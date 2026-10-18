@@ -54,16 +54,6 @@ import { MateriaEstudianteItem } from '../../../../core/models/role-management.m
             </svg>
             Auto-Registro Asistencia
           </button>
-
-          <app-button variant="primary" size="sm" (clicked)="openEnrollmentRequest.emit()">
-            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-            </svg>
-            Solicitar Inscripción
-          </app-button>
-          <span class="px-3 py-1.5 rounded-xl bg-warm-100 text-xs font-bold text-warm-800 border border-warm-200">
-            {{ totalCreditos() }} Créditos
-          </span>
         </div>
       </div>
 

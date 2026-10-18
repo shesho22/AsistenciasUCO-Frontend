@@ -6,6 +6,9 @@ import {
   EstudianteDetalleApiDto,
   EstudiantePaginaApiDto,
 } from '../api/models/estudiante-api-dto.model';
+import { ApiListResponse } from '../api/models/api-list-response.model';
+import { EstudianteGrupoApiDto } from '../api/models/estudiante-grupo-api-dto.model';
+import { MOCK_ESTUDIANTES_DIRECTORIO } from '../mocks/role-management.mock';
 import { OperationResultResponse } from '../api/models/operation-result-response.model';
 import { RegistrarEstudianteEnGrupoRequest } from '../api/models/registrar-estudiante-en-grupo-request.model';
 import { getPasswordValidationError } from '../validation/request-form-validation.util';
@@ -74,22 +77,28 @@ export class StudentService {
 
   getStudentsByGroup(
     grupoId: string
-  ): Observable<EstudiantePaginaApiDto> {
+  ): Observable<ApiListResponse<EstudianteGrupoApiDto>> {
     if (environment.useFrontendMocks) {
+      const students = MOCK_ESTUDIANTES_DIRECTORIO
+        .filter((student) => student.gruposInscritos?.includes(grupoId))
+        .map((student): EstudianteGrupoApiDto => ({
+          id: `matricula-${grupoId}-${student.id}`,
+          idEstudiante: student.id,
+          documento: student.documento,
+          nombreCompleto: student.nombreCompleto,
+          correo: student.correo,
+          codigoEstado: student.estadoMatricula,
+          nombreEstado: student.estadoMatricula,
+        }));
       return of({
-        items: [],
-        totalItems: 0,
-        totalPages: 0,
-        page: 0,
-        size: 0,
+        exitoso: true,
+        datos: students,
+        total: students.length,
       }).pipe(delay(200));
     }
 
-    return this.http.get<EstudiantePaginaApiDto>(
-      `${environment.apiUrl}/estudiantes`,
-      {
-        params: grupoId ? { grupoId } : {},
-      }
+    return this.http.get<ApiListResponse<EstudianteGrupoApiDto>>(
+      `${environment.apiUrl}/grupos/${grupoId}/estudiantes`
     );
   }
 

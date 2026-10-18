@@ -48,7 +48,7 @@ import { ToastService } from '../../shared/components/toast/toast.component';
 
         <div class="flex items-center gap-2 self-end sm:self-auto">
           @if (!isEditing()) {
-            <app-button variant="accent" size="sm" (click)="enableEditing()">
+            <app-button variant="accent" size="sm" [disabled]="!canEditProfile()" (click)="enableEditing()">
               <svg class="w-4 h-4 mr-1.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
               </svg>
@@ -142,7 +142,7 @@ import { ToastService } from '../../shared/components/toast/toast.component';
                     <span class="text-[11px] font-semibold text-warm-600 bg-warm-100 px-2.5 py-1 rounded-full border border-warm-200">
                       Modo Consulta
                     </span>
-                    <app-button variant="accent" size="sm" type="button" (click)="enableEditing()">
+                    <app-button variant="accent" size="sm" type="button" [disabled]="!canEditProfile()" (click)="enableEditing()">
                       <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                       </svg>
@@ -180,7 +180,7 @@ import { ToastService } from '../../shared/components/toast/toast.component';
                   <span class="text-[11px]">
                     Para modificar tus nombres o apellidos, presiona el botón <strong>"Editar"</strong>.
                   </span>
-                  <app-button variant="accent" size="sm" type="button" (click)="enableEditing()">
+                  <app-button variant="accent" size="sm" type="button" [disabled]="!canEditProfile()" (click)="enableEditing()">
                     Editar Datos
                   </app-button>
                 </div>
@@ -294,7 +294,7 @@ import { ToastService } from '../../shared/components/toast/toast.component';
                 <app-button variant="secondary" size="md" type="button" (click)="goBack()">
                   Volver al Panel
                 </app-button>
-                <app-button variant="primary" size="md" type="button" (click)="enableEditing()">
+                <app-button variant="primary" size="md" type="button" [disabled]="!canEditProfile()" (click)="enableEditing()">
                   <svg class="w-4 h-4 mr-1.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                   </svg>
@@ -315,6 +315,7 @@ export class ProfileComponent implements OnInit {
   private router = inject(Router);
 
   user = this.authService.currentUser;
+  canEditProfile = this.authService.isMockMode;
   isSaving = signal<boolean>(false);
   isEditing = signal<boolean>(false);
 
@@ -349,6 +350,10 @@ export class ProfileComponent implements OnInit {
   }
 
   enableEditing(): void {
+    if (!this.canEditProfile()) {
+      this.toastService.show('La edición de perfil está pendiente del contrato backend.', 'info');
+      return;
+    }
     this.isEditing.set(true);
   }
 
@@ -370,6 +375,10 @@ export class ProfileComponent implements OnInit {
   }
 
   saveProfile(): void {
+    if (!this.canEditProfile()) {
+      this.toastService.show('La edición de perfil está pendiente del contrato backend.', 'info');
+      return;
+    }
     if (!this.formModel.primerNombre.trim()) {
       this.toastService.show('El campo Primer Nombre es obligatorio.', 'warning');
       return;

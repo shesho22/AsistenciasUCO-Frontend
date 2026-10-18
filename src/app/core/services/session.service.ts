@@ -10,12 +10,14 @@ import { SesionConsultadaApiDto } from '../api/models/sesion-consultada-api-dto.
 import { getApiErrorMessage } from '../api/errors/api-error.util';
 import { ClassSession } from '../models/attendance.model';
 import { getSessionNameError } from '../validation/session-name.util';
+import { SessionV2Service, UpdateSessionV2Input } from './session-v2.service';
 
 export interface UpdateSessionInput {
   title: string;
   date: string;
   startTime: string;
   endTime: string;
+  originalSession?: ClassSession;
 }
 
 @Injectable({
@@ -91,9 +93,22 @@ export class SessionService {
 
   private sessionsByGroupSignal = signal<Record<string, ClassSession[]>>(this.initialSessions);
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private sessionV2: SessionV2Service
+  ) {}
 
   getSessionsByGroup(grupoId: string): Observable<ApiResponse<ClassSession[]>> {
+    if (environment.useSessionsV2 && !environment.useMocks) {
+      return this.sessionV2.getSessionsByGroup(grupoId).pipe(
+        map((response) => ({
+          exitoso: response.exitoso,
+          total: response.total,
+          datos: response.datos,
+        }))
+      );
+    }
+
     if (environment.useMocks) {
       const map = this.sessionsByGroupSignal();
       const existing = map[grupoId];
@@ -136,6 +151,7 @@ export class SessionService {
               sessionNumber: session.numero,
               title: session.nombre,
               date: start.date,
+              endDate: end.date,
               startTime: start.time,
               endTime: end.time,
               records: [],
@@ -149,6 +165,13 @@ export class SessionService {
           };
         })
       );
+  }
+
+  getSession(sesionId: string): Observable<{ exitoso: boolean; datos: ClassSession }> {
+    if (environment.useSessionsV2 && !environment.useMocks) {
+      return this.sessionV2.getSession(sesionId);
+    }
+    return this.http.get<any>(`${environment.apiUrl}/sesiones/${sesionId}`);
   }
 
   private splitLocalDateTime(value: string): { date: string; time: string } {
@@ -173,6 +196,13 @@ export class SessionService {
     const nombreError = getSessionNameError(data.title);
     if (nombreError) {
       return throwError(() => new Error(nombreError));
+    }
+    if (data.startTime === data.endTime) {
+      return throwError(() => new Error('La hora de fin debe ser posterior a la hora de inicio; una sesión de 24 horas no se crea implícitamente.'));
+    }
+
+    if (environment.useSessionsV2 && !environment.useMocks) {
+      return this.sessionV2.createSession(grupoId, data);
     }
 
     if (environment.useMocks) {
@@ -221,6 +251,13 @@ export class SessionService {
     const nombreError = getSessionNameError(cambios.title);
     if (nombreError) {
       return throwError(() => new Error(nombreError));
+    }
+    if (cambios.startTime === cambios.endTime) {
+      return throwError(() => new Error('La hora de fin debe ser posterior a la hora de inicio; una sesión de 24 horas no se crea implícitamente.'));
+    }
+
+    if (environment.useSessionsV2 && !environment.useMocks) {
+      return this.sessionV2.updateSession(sesionId, cambios as UpdateSessionV2Input);
     }
 
     if (environment.useMocks) {

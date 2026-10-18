@@ -300,7 +300,7 @@ describe('AuthService', () => {
       expect(localStorage.getItem('USE_MOCKS')).toBe('true');
 
       service.setMockMode(false);
-      expect(localStorage.getItem('USE_MOCKS')).toBeNull();
+      expect(localStorage.getItem('USE_MOCKS')).toBe('false');
     });
   });
 

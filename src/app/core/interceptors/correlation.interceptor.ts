@@ -20,13 +20,13 @@ function normalizeHost(hostname: string): string {
 function isApiRequest(url: string): boolean {
   try {
     const requestUrl = new URL(url, window.location.origin);
-    const apiUrl = new URL(environment.apiUrl, window.location.origin);
-    return (
-      requestUrl.protocol === apiUrl.protocol &&
-      normalizeHost(requestUrl.hostname) === normalizeHost(apiUrl.hostname) &&
-      requestUrl.port === apiUrl.port &&
-      requestUrl.pathname.startsWith(apiUrl.pathname)
-    );
+    return [environment.apiUrl, environment.apiV2Url].some((root) => {
+      const apiUrl = new URL(root, window.location.origin);
+      return requestUrl.protocol === apiUrl.protocol &&
+        normalizeHost(requestUrl.hostname) === normalizeHost(apiUrl.hostname) &&
+        requestUrl.port === apiUrl.port &&
+        requestUrl.pathname.startsWith(`${apiUrl.pathname}/`);
+    });
   } catch {
     return false;
   }

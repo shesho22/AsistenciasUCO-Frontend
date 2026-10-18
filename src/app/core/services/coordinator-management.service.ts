@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, tap } from 'rxjs';
+import { Observable, map, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiResponse } from '../models/api-response.model';
 import {
@@ -11,6 +11,15 @@ import {
   SolicitudMatriculaItem,
   PeriodoAcademicoItem,
 } from '../models/role-management.model';
+import { EstudiantePaginaApiDto } from '../api/models/estudiante-api-dto.model';
+
+export interface DirectorioEstudiantesQuery {
+  page: number;
+  size: number;
+  nombre?: string;
+  numeroIdentificacion?: string;
+  activo?: boolean;
+}
 
 @Injectable({
   providedIn: 'root',
@@ -207,6 +216,55 @@ export class CoordinatorManagementService {
         }
       })
     );
+  }
+
+  getEstudiantesDirectorioPagina(
+    query: DirectorioEstudiantesQuery
+  ): Observable<EstudiantePaginaApiDto> {
+    if (environment.useFrontendMocks) {
+      return this.http
+        .get<ApiResponse<EstudianteDirectorioItem[]>>(`${environment.apiUrl}/coordinador/estudiantes`)
+        .pipe(
+          map((response) => {
+            const start = query.page * query.size;
+            const filtered = (response.datos || [])
+              .filter((item) => !query.nombre || item.nombreCompleto.toLowerCase().includes(query.nombre.toLowerCase()))
+              .filter((item) => query.activo === undefined || (item.estadoMatricula === 'ACTIVO') === query.activo);
+            const items = filtered
+              .slice(start, start + query.size)
+              .map((item) => ({
+                id: item.id,
+                idUsuario: item.id,
+                tipoIdentificacionId: '',
+                numeroIdentificacion: Number(item.documento) || 0,
+                primerApellido: '',
+                segundoApellido: '',
+                primerNombre: item.nombreCompleto,
+                segundoNombre: '',
+                nombreCompleto: item.nombreCompleto,
+                correo: item.correo,
+                estaActivoUsuario: item.estadoMatricula === 'ACTIVO',
+              }));
+            const totalItems = filtered.length;
+            return {
+              items,
+              totalItems,
+              totalPages: Math.ceil(totalItems / query.size),
+              page: query.page,
+              size: query.size,
+            };
+          })
+        );
+    }
+
+    const params: Record<string, string> = {
+      page: String(query.page),
+      size: String(query.size),
+    };
+    if (query.nombre) params['nombre'] = query.nombre;
+    if (query.numeroIdentificacion) params['numeroIdentificacion'] = query.numeroIdentificacion;
+    if (query.activo !== undefined) params['activo'] = String(query.activo);
+    return this.http.get<EstudiantePaginaApiDto>(`${environment.apiUrl}/estudiantes`, { params });
   }
 
   getEstudiantesPorGrupo(grupoId: string): Observable<ApiResponse<EstudianteDirectorioItem[]>> {

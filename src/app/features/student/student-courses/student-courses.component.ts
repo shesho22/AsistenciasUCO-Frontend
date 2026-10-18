@@ -21,7 +21,6 @@ import { Course } from '../../../core/models/course.model';
 import { StudentCoursesListComponent } from './components/student-courses-list.component';
 import { StudentCourseDetailComponent } from './components/student-course-detail.component';
 import { StudentClaimFormComponent } from './components/student-claim-form.component';
-import { StudentCourseEnrollFormComponent } from './components/student-course-enroll-form.component';
 import { StudentPrerequisitosModalComponent } from './components/modals/student-prerequisitos-modal.component';
 import { StudentAutoAsistenciaModalComponent } from './components/modals/student-auto-asistencia-modal.component';
 import { StudentMatriculaCodigoModalComponent } from './components/modals/student-matricula-codigo-modal.component';
@@ -37,7 +36,6 @@ type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO' | 'SOLICITAR_MATRICULA';
     StudentCoursesListComponent,
     StudentCourseDetailComponent,
     StudentClaimFormComponent,
-    StudentCourseEnrollFormComponent,
     StudentPrerequisitosModalComponent,
     StudentAutoAsistenciaModalComponent,
     StudentMatriculaCodigoModalComponent,
@@ -49,12 +47,10 @@ type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO' | 'SOLICITAR_MATRICULA';
         <app-student-courses-list
           [materias]="materias()"
           [isLoading]="isLoading()"
-          [totalCreditos]="totalCreditos()"
           [promedioAsistencia]="promedioAsistencia()"
           [totalFallas]="totalFallas()"
           (openCodeEnrollment)="abrirModalMatriculaGrupo()"
           (openAutoAttendance)="abrirModalAutoAsistencia()"
-          (openEnrollmentRequest)="abrirSolicitudMatricula()"
           (viewDetail)="verDetalleCompleto($event)"
           (viewPrerequisites)="abrirPrerrequisitos($event)"
         />
@@ -85,16 +81,7 @@ type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO' | 'SOLICITAR_MATRICULA';
         />
       }
 
-      <!-- 4. Vista: Solicitar Inscripción / Matrícula a Grupo -->
-      @if (vistaActual() === 'SOLICITAR_MATRICULA') {
-        <app-student-course-enroll-form
-          [cursos]="cursosDisponibles()"
-          (back)="volverALista()"
-          (submitted)="enviarSolicitudMatricula($event)"
-        />
-      }
-
-      <!-- 5. Modal de Prerrequisitos de Asignatura -->
+      <!-- 4. Modal de Prerrequisitos de Asignatura -->
       <app-student-prerequisitos-modal
         [isOpen]="modalPrerrequisitosVisible()"
         [materia]="materiaPrerrequisitos()"
@@ -162,7 +149,7 @@ export class StudentCoursesComponent implements OnInit {
   loadingPrerrequisitos = signal<boolean>(false);
 
   totalCreditos(): number {
-    return this.materias().reduce((sum, m) => sum + m.creditos, 0);
+    return this.materias().reduce((sum, m) => sum + (Number(m.creditos) || 0), 0);
   }
 
   promedioAsistencia(): string {
@@ -269,6 +256,7 @@ export class StudentCoursesComponent implements OnInit {
         next: (res) => {
           if (res.exitoso && res.datos) {
             this.archivoAdjunto.set({
+              fileId: res.datos.fileId,
               nombre: res.datos.nombre,
               tipo: file.type || 'application/pdf',
               tamanioKb: Math.max(1, Math.round(file.size / 1024)),

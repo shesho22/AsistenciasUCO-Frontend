@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, input, output, signal, effect } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, output, signal, effect, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
@@ -10,6 +10,7 @@ import {
   SESSION_NAME_MAX_LENGTH,
   getSessionNameError,
 } from '../../../../core/validation/session-name.util';
+import { SessionTimeZoneService } from '../../../../core/services/session-timezone.service';
 
 @Component({
   selector: 'app-attendance-new-session-modal',
@@ -32,6 +33,9 @@ import {
             Crea una nueva sesión de clase en el cronograma académico del grupo.
           </p>
         }
+        <p class="text-[11px] text-primary-800 bg-primary-50 border border-primary-100 rounded-lg px-3 py-2">
+          Las fechas y horas se interpretan en la zona IANA activa: <strong>{{ timeZone.zone() }}</strong>.
+        </p>
 
         <app-form-field label="Título de la Sesión" [required]="true">
           <input
@@ -113,7 +117,7 @@ export class AttendanceNewSessionModalComponent {
   course = input<Course | null | undefined>(null);
   isCreating = input<boolean>(false);
 
-  date = signal<string>(new Date().toISOString().split('T')[0]);
+  date = signal<string>('');
   startTime = signal<string>('08:00');
   endTime = signal<string>('10:00');
   title = signal<string>('');
@@ -136,11 +140,13 @@ export class AttendanceNewSessionModalComponent {
   }>();
   closed = output<void>();
 
+  readonly timeZone = inject(SessionTimeZoneService);
+
   constructor() {
     effect(() => {
       if (this.isOpen()) {
         this.title.set('');
-        this.date.set(new Date().toISOString().split('T')[0]);
+        this.date.set(this.timeZone.currentDate());
         this.startTime.set('08:00');
         this.endTime.set('10:00');
       }

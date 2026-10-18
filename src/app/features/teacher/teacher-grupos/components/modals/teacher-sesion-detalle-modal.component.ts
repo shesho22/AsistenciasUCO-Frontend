@@ -1,8 +1,9 @@
-import { Component, ChangeDetectionStrategy, input, output } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ModalComponent } from '../../../../../shared/components/modal/modal.component';
 import { ButtonComponent } from '../../../../../shared/components/button/button.component';
 import { ClassSession } from '../../../../../core/models/attendance.model';
+import { SessionTimeZoneService } from '../../../../../core/services/session-timezone.service';
 
 @Component({
   selector: 'app-teacher-sesion-detalle-modal',
@@ -26,8 +27,12 @@ import { ClassSession } from '../../../../../core/models/attendance.model';
             </div>
             <h4 class="font-bold text-base text-warm-900">{{ sesion()?.title }}</h4>
             <div class="grid grid-cols-2 gap-2 pt-2 border-t border-warm-200/60 text-xs text-warm-700">
-              <div><strong>Fecha:</strong> {{ sesion()?.date }}</div>
-              <div><strong>Horario:</strong> {{ sesion()?.startTime }} - {{ sesion()?.endTime }}</div>
+              @if (sesion()?.estadoTemporal === 'INDETERMINADA') {
+                <div class="col-span-2 text-amber-800"><strong>Horario:</strong> no confirmado</div>
+              } @else {
+                <div><strong>Fecha:</strong> {{ timeZone.displaySessionDate(sesion()!) }}{{ timeZone.displaySessionEndDate(sesion()!) !== timeZone.displaySessionDate(sesion()!) ? ' – ' + timeZone.displaySessionEndDate(sesion()!) : '' }}</div>
+                <div><strong>Horario:</strong> {{ timeZone.displaySessionStartTime(sesion()!) }} - {{ timeZone.displaySessionEndTime(sesion()!) }}</div>
+              }
             </div>
           </div>
 
@@ -74,6 +79,7 @@ import { ClassSession } from '../../../../../core/models/attendance.model';
   `,
 })
 export class TeacherSesionDetalleModalComponent {
+  readonly timeZone = inject(SessionTimeZoneService);
   isOpen = input.required<boolean>();
   sesion = input<ClassSession | null>(null);
   closed = output<void>();

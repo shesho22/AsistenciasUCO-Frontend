@@ -1,7 +1,8 @@
-import { Component, ChangeDetectionStrategy, input, output } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { ClassSession } from '../../../../core/models/attendance.model';
+import { SessionTimeZoneService } from '../../../../core/services/session-timezone.service';
 
 @Component({
   selector: 'app-teacher-grupo-sesiones',
@@ -42,9 +43,15 @@ import { ClassSession } from '../../../../core/models/attendance.model';
                   <span class="text-xs font-mono font-bold px-2.5 py-0.5 rounded-md bg-warm-100 text-warm-800">
                     #{{ sesion.sessionNumber }}
                   </span>
-                  <span class="text-xs font-medium text-warm-600">{{ sesion.date }}</span>
-                  <span class="text-warm-300">•</span>
-                  <span class="text-xs font-mono font-bold text-warm-800">{{ sesion.startTime }} - {{ sesion.endTime }}</span>
+                  @if (sesion.estadoTemporal === 'INDETERMINADA') {
+                    <span class="text-xs font-semibold text-amber-800 bg-amber-50 px-2 py-0.5 rounded">Horario no confirmado</span>
+                  } @else {
+                    <span class="text-xs font-medium text-warm-600">
+                      {{ timeZone.displaySessionDate(sesion) }}{{ timeZone.displaySessionEndDate(sesion) !== timeZone.displaySessionDate(sesion) ? ' – ' + timeZone.displaySessionEndDate(sesion) : '' }}
+                    </span>
+                    <span class="text-warm-300">•</span>
+                    <span class="text-xs font-mono font-bold text-warm-800">{{ timeZone.displaySessionStartTime(sesion) }} - {{ timeZone.displaySessionEndTime(sesion) }}</span>
+                  }
                 </div>
 
                 <h4 class="font-bold text-sm text-warm-900 leading-snug">
@@ -127,6 +134,7 @@ import { ClassSession } from '../../../../core/models/attendance.model';
   `,
 })
 export class TeacherGrupoSesionesComponent {
+  readonly timeZone = inject(SessionTimeZoneService);
   sessions = input<ClassSession[]>([]);
   loading = input<boolean>(false);
   // OUT_OF_GOLDEN_PATH: QR/PIN y Cancelar no tienen contrato backend; ocultas salvo feature explícita.

@@ -21,6 +21,7 @@ import { Course } from '../../../core/models/course.model';
 import { AttendanceMapper } from '../../../core/mappers/attendance.mapper';
 import { RegistrarAsistenciasSesionRequest } from '../../../core/api/models/registrar-asistencias-sesion-request.model';
 import { environment } from '../../../../environments/environment';
+import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
 import {
   getPasswordValidationError,
   parseIdentificationNumber,
@@ -204,6 +205,7 @@ export class AttendanceControlComponent {
   private destroyRef = inject(DestroyRef);
   private catalogService = inject(CatalogService);
   private attendanceClaimService = inject(AttendanceClaimService);
+  private timeZone = inject(SessionTimeZoneService);
 
   readonly sessionsEnabled = environment.features.sessionsEnabled;
   readonly attendanceEnabled = environment.features.attendanceEnabled;
@@ -472,7 +474,9 @@ export class AttendanceControlComponent {
     return this.sessions()
       .map((s) => ({
         value: s.id,
-        label: `Sesión #${s.sessionNumber} (${s.date}): ${s.title}`,
+        label: s.estadoTemporal === 'INDETERMINADA'
+          ? `Sesión #${s.sessionNumber} (horario no confirmado): ${s.title}`
+          : `Sesión #${s.sessionNumber} (${this.timeZone.displaySessionDate(s)}${this.timeZone.displaySessionEndDate(s) !== this.timeZone.displaySessionDate(s) ? ` – ${this.timeZone.displaySessionEndDate(s)}` : ''}): ${s.title}`,
       }));
   });
 
@@ -541,13 +545,12 @@ export class AttendanceControlComponent {
                 });
 
                 this.sessions.set(populatedSessions);
-                const createdSession = populatedSessions.find(
-                  (s) => s.title === data.title && s.date === data.date
-                );
-                if (createdSession) {
-                  this.selectedSessionId.set(createdSession.id);
-                  this.cargarEstudiantesYSesion(course.id, createdSession.id);
-                }
+                // POST /sesiones solo devuelve ApiMessageResponse. Sin un
+                // identificador de creación no se selecciona por nombre/fecha,
+                // porque puede haber sesiones duplicadas; el usuario elige la
+                // fila por su ID real en el listado recién recargado.
+                this.selectedSessionId.set('');
+                this.vistaActual.set('OVERVIEW');
               },
             });
           } else {

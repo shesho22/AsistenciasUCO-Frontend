@@ -1,9 +1,10 @@
-import { Component, ChangeDetectionStrategy, input, output, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, output, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { Course } from '../../../../core/models/course.model';
 import { ClassSession } from '../../../../core/models/attendance.model';
 import { findActiveOrUpcomingSession } from '../../../../core/utils/session-selection.util';
+import { SessionTimeZoneService } from '../../../../core/services/session-timezone.service';
 
 @Component({
   selector: 'app-group-sessions-overview',
@@ -99,7 +100,7 @@ import { findActiveOrUpcomingSession } from '../../../../core/utils/session-sele
               {{ sesionActivaHoy()?.title || (sesionReciente() ? '#' + sesionReciente()?.sessionNumber + ' ' + sesionReciente()?.title : 'Sin sesiones') }}
             </h4>
             <p class="text-[11px] text-warm-300 mt-0.5">
-              {{ sesionActivaHoy()?.date || sesionReciente()?.date || 'Sin programar' }}
+              {{ displayDate(sesionActivaHoy() || sesionReciente()) || 'Sin programar' }}
             </p>
           </div>
 
@@ -259,8 +260,12 @@ import { findActiveOrUpcomingSession } from '../../../../core/utils/session-sele
                       Sesión #{{ s.sessionNumber }}
                     </td>
                     <td class="px-5 py-4">
-                      <div class="font-semibold text-warm-900">{{ s.date }}</div>
-                      <div class="text-[11px] text-warm-500 font-mono">{{ s.startTime }} - {{ s.endTime }}</div>
+                      @if (s.estadoTemporal === 'INDETERMINADA') {
+                        <div class="font-semibold text-amber-800">Horario no confirmado</div>
+                      } @else {
+                        <div class="font-semibold text-warm-900">{{ timeZone.displaySessionDate(s) }}{{ timeZone.displaySessionEndDate(s) !== timeZone.displaySessionDate(s) ? ' – ' + timeZone.displaySessionEndDate(s) : '' }}</div>
+                        <div class="text-[11px] text-warm-500 font-mono">{{ timeZone.displaySessionStartTime(s) }} - {{ timeZone.displaySessionEndTime(s) }}</div>
+                      }
                     </td>
                     <td class="px-5 py-4 max-w-xs truncate">
                       <span class="font-medium text-warm-900 block truncate" [title]="s.title">
@@ -293,6 +298,7 @@ import { findActiveOrUpcomingSession } from '../../../../core/utils/session-sele
   `,
 })
 export class GroupSessionsOverviewComponent {
+  readonly timeZone = inject(SessionTimeZoneService);
   course = input<Course | undefined>(undefined);
   sessions = input<ClassSession[]>([]);
   totalReclamosPendientes = input<number>(0);
@@ -344,9 +350,14 @@ export class GroupSessionsOverviewComponent {
   });
 
   sesionActivaHoy = computed(() => {
-    const hoy = new Date().toISOString().split('T')[0];
+    const hoy = this.timeZone.currentDate();
     const recomendada = this.sesionRecomendada();
-    return recomendada && recomendada.date === hoy ? recomendada : undefined;
+    if (recomendada && (recomendada.date === hoy || this.timeZone.displaySessionDate(recomendada) === hoy)) {
+      return recomendada;
+    }
+    return this.sessions().find((s) =>
+      s.estadoTemporal !== 'INDETERMINADA' && this.timeZone.displaySessionDate(s) === hoy
+    );
   });
 
   sesionReciente = computed(() => {
@@ -356,5 +367,12 @@ export class GroupSessionsOverviewComponent {
   getPresentesCount(session: ClassSession): number {
     if (!session.records) return 0;
     return session.records.filter((r) => r.status === 'AN' || r.status === 'EX').length;
+  }
+
+  displayDate(session: ClassSession | undefined): string {
+    if (!session) return '';
+    return session.estadoTemporal === 'INDETERMINADA'
+      ? 'Horario no confirmado'
+      : this.timeZone.displaySessionDate(session);
   }
 }

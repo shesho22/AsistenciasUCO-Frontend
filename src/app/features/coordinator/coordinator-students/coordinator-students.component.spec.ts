@@ -32,12 +32,15 @@ describe('CoordinatorStudentsComponent', () => {
   beforeEach(() => {
     coordinatorService = jasmine.createSpyObj<CoordinatorManagementService>(
       'CoordinatorManagementService',
-      ['getEstudiantesDirectorio', 'getSolicitudesMatricula', 'getEstudiantesPorGrupo']
+      ['getEstudiantesDirectorio', 'getEstudiantesDirectorioPagina', 'getSolicitudesMatricula', 'getEstudiantesPorGrupo']
     );
     courseService = jasmine.createSpyObj<CourseService>('CourseService', ['getTeacherCourses']);
 
     coordinatorService.getEstudiantesDirectorio.and.returnValue(
       of({ exitoso: true, datos: [] } as any)
+    );
+    coordinatorService.getEstudiantesDirectorioPagina.and.returnValue(
+      of({ items: [], totalItems: 0, totalPages: 0, page: 0, size: 6 })
     );
     coordinatorService.getSolicitudesMatricula.and.returnValue(
       of({ exitoso: true, datos: [] } as any)

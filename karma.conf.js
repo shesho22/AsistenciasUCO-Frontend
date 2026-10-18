@@ -40,6 +40,23 @@ module.exports = function (config) {
     logLevel: config.LOG_INFO,
     autoWatch: true,
     browsers: ['Chrome'],
+    customLaunchers: {
+      // Solo para el runner de CI local/Windows. No modifica Chrome de producción.
+      // `--no-sandbox` queda limitado al proceso efímero de pruebas porque este
+      // entorno administrado no permite iniciar el sandbox nativo de Chrome.
+      ChromeHeadlessCI: {
+        base: 'ChromeHeadless',
+        flags: [
+          '--headless',
+          '--no-sandbox',
+          '--disable-gpu',
+          '--disable-dev-shm-usage',
+          '--no-first-run',
+          '--no-default-browser-check',
+          '--disable-extensions',
+        ],
+      },
+    },
     singleRun: false,
     restartOnFileChange: true,
   });

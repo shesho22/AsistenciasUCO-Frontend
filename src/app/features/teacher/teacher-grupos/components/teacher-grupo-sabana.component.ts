@@ -1,6 +1,7 @@
-import { Component, ChangeDetectionStrategy, input } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ClassSession } from '../../../../core/models/attendance.model';
+import { SessionTimeZoneService } from '../../../../core/services/session-timezone.service';
 
 @Component({
   selector: 'app-teacher-grupo-sabana',
@@ -69,12 +70,16 @@ import { ClassSession } from '../../../../core/models/attendance.model';
                   Estudiante (Documento)
                 </th>
                 @for (ses of sessions(); track ses.id) {
-                  <th class="p-2.5 text-center min-w-[70px] border-r border-warm-200" [title]="ses.title + ' - ' + ses.date">
+                  <th class="p-2.5 text-center min-w-[70px] border-r border-warm-200" [title]="ses.title + ' - ' + displayDate(ses)">
                     <div class="font-mono font-bold text-primary-900">#{{ ses.sessionNumber }}</div>
-                    <div class="text-[10px] text-warm-500 font-normal truncate">{{ ses.date | slice:5 }}</div>
+                    @if (ses.estadoTemporal === 'INDETERMINADA') {
+                      <div class="text-[10px] text-amber-700 font-semibold truncate">Sin fecha</div>
+                    } @else {
+                      <div class="text-[10px] text-warm-500 font-normal truncate">{{ displayDate(ses) | slice:5 }}</div>
+                    }
                     <span
                       class="inline-block w-1.5 h-1.5 rounded-full mt-0.5 bg-emerald-500"
-                      [title]="ses.date"
+                      [title]="ses.estadoTemporal === 'INDETERMINADA' ? 'Horario no confirmado' : displayDate(ses)"
                     ></span>
                   </th>
                 }
@@ -162,9 +167,16 @@ import { ClassSession } from '../../../../core/models/attendance.model';
   `,
 })
 export class TeacherGrupoSabanaComponent {
+  readonly timeZone = inject(SessionTimeZoneService);
   estudiantes = input<any[]>([]);
   sessions = input<ClassSession[]>([]);
   cargando = input<boolean>(false);
+
+  displayDate(session: ClassSession): string {
+    return session.estadoTemporal === 'INDETERMINADA'
+      ? 'Horario no confirmado'
+      : this.timeZone.displaySessionDate(session);
+  }
 
   getAsistenciaEstudianteEnSesion(estudianteId: string, sesion: ClassSession): string {
     if (!sesion.records || sesion.records.length === 0) {

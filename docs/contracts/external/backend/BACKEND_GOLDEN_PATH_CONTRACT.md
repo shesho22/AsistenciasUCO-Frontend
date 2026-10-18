@@ -8,6 +8,8 @@ last-reviewed: 2026-09-24
 
 # Contrato backend del Golden Path (LB-001B.4)
 
+> **Snapshot histórico de septiembre de 2026.** Esta copia no es OpenAPI y no congela la representación HTTP de sesiones UTC v2. Para MAINT-004 prevalece el OpenAPI `openapi-golden-path.yaml` del backend `develop`, que agrega `/api/v2/sesiones` y conserva v1.
+
 Insumo para la verificación frontend y para LB-001C. **No es OpenAPI** ni congela la representación HTTP final de campos temporales. Extraído de controllers, DTOs, `SecurityConfig` y tests del checkout (rama `sergio`); no describe endpoints fuera del Golden Path. Evidencia: [VALIDATION](../work-items/LB-001B.4-final-backend-contract-closure/VALIDATION.md), [AUDIT](../work-items/LB-001B.4-final-backend-contract-closure/AUDIT.md). Contrato DB consumido: `docs/contracts/external/db/DB_BASELINE_CONTRACT.md` (SHA-256 `45e48c5a0ab321d0c8cbffb55ee224e3b6fd29febc39a62ca723b2b209945aec`).
 
 ## A. Endpoints y B. Roles (RBAC de `SecurityConfig`, prefijo `ROLE_`)

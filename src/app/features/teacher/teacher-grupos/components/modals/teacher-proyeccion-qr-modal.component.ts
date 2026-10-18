@@ -1,9 +1,10 @@
-import { Component, ChangeDetectionStrategy, input, output } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonComponent } from '../../../../../shared/components/button/button.component';
 import { Course } from '../../../../../core/models/course.model';
 import { ClassSession } from '../../../../../core/models/attendance.model';
+import { SessionTimeZoneService } from '../../../../../core/services/session-timezone.service';
 
 @Component({
   selector: 'app-teacher-proyeccion-qr-modal',
@@ -55,7 +56,7 @@ import { ClassSession } from '../../../../../core/models/attendance.model';
                 >
                   @for (s of sessions(); track s.id) {
                     <option [value]="s.id">
-                      #{{ s.sessionNumber }} — {{ s.title }} ({{ s.date }})
+                      #{{ s.sessionNumber }} — {{ s.title }} ({{ s.estadoTemporal === 'INDETERMINADA' ? 'Horario no confirmado' : timeZone.displaySessionDate(s) }})
                     </option>
                   }
                 </select>
@@ -129,6 +130,7 @@ import { ClassSession } from '../../../../../core/models/attendance.model';
   `,
 })
 export class TeacherProyeccionQrModalComponent {
+  readonly timeZone = inject(SessionTimeZoneService);
   isOpen = input.required<boolean>();
   curso = input<Course | null>(null);
   sessions = input<ClassSession[]>([]);

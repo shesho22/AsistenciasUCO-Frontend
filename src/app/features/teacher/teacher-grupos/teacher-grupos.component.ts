@@ -24,6 +24,7 @@ import { TeacherSesionCancelarModalComponent } from './components/modals/teacher
 import { TeacherSesionDetalleModalComponent } from './components/modals/teacher-sesion-detalle-modal.component';
 import { getSessionNameError } from '../../../core/validation/session-name.util';
 import { environment } from '../../../../environments/environment';
+import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
 
 type VistaGrupos = 'LISTA' | 'FORM_GRUPO' | 'HUB_GRUPO' | 'FORM_SESION';
 
@@ -151,6 +152,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   private claimService = inject(AttendanceClaimService);
   private router = inject(Router);
   private toast = inject(ToastService);
+  private timeZone = inject(SessionTimeZoneService);
 
   // OUT_OF_GOLDEN_PATH (LB-001B.5A): sin contrato backend → deshabilitadas por feature explícita.
   readonly sessionQrEnabled = environment.features.sessionQrEnabled;
@@ -219,6 +221,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
     endTime: '10:00',
     sessionNumber: 1,
   };
+  private sesionFormTimeZone: string | null = null;
 
   ngOnInit(): void {
     this.cargarGrupos();
@@ -445,11 +448,12 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
     this.selectedSessionId = null;
     this.sesionForm = {
       title: 'Sesión Extraordinaria de Refuerzo',
-      date: new Date().toISOString().split('T')[0],
+      date: this.timeZone.currentDate(),
       startTime: '14:00',
       endTime: '16:00',
       sessionNumber: this.sessions().length + 1,
     };
+    this.sesionFormTimeZone = this.timeZone.zone();
     this.vistaActual.set('FORM_SESION');
   }
 
@@ -463,6 +467,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
       endTime: sesion.endTime,
       sessionNumber: sesion.sessionNumber,
     };
+    this.sesionFormTimeZone = this.timeZone.zone();
     this.vistaActual.set('FORM_SESION');
   }
 
@@ -489,7 +494,21 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
       this.toast.warning('Los campos Hora Inicio y Hora Fin de la sesión son obligatorios.');
       return;
     }
-    if (this.sesionForm.startTime >= this.sesionForm.endTime) {
+    if (this.modoFormSesion === 'EDITAR' && this.sesionFormTimeZone !== this.timeZone.zone()) {
+      const original = this.sessions().find((session) => session.id === this.selectedSessionId);
+      if (original) {
+        this.sesionForm = {
+          ...this.sesionForm,
+          date: this.timeZone.displaySessionDate(original),
+          startTime: this.timeZone.displaySessionStartTime(original),
+          endTime: this.timeZone.displaySessionEndTime(original),
+        };
+      }
+      this.sesionFormTimeZone = this.timeZone.zone();
+      this.toast.warning('La zona horaria activa cambió mientras editabas. Se recargó el horario original; revisa los datos antes de guardar.');
+      return;
+    }
+    if (!environment.useSessionsV2 && this.sesionForm.startTime >= this.sesionForm.endTime) {
       this.toast.warning('El campo Hora Fin de la sesión debe ser posterior a la Hora Inicio.');
       return;
     }
@@ -519,6 +538,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
           date: this.sesionForm.date,
           startTime: this.sesionForm.startTime,
           endTime: this.sesionForm.endTime,
+          originalSession: this.sessions().find((session) => session.id === this.selectedSessionId),
         })
         .subscribe({
           next: (res) => {

@@ -1,9 +1,10 @@
-import { Component, ChangeDetectionStrategy, input, output, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, output, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FormFieldComponent } from '../../../../../shared/components/form-field/form-field.component';
 import { ButtonComponent } from '../../../../../shared/components/button/button.component';
 import { ClassSession } from '../../../../../core/models/attendance.model';
+import { SessionTimeZoneService } from '../../../../../core/services/session-timezone.service';
 
 @Component({
   selector: 'app-teacher-sesion-cancelar-modal',
@@ -23,7 +24,11 @@ import { ClassSession } from '../../../../../core/models/attendance.model';
               </div>
               <div>
                 <h3 class="font-serif font-bold text-lg text-warm-900">Cancelar Sesión #{{ sesion()?.sessionNumber }}</h3>
-                <p class="text-xs text-warm-600">{{ sesion()?.date }} • {{ sesion()?.startTime }} - {{ sesion()?.endTime }}</p>
+                @if (sesion()?.estadoTemporal === 'INDETERMINADA') {
+                  <p class="text-xs text-amber-800">Horario no confirmado</p>
+                } @else {
+                  <p class="text-xs text-warm-600">{{ timeZone.displaySessionDate(sesion()!) }}{{ timeZone.displaySessionEndDate(sesion()!) !== timeZone.displaySessionDate(sesion()!) ? ' – ' + timeZone.displaySessionEndDate(sesion()!) : '' }} • {{ timeZone.displaySessionStartTime(sesion()!) }} - {{ timeZone.displaySessionEndTime(sesion()!) }}</p>
+                }
               </div>
             </div>
             <button
@@ -75,6 +80,7 @@ import { ClassSession } from '../../../../../core/models/attendance.model';
   `,
 })
 export class TeacherSesionCancelarModalComponent {
+  readonly timeZone = inject(SessionTimeZoneService);
   isOpen = input.required<boolean>();
   sesion = input<ClassSession | null>(null);
   motivo = signal<string>('');

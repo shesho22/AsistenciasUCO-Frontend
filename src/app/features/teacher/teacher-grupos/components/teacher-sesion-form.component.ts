@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, input, output, model } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, output, model, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FormFieldComponent } from '../../../../shared/components/form-field/form-field.component';
@@ -8,6 +8,7 @@ import {
   SESSION_NAME_MAX_LENGTH,
   getSessionNameError,
 } from '../../../../core/validation/session-name.util';
+import { SessionTimeZoneService } from '../../../../core/services/session-timezone.service';
 
 @Component({
   selector: 'app-teacher-sesion-form',
@@ -40,6 +41,9 @@ import {
           </h2>
           <p class="text-sm text-warm-600 mt-1">
             Establece el título, la fecha y el horario de este bloque de clase.
+          </p>
+          <p class="text-[11px] text-primary-800 mt-2">
+            Zona horaria activa: <strong>{{ timeZone.zone() }}</strong>. Los cambios de horario se validan como instantes reales.
           </p>
         </div>
 
@@ -105,6 +109,7 @@ import {
   `,
 })
 export class TeacherSesionFormComponent {
+  readonly timeZone = inject(SessionTimeZoneService);
   modo = input<'CREAR' | 'EDITAR'>('CREAR');
   codigoCurso = input<string>('');
   form = model<any>({

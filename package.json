@@ -7,7 +7,7 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "test:ci": "ng test --watch=false --browsers=ChromeHeadless --code-coverage",
+    "test:ci": "ng test --watch=false --browsers=ChromeHeadlessCI --code-coverage",
     "coverage:realtime:check": "node scripts/check-realtime-coverage.mjs",
     "e2e:realtime:smoke": "node scripts/realtime-smoke.mjs",
     "verify": "npm run test:ci && npm run coverage:realtime:check && npm run build -- --configuration=production"

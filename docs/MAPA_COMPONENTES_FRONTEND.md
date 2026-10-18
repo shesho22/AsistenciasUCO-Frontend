@@ -81,40 +81,62 @@ Control centralizado de sesiones y registro de asistencia en aula.
 ---
 
 ### 2.4 Módulo de Coordinador (`/app/coordinador/*`)
-- **Docentes del Programa:**
-  - **Ruta:** `/app/coordinador/docentes`
-  - **Componente:** `CoordinatorDocentesComponent`
-- **Planes de Estudio y Asignaturas:**
-  - **Ruta:** `/app/coordinador/planes-estudio`
-  - **Componente:** `CoordinatorStudyPlansComponent`
-  - **Subcomponentes:** `StudyPlansListComponent`, `StudyPlanFormComponent`, `StudyPlanMeshComponent`, `SubjectFormComponent`, `AcademicPeriodsTabComponent`.
-- **Estudiantes de la Coordinación:**
-  - **Ruta:** `/app/coordinador/estudiantes`
-  - **Componente:** `CoordinatorStudentsComponent`
+> Separado en vistas y rutas independientes con soporte de deep-linking (UX-006). Rutas en [`app.routes.ts`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/app.routes.ts) con `data.roles: ['COORDINADOR']`. Sidebar en [`dashboard-layout.component.ts`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/layouts/dashboard-layout/dashboard-layout.component.ts). Servicio de datos: [`CoordinatorManagementService`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/core/services/coordinator-management.service.ts).
+
+| Ruta | Sidebar | Componente Contenedor | Hijo Presentacional | Spec |
+| :--- | :--- | :--- | :--- | :--- |
+| `/app/coordinador/docentes` | Gestión de Docentes | [`CoordinatorDocentesComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/coordinator/coordinator-docentes/coordinator-docentes.component.ts) | — | ✅ |
+| `/app/coordinador/planes-estudio` | Planes de Estudio | [`CoordinatorStudyPlansComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/coordinator/coordinator-study-plans/coordinator-study-plans.component.ts) | [`StudyPlansListComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/coordinator/coordinator-study-plans/components/study-plans-list.component.ts) | ✅ |
+| `/app/coordinador/planes-estudio/nuevo` · `/:planId/editar` | — (deep-link) | [`CoordinatorStudyPlanFormPageComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/coordinator/coordinator-study-plans/pages/study-plan-form-page.component.ts) | [`StudyPlanFormComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/coordinator/coordinator-study-plans/components/study-plan-form.component.ts) | ✅ |
+| `/app/coordinador/planes-estudio/:planId/malla` | — (deep-link) | [`CoordinatorStudyPlanMeshPageComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/coordinator/coordinator-study-plans/pages/study-plan-mesh-page.component.ts) | [`StudyPlanMeshComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/coordinator/coordinator-study-plans/components/study-plan-mesh.component.ts) | ✅ |
+| `/app/coordinador/planes-estudio/:planId/asignaturas/nueva` · `/:asignaturaId/editar` | — (deep-link) | [`CoordinatorSubjectFormPageComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/coordinator/coordinator-study-plans/pages/subject-form-page.component.ts) | [`SubjectFormComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/coordinator/coordinator-study-plans/components/subject-form.component.ts) | ✅ |
+| `/app/coordinador/periodos` | Períodos Académicos | [`CoordinatorPeriodsComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/coordinator/coordinator-periods/coordinator-periods.component.ts) | [`AcademicPeriodsTabComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/coordinator/coordinator-study-plans/components/academic-periods-tab.component.ts) | ✅ |
+| `/app/coordinador/estudiantes` | Estudiantes del Programa | [`CoordinatorStudentsComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/coordinator/coordinator-students/coordinator-students.component.ts) | — (Directorio paginado del padrón estudiantil de la carrera) | ✅ |
+| `/app/coordinador/materias` | Materias del Programa | [`CoordinatorSubjectsComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/coordinator/coordinator-subjects/coordinator-subjects.component.ts) | — (Catálogo de grupos ofertados, consulta de inscritos y asignaturas curriculares) | ✅ |
 
 ---
 
 ### 2.5 Módulo de Decano (`/app/decano/*`)
-- **Facultad y Métricas Globales:**
-  - **Ruta:** `/app/decano/facultad`
-  - **Componente:** `DeanFacultyComponent`
-- **Coordinadores de la Facultad:**
-  - **Ruta:** `/app/decano/coordinadores`
-  - **Componente:** `DeanCoordinadoresComponent`
+> Separado en vistas independientes por dominio funcional (UX-006). Rutas con `data.roles: ['DECANO']`. Servicios: [`CourseService`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/core/services/course.service.ts), [`SessionService`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/core/services/session.service.ts), [`AdminManagementService`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/core/services/admin-management.service.ts), [`CoordinatorManagementService`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/core/services/coordinator-management.service.ts), [`DeanManagementService`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/core/services/dean-management.service.ts).
+
+| Ruta | Sidebar | Componente | Responsabilidad | Spec |
+| :--- | :--- | :--- | :--- | :--- |
+| `/app/decano/facultad` | Mi Facultad | [`DeanFacultyComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/dean/dean-faculty/dean-faculty.component.ts) | Resumen ejecutivo de la facultad, ficha institucional, KPIs y accesos rápidos. | ✅ |
+| `/app/decano/grupos` | Grupos de la Facultad | [`DeanGruposComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/dean/dean-grupos/dean-grupos.component.ts) | Listado paginado y buscador reactivo de grupos de la facultad y métricas de aforo. | ✅ |
+| `/app/decano/grupos/:grupoId` | — (deep-link) | [`DeanGrupoDetalleComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/dean/dean-grupo-detalle/dean-grupo-detalle.component.ts) | Ficha resumen del grupo seleccionado y cronograma de sesiones registradas. | ✅ |
+| `/app/decano/programas` | Programas y Planes | [`DeanProgramasComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/dean/dean-programas/dean-programas.component.ts) | Catálogo de programas académicos y planes de estudio adscritos a la facultad. | ✅ |
+| `/app/decano/programas/:planId` | — (deep-link) | [`DeanPlanMallaComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/dean/dean-plan-malla/dean-plan-malla.component.ts) | Vista dedicada de solo lectura de la malla curricular y asignaturas por semestre. | ✅ |
+| `/app/decano/periodos` | Períodos Académicos | [`DeanPeriodosComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/dean/dean-periodos/dean-periodos.component.ts) | Consulta del calendario académico y vigencias semestrales. | ✅ |
+| `/app/decano/infraestructura` | Áreas y Sedes | [`DeanInfraestructuraComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/dean/dean-infraestructura/dean-infraestructura.component.ts) | Consulta de áreas de conocimiento, sedes universitarias y espacios físicos. | ✅ |
+| `/app/decano/coordinadores` | Gestión de Coordinadores | [`DeanCoordinadoresComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/dean/dean-coordinadores/dean-coordinadores.component.ts) | Administración y nombramiento de coordinadores de programa. | — |
 
 ---
 
 ### 2.6 Módulo de Administrador Institucional (`/app/admin/*`)
-- **Gestión de Decanos:**
-  - **Ruta:** `/app/admin/decanos`
-  - **Componente:** `AdminDecanosComponent`
-- **Catálogos Institucionales (Sedes, Espacios, Áreas, Facultades):**
-  - **Ruta:** `/app/admin/catalogos`
-  - **Componente:** `AdminCatalogsComponent`
-  - **Subcomponentes:** `CatalogSedesComponent`, `CatalogEspaciosComponent`, `CatalogAreasComponent`, `CatalogFacultadesComponent`.
-- **Configuración del Sistema:**
-  - **Ruta:** `/app/admin/sistema`
-  - **Componente:** `AdminSystemComponent`
+> Separado en vistas independientes en el commit `a3bbebc` (HU116). Rutas con `data.roles: ['ADMINISTRADOR', 'ADMIN']`. Servicio: [`AdminManagementService`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/core/services/admin-management.service.ts).
+
+| Ruta | Sidebar | Componente | Spec |
+| :--- | :--- | :--- | :--- |
+| `/app/admin/facultades` | Gestión de Facultades | [`AdminFacultadesComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/admin/admin-facultades/admin-facultades.component.ts) | ✅ |
+| `/app/admin/decanos` | Gestión de Decanos | [`AdminDecanosComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/admin/admin-decanos/admin-decanos.component.ts) | — |
+| `/app/admin/sedes` | Sedes Institucionales | [`AdminSedesComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/admin/admin-sedes/admin-sedes.component.ts) | ✅ |
+| `/app/admin/areas` | Áreas de Conocimiento | [`AdminAreasComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/admin/admin-areas/admin-areas.component.ts) | ✅ |
+| `/app/admin/sistema` | Sistema & Auditoría | [`AdminSystemComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/admin/admin-system/admin-system.component.ts) | — |
+| `/app/admin/catalogos` | — | `redirectTo: 'admin/facultades'` (ruta legada) | — |
+
+> [!WARNING]
+> [`admin-catalogs.component.ts`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/admin/admin-catalogs/admin-catalogs.component.ts) sigue en disco pero ya no está enrutado (los `Catalog*Component` fueron eliminados). Candidato a limpieza.
+
+---
+
+### 2.7 Patrón de Separación de Vistas (referencia para nuevas pantallas)
+Aplicado en Admin (`a3bbebc`), Decano y Coordinador (`UX-006`). Usarlo cuando una pantalla acumule pestañas de dominios distintos o sub-vistas controladas por signals sin URL.
+
+1. **Una ruta por dominio funcional** en `app.routes.ts` (`loadComponent`, `roleGuard`, `data.roles`) y **una entrada de sidebar** por ruta de primer nivel.
+2. **Maestro-detalle con URL:** listas en `/<rol>/<recurso>`, detalle/formularios en `/<rol>/<recurso>/:id[/accion]` (deep-link y botón “atrás” funcionales). Nada de `subVista.set(...)` para navegar entre pantallas completas.
+3. **Carpeta por vista:** `features/<rol>/<rol>-<recurso>/<rol>-<recurso>.component.ts` + `.spec.ts`.
+4. **Ruta antigua:** conservar como vista resumen o con `redirectTo` hacia la nueva vista principal.
+5. **Hijos presentacionales** (`components/`) con `input()`/`output()` sin dependencias de servicios; el contenedor por ruta orquesta servicios y `Router`.
 
 ---
 

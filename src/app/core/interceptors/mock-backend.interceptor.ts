@@ -1,8 +1,11 @@
-import { HttpInterceptorFn, HttpResponse } from '@angular/common/http';
-import { of, delay } from 'rxjs';
+import { HttpErrorResponse, HttpInterceptorFn, HttpResponse } from '@angular/common/http';
+import { inject } from '@angular/core';
+import { of, delay, throwError } from 'rxjs';
 import { mockStore } from '../mocks/mock-data-store';
 import { ApiResponse } from '../models/api-response.model';
 import { SolicitudMatriculaItem, PlanEstudioItem } from '../models/role-management.model';
+import { AuthService } from '../services/auth.service';
+import { environment } from '../../../environments/environment';
 
 function okResponse<T>(datos: T, mensajeUsuario?: string, total?: number): HttpResponse<ApiResponse<T>> {
   return new HttpResponse<ApiResponse<T>>({
@@ -18,6 +21,13 @@ function okResponse<T>(datos: T, mensajeUsuario?: string, total?: number): HttpR
 }
 
 export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
+  // AuthService es la fuente reactiva de verdad y se consulta por petición,
+  // incluyendo cambios de modo sin recargar la aplicación.
+  const mockEnabled = inject(AuthService).isMockMode();
+  if (!mockEnabled) {
+    return next(req);
+  }
+
   const url = req.url;
   const method = req.method;
 
@@ -420,6 +430,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   // ================= RECLAMOS Y JUSTIFICACIONES =================
   if (url.endsWith('/archivos/subir') && method === 'POST') {
     const mockFileRes = {
+      fileId: `00000000-0000-4000-8000-${String(Date.now()).slice(-12).padStart(12, '0')}`,
       nombre: 'soporte_medico.pdf',
       nombreGuardado: `mock_${Date.now()}_soporte.pdf`,
       url: `/api/v1/archivos/mock_${Date.now()}_soporte.pdf`,
@@ -475,6 +486,35 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     return of(okResponse(mockStore.horariosDocente)).pipe(delay(250));
   }
 
-  // Para cualquier otra petición no interceptada, continuar a la red
+  // En modo mock una ruta API desconocida nunca debe alcanzar backend real.
+  // Recursos externos (fuentes, imágenes, etc.) siguen su flujo normal.
+  if (isApiRequest(url)) {
+    return throwError(() => new HttpErrorResponse({
+      error: {
+        code: 'MOCK_ROUTE_NOT_IMPLEMENTED',
+        message: `Ruta no simulada en modo mock: ${method} ${url}`,
+      },
+      status: 501,
+      statusText: 'Mock route not implemented',
+      url,
+    }));
+  }
+
   return next(req);
 };
+
+function isApiRequest(url: string): boolean {
+  try {
+    const requestUrl = new URL(url, typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost';
+    return [environment.apiUrl, environment.apiV2Url].some((root) => {
+      const apiUrl = new URL(root, origin);
+      return requestUrl.protocol === apiUrl.protocol
+        && requestUrl.hostname === apiUrl.hostname
+        && requestUrl.port === apiUrl.port
+        && requestUrl.pathname.startsWith(`${apiUrl.pathname}/`);
+    });
+  } catch {
+    return false;
+  }
+}

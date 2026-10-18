@@ -38,9 +38,11 @@ import {
         <div class="bg-white p-6 rounded-2xl border border-warm-200 shadow-warm-sm grid grid-cols-1 md:grid-cols-4 gap-6">
           <div class="md:col-span-3 space-y-2">
             <div class="flex items-center gap-2">
-              <span class="text-xs font-semibold px-2 py-0.5 rounded bg-primary-50 text-primary-800 border border-primary-200">
-                {{ materia()?.creditos }} Créditos
-              </span>
+              @if (materia()?.creditos) {
+                <span class="text-xs font-semibold px-2 py-0.5 rounded bg-primary-50 text-primary-800 border border-primary-200">
+                  {{ materia()?.creditos }} Créditos
+                </span>
+              }
               <app-badge [variant]="getBadgeVariant(materia()!.estado)">
                 {{ materia()?.estado }}
               </app-badge>

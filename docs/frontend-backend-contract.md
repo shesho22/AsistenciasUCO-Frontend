@@ -1,5 +1,7 @@
 # Contrato frontend-backend
 
+> **Snapshot histórico:** este documento describe principalmente el contrato v1 congelado en septiembre de 2026. Para la integración MAINT-004, el OpenAPI local del backend `develop` añade sesiones UTC v2 sin reemplazar v1. La matriz vigente está en `docs/work-items/MAINT-004-frontend-backend-db-alignment/CONTRACT_MATRIX.md`; no usar este snapshot para inferir el wire temporal v2.
+
 El backend congelado es la fuente de verdad. Las consultas usan DTO tipados y propagan los errores HTTP; en modo real no se transforman fallos en datos vacíos ni en asistencia `AN` ficticia.
 
 ## Flujo de asistencia docente

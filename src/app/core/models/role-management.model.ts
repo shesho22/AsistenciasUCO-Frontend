@@ -1,5 +1,6 @@
 export interface DecanoItem {
   id: string;
+  idUsuario?: string;
   tipoIdentificacion?: string;
   tipoIdentificacionId?: string;
   numeroIdentificacion: string;
@@ -7,13 +8,16 @@ export interface DecanoItem {
   segundoNombre?: string;
   primerApellido?: string;
   segundoApellido?: string;
+  nombreCompleto?: string;
   nombres: string;
   apellidos: string;
   correo: string;
   facultad: string;
+  nombreFacultad?: string;
   telefono: string;
   fechaAsignacion: string;
   estado: 'ACTIVO' | 'INACTIVO';
+  estaActivoDecano?: boolean;
 }
 
 export interface CoordinadorItem {
@@ -110,6 +114,7 @@ export type CategoriaJustificacion =
   | 'Otro';
 
 export interface SoporteAdjuntoItem {
+  fileId?: string;
   nombre: string;
   tipo: string;
   tamanioKb: number;
@@ -190,7 +195,7 @@ export interface EstudianteDirectorioItem {
   nombreCompleto: string;
   correo: string;
   programa: string;
-  semestreActual: number;
+  semestreActual?: number;
   estadoMatricula: 'ACTIVO' | 'INACTIVO' | 'BLOQUEADO';
   promedioAcumulado?: number;
   gruposInscritos?: string[];

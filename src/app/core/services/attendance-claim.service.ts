@@ -3,11 +3,21 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, catchError, of, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiResponse } from '../models/api-response.model';
+import { ApiDataResponse } from '../api/models/api-data-response.model';
 import {
   SesionMateriaDetalle,
   SolicitudRevisionItem,
   HorarioDocenteItem,
 } from '../models/role-management.model';
+
+export interface ResolverReclamoResponse {
+  exitoso: boolean;
+  idTransaccion?: string;
+  mensajeUsuario?: string;
+  mensajeTecnico?: string;
+  /** El contrato de resolución es void; algunos despliegues omiten `datos`. */
+  datos?: null;
+}
 
 @Injectable({
   providedIn: 'root',
@@ -15,13 +25,19 @@ import {
 export class AttendanceClaimService {
   constructor(private http: HttpClient) {}
 
-  subirSoporte(file: File): Observable<ApiResponse<{ nombre: string; nombreGuardado: string; url: string; tamanio: number }>> {
+  subirSoporte(file: File): Observable<ApiDataResponse<{ fileId: string; nombre: string; url: string; tamanio: number }>> {
     const formData = new FormData();
     formData.append('archivo', file);
-    return this.http.post<ApiResponse<{ nombre: string; nombreGuardado: string; url: string; tamanio: number }>>(
+    return this.http.post<ApiDataResponse<{ fileId: string; nombre: string; url: string; tamanio: number }>>(
       `${environment.apiUrl}/archivos/subir`,
       formData
     );
+  }
+
+  descargarSoporte(fileId: string): Observable<Blob> {
+    return this.http.get(`${environment.apiUrl}/archivos/${encodeURIComponent(fileId)}`, {
+      responseType: 'blob',
+    });
   }
 
   getReclamosDocente(docenteId?: string): Observable<ApiResponse<SolicitudRevisionItem[]>> {
@@ -71,8 +87,8 @@ export class AttendanceClaimService {
     id: string,
     accion: 'APROBADA' | 'RECHAZADA',
     respuestaDocente: string = ''
-  ): Observable<ApiResponse<SolicitudRevisionItem | null>> {
-    return this.http.patch<ApiResponse<SolicitudRevisionItem | null>>(
+  ): Observable<ResolverReclamoResponse> {
+    return this.http.patch<ResolverReclamoResponse>(
       `${environment.apiUrl}/docente/reclamos/${id}`,
       { accion, respuestaDocente, respuesta: respuestaDocente }
     );

@@ -67,6 +67,7 @@ interface JwtTokenPayload {
   given_name?: string;
   family_name?: string;
   name?: string;
+  numeroIdentificacion?: string | number;
   exp?: number;
   iat?: number;
   realm_access?: {
@@ -133,11 +134,9 @@ export class AuthService implements OnDestroy {
   private readonly authChannel = new BroadcastChannel(AUTH_BROADCAST_CHANNEL);
 
   setMockMode(enabled: boolean): void {
-    if (enabled) {
-      localStorage.setItem('USE_MOCKS', 'true');
-    } else {
-      localStorage.removeItem('USE_MOCKS');
-    }
+    // Persistir ambos estados evita que un USE_MOCKS=true definido por runtime
+    // reaparezca al eliminar la preferencia local durante el mismo arranque.
+    localStorage.setItem('USE_MOCKS', String(enabled));
     this.mockModeSignal.set(enabled);
   }
 
@@ -353,6 +352,7 @@ export class AuthService implements OnDestroy {
       grant_type: 'password',
       username: username,
       password: password,
+      scope: 'openid email profile',
     });
 
     let response: Response;
@@ -782,6 +782,7 @@ export class AuthService implements OnDestroy {
       institutionName: 'Universidad Católica de Oriente',
       department: this.getDepartmentForRole(primaryRole),
       status: 'active',
+      numeroIdentificacion: payload.numeroIdentificacion,
     };
   }
 

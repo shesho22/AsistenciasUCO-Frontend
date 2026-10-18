@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -315,7 +315,7 @@ type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
     </div>
   `,
 })
-export class AdminSystemComponent {
+export class AdminSystemComponent implements OnInit {
   private adminService = inject(AdminManagementService);
   private coordService = inject(CoordinatorManagementService);
   private toast = inject(ToastService);
@@ -330,6 +330,11 @@ export class AdminSystemComponent {
   auditoria = this.adminService.auditoria;
   reportesCierre = this.adminService.reportesCierre;
   periodos = this.coordService.periodos;
+
+  ngOnInit(): void {
+    this.adminService.cargarParametros().subscribe();
+    this.adminService.cargarAuditoria().subscribe();
+  }
 
   auditoriaFiltrada = computed(() => {
     let logs = this.auditoria();

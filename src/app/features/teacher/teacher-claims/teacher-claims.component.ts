@@ -16,6 +16,7 @@ import { AvatarComponent } from '../../../shared/components/avatar/avatar.compon
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 
 type VistaDocenteReclamos = 'BANDEJA' | 'RESOLUCION';
+type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'NETWORK_ERROR' | 'SERVER_ERROR';
 
 @Component({
   selector: 'app-teacher-claims',
@@ -60,6 +61,13 @@ type VistaDocenteReclamos = 'BANDEJA' | 'RESOLUCION';
           </div>
         </div>
 
+        @if (listUnavailable()) {
+          <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-900">
+            El listado de reclamos docentes está pendiente del contrato backend y responde <strong>501 Not Implemented</strong>.
+            La resolución individual permanece disponible cuando se conoce el identificador del reclamo.
+          </div>
+        }
+
         <!-- Filtros y Búsqueda -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div class="sm:col-span-2">
@@ -95,6 +103,10 @@ type VistaDocenteReclamos = 'BANDEJA' | 'RESOLUCION';
             @for (n of [1, 2, 3, 4]; track n) {
               <div class="h-56 bg-warm-100 rounded-2xl animate-pulse"></div>
             }
+          </div>
+        } @else if (listState() !== 'LOADED') {
+          <div class="bg-red-50 border border-red-200 rounded-2xl p-6 text-center text-sm text-red-900">
+            {{ listStateMessage() }}
           </div>
         } @else if (filteredReclamos().length === 0) {
           <div class="bg-white rounded-2xl border border-warm-200 p-12 text-center shadow-warm-sm">
@@ -362,6 +374,8 @@ export class TeacherClaimsComponent implements OnInit {
   vistaActual = signal<VistaDocenteReclamos>('BANDEJA');
   reclamos = signal<SolicitudRevisionItem[]>([]);
   isLoading = signal<boolean>(true);
+  listUnavailable = signal<boolean>(false);
+  listState = signal<ReclamosListState>('LOADING');
   searchQuery = '';
   selectedEstado: string = 'TODOS';
 
@@ -396,14 +410,26 @@ export class TeacherClaimsComponent implements OnInit {
 
   cargarReclamos(): void {
     this.isLoading.set(true);
+    this.listUnavailable.set(false);
+    this.listState.set('LOADING');
     this.claimService.getReclamosDocente().subscribe({
       next: (res) => {
         this.reclamos.set(res.datos || []);
+        this.listState.set('LOADED');
         this.isLoading.set(false);
       },
-      error: () => {
+      error: (error: unknown) => {
+        const status = (error as { status?: number })?.status;
+        this.listState.set(status === 501
+          ? 'UNAVAILABLE'
+          : status === 403
+            ? 'FORBIDDEN'
+            : status === 0
+              ? 'NETWORK_ERROR'
+              : 'SERVER_ERROR');
+        this.listUnavailable.set(status === 501);
         this.isLoading.set(false);
-        this.toast.error('Error al cargar solicitudes de revisión.');
+        if (status !== 501) this.toast.error(getApiErrorMessage(error));
       },
     });
   }
@@ -427,7 +453,7 @@ export class TeacherClaimsComponent implements OnInit {
 
     this.claimService.resolverReclamo(reclamo.id, accion, feedback).subscribe({
       next: (res) => {
-        if (res.exitoso && res.datos) {
+        if (res.exitoso) {
           this.toast.success(res.mensajeUsuario || 'Reclamo procesado.');
           this.cargarReclamos();
           this.volverABandeja();
@@ -437,14 +463,33 @@ export class TeacherClaimsComponent implements OnInit {
     });
   }
 
-  descargarSoporte(adjunto: SoporteAdjuntoItem): void {
-    if (adjunto.urlSimulada) {
-      const url = adjunto.urlSimulada.startsWith('http')
-        ? adjunto.urlSimulada
-        : `http://localhost:8080${adjunto.urlSimulada}`;
-      window.open(url, '_blank');
+  listStateMessage(): string {
+    switch (this.listState()) {
+      case 'FORBIDDEN': return 'No tienes autorización para consultar los reclamos de este alcance institucional (403).';
+      case 'NETWORK_ERROR': return 'No se pudo conectar con el backend. La lista no se reemplazó por datos simulados.';
+      case 'SERVER_ERROR': return 'El backend no pudo cargar los reclamos. Intenta nuevamente más tarde.';
+      case 'UNAVAILABLE': return 'El listado de reclamos todavía no está implementado en el backend (501).';
+      default: return 'No fue posible cargar los reclamos.';
     }
-    this.toast.success(`Abriendo comprobante "${adjunto.nombre}" (${adjunto.tamanioKb} KB)...`);
+  }
+
+  descargarSoporte(adjunto: SoporteAdjuntoItem): void {
+    if (!adjunto.fileId) {
+      this.toast.warning('Este soporte no contiene un fileId descargable en el contrato actual.');
+      return;
+    }
+    this.claimService.descargarSoporte(adjunto.fileId).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = adjunto.nombre;
+        anchor.click();
+        URL.revokeObjectURL(url);
+        this.toast.success(`Soporte "${adjunto.nombre}" descargado.`);
+      },
+      error: (error) => this.toast.error(getApiErrorMessage(error)),
+    });
   }
 
   getReclamoBadgeVariant(estado: EstadoSolicitudRevision): BadgeVariant {

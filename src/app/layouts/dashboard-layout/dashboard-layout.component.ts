@@ -224,16 +224,28 @@ export class DashboardLayoutComponent {
       icon: 'dashboard',
     },
     {
+      label: 'Gestión de Facultades',
+      route: '/app/admin/facultades',
+      roles: ['ADMINISTRADOR', 'ADMIN'],
+      icon: 'facultad',
+    },
+    {
       label: 'Gestión de Decanos',
       route: '/app/admin/decanos',
       roles: ['ADMINISTRADOR', 'ADMIN'],
       icon: 'decanos',
     },
     {
-      label: 'Infraestructura & Sedes',
-      route: '/app/admin/catalogos',
+      label: 'Sedes Institucionales',
+      route: '/app/admin/sedes',
       roles: ['ADMINISTRADOR', 'ADMIN'],
       icon: 'catalogos',
+    },
+    {
+      label: 'Áreas de Conocimiento',
+      route: '/app/admin/areas',
+      roles: ['ADMINISTRADOR', 'ADMIN'],
+      icon: 'materias',
     },
     {
       label: 'Sistema & Auditoría',
@@ -248,10 +260,34 @@ export class DashboardLayoutComponent {
       icon: 'seguridad',
     },
     {
-      label: 'Facultad & Grupos',
+      label: 'Mi Facultad',
       route: '/app/decano/facultad',
       roles: ['DECANO'],
       icon: 'facultad',
+    },
+    {
+      label: 'Grupos de la Facultad',
+      route: '/app/decano/grupos',
+      roles: ['DECANO'],
+      icon: 'grupos',
+    },
+    {
+      label: 'Programas y Planes',
+      route: '/app/decano/programas',
+      roles: ['DECANO'],
+      icon: 'planes-estudio',
+    },
+    {
+      label: 'Períodos Académicos',
+      route: '/app/decano/periodos',
+      roles: ['DECANO'],
+      icon: 'horarios',
+    },
+    {
+      label: 'Áreas y Sedes',
+      route: '/app/decano/infraestructura',
+      roles: ['DECANO'],
+      icon: 'catalogos',
     },
     {
       label: 'Gestión de Coordinadores',
@@ -272,10 +308,22 @@ export class DashboardLayoutComponent {
       icon: 'planes-estudio',
     },
     {
-      label: 'Estudiantes & Matrícula',
+      label: 'Períodos Académicos',
+      route: '/app/coordinador/periodos',
+      roles: ['COORDINADOR'],
+      icon: 'horarios',
+    },
+    {
+      label: 'Estudiantes del Programa',
       route: '/app/coordinador/estudiantes',
       roles: ['COORDINADOR'],
       icon: 'estudiantes',
+    },
+    {
+      label: 'Materias del Programa',
+      route: '/app/coordinador/materias',
+      roles: ['COORDINADOR'],
+      icon: 'materias',
     },
     {
       label: 'Mis Grupos',
