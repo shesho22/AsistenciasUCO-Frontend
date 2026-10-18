@@ -1,6 +1,7 @@
-import { Component, signal, inject, ChangeDetectionStrategy } from '@angular/core';
+import { Component, signal, inject, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { ButtonComponent } from '../../../shared/components/button/button.component';
 import { CardComponent } from '../../../shared/components/card/card.component';
@@ -109,16 +110,33 @@ import { CardComponent } from '../../../shared/components/card/card.component';
               </div>
             </div>
 
-            <!-- Botón de Envío -->
-            <div class="pt-2">
+            <!-- Botón de Envío y SSO -->
+            <div class="pt-2 space-y-3">
+              <button
+                type="button"
+                (click)="onInstitutionalLogin()"
+                class="w-full py-2.5 px-4 rounded-xl bg-primary-700 hover:bg-primary-800 text-white font-medium text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer"
+              >
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+                Iniciar sesión con Plataforma de Seguridad (SSO)
+              </button>
+
+              <div class="relative flex py-1 items-center">
+                <div class="grow border-t border-warm-200"></div>
+                <span class="shrink mx-3 text-warm-400 text-[11px] uppercase tracking-wider">o ingresar directamente</span>
+                <div class="grow border-t border-warm-200"></div>
+              </div>
+
               <app-button
-                variant="primary"
+                variant="secondary"
                 type="submit"
                 [fullWidth]="true"
                 [loading]="isLoading()"
                 size="lg"
               >
-                Ingresar al Sistema
+                Ingresar con Credenciales Locales
               </app-button>
             </div>
           </form>
@@ -126,14 +144,30 @@ import { CardComponent } from '../../../shared/components/card/card.component';
     </div>
   `,
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   private authService = inject(AuthService);
+  private router = inject(Router);
 
   username = '';
   password = '';
   showPassword = signal<boolean>(false);
   isLoading = signal<boolean>(false);
   errorMessage = signal<string>('');
+
+  async ngOnInit(): Promise<void> {
+    if (this.authService.isAuthenticated()) {
+      this.router.navigate(['/app/dashboard']);
+      return;
+    }
+    const hasPdpSession = await this.authService.checkPdpSession();
+    if (hasPdpSession) {
+      this.router.navigate(['/app/dashboard']);
+    }
+  }
+
+  onInstitutionalLogin(): void {
+    this.authService.loginWithSecurityPlatform();
+  }
 
   toggleShowPassword(): void {
     this.showPassword.update((v) => !v);

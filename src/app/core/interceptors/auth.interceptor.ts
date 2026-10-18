@@ -28,32 +28,35 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     return next(req);
   }
 
+  // Security Baseline: peticiones a la API institucional viajan con credenciales (cookies de sesión BFF).
+  const reqWithCredentials = req.clone({ withCredentials: true });
+
   // Limpia tokens mock heredados si ya no estamos en modo mock.
   const currentToken = authService.token();
   if (currentToken && !authService.isMockMode() && currentToken.startsWith('mock-')) {
     authService.clearSession();
-    return next(req);
+    return next(reqWithCredentials);
   }
 
   if (authService.isMockMode()) {
-    return next(currentToken ? attachToken(req, currentToken) : req);
+    return next(currentToken ? attachToken(reqWithCredentials, currentToken) : reqWithCredentials);
   }
 
   if (!authService.isAuthenticated()) {
-    return next(req);
+    return next(reqWithCredentials);
   }
 
   return from(authService.getValidAccessToken(30)).pipe(
     switchMap((token) => {
       const activeToken = token || authService.token();
       if (!activeToken) {
-        return next(req);
+        return next(reqWithCredentials);
       }
-      return next(attachToken(req, activeToken));
+      return next(attachToken(reqWithCredentials, activeToken));
     }),
     catchError((err) => {
       if (err?.status === 401) {
-        return handle401(req, next, authService);
+        return handle401(reqWithCredentials, next, authService);
       }
       return throwError(() => err);
     })
@@ -110,6 +113,7 @@ function handle401(
  */
 function attachToken(req: HttpRequest<unknown>, token: string): HttpRequest<unknown> {
   return req.clone({
+    withCredentials: true,
     headers: req.headers.set('Authorization', `Bearer ${token}`),
   });
 }

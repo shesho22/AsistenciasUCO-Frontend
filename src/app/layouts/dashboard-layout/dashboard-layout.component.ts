@@ -242,6 +242,12 @@ export class DashboardLayoutComponent {
       icon: 'sistema',
     },
     {
+      label: 'Seguridad & Permisos',
+      route: '/app/admin/seguridad',
+      roles: ['ADMINISTRADOR', 'ADMIN'],
+      icon: 'seguridad',
+    },
+    {
       label: 'Facultad & Grupos',
       route: '/app/decano/facultad',
       roles: ['DECANO'],

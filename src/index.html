@@ -6,14 +6,15 @@
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <!-- Content Security Policy (CSP) - Protección contra inyección de recursos externos no autorizados -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' http://localhost:* http://127.0.0.1:*; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' http://localhost:* http://127.0.0.1:*; object-src 'none'; base-uri 'self';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' http://localhost:* http://127.0.0.1:*; script-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:* http://127.0.0.1:*; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' http://localhost:* http://127.0.0.1:*; object-src 'none'; base-uri 'self';">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
 
   <!-- Google Fonts: Plus Jakarta Sans & Fraunces -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
-  <!-- Configuración de Variables de Entorno de Ejecución -->
+  <!-- Configuración de Variables de Entorno de Ejecución y Shim de Proceso para Microfrontends -->
+  <script>window.process = window.process || { env: { NODE_ENV: 'production' } };</script>
   <script src="assets/env.js"></script>
 </head>
 <body class="bg-warm-50 text-warm-900 font-sans antialiased min-h-screen">
