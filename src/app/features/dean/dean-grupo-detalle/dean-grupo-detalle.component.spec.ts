@@ -4,7 +4,8 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { DeanGrupoDetalleComponent } from './dean-grupo-detalle.component';
 import { environment } from '../../../../environments/environment';
-import { Course } from '../../../core/models/course.model';
+import { HorarioDocenteApiDto } from '../../../core/api/models/horario-docente-api-dto.model';
+import { SesionConsultadaApiDto } from '../../../core/api/models/sesion-consultada-api-dto.model';
 
 describe('DeanGrupoDetalleComponent', () => {
   let fixture: ComponentFixture<DeanGrupoDetalleComponent>;
@@ -12,16 +13,17 @@ describe('DeanGrupoDetalleComponent', () => {
   let http: HttpTestingController;
   let routerSpy: jasmine.SpyObj<Router>;
 
-  const mockCourse: Course = {
+  const mockCourseApi: HorarioDocenteApiDto = {
     id: 'crs-1',
-    code: 'MAT-301',
-    name: 'Matemática Avanzada III',
-    section: 'Sección A',
-    schedule: 'Lun, Mié 08:00 - 10:00 AM',
-    room: 'Aula A-204',
-    enrolledStudentsCount: 28,
-    cupoMaximo: 35,
-    colorCategory: 'emerald',
+    idDocente: 'doc-1',
+    idGrupo: 'crs-1',
+    codigoMateria: 'MAT-301',
+    nombreMateria: 'Matemática Avanzada III',
+    seccion: 'Sección A',
+    dia: 'Lunes',
+    horaInicio: '08:00',
+    horaFin: '10:00',
+    totalEstudiantes: 28,
   };
 
   beforeEach(() => {
@@ -47,21 +49,23 @@ describe('DeanGrupoDetalleComponent', () => {
 
     http.expectOne(`${environment.apiUrl}/docente/horarios`).flush({
       exitoso: true,
-      datos: [mockCourse],
+      datos: [mockCourseApi],
     });
     http.expectOne(`${environment.apiUrl}/sesiones/grupo/crs-1`).flush({
       exitoso: true,
       datos: [
         {
-          id: 'ses-1',
-          courseId: 'crs-1',
-          sessionNumber: 1,
-          title: 'Sesión Inaugural',
-          date: '2026-09-14',
-          startTime: '08:00',
-          endTime: '10:00',
-          records: [],
-        },
+          sesion: 'ses-1',
+          grupo: 'crs-1',
+          nombre: 'Sesión Inaugural',
+          numero: 1,
+          codigo: 'MAT-301',
+          numeroSemana: 38,
+          codigoGrupo: 'GRP-01',
+          nombreGrupo: 'Sección A',
+          fechaHoraInicio: '2026-09-14T08:00:00',
+          fechaHoraFin: '2026-09-14T10:00:00',
+        } satisfies SesionConsultadaApiDto,
       ],
     });
     fixture.detectChanges();

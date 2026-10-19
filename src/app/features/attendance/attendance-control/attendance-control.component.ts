@@ -545,11 +545,18 @@ export class AttendanceControlComponent {
                 });
 
                 this.sessions.set(populatedSessions);
-                // POST /sesiones solo devuelve ApiMessageResponse. Sin un
-                // identificador de creación no se selecciona por nombre/fecha,
-                // porque puede haber sesiones duplicadas; el usuario elige la
-                // fila por su ID real en el listado recién recargado.
-                this.selectedSessionId.set('');
+                const responseWithCreatedData = res as typeof res & {
+                  datos?: { id?: string };
+                };
+                const createdId = responseWithCreatedData.datos?.id;
+                const matchingSessions = populatedSessions.filter((session) =>
+                  session.title === data.title &&
+                  session.date === data.date
+                );
+                const selectedSession = createdId
+                  ? populatedSessions.find((session) => session.id === createdId)
+                  : [...matchingSessions].sort((left, right) => right.sessionNumber - left.sessionNumber)[0];
+                this.selectedSessionId.set(selectedSession?.id || '');
                 this.vistaActual.set('OVERVIEW');
               },
             });

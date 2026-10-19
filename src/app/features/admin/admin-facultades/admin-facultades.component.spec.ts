@@ -37,6 +37,27 @@ describe('AdminFacultadesComponent', () => {
     },
   ];
 
+  const mockFacultadesApi = [
+    {
+      id: 'fac-1',
+      nombreFacultad: 'Facultad de Ingeniería',
+      idDecano: 'dec-1',
+      nombreCompletoDecano: 'Dr. Roberto Gómez',
+      estaActivaFacultad: true,
+      totalProgramas: 4,
+      totalEstudiantes: 320,
+    },
+    {
+      id: 'fac-2',
+      nombreFacultad: 'Facultad de Ciencias Económicas',
+      idDecano: 'dec-2',
+      nombreCompletoDecano: 'Dra. María Pérez',
+      estaActivaFacultad: false,
+      totalProgramas: 3,
+      totalEstudiantes: 210,
+    },
+  ];
+
   const mockDecanos = [
     {
       id: 'dec-1',
@@ -81,6 +102,10 @@ describe('AdminFacultadesComponent', () => {
     fixture = TestBed.createComponent(AdminFacultadesComponent);
     component = fixture.componentInstance;
   });
+  const flushCoordinatorCatalogs = () => {
+    http.expectOne(`${environment.apiUrl}/coordinador/planes-estudio`).flush({ exitoso: true, datos: [] });
+    http.expectOne(`${environment.apiUrl}/coordinador/periodos-academicos`).flush({ exitoso: true, datos: [] });
+  };
 
   afterEach(() => {
     http.verify();
@@ -90,13 +115,14 @@ describe('AdminFacultadesComponent', () => {
     fixture.detectChanges();
 
     const reqFac = http.expectOne(`${environment.apiUrl}/admin/facultades`);
-    reqFac.flush({ exitoso: true, datos: mockFacultades });
+    reqFac.flush({ exitoso: true, datos: mockFacultadesApi });
 
     const reqDec = http.expectOne(`${environment.apiUrl}/admin/decanos`);
     reqDec.flush({ exitoso: true, datos: mockDecanos });
 
     const reqInst = http.expectOne(`${environment.apiUrl}/admin/instituciones`);
     reqInst.flush({ exitoso: true, datos: [{ id: 'inst-uco', nombre: 'UCO' }] });
+    flushCoordinatorCatalogs();
 
     expect(component).toBeTruthy();
     expect(component.facultades().length).toBe(2);
@@ -105,9 +131,10 @@ describe('AdminFacultadesComponent', () => {
   it('calcula métricas Bento Grid correctamente (Totales, Activas, Inactivas, Con Decano)', () => {
     fixture.detectChanges();
 
-    http.expectOne(`${environment.apiUrl}/admin/facultades`).flush({ exitoso: true, datos: mockFacultades });
+    http.expectOne(`${environment.apiUrl}/admin/facultades`).flush({ exitoso: true, datos: mockFacultadesApi });
     http.expectOne(`${environment.apiUrl}/admin/decanos`).flush({ exitoso: true, datos: mockDecanos });
     http.expectOne(`${environment.apiUrl}/admin/instituciones`).flush({ exitoso: true, datos: [] });
+    flushCoordinatorCatalogs();
 
     expect(component.totalActivas()).toBe(1);
     expect(component.totalInactivas()).toBe(1);
@@ -120,6 +147,7 @@ describe('AdminFacultadesComponent', () => {
     http.expectOne(`${environment.apiUrl}/admin/facultades`).flush({ exitoso: true, datos: [] });
     http.expectOne(`${environment.apiUrl}/admin/decanos`).flush({ exitoso: true, datos: mockDecanos });
     http.expectOne(`${environment.apiUrl}/admin/instituciones`).flush({ exitoso: true, datos: [{ id: 'inst-1', nombre: 'UCO' }] });
+    flushCoordinatorCatalogs();
 
     component.abrirFormularioCrear();
     fixture.detectChanges();
@@ -136,6 +164,7 @@ describe('AdminFacultadesComponent', () => {
     http.expectOne(`${environment.apiUrl}/admin/facultades`).flush({ exitoso: true, datos: [] });
     http.expectOne(`${environment.apiUrl}/admin/decanos`).flush({ exitoso: true, datos: mockDecanos });
     http.expectOne(`${environment.apiUrl}/admin/instituciones`).flush({ exitoso: true, datos: [{ id: 'inst-1', nombre: 'UCO' }] });
+    flushCoordinatorCatalogs();
 
     component.abrirFormularioCrear();
     component.formFacultad.nombre = 'Facultad de Teología';
@@ -160,9 +189,10 @@ describe('AdminFacultadesComponent', () => {
   it('detecta nombre duplicado e impide el envío del formulario', () => {
     fixture.detectChanges();
 
-    http.expectOne(`${environment.apiUrl}/admin/facultades`).flush({ exitoso: true, datos: mockFacultades });
+    http.expectOne(`${environment.apiUrl}/admin/facultades`).flush({ exitoso: true, datos: mockFacultadesApi });
     http.expectOne(`${environment.apiUrl}/admin/decanos`).flush({ exitoso: true, datos: mockDecanos });
     http.expectOne(`${environment.apiUrl}/admin/instituciones`).flush({ exitoso: true, datos: [] });
+    flushCoordinatorCatalogs();
 
     component.abrirFormularioCrear();
     component.formFacultad.nombre = 'facultad de ingeniería'; // case-insensitive duplicate
@@ -178,9 +208,10 @@ describe('AdminFacultadesComponent', () => {
   it('permite cambiar decano titular vía modal', () => {
     fixture.detectChanges();
 
-    http.expectOne(`${environment.apiUrl}/admin/facultades`).flush({ exitoso: true, datos: mockFacultades });
+    http.expectOne(`${environment.apiUrl}/admin/facultades`).flush({ exitoso: true, datos: mockFacultadesApi });
     http.expectOne(`${environment.apiUrl}/admin/decanos`).flush({ exitoso: true, datos: mockDecanos });
     http.expectOne(`${environment.apiUrl}/admin/instituciones`).flush({ exitoso: true, datos: [] });
+    flushCoordinatorCatalogs();
 
     const fac = mockFacultades[0];
     component.abrirModalVincularDecano(fac);

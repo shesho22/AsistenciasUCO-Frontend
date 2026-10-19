@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { DeanGruposComponent } from './dean-grupos.component';
 import { environment } from '../../../../environments/environment';
 import { Course } from '../../../core/models/course.model';
+import { HorarioDocenteApiDto } from '../../../core/api/models/horario-docente-api-dto.model';
 
 describe('DeanGruposComponent', () => {
   let fixture: ComponentFixture<DeanGruposComponent>;
@@ -37,6 +38,33 @@ describe('DeanGruposComponent', () => {
     },
   ];
 
+  const mockCoursesApi: HorarioDocenteApiDto[] = [
+    {
+      id: 'hor-1',
+      idDocente: 'doc-1',
+      idGrupo: 'crs-1',
+      codigoMateria: 'MAT-301',
+      nombreMateria: 'Matemática Avanzada III',
+      seccion: 'Sección A',
+      dia: 'Lunes',
+      horaInicio: '08:00',
+      horaFin: '10:00',
+      totalEstudiantes: 28,
+    },
+    {
+      id: 'hor-2',
+      idDocente: 'doc-1',
+      idGrupo: 'crs-2',
+      codigoMateria: 'SIS-102',
+      nombreMateria: 'Ingeniería de Software I',
+      seccion: 'Sección B',
+      dia: 'Martes',
+      horaInicio: '10:00',
+      horaFin: '12:00',
+      totalEstudiantes: 22,
+    },
+  ];
+
   beforeEach(() => {
     routerSpy = jasmine.createSpyObj('Router', ['navigate']);
 
@@ -56,7 +84,7 @@ describe('DeanGruposComponent', () => {
 
     http.expectOne(`${environment.apiUrl}/docente/horarios`).flush({
       exitoso: true,
-      datos: mockCourses,
+      datos: mockCoursesApi,
     });
     fixture.detectChanges();
   });
@@ -68,7 +96,7 @@ describe('DeanGruposComponent', () => {
   it('debe cargar los grupos de la facultad y calcular métricas', () => {
     expect(component.courses().length).toBe(2);
     expect(component.totalEstudiantes()).toBe(50);
-    expect(component.totalCupos()).toBe(65);
+    expect(component.totalCupos()).toBe(60);
   });
 
   it('filtra grupos reactivamente mediante filtroTexto signal', () => {
