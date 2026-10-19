@@ -124,9 +124,9 @@ export class CoordinatorSubjectFormPageComponent implements OnInit {
   volverAMalla(): void {
     const id = this.effectivePlanId();
     if (!id) {
-      this.router.navigate(['/app/coordinador/planes-estudio']);
+      void this.router.navigate(['/app/coordinador/planes-estudio']);
       return;
     }
-    this.router.navigate(['/app/coordinador/planes-estudio', id, 'malla']);
+    void this.router.navigate(['/app/coordinador/planes-estudio', id, 'malla']);
   }
 }

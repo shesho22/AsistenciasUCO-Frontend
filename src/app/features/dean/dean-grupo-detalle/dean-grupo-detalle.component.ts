@@ -156,6 +156,6 @@ export class DeanGrupoDetalleComponent implements OnInit {
   }
 
   volverAGrupos(): void {
-    this.router.navigate(['/app/decano/grupos']);
+    void this.router.navigate(['/app/decano/grupos']);
   }
 }

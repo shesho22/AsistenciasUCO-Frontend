@@ -319,7 +319,7 @@ export class RegisterComponent implements OnInit {
           this.showToast.set(true);
 
           setTimeout(() => {
-            this.router.navigate(['/login']);
+            void this.router.navigate(['/login']);
           }, 1200);
         } else {
           this.toastType.set('error');

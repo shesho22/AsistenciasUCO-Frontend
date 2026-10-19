@@ -1,5 +1,5 @@
 const BACKEND_INTEGER_MAX = 2_147_483_647;
-const PASSWORD_SPECIAL_CHARS = '!@#$%^&*()_+-=%';
+const ALLOWED_SPECIAL_CHARS = '!@#$%^&*()_+-=%';
 
 export type IdentificationNumberResult =
   | { valid: true; value: number }
@@ -83,7 +83,7 @@ export function getPasswordValidationError(
   }
 
   const hasAllowedSpecialCharacter = Array.from(password).some((character) =>
-    PASSWORD_SPECIAL_CHARS.includes(character)
+    ALLOWED_SPECIAL_CHARS.includes(character)
   );
 
   if (!hasAllowedSpecialCharacter) {

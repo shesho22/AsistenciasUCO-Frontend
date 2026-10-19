@@ -119,6 +119,6 @@ export class DeanPeriodosComponent implements OnInit {
   }
 
   volverAFacultad(): void {
-    this.router.navigate(['/app/decano/facultad']);
+    void this.router.navigate(['/app/decano/facultad']);
   }
 }

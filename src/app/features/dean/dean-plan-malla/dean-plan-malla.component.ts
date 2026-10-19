@@ -208,6 +208,6 @@ export class DeanPlanMallaComponent implements OnInit {
   }
 
   volverAProgramas(): void {
-    this.router.navigate(['/app/decano/programas']);
+    void this.router.navigate(['/app/decano/programas']);
   }
 }

@@ -130,19 +130,19 @@ export class CoordinatorStudyPlansComponent implements OnInit {
   }
 
   abrirCrearPlan(): void {
-    this.router.navigate(['/app/coordinador/planes-estudio/nuevo']);
+    void this.router.navigate(['/app/coordinador/planes-estudio/nuevo']);
   }
 
   abrirEditarPlan(plan: PlanEstudioItem): void {
-    this.router.navigate(['/app/coordinador/planes-estudio', plan.id, 'editar']);
+    void this.router.navigate(['/app/coordinador/planes-estudio', plan.id, 'editar']);
   }
 
   verMallaCurricular(plan: PlanEstudioItem): void {
-    this.router.navigate(['/app/coordinador/planes-estudio', plan.id, 'malla']);
+    void this.router.navigate(['/app/coordinador/planes-estudio', plan.id, 'malla']);
   }
 
   irAPeriodos(): void {
-    this.router.navigate(['/app/coordinador/periodos']);
+    void this.router.navigate(['/app/coordinador/periodos']);
   }
 
   toggleEstadoPlan(plan: PlanEstudioItem): void {

@@ -27,6 +27,15 @@ function debugLog(message: string): void {
   }
 }
 
+function getSecureJitter(maxMs: number): number {
+  if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+    const buffer = new Uint32Array(1);
+    crypto.getRandomValues(buffer);
+    return (buffer[0] / 0xffffffff) * maxMs;
+  }
+  return maxMs / 2;
+}
+
 class UnauthorizedStreamError extends Error {}
 class ForbiddenStreamError extends Error {}
 
@@ -380,7 +389,7 @@ export class FetchSseRealtimeTransport implements RealtimeTransport {
       : RECONNECT_BACKOFF_MS[
           Math.min(this.backoffAttempt, RECONNECT_BACKOFF_MS.length - 1)
         ] +
-        Math.random() * 250;
+        getSecureJitter(250);
     this.backoffAttempt++;
     await this.pause(waitMs);
   }

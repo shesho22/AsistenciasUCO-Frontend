@@ -225,10 +225,10 @@ export class DeanGruposComponent implements OnInit {
   }
 
   abrirDetalleGrupo(curso: Course): void {
-    this.router.navigate(['/app/decano/grupos', curso.id]);
+    void this.router.navigate(['/app/decano/grupos', curso.id]);
   }
 
   volverAFacultad(): void {
-    this.router.navigate(['/app/decano/facultad']);
+    void this.router.navigate(['/app/decano/facultad']);
   }
 }

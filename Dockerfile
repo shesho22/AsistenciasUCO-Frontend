@@ -9,7 +9,7 @@ WORKDIR /app
 COPY package*.json .npmrc ./
 
 # Instalar dependencias limpias
-RUN npm ci
+RUN npm ci --ignore-scripts
 
 # Copiar el código fuente completo del proyecto
 COPY . .

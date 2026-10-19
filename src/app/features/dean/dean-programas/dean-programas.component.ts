@@ -211,10 +211,10 @@ export class DeanProgramasComponent implements OnInit {
   }
 
   verPlanEstudio(plan: PlanEstudioItem): void {
-    this.router.navigate(['/app/decano/programas', plan.id]);
+    void this.router.navigate(['/app/decano/programas', plan.id]);
   }
 
   volverAFacultad(): void {
-    this.router.navigate(['/app/decano/facultad']);
+    void this.router.navigate(['/app/decano/facultad']);
   }
 }

@@ -127,13 +127,13 @@ export class CoordinatorStudyPlanMeshPageComponent implements OnInit {
   abrirCrearAsignatura(): void {
     const id = this.effectivePlanId();
     if (!id) return;
-    this.router.navigate(['/app/coordinador/planes-estudio', id, 'asignaturas', 'nueva']);
+    void this.router.navigate(['/app/coordinador/planes-estudio', id, 'asignaturas', 'nueva']);
   }
 
   abrirEditarAsignatura(asig: AsignaturaPlanItem): void {
     const id = this.effectivePlanId();
     if (!id) return;
-    this.router.navigate(['/app/coordinador/planes-estudio', id, 'asignaturas', asig.id, 'editar']);
+    void this.router.navigate(['/app/coordinador/planes-estudio', id, 'asignaturas', asig.id, 'editar']);
   }
 
   eliminarAsignatura(asig: AsignaturaPlanItem): void {
@@ -155,6 +155,6 @@ export class CoordinatorStudyPlanMeshPageComponent implements OnInit {
   }
 
   volver(): void {
-    this.router.navigate(['/app/coordinador/planes-estudio']);
+    void this.router.navigate(['/app/coordinador/planes-estudio']);
   }
 }

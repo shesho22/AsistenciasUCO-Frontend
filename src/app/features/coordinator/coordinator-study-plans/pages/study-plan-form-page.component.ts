@@ -88,6 +88,6 @@ export class CoordinatorStudyPlanFormPageComponent implements OnInit {
   }
 
   volver(): void {
-    this.router.navigate(['/app/coordinador/planes-estudio']);
+    void this.router.navigate(['/app/coordinador/planes-estudio']);
   }
 }

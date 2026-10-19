@@ -671,13 +671,13 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   }
 
   tomarAsistenciaGrupo(course: Course): void {
-    this.router.navigate(['/app/asistencia'], { queryParams: { courseId: course.id } });
+    void this.router.navigate(['/app/asistencia'], { queryParams: { courseId: course.id } });
   }
 
   tomarAsistenciaSesionEspecifica(sesion: ClassSession): void {
     const course = this.selectedCourse();
     if (!course) return;
-    this.router.navigate(['/app/asistencia'], {
+    void this.router.navigate(['/app/asistencia'], {
       queryParams: {
         courseId: course.id,
         sessionId: sesion.id,
@@ -686,11 +686,11 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   }
 
   irAGestionReclamos(): void {
-    this.router.navigate(['/app/docente/reclamos']);
+    void this.router.navigate(['/app/docente/reclamos']);
   }
 
   irATomaAsistencia(): void {
-    this.router.navigate(['/app/asistencia']);
+    void this.router.navigate(['/app/asistencia']);
   }
 
   abrirDetalleSesionModal(sesion: ClassSession): void {

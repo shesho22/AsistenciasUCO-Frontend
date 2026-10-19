@@ -15,6 +15,6 @@ export class AdminCatalogsComponent implements OnInit {
   private router = inject(Router);
 
   ngOnInit(): void {
-    this.router.navigate(['/app/admin/facultades'], { replaceUrl: true });
+    void this.router.navigate(['/app/admin/facultades'], { replaceUrl: true });
   }
 }

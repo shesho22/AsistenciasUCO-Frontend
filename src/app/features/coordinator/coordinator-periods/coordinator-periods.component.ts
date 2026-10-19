@@ -127,7 +127,7 @@ export class CoordinatorPeriodsComponent implements OnInit {
   }
 
   irAPlanes(): void {
-    this.router.navigate(['/app/coordinador/planes-estudio']);
+    void this.router.navigate(['/app/coordinador/planes-estudio']);
   }
 
   guardarPeriodo(event: { modo: 'CREAR' | 'EDITAR'; id?: string; datos: Partial<PeriodoAcademicoItem> }): void {

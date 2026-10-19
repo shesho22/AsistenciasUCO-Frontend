@@ -416,7 +416,7 @@ export class ProfileComponent implements OnInit {
     if (window.history.length > 1) {
       this.location.back();
     } else {
-      this.router.navigate(['/app/dashboard']);
+      void this.router.navigate(['/app/dashboard']);
     }
   }
 
