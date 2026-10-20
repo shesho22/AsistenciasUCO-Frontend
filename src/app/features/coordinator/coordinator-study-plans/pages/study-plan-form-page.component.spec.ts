@@ -67,4 +67,41 @@ describe('CoordinatorStudyPlanFormPageComponent', () => {
     expect(toastSpy.success).toHaveBeenCalled();
     expect(routerSpy.navigate).toHaveBeenCalledWith(['/app/coordinador/planes-estudio']);
   });
+
+  it('vuelve a la lista de planes al llamar volver()', () => {
+    component.volver();
+    expect(routerSpy.navigate).toHaveBeenCalledWith(['/app/coordinador/planes-estudio']);
+  });
+
+  it('guarda en modo EDITAR cuando effectivePlanId está presente', () => {
+    fixture.componentRef.setInput('planId', 'plan-existente');
+    fixture.detectChanges();
+    expect(component.modo()).toBe('EDITAR');
+
+    component.guardarPlan({
+      nombre: 'Plan Actualizado',
+    });
+
+    const req = http.expectOne(`${environment.apiUrl}/coordinador/planes-estudio/plan-existente`);
+    expect(req.request.method).toBe('PUT');
+    req.flush({
+      exitoso: true,
+      mensajeUsuario: 'Plan actualizado.',
+      datos: { id: 'plan-existente', codigo: 'PLAN-2027', nombre: 'Plan Actualizado' },
+    });
+
+    expect(toastSpy.success).toHaveBeenCalled();
+    expect(routerSpy.navigate).toHaveBeenCalledWith(['/app/coordinador/planes-estudio']);
+  });
+
+  it('muestra toast error cuando la creación o actualización de plan falla', () => {
+    component.guardarPlan({
+      codigo: 'PLAN-FAIL',
+    });
+
+    const req = http.expectOne(`${environment.apiUrl}/coordinador/planes-estudio`);
+    req.flush({ error: 'Fallo' }, { status: 500, statusText: 'Internal Error' });
+
+    expect(toastSpy.error).toHaveBeenCalled();
+  });
 });

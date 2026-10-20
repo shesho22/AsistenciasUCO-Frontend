@@ -34,7 +34,7 @@ export function parseDayToNumber(dayStr: string): number {
   if (d.startsWith('dom')) return 0;
   if (d.startsWith('lun')) return 1;
   if (d.startsWith('mar')) return 2;
-  if (d.startsWith('mi') || d.includes('ier')) return 3;
+  if (d.startsWith('mi')) return 3;
   if (d.startsWith('jue')) return 4;
   if (d.startsWith('vie')) return 5;
   if (d.startsWith('sab')) return 6;

@@ -96,8 +96,9 @@ export class AdminManagementService {
               nombres: nombres || nombreCompleto,
               apellidos: apellidos,
               correo: raw.correo || '',
-              facultad: raw.nombreFacultad || raw.facultad || '',
-              nombreFacultad: raw.nombreFacultad || raw.facultad || '',
+              idFacultad: raw.idFacultad || undefined,
+              facultad: raw.nombreFacultad || raw.facultad || 'Sin Facultad Asignada',
+              nombreFacultad: raw.nombreFacultad || raw.facultad || 'Sin Facultad Asignada',
               telefono: raw.telefono || '',
               fechaAsignacion: raw.fechaAsignacion || '',
               estado: raw.estado || (raw.estaActivoDecano === false ? 'INACTIVO' : 'ACTIVO'),
@@ -113,7 +114,7 @@ export class AdminManagementService {
     );
   }
 
-  createDecano(nuevoDecano: Omit<DecanoItem, 'id'>): Observable<ApiResponse<DecanoItem>> {
+  createDecano(nuevoDecano: Omit<DecanoItem, 'id'> | Record<string, unknown>): Observable<ApiResponse<DecanoItem>> {
     return this.http.post<ApiResponse<DecanoItem>>(`${environment.apiUrl}/admin/decanos`, nuevoDecano);
   }
 

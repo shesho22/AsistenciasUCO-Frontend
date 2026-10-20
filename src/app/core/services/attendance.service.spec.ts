@@ -44,4 +44,50 @@ describe('AttendanceService', () => {
     expect(request.request.body.registros[0].observaciones).toBeUndefined();
     request.flush({ exitoso: true, mensaje: 'ok' });
   });
+
+  it('consulta asistencias de un grupo sin sesionId', () => {
+    service.getAttendancesByGroup('grupo-1').subscribe();
+
+    const req = http.expectOne(`${environment.apiUrl}/grupos/grupo-1/asistencias`);
+    expect(req.request.method).toBe('GET');
+    req.flush({ exitoso: true, datos: [] });
+  });
+
+  it('consulta asistencias de un grupo filtradas por sesionId', () => {
+    service.getAttendancesByGroup('grupo-1', 'sesion-456').subscribe();
+
+    const req = http.expectOne(`${environment.apiUrl}/grupos/grupo-1/asistencias?sesionId=sesion-456`);
+    expect(req.request.method).toBe('GET');
+    req.flush({ exitoso: true, datos: [] });
+  });
+
+  it('solicita revisión de asistencia con justificación válida', () => {
+    service
+      .requestAttendanceRevision({
+        sesionId: 'ses-1',
+        categoria: 'Médico / Salud',
+        justificacion: 'Estuve en cita médica certificada',
+      })
+      .subscribe();
+
+    const req = http.expectOne(`${environment.apiUrl}/asistencias/revisiones`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body.justificacion).toBe('Estuve en cita médica certificada');
+    req.flush({ exitoso: true, mensajeUsuario: 'Solicitud enviada' });
+  });
+
+  it('rechaza revisión si la justificación tiene menos de 5 caracteres', () => {
+    let error: any;
+    service
+      .requestAttendanceRevision({
+        sesionId: 'ses-1',
+        categoria: 'Médico / Salud',
+        justificacion: 'hola',
+      })
+      .subscribe({ error: (err) => (error = err) });
+
+    expect(error?.message).toContain('entre 5 y 500 caracteres');
+    http.expectNone(`${environment.apiUrl}/asistencias/revisiones`);
+  });
 });
+

@@ -131,7 +131,7 @@ export class TeacherMatriculaModalComponent {
   copiarPin(): void {
     const id = this.curso()?.id;
     if (id) {
-      navigator.clipboard?.writeText(id);
+      void navigator.clipboard?.writeText(id);
       this.toast.success('Código PIN de matrícula copiado al portapapeles.');
     }
   }
@@ -140,7 +140,7 @@ export class TeacherMatriculaModalComponent {
     const id = this.curso()?.id;
     if (id) {
       const url = `${window.location.origin}/app/estudiante/materias?matricularGrupo=${encodeURIComponent(id)}`;
-      navigator.clipboard?.writeText(url);
+      void navigator.clipboard?.writeText(url);
       this.toast.success('Enlace de matrícula copiado al portapapeles.');
     }
   }

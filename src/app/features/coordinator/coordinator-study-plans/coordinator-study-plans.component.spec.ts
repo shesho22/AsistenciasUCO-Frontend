@@ -94,4 +94,40 @@ describe('CoordinatorStudyPlansComponent', () => {
     component.irAPeriodos();
     expect(routerSpy.navigate).toHaveBeenCalledWith(['/app/coordinador/periodos']);
   });
+
+  it('permite alternar el estado de un plan de estudio con éxito', () => {
+    component.toggleEstadoPlan(mockPlanes[0]);
+
+    const patchReq = http.expectOne(`${environment.apiUrl}/coordinador/planes-estudio/PLAN-SIS-2024/toggle`);
+    expect(patchReq.request.method).toBe('PATCH');
+    patchReq.flush({
+      exitoso: true,
+      mensajeUsuario: 'Estado actualizado correctamente.',
+    });
+
+    http.expectOne(`${environment.apiUrl}/coordinador/planes-estudio`).flush({
+      exitoso: true,
+      datos: [{ ...mockPlanes[0], estado: 'INACTIVO' }],
+    });
+
+    expect(toastSpy.success).toHaveBeenCalledWith('Estado actualizado correctamente.');
+  });
+
+  it('muestra error toast si alternar el estado del plan falla', () => {
+    component.toggleEstadoPlan(mockPlanes[0]);
+
+    const patchReq = http.expectOne(`${environment.apiUrl}/coordinador/planes-estudio/PLAN-SIS-2024/toggle`);
+    patchReq.flush({ error: 'Error del servidor' }, { status: 500, statusText: 'Server Error' });
+
+    expect(toastSpy.error).toHaveBeenCalled();
+  });
+
+  it('muestra error toast si cargarPlanes falla', () => {
+    component.cargarPlanes();
+    const req = http.expectOne(`${environment.apiUrl}/coordinador/planes-estudio`);
+    req.flush({ error: 'Fallo al cargar' }, { status: 500, statusText: 'Server Error' });
+
+    expect(toastSpy.error).toHaveBeenCalled();
+  });
 });
+

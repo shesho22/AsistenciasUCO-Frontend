@@ -344,9 +344,12 @@ export class ProfileComponent implements OnInit {
 
   ngOnInit(): void {
     this.resetForm();
-    this.authService.fetchProfileFromBackend().then(() => {
-      this.resetForm();
-    });
+    void this.authService
+      .fetchProfileFromBackend()
+      .then(() => {
+        this.resetForm();
+      })
+      .catch(() => {});
   }
 
   enableEditing(): void {

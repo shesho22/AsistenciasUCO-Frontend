@@ -167,4 +167,61 @@ describe('CourseService', () => {
     expect(request.request.body.docenteName).toBeUndefined();
     request.flush({ exitoso: true, datos: {} });
   });
+
+  it('getTeacherCourses consulta y mapea la respuesta enriquecida', () => {
+    let courses: Course[] = [];
+    service.getTeacherCourses().subscribe((res) => (courses = res.datos));
+
+    http.expectOne(`${environment.apiUrl}/docente/horarios`).flush({
+      exitoso: true,
+      total: 1,
+      datos: [
+        {
+          id: 'h1',
+          idDocente: 'd1',
+          idGrupo: 'g1',
+          codigoMateria: 'IS-001',
+          nombreMateria: 'Arquitectura',
+          seccion: 'Grupo 1',
+          dia: 'Lunes',
+          horaInicio: '08:00:00',
+          horaFin: '10:00:00',
+          totalEstudiantes: 20,
+        },
+      ],
+    });
+
+    expect(courses.length).toBe(1);
+    expect(courses[0].id).toBe('g1');
+  });
+
+  it('getAsignaturasDocente consulta asignaturas del docente', () => {
+    let asignaturas: unknown[] = [];
+    service.getAsignaturasDocente().subscribe((res) => (asignaturas = res.datos));
+
+    http.expectOne(`${environment.apiUrl}/docente/asignaturas`).flush({
+      exitoso: true,
+      datos: [{ id: 'asig-1', nombre: 'Ingeniería de Software' }],
+    });
+
+    expect(asignaturas.length).toBe(1);
+  });
+
+  it('crearGrupo y actualizarGrupo interactúan con endpoints /grupos', () => {
+    service.crearGrupo({ code: 'IS-101', name: 'Arquitectura', section: 'G1', cupoMaximo: 30 }).subscribe((res) => {
+      expect(res.exitoso).toBeTrue();
+    });
+    const postReq = http.expectOne(`${environment.apiUrl}/grupos`);
+    expect(postReq.request.method).toBe('POST');
+    postReq.flush({ exitoso: true, datos: { id: 'grp-nuevo', code: 'IS-101' } });
+
+    service.actualizarGrupo('grp-nuevo', { name: 'Arquitectura Actualizada', docenteName: 'Profesor X' } as any).subscribe((res) => {
+      expect(res.exitoso).toBeTrue();
+    });
+    const putReq = http.expectOne(`${environment.apiUrl}/grupos/grp-nuevo`);
+    expect(putReq.request.method).toBe('PUT');
+    expect(putReq.request.body).toEqual({ name: 'Arquitectura Actualizada' });
+    putReq.flush({ exitoso: true, datos: { id: 'grp-nuevo', name: 'Arquitectura Actualizada' } });
+  });
 });
+

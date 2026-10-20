@@ -51,4 +51,38 @@ describe('roleGuard', () => {
     expect(runFor('ADMINISTRADOR')).not.toBeTrue();
     expect(router.createUrlTree).toHaveBeenCalledWith(['/app/admin/decanos']);
   });
+
+  it('redirige a login si no hay usuario', () => {
+    authService = { currentUser: () => null } as unknown as AuthService;
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: Router, useValue: router },
+        { provide: AuthService, useValue: authService },
+      ],
+    });
+    const route = { data: { roles: ['DOCENTE'] } } as unknown as ActivatedRouteSnapshot;
+    TestBed.runInInjectionContext(() => roleGuard(route, {} as any));
+    expect(router.createUrlTree).toHaveBeenCalledWith(['/login']);
+  });
+
+  it('permite acceso si no hay allowedRoles configurados', () => {
+    const route = { data: {} } as unknown as ActivatedRouteSnapshot;
+    const res = TestBed.runInInjectionContext(() => roleGuard(route, {} as any));
+    expect(res).toBeTrue();
+  });
+
+  it('redirige a vistas iniciales por rol si no tiene permiso', () => {
+    expect(runFor('DECANO')).not.toBeTrue();
+    expect(router.createUrlTree).toHaveBeenCalledWith(['/app/decano/coordinadores']);
+
+    expect(runFor('COORDINADOR')).not.toBeTrue();
+    expect(router.createUrlTree).toHaveBeenCalledWith(['/app/coordinador/docentes']);
+
+    expect(runFor('ESTUDIANTE')).not.toBeTrue();
+    expect(router.createUrlTree).toHaveBeenCalledWith(['/app/estudiante/horarios']);
+
+    expect(runFor('OTRO' as any)).not.toBeTrue();
+    expect(router.createUrlTree).toHaveBeenCalledWith(['/app/dashboard']);
+  });
 });

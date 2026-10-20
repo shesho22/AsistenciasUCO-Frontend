@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
+import { Router } from '@angular/router';
 import { CoordinatorStudentsComponent } from './coordinator-students.component';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { CourseService } from '../../../core/services/course.service';
@@ -53,11 +54,14 @@ describe('CoordinatorStudentsComponent', () => {
       of({ exitoso: true, datos: [course] } as any)
     );
 
+    const routerSpy = jasmine.createSpyObj('Router', ['navigate']);
+
     TestBed.configureTestingModule({
       imports: [CoordinatorStudentsComponent],
       providers: [
         { provide: CoordinatorManagementService, useValue: coordinatorService },
         { provide: CourseService, useValue: courseService },
+        { provide: Router, useValue: routerSpy },
       ],
     });
 
@@ -73,5 +77,63 @@ describe('CoordinatorStudentsComponent', () => {
 
     const text = (fixture.nativeElement as HTMLElement).textContent || '';
     expect(text).not.toContain(MARCADOR_DOCENTE);
+  });
+
+  it('calcula correctamente totalActivosPagina y totalInactivosPagina', () => {
+    component.directorio.set([
+      {
+        id: 'est-1',
+        documento: '1017001',
+        codigo: 'EST-1',
+        nombreCompleto: 'Ana Gómez',
+        correo: 'ana@uco.edu.co',
+        programa: 'Sistemas',
+        estadoMatricula: 'ACTIVO',
+      },
+      {
+        id: 'est-2',
+        documento: '1017002',
+        codigo: 'EST-2',
+        nombreCompleto: 'Bernardo Vega',
+        correo: 'bernardo@uco.edu.co',
+        programa: 'Sistemas',
+        estadoMatricula: 'INACTIVO',
+      },
+    ]);
+
+    expect(component.totalActivosPagina()).toBe(1);
+    expect(component.totalInactivosPagina()).toBe(1);
+  });
+
+  it('gestiona cambios de página y tamaño de página del directorio', () => {
+    component.onDirectorioPageChange(2);
+    expect(component.currentPageDirectorio()).toBe(2);
+
+    component.onPageSizeDirectorioChange(12);
+    expect(component.pageSizeDirectorio()).toBe(12);
+    expect(component.currentPageDirectorio()).toBe(1);
+  });
+
+  it('gestiona cambios de filtro de estado del directorio', () => {
+    component.onDirectorioStatusChange('INACTIVO');
+    expect(component.filtroEstadoDirectorio()).toBe('INACTIVO');
+    expect(component.currentPageDirectorio()).toBe(1);
+  });
+
+  it('irAMaterias navega hacia la ruta correspondiente', () => {
+    const router = TestBed.inject(Router);
+    component.irAMaterias();
+    expect(router.navigate).toHaveBeenCalledWith(['/app/coordinador/materias']);
+  });
+
+  it('onSelectCourse asigna el curso seleccionado y cargarDatos actualiza directorio', () => {
+    component.onSelectCourse('crs-100');
+    expect(component.selectedCourseId()).toBe('crs-100');
+
+    component.cargarDatos();
+    expect(coordinatorService.getEstudiantesDirectorioPagina).toHaveBeenCalled();
+
+    component.onDirectorioSearchChange('Carlos');
+    expect(component.searchDirectorio()).toBe('Carlos');
   });
 });

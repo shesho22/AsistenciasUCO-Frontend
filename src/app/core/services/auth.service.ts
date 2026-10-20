@@ -477,7 +477,7 @@ export class AuthService implements OnDestroy {
       this.currentUser.set(user);
       this.storeRefreshToken(newRefreshToken);
 
-      this.fetchProfileFromBackend(accessToken);
+      void this.fetchProfileFromBackend(accessToken);
       return true;
     } catch {
       return false;

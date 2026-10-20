@@ -21,7 +21,7 @@ export function mapTeacherAssignmentToCourse(
     section: assignment.nombreGrupo,
     schedule: 'No disponible',
     room: 'No disponible',
-    enrolledStudentsCount: group?.estudiantesActivos ?? null,
+    enrolledStudentsCount: group?.estudiantesActivos ?? 0,
     docenteName: assignment.nombreCompleto,
     colorCategory: COURSE_COLORS[index % COURSE_COLORS.length] ?? 'emerald',
   };

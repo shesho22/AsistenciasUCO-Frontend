@@ -30,4 +30,22 @@ describe('GroupService', () => {
     expect(request.request.method).toBe('GET');
     request.flush({ exitoso: true, datos: [], total: 0 });
   });
+
+  it('consulta todos los grupos con getAllGroups', () => {
+    service.getAllGroups().subscribe();
+
+    const req = http.expectOne(`${environment.apiUrl}/grupos`);
+    expect(req.request.method).toBe('GET');
+    req.flush({ exitoso: true, datos: [] });
+  });
+
+  it('descarga la planilla de excel en blob', () => {
+    service.descargarPlanillaExcel('grupo-1').subscribe();
+
+    const req = http.expectOne(`${environment.apiUrl}/grupos/grupo-1/reportes/asistencia-excel`);
+    expect(req.request.method).toBe('GET');
+    expect(req.request.responseType).toBe('blob');
+    req.flush(new Blob(['excel'], { type: 'application/vnd.ms-excel' }));
+  });
 });
+

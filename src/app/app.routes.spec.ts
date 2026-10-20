@@ -19,4 +19,21 @@ describe('application routes', () => {
       expect(roles).not.toContain(role);
     }
   });
+
+  it('resuelve adecuadamente los componentes cargados de forma perezosa en todas las rutas', async () => {
+    const resolverRutas = async (listaRutas: typeof routes) => {
+      for (const ruta of listaRutas) {
+        if (typeof ruta.loadComponent === 'function') {
+          const comp = await ruta.loadComponent();
+          expect(comp).toBeTruthy();
+        }
+        if (ruta.children && ruta.children.length > 0) {
+          await resolverRutas(ruta.children);
+        }
+      }
+    };
+
+    await resolverRutas(routes);
+  });
 });
+

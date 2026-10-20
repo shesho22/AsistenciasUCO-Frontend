@@ -191,4 +191,34 @@ describe('SessionService', () => {
       expect(String(session.topic ?? '')).not.toContain('[CANCELADA]');
     }
   }));
+
+  it('closeSession, cancelarSesion, getQrToken y registrarAutoAsistencia funcionan en modo HTTP', () => {
+    service.closeSession('ses-1').subscribe((res) => {
+      expect(res.exitoso).toBeTrue();
+    });
+    const reqClose = http.expectOne(`${environment.apiUrl}/sesiones/cierres`);
+    expect(reqClose.request.method).toBe('POST');
+    reqClose.flush({ exitoso: true, datos: null });
+
+    service.cancelarSesion('ses-1', 'Motivo fuerza mayor').subscribe((res) => {
+      expect(res.exitoso).toBeTrue();
+    });
+    const reqCancel = http.expectOne(`${environment.apiUrl}/docente/sesiones/ses-1/cancelar`);
+    expect(reqCancel.request.method).toBe('PATCH');
+    reqCancel.flush({ exitoso: true, datos: { id: 'ses-1' } });
+
+    service.getQrToken('ses-1').subscribe((res) => {
+      expect(res.exitoso).toBeTrue();
+    });
+    const reqQr = http.expectOne(`${environment.apiUrl}/sesiones/ses-1/qr-token`);
+    expect(reqQr.request.method).toBe('GET');
+    reqQr.flush({ exitoso: true, datos: { token: 'tok-123' } });
+
+    service.registrarAutoAsistencia({ token: 'tok-123' }).subscribe((res) => {
+      expect(res.exitoso).toBeTrue();
+    });
+    const reqAuto = http.expectOne(`${environment.apiUrl}/estudiante/asistencia-qr`);
+    expect(reqAuto.request.method).toBe('POST');
+    reqAuto.flush({ exitoso: true, datos: true });
+  });
 });

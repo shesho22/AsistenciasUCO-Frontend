@@ -2,9 +2,17 @@ name: Frontend CI
 
 on:
   pull_request:
-    branches: [develop]
+    branches:
+      - develop
+      - main
   push:
-    branches: [develop]
+    branches:
+      - develop
+      - main
+      - 'feature/**'
+      - 'feat/**'
+      - 'fix/**'
+      - 'hotfix/**'
   workflow_dispatch:
 
 jobs:

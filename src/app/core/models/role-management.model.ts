@@ -1,6 +1,7 @@
 export interface DecanoItem {
   id: string;
   idUsuario?: string;
+  idFacultad?: string | null;
   tipoIdentificacion?: string;
   tipoIdentificacionId?: string;
   numeroIdentificacion: string;

@@ -352,10 +352,10 @@ export class DeanFacultyComponent implements OnInit {
     this.sessionService.getSessionsByGroup(curso.id).subscribe({
       next: (res) => this.sessions.set(res.datos || []),
     });
-    this.router.navigate(['/app/decano/grupos', curso.id]).catch(() => {});
+    void this.router.navigate(['/app/decano/grupos', curso.id]);
   }
 
   irARuta(ruta: string): void {
-    this.router.navigate([ruta]).catch(() => {});
+    void this.router.navigate([ruta]);
   }
 }

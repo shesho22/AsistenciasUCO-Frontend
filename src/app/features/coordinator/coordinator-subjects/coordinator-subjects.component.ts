@@ -403,7 +403,7 @@ export class CoordinatorSubjectsComponent implements OnInit {
   }
 
   irAMallaPlan(planId: string): void {
-    this.router.navigate(['/app/coordinador/planes-estudio', planId, 'malla']).catch(() => {});
+    void this.router.navigate(['/app/coordinador/planes-estudio', planId, 'malla']);
   }
 
   getTipoBadgeVariant(componente: string): BadgeVariant {

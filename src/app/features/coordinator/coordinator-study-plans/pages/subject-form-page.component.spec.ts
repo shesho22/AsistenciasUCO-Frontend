@@ -96,4 +96,56 @@ describe('CoordinatorSubjectFormPageComponent', () => {
       'malla',
     ]);
   });
+
+  it('vuelve a la malla al llamar volverAMalla()', () => {
+    component.volverAMalla();
+    expect(routerSpy.navigate).toHaveBeenCalledWith([
+      '/app/coordinador/planes-estudio',
+      'PLAN-SIS-2024',
+      'malla',
+    ]);
+  });
+
+  it('actualiza una asignatura existente en modo EDITAR', () => {
+    fixture.componentRef.setInput('asignaturaId', 'asig-existente');
+    fixture.detectChanges();
+    expect(component.modo()).toBe('EDITAR');
+
+    component.guardarAsignatura({
+      id: 'asig-existente',
+      datos: {
+        nombre: 'Estructuras II',
+      },
+    });
+
+    const req = http.expectOne(
+      `${environment.apiUrl}/coordinador/planes-estudio/PLAN-SIS-2024/asignaturas/asig-existente`
+    );
+    expect(req.request.method).toBe('PUT');
+    req.flush({
+      exitoso: true,
+      mensajeUsuario: 'Asignatura actualizada.',
+      datos: { id: 'asig-existente', nombre: 'Estructuras II' },
+    });
+
+    expect(toastSpy.success).toHaveBeenCalled();
+    expect(routerSpy.navigate).toHaveBeenCalledWith([
+      '/app/coordinador/planes-estudio',
+      'PLAN-SIS-2024',
+      'malla',
+    ]);
+  });
+
+  it('muestra toast error si la creación de asignatura falla', () => {
+    component.guardarAsignatura({
+      datos: { codigo: 'FAIL' },
+    });
+
+    const req = http.expectOne(
+      `${environment.apiUrl}/coordinador/planes-estudio/PLAN-SIS-2024/asignaturas`
+    );
+    req.flush({ error: 'Error' }, { status: 400, statusText: 'Bad Request' });
+
+    expect(toastSpy.error).toHaveBeenCalled();
+  });
 });

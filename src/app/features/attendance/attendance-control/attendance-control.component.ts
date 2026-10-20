@@ -281,12 +281,12 @@ export class AttendanceControlComponent {
   private router = inject(Router, { optional: true });
 
   volverAListaGrupos(): void {
-    this.router?.navigate(['/app/docente/grupos']);
+    void this.router?.navigate(['/app/docente/grupos']);
   }
 
   irABandejaGeneralReclamos(): void {
     this.isGroupClaimsModalOpen.set(false);
-    this.router?.navigate(['/app/docente/reclamos']);
+    void this.router?.navigate(['/app/docente/reclamos']);
   }
 
   abrirProyeccionDeSesion(sessionId: string): void {
@@ -773,7 +773,7 @@ export class AttendanceControlComponent {
 
   seleccionarCurso(courseId: string): void {
     if (this.selectedCourseId() === courseId) return;
-    this.router?.navigate([], {
+    void this.router?.navigate([], {
       relativeTo: this.route || undefined,
       queryParams: { courseId, sessionId: null },
       queryParamsHandling: 'merge',
@@ -784,7 +784,7 @@ export class AttendanceControlComponent {
   volverAOverview(): void {
     this.vistaActual.set('OVERVIEW');
     this.selectedSessionId.set('');
-    this.router?.navigate([], {
+    void this.router?.navigate([], {
       relativeTo: this.route || undefined,
       queryParams: { sessionId: null },
       queryParamsHandling: 'merge',
@@ -794,7 +794,7 @@ export class AttendanceControlComponent {
   irASesionDetalle(sessionId: string): void {
     this.selectedSessionId.set(sessionId);
     this.vistaActual.set('DETALLE');
-    this.router?.navigate([], {
+    void this.router?.navigate([], {
       relativeTo: this.route || undefined,
       queryParams: { sessionId },
       queryParamsHandling: 'merge',
@@ -809,7 +809,7 @@ export class AttendanceControlComponent {
     this.pendingStudentIds.clear();
     this.selectedSessionId.set(sessionId);
     this.vistaActual.set('DETALLE');
-    this.router?.navigate([], {
+    void this.router?.navigate([], {
       relativeTo: this.route || undefined,
       queryParams: { sessionId },
       queryParamsHandling: 'merge',

@@ -243,4 +243,108 @@ describe('TeacherGruposComponent', () => {
       queryParams: { courseId: course.id },
     });
   });
+
+  it('guardarSesion crea una nueva sesión cuando modoFormSesion es CREAR', () => {
+    sessionService.createSession.and.returnValue(of({ exitoso: true, mensaje: 'Sesión creada' } as any));
+    component.verHubGrupo(course);
+    component.abrirCrearSesionExtraordinaria();
+    component.sesionForm = {
+      title: 'Sesión de repaso',
+      date: '2026-09-15',
+      startTime: '08:00',
+      endTime: '10:00',
+      sessionNumber: 1,
+    };
+
+    component.guardarSesion();
+
+    expect(sessionService.createSession).toHaveBeenCalled();
+  });
+
+  it('guardarSesion valida campos obligatorios antes de enviar', () => {
+    component.verHubGrupo(course);
+    component.abrirCrearSesionExtraordinaria();
+    component.sesionForm = { title: '', date: '', startTime: '', endTime: '', sessionNumber: 1 };
+    component.guardarSesion();
+    expect(sessionService.createSession).not.toHaveBeenCalled();
+
+    component.sesionForm = { title: 'Valida', date: '', startTime: '08:00', endTime: '10:00', sessionNumber: 1 };
+    component.guardarSesion();
+    expect(sessionService.createSession).not.toHaveBeenCalled();
+
+    component.sesionForm = { title: 'Valida', date: '2026-09-15', startTime: '10:00', endTime: '08:00', sessionNumber: 1 };
+    component.guardarSesion();
+    expect(sessionService.createSession).not.toHaveBeenCalled();
+  });
+
+  it('permite abrir y cerrar modal de matrícula de grupo', () => {
+    component.abrirModalMatriculaGrupo(course);
+    expect(component.modalMatriculaGrupoVisible()).toBeTrue();
+    expect(component.grupoMatricula()).toBe(course);
+
+    component.cerrarModalMatriculaGrupo();
+    expect(component.modalMatriculaGrupoVisible()).toBeFalse();
+    expect(component.grupoMatricula()).toBeNull();
+  });
+
+  it('permite cancelar sesión cuando el switch está activo', () => {
+    sessionService.cancelarSesion.and.returnValue(
+      of({ exitoso: true, mensajeUsuario: 'Cancelada' } as any)
+    );
+    (component as any).sessionCancelEnabled = true;
+    component.verHubGrupo(course);
+    const sesion: ClassSession = {
+      id: 'ses-cancelar',
+      courseId: 'crs-1',
+      sessionNumber: 2,
+      title: 'Sesión por cancelar',
+      date: '2026-09-20',
+      startTime: '08:00',
+      endTime: '10:00',
+      records: [],
+    };
+
+    component.abrirModalCancelarSesion(sesion);
+    expect(component.modalCancelarVisible()).toBeTrue();
+    expect(component.sesionACancelar()).toBe(sesion);
+
+    component.confirmarCancelarSesionConMotivo('Incapacidad médica docente');
+    expect(sessionService.cancelarSesion).toHaveBeenCalledWith('ses-cancelar', 'Incapacidad médica docente');
+    expect(component.modalCancelarVisible()).toBeFalse();
+  });
+
+  it('guardarGrupo crea un grupo cuando modoFormGrupo es CREAR', () => {
+    courseService.crearGrupo.and.returnValue(
+      of({ exitoso: true, mensajeUsuario: 'Grupo creado con éxito.' } as any)
+    );
+    component.abrirCrearGrupo();
+    component.grupoForm = {
+      code: 'SIS-205',
+      name: 'Bases de Datos',
+      section: 'G01',
+      schedule: 'Lunes 08:00 - 10:00',
+      room: 'A-101',
+      cupoMaximo: 30,
+      docenteName: 'Docente Prueba',
+      asignaturaId: '',
+      diasSeleccionados: ['Lunes'],
+      horaInicio: '08:00',
+      horaFin: '10:00',
+      generarSesionesAutomaticas: false,
+    };
+
+    component.guardarGrupo();
+
+    expect(courseService.crearGrupo).toHaveBeenCalled();
+  });
+
+  it('guardarGrupo actualiza un grupo cuando modoFormGrupo es EDITAR', () => {
+    courseService.actualizarGrupo.and.returnValue(
+      of({ exitoso: true, mensajeUsuario: 'Grupo actualizado.' } as any)
+    );
+    component.abrirEditarGrupo(course);
+    component.guardarGrupo();
+
+    expect(courseService.actualizarGrupo).toHaveBeenCalled();
+  });
 });

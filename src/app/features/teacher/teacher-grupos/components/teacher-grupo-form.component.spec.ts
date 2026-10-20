@@ -24,4 +24,44 @@ describe('TeacherGrupoFormComponent', () => {
 
     expect(placeholders).not.toContain('Ej. Dra. María Elena Rostagno');
   });
+
+  it('alternarDia y actualizarHorarioTexto modifican los días seleccionados y el texto del horario', () => {
+    const component = fixture.componentInstance;
+    component.form.set({
+      code: 'IS-101',
+      name: 'Software',
+      diasSeleccionados: ['Lunes', 'Miércoles'],
+      horaInicio: '08:00',
+      horaFin: '10:00',
+      schedule: '',
+    });
+
+    component.alternarDia('Viernes');
+    expect(component.form().diasSeleccionados).toContain('Viernes');
+    expect(component.form().schedule).toContain('Lunes y Miércoles y Viernes');
+
+    component.alternarDia('Miércoles');
+    expect(component.form().diasSeleccionados).not.toContain('Miércoles');
+
+    // No debe eliminar el último día restante
+    component.alternarDia('Lunes');
+    component.alternarDia('Viernes');
+    expect(component.form().diasSeleccionados.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('emite cancelar, guardar y asignaturaChange correctamente', () => {
+    const component = fixture.componentInstance;
+    spyOn(component.cancelar, 'emit');
+    spyOn(component.guardar, 'emit');
+    spyOn(component.asignaturaChange, 'emit');
+
+    component.cancelar.emit();
+    expect(component.cancelar.emit).toHaveBeenCalled();
+
+    component.guardar.emit();
+    expect(component.guardar.emit).toHaveBeenCalled();
+
+    component.asignaturaChange.emit('asig-1');
+    expect(component.asignaturaChange.emit).toHaveBeenCalledWith('asig-1');
+  });
 });

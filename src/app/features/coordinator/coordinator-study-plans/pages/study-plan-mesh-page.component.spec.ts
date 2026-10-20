@@ -97,5 +97,39 @@ describe('CoordinatorStudyPlanMeshPageComponent', () => {
       'asignaturas',
       'nueva',
     ]);
+
+    component.abrirEditarAsignatura(component.asignaturas()[0]);
+    expect(routerSpy.navigate).toHaveBeenCalledWith([
+      '/app/coordinador/planes-estudio',
+      'PLAN-SIS-2024',
+      'asignaturas',
+      'asig-1',
+      'editar',
+    ]);
+  });
+
+  it('volver navega a la lista de planes de estudio', () => {
+    component.volver();
+    expect(routerSpy.navigate).toHaveBeenCalledWith(['/app/coordinador/planes-estudio']);
+  });
+
+  it('agregarSemestre incrementa el total de semestres del plan', () => {
+    component.agregarSemestre();
+
+    const putReq = http.expectOne(`${environment.apiUrl}/coordinador/planes-estudio/PLAN-SIS-2024`);
+    expect(putReq.request.method).toBe('PUT');
+    putReq.flush({ exitoso: true, datos: { ...mockPlan, totalSemestres: 11 } });
+
+    expect(toastSpy.success).toHaveBeenCalledWith('Semestre 11 agregado al plan.');
+  });
+
+  it('eliminarSemestreVacio disminuye semestres si el último no tiene asignaturas', () => {
+    component.eliminarSemestreVacio();
+
+    const putReq = http.expectOne(`${environment.apiUrl}/coordinador/planes-estudio/PLAN-SIS-2024`);
+    expect(putReq.request.method).toBe('PUT');
+    putReq.flush({ exitoso: true, datos: { ...mockPlan, totalSemestres: 9 } });
+
+    expect(toastSpy.success).toHaveBeenCalledWith('Semestre 10 vacío eliminado.');
   });
 });
