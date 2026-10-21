@@ -198,6 +198,10 @@ describe('DeanCoordinadoresComponent', () => {
 
     const req = http.expectOne(`${environment.apiUrl}/decano/coordinadores`);
     expect(req.request.method).toBe('POST');
+    expect(req.request.body.numeroIdentificacion).toBe('1017555444');
+    expect(req.request.body.primerNombre).toBe('Jorge');
+    expect(req.request.body.primerApellido).toBe('Henao');
+    expect(req.request.body.correo).toBe('jorge.henao@uco.edu.co');
     req.flush({
       exitoso: true,
       mensajeUsuario: 'Coordinador creado.',
@@ -207,6 +211,21 @@ describe('DeanCoordinadoresComponent', () => {
         totalDocentes: 0,
         totalGrupos: 0,
       },
+    });
+
+    const getReq = http.expectOne(`${environment.apiUrl}/decano/coordinadores`);
+    expect(getReq.request.method).toBe('GET');
+    getReq.flush({
+      exitoso: true,
+      datos: [
+        ...mockCoordinadores,
+        {
+          id: 'coord-nuevo',
+          ...component.formData,
+          totalDocentes: 0,
+          totalGrupos: 0,
+        },
+      ],
     });
 
     expect(component.coordinadores().length).toBe(3);
@@ -237,40 +256,74 @@ describe('DeanCoordinadoresComponent', () => {
     expect(toastService.info).toHaveBeenCalled();
   });
 
-  it('onCoordinadorSeleccionadoDelDirectorio vincula a un docente nuevo como coordinador', () => {
+  it('onCoordinadorSeleccionadoDelDirectorio precarga datos cuando es un nuevo coordinador', () => {
     flushInitialRequests();
     component.onCoordinadorSeleccionadoDelDirectorio({
       id: 'usr-nuevo-directorio',
       numeroIdentificacion: '1017998877',
+      primerNombre: 'Valeria',
+      primerApellido: 'Restrepo',
       nombres: 'Valeria',
       apellidos: 'Restrepo',
       correo: 'valeria.restrepo@uco.edu.co',
       tipoIdentificacion: 'CC',
     });
 
+    expect(component.vistaActual()).toBe('REGISTRO');
+    expect(component.formData.numeroIdentificacion).toBe('1017998877');
+    expect(component.formData.primerNombre).toBe('Valeria');
+    expect(component.formData.primerApellido).toBe('Restrepo');
+    expect(component.formData.correo).toBe('valeria.restrepo@uco.edu.co');
+    expect(component.formData.programaAcademico).toBe('SIN_PROGRAMA');
+    expect(toastService.info).toHaveBeenCalled();
+  });
+
+  it('guardarCoordinador permite aprovisionar coordinador con SIN_PROGRAMA cuando la facultad aún no tiene programas', () => {
+    flushInitialRequests();
+    component.programasAcademicos.set([]);
+    component.abrirFormularioRegistro();
+    expect(component.formData.programaAcademico).toBe('SIN_PROGRAMA');
+
+    component.formData.numeroIdentificacion = '1017666777';
+    component.formData.primerNombre = 'Elena';
+    component.formData.primerApellido = 'Montoya';
+    component.formData.correo = 'elena.montoya@uco.edu.co';
+
+    component.guardarCoordinador();
+
     const req = http.expectOne(`${environment.apiUrl}/decano/coordinadores`);
     expect(req.request.method).toBe('POST');
+    expect(req.request.body.idPrograma).toBeNull();
     req.flush({
       exitoso: true,
+      mensajeUsuario: 'Coordinador aprovisionado sin programa.',
       datos: {
-        id: 'usr-nuevo-directorio',
-        tipoIdentificacionId: 'tipo-1',
-        tipoIdentificacion: 'CC',
-        numeroIdentificacion: '1017998877',
-        primerNombre: 'Valeria',
-        primerApellido: 'Restrepo',
-        nombres: 'Valeria',
-        apellidos: 'Restrepo',
-        correo: 'valeria.restrepo@uco.edu.co',
-        facultad: 'Facultad de Ingeniería',
-        programaAcademico: 'Ingeniería de Sistemas',
+        id: 'coord-sin-prog',
+        ...component.formData,
+        programaAcademico: 'Sin Programa Asignado',
         totalDocentes: 0,
         totalGrupos: 0,
-        estado: 'ACTIVO',
       },
     });
 
-    expect(component.coordinadores().some((c) => c.id === 'usr-nuevo-directorio')).toBeTrue();
+    const getReq = http.expectOne(`${environment.apiUrl}/decano/coordinadores`);
+    expect(getReq.request.method).toBe('GET');
+    getReq.flush({
+      exitoso: true,
+      datos: [
+        ...mockCoordinadores,
+        {
+          id: 'coord-sin-prog',
+          ...component.formData,
+          programaAcademico: 'Sin Programa Asignado',
+          totalDocentes: 0,
+          totalGrupos: 0,
+        },
+      ],
+    });
+
+    expect(component.coordinadores().some((c) => c.id === 'coord-sin-prog')).toBeTrue();
+    expect(component.vistaActual()).toBe('LISTA');
     expect(toastService.success).toHaveBeenCalled();
   });
 });

@@ -13,6 +13,7 @@ export interface DecanoItem {
   nombres: string;
   apellidos: string;
   correo: string;
+  password?: string;
   facultad: string;
   nombreFacultad?: string;
   telefono: string;
@@ -23,6 +24,8 @@ export interface DecanoItem {
 
 export interface CoordinadorItem {
   id: string;
+  idUsuario?: string;
+  idPrograma?: string | null;
   tipoIdentificacion?: string;
   tipoIdentificacionId?: string;
   numeroIdentificacion: string;
@@ -30,14 +33,18 @@ export interface CoordinadorItem {
   segundoNombre?: string;
   primerApellido?: string;
   segundoApellido?: string;
+  nombreCompleto?: string;
   nombres: string;
   apellidos: string;
   correo: string;
+  password?: string;
   facultad: string;
   programaAcademico: string;
+  nombrePrograma?: string;
   totalDocentes: number;
   totalGrupos: number;
   estado: 'ACTIVO' | 'INACTIVO';
+  estaActivoCoordinador?: boolean;
 }
 
 export interface DocenteItem {

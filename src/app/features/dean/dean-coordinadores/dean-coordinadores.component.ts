@@ -315,22 +315,35 @@ type VistaDecano = 'LISTA' | 'REGISTRO';
                 class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
               >
                 <option value="">-- Selecciona un Programa --</option>
+                <option value="SIN_PROGRAMA">Sin programa asignado (Aprovisionar para nuevo programa)</option>
                 @for (prog of programasAcademicos(); track prog.id) {
                   <option [value]="prog.nombre">{{ prog.nombre }}</option>
                 }
               </select>
             </app-form-field>
 
-            <app-form-field label="Correo Institucional UCO" [required]="true">
-              <input
-                type="email"
-                [(ngModel)]="formData.correo"
-                name="correo"
-                placeholder="coordinador.programa@uco.edu.co"
-                required
-                class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-              />
-            </app-form-field>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <app-form-field label="Correo Institucional UCO" [required]="true">
+                <input
+                  type="email"
+                  [(ngModel)]="formData.correo"
+                  name="correo"
+                  placeholder="coordinador.programa@uco.edu.co"
+                  required
+                  class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                />
+              </app-form-field>
+
+              <app-form-field label="Contraseña Inicial IAM (Opcional)">
+                <input
+                  type="text"
+                  [(ngModel)]="formData.password"
+                  name="password"
+                  placeholder="Por defecto: UcoCoord_<Documento>!"
+                  class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                />
+              </app-form-field>
+            </div>
 
             <app-form-field label="Facultad">
               <input
@@ -494,7 +507,8 @@ export class DeanCoordinadoresComponent implements OnInit {
       apellidos: '',
       correo: '',
       facultad: 'Facultad de Ingeniería',
-      programaAcademico: '',
+      programaAcademico: this.programasAcademicos().length === 0 ? 'SIN_PROGRAMA' : '',
+      idPrograma: null,
       estado: 'ACTIVO',
     };
     this.vistaActual.set('REGISTRO');
@@ -547,11 +561,33 @@ export class DeanCoordinadoresComponent implements OnInit {
     this.formData.nombres = [pn, (this.formData.segundoNombre || '').trim()].filter(Boolean).join(' ');
     this.formData.apellidos = [pa, (this.formData.segundoApellido || '').trim()].filter(Boolean).join(' ');
 
-    this.deanService.createCoordinador(this.formData).subscribe({
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    let idProgramaSeleccionado: string | null = null;
+    if (this.formData.programaAcademico === 'SIN_PROGRAMA') {
+      idProgramaSeleccionado = null;
+    } else {
+      const progMatch = this.programasAcademicos().find(
+        (p) => p.nombre === this.formData.programaAcademico || p.id === this.formData.programaAcademico
+      );
+      idProgramaSeleccionado = progMatch && uuidRegex.test(progMatch.id) ? progMatch.id : null;
+    }
+
+    const payload = {
+      numeroIdentificacion: this.formData.numeroIdentificacion.trim(),
+      primerNombre: pn,
+      segundoNombre: (this.formData.segundoNombre || '').trim(),
+      primerApellido: pa,
+      segundoApellido: (this.formData.segundoApellido || '').trim(),
+      correo: this.formData.correo.trim(),
+      idPrograma: idProgramaSeleccionado,
+      password: (this.formData.password || '').trim() || undefined,
+    };
+
+    this.deanService.createCoordinador(payload).subscribe({
       next: (res) => {
-        if (res.exitoso && res.datos) {
-          this.coordinadores.set([res.datos, ...this.coordinadores()]);
+        if (res.exitoso) {
           this.toast.success(res.mensajeUsuario || 'Coordinador registrado exitosamente.');
+          this.cargarCoordinadores();
           this.volverALista();
         }
       },
@@ -584,50 +620,21 @@ export class DeanCoordinadoresComponent implements OnInit {
       return;
     }
 
-    // Si el formulario ya tiene programa seleccionado o usamos el primero disponible
-    const programaAsignado =
-      this.formData.programaAcademico ||
-      (this.programasAcademicos().length > 0
-        ? this.programasAcademicos()[0].nombre
-        : 'Ingeniería de Sistemas');
-
-    const nuevoCoordinador: CoordinadorItem = {
-      id: user.id,
-      tipoIdentificacionId:
-        this.tiposIdentificacion().find((t) => t.tipoIdentificacion === user.tipoIdentificacion)?.id ||
-        (this.tiposIdentificacion().length > 0
-          ? this.tiposIdentificacion()[0].id
-          : 'A1B2C3D4-0000-0000-0000-000000000001'),
-      tipoIdentificacion: user.tipoIdentificacion || 'CC',
-      numeroIdentificacion: user.numeroIdentificacion,
-      primerNombre: user.primerNombre || user.nombres.split(' ')[0] || '',
-      segundoNombre: user.segundoNombre || '',
-      primerApellido: user.primerApellido || user.apellidos.split(' ')[0] || '',
-      segundoApellido: user.segundoApellido || '',
-      nombres: user.nombres,
-      apellidos: user.apellidos,
-      correo: user.correo,
-      facultad: 'Facultad de Ingeniería',
-      programaAcademico: programaAsignado,
-      totalDocentes: 0,
-      totalGrupos: 0,
-      estado: 'ACTIVO',
-    };
-
-    this.deanService.createCoordinador(nuevoCoordinador).subscribe({
-      next: (res) => {
-        const creado = res.datos || nuevoCoordinador;
-        this.coordinadores.set([creado, ...this.coordinadores()]);
-        this.toast.success(
-          res.mensajeUsuario || `Coordinador ${user.nombres} ${user.apellidos} nombrado exitosamente.`
-        );
-        this.volverALista();
-      },
-      error: () => {
-        this.coordinadores.set([nuevoCoordinador, ...this.coordinadores()]);
-        this.toast.success(`Coordinador ${user.nombres} ${user.apellidos} nombrado exitosamente.`);
-        this.volverALista();
-      },
-    });
+    this.abrirFormularioRegistro();
+    this.formData.tipoIdentificacionId =
+      this.tiposIdentificacion().find((t) => t.tipoIdentificacion === user.tipoIdentificacion)?.id ||
+      (this.tiposIdentificacion().length > 0
+        ? this.tiposIdentificacion()[0].id
+        : 'A1B2C3D4-0000-0000-0000-000000000001');
+    this.formData.tipoIdentificacion = user.tipoIdentificacion || 'CC';
+    this.formData.numeroIdentificacion = String(user.numeroIdentificacion || '');
+    this.formData.primerNombre = user.primerNombre || user.nombres.split(' ')[0] || '';
+    this.formData.segundoNombre = user.segundoNombre || '';
+    this.formData.primerApellido = user.primerApellido || user.apellidos.split(' ')[0] || '';
+    this.formData.segundoApellido = user.segundoApellido || '';
+    this.formData.correo = user.correo || '';
+    this.formData.programaAcademico = 'SIN_PROGRAMA';
+    this.formData.idPrograma = null;
+    this.toast.info(`Datos de ${user.nombres} ${user.apellidos} precargados. Confirme el programa y guarde.`);
   }
 }
