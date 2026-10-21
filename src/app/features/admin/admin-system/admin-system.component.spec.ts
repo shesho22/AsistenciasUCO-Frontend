@@ -61,7 +61,7 @@ describe('AdminSystemComponent', () => {
     adminServiceSpy.cargarParametros.and.returnValue(of({ exitoso: true, datos: mockParametros }));
     adminServiceSpy.cargarAuditoria.and.returnValue(of({ exitoso: true, datos: mockAuditoria }));
 
-    coordServiceSpy = jasmine.createSpyObj('CoordinatorManagementService', [], {
+    coordServiceSpy = jasmine.createSpyObj('CoordinatorManagementService', ['cargarDatosAcademicosBase'], {
       periodos: signal([
         {
           id: 'per-1',
@@ -92,6 +92,7 @@ describe('AdminSystemComponent', () => {
 
   it('debe crearse e inicializar parámetros y auditoría', () => {
     expect(component).toBeTruthy();
+    expect(coordServiceSpy.cargarDatosAcademicosBase).toHaveBeenCalled();
     expect(adminServiceSpy.cargarParametros).toHaveBeenCalled();
     expect(adminServiceSpy.cargarAuditoria).toHaveBeenCalled();
     expect(component.parametros().length).toBe(1);

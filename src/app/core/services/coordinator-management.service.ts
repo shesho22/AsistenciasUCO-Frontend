@@ -39,13 +39,17 @@ export class CoordinatorManagementService {
   private solicitudesMatriculaSignal = signal<SolicitudMatriculaItem[]>([]);
   public solicitudesMatricula = this.solicitudesMatriculaSignal.asReadonly();
 
-  constructor(private http: HttpClient) {
-    this.cargarDatosIniciales();
-  }
+  constructor(private http: HttpClient) {}
 
-  private cargarDatosIniciales(): void {
-    this.getPlanesEstudio().subscribe();
-    this.getPeriodosAcademicos().subscribe();
+  /**
+   * Carga planes de estudio y periodos academicos (endpoints /coordinador/**) bajo demanda.
+   * Ya no se dispara desde el constructor: el servicio es `providedIn: 'root'` y un estudiante o docente
+   * que lo inyecte no debe generar peticiones administrativas (403). Lo invocan solo las pantallas
+   * de Coordinador, Decano y Administrador que consumen las senales `planes` / `periodos`.
+   */
+  cargarDatosAcademicosBase(): void {
+    this.getPlanesEstudio().subscribe({ error: () => undefined });
+    this.getPeriodosAcademicos().subscribe({ error: () => undefined });
   }
 
   // --- DOCENTES ---

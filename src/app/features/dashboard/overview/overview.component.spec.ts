@@ -21,6 +21,7 @@ import {
   HorarioDocenteItem,
   HorarioItem,
 } from '../../../core/models/role-management.model';
+import { crearMateria } from '../../../core/testing/student-portal.fixtures';
 
 describe('OverviewComponent', () => {
   let fixture: ComponentFixture<OverviewComponent>;
@@ -132,8 +133,8 @@ describe('OverviewComponent', () => {
   ];
 
   const mockMaterias: MateriaEstudianteItem[] = [
-    {
-      id: 'mat-1',
+    crearMateria({
+      id: 'e2f3a4b5-0000-0000-0000-0000000000a1',
       codigo: 'MAT-101',
       nombre: 'Cálculo I',
       grupo: '01',
@@ -141,12 +142,9 @@ describe('OverviewComponent', () => {
       horario: 'Martes 10:00 - 12:00',
       aula: 'Aula 102',
       creditos: 4,
-      porcentajeAsistencia: 90,
-      asistencias: 9,
-      inasistencias: 1,
-      totalClases: 10,
+      indicadores: { porcentajeAsistencia: 90, asistencias: 9, inasistencias: 1, totalClases: 10 },
       estado: 'Al día',
-    },
+    }),
   ];
 
   const mockHorarioEstudiante: HorarioItem[] = [
@@ -300,6 +298,14 @@ describe('OverviewComponent', () => {
     expect(component.averageStudentAttendance()).toBe(90);
     expect(component.totalStudentAbsences()).toBe(1);
     expect(component.isLoading()).toBeFalse();
+  });
+
+  it('sin indicadores autoritativos no calcula promedio ni fallas (null, nunca 0 ni NaN)', () => {
+    studentServiceSpy.getMaterias.and.returnValue(of({ exitoso: true, datos: [crearMateria()] }));
+    createComponentWithRole('ESTUDIANTE');
+    expect(component.materias().length).toBe(1);
+    expect(component.averageStudentAttendance()).toBeNull();
+    expect(component.totalStudentAbsences()).toBeNull();
   });
 
   it('debe manejar error al cargar materias para rol ESTUDIANTE', () => {

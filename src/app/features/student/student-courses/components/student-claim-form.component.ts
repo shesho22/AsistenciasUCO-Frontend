@@ -1,6 +1,7 @@
 import { Component, ChangeDetectionStrategy, input, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { SOPORTE_ACCEPT } from '../../../../core/files/soporte-file.validator';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { FormFieldComponent } from '../../../../shared/components/form-field/form-field.component';
 import {
@@ -57,7 +58,7 @@ import {
               </span>
             </div>
             <p class="text-amber-950 font-medium">Tema: {{ sesion()?.tema }}</p>
-            <p class="text-amber-800">Docente a cargo: {{ materia()?.docente }}</p>
+            <p class="text-amber-800">Docente a cargo: {{ materia()?.docente ?? 'No informado' }}</p>
           </div>
 
           <!-- Formulario de Justificación -->
@@ -88,8 +89,22 @@ import {
             <!-- Carga de Archivo Adjunto / Soporte Documental -->
             <div class="space-y-2">
               <label class="block text-xs font-semibold uppercase tracking-wider text-warm-700">
-                Soporte Documental Adjunto (PDF, JPG, PNG - Máx. 10MB)
+                Soporte Documental Adjunto (opcional · PDF, JPG, PNG · Máx. 5 MB)
               </label>
+
+              @if (subiendo()) {
+                <div class="flex items-center gap-3 p-3.5 bg-warm-50 border border-warm-200 rounded-xl text-xs text-warm-700" role="status">
+                  <span class="inline-block w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></span>
+                  Subiendo y analizando el archivo…
+                  <button type="button" (click)="removeFile.emit()" class="ml-auto font-semibold text-red-700 hover:underline">
+                    Cancelar
+                  </button>
+                </div>
+              }
+
+              @if (errorSoporte()) {
+                <p class="text-xs font-medium text-red-700" role="alert">{{ errorSoporte() }}</p>
+              }
 
               @if (archivo()) {
                 <div class="flex items-center justify-between p-3.5 bg-warm-50 border border-warm-200 rounded-xl">
@@ -115,14 +130,14 @@ import {
                     </svg>
                   </button>
                 </div>
-              } @else {
+              } @else if (!subiendo()) {
                 <label
                   class="border-2 border-dashed border-warm-200 hover:border-primary-400 rounded-2xl p-5 flex flex-col items-center justify-center gap-2 cursor-pointer bg-warm-50/50 hover:bg-primary-50/20 transition-all text-center"
                 >
                   <input
                     type="file"
                     class="hidden"
-                    accept=".pdf,.png,.jpg,.jpeg"
+                    [attr.accept]="accept"
                     (change)="fileSelected.emit($event)"
                   />
                   <div class="w-10 h-10 rounded-full bg-primary-50 text-primary-600 flex items-center justify-center">
@@ -155,7 +170,8 @@ import {
             <app-button
               variant="primary"
               size="md"
-              [disabled]="!justificacion().trim() || submitting()"
+              [disabled]="!justificacion().trim() || submitting() || subiendo()"
+              [loading]="submitting()"
               (clicked)="onSubmit()"
             >
               <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -174,6 +190,11 @@ export class StudentClaimFormComponent {
   sesion = input<SesionMateriaDetalle | null>(null);
   archivo = input<SoporteAdjuntoItem | null>(null);
   submitting = input<boolean>(false);
+  /** Hay una subida del soporte en curso: no se puede radicar hasta conocer el `fileId`. */
+  subiendo = input<boolean>(false);
+  errorSoporte = input<string | null>(null);
+
+  readonly accept = SOPORTE_ACCEPT;
 
   categoria = signal<CategoriaJustificacion>('Médico / Salud');
   justificacion = signal<string>('');

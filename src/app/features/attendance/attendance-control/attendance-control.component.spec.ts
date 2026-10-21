@@ -333,6 +333,51 @@ describe('AttendanceControlComponent contract corrections', () => {
     expect(component.showToast()).toBeFalse();
   });
 
+  it('grupo asignado sin horario ni código: aparece en el selector y carga sus dos sesiones', () => {
+    const grupoId = 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d';
+    courseService.getCurrentTeacherCourses.and.returnValue(
+      of({
+        exitoso: true,
+        total: 1,
+        datos: [
+          {
+            id: grupoId,
+            name: 'Arquitectura de Software',
+            section: 'Grupo 001 - Arq Software',
+            schedule: '',
+            asignaturaId: 'e2f3a4b5-0000-0000-0000-000000000001',
+            colorCategory: 'emerald',
+          },
+        ],
+      })
+    );
+    sessionService.getSessionsByGroup.and.returnValue(
+      of({
+        exitoso: true,
+        total: 2,
+        datos: [1, 2].map((n) => ({
+          id: `sesion-${n}`,
+          courseId: grupoId,
+          sessionNumber: n,
+          title: `Sesión ${n}`,
+          date: '2026-09-14',
+          startTime: '08:00',
+          endTime: '10:00',
+          records: [],
+        })),
+      } as any)
+    );
+    const component = createComponent();
+
+    expect(component.courseOptions()).toEqual([
+      { value: grupoId, label: 'Arquitectura de Software (Grupo 001 - Arq Software)' },
+    ] as any);
+    expect(component.selectedCourseId()).toBe(grupoId);
+    expect(sessionService.getSessionsByGroup).toHaveBeenCalledWith(grupoId);
+    expect(component.sessions().length).toBe(2);
+    expect(component.showToast()).toBeFalse();
+  });
+
   it('muestra feedback útil ante UNAUTHORIZED realtime', () => {
     const component = createComponent();
 

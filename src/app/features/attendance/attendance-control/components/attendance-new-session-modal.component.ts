@@ -26,7 +26,7 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
       <form (submit)="onSubmit($event)" class="space-y-4">
         @if (course(); as c) {
           <p class="text-xs text-warm-600">
-            Crea una nueva sesión para <span class="font-semibold text-warm-800">{{ c.name }}</span> ({{ c.code }} - Grupo {{ c.section }}).
+            Crea una nueva sesión para <span class="font-semibold text-warm-800">{{ c.name }}</span> ({{ c.code ? c.code + ' - ' : '' }}{{ c.section }}).
           </p>
         } @else {
           <p class="text-xs text-warm-600">

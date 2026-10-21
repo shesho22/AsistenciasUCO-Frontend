@@ -12,6 +12,7 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
 import { UserPickerModalComponent, UserPickerItem } from '../../../shared/components/user-picker-modal/user-picker-modal.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { parseIdentificationNumber, validateInstitutionalEmail } from '../../../core/validation/request-form-validation.util';
+import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
 
 type VistaAdmin = 'LISTA' | 'REGISTRO';
 
@@ -362,6 +363,7 @@ export class AdminDecanosComponent implements OnInit {
   private adminService = inject(AdminManagementService);
   private catalogService = inject(CatalogService);
   private toast = inject(ToastService);
+  private sessionTimeZone = inject(SessionTimeZoneService);
 
   isPickerModalOpen = signal<boolean>(false);
   vistaActual = signal<VistaAdmin>('LISTA');
@@ -386,7 +388,7 @@ export class AdminDecanosComponent implements OnInit {
     facultad: 'Sin Facultad Asignada',
     idFacultad: null,
     telefono: '',
-    fechaAsignacion: new Date().toISOString().split('T')[0],
+    fechaAsignacion: this.sessionTimeZone.currentDate(),
     estado: 'ACTIVO',
     password: '',
   };
@@ -497,7 +499,7 @@ export class AdminDecanosComponent implements OnInit {
       facultad: 'Sin Facultad Asignada',
       idFacultad: null,
       telefono: '',
-      fechaAsignacion: new Date().toISOString().split('T')[0],
+      fechaAsignacion: this.sessionTimeZone.currentDate(),
       estado: 'ACTIVO',
       password: '',
     };

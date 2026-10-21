@@ -108,13 +108,17 @@ import { Course } from '../../../../core/models/course.model';
                 <div>
                   <div class="flex items-start justify-between gap-3 mb-2">
                     <div class="flex items-center gap-2">
-                      <span class="text-xs font-mono font-bold px-2.5 py-1 rounded-md bg-warm-100 text-warm-800 group-hover:bg-primary-50 group-hover:text-primary-800 transition-colors">
-                        {{ course.code }}
-                      </span>
+                      @if (course.code) {
+                        <span class="text-xs font-mono font-bold px-2.5 py-1 rounded-md bg-warm-100 text-warm-800 group-hover:bg-primary-50 group-hover:text-primary-800 transition-colors">
+                          {{ course.code }}
+                        </span>
+                      }
                       <app-badge variant="neutral">{{ course.section }}</app-badge>
                     </div>
 
-                    @if (course.cupoMaximo) {
+                    @if (course.enrolledStudentsCount === undefined) {
+                      <!-- Total de estudiantes desconocido: no se muestra un conteo inventado -->
+                    } @else if (course.cupoMaximo) {
                       <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                         {{ course.enrolledStudentsCount }} / {{ course.cupoMaximo }} cupos
                       </span>
@@ -136,7 +140,7 @@ import { Course } from '../../../../core/models/course.model';
                     <svg class="w-4 h-4 text-warm-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <span class="font-medium">{{ course.schedule }}</span>
+                    <span class="font-medium">{{ course.schedule || 'Sin horario asignado' }}</span>
                   </div>
                   <span class="text-[11px] font-semibold text-primary-700 group-hover:underline">
                     Ver Grupo →
@@ -189,7 +193,10 @@ export class TeacherGruposListComponent {
     const q = this.searchQuery().trim().toLowerCase();
     if (!q) return this.courses();
     return this.courses().filter(
-      (c) => c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q)
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
+        (c.code ?? '').toLowerCase().includes(q) ||
+        c.section.toLowerCase().includes(q)
     );
   });
 

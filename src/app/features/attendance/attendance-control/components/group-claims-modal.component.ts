@@ -23,7 +23,7 @@ import { Course } from '../../../../core/models/course.model';
         <div class="flex items-center justify-between pb-2 border-b border-warm-100">
           <div>
             <span class="text-xs font-bold text-warm-700 uppercase tracking-wider block">
-              {{ course()?.name }} ({{ course()?.code }})
+              {{ course()?.name }}{{ course()?.code ? ' (' + course()?.code + ')' : '' }}
             </span>
             <span class="text-[11px] text-warm-500">
               Solicitudes de inasistencia radicadas por los estudiantes de este curso.

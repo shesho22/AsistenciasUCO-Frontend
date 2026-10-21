@@ -140,7 +140,7 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
                       <div class="w-20 bg-warm-200 rounded-full h-1.5 mx-auto mt-1 overflow-hidden">
                         <div
                           class="bg-primary-700 h-1.5 rounded-full"
-                          [style.width.%]="(c.enrolledStudentsCount / (c.cupoMaximo || 30)) * 100"
+                          [style.width.%]="((c.enrolledStudentsCount ?? 0) / (c.cupoMaximo || 30)) * 100"
                         ></div>
                       </div>
                     </td>
@@ -189,7 +189,7 @@ export class DeanGruposComponent implements OnInit {
     return this.courses().filter(
       (c: Course) =>
         c.name.toLowerCase().includes(q) ||
-        c.code.toLowerCase().includes(q) ||
+        (c.code ?? '').toLowerCase().includes(q) ||
         (c.room && c.room.toLowerCase().includes(q))
     );
   });

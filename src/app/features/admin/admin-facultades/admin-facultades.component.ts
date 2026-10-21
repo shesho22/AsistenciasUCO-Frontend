@@ -636,6 +636,7 @@ export class AdminFacultadesComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.coordService.cargarDatosAcademicosBase();
     this.adminService.cargarFacultades().subscribe();
     this.adminService.getDecanos().subscribe();
     this.adminService.getInstituciones().subscribe();

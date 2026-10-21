@@ -40,7 +40,7 @@ import { TeacherGrupoSabanaComponent } from './teacher-grupo-sabana.component';
 
           <div class="flex items-center gap-2">
             <span class="text-xs font-mono font-bold px-2.5 py-1 rounded-md bg-warm-100 text-warm-800">
-              {{ selectedCourse()?.code }} • {{ selectedCourse()?.section }}
+              {{ selectedCourse()?.code ? selectedCourse()?.code + ' • ' : '' }}{{ selectedCourse()?.section }}
             </span>
             <app-badge variant="success">Grupo Activo</app-badge>
           </div>
@@ -50,9 +50,11 @@ import { TeacherGrupoSabanaComponent } from './teacher-grupo-sabana.component';
         <div class="bg-white p-6 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div class="space-y-1.5">
             <div class="flex items-center gap-2">
-              <span class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-primary-50 text-primary-800 border border-primary-200">
-                {{ selectedCourse()?.code }}
-              </span>
+              @if (selectedCourse()?.code) {
+                <span class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-primary-50 text-primary-800 border border-primary-200">
+                  {{ selectedCourse()?.code }}
+                </span>
+              }
               <span class="text-xs font-bold text-warm-600">{{ selectedCourse()?.section }}</span>
               <span class="text-xs text-warm-400">•</span>
               <span class="text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">

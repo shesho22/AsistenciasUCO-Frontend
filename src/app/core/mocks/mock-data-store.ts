@@ -4,8 +4,6 @@ import {
   DocenteItem,
   HorarioItem,
   HorarioDocenteItem,
-  MateriaEstudianteItem,
-  SesionMateriaDetalle,
   SolicitudRevisionItem,
   PlanEstudioItem,
   AsignaturaPlanItem,
@@ -29,6 +27,8 @@ import {
   MOCK_HORARIOS_DOCENTE,
   MOCK_MATERIAS_ESTUDIANTE,
   MOCK_SESIONES_MATERIAS,
+  MockMateriaEstudiante,
+  MockSesionMateria,
   MOCK_SOLICITUDES_REVISION,
   MOCK_PLANES_ESTUDIO,
   MOCK_ASIGNATURAS_PLAN,
@@ -56,8 +56,8 @@ class MockDataStore {
   docentes: DocenteItem[] = JSON.parse(JSON.stringify(MOCK_DOCENTES));
   horariosEstudiante: HorarioItem[] = JSON.parse(JSON.stringify(MOCK_HORARIOS_ESTUDIANTE));
   horariosDocente: HorarioDocenteItem[] = JSON.parse(JSON.stringify(MOCK_HORARIOS_DOCENTE));
-  materiasEstudiante: MateriaEstudianteItem[] = JSON.parse(JSON.stringify(MOCK_MATERIAS_ESTUDIANTE));
-  sesionesMaterias: Record<string, SesionMateriaDetalle[]> = JSON.parse(JSON.stringify(MOCK_SESIONES_MATERIAS));
+  materiasEstudiante: MockMateriaEstudiante[] = JSON.parse(JSON.stringify(MOCK_MATERIAS_ESTUDIANTE));
+  sesionesMaterias: Record<string, MockSesionMateria[]> = JSON.parse(JSON.stringify(MOCK_SESIONES_MATERIAS));
   solicitudesRevision: SolicitudRevisionItem[] = JSON.parse(JSON.stringify(MOCK_SOLICITUDES_REVISION));
   planesEstudio: PlanEstudioItem[] = JSON.parse(JSON.stringify(MOCK_PLANES_ESTUDIO));
   asignaturasPlan: Record<string, AsignaturaPlanItem[]> = JSON.parse(JSON.stringify(MOCK_ASIGNATURAS_PLAN));

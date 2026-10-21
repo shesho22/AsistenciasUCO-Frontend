@@ -4,6 +4,7 @@ import { CardComponent } from '../../../../shared/components/card/card.component
 import { BadgeComponent, BadgeVariant } from '../../../../shared/components/badge/badge.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { MateriaEstudianteItem } from '../../../../core/models/role-management.model';
+import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
 
 @Component({
   selector: 'app-student-courses-list',
@@ -79,7 +80,11 @@ import { MateriaEstudianteItem } from '../../../../core/models/role-management.m
           </div>
           <div>
             <span class="text-xs text-warm-500 font-medium">Promedio de Asistencia</span>
-            <p class="text-2xl font-serif font-bold text-emerald-700">{{ promedioAsistencia() }}%</p>
+            @if (promedioAsistencia() !== null) {
+              <p class="text-2xl font-serif font-bold text-emerald-700">{{ promedioAsistencia() }}%</p>
+            } @else {
+              <p class="text-base font-serif font-bold text-warm-500" data-testid="promedio-no-disponible">No disponible</p>
+            }
           </div>
         </div>
 
@@ -91,7 +96,11 @@ import { MateriaEstudianteItem } from '../../../../core/models/role-management.m
           </div>
           <div>
             <span class="text-xs text-warm-500 font-medium">Fallas Registradas</span>
-            <p class="text-2xl font-serif font-bold text-warm-900">{{ totalFallas() }}</p>
+            @if (totalFallas() !== null) {
+              <p class="text-2xl font-serif font-bold text-warm-900">{{ totalFallas() }}</p>
+            } @else {
+              <p class="text-base font-serif font-bold text-warm-500" data-testid="fallas-no-disponible">No disponible</p>
+            }
           </div>
         </div>
       </div>
@@ -103,52 +112,68 @@ import { MateriaEstudianteItem } from '../../../../core/models/role-management.m
             <div class="h-52 bg-warm-100 rounded-2xl animate-pulse"></div>
           }
         </div>
+      } @else if (error()) {
+        <div class="bg-white p-8 rounded-2xl border border-red-200 text-center space-y-3" role="alert" data-testid="materias-error">
+          <p class="text-sm font-bold text-red-800">{{ error()!.titulo }}</p>
+          <p class="text-xs text-warm-600">{{ error()!.mensaje }}</p>
+          <app-button variant="secondary" size="sm" (clicked)="retry.emit()">Reintentar</app-button>
+        </div>
       } @else {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-          @for (materia of materias(); track materia.id) {
+          @for (materia of materias(); track materia.claveGrupo) {
             <app-card [hoverable]="true" padding="md">
               <div class="flex flex-col h-full justify-between gap-4">
                 <div>
                   <div class="flex items-start justify-between gap-3 mb-2">
                     <div class="flex items-center gap-2">
-                      <span class="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-warm-100 text-warm-800">
-                        {{ materia.codigo }}
-                      </span>
-                      <span class="text-xs text-warm-500 font-medium">Grupo {{ materia.grupo }}</span>
+                      @if (materia.codigo) {
+                        <span class="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-warm-100 text-warm-800">
+                          {{ materia.codigo }}
+                        </span>
+                      }
+                      <span class="text-xs text-warm-500 font-medium" data-testid="materia-grupo">{{ materia.grupo }}</span>
                     </div>
 
-                    <app-badge [variant]="getBadgeVariant(materia.estado)">
-                      {{ materia.estado }}
-                    </app-badge>
+                    @if (materia.estado) {
+                      <app-badge [variant]="getBadgeVariant(materia.estado)">
+                        {{ materia.estado }}
+                      </app-badge>
+                    }
                   </div>
 
                   <h3 class="font-serif font-bold text-lg text-warm-900 leading-snug">
                     {{ materia.nombre }}
                   </h3>
-                  <p class="text-xs text-warm-500 mt-1">Docente: {{ materia.docente }}</p>
+                  <p class="text-xs text-warm-500 mt-1">Docente: {{ materia.docente ?? 'No informado' }}</p>
                 </div>
 
-                <!-- Barra de Progreso de Asistencia -->
-                <div class="space-y-1.5 p-3 rounded-xl bg-warm-50 border border-warm-100">
-                  <div class="flex items-center justify-between text-xs">
-                    <span class="font-medium text-warm-600">Asistencia Registrada</span>
-                    <span class="font-bold text-warm-900">{{ materia.porcentajeAsistencia }}%</span>
+                <!-- Indicadores de Asistencia (solo con fuente autoritativa) -->
+                @if (materia.indicadores; as ind) {
+                  <div class="space-y-1.5 p-3 rounded-xl bg-warm-50 border border-warm-100">
+                    <div class="flex items-center justify-between text-xs">
+                      <span class="font-medium text-warm-600">Asistencia Registrada</span>
+                      <span class="font-bold text-warm-900">{{ ind.porcentajeAsistencia }}%</span>
+                    </div>
+                    <div class="w-full h-2 bg-warm-200 rounded-full overflow-hidden">
+                      <div
+                        [class]="getProgressColor(ind.porcentajeAsistencia)"
+                        [style.width.%]="ind.porcentajeAsistencia"
+                        class="h-full rounded-full transition-all duration-500"
+                      ></div>
+                    </div>
+                    <div class="flex items-center justify-between text-[11px] text-warm-500 pt-0.5">
+                      <span>{{ ind.asistencias }} asistencias</span>
+                      <span>{{ ind.inasistencias }} fallas de {{ ind.totalClases }} clases</span>
+                    </div>
                   </div>
-                  <div class="w-full h-2 bg-warm-200 rounded-full overflow-hidden">
-                    <div
-                      [class]="getProgressColor(materia.porcentajeAsistencia)"
-                      [style.width.%]="materia.porcentajeAsistencia"
-                      class="h-full rounded-full transition-all duration-500"
-                    ></div>
+                } @else {
+                  <div class="p-3 rounded-xl bg-warm-50 border border-warm-100 text-xs text-warm-500" data-testid="asistencia-no-disponible">
+                    <span class="font-medium text-warm-600">Asistencia:</span> No disponible
                   </div>
-                  <div class="flex items-center justify-between text-[11px] text-warm-500 pt-0.5">
-                    <span>{{ materia.asistencias }} asistencias</span>
-                    <span>{{ materia.inasistencias }} fallas de {{ materia.totalClases }} clases</span>
-                  </div>
-                </div>
+                }
 
                 <div class="flex items-center justify-between pt-2 border-t border-warm-100">
-                  <span class="text-xs text-warm-500">{{ materia.aula }}</span>
+                  <span class="text-xs text-warm-500">{{ materia.aula ?? 'Aula no informada' }}</span>
                   <div class="flex items-center gap-2">
                     <button
                       type="button"
@@ -173,7 +198,7 @@ import { MateriaEstudianteItem } from '../../../../core/models/role-management.m
               </div>
             </app-card>
           } @empty {
-            <div class="col-span-2 bg-white p-12 rounded-2xl border border-warm-200 text-center space-y-3">
+            <div class="col-span-2 bg-white p-12 rounded-2xl border border-warm-200 text-center space-y-3" data-testid="materias-vacio">
               <p class="text-xs text-warm-500">No tienes asignaturas matriculadas actualmente.</p>
             </div>
           }
@@ -185,17 +210,20 @@ import { MateriaEstudianteItem } from '../../../../core/models/role-management.m
 export class StudentCoursesListComponent {
   materias = input<MateriaEstudianteItem[]>([]);
   isLoading = input<boolean>(false);
+  error = input<LoadErrorState | null>(null);
   totalCreditos = input<number>(0);
-  promedioAsistencia = input<string>('0.0');
-  totalFallas = input<number>(0);
+  /** `null` = sin fuente autoritativa de asistencia. */
+  promedioAsistencia = input<string | null>(null);
+  totalFallas = input<number | null>(null);
 
+  retry = output<void>();
   openCodeEnrollment = output<void>();
   openAutoAttendance = output<void>();
   openEnrollmentRequest = output<void>();
   viewDetail = output<MateriaEstudianteItem>();
   viewPrerequisites = output<MateriaEstudianteItem>();
 
-  getBadgeVariant(estado: MateriaEstudianteItem['estado']): BadgeVariant {
+  getBadgeVariant(estado: MateriaEstudianteItem['estado'] | null): BadgeVariant {
     switch (estado) {
       case 'Al día':
         return 'success';

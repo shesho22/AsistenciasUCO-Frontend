@@ -50,7 +50,9 @@ describe('CoordinatorManagementService', () => {
     service = TestBed.inject(CoordinatorManagementService);
     http = TestBed.inject(HttpTestingController);
 
-    // Responder a las llamadas iniciales del constructor
+    // La carga ya NO ocurre en el constructor: las pantallas de Coordinador la solicitan explicitamente.
+    http.expectNone(() => true);
+    service.cargarDatosAcademicosBase();
     const reqPlanes = http.expectOne(`${environment.apiUrl}/coordinador/planes-estudio`);
     reqPlanes.flush({ exitoso: true, datos: mockPlanes });
 
@@ -60,10 +62,38 @@ describe('CoordinatorManagementService', () => {
 
   afterEach(() => http.verify());
 
-  it('debe crearse e inicializar señales de planes y periodos', () => {
+  it('cargarDatosAcademicosBase llena las señales de planes y periodos', () => {
     expect(service).toBeTruthy();
     expect(service.planes().length).toBe(1);
     expect(service.periodos().length).toBe(1);
+  });
+
+  it('instanciar el servicio NO emite peticiones /coordinador/** (un estudiante no debe provocar 403)', () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [CoordinatorManagementService, provideHttpClient(), provideHttpClientTesting()],
+    });
+    const fresco = TestBed.inject(CoordinatorManagementService);
+    const httpFresco = TestBed.inject(HttpTestingController);
+
+    expect(fresco.planes()).toEqual([]);
+    expect(fresco.periodos()).toEqual([]);
+    httpFresco.expectNone(() => true);
+    httpFresco.verify();
+  });
+
+  it('cargarDatosAcademicosBase tolera un error HTTP sin romper al llamador', () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [CoordinatorManagementService, provideHttpClient(), provideHttpClientTesting()],
+    });
+    const fresco = TestBed.inject(CoordinatorManagementService);
+    const httpFresco = TestBed.inject(HttpTestingController);
+
+    expect(() => fresco.cargarDatosAcademicosBase()).not.toThrow();
+    httpFresco.expectOne(`${environment.apiUrl}/coordinador/planes-estudio`).flush(null, { status: 403, statusText: 'Forbidden' });
+    httpFresco.expectOne(`${environment.apiUrl}/coordinador/periodos-academicos`).flush(null, { status: 403, statusText: 'Forbidden' });
+    httpFresco.verify();
   });
 
   describe('Docentes', () => {

@@ -82,6 +82,17 @@ describe('DeanGruposComponent', () => {
     component = fixture.componentInstance;
     fixture.detectChanges();
 
+    http.expectOne(`${environment.apiUrl}/docente/asignaturas`).flush({
+      exitoso: true,
+      datos: mockCoursesApi.map((h) => ({
+        idAsignatura: `asig-${h.idGrupo}`,
+        nombreAsignatura: h.nombreMateria,
+        idGrupo: h.idGrupo,
+        nombreGrupo: h.seccion,
+        idPrograma: 'prog-1',
+        nombrePrograma: 'Ingeniería de Sistemas',
+      })),
+    });
     http.expectOne(`${environment.apiUrl}/docente/horarios`).flush({
       exitoso: true,
       datos: mockCoursesApi,

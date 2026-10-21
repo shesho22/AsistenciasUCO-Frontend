@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FormFieldComponent } from '../../../../shared/components/form-field/form-field.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
+import { AsignaturaDocenteApiDto } from '../../../../core/api/models/asignatura-docente-api-dto.model';
 
 @Component({
   selector: 'app-teacher-grupo-form',
@@ -50,9 +51,9 @@ import { ButtonComponent } from '../../../../shared/components/button/button.com
                   class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm font-semibold text-warm-900 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                 >
                   <option value="">Selecciona una asignatura de tu carga académica...</option>
-                  @for (asig of asignaturasDocente(); track asig.id) {
-                    <option [value]="asig.id">
-                      {{ asig.codigo }} — {{ asig.nombre }} ({{ asig.nombrePrograma || 'Programa UCO' }})
+                  @for (asig of asignaturasDocente(); track asig.idAsignatura) {
+                    <option [value]="asig.idAsignatura">
+                      {{ asig.nombreAsignatura }} ({{ asig.nombrePrograma || 'Programa UCO' }})
                     </option>
                   }
                 </select>
@@ -231,7 +232,7 @@ import { ButtonComponent } from '../../../../shared/components/button/button.com
           <app-button
             variant="primary"
             size="md"
-            [disabled]="!form().code?.trim() || !form().name?.trim()"
+            [disabled]="!form().name?.trim() || (asignaturasDocente().length === 0 && !form().code?.trim())"
             (clicked)="guardar.emit()"
           >
             <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -246,7 +247,7 @@ import { ButtonComponent } from '../../../../shared/components/button/button.com
 })
 export class TeacherGrupoFormComponent {
   modo = input<'CREAR' | 'EDITAR'>('CREAR');
-  asignaturasDocente = input<any[]>([]);
+  asignaturasDocente = input<AsignaturaDocenteApiDto[]>([]);
   form = model<any>({
     code: '',
     section: '',

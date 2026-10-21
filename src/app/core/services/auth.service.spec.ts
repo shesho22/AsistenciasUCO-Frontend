@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { AuthService } from './auth.service';
+import { environment } from '../../../environments/environment';
 
 function base64UrlEncode(json: object): string {
   // UTF-8 safe base64 (parseJwt reverses this exact encoding via atob + decodeURIComponent).
@@ -766,6 +767,15 @@ describe('AuthService', () => {
         expect(sessionStorage.getItem(SESSION_REFRESH_KEY)).toBe('refresh-1');
       });
 
+      it('el login no solicita /usuarios/perfil mientras el endpoint esté deshabilitado', async () => {
+        profileUnavailable();
+
+        await service.loginWithCredentials('docente@uco.edu.co', 'pass');
+
+        const urls = fetchSpy.calls.allArgs().map(([input]) => String(input));
+        expect(urls.some((url) => url.includes('/usuarios/perfil'))).toBeFalse();
+      });
+
       it('la restauración tras F5 no depende del perfil', async () => {
         sessionStorage.setItem(SESSION_REFRESH_KEY, 'refresh-1');
         const reloaded = simulateReload();
@@ -898,6 +908,34 @@ describe('AuthService', () => {
   });
 
   describe('fetchProfileFromBackend', () => {
+    const features = environment.features as { userProfileEndpointEnabled: boolean };
+    let profileFlag: boolean;
+
+    beforeEach(() => {
+      profileFlag = features.userProfileEndpointEnabled;
+      features.userProfileEndpointEnabled = true;
+    });
+
+    afterEach(() => {
+      features.userProfileEndpointEnabled = profileFlag;
+    });
+
+    it('con userProfileEndpointEnabled apagado no llama a /usuarios/perfil (backend responde 501)', async () => {
+      mockTokenResponse(basePayload());
+      await service.loginWithCredentials('docente@uco.edu.co', 'pass');
+      features.userProfileEndpointEnabled = false;
+      fetchSpy.calls.reset();
+
+      const result = await service.fetchProfileFromBackend();
+
+      expect(result).toBe(service.currentUser());
+      expect(fetchSpy).not.toHaveBeenCalled();
+    });
+
+    it('el flag userProfileEndpointEnabled está apagado por defecto', () => {
+      expect(profileFlag).toBeFalse();
+    });
+
     it('en modo mock devuelve el usuario actual sin llamar a fetch', async () => {
       service.setMockMode(true);
       service.loginAsMockUser('DOCENTE', false);

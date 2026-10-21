@@ -4,8 +4,6 @@ import {
   DocenteItem,
   HorarioItem,
   HorarioDocenteItem,
-  MateriaEstudianteItem,
-  SesionMateriaDetalle,
   SolicitudRevisionItem,
   PlanEstudioItem,
   AsignaturaPlanItem,
@@ -178,6 +176,40 @@ export const MOCK_DOCENTES: DocenteItem[] = [
   },
 ];
 
+/** Forma heredada del mock de materias (anterior al contrato real); el interceptor la convierte a DTO HTTP. */
+export interface MockMateriaEstudiante {
+  id: string;
+  codigo: string;
+  nombre: string;
+  creditos: number;
+  grupo: string;
+  docente: string;
+  aula: string;
+  horario: string;
+  totalClases: number;
+  asistencias: number;
+  inasistencias: number;
+  porcentajeAsistencia: number;
+  estado: 'Al día' | 'Riesgo' | 'Crítico';
+}
+
+/** Forma heredada del mock de sesiones; incluye estado de asistencia y reclamo, que el backend real aun no entrega. */
+export interface MockSesionMateria {
+  id: string;
+  materiaId: string;
+  numeroSesion: number;
+  fecha: string;
+  horario: string;
+  tema: string;
+  estadoAsistencia: 'PRESENTE' | 'AUSENTE' | 'RETARDO' | 'JUSTIFICADA';
+  reclamoId?: string;
+  estadoReclamo?: 'PENDIENTE' | 'APROBADA' | 'RECHAZADA';
+  categoriaReclamo?: string;
+  justificacionEstudiante?: string;
+  soporteAdjuntoNombre?: string;
+  respuestaDocente?: string;
+}
+
 export const MOCK_HORARIOS_ESTUDIANTE: HorarioItem[] = [
   {
     id: 'HOR-001',
@@ -316,7 +348,7 @@ export const MOCK_HORARIOS_DOCENTE: HorarioDocenteItem[] = [
   },
 ];
 
-export const MOCK_MATERIAS_ESTUDIANTE: MateriaEstudianteItem[] = [
+export const MOCK_MATERIAS_ESTUDIANTE: MockMateriaEstudiante[] = [
   {
     id: 'MAT-001',
     codigo: 'SIS-401',
@@ -379,7 +411,7 @@ export const MOCK_MATERIAS_ESTUDIANTE: MateriaEstudianteItem[] = [
   },
 ];
 
-export const MOCK_SESIONES_MATERIAS: Record<string, SesionMateriaDetalle[]> = {
+export const MOCK_SESIONES_MATERIAS: Record<string, MockSesionMateria[]> = {
   'MAT-001': [
     {
       id: 'SES-001-01',

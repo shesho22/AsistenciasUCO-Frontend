@@ -11,7 +11,11 @@ import { FormFieldComponent } from '../../../shared/components/form-field/form-f
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { UserPickerModalComponent, UserPickerItem } from '../../../shared/components/user-picker-modal/user-picker-modal.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
-import { parseIdentificationNumber, validateInstitutionalEmail } from '../../../core/validation/request-form-validation.util';
+import {
+  parseIdentificationNumber,
+  validateInstitutionalEmail,
+  getPasswordValidationError,
+} from '../../../core/validation/request-form-validation.util';
 
 type VistaDecano = 'LISTA' | 'REGISTRO';
 
@@ -334,12 +338,13 @@ type VistaDecano = 'LISTA' | 'REGISTRO';
                 />
               </app-form-field>
 
-              <app-form-field label="Contraseña Inicial IAM (Opcional)">
+              <app-form-field label="Contraseña" [required]="true">
                 <input
                   type="text"
                   [(ngModel)]="formData.password"
                   name="password"
-                  placeholder="Por defecto: UcoCoord_<Documento>!"
+                  required
+                  placeholder="ej. UcoCoord2026!"
                   class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                 />
               </app-form-field>
@@ -359,7 +364,7 @@ type VistaDecano = 'LISTA' | 'REGISTRO';
               <app-button variant="secondary" size="md" type="button" (clicked)="volverALista()">
                 Cancelar
               </app-button>
-              <app-button variant="primary" size="md" type="submit" [disabled]="!formData.primerNombre || !formData.primerApellido || !formData.correo || !formData.programaAcademico">
+              <app-button variant="primary" size="md" type="submit" [disabled]="!formData.primerNombre || !formData.primerApellido || !formData.correo || !formData.programaAcademico || !formData.password">
                 Guardar Coordinador
               </app-button>
             </div>
@@ -506,6 +511,7 @@ export class DeanCoordinadoresComponent implements OnInit {
       nombres: '',
       apellidos: '',
       correo: '',
+      password: '',
       facultad: 'Facultad de Ingeniería',
       programaAcademico: this.programasAcademicos().length === 0 ? 'SIN_PROGRAMA' : '',
       idPrograma: null,
@@ -555,6 +561,17 @@ export class DeanCoordinadoresComponent implements OnInit {
 
     if (!this.formData.programaAcademico || !this.formData.programaAcademico.trim()) {
       this.toast.warning('El campo Programa Académico es obligatorio.');
+      return;
+    }
+
+    if (!this.formData.password || !this.formData.password.trim()) {
+      this.toast.warning('El campo Contraseña Inicial IAM es obligatorio.');
+      return;
+    }
+
+    const passwordError = getPasswordValidationError(this.formData.password.trim(), this.formData.numeroIdentificacion.trim());
+    if (passwordError) {
+      this.toast.warning(passwordError);
       return;
     }
 

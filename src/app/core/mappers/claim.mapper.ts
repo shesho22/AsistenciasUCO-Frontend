@@ -38,10 +38,86 @@ export interface SolicitudRevisionDTO {
   fecha_respuesta?: string | null;
 }
 
+/** Soporte vinculado tal como lo devuelve GET /docente/reclamos (LB-004D). */
+export interface ReclamoDocenteSoporteApi {
+  fileId: string;
+  nombre: string;
+  tipo: string;
+  tamanioBytes: number;
+  fechaSubidaUtc?: string | null;
+  url?: string | null;
+}
+
+/** Elemento de `datos` de GET /docente/reclamos (camelCase, instantes UTC con 'Z', fechaSolicitud = DATE). */
+export interface ReclamoDocenteApi {
+  id: string;
+  nombre?: string | null;
+  fechaSolicitud: string;
+  estadoSolicitud: string;
+  justificacionSolicitud: string;
+  justificacionRespuesta?: string | null;
+  estudianteId: string;
+  estudianteNombre: string;
+  sesionId: string;
+  sesionNumero: number;
+  fechaSesionUtc?: string | null;
+  procedenciaTemporalSesion?: string | null;
+  grupoId?: string;
+  grupoCodigo?: number | null;
+  grupoNombre?: string | null;
+  materiaId: string;
+  materiaCodigo: string;
+  materiaNombre: string;
+  soporteAdjunto?: ReclamoDocenteSoporteApi | null;
+}
+
+/** Formatea un instante UTC ISO en la zona IANA del usuario; devuelve la fecha local 'yyyy-MM-dd'. */
+export type InstantDateFormatter = (isoInstant: string) => string;
+
 /**
  * Mapper para Serialización y Deserialización de Solicitudes y Reclamos de Asistencia.
  */
 export class ClaimMapper {
+  /**
+   * Convierte un reclamo del backend (LB-004D) al modelo de UI. Conserva el instante UTC original de la sesion
+   * (`fechaSesionUtc`) y solo presenta una fecha cuando el backend afirma un instante verificable; no aplica
+   * offsets manuales: la zona la resuelve el formateador inyectado (IANA, con DST).
+   */
+  static fromReclamoDocente(dto: ReclamoDocenteApi, formatDate: InstantDateFormatter): SolicitudRevisionItem {
+    const soporte = dto.soporteAdjunto ?? null;
+    return {
+      id: dto.id,
+      estudianteId: dto.estudianteId,
+      estudianteNombre: dto.estudianteNombre,
+      // El listado del docente no expone el correo del estudiante (datos personales minimos).
+      estudianteCorreo: '',
+      materiaId: dto.materiaId,
+      materiaCodigo: dto.materiaCodigo,
+      materiaNombre: dto.materiaNombre,
+      grupo: dto.grupoNombre || (dto.grupoCodigo == null ? '' : String(dto.grupoCodigo)),
+      sesionId: dto.sesionId,
+      sesionNumero: dto.sesionNumero,
+      fechaSesion: dto.fechaSesionUtc ? formatDate(dto.fechaSesionUtc) : '',
+      fechaSesionUtc: dto.fechaSesionUtc ?? undefined,
+      fechaSolicitud: dto.fechaSolicitud,
+      estadoSolicitud: dto.estadoSolicitud as EstadoSolicitudRevision,
+      soporteAdjunto: soporte
+        ? {
+            fileId: soporte.fileId,
+            nombre: soporte.nombre,
+            tipo: soporte.tipo,
+            tamanioBytes: soporte.tamanioBytes,
+            tamanioKb: Math.max(1, Math.round(soporte.tamanioBytes / 1024)),
+            urlSimulada: soporte.url ?? undefined,
+            fechaSubida: soporte.fechaSubidaUtc ? formatDate(soporte.fechaSubidaUtc) : '',
+            fechaSubidaUtc: soporte.fechaSubidaUtc ?? undefined,
+          }
+        : undefined,
+      justificacionSolicitud: dto.justificacionSolicitud,
+      justificacionRespuesta: dto.justificacionRespuesta ?? undefined,
+    };
+  }
+
   static fromDTO(dto: SolicitudRevisionDTO): SolicitudRevisionItem {
     return {
       id: dto.id_solicitud,
@@ -89,7 +165,7 @@ export class ClaimMapper {
       id_sesion: model.sesionId,
       numero_sesion: model.sesionNumero,
       fecha_sesion: model.fechaSesion,
-      estado_original: model.estadoOriginal,
+      estado_original: model.estadoOriginal ?? '',
       fecha_solicitud: model.fechaSolicitud,
       estado_solicitud: model.estadoSolicitud,
       categoria: model.categoria ?? null,

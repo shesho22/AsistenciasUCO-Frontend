@@ -386,7 +386,9 @@ export class AttendanceControlComponent {
           this.courseOptions.set(
             courses.map((course) => ({
               value: course.id,
-              label: `${course.code} - ${course.name} (${course.section})`,
+              label: course.code
+                ? `${course.code} - ${course.name} (${course.section})`
+                : `${course.name} (${course.section})`,
             }))
           );
 

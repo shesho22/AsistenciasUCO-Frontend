@@ -20,9 +20,11 @@ import { Course } from '../../../../core/models/course.model';
         <!-- Ficha Resumen del Grupo -->
         <div class="p-4 bg-warm-50 rounded-2xl border border-warm-200 space-y-2">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-mono font-bold px-2.5 py-0.5 rounded bg-primary-100 text-primary-900 border border-primary-200">
-              {{ course()?.code }}
-            </span>
+            @if (course()?.code) {
+              <span class="text-xs font-mono font-bold px-2.5 py-0.5 rounded bg-primary-100 text-primary-900 border border-primary-200">
+                {{ course()?.code }}
+              </span>
+            }
             <app-badge variant="neutral">{{ course()?.section }}</app-badge>
           </div>
           <h4 class="font-serif font-bold text-base text-warm-900 leading-snug">

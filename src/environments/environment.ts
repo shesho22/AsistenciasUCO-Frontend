@@ -57,8 +57,8 @@ export const environment = {
     // BACKEND_GOLDEN_PATH_CONTRACT. Deshabilitadas hasta que exista un contrato propio.
     sessionCancelEnabled: false,
     sessionQrEnabled: false,
-    // Habilitado contractualmente para sincronización de perfil
-    userProfileEndpointEnabled: true,
+    // GET/PUT /usuarios/perfil responden 501 (FEATURE_UNAVAILABLE): apagado por defecto; habilitar con USER_PROFILE_ENDPOINT_ENABLED=true cuando el backend lo implemente
+    userProfileEndpointEnabled: runtimeFlag('USER_PROFILE_ENDPOINT_ENABLED'),
     // Módulo de reclamos docente en backend responde 501 (fuera de alcance en esta fase)
     teacherClaimsEnabled: false,
   },

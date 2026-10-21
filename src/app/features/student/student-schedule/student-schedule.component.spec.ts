@@ -1,15 +1,14 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
 import { StudentScheduleComponent } from './student-schedule.component';
 import { StudentManagementService } from '../../../core/services/student-management.service';
-import { ToastService } from '../../../shared/components/toast/toast.component';
 import { HorarioItem } from '../../../core/models/role-management.model';
 
 describe('StudentScheduleComponent', () => {
   let fixture: ComponentFixture<StudentScheduleComponent>;
   let component: StudentScheduleComponent;
   let studentServiceSpy: jasmine.SpyObj<StudentManagementService>;
-  let toastSpy: jasmine.SpyObj<ToastService>;
 
   const mockHorarios: HorarioItem[] = [
     {
@@ -40,7 +39,6 @@ describe('StudentScheduleComponent', () => {
 
   beforeEach(async () => {
     studentServiceSpy = jasmine.createSpyObj('StudentManagementService', ['getHorarios']);
-    toastSpy = jasmine.createSpyObj('ToastService', ['success', 'error', 'warning', 'info']);
 
     studentServiceSpy.getHorarios.and.returnValue(
       of({ exitoso: true, datos: mockHorarios })
@@ -50,7 +48,6 @@ describe('StudentScheduleComponent', () => {
       imports: [StudentScheduleComponent],
       providers: [
         { provide: StudentManagementService, useValue: studentServiceSpy },
-        { provide: ToastService, useValue: toastSpy },
       ],
     }).compileComponents();
 
@@ -79,11 +76,51 @@ describe('StudentScheduleComponent', () => {
     expect(clasesJueves[0].codigoMateria).toBe('FIS-102');
   });
 
-  it('debe manejar error al cargar el horario', () => {
-    studentServiceSpy.getHorarios.and.returnValue(throwError(() => new Error('Error')));
+  it('un error HTTP no se presenta como horario vacio: muestra el estado de error con reintento', () => {
+    studentServiceSpy.getHorarios.and.returnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
     component.cargarHorario();
+    fixture.detectChanges();
+
     expect(component.isLoading()).toBeFalse();
-    expect(toastSpy.error).toHaveBeenCalledWith('Error al cargar horario de clases.');
+    expect(component.error()?.kind).toBe('SERVIDOR');
+    expect(fixture.nativeElement.querySelector('[data-testid="horarios-error"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="horarios-vacio"]')).toBeNull();
+  });
+
+  it('una respuesta 200 sin filas indica que no hay clases registradas', () => {
+    studentServiceSpy.getHorarios.and.returnValue(of({ exitoso: true, datos: [] }));
+    component.cargarHorario();
+    fixture.detectChanges();
+
+    expect(component.error()).toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="horarios-vacio"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="horarios-error"]')).toBeNull();
+  });
+
+  it('muestra la columna del sabado solo cuando hay clases ese dia', () => {
+    expect(component.diasVisibles()).toEqual(['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes']);
+
+    studentServiceSpy.getHorarios.and.returnValue(
+      of({ exitoso: true, datos: [{ ...mockHorarios[0], id: 'h3', dia: 'Sábado' }] })
+    );
+    component.cargarHorario();
+    fixture.detectChanges();
+
+    expect(component.diasVisibles()).toContain('Sábado');
+    expect(fixture.nativeElement.textContent).toContain('Sábado');
+  });
+
+  it('renderiza "no informada/o" para aula y docente ausentes en lugar de textos vacios', () => {
+    studentServiceSpy.getHorarios.and.returnValue(
+      of({ exitoso: true, datos: [{ ...mockHorarios[0], aula: null, docente: null }] })
+    );
+    component.cargarHorario();
+    fixture.detectChanges();
+
+    const texto: string = fixture.nativeElement.textContent;
+    expect(texto).toContain('Aula no informada');
+    expect(texto).toContain('Docente no informado');
+    expect(texto).not.toContain('null');
   });
 
   it('debe retornar estilos de clases para cada categoría de color', () => {

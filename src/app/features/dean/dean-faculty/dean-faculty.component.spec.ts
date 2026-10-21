@@ -42,6 +42,11 @@ describe('DeanFacultyComponent', () => {
     fixture.detectChanges();
 
     http = TestBed.inject(HttpTestingController);
+    http.expectOne(`${environment.apiUrl}/docente/asignaturas`).flush({
+      exitoso: true,
+      total: 0,
+      datos: [],
+    });
     http.expectOne(`${environment.apiUrl}/docente/horarios`).flush({
       exitoso: true,
       total: 0,

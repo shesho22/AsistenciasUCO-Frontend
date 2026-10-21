@@ -1,9 +1,10 @@
 import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of, delay, map } from 'rxjs';
+import { Observable, of, delay, map, forkJoin, catchError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiResponse } from '../models/api-response.model';
 import { ApiListResponse } from '../api/models/api-list-response.model';
+import { AsignaturaDocenteApiDto } from '../api/models/asignatura-docente-api-dto.model';
 import { HorarioDocenteApiDto } from '../api/models/horario-docente-api-dto.model';
 import { Course } from '../models/course.model';
 import { MOCK_COURSES } from '../mocks/course.mock';
@@ -37,61 +38,73 @@ export class CourseService {
       }).pipe(delay(250));
     }
 
-    return this.http
-      .get<ApiListResponse<HorarioDocenteApiDto>>(
-        `${environment.apiUrl}/docente/horarios`
-      )
-      .pipe(
-        map((response) => {
-          const grouped = new Map<
-            string,
-            { horario: HorarioDocenteApiDto; scheduleBlocks: Set<string> }
-          >();
+    // /docente/asignaturas es la fuente de grupos autorizados; /docente/horarios solo enriquece.
+    return forkJoin([
+      this.http.get<ApiListResponse<AsignaturaDocenteApiDto>>(
+        `${environment.apiUrl}/docente/asignaturas`
+      ),
+      this.http
+        .get<ApiListResponse<HorarioDocenteApiDto>>(`${environment.apiUrl}/docente/horarios`)
+        .pipe(catchError(() => of(null))),
+    ]).pipe(
+      map(([asignaciones, horarios]) => {
+        const courses = this.buildCourses(asignaciones.datos ?? [], horarios?.datos ?? []);
+        return {
+          exitoso: asignaciones.exitoso,
+          total: courses.length,
+          datos: courses,
+        };
+      })
+    );
+  }
 
-          for (const horario of response.datos) {
-            const scheduleBlock = `${horario.dia} ${horario.horaInicio.slice(
-              0,
-              5
-            )}-${horario.horaFin.slice(0, 5)}`;
-            const existing = grouped.get(horario.idGrupo);
+  private buildCourses(
+    asignaciones: AsignaturaDocenteApiDto[],
+    horarios: HorarioDocenteApiDto[]
+  ): Course[] {
+    const horariosPorGrupo = new Map<string, HorarioDocenteApiDto[]>();
+    for (const horario of horarios) {
+      const delGrupo = horariosPorGrupo.get(horario.idGrupo);
+      if (delGrupo) {
+        delGrupo.push(horario);
+      } else {
+        horariosPorGrupo.set(horario.idGrupo, [horario]);
+      }
+    }
 
-            if (existing) {
-              existing.scheduleBlocks.add(scheduleBlock);
-            } else {
-              grouped.set(horario.idGrupo, {
-                horario,
-                scheduleBlocks: new Set([scheduleBlock]),
-              });
-            }
-          }
+    const colors: Course['colorCategory'][] = ['emerald', 'amber', 'blue', 'purple'];
+    const asignacionesPorGrupo = new Map<string, AsignaturaDocenteApiDto>();
+    for (const asignacion of asignaciones) {
+      if (!asignacionesPorGrupo.has(asignacion.idGrupo)) {
+        asignacionesPorGrupo.set(asignacion.idGrupo, asignacion);
+      }
+    }
 
-          const colors: Course['colorCategory'][] = [
-            'emerald',
-            'amber',
-            'blue',
-            'purple',
-          ];
-          const courses = Array.from(grouped.values()).map(
-            ({ horario, scheduleBlocks }, index): Course => ({
-              id: horario.idGrupo,
-              code: horario.codigoMateria,
-              name: horario.nombreMateria,
-              section: horario.seccion,
-              schedule: Array.from(scheduleBlocks).join(', '),
-              // Sin `room`: HorarioDocente no entrega aula (BACKEND_GOLDEN_PATH_CONTRACT §C.1) y no se sintetiza.
-              enrolledStudentsCount: horario.totalEstudiantes,
-              docenteId: horario.idDocente,
-              colorCategory: colors[index % colors.length],
-            })
-          );
-
-          return {
-            exitoso: response.exitoso,
-            total: courses.length,
-            datos: courses,
-          };
-        })
+    return Array.from(asignacionesPorGrupo.values()).map((asignacion, index): Course => {
+      const delGrupo = horariosPorGrupo.get(asignacion.idGrupo) ?? [];
+      const scheduleBlocks = new Set(
+        delGrupo.map(
+          (h) => `${h.dia} ${h.horaInicio.slice(0, 5)}-${h.horaFin.slice(0, 5)}`
+        )
       );
+      const primero = delGrupo[0];
+
+      // Solo los campos que entrega el contrato: sin code/room/docenteName/cupo sintetizados.
+      const course: Course = {
+        id: asignacion.idGrupo,
+        name: asignacion.nombreAsignatura,
+        section: asignacion.nombreGrupo,
+        schedule: Array.from(scheduleBlocks).join(', '),
+        asignaturaId: asignacion.idAsignatura,
+        colorCategory: colors[index % colors.length],
+      };
+      if (primero) {
+        course.code = primero.codigoMateria;
+        course.enrolledStudentsCount = primero.totalEstudiantes;
+        course.docenteId = primero.idDocente;
+      }
+      return course;
+    });
   }
 
   crearGrupo(nuevo: Partial<Course> & Record<string, unknown>): Observable<ApiResponse<Course>> {
@@ -133,27 +146,43 @@ export class CourseService {
     });
   }
 
-  getAsignaturasDocente(): Observable<ApiResponse<unknown[]>> {
+  getAsignaturasDocente(): Observable<ApiResponse<AsignaturaDocenteApiDto[]>> {
     if (environment.useMocks) {
       return of({
         idTransaccion: 'mock-tx-asig-docente',
         exitoso: true,
         total: 2,
         datos: [
-          { id: 'E2F3A4B5-0000-0000-0000-000000000001', codigo: 'ARQ-402', nombre: 'Arquitectura de Software', creditos: 3, nombrePrograma: 'Ingeniería de Sistemas' },
-          { id: '12E18E5A-6AE2-43BD-8A99-5CC694D801C3', codigo: 'IS-302', nombre: 'Ingeniería de Software I', creditos: 4, nombrePrograma: 'Ingeniería de Sistemas' },
+          {
+            idAsignatura: 'E2F3A4B5-0000-0000-0000-000000000001',
+            nombreAsignatura: 'Arquitectura de Software',
+            idGrupo: 'A1B2C3D4-E5F6-7A8B-9C0D-1E2F3A4B5C6D',
+            nombreGrupo: 'Grupo 001 - Arq Software',
+            idPrograma: 'AAAAAAAA-0000-0000-0000-000000000001',
+            nombrePrograma: 'Ingeniería de Sistemas',
+          },
+          {
+            idAsignatura: '12E18E5A-6AE2-43BD-8A99-5CC694D801C3',
+            nombreAsignatura: 'Ingeniería de Software I',
+            idGrupo: 'A1B2C3D4-E5F6-7A8B-9C0D-1E2F3A4B5C70',
+            nombreGrupo: 'Grupo 001 - Ing Software I',
+            idPrograma: 'AAAAAAAA-0000-0000-0000-000000000001',
+            nombrePrograma: 'Ingeniería de Sistemas',
+          },
         ],
       }).pipe(delay(150));
     }
 
-    return this.http.get<ApiResponse<unknown[]>>(`${environment.apiUrl}/docente/asignaturas`).pipe(
-      map((res) => ({
-        idTransaccion: res.idTransaccion || 'tx-docente-asig',
-        exitoso: res.exitoso ?? true,
-        total: res.total || (res.datos ? res.datos.length : 0),
-        datos: res.datos || [],
-      }))
-    );
+    return this.http
+      .get<ApiResponse<AsignaturaDocenteApiDto[]>>(`${environment.apiUrl}/docente/asignaturas`)
+      .pipe(
+        map((res) => ({
+          idTransaccion: res.idTransaccion || 'tx-docente-asig',
+          exitoso: res.exitoso ?? true,
+          total: res.total || (res.datos ? res.datos.length : 0),
+          datos: res.datos || [],
+        }))
+      );
   }
 
   actualizarGrupo(id: string, cambios: Partial<Course>): Observable<ApiResponse<Course>> {

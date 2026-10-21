@@ -2,6 +2,12 @@ import { HttpErrorResponse, HttpInterceptorFn, HttpResponse } from '@angular/com
 import { inject } from '@angular/core';
 import { of, delay, throwError } from 'rxjs';
 import { mockStore } from '../mocks/mock-data-store';
+import {
+  mockHorariosToDto,
+  mockMateriasToDto,
+  mockSesionesToDto,
+  mockUuid,
+} from '../mocks/student-portal-mock.adapter';
 import { ApiResponse } from '../models/api-response.model';
 import { SolicitudMatriculaItem, PlanEstudioItem } from '../models/role-management.model';
 import { AuthService } from '../services/auth.service';
@@ -291,16 +297,20 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
 
   // ================= ESTUDIANTE =================
   if (url.endsWith('/estudiante/horarios') && method === 'GET') {
-    return of(okResponse(mockStore.horariosEstudiante)).pipe(delay(250));
+    return of(okResponse(mockHorariosToDto(mockStore.horariosEstudiante))).pipe(delay(250));
   }
   if (url.endsWith('/estudiante/materias') && method === 'GET') {
-    return of(okResponse(mockStore.materiasEstudiante)).pipe(delay(250));
+    return of(okResponse(mockMateriasToDto(mockStore.materiasEstudiante))).pipe(delay(250));
   }
   if (url.includes('/estudiante/materias/') && url.endsWith('/sesiones') && method === 'GET') {
     const segments = url.split('/');
     const materiaId = segments[segments.length - 2];
-    const sesiones = mockStore.sesionesMaterias[materiaId] || [];
-    return of(okResponse(sesiones)).pipe(delay(200));
+    // Acepta el UUID deterministico emitido por el mock de materias o la clave heredada.
+    const clave =
+      mockStore.materiasEstudiante.find((m) => mockUuid(`asignatura:${m.id}`) === materiaId)?.id ?? materiaId;
+    const materia = mockStore.materiasEstudiante.find((m) => m.id === clave);
+    const sesiones = mockStore.sesionesMaterias[clave] || [];
+    return of(okResponse(mockSesionesToDto(sesiones, materia))).pipe(delay(200));
   }
   if (url.includes('/estudiante/materias/') && url.endsWith('/prerrequisitos') && method === 'GET') {
     const mockPrereqs = [

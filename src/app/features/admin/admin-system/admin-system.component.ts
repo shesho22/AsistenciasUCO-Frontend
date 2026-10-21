@@ -332,6 +332,7 @@ export class AdminSystemComponent implements OnInit {
   periodos = this.coordService.periodos;
 
   ngOnInit(): void {
+    this.coordService.cargarDatosAcademicosBase();
     this.adminService.cargarParametros().subscribe();
     this.adminService.cargarAuditoria().subscribe();
   }

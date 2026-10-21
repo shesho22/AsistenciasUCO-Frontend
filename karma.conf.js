@@ -47,13 +47,15 @@ module.exports = function (config) {
       ChromeHeadlessCI: {
         base: 'ChromeHeadless',
         flags: [
-          '--headless',
           '--no-sandbox',
           '--disable-gpu',
           '--disable-dev-shm-usage',
           '--no-first-run',
           '--no-default-browser-check',
           '--disable-extensions',
+          // ChromeHeadless añade 9222 por defecto; el puerto efímero evita
+          // colisiones con procesos huérfanos o sesiones de otro runner.
+          '--remote-debugging-port=0',
         ],
       },
     },

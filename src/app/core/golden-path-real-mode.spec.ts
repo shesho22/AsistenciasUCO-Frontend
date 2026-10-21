@@ -42,11 +42,14 @@ describe('Golden Path en modo REAL (USE_MOCKS=false)', () => {
     expect(TestBed.inject(AuthService).isMockMode()).toBeFalse();
   });
 
-  it('CourseService → GET /docente/horarios', () => {
+  it('CourseService → GET /docente/asignaturas (fuente) y GET /docente/horarios (enriquecimiento)', () => {
     TestBed.inject(CourseService).getCurrentTeacherCourses().subscribe();
-    const req = http.expectOne(`${api()}/docente/horarios`);
-    expect(req.request.method).toBe('GET');
-    req.flush({ exitoso: true, datos: [], total: 0 });
+    const asignaturas = http.expectOne(`${api()}/docente/asignaturas`);
+    const horarios = http.expectOne(`${api()}/docente/horarios`);
+    expect(asignaturas.request.method).toBe('GET');
+    expect(horarios.request.method).toBe('GET');
+    asignaturas.flush({ exitoso: true, datos: [], total: 0 });
+    horarios.flush({ exitoso: true, datos: [], total: 0 });
   });
 
   it('GroupService → GET /grupos/{id}/estudiantes', () => {
@@ -79,7 +82,8 @@ describe('Golden Path en modo REAL (USE_MOCKS=false)', () => {
       next: () => results.push('next'),
       error: () => results.push('error'),
     });
-    http.expectOne(`${api()}/docente/horarios`).flush(null, { status: 500, statusText: 'Server Error' });
+    http.expectOne(`${api()}/docente/asignaturas`).flush(null, { status: 500, statusText: 'Server Error' });
+    expect(http.expectOne(`${api()}/docente/horarios`).cancelled).toBeTrue();
 
     TestBed.inject(SessionService).getSessionsByGroup('g1').subscribe({
       next: () => results.push('next'),
@@ -99,6 +103,14 @@ describe('Golden Path en modo REAL (USE_MOCKS=false)', () => {
   it('Horario no trae aula en el contrato: Course.room no se toma de ningún campo aula ni se sintetiza', () => {
     let room: string | undefined = 'sin-asignar';
     TestBed.inject(CourseService).getCurrentTeacherCourses().subscribe((r) => (room = r.datos[0]?.room));
+    http.expectOne(`${api()}/docente/asignaturas`).flush({
+      exitoso: true,
+      total: 1,
+      datos: [{
+        idAsignatura: 'a1', nombreAsignatura: 'Arq', idGrupo: 'g1', nombreGrupo: 'G1',
+        idPrograma: 'p1', nombrePrograma: 'Sistemas',
+      }],
+    });
     http.expectOne(`${api()}/docente/horarios`).flush({
       exitoso: true,
       total: 1,

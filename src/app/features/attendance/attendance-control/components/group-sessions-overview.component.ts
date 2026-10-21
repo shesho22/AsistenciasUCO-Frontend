@@ -54,11 +54,15 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
           <div class="mt-4">
             <div class="flex items-baseline gap-2">
               <span class="text-2xl sm:text-3xl font-serif font-bold text-warm-900 leading-none">
-                {{ promedioAsistencia() }}%
+                {{ promedioAsistencia() === null ? '—' : promedioAsistencia() + '%' }}
               </span>
-              <span class="text-xs text-emerald-700 font-bold">Institucional</span>
+              @if (promedioAsistencia() !== null) {
+                <span class="text-xs text-emerald-700 font-bold">Institucional</span>
+              }
             </div>
-            <p class="text-[11px] text-warm-500 mt-1">Promedio de registros en actas</p>
+            <p class="text-[11px] text-warm-500 mt-1">
+              {{ promedioAsistencia() === null ? 'Sin registros de asistencia para calcular' : 'Promedio de registros en actas' }}
+            </p>
           </div>
         </div>
 
@@ -140,7 +144,7 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
           <div>
             <div class="flex items-center gap-2 mb-1">
               <span class="text-xs font-bold text-warm-500 uppercase tracking-widest">
-                {{ course()?.code }} • Grupo {{ course()?.section }}
+                {{ course()?.code ? course()?.code + ' • ' : '' }}{{ course()?.section }}
               </span>
               <span class="text-xs text-warm-400">•</span>
               <span class="text-xs text-warm-600 font-medium">{{ course()?.name }}</span>
@@ -315,12 +319,15 @@ export class GroupSessionsOverviewComponent {
   totalSesiones = computed(() => this.sessions().length);
 
   promedioAsistencia = computed(() => {
-    const conRegistros = this.sessions().filter((s) => s.records && s.records.length > 0);
-    if (conRegistros.length === 0) return 100;
+    // Solo cuentan los estudiantes con estado registrado: una fila sin estado no es una inasistencia.
+    const registrados = (s: ClassSession) => (s.records ?? []).filter((r) => r.status !== null);
+    const conRegistros = this.sessions().filter((s) => registrados(s).length > 0);
+    if (conRegistros.length === 0) return null;
     let sumPorcentajes = 0;
     for (const s of conRegistros) {
-      const presentes = s.records.filter((r) => r.status === 'AN' || r.status === 'EX').length;
-      sumPorcentajes += (presentes / s.records.length) * 100;
+      const delSesion = registrados(s);
+      const presentes = delSesion.filter((r) => r.status === 'AN' || r.status === 'EX').length;
+      sumPorcentajes += (presentes / delSesion.length) * 100;
     }
     return Math.round(sumPorcentajes / conRegistros.length);
   });

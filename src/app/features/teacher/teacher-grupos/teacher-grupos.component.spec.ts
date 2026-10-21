@@ -131,6 +131,88 @@ describe('TeacherGruposComponent', () => {
     expect(sentPayload['docenteName']).toBeUndefined();
   });
 
+  it('muestra un grupo asignado sin horario ni código, sin inventar datos', () => {
+    courseService.getTeacherCourses.and.returnValue(
+      of({
+        exitoso: true,
+        datos: [
+          {
+            id: 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d',
+            name: 'Arquitectura de Software',
+            section: 'Grupo 001 - Arq Software',
+            schedule: '',
+            asignaturaId: 'e2f3a4b5-0000-0000-0000-000000000001',
+            colorCategory: 'emerald',
+          },
+        ],
+      } as any)
+    );
+
+    component.cargarGrupos();
+    fixture.detectChanges();
+
+    expect(component.courses().length).toBe(1);
+    const text = (fixture.nativeElement as HTMLElement).textContent || '';
+    expect(text).toContain('Arquitectura de Software');
+    expect(text).toContain('Grupo 001 - Arq Software');
+    expect(text).toContain('Sin horario asignado');
+    expect(text).not.toContain('undefined');
+  });
+
+  it('el selector de asignaturas usa idAsignatura/nombreAsignatura y no repite asignaturas', () => {
+    const fila = (idGrupo: string) => ({
+      idAsignatura: 'e2f3a4b5-0000-0000-0000-000000000001',
+      nombreAsignatura: 'Arquitectura de Software',
+      idGrupo,
+      nombreGrupo: `Grupo ${idGrupo}`,
+      idPrograma: 'p1',
+      nombrePrograma: 'Ingeniería de Sistemas',
+    });
+    courseService.getAsignaturasDocente.and.returnValue(
+      of({ exitoso: true, datos: [fila('g1'), fila('g2')] } as any)
+    );
+
+    component.cargarAsignaturasDocente();
+    expect(component.asignaturasDocente().length).toBe(1);
+
+    component.abrirCrearGrupo();
+    component.onAsignaturaChange('e2f3a4b5-0000-0000-0000-000000000001');
+
+    expect(component.grupoForm.asignaturaId).toBe('e2f3a4b5-0000-0000-0000-000000000001');
+    expect(component.grupoForm.name).toBe('Arquitectura de Software');
+    expect(component.grupoForm.code).toBe('');
+  });
+
+  it('guardarGrupo() (CREAR) con asignatura seleccionada no exige un código que el contrato no entrega', () => {
+    courseService.getAsignaturasDocente.and.returnValue(
+      of({
+        exitoso: true,
+        datos: [
+          {
+            idAsignatura: 'asig-1',
+            nombreAsignatura: 'Arquitectura de Software',
+            idGrupo: 'g1',
+            nombreGrupo: 'Grupo 001',
+            idPrograma: 'p1',
+            nombrePrograma: 'Sistemas',
+          },
+        ],
+      } as any)
+    );
+    courseService.crearGrupo.and.returnValue(
+      of({ exitoso: true, mensajeUsuario: 'ok', datos: course } as any)
+    );
+    component.cargarAsignaturasDocente();
+    component.abrirCrearGrupo();
+    component.onAsignaturaChange('asig-1');
+
+    component.guardarGrupo();
+
+    expect(courseService.crearGrupo).toHaveBeenCalled();
+    const sent = courseService.crearGrupo.calls.mostRecent().args[0] as Record<string, unknown>;
+    expect(sent['asignaturaId']).toBe('asig-1');
+  });
+
   it('abrirModalProyeccionParaGrupo() ya no selecciona la sesión activa por status sintético', () => {
     // TARGET (PLAN.md riesgo #2/TARGET): sin sustituto sintético, se asume el criterio más
     // simple consistente con "no inventar una regla de reemplazo": tomar la primera sesión

@@ -169,8 +169,9 @@ export class OverviewComponent implements OnInit {
 
   // Datos Estudiante
   materias = signal<MateriaEstudianteItem[]>([]);
-  averageStudentAttendance = signal<number>(0);
-  totalStudentAbsences = signal<number>(0);
+  /** `null` = sin fuente autoritativa de asistencia (no se muestran ceros inventados). */
+  averageStudentAttendance = signal<number | null>(null);
+  totalStudentAbsences = signal<number | null>(null);
 
   isLoading = signal<boolean>(true);
 
@@ -283,17 +284,18 @@ export class OverviewComponent implements OnInit {
           next: (res) => {
             if (res.exitoso && res.datos) {
               this.materias.set(res.datos);
-              if (res.datos.length > 0) {
+              const conIndicadores = res.datos.filter((m) => m.indicadores !== null);
+              if (conIndicadores.length > 0) {
                 const avg = Math.round(
-                  res.datos.reduce((acc: number, m: any) => acc + m.porcentajeAsistencia, 0) /
-                    res.datos.length
+                  conIndicadores.reduce((acc, m) => acc + m.indicadores!.porcentajeAsistencia, 0) /
+                    conIndicadores.length
                 );
-                const absences = res.datos.reduce(
-                  (acc: number, m: any) => acc + m.inasistencias,
-                  0
-                );
+                const absences = conIndicadores.reduce((acc, m) => acc + m.indicadores!.inasistencias, 0);
                 this.averageStudentAttendance.set(avg);
                 this.totalStudentAbsences.set(absences);
+              } else {
+                this.averageStudentAttendance.set(null);
+                this.totalStudentAbsences.set(null);
               }
               this.recalcularProximaClase();
             }
@@ -340,7 +342,7 @@ export class OverviewComponent implements OnInit {
           const parsed = parseScheduleString(c.schedule);
           for (const p of parsed) {
             items.push({
-              codigoMateria: c.code,
+              codigoMateria: c.code ?? '',
               nombreMateria: c.name,
               dia: p.dia,
               horaInicio: p.horaInicio,
@@ -360,22 +362,24 @@ export class OverviewComponent implements OnInit {
             dia: h.dia,
             horaInicio: h.horaInicio,
             horaFin: h.horaFin,
-            aula: h.aula || 'Aula Asignada',
-            subtitulo: `Grupo ${h.grupo || '01'}${h.docente ? ' • ' + h.docente : ''}`,
+            aula: h.aula || 'Aula no informada',
+            subtitulo: `${h.grupo}${h.docente ? ' • ' + h.docente : ''}`,
           });
         }
       } else if (this.materias() && this.materias().length > 0) {
         for (const m of this.materias()) {
+          // Sin horario informado por el backend no hay clases que proyectar (no se inventan).
+          if (!m.horario) continue;
           const parsed = parseScheduleString(m.horario);
           for (const p of parsed) {
             items.push({
-              codigoMateria: m.codigo,
+              codigoMateria: m.codigo ?? m.nombre,
               nombreMateria: m.nombre,
               dia: p.dia,
               horaInicio: p.horaInicio,
               horaFin: p.horaFin,
-              aula: m.aula || 'Aula Asignada',
-              subtitulo: `Grupo ${m.grupo || '01'}${m.docente ? ' • ' + m.docente : ''}`,
+              aula: m.aula || 'Aula no informada',
+              subtitulo: `${m.grupo}${m.docente ? ' • ' + m.docente : ''}`,
             });
           }
         }

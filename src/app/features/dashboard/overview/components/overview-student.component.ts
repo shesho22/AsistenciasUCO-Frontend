@@ -26,13 +26,23 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
         </div>
         <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Asistencia Promedio</span>
-          <p class="text-2xl font-serif font-bold text-emerald-700 mt-1">{{ averageAttendance() }}%</p>
-          <span class="text-[11px] text-emerald-700 font-medium">Excelente desempeño</span>
+          @if (averageAttendance() !== null) {
+            <p class="text-2xl font-serif font-bold text-emerald-700 mt-1">{{ averageAttendance() }}%</p>
+            <span class="text-[11px] text-emerald-700 font-medium">Según tus sesiones registradas</span>
+          } @else {
+            <p class="text-base font-serif font-bold text-warm-500 mt-1" data-testid="promedio-no-disponible">No disponible</p>
+            <span class="text-[11px] text-warm-500 font-medium">Sin datos de asistencia consolidados</span>
+          }
         </div>
         <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Inasistencias Registradas</span>
-          <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ totalAbsences() }}</p>
-          <span class="text-[11px] text-warm-500 font-medium">En todo el periodo</span>
+          @if (totalAbsences() !== null) {
+            <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ totalAbsences() }}</p>
+            <span class="text-[11px] text-warm-500 font-medium">En todo el periodo</span>
+          } @else {
+            <p class="text-base font-serif font-bold text-warm-500 mt-1" data-testid="fallas-no-disponible">No disponible</p>
+            <span class="text-[11px] text-warm-500 font-medium">Sin datos de asistencia consolidados</span>
+          }
         </div>
         <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px]"
              [ngClass]="{'border-emerald-300 bg-emerald-50/30 ring-1 ring-emerald-400/20': proximaClase()?.enCurso, 'border-primary-200/60': proximaClase() && !proximaClase()?.enCurso}">
@@ -134,47 +144,57 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          @for (mat of materias(); track mat.id) {
-            <app-card [hoverable]="true" [title]="mat.nombre" [subtitle]="mat.codigo + ' • Grupo ' + mat.grupo">
+          @for (mat of materias(); track mat.claveGrupo) {
+            <app-card [hoverable]="true" [title]="mat.nombre" [subtitle]="mat.codigo ? mat.codigo + ' • ' + mat.grupo : mat.grupo">
               <div class="space-y-4 my-2 text-xs text-warm-700">
-                <!-- Barra de Progreso de Asistencia -->
-                <div>
-                  <div class="flex items-center justify-between mb-1.5">
-                    <span class="font-medium text-warm-600">Cumplimiento de Asistencia:</span>
-                    <span class="font-bold text-sm" [ngClass]="mat.porcentajeAsistencia >= 80 ? 'text-emerald-700' : 'text-rose-700'">
-                      {{ mat.porcentajeAsistencia }}%
-                    </span>
+                <!-- Barra de Progreso de Asistencia (solo con fuente autoritativa) -->
+                @if (mat.indicadores; as ind) {
+                  <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                      <span class="font-medium text-warm-600">Cumplimiento de Asistencia:</span>
+                      <span class="font-bold text-sm" [ngClass]="ind.porcentajeAsistencia >= 80 ? 'text-emerald-700' : 'text-rose-700'">
+                        {{ ind.porcentajeAsistencia }}%
+                      </span>
+                    </div>
+                    <div class="w-full bg-warm-100 rounded-full h-2.5 overflow-hidden">
+                      <div
+                        class="h-2.5 rounded-full transition-all duration-500"
+                        [ngClass]="ind.porcentajeAsistencia >= 80 ? 'bg-emerald-600' : 'bg-rose-500'"
+                        [style.width.%]="ind.porcentajeAsistencia"
+                      ></div>
+                    </div>
                   </div>
-                  <div class="w-full bg-warm-100 rounded-full h-2.5 overflow-hidden">
-                    <div
-                      class="h-2.5 rounded-full transition-all duration-500"
-                      [ngClass]="mat.porcentajeAsistencia >= 80 ? 'bg-emerald-600' : 'bg-rose-500'"
-                      [style.width.%]="mat.porcentajeAsistencia"
-                    ></div>
+                } @else {
+                  <div class="text-warm-500" data-testid="asistencia-no-disponible">
+                    <span class="font-medium text-warm-600">Cumplimiento de Asistencia:</span> No disponible
                   </div>
-                </div>
+                }
 
                 <!-- Ficha resumida -->
                 <div class="grid grid-cols-2 gap-2 bg-warm-50 p-3 rounded-xl">
                   <div>
                     <span class="text-warm-400 text-[10px] block">Docente</span>
-                    <span class="font-semibold text-warm-900 text-xs">{{ mat.docente }}</span>
+                    <span class="font-semibold text-warm-900 text-xs">{{ mat.docente ?? 'No informado' }}</span>
                   </div>
                   <div>
                     <span class="text-warm-400 text-[10px] block">Horario y Aula</span>
-                    <span class="font-semibold text-warm-900 text-xs">{{ mat.horario }} ({{ mat.aula }})</span>
+                    <span class="font-semibold text-warm-900 text-xs">{{ mat.horario ?? 'No informado' }}{{ mat.aula ? ' (' + mat.aula + ')' : '' }}</span>
                   </div>
                 </div>
 
                 <div class="flex items-center justify-between pt-2 border-t border-warm-100">
-                  <div class="flex items-center gap-2">
-                    <span class="text-emerald-700 font-semibold">{{ mat.asistencias }} asistencias</span>
-                    <span class="text-warm-300">•</span>
-                    <span class="text-rose-700 font-semibold">{{ mat.inasistencias }} fallas</span>
-                  </div>
-                  <app-badge [variant]="mat.estado === 'Al día' ? 'success' : 'danger'">
-                    {{ mat.estado }}
-                  </app-badge>
+                  @if (mat.indicadores; as ind) {
+                    <div class="flex items-center gap-2">
+                      <span class="text-emerald-700 font-semibold">{{ ind.asistencias }} asistencias</span>
+                      <span class="text-warm-300">•</span>
+                      <span class="text-rose-700 font-semibold">{{ ind.inasistencias }} fallas</span>
+                    </div>
+                  }
+                  @if (mat.estado) {
+                    <app-badge [variant]="mat.estado === 'Al día' ? 'success' : 'danger'">
+                      {{ mat.estado }}
+                    </app-badge>
+                  }
                 </div>
               </div>
 
@@ -218,7 +238,7 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
 })
 export class OverviewStudentComponent {
   materias = input<MateriaEstudianteItem[]>([]);
-  averageAttendance = input<number>(0);
-  totalAbsences = input<number>(0);
+  averageAttendance = input<number | null>(null);
+  totalAbsences = input<number | null>(null);
   proximaClase = input<ProximaClaseInfo | null>(null);
 }

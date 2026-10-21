@@ -8,6 +8,7 @@ import { GroupService } from '../../../core/services/group.service';
 import { StudentService } from '../../../core/services/student.service';
 import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
 import { ToastService } from '../../../shared/components/toast/toast.component';
+import { AsignaturaDocenteApiDto } from '../../../core/api/models/asignatura-docente-api-dto.model';
 import { Course } from '../../../core/models/course.model';
 import { ClassSession } from '../../../core/models/attendance.model';
 import { SolicitudRevisionItem } from '../../../core/models/role-management.model';
@@ -192,7 +193,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   modoFormGrupo: 'CREAR' | 'EDITAR' = 'CREAR';
   selectedCourse = signal<Course | null>(null);
   selectedGrupoId: string | null = null;
-  asignaturasDocente = signal<any[]>([]);
+  asignaturasDocente = signal<AsignaturaDocenteApiDto[]>([]);
 
   grupoForm = {
     code: '',
@@ -251,7 +252,9 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
     this.courseService.getAsignaturasDocente().subscribe({
       next: (res) => {
         if (res.exitoso && res.datos) {
-          this.asignaturasDocente.set(res.datos);
+          // El endpoint devuelve una fila por grupo: el selector necesita asignaturas únicas.
+          const unicas = new Map(res.datos.map((a) => [a.idAsignatura, a]));
+          this.asignaturasDocente.set(Array.from(unicas.values()));
         }
       },
       error: () => this.asignaturasDocente.set([]),
@@ -259,11 +262,12 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   }
 
   onAsignaturaChange(asignaturaId: string): void {
-    const asig = this.asignaturasDocente().find((a) => a.id === asignaturaId);
+    const asig = this.asignaturasDocente().find((a) => a.idAsignatura === asignaturaId);
     if (asig) {
-      this.grupoForm.code = asig.codigo;
-      this.grupoForm.name = asig.nombre;
-      this.grupoForm.asignaturaId = asig.id;
+      // AsignaturaDocenteDTO no entrega código de materia: no se inventa.
+      this.grupoForm.code = '';
+      this.grupoForm.name = asig.nombreAsignatura;
+      this.grupoForm.asignaturaId = asig.idAsignatura;
     }
   }
 
@@ -309,7 +313,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
     if (lower.includes('sab')) dias.push('Sábado');
 
     this.grupoForm = {
-      code: course.code,
+      code: course.code ?? '',
       section: course.section,
       name: course.name,
       room: course.room ?? '',
@@ -331,7 +335,8 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
         this.toast.warning('El campo Asignatura Asignada es obligatorio.');
         return;
       }
-      if (!this.grupoForm.code.trim() || !this.grupoForm.name.trim()) {
+      const codigoRequerido = this.asignaturasDocente().length === 0;
+      if ((codigoRequerido && !this.grupoForm.code.trim()) || !this.grupoForm.name.trim()) {
         this.toast.warning('El código y el nombre de la asignatura son obligatorios.');
         return;
       }
@@ -344,6 +349,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
           schedule: this.grupoForm.schedule.trim(),
           room: this.grupoForm.room.trim(),
           cupoMaximo: Number(this.grupoForm.cupoMaximo) || 35,
+          asignaturaId: this.grupoForm.asignaturaId || undefined,
         })
         .subscribe({
           next: (res) => {

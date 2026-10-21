@@ -59,7 +59,7 @@ import { ClassSession } from '../../../../core/models/attendance.model';
                 <app-badge variant="neutral" size="sm">Sesiones deshabilitadas</app-badge>
               }
               <span class="text-xs font-bold text-warm-500 uppercase tracking-widest">
-                {{ currentCourse()?.code }} • {{ currentCourse()?.section }}
+                {{ currentCourse()?.code ? currentCourse()?.code + ' • ' : '' }}{{ currentCourse()?.section }}
               </span>
             </div>
             <h1 class="font-serif text-xl sm:text-2xl font-bold text-warm-900 tracking-tight">

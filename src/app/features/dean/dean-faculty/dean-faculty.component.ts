@@ -322,7 +322,7 @@ export class DeanFacultyComponent implements OnInit {
     return this.courses().filter(
       (c: Course) =>
         c.name.toLowerCase().includes(q) ||
-        c.code.toLowerCase().includes(q) ||
+        (c.code ?? '').toLowerCase().includes(q) ||
         (c.room && c.room.toLowerCase().includes(q))
     );
   });
@@ -336,6 +336,7 @@ export class DeanFacultyComponent implements OnInit {
   );
 
   ngOnInit(): void {
+    this.coordService.cargarDatosAcademicosBase();
     this.courseService.getTeacherCourses().subscribe({
       next: (res) => this.courses.set(res.datos || []),
     });

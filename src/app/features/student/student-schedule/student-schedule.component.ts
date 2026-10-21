@@ -1,9 +1,10 @@
-import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { StudentManagementService } from '../../../core/services/student-management.service';
 import { HorarioItem, DiaSemana } from '../../../core/models/role-management.model';
 import { CardComponent } from '../../../shared/components/card/card.component';
-import { ToastService } from '../../../shared/components/toast/toast.component';
+import { ButtonComponent } from '../../../shared/components/button/button.component';
+import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load-error.util';
 
 @Component({
   selector: 'app-student-schedule',
@@ -12,6 +13,7 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
   imports: [
     CommonModule,
     CardComponent,
+    ButtonComponent,
   ],
   template: `
     <div class="space-y-6 animate-fade-in">
@@ -23,21 +25,16 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
               Portal Estudiantil
             </span>
             <span class="text-xs text-warm-400">•</span>
-            <span class="text-xs font-medium text-warm-500">Semestre Académico 2026-2</span>
+            <span class="text-xs font-medium text-warm-500">Horario semanal</span>
           </div>
           <h1 class="font-serif font-bold text-2xl sm:text-3xl text-warm-900 tracking-tight">
             Mi Horario de Clases
           </h1>
           <p class="text-sm text-warm-600 mt-1">
-            Consulta la distribución semanal de tus clases, aulas asignadas y docentes titulares.
+            Consulta la distribución semanal de tus clases y docentes titulares según la información registrada.
           </p>
         </div>
 
-        <div class="flex items-center gap-2">
-          <span class="px-3 py-1.5 rounded-xl bg-warm-100 text-xs font-semibold text-warm-800 border border-warm-200">
-            Jornada Diurna
-          </span>
-        </div>
       </div>
 
       <!-- Grilla Semanal Bento (Lunes a Viernes) -->
@@ -47,9 +44,20 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
             <div class="h-80 bg-warm-100 rounded-2xl animate-pulse"></div>
           }
         </div>
+      } @else if (error()) {
+        <div class="bg-white p-8 rounded-2xl border border-red-200 text-center space-y-3" role="alert" data-testid="horarios-error">
+          <p class="text-sm font-bold text-red-800">{{ error()!.titulo }}</p>
+          <p class="text-xs text-warm-600">{{ error()!.mensaje }}</p>
+          <app-button variant="secondary" size="sm" (clicked)="cargarHorario()">Reintentar</app-button>
+        </div>
       } @else {
-        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
-          @for (dia of diasSemana; track dia) {
+        @if (horarios().length === 0) {
+          <div class="bg-warm-50 p-4 rounded-2xl border border-warm-200 text-xs text-warm-600" data-testid="horarios-vacio">
+            No hay clases registradas en tu horario. Si esperabas verlas, consulta con tu coordinación académica.
+          </div>
+        }
+        <div [class]="diasVisibles().length === 6 ? 'grid grid-cols-1 md:grid-cols-6 gap-4' : 'grid grid-cols-1 md:grid-cols-5 gap-4'">
+          @for (dia of diasVisibles(); track dia) {
             <div class="flex flex-col bg-white rounded-2xl border border-warm-200/80 shadow-warm-sm overflow-hidden">
               <!-- Encabezado del Día -->
               <div class="p-3.5 bg-warm-50 border-b border-warm-200 flex items-center justify-between">
@@ -87,13 +95,13 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
                           <svg class="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                           </svg>
-                          <span class="truncate">{{ clase.aula }}</span>
+                          <span class="truncate">{{ clase.aula ?? 'Aula no informada' }}</span>
                         </div>
                         <div class="flex items-center gap-1.5 opacity-85">
                           <svg class="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                           </svg>
-                          <span class="truncate">{{ clase.docente }}</span>
+                          <span class="truncate">{{ clase.docente ?? 'Docente no informado' }}</span>
                         </div>
                       </div>
                     </div>
@@ -109,12 +117,17 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
 })
 export class StudentScheduleComponent implements OnInit {
   private studentService = inject(StudentManagementService);
-  private toast = inject(ToastService);
 
   horarios = signal<HorarioItem[]>([]);
   isLoading = signal<boolean>(true);
+  error = signal<LoadErrorState | null>(null);
 
   diasSemana: DiaSemana[] = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
+
+  /** Lunes a viernes siempre; el sabado solo aparece si el backend entrega clases ese dia. */
+  diasVisibles = computed<DiaSemana[]>(() =>
+    this.horarios().some((h) => h.dia === 'Sábado') ? [...this.diasSemana, 'Sábado'] : this.diasSemana
+  );
 
   ngOnInit(): void {
     this.cargarHorario();
@@ -122,14 +135,16 @@ export class StudentScheduleComponent implements OnInit {
 
   cargarHorario(): void {
     this.isLoading.set(true);
+    this.error.set(null);
     this.studentService.getHorarios().subscribe({
       next: (res) => {
         this.horarios.set(res.datos || []);
         this.isLoading.set(false);
       },
-      error: () => {
+      error: (err) => {
+        this.horarios.set([]);
+        this.error.set(classifyLoadError(err));
         this.isLoading.set(false);
-        this.toast.error('Error al cargar horario de clases.');
       },
     });
   }

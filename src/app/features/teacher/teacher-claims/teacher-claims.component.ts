@@ -1,5 +1,6 @@
 import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { finalize } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
 import {
@@ -172,7 +173,7 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
                       </div>
                       <div class="flex items-center justify-between text-warm-600">
                         <span>Sesión #{{ reclamo.sesionNumero }} ({{ reclamo.fechaSesion }})</span>
-                        <span class="font-bold text-red-700">Falla: {{ reclamo.estadoOriginal }}</span>
+                        <span class="font-bold text-red-700">Falla: {{ reclamo.estadoOriginal ?? 'No informado' }}</span>
                       </div>
                     </div>
 
@@ -269,7 +270,7 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
               <p class="text-xs text-warm-600">
                 Grupo: {{ selectedReclamo()?.grupo }} • Sesión #{{ selectedReclamo()?.sesionNumero }} ({{ selectedReclamo()?.fechaSesion }})
               </p>
-              <p class="text-xs font-bold text-red-700">Registro original: {{ selectedReclamo()?.estadoOriginal }}</p>
+              <p class="text-xs font-bold text-red-700">Registro original: {{ selectedReclamo()?.estadoOriginal ?? 'No informado' }}</p>
             </div>
           </div>
 
@@ -473,23 +474,47 @@ export class TeacherClaimsComponent implements OnInit {
     }
   }
 
+  descargandoSoporte = signal<boolean>(false);
+
+  /**
+   * Descarga autenticada: el interceptor agrega el Bearer a la peticion HttpClient; nunca se abre una URL del storage
+   * ni se envia el token en la URL. El backend responde 404 si el docente ya no es titular.
+   */
   descargarSoporte(adjunto: SoporteAdjuntoItem): void {
     if (!adjunto.fileId) {
       this.toast.warning('Este soporte no contiene un fileId descargable en el contrato actual.');
       return;
     }
-    this.claimService.descargarSoporte(adjunto.fileId).subscribe({
-      next: (blob) => {
-        const url = URL.createObjectURL(blob);
-        const anchor = document.createElement('a');
-        anchor.href = url;
-        anchor.download = adjunto.nombre;
-        anchor.click();
-        URL.revokeObjectURL(url);
-        this.toast.success(`Soporte "${adjunto.nombre}" descargado.`);
-      },
-      error: (error) => this.toast.error(getApiErrorMessage(error)),
-    });
+    if (this.descargandoSoporte()) return;
+    this.descargandoSoporte.set(true);
+    this.claimService
+      .descargarSoporte(adjunto.fileId)
+      .pipe(finalize(() => this.descargandoSoporte.set(false)))
+      .subscribe({
+        next: (blob) => {
+          const url = URL.createObjectURL(blob);
+          const anchor = document.createElement('a');
+          anchor.href = url;
+          anchor.download = adjunto.nombre.replace(/[\\/:*?"<>|\r\n]/g, '_');
+          anchor.click();
+          URL.revokeObjectURL(url);
+          this.toast.success(`Soporte "${adjunto.nombre}" descargado.`);
+        },
+        error: (error) => this.toast.error(this.mensajeErrorDescarga(error)),
+      });
+  }
+
+  private mensajeErrorDescarga(error: unknown): string {
+    switch ((error as { status?: number })?.status) {
+      case 401:
+        return 'Tu sesión expiró. Inicia sesión nuevamente para descargar el soporte.';
+      case 404:
+        return 'El soporte ya no está disponible o ya no tienes autorización para descargarlo.';
+      case 0:
+        return 'No se pudo conectar con el servidor. Inténtalo de nuevo.';
+      default:
+        return getApiErrorMessage(error);
+    }
   }
 
   getReclamoBadgeVariant(estado: EstadoSolicitudRevision): BadgeVariant {

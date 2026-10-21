@@ -15,9 +15,11 @@ import { MateriaEstudianteItem } from '../../../../../core/models/role-managemen
           <div class="p-6 border-b border-warm-100 flex items-start justify-between bg-warm-50/50">
             <div>
               <div class="flex items-center gap-2 mb-1">
-                <span class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-primary-100 text-primary-900 border border-primary-200">
-                  {{ materia()?.codigo }}
-                </span>
+                @if (materia()?.codigo) {
+                  <span class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-primary-100 text-primary-900 border border-primary-200">
+                    {{ materia()?.codigo }}
+                  </span>
+                }
                 <span class="text-xs font-semibold text-warm-500">Malla Curricular</span>
               </div>
               <h3 class="font-serif font-bold text-xl text-warm-900">
