@@ -311,24 +311,24 @@ export class AdminManagementService {
     );
   }
 
-  crearArea(item: Omit<AreaConocimientoItem, 'id'>): void {
-    this.http.post<ApiResponse<AreaConocimientoItem>>(`${environment.apiUrl}/admin/areas`, item).pipe(
+  crearArea(item: Omit<AreaConocimientoItem, 'id'>): Observable<ApiResponse<AreaConocimientoItem>> {
+    return this.http.post<ApiResponse<AreaConocimientoItem>>(`${environment.apiUrl}/admin/areas`, item).pipe(
       tap((res) => {
         if (res.exitoso && res.datos) {
           this._areas.update((prev) => [res.datos, ...prev]);
         }
       })
-    ).subscribe();
+    );
   }
 
-  actualizarArea(id: string, cambios: Partial<AreaConocimientoItem>): void {
-    this.http.put<ApiResponse<AreaConocimientoItem>>(`${environment.apiUrl}/admin/areas/${id}`, cambios).pipe(
+  actualizarArea(id: string, cambios: Partial<AreaConocimientoItem>): Observable<ApiResponse<AreaConocimientoItem>> {
+    return this.http.put<ApiResponse<AreaConocimientoItem>>(`${environment.apiUrl}/admin/areas/${id}`, cambios).pipe(
       tap((res) => {
         if (res.exitoso && res.datos) {
           this._areas.update((prev) => prev.map((a) => (a.id === id ? res.datos : a)));
         }
       })
-    ).subscribe();
+    );
   }
 
   cambiarEstadoArea(id: string): void {

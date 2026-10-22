@@ -342,10 +342,10 @@ export interface AreaConocimientoItem {
   id: string;
   codigo: string;
   nombre: string;
-  facultadId: string;
+  facultadId?: string;
   facultadNombre?: string;
   coordinadorArea?: string;
-  estado: 'ACTIVO' | 'INACTIVO';
+  estado?: 'ACTIVO' | 'INACTIVO';
   totalAsignaturas?: number;
 }
 
@@ -387,3 +387,32 @@ export interface CierrePeriodoReporte {
   ejecutadoPor: string;
 }
 
+
+export interface ProgramaAcademicoItem {
+  id: string;
+  nombrePrograma: string;
+  idFacultad?: string;
+  nombreFacultad?: string;
+  idInstitucion?: string;
+  nombreInstitucion?: string;
+  idCoordinador?: string;
+  nombreCoordinador?: string;
+  estaActivoPrograma?: boolean;
+  estaActivoTextoPrograma?: string;
+  idTipoPrograma?: string;
+  nombreTipoPrograma?: string;
+}
+
+export interface TipoProgramaItem {
+  id: string;
+  nombre: string;
+  estaActivoTipoPrograma?: boolean;
+  estaActivoTextoTipoPrograma?: string;
+}
+
+export interface CreateProgramaPayload {
+  nombre: string;
+  idTipoPrograma: string;
+  idCoordinador: string;
+  codigo?: number;
+}
