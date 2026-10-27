@@ -388,6 +388,15 @@ describe('mockBackendInterceptor', () => {
     expect(retirada?.exitoso).toBeTrue();
   }));
 
+  it('HU006 MK-06 simula el perfil propio con sus vínculos', fakeAsync(() => {
+    auth.setMockMode(true);
+    let perfil: any;
+    httpClient.get(`${environment.apiUrl}/usuarios/perfil`).subscribe((r) => (perfil = r));
+    tick(250);
+    expect(perfil.datos.correo).toBe('usuario.mock@uco.edu.co');
+    expect(perfil.datos.vinculos.length).toBe(1);
+  }));
+
   it('HU051 RT-09 simula el retiro de un estudiante por el docente', fakeAsync(() => {
     auth.setMockMode(true);
     let res: any;

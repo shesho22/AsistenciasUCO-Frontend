@@ -632,6 +632,17 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     mockStore.solicitudesRevision = mockStore.solicitudesRevision.filter((r) => r.id !== id);
     return of(okResponse(true, 'Solicitud de revisión eliminada.')).pipe(delay(200));
   }
+  // HU006: perfil propio con vinculos institucionales (misma forma que el backend).
+  if (url.endsWith('/usuarios/perfil') && method === 'GET') {
+    return of(okResponse({
+      idUsuario: 'usr-mock', codigoTipoIdentificacion: 'CC', nombreTipoIdentificacion: 'Cédula de ciudadanía',
+      numeroIdentificacion: 1017000000, primerNombre: 'Usuario', segundoNombre: null, primerApellido: 'Mock', segundoApellido: null,
+      nombreCompleto: 'Usuario Mock', correo: 'usuario.mock@uco.edu.co', correoConfirmado: true, estaActivo: true,
+      vinculos: [
+        { rol: 'DOCENTE', idEntidad: 'prog-mock', nombreEntidad: 'Ingeniería de Sistemas', detalle: 'Cátedra', estaActivo: true },
+      ],
+    })).pipe(delay(200));
+  }
   // HU053-HU055: solicitudes de ingreso a grupo (misma forma que el backend; estado en memoria de la sesión mock).
   if (url.endsWith('/estudiante/solicitudes-matricula') && method === 'POST') {
     const grupoId = (req.body as { grupoId?: string } | null)?.grupoId ?? '';
