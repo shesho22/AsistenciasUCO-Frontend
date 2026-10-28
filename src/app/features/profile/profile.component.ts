@@ -10,6 +10,7 @@ import { ButtonComponent } from '../../shared/components/button/button.component
 import { FormFieldComponent } from '../../shared/components/form-field/form-field.component';
 import { AvatarComponent } from '../../shared/components/avatar/avatar.component';
 import { ToastService } from '../../shared/components/toast/toast.component';
+import { ProfileLinksComponent } from './components/profile-links.component';
 
 @Component({
   selector: 'app-profile',
@@ -24,6 +25,7 @@ import { ToastService } from '../../shared/components/toast/toast.component';
     ButtonComponent,
     FormFieldComponent,
     AvatarComponent,
+    ProfileLinksComponent,
   ],
   template: `
     <div class="space-y-6 animate-fade-in">
@@ -303,6 +305,9 @@ import { ToastService } from '../../shared/components/toast/toast.component';
               }
             </div>
           </form>
+
+          <!-- HU006: expediente y vinculos institucionales leidos de la DB (GET /usuarios/perfil) -->
+          <app-profile-links />
         </div>
       </div>
     </div>
