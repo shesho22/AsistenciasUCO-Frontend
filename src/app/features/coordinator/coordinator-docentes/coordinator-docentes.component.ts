@@ -5,12 +5,11 @@ import { FormsModule } from '@angular/forms';
 import { EMPTY, catchError, debounceTime, switchMap, tap } from 'rxjs';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { CatalogService, TipoIdentificacionItem } from '../../../core/services/catalog.service';
-import { CourseService } from '../../../core/services/course.service';
-import { Course } from '../../../core/models/course.model';
 import {
   ActualizarDocentePayload,
   DocenteCandidato,
   DocentePrograma,
+  ResumenDocentesPrograma,
   TipoVinculacionItem,
   VincularDocenteExistentePayload,
   VincularDocenteNuevoPayload,
@@ -25,6 +24,7 @@ import { AccountAccessStatusComponent } from '../../../shared/components/account
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { CoordinatorDocenteFormModalComponent } from './components/coordinator-docente-form-modal.component';
 import { CoordinatorDocenteEditModalComponent } from './components/coordinator-docente-edit-modal.component';
+import { CoordinatorDocenteFichaModalComponent } from './components/coordinator-docente-ficha-modal.component';
 
 type FiltroEstado = 'TODOS' | 'ACTIVO' | 'INACTIVO';
 
@@ -45,6 +45,7 @@ const MIN_CARACTERES_CANDIDATOS = 3;
     AccountAccessStatusComponent,
     CoordinatorDocenteFormModalComponent,
     CoordinatorDocenteEditModalComponent,
+    CoordinatorDocenteFichaModalComponent,
   ],
   template: `
     <div class="space-y-6 animate-fade-in">
@@ -62,7 +63,38 @@ const MIN_CARACTERES_CANDIDATOS = 3;
       <!-- Estado de acceso de la ultima cuenta docente creada (verificado por el backend, nunca por la SPA) -->
       <app-account-access-status [correo]="ultimaCuentaRegistrada()" />
 
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <!-- HU095: consolidado del directorio del programa (servidor), por estado y tipo de vinculacion -->
+      @if (resumen(); as r) {
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4" data-testid="resumen-docentes">
+          <div class="bg-white p-4 rounded-2xl border border-warm-200/80 shadow-warm-sm">
+            <p class="text-xs font-semibold text-warm-500 uppercase">Docentes vinculados</p>
+            <p class="text-2xl font-bold text-warm-900">{{ r.totalDocentes }}</p>
+          </div>
+          <div class="bg-white p-4 rounded-2xl border border-warm-200/80 shadow-warm-sm">
+            <p class="text-xs font-semibold text-emerald-700 uppercase">Activos</p>
+            <p class="text-2xl font-bold text-emerald-800">{{ r.totalActivos }}</p>
+          </div>
+          <div class="bg-white p-4 rounded-2xl border border-warm-200/80 shadow-warm-sm">
+            <p class="text-xs font-semibold text-warm-500 uppercase">Inactivos</p>
+            <p class="text-2xl font-bold text-warm-700">{{ r.totalInactivos }}</p>
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          @for (tipo of r.porTipoVinculacion; track tipo.idTipoVinculacion) {
+            <button
+              type="button"
+              data-testid="chip-tipo-vinculacion"
+              (click)="alternarTipoVinculacion(tipo.idTipoVinculacion)"
+              [class]="filtroTipo() === tipo.idTipoVinculacion ? claseChipActivo : claseChip"
+              [title]="tipo.totalActivos + ' activos, ' + tipo.totalInactivos + ' inactivos'"
+            >
+              {{ tipo.nombreTipoVinculacion }}: {{ tipo.total }}
+            </button>
+          }
+        </div>
+      }
+
+      <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <div class="sm:col-span-2">
           <input
             type="text"
@@ -83,6 +115,18 @@ const MIN_CARACTERES_CANDIDATOS = 3;
           <option value="TODOS">Todos los estados</option>
           <option value="ACTIVO">Solo activos</option>
           <option value="INACTIVO">Solo inactivos</option>
+        </select>
+        <select
+          [ngModel]="filtroTipo()"
+          (ngModelChange)="onTipoVinculacionChange($event)"
+          name="tipoVinculacionDocentes"
+          aria-label="Tipo de vinculación"
+          class="w-full px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20 shadow-warm-sm"
+        >
+          <option value="">Todos los tipos de vinculación</option>
+          @for (tipo of tiposVinculacion(); track tipo.id) {
+            <option [value]="tipo.id">{{ tipo.nombre }}</option>
+          }
         </select>
       </div>
 
@@ -140,7 +184,7 @@ const MIN_CARACTERES_CANDIDATOS = 3;
                   (click)="verFichaDocente(docente)"
                   class="w-full text-xs font-semibold text-primary-800 bg-primary-50 hover:bg-primary-100 border border-primary-200 py-1.5 px-3 rounded-xl transition-colors"
                 >
-                  Ver materias y horarios →
+                  Ver ficha e historial →
                 </button>
               </div>
             </app-card>
@@ -156,34 +200,7 @@ const MIN_CARACTERES_CANDIDATOS = 3;
       }
 
       @if (docenteSeleccionado(); as seleccionado) {
-        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-warm-950/40 backdrop-blur-xs">
-          <div class="bg-white border border-warm-200 rounded-3xl max-w-2xl w-full shadow-warm-xl overflow-hidden">
-            <div class="p-6 bg-warm-50 border-b border-warm-200/80 flex items-start justify-between">
-              <div>
-                <h3 class="font-serif font-bold text-xl text-warm-900">{{ seleccionado.nombreCompleto }}</h3>
-                <p class="text-xs text-warm-600 mt-0.5">
-                  {{ seleccionado.codigoTipoIdentificacion }} {{ seleccionado.numeroIdentificacion }} • {{ seleccionado.correo }} • {{ seleccionado.nombreTipoVinculacion }}
-                </p>
-              </div>
-              <button type="button" (click)="cerrarFichaDocente()" aria-label="Cerrar ficha" class="text-warm-400 hover:text-warm-700 p-1.5 rounded-xl hover:bg-warm-100">✕</button>
-            </div>
-            <div class="p-6 space-y-3 max-h-[70vh] overflow-y-auto">
-              <h4 class="font-serif font-bold text-base text-warm-900">Materias y grupos a cargo este período</h4>
-              @if (cursosDocente().length === 0) {
-                <p class="p-6 text-center text-xs text-warm-400 bg-warm-50 rounded-2xl border border-warm-100">No tiene grupos registrados para este período académico.</p>
-              } @else {
-                @for (curso of cursosDocente(); track curso.id) {
-                  <div class="p-4 rounded-2xl border border-warm-200 bg-white">
-                    <span class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-warm-100 text-warm-800 mr-2">{{ curso.code }}</span>
-                    <span class="text-xs font-semibold text-warm-500">{{ curso.section }}</span>
-                    <h5 class="font-bold text-sm text-warm-900 mt-1">{{ curso.name }}</h5>
-                    <p class="text-xs text-warm-600 mt-1">{{ curso.schedule }} • {{ curso.room }} • {{ curso.enrolledStudentsCount }} matriculados</p>
-                  </div>
-                }
-              }
-            </div>
-          </div>
-        </div>
+        <app-coordinator-docente-ficha-modal [docente]="seleccionado" (cerrar)="cerrarFichaDocente()" />
       }
 
       @if (docentePendienteEstado(); as pendiente) {
@@ -233,7 +250,6 @@ const MIN_CARACTERES_CANDIDATOS = 3;
 export class CoordinatorDocentesComponent implements OnInit {
   private readonly coordService = inject(CoordinatorManagementService);
   private readonly catalogService = inject(CatalogService);
-  private readonly courseService = inject(CourseService);
   private readonly toast = inject(ToastService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -242,29 +258,32 @@ export class CoordinatorDocentesComponent implements OnInit {
 
   readonly busqueda = signal('');
   readonly filtroEstado = signal<FiltroEstado>('TODOS');
+  /** HU095: id del tipo de vinculacion filtrado (cadena vacia = todos). */
+  readonly filtroTipo = signal('');
+  readonly resumen = signal<ResumenDocentesPrograma | null>(null);
+  readonly claseChip = 'px-3 py-1.5 rounded-full text-xs font-semibold border bg-white text-warm-700 border-warm-200 hover:bg-warm-50';
+  readonly claseChipActivo = 'px-3 py-1.5 rounded-full text-xs font-semibold border bg-primary-700 text-white border-primary-700';
   readonly pagina = signal(1);
   readonly tamano = signal(10);
   /** Correo de la ultima cuenta docente creada: el panel consulta su estado de acceso real. */
   readonly ultimaCuentaRegistrada = signal<string | null>(null);
   private readonly recarga = signal(0);
-  private cursosCargados = false;
 
   readonly isLoading = signal(true);
   readonly formularioAbierto = signal(false);
   readonly tiposIdentificacion = signal<TipoIdentificacionItem[]>([]);
   readonly tiposVinculacion = signal<TipoVinculacionItem[]>([]);
   readonly candidatos = signal<DocenteCandidato[]>([]);
-  readonly allCourses = signal<Course[]>([]);
   readonly docenteSeleccionado = signal<DocentePrograma | null>(null);
   readonly docenteEnEdicion = signal<DocentePrograma | null>(null);
   readonly docentePendienteEstado = signal<DocentePrograma | null>(null);
-  readonly cursosDocente = signal<Course[]>([]);
 
   private readonly consulta = computed(() => ({
     pagina: this.pagina(),
     tamano: this.tamano(),
     busqueda: this.busqueda().trim() || undefined,
     estaActivo: this.estaActivoDe(this.filtroEstado()),
+    idTipoVinculacion: this.filtroTipo() || undefined,
     recarga: this.recarga(),
   }));
 
@@ -274,8 +293,8 @@ export class CoordinatorDocentesComponent implements OnInit {
       .pipe(
         debounceTime(DEBOUNCE_MS),
         tap(() => this.isLoading.set(true)),
-        switchMap(({ pagina, tamano, busqueda, estaActivo }) =>
-          this.coordService.getDocentesPrograma({ pagina, tamano, busqueda, estaActivo }).pipe(
+        switchMap(({ pagina, tamano, busqueda, estaActivo, idTipoVinculacion }) =>
+          this.coordService.getDocentesPrograma({ pagina, tamano, busqueda, estaActivo, idTipoVinculacion }).pipe(
             catchError((error: unknown) => {
               this.toast.error(getApiErrorMessage(error));
               this.isLoading.set(false);
@@ -286,6 +305,14 @@ export class CoordinatorDocentesComponent implements OnInit {
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe(() => this.isLoading.set(false));
+
+    // HU095: el consolidado se relee al entrar y tras cada vinculacion, edicion o cambio de estado (recarga).
+    toObservable(this.recarga)
+      .pipe(
+        switchMap(() => this.coordService.getResumenDocentes().pipe(catchError(() => EMPTY))),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe((res) => this.resumen.set(res.datos ?? null));
   }
 
   ngOnInit(): void {
@@ -307,6 +334,16 @@ export class CoordinatorDocentesComponent implements OnInit {
   onEstadoChange(estado: FiltroEstado): void {
     this.filtroEstado.set(estado);
     this.pagina.set(1);
+  }
+
+  onTipoVinculacionChange(idTipoVinculacion: string): void {
+    this.filtroTipo.set(idTipoVinculacion ?? '');
+    this.pagina.set(1);
+  }
+
+  /** Un clic en el contador de un tipo filtra por el; un segundo clic quita el filtro. */
+  alternarTipoVinculacion(idTipoVinculacion: string): void {
+    this.onTipoVinculacionChange(this.filtroTipo() === idTipoVinculacion ? '' : idTipoVinculacion);
   }
 
   onPageChange(pagina: number): void {
@@ -398,33 +435,13 @@ export class CoordinatorDocentesComponent implements OnInit {
     });
   }
 
-  /**
-   * Los cursos se cargan solo al abrir la ficha (no al entrar a la pantalla): el endpoint de cursos es del portal
-   * docente y un coordinador recibiria un 403 innecesario al listar el directorio.
-   */
+  /** HU094: la ficha (resumen e historial de grupos) la consulta el modal al servidor. */
   verFichaDocente(docente: DocentePrograma): void {
     this.docenteSeleccionado.set(docente);
-    if (this.cursosCargados) {
-      this.cursosDocente.set(this.allCourses().filter((c) => c.docenteId === docente.idDocente));
-      return;
-    }
-    this.cursosCargados = true;
-    this.courseService.getCoordinatorCourses().subscribe({
-      next: (res) => {
-        this.allCourses.set(res.datos ?? []);
-        this.cursosDocente.set(this.allCourses().filter((c) => c.docenteId === docente.idDocente));
-      },
-      error: () => {
-        this.cursosCargados = false;
-        this.allCourses.set([]);
-        this.cursosDocente.set([]);
-      },
-    });
   }
 
   cerrarFichaDocente(): void {
     this.docenteSeleccionado.set(null);
-    this.cursosDocente.set([]);
   }
 
   /** Sin actualizacion optimista: se espera la respuesta del backend y se recarga la pagina desde el servidor. */

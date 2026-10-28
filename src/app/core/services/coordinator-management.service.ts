@@ -8,6 +8,9 @@ import {
   DocenteCandidato,
   DocentePrograma,
   DocentesProgramaFiltro,
+  FichaDocente,
+  FichaDocenteFiltro,
+  ResumenDocentesPrograma,
   TipoVinculacionItem,
   VincularDocentePayload,
 } from '../models/docente-programa.model';
@@ -202,6 +205,20 @@ export class CoordinatorManagementService {
   /** HU093: activa/inactiva SOLO el vinculo con el programa. La lista se recarga desde el servidor. */
   cambiarEstadoDocente(idDocente: string, estaActivo: boolean): Observable<ApiResponse<DocentePrograma>> {
     return this.http.patch<ApiResponse<DocentePrograma>>(`${environment.apiUrl}/coordinador/docentes/${idDocente}/estado`, { estaActivo });
+  }
+
+  /** HU094: ficha del docente con su historial de grupos en el programa y el resumen de carga. */
+  getFichaDocente(idDocente: string, filtro: FichaDocenteFiltro): Observable<ApiResponse<FichaDocente>> {
+    let params = new HttpParams().set('pagina', filtro.pagina).set('tamano', filtro.tamano);
+    if (filtro.idPeriodoAcademico) {
+      params = params.set('idPeriodoAcademico', filtro.idPeriodoAcademico);
+    }
+    return this.http.get<ApiResponse<FichaDocente>>(`${environment.apiUrl}/coordinador/docentes/${idDocente}/ficha`, { params });
+  }
+
+  /** HU095: consolidado del directorio docente del programa (activos, inactivos y por tipo de vinculacion). */
+  getResumenDocentes(): Observable<ApiResponse<ResumenDocentesPrograma>> {
+    return this.http.get<ApiResponse<ResumenDocentesPrograma>>(`${environment.apiUrl}/coordinador/docentes/resumen`);
   }
 
   getTiposVinculacion(): Observable<TipoVinculacionItem[]> {

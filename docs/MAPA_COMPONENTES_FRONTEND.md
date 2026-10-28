@@ -82,6 +82,9 @@ Control centralizado de sesiones y registro de asistencia en aula.
 - **Mis Reclamos (HU010/HU011, consulta):**
   - **Ruta:** `/app/estudiante/reclamos` (menú ESTUDIANTE "Mis Reclamos")
   - **Componente:** `StudentClaimsComponent` (`features/student/student-claims`): solicitudes propias con estado, respuesta del docente y soporte; filtro por estado y paginación del servidor; descarga del soporte por `GET /archivos/{fileId}`.
+- **Oferta de Grupos (HU008):**
+  - **Ruta:** `/app/estudiante/oferta` (menú ESTUDIANTE "Oferta de Grupos")
+  - **Componente:** `StudentGroupOfferComponent` (`features/student/student-group-offer`): grupos de su programa y transversales con cupos, horario y "Solicitar ingreso".
 - **Solicitudes de Ingreso (HU053/HU055):**
   - **Ruta:** `/app/estudiante/solicitudes` (menú ESTUDIANTE "Solicitudes de Ingreso"; acepta `?grupo={id}`)
   - **Componente:** `StudentEnrollmentRequestsComponent` (`features/student/student-enrollment-requests`): solicitar el ingreso, ver estado y motivo de rechazo, retirar solicitudes abiertas.
@@ -93,7 +96,7 @@ Control centralizado de sesiones y registro de asistencia en aula.
 
 | Ruta | Sidebar | Componente Contenedor | Hijo Presentacional | Spec |
 | :--- | :--- | :--- | :--- | :--- |
-| `/app/coordinador/docentes` | Gestión de Docentes | [`CoordinatorDocentesComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/coordinator/coordinator-docentes/coordinator-docentes.component.ts) | — | ✅ |
+| `/app/coordinador/docentes` | Gestión de Docentes | [`CoordinatorDocentesComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/coordinator/coordinator-docentes/coordinator-docentes.component.ts) (contadores y filtro por tipo de vinculación, HU095) | [`CoordinatorDocenteFichaModalComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/coordinator/coordinator-docentes/components/coordinator-docente-ficha-modal.component.ts) (ficha con historial, HU094) | ✅ |
 | `/app/coordinador/planes-estudio` | Planes de Estudio | [`CoordinatorStudyPlansComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/coordinator/coordinator-study-plans/coordinator-study-plans.component.ts) | [`StudyPlansListComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/coordinator/coordinator-study-plans/components/study-plans-list.component.ts) | ✅ |
 | `/app/coordinador/planes-estudio/nuevo` · `/:planId/editar` | — (deep-link) | [`CoordinatorStudyPlanFormPageComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/coordinator/coordinator-study-plans/pages/study-plan-form-page.component.ts) | [`StudyPlanFormComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/coordinator/coordinator-study-plans/components/study-plan-form.component.ts) | ✅ |
 | `/app/coordinador/planes-estudio/:planId/malla` | — (deep-link) | [`CoordinatorStudyPlanMeshPageComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/coordinator/coordinator-study-plans/pages/study-plan-mesh-page.component.ts) | [`StudyPlanMeshComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/coordinator/coordinator-study-plans/components/study-plan-mesh.component.ts) | ✅ |

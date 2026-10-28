@@ -411,6 +411,15 @@ export const routes: Routes = [
             (m) => m.StudentEnrollmentRequestsComponent
           ),
       },
+      {
+        path: 'estudiante/oferta',
+        canActivate: [roleGuard],
+        data: { roles: ['ESTUDIANTE'] },
+        loadComponent: () =>
+          import('./features/student/student-group-offer/student-group-offer.component').then(
+            (m) => m.StudentGroupOfferComponent
+          ),
+      },
     ],
   },
   {

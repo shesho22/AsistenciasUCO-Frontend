@@ -280,6 +280,28 @@ describe('CoordinatorManagementService', () => {
       expect(service.docentes()).toEqual([]);
     });
 
+    it('getFichaDocente (HU094) envía paginacion y periodo opcional', () => {
+      service.getFichaDocente('doc-1', { pagina: 2, tamano: 5 }).subscribe((res) => expect(res.datos.totalHistorial).toBe(0));
+      const req = http.expectOne((r) => r.url === `${environment.apiUrl}/coordinador/docentes/doc-1/ficha`);
+      expect(req.request.method).toBe('GET');
+      expect(req.request.params.get('pagina')).toBe('2');
+      expect(req.request.params.get('tamano')).toBe('5');
+      expect(req.request.params.has('idPeriodoAcademico')).toBeFalse();
+      req.flush({ exitoso: true, datos: { docente: fila, resumen: null, historial: [], totalHistorial: 0 } });
+
+      service.getFichaDocente('doc-1', { pagina: 1, tamano: 10, idPeriodoAcademico: 'per-1' }).subscribe();
+      const conPeriodo = http.expectOne((r) => r.url === `${environment.apiUrl}/coordinador/docentes/doc-1/ficha`);
+      expect(conPeriodo.request.params.get('idPeriodoAcademico')).toBe('per-1');
+      conPeriodo.flush({ exitoso: true, datos: { docente: fila, resumen: null, historial: [], totalHistorial: 0 } });
+    });
+
+    it('getResumenDocentes (HU095) consulta el consolidado del programa', () => {
+      service.getResumenDocentes().subscribe((res) => expect(res.datos.totalDocentes).toBe(3));
+      const req = http.expectOne(`${environment.apiUrl}/coordinador/docentes/resumen`);
+      expect(req.request.method).toBe('GET');
+      req.flush({ exitoso: true, datos: { totalDocentes: 3, totalActivos: 2, totalInactivos: 1, porTipoVinculacion: [] } });
+    });
+
     it('cambiarEstadoDocente propaga el 404 del backend', () => {
       let status = 0;
       service.cambiarEstadoDocente('doc-x', true).subscribe({ error: (e) => (status = e.status) });

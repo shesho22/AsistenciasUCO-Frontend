@@ -284,6 +284,17 @@ describe('mockBackendInterceptor', () => {
     expect(postDocRes?.exitoso).toBeTrue();
 
     const docId = mockStore.docentes[0].id;
+    let resumenDocRes: any;
+    httpClient.get(`${environment.apiUrl}/coordinador/docentes/resumen`).subscribe((r) => (resumenDocRes = r));
+    tick(250);
+    expect(resumenDocRes?.datos.totalDocentes).toBe(mockStore.docentes.length);
+
+    let fichaDocRes: any;
+    httpClient.get(`${environment.apiUrl}/coordinador/docentes/${docId}/ficha`).subscribe((r) => (fichaDocRes = r));
+    tick(300);
+    expect(fichaDocRes?.datos.historial.length).toBe(2);
+    expect(fichaDocRes?.datos.resumen.gruposVigentes).toBe(1);
+
     let toggleDocRes: any;
     httpClient.patch(`${environment.apiUrl}/coordinador/docentes/${docId}/toggle`, {}).subscribe((r) => (toggleDocRes = r));
     tick(250);
@@ -395,6 +406,22 @@ describe('mockBackendInterceptor', () => {
     tick(250);
     expect(perfil.datos.correo).toBe('usuario.mock@uco.edu.co');
     expect(perfil.datos.vinculos.length).toBe(1);
+  }));
+
+  it('HU008 MK-08 simula la oferta de grupos y refleja la solicitud abierta del estudiante', fakeAsync(() => {
+    auth.setMockMode(true);
+    let oferta: any;
+    httpClient.get(`${environment.apiUrl}/estudiante/oferta-academica`).subscribe((r) => (oferta = r));
+    tick(300);
+    expect(oferta.datos.length).toBe(2);
+    expect(oferta.datos[0].cuposDisponibles).toBe(5);
+
+    httpClient.post(`${environment.apiUrl}/estudiante/solicitudes-matricula`, { grupoId: 'grp-oferta-1' }).subscribe();
+    tick(300);
+    httpClient.get(`${environment.apiUrl}/estudiante/oferta-academica`).subscribe((r) => (oferta = r));
+    tick(300);
+    expect(oferta.datos[0].estadoSolicitud).toBe('PENDIENTE');
+    expect(oferta.datos[1].estadoSolicitud).toBeNull();
   }));
 
   it('HU051 RT-09 simula el retiro de un estudiante por el docente', fakeAsync(() => {

@@ -69,3 +69,65 @@ export interface ActualizarDocentePayload {
   primerApellido?: string;
   segundoApellido?: string;
 }
+
+/** Estado del periodo del grupo segun la fecha local institucional (HU094). */
+export type EstadoPeriodoHistorial = 'VIGENTE' | 'FINALIZADO' | 'PROXIMO';
+
+/** Grupo dictado por el docente en el programa (`GET /coordinador/docentes/{id}/ficha`, HU094). */
+export interface GrupoHistorialDocente {
+  idGrupo: string;
+  codigoGrupo: number;
+  nombreGrupo: string;
+  idAsignatura: string;
+  nombreAsignatura: string;
+  idPeriodoAcademico: string;
+  codigoPeriodoAcademico: number;
+  nombrePeriodoAcademico: string;
+  fechaInicioPeriodo: string;
+  fechaFinPeriodo: string;
+  estadoPeriodo: EstadoPeriodoHistorial;
+  capacidadMaxima: number;
+  estudiantesActivos: number;
+  estudiantesFinalizados: number;
+  estudiantesCanceladosVoluntad: number;
+  estudiantesCanceladosInasistencia: number;
+}
+
+/** Resumen de carga sobre TODO el historial del docente en el programa (no depende de la pagina). */
+export interface ResumenCargaDocente {
+  totalGrupos: number;
+  totalPeriodos: number;
+  gruposVigentes: number;
+  estudiantesActivosVigentes: number;
+}
+
+export interface FichaDocente {
+  docente: DocentePrograma;
+  resumen: ResumenCargaDocente;
+  historial: GrupoHistorialDocente[];
+  totalHistorial: number;
+}
+
+/** Vinculos activos e inactivos de un tipo de vinculacion en el programa (HU095). */
+export interface ResumenTipoVinculacion {
+  idTipoVinculacion: string;
+  codigoTipoVinculacion: string;
+  nombreTipoVinculacion: string;
+  totalActivos: number;
+  totalInactivos: number;
+  total: number;
+}
+
+/** Consolidado del directorio docente del programa (`GET /coordinador/docentes/resumen`, HU095). */
+export interface ResumenDocentesPrograma {
+  totalDocentes: number;
+  totalActivos: number;
+  totalInactivos: number;
+  porTipoVinculacion: ResumenTipoVinculacion[];
+}
+
+export interface FichaDocenteFiltro {
+  pagina: number;
+  tamano: number;
+  idPeriodoAcademico?: string;
+}

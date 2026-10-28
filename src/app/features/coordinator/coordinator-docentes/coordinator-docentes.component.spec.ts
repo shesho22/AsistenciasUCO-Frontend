@@ -6,10 +6,8 @@ import { of, throwError } from 'rxjs';
 import { CoordinatorDocentesComponent } from './coordinator-docentes.component';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { CatalogService } from '../../../core/services/catalog.service';
-import { CourseService } from '../../../core/services/course.service';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { AccountAccessService } from '../../../core/services/account-access.service';
-import { Course } from '../../../core/models/course.model';
 import { DocentePrograma, DocenteCandidato } from '../../../core/models/docente-programa.model';
 
 describe('CoordinatorDocentesComponent', () => {
@@ -25,10 +23,11 @@ describe('CoordinatorDocentesComponent', () => {
     vincularDocente: jasmine.Spy;
     actualizarDocente: jasmine.Spy;
     cambiarEstadoDocente: jasmine.Spy;
+    getFichaDocente: jasmine.Spy;
+    getResumenDocentes: jasmine.Spy;
     getTiposVinculacion: jasmine.Spy;
   };
   let catalogService: jasmine.SpyObj<CatalogService>;
-  let courseService: jasmine.SpyObj<CourseService>;
   let toast: jasmine.SpyObj<ToastService>;
   let accountAccess: jasmine.SpyObj<AccountAccessService>;
 
@@ -51,20 +50,6 @@ describe('CoordinatorDocentesComponent', () => {
     totalGruposPrograma: 2,
     estaActivo: activo,
   });
-
-  const curso: Course = {
-    id: 'crs-1',
-    code: 'MAT-301',
-    name: 'Matemática Avanzada III',
-    section: 'Sección A',
-    schedule: 'Lun 08:00',
-    room: 'A-204',
-    enrolledStudentsCount: 32,
-    cupoMaximo: 35,
-    docenteId: 'doc-1',
-    docenteName: 'Roberto',
-    colorCategory: 'emerald',
-  };
 
   function crear(): void {
     fixture = TestBed.createComponent(CoordinatorDocentesComponent);
@@ -89,14 +74,28 @@ describe('CoordinatorDocentesComponent', () => {
       vincularDocente: jasmine.createSpy('vincularDocente').and.returnValue(of({ exitoso: true, mensajeUsuario: 'ok', datos: fila('doc-3', 'Nuevo') })),
       actualizarDocente: jasmine.createSpy('actualizarDocente').and.returnValue(of({ exitoso: true, mensajeUsuario: 'Docente actualizado.', datos: fila('doc-1', 'Roberto') })),
       cambiarEstadoDocente: jasmine.createSpy('cambiarEstadoDocente').and.returnValue(of({ exitoso: true, mensajeUsuario: 'Estado del docente actualizado.', datos: fila('doc-1', 'Roberto', false) })),
+      getFichaDocente: jasmine.createSpy('getFichaDocente').and.returnValue(
+        of({ exitoso: true, datos: { docente: fila('doc-1', 'Roberto'), resumen: { totalGrupos: 0, totalPeriodos: 0, gruposVigentes: 0, estudiantesActivosVigentes: 0 }, historial: [], totalHistorial: 0 } })
+      ),
+      getResumenDocentes: jasmine.createSpy('getResumenDocentes').and.returnValue(
+        of({
+          exitoso: true,
+          datos: {
+            totalDocentes: 3,
+            totalActivos: 2,
+            totalInactivos: 1,
+            porTipoVinculacion: [
+              { idTipoVinculacion: 'tv-1', codigoTipoVinculacion: 'CAT', nombreTipoVinculacion: 'Cátedra', totalActivos: 2, totalInactivos: 1, total: 3 },
+            ],
+          },
+        })
+      ),
       getTiposVinculacion: jasmine.createSpy('getTiposVinculacion').and.returnValue(of([{ id: 'tv-1', codigo: 'CAT', nombre: 'Cátedra' }])),
     };
     catalogService = jasmine.createSpyObj<CatalogService>('CatalogService', ['getTiposIdentificacion']);
     catalogService.getTiposIdentificacion.and.returnValue(
       of({ exitoso: true, datos: [{ id: 'tipo-1', tipoIdentificacion: 'CC', nombre: 'Cédula' }] })
     );
-    courseService = jasmine.createSpyObj<CourseService>('CourseService', ['getCoordinatorCourses']);
-    courseService.getCoordinatorCourses.and.returnValue(of({ exitoso: true, datos: [curso] }));
     toast = jasmine.createSpyObj<ToastService>('ToastService', ['success', 'error', 'warning', 'info']);
     accountAccess = jasmine.createSpyObj<AccountAccessService>('AccountAccessService', ['consult', 'reconcile']);
     accountAccess.consult.and.returnValue(
@@ -108,7 +107,6 @@ describe('CoordinatorDocentesComponent', () => {
       providers: [
         { provide: CoordinatorManagementService, useValue: coordService },
         { provide: CatalogService, useValue: catalogService },
-        { provide: CourseService, useValue: courseService },
         { provide: ToastService, useValue: toast },
         { provide: AccountAccessService, useValue: accountAccess },
       ],
@@ -473,44 +471,83 @@ describe('CoordinatorDocentesComponent', () => {
     expect(coordService.actualizarDocente).not.toHaveBeenCalled();
   }));
 
-  it('la pantalla NO consulta cursos al cargar (evita un 403 para el coordinador) sino al abrir la ficha, una sola vez', fakeAsync(() => {
+  it('HU094: la ficha se consulta al servidor solo al abrirla y cerrarFichaDocente la oculta', fakeAsync(() => {
     crear();
     tick(300);
-    expect(courseService.getCoordinatorCourses).not.toHaveBeenCalled();
-
-    component.verFichaDocente(fila('doc-1', 'Roberto'));
-    component.verFichaDocente(fila('doc-1', 'Roberto'));
-
-    expect(courseService.getCoordinatorCourses).toHaveBeenCalledTimes(1);
-    expect(component.cursosDocente().map((c) => c.id)).toEqual(['crs-1']);
-  }));
-
-  it('verFichaDocente empareja cursos por idDocente real y cerrarFichaDocente limpia', fakeAsync(() => {
-    crear();
-    tick(300);
+    expect(coordService.getFichaDocente).not.toHaveBeenCalled();
     const docente = fila('doc-1', 'Roberto');
 
     component.verFichaDocente(docente);
+    fixture.detectChanges();
     expect(component.docenteSeleccionado()).toBe(docente);
-    expect(component.cursosDocente().map((c) => c.id)).toEqual(['crs-1']);
+    expect(coordService.getFichaDocente).toHaveBeenCalledWith('doc-1', { pagina: 1, tamano: 5 });
+    expect(fixture.nativeElement.querySelector('app-coordinator-docente-ficha-modal')).not.toBeNull();
 
     component.cerrarFichaDocente();
+    fixture.detectChanges();
     expect(component.docenteSeleccionado()).toBeNull();
-    expect(component.cursosDocente()).toEqual([]);
+    expect(fixture.nativeElement.querySelector('app-coordinator-docente-ficha-modal')).toBeNull();
   }));
 
-  it('un error al cargar los cursos de la ficha deja la lista vacía y permite reintentar', fakeAsync(() => {
-    courseService.getCoordinatorCourses.and.returnValue(throwError(() => new HttpErrorResponse({ status: 403 })));
+  it('HU095: muestra el consolidado del programa y los contadores por tipo de vinculación', fakeAsync(() => {
     crear();
     tick(300);
+    fixture.detectChanges();
 
-    component.verFichaDocente(fila('doc-1', 'Roberto'));
-    expect(component.cursosDocente()).toEqual([]);
+    expect(coordService.getResumenDocentes).toHaveBeenCalledTimes(1);
+    expect(component.resumen()?.totalDocentes).toBe(3);
+    const texto = fixture.nativeElement.querySelector('[data-testid="resumen-docentes"]').textContent;
+    expect(texto).toContain('3');
+    expect(texto).toContain('2');
+    expect(texto).toContain('1');
+    const chip: HTMLButtonElement = fixture.nativeElement.querySelector('[data-testid="chip-tipo-vinculacion"]');
+    expect(chip.textContent).toContain('Cátedra: 3');
+  }));
 
-    courseService.getCoordinatorCourses.and.returnValue(of({ exitoso: true, datos: [curso] }));
-    component.verFichaDocente(fila('doc-1', 'Roberto'));
-    expect(courseService.getCoordinatorCourses).toHaveBeenCalledTimes(2);
-    expect(component.cursosDocente().length).toBe(1);
+  it('HU095: el contador de un tipo filtra el directorio en el servidor y un segundo clic quita el filtro', fakeAsync(() => {
+    crear();
+    tick(300);
+    fixture.detectChanges();
+    coordService.getDocentesPrograma.calls.reset();
+
+    (fixture.nativeElement.querySelector('[data-testid="chip-tipo-vinculacion"]') as HTMLButtonElement).click();
+    tick(300);
+    expect(component.filtroTipo()).toBe('tv-1');
+    expect(component.pagina()).toBe(1);
+    expect(coordService.getDocentesPrograma).toHaveBeenCalledWith(jasmine.objectContaining({ idTipoVinculacion: 'tv-1' }));
+
+    component.alternarTipoVinculacion('tv-1');
+    tick(300);
+    expect(component.filtroTipo()).toBe('');
+    expect(coordService.getDocentesPrograma.calls.mostRecent().args[0].idTipoVinculacion).toBeUndefined();
+  }));
+
+  it('HU095: el selector de tipo de vinculación filtra y vuelve a la primera página', fakeAsync(() => {
+    crear();
+    tick(300);
+    component.onPageChange(3);
+    component.onTipoVinculacionChange('tv-1');
+    tick(300);
+    expect(component.pagina()).toBe(1);
+    expect(coordService.getDocentesPrograma.calls.mostRecent().args[0].idTipoVinculacion).toBe('tv-1');
+  }));
+
+  it('HU095: el consolidado se relee tras un cambio de estado y un error lo deja sin mostrar', fakeAsync(() => {
+    crear();
+    tick(300);
+    expect(coordService.getResumenDocentes).toHaveBeenCalledTimes(1);
+
+    component.solicitarCambioEstado(fila('doc-1', 'Roberto'));
+    component.confirmarCambioEstado();
+    tick(300);
+    expect(coordService.getResumenDocentes).toHaveBeenCalledTimes(2);
+
+    coordService.getResumenDocentes.and.returnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
+    component.solicitarCambioEstado(fila('doc-1', 'Roberto'));
+    component.confirmarCambioEstado();
+    tick(300);
+    expect(coordService.getResumenDocentes).toHaveBeenCalledTimes(3);
+    expect(component.resumen()?.totalDocentes).toBe(3);
   }));
 
   it('no usa setInterval ni polling para refrescar', () => {
