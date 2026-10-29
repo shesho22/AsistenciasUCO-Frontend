@@ -29,7 +29,7 @@ import { StudyPlansListComponent } from './components/study-plans-list.component
             Planes de Estudio y Mallas Curriculares
           </h1>
           <p class="text-sm text-warm-600 mt-1">
-            Administra planes de estudio, mallas por semestres y asignaturas con prerrequisitos de tu coordinación.
+            Administra planes de estudio, mallas por semestres y asignaturas de tu coordinación.
           </p>
         </div>
 

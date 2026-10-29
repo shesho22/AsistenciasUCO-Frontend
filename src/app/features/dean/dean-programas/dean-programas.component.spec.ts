@@ -77,8 +77,8 @@ describe('DeanProgramasComponent', () => {
     http.expectOne(`${environment.apiUrl}/decano/planes-estudio/PLAN-SIS-2024/asignaturas`).flush({
       exitoso: true,
       datos: [
-        { id: 'a1', codigo: 'ARQ-402', nombre: 'Arquitectura de Software', creditos: 3, semestre: 8, area: 'Software', componente: 'Obligatoria', prerrequisitos: [], horasSemanales: 4 },
-        { id: 'a2', codigo: 'BD-201', nombre: 'Bases de Datos', creditos: 4, semestre: 4, area: 'Datos', componente: 'Obligatoria', prerrequisitos: [], horasSemanales: 4 },
+        { id: 'a1', codigo: 'ARQ-402', nombre: 'Arquitectura de Software', creditos: 3, semestre: 8, area: 'Software', componente: 'Obligatoria', horasSemanales: 4 },
+        { id: 'a2', codigo: 'BD-201', nombre: 'Bases de Datos', creditos: 4, semestre: 4, area: 'Datos', componente: 'Obligatoria', horasSemanales: 4 },
       ],
     });
     http.expectOne(`${environment.apiUrl}/decano/planes-estudio/PLAN-SIS-2019/asignaturas`).flush({ exitoso: true, datos: [] });

@@ -661,7 +661,6 @@ export const MOCK_ASIGNATURAS_PLAN: Record<string, AsignaturaPlanItem[]> = {
       semestre: 1,
       area: 'Ciencias Computacionales',
       componente: 'Obligatoria',
-      prerrequisitos: [],
       horasSemanales: 4,
     },
     {
@@ -673,7 +672,6 @@ export const MOCK_ASIGNATURAS_PLAN: Record<string, AsignaturaPlanItem[]> = {
       semestre: 1,
       area: 'Ciencias Básicas',
       componente: 'Obligatoria',
-      prerrequisitos: [],
       horasSemanales: 4,
     },
     {
@@ -685,7 +683,6 @@ export const MOCK_ASIGNATURAS_PLAN: Record<string, AsignaturaPlanItem[]> = {
       semestre: 1,
       area: 'Sociohumanística',
       componente: 'Obligatoria',
-      prerrequisitos: [],
       horasSemanales: 2,
     },
     // Semestre 2
@@ -698,7 +695,6 @@ export const MOCK_ASIGNATURAS_PLAN: Record<string, AsignaturaPlanItem[]> = {
       semestre: 2,
       area: 'Ciencias Computacionales',
       componente: 'Obligatoria',
-      prerrequisitos: ['SIS-101'],
       horasSemanales: 4,
     },
     {
@@ -710,7 +706,6 @@ export const MOCK_ASIGNATURAS_PLAN: Record<string, AsignaturaPlanItem[]> = {
       semestre: 2,
       area: 'Ciencias Básicas',
       componente: 'Obligatoria',
-      prerrequisitos: ['MAT-101'],
       horasSemanales: 4,
     },
     // Semestre 3
@@ -723,7 +718,6 @@ export const MOCK_ASIGNATURAS_PLAN: Record<string, AsignaturaPlanItem[]> = {
       semestre: 3,
       area: 'Ingeniería de Software',
       componente: 'Obligatoria',
-      prerrequisitos: ['SIS-201'],
       horasSemanales: 4,
     },
     {
@@ -735,7 +729,6 @@ export const MOCK_ASIGNATURAS_PLAN: Record<string, AsignaturaPlanItem[]> = {
       semestre: 3,
       area: 'Gestión de Información',
       componente: 'Obligatoria',
-      prerrequisitos: ['SIS-201'],
       horasSemanales: 4,
     },
     // Semestre 4
@@ -748,7 +741,6 @@ export const MOCK_ASIGNATURAS_PLAN: Record<string, AsignaturaPlanItem[]> = {
       semestre: 4,
       area: 'Ingeniería de Software',
       componente: 'Obligatoria',
-      prerrequisitos: ['SIS-301'],
       horasSemanales: 4,
     },
     {
@@ -760,7 +752,6 @@ export const MOCK_ASIGNATURAS_PLAN: Record<string, AsignaturaPlanItem[]> = {
       semestre: 4,
       area: 'Gestión de Información',
       componente: 'Obligatoria',
-      prerrequisitos: ['SIS-302'],
       horasSemanales: 4,
     },
     {
@@ -772,7 +763,6 @@ export const MOCK_ASIGNATURAS_PLAN: Record<string, AsignaturaPlanItem[]> = {
       semestre: 4,
       area: 'Hardware y Redes',
       componente: 'Obligatoria',
-      prerrequisitos: ['SIS-201'],
       horasSemanales: 4,
     },
     // Semestre 5
@@ -785,7 +775,6 @@ export const MOCK_ASIGNATURAS_PLAN: Record<string, AsignaturaPlanItem[]> = {
       semestre: 5,
       area: 'Hardware y Redes',
       componente: 'Obligatoria',
-      prerrequisitos: ['SIS-403'],
       horasSemanales: 4,
     },
     {
@@ -797,7 +786,6 @@ export const MOCK_ASIGNATURAS_PLAN: Record<string, AsignaturaPlanItem[]> = {
       semestre: 5,
       area: 'Ingeniería de Software',
       componente: 'Obligatoria',
-      prerrequisitos: ['SIS-401'],
       horasSemanales: 4,
     },
     {
@@ -809,7 +797,6 @@ export const MOCK_ASIGNATURAS_PLAN: Record<string, AsignaturaPlanItem[]> = {
       semestre: 5,
       area: 'Línea de Énfasis',
       componente: 'Electiva',
-      prerrequisitos: ['SIS-401'],
       horasSemanales: 4,
     },
   ],
@@ -823,7 +810,6 @@ export const MOCK_ASIGNATURAS_PLAN: Record<string, AsignaturaPlanItem[]> = {
       semestre: 1,
       area: 'Ciencias Computacionales',
       componente: 'Obligatoria',
-      prerrequisitos: [],
       horasSemanales: 4,
     },
     {
@@ -835,7 +821,6 @@ export const MOCK_ASIGNATURAS_PLAN: Record<string, AsignaturaPlanItem[]> = {
       semestre: 8,
       area: 'Ingeniería de Software',
       componente: 'Obligatoria',
-      prerrequisitos: ['SIS-301'],
       horasSemanales: 4,
     },
   ],
@@ -942,9 +927,9 @@ export const MOCK_SOLICITUDES_MATRICULA: SolicitudMatriculaItem[] = [
     cursoNombre: 'Matemática Avanzada III',
     grupo: 'Sección A',
     fechaSolicitud: '2026-08-19',
-    motivo: 'Nivelación académica de semestre anterior, ya cumplí prerrequisito.',
+    motivo: 'Nivelación académica de semestre anterior.',
     estado: 'APROBADA',
-    respuestaCoordinador: 'Cupo habilitado previa verificación de prerrequisitos.',
+    respuestaCoordinador: 'Cupo habilitado.',
     fechaRespuesta: '2026-08-21',
   },
   {

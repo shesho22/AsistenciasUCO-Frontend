@@ -71,7 +71,6 @@ describe('CoordinatorSubjectsComponent', () => {
             horasSemanales: 4,
             area: 'Ingeniería de Software',
             componente: 'Obligatoria',
-            prerrequisitos: [],
           },
         ],
       } as any)

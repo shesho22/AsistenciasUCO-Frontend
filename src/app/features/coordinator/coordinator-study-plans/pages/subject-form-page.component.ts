@@ -21,7 +21,6 @@ import { SubjectFormComponent } from '../components/subject-form.component';
             [plan]="plan"
             [modo]="modo()"
             [asignatura]="selectedAsignatura()"
-            [asignaturasPlan]="asignaturas()"
             (save)="guardarAsignatura($event)"
             (cancel)="volverAMalla()"
           />

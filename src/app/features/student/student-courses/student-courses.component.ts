@@ -27,7 +27,6 @@ import { Course } from '../../../core/models/course.model';
 import { StudentCoursesListComponent } from './components/student-courses-list.component';
 import { StudentCourseDetailComponent } from './components/student-course-detail.component';
 import { StudentClaimFormComponent } from './components/student-claim-form.component';
-import { StudentPrerequisitosModalComponent } from './components/modals/student-prerequisitos-modal.component';
 import { StudentAutoAsistenciaModalComponent } from './components/modals/student-auto-asistencia-modal.component';
 import { StudentMatriculaCodigoModalComponent } from './components/modals/student-matricula-codigo-modal.component';
 
@@ -42,7 +41,6 @@ type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO' | 'SOLICITAR_MATRICULA';
     StudentCoursesListComponent,
     StudentCourseDetailComponent,
     StudentClaimFormComponent,
-    StudentPrerequisitosModalComponent,
     StudentAutoAsistenciaModalComponent,
     StudentMatriculaCodigoModalComponent,
   ],
@@ -60,7 +58,6 @@ type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO' | 'SOLICITAR_MATRICULA';
           (openCodeEnrollment)="abrirModalMatriculaGrupo()"
           (openAutoAttendance)="abrirModalAutoAsistencia()"
           (viewDetail)="verDetalleCompleto($event)"
-          (viewPrerequisites)="abrirPrerrequisitos($event)"
         />
       }
 
@@ -93,15 +90,6 @@ type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO' | 'SOLICITAR_MATRICULA';
           (submitted)="enviarReclamo($event)"
         />
       }
-
-      <!-- 4. Modal de Prerrequisitos de Asignatura -->
-      <app-student-prerequisitos-modal
-        [isOpen]="modalPrerrequisitosVisible()"
-        [materia]="materiaPrerrequisitos()"
-        [prerequisitos]="listaPrerrequisitos()"
-        [loading]="loadingPrerrequisitos()"
-        (closed)="cerrarModalPrerrequisitos()"
-      />
 
       <!-- 6. Modal: Auto-Registro de Asistencia (HU176 - PIN / QR) -->
       <app-student-auto-asistencia-modal
@@ -163,12 +151,6 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
   private subidaEnCurso: Subscription | null = null;
   /** Un reintento tecnico del mismo contenido reutiliza la correlacion; solo un exito la renueva. */
   private readonly intentoRadicacion = new RadicacionIntento();
-
-  // Prerrequisitos de Materia
-  modalPrerrequisitosVisible = signal<boolean>(false);
-  materiaPrerrequisitos = signal<MateriaEstudianteItem | null>(null);
-  listaPrerrequisitos = signal<any[]>([]);
-  loadingPrerrequisitos = signal<boolean>(false);
 
   totalCreditos(): number {
     return this.materias().reduce((sum, m) => sum + (m.creditos ?? 0), 0);
@@ -490,29 +472,6 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
   private resultadoIncierto(err: unknown): boolean {
     const status = (err as { status?: number })?.status;
     return status === 0 || status === 408 || (typeof status === 'number' && status >= 500);
-  }
-
-  abrirPrerrequisitos(materia: MateriaEstudianteItem): void {
-    this.materiaPrerrequisitos.set(materia);
-    this.modalPrerrequisitosVisible.set(true);
-    this.loadingPrerrequisitos.set(true);
-
-    this.studentService.getPrerrequisitosMateria(materia.id).subscribe({
-      next: (res) => {
-        this.listaPrerrequisitos.set(res.datos || []);
-        this.loadingPrerrequisitos.set(false);
-      },
-      error: () => {
-        this.listaPrerrequisitos.set([]);
-        this.loadingPrerrequisitos.set(false);
-      },
-    });
-  }
-
-  cerrarModalPrerrequisitos(): void {
-    this.modalPrerrequisitosVisible.set(false);
-    this.materiaPrerrequisitos.set(null);
-    this.listaPrerrequisitos.set([]);
   }
 
   abrirModalAutoAsistencia(): void {

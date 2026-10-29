@@ -259,7 +259,7 @@ describe('StudentCoursesComponent', () => {
   ];
 
   beforeEach(async () => {
-    studentServiceSpy = jasmine.createSpyObj('StudentManagementService', ['getMaterias', 'getPrerrequisitosMateria', 'matricularGrupo']);
+    studentServiceSpy = jasmine.createSpyObj('StudentManagementService', ['getMaterias', 'matricularGrupo']);
     claimServiceSpy = jasmine.createSpyObj('AttendanceClaimService', ['getSesionesPorMateria', 'crearReclamo', 'eliminarReclamo', 'subirSoporte']);
     authServiceSpy = jasmine.createSpyObj('AuthService', ['currentUser']);
     coordinatorServiceSpy = jasmine.createSpyObj('CoordinatorManagementService', ['crearSolicitudMatricula']);
@@ -326,17 +326,6 @@ describe('StudentCoursesComponent', () => {
     component.retirarReclamo(mockSesiones[0]);
     expect(claimServiceSpy.eliminarReclamo).toHaveBeenCalledWith('rec-1', ASIGNATURA_ID, 'ses-1');
     expect(toastSpy.success).toHaveBeenCalledWith('Reclamo retirado.');
-  });
-
-  it('abre y cierra modal de prerrequisitos consultando servicio', () => {
-    studentServiceSpy.getPrerrequisitosMateria.and.returnValue(of({ exitoso: true, datos: [{ id: 'p1', prerrequisitoNombre: 'Cálculo I' }] } as any));
-    component.abrirPrerrequisitos(mockMaterias[0]);
-    expect(component.modalPrerrequisitosVisible()).toBeTrue();
-    expect(component.materiaPrerrequisitos()?.id).toBe(ASIGNATURA_ID);
-    expect(component.listaPrerrequisitos().length).toBe(1);
-    component.cerrarModalPrerrequisitos();
-    expect(component.modalPrerrequisitosVisible()).toBeFalse();
-    expect(component.materiaPrerrequisitos()).toBeNull();
   });
 
   it('registra autoasistencia por PIN o Token exitosamente', () => {

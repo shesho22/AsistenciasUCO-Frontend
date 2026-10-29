@@ -257,10 +257,6 @@ describe('mockBackendInterceptor', () => {
     tick(250);
     expect(sesMatRes?.exitoso).toBeTrue();
 
-    let prereqRes: any;
-    httpClient.get(`${environment.apiUrl}/estudiante/materias/mat-1/prerrequisitos`).subscribe((r) => (prereqRes = r));
-    tick(250);
-    expect(prereqRes?.exitoso).toBeTrue();
 
     let matrGrupoRes: any;
     httpClient.post(`${environment.apiUrl}/estudiante/matricular-grupo`, { codigo: 'G-1' }).subscribe((r) => (matrGrupoRes = r));

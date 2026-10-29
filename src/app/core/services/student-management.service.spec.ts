@@ -88,16 +88,6 @@ describe('StudentManagementService', () => {
     expect(resultado[0].indicadores).toBeNull();
   });
 
-  it('getPrerrequisitosMateria realiza petición GET para prerrequisitos', () => {
-    service.getPrerrequisitosMateria('mat-1').subscribe((res) => {
-      expect(res.exitoso).toBeTrue();
-    });
-
-    const req = http.expectOne(`${environment.apiUrl}/estudiante/materias/mat-1/prerrequisitos`);
-    expect(req.request.method).toBe('GET');
-    req.flush({ exitoso: true, datos: [] });
-  });
-
   it('matricularGrupo realiza petición POST con el código o pin', () => {
     service.matricularGrupo('PIN-12345').subscribe((res) => {
       expect(res.exitoso).toBeTrue();

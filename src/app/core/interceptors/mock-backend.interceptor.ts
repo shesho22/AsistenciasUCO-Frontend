@@ -333,27 +333,6 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     const sesiones = mockStore.sesionesMaterias[clave] || [];
     return of(okResponse(mockSesionesToDto(sesiones, materia))).pipe(delay(200));
   }
-  if (url.includes('/estudiante/materias/') && url.endsWith('/prerrequisitos') && method === 'GET') {
-    const mockPrereqs = [
-      {
-        id: 'req-01',
-        prerrequisitoCodigo: 'IS-302',
-        prerrequisitoNombre: 'Ingeniería de Software I',
-        creditos: 3,
-        tipo: 'OBLIGATORIO',
-        estadoAcademico: 'APROBADA',
-      },
-      {
-        id: 'req-02',
-        prerrequisitoCodigo: 'BD-301',
-        prerrequisitoNombre: 'Bases de Datos Avanzadas',
-        creditos: 3,
-        tipo: 'OBLIGATORIO',
-        estadoAcademico: 'PENDIENTE',
-      },
-    ];
-    return of(okResponse(mockPrereqs, undefined, 2)).pipe(delay(200));
-  }
   if (url.endsWith('/estudiante/matricular-grupo') && method === 'POST') {
     const body = req.body as any;
     return of(okResponse({ grupoId: body?.codigo }, '¡Te has matriculado exitosamente en el grupo!')).pipe(delay(250));
