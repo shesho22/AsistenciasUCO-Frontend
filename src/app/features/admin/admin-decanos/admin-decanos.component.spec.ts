@@ -376,6 +376,47 @@ describe('AdminDecanosComponent', () => {
       expect(panel.textContent).not.toContain('ACTIVA');
     });
 
+  it('bloquea el doble clic y libera el formulario tras el primer alta', () => {
+    component.abrirFormularioRegistro();
+    component.formData.tipoIdentificacionId = 'tipo-1';
+    component.formData.numeroIdentificacion = '1020304050';
+    component.formData.primerNombre = 'Carlos';
+    component.formData.primerApellido = 'Zapata';
+    component.formData.correo = 'carlos.zapata@uco.edu.co';
+    component.formData.password = 'ClaveSegura2026#';
+
+    component.guardarDecano();
+    component.guardarDecano();
+
+    const posts = http.match(`${environment.apiUrl}/admin/decanos`);
+    expect(posts.length).toBe(1);
+    expect(component.isSubmitting()).toBeTrue();
+    posts[0].flush({ exitoso: true, mensajeUsuario: 'Decano registrado exitosamente.' });
+    http.expectOne(`${environment.apiUrl}/admin/decanos`).flush({ exitoso: true, datos: [
+      ...mockDecanos,
+      { ...mockDecanos[0], id: 'dec-nuevo', numeroIdentificacion: '1020304050', correo: 'carlos.zapata@uco.edu.co' },
+    ] });
+    http.expectOne(`${environment.apiUrl}/admin/facultades`).flush({ exitoso: true, datos: mockFacultades });
+
+    expect(component.isSubmitting()).toBeFalse();
+  });
+
+  it('ignora una respuesta antigua del listado de decanos', () => {
+    component.cargarDecanos();
+    component.cargarDecanos();
+
+    const requests = http.match(`${environment.apiUrl}/admin/decanos`);
+    expect(requests.length).toBe(2);
+    const nuevoListado = [
+      ...mockDecanos,
+      { ...mockDecanos[0], id: 'dec-nuevo', numeroIdentificacion: '1020304050' },
+    ];
+    requests[1].flush({ exitoso: true, datos: nuevoListado });
+    requests[0].flush({ exitoso: true, datos: mockDecanos });
+
+    expect(component.decanos().some((decano) => decano.id === 'dec-nuevo')).toBeTrue();
+  });
+
     it('muestra error cuando el guardado falla en el backend', () => {
       component.formData.tipoIdentificacionId = 'tipo-1';
       component.formData.numeroIdentificacion = '1020304050';

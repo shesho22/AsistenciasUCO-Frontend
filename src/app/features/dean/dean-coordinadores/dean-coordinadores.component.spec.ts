@@ -410,6 +410,48 @@ describe('DeanCoordinadoresComponent', () => {
     expect(toastService.success).toHaveBeenCalled();
   });
 
+  it('bloquea el doble clic y libera el formulario tras el primer alta', () => {
+    flushInitialRequests();
+    component.abrirFormularioRegistro();
+    component.formData.numeroIdentificacion = '1017555444';
+    component.formData.primerNombre = 'Jorge';
+    component.formData.primerApellido = 'Valencia';
+    component.formData.correo = 'coordinador231@uco.edu.co';
+    component.formData.programaAcademico = 'Ingeniería de Sistemas';
+    component.formData.password = 'ClaveSegura2026!';
+
+    component.guardarCoordinador();
+    component.guardarCoordinador();
+
+    const posts = http.match(`${environment.apiUrl}/decano/coordinadores`);
+    expect(posts.length).toBe(1);
+    expect(component.isSubmitting()).toBeTrue();
+    posts[0].flush({ exitoso: true, mensajeUsuario: 'Coordinador creado.', datos: {} });
+    http.expectOne(`${environment.apiUrl}/decano/coordinadores`).flush({ exitoso: true, datos: [
+      ...mockCoordinadores,
+      { ...mockCoordinadores[0], id: 'coord-nuevo', numeroIdentificacion: '1017555444', correo: 'coordinador231@uco.edu.co' },
+    ] });
+
+    expect(component.isSubmitting()).toBeFalse();
+  });
+
+  it('ignora una respuesta antigua del listado de coordinadores', () => {
+    flushInitialRequests();
+    component.cargarCoordinadores();
+    component.cargarCoordinadores();
+
+    const requests = http.match(`${environment.apiUrl}/decano/coordinadores`);
+    expect(requests.length).toBe(2);
+    const nuevoListado = [
+      ...mockCoordinadores,
+      { ...mockCoordinadores[0], id: 'coord-nuevo', numeroIdentificacion: '1017555444' },
+    ];
+    requests[1].flush({ exitoso: true, datos: nuevoListado });
+    requests[0].flush({ exitoso: true, datos: mockCoordinadores });
+
+    expect(component.coordinadores().some((coord) => coord.id === 'coord-nuevo')).toBeTrue();
+  });
+
   it('abrirModalSeleccionarCoordinador y onSolicitarRegistroNuevo gestionan estado del modal', () => {
     flushInitialRequests();
     expect(component.isPickerModalOpen()).toBeFalse();

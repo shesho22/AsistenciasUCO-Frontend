@@ -58,7 +58,7 @@ export class DeanManagementService {
               nombres: nombres || nombreCompleto,
               apellidos: apellidos,
               correo: raw.correo || '',
-              facultad: raw.facultad || raw.nombreFacultad || 'Facultad Asignada',
+              facultad: raw.facultad || raw.nombreFacultad || 'Sin Facultad Asignada',
               programaAcademico: programaResuelto,
               nombrePrograma: raw.nombrePrograma || programaResuelto,
               totalDocentes: raw.totalDocentes ?? 0,

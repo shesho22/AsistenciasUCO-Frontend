@@ -20,6 +20,8 @@ import {
   validateInstitutionalEmail,
   getPasswordValidationError,
 } from '../../../core/validation/request-form-validation.util';
+import { finalize } from 'rxjs';
+import { IdentidadEsperada, UltimaPeticion, advertirRegistroNoListado } from '../../../core/utils/registro-confirmado.util';
 
 type VistaDecano = 'LISTA' | 'REGISTRO';
 
@@ -383,7 +385,7 @@ type VistaDecano = 'LISTA' | 'REGISTRO';
               <app-button variant="secondary" size="md" type="button" (clicked)="volverALista()">
                 Cancelar
               </app-button>
-              <app-button variant="primary" size="md" type="submit" [disabled]="!formData.primerNombre || !formData.primerApellido || !formData.correo || !formData.programaAcademico || !formData.password">
+              <app-button variant="primary" size="md" type="submit" [loading]="isSubmitting()" [disabled]="!formData.primerNombre || !formData.primerApellido || !formData.correo || !formData.programaAcademico || !formData.password">
                 Guardar Coordinador
               </app-button>
             </div>
@@ -437,8 +439,10 @@ export class DeanCoordinadoresComponent implements OnInit {
   tiposIdentificacion = signal<TipoIdentificacionItem[]>([]);
   programasAcademicos = signal<Array<{ id: string; nombre: string }>>([]);
   isLoading = signal<boolean>(true);
+  isSubmitting = signal<boolean>(false);
   searchQuery = '';
   selectedEstado = 'TODOS';
+  private readonly ultimaPeticionCoordinadores = new UltimaPeticion();
 
   formData: Omit<CoordinadorItem, 'id' | 'totalDocentes' | 'totalGrupos'> = {
     tipoIdentificacionId: 'A1B2C3D4-0000-0000-0000-000000000001',
@@ -513,14 +517,23 @@ export class DeanCoordinadoresComponent implements OnInit {
     }
   }
 
-  cargarCoordinadores(): void {
+  cargarCoordinadores(identidadEsperada?: IdentidadEsperada): void {
+    const peticion = this.ultimaPeticionCoordinadores.iniciar();
     this.isLoading.set(true);
     this.deanService.getCoordinadores().subscribe({
       next: (res) => {
-        this.coordinadores.set(res.datos || []);
+        if (!this.ultimaPeticionCoordinadores.esVigente(peticion)) {
+          return;
+        }
+        const datos = res.datos || [];
+        this.coordinadores.set(datos);
         this.isLoading.set(false);
+        advertirRegistroNoListado(datos, identidadEsperada, (aviso) => this.toast.warning(aviso));
       },
       error: () => {
+        if (!this.ultimaPeticionCoordinadores.esVigente(peticion)) {
+          return;
+        }
         this.isLoading.set(false);
         this.toast.error('Error al cargar coordinadores.');
       },
@@ -620,6 +633,9 @@ export class DeanCoordinadoresComponent implements OnInit {
   }
 
   guardarCoordinador(): void {
+    if (this.isSubmitting()) {
+      return;
+    }
     if (!this.formData.tipoIdentificacionId) {
       this.toast.warning('El campo Tipo de Documento es obligatorio.');
       return;
@@ -689,12 +705,13 @@ export class DeanCoordinadoresComponent implements OnInit {
       password: (this.formData.password || '').trim() || undefined,
     };
 
-    this.deanService.createCoordinador(payload).subscribe({
+    this.isSubmitting.set(true);
+    this.deanService.createCoordinador(payload).pipe(finalize(() => this.isSubmitting.set(false))).subscribe({
       next: (res) => {
         if (res.exitoso) {
           this.toast.success(res.mensajeUsuario || 'Coordinador registrado exitosamente.');
           this.ultimaCuentaRegistrada.set(payload.correo);
-          this.cargarCoordinadores();
+          this.cargarCoordinadores({ numeroIdentificacion: payload.numeroIdentificacion, correo: payload.correo });
           this.volverALista();
         }
       },
