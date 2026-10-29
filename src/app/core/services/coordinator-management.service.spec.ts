@@ -449,7 +449,6 @@ describe('CoordinatorManagementService', () => {
           horasSemanales: 4,
           componente: 'Obligatoria',
           area: 'Ciencias Básicas',
-          prerrequisitos: [],
         },
       ];
 

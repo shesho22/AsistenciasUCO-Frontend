@@ -16,7 +16,7 @@ Diseñado para cumplir con la totalidad de las **174 Historias de Usuario (HU001
 2. **Gobernanza Multirrol con Guards Estrictos**:
    - `ADMINISTRADOR`: Gestión de decanos, sedes, espacios físicos, facultades, áreas de conocimiento, parámetros globales, auditoría y simulador de cierre semestral masivo.
    - `DECANO`: Supervisión de coordinadores, consulta y detalle de grupos de la facultad, cronograma de sesiones, estructura física/académica y períodos lectivos.
-   - `COORDINADOR`: Gestión de docentes adscritos, planes de estudio (mallas curriculares por semestres y asignaturas con prerrequisitos), períodos académicos, directorio institucional de estudiantes, matrícula por grupo y aprobación de solicitudes de cupo. *(Excluido estrictamente de la toma de asistencia)*.
+   - `COORDINADOR`: Gestión de docentes adscritos, planes de estudio (mallas curriculares por semestres y asignaturas), períodos académicos, directorio institucional de estudiantes, matrícula por grupo y aprobación de solicitudes de cupo. *(Excluido estrictamente de la toma de asistencia)*.
    - `DOCENTE`: Horarios semanales, gestión de grupos y cupos máximos, cronograma de sesiones (regulares, reposición, extraordinarias), tablero de control de asistencia con atajos de teclado y resolución de reclamos justificados con soportes.
    - `ESTUDIANTE`: Consulta de horarios, seguimiento de materias inscritas con porcentaje acumulado de fallas, radicación de reclamos categorizados (`SALUD`, `CALAMIDAD`, `ACADEMICA`, `LABORAL`, `OTRA`) con adjuntos y solicitud de inscripción a cupos extemporáneos.
 

@@ -82,7 +82,6 @@ export function normalizarAsignaturaPlan(raw: any): AsignaturaPlanItem {
     semestre,
     area: raw?.area ?? raw?.nombreArea ?? '',
     componente: raw?.componente ?? raw?.nombreComponente ?? '',
-    prerrequisitos: raw?.prerrequisitos ?? [],
     horasSemanales: raw?.horasSemanales ?? 0,
   };
 }

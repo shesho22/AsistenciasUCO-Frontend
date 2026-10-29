@@ -72,7 +72,6 @@ describe('CoordinatorStudyPlanMeshPageComponent', () => {
               area: 'Software',
               componente: 'Obligatoria',
               horasSemanales: 4,
-              prerrequisitos: [],
             },
           ],
         })

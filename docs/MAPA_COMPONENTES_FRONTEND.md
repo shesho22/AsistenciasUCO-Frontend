@@ -78,7 +78,6 @@ Control centralizado de sesiones y registro de asistencia en aula.
   - **Modales:**
     - `StudentAutoAsistenciaModalComponent`: Marcación de asistencia con validación de Wi-Fi institucional.
     - `StudentMatriculaCodigoModalComponent`: Auto-matrícula vía código/PIN de aula.
-    - `StudentPrerequisitosModalComponent`: Validación de requisitos académicos.
 - **Mis Reclamos (HU010/HU011, consulta):**
   - **Ruta:** `/app/estudiante/reclamos` (menú ESTUDIANTE "Mis Reclamos")
   - **Componente:** `StudentClaimsComponent` (`features/student/student-claims`): solicitudes propias con estado, respuesta del docente y soporte; filtro por estado y paginación del servidor; descarga del soporte por `GET /archivos/{fileId}`.

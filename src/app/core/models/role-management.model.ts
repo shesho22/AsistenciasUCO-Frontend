@@ -270,7 +270,6 @@ export interface AsignaturaPlanItem {
   semestre: number;
   area: string;
   componente: 'Obligatoria' | 'Electiva' | 'Complementaria';
-  prerrequisitos: string[];
   horasSemanales: number;
 }
 

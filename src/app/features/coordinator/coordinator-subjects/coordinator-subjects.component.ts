@@ -288,10 +288,7 @@ import { AvatarComponent } from '../../../shared/components/avatar/avatar.compon
                   </div>
                 </div>
 
-                <div class="pt-2 border-t border-warm-100 flex items-center justify-between text-xs">
-                  <span class="text-warm-500 truncate">
-                    {{ asig.prerrequisitos.length > 0 ? asig.prerrequisitos.join(', ') : 'Sin prerrequisitos' }}
-                  </span>
+                <div class="pt-2 border-t border-warm-100 flex items-center justify-end text-xs">
                   <button
                     type="button"
                     (click)="irAMallaPlan(asig.planEstudioId)"

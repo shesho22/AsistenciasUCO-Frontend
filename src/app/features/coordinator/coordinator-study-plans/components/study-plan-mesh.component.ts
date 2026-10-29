@@ -130,13 +130,6 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
                 <div class="text-xs space-y-1 text-warm-600">
                   <p><span class="text-warm-400 font-medium">Área:</span> {{ asig.area }}</p>
                   <p><span class="text-warm-400 font-medium">Componente:</span> {{ asig.componente }}</p>
-                  @if (asig.prerrequisitos.length > 0) {
-                    <p class="text-amber-800 font-medium">
-                      Prerrequisitos: {{ asig.prerrequisitos.join(', ') }}
-                    </p>
-                  } @else {
-                    <p class="text-warm-400 italic">Sin prerrequisitos</p>
-                  }
                 </div>
               </div>
 
@@ -146,7 +139,7 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
                     type="button"
                     (click)="editSubject.emit(asig)"
                     class="p-1 text-warm-500 hover:text-primary-700 rounded hover:bg-warm-100"
-                    title="Modificar asignatura y prerrequisitos"
+                    title="Modificar asignatura"
                   >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />

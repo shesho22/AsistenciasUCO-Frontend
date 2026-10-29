@@ -41,9 +41,6 @@ export class StudentManagementService {
       );
   }
 
-  getPrerrequisitosMateria(materiaId: string): Observable<ApiResponse<any[]>> {
-    return this.http.get<ApiResponse<any[]>>(`${environment.apiUrl}/estudiante/materias/${materiaId}/prerrequisitos`);
-  }
 
   matricularGrupo(codigoOPin: string): Observable<ApiResponse<any>> {
     return this.http.post<ApiResponse<any>>(`${environment.apiUrl}/estudiante/matricular-grupo`, {
