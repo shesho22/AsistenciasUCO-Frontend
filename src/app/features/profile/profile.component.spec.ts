@@ -7,6 +7,7 @@ import { ToastService } from '../../shared/components/toast/toast.component';
 import { Location } from '@angular/common';
 import { Router } from '@angular/router';
 import { User, UserRole } from '../../core/models/user.model';
+import { PerfilService } from '../../core/services/perfil.service';
 
 describe('ProfileComponent', () => {
   let fixture: ComponentFixture<ProfileComponent>;
@@ -50,6 +51,7 @@ describe('ProfileComponent', () => {
         { provide: ToastService, useValue: toastServiceSpy },
         { provide: Router, useValue: routerSpy },
         { provide: Location, useValue: locationSpy },
+        { provide: PerfilService, useValue: { consultar: () => of({ exitoso: true, datos: null }) } },
       ],
     }).compileComponents();
 
