@@ -21,7 +21,7 @@ import {
   getPasswordValidationError,
 } from '../../../core/validation/request-form-validation.util';
 import { finalize } from 'rxjs';
-import { IdentidadEsperada, REGISTRO_NO_LISTADO_WARNING, UltimaPeticion, listaIncluyeIdentidad } from '../../../core/utils/registro-confirmado.util';
+import { IdentidadEsperada, UltimaPeticion, advertirRegistroNoListado } from '../../../core/utils/registro-confirmado.util';
 
 type VistaDecano = 'LISTA' | 'REGISTRO';
 
@@ -528,9 +528,7 @@ export class DeanCoordinadoresComponent implements OnInit {
         const datos = res.datos || [];
         this.coordinadores.set(datos);
         this.isLoading.set(false);
-        if (identidadEsperada && !listaIncluyeIdentidad(datos, identidadEsperada)) {
-          this.toast.warning(REGISTRO_NO_LISTADO_WARNING);
-        }
+        advertirRegistroNoListado(datos, identidadEsperada, (aviso) => this.toast.warning(aviso));
       },
       error: () => {
         if (!this.ultimaPeticionCoordinadores.esVigente(peticion)) {

@@ -15,7 +15,7 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { parseIdentificationNumber, validateInstitutionalEmail } from '../../../core/validation/request-form-validation.util';
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
 import { finalize } from 'rxjs';
-import { IdentidadEsperada, REGISTRO_NO_LISTADO_WARNING, UltimaPeticion, listaIncluyeIdentidad } from '../../../core/utils/registro-confirmado.util';
+import { IdentidadEsperada, UltimaPeticion, advertirRegistroNoListado } from '../../../core/utils/registro-confirmado.util';
 
 type VistaAdmin = 'LISTA' | 'REGISTRO';
 
@@ -479,9 +479,7 @@ export class AdminDecanosComponent implements OnInit {
         const datos = res.datos || [];
         this.decanos.set(datos);
         this.isLoading.set(false);
-        if (identidadEsperada && !listaIncluyeIdentidad(datos, identidadEsperada)) {
-          this.toast.warning(REGISTRO_NO_LISTADO_WARNING);
-        }
+        advertirRegistroNoListado(datos, identidadEsperada, (aviso) => this.toast.warning(aviso));
       },
       error: () => {
         if (!this.ultimaPeticionDecanos.esVigente(peticion)) {

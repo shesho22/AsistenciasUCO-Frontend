@@ -1,4 +1,4 @@
-import { UltimaPeticion, listaIncluyeIdentidad } from './registro-confirmado.util';
+import { REGISTRO_NO_LISTADO_WARNING, UltimaPeticion, advertirRegistroNoListado, listaIncluyeIdentidad } from './registro-confirmado.util';
 
 describe('registro-confirmado.util', () => {
   const esperada = { numeroIdentificacion: '1020304050', correo: 'Nuevo@uco.edu.co' };
@@ -22,5 +22,16 @@ describe('registro-confirmado.util', () => {
     const segunda = peticiones.iniciar();
     expect(peticiones.esVigente(primera)).toBeFalse();
     expect(peticiones.esVigente(segunda)).toBeTrue();
+  });
+
+  it('advierte solo cuando se espera una persona y la lista no la incluye', () => {
+    const advertir = jasmine.createSpy('advertir');
+
+    advertirRegistroNoListado([], esperada, advertir);
+    advertirRegistroNoListado([{ numeroIdentificacion: '1020304050' }], esperada, advertir);
+    advertirRegistroNoListado([], undefined, advertir);
+
+    expect(advertir).toHaveBeenCalledTimes(1);
+    expect(advertir).toHaveBeenCalledWith(REGISTRO_NO_LISTADO_WARNING);
   });
 });

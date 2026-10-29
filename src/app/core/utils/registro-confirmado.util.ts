@@ -29,3 +29,14 @@ export class UltimaPeticion {
     return version === this.version;
   }
 }
+
+/** Avisa cuando el backend confirmó el alta pero la lista recargada todavía no incluye a la persona. */
+export function advertirRegistroNoListado(
+  items: ReadonlyArray<{ numeroIdentificacion?: string | number | null; correo?: string | null }>,
+  esperada: IdentidadEsperada | undefined,
+  advertir: (mensaje: string) => void,
+): void {
+  if (esperada && !listaIncluyeIdentidad(items, esperada)) {
+    advertir(REGISTRO_NO_LISTADO_WARNING);
+  }
+}
