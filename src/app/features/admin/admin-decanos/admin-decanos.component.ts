@@ -15,6 +15,7 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { parseIdentificationNumber, validateInstitutionalEmail } from '../../../core/validation/request-form-validation.util';
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
 import { finalize } from 'rxjs';
+import { IdentidadEsperada, REGISTRO_NO_LISTADO_WARNING, UltimaPeticion, listaIncluyeIdentidad } from '../../../core/utils/registro-confirmado.util';
 
 type VistaAdmin = 'LISTA' | 'REGISTRO';
 
@@ -382,7 +383,7 @@ export class AdminDecanosComponent implements OnInit {
   isSubmitting = signal<boolean>(false);
   searchQuery = '';
   selectedEstado = 'TODOS';
-  private decanosRequestVersion = 0;
+  private readonly ultimaPeticionDecanos = new UltimaPeticion();
 
   formData: Omit<DecanoItem, 'id'> & { password?: string } = {
     tipoIdentificacionId: 'A1B2C3D4-0000-0000-0000-000000000001',
@@ -467,25 +468,23 @@ export class AdminDecanosComponent implements OnInit {
     }
   }
 
-  cargarDecanos(identidadEsperada?: { numeroIdentificacion: string; correo: string }): void {
-    const requestVersion = ++this.decanosRequestVersion;
+  cargarDecanos(identidadEsperada?: IdentidadEsperada): void {
+    const peticion = this.ultimaPeticionDecanos.iniciar();
     this.isLoading.set(true);
     this.adminService.getDecanos().subscribe({
       next: (res) => {
-        if (requestVersion !== this.decanosRequestVersion) {
+        if (!this.ultimaPeticionDecanos.esVigente(peticion)) {
           return;
         }
         const datos = res.datos || [];
         this.decanos.set(datos);
         this.isLoading.set(false);
-        if (identidadEsperada && !datos.some((decano) =>
-          String(decano.numeroIdentificacion) === identidadEsperada.numeroIdentificacion
-          || decano.correo?.trim().toLowerCase() === identidadEsperada.correo.toLowerCase())) {
-          this.toast.warning('El backend confirmó el registro, pero la lista aún no devuelve la persona. No repita el alta; verifique el estado de acceso.');
+        if (identidadEsperada && !listaIncluyeIdentidad(datos, identidadEsperada)) {
+          this.toast.warning(REGISTRO_NO_LISTADO_WARNING);
         }
       },
       error: () => {
-        if (requestVersion !== this.decanosRequestVersion) {
+        if (!this.ultimaPeticionDecanos.esVigente(peticion)) {
           return;
         }
         this.isLoading.set(false);

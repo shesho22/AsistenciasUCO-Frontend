@@ -21,6 +21,7 @@ import {
   getPasswordValidationError,
 } from '../../../core/validation/request-form-validation.util';
 import { finalize } from 'rxjs';
+import { IdentidadEsperada, REGISTRO_NO_LISTADO_WARNING, UltimaPeticion, listaIncluyeIdentidad } from '../../../core/utils/registro-confirmado.util';
 
 type VistaDecano = 'LISTA' | 'REGISTRO';
 
@@ -441,7 +442,7 @@ export class DeanCoordinadoresComponent implements OnInit {
   isSubmitting = signal<boolean>(false);
   searchQuery = '';
   selectedEstado = 'TODOS';
-  private coordinadoresRequestVersion = 0;
+  private readonly ultimaPeticionCoordinadores = new UltimaPeticion();
 
   formData: Omit<CoordinadorItem, 'id' | 'totalDocentes' | 'totalGrupos'> = {
     tipoIdentificacionId: 'A1B2C3D4-0000-0000-0000-000000000001',
@@ -516,25 +517,23 @@ export class DeanCoordinadoresComponent implements OnInit {
     }
   }
 
-  cargarCoordinadores(identidadEsperada?: { numeroIdentificacion: string; correo: string }): void {
-    const requestVersion = ++this.coordinadoresRequestVersion;
+  cargarCoordinadores(identidadEsperada?: IdentidadEsperada): void {
+    const peticion = this.ultimaPeticionCoordinadores.iniciar();
     this.isLoading.set(true);
     this.deanService.getCoordinadores().subscribe({
       next: (res) => {
-        if (requestVersion !== this.coordinadoresRequestVersion) {
+        if (!this.ultimaPeticionCoordinadores.esVigente(peticion)) {
           return;
         }
         const datos = res.datos || [];
         this.coordinadores.set(datos);
         this.isLoading.set(false);
-        if (identidadEsperada && !datos.some((coordinador) =>
-          String(coordinador.numeroIdentificacion) === identidadEsperada.numeroIdentificacion
-          || coordinador.correo?.trim().toLowerCase() === identidadEsperada.correo.toLowerCase())) {
-          this.toast.warning('El backend confirmó el registro, pero la lista aún no devuelve la persona. No repita el alta; verifique el estado de acceso.');
+        if (identidadEsperada && !listaIncluyeIdentidad(datos, identidadEsperada)) {
+          this.toast.warning(REGISTRO_NO_LISTADO_WARNING);
         }
       },
       error: () => {
-        if (requestVersion !== this.coordinadoresRequestVersion) {
+        if (!this.ultimaPeticionCoordinadores.esVigente(peticion)) {
           return;
         }
         this.isLoading.set(false);
