@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, input, output, signal, inject, WritableSignal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, computed, input, output, signal, inject, WritableSignal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
@@ -213,9 +213,14 @@ import { StudentService } from '../../../../core/services/student.service';
                 [ngModel]="email()"
                 (ngModelChange)="onFieldInput('correo', $event, email)"
                 name="studentEmail"
-                placeholder="juan.perez@uco.edu.co"
+                [placeholder]="emailPlaceholder()"
                 class="w-full bg-white text-warm-900 border border-warm-300 rounded-xl px-4 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
+              @if (emailDomain()) {
+                <p class="mt-1 text-[11px] text-warm-500" data-testid="email-domain-hint">
+                  Debe terminar en {{ emailDomain() }}. Se enviará un enlace para verificar el correo.
+                </p>
+              }
             </app-form-field>
 
             <!-- Contraseña Temporal y Confirmación de Contraseña -->
@@ -295,6 +300,9 @@ export class AttendanceEnrollmentModalComponent {
   isEnrolling = input<boolean>(false);
   docTypeOptions = input<SelectOption[]>([]);
   fieldErrors = input<Record<string, string | undefined>>({});
+  /** Dominio institucional exigido (IDENT-001); vacio si aun no se conoce. */
+  emailDomain = input<string>('');
+  emailPlaceholder = computed(() => `juan.perez${this.emailDomain() || '@uco.edu.co'}`);
 
   docType = signal<string>('');
   code = signal<string>('');
@@ -323,6 +331,7 @@ export class AttendanceEnrollmentModalComponent {
     password: string;
     confirmPassword?: string;
     hasLocalConfirmError?: boolean;
+    esNuevoEstudiante?: boolean;
   }>();
   closed = output<void>();
   clearFieldError = output<string>();
@@ -480,6 +489,7 @@ export class AttendanceEnrollmentModalComponent {
       password: this.password(),
       confirmPassword: this.confirmPassword(),
       hasLocalConfirmError,
+      esNuevoEstudiante: this.showRegistrationForm(),
     });
   }
 }

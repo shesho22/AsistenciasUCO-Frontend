@@ -23,6 +23,14 @@ export const routes: Routes = [
           ),
       },
       {
+        // IDENT-001: destino publico del enlace de verificacion de correo (el token llega en el fragmento).
+        path: 'verificar-correo',
+        loadComponent: () =>
+          import('./features/auth/verify-email/verify-email.component').then(
+            (m) => m.VerifyEmailComponent
+          ),
+      },
+      {
         path: 'register',
         redirectTo: 'login',
       },

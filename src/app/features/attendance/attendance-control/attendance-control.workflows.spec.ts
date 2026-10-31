@@ -7,6 +7,8 @@ import { CourseService } from '../../../core/services/course.service';
 import { GroupService } from '../../../core/services/group.service';
 import { SessionService } from '../../../core/services/session.service';
 import { StudentService } from '../../../core/services/student.service';
+import { StudentRegistrationConfigService } from '../../../core/services/student-registration-config.service';
+import { EmailVerificationService } from '../../../core/services/email-verification.service';
 import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
 import { AttendanceControlComponent } from './attendance-control.component';
 import { AttendanceRealtimeSyncService } from './attendance-realtime-sync.service';
@@ -20,6 +22,8 @@ describe('AttendanceControlComponent public workflows', () => {
   let attendanceService: jasmine.SpyObj<AttendanceService>;
   let attendanceClaimService: jasmine.SpyObj<AttendanceClaimService>;
   let realtime: jasmine.SpyObj<AttendanceRealtimeSyncService>;
+  let registrationConfig: jasmine.SpyObj<StudentRegistrationConfigService>;
+  let emailVerification: jasmine.SpyObj<EmailVerificationService>;
 
   const course = {
     id: 'group-1',
@@ -91,6 +95,10 @@ describe('AttendanceControlComponent public workflows', () => {
     );
     realtime.watch.and.returnValue(NEVER);
     realtime.connectionAlerts.and.returnValue(NEVER);
+    registrationConfig = jasmine.createSpyObj('StudentRegistrationConfigService', ['getEmailDomain']);
+    registrationConfig.getEmailDomain.and.returnValue(of('@uco.edu.co'));
+    emailVerification = jasmine.createSpyObj('EmailVerificationService', ['resendVerification']);
+    emailVerification.resendVerification.and.returnValue(of({ exitoso: true, datos: null }));
 
     attendanceClaimService = jasmine.createSpyObj('AttendanceClaimService', [
       'getReclamosDocente',
@@ -114,6 +122,8 @@ describe('AttendanceControlComponent public workflows', () => {
           useValue: { getIdentityDocumentTypes: () => of([]) },
         },
         { provide: AttendanceRealtimeSyncService, useValue: realtime },
+        { provide: StudentRegistrationConfigService, useValue: registrationConfig },
+        { provide: EmailVerificationService, useValue: emailVerification },
       ],
     });
   });
@@ -265,6 +275,120 @@ describe('AttendanceControlComponent public workflows', () => {
 
     expect(component.studentFieldErrors()['correo']).toBe('El correo ya existe');
     expect(component.toastType()).toBe('error');
+  });
+
+  describe('IDENT-001 correo institucional y verificacion', () => {
+    const nuevo = (correo: string) => ({
+      tipoIdentificacionId: 'tipo-1',
+      numeroIdentificacion: '1017123456',
+      primerNombre: 'Carlos',
+      primerApellido: 'Perez',
+      correo,
+      password: 'Temporal2026*',
+      esNuevoEstudiante: true,
+    });
+
+    it('carga el dominio al abrir el registro y lo expone al modal', () => {
+      const component = createComponent();
+
+      component.openStudentRegistration();
+
+      expect(registrationConfig.getEmailDomain).toHaveBeenCalledTimes(1);
+      expect(component.emailDomain()).toBe('@uco.edu.co');
+    });
+
+    it('rechaza a un estudiante nuevo con correo no institucional sin llamar al backend', () => {
+      const component = createComponent();
+      component.openStudentRegistration();
+
+      component.onRegisterStudentSubmit(nuevo('carlos@gmail.com'));
+
+      expect(studentService.enrollStudentInGroup).not.toHaveBeenCalled();
+      expect(component.studentFieldErrors()['correo']).toBe(
+        'El correo del estudiante debe ser institucional y terminar en @uco.edu.co.'
+      );
+      expect(component.toastType()).toBe('error');
+    });
+
+    it('acepta a un estudiante nuevo con correo institucional', () => {
+      const component = createComponent();
+      component.openStudentRegistration();
+
+      component.onRegisterStudentSubmit(nuevo('carlos.perez@UCO.edu.co'));
+
+      expect(studentService.enrollStudentInGroup).toHaveBeenCalledTimes(1);
+    });
+
+    it('no aplica el dominio a un estudiante existente (solo se vincula)', () => {
+      const component = createComponent();
+      component.openStudentRegistration();
+
+      component.onRegisterStudentSubmit({ ...nuevo('carlos@gmail.com'), esNuevoEstudiante: false });
+
+      expect(studentService.enrollStudentInGroup).toHaveBeenCalledTimes(1);
+    });
+
+    it('si el dominio no pudo cargarse omite la pre-validacion y deja decidir al backend', () => {
+      registrationConfig.getEmailDomain.and.returnValue(throwError(() => new Error('sin red')));
+      const component = createComponent();
+      component.openStudentRegistration();
+
+      component.onRegisterStudentSubmit(nuevo('carlos@gmail.com'));
+
+      expect(component.emailDomain()).toBe('');
+      expect(studentService.enrollStudentInGroup).toHaveBeenCalledTimes(1);
+    });
+
+    it('reenvia el enlace del estudiante del grupo seleccionado y avisa del exito', () => {
+      const component = createComponent();
+      component.onCourseSelect('group-1');
+
+      component.onResendVerification('student-1');
+
+      expect(emailVerification.resendVerification).toHaveBeenCalledOnceWith('group-1', 'student-1');
+      expect(component.resendingStudentId()).toBe('');
+      expect(component.toastType()).toBe('success');
+    });
+
+    it('muestra el mensaje del backend si el reenvio falla (por ejemplo, espera de reenvio)', () => {
+      emailVerification.resendVerification.and.returnValue(throwError(() =>
+        new HttpErrorResponse({
+          status: 409,
+          error: { status: 409, code: 'VCE_005', message: 'Espere unos minutos antes de reenviar el enlace.' },
+        })
+      ));
+      const component = createComponent();
+      component.onCourseSelect('group-1');
+
+      component.onResendVerification('student-1');
+
+      expect(component.toastType()).toBe('error');
+      expect(component.toastMessage()).toBe('Espere unos minutos antes de reenviar el enlace.');
+      expect(component.resendingStudentId()).toBe('');
+    });
+
+    it('muestra el mensaje generico de la utilidad de errores si el reenvio falla sin detalle', () => {
+      emailVerification.resendVerification.and.returnValue(throwError(() => new Error('')));
+      const component = createComponent();
+      component.onCourseSelect('group-1');
+
+      component.onResendVerification('student-1');
+
+      expect(component.toastType()).toBe('error');
+      expect(component.toastMessage()).toBe('No fue posible completar la operación. Intente nuevamente.');
+    });
+
+    it('ignora reenvios sin grupo seleccionado o mientras hay otro en curso', () => {
+      const component = createComponent();
+      component.selectedCourseId.set('');
+      component.onResendVerification('student-1');
+
+      component.selectedCourseId.set('group-1');
+      component.resendingStudentId.set('student-2');
+      component.onResendVerification('student-1');
+
+      expect(emailVerification.resendVerification).not.toHaveBeenCalled();
+    });
   });
 
   it('marca todos como SJC y reporta un fallo al guardar', () => {
