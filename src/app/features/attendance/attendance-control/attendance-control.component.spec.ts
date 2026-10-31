@@ -5,6 +5,8 @@ import { CourseService } from '../../../core/services/course.service';
 import { SessionService } from '../../../core/services/session.service';
 import { GroupService } from '../../../core/services/group.service';
 import { StudentService } from '../../../core/services/student.service';
+import { StudentRegistrationConfigService } from '../../../core/services/student-registration-config.service';
+import { EmailVerificationService } from '../../../core/services/email-verification.service';
 import { AttendanceService } from '../../../core/services/attendance.service';
 import { CatalogService } from '../../../core/services/catalog.service';
 import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
@@ -159,6 +161,11 @@ describe('AttendanceControlComponent contract corrections', () => {
         { provide: CatalogService, useValue: catalogService },
         { provide: AttendanceClaimService, useValue: attendanceClaimService },
         { provide: AttendanceRealtimeSyncService, useValue: realtimeSync },
+        {
+          provide: StudentRegistrationConfigService,
+          useValue: { getEmailDomain: () => of('@uco.edu.co') },
+        },
+        { provide: EmailVerificationService, useValue: { resendVerification: () => of({ exitoso: true, datos: null }) } },
       ],
     });
   });

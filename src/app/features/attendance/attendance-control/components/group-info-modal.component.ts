@@ -95,9 +95,22 @@ import { Course } from '../../../../core/models/course.model';
                       </div>
                     </div>
                   </div>
-                  <span class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
-                    {{ st.nombreEstado || st.codigoEstado || 'Matriculado' }}
-                  </span>
+                  <div class="flex items-center gap-2 shrink-0">
+                    @if (st.idEstudiante) {
+                      <button
+                        type="button"
+                        class="px-2 py-0.5 text-[10px] font-bold rounded-md border border-primary-200 text-primary-800 bg-white hover:bg-primary-50 disabled:opacity-50"
+                        [attr.data-testid]="'resend-verification-' + st.idEstudiante"
+                        [disabled]="resendingStudentId() !== ''"
+                        (click)="resendVerification.emit(st.idEstudiante)"
+                      >
+                        {{ resendingStudentId() === st.idEstudiante ? 'Enviando…' : 'Reenviar enlace' }}
+                      </button>
+                    }
+                    <span class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      {{ st.nombreEstado || st.codigoEstado || 'Matriculado' }}
+                    </span>
+                  </div>
                 </div>
               }
             </div>
@@ -119,6 +132,9 @@ export class GroupInfoModalComponent {
   course = input<Course | null | undefined>(null);
   students = input<any[]>([]);
   isLoading = input<boolean>(false);
+  /** Id del estudiante cuyo enlace de verificacion se esta reenviando (IDENT-001); vacio si ninguno. */
+  resendingStudentId = input<string>('');
 
   closed = output<void>();
+  resendVerification = output<string>();
 }

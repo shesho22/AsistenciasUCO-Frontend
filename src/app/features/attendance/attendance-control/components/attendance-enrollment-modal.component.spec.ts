@@ -219,6 +219,39 @@ describe('AttendanceEnrollmentModalComponent', () => {
     expect(payloadEmitido.hasLocalConfirmError).toBeFalse();
   });
 
+  it('IDENT-001: el payload distingue al estudiante nuevo del existente', () => {
+    let payloadEmitido: any = null;
+    component.submitted.subscribe((p) => (payloadEmitido = p));
+    const event = new Event('submit');
+
+    component.showRegistrationForm.set(true);
+    component.onSubmit(event);
+    expect(payloadEmitido.esNuevoEstudiante).toBeTrue();
+
+    component.showRegistrationForm.set(false);
+    component.onSubmit(event);
+    expect(payloadEmitido.esNuevoEstudiante).toBeFalse();
+  });
+
+  it('IDENT-001: muestra el dominio exigido y lo usa en el ejemplo del campo correo', () => {
+    component.showRegistrationForm.set(true);
+    fixture.componentRef.setInput('emailDomain', '@otra.edu');
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelector('[data-testid="email-domain-hint"]')?.textContent).toContain('@otra.edu');
+    expect(host.querySelector<HTMLInputElement>('input[name="studentEmail"]')?.placeholder).toBe('juan.perez@otra.edu');
+  });
+
+  it('IDENT-001: sin dominio conocido no muestra la ayuda y conserva el ejemplo institucional', () => {
+    component.showRegistrationForm.set(true);
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelector('[data-testid="email-domain-hint"]')).toBeNull();
+    expect(host.querySelector<HTMLInputElement>('input[name="studentEmail"]')?.placeholder).toBe('juan.perez@uco.edu.co');
+  });
+
   it('onClose resetea el formulario y emite evento closed', () => {
     let cerrado = false;
     component.closed.subscribe(() => (cerrado = true));

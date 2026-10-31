@@ -3,6 +3,9 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { finalize, forkJoin, map } from 'rxjs';
 import { StudentService } from '../../../core/services/student.service';
+import { StudentRegistrationConfigService } from '../../../core/services/student-registration-config.service';
+import { EmailVerificationService } from '../../../core/services/email-verification.service';
+import { isInstitutionalEmail } from '../../../core/validation/institutional-email.util';
 import { SessionService } from '../../../core/services/session.service';
 import { AttendanceService } from '../../../core/services/attendance.service';
 import { GroupService } from '../../../core/services/group.service';
@@ -137,6 +140,7 @@ type StudentEnrollmentField =
         [isEnrolling]="isEnrolling()"
         [docTypeOptions]="docTypeOptions()"
         [fieldErrors]="studentFieldErrors()"
+        [emailDomain]="emailDomain()"
         (submitted)="onRegisterStudentSubmit($event)"
         (clearFieldError)="onClearStudentFieldError($event)"
         (closed)="isRegisterModalOpen.set(false)"
@@ -172,6 +176,8 @@ type StudentEnrollmentField =
         [course]="currentCourse()"
         [students]="groupStudents()"
         [isLoading]="isLoadingGroupStudents()"
+        [resendingStudentId]="resendingStudentId()"
+        (resendVerification)="onResendVerification($event)"
         (closed)="isGroupInfoModalOpen.set(false)"
       />
 
@@ -206,6 +212,10 @@ export class AttendanceControlComponent {
   private catalogService = inject(CatalogService);
   private attendanceClaimService = inject(AttendanceClaimService);
   private timeZone = inject(SessionTimeZoneService);
+  private studentRegistrationConfig = inject(StudentRegistrationConfigService);
+  private emailVerification = inject(EmailVerificationService);
+  emailDomain = signal<string>('');
+  resendingStudentId = signal<string>('');
 
   readonly sessionsEnabled = environment.features.sessionsEnabled;
   readonly attendanceEnabled = environment.features.attendanceEnabled;
@@ -579,6 +589,38 @@ export class AttendanceControlComponent {
   openStudentRegistration(): void {
     this.studentFieldErrors.set({});
     this.isRegisterModalOpen.set(true);
+    this.studentRegistrationConfig
+      .getEmailDomain()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (dominio) => this.emailDomain.set(dominio),
+        // Sin dominio cargado solo se omite la pre-validacion; el backend sigue siendo la autoridad.
+        error: () => this.emailDomain.set(''),
+      });
+  }
+
+  onResendVerification(idEstudiante: string): void {
+    const courseId = this.selectedCourseId();
+    if (!courseId || this.resendingStudentId()) return;
+    this.resendingStudentId.set(idEstudiante);
+    this.emailVerification
+      .resendVerification(courseId, idEstudiante)
+      .pipe(
+        finalize(() => this.resendingStudentId.set('')),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe({
+        next: () => {
+          this.toastType.set('success');
+          this.toastMessage.set('Se envió un nuevo enlace de verificación al correo del estudiante.');
+          this.showToast.set(true);
+        },
+        error: (error: unknown) => {
+          this.toastType.set('error');
+          this.toastMessage.set(getApiErrorMessage(error) || 'No fue posible reenviar el enlace de verificación.');
+          this.showToast.set(true);
+        },
+      });
   }
 
   onClearStudentFieldError(field: string): void {
@@ -610,6 +652,9 @@ export class AttendanceControlComponent {
       fieldErrors.correo = 'El campo Correo Institucional es obligatorio.';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.correo.trim())) {
       fieldErrors.correo = 'El campo Correo Institucional debe tener un formato válido (ej. estudiante@uco.edu.co).';
+    } else if (data.esNuevoEstudiante && this.emailDomain() && !isInstitutionalEmail(data.correo, this.emailDomain())) {
+      // IDENT-001: pre-validacion de comodidad; la autoridad es el backend (si el dominio no se pudo cargar se omite).
+      fieldErrors.correo = `El correo del estudiante debe ser institucional y terminar en ${this.emailDomain()}.`;
     }
     if (passwordError) {
       fieldErrors.password = passwordError;
