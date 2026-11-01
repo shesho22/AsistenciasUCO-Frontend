@@ -7,7 +7,7 @@ import { ApiListResponse } from '../api/models/api-list-response.model';
 import { AsignaturaDocenteApiDto } from '../api/models/asignatura-docente-api-dto.model';
 import { GrupoApiDto } from '../api/models/grupo-api-dto.model';
 import { HorarioDocenteApiDto } from '../api/models/horario-docente-api-dto.model';
-import { Course } from '../models/course.model';
+import { Course, FranjaHorario } from '../models/course.model';
 import { MOCK_COURSES } from '../mocks/course.mock';
 
 @Injectable({
@@ -95,7 +95,7 @@ export class CourseService {
     );
   }
 
-  /** Solo los campos que entrega el contrato del grupo: sin horario, aula ni nombre de docente sintetizados. */
+  /** Solo los campos que entrega el contrato del grupo (F1: incluye las franjas del horario); sin aula ni nombre de docente sintetizados. */
   private buildCoursesFromGroups(grupos: GrupoApiDto[]): Course[] {
     const colors: Course['colorCategory'][] = ['emerald', 'amber', 'blue', 'purple'];
     return grupos.map(
@@ -104,7 +104,8 @@ export class CourseService {
         code: grupo.codigo,
         name: grupo.nombreAsignatura,
         section: grupo.nombre,
-        schedule: '',
+        schedule: describirFranjas(toFranjas(grupo)),
+        franjas: toFranjas(grupo),
         asignaturaId: grupo.idAsignatura,
         docenteId: grupo.idDocente,
         enrolledStudentsCount: grupo.estudiantesActivos,
@@ -163,42 +164,27 @@ export class CourseService {
     });
   }
 
-  crearGrupo(nuevo: Partial<Course> & Record<string, unknown>): Observable<ApiResponse<Course>> {
+  /**
+   * F1: crea un grupo (POST /grupos, solo COORDINADOR) con su horario semanal en la misma transacción.
+   * El body sigue el contrato real de CrearGrupoRequest; `franjas` vacío o ausente = grupo sin horario.
+   */
+  crearGrupo(payload: GrupoCoordinadorPayload): Observable<ApiResponse<{ id: string; mensajeUsuario: string }>> {
     if (environment.useMocks) {
-      const cursoCreado: Course = {
-        id: `mock-crs-${this.coursesSignal().length + 1}`,
-        code: nuevo.code || 'ASIG-001',
-        name: nuevo.name || 'Nueva Asignatura',
-        section: nuevo.section || 'Grupo 01',
-        schedule: nuevo.schedule || 'Lun, Mié 08:00 - 10:00 AM',
-        room: nuevo.room || 'Aula Por Asignar',
-        enrolledStudentsCount: nuevo.enrolledStudentsCount || 0,
-        cupoMaximo: nuevo.cupoMaximo || 35,
-        colorCategory: nuevo.colorCategory || 'emerald',
-      };
-
-      this.coursesSignal.update((prev) => [cursoCreado, ...prev]);
       return of({
-        idTransaccion: 'mock-tx-create-course',
+        idTransaccion: 'mock-tx-create-group',
         exitoso: true,
-        mensajeUsuario: `Grupo ${cursoCreado.section} de ${cursoCreado.name} creado exitosamente.`,
-        datos: cursoCreado,
+        mensajeUsuario: 'Grupo registrado(a) exitosamente.',
+        datos: { id: `mock-grp-${Date.now()}`, mensajeUsuario: 'Grupo registrado(a) exitosamente.' },
       }).pipe(delay(250));
     }
 
-    return this.http.post<ApiResponse<Course>>(`${environment.apiUrl}/grupos`, {
-      code: nuevo.code,
-      name: nuevo.name,
-      section: nuevo.section,
-      cupoMaximo: nuevo.cupoMaximo || 35,
-      colorCategory: nuevo.colorCategory,
-      room: nuevo.room,
-      schedule: nuevo.schedule,
-      asignaturaId: nuevo['asignaturaId'],
-      dias: nuevo['dias'],
-      horaInicio: nuevo['horaInicio'],
-      horaFin: nuevo['horaFin'],
-      generarSesionesAutomaticas: nuevo['generarSesionesAutomaticas'],
+    return this.http.post<ApiResponse<{ id: string; mensajeUsuario: string }>>(`${environment.apiUrl}/grupos`, {
+      idAsignatura: payload.idAsignatura,
+      idPeriodoAcademico: payload.idPeriodoAcademico,
+      codigo: payload.codigo,
+      nombre: payload.nombre,
+      idDocente: payload.idDocente,
+      franjas: toFranjasRequest(payload.franjas),
     });
   }
 
@@ -241,30 +227,55 @@ export class CourseService {
       );
   }
 
-  actualizarGrupo(id: string, cambios: Partial<Course>): Observable<ApiResponse<Course>> {
+  /**
+   * F1: actualiza un grupo (PUT /grupos/{id}, solo COORDINADOR). Si se envían `franjas`, reemplazan el horario
+   * semanal completo; si no, el horario no cambia.
+   */
+  actualizarGrupo(id: string, payload: GrupoCoordinadorPayload): Observable<ApiResponse<{ id: string; mensajeUsuario: string }>> {
     if (environment.useMocks) {
-      let actualizado: Course | null = null;
-      this.coursesSignal.update((prev) => {
-        return prev.map((c) => {
-          if (c.id === id) {
-            actualizado = { ...c, ...cambios };
-            return actualizado;
-          }
-          return c;
-        });
-      });
-
       return of({
-        idTransaccion: `mock-tx-update-course-${id}`,
+        idTransaccion: `mock-tx-update-group-${id}`,
         exitoso: true,
-        mensajeUsuario: 'Información del grupo actualizada correctamente.',
-        datos: actualizado as unknown as Course,
+        mensajeUsuario: 'Grupo actualizado(a) exitosamente.',
+        datos: { id, mensajeUsuario: 'Grupo actualizado(a) exitosamente.' },
       }).pipe(delay(250));
     }
 
-    // TARGET (PLAN.md LB-001B.1B, riesgo #3 RESUELTO): Grupo.docente en DB es solo FK UUID;
-    // ActualizarGrupoRequest.java del backend no declara docenteName.
-    const { docenteName, ...resto } = cambios as Partial<Course> & Record<string, unknown>;
-    return this.http.put<ApiResponse<Course>>(`${environment.apiUrl}/grupos/${id}`, resto);
+    return this.http.put<ApiResponse<{ id: string; mensajeUsuario: string }>>(`${environment.apiUrl}/grupos/${id}`, {
+      codigo: payload.codigo,
+      nombre: payload.nombre,
+      idDocente: payload.idDocente,
+      cupoMaximo: payload.cupoMaximo,
+      franjas: toFranjasRequest(payload.franjas),
+    });
   }
+}
+
+/** Cuerpo de crear/actualizar grupo del coordinador (F1). */
+export interface GrupoCoordinadorPayload {
+  idAsignatura?: string;
+  idPeriodoAcademico?: string;
+  codigo?: number;
+  nombre?: string;
+  idDocente?: string;
+  cupoMaximo?: number;
+  franjas?: FranjaHorario[];
+}
+
+function toFranjasRequest(franjas: FranjaHorario[] | undefined): { dia: string; horaInicio: string; horaFin: string }[] | undefined {
+  return franjas?.map((f) => ({ dia: f.dia, horaInicio: f.horaInicio, horaFin: f.horaFin }));
+}
+
+/** Texto del horario semanal: "Lunes 08:00-10:00, Miercoles 08:00-10:00". */
+export function describirFranjas(franjas: FranjaHorario[] | undefined): string {
+  return (franjas ?? []).map((f) => `${f.nombreDia ?? f.dia} ${f.horaInicio}-${f.horaFin}`).join(', ');
+}
+
+function toFranjas(grupo: GrupoApiDto): FranjaHorario[] {
+  return (grupo.franjas ?? []).map((f) => ({
+    dia: f.codigoDia,
+    nombreDia: f.nombreDia ?? undefined,
+    horaInicio: f.horaInicio,
+    horaFin: f.horaFin,
+  }));
 }

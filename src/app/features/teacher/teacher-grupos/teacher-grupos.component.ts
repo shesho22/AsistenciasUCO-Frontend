@@ -8,7 +8,6 @@ import { GroupService } from '../../../core/services/group.service';
 import { StudentService } from '../../../core/services/student.service';
 import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
 import { ToastService } from '../../../shared/components/toast/toast.component';
-import { AsignaturaDocenteApiDto } from '../../../core/api/models/asignatura-docente-api-dto.model';
 import { Course } from '../../../core/models/course.model';
 import { ClassSession } from '../../../core/models/attendance.model';
 import { SolicitudRevisionItem } from '../../../core/models/role-management.model';
@@ -16,7 +15,6 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 
 // Componentes Hijos Desacoplados
 import { TeacherGruposListComponent } from './components/teacher-grupos-list.component';
-import { TeacherGrupoFormComponent } from './components/teacher-grupo-form.component';
 import { TeacherGrupoHubComponent } from './components/teacher-grupo-hub.component';
 import { TeacherSesionFormComponent } from './components/teacher-sesion-form.component';
 import { TeacherProyeccionQrModalComponent } from './components/modals/teacher-proyeccion-qr-modal.component';
@@ -28,7 +26,7 @@ import { getSessionNameError } from '../../../core/validation/session-name.util'
 import { environment } from '../../../../environments/environment';
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
 
-type VistaGrupos = 'LISTA' | 'FORM_GRUPO' | 'HUB_GRUPO' | 'FORM_SESION';
+type VistaGrupos = 'LISTA' | 'HUB_GRUPO' | 'FORM_SESION';
 
 @Component({
   selector: 'app-teacher-grupos',
@@ -37,7 +35,6 @@ type VistaGrupos = 'LISTA' | 'FORM_GRUPO' | 'HUB_GRUPO' | 'FORM_SESION';
   imports: [
     CommonModule,
     TeacherGruposListComponent,
-    TeacherGrupoFormComponent,
     TeacherGrupoHubComponent,
     TeacherSesionFormComponent,
     TeacherProyeccionQrModalComponent,
@@ -54,24 +51,10 @@ type VistaGrupos = 'LISTA' | 'FORM_GRUPO' | 'HUB_GRUPO' | 'FORM_SESION';
           [courses]="courses()"
           [isLoading]="isLoading()"
           [sessionQrEnabled]="sessionQrEnabled"
-          (crearGrupo)="abrirCrearGrupo()"
           (irAsistencia)="irATomaAsistencia()"
-          (editarGrupo)="abrirEditarGrupo($event)"
           (seleccionarGrupo)="tomarAsistenciaGrupo($event)"
           (matricular)="abrirModalMatriculaGrupo($event)"
           (tomarAsistencia)="tomarAsistenciaGrupo($event)"
-        />
-      }
-
-      <!-- 2. VISTA FORMULARIO CREAR / EDITAR GRUPO -->
-      @if (vistaActual() === 'FORM_GRUPO') {
-        <app-teacher-grupo-form
-          [modo]="modoFormGrupo"
-          [asignaturasDocente]="asignaturasDocente()"
-          [(form)]="grupoForm"
-          (cancelar)="volverALista()"
-          (guardar)="guardarGrupo()"
-          (asignaturaChange)="onAsignaturaChange($event)"
         />
       }
 
@@ -202,26 +185,8 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   /** HU051: estudiante cuyo retiro se está confirmando (null = modal cerrado). */
   estudianteARetirar = signal<{ idEstudiante: string; nombreCompleto?: string } | null>(null);
 
-  // Formularios
-  modoFormGrupo: 'CREAR' | 'EDITAR' = 'CREAR';
+  // Formularios (F1: el horario y los datos del grupo los define el coordinador; el docente solo los consulta)
   selectedCourse = signal<Course | null>(null);
-  selectedGrupoId: string | null = null;
-  asignaturasDocente = signal<AsignaturaDocenteApiDto[]>([]);
-
-  grupoForm = {
-    code: '',
-    section: '',
-    name: '',
-    room: '',
-    schedule: '',
-    cupoMaximo: 35,
-    docenteName: '',
-    asignaturaId: '',
-    diasSeleccionados: ['Lunes', 'Miércoles'],
-    horaInicio: '08:00',
-    horaFin: '10:00',
-    generarSesionesAutomaticas: true,
-  };
 
   modoFormSesion: 'CREAR' | 'EDITAR' = 'CREAR';
   sessions = signal<ClassSession[]>([]);
@@ -239,7 +204,6 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.cargarGrupos();
-    this.cargarAsignaturasDocente();
   }
 
   ngOnDestroy(): void {
@@ -261,146 +225,6 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
     });
   }
 
-  cargarAsignaturasDocente(): void {
-    this.courseService.getAsignaturasDocente().subscribe({
-      next: (res) => {
-        if (res.exitoso && res.datos) {
-          // El endpoint devuelve una fila por grupo: el selector necesita asignaturas únicas.
-          const unicas = new Map(res.datos.map((a) => [a.idAsignatura, a]));
-          this.asignaturasDocente.set(Array.from(unicas.values()));
-        }
-      },
-      error: () => this.asignaturasDocente.set([]),
-    });
-  }
-
-  onAsignaturaChange(asignaturaId: string): void {
-    const asig = this.asignaturasDocente().find((a) => a.idAsignatura === asignaturaId);
-    if (asig) {
-      // AsignaturaDocenteDTO no entrega código de materia: no se inventa.
-      this.grupoForm.code = '';
-      this.grupoForm.name = asig.nombreAsignatura;
-      this.grupoForm.asignaturaId = asig.idAsignatura;
-    }
-  }
-
-  abrirCrearGrupo(): void {
-    this.modoFormGrupo = 'CREAR';
-    this.selectedGrupoId = null;
-    this.selectedCourse.set(null);
-    this.grupoForm = {
-      code: '',
-      section: `Grupo 0${this.courses().length + 1}`,
-      name: '',
-      room: 'Aula A-101',
-      schedule: 'Lunes y Miércoles 08:00 - 10:00',
-      cupoMaximo: 35,
-      docenteName: '',
-      asignaturaId: '',
-      diasSeleccionados: ['Lunes', 'Miércoles'],
-      horaInicio: '08:00',
-      horaFin: '10:00',
-      generarSesionesAutomaticas: true,
-    };
-    this.vistaActual.set('FORM_GRUPO');
-  }
-
-  abrirEditarGrupo(course: Course): void {
-    this.modoFormGrupo = 'EDITAR';
-    this.selectedGrupoId = course.id;
-    this.selectedCourse.set(course);
-
-    // Detección inteligente de horario existente
-    const sched = course.schedule || '';
-    const timeMatch = sched.match(/(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/);
-    const horaInicio = timeMatch ? timeMatch[1] : '08:00';
-    const horaFin = timeMatch ? timeMatch[2] : '10:00';
-
-    const lower = sched.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    const dias: string[] = [];
-    if (lower.includes('lun')) dias.push('Lunes');
-    if (lower.includes('mar')) dias.push('Martes');
-    if (lower.includes('mie')) dias.push('Miércoles');
-    if (lower.includes('jue')) dias.push('Jueves');
-    if (lower.includes('vie')) dias.push('Viernes');
-    if (lower.includes('sab')) dias.push('Sábado');
-
-    this.grupoForm = {
-      code: course.code ?? '',
-      section: course.section,
-      name: course.name,
-      room: course.room ?? '',
-      schedule: course.schedule,
-      cupoMaximo: course.cupoMaximo || 35,
-      docenteName: course.docenteName || '',
-      asignaturaId: '',
-      diasSeleccionados: dias.length > 0 ? dias : ['Lunes', 'Miércoles'],
-      horaInicio,
-      horaFin,
-      generarSesionesAutomaticas: false,
-    };
-    this.vistaActual.set('FORM_GRUPO');
-  }
-
-  guardarGrupo(): void {
-    if (this.modoFormGrupo === 'CREAR') {
-      if (this.asignaturasDocente().length > 0 && !this.grupoForm.asignaturaId) {
-        this.toast.warning('El campo Asignatura Asignada es obligatorio.');
-        return;
-      }
-      const codigoRequerido = this.asignaturasDocente().length === 0;
-      if ((codigoRequerido && !this.grupoForm.code.trim()) || !this.grupoForm.name.trim()) {
-        this.toast.warning('El código y el nombre de la asignatura son obligatorios.');
-        return;
-      }
-
-      this.courseService
-        .crearGrupo({
-          code: this.grupoForm.code.trim(),
-          name: this.grupoForm.name.trim(),
-          section: this.grupoForm.section.trim(),
-          schedule: this.grupoForm.schedule.trim(),
-          room: this.grupoForm.room.trim(),
-          cupoMaximo: Number(this.grupoForm.cupoMaximo) || 35,
-          asignaturaId: this.grupoForm.asignaturaId || undefined,
-        })
-        .subscribe({
-          next: (res) => {
-            if (res.exitoso) {
-              this.toast.success(res.mensajeUsuario || 'Grupo creado con éxito.');
-              this.cargarGrupos();
-              this.volverALista();
-            } else {
-              this.toast.error(res.mensajeUsuario || 'No fue posible crear el grupo.');
-            }
-          },
-          error: (err: unknown) => {
-            this.toast.error(getApiErrorMessage(err) || 'Error al crear el grupo.');
-          },
-        });
-    } else if (this.selectedGrupoId) {
-      this.courseService
-        .actualizarGrupo(this.selectedGrupoId, {
-          code: this.grupoForm.code.trim(),
-          name: this.grupoForm.name.trim(),
-          section: this.grupoForm.section.trim(),
-          schedule: this.grupoForm.schedule.trim(),
-          room: this.grupoForm.room.trim(),
-          cupoMaximo: Number(this.grupoForm.cupoMaximo) || 35,
-        })
-        .subscribe({
-          next: (res) => {
-            if (res.exitoso) {
-              this.toast.success(res.mensajeUsuario || 'Grupo actualizado.');
-              this.cargarGrupos();
-              this.volverALista();
-            }
-          },
-          error: (err: unknown) => this.toast.error(getApiErrorMessage(err)),
-        });
-    }
-  }
-
   verHubGrupo(course: Course): void {
     this.selectedCourse.set(course);
     this.vistaActual.set('HUB_GRUPO');
@@ -413,7 +237,6 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   volverALista(): void {
     this.vistaActual.set('LISTA');
     this.selectedCourse.set(null);
-    this.selectedGrupoId = null;
     this.detenerTimerQr();
   }
 

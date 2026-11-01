@@ -27,17 +27,11 @@ import { Course } from '../../../../core/models/course.model';
             Gestión Integral de Grupos y Sesiones
           </h1>
           <p class="text-sm text-warm-600 mt-1">
-            Administra la oferta de grupos, programa sesiones regulares y extraordinarias, y ajusta bloques horarios.
+            Consulta tus grupos y su horario semanal (lo define el coordinador), programa sesiones y toma asistencia.
           </p>
         </div>
 
         <div class="flex flex-wrap items-center gap-2.5">
-          <app-button variant="primary" size="md" (clicked)="crearGrupo.emit()">
-            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-            </svg>
-            Nuevo Grupo
-          </app-button>
           <app-button variant="secondary" size="md" (clicked)="irAsistencia.emit()">
             <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
@@ -146,21 +140,6 @@ import { Course } from '../../../../core/models/course.model';
                     Ver Grupo →
                   </span>
                 </div>
-
-                <!-- Botones de Acción Mínimos -->
-                <div class="flex items-center justify-end gap-2 pt-2 border-t border-warm-100">
-                  <button
-                    type="button"
-                    (click)="$event.stopPropagation(); editarGrupo.emit(course)"
-                    class="text-xs font-semibold text-warm-600 hover:text-warm-900 px-2.5 py-1.5 rounded-lg hover:bg-warm-100 transition-colors inline-flex items-center gap-1"
-                    title="Modificar datos del grupo"
-                  >
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                    Editar Grupo
-                  </button>
-                </div>
               </div>
             </app-card>
           }
@@ -175,9 +154,7 @@ export class TeacherGruposListComponent {
   // OUT_OF_GOLDEN_PATH: QR de asistencia por sesión sin contrato backend; oculto salvo feature explícita.
   sessionQrEnabled = input<boolean>(false);
 
-  crearGrupo = output<void>();
   irAsistencia = output<void>();
-  editarGrupo = output<Course>();
   seleccionarGrupo = output<Course>();
   matricular = output<Course>();
   proyectarQr = output<Course>();
