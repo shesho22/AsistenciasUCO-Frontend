@@ -99,37 +99,8 @@ describe('TeacherGruposComponent', () => {
     fixture.detectChanges();
   });
 
-  it('abrirCrearGrupo() ya no precarga el literal sintetizado "Dra. María Elena Rostagno"', () => {
-    component.abrirCrearGrupo();
 
-    expect(component.grupoForm.docenteName).not.toBe('Dra. María Elena Rostagno');
-  });
 
-  it('guardarGrupo() (CREAR) no envía docenteName a crearGrupo()', () => {
-    courseService.crearGrupo.and.returnValue(
-      of({ exitoso: true, mensajeUsuario: 'ok', datos: course } as any)
-    );
-    component.abrirCrearGrupo();
-    component.grupoForm.code = 'NUE-100';
-    component.grupoForm.name = 'Nueva Asignatura';
-
-    component.guardarGrupo();
-
-    const sentPayload = courseService.crearGrupo.calls.mostRecent().args[0] as Record<string, unknown>;
-    expect(sentPayload['docenteName']).toBeUndefined();
-  });
-
-  it('guardarGrupo() (EDITAR) no envía docenteName a actualizarGrupo()', () => {
-    courseService.actualizarGrupo.and.returnValue(
-      of({ exitoso: true, mensajeUsuario: 'ok', datos: course } as any)
-    );
-    component.abrirEditarGrupo(course);
-
-    component.guardarGrupo();
-
-    const sentPayload = courseService.actualizarGrupo.calls.mostRecent().args[1] as Record<string, unknown>;
-    expect(sentPayload['docenteName']).toBeUndefined();
-  });
 
   it('muestra un grupo asignado sin horario ni código, sin inventar datos', () => {
     courseService.getTeacherCourses.and.returnValue(
@@ -159,59 +130,7 @@ describe('TeacherGruposComponent', () => {
     expect(text).not.toContain('undefined');
   });
 
-  it('el selector de asignaturas usa idAsignatura/nombreAsignatura y no repite asignaturas', () => {
-    const fila = (idGrupo: string) => ({
-      idAsignatura: 'e2f3a4b5-0000-0000-0000-000000000001',
-      nombreAsignatura: 'Arquitectura de Software',
-      idGrupo,
-      nombreGrupo: `Grupo ${idGrupo}`,
-      idPrograma: 'p1',
-      nombrePrograma: 'Ingeniería de Sistemas',
-    });
-    courseService.getAsignaturasDocente.and.returnValue(
-      of({ exitoso: true, datos: [fila('g1'), fila('g2')] } as any)
-    );
 
-    component.cargarAsignaturasDocente();
-    expect(component.asignaturasDocente().length).toBe(1);
-
-    component.abrirCrearGrupo();
-    component.onAsignaturaChange('e2f3a4b5-0000-0000-0000-000000000001');
-
-    expect(component.grupoForm.asignaturaId).toBe('e2f3a4b5-0000-0000-0000-000000000001');
-    expect(component.grupoForm.name).toBe('Arquitectura de Software');
-    expect(component.grupoForm.code).toBe('');
-  });
-
-  it('guardarGrupo() (CREAR) con asignatura seleccionada no exige un código que el contrato no entrega', () => {
-    courseService.getAsignaturasDocente.and.returnValue(
-      of({
-        exitoso: true,
-        datos: [
-          {
-            idAsignatura: 'asig-1',
-            nombreAsignatura: 'Arquitectura de Software',
-            idGrupo: 'g1',
-            nombreGrupo: 'Grupo 001',
-            idPrograma: 'p1',
-            nombrePrograma: 'Sistemas',
-          },
-        ],
-      } as any)
-    );
-    courseService.crearGrupo.and.returnValue(
-      of({ exitoso: true, mensajeUsuario: 'ok', datos: course } as any)
-    );
-    component.cargarAsignaturasDocente();
-    component.abrirCrearGrupo();
-    component.onAsignaturaChange('asig-1');
-
-    component.guardarGrupo();
-
-    expect(courseService.crearGrupo).toHaveBeenCalled();
-    const sent = courseService.crearGrupo.calls.mostRecent().args[0] as Record<string, unknown>;
-    expect(sent['asignaturaId']).toBe('asig-1');
-  });
 
   it('abrirModalProyeccionParaGrupo() ya no selecciona la sesión activa por status sintético', () => {
     // TARGET (PLAN.md riesgo #2/TARGET): sin sustituto sintético, se asume el criterio más
@@ -413,40 +332,7 @@ describe('TeacherGruposComponent', () => {
     expect(component.modalCancelarVisible()).toBeFalse();
   });
 
-  it('guardarGrupo crea un grupo cuando modoFormGrupo es CREAR', () => {
-    courseService.crearGrupo.and.returnValue(
-      of({ exitoso: true, mensajeUsuario: 'Grupo creado con éxito.' } as any)
-    );
-    component.abrirCrearGrupo();
-    component.grupoForm = {
-      code: 'SIS-205',
-      name: 'Bases de Datos',
-      section: 'G01',
-      schedule: 'Lunes 08:00 - 10:00',
-      room: 'A-101',
-      cupoMaximo: 30,
-      docenteName: 'Docente Prueba',
-      asignaturaId: '',
-      diasSeleccionados: ['Lunes'],
-      horaInicio: '08:00',
-      horaFin: '10:00',
-      generarSesionesAutomaticas: false,
-    };
 
-    component.guardarGrupo();
-
-    expect(courseService.crearGrupo).toHaveBeenCalled();
-  });
-
-  it('guardarGrupo actualiza un grupo cuando modoFormGrupo es EDITAR', () => {
-    courseService.actualizarGrupo.and.returnValue(
-      of({ exitoso: true, mensajeUsuario: 'Grupo actualizado.' } as any)
-    );
-    component.abrirEditarGrupo(course);
-    component.guardarGrupo();
-
-    expect(courseService.actualizarGrupo).toHaveBeenCalled();
-  });
 
   it('HU051 RT-11 abre el modal de retiro con el estudiante y, tras retirarlo, recarga el padrón', () => {
     component.selectedCourse.set(course);

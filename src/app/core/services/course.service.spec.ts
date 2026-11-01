@@ -198,35 +198,7 @@ describe('CourseService', () => {
     expect(JSON.stringify(courses[0])).not.toContain('AULA-FANTASMA');
   });
 
-  it('crearGrupo() (HTTP real) no envía docenteName en el body de POST /grupos', () => {
-    // TARGET (PLAN.md LB-001B.1B, riesgo #3 RESUELTO): Grupo.docente en DB es solo FK UUID;
-    // CrearGrupoRequest.java del backend no declara docenteName. Con FAIL_ON_UNKNOWN_PROPERTIES
-    // activo, enviarlo hoy debería producir 400 en vez de ser ignorado silenciosamente.
-    service
-      .crearGrupo({
-        code: 'IS-001',
-        name: 'Arquitectura de Software',
-        section: 'Grupo 1',
-        docenteName: 'Dra. María Elena Rostagno',
-      } as any)
-      .subscribe();
 
-    const request = http.expectOne(`${environment.apiUrl}/grupos`);
-    expect(request.request.method).toBe('POST');
-    expect(request.request.body.docenteName).toBeUndefined();
-    request.flush({ exitoso: true, mensajeUsuario: 'ok', datos: {} });
-  });
-
-  it('actualizarGrupo() (HTTP real) no envía docenteName en el body de PUT /grupos/{id}', () => {
-    service
-      .actualizarGrupo('g1', { docenteName: 'Dra. María Elena Rostagno' } as any)
-      .subscribe();
-
-    const request = http.expectOne(`${environment.apiUrl}/grupos/g1`);
-    expect(request.request.method).toBe('PUT');
-    expect(request.request.body.docenteName).toBeUndefined();
-    request.flush({ exitoso: true, datos: {} });
-  });
 
   it('getTeacherCourses envuelve los grupos de getCurrentTeacherCourses', () => {
     let courses: Course[] = [];
@@ -257,21 +229,62 @@ describe('CourseService', () => {
     expect(asignaturas[0].nombreAsignatura).toBe('Arquitectura de Software');
   });
 
-  it('crearGrupo y actualizarGrupo interactúan con endpoints /grupos', () => {
-    service.crearGrupo({ code: 'IS-101', name: 'Arquitectura', section: 'G1', cupoMaximo: 30 }).subscribe((res) => {
-      expect(res.exitoso).toBeTrue();
-    });
+  it('F1: crearGrupo envía el contrato real de POST /grupos con las franjas del horario', () => {
+    service
+      .crearGrupo({
+        idAsignatura: 'asig-1',
+        idPeriodoAcademico: 'per-1',
+        codigo: 3,
+        nombre: 'Grupo 3',
+        idDocente: 'doc-1',
+        franjas: [{ dia: 'LU', nombreDia: 'Lunes', horaInicio: '08:00', horaFin: '10:00' }],
+      })
+      .subscribe((res) => expect(res.exitoso).toBeTrue());
+
     const postReq = http.expectOne(`${environment.apiUrl}/grupos`);
     expect(postReq.request.method).toBe('POST');
-    postReq.flush({ exitoso: true, datos: { id: 'grp-nuevo', code: 'IS-101' } });
+    expect(postReq.request.body).toEqual({
+      idAsignatura: 'asig-1',
+      idPeriodoAcademico: 'per-1',
+      codigo: 3,
+      nombre: 'Grupo 3',
+      idDocente: 'doc-1',
+      franjas: [{ dia: 'LU', horaInicio: '08:00', horaFin: '10:00' }],
+    });
+    postReq.flush({ exitoso: true, datos: { id: 'grp-nuevo', mensajeUsuario: 'ok' } });
+  });
 
-    service.actualizarGrupo('grp-nuevo', { name: 'Arquitectura Actualizada', docenteName: 'Profesor X' } as any).subscribe((res) => {
+  it('F1: actualizarGrupo envía PUT /grupos/{id}; sin franjas el horario no viaja', () => {
+    service.actualizarGrupo('grp-nuevo', { nombre: 'Grupo B', cupoMaximo: 40 }).subscribe((res) => {
       expect(res.exitoso).toBeTrue();
     });
     const putReq = http.expectOne(`${environment.apiUrl}/grupos/grp-nuevo`);
     expect(putReq.request.method).toBe('PUT');
-    expect(putReq.request.body).toEqual({ name: 'Arquitectura Actualizada' });
-    putReq.flush({ exitoso: true, datos: { id: 'grp-nuevo', name: 'Arquitectura Actualizada' } });
+    expect(putReq.request.body.franjas).toBeUndefined();
+    expect(putReq.request.body.nombre).toBe('Grupo B');
+    expect(putReq.request.body.cupoMaximo).toBe(40);
+    putReq.flush({ exitoso: true, datos: { id: 'grp-nuevo', mensajeUsuario: 'ok' } });
+  });
+
+  it('F1: el grupo del coordinador trae sus franjas y el texto del horario', () => {
+    let courses: Course[] = [];
+    service.getCoordinatorCourses().subscribe((res) => (courses = res.datos));
+    http.expectOne(`${environment.apiUrl}/grupos`).flush({
+      exitoso: true,
+      total: 1,
+      datos: [grupoApi({
+        franjas: [
+          { codigoDia: 'LU', nombreDia: 'Lunes', horaInicio: '08:00', horaFin: '10:00' },
+          { codigoDia: 'MI', nombreDia: null, horaInicio: '14:00', horaFin: '16:00' },
+        ],
+      })],
+    });
+
+    expect(courses[0].franjas).toEqual([
+      { dia: 'LU', nombreDia: 'Lunes', horaInicio: '08:00', horaFin: '10:00' },
+      { dia: 'MI', nombreDia: undefined, horaInicio: '14:00', horaFin: '16:00' },
+    ]);
+    expect(courses[0].schedule).toBe('Lunes 08:00-10:00, MI 14:00-16:00');
   });
   // --- Grupos por ambito (hallazgo del recorrido de vistas): decano y coordinador NO usan /docente/* ---
 

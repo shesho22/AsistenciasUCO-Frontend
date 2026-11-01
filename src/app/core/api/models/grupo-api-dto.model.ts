@@ -11,4 +11,6 @@ export interface GrupoApiDto {
   grupoHabilitado: boolean;
   fechaInicioPeriodoAcademico: string;
   fechaFinPeriodoAcademico: string;
+  /** F1: horario semanal del grupo (dbo.uv_horario), ordenado de lunes a domingo. */
+  franjas?: { codigoDia: string; nombreDia?: string | null; horaInicio: string; horaFin: string }[];
 }

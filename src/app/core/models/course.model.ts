@@ -25,4 +25,14 @@ export interface Course {
   dias?: string[];
   horaInicio?: string;
   horaFin?: string;
+  /** F1: horario semanal del grupo (GET /grupos). */
+  franjas?: FranjaHorario[];
+}
+
+/** F1: franja del horario semanal de un grupo. `dia` es el código de dbo.Dia (LU, MA, MI, JU, VI, SA, DO). */
+export interface FranjaHorario {
+  dia: string;
+  nombreDia?: string;
+  horaInicio: string;
+  horaFin: string;
 }

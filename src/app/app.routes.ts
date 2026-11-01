@@ -346,6 +346,15 @@ export const routes: Routes = [
           ).then((m) => m.CoordinatorStudentsComponent),
       },
       {
+        path: 'coordinador/grupos',
+        canActivate: [roleGuard],
+        data: { roles: ['COORDINADOR'] },
+        loadComponent: () =>
+          import(
+            './features/coordinator/coordinator-groups/coordinator-groups.component'
+          ).then((m) => m.CoordinatorGroupsComponent),
+      },
+      {
         path: 'coordinador/materias',
         canActivate: [roleGuard],
         data: { roles: ['COORDINADOR'] },
