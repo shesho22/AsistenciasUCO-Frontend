@@ -121,8 +121,7 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
     expect(toast.warning).toHaveBeenCalledWith('Seleccione el docente titular.');
 
     component.form.idDocente = 'doc-1';
-    component.agregarFranja();
-    component.form.franjas[1] = { dia: 'MI', horaInicio: '14:00', horaFin: '16:00' };
+    component.form.franjas = [...component.form.franjas, { dia: 'MI', horaInicio: '14:00', horaFin: '16:00' }];
     component.guardar();
 
     expect(courseService.crearGrupo).toHaveBeenCalledWith({
@@ -161,8 +160,6 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
       { dia: 'LU', horaInicio: '10:00', horaFin: '12:00' },
     ];
     expect(component.validar()).toBeNull();
-    component.quitarFranja(0);
-    expect(component.form.franjas).toEqual([{ dia: 'LU', horaInicio: '10:00', horaFin: '12:00' }]);
     expect(courseService.crearGrupo).not.toHaveBeenCalled();
   });
 

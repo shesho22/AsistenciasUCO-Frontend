@@ -42,6 +42,7 @@ describe('TeacherGruposComponent', () => {
       'getAsignaturasDocente',
       'crearGrupo',
       'actualizarGrupo',
+      'getOfertaCreacionGrupos',
     ]);
     sessionService = jasmine.createSpyObj<SessionService>('SessionService', [
       'getSessionsByGroup',
@@ -358,5 +359,48 @@ describe('TeacherGruposComponent', () => {
     studentService.getStudentsByGroup.calls.reset();
     component.onEstudianteRetirado();
     expect(studentService.getStudentsByGroup).not.toHaveBeenCalled();
+  });
+  it('F3 abre el formulario de nuevo grupo y carga la oferta de asignaturas del docente', () => {
+    courseService.getOfertaCreacionGrupos.and.returnValue(
+      of({ exitoso: true, datos: { idDocente: 'doc-1', asignaturas: [] } } as any)
+    );
+
+    component.abrirNuevoGrupo();
+
+    expect(component.vistaActual()).toBe('FORM_GRUPO');
+    expect(component.ofertaGrupos()?.idDocente).toBe('doc-1');
+    expect(component.cargandoOferta()).toBeFalse();
+  });
+
+  it('F3 guardarNuevoGrupo crea el grupo, vuelve a la lista y recarga los grupos', () => {
+    courseService.crearGrupo.and.returnValue(
+      of({ exitoso: true, mensajeUsuario: 'Grupo registrado(a) exitosamente.', datos: { id: 'g1', mensajeUsuario: 'ok' } } as any)
+    );
+    component.vistaActual.set('FORM_GRUPO');
+    courseService.getTeacherCourses.calls.reset();
+
+    component.guardarNuevoGrupo({ idAsignatura: 'asig-1', codigo: 2, nombre: 'Grupo 2', idDocente: 'doc-1' });
+
+    expect(courseService.crearGrupo).toHaveBeenCalledWith({
+      idAsignatura: 'asig-1',
+      codigo: 2,
+      nombre: 'Grupo 2',
+      idDocente: 'doc-1',
+    });
+    expect(component.vistaActual()).toBe('LISTA');
+    expect(component.guardandoGrupo()).toBeFalse();
+    expect(courseService.getTeacherCourses).toHaveBeenCalledTimes(1);
+  });
+
+  it('F3 guardarNuevoGrupo se queda en el formulario si el backend rechaza el grupo', () => {
+    courseService.crearGrupo.and.returnValue(
+      of({ exitoso: false, mensajeUsuario: 'No tiene autorización sobre el recurso solicitado.' } as any)
+    );
+    component.vistaActual.set('FORM_GRUPO');
+
+    component.guardarNuevoGrupo({ idAsignatura: 'asig-1', codigo: 2, nombre: 'Grupo 2', idDocente: 'otro' });
+
+    expect(component.vistaActual()).toBe('FORM_GRUPO');
+    expect(component.guardandoGrupo()).toBeFalse();
   });
 });

@@ -254,6 +254,36 @@ describe('CourseService', () => {
     postReq.flush({ exitoso: true, datos: { id: 'grp-nuevo', mensajeUsuario: 'ok' } });
   });
 
+  it('F3: crearGrupo del docente no envía período (la DB toma el más reciente) y getOfertaCreacionGrupos lee su oferta', () => {
+    service
+      .crearGrupo({ idAsignatura: 'asig-1', codigo: 4, nombre: 'Grupo 4', idDocente: 'doc-1' })
+      .subscribe((res) => expect(res.exitoso).toBeTrue());
+    const postReq = http.expectOne(`${environment.apiUrl}/grupos`);
+    expect(postReq.request.body.idPeriodoAcademico).toBeUndefined();
+    expect(postReq.request.body.idDocente).toBe('doc-1');
+    postReq.flush({ exitoso: true, datos: { id: 'grp-docente', mensajeUsuario: 'ok' } });
+
+    let idDocente = '';
+    let total = 0;
+    service.getOfertaCreacionGrupos().subscribe((res) => {
+      idDocente = res.datos?.idDocente ?? '';
+      total = res.datos?.asignaturas.length ?? 0;
+    });
+    const getReq = http.expectOne(`${environment.apiUrl}/docente/oferta-creacion-grupos`);
+    expect(getReq.request.method).toBe('GET');
+    getReq.flush({
+      exitoso: true,
+      datos: {
+        idDocente: 'doc-1',
+        asignaturas: [
+          { idAsignatura: 'asig-1', codigoAsignatura: 'MAT1', nombreAsignatura: 'Algebra', idPrograma: 'p1', nombrePrograma: 'Sistemas' },
+        ],
+      },
+    });
+    expect(idDocente).toBe('doc-1');
+    expect(total).toBe(1);
+  });
+
   it('F1: actualizarGrupo envía PUT /grupos/{id}; sin franjas el horario no viaja', () => {
     service.actualizarGrupo('grp-nuevo', { nombre: 'Grupo B', cupoMaximo: 40 }).subscribe((res) => {
       expect(res.exitoso).toBeTrue();

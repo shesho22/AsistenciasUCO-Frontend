@@ -7,6 +7,7 @@ import { ApiListResponse } from '../api/models/api-list-response.model';
 import { AsignaturaDocenteApiDto } from '../api/models/asignatura-docente-api-dto.model';
 import { GrupoApiDto } from '../api/models/grupo-api-dto.model';
 import { HorarioDocenteApiDto } from '../api/models/horario-docente-api-dto.model';
+import { OfertaCreacionGruposDocenteApiDto } from '../api/models/oferta-creacion-grupos-docente-api-dto.model';
 import { Course, FranjaHorario } from '../models/course.model';
 import { MOCK_COURSES } from '../mocks/course.mock';
 
@@ -165,8 +166,9 @@ export class CourseService {
   }
 
   /**
-   * F1: crea un grupo (POST /grupos, solo COORDINADOR) con su horario semanal en la misma transacción.
-   * El body sigue el contrato real de CrearGrupoRequest; `franjas` vacío o ausente = grupo sin horario.
+   * F1/F3: crea un grupo (POST /grupos, COORDINADOR o el propio DOCENTE) con su horario semanal en la misma transacción.
+   * El body sigue el contrato real de CrearGrupoRequest; `franjas` vacío o ausente = grupo sin horario. Sin
+   * `idPeriodoAcademico` la DB toma el período más reciente.
    */
   crearGrupo(payload: GrupoCoordinadorPayload): Observable<ApiResponse<{ id: string; mensajeUsuario: string }>> {
     if (environment.useMocks) {
@@ -228,6 +230,33 @@ export class CourseService {
   }
 
   /**
+   * F3: datos del formulario "Nuevo grupo" del docente (GET /docente/oferta-creacion-grupos): su propio idDocente y las
+   * asignaturas de los programas con los que tiene vínculo activo.
+   */
+  getOfertaCreacionGrupos(): Observable<ApiResponse<OfertaCreacionGruposDocenteApiDto>> {
+    if (environment.useMocks) {
+      return of({
+        idTransaccion: 'mock-tx-oferta-creacion-grupos',
+        exitoso: true,
+        datos: {
+          idDocente: 'mock-docente-1',
+          asignaturas: [
+            {
+              idAsignatura: 'E2F3A4B5-0000-0000-0000-000000000001',
+              codigoAsignatura: 'SIS401',
+              nombreAsignatura: 'Arquitectura de Software',
+              idPrograma: 'AAAAAAAA-0000-0000-0000-000000000001',
+              nombrePrograma: 'Ingeniería de Sistemas',
+            },
+          ],
+        },
+      }).pipe(delay(150));
+    }
+
+    return this.http.get<ApiResponse<OfertaCreacionGruposDocenteApiDto>>(`${environment.apiUrl}/docente/oferta-creacion-grupos`);
+  }
+
+  /**
    * F1: actualiza un grupo (PUT /grupos/{id}, solo COORDINADOR). Si se envían `franjas`, reemplazan el horario
    * semanal completo; si no, el horario no cambia.
    */
@@ -251,7 +280,7 @@ export class CourseService {
   }
 }
 
-/** Cuerpo de crear/actualizar grupo del coordinador (F1). */
+/** Cuerpo de crear/actualizar grupo (F1; el docente solo crea, F3). */
 export interface GrupoCoordinadorPayload {
   idAsignatura?: string;
   idPeriodoAcademico?: string;

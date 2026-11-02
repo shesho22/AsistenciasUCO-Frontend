@@ -10,17 +10,8 @@ import { AsignaturaPlanItem, PeriodoAcademicoItem } from '../../../core/models/r
 import { DocentePrograma } from '../../../core/models/docente-programa.model';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
-
-/** Días de dbo.Dia en el orden de la semana (código y nombre visible). */
-export const DIAS_SEMANA: ReadonlyArray<{ codigo: string; nombre: string }> = [
-  { codigo: 'LU', nombre: 'Lunes' },
-  { codigo: 'MA', nombre: 'Martes' },
-  { codigo: 'MI', nombre: 'Miércoles' },
-  { codigo: 'JU', nombre: 'Jueves' },
-  { codigo: 'VI', nombre: 'Viernes' },
-  { codigo: 'SA', nombre: 'Sábado' },
-  { codigo: 'DO', nombre: 'Domingo' },
-];
+import { franjaNueva, validarFranjas } from '../../../core/validation/franjas.util';
+import { FranjasEditorComponent } from '../../../shared/components/franjas-editor/franjas-editor.component';
 
 interface GrupoForm {
   idAsignatura: string;
@@ -42,7 +33,7 @@ interface GrupoForm {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full' },
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, FranjasEditorComponent],
   template: `
     <div class="space-y-6 animate-fade-in">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
@@ -146,29 +137,7 @@ interface GrupoForm {
             }
           </div>
 
-          <div class="space-y-2">
-            <div class="flex items-center justify-between">
-              <h3 class="text-sm font-semibold text-warm-800">Horario semanal</h3>
-              <button type="button" data-testid="agregar-franja" (click)="agregarFranja()" class="text-xs font-semibold text-primary-700 hover:underline">
-                + Agregar franja
-              </button>
-            </div>
-            <p class="text-[11px] text-warm-500">
-              Un bloque por día y hora. Las franjas del grupo no pueden cruzarse entre sí y el docente no puede tener otro grupo a la misma hora.
-            </p>
-            @for (franja of form.franjas; track $index; let i = $index) {
-              <div class="grid grid-cols-[1fr_auto_auto_auto] gap-2 items-center">
-                <select [name]="'dia' + i" [(ngModel)]="franja.dia" class="px-3 py-2 border border-warm-200 rounded-xl text-sm">
-                  @for (d of dias; track d.codigo) {
-                    <option [value]="d.codigo">{{ d.nombre }}</option>
-                  }
-                </select>
-                <input [name]="'inicio' + i" type="time" [(ngModel)]="franja.horaInicio" class="px-3 py-2 border border-warm-200 rounded-xl text-sm" />
-                <input [name]="'fin' + i" type="time" [(ngModel)]="franja.horaFin" class="px-3 py-2 border border-warm-200 rounded-xl text-sm" />
-                <button type="button" (click)="quitarFranja(i)" class="text-xs text-red-600 hover:underline" title="Quitar franja">Quitar</button>
-              </div>
-            }
-          </div>
+          <app-franjas-editor [(franjas)]="form.franjas" />
 
           <div class="flex justify-end gap-2 pt-2 border-t border-warm-100">
             <button type="button" (click)="volver()" class="px-4 py-2 rounded-xl bg-warm-50 border border-warm-200 text-sm font-semibold text-warm-700">
@@ -188,7 +157,6 @@ export class CoordinatorGroupsComponent implements OnInit {
   private readonly coordinatorService = inject(CoordinatorManagementService);
   private readonly toast = inject(ToastService);
 
-  readonly dias = DIAS_SEMANA;
   vista = signal<'LISTA' | 'FORM'>('LISTA');
   modo = signal<'CREAR' | 'EDITAR'>('CREAR');
   cargando = signal<boolean>(true);
@@ -276,14 +244,6 @@ export class CoordinatorGroupsComponent implements OnInit {
     this.vista.set('FORM');
   }
 
-  agregarFranja(): void {
-    this.form.franjas = [...this.form.franjas, { dia: 'LU', horaInicio: '08:00', horaFin: '10:00' }];
-  }
-
-  quitarFranja(indice: number): void {
-    this.form.franjas = this.form.franjas.filter((_, i) => i !== indice);
-  }
-
   volver(): void {
     this.vista.set('LISTA');
     this.grupoEditado = null;
@@ -343,15 +303,7 @@ export class CoordinatorGroupsComponent implements OnInit {
     if (!this.form.idDocente) {
       return 'Seleccione el docente titular.';
     }
-    for (const franja of this.form.franjas) {
-      if (!franja.horaInicio || !franja.horaFin || franja.horaFin <= franja.horaInicio) {
-        return 'En cada franja la hora de fin debe ser mayor que la de inicio.';
-      }
-    }
-    const cruce = this.form.franjas.some((a, i) =>
-      this.form.franjas.some((b, j) => j > i && a.dia === b.dia && a.horaInicio < b.horaFin && a.horaFin > b.horaInicio)
-    );
-    return cruce ? 'Las franjas del horario no pueden cruzarse entre sí.' : null;
+    return validarFranjas(this.form.franjas);
   }
 
   private formVacio(): GrupoForm {
@@ -362,7 +314,7 @@ export class CoordinatorGroupsComponent implements OnInit {
       nombre: '',
       idDocente: '',
       cupoMaximo: null,
-      franjas: [{ dia: 'LU', horaInicio: '08:00', horaFin: '10:00' }],
+      franjas: [franjaNueva()],
     };
   }
 }
