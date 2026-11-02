@@ -39,6 +39,20 @@ describe('TeacherGruposListComponent', () => {
     expect(text).not.toContain(MARCADOR_DOCENTE);
   });
 
+  it('F3: el botón "Nuevo grupo" emite nuevoGrupo', () => {
+    fixture.componentRef.setInput('courses', [course]);
+    fixture.componentRef.setInput('isLoading', false);
+    let emitido = false;
+    fixture.componentInstance.nuevoGrupo.subscribe(() => (emitido = true));
+    fixture.detectChanges();
+
+    const boton: HTMLButtonElement | null = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="nuevo-grupo"] button');
+    expect(boton).not.toBeNull();
+    boton!.click();
+
+    expect(emitido).toBeTrue();
+  });
+
   // LB-001B.5A: sin aula (HorarioDocente no la entrega) y sin QR de sesión (sin contrato).
   it('no presenta aula ni permite buscar por aula', () => {
     fixture.componentRef.setInput('courses', [course]);
