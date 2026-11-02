@@ -7,6 +7,7 @@ import { MOCK_USERS_BY_ROLE, MOCK_USERS_LIST } from '../mocks/user.mock';
 import { environment } from '../../../environments/environment';
 import {
   BaselineOidcConfig,
+  BASELINE_HTTP_TIMEOUT_MS,
   buildAuthorizeUrl,
   buildInteractiveLoginUrl,
   buildLogoutUrl,
@@ -19,6 +20,7 @@ import {
   recentSilentAttempt,
   safeInternalPath,
   savePending,
+  withBaselineTimeout,
 } from '../security/baseline-oidc';
 import { BrowserNavigator } from '../security/browser-navigator';
 
@@ -60,6 +62,8 @@ const AUTH_MESSAGES_FALLBACK: Record<string, string> = {
   AUTH_GENERIC_ERROR: 'Usuario o contraseña incorrectos.',
   AUTH_INVALID_CREDENTIALS: 'Credenciales inválidas. Verifica tu usuario y contraseña institucional.',
   AUTH_INVALID_RESPONSE: 'Respuesta de autenticación inválida.',
+  AUTH_UNAUTHENTICATED: 'El servidor no aceptó la sesión institucional (401). Inicia sesión nuevamente.',
+  AUTH_FORBIDDEN: 'La sesión fue autenticada, pero no tiene permiso para acceder (403). Contacta al administrador.',
   AUTH_NO_ROLE_ASSIGNED: 'Tu cuenta institucional no tiene un rol o identidad válidos asignados. Contacta al administrador del sistema.',
 };
 
@@ -117,6 +121,8 @@ interface InstitutionalIdentity {
 
 type IdentityResolution =
   | { status: 'resolved'; identity: InstitutionalIdentity }
+  | { status: 'unauthenticated' }
+  | { status: 'forbidden' }
   | { status: 'rejected' }
   | { status: 'unavailable' };
 
@@ -308,6 +314,7 @@ export class AuthService implements OnDestroy {
     this.token.set(null);
     this.currentUser.set(null);
     this.storeRefreshToken(null);
+    this.authError.set(null);
 
     const callback = parseCallback(window.location.search);
     if (callback.code || callback.error) {
@@ -318,8 +325,15 @@ export class AuthService implements OnDestroy {
       clearPending();
       return false;
     }
-    await this.redirectToBaselineAuthorize(true, this.currentReturnPath());
-    return new Promise<boolean>(() => undefined);
+    try {
+      await this.redirectToBaselineAuthorize(true, this.currentReturnPath());
+      return false;
+    } catch {
+      clearPending();
+      this.replaceBaselineUrl('/login');
+      this.authError.set(this.resolveAuthMessage('AUTH_NETWORK_ERROR'));
+      return false;
+    }
   }
 
   /** Retorno del IdP (`?code&state` o `?error`): intercambia el código por el access token, que queda SOLO en memoria. */
@@ -345,8 +359,21 @@ export class AuthService implements OnDestroy {
         ? await this.fetchInstitutionalIdentity(accessToken)
         : ({ status: 'rejected' } as IdentityResolution);
       if (resolution.status === 'unavailable') {
+        this.clearSession();
+        clearPending();
         this.replaceBaselineUrl('/login');
         this.authError.set(this.resolveAuthMessage('AUTH_NETWORK_ERROR'));
+        return false;
+      }
+      if (resolution.status === 'unauthenticated' || resolution.status === 'forbidden') {
+        this.clearSession();
+        clearPending();
+        this.replaceBaselineUrl('/login');
+        this.authError.set(
+          this.resolveAuthMessage(
+            resolution.status === 'unauthenticated' ? 'AUTH_UNAUTHENTICATED' : 'AUTH_FORBIDDEN'
+          )
+        );
         return false;
       }
       const user =
@@ -363,8 +390,9 @@ export class AuthService implements OnDestroy {
         : pending.returnUrl;
       this.replaceBaselineUrl(target);
       return true;
-    } catch (error) {
-      console.error('No se pudo completar el inicio de sesión institucional:', error);
+    } catch {
+      this.clearSession();
+      clearPending();
       this.replaceBaselineUrl('/login');
       this.authError.set(this.resolveAuthMessage('AUTH_NETWORK_ERROR'));
       return false;
@@ -381,6 +409,7 @@ export class AuthService implements OnDestroy {
       return;
     }
     const target = safeInternalPath(returnUrl ?? this.currentReturnPath());
+    clearPending();
     const returnTo = `${window.location.origin}/login?returnUrl=${encodeURIComponent(target)}`;
     this.navigator.assign(buildInteractiveLoginUrl(this.baselineConfig(), returnTo));
   }
@@ -869,36 +898,43 @@ export class AuthService implements OnDestroy {
    * fallo de red o un 5xx indica que el servicio no está disponible (no se concede sesión en ningún caso).
    */
   private async fetchInstitutionalIdentity(accessToken: string): Promise<IdentityResolution> {
-    let response: Response;
     try {
-      response = await fetch(`${environment.apiUrl}/auth/me`, {
-        // API Bearer-only: no se adjuntan cookies del navegador.
-        credentials: 'omit',
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
+      return await withBaselineTimeout(async (signal) => {
+        const response = await fetch(environment.apiUrl + '/auth/me', {
+          // API Bearer-only: no se adjuntan cookies del navegador.
+          credentials: 'omit',
+          headers: { Authorization: 'Bearer ' + accessToken },
+          signal,
+        });
+        if (response.status >= 500) {
+          return { status: 'unavailable' };
+        }
+        if (response.status === 401) {
+          return { status: 'unauthenticated' };
+        }
+        if (response.status === 403) {
+          return { status: 'forbidden' };
+        }
+        if (!response.ok) {
+          return { status: 'rejected' };
+        }
+        try {
+          const datos = (await response.json())?.datos;
+          const roles = Array.isArray(datos?.roles)
+            ? VALID_INSTITUTIONAL_ROLES.filter((role) => datos.roles.includes(role))
+            : [];
+          if (!isValidUuid(datos?.idUsuario) || roles.length === 0) {
+            return { status: 'rejected' };
+          }
+          return { status: 'resolved', identity: { idUsuario: datos.idUsuario, roles } };
+        } catch {
+          return { status: 'rejected' };
+        }
+      }, BASELINE_HTTP_TIMEOUT_MS);
     } catch {
       return { status: 'unavailable' };
-    }
-    if (response.status >= 500) {
-      return { status: 'unavailable' };
-    }
-    if (!response.ok) {
-      return { status: 'rejected' };
-    }
-    try {
-      const datos = (await response.json())?.datos;
-      const roles = Array.isArray(datos?.roles)
-        ? VALID_INSTITUTIONAL_ROLES.filter((role) => datos.roles.includes(role))
-        : [];
-      if (!isValidUuid(datos?.idUsuario) || roles.length === 0) {
-        return { status: 'rejected' };
-      }
-      return { status: 'resolved', identity: { idUsuario: datos.idUsuario, roles } };
-    } catch {
-      return { status: 'rejected' };
     }
   }
-
   /**
    * Construye el `User` con la identidad institucional del backend. Del JWT solo se leen datos de presentación
    * (nombre, correo): ni el UUID ni los roles salen del token. El rol principal es el de mayor jerarquía según

@@ -1,4 +1,5 @@
 import {
+  BASELINE_HTTP_TIMEOUT_MS,
   BaselineOidcConfig,
   SILENT_ATTEMPT_WINDOW_MS,
   base64Url,
@@ -106,6 +107,20 @@ describe('baseline-oidc', () => {
       await expectAsync(exchangeCode(CONFIG, 'c', 'v', reply(false, {}))).toBeRejected();
       await expectAsync(exchangeCode(CONFIG, 'c', 'v', reply(true, { access_token: 'AT', token_type: 'mac' }))).toBeRejected();
       await expectAsync(exchangeCode(CONFIG, 'c', 'v', reply(true, { token_type: 'Bearer' }))).toBeRejected();
+    });
+
+    it('aborta un intercambio OIDC que no responde y rechaza al vencer el tiempo límite', async () => {
+      let signal: AbortSignal | undefined;
+      const stalledFetch = ((_input: RequestInfo | URL, init?: RequestInit) => {
+        signal = init?.signal as AbortSignal | undefined;
+        return new Promise<Response>(() => undefined);
+      }) as typeof fetch;
+
+      await expectAsync(exchangeCode(CONFIG, 'c', 'v', stalledFetch, 10)).toBeRejected();
+
+      expect(signal).toBeDefined();
+      expect(signal?.aborted).toBeTrue();
+      expect(BASELINE_HTTP_TIMEOUT_MS).toBeGreaterThan(0);
     });
   });
 });
