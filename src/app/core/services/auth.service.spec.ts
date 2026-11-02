@@ -1,9 +1,9 @@
-import { TestBed } from '@angular/core/testing';
+import { fakeAsync, flushMicrotasks, TestBed, tick } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { AuthService } from './auth.service';
 import { environment } from '../../../environments/environment';
 import { BrowserNavigator } from '../security/browser-navigator';
-import { loadPending, savePending } from '../security/baseline-oidc';
+import { BASELINE_HTTP_TIMEOUT_MS, loadPending, savePending } from '../security/baseline-oidc';
 
 function base64UrlEncode(json: object): string {
   // UTF-8 safe base64 (parseJwt reverses this exact encoding via atob + decodeURIComponent).
@@ -443,7 +443,7 @@ describe('AuthService', () => {
         expect(await completeCallback()).toBeFalse();
         expect(service.token()).toBeNull();
         expect(service.currentUser()).toBeNull();
-        expect(service.authError()).toContain('rol o identidad');
+        expect(service.authError()).toContain(status === 401 ? '(401)' : '(403)');
         expect(dumpStorage(localStorage) + dumpStorage(sessionStorage)).not.toContain('eyJ');
       }
     });
@@ -517,12 +517,43 @@ describe('AuthService', () => {
       expect(service.isAuthenticated()).toBeFalse();
     });
 
-    it('sin callback intenta una re-autenticación silenciosa (prompt=none, S256) y no se resuelve', async () => {
-      window.history.replaceState({}, '', '/app/docente/grupos');
-      let settled = false;
-      void service.initKeycloak().then(() => (settled = true));
+    it('callback con /auth/me detenido agota el tiempo, limpia credenciales y deja el login reintentable', fakeAsync(() => {
+      const state = pendingLogin();
+      window.history.replaceState({}, '', '/login?code=code-timeout&state=' + state);
+      let identitySignal: AbortSignal | undefined;
+      fetchSpy.and.callFake((url: string, init?: RequestInit) => {
+        if (url.endsWith('/auth/me')) {
+          identitySignal = init?.signal as AbortSignal | undefined;
+          return new Promise<Response>(() => undefined);
+        }
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            access_token: makeJwt(basePayload()),
+            token_type: 'Bearer',
+          }),
+        } as Response);
+      });
+      let initialized: boolean | undefined;
+      void service.initKeycloak().then((result) => (initialized = result));
 
-      await waitUntil(() => navigatorSpy.assign.calls.count() === 1);
+      flushMicrotasks();
+      tick(BASELINE_HTTP_TIMEOUT_MS);
+      flushMicrotasks();
+
+      expect(initialized).toBeFalse();
+      expect(identitySignal?.aborted).toBeTrue();
+      expect(service.token()).toBeNull();
+      expect(service.currentUser()).toBeNull();
+      expect(service.authError()).toContain('conexión');
+      expect(loadPending()).toBeNull();
+      expect(window.location.pathname).toBe('/login');
+      expect(window.location.search).toBe('');
+      expect(dumpStorage(localStorage) + dumpStorage(sessionStorage)).not.toContain('eyJ');
+    }));
+    it('sin callback inicia una re-autenticación silenciosa (prompt=none, S256) sin bloquear el arranque', async () => {
+      window.history.replaceState({}, '', '/app/docente/grupos');
+      expect(await service.initKeycloak()).toBeFalse();
       const target = new URL(navigatorSpy.assign.calls.mostRecent().args[0]);
       expect(target.origin + target.pathname).toBe(`${ISSUER.replace('/realms/security-baseline', '')}/realms/security-baseline/protocol/openid-connect/auth`);
       expect(target.searchParams.get('prompt')).toBe('none');
@@ -533,8 +564,7 @@ describe('AuthService', () => {
       const pending = loadPending();
       expect(pending?.returnUrl).toBe('/app/docente/grupos');
       expect(pending?.state).toBe(target.searchParams.get('state') ?? undefined);
-      await new Promise((resolve) => setTimeout(resolve, 20));
-      expect(settled).toBeFalse();
+
     });
 
     it('un intento silencioso reciente no vuelve a redirigir (evita bucles)', async () => {
@@ -563,8 +593,11 @@ describe('AuthService', () => {
       expect(await service.refreshAccessToken('cualquiera')).toBeFalse();
     });
 
-    it('login interactivo: delega en el BFF del PDP con return_to a la SPA y sin credenciales', () => {
+    it('login interactivo: delega en el BFF del PDP con return_to a la SPA y limpia PKCE abandonado', () => {
+      pendingLogin();
       service.startBaselineLogin('/app/docente/grupos');
+
+      expect(loadPending()).toBeNull();
 
       const target = new URL(navigatorSpy.assign.calls.mostRecent().args[0]);
       expect(target.origin).toBe(PDP);

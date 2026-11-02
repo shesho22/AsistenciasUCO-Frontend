@@ -111,6 +111,22 @@ describe('LoginComponent', () => {
       expect(authServiceSpy.loginWithCredentials).not.toHaveBeenCalled();
     });
 
+    it('muestra el error de conectividad y permite reintentar el login institucional', async () => {
+      TestBed.resetTestingModule();
+      baselineMode = true;
+      authError.set('No se pudo establecer conexión con el servidor de autenticación institucional.');
+      await createComponent();
+
+      expect(fixture.nativeElement.textContent).toContain('No se pudo establecer conexión');
+      expect(fixture.nativeElement.textContent).toContain('Reintentar inicio de sesión institucional');
+      expect(fixture.nativeElement.querySelector('input[type="password"]')).toBeNull();
+
+      await component.onSubmit();
+
+      expect(authServiceSpy.startBaselineLogin).toHaveBeenCalledTimes(1);
+      expect(authServiceSpy.loginWithCredentials).not.toHaveBeenCalled();
+    });
+
     it('muestra el error de autenticación del proveedor (p. ej. cuenta sin rol)', async () => {
       TestBed.resetTestingModule();
       baselineMode = true;

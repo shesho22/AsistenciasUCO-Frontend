@@ -59,7 +59,7 @@ import { CardComponent } from '../../../shared/components/card/card.component';
                 [disabled]="!!configError()"
                 size="lg"
               >
-                Ingresar con cuenta institucional
+                {{ loginButtonLabel() }}
               </app-button>
             </form>
           </div>
@@ -160,6 +160,9 @@ export class LoginComponent {
   isLoading = signal<boolean>(false);
   errorMessage = signal<string>('');
   readonly configError = this.authService.securityConfigError;
+  readonly loginButtonLabel = computed(() =>
+    this.authService.authError() ? 'Reintentar inicio de sesión institucional' : 'Ingresar con cuenta institucional'
+  );
   readonly visibleError = computed(
     () => this.configError() || this.errorMessage() || this.authService.authError() || ''
   );
@@ -177,7 +180,12 @@ export class LoginComponent {
 
     if (this.baselineMode) {
       this.isLoading.set(true);
-      this.authService.startBaselineLogin();
+      try {
+        this.authService.startBaselineLogin();
+      } catch {
+        this.isLoading.set(false);
+        this.errorMessage.set('No se pudo iniciar el acceso institucional. Puedes reintentar.');
+      }
       return;
     }
 
