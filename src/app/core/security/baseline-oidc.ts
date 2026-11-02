@@ -167,34 +167,74 @@ export function recentSilentAttempt(now = Date.now()): boolean {
   }
 }
 
+/** Límite de cada operación de red durante el retorno OIDC. */
+export const BASELINE_HTTP_TIMEOUT_MS = 8_000;
+
+/**
+ * Resuelve la operación aunque el proveedor de fetch no honre AbortSignal.
+ * El aborto reduce trabajo pendiente; Promise.race garantiza el límite para el arranque Angular.
+ */
+export async function withBaselineTimeout<T>(
+  operation: (signal: AbortSignal) => Promise<T>,
+  timeoutMs = BASELINE_HTTP_TIMEOUT_MS
+): Promise<T> {
+  const controller = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      controller.abort();
+      reject(new Error('La solicitud institucional excedió el tiempo límite.'));
+    }, timeoutMs);
+  });
+
+  try {
+    return await Promise.race([
+      Promise.resolve().then(() => operation(controller.signal)),
+      timeout,
+    ]);
+  } finally {
+    if (timer !== undefined) {
+      clearTimeout(timer);
+    }
+  }
+}
+
 /**
  * Intercambia el authorization code por un access token. Descarta refresh_token e id_token: la SPA no los
  * conserva. Falla con Error si la respuesta no es un Bearer válido.
  */
-export async function exchangeCode(
+export function exchangeCode(
   config: BaselineOidcConfig,
   code: string,
   verifier: string,
-  fetchFn: typeof fetch = fetch
+  fetchFn: typeof fetch = fetch,
+  timeoutMs = BASELINE_HTTP_TIMEOUT_MS
 ): Promise<BaselineTokenResult> {
-  const response = await fetchFn(`${config.issuerUrl}/protocol/openid-connect/token`, {
-    method: 'POST',
-    credentials: 'omit',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      grant_type: 'authorization_code',
-      client_id: config.clientId,
-      code,
-      redirect_uri: config.redirectUri,
-      code_verifier: verifier,
-    }).toString(),
-  });
-  if (!response.ok) {
-    throw new Error('El proveedor de identidad rechazó el código de autorización.');
-  }
-  const body = (await response.json()) as { access_token?: unknown; token_type?: unknown };
-  if (typeof body.access_token !== 'string' || !body.access_token || String(body.token_type).toLowerCase() !== 'bearer') {
-    throw new Error('Respuesta de token inválida.');
-  }
-  return { accessToken: body.access_token };
+  return withBaselineTimeout(async (signal) => {
+    const response = await fetchFn(config.issuerUrl + '/protocol/openid-connect/token', {
+      method: 'POST',
+      credentials: 'omit',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        client_id: config.clientId,
+        code,
+        redirect_uri: config.redirectUri,
+        code_verifier: verifier,
+      }).toString(),
+      signal,
+    });
+    if (!response.ok) {
+      throw new Error('El proveedor de identidad rechazó el código de autorización.');
+    }
+    const body = (await response.json()) as { access_token?: unknown; token_type?: unknown };
+    if (
+      typeof body.access_token !== 'string' ||
+      !body.access_token ||
+      String(body.token_type).toLowerCase() !== 'bearer'
+    ) {
+      throw new Error('Respuesta de token inválida.');
+    }
+    return { accessToken: body.access_token };
+  }, timeoutMs);
 }
