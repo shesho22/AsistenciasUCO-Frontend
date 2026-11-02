@@ -21,7 +21,7 @@ import { DIAS_SEMANA, franjaNueva } from '../../../core/validation/franjas.util'
         </button>
       </div>
       <p class="text-[11px] text-warm-500">
-        Un bloque por día y hora. Las franjas del grupo no pueden cruzarse entre sí y el docente no puede tener otro grupo a la misma hora.
+        Un bloque por día y hora. Las franjas del grupo no pueden cruzarse entre sí y el docente no puede tener otro grupo a la misma hora. Al guardar, las sesiones futuras del grupo se crean o se ajustan según este horario.
       </p>
       @for (franja of franjas(); track $index; let i = $index) {
         <div class="grid grid-cols-[1fr_auto_auto_auto] gap-2 items-center">
