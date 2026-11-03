@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DeanFacultadService } from '../../../core/services/dean-facultad.service';
@@ -6,6 +6,7 @@ import { SesionFacultadItem } from '../../../core/models/facultad-decano.model';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
+import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
 
 /** HU145: cronograma de las sesiones de clase programadas en la facultad, por rango de fechas. Solo lectura. */
 @Component({
@@ -43,6 +44,13 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
         @if (sesiones().length === 0 && !cargando()) {
           <p class="text-sm text-warm-500 text-center py-6">No hay sesiones programadas en el rango seleccionado.</p>
         } @else {
+          <p class="text-xs text-warm-500" data-testid="zona-horaria-cronograma">
+            @if (sinZona()) {
+              Algunas horas están registradas sin zona horaria confirmada y se muestran tal como las informa el servidor.
+            } @else {
+              Horas en {{ timeZone.zoneLabel() }}.
+            }
+          </p>
           <div class="overflow-x-auto">
             <table class="w-full text-sm">
               <thead>
@@ -56,7 +64,7 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
               <tbody>
                 @for (s of sesiones(); track s.id) {
                   <tr class="border-b border-warm-50">
-                    <td class="py-2 pr-3 text-xs text-warm-600">{{ s.fechaHoraInicio | date: 'dd/MM/yyyy HH:mm' }} – {{ s.fechaHoraFin | date: 'HH:mm' }}</td>
+                    <td class="py-2 pr-3 text-xs text-warm-600">{{ timeZone.formatTemporalRange(s.fechaHoraInicio, s.fechaHoraFin) }}</td>
                     <td class="py-2 pr-3 font-semibold text-warm-900">{{ s.nombre }} <span class="text-warm-400 font-mono">{{ s.codigo }}</span></td>
                     <td class="py-2 pr-3 text-warm-700">{{ s.nombreAsignatura }} · {{ s.nombreGrupo }}</td>
                     <td class="py-2 text-warm-700">{{ s.nombrePrograma }}</td>
@@ -80,8 +88,11 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 export class DeanCronogramaComponent implements OnInit {
   private readonly service = inject(DeanFacultadService);
   private readonly toast = inject(ToastService);
+  readonly timeZone = inject(SessionTimeZoneService);
 
   sesiones = signal<SesionFacultadItem[]>([]);
+  /** APP-04: el contrato v1 del decano entrega `LocalDateTime` sin zona; se muestra literal e identificado. */
+  sinZona = computed(() => this.timeZone.hasUnzonedValue(this.sesiones().map((s) => s.fechaHoraInicio)));
   total = signal(0);
   pagina = signal(1);
   tamano = signal(20);
