@@ -4,6 +4,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { CoordinatorFichaModalComponent } from './coordinator-ficha-modal.component';
 import { environment } from '../../../../../environments/environment';
 import { BitacoraSesion, FichaEstudiante } from '../../../../core/models/coordinator-indicators.model';
+import { SessionTimeZoneService } from '../../../../core/services/session-timezone.service';
 
 describe('CoordinatorFichaModalComponent', () => {
   let fixture: ComponentFixture<CoordinatorFichaModalComponent>;
@@ -56,6 +57,18 @@ describe('CoordinatorFichaModalComponent', () => {
     expect(t).toContain('33.33%');
     expect(t).not.toContain('Teléfono');
     expect(component.totalBitacora()).toBe(25);
+  });
+
+  it('APP-04 la bitácora presenta el instante UTC en la zona efectiva (Londres)', () => {
+    TestBed.inject(SessionTimeZoneService).setManualTimeZone('Europe/London');
+    abrir();
+    http.expectOne(`${base}/ficha`).flush({ exitoso: true, datos: ficha });
+    http.expectOne((r) => r.url === `${base}/bitacora`).flush({ exitoso: true, datos: [sesion(6, true)], total: 1 });
+    fixture.detectChanges();
+
+    expect(texto()).toContain('23/10/2026 15:00');
+    expect(texto()).toContain('Europe/London');
+    localStorage.removeItem('asistenciasuco.session-timezone');
   });
 
   it('T-FE-04 una sesión sin registro se muestra como "Sin registro" (no como falta)', () => {

@@ -23,8 +23,13 @@ export interface SesionGrupoItem {
   numero: number | null;
   codigo: string;
   numeroSemana: number | null;
+  /** v1: `LocalDateTime` sin zona; se presenta literal, nunca se reinterpreta (APP-04). */
   fechaHoraInicio: string | null;
   fechaHoraFin: string | null;
+  /** APP-04 (aditivo): instantes UTC con `Z`, presentes solo si `estadoTemporal = CONFIRMADA`. */
+  fechaHoraInicioUtc?: string | null;
+  fechaHoraFinUtc?: string | null;
+  estadoTemporal?: 'CONFIRMADA' | 'INDETERMINADA' | null;
 }
 
 export interface AsistenciaSesionItem {
