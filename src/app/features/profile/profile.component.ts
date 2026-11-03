@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, effect, untracked, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -11,11 +11,14 @@ import { FormFieldComponent } from '../../shared/components/form-field/form-fiel
 import { AvatarComponent } from '../../shared/components/avatar/avatar.component';
 import { ToastService } from '../../shared/components/toast/toast.component';
 import { ProfileLinksComponent } from './components/profile-links.component';
+import { PerfilInstitucionalStore, TEXTO_SIN_REGISTRAR } from './perfil-institucional.store';
 
 @Component({
   selector: 'app-profile',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  // APP-06: un solo estado de perfil institucional por pantalla, compartido con <app-profile-links>.
+  providers: [PerfilInstitucionalStore],
   imports: [
     CommonModule,
     FormsModule,
@@ -74,11 +77,11 @@ import { ProfileLinksComponent } from './components/profile-links.component';
             </div>
 
             <div>
-              <h2 class="font-serif font-bold text-xl text-warm-900 leading-tight">
+              <h2 class="font-serif font-bold text-xl text-warm-900 leading-tight" data-testid="perfil-resumen-nombre">
                 {{ computedFullName() }}
               </h2>
-              <p class="text-xs text-primary-800 font-semibold mt-0.5">
-                {{ user()?.email }}
+              <p class="text-xs text-primary-800 font-semibold mt-0.5" data-testid="perfil-resumen-correo">
+                {{ correoVisible() }}
               </p>
               <p class="text-[11px] text-warm-500 mt-1">
                 {{ user()?.department }}
@@ -92,7 +95,7 @@ import { ProfileLinksComponent } from './components/profile-links.component';
               </div>
               <div class="flex items-center justify-between">
                 <span class="text-warm-500">Documento:</span>
-                <span class="font-mono font-semibold text-warm-800">{{ user()?.numeroIdentificacion || 'Sin registrar' }}</span>
+                <span class="font-mono font-semibold text-warm-800" data-testid="perfil-resumen-documento">{{ identificacion().documento }}</span>
               </div>
               <div class="flex items-center justify-between">
                 <span class="text-warm-500">Rol:</span>
@@ -257,12 +260,17 @@ import { ProfileLinksComponent } from './components/profile-links.component';
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div class="bg-warm-50 p-3 rounded-xl border border-warm-200/70">
                   <span class="text-warm-500 block text-[10px] uppercase font-bold">Correo Institucional</span>
-                  <span class="font-semibold text-warm-900 font-mono text-xs">{{ user()?.email }}</span>
+                  <span class="font-semibold text-warm-900 font-mono text-xs" data-testid="perfil-correo-institucional">{{ correoVisible() }}</span>
+                </div>
+
+                <div class="bg-warm-50 p-3 rounded-xl border border-warm-200/70">
+                  <span class="text-warm-500 block text-[10px] uppercase font-bold">Tipo de Identificación</span>
+                  <span class="font-semibold text-warm-900 text-xs" data-testid="perfil-tipo-identificacion">{{ identificacion().tipo }}</span>
                 </div>
 
                 <div class="bg-warm-50 p-3 rounded-xl border border-warm-200/70">
                   <span class="text-warm-500 block text-[10px] uppercase font-bold">Número de Identificación</span>
-                  <span class="font-semibold text-warm-900 font-mono text-xs">{{ user()?.numeroIdentificacion }}</span>
+                  <span class="font-semibold text-warm-900 font-mono text-xs" data-testid="perfil-numero-identificacion">{{ identificacion().numero }}</span>
                 </div>
 
                 <div class="bg-warm-50 p-3 rounded-xl border border-warm-200/70">
@@ -318,8 +326,11 @@ export class ProfileComponent implements OnInit {
   private toastService = inject(ToastService);
   private location = inject(Location);
   private router = inject(Router);
+  private perfilStore = inject(PerfilInstitucionalStore);
 
   user = this.authService.currentUser;
+  /** APP-06: documento leido solo del GET institucional; nunca del token. */
+  identificacion = this.perfilStore.identificacion;
   canEditProfile = this.authService.isMockMode;
   isSaving = signal<boolean>(false);
   isEditing = signal<boolean>(false);
@@ -337,24 +348,33 @@ export class ProfileComponent implements OnInit {
     segundoApellido: '',
   };
 
+  /** Nombres vigentes en pantalla: los del perfil institucional, o los de la sesión mientras este no llega. */
+  private nombresVisibles = signal({ ...this.formModel });
+
   computedFullName = computed(() => {
-    const fn = [
-      this.formModel.primerNombre,
-      this.formModel.segundoNombre,
-      this.formModel.primerApellido,
-      this.formModel.segundoApellido,
-    ].filter(Boolean).join(' ');
-    return fn.trim() || this.user()?.name || 'Usuario';
+    const n = this.nombresVisibles();
+    const fn = [n.primerNombre, n.segundoNombre, n.primerApellido, n.segundoApellido].filter(Boolean).join(' ');
+    return fn.trim() || this.perfilStore.perfil()?.nombreCompleto || this.user()?.name || 'Usuario';
   });
+
+  correoVisible = computed(() => {
+    const perfil = this.perfilStore.perfil();
+    return perfil ? perfil.correo || TEXTO_SIN_REGISTRAR : this.user()?.email;
+  });
+
+  constructor() {
+    // Al llegar el perfil institucional, el formulario de consulta toma sus nombres (salvo edición en curso).
+    effect(() => {
+      if (this.perfilStore.perfil() && !untracked(this.isEditing)) {
+        untracked(() => this.resetForm());
+      }
+    });
+  }
 
   ngOnInit(): void {
     this.resetForm();
-    void this.authService
-      .fetchProfileFromBackend()
-      .then(() => {
-        this.resetForm();
-      })
-      .catch(() => {});
+    // El GET se hace aquí, con PerfilService, no con AuthService.fetchProfileFromBackend (bandera obsoleta).
+    this.perfilStore.cargar();
   }
 
   enableEditing(): void {
@@ -371,7 +391,7 @@ export class ProfileComponent implements OnInit {
   }
 
   resetForm(): void {
-    const current = this.user();
+    const current = this.perfilStore.perfil() ?? this.user();
     if (current) {
       this.formModel = {
         primerNombre: current.primerNombre || '',
@@ -379,6 +399,7 @@ export class ProfileComponent implements OnInit {
         primerApellido: current.primerApellido || '',
         segundoApellido: current.segundoApellido || '',
       };
+      this.nombresVisibles.set({ ...this.formModel });
     }
   }
 
@@ -408,6 +429,7 @@ export class ProfileComponent implements OnInit {
         this.isSaving.set(false);
         if (res.exitoso) {
           this.toastService.show('¡Perfil actualizado con éxito!', 'success');
+          this.nombresVisibles.set({ ...this.formModel });
           this.isEditing.set(false);
         } else {
           this.toastService.show(res.mensajeUsuario || 'Error al actualizar el perfil.', 'error');
