@@ -102,11 +102,13 @@ describe('AttendanceControlComponent public workflows', () => {
 
     attendanceClaimService = jasmine.createSpyObj('AttendanceClaimService', [
       'getReclamosDocente',
+      'getReclamosDocentePorGrupo',
       'resolverReclamo',
     ]);
     attendanceClaimService.getReclamosDocente.and.returnValue(
       of({ exitoso: true, datos: [] })
     );
+    attendanceClaimService.getReclamosDocentePorGrupo.and.returnValue(of([]));
 
     TestBed.configureTestingModule({
       imports: [AttendanceControlComponent],
