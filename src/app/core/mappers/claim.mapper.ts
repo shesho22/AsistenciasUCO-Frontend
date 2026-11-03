@@ -105,6 +105,7 @@ export class ClaimMapper {
     const soporte = dto.soporteAdjunto ?? null;
     return {
       id: dto.id,
+      grupoId: dto.grupoId,
       estudianteId: dto.estudianteId,
       estudianteNombre: dto.estudianteNombre,
       // El listado del docente no expone el correo del estudiante (datos personales minimos).
