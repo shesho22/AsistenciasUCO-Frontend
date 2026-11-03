@@ -394,6 +394,16 @@ export interface ParametroInstitucionalItem {
   ultimaModificacion?: string;
 }
 
+export interface ParametroAdminDto {
+  id: string;
+  grupo: string;
+  clave: string;
+  valor: string;
+  tipoDato: string;
+  valorDefecto: string;
+  estaActivo: boolean;
+}
+
 export interface RegistroAuditoriaItem {
   id: string;
   timestamp: string;

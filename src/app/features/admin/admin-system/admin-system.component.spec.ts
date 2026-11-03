@@ -7,7 +7,7 @@ import { AdminSystemComponent } from './admin-system.component';
 import { AdminManagementService } from '../../../core/services/admin-management.service';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { ToastService } from '../../../shared/components/toast/toast.component';
-import { ParametroInstitucionalItem, RegistroAuditoriaItem } from '../../../core/models/role-management.model';
+import { ParametroAdminDto, RegistroAuditoriaItem } from '../../../core/models/role-management.model';
 
 describe('AdminSystemComponent', () => {
   let fixture: ComponentFixture<AdminSystemComponent>;
@@ -17,16 +17,15 @@ describe('AdminSystemComponent', () => {
   let toastServiceSpy: jasmine.SpyObj<ToastService>;
   let auditoriaSignal = signal<RegistroAuditoriaItem[]>([]);
 
-  const mockParametros: ParametroInstitucionalItem[] = [
+  const mockParametros: ParametroAdminDto[] = [
     {
       id: 'param-1',
+      grupo: 'ASISTENCIA',
       clave: 'asistencias.limite.inasistencia',
-      nombre: 'Límite de Inasistencia',
       valor: '20',
-      descripcion: 'Porcentaje máximo permitido',
-      categoria: 'ASISTENCIA',
-      tipo: 'PORCENTAJE',
-      ultimaModificacion: '2026-01-01',
+      tipoDato: 'NUMERO',
+      valorDefecto: '0',
+      estaActivo: true,
     },
   ];
 
@@ -51,7 +50,7 @@ describe('AdminSystemComponent', () => {
 
     adminServiceSpy = jasmine.createSpyObj(
       'AdminManagementService',
-      ['cargarParametros', 'cargarAuditoria', 'actualizarParametro', 'ejecutarCierreMasivo'],
+      ['cargarParametros', 'cargarAuditoria', 'ejecutarCierreMasivo'],
       {
         parametros: signal(mockParametros).asReadonly(),
         auditoria: auditoriaSignal.asReadonly(),
@@ -121,9 +120,17 @@ describe('AdminSystemComponent', () => {
     expect(component.auditoriaFiltrada().length).toBe(1);
   });
 
-  it('actualizarValorParam llama al servicio y notifica éxito', () => {
-    component.actualizarValorParam(mockParametros[0], '25');
-    expect(adminServiceSpy.actualizarParametro).toHaveBeenCalledWith('param-1', '25');
-    expect(toastServiceSpy.success).toHaveBeenCalled();
+  it('muestra el parámetro real en modo consulta y no ofrece una acción de guardado', () => {
+    const host = fixture.nativeElement as HTMLElement;
+    const card = host.querySelector('.bg-warm-50') as HTMLElement;
+    const valueInput = card.querySelector('input') as HTMLInputElement;
+
+    expect(host.textContent).toContain('Edición de parámetros no disponible');
+    expect(host.textContent).toContain('ASISTENCIA');
+    expect(host.textContent).toContain('NUMERO');
+    expect(valueInput.value).toBe('20');
+    expect(valueInput.readOnly).toBeTrue();
+    expect(card.querySelectorAll('button').length).toBe(0);
+    expect(toastServiceSpy.success).not.toHaveBeenCalled();
   });
 });
