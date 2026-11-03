@@ -51,4 +51,33 @@ describe('TeacherGrupoReclamosComponent', () => {
 
     expect(emitido).toBeTrue();
   });
+
+  it('no declara una lista vacía antes de una respuesta válida', () => {
+    fixture.componentRef.setInput('estadoCarga', 'LOADING');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Cargando reclamos');
+    expect(fixture.nativeElement.textContent).not.toContain('No hay reclamos para este grupo');
+  });
+
+  it('distingue 501, 403 y fallo de conexión y permite reintentar', () => {
+    const reintentar = jasmine.createSpy('reintentar');
+    component.reintentar.subscribe(reintentar);
+    for (const [estado, mensaje] of [
+      ['UNAVAILABLE', '501'],
+      ['FORBIDDEN', 'autorización'],
+      ['NETWORK_ERROR', 'conectar'],
+    ]) {
+      fixture.componentRef.setInput('estadoCarga', estado);
+      fixture.detectChanges();
+      expect(fixture.nativeElement.textContent).toContain(mensaje);
+    }
+    fixture.nativeElement.querySelector('[data-accion="reintentar"]').click();
+    expect(reintentar).toHaveBeenCalledTimes(1);
+  });
+
+  it('solo muestra vacío cuando la consulta completa se cargó correctamente', () => {
+    fixture.componentRef.setInput('estadoCarga', 'LOADED');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('No hay reclamos para este grupo');
+  });
 });

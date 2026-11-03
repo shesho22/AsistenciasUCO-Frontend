@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpContext, HttpParams } from '@angular/common/http';
-import { Observable, map, throwError } from 'rxjs';
+import { Observable, defer, map, of, switchMap, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiResponse } from '../models/api-response.model';
 import { ApiDataResponse } from '../api/models/api-data-response.model';
@@ -38,6 +38,14 @@ export class IdentificadorInvalidoError extends Error {
   constructor(readonly valor: unknown) {
     super('Identificador inválido.');
     this.name = 'IdentificadorInvalidoError';
+  }
+}
+
+/** La respuesta paginada no permite certificar el conjunto completo de reclamos. */
+export class PaginacionReclamosInconsistenteError extends Error {
+  constructor() {
+    super('No fue posible verificar la paginación de reclamos.');
+    this.name = 'PaginacionReclamosInconsistenteError';
   }
 }
 
@@ -95,6 +103,74 @@ export class AttendanceClaimService {
         return { ...res, datos, total: res.total ?? datos.length };
       })
     );
+  }
+
+  /**
+   * Recorre el listado existente por su paginación contractual y filtra usando exclusivamente el UUID `grupoId`
+   * del DTO. La respuesta no se emite hasta verificar páginas, total, IDs y pertenencia del grupo en todo el lote.
+   * No agrega parámetros HTTP al contrato del backend.
+   */
+  getReclamosDocentePorGrupo(grupoId: string): Observable<SolicitudRevisionItem[]> {
+    return defer(() => {
+      if (!isUuid(grupoId)) {
+        return throwError(() => new IdentificadorInvalidoError(grupoId));
+      }
+
+      const tamanoPagina = 100;
+      const grupoBuscado = grupoId.toLowerCase();
+      const cargarPagina = (
+        pagina: number,
+        totalEsperado?: number,
+        acumulados: SolicitudRevisionItem[] = [],
+        idsVistos: Set<string> = new Set<string>()
+      ): Observable<SolicitudRevisionItem[]> => {
+        const params = new HttpParams().set('pagina', pagina).set('tamano', tamanoPagina);
+        return this.http.get<ApiListResponse<ReclamoDocenteApi>>(`${environment.apiUrl}/docente/reclamos`, { params }).pipe(
+          switchMap((res) => {
+            const datos = res?.datos;
+            const total = res?.total;
+            if (res?.exitoso !== true || !Number.isSafeInteger(total) || total < 0 || !Array.isArray(datos)) {
+              return throwError(() => new PaginacionReclamosInconsistenteError());
+            }
+            if (totalEsperado !== undefined && total !== totalEsperado) {
+              return throwError(() => new PaginacionReclamosInconsistenteError());
+            }
+
+            const paginasTotales = Math.max(1, Math.ceil(total / tamanoPagina));
+            const filasEsperadas = total === 0 && pagina === 1 ? 0 : Math.min(tamanoPagina, total - (pagina - 1) * tamanoPagina);
+            if (pagina > paginasTotales || filasEsperadas < 0 || datos.length !== filasEsperadas) {
+              return throwError(() => new PaginacionReclamosInconsistenteError());
+            }
+
+            const idsPagina = new Set(idsVistos);
+            for (const dto of datos) {
+              if (!dto || typeof dto.id !== 'string' || !dto.id.trim() || !isUuid(dto.grupoId)) {
+                return throwError(() => new PaginacionReclamosInconsistenteError());
+              }
+              const idNormalizado = dto.id.trim().toLowerCase();
+              if (idsPagina.has(idNormalizado)) {
+                return throwError(() => new PaginacionReclamosInconsistenteError());
+              }
+              idsPagina.add(idNormalizado);
+            }
+
+            const paginaMapeada = datos.map((item) =>
+              ClaimMapper.fromReclamoDocente(item, (instant) => this.sessionTimeZone.displayInstant(instant).date)
+            );
+            const siguienteAcumulado = [...acumulados, ...paginaMapeada];
+            if (pagina < paginasTotales) {
+              return cargarPagina(pagina + 1, total, siguienteAcumulado, idsPagina);
+            }
+            if (siguienteAcumulado.length !== total) {
+              return throwError(() => new PaginacionReclamosInconsistenteError());
+            }
+            return of(siguienteAcumulado.filter((item) => item.grupoId?.toLowerCase() === grupoBuscado));
+          })
+        );
+      };
+
+      return cargarPagina(1);
+    });
   }
 
   /**

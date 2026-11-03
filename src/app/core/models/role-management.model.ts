@@ -208,8 +208,12 @@ export interface SesionMateriaDetalle {
   respuestaDocente?: string;
 }
 
+export type EstadoCargaReclamos = 'IDLE' | 'LOADING' | 'LOADED' | 'FORBIDDEN' | 'UNAVAILABLE' | 'NETWORK_ERROR' | 'SERVER_ERROR';
+
 export interface SolicitudRevisionItem {
   id: string;
+  /** UUID real del grupo informado por el DTO del backend; no se deriva del nombre visible. */
+  grupoId?: string;
   estudianteId: string;
   estudianteNombre: string;
   estudianteCorreo: string;

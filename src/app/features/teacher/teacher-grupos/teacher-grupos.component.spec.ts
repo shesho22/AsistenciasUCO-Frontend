@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
-import { of } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { TeacherGruposComponent } from './teacher-grupos.component';
 import { CourseService } from '../../../core/services/course.service';
 import { SessionService } from '../../../core/services/session.service';
@@ -55,7 +55,7 @@ describe('TeacherGruposComponent', () => {
       'getStudentsByGroup',
     ]);
     claimService = jasmine.createSpyObj<AttendanceClaimService>('AttendanceClaimService', [
-      'getReclamosDocente',
+      'getReclamosDocentePorGrupo',
     ]);
     router = jasmine.createSpyObj<Router>('Router', ['navigate']);
 
@@ -65,9 +65,7 @@ describe('TeacherGruposComponent', () => {
     courseService.getAsignaturasDocente.and.returnValue(
       of({ exitoso: true, datos: [] } as any)
     );
-    claimService.getReclamosDocente.and.returnValue(
-      of({ exitoso: true, datos: [] } as any)
-    );
+    claimService.getReclamosDocentePorGrupo.and.returnValue(of([]) as never);
     studentService.getStudentsByGroup.and.returnValue(
       of({ exitoso: true, datos: [] } as any)
     );
@@ -402,5 +400,69 @@ describe('TeacherGruposComponent', () => {
 
     expect(component.vistaActual()).toBe('FORM_GRUPO');
     expect(component.guardandoGrupo()).toBeFalse();
+  });
+
+  describe('APP-05 reclamos por grupo', () => {
+    const GROUP_A = '3f0c1d2e-0000-4000-8000-000000000001';
+    const GROUP_B = '3f0c1d2e-0000-4000-8000-000000000002';
+    const claim = (id: string, grupoId: string) => ({ id, grupoId } as any);
+
+    it('solicita el UUID seleccionado y no retiene filas de otro grupo', () => {
+      claimService.getReclamosDocentePorGrupo.and.returnValue(of([
+        claim('a-1', GROUP_A),
+        claim('b-1', GROUP_B),
+      ]) as never);
+
+      component.verHubGrupo({ ...course, id: GROUP_A });
+
+      expect(claimService.getReclamosDocentePorGrupo).toHaveBeenCalledOnceWith(GROUP_A);
+      expect(component.reclamosGrupo().map((item) => item.id)).toEqual(['a-1']);
+      expect(component.estadoCargaReclamos()).toBe('LOADED');
+    });
+
+    it('descarta la respuesta pendiente del grupo anterior al cambiar rápidamente', () => {
+      const anterior = new Subject<any[]>();
+      const actual = new Subject<any[]>();
+      claimService.getReclamosDocentePorGrupo.and.returnValues(anterior.asObservable() as never, actual.asObservable() as never);
+
+      component.verHubGrupo({ ...course, id: GROUP_A });
+      expect(component.estadoCargaReclamos()).toBe('LOADING');
+      component.verHubGrupo({ ...course, id: GROUP_B });
+      anterior.next([claim('a-1', GROUP_A)]);
+      actual.next([claim('b-1', GROUP_B)]);
+
+      expect(component.reclamosGrupo().map((item) => item.id)).toEqual(['b-1']);
+      expect(component.reclamosGrupo()[0].grupoId).toBe(GROUP_B);
+      expect(component.estadoCargaReclamos()).toBe('LOADED');
+    });
+
+    it('no duplica una consulta activa del mismo grupo', () => {
+      const pendiente = new Subject<any[]>();
+      claimService.getReclamosDocentePorGrupo.and.returnValue(pendiente.asObservable() as never);
+      const grupo = { ...course, id: GROUP_A };
+
+      component.verHubGrupo(grupo);
+      component.cargarReclamosGrupo(GROUP_A);
+
+      expect(claimService.getReclamosDocentePorGrupo).toHaveBeenCalledOnceWith(GROUP_A);
+    });
+
+    it('distingue 403, 501, red y error HTTP de una lista vacía', () => {
+      const casos = [
+        { status: 403, esperado: 'FORBIDDEN' },
+        { status: 501, esperado: 'UNAVAILABLE' },
+        { status: 0, esperado: 'NETWORK_ERROR' },
+        { status: 500, esperado: 'SERVER_ERROR' },
+      ] as const;
+
+      for (const caso of casos) {
+        claimService.getReclamosDocentePorGrupo.and.returnValue(
+          throwError(() => ({ status: caso.status })) as never
+        );
+        component.verHubGrupo({ ...course, id: GROUP_A });
+        expect(component.estadoCargaReclamos()).toBe(caso.esperado);
+        expect(component.reclamosGrupo()).toEqual([]);
+      }
+    });
   });
 });

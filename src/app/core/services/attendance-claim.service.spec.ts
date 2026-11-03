@@ -3,7 +3,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { environment } from '../../../environments/environment';
 import { AttendanceClaimService, IdentificadorInvalidoError } from './attendance-claim.service';
-import { SesionMateriaDetalle } from '../models/role-management.model';
+import { SesionMateriaDetalle, SolicitudRevisionItem } from '../models/role-management.model';
 import { SessionTimeZoneService } from './session-timezone.service';
 
 describe('AttendanceClaimService', () => {
@@ -396,6 +396,132 @@ describe('AttendanceClaimService', () => {
       http.expectOne((r) => r.url === `${environment.apiUrl}/docente/reclamos`).flush({}, { status: 501, statusText: 'Not Implemented' });
       expect(result).toBeUndefined();
       expect(error?.status).toBe(501);
+    });
+  });
+
+  describe('APP-05 reclamos del grupo docente', () => {
+    const GROUP_A = '3f0c1d2e-0000-4000-8000-000000000001';
+    const GROUP_B = '3f0c1d2e-0000-4000-8000-000000000002';
+    const LISTA = `${environment.apiUrl}/docente/reclamos`;
+    const reclamo = (id: string, grupoId?: string) => ({
+      id,
+      fechaSolicitud: '2026-11-02',
+      estadoSolicitud: 'PENDIENTE',
+      justificacionSolicitud: 'Justificación de prueba',
+      estudianteId: 'est-1',
+      estudianteNombre: 'Estudiante',
+      sesionId: 'ses-1',
+      sesionNumero: 1,
+      grupoId,
+      grupoCodigo: 1,
+      grupoNombre: 'Grupo visible',
+      materiaId: 'mat-1',
+      materiaCodigo: 'MAT-1',
+      materiaNombre: 'Materia',
+      soporteAdjunto: null,
+    });
+
+    it('recorre páginas completas y filtra por el UUID DTO sin inventar query params', () => {
+      let resultado: SolicitudRevisionItem[] | undefined;
+      service.getReclamosDocentePorGrupo(GROUP_A).subscribe((items) => (resultado = items));
+
+      const pagina1 = http.expectOne((request) => request.url === LISTA);
+      expect(pagina1.request.params.get('pagina')).toBe('1');
+      expect(pagina1.request.params.get('tamano')).toBe('100');
+      expect(pagina1.request.params.has('grupoId')).toBeFalse();
+      const primeraPagina = [
+        reclamo('target-1', GROUP_A),
+        ...Array.from({ length: 99 }, (_, index) => reclamo(`other-${index}`, GROUP_B)),
+      ];
+      pagina1.flush({ exitoso: true, datos: primeraPagina, total: 101 });
+
+      const pagina2 = http.expectOne((request) => request.url === LISTA);
+      expect(pagina2.request.params.get('pagina')).toBe('2');
+      expect(pagina2.request.params.get('tamano')).toBe('100');
+      pagina2.flush({ exitoso: true, datos: [reclamo('target-2', GROUP_A)], total: 101 });
+
+      expect(resultado?.map((item) => item.id)).toEqual(['target-1', 'target-2']);
+      expect(resultado?.every((item) => item.grupoId === GROUP_A)).toBeTrue();
+    });
+
+    it('solo declara vacío después de recorrer todas las páginas de otros grupos', () => {
+      let resultado: SolicitudRevisionItem[] | undefined;
+      service.getReclamosDocentePorGrupo(GROUP_A).subscribe((items) => (resultado = items));
+      http.expectOne((request) => request.url === LISTA).flush({
+        exitoso: true,
+        datos: Array.from({ length: 100 }, (_, index) => reclamo(`other-${index}`, GROUP_B)),
+        total: 101,
+      });
+      http.expectOne((request) => request.url === LISTA).flush({
+        exitoso: true,
+        datos: [reclamo('other-final', GROUP_B)],
+        total: 101,
+      });
+      expect(resultado).toEqual([]);
+    });
+
+    it('falla cerrado si una fila no incluye el UUID grupoId requerido por el DTO', () => {
+      let resultado: unknown;
+      let error: unknown;
+      service.getReclamosDocentePorGrupo(GROUP_A).subscribe({
+        next: (items) => (resultado = items),
+        error: (reason) => (error = reason),
+      });
+      http.expectOne((request) => request.url === LISTA).flush({
+        exitoso: true,
+        datos: [reclamo('missing-group')],
+        total: 1,
+      });
+      expect(resultado).toBeUndefined();
+      expect(error).toBeTruthy();
+    });
+
+    it('falla cerrado si el total cambia mientras se recorren las páginas', () => {
+      let resultado: unknown;
+      let error: unknown;
+      service.getReclamosDocentePorGrupo(GROUP_A).subscribe({
+        next: (items) => (resultado = items),
+        error: (reason) => (error = reason),
+      });
+      http.expectOne((request) => request.url === LISTA).flush({
+        exitoso: true,
+        datos: Array.from({ length: 100 }, (_, index) => reclamo(`row-${index}`, GROUP_B)),
+        total: 101,
+      });
+      http.expectOne((request) => request.url === LISTA).flush({
+        exitoso: true,
+        datos: [reclamo('row-final', GROUP_B)],
+        total: 102,
+      });
+      expect(resultado).toBeUndefined();
+      expect(error).toBeTruthy();
+    });
+
+    it('propaga 403, 501 y fallo de conexión sin convertirlos en lista vacía', () => {
+      for (const status of [403, 501]) {
+        let resultado: unknown;
+        let error: { status?: number } | undefined;
+        service.getReclamosDocentePorGrupo(GROUP_A).subscribe({
+          next: (items) => (resultado = items),
+          error: (reason) => (error = reason),
+        });
+        http.expectOne((request) => request.url === LISTA).flush({}, {
+          status,
+          statusText: status === 403 ? 'Forbidden' : 'Not Implemented',
+        });
+        expect(resultado).toBeUndefined();
+        expect(error?.status).toBe(status);
+      }
+
+      let resultado: unknown;
+      let error: { status?: number } | undefined;
+      service.getReclamosDocentePorGrupo(GROUP_A).subscribe({
+        next: (items) => (resultado = items),
+        error: (reason) => (error = reason),
+      });
+      http.expectOne((request) => request.url === LISTA).error(new ProgressEvent('error'));
+      expect(resultado).toBeUndefined();
+      expect(error?.status).toBe(0);
     });
   });
 });
