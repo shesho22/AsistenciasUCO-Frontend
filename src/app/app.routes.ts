@@ -245,6 +245,36 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/dean/dean-cronograma/dean-cronograma.component').then((m) => m.DeanCronogramaComponent),
       },
+      // HU128 / HU143: docentes y búsqueda de asignaturas de la facultad del decano
+      {
+        path: 'decano/docentes',
+        canActivate: [roleGuard],
+        data: { roles: ['DECANO'] },
+        loadComponent: () =>
+          import('./features/dean/dean-docentes/dean-docentes.component').then((m) => m.DeanDocentesComponent),
+      },
+      {
+        path: 'decano/asignaturas',
+        canActivate: [roleGuard],
+        data: { roles: ['DECANO'] },
+        loadComponent: () =>
+          import('./features/dean/dean-asignaturas/dean-asignaturas.component').then((m) => m.DeanAsignaturasComponent),
+      },
+      // HU143 / HU157: búsqueda de asignaturas y ficha unificada de estudiantes del administrador
+      {
+        path: 'admin/asignaturas',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMINISTRADOR', 'ADMIN'], comoAdministrador: true },
+        loadComponent: () =>
+          import('./features/dean/dean-asignaturas/dean-asignaturas.component').then((m) => m.DeanAsignaturasComponent),
+      },
+      {
+        path: 'admin/estudiantes',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMINISTRADOR', 'ADMIN'] },
+        loadComponent: () =>
+          import('./features/admin/admin-estudiantes/admin-estudiantes.component').then((m) => m.AdminEstudiantesComponent),
+      },
       // Rutas Coordinador
       {
         path: 'coordinador/docentes',

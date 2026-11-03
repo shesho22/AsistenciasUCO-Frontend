@@ -2,6 +2,7 @@ import { HttpErrorResponse, HttpInterceptorFn, HttpResponse } from '@angular/com
 import { inject } from '@angular/core';
 import { of, delay, throwError } from 'rxjs';
 import { mockStore } from '../mocks/mock-data-store';
+import { respuestaConsultasTransversales } from '../mocks/mock-consultas-transversales';
 import {
   mockHorariosToDto,
   mockMateriasToDto,
@@ -469,6 +470,12 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     const planId = segments[segments.length - 2];
     const asignaturas = mockStore.asignaturasPlan[planId] || [];
     return of(okResponse(asignaturas)).pipe(delay(200));
+  }
+
+  // ================= DECANO Y ADMINISTRADOR: CONSULTAS TRANSVERSALES (HU112/HU128/HU143/HU157) =================
+  const transversal = respuestaConsultasTransversales(req, url);
+  if (transversal) {
+    return of(okResponse(transversal.datos, undefined, transversal.total)).pipe(delay(200));
   }
 
   // ================= DECANO: ESTUDIANTES, ESTRUCTURA Y CRONOGRAMA (HU104/HU105/HU109/HU119/HU145) =================
