@@ -56,6 +56,12 @@ describe('DeanCronogramaComponent (HU145)', () => {
 
   afterEach(() => http.verify());
 
+  it('APP-04: la hora sin zona del cronograma se muestra literal e identificada', () => {
+    const texto = fixture.nativeElement.textContent as string;
+    expect(texto).toContain('03/02/2026 07:00 – 09:00');
+    expect(texto).toContain('sin zona horaria');
+  });
+
   it('HU145: lista las sesiones con asignatura, grupo y programa', () => {
     const texto = fixture.nativeElement.textContent as string;
     expect(component.total()).toBe(1);

@@ -12,6 +12,8 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
+import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
+import { resolveSessionInstant } from '../../../core/time/session-timezone.util';
 
 type FiltroAsistio = 'TODOS' | 'ASISTIO' | 'NO_ASISTIO';
 
@@ -135,6 +137,13 @@ type FiltroAsistio = 'TODOS' | 'ASISTIO' | 'NO_ASISTIO';
           @if (sesiones().length === 0 && !cargandoSesiones()) {
             <p class="text-sm text-warm-500 text-center py-6">El grupo no tiene sesiones en el rango seleccionado.</p>
           } @else {
+            <p class="text-xs text-warm-500" data-testid="zona-horaria-sesiones">
+              @if (sesionesSinZona()) {
+                Algunas horas están registradas sin zona horaria confirmada y se muestran tal como las informa el servidor.
+              } @else {
+                Horas en {{ timeZone.zoneLabel() }}.
+              }
+            </p>
             <div class="overflow-x-auto">
               <table class="w-full text-sm">
                 <thead>
@@ -150,7 +159,7 @@ type FiltroAsistio = 'TODOS' | 'ASISTIO' | 'NO_ASISTIO';
                     <tr class="border-b border-warm-50" [class.bg-primary-50]="sesionSeleccionada()?.id === s.id">
                       <td class="py-2 pr-3 font-semibold text-warm-900">{{ s.nombre }} <span class="text-warm-400 font-mono">{{ s.codigo }}</span></td>
                       <td class="py-2 pr-3 text-warm-700">{{ s.numeroSemana ?? '—' }}</td>
-                      <td class="py-2 pr-3 text-warm-600 text-xs">{{ s.fechaHoraInicio | date: 'dd/MM/yyyy HH:mm' }} – {{ s.fechaHoraFin | date: 'HH:mm' }}</td>
+                      <td class="py-2 pr-3 text-warm-600 text-xs">{{ horario(s) }}</td>
                       <td class="py-2 text-right">
                         <button type="button" class="text-xs font-semibold text-primary-700 hover:underline" (click)="seleccionarSesion(s)">
                           Ver asistencia
@@ -179,7 +188,7 @@ type FiltroAsistio = 'TODOS' | 'ASISTIO' | 'NO_ASISTIO';
             <div>
               <h2 class="font-serif font-bold text-lg text-warm-900">Asistencia · {{ sesion.nombre }}</h2>
               <p class="text-xs text-warm-500">
-                {{ sesion.fechaHoraInicio | date: 'dd/MM/yyyy HH:mm' }} – {{ sesion.fechaHoraFin | date: 'HH:mm' }} ·
+                {{ horario(sesion) }} ·
                 {{ presentesPagina() }} presentes / {{ ausentesPagina() }} ausentes en esta página
               </p>
             </div>
@@ -237,6 +246,7 @@ type FiltroAsistio = 'TODOS' | 'ASISTIO' | 'NO_ASISTIO';
 export class CoordinatorAttendanceComponent implements OnInit {
   private readonly service = inject(CoordinatorManagementService);
   private readonly toast = inject(ToastService);
+  readonly timeZone = inject(SessionTimeZoneService);
 
   periodos = signal<PeriodoAcademicoItem[]>([]);
   idPeriodo = signal('');
@@ -265,8 +275,26 @@ export class CoordinatorAttendanceComponent implements OnInit {
   cargandoAsistencias = signal(false);
   filtroAsistio = signal<FiltroAsistio>('TODOS');
 
+  /** APP-04: hay sesiones cuyo horario no es un instante confirmado (v1 sin zona o INDETERMINADA). */
+  sesionesSinZona = computed(() =>
+    this.timeZone.hasUnzonedValue(this.sesiones().map((s) => this.inicio(s)))
+  );
+
   presentesPagina = computed(() => this.asistencias().filter((a) => a.asistio).length);
   ausentesPagina = computed(() => this.asistencias().filter((a) => !a.asistio).length);
+
+  /** Horario de la sesión en la zona efectiva; el valor sin zona se muestra literal (APP-04). */
+  horario(sesion: SesionGrupoItem): string {
+    return this.timeZone.formatTemporalRange(this.inicio(sesion), this.fin(sesion));
+  }
+
+  private inicio(sesion: SesionGrupoItem): string | null {
+    return resolveSessionInstant(sesion.fechaHoraInicio, sesion.fechaHoraInicioUtc, sesion.estadoTemporal);
+  }
+
+  private fin(sesion: SesionGrupoItem): string | null {
+    return resolveSessionInstant(sesion.fechaHoraFin, sesion.fechaHoraFinUtc, sesion.estadoTemporal);
+  }
 
   ngOnInit(): void {
     this.service.getPeriodosAcademicos().subscribe({

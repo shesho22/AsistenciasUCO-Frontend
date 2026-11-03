@@ -7,7 +7,7 @@ import { CoordinatorManagementService } from '../../../core/services/coordinator
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import {
-  ParametroInstitucionalItem,
+  ParametroAdminDto,
   RegistroAuditoriaItem,
   CierrePeriodoReporte,
 } from '../../../core/models/role-management.model';
@@ -87,55 +87,31 @@ type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
                     {{ p.clave }}
                   </span>
                   <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-primary-50 text-primary-800 border border-primary-100">
-                    {{ p.categoria }}
+                    {{ p.grupo }}
                   </span>
                 </div>
 
-                <h3 class="font-bold text-warm-900 text-sm mb-1.5">{{ p.nombre }}</h3>
-                <p class="text-xs text-warm-600 mb-4 leading-relaxed">{{ p.descripcion }}</p>
+                <h3 class="font-bold text-warm-900 text-sm mb-1.5">{{ p.clave }}</h3>
+                <p class="text-xs text-warm-600 mb-4 leading-relaxed">Parámetro institucional</p>
 
                 <div class="bg-warm-50 p-3.5 rounded-xl border border-warm-100 mb-4">
                   <label class="block text-[10px] font-bold text-warm-500 uppercase mb-1.5">Valor Configurado Actual</label>
-                  
-                  @if (p.tipo === 'BOOLEANO') {
-                    <div class="flex items-center gap-3">
-                      <button
-                        (click)="actualizarValorParam(p, 'true')"
-                        [class]="p.valor === 'true' ? 'bg-primary-700 text-white font-bold' : 'bg-white text-warm-700 border border-warm-200'"
-                        class="px-3 py-1.5 rounded-lg text-xs transition-colors"
-                      >
-                        Habilitado (true)
-                      </button>
-                      <button
-                        (click)="actualizarValorParam(p, 'false')"
-                        [class]="p.valor === 'false' ? 'bg-red-700 text-white font-bold' : 'bg-white text-warm-700 border border-warm-200'"
-                        class="px-3 py-1.5 rounded-lg text-xs transition-colors"
-                      >
-                        Deshabilitado (false)
-                      </button>
-                    </div>
-                  } @else {
-                    <div class="flex items-center gap-2">
-                      <input
-                        type="text"
-                        [value]="p.valor"
-                        #inputVal
-                        class="flex-1 px-3 py-1.5 bg-white border border-warm-200 rounded-lg text-xs font-bold text-warm-900 focus:outline-none focus:ring-2 focus:ring-primary-700/20"
-                      />
-                      <button
-                        (click)="actualizarValorParam(p, inputVal.value)"
-                        class="px-3.5 py-1.5 bg-warm-900 hover:bg-black text-white text-xs font-semibold rounded-lg transition-colors"
-                      >
-                        Guardar
-                      </button>
-                    </div>
-                  }
+                  <input
+                    type="text"
+                    [value]="p.valor"
+                    readonly
+                    aria-label="Valor configurado actual"
+                    class="w-full px-3 py-1.5 bg-white border border-warm-200 rounded-lg text-xs font-bold text-warm-900"
+                  />
+                  <p role="status" class="mt-3 text-xs text-warm-600">
+                    Edición de parámetros no disponible. Los valores se muestran en modo consulta.
+                  </p>
                 </div>
               </div>
 
               <div class="text-[10px] text-warm-400 flex items-center justify-between pt-2 border-t border-warm-100">
-                <span>Tipo: {{ p.tipo }}</span>
-                <span>Último cambio: {{ p.ultimaModificacion || 'Por defecto' }}</span>
+                <span>Tipo: {{ p.tipoDato }}</span>
+                <span>Estado: {{ p.estaActivo ? 'Activo' : 'Inactivo' }}</span>
               </div>
             </div>
           }
@@ -353,11 +329,6 @@ export class AdminSystemComponent implements OnInit {
         l.modulo.toLowerCase().includes(q)
     );
   });
-
-  actualizarValorParam(p: ParametroInstitucionalItem, nuevoValor: string): void {
-    this.adminService.actualizarParametro(p.id, nuevoValor);
-    this.toast.success(`Parámetro "${p.nombre}" actualizado a "${nuevoValor}"`);
-  }
 
   private destroyRef = inject(DestroyRef);
 

@@ -12,6 +12,7 @@ import {
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { mockBackendInterceptor } from '../../../core/interceptors/mock-backend.interceptor';
 import { AuthService } from '../../../core/services/auth.service';
+import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
 
 const API = environment.apiUrl;
 
@@ -225,6 +226,61 @@ describe('CoordinatorAttendanceComponent (HU064/HU060/HU061)', () => {
       .flush({ exitoso: false }, { status: 500, statusText: 'Error' });
     expect(component.asistencias()).toEqual([]);
     expect(toastSpy.error).toHaveBeenCalled();
+  });
+
+  describe('APP-04: horas de sesión en la zona del navegador', () => {
+    const confirmada: SesionGrupoItem = {
+      ...sesion,
+      id: 'ses-utc',
+      fechaHoraInicio: '2026-11-03T15:00:00',
+      fechaHoraFin: '2026-11-03T17:00:00',
+      fechaHoraInicioUtc: '2026-11-03T15:00:00.1234567Z',
+      fechaHoraFinUtc: '2026-11-03T17:00:00Z',
+      estadoTemporal: 'CONFIRMADA',
+    };
+
+    afterEach(() => localStorage.removeItem('asistenciasuco.session-timezone'));
+
+    function cargarSesiones(datos: SesionGrupoItem[]): string {
+      component.seleccionarGrupo(grupo);
+      http.expectOne((r) => r.url.endsWith('/sesiones')).flush({ exitoso: true, datos, total: datos.length });
+      fixture.detectChanges();
+      return fixture.nativeElement.textContent as string;
+    }
+
+    it('presenta el instante UTC confirmado en Bogotá y lo recalcula para Berlín (CASO 1/5)', () => {
+      const timeZone = TestBed.inject(SessionTimeZoneService);
+      timeZone.setManualTimeZone('America/Bogota');
+
+      let texto = cargarSesiones([confirmada]);
+      expect(texto).toContain('03/11/2026 10:00 – 12:00');
+      expect(texto).toContain('America/Bogota');
+      expect(texto).not.toContain('03/11/2026 15:00');
+
+      timeZone.setManualTimeZone('Europe/Berlin');
+      fixture.detectChanges();
+      texto = fixture.nativeElement.textContent as string;
+      expect(texto).toContain('03/11/2026 16:00 – 18:00');
+      expect(component.sesiones()[0].fechaHoraInicioUtc).toBe('2026-11-03T15:00:00.1234567Z');
+    });
+
+    it('no reinterpreta una hora sin zona y la identifica como tal', () => {
+      TestBed.inject(SessionTimeZoneService).setManualTimeZone('Europe/Berlin');
+
+      const texto = cargarSesiones([sesion]);
+
+      expect(texto).toContain('03/02/2026 07:00 – 09:00');
+      expect(texto).toContain('sin zona horaria');
+    });
+
+    it('una sesión INDETERMINADA no usa un instante aunque llegue', () => {
+      TestBed.inject(SessionTimeZoneService).setManualTimeZone('Europe/Berlin');
+
+      const texto = cargarSesiones([{ ...confirmada, estadoTemporal: 'INDETERMINADA' }]);
+
+      expect(texto).toContain('03/11/2026 15:00 – 17:00');
+      expect(texto).toContain('sin zona horaria');
+    });
   });
 
   it('sin grupo o sesión seleccionados no consulta sesiones ni asistencias', () => {

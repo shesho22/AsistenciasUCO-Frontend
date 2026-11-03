@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { forkJoin, of } from 'rxjs';
+import { Subscription, forkJoin, of } from 'rxjs';
 import { CourseService, GrupoCoordinadorPayload } from '../../../core/services/course.service';
 import { OfertaCreacionGruposDocenteApiDto } from '../../../core/api/models/oferta-creacion-grupos-docente-api-dto.model';
 import { SessionService } from '../../../core/services/session.service';
@@ -11,8 +11,9 @@ import { AttendanceClaimService } from '../../../core/services/attendance-claim.
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { Course } from '../../../core/models/course.model';
 import { ClassSession } from '../../../core/models/attendance.model';
-import { SolicitudRevisionItem } from '../../../core/models/role-management.model';
+import { type EstadoCargaReclamos, SolicitudRevisionItem } from '../../../core/models/role-management.model';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
+import { isUuid } from '../../../core/utils/uuid.util';
 
 // Componentes Hijos Desacoplados
 import { TeacherGruposListComponent } from './components/teacher-grupos-list.component';
@@ -82,7 +83,7 @@ type VistaGrupos = 'LISTA' | 'HUB_GRUPO' | 'FORM_SESION' | 'FORM_GRUPO';
           [estudiantes]="estudiantesGrupo()"
           [cargandoEstudiantes]="cargandoEstudiantes()"
           [reclamos]="reclamosGrupo()"
-          [cargandoReclamos]="cargandoReclamos()"
+          [estadoCargaReclamos]="estadoCargaReclamos()"
           [sessionQrEnabled]="sessionQrEnabled"
           [sessionCancelEnabled]="sessionCancelEnabled"
           [(subPestanaHub)]="subPestanaHub"
@@ -98,6 +99,7 @@ type VistaGrupos = 'LISTA' | 'HUB_GRUPO' | 'FORM_SESION' | 'FORM_GRUPO';
           (cancelarSesion)="abrirModalCancelarSesion($event)"
           (retirarEstudiante)="abrirModalRetiro($event)"
           (irReclamos)="irAGestionReclamos()"
+          (reintentarReclamos)="reintentarCargaReclamosGrupo()"
         />
       }
 
@@ -182,7 +184,10 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   estudiantesGrupo = signal<any[]>([]);
   cargandoEstudiantes = signal<boolean>(false);
   reclamosGrupo = signal<SolicitudRevisionItem[]>([]);
-  cargandoReclamos = signal<boolean>(false);
+  estadoCargaReclamos = signal<EstadoCargaReclamos>('IDLE');
+  private reclamosGrupoSubscription: Subscription | null = null;
+  private reclamosGrupoRequestId = 0;
+  private grupoReclamosActivo: string | null = null;
 
   // Modal Detalle Sesión (Historial)
   modalDetalleSesionVisible = signal<boolean>(false);
@@ -227,6 +232,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.cancelarCargaReclamosGrupo();
     this.detenerTimerQr();
   }
 
@@ -292,6 +298,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   }
 
   volverALista(): void {
+    this.cancelarCargaReclamosGrupo();
     this.vistaActual.set('LISTA');
     this.selectedCourse.set(null);
     this.detenerTimerQr();
@@ -327,18 +334,86 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   }
 
   cargarReclamosGrupo(courseId?: string): void {
-    this.cargandoReclamos.set(true);
-    this.claimService.getReclamosDocente().subscribe({
-      next: (res) => {
-        const items = res.datos || [];
-        this.reclamosGrupo.set(items);
-        this.cargandoReclamos.set(false);
+    const grupoId = courseId ?? this.selectedCourse()?.id;
+    if (!grupoId) {
+      this.cancelarCargaReclamosGrupo();
+      return;
+    }
+
+    const grupoNormalizado = grupoId.toLowerCase();
+    const mismaCargaActiva = this.grupoReclamosActivo === grupoNormalizado && this.estadoCargaReclamos() === 'LOADING';
+    const mismoResultadoCompleto = this.grupoReclamosActivo === grupoNormalizado && this.estadoCargaReclamos() === 'LOADED';
+    if (mismaCargaActiva || mismoResultadoCompleto) {
+      return;
+    }
+
+    this.reclamosGrupoSubscription?.unsubscribe();
+    this.reclamosGrupoSubscription = null;
+    const requestId = ++this.reclamosGrupoRequestId;
+    this.grupoReclamosActivo = grupoNormalizado;
+    this.reclamosGrupo.set([]);
+    this.estadoCargaReclamos.set('LOADING');
+
+    const sigueSiendoLaCargaActual = (): boolean =>
+      requestId === this.reclamosGrupoRequestId &&
+      this.grupoReclamosActivo === grupoNormalizado &&
+      this.vistaActual() === 'HUB_GRUPO' &&
+      this.selectedCourse()?.id.toLowerCase() === grupoNormalizado;
+
+    this.reclamosGrupoSubscription = this.claimService.getReclamosDocentePorGrupo(grupoId).subscribe({
+      next: (items) => {
+        if (!sigueSiendoLaCargaActual()) {
+          return;
+        }
+        if (!Array.isArray(items) || items.some((item) => !item || !isUuid(item.grupoId))) {
+          this.reclamosGrupo.set([]);
+          this.estadoCargaReclamos.set('SERVER_ERROR');
+          return;
+        }
+
+        this.reclamosGrupo.set(items.filter((item) => item.grupoId!.toLowerCase() === grupoNormalizado));
+        this.estadoCargaReclamos.set('LOADED');
       },
-      error: () => {
+      error: (error: unknown) => {
+        if (!sigueSiendoLaCargaActual()) {
+          return;
+        }
         this.reclamosGrupo.set([]);
-        this.cargandoReclamos.set(false);
+        this.estadoCargaReclamos.set(this.estadoReclamosDesdeError(error));
       },
     });
+  }
+
+  reintentarCargaReclamosGrupo(): void {
+    const grupoId = this.selectedCourse()?.id;
+    if (grupoId) {
+      this.cargarReclamosGrupo(grupoId);
+    }
+  }
+
+  private cancelarCargaReclamosGrupo(): void {
+    this.reclamosGrupoRequestId += 1;
+    this.reclamosGrupoSubscription?.unsubscribe();
+    this.reclamosGrupoSubscription = null;
+    this.grupoReclamosActivo = null;
+    this.reclamosGrupo.set([]);
+    this.estadoCargaReclamos.set('IDLE');
+  }
+
+  private estadoReclamosDesdeError(error: unknown): EstadoCargaReclamos {
+    const status = typeof error === 'object' && error !== null && 'status' in error
+      ? (error as { status?: unknown }).status
+      : undefined;
+    if (status === 403) {
+      return 'FORBIDDEN';
+    }
+    if (status === 501) {
+      return 'UNAVAILABLE';
+    }
+    if (status === 0) {
+      return 'NETWORK_ERROR';
+    }
+    return 'SERVER_ERROR';
   }
 
   abrirCrearSesionExtraordinaria(): void {

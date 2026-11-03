@@ -1,14 +1,14 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, input, output, signal } from '@angular/core';
-import { DatePipe } from '@angular/common';
 import { CoordinatorIndicatorsService } from '../../../../core/services/coordinator-indicators.service';
 import { BitacoraSesion, FichaEstudiante } from '../../../../core/models/coordinator-indicators.model';
 import { getApiErrorMessage } from '../../../../core/api/errors/api-error.util';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
+import { SessionTimeZoneService } from '../../../../core/services/session-timezone.service';
 
 @Component({
   selector: 'app-coordinator-ficha-modal',
   standalone: true,
-  imports: [DatePipe, PaginationComponent],
+  imports: [PaginationComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
@@ -55,12 +55,13 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
         }
 
         <h3 class="mb-2 text-sm font-semibold text-gray-900">Bitácora de asistencia</h3>
+        <p class="mb-2 text-xs text-gray-500">Horas en {{ timeZone.zoneLabel() }}.</p>
         <ol class="mb-3 space-y-2">
           @for (s of bitacora(); track s.idSesion + s.idGrupo) {
             <li class="rounded-lg border border-gray-100 p-3 text-sm">
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <span class="font-medium">{{ s.nombreAsignatura }} · {{ s.nombreSesion }}</span>
-                <span class="text-xs text-gray-500">{{ s.fechaHoraInicio | date: 'dd/MM/yyyy HH:mm' }}</span>
+                <span class="text-xs text-gray-500">{{ timeZone.formatTemporal(s.fechaHoraInicio) }}</span>
               </div>
               <p class="text-gray-700">
                 {{ etiquetaAsistencia(s.asistio) }}@if (s.nombreRazonCausa) { · {{ s.nombreRazonCausa }} }
@@ -81,6 +82,7 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
 })
 export class CoordinatorFichaModalComponent implements OnInit {
   private readonly service = inject(CoordinatorIndicatorsService);
+  readonly timeZone = inject(SessionTimeZoneService);
 
   readonly idEstudiante = input.required<string>();
   readonly nombre = input<string>('');

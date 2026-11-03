@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { BadgeComponent, BadgeVariant } from '../../../../shared/components/badge/badge.component';
-import { SolicitudRevisionItem } from '../../../../core/models/role-management.model';
+import { type EstadoCargaReclamos, SolicitudRevisionItem } from '../../../../core/models/role-management.model';
 import { Course } from '../../../../core/models/course.model';
 
 @Component({
@@ -29,26 +29,33 @@ import { Course } from '../../../../core/models/course.model';
               Solicitudes de inasistencia radicadas por los estudiantes de este curso.
             </span>
           </div>
-          <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-200">
-            {{ reclamos().length }} Registros
+          <span data-testid="group-claims-count" class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-200">
+            @if (estadoCarga() === 'LOADED') {
+              {{ reclamos().length }} Registros
+            } @else if (estadoCarga() === 'LOADING') {
+              Cargando…
+            } @else {
+              —
+            }
           </span>
         </div>
 
-        @if (isLoading()) {
-          <div class="space-y-3 py-4">
+        @if (estadoCarga() === 'LOADING') {
+          <div role="status" class="space-y-3 py-4">
+            <p class="text-xs text-warm-600">Cargando reclamos del grupo…</p>
             @for (n of [1, 2, 3]; track n) {
               <div class="h-16 bg-warm-100 rounded-xl animate-pulse"></div>
             }
           </div>
-        } @else if (reclamos().length === 0) {
+        } @else if (estadoCarga() === 'LOADED' && reclamos().length === 0) {
           <div class="py-10 text-center text-warm-400 bg-warm-50/50 rounded-2xl border border-dashed border-warm-200">
             <svg class="w-8 h-8 mx-auto mb-2 text-warm-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            <p class="text-xs font-medium text-warm-600">No hay reclamos ni justificaciones para este grupo.</p>
+            <p class="text-xs font-medium text-warm-600">No hay reclamos para este grupo. No hay justificaciones ni reclamos pendientes.</p>
             <p class="text-[11px] text-warm-400 mt-0.5">Todas las asistencias están al día y sin novedades.</p>
           </div>
-        } @else {
+        } @else if (estadoCarga() === 'LOADED') {
           <div class="max-h-72 overflow-y-auto space-y-3 pr-1">
             @for (rec of reclamos(); track rec.id) {
               <div class="p-3.5 rounded-xl border border-warm-200 bg-warm-50/40 hover:bg-warm-50 transition-colors space-y-2">
@@ -99,6 +106,23 @@ import { Course } from '../../../../core/models/course.model';
               </div>
             }
           </div>
+        } @else if (estadoCarga() === 'FORBIDDEN' || estadoCarga() === 'UNAVAILABLE' || estadoCarga() === 'NETWORK_ERROR' || estadoCarga() === 'SERVER_ERROR') {
+          <div role="alert" class="py-8 px-4 text-center space-y-3">
+            @if (estadoCarga() === 'FORBIDDEN') {
+              <p class="text-xs text-rose-700">No tienes autorización para consultar reclamos de este grupo.</p>
+            } @else if (estadoCarga() === 'UNAVAILABLE') {
+              <p class="text-xs text-amber-800">El servicio de reclamos no está disponible (HTTP 501).</p>
+            } @else if (estadoCarga() === 'NETWORK_ERROR') {
+              <p class="text-xs text-rose-700">No fue posible conectar con el servicio de reclamos.</p>
+            } @else {
+              <p class="text-xs text-rose-700">No fue posible cargar los reclamos del grupo.</p>
+            }
+            <button type="button" data-accion="reintentar" (click)="reintentar.emit()" class="text-xs font-semibold text-primary-800 hover:text-primary-950 underline underline-offset-2">
+              Reintentar consulta
+            </button>
+          </div>
+        } @else {
+          <p class="py-8 text-center text-xs text-warm-500">Selecciona un grupo para consultar sus reclamos.</p>
         }
 
         <!-- Footer -->
@@ -122,11 +146,12 @@ export class GroupClaimsModalComponent {
   isOpen = input<boolean>(false);
   course = input<Course | null | undefined>(null);
   reclamos = input<SolicitudRevisionItem[]>([]);
-  isLoading = input<boolean>(false);
+  estadoCarga = input<EstadoCargaReclamos>('IDLE');
 
   closed = output<void>();
   resolver = output<{ id: string; accion: 'APROBADA' | 'RECHAZADA' }>();
   irABandejaGeneral = output<void>();
+  reintentar = output<void>();
 
   getBadgeVariant(estado?: string): BadgeVariant {
     if (estado === 'APROBADA') return 'success';

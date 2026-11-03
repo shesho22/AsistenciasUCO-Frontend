@@ -8,6 +8,7 @@ import { TeacherGrupoHorariosComponent } from './teacher-grupo-horarios.componen
 import { TeacherGrupoEstudiantesComponent } from './teacher-grupo-estudiantes.component';
 import { TeacherGrupoSolicitudesComponent } from './teacher-grupo-solicitudes.component';
 import { TeacherGrupoReclamosComponent } from './teacher-grupo-reclamos.component';
+import { type EstadoCargaReclamos } from '../../../../core/models/role-management.model';
 import { TeacherGrupoSabanaComponent } from './teacher-grupo-sabana.component';
 
 @Component({
@@ -171,7 +172,10 @@ import { TeacherGrupoSabanaComponent } from './teacher-grupo-sabana.component';
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             Reclamos & Novedades
-            <span class="px-2 py-0.5 rounded-full text-[11px] bg-amber-100 text-amber-800">{{ reclamos().length }}</span>
+            <span
+              data-testid="grupo-reclamos-count"
+              class="px-2 py-0.5 rounded-full text-[11px] bg-amber-100 text-amber-800"
+            >{{ estadoCargaReclamos() === 'LOADED' ? reclamos().length : (estadoCargaReclamos() === 'LOADING' ? '…' : '—') }}</span>
           </button>
 
           <button
@@ -227,8 +231,9 @@ import { TeacherGrupoSabanaComponent } from './teacher-grupo-sabana.component';
         @if (subPestanaHub() === 'RECLAMOS') {
           <app-teacher-grupo-reclamos
             [reclamos]="reclamos()"
-            [cargando]="cargandoReclamos()"
+            [estadoCarga]="estadoCargaReclamos()"
             (irAReclamos)="irReclamos.emit()"
+            (reintentar)="reintentarReclamos.emit()"
           />
         }
 
@@ -250,12 +255,14 @@ export class TeacherGrupoHubComponent {
   estudiantes = input<any[]>([]);
   cargandoEstudiantes = input<boolean>(false);
   reclamos = input<any[]>([]);
-  cargandoReclamos = input<boolean>(false);
+  estadoCargaReclamos = input<EstadoCargaReclamos>('IDLE');
   // OUT_OF_GOLDEN_PATH: acciones de sesión sin contrato backend; ocultas salvo feature explícita.
   sessionQrEnabled = input<boolean>(false);
   sessionCancelEnabled = input<boolean>(false);
 
   subPestanaHub = model<'SESIONES' | 'HORARIOS' | 'ESTUDIANTES' | 'SOLICITUDES' | 'RECLAMOS' | 'SABANA'>('SESIONES');
+
+  reintentarReclamos = output<void>();
 
   volver = output<void>();
   irAsistencia = output<Course>();

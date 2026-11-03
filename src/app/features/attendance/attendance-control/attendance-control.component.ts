@@ -1,7 +1,7 @@
 import { Component, DestroyRef, signal, computed, inject, ChangeDetectionStrategy } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
-import { finalize, forkJoin, map } from 'rxjs';
+import { Subscription, finalize, forkJoin, map } from 'rxjs';
 import { StudentService } from '../../../core/services/student.service';
 import { StudentRegistrationConfigService } from '../../../core/services/student-registration-config.service';
 import { EmailVerificationService } from '../../../core/services/email-verification.service';
@@ -43,7 +43,8 @@ import { GroupInfoModalComponent } from './components/group-info-modal.component
 import { GroupClaimsModalComponent } from './components/group-claims-modal.component';
 import { TeacherMatriculaModalComponent } from '../../teacher/teacher-grupos/components/modals/teacher-matricula-modal.component';
 import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
-import { SolicitudRevisionItem } from '../../../core/models/role-management.model';
+import { type EstadoCargaReclamos, SolicitudRevisionItem } from '../../../core/models/role-management.model';
+import { isUuid } from '../../../core/utils/uuid.util';
 import { EstudianteGrupoApiDto } from '../../../core/api/models/estudiante-grupo-api-dto.model';
 import { findActiveOrUpcomingSession } from '../../../core/utils/session-selection.util';
 
@@ -186,9 +187,10 @@ type StudentEnrollmentField =
         [isOpen]="isGroupClaimsModalOpen()"
         [course]="currentCourse()"
         [reclamos]="filteredGroupClaims()"
-        [isLoading]="isLoadingClaims()"
+        [estadoCarga]="estadoCargaReclamos()"
         (closed)="isGroupClaimsModalOpen.set(false)"
         (resolver)="resolverReclamoGrupo($event)"
+        (reintentar)="reintentarCargaReclamos()"
         (irABandejaGeneral)="irABandejaGeneralReclamos()"
       />
       <!-- Feedback Toast -->
@@ -255,7 +257,10 @@ export class AttendanceControlComponent {
   // Estado para Reclamos del Grupo
   isGroupClaimsModalOpen = signal<boolean>(false);
   allTeacherClaims = signal<SolicitudRevisionItem[]>([]);
-  isLoadingClaims = signal<boolean>(false);
+  estadoCargaReclamos = signal<EstadoCargaReclamos>('IDLE');
+  private reclamosRequestId = 0;
+  private reclamosGrupoActivo: string | null = null;
+  private reclamosSubscription: Subscription | null = null;
   showToast = signal<boolean>(false);
   toastMessage = signal<string>('');
   toastType = signal<'success' | 'info' | 'warning' | 'error'>('success');
@@ -270,17 +275,10 @@ export class AttendanceControlComponent {
   );
 
   filteredGroupClaims = computed<SolicitudRevisionItem[]>(() => {
-    const courseId = this.selectedCourseId();
-    const course = this.currentCourse();
+    const courseId = this.selectedCourseId().toLowerCase();
     if (!courseId) return [];
 
-    return this.allTeacherClaims().filter((c) => {
-      // Filtrar por ID de grupo o coincidencia de código/nombre de asignatura
-      if (c.materiaId && (c.materiaId === courseId || c.materiaId === course?.code)) return true;
-      if (c.materiaNombre && course?.name && c.materiaNombre.toLowerCase().includes(course.name.toLowerCase())) return true;
-      if (c.materiaCodigo && course?.code && c.materiaCodigo === course.code) return true;
-      return false;
-    });
+    return this.allTeacherClaims().filter((claim) => claim.grupoId?.toLowerCase() === courseId);
   });
 
   pendingClaimsCount = computed<number>(() => {
@@ -314,7 +312,7 @@ export class AttendanceControlComponent {
 
   abrirReclamosGrupo(): void {
     this.isGroupClaimsModalOpen.set(true);
-    this.cargarReclamosDocente();
+    this.cargarReclamosDocente(this.selectedCourseId());
   }
 
   private cargarEstudiantesGrupo(courseId: string): void {
@@ -332,24 +330,64 @@ export class AttendanceControlComponent {
       });
   }
 
-  private cargarReclamosDocente(): void {
-    if (!environment.features.teacherClaimsEnabled) {
-      this.allTeacherClaims.set([]);
-      this.isLoadingClaims.set(false);
+  private cargarReclamosDocente(courseId: string, forzar = false): void {
+    const grupoId = courseId.toLowerCase();
+    const cargaActivaOCompleta = this.reclamosGrupoActivo === grupoId &&
+      (this.estadoCargaReclamos() === 'LOADING' || this.estadoCargaReclamos() === 'LOADED');
+    if (!forzar && courseId.length > 0 && cargaActivaOCompleta) {
       return;
     }
-    this.isLoadingClaims.set(true);
-    this.attendanceClaimService
-      .getReclamosDocente()
-      .pipe(finalize(() => this.isLoadingClaims.set(false)))
+
+    this.reclamosSubscription?.unsubscribe();
+    this.reclamosSubscription = null;
+    const requestId = ++this.reclamosRequestId;
+    this.reclamosGrupoActivo = courseId ? grupoId : null;
+    this.allTeacherClaims.set([]);
+
+    if (!courseId) {
+      this.estadoCargaReclamos.set('IDLE');
+      return;
+    }
+
+    this.estadoCargaReclamos.set('LOADING');
+    this.reclamosSubscription = this.attendanceClaimService
+      .getReclamosDocentePorGrupo(courseId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (res) => {
-          this.allTeacherClaims.set(res.datos || []);
+        next: (items) => {
+          if (requestId !== this.reclamosRequestId || this.selectedCourseId().toLowerCase() !== grupoId) {
+            return;
+          }
+          if (!Array.isArray(items) || items.some((item) => !item || !isUuid(item.grupoId))) {
+            this.estadoCargaReclamos.set('SERVER_ERROR');
+            return;
+          }
+
+          this.allTeacherClaims.set(items.filter((item) => item.grupoId!.toLowerCase() === grupoId));
+          this.estadoCargaReclamos.set('LOADED');
         },
-        error: () => {
+        error: (error: unknown) => {
+          if (requestId !== this.reclamosRequestId || this.selectedCourseId().toLowerCase() !== grupoId) {
+            return;
+          }
           this.allTeacherClaims.set([]);
+          this.estadoCargaReclamos.set(this.estadoReclamosDesdeError(error));
         },
       });
+  }
+
+  reintentarCargaReclamos(): void {
+    this.cargarReclamosDocente(this.selectedCourseId(), true);
+  }
+
+  private estadoReclamosDesdeError(error: unknown): EstadoCargaReclamos {
+    const status = typeof error === 'object' && error !== null && 'status' in error
+      ? (error as { status?: unknown }).status
+      : undefined;
+    if (status === 403) return 'FORBIDDEN';
+    if (status === 501) return 'UNAVAILABLE';
+    if (status === 0) return 'NETWORK_ERROR';
+    return 'SERVER_ERROR';
   }
 
   resolverReclamoGrupo(event: { id: string; accion: 'APROBADA' | 'RECHAZADA' }): void {
@@ -361,7 +399,7 @@ export class AttendanceControlComponent {
             this.toastType.set('success');
             this.toastMessage.set(res.mensajeUsuario || `Reclamo ${event.accion.toLowerCase()} correctamente.`);
             this.showToast.set(true);
-            this.cargarReclamosDocente();
+            this.cargarReclamosDocente(this.selectedCourseId(), true);
           } else {
             this.toastType.set('error');
             this.toastMessage.set(res.mensajeUsuario || 'No se pudo resolver el reclamo.');
@@ -776,7 +814,7 @@ export class AttendanceControlComponent {
     this.vistaActual.set(initialSessionId ? 'DETALLE' : 'OVERVIEW');
     if (courseId) {
       this.attendanceRealtimeSync.connectGroup(courseId);
-      this.cargarReclamosDocente();
+      this.cargarReclamosDocente(courseId);
     }
 
     forkJoin({

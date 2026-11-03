@@ -4,6 +4,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { ProfileLinksComponent } from './profile-links.component';
 import { BYPASS_GLOBAL_ERROR_TOAST } from '../../../core/interceptors/error.interceptor';
 import { environment } from '../../../../environments/environment';
+import { PerfilInstitucionalStore } from '../perfil-institucional.store';
 
 const URL = `${environment.apiUrl}/usuarios/perfil`;
 
@@ -33,7 +34,7 @@ describe('ProfileLinksComponent (HU006)', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [ProfileLinksComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(), provideHttpClientTesting(), PerfilInstitucionalStore],
     });
     fixture = TestBed.createComponent(ProfileLinksComponent);
     component = fixture.componentInstance;
@@ -102,5 +103,39 @@ describe('ProfileLinksComponent (HU006)', () => {
     expect(component.etiqueta('OTRO' as never)).toBe('OTRO');
     expect(component.etiqueta('DECANO')).toBe('Decano de');
     expect(component.etiqueta('COORDINADOR')).toBe('Coordina');
+  });
+
+  it('PL-06 (APP-06) documento null se muestra como no registrado', () => {
+    http.expectOne(URL).flush({
+      exitoso: true,
+      datos: perfilApi([], { codigoTipoIdentificacion: null, nombreTipoIdentificacion: null, numeroIdentificacion: null }),
+    });
+    fixture.detectChanges();
+
+    const doc = fixture.nativeElement.querySelector('[data-testid="perfil-expediente-documento"]');
+    expect(doc.textContent.trim()).toBe('Sin registrar');
+    expect(fixture.nativeElement.querySelector('[role="alert"]')).toBeNull();
+  });
+
+  it('PL-07 (APP-06) respuesta sin datos se distingue del error y del vacío', () => {
+    http.expectOne(URL).flush({ exitoso: true, datos: null });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="perfil-expediente-sin-datos"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[role="alert"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="perfil-expediente-documento"]')).toBeNull();
+  });
+
+  it('PL-08 (APP-06) Reintentar repite el GET tras un error', () => {
+    http.expectOne(URL).error(new ProgressEvent('error'), { status: 0, statusText: '' });
+    fixture.detectChanges();
+
+    const boton = fixture.nativeElement.querySelector('[role="alert"] button') as HTMLButtonElement;
+    expect(boton.textContent).toContain('Reintentar');
+    boton.click();
+    http.expectOne(URL).flush({ exitoso: true, datos: perfilApi([]) });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('CC 1017000001');
   });
 });

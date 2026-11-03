@@ -94,11 +94,11 @@ describe('AttendanceControlComponent contract corrections', () => {
     ]);
     attendanceClaimService = jasmine.createSpyObj<AttendanceClaimService>(
       'AttendanceClaimService',
-      ['getReclamosDocente', 'resolverReclamo']
+      ['getReclamosDocente', 'getReclamosDocentePorGrupo', 'resolverReclamo']
     );
     attendanceClaimService.getReclamosDocente.and.returnValue(
       of({ exitoso: true, datos: [] })
-    );
+    );    attendanceClaimService.getReclamosDocentePorGrupo.and.returnValue(of([]) as never);
     realtimeAlerts$ = new Subject<RealtimeConnectionState>();
     realtimeSync = jasmine.createSpyObj<AttendanceRealtimeSyncService>(
       'AttendanceRealtimeSyncService',
@@ -509,6 +509,48 @@ describe('AttendanceControlComponent contract corrections', () => {
 
     component.abrirReclamosGrupo();
     expect(component.isGroupClaimsModalOpen()).toBeTrue();
+  });
+
+  describe('APP-05 dialogo de reclamos por grupo', () => {
+    const GROUP_A = '3f0c1d2e-0000-4000-8000-000000000001';
+    const GROUP_B = '3f0c1d2e-0000-4000-8000-000000000002';
+    const claim = (id: string, grupoId: string) => ({ id, grupoId, estadoSolicitud: 'PENDIENTE' } as any);
+
+    it('consulta por UUID aunque la bandera legacy este desactivada y conserva solo el grupo exacto', () => {
+      const component = createComponent([activeStudent], []);
+      attendanceClaimService.getReclamosDocentePorGrupo.calls.reset();
+      attendanceClaimService.getReclamosDocentePorGrupo.and.returnValue(
+        of([claim('a-1', GROUP_A), claim('b-1', GROUP_B)]) as never
+      );
+      component.selectedCourseId.set(GROUP_A);
+
+      component.abrirReclamosGrupo();
+
+      expect(attendanceClaimService.getReclamosDocentePorGrupo).toHaveBeenCalledOnceWith(GROUP_A);
+      expect(component.filteredGroupClaims().map((item) => item.id)).toEqual(['a-1']);
+      expect(component.estadoCargaReclamos()).toBe('LOADED');
+    });
+
+    it('mantiene 403, 501, red y 5xx como error y no como lista vacia', () => {
+      const casos = [
+        { status: 403, esperado: 'FORBIDDEN' },
+        { status: 501, esperado: 'UNAVAILABLE' },
+        { status: 0, esperado: 'NETWORK_ERROR' },
+        { status: 500, esperado: 'SERVER_ERROR' },
+      ] as const;
+
+      for (const caso of casos) {
+        const component = createComponent([activeStudent], []);
+        attendanceClaimService.getReclamosDocentePorGrupo.and.returnValue(
+          throwError(() => ({ status: caso.status })) as never
+        );
+        component.selectedCourseId.set(GROUP_A);
+        component.abrirReclamosGrupo();
+
+        expect(component.estadoCargaReclamos()).toBe(caso.esperado);
+        expect(component.filteredGroupClaims()).toEqual([]);
+      }
+    });
   });
 
   it('resolverReclamoGrupo procesa respuesta exitosa y actualiza toast', () => {

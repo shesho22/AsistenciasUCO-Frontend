@@ -54,4 +54,10 @@ describe('ClaimMapper.fromReclamoDocente (LB-004D)', () => {
     const dto = ClaimMapper.toDTO(ClaimMapper.fromReclamoDocente(base, formatter));
     expect(dto.estado_original).toBe('');
   });
+
+  it('APP05-MAP-01 conserva el UUID real del grupo del DTO', () => {
+    const grupoId = '3f0c1d2e-0000-4000-8000-000000000001';
+    const item = ClaimMapper.fromReclamoDocente({ ...base, grupoId }, formatter);
+    expect(item.grupoId).toBe(grupoId);
+  });
 });
