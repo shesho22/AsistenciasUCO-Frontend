@@ -7,19 +7,23 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
+import { ConsultasTransversalesService } from '../../../core/services/consultas-transversales.service';
+import { FichaUnificadaEstudiante } from '../../../core/models/consultas-transversales.model';
+import { HistorialEstudianteComponent } from '../../../shared/components/historial-estudiante/historial-estudiante.component';
 
 type FiltroEstado = 'TODOS' | 'ACTIVO' | 'INACTIVO';
 
 /**
  * HU104 (directorio consolidado de estudiantes de la facultad) y HU105 (búsqueda por nombre o documento y ficha
- * con las matrículas del estudiante). Solo lectura.
+ * con las matrículas del estudiante). HU157: la ficha incluye el historial completo (períodos, grupos y asistencia),
+ * limitado a la facultad del decano. Solo lectura.
  */
 @Component({
   selector: 'app-dean-estudiantes',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full' },
-  imports: [CommonModule, FormsModule, BadgeComponent, PaginationComponent],
+  imports: [CommonModule, FormsModule, BadgeComponent, PaginationComponent, HistorialEstudianteComponent],
   template: `
     <div class="space-y-6 animate-fade-in">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
@@ -141,6 +145,12 @@ type FiltroEstado = 'TODOS' | 'ACTIVO' | 'INACTIVO';
               </tbody>
             </table>
           </div>
+          @if (historial(); as h) {
+            <div class="pt-4 border-t border-warm-100 space-y-3">
+              <h3 class="font-serif font-bold text-base text-warm-900">Historial completo</h3>
+              <app-historial-estudiante [ficha]="h" />
+            </div>
+          }
         </section>
       }
     </div>
@@ -149,6 +159,7 @@ type FiltroEstado = 'TODOS' | 'ACTIVO' | 'INACTIVO';
 export class DeanEstudiantesComponent implements OnInit {
   private readonly service = inject(DeanFacultadService);
   private readonly toast = inject(ToastService);
+  private readonly consultas = inject(ConsultasTransversalesService);
 
   estudiantes = signal<EstudianteFacultadItem[]>([]);
   total = signal(0);
@@ -158,6 +169,7 @@ export class DeanEstudiantesComponent implements OnInit {
   busqueda = signal('');
   estado = signal<FiltroEstado>('TODOS');
   ficha = signal<FichaEstudianteFacultad | null>(null);
+  historial = signal<FichaUnificadaEstudiante | null>(null);
   private readonly fichaPanel = viewChild<ElementRef<HTMLElement>>('fichaPanel');
 
   ngOnInit(): void {
@@ -189,6 +201,7 @@ export class DeanEstudiantesComponent implements OnInit {
       next: (res) => {
         this.ficha.set(res.datos ?? null);
         this.enfocarFicha();
+        this.cargarHistorial(estudiante.idEstudiante);
       },
       error: (error: unknown) => {
         this.ficha.set(null);
@@ -208,8 +221,18 @@ export class DeanEstudiantesComponent implements OnInit {
     });
   }
 
+  /** HU157: el historial es complementario; si falla, la ficha sigue visible y se informa el error. */
+  private cargarHistorial(idEstudiante: string): void {
+    this.historial.set(null);
+    this.consultas.getHistorialEstudiante(idEstudiante).subscribe({
+      next: (res) => this.historial.set(res.datos ?? null),
+      error: (error: unknown) => this.toast.error(getApiErrorMessage(error)),
+    });
+  }
+
   cerrarFicha(): void {
     this.ficha.set(null);
+    this.historial.set(null);
   }
 
   private cargar(): void {

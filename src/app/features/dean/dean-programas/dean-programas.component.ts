@@ -8,13 +8,20 @@ import { PlanEstudioItem } from '../../../core/models/role-management.model';
 import { BadgeComponent } from '../../../shared/components/badge/badge.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { DeanProgramasGestionComponent } from './components/dean-programas-gestion.component';
+import { DeanProgramasCreditosComponent } from './components/dean-programas-creditos.component';
+import { ConsultasTransversalesService } from '../../../core/services/consultas-transversales.service';
+import { ProgramaCreditosItem } from '../../../core/models/consultas-transversales.model';
+import { EMPTY, expand, reduce } from 'rxjs';
+
+/** HU112: tamaño máximo de página del backend; si la facultad tiene más filas se piden las páginas siguientes. */
+const TAMANO_CREDITOS = 100;
 
 @Component({
   selector: 'app-dean-programas',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full' },
-  imports: [CommonModule, FormsModule, BadgeComponent, PaginationComponent, DeanProgramasGestionComponent],
+  imports: [CommonModule, FormsModule, BadgeComponent, PaginationComponent, DeanProgramasGestionComponent, DeanProgramasCreditosComponent],
   template: `
     <div class="space-y-6 animate-fade-in">
       <!-- Header Bento -->
@@ -51,6 +58,9 @@ import { DeanProgramasGestionComponent } from './components/dean-programas-gesti
 
       <!-- Gestión de programas (HU076, HU077, HU078, HU108) -->
       <app-dean-programas-gestion />
+
+      <!-- Tabla unificada de programas y créditos (HU112) -->
+      <app-dean-programas-creditos [filas]="creditos()" [error]="errorCreditos()" />
 
       <!-- KPIs Bento -->
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -135,7 +145,7 @@ import { DeanProgramasGestionComponent } from './components/dean-programas-gesti
               <div class="grid grid-cols-3 gap-2 py-2.5 border-y border-warm-100 text-xs text-warm-700 bg-warm-50/60 rounded-xl px-3 text-center">
                 <div>
                   <span class="text-[10px] text-warm-400 font-bold uppercase block">Créditos</span>
-                  <span class="font-bold text-warm-900">{{ mallaCargada(plan.id) ? plan.totalCreditos : '—' }}</span>
+                  <span class="font-bold text-warm-900">{{ totalesDe(plan.id)?.totalCreditos ?? '—' }}</span>
                 </div>
                 <div>
                   <span class="text-[10px] text-warm-400 font-bold uppercase block">Semestres</span>
@@ -143,7 +153,7 @@ import { DeanProgramasGestionComponent } from './components/dean-programas-gesti
                 </div>
                 <div>
                   <span class="text-[10px] text-warm-400 font-bold uppercase block">Asignaturas</span>
-                  <span class="font-bold text-warm-900">{{ mallaCargada(plan.id) ? plan.totalAsignaturas : '—' }}</span>
+                  <span class="font-bold text-warm-900">{{ totalesDe(plan.id)?.totalAsignaturas ?? '—' }}</span>
                 </div>
               </div>
 
@@ -177,12 +187,17 @@ import { DeanProgramasGestionComponent } from './components/dean-programas-gesti
 })
 export class DeanProgramasComponent implements OnInit {
   private deanService = inject(DeanFacultadService);
+  private consultas = inject(ConsultasTransversalesService);
   private router = inject(Router);
 
   planes = signal<PlanEstudioItem[]>([]);
   errorEstructura = signal<string | null>(null);
-  /** Estado de la carga de la malla de cada plan; créditos y asignaturas solo se muestran cuando vienen de la malla real. */
-  private mallas = signal<Record<string, 'ok' | 'error'>>({});
+  /** HU112: filas de programas y créditos; alimentan la tabla unificada y los créditos de las tarjetas. */
+  creditos = signal<ProgramaCreditosItem[]>([]);
+  errorCreditos = signal<string | null>(null);
+  private creditosPorPlan = computed(
+    () => new Map(this.creditos().filter((c) => c.idPlanEstudio).map((c) => [c.idPlanEstudio as string, c]))
+  );
   filtroTexto = signal('');
   currentPage = signal(1);
   pageSize = signal(6);
@@ -192,17 +207,22 @@ export class DeanProgramasComponent implements OnInit {
   );
 
   totalAsignaturas = computed(() =>
-    this.planes().reduce((sum, p) => sum + (p.totalAsignaturas || 0), 0)
+    this.planes().reduce((sum, p) => sum + (this.totalesDe(p.id)?.totalAsignaturas ?? 0), 0)
   );
 
-  /** «—» mientras alguna malla no se haya cargado: un total parcial no es el total de la facultad. */
+  /** «—» mientras falten los créditos de algún plan: un total parcial no es el total de la facultad. */
   totalAsignaturasTexto = computed(() => {
     const planes = this.planes();
-    return planes.length > 0 && planes.every((p) => this.mallaCargada(p.id)) ? String(this.totalAsignaturas()) : '—';
+    return planes.length > 0 && planes.every((p) => this.creditosCargados(p.id)) ? String(this.totalAsignaturas()) : '—';
   });
 
-  mallaCargada(idPlan: string): boolean {
-    return this.mallas()[idPlan] === 'ok';
+  creditosCargados(idPlan: string): boolean {
+    return this.creditosPorPlan().has(idPlan);
+  }
+
+  /** Créditos y asignaturas del plan según la tabla unificada; indefinido mientras no se hayan cargado. */
+  totalesDe(idPlan: string): ProgramaCreditosItem | undefined {
+    return this.creditosPorPlan().get(idPlan);
   }
 
   planesFiltrados = computed(() => {
@@ -228,38 +248,36 @@ export class DeanProgramasComponent implements OnInit {
       next: (res) => {
         const planes = planesDeLaEstructura(res.datos || []);
         this.planes.set(planes);
-        planes.forEach((plan) => this.cargarMalla(plan.id));
       },
       error: (error: unknown) => {
         this.planes.set([]);
         this.errorEstructura.set(getApiErrorMessage(error));
       },
     });
+    this.cargarCreditos();
   }
 
   /**
-   * La estructura no trae créditos ni asignaturas (DAT-06): se calculan desde la malla real del plan
-   * (GET /decano/planes-estudio/{id}/asignaturas), nunca con ceros fijos.
+   * HU112: la estructura no trae créditos ni asignaturas (DAT-06). Salen de la tabla unificada de programas y
+   * créditos (GET /decano/programas-creditos), una consulta para toda la facultad en lugar de una malla por plan;
+   * si la facultad supera el tamaño máximo de página se piden las siguientes. Nunca se muestran ceros fijos.
    */
-  private cargarMalla(idPlan: string): void {
-    this.deanService.getAsignaturasPlan(idPlan).subscribe({
-      next: (res) => {
-        const asignaturas = res.datos || [];
-        this.planes.update((planes) =>
-          planes.map((p) =>
-            p.id === idPlan
-              ? {
-                  ...p,
-                  totalAsignaturas: asignaturas.length,
-                  totalCreditos: asignaturas.reduce((total, a) => total + (Number(a.creditos) || 0), 0),
-                }
-              : p
-          )
-        );
-        this.mallas.update((estado) => ({ ...estado, [idPlan]: 'ok' }));
-      },
-      error: () => this.mallas.update((estado) => ({ ...estado, [idPlan]: 'error' })),
-    });
+  private cargarCreditos(): void {
+    const pedir = (pagina: number) =>
+      this.consultas.getProgramasCreditos({ pagina, tamano: TAMANO_CREDITOS });
+    let pagina = 1;
+    pedir(pagina)
+      .pipe(
+        expand((res) => (pagina * TAMANO_CREDITOS < Number(res.total ?? 0) ? pedir(++pagina) : EMPTY)),
+        reduce((filas: ProgramaCreditosItem[], res) => [...filas, ...(res.datos ?? [])], [])
+      )
+      .subscribe({
+        next: (filas) => this.creditos.set(filas),
+        error: (error: unknown) => {
+          this.creditos.set([]);
+          this.errorCreditos.set(getApiErrorMessage(error));
+        },
+      });
   }
 
   onFiltroChange(valor: string): void {

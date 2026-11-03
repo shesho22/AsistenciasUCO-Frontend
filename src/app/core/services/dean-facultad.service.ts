@@ -12,7 +12,7 @@ import {
   SesionFacultadItem,
 } from '../models/facultad-decano.model';
 
-type Filtro = Record<string, string | number | boolean | null | undefined>;
+export type Filtro = Record<string, string | number | boolean | null | undefined>;
 
 /**
  * HU104/HU105/HU108/HU109/HU119/HU145: consultas de solo lectura del decano sobre su facultad. El backend limita los
@@ -87,8 +87,8 @@ export function planesDeLaEstructura(facultades: FacultadNodo[]): PlanEstudioIte
   );
 }
 
-/** Omite los filtros vacios para que el backend aplique sus valores por defecto. */
-function parametros(filtro: Filtro): HttpParams {
+/** Omite los filtros vacios para que el backend aplique sus valores por defecto (tambien lo usan las consultas HU112-HU157). */
+export function parametros(filtro: Filtro): HttpParams {
   let params = new HttpParams();
   for (const [clave, valor] of Object.entries(filtro)) {
     if (valor !== null && valor !== undefined && String(valor).trim() !== '') {
