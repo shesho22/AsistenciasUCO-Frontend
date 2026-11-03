@@ -45,6 +45,21 @@ Fecha: 2026-11-03 (America/Bogota). Base `develop@860add4`; rama `fix/app04-utc-
 | SES-01/02/03 | `17/08/2026 13:00 – 15:00`, `24/08/2026 13:00 – 15:00`, `09/12/2026 13:00 – 15:00` + aviso «Algunas horas están registradas sin zona horaria confirmada…» | Literal v1 identificado, sin conversión inventada | PASS (comportamiento de respaldo) |
 | CASO 6 docente ↔ coordinador | Docente 08:00, coordinador 13:00 (literal identificado) | Igual hora solo con el backend APP-04 desplegado | PENDIENTE de despliegue backend |
 
+## Navegador integrado — COORDINADOR con backend APP-04 desplegado localmente
+
+- Con autorización del usuario se reinició el backend local :8080 con el jar de `fix/app04-utc-coordinador-sesiones`
+  (`5ed28da`), mismo script `start-backend-baseline.ps1 -Provider baseline` y `.env`. Health 200.
+- Respuesta HU060: v1 `fechaHoraInicio = 2026-08-17T13:00:00` intacto + `fechaHoraInicioUtc = 2026-08-17T13:00:00Z`,
+  `estadoTemporal = CONFIRMADA` (mismos instantes que `GET /api/v2/sesiones/grupo/{id}` del docente).
+
+| Zona efectiva | SES-01 (17/08) | SES-03 (09/12) | Docente (misma zona) | Resultado |
+|---|---|---|---|---|
+| America/Bogota (auto) | 08:00 – 10:00 | 08:00 – 10:00 | 08:00 – 10:00 | PASS (CASO 6) |
+| Europe/London (manual) | 14:00 – 16:00 | 13:00 – 15:00 | 14:00 / 13:00 | PASS |
+| Europe/Berlin (manual) | 15:00 – 17:00 | 14:00 – 16:00 | 15:00 / 14:00 | PASS |
+
+- Etiqueta visible: «Horas en America/Bogota (UTC-05:00, automática del navegador).» Cabecera del detalle de
+  asistencia: `17/08/2026 08:00 – 10:00`. Preferencia manual retirada al terminar (modo automático).
 - Bitácora de la ficha (Indicadores): NOT_RUN, «No hay estudiantes con alerta en este período»; cubierta por spec.
 
 ## No ejecutado
