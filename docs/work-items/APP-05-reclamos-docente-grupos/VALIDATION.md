@@ -86,7 +86,11 @@ Backend y DB no recibieron cambios de archivos. Se conservaron sin alteración l
 
 Durante la regresión focal volvió a aparecer `NG0205: Injector has already been destroyed` asociado al Router; no causó fallos y el exit code fue 0. La suite completa finalizó 1395/1395. También se imprimieron avisos de validación de fixtures en pruebas del student portal; no hubo fallos asociados.
 
-### Estado posterior
+### Estado posterior — actualización final 2026-11-03
 
-- En esta validación local, la corrección queda limitada a `attendance-control.workflows.spec.ts`; esta actualización preserva la evidencia previa de APP-05.
-- Pendiente: commit/push del nuevo SHA, CI remoto asociado y validación manual en el navegador integrado con la versión del branch. La observación DOCENTE anterior permanece histórica; no certifica el runtime corregido.
+- Commit publicado en `fix/app05-reclamos-docente-grupos`: `5d6f505ea0b593471a6511b080f0faf480a7fccf` (`test(APP-05): mock grouped teacher claims`). Push normal, sin force; el árbol local quedó limpio.
+- CI remoto para el SHA nuevo: [Frontend CI run #152](https://github.com/shesho22/AsistenciasUCO-Frontend/actions/runs/41585948472), conclusión `success`. PR #33 sigue abierto en borrador, base `develop`, sin merge.
+- Sesión DOCENTE activa en el navegador integrado. La página local cargó AttendanceControl del grupo seleccionado; el diálogo de reclamos mostró `7 Registros`. Se abrió `/app/docente/reclamos` y se observaron filas y estados en la bandeja general. No se aprobaron, rechazaron, eliminaron ni radicaron solicitudes. No se versionó ni adjuntó captura con PII.
+- Procedencia del runtime: el navegador cargó `http://localhost:4200` con Vite (`/@vite/client`, `main.js`); un GET local a `/main.js` respondió 200 y sus referencias mostraron la caché Angular bajo el workspace autorizado `AsistenciasUCO-Frontend`. Entre el SHA base de la rama (`a62ff3d`) y este fix, el único archivo bajo `src/` que cambió es `attendance-control.workflows.spec.ts`; se infiere que el runtime usa el workspace actual y conserva el mismo código funcional APP-05, porque este commit solo cambia el fixture. No se obtuvo hash exacto del chunk lazy del componente.
+- NOT_RUN: inspección de requests API en Network/DevTools y captura de status/body; validar respuestas reales 403/501/red/5xx. El GET de `main.js` solo prueba disponibilidad del bundle, no sustituye evidencia HTTP de reclamos.
+- La observación inicial del runtime con cero registros se conserva como evidencia histórica; la comprobación actual mostró el resultado indicado arriba.
