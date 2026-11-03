@@ -34,8 +34,20 @@ Fecha: 2026-11-03 (America/Bogota). Base `develop@860add4`; rama `fix/app04-utc-
 | `2026-12-09T13:00:00Z` | Europe/Berlin (manual, CET) | 14:00–16:00 | 14:00 - 16:00 | PASS |
 | Identidad (CASO 5) | tras cambiar de zona y recargar | mismos ids e instantes | respuesta v2 idéntica a la primera | PASS |
 
+## Navegador integrado — COORDINADOR (backend local previo, sin la rama APP-04)
+
+- Sesión iniciada manualmente por el usuario. Pantalla `/app/coordinador/asistencias` → Grupo 001 → «Ver sesiones».
+- `GET /api/v1/coordinador/grupos/{id}/sesiones?pagina=1&tamano=10` → 200; `fechaHoraInicio` = `2026-08-17T13:00:00`
+  (sin zona) y **sin** `fechaHoraInicioUtc`/`estadoTemporal` (backend no actualizado).
+
+| Sesión | Observado | Esperado con este backend | Resultado |
+|---|---|---|---|
+| SES-01/02/03 | `17/08/2026 13:00 – 15:00`, `24/08/2026 13:00 – 15:00`, `09/12/2026 13:00 – 15:00` + aviso «Algunas horas están registradas sin zona horaria confirmada…» | Literal v1 identificado, sin conversión inventada | PASS (comportamiento de respaldo) |
+| CASO 6 docente ↔ coordinador | Docente 08:00, coordinador 13:00 (literal identificado) | Igual hora solo con el backend APP-04 desplegado | PENDIENTE de despliegue backend |
+
+- Bitácora de la ficha (Indicadores): NOT_RUN, «No hay estudiantes con alerta en este período»; cubierta por spec.
+
 ## No ejecutado
 
-- ESTUDIANTE y COORDINADOR en navegador: NOT_RUN (requieren otro inicio de sesión manual). El coordinador seguirá
-  mostrando el literal v1 «sin zona» hasta desplegar el backend `fix/app04-utc-coordinador-sesiones`.
+- ESTUDIANTE en navegador: NOT_RUN (requiere otro inicio de sesión manual).
 - Detección automática de Londres/Berlín por cambio real de zona del sistema: NOT_RUN en navegador (unitario PASS).
