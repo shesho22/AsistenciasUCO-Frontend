@@ -364,7 +364,7 @@ describe('AdminManagementService', () => {
     expect(service.areas().length).toBe(1);
   });
 
-  it('cargarParametros y actualizarParametro gestionan parámetros institucionales', () => {
+  it('cargarParametros conserva los datos del DTO de parámetros recibido por GET', () => {
     service.cargarParametros().subscribe((res) => {
       expect(res.exitoso).toBeTrue();
       expect(res.datos?.length).toBe(1);
@@ -377,38 +377,25 @@ describe('AdminManagementService', () => {
       datos: [
         {
           id: 'param-1',
+          grupo: 'ASISTENCIA',
           clave: 'limite.inasistencia',
-          nombre: 'Límite Inasistencia',
           valor: '20',
-          descripcion: 'Porcentaje',
-          categoria: 'ASISTENCIA',
-          tipo: 'PORCENTAJE',
-          ultimaModificacion: '2026-01-01',
+          tipoDato: 'NUMERO',
+          valorDefecto: '0',
+          estaActivo: true,
         },
       ],
     });
 
     expect(service.parametros().length).toBe(1);
-
-    service.actualizarParametro('param-1', '25');
-    const patchReq = http.expectOne(`${environment.apiUrl}/admin/parametros/param-1`);
-    expect(patchReq.request.method).toBe('PATCH');
-    expect(patchReq.request.body).toEqual({ valor: '25' });
-    patchReq.flush({
-      exitoso: true,
-      datos: {
-        id: 'param-1',
-        clave: 'limite.inasistencia',
-        nombre: 'Límite Inasistencia',
-        valor: '25',
-        descripcion: 'Porcentaje',
-        categoria: 'ASISTENCIA',
-        tipo: 'PORCENTAJE',
-        ultimaModificacion: '2026-02-01',
-      },
-    });
-
-    expect(service.parametros()[0].valor).toBe('25');
+    expect(service.parametros()[0]).toEqual(jasmine.objectContaining({
+      grupo: 'ASISTENCIA',
+      clave: 'limite.inasistencia',
+      valor: '20',
+      tipoDato: 'NUMERO',
+      estaActivo: true,
+    }));
+    http.expectNone((request) => request.method === 'PATCH' || request.method === 'PUT');
   });
 
   it('createDecano envía petición al endpoint de administración sin facultad asignada', () => {
@@ -539,12 +526,11 @@ describe('AdminManagementService', () => {
     patchReq.flush({ exitoso: true, datos: { id: 'inst-1' } });
   });
 
-  it('actualizarParametro funciona', () => {
-    service.actualizarParametro('param-1', '25');
-    const patchParam = http.expectOne(`${environment.apiUrl}/admin/parametros/param-1`);
-    expect(patchParam.request.method).toBe('PATCH');
-    expect(patchParam.request.body).toEqual({ valor: '25' });
-    patchParam.flush({ exitoso: true, datos: { id: 'param-1', valor: '25' } });
+  it('no expone una operación de escritura de parámetros sin contrato aprobado', () => {
+    const publicService = service as unknown as Record<string, unknown>;
+    expect(publicService['actualizarParametro']).toBeUndefined();
+    http.expectNone((request) => request.url.includes('/admin/parametros/') &&
+      (request.method === 'PATCH' || request.method === 'PUT'));
   });
 
   it('crearSede, actualizarSede y cambiarEstadoSede actualizan reactivamente la señal _sedes', () => {

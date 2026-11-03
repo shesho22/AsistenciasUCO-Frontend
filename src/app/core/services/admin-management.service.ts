@@ -10,7 +10,7 @@ import {
   FacultadItem,
   AreaConocimientoItem,
   TipoProgramaItem,
-  ParametroInstitucionalItem,
+  ParametroAdminDto,
   RegistroAuditoriaItem,
   CierrePeriodoReporte,
   InstitucionItem,
@@ -49,7 +49,7 @@ export class AdminManagementService {
   tiposPrograma = this._tiposPrograma.asReadonly();
 
   // Parámetros Institucionales
-  private _parametros = signal<ParametroInstitucionalItem[]>([]);
+  private _parametros = signal<ParametroAdminDto[]>([]);
   parametros = this._parametros.asReadonly();
 
   // Auditoría
@@ -376,24 +376,14 @@ export class AdminManagementService {
   }
 
   // ================= PARÁMETROS INSTITUCIONALES =================
-  cargarParametros(): Observable<ApiResponse<ParametroInstitucionalItem[]>> {
-    return this.http.get<ApiResponse<ParametroInstitucionalItem[]>>(`${environment.apiUrl}/admin/parametros`).pipe(
+  cargarParametros(): Observable<ApiResponse<ParametroAdminDto[]>> {
+    return this.http.get<ApiResponse<ParametroAdminDto[]>>(`${environment.apiUrl}/admin/parametros`).pipe(
       tap((res) => {
         if (res.exitoso && res.datos) {
           this._parametros.set(res.datos);
         }
       })
     );
-  }
-
-  actualizarParametro(id: string, nuevoValor: string): void {
-    this.http.patch<ApiResponse<ParametroInstitucionalItem>>(`${environment.apiUrl}/admin/parametros/${id}`, { valor: nuevoValor }).pipe(
-      tap((res) => {
-        if (res.exitoso && res.datos) {
-          this._parametros.update((prev) => prev.map((p) => (p.id === id ? res.datos : p)));
-        }
-      })
-    ).subscribe();
   }
 
   // ================= AUDITORÍA =================
