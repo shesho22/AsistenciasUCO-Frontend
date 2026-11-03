@@ -69,7 +69,8 @@ Runtime reutilizado: `ng serve` existente en `http://localhost:4200` desde este 
 
 ## CI remoto
 
-Pendiente de la ejecución en el PR (se actualiza tras GitHub Actions).
+- [Frontend CI run #156](https://github.com/shesho22/AsistenciasUCO-Frontend/actions/runs/41589870897), evento `push`, head `1939cb2bf21754128e4579cd2b29b2fcdd5b8d0c`: conclusión `success`. Pasos en verde: unit tests con cobertura, realtime coverage gate, Trivy, SonarCloud preflight y scan, production build, Docker build y validación de runtime `env.js`/Compose.
+- El commit posterior que actualiza esta sección solo cambia documentación.
 
 ## Limitaciones
 
