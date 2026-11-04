@@ -9,10 +9,6 @@ on:
     branches:
       - develop
       - main
-      - 'feature/**'
-      - 'feat/**'
-      - 'fix/**'
-      - 'hotfix/**'
   workflow_dispatch:
 
 jobs:
@@ -53,6 +49,8 @@ jobs:
           scan-type: fs
           scan-ref: .
           scanners: vuln,misconfig,secret
+          version: 'v0.72.0'
+          cache: true
           format: sarif
           output: frontend-trivy-fs.sarif
           severity: HIGH,CRITICAL
@@ -114,6 +112,8 @@ jobs:
           scan-type: image
           image-ref: asistencias-uco-frontend-ci
           scanners: vuln,misconfig,secret
+          version: 'v0.72.0'
+          cache: true
           format: sarif
           output: frontend-trivy-image.sarif
           severity: HIGH,CRITICAL
