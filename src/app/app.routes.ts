@@ -129,9 +129,12 @@ export const routes: Routes = [
           ),
       },
       {
+        // HU154 (tipos de programa) y HU153 (tipos de documento): antes redirigía a facultades y la pantalla no tenía ruta.
         path: 'admin/catalogos',
-        redirectTo: 'admin/facultades',
-        pathMatch: 'full',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMINISTRADOR', 'ADMIN'] },
+        loadComponent: () =>
+          import('./features/admin/admin-catalogs/admin-catalogs.component').then((m) => m.AdminCatalogsComponent),
       },
       {
         path: 'admin/sistema',
@@ -259,6 +262,16 @@ export const routes: Routes = [
         data: { roles: ['DECANO'] },
         loadComponent: () =>
           import('./features/dean/dean-asignaturas/dean-asignaturas.component').then((m) => m.DeanAsignaturasComponent),
+      },
+      // HU061: consolidado de asistencia por cohorte, materia y docente (facultad del decano)
+      {
+        path: 'decano/consolidado-asistencia',
+        canActivate: [roleGuard],
+        data: { roles: ['DECANO'], comoDecano: true },
+        loadComponent: () =>
+          import('./features/coordinator/coordinator-consolidado/consolidado-asistencia.component').then(
+            (m) => m.ConsolidadoAsistenciaComponent
+          ),
       },
       // HU143 / HU157: búsqueda de asignaturas y ficha unificada de estudiantes del administrador
       {
@@ -401,6 +414,16 @@ export const routes: Routes = [
           import(
             './features/coordinator/coordinator-attendance/coordinator-attendance.component'
           ).then((m) => m.CoordinatorAttendanceComponent),
+      },
+      // HU061: consolidado de asistencia por cohorte, materia y docente (programa del coordinador)
+      {
+        path: 'coordinador/consolidado-asistencia',
+        canActivate: [roleGuard],
+        data: { roles: ['COORDINADOR'] },
+        loadComponent: () =>
+          import('./features/coordinator/coordinator-consolidado/consolidado-asistencia.component').then(
+            (m) => m.ConsolidadoAsistenciaComponent
+          ),
       },
       // Rutas Docente
       {

@@ -236,9 +236,6 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     const param = mockStore.parametros.find((p) => p.id === id);
     return of(okResponse(param, 'Parámetro actualizado.')).pipe(delay(150));
   }
-  if (url.endsWith('/admin/auditoria') && method === 'GET') {
-    return of(okResponse(mockStore.auditoria)).pipe(delay(200));
-  }
   if (url.endsWith('/admin/cierre-masivo') && method === 'POST') {
     const body = req.body as any;
     const nuevoReporte = {
