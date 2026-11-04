@@ -248,7 +248,7 @@ export class DashboardLayoutComponent {
       icon: 'catalogos',
     },
     {
-      label: 'Tipos de Programa y Documento',
+      label: 'Tipos de Programa',
       route: '/app/admin/catalogos',
       roles: ['ADMINISTRADOR', 'ADMIN'],
       icon: 'catalogos',
