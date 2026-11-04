@@ -161,6 +161,10 @@ export class CourseService {
         course.enrolledStudentsCount = primero.totalEstudiantes;
         course.docenteId = primero.idDocente;
       }
+      // Matrícula activa del grupo desde /docente/asignaturas: existe aunque el grupo aún no tenga horario.
+      if (typeof asignacion.estudiantesActivos === 'number') {
+        course.enrolledStudentsCount = asignacion.estudiantesActivos;
+      }
       return course;
     });
   }

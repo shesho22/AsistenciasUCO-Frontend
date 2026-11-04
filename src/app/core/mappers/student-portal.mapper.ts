@@ -193,8 +193,9 @@ export class StudentPortalMapper {
   ): SesionMateriaDetalle | null {
     if (!dto || !isUuid(dto.id)) return null;
 
-    const inicio = StudentPortalMapper.presentarInstante(dto.fechaHoraInicio, format);
-    const fin = StudentPortalMapper.presentarInstante(dto.fechaHoraFin, format);
+    // APP-04: el backend entrega el instante UTC confirmado aparte; la hora v1 sin zona solo es respaldo literal.
+    const inicio = StudentPortalMapper.presentarInstante(dto.fechaHoraInicioUtc ?? dto.fechaHoraInicio, format);
+    const fin = StudentPortalMapper.presentarInstante(dto.fechaHoraFinUtc ?? dto.fechaHoraFin, format);
     const fecha = inicio?.date ?? NO_INFORMADO;
     let horario = NO_INFORMADO;
     if (inicio) horario = fin ? `${inicio.time} - ${fin.time}` : inicio.time;

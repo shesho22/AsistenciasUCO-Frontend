@@ -9,4 +9,6 @@ export interface AsignaturaDocenteApiDto {
   nombreGrupo: string;
   idPrograma: string;
   nombrePrograma: string;
+  /** Estudiantes con matrícula activa en el grupo (uv_grupo); ausente en backends anteriores. */
+  estudiantesActivos?: number | null;
 }

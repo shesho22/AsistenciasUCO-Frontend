@@ -51,6 +51,10 @@ export interface SesionMateriaEstudianteApiDto {
   nombreGrupo: string;
   fechaHoraInicio: string;
   fechaHoraFin: string;
+  /** APP-04 (aditivo): instante UTC con sufijo Z solo si estadoTemporal = CONFIRMADA; null en otro caso. */
+  fechaHoraInicioUtc?: string | null;
+  fechaHoraFinUtc?: string | null;
+  estadoTemporal?: 'CONFIRMADA' | 'INDETERMINADA' | string | null;
   estadoAsistencia?: string | null;
   estadoSolicitudRevision?: string | null;
   reclamable?: boolean | null;
