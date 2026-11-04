@@ -567,6 +567,30 @@ describe('AttendanceControlComponent contract corrections', () => {
     expect(component.toastMessage()).toBe('Reclamo aprobado.');
   });
 
+  it('SES-04: resolverReclamoGrupo ignora clics repetidos y, tras aprobar, recarga la asistencia de la sesión', () => {
+    const respuesta = new Subject<any>();
+    attendanceClaimService.resolverReclamo.and.returnValue(respuesta.asObservable());
+    const component = createComponent([activeStudent], []);
+    const cargasAntes = attendanceService.getAttendancesByGroup.calls.count();
+
+    component.resolverReclamoGrupo({ id: 'rec-1', accion: 'APROBADA' });
+    component.resolverReclamoGrupo({ id: 'rec-1', accion: 'APROBADA' });
+    component.resolverReclamoGrupo({ id: 'rec-2', accion: 'RECHAZADA' });
+
+    expect(attendanceClaimService.resolverReclamo).toHaveBeenCalledTimes(1);
+    expect(component.showToast()).toBeFalse();
+
+    respuesta.next({ exitoso: true, mensajeUsuario: 'Reclamo aprobado.' });
+    respuesta.complete();
+
+    expect(component.toastType()).toBe('success');
+    expect(attendanceService.getAttendancesByGroup.calls.count()).toBeGreaterThan(cargasAntes);
+
+    attendanceClaimService.resolverReclamo.and.returnValue(of({ exitoso: true, mensajeUsuario: 'ok' } as any));
+    component.resolverReclamoGrupo({ id: 'rec-2', accion: 'RECHAZADA' });
+    expect(attendanceClaimService.resolverReclamo).toHaveBeenCalledTimes(2);
+  });
+
   it('onCreateSessionSubmit crea sesión exitosamente y actualiza lista', () => {
     sessionService.createSession.and.returnValue(
       of({ exitoso: true, mensaje: 'Sesión creada.', datos: { id: 'ses-nueva' } } as any)
