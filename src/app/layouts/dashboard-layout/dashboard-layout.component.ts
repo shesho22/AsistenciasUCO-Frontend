@@ -254,6 +254,12 @@ export class DashboardLayoutComponent {
       icon: 'catalogos',
     },
     {
+      label: 'Estados del Sistema',
+      route: '/app/admin/estados',
+      roles: ['ADMINISTRADOR', 'ADMIN'],
+      icon: 'catalogos',
+    },
+    {
       label: 'Áreas de Conocimiento',
       route: '/app/admin/areas',
       roles: ['ADMINISTRADOR', 'ADMIN'],

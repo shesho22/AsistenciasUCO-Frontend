@@ -96,6 +96,13 @@ describe('CourseService', () => {
     expect('room' in courses[0]).toBeFalse();
   });
 
+  it('HU058: conserva el tipo de programa (nivel formativo) de la asignación', () => {
+    const { courses } = loadCourses([asignacion({ idTipoPrograma: 'TP-PRE', nombreTipoPrograma: 'pregrado' })], []);
+
+    expect(courses[0].idTipoPrograma).toBe('TP-PRE');
+    expect(courses[0].nombreTipoPrograma).toBe('pregrado');
+  });
+
   it('una asignatura y varios horarios → un grupo con horario y datos del horario', () => {
     const { courses } = loadCourses(
       [asignacion()],

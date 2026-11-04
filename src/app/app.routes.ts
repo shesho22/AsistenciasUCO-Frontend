@@ -137,6 +137,14 @@ export const routes: Routes = [
           import('./features/admin/admin-catalogs/admin-catalogs.component').then((m) => m.AdminCatalogsComponent),
       },
       {
+        // HU155 / HU167: estados del sistema, solo consulta.
+        path: 'admin/estados',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMINISTRADOR', 'ADMIN'] },
+        loadComponent: () =>
+          import('./features/admin/admin-estados/admin-estados.component').then((m) => m.AdminEstadosComponent),
+      },
+      {
         path: 'admin/sistema',
         canActivate: [roleGuard],
         data: { roles: ['ADMINISTRADOR', 'ADMIN'] },

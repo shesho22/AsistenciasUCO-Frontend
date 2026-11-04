@@ -84,4 +84,11 @@ describe('ConsultasTransversalesService (HU112/HU128/HU143/HU157)', () => {
       .expectOne(`${api}/coordinador/componentes-formacion`)
       .flush({ exitoso: true, datos: [{ idComponente: 'c', codigo: 'ESP', nombre: 'Específicas', totalAsignaturas: 0 }] });
   });
+
+  it('HU155: consulta los estados del sistema del administrador', () => {
+    service.getEstadosSistema().subscribe((res) => expect(res.datos.length).toBe(1));
+    http
+      .expectOne(`${api}/admin/estados`)
+      .flush({ exitoso: true, datos: [{ catalogo: 'SOLICITUD', id: 'e', codigo: 'P', nombre: 'pendiente' }] });
+  });
 });

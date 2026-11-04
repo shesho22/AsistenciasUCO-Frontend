@@ -5,6 +5,7 @@ import {
   ConsolidadoGrupoItem,
   DocenteFacultadItem,
   EstudianteInstitucionItem,
+  EstadoSistemaItem,
   EventoAuditoriaItem,
   FichaUnificadaEstudiante,
   ProgramaCreditosItem,
@@ -115,6 +116,15 @@ const AUDITORIA: EventoAuditoriaItem[] = [
   },
 ];
 
+/** HU155: estados de negocio del seed. */
+const ESTADOS: EstadoSistemaItem[] = [
+  { catalogo: 'SOLICITUD', id: 'EST-P', codigo: 'P', nombre: 'pendiente' },
+  { catalogo: 'SOLICITUD', id: 'EST-A', codigo: 'A', nombre: 'aceptada' },
+  { catalogo: 'SOLICITUD', id: 'EST-R', codigo: 'R', nombre: 'rechazada' },
+  { catalogo: 'ESTUDIANTE_GRUPO', id: 'EEG-A', codigo: 'A', nombre: 'activo' },
+  { catalogo: 'ESTUDIANTE_GRUPO', id: 'EEG-CI', codigo: 'CI', nombre: 'cancelado por inasistencia' },
+];
+
 const COMPONENTES: ComponenteFormacionItem[] = [
   { idComponente: 'CMP-BAS', codigo: 'BAS', nombre: 'Básicas', totalAsignaturas: 1 },
   { idComponente: 'CMP-ESP', codigo: 'ESP', nombre: 'Específicas', totalAsignaturas: 1 },
@@ -151,6 +161,7 @@ export function respuestaConsultasTransversales(req: HttpRequest<unknown>, url: 
     const datos = AUDITORIA.filter((e) => req.params.get('soloAsistencia') === 'false' || e.accionAsistencia);
     return { datos, total: datos.length };
   }
+  if (url.endsWith('/admin/estados')) return { datos: ESTADOS, total: ESTADOS.length };
   if (url.endsWith('/coordinador/componentes-formacion')) return { datos: COMPONENTES, total: COMPONENTES.length };
   if (url.endsWith('/admin/estudiantes')) return filtrar(req, ESTUDIANTES, ['nombreCompleto', 'numeroIdentificacion']);
   return null;

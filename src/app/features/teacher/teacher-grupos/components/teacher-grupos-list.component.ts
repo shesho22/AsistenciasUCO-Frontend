@@ -5,6 +5,7 @@ import { CardComponent } from '../../../../shared/components/card/card.component
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
 import { Course } from '../../../../core/models/course.model';
+import { CatalogoPrograma } from '../../../../core/models/programa-academico.model';
 
 @Component({
   selector: 'app-teacher-grupos-list',
@@ -71,8 +72,9 @@ import { Course } from '../../../../core/models/course.model';
         </div>
       </div>
 
-      <!-- Barra de Búsqueda -->
-      <div class="relative">
+      <!-- Barra de Búsqueda y filtro por nivel formativo (HU058) -->
+      <div class="flex flex-col sm:flex-row gap-3">
+      <div class="relative flex-1">
         <input
           type="text"
           [ngModel]="searchQuery()"
@@ -83,6 +85,20 @@ import { Course } from '../../../../core/models/course.model';
         <svg class="w-4 h-4 text-warm-400 absolute left-3.5 top-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
+      </div>
+      @if (tiposPrograma().length > 0) {
+        <select
+          aria-label="Nivel formativo"
+          [ngModel]="nivelFormativo()"
+          (ngModelChange)="nivelFormativo.set($event)"
+          class="px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-800 shadow-warm-sm"
+        >
+          <option value="">Todos los niveles</option>
+          @for (t of tiposPrograma(); track t.id) {
+            <option [value]="t.id">{{ t.nombre }}</option>
+          }
+        </select>
+      }
       </div>
 
       <!-- Tarjetas de Grupos -->
@@ -111,6 +127,9 @@ import { Course } from '../../../../core/models/course.model';
                         </span>
                       }
                       <app-badge variant="neutral">{{ course.section }}</app-badge>
+                      @if (course.nombreTipoPrograma) {
+                        <span class="text-[10px] font-semibold uppercase text-warm-500">{{ course.nombreTipoPrograma }}</span>
+                      }
                     </div>
 
                     @if (course.enrolledStudentsCount === undefined) {
@@ -153,6 +172,8 @@ import { Course } from '../../../../core/models/course.model';
 })
 export class TeacherGruposListComponent {
   courses = input<Course[]>([]);
+  /** HU058: catálogo real de tipos de programa; sin opciones no se muestra el filtro. */
+  tiposPrograma = input<CatalogoPrograma[]>([]);
   isLoading = input<boolean>(false);
   // OUT_OF_GOLDEN_PATH: QR de asistencia por sesión sin contrato backend; oculto salvo feature explícita.
   sessionQrEnabled = input<boolean>(false);
@@ -165,6 +186,7 @@ export class TeacherGruposListComponent {
   tomarAsistencia = output<Course>();
 
   searchQuery = signal<string>('');
+  nivelFormativo = signal<string>('');
 
   totalEstudiantes = computed(() =>
     this.courses().reduce((acc, c) => acc + (c.enrolledStudentsCount || 0), 0)
@@ -172,8 +194,10 @@ export class TeacherGruposListComponent {
 
   filteredCourses = computed(() => {
     const q = this.searchQuery().trim().toLowerCase();
-    if (!q) return this.courses();
-    return this.courses().filter(
+    const nivel = this.nivelFormativo();
+    const delNivel = nivel ? this.courses().filter((c) => c.idTipoPrograma === nivel) : this.courses();
+    if (!q) return delNivel;
+    return delNivel.filter(
       (c) =>
         c.name.toLowerCase().includes(q) ||
         (c.code ?? '').toLowerCase().includes(q) ||

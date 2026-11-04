@@ -147,6 +147,7 @@ Control centralizado de sesiones y registro de asistencia en aula.
 | `/app/admin/sistema` | Sistema & Auditoría | [`AdminSystemComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/admin/admin-system/admin-system.component.ts) | — |
 | ↳ pestaña "Trazabilidad y Auditoría" | — | [`AdminAuditoriaComponent`](../src/app/features/admin/admin-system/admin-auditoria.component.ts) (HU172: rastro real paginado; 7 días por defecto, máximo 90, solo asistencia por defecto) | [spec](../src/app/features/admin/admin-system/admin-auditoria.component.spec.ts) |
 | `/app/admin/catalogos` | Tipos de Programa | [`AdminCatalogsComponent`](../src/app/features/admin/admin-catalogs/admin-catalogs.component.ts) (HU154: solo consulta sobre [`CatalogoSoloConsultaComponent`](../src/app/shared/components/catalogo-solo-consulta/catalogo-solo-consulta.component.ts); regla de John 2026-11-04, catálogos base sin CRUD) | [spec](../src/app/features/admin/admin-catalogs/admin-catalogs.component.spec.ts) |
+| `/app/admin/estados` | Estados del Sistema | [`AdminEstadosComponent`](../src/app/features/admin/admin-estados/admin-estados.component.ts) (HU155/HU167: estados de solicitudes y del estudiante en el grupo, solo consulta) | [spec](../src/app/features/admin/admin-estados/admin-estados.component.spec.ts) |
 
 
 ---

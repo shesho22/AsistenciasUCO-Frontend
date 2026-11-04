@@ -25,6 +25,9 @@ export interface Course {
   dias?: string[];
   horaInicio?: string;
   horaFin?: string;
+  /** HU058: tipo de programa (nivel formativo) del grupo (GET /docente/asignaturas). */
+  idTipoPrograma?: string;
+  nombreTipoPrograma?: string;
   /** F1: horario semanal del grupo (GET /grupos). */
   franjas?: FranjaHorario[];
 }
