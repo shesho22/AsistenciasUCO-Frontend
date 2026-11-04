@@ -187,14 +187,17 @@ export class AttendanceControlHeaderComponent {
   isLoadingSession = input<boolean>(false);
   showBackButton = input<boolean>(false);
   isDetailMode = input<boolean>(false);
+  /** SES-01: la sesión mostrada está activa ([inicio, fin) sobre instantes v2 confirmados). */
+  attendanceWindowOpen = input<boolean>(true);
 
-  // Marcado masivo: features + guardado en curso + existencia de sesión. Sin estado sintético de sesión.
+  // Marcado masivo: features + guardado en curso + existencia de sesión + ventana activa (SES-01).
   bulkDisabled = computed(
     () =>
       !this.sessionsEnabled() ||
       !this.attendanceEnabled() ||
       this.isSaving() ||
-      !this.currentSession()
+      !this.currentSession() ||
+      !this.attendanceWindowOpen()
   );
 
   markAllPresent = output<void>();
