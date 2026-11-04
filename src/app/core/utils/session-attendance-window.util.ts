@@ -24,7 +24,7 @@ const ATTENDANCE_WINDOW_ERROR_CODES = new Set([
 ]);
 
 function windowInstants(session: SessionWindow | null | undefined): { startMs: number; endMs: number } | null {
-  if (!session || session.estadoTemporal !== 'CONFIRMADA' || !session.fechaHoraInicio || !session.fechaHoraFin) {
+  if (session?.estadoTemporal !== 'CONFIRMADA' || !session?.fechaHoraInicio || !session?.fechaHoraFin) {
     return null;
   }
   const startMs = Date.parse(session.fechaHoraInicio);
