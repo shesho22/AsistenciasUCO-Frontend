@@ -43,6 +43,43 @@ jobs:
       - name: Realtime coverage gate
         run: npm run coverage:realtime:check
 
+      - name: Cache Trivy CLI
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/trivy-bin
+          key: trivy-cli-${{ runner.os }}-${{ runner.arch }}-v0.72.0
+
+      - name: Install Trivy CLI (bounded retries)
+        shell: bash
+        env:
+          TRIVY_VERSION: v0.72.0
+        run: |
+          set -euo pipefail
+          trivy_bin_dir="${RUNNER_TEMP}/trivy-bin"
+          mkdir -p "$trivy_bin_dir"
+          if [[ -x "$trivy_bin_dir/trivy" ]]; then
+            "$trivy_bin_dir/trivy" --version
+          else
+            installer="${RUNNER_TEMP}/trivy-install.sh"
+            curl --fail --location --silent --show-error \
+              --retry 3 --retry-all-errors --retry-delay 2 \
+              "https://raw.githubusercontent.com/aquasecurity/trivy/${TRIVY_VERSION}/contrib/install.sh" \
+              --output "$installer"
+            for attempt in 1 2 3; do
+              if bash "$installer" -b "$trivy_bin_dir" -c setup-trivy "$TRIVY_VERSION"; then
+                "$trivy_bin_dir/trivy" --version
+                break
+              fi
+              if [[ "$attempt" -eq 3 ]]; then
+                echo "::error::Trivy ${TRIVY_VERSION} installation failed after ${attempt} attempts."
+                exit 1
+              fi
+              echo "Trivy installation attempt ${attempt} failed; retrying..."
+              sleep "$((attempt * 2))"
+            done
+          fi
+          echo "$trivy_bin_dir" >> "$GITHUB_PATH"
+
       - name: Trivy filesystem inventory
         uses: aquasecurity/trivy-action@v0.36.0
         with:
@@ -51,6 +88,7 @@ jobs:
           scanners: vuln,misconfig,secret
           version: 'v0.72.0'
           cache: true
+          skip-setup-trivy: true
           format: sarif
           output: frontend-trivy-fs.sarif
           severity: HIGH,CRITICAL
@@ -114,6 +152,7 @@ jobs:
           scanners: vuln,misconfig,secret
           version: 'v0.72.0'
           cache: true
+          skip-setup-trivy: true
           format: sarif
           output: frontend-trivy-image.sarif
           severity: HIGH,CRITICAL
