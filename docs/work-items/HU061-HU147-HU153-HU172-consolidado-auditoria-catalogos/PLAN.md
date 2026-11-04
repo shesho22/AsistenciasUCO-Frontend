@@ -1,5 +1,7 @@
 # HU061-HU147-HU153-HU172-consolidado-auditoria-catalogos — Consolidado, auditoría, catálogos y reglas de asignatura
 
+> **Actualización (2026-11-04):** por la regla de John de catálogos base de solo consulta, la escritura de HU153 se retiró en CAT-01 (`docs/work-items/CAT-01-catalogos-solo-consulta/`). El resto de este work item sigue vigente.
+
 ## Objetivo
 
 Pantallas para HU061 (consolidado de asistencia del coordinador y del decano), HU172 (auditoría del administrador) y HU153 (tipos de documento), y el formulario de asignaturas con componentes (HU147) y áreas reales, créditos obligatorios y semestre del plan (P5). Las pantallas de otros integrantes solo reciben cambios acotados.

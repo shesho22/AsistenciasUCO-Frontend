@@ -129,7 +129,7 @@ export const routes: Routes = [
           ),
       },
       {
-        // HU154 (tipos de programa) y HU153 (tipos de documento): antes redirigía a facultades y la pantalla no tenía ruta.
+        // HU154 (tipos de programa): antes redirigía a facultades y la pantalla no tenía ruta.
         path: 'admin/catalogos',
         canActivate: [roleGuard],
         data: { roles: ['ADMINISTRADOR', 'ADMIN'] },
