@@ -9,4 +9,7 @@ export interface AsignaturaDocenteApiDto {
   nombreGrupo: string;
   idPrograma: string;
   nombrePrograma: string;
+  /** HU058: tipo de programa (nivel formativo) del grupo; nulo si el grupo no tiene programa. */
+  idTipoPrograma?: string | null;
+  nombreTipoPrograma?: string | null;
 }

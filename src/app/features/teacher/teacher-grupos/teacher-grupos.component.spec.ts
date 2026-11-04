@@ -7,6 +7,7 @@ import { SessionService } from '../../../core/services/session.service';
 import { StudentService } from '../../../core/services/student.service';
 import { GroupService } from '../../../core/services/group.service';
 import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
+import { CatalogService } from '../../../core/services/catalog.service';
 import { Course } from '../../../core/models/course.model';
 import { ClassSession } from '../../../core/models/attendance.model';
 
@@ -90,6 +91,8 @@ describe('TeacherGruposComponent', () => {
         { provide: StudentService, useValue: studentService },
         { provide: AttendanceClaimService, useValue: claimService },
         { provide: Router, useValue: router },
+        // HU058: catálogo real de tipos de programa para el filtro "Nivel formativo".
+        { provide: CatalogService, useValue: { getTiposPrograma: () => of([{ id: 'TP-PRE', codigo: 'PRE', nombre: 'pregrado' }]) } },
       ],
     });
 
@@ -464,5 +467,9 @@ describe('TeacherGruposComponent', () => {
         expect(component.reclamosGrupo()).toEqual([]);
       }
     });
+  });
+
+  it('HU058: carga el catálogo de tipos de programa para el filtro de nivel formativo', () => {
+    expect(component.tiposPrograma().map((t) => t.codigo)).toEqual(['PRE']);
   });
 });

@@ -88,5 +88,31 @@ describe('TeacherGruposListComponent', () => {
 
     expect(fixture.componentInstance.seleccionarGrupo.emit).toHaveBeenCalledWith(course);
   });
-});
 
+  it('HU058: filtra por nivel formativo con el catálogo real y muestra el tipo en la tarjeta', () => {
+    const pregrado: Course = { ...course, id: 'crs-pre', name: 'Cálculo', idTipoPrograma: 'TP-PRE', nombreTipoPrograma: 'pregrado' };
+    const postgrado: Course = { ...course, id: 'crs-pos', name: 'Analítica', idTipoPrograma: 'TP-POS', nombreTipoPrograma: 'postgrado' };
+    fixture.componentRef.setInput('courses', [pregrado, postgrado]);
+    fixture.componentRef.setInput('tiposPrograma', [
+      { id: 'TP-PRE', codigo: 'PRE', nombre: 'pregrado' },
+      { id: 'TP-POS', codigo: 'POS', nombre: 'postgrado' },
+    ]);
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    const select = host.querySelector('select[aria-label="Nivel formativo"]') as HTMLSelectElement;
+    expect(Array.from(select.options).map((o) => o.textContent?.trim())).toEqual(['Todos los niveles', 'pregrado', 'postgrado']);
+    expect(host.textContent).toContain('postgrado');
+
+    fixture.componentInstance.nivelFormativo.set('TP-POS');
+    expect(fixture.componentInstance.filteredCourses().map((c) => c.id)).toEqual(['crs-pos']);
+    fixture.componentInstance.nivelFormativo.set('');
+    expect(fixture.componentInstance.filteredCourses().length).toBe(2);
+  });
+
+  it('HU058: sin catálogo de tipos de programa no muestra el filtro', () => {
+    fixture.componentRef.setInput('courses', [course]);
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).querySelector('select[aria-label="Nivel formativo"]')).toBeNull();
+  });
+});

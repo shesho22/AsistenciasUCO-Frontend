@@ -182,3 +182,11 @@ export interface ComponenteFormacionItem {
   nombre: string;
   totalAsignaturas: number;
 }
+
+/** HU155: estado de un catálogo de negocio de solo consulta (estados de solicitudes o del estudiante en el grupo). */
+export interface EstadoSistemaItem {
+  catalogo: 'SOLICITUD' | 'ESTUDIANTE_GRUPO';
+  id: string;
+  codigo: string;
+  nombre: string;
+}

@@ -32,6 +32,9 @@ describe('respuestaConsultasTransversales (mock HU112/HU128/HU143/HU157)', () =>
     const todas = new HttpRequest('GET', auditoria, { params: new HttpParams().set('soloAsistencia', 'false') });
     expect(respuestaConsultasTransversales(todas, auditoria)?.total).toBe(2);
 
+    const estados = '/api/v1/admin/estados';
+    expect(respuestaConsultasTransversales(get(estados), estados)?.total).toBe(5);
+
     const componentes = '/api/v1/coordinador/componentes-formacion';
     expect(respuestaConsultasTransversales(get(componentes), componentes)?.total).toBe(3);
   });

@@ -9,6 +9,7 @@ import {
   ConsolidadoGrupoItem,
   DocenteFacultadItem,
   EstudianteInstitucionItem,
+  EstadoSistemaItem,
   EventoAuditoriaItem,
   FichaUnificadaEstudiante,
   FiltroAuditoria,
@@ -65,6 +66,11 @@ export class ConsultasTransversalesService {
   /** HU172: rastro de auditoría del administrador, paginado y con rango de fechas. */
   getAuditoria(filtro: FiltroAuditoria): Observable<ApiResponse<EventoAuditoriaItem[]>> {
     return this.listar(`${this.admin}/auditoria`, filtro);
+  }
+
+  /** HU155: estados del sistema (solo consulta, solo administrador). */
+  getEstadosSistema(): Observable<ApiResponse<EstadoSistemaItem[]>> {
+    return this.http.get<ApiResponse<EstadoSistemaItem[]>>(`${this.admin}/estados`);
   }
 
   /** HU147: componentes de formación reales (BAS, INS, ESP) para el formulario de asignaturas. */

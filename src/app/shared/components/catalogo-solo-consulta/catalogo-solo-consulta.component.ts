@@ -5,7 +5,8 @@ export interface FilaCatalogo {
   id: string;
   codigo: string;
   nombre: string;
-  activo: boolean;
+  /** Ausente en los catálogos sin estado activo/inactivo (p. ej. estados del sistema, HU155). */
+  activo?: boolean;
 }
 
 /**
@@ -18,12 +19,19 @@ export interface FilaCatalogo {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="space-y-6 animate-fade-in">
-      <div>
-        <div class="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1">Administración Institucional</div>
-        <h1 class="text-2xl font-bold font-serif text-warm-900">{{ titulo() }}</h1>
-        <p class="text-sm text-warm-600">{{ descripcion() }}</p>
-        <p class="text-xs text-warm-500 mt-1">Catálogo de solo consulta: sus valores se cargan con la base de datos.</p>
-      </div>
+      @if (seccion()) {
+        <div>
+          <h2 class="text-lg font-bold font-serif text-warm-900">{{ titulo() }}</h2>
+          <p class="text-sm text-warm-600">{{ descripcion() }}</p>
+        </div>
+      } @else {
+        <div>
+          <div class="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1">Administración Institucional</div>
+          <h1 class="text-2xl font-bold font-serif text-warm-900">{{ titulo() }}</h1>
+          <p class="text-sm text-warm-600">{{ descripcion() }}</p>
+          <p class="text-xs text-warm-500 mt-1">Catálogo de solo consulta: sus valores se cargan con la base de datos.</p>
+        </div>
+      }
 
       <div class="bg-white rounded-2xl border border-warm-200 overflow-hidden">
         <table class="w-full text-sm">
@@ -31,7 +39,9 @@ export interface FilaCatalogo {
             <tr>
               <th class="text-left px-4 py-3">Código</th>
               <th class="text-left px-4 py-3">Nombre</th>
-              <th class="text-left px-4 py-3">Estado</th>
+              @if (conEstado()) {
+                <th class="text-left px-4 py-3">Estado</th>
+              }
             </tr>
           </thead>
           <tbody>
@@ -39,6 +49,7 @@ export interface FilaCatalogo {
               <tr class="border-t border-warm-100">
                 <td class="px-4 py-3 font-mono font-bold">{{ fila.codigo }}</td>
                 <td class="px-4 py-3">{{ fila.nombre }}</td>
+                @if (conEstado()) {
                 <td class="px-4 py-3">
                   <span
                     class="px-2 py-0.5 rounded-full text-xs font-bold"
@@ -47,10 +58,11 @@ export interface FilaCatalogo {
                     {{ fila.activo ? 'Activo' : 'Inactivo' }}
                   </span>
                 </td>
+                }
               </tr>
             } @empty {
               <tr>
-                <td colspan="3" class="px-4 py-8 text-center text-warm-500">{{ vacio() }}</td>
+                <td [attr.colspan]="conEstado() ? 3 : 2" class="px-4 py-8 text-center text-warm-500">{{ vacio() }}</td>
               </tr>
             }
           </tbody>
@@ -64,4 +76,8 @@ export class CatalogoSoloConsultaComponent {
   descripcion = input('');
   vacio = input('No hay registros.');
   filas = input<FilaCatalogo[]>([]);
+  /** Muestra la columna Activo/Inactivo (los estados del sistema no la tienen). */
+  conEstado = input(true);
+  /** Encabezado de sección (h2) en lugar de encabezado de página, para varias tablas en una misma pantalla. */
+  seccion = input(false);
 }
