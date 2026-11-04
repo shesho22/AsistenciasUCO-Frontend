@@ -1,8 +1,7 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { PerfilService, PerfilUsuario, RolVinculo } from '../../../core/services/perfil.service';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject } from '@angular/core';
+import { RolVinculo } from '../../../core/services/perfil.service';
 import { BadgeComponent } from '../../../shared/components/badge/badge.component';
-import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
+import { PerfilInstitucionalStore } from '../perfil-institucional.store';
 
 const ETIQUETA_ROL: Record<RolVinculo, string> = {
   ESTUDIANTE: 'Estudiante en',
@@ -15,6 +14,7 @@ const ETIQUETA_ROL: Record<RolVinculo, string> = {
 /**
  * HU006: datos del expediente institucional (DB) y vinculos del usuario autenticado: programas como estudiante o
  * docente, programa que coordina, facultad que dirige e institucion que administra. Solo lectura.
+ * APP-06: lee el `PerfilInstitucionalStore` que provee `ProfileComponent`, el mismo que alimenta el resumen.
  */
 @Component({
   selector: 'app-profile-links',
@@ -31,18 +31,25 @@ const ETIQUETA_ROL: Record<RolVinculo, string> = {
       @if (cargando()) {
         <div class="h-20 bg-warm-100 rounded-2xl animate-pulse"></div>
       } @else if (error()) {
-        <p role="alert" class="text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2">{{ error() }}</p>
+        <div role="alert" class="flex items-center justify-between gap-3 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+          <span>{{ error() }}</span>
+          <button type="button" class="font-semibold underline shrink-0" (click)="reintentar()">Reintentar</button>
+        </div>
+      } @else if (estado().tipo === 'SIN_DATOS') {
+        <p class="text-xs text-warm-600 bg-warm-50 border border-warm-200 rounded-xl px-3 py-2" data-testid="perfil-expediente-sin-datos">
+          El servidor no devolvió información del perfil institucional.
+        </p>
       } @else {
         @if (perfil(); as p) {
         <dl class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
           <div class="p-3 rounded-xl bg-warm-50 border border-warm-100">
             <dt class="text-warm-500">Documento</dt>
-            <dd class="font-mono font-semibold text-warm-900">{{ p.codigoTipoIdentificacion }} {{ p.numeroIdentificacion }}</dd>
+            <dd class="font-mono font-semibold text-warm-900" data-testid="perfil-expediente-documento">{{ identificacion().documento }}</dd>
           </div>
           <div class="p-3 rounded-xl bg-warm-50 border border-warm-100">
             <dt class="text-warm-500">Correo institucional</dt>
             <dd class="font-semibold text-warm-900 break-all">
-              {{ p.correo }}
+              {{ p.correo || 'Sin registrar' }}
               @if (!p.correoConfirmado) {
                 <span class="ml-1 text-amber-700">(sin confirmar)</span>
               }
@@ -50,7 +57,7 @@ const ETIQUETA_ROL: Record<RolVinculo, string> = {
           </div>
           <div class="p-3 rounded-xl bg-warm-50 border border-warm-100">
             <dt class="text-warm-500">Nombre registrado</dt>
-            <dd class="font-semibold text-warm-900">{{ p.nombreCompleto }}</dd>
+            <dd class="font-semibold text-warm-900">{{ p.nombreCompleto || 'Sin registrar' }}</dd>
           </div>
           <div class="p-3 rounded-xl bg-warm-50 border border-warm-100">
             <dt class="text-warm-500">Estado de la cuenta</dt>
@@ -83,27 +90,20 @@ const ETIQUETA_ROL: Record<RolVinculo, string> = {
   `,
 })
 export class ProfileLinksComponent implements OnInit {
-  private readonly perfilService = inject(PerfilService);
-  private readonly destroyRef = inject(DestroyRef);
+  private readonly store = inject(PerfilInstitucionalStore);
 
-  readonly perfil = signal<PerfilUsuario | null>(null);
-  readonly cargando = signal(true);
-  readonly error = signal<string | null>(null);
+  readonly estado = this.store.estado;
+  readonly perfil = this.store.perfil;
+  readonly error = this.store.error;
+  readonly identificacion = this.store.identificacion;
+  readonly cargando = computed(() => this.estado().tipo === 'CARGANDO' || this.estado().tipo === 'INACTIVO');
 
   ngOnInit(): void {
-    this.perfilService
-      .consultar()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (res) => {
-          this.perfil.set(res.datos ?? null);
-          this.cargando.set(false);
-        },
-        error: (error: unknown) => {
-          this.error.set(getApiErrorMessage(error));
-          this.cargando.set(false);
-        },
-      });
+    this.store.cargar();
+  }
+
+  reintentar(): void {
+    this.store.cargar();
   }
 
   etiqueta(rol: RolVinculo): string {

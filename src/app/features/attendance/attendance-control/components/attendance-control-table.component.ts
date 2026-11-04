@@ -5,6 +5,10 @@ import { CardComponent } from '../../../../shared/components/card/card.component
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { AvatarComponent } from '../../../../shared/components/avatar/avatar.component';
 import { StudentAttendance, AttendanceStatus } from '../../../../core/models/attendance.model';
+import {
+  ATTENDANCE_WINDOW_MESSAGES,
+  AttendanceWindowState,
+} from '../../../../core/utils/session-attendance-window.util';
 
 @Component({
   selector: 'app-attendance-control-table',
@@ -16,6 +20,17 @@ import { StudentAttendance, AttendanceStatus } from '../../../../core/models/att
   },
   template: `
     <div class="space-y-4">
+      @if (windowMessage()) {
+        <div
+          role="status"
+          class="flex items-start gap-2 bg-amber-50 border border-amber-200 text-amber-900 text-xs font-medium rounded-2xl px-3.5 py-2.5"
+        >
+          <svg class="w-4 h-4 shrink-0 mt-px" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>{{ windowMessage() }} La consulta del registro sigue disponible.</span>
+        </div>
+      }
       <!-- Barra Unificada Compacta: Buscador + Filtros -->
       <section class="flex flex-col md:flex-row gap-3 items-center justify-between bg-white p-3.5 rounded-2xl border border-warm-200 shadow-warm-sm">
         <!-- Buscador -->
@@ -254,12 +269,23 @@ export class AttendanceControlTableComponent {
   isSaving = input<boolean>(false);
   sessionsEnabled = input<boolean>(true);
   attendanceEnabled = input<boolean>(true);
+  /** SES-01: estado derivado de los instantes v2; no es un estado persistido de la sesión. */
+  attendanceWindowState = input<AttendanceWindowState>('ABIERTA');
 
-  // Único gate de los controles: features + guardado en curso. La sesión no tiene estado en el
-  // frontend (BACKEND_GOLDEN_PATH_CONTRACT §C.2); ante una operación inválida decide backend/DB.
+  // Gate de los controles: features + guardado en curso + ventana de registro (SES-01). La ventana
+  // se deriva en el frontend solo para presentar; backend/DB la validan con su reloj y rechazan con 409.
   controlsDisabled = computed(
-    () => !this.sessionsEnabled() || !this.attendanceEnabled() || this.isSaving()
+    () =>
+      !this.sessionsEnabled() ||
+      !this.attendanceEnabled() ||
+      this.isSaving() ||
+      this.attendanceWindowState() !== 'ABIERTA'
   );
+
+  windowMessage = computed(() => {
+    const state = this.attendanceWindowState();
+    return state === 'ABIERTA' ? '' : ATTENDANCE_WINDOW_MESSAGES[state];
+  });
 
   statusChange = output<{ studentId: string; status: AttendanceStatus }>();
   openExcuseModal = output<StudentAttendance>();

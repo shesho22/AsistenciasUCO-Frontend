@@ -13,6 +13,14 @@ import { AttendanceClaimService } from '../../../core/services/attendance-claim.
 import { AttendanceControlComponent } from './attendance-control.component';
 import { AttendanceRealtimeSyncService } from './attendance-realtime-sync.service';
 
+/** SES-01: sesión confirmada (v2) y activa en el instante real de la prueba; la toma ordinaria solo se habilita así. */
+const sesionActivaV2 = () => ({
+  estadoTemporal: 'CONFIRMADA' as const,
+  procedenciaTemporal: 'UTC_V2' as const,
+  fechaHoraInicio: new Date(Date.now() - 3_600_000).toISOString(),
+  fechaHoraFin: new Date(Date.now() + 3_600_000).toISOString(),
+});
+
 describe('AttendanceControlComponent public workflows', () => {
   let fixture: ComponentFixture<AttendanceControlComponent>;
   let courseService: jasmine.SpyObj<CourseService>;
@@ -46,6 +54,7 @@ describe('AttendanceControlComponent public workflows', () => {
     startTime: '08:00',
     endTime: '10:00',
     records: [],
+    ...sesionActivaV2(),
   };
 
   beforeEach(() => {
@@ -102,11 +111,13 @@ describe('AttendanceControlComponent public workflows', () => {
 
     attendanceClaimService = jasmine.createSpyObj('AttendanceClaimService', [
       'getReclamosDocente',
+      'getReclamosDocentePorGrupo',
       'resolverReclamo',
     ]);
     attendanceClaimService.getReclamosDocente.and.returnValue(
       of({ exitoso: true, datos: [] })
     );
+    attendanceClaimService.getReclamosDocentePorGrupo.and.returnValue(of([]));
 
     TestBed.configureTestingModule({
       imports: [AttendanceControlComponent],
@@ -421,8 +432,11 @@ describe('AttendanceControlComponent public workflows', () => {
   // TARGET (PLAN.md, riesgo #2 y sección TARGET pantallas ampliadas): el gate basado en
   // ClassSession.status ('CONCLUIDA') se retira sin sustituir por una nueva regla de UI;
   // el backend queda como única autoridad ante una operación inválida.
+  // SES-01 (decisión funcional 2026-11-02) reemplaza esa regla: sin estado persistido, la UI deriva la
+  // ventana [inicio, fin) de los instantes v2 y solo habilita la sesión activa; backend/DB siguen siendo
+  // la autoridad. Casos bloqueados: attendance-control.ses01.spec.ts.
 
-  it('openExcuseModal no depende de ningún estado de sesión', () => {
+  it('openExcuseModal marca EX con la sesión activa confirmada (SES-01)', () => {
     sessionService.getSessionsByGroup.and.returnValue(
       of({
         exitoso: true,
@@ -437,7 +451,7 @@ describe('AttendanceControlComponent public workflows', () => {
     expect(component.students()[0].status).toBe('EX');
   });
 
-  it('markAllPresent/saveAttendance no dependen de ningún estado de sesión', () => {
+  it('markAllPresent/saveAttendance guardan con la sesión activa confirmada (SES-01)', () => {
     sessionService.getSessionsByGroup.and.returnValue(
       of({
         exitoso: true,

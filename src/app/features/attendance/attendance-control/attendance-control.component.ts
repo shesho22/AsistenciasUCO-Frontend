@@ -1,7 +1,7 @@
-import { Component, DestroyRef, signal, computed, inject, ChangeDetectionStrategy } from '@angular/core';
+import { Component, DestroyRef, signal, computed, effect, inject, ChangeDetectionStrategy } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
-import { finalize, forkJoin, map } from 'rxjs';
+import { Subscription, finalize, forkJoin, map } from 'rxjs';
 import { StudentService } from '../../../core/services/student.service';
 import { StudentRegistrationConfigService } from '../../../core/services/student-registration-config.service';
 import { EmailVerificationService } from '../../../core/services/email-verification.service';
@@ -15,6 +15,7 @@ import { SelectOption } from '../../../shared/components/form-select/form-select
 import { CatalogService } from '../../../core/services/catalog.service';
 import { CourseService } from '../../../core/services/course.service';
 import {
+  getApiErrorCode,
   getApiErrorMessage,
   getApiFieldError,
 } from '../../../core/api/errors/api-error.util';
@@ -43,9 +44,20 @@ import { GroupInfoModalComponent } from './components/group-info-modal.component
 import { GroupClaimsModalComponent } from './components/group-claims-modal.component';
 import { TeacherMatriculaModalComponent } from '../../teacher/teacher-grupos/components/modals/teacher-matricula-modal.component';
 import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
-import { SolicitudRevisionItem } from '../../../core/models/role-management.model';
+import { type EstadoCargaReclamos, SolicitudRevisionItem } from '../../../core/models/role-management.model';
+import { isUuid } from '../../../core/utils/uuid.util';
 import { EstudianteGrupoApiDto } from '../../../core/api/models/estudiante-grupo-api-dto.model';
 import { findActiveOrUpcomingSession } from '../../../core/utils/session-selection.util';
+import {
+  ATTENDANCE_WINDOW_MESSAGES,
+  getAttendanceWindowState,
+  isAttendanceWindowErrorCode,
+  msUntilAttendanceWindowChange,
+} from '../../../core/utils/session-attendance-window.util';
+import { ATTENDANCE_NOW } from '../../../core/utils/attendance-now.token';
+
+/** Re-evaluación máxima de la ventana aunque no haya límite cercano (suspensión, reloj ajustado). */
+const MAX_ATTENDANCE_WINDOW_TICK_MS = 30_000;
 
 type StudentEnrollmentField =
   | 'tipoIdentificacionId'
@@ -91,6 +103,7 @@ type StudentEnrollmentField =
         [isLoadingSession]="isLoadingSession()"
         [showBackButton]="vistaActual() === 'DETALLE'"
         [isDetailMode]="vistaActual() === 'DETALLE'"
+        [attendanceWindowOpen]="attendanceWindowOpen()"
         (markAllPresent)="markAllPresent()"
         (markAllAbsent)="markAllAbsent()"
         (openEnrollment)="openStudentRegistration()"
@@ -128,6 +141,7 @@ type StudentEnrollmentField =
           [isSaving]="isSaving()"
           [sessionsEnabled]="sessionsEnabled"
           [attendanceEnabled]="attendanceEnabled"
+          [attendanceWindowState]="attendanceWindowState()"
           (statusChange)="onStudentStatusChange($event)"
           (openExcuseModal)="openExcuseModal($event)"
           (saveAttendance)="saveAttendance()"
@@ -186,9 +200,10 @@ type StudentEnrollmentField =
         [isOpen]="isGroupClaimsModalOpen()"
         [course]="currentCourse()"
         [reclamos]="filteredGroupClaims()"
-        [isLoading]="isLoadingClaims()"
+        [estadoCarga]="estadoCargaReclamos()"
         (closed)="isGroupClaimsModalOpen.set(false)"
         (resolver)="resolverReclamoGrupo($event)"
+        (reintentar)="reintentarCargaReclamos()"
         (irABandejaGeneral)="irABandejaGeneralReclamos()"
       />
       <!-- Feedback Toast -->
@@ -255,7 +270,10 @@ export class AttendanceControlComponent {
   // Estado para Reclamos del Grupo
   isGroupClaimsModalOpen = signal<boolean>(false);
   allTeacherClaims = signal<SolicitudRevisionItem[]>([]);
-  isLoadingClaims = signal<boolean>(false);
+  estadoCargaReclamos = signal<EstadoCargaReclamos>('IDLE');
+  private reclamosRequestId = 0;
+  private reclamosGrupoActivo: string | null = null;
+  private reclamosSubscription: Subscription | null = null;
   showToast = signal<boolean>(false);
   toastMessage = signal<string>('');
   toastType = signal<'success' | 'info' | 'warning' | 'error'>('success');
@@ -270,17 +288,10 @@ export class AttendanceControlComponent {
   );
 
   filteredGroupClaims = computed<SolicitudRevisionItem[]>(() => {
-    const courseId = this.selectedCourseId();
-    const course = this.currentCourse();
+    const courseId = this.selectedCourseId().toLowerCase();
     if (!courseId) return [];
 
-    return this.allTeacherClaims().filter((c) => {
-      // Filtrar por ID de grupo o coincidencia de código/nombre de asignatura
-      if (c.materiaId && (c.materiaId === courseId || c.materiaId === course?.code)) return true;
-      if (c.materiaNombre && course?.name && c.materiaNombre.toLowerCase().includes(course.name.toLowerCase())) return true;
-      if (c.materiaCodigo && course?.code && c.materiaCodigo === course.code) return true;
-      return false;
-    });
+    return this.allTeacherClaims().filter((claim) => claim.grupoId?.toLowerCase() === courseId);
   });
 
   pendingClaimsCount = computed<number>(() => {
@@ -314,7 +325,7 @@ export class AttendanceControlComponent {
 
   abrirReclamosGrupo(): void {
     this.isGroupClaimsModalOpen.set(true);
-    this.cargarReclamosDocente();
+    this.cargarReclamosDocente(this.selectedCourseId());
   }
 
   private cargarEstudiantesGrupo(courseId: string): void {
@@ -332,36 +343,88 @@ export class AttendanceControlComponent {
       });
   }
 
-  private cargarReclamosDocente(): void {
-    if (!environment.features.teacherClaimsEnabled) {
-      this.allTeacherClaims.set([]);
-      this.isLoadingClaims.set(false);
+  private cargarReclamosDocente(courseId: string, forzar = false): void {
+    const grupoId = courseId.toLowerCase();
+    const cargaActivaOCompleta = this.reclamosGrupoActivo === grupoId &&
+      (this.estadoCargaReclamos() === 'LOADING' || this.estadoCargaReclamos() === 'LOADED');
+    if (!forzar && courseId.length > 0 && cargaActivaOCompleta) {
       return;
     }
-    this.isLoadingClaims.set(true);
-    this.attendanceClaimService
-      .getReclamosDocente()
-      .pipe(finalize(() => this.isLoadingClaims.set(false)))
+
+    this.reclamosSubscription?.unsubscribe();
+    this.reclamosSubscription = null;
+    const requestId = ++this.reclamosRequestId;
+    this.reclamosGrupoActivo = courseId ? grupoId : null;
+    this.allTeacherClaims.set([]);
+
+    if (!courseId) {
+      this.estadoCargaReclamos.set('IDLE');
+      return;
+    }
+
+    this.estadoCargaReclamos.set('LOADING');
+    this.reclamosSubscription = this.attendanceClaimService
+      .getReclamosDocentePorGrupo(courseId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (res) => {
-          this.allTeacherClaims.set(res.datos || []);
+        next: (items) => {
+          if (requestId !== this.reclamosRequestId || this.selectedCourseId().toLowerCase() !== grupoId) {
+            return;
+          }
+          if (!Array.isArray(items) || items.some((item) => !item || !isUuid(item.grupoId))) {
+            this.estadoCargaReclamos.set('SERVER_ERROR');
+            return;
+          }
+
+          this.allTeacherClaims.set(items.filter((item) => item.grupoId!.toLowerCase() === grupoId));
+          this.estadoCargaReclamos.set('LOADED');
         },
-        error: () => {
+        error: (error: unknown) => {
+          if (requestId !== this.reclamosRequestId || this.selectedCourseId().toLowerCase() !== grupoId) {
+            return;
+          }
           this.allTeacherClaims.set([]);
+          this.estadoCargaReclamos.set(this.estadoReclamosDesdeError(error));
         },
       });
   }
 
+  reintentarCargaReclamos(): void {
+    this.cargarReclamosDocente(this.selectedCourseId(), true);
+  }
+
+  private estadoReclamosDesdeError(error: unknown): EstadoCargaReclamos {
+    const status = typeof error === 'object' && error !== null && 'status' in error
+      ? (error as { status?: unknown }).status
+      : undefined;
+    if (status === 403) return 'FORBIDDEN';
+    if (status === 501) return 'UNAVAILABLE';
+    if (status === 0) return 'NETWORK_ERROR';
+    return 'SERVER_ERROR';
+  }
+
+  /** SES-04: una decisión en curso bloquea otra hasta la respuesta real del backend. */
+  private resolviendoReclamo = false;
+
   resolverReclamoGrupo(event: { id: string; accion: 'APROBADA' | 'RECHAZADA' }): void {
+    if (this.resolviendoReclamo) return;
+    this.resolviendoReclamo = true;
     this.attendanceClaimService
       .resolverReclamo(event.id, event.accion, `Decisión registrada desde el control de asistencia (${event.accion})`)
+      .pipe(finalize(() => (this.resolviendoReclamo = false)))
       .subscribe({
         next: (res) => {
           if (res.exitoso) {
             this.toastType.set('success');
             this.toastMessage.set(res.mensajeUsuario || `Reclamo ${event.accion.toLowerCase()} correctamente.`);
             this.showToast.set(true);
-            this.cargarReclamosDocente();
+            this.cargarReclamosDocente(this.selectedCourseId(), true);
+            // Una aprobación deja la asistencia JUSTIFICADA (EX): se recarga el estado persistido de la sesión.
+            const courseId = this.selectedCourseId();
+            const sessionId = this.selectedSessionId();
+            if (courseId && sessionId) {
+              this.cargarEstudiantesYSesion(courseId, sessionId);
+            }
           } else {
             this.toastType.set('error');
             this.toastMessage.set(res.mensajeUsuario || 'No se pudo resolver el reclamo.');
@@ -480,6 +543,17 @@ export class AttendanceControlComponent {
       });
 
     this.destroyRef.onDestroy(() => this.attendanceRealtimeSync.disconnect());
+
+    // SES-01: re-evalúa la ventana justo al abrir/cerrar la sesión mostrada, aunque la página quede abierta.
+    effect((onCleanup) => {
+      const delay = msUntilAttendanceWindowChange(this.currentSession(), this.nowMs());
+      if (delay === null) return;
+      const timer = setTimeout(
+        () => this.refrescarVentanaAsistencia(),
+        Math.min(delay + 25, MAX_ATTENDANCE_WINDOW_TICK_MS)
+      );
+      onCleanup(() => clearTimeout(timer));
+    });
   }
 
   sessionOptions = computed<SelectOption[]>(() => {
@@ -501,6 +575,54 @@ export class AttendanceControlComponent {
   );
 
   students = computed(() => this.currentSession()?.records || []);
+
+  /**
+   * SES-01: la toma ordinaria solo está habilitada con la sesión activa, [inicio, fin) sobre los
+   * instantes v2 confirmados. El reloj del navegador decide solo la presentación: backend y DB
+   * vuelven a validar con su reloj y rechazan con 409 (ver saveAttendance).
+   */
+  private readonly now = inject(ATTENDANCE_NOW);
+  private readonly nowMs = signal<number>(this.now());
+
+  attendanceWindowState = computed(() => getAttendanceWindowState(this.currentSession(), this.nowMs()));
+
+  attendanceWindowOpen = computed(() => this.attendanceWindowState() === 'ABIERTA');
+
+  /** Re-evalúa la ventana con el reloj actual; si se cerró con cambios sin guardar, los descarta. */
+  refrescarVentanaAsistencia(): void {
+    this.nowMs.set(this.now());
+    if (!this.attendanceWindowOpen() && this.pendingStudentIds.size > 0) {
+      this.descartarCambiosNoGuardados('Los cambios no guardados se descartaron.');
+    }
+  }
+
+  private ventanaAsistenciaAbierta(): boolean {
+    this.nowMs.set(this.now());
+    const state = this.attendanceWindowState();
+    if (state === 'ABIERTA') return true;
+    if (this.pendingStudentIds.size > 0) {
+      this.descartarCambiosNoGuardados('Los cambios no guardados se descartaron.');
+    } else {
+      this.toastType.set('warning');
+      this.toastMessage.set(ATTENDANCE_WINDOW_MESSAGES[state]);
+      this.showToast.set(true);
+    }
+    return false;
+  }
+
+  /** Vuelve al estado persistido de la sesión: lo marcado localmente y no confirmado se pierde. */
+  private descartarCambiosNoGuardados(detalle: string): void {
+    this.pendingStudentIds.clear();
+    const state = this.attendanceWindowState();
+    this.toastType.set('warning');
+    this.toastMessage.set(`${state === 'ABIERTA' ? '' : ATTENDANCE_WINDOW_MESSAGES[state] + ' '}${detalle}`.trim());
+    this.showToast.set(true);
+    const courseId = this.selectedCourseId();
+    const sessionId = this.selectedSessionId();
+    if (courseId && sessionId) {
+      this.cargarEstudiantesYSesion(courseId, sessionId);
+    }
+  }
 
   onStudentStatusChange(event: { studentId: string; status: AttendanceStatus }): void {
     this.setStatus(event.studentId, event.status);
@@ -776,7 +898,7 @@ export class AttendanceControlComponent {
     this.vistaActual.set(initialSessionId ? 'DETALLE' : 'OVERVIEW');
     if (courseId) {
       this.attendanceRealtimeSync.connectGroup(courseId);
-      this.cargarReclamosDocente();
+      this.cargarReclamosDocente(courseId);
     }
 
     forkJoin({
@@ -839,6 +961,7 @@ export class AttendanceControlComponent {
   }
 
   irASesionDetalle(sessionId: string): void {
+    this.nowMs.set(this.now());
     this.selectedSessionId.set(sessionId);
     this.vistaActual.set('DETALLE');
     void this.router?.navigate([], {
@@ -854,6 +977,7 @@ export class AttendanceControlComponent {
 
   onSessionSelect(sessionId: string): void {
     this.pendingStudentIds.clear();
+    this.nowMs.set(this.now());
     this.selectedSessionId.set(sessionId);
     this.vistaActual.set('DETALLE');
     void this.router?.navigate([], {
@@ -913,6 +1037,7 @@ export class AttendanceControlComponent {
   }
 
   setStatus(studentId: string, status: AttendanceStatus): void {
+    if (!this.ventanaAsistenciaAbierta()) return;
     this.pendingStudentIds.add(studentId);
     this.sessions.update((prev) =>
       prev.map((session) => {
@@ -937,6 +1062,7 @@ export class AttendanceControlComponent {
   }
 
   private bulkSetStatus(status: AttendanceStatus): void {
+    if (!this.ventanaAsistenciaAbierta()) return;
     for (const record of this.students()) {
       this.pendingStudentIds.add(record.studentId);
     }
@@ -956,6 +1082,7 @@ export class AttendanceControlComponent {
     const records = this.students();
 
     if (!sessionId || records.length === 0) return;
+    if (!this.ventanaAsistenciaAbierta()) return;
 
     const explicitRecords = records.filter(
       (
@@ -1000,6 +1127,12 @@ export class AttendanceControlComponent {
           }
         },
         error: (err: unknown) => {
+          // SES-01: el servidor es la autoridad temporal. Un 409 de ventana nunca se muestra como éxito
+          // y lo marcado localmente vuelve al estado persistido.
+          if (isAttendanceWindowErrorCode(getApiErrorCode(err))) {
+            this.nowMs.set(this.now());
+            this.descartarCambiosNoGuardados('');
+          }
           this.toastType.set('error');
           this.toastMessage.set(getApiErrorMessage(err) || 'Error al guardar la asistencia.');
           this.showToast.set(true);

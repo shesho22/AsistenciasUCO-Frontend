@@ -5,8 +5,27 @@ import { DeanEstudiantesComponent } from './dean-estudiantes.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { environment } from '../../../../environments/environment';
 import { EstudianteFacultadItem } from '../../../core/models/facultad-decano.model';
+import { FichaUnificadaEstudiante } from '../../../core/models/consultas-transversales.model';
 
 const BASE = `${environment.apiUrl}/decano/estudiantes`;
+
+const HISTORIAL: FichaUnificadaEstudiante = {
+  idEstudiante: 'est-1',
+  tipoIdentificacion: 'CC',
+  numeroIdentificacion: '1017000111',
+  nombreCompleto: 'Ana Ruiz',
+  correo: 'ana@uco.edu.co',
+  activo: true,
+  matriculas: [
+    {
+      idFacultad: 'f-1', nombreFacultad: 'Ingeniería', idPrograma: 'p-1', nombrePrograma: 'Ingeniería de Sistemas',
+      inpPlanEstudio: 20241, idPeriodoAcademico: 'per-1', codigoPeriodo: '2026-1', nombrePeriodo: 'Primer semestre 2026',
+      idGrupo: 'g-1', codigoGrupo: 1, idAsignatura: 'a-1', nombreAsignatura: 'Cálculo', codigoEstadoEstudiante: 'MAT',
+      nombreEstadoEstudiante: 'Matriculado',
+      resumen: { sesionesEjecutadas: 10, asistencias: 8, faltasSinJustaCausa: 2, excusas: 0, porcentajeInasistencia: 20, codigoPermanencia: 'RIESGO' },
+    },
+  ],
+};
 
 const estudiante: EstudianteFacultadItem = {
   idEstudiante: 'est-1',
@@ -109,13 +128,31 @@ describe('DeanEstudiantesComponent (HU104/HU105)', () => {
         ],
       },
     });
+    // HU157: la ficha del decano incluye el historial completo, limitado a su facultad.
+    http.expectOne(`${BASE}/est-1/historial`).flush({ exitoso: true, datos: HISTORIAL });
     fixture.detectChanges();
     const texto = fixture.nativeElement.textContent as string;
     expect(texto).toContain('1 matrículas');
     expect(texto).toContain('Cálculo');
+    expect(texto).toContain('Historial completo');
+    expect(texto).toContain('Primer semestre 2026');
+    expect(texto).toContain('RIESGO');
 
     component.cerrarFicha();
     expect(component.ficha()).toBeNull();
+    expect(component.historial()).toBeNull();
+  });
+
+  it('HU157: si el historial falla, la ficha sigue visible y se informa el error', () => {
+    component.verFicha(estudiante);
+    http.expectOne(`${BASE}/est-1`).flush({
+      exitoso: true,
+      datos: { idEstudiante: 'est-1', numeroIdentificacion: '1017000111', nombreCompleto: 'Ana Ruiz', activo: true, matriculas: [] },
+    });
+    http.expectOne(`${BASE}/est-1/historial`).flush({ exitoso: false }, { status: 404, statusText: 'Not Found' });
+    expect(component.ficha()).not.toBeNull();
+    expect(component.historial()).toBeNull();
+    expect(toastSpy.error).toHaveBeenCalled();
   });
 
   it('HU105: error al abrir la ficha muestra el mensaje', () => {
@@ -132,6 +169,7 @@ describe('DeanEstudiantesComponent (HU104/HU105)', () => {
       exitoso: true,
       datos: { idEstudiante: 'est-1', numeroIdentificacion: '1017000111', nombreCompleto: 'Ana Ruiz', activo: true, matriculas: [] },
     });
+    http.expectOne(`${BASE}/est-1/historial`).flush({ exitoso: true, datos: { ...HISTORIAL, matriculas: [] } });
     fixture.detectChanges();
     const panel = (fixture.nativeElement as HTMLElement).querySelector('[aria-label="Ficha del estudiante"]') as HTMLElement;
     expect(panel).not.toBeNull();

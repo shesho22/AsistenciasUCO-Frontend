@@ -16,7 +16,7 @@ import { FormFieldComponent } from '../../../shared/components/form-field/form-f
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { AvatarComponent } from '../../../shared/components/avatar/avatar.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
-import { getApiErrorMessage, getApiErrorResponse } from '../../../core/api/errors/api-error.util';
+import { getApiErrorCode, getApiErrorMessage, getApiErrorResponse } from '../../../core/api/errors/api-error.util';
 
 type VistaDocenteReclamos = 'BANDEJA' | 'RESOLUCION';
 type EstadoFiltroReclamos = 'TODOS' | 'P' | 'A' | 'R';
@@ -362,6 +362,7 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
                 <app-button
                   variant="danger"
                   size="md"
+                  [disabled]="resolviendo()"
                   (clicked)="confirmarResolucion('RECHAZADA')"
                 >
                   <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -373,6 +374,7 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
                 <app-button
                   variant="primary"
                   size="md"
+                  [disabled]="resolviendo()"
                   (clicked)="confirmarResolucion('APROBADA')"
                 >
                   <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -413,6 +415,8 @@ export class TeacherClaimsComponent implements OnInit, OnDestroy {
 
   selectedReclamo = signal<DetalleReclamoDocenteItem | null>(null);
   abriendoDetalle = signal<boolean>(false);
+  /** SES-04: una decisión en curso bloquea otra (doble clic o decisión contradictoria) hasta la respuesta real. */
+  resolviendo = signal<boolean>(false);
   comentarioDocente = '';
 
   private listaSub?: Subscription;
@@ -551,20 +555,30 @@ export class TeacherClaimsComponent implements OnInit, OnDestroy {
 
   confirmarResolucion(accion: 'APROBADA' | 'RECHAZADA'): void {
     const reclamo = this.selectedReclamo();
-    if (!reclamo) return;
+    if (!reclamo || this.resolviendo()) return;
 
     const feedback = this.comentarioDocente.trim() || (accion === 'APROBADA' ? 'Justificación válida y aceptada.' : 'No cumple con los soportes requeridos.');
 
-    this.claimService.resolverReclamo(reclamo.id, accion, feedback).subscribe({
-      next: (res) => {
-        if (res.exitoso) {
-          this.toast.success(res.mensajeUsuario || 'Reclamo procesado.');
-          this.cargarReclamos();
-          this.volverABandeja();
-        }
-      },
-      error: (err) => this.toast.error(getApiErrorMessage(err)),
-    });
+    this.resolviendo.set(true);
+    this.claimService
+      .resolverReclamo(reclamo.id, accion, feedback)
+      .pipe(finalize(() => this.resolviendo.set(false)))
+      .subscribe({
+        next: (res) => {
+          if (res.exitoso) {
+            this.toast.success(res.mensajeUsuario || 'Reclamo procesado.');
+            this.cargarReclamos();
+            this.volverABandeja();
+          }
+        },
+        error: (err) => {
+          this.toast.error(this.mensajeBackend(err));
+          // SES-04: si otra decisión ya resolvió el reclamo (o dejó de existir), la bandeja muestra el estado real.
+          if (['ERR_RECLAMO_YA_RESUELTO', 'ERR_RECLAMO_NO_EXISTE'].includes(getApiErrorCode(err))) {
+            this.cargarReclamos();
+          }
+        },
+      });
   }
 
   /** Muestra el `message` institucional del backend; sin envelope usa la resolución por código existente. */

@@ -271,12 +271,93 @@ export function formatInstantInTimeZone(
   return formatParts(epoch, timeZone);
 }
 
-export function browserTimeZone(): string {
+/** Zona IANA que informa el navegador, o `null` si no la informa o no es válida. */
+export function detectedBrowserTimeZone(): string | null {
   const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  return detected && validTimeZone(detected) ? detected : 'UTC';
+  return detected && validTimeZone(detected) ? detected : null;
+}
+
+/** Zona efectiva automática: la del navegador o, en su defecto, el respaldo explícito `UTC`. */
+export function browserTimeZone(): string {
+  return detectedBrowserTimeZone() ?? 'UTC';
 }
 
 export function currentDateInTimeZone(timeZone: string): string {
   return formatParts(Date.now(), timeZone).date;
 }
 
+
+/** Tipo semántico de un valor temporal leído de la API (APP-04). */
+export type TemporalKind = 'INSTANTE' | 'SIN_ZONA';
+
+export interface PresentedTemporal extends LocalDateTimeParts {
+  kind: TemporalKind;
+  /** Instante canónico normalizado a `Z`, con la precisión original (hasta 7 decimales). */
+  utc?: string;
+}
+
+const NAIVE_DATE_TIME_PATTERN = /^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})(?::\d{2}(?:\.\d{1,9})?)?$/;
+
+/**
+ * Presenta un valor temporal de la API. Un instante (`Z` u offset) se convierte a la zona IANA indicada; una
+ * fecha-hora sin zona (`LocalDateTime` v1) NO se reinterpreta: se devuelve literal y marcada `SIN_ZONA`.
+ */
+export function presentTemporalValue(
+  value: string | null | undefined,
+  timeZone: string
+): PresentedTemporal | null {
+  const raw = typeof value === 'string' ? value.trim() : '';
+  if (!raw) return null;
+  if (RFC3339_PATTERN.test(raw)) {
+    try {
+      const utc = normalizeRfc3339ToUtc(raw);
+      return { ...formatInstantInTimeZone(utc, timeZone), kind: 'INSTANTE', utc };
+    } catch {
+      return null;
+    }
+  }
+  const naive = NAIVE_DATE_TIME_PATTERN.exec(raw);
+  if (!naive) return null;
+  try {
+    parseDate(naive[1]);
+    parseTime(naive[2]);
+  } catch {
+    return null;
+  }
+  return { date: naive[1], time: naive[2], kind: 'SIN_ZONA' };
+}
+
+/**
+ * Fecha civil (`yyyy-MM-dd`) a `dd/MM/yyyy` sin pasar por `Date`: no se desplaza por zona horaria.
+ * Un valor con hora u offset no es una fecha civil y se rechaza.
+ */
+export function formatCivilDate(value: string | null | undefined): string | null {
+  if (typeof value !== 'string' || !LOCAL_DATE_PATTERN.test(value)) return null;
+  try {
+    parseDate(value);
+  } catch {
+    return null;
+  }
+  const [year, month, day] = value.split('-');
+  return `${day}/${month}/${year}`;
+}
+
+/** Offset vigente de la zona en un instante concreto (`UTC`, `UTC-05:00`, `UTC+01:00`); respeta DST. */
+export function timeZoneOffsetLabel(timeZone: string, instant: string | number = Date.now()): string {
+  const epoch = typeof instant === 'number' ? instant : Date.parse(normalizeRfc3339ToUtc(instant));
+  const offset = formatOffset(offsetMinutesAt(epoch, timeZone));
+  return offset === 'Z' ? 'UTC' : `UTC${offset}`;
+}
+
+/**
+ * Elige el valor a presentar de una sesión: el instante UTC solo si la procedencia es CONFIRMADA (UTC-D06/D07);
+ * en cualquier otro caso, el valor v1 sin zona, que se mostrará literal.
+ */
+export function resolveSessionInstant(
+  naive: string | null | undefined,
+  utc: string | null | undefined,
+  estadoTemporal: string | null | undefined
+): string | null {
+  if (estadoTemporal === 'CONFIRMADA' && utc) return utc;
+  return naive ?? null;
+}

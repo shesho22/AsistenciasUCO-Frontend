@@ -15,6 +15,14 @@ import { EstudianteGrupoApiDto } from '../../../core/api/models/estudiante-grupo
 import { AsistenciaConsultadaApiDto } from '../../../core/api/models/asistencia-consultada-api-dto.model';
 import { RealtimeConnectionState } from '../../../core/realtime/model/realtime-connection-state.model';
 
+/** SES-01: sesión confirmada (v2) y activa en el instante real de la prueba; la toma ordinaria solo se habilita así. */
+const sesionActivaV2 = () => ({
+  estadoTemporal: 'CONFIRMADA' as const,
+  procedenciaTemporal: 'UTC_V2' as const,
+  fechaHoraInicio: new Date(Date.now() - 3_600_000).toISOString(),
+  fechaHoraFin: new Date(Date.now() + 3_600_000).toISOString(),
+});
+
 describe('AttendanceControlComponent contract corrections', () => {
   let courseService: jasmine.SpyObj<CourseService>;
   let sessionService: jasmine.SpyObj<SessionService>;
@@ -94,11 +102,11 @@ describe('AttendanceControlComponent contract corrections', () => {
     ]);
     attendanceClaimService = jasmine.createSpyObj<AttendanceClaimService>(
       'AttendanceClaimService',
-      ['getReclamosDocente', 'resolverReclamo']
+      ['getReclamosDocente', 'getReclamosDocentePorGrupo', 'resolverReclamo']
     );
     attendanceClaimService.getReclamosDocente.and.returnValue(
       of({ exitoso: true, datos: [] })
-    );
+    );    attendanceClaimService.getReclamosDocentePorGrupo.and.returnValue(of([]) as never);
     realtimeAlerts$ = new Subject<RealtimeConnectionState>();
     realtimeSync = jasmine.createSpyObj<AttendanceRealtimeSyncService>(
       'AttendanceRealtimeSyncService',
@@ -139,6 +147,7 @@ describe('AttendanceControlComponent contract corrections', () => {
             startTime: '08:00',
             endTime: '10:00',
             records: [],
+            ...sesionActivaV2(),
           },
         ],
       } as any)
@@ -371,6 +380,7 @@ describe('AttendanceControlComponent contract corrections', () => {
           startTime: '08:00',
           endTime: '10:00',
           records: [],
+          ...sesionActivaV2(),
         })),
       } as any)
     );
@@ -395,8 +405,9 @@ describe('AttendanceControlComponent contract corrections', () => {
     expect(component.toastMessage()).toContain('sesión');
   });
 
-  // La Sesion no tiene estado contractual: no existe gate de UI por estado de sesión.
-  it('permite marcar EX sin ningún gate por estado de sesión', () => {
+  // SES-01 (decisión 2026-11-02): la Sesion sigue sin estado persistido, pero la toma ordinaria se habilita
+  // solo con la sesión activa derivada de sus instantes v2. Los bloqueos están en attendance-control.ses01.spec.ts.
+  it('permite marcar EX con la sesión activa confirmada, sin capturar causa', () => {
     sessionService.getSessionsByGroup.and.returnValue(
       of({
         exitoso: true,
@@ -410,6 +421,7 @@ describe('AttendanceControlComponent contract corrections', () => {
             startTime: '08:00',
             endTime: '10:00',
             records: [],
+            ...sesionActivaV2(),
           },
         ],
       } as any)
@@ -511,6 +523,48 @@ describe('AttendanceControlComponent contract corrections', () => {
     expect(component.isGroupClaimsModalOpen()).toBeTrue();
   });
 
+  describe('APP-05 dialogo de reclamos por grupo', () => {
+    const GROUP_A = '3f0c1d2e-0000-4000-8000-000000000001';
+    const GROUP_B = '3f0c1d2e-0000-4000-8000-000000000002';
+    const claim = (id: string, grupoId: string) => ({ id, grupoId, estadoSolicitud: 'PENDIENTE' } as any);
+
+    it('consulta por UUID aunque la bandera legacy este desactivada y conserva solo el grupo exacto', () => {
+      const component = createComponent([activeStudent], []);
+      attendanceClaimService.getReclamosDocentePorGrupo.calls.reset();
+      attendanceClaimService.getReclamosDocentePorGrupo.and.returnValue(
+        of([claim('a-1', GROUP_A), claim('b-1', GROUP_B)]) as never
+      );
+      component.selectedCourseId.set(GROUP_A);
+
+      component.abrirReclamosGrupo();
+
+      expect(attendanceClaimService.getReclamosDocentePorGrupo).toHaveBeenCalledOnceWith(GROUP_A);
+      expect(component.filteredGroupClaims().map((item) => item.id)).toEqual(['a-1']);
+      expect(component.estadoCargaReclamos()).toBe('LOADED');
+    });
+
+    it('mantiene 403, 501, red y 5xx como error y no como lista vacia', () => {
+      const casos = [
+        { status: 403, esperado: 'FORBIDDEN' },
+        { status: 501, esperado: 'UNAVAILABLE' },
+        { status: 0, esperado: 'NETWORK_ERROR' },
+        { status: 500, esperado: 'SERVER_ERROR' },
+      ] as const;
+
+      for (const caso of casos) {
+        const component = createComponent([activeStudent], []);
+        attendanceClaimService.getReclamosDocentePorGrupo.and.returnValue(
+          throwError(() => ({ status: caso.status })) as never
+        );
+        component.selectedCourseId.set(GROUP_A);
+        component.abrirReclamosGrupo();
+
+        expect(component.estadoCargaReclamos()).toBe(caso.esperado);
+        expect(component.filteredGroupClaims()).toEqual([]);
+      }
+    });
+  });
+
   it('resolverReclamoGrupo procesa respuesta exitosa y actualiza toast', () => {
     attendanceClaimService.resolverReclamo.and.returnValue(
       of({ exitoso: true, mensajeUsuario: 'Reclamo aprobado.' } as any)
@@ -523,6 +577,30 @@ describe('AttendanceControlComponent contract corrections', () => {
     expect(component.showToast()).toBeTrue();
     expect(component.toastType()).toBe('success');
     expect(component.toastMessage()).toBe('Reclamo aprobado.');
+  });
+
+  it('SES-04: resolverReclamoGrupo ignora clics repetidos y, tras aprobar, recarga la asistencia de la sesión', () => {
+    const respuesta = new Subject<any>();
+    attendanceClaimService.resolverReclamo.and.returnValue(respuesta.asObservable());
+    const component = createComponent([activeStudent], []);
+    const cargasAntes = attendanceService.getAttendancesByGroup.calls.count();
+
+    component.resolverReclamoGrupo({ id: 'rec-1', accion: 'APROBADA' });
+    component.resolverReclamoGrupo({ id: 'rec-1', accion: 'APROBADA' });
+    component.resolverReclamoGrupo({ id: 'rec-2', accion: 'RECHAZADA' });
+
+    expect(attendanceClaimService.resolverReclamo).toHaveBeenCalledTimes(1);
+    expect(component.showToast()).toBeFalse();
+
+    respuesta.next({ exitoso: true, mensajeUsuario: 'Reclamo aprobado.' });
+    respuesta.complete();
+
+    expect(component.toastType()).toBe('success');
+    expect(attendanceService.getAttendancesByGroup.calls.count()).toBeGreaterThan(cargasAntes);
+
+    attendanceClaimService.resolverReclamo.and.returnValue(of({ exitoso: true, mensajeUsuario: 'ok' } as any));
+    component.resolverReclamoGrupo({ id: 'rec-2', accion: 'RECHAZADA' });
+    expect(attendanceClaimService.resolverReclamo).toHaveBeenCalledTimes(2);
   });
 
   it('onCreateSessionSubmit crea sesión exitosamente y actualiza lista', () => {

@@ -71,4 +71,23 @@ describe('TeacherGrupoHubComponent', () => {
 
     expect(retirar).toHaveBeenCalledWith(jasmine.objectContaining({ idEstudiante: 'est-1' }));
   });
+
+  it('el badge muestra el conteo solo después de una carga completa', () => {
+    fixture.componentRef.setInput('selectedCourse', course);
+    fixture.componentInstance.subPestanaHub.set('RECLAMOS');
+    fixture.componentRef.setInput('reclamos', [{ id: 'r1' }, { id: 'r2' }]);
+    fixture.componentRef.setInput('estadoCargaReclamos', 'LOADING');
+    fixture.detectChanges();
+    const count = fixture.nativeElement.querySelector('[data-testid="grupo-reclamos-count"]') as HTMLElement;
+    expect(count.textContent?.trim()).not.toBe('0');
+    expect(count.textContent?.trim()).toBe('…');
+
+    fixture.componentRef.setInput('estadoCargaReclamos', 'LOADED');
+    fixture.detectChanges();
+    expect(count.textContent?.trim()).toBe('2');
+
+    fixture.componentRef.setInput('estadoCargaReclamos', 'UNAVAILABLE');
+    fixture.detectChanges();
+    expect(count.textContent?.trim()).toBe('—');
+  });
 });

@@ -260,6 +260,18 @@ export class DashboardLayoutComponent {
       icon: 'horarios',
     },
     {
+      label: 'Estudiantes',
+      route: '/app/admin/estudiantes',
+      roles: ['ADMINISTRADOR', 'ADMIN'],
+      icon: 'estudiantes',
+    },
+    {
+      label: 'Búsqueda de Asignaturas',
+      route: '/app/admin/asignaturas',
+      roles: ['ADMINISTRADOR', 'ADMIN'],
+      icon: 'materias',
+    },
+    {
       label: 'Sistema & Auditoría',
       route: '/app/admin/sistema',
       roles: ['ADMINISTRADOR', 'ADMIN'],
@@ -336,6 +348,18 @@ export class DashboardLayoutComponent {
       route: '/app/decano/cronograma',
       roles: ['DECANO'],
       icon: 'horarios',
+    },
+    {
+      label: 'Docentes de la Facultad',
+      route: '/app/decano/docentes',
+      roles: ['DECANO'],
+      icon: 'docentes',
+    },
+    {
+      label: 'Búsqueda de Asignaturas',
+      route: '/app/decano/asignaturas',
+      roles: ['DECANO'],
+      icon: 'materias',
     },
     {
       label: 'Gestión de Docentes',
