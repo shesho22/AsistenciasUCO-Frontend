@@ -96,6 +96,24 @@ describe('GroupSessionsOverviewComponent', () => {
       expect(celda?.textContent).toContain('1 justificada');
     });
 
+    it('una sesión sin registros cuenta 0 asistentes y 0 justificadas', () => {
+      const component = render([session(1)]);
+      const sinRegistros = { ...session(1), records: undefined } as unknown as ClassSession;
+
+      expect(component.getPresentesCount(sinRegistros)).toBe(0);
+      expect(component.getJustificadasCount(sinRegistros)).toBe(0);
+    });
+
+    it('con varias EX usa el plural «justificadas»', () => {
+      render([session(1, [
+        { studentId: 'e1', status: 'EX' },
+        { studentId: 'e2', status: 'EX' },
+      ] as ClassSession['records'])]);
+
+      const celda = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="asistentes-sesion-1"]');
+      expect(celda?.textContent).toContain('2 justificadas');
+    });
+
     it('sin EX no muestra el indicador de justificadas', () => {
       render([session(1, [{ studentId: 'e1', status: 'AN' }] as ClassSession['records'])]);
 
