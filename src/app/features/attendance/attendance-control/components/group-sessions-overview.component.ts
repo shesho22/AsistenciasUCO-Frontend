@@ -276,11 +276,16 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
                         {{ s.title }}
                       </span>
                     </td>
-                    <td class="px-5 py-4 text-center">
+                    <td class="px-5 py-4 text-center" [attr.data-testid]="'asistentes-sesion-' + s.sessionNumber">
                       <span class="font-bold text-warm-900">
                         {{ getPresentesCount(s) }}
                       </span>
                       <span class="text-warm-500 font-normal"> / {{ s.records ? s.records.length : 0 }}</span>
+                      @if (getJustificadasCount(s) > 0) {
+                        <span class="block text-[11px] font-semibold text-amber-700">
+                          {{ getJustificadasCount(s) }} {{ getJustificadasCount(s) === 1 ? 'justificada' : 'justificadas' }}
+                        </span>
+                      }
                     </td>
                     <td class="px-5 py-4 text-right space-x-1.5 whitespace-nowrap">
                       <app-button
@@ -371,9 +376,15 @@ export class GroupSessionsOverviewComponent {
     return this.sesionRecomendada();
   });
 
+  /** SES-05: solo AN es asistencia presencial; EX es una ausencia justificada y se informa aparte. */
   getPresentesCount(session: ClassSession): number {
     if (!session.records) return 0;
-    return session.records.filter((r) => r.status === 'AN' || r.status === 'EX').length;
+    return session.records.filter((r) => r.status === 'AN').length;
+  }
+
+  getJustificadasCount(session: ClassSession): number {
+    if (!session.records) return 0;
+    return session.records.filter((r) => r.status === 'EX').length;
   }
 
   displayDate(session: ClassSession | undefined): string {
