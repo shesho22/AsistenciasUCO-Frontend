@@ -15,6 +15,14 @@ import { EstudianteGrupoApiDto } from '../../../core/api/models/estudiante-grupo
 import { AsistenciaConsultadaApiDto } from '../../../core/api/models/asistencia-consultada-api-dto.model';
 import { RealtimeConnectionState } from '../../../core/realtime/model/realtime-connection-state.model';
 
+/** SES-01: sesión confirmada (v2) y activa en el instante real de la prueba; la toma ordinaria solo se habilita así. */
+const sesionActivaV2 = () => ({
+  estadoTemporal: 'CONFIRMADA' as const,
+  procedenciaTemporal: 'UTC_V2' as const,
+  fechaHoraInicio: new Date(Date.now() - 3_600_000).toISOString(),
+  fechaHoraFin: new Date(Date.now() + 3_600_000).toISOString(),
+});
+
 describe('AttendanceControlComponent contract corrections', () => {
   let courseService: jasmine.SpyObj<CourseService>;
   let sessionService: jasmine.SpyObj<SessionService>;
@@ -139,6 +147,7 @@ describe('AttendanceControlComponent contract corrections', () => {
             startTime: '08:00',
             endTime: '10:00',
             records: [],
+            ...sesionActivaV2(),
           },
         ],
       } as any)
@@ -371,6 +380,7 @@ describe('AttendanceControlComponent contract corrections', () => {
           startTime: '08:00',
           endTime: '10:00',
           records: [],
+          ...sesionActivaV2(),
         })),
       } as any)
     );
@@ -395,8 +405,9 @@ describe('AttendanceControlComponent contract corrections', () => {
     expect(component.toastMessage()).toContain('sesión');
   });
 
-  // La Sesion no tiene estado contractual: no existe gate de UI por estado de sesión.
-  it('permite marcar EX sin ningún gate por estado de sesión', () => {
+  // SES-01 (decisión 2026-11-02): la Sesion sigue sin estado persistido, pero la toma ordinaria se habilita
+  // solo con la sesión activa derivada de sus instantes v2. Los bloqueos están en attendance-control.ses01.spec.ts.
+  it('permite marcar EX con la sesión activa confirmada, sin capturar causa', () => {
     sessionService.getSessionsByGroup.and.returnValue(
       of({
         exitoso: true,
@@ -410,6 +421,7 @@ describe('AttendanceControlComponent contract corrections', () => {
             startTime: '08:00',
             endTime: '10:00',
             records: [],
+            ...sesionActivaV2(),
           },
         ],
       } as any)

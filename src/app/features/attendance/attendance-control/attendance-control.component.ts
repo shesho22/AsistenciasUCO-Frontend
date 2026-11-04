@@ -1,4 +1,4 @@
-import { Component, DestroyRef, signal, computed, inject, ChangeDetectionStrategy } from '@angular/core';
+import { Component, DestroyRef, signal, computed, effect, inject, ChangeDetectionStrategy } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { Subscription, finalize, forkJoin, map } from 'rxjs';
@@ -15,6 +15,7 @@ import { SelectOption } from '../../../shared/components/form-select/form-select
 import { CatalogService } from '../../../core/services/catalog.service';
 import { CourseService } from '../../../core/services/course.service';
 import {
+  getApiErrorCode,
   getApiErrorMessage,
   getApiFieldError,
 } from '../../../core/api/errors/api-error.util';
@@ -47,6 +48,16 @@ import { type EstadoCargaReclamos, SolicitudRevisionItem } from '../../../core/m
 import { isUuid } from '../../../core/utils/uuid.util';
 import { EstudianteGrupoApiDto } from '../../../core/api/models/estudiante-grupo-api-dto.model';
 import { findActiveOrUpcomingSession } from '../../../core/utils/session-selection.util';
+import {
+  ATTENDANCE_WINDOW_MESSAGES,
+  getAttendanceWindowState,
+  isAttendanceWindowErrorCode,
+  msUntilAttendanceWindowChange,
+} from '../../../core/utils/session-attendance-window.util';
+import { ATTENDANCE_NOW } from '../../../core/utils/attendance-now.token';
+
+/** Re-evaluación máxima de la ventana aunque no haya límite cercano (suspensión, reloj ajustado). */
+const MAX_ATTENDANCE_WINDOW_TICK_MS = 30_000;
 
 type StudentEnrollmentField =
   | 'tipoIdentificacionId'
@@ -92,6 +103,7 @@ type StudentEnrollmentField =
         [isLoadingSession]="isLoadingSession()"
         [showBackButton]="vistaActual() === 'DETALLE'"
         [isDetailMode]="vistaActual() === 'DETALLE'"
+        [attendanceWindowOpen]="attendanceWindowOpen()"
         (markAllPresent)="markAllPresent()"
         (markAllAbsent)="markAllAbsent()"
         (openEnrollment)="openStudentRegistration()"
@@ -129,6 +141,7 @@ type StudentEnrollmentField =
           [isSaving]="isSaving()"
           [sessionsEnabled]="sessionsEnabled"
           [attendanceEnabled]="attendanceEnabled"
+          [attendanceWindowState]="attendanceWindowState()"
           (statusChange)="onStudentStatusChange($event)"
           (openExcuseModal)="openExcuseModal($event)"
           (saveAttendance)="saveAttendance()"
@@ -530,6 +543,17 @@ export class AttendanceControlComponent {
       });
 
     this.destroyRef.onDestroy(() => this.attendanceRealtimeSync.disconnect());
+
+    // SES-01: re-evalúa la ventana justo al abrir/cerrar la sesión mostrada, aunque la página quede abierta.
+    effect((onCleanup) => {
+      const delay = msUntilAttendanceWindowChange(this.currentSession(), this.nowMs());
+      if (delay === null) return;
+      const timer = setTimeout(
+        () => this.refrescarVentanaAsistencia(),
+        Math.min(delay + 25, MAX_ATTENDANCE_WINDOW_TICK_MS)
+      );
+      onCleanup(() => clearTimeout(timer));
+    });
   }
 
   sessionOptions = computed<SelectOption[]>(() => {
@@ -551,6 +575,54 @@ export class AttendanceControlComponent {
   );
 
   students = computed(() => this.currentSession()?.records || []);
+
+  /**
+   * SES-01: la toma ordinaria solo está habilitada con la sesión activa, [inicio, fin) sobre los
+   * instantes v2 confirmados. El reloj del navegador decide solo la presentación: backend y DB
+   * vuelven a validar con su reloj y rechazan con 409 (ver saveAttendance).
+   */
+  private readonly now = inject(ATTENDANCE_NOW);
+  private readonly nowMs = signal<number>(this.now());
+
+  attendanceWindowState = computed(() => getAttendanceWindowState(this.currentSession(), this.nowMs()));
+
+  attendanceWindowOpen = computed(() => this.attendanceWindowState() === 'ABIERTA');
+
+  /** Re-evalúa la ventana con el reloj actual; si se cerró con cambios sin guardar, los descarta. */
+  refrescarVentanaAsistencia(): void {
+    this.nowMs.set(this.now());
+    if (!this.attendanceWindowOpen() && this.pendingStudentIds.size > 0) {
+      this.descartarCambiosNoGuardados('Los cambios no guardados se descartaron.');
+    }
+  }
+
+  private ventanaAsistenciaAbierta(): boolean {
+    this.nowMs.set(this.now());
+    const state = this.attendanceWindowState();
+    if (state === 'ABIERTA') return true;
+    if (this.pendingStudentIds.size > 0) {
+      this.descartarCambiosNoGuardados('Los cambios no guardados se descartaron.');
+    } else {
+      this.toastType.set('warning');
+      this.toastMessage.set(ATTENDANCE_WINDOW_MESSAGES[state]);
+      this.showToast.set(true);
+    }
+    return false;
+  }
+
+  /** Vuelve al estado persistido de la sesión: lo marcado localmente y no confirmado se pierde. */
+  private descartarCambiosNoGuardados(detalle: string): void {
+    this.pendingStudentIds.clear();
+    const state = this.attendanceWindowState();
+    this.toastType.set('warning');
+    this.toastMessage.set(`${state === 'ABIERTA' ? '' : ATTENDANCE_WINDOW_MESSAGES[state] + ' '}${detalle}`.trim());
+    this.showToast.set(true);
+    const courseId = this.selectedCourseId();
+    const sessionId = this.selectedSessionId();
+    if (courseId && sessionId) {
+      this.cargarEstudiantesYSesion(courseId, sessionId);
+    }
+  }
 
   onStudentStatusChange(event: { studentId: string; status: AttendanceStatus }): void {
     this.setStatus(event.studentId, event.status);
@@ -889,6 +961,7 @@ export class AttendanceControlComponent {
   }
 
   irASesionDetalle(sessionId: string): void {
+    this.nowMs.set(this.now());
     this.selectedSessionId.set(sessionId);
     this.vistaActual.set('DETALLE');
     void this.router?.navigate([], {
@@ -904,6 +977,7 @@ export class AttendanceControlComponent {
 
   onSessionSelect(sessionId: string): void {
     this.pendingStudentIds.clear();
+    this.nowMs.set(this.now());
     this.selectedSessionId.set(sessionId);
     this.vistaActual.set('DETALLE');
     void this.router?.navigate([], {
@@ -963,6 +1037,7 @@ export class AttendanceControlComponent {
   }
 
   setStatus(studentId: string, status: AttendanceStatus): void {
+    if (!this.ventanaAsistenciaAbierta()) return;
     this.pendingStudentIds.add(studentId);
     this.sessions.update((prev) =>
       prev.map((session) => {
@@ -987,6 +1062,7 @@ export class AttendanceControlComponent {
   }
 
   private bulkSetStatus(status: AttendanceStatus): void {
+    if (!this.ventanaAsistenciaAbierta()) return;
     for (const record of this.students()) {
       this.pendingStudentIds.add(record.studentId);
     }
@@ -1006,6 +1082,7 @@ export class AttendanceControlComponent {
     const records = this.students();
 
     if (!sessionId || records.length === 0) return;
+    if (!this.ventanaAsistenciaAbierta()) return;
 
     const explicitRecords = records.filter(
       (
@@ -1050,6 +1127,12 @@ export class AttendanceControlComponent {
           }
         },
         error: (err: unknown) => {
+          // SES-01: el servidor es la autoridad temporal. Un 409 de ventana nunca se muestra como éxito
+          // y lo marcado localmente vuelve al estado persistido.
+          if (isAttendanceWindowErrorCode(getApiErrorCode(err))) {
+            this.nowMs.set(this.now());
+            this.descartarCambiosNoGuardados('');
+          }
           this.toastType.set('error');
           this.toastMessage.set(getApiErrorMessage(err) || 'Error al guardar la asistencia.');
           this.showToast.set(true);
