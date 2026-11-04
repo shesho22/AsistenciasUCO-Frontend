@@ -11,7 +11,6 @@ import {
   AreaConocimientoItem,
   TipoProgramaItem,
   ParametroAdminDto,
-  RegistroAuditoriaItem,
   CierrePeriodoReporte,
   InstitucionItem,
 } from '../models/role-management.model';
@@ -53,8 +52,6 @@ export class AdminManagementService {
   parametros = this._parametros.asReadonly();
 
   // Auditoría
-  private _auditoria = signal<RegistroAuditoriaItem[]>([]);
-  auditoria = this._auditoria.asReadonly();
 
   // Reportes Cierre Masivo
   private _reportesCierre = signal<CierrePeriodoReporte[]>([]);
@@ -381,17 +378,6 @@ export class AdminManagementService {
       tap((res) => {
         if (res.exitoso && res.datos) {
           this._parametros.set(res.datos);
-        }
-      })
-    );
-  }
-
-  // ================= AUDITORÍA =================
-  cargarAuditoria(): Observable<ApiResponse<RegistroAuditoriaItem[]>> {
-    return this.http.get<ApiResponse<RegistroAuditoriaItem[]>>(`${environment.apiUrl}/admin/auditoria`).pipe(
-      tap((res) => {
-        if (res.exitoso && res.datos) {
-          this._auditoria.set(res.datos);
         }
       })
     );

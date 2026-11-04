@@ -5,6 +5,7 @@ import { AdminCatalogsComponent } from './admin-catalogs.component';
 import { AdminManagementService } from '../../../core/services/admin-management.service';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { TipoProgramaItem } from '../../../core/models/role-management.model';
+import { CatalogService } from '../../../core/services/catalog.service';
 
 describe('AdminCatalogsComponent - tipos de programa (HU154)', () => {
   let fixture: ComponentFixture<AdminCatalogsComponent>;
@@ -33,6 +34,8 @@ describe('AdminCatalogsComponent - tipos de programa (HU154)', () => {
       providers: [
         { provide: AdminManagementService, useValue: service },
         { provide: ToastService, useValue: toast },
+        // HU153: la sección de tipos de documento tiene su propia spec.
+        { provide: CatalogService, useValue: { getIdentityDocumentTypes: () => of([]) } },
       ],
     }).compileComponents();
 

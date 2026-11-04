@@ -4,13 +4,14 @@ import { FormsModule } from '@angular/forms';
 import { AdminManagementService } from '../../../core/services/admin-management.service';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { TipoProgramaItem } from '../../../core/models/role-management.model';
+import { AdminTiposDocumentoComponent } from './admin-tipos-documento.component';
 
-/** HU154: administracion del catalogo de tipos de programa (modalidades formativas). */
+/** HU154: administracion del catalogo de tipos de programa (modalidades formativas). HU153: tipos de documento. */
 @Component({
   selector: 'app-admin-catalogs',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AdminTiposDocumentoComponent],
   template: `
     <div class="space-y-6 animate-fade-in">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -119,6 +120,8 @@ import { TipoProgramaItem } from '../../../core/models/role-management.model';
           </tbody>
         </table>
       </div>
+
+      <app-admin-tipos-documento />
     </div>
   `,
 })

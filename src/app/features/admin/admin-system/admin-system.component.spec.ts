@@ -7,7 +7,9 @@ import { AdminSystemComponent } from './admin-system.component';
 import { AdminManagementService } from '../../../core/services/admin-management.service';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { ToastService } from '../../../shared/components/toast/toast.component';
-import { ParametroAdminDto, RegistroAuditoriaItem } from '../../../core/models/role-management.model';
+import { HttpTestingController } from '@angular/common/http/testing';
+import { ParametroAdminDto } from '../../../core/models/role-management.model';
+import { environment } from '../../../../environments/environment';
 
 describe('AdminSystemComponent', () => {
   let fixture: ComponentFixture<AdminSystemComponent>;
@@ -15,7 +17,6 @@ describe('AdminSystemComponent', () => {
   let adminServiceSpy: jasmine.SpyObj<AdminManagementService>;
   let coordServiceSpy: jasmine.SpyObj<CoordinatorManagementService>;
   let toastServiceSpy: jasmine.SpyObj<ToastService>;
-  let auditoriaSignal = signal<RegistroAuditoriaItem[]>([]);
 
   const mockParametros: ParametroAdminDto[] = [
     {
@@ -29,36 +30,18 @@ describe('AdminSystemComponent', () => {
     },
   ];
 
-  const mockAuditoria: RegistroAuditoriaItem[] = [
-    {
-      id: 'aud-1',
-      timestamp: '2026-02-01T10:00:00Z',
-      usuarioId: 'usr-1',
-      usuarioNombre: 'Carlos Admin',
-      rol: 'ADMINISTRADOR',
-      accion: 'ACTUALIZAR',
-      modulo: 'SISTEMA',
-      descripcion: 'Cambio de parámetro institucional',
-      direccionIp: '127.0.0.1',
-      nivel: 'INFO',
-    },
-  ];
-
   beforeEach(async () => {
-    auditoriaSignal = signal<RegistroAuditoriaItem[]>(mockAuditoria);
     toastServiceSpy = jasmine.createSpyObj('ToastService', ['success', 'error', 'info', 'warning']);
 
     adminServiceSpy = jasmine.createSpyObj(
       'AdminManagementService',
-      ['cargarParametros', 'cargarAuditoria', 'ejecutarCierreMasivo'],
+      ['cargarParametros', 'ejecutarCierreMasivo'],
       {
         parametros: signal(mockParametros).asReadonly(),
-        auditoria: auditoriaSignal.asReadonly(),
         reportesCierre: signal([]).asReadonly(),
       }
     );
     adminServiceSpy.cargarParametros.and.returnValue(of({ exitoso: true, datos: mockParametros }));
-    adminServiceSpy.cargarAuditoria.and.returnValue(of({ exitoso: true, datos: mockAuditoria }));
 
     coordServiceSpy = jasmine.createSpyObj('CoordinatorManagementService', ['cargarPeriodosAcademicosBase'], {
       periodos: signal([
@@ -89,13 +72,11 @@ describe('AdminSystemComponent', () => {
     fixture.detectChanges();
   });
 
-  it('debe crearse e inicializar parámetros y auditoría', () => {
+  it('debe crearse e inicializar los parámetros', () => {
     expect(component).toBeTruthy();
     expect(coordServiceSpy.cargarPeriodosAcademicosBase).toHaveBeenCalled();
     expect(adminServiceSpy.cargarParametros).toHaveBeenCalled();
-    expect(adminServiceSpy.cargarAuditoria).toHaveBeenCalled();
     expect(component.parametros().length).toBe(1);
-    expect(component.auditoria().length).toBe(1);
   });
 
   it('tabActiva alterna correctamente entre pestañas', () => {
@@ -106,18 +87,17 @@ describe('AdminSystemComponent', () => {
     expect(component.tabActiva()).toBe('CIERRE_MASIVO');
   });
 
-  it('auditoriaFiltrada filtra por módulo y texto', () => {
-    component.filtroAuditoria = 'carlos';
-    auditoriaSignal.set([...mockAuditoria]);
-    expect(component.auditoriaFiltrada().length).toBe(1);
+  it('HU172: la pestaña de auditoría consulta el rastro real paginado del backend', () => {
+    const http = TestBed.inject(HttpTestingController);
+    component.tabActiva.set('AUDITORIA');
+    fixture.detectChanges();
 
-    component.moduloAuditoriaFiltro = 'ASISTENCIA';
-    auditoriaSignal.set([...mockAuditoria]);
-    expect(component.auditoriaFiltrada().length).toBe(0);
-
-    component.moduloAuditoriaFiltro = 'SISTEMA';
-    auditoriaSignal.set([...mockAuditoria]);
-    expect(component.auditoriaFiltrada().length).toBe(1);
+    const req = http.expectOne((r) => r.url === `${environment.apiUrl}/admin/auditoria`);
+    expect(req.request.params.get('soloAsistencia')).toBe('true');
+    expect(req.request.params.get('desde')).toBeTruthy();
+    req.flush({ exitoso: true, datos: [], total: 0 });
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('No hay eventos de auditoría');
   });
 
   it('muestra el parámetro real en modo consulta y no ofrece una acción de guardado', () => {

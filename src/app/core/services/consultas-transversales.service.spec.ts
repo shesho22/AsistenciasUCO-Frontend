@@ -55,4 +55,33 @@ describe('ConsultasTransversalesService (HU112/HU128/HU143/HU157)', () => {
     service.getHistorialEstudiante('e-1').subscribe();
     http.expectOne(`${api}/decano/estudiantes/e-1/historial`).flush({ exitoso: true, datos: null });
   });
+
+  it('HU061: el coordinador y el decano consultan el consolidado por su propia ruta con los filtros', () => {
+    service.getConsolidadoAsistencia({ idPeriodoAcademico: 'per-1', idDocente: null, pagina: 1, tamano: 10 }).subscribe();
+    const req = http.expectOne((r) => r.url === `${api}/coordinador/consolidado-asistencia`);
+    expect(req.request.params.get('idPeriodoAcademico')).toBe('per-1');
+    expect(req.request.params.has('idDocente')).toBeFalse();
+    req.flush({ exitoso: true, datos: [] });
+
+    service.getConsolidadoAsistencia({ pagina: 1, tamano: 10 }, true).subscribe();
+    http.expectOne((r) => r.url === `${api}/decano/consolidado-asistencia`).flush({ exitoso: true, datos: [] });
+  });
+
+  it('HU172: la auditoría envía el rango, la acción y el filtro de asistencia', () => {
+    service
+      .getAuditoria({ desde: '2026-11-01T05:00:00.000Z', hasta: '2026-11-04T05:00:00.000Z', accion: 'CREAR_SESION', soloAsistencia: false, pagina: 2, tamano: 25 })
+      .subscribe();
+    const req = http.expectOne((r) => r.url === `${api}/admin/auditoria`);
+    expect(req.request.params.get('desde')).toBe('2026-11-01T05:00:00.000Z');
+    expect(req.request.params.get('soloAsistencia')).toBe('false');
+    expect(req.request.params.get('pagina')).toBe('2');
+    req.flush({ exitoso: true, datos: [] });
+  });
+
+  it('HU147: consulta los componentes de formación', () => {
+    service.getComponentesFormacion().subscribe((res) => expect(res.datos.length).toBe(1));
+    http
+      .expectOne(`${api}/coordinador/componentes-formacion`)
+      .flush({ exitoso: true, datos: [{ idComponente: 'c', codigo: 'ESP', nombre: 'Específicas', totalAsignaturas: 0 }] });
+  });
 });

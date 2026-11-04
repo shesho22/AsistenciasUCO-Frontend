@@ -3,6 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, delay, map, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { TipoIdentificacionApiDto } from '../api/models/tipo-identificacion-api-dto.model';
+import { ApiResponse } from '../models/api-response.model';
 
 export type IdentityDocumentTypeDTO = TipoIdentificacionApiDto;
 export type TipoIdentificacionItem = TipoIdentificacionApiDto;
@@ -44,6 +45,33 @@ export class CatalogService {
     ).pipe(
       map((items) => ({ exitoso: true, datos: items }))
     );
+  }
+
+  /**
+   * HU153 (decisión de John, 2026-11-04): el administrador crea tipos de documento (código de 1 a 5 letras, inmutable)
+   * y edita su nombre; no se inactivan. Unicidad y perfil los valida el backend.
+   */
+  crearTipoIdentificacion(codigo: string, nombre: string): Observable<ApiResponse<TipoIdentificacionApiDto>> {
+    if (environment.useFrontendMocks) {
+      const creado = { id: `TI-MOCK-${MOCK_DOCUMENT_TYPES.length + 1}`, tipoIdentificacion: codigo.toUpperCase(), nombre };
+      MOCK_DOCUMENT_TYPES.push(creado);
+      return of({ exitoso: true, datos: creado }).pipe(delay(200));
+    }
+    return this.http.post<ApiResponse<TipoIdentificacionApiDto>>(`${environment.apiUrl}/admin/tipos-identificacion`, {
+      codigo,
+      nombre,
+    });
+  }
+
+  actualizarTipoIdentificacion(id: string, nombre: string): Observable<ApiResponse<TipoIdentificacionApiDto>> {
+    if (environment.useFrontendMocks) {
+      const tipo = MOCK_DOCUMENT_TYPES.find((t) => t.id === id);
+      if (tipo) tipo.nombre = nombre;
+      return of({ exitoso: !!tipo, datos: tipo ?? { id, tipoIdentificacion: '', nombre } }).pipe(delay(200));
+    }
+    return this.http.put<ApiResponse<TipoIdentificacionApiDto>>(`${environment.apiUrl}/admin/tipos-identificacion/${id}`, {
+      nombre,
+    });
   }
 
   getFacultades(): Observable<{ exitoso: boolean; datos: Array<{ id: string; nombre: string }> }> {

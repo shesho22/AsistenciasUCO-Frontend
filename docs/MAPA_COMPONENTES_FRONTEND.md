@@ -106,6 +106,7 @@ Control centralizado de sesiones y registro de asistencia en aula.
 | `/app/coordinador/grupos` | Grupos y Horarios | [`CoordinatorGroupsComponent`](../src/app/features/coordinator/coordinator-groups/coordinator-groups.component.ts) | — (F1: crear y editar grupos del programa con su horario semanal; POST/PUT `/grupos` con `franjas`) | ✅ |
 | `/app/coordinador/materias` | Materias del Programa | [`CoordinatorSubjectsComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/coordinator/coordinator-subjects/coordinator-subjects.component.ts) | — (Catálogo de grupos ofertados, consulta de inscritos y asignaturas curriculares) | ✅ |
 | `/app/coordinador/asistencias` | Asistencias del Programa | [`CoordinatorAttendanceComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/coordinator/coordinator-attendance/coordinator-attendance.component.ts) | — (HU064/HU060/HU061: grupos → sesiones → detalle de asistencia, solo lectura) | ✅ |
+| `/app/coordinador/consolidado-asistencia` | Consolidado de Asistencia | [`ConsolidadoAsistenciaComponent`](../src/app/features/coordinator/coordinator-consolidado/consolidado-asistencia.component.ts) (HU061: grupos del programa por cohorte, materia y docente) | — | [spec](../src/app/features/coordinator/coordinator-consolidado/consolidado-asistencia.component.spec.ts) |
 
 ---
 
@@ -127,6 +128,7 @@ Control centralizado de sesiones y registro de asistencia en aula.
 | `/app/decano/cronograma` | Cronograma de Sesiones | [`DeanCronogramaComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/dean/dean-cronograma/dean-cronograma.component.ts) | HU145: sesiones de la facultad por rango de fechas. | ✅ |
 | `/app/decano/docentes` | Docentes de la Facultad | [`DeanDocentesComponent`](../src/app/features/dean/dean-docentes/dean-docentes.component.ts) | HU128: docentes con vínculo activo, filtrables por programa, nombre o documento y estado. | ✅ |
 | `/app/decano/asignaturas` | Búsqueda de Asignaturas | [`DeanAsignaturasComponent`](../src/app/features/dean/dean-asignaturas/dean-asignaturas.component.ts) | HU143: asignaturas de la facultad por código o nombre, con programa, plan, semestre y créditos. | ✅ |
+| `/app/decano/consolidado-asistencia` | Consolidado de Asistencia | [`ConsolidadoAsistenciaComponent`](../src/app/features/coordinator/coordinator-consolidado/consolidado-asistencia.component.ts) con `data.comoDecano` | HU061: grupos de la facultad por cohorte, materia y docente | [spec](../src/app/features/coordinator/coordinator-consolidado/consolidado-asistencia.component.spec.ts) |
 
 ---
 
@@ -143,10 +145,9 @@ Control centralizado de sesiones y registro de asistencia en aula.
 | `/app/admin/estudiantes` | Estudiantes | [`AdminEstudiantesComponent`](../src/app/features/admin/admin-estudiantes/admin-estudiantes.component.ts) (HU157: buscador de la institución y ficha unificada con historial) | ✅ |
 | `/app/admin/asignaturas` | Búsqueda de Asignaturas | [`DeanAsignaturasComponent`](../src/app/features/dean/dean-asignaturas/dean-asignaturas.component.ts) con `data.comoAdministrador` (HU143: toda la institución, filtro por facultad) | ✅ |
 | `/app/admin/sistema` | Sistema & Auditoría | [`AdminSystemComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/admin/admin-system/admin-system.component.ts) | — |
-| `/app/admin/catalogos` | — | `redirectTo: 'admin/facultades'` (ruta legada) | — |
+| ↳ pestaña "Trazabilidad y Auditoría" | — | [`AdminAuditoriaComponent`](../src/app/features/admin/admin-system/admin-auditoria.component.ts) (HU172: rastro real paginado; 7 días por defecto, máximo 90, solo asistencia por defecto) | [spec](../src/app/features/admin/admin-system/admin-auditoria.component.spec.ts) |
+| `/app/admin/catalogos` | Tipos de Programa y Documento | [`AdminCatalogsComponent`](../src/app/features/admin/admin-catalogs/admin-catalogs.component.ts) (HU154) con [`AdminTiposDocumentoComponent`](../src/app/features/admin/admin-catalogs/admin-tipos-documento.component.ts) (HU153: crear y editar el nombre). Antes redirigía a facultades. | [spec](../src/app/features/admin/admin-catalogs/admin-catalogs.component.spec.ts) · [spec HU153](../src/app/features/admin/admin-catalogs/admin-tipos-documento.component.spec.ts) |
 
-> [!WARNING]
-> [`admin-catalogs.component.ts`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/admin/admin-catalogs/admin-catalogs.component.ts) sigue en disco pero ya no está enrutado (los `Catalog*Component` fueron eliminados). Candidato a limpieza.
 
 ---
 
