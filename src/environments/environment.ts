@@ -113,5 +113,20 @@ export const environment = {
       return String((window as any)['env']?.['SECURITY_BASELINE_CLIENT_ID'] || 'asistencias-uco-spa');
     },
   },
+  /** Administración de mensajes institucionales: micro frontend de MessageUcoLab (paquete minifront-mensajes). */
+  messages: {
+    /** Ruta relativa (mismo origen): el proxy la reenvía al gateway de MessageUcoLab para que viaje la cookie de sesión. */
+    get apiBaseUrl(): string {
+      return String((window as any)['env']?.['MESSAGEUCOLAB_API_BASE_URL'] || '/messageucolab').replace(/\/+$/, '');
+    },
+    /** Nombre exacto de la aplicación en MessageUcoLab. */
+    get applicationName(): string {
+      return String((window as any)['env']?.['MESSAGEUCOLAB_APPLICATION_NAME'] || 'Asistencias UCO');
+    },
+    /** Ambiente inicial (Develop, Testing o Produccion). */
+    get environmentName(): string {
+      return String((window as any)['env']?.['MESSAGEUCOLAB_ENVIRONMENT_NAME'] || 'Develop');
+    },
+  },
 };
 
