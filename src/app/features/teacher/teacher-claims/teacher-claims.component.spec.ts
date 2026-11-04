@@ -167,6 +167,49 @@ describe('TeacherClaimsComponent', () => {
     expect(claimServiceSpy.resolverReclamo).toHaveBeenCalledWith('rec-1', 'RECHAZADA', 'No cumple con los soportes requeridos.');
   });
 
+  // SES-04: la decisión espera la respuesta real, no se envía dos veces y un conflicto no se muestra como éxito.
+  it('SES-04: un segundo clic mientras se resuelve no envía otra decisión', () => {
+    const respuesta = new Subject<{ exitoso: boolean; mensajeUsuario: string }>();
+    claimServiceSpy.resolverReclamo.and.returnValue(respuesta.asObservable() as any);
+    component.abrirVistaResolucion(mockReclamos[0]);
+
+    component.confirmarResolucion('APROBADA');
+    component.confirmarResolucion('APROBADA');
+    component.confirmarResolucion('RECHAZADA');
+
+    expect(claimServiceSpy.resolverReclamo).toHaveBeenCalledTimes(1);
+    expect(component.resolviendo()).toBeTrue();
+    expect(component.vistaActual()).toBe('RESOLUCION');
+    expect(toastSpy.success).not.toHaveBeenCalled();
+
+    respuesta.next({ exitoso: true, mensajeUsuario: 'Reclamo aprobado.' });
+    respuesta.complete();
+
+    expect(component.resolviendo()).toBeFalse();
+    expect(toastSpy.success).toHaveBeenCalledOnceWith('Reclamo aprobado.');
+    expect(component.vistaActual()).toBe('BANDEJA');
+  });
+
+  it('SES-04: un 409 de reclamo ya resuelto muestra el error, recarga la bandeja y no reporta éxito', () => {
+    claimServiceSpy.resolverReclamo.and.returnValue(throwError(() => new HttpErrorResponse({
+      status: 409,
+      error: {
+        timestamp: '2026-11-03T20:00:00Z', status: 409, error: 'Conflict', code: 'ERR_RECLAMO_YA_RESUELTO',
+        message: 'El reclamo ya fue resuelto con una decision distinta.', path: '/api/v1/docente/reclamos/rec-1',
+        correlationId: '43ecb554-7527-45f5-8107-8ef896f63455',
+      },
+    })));
+    component.abrirVistaResolucion(mockReclamos[0]);
+    const cargasAntes = claimServiceSpy.getReclamosDocente.calls.count();
+
+    component.confirmarResolucion('RECHAZADA');
+
+    expect(toastSpy.success).not.toHaveBeenCalled();
+    expect(toastSpy.error).toHaveBeenCalledWith('El reclamo ya fue resuelto con una decision distinta.');
+    expect(claimServiceSpy.getReclamosDocente.calls.count()).toBeGreaterThan(cargasAntes);
+    expect(component.resolviendo()).toBeFalse();
+  });
+
   it('descargarSoporte descarga archivo cuando contiene fileId', () => {
     claimServiceSpy.descargarSoporte.and.returnValue(of(new Blob(['pdf'], { type: 'application/pdf' })));
     component.descargarSoporte(mockReclamos[0].soporteAdjunto!);

@@ -403,9 +403,15 @@ export class AttendanceControlComponent {
     return 'SERVER_ERROR';
   }
 
+  /** SES-04: una decisión en curso bloquea otra hasta la respuesta real del backend. */
+  private resolviendoReclamo = false;
+
   resolverReclamoGrupo(event: { id: string; accion: 'APROBADA' | 'RECHAZADA' }): void {
+    if (this.resolviendoReclamo) return;
+    this.resolviendoReclamo = true;
     this.attendanceClaimService
       .resolverReclamo(event.id, event.accion, `Decisión registrada desde el control de asistencia (${event.accion})`)
+      .pipe(finalize(() => (this.resolviendoReclamo = false)))
       .subscribe({
         next: (res) => {
           if (res.exitoso) {
@@ -413,6 +419,12 @@ export class AttendanceControlComponent {
             this.toastMessage.set(res.mensajeUsuario || `Reclamo ${event.accion.toLowerCase()} correctamente.`);
             this.showToast.set(true);
             this.cargarReclamosDocente(this.selectedCourseId(), true);
+            // Una aprobación deja la asistencia JUSTIFICADA (EX): se recarga el estado persistido de la sesión.
+            const courseId = this.selectedCourseId();
+            const sessionId = this.selectedSessionId();
+            if (courseId && sessionId) {
+              this.cargarEstudiantesYSesion(courseId, sessionId);
+            }
           } else {
             this.toastType.set('error');
             this.toastMessage.set(res.mensajeUsuario || 'No se pudo resolver el reclamo.');
