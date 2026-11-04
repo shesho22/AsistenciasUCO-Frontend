@@ -290,6 +290,12 @@ export class DashboardLayoutComponent {
       icon: 'sistema',
     },
     {
+      label: 'Mensajes',
+      route: '/app/admin/mensajes',
+      roles: ['ADMINISTRADOR', 'ADMIN'],
+      icon: 'sistema',
+    },
+    {
       label: 'Indicadores',
       route: '/app/decano/indicadores',
       roles: ['DECANO'],
