@@ -2,7 +2,9 @@ import { Component, OnInit, inject, input, signal, computed, ChangeDetectionStra
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CoordinatorManagementService } from '../../../../core/services/coordinator-management.service';
-import { PlanEstudioItem, AsignaturaPlanItem } from '../../../../core/models/role-management.model';
+import { PlanEstudioItem, AsignaturaPlanItem, AreaConocimientoItem } from '../../../../core/models/role-management.model';
+import { ComponenteFormacionItem } from '../../../../core/models/consultas-transversales.model';
+import { ConsultasTransversalesService } from '../../../../core/services/consultas-transversales.service';
 import { ToastService } from '../../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../../core/api/errors/api-error.util';
 import { SubjectFormComponent } from '../components/subject-form.component';
@@ -21,6 +23,8 @@ import { SubjectFormComponent } from '../components/subject-form.component';
             [plan]="plan"
             [modo]="modo()"
             [asignatura]="selectedAsignatura()"
+            [componentes]="componentes()"
+            [areas]="areas()"
             (save)="guardarAsignatura($event)"
             (cancel)="volverAMalla()"
           />
@@ -39,6 +43,7 @@ import { SubjectFormComponent } from '../components/subject-form.component';
 })
 export class CoordinatorSubjectFormPageComponent implements OnInit {
   private coordService = inject(CoordinatorManagementService);
+  private consultas = inject(ConsultasTransversalesService);
   private toast = inject(ToastService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
@@ -48,6 +53,8 @@ export class CoordinatorSubjectFormPageComponent implements OnInit {
 
   planes = signal<PlanEstudioItem[]>(this.coordService.planes());
   asignaturas = signal<AsignaturaPlanItem[]>([]);
+  componentes = signal<ComponenteFormacionItem[]>([]);
+  areas = signal<AreaConocimientoItem[]>([]);
 
   effectivePlanId = computed(() => {
     return this.planId() || this.route.snapshot.paramMap.get('planId') || '';
@@ -73,6 +80,15 @@ export class CoordinatorSubjectFormPageComponent implements OnInit {
 
   ngOnInit(): void {
     const id = this.effectivePlanId();
+    // HU147 / P5: el formulario solo ofrece componentes y áreas que existen en sus tablas.
+    this.consultas.getComponentesFormacion().subscribe({
+      next: (res) => this.componentes.set(res.datos || []),
+      error: (err) => this.toast.error(getApiErrorMessage(err)),
+    });
+    this.coordService.getAreasConocimiento().subscribe({
+      next: (res) => this.areas.set(res.datos || []),
+      error: (err) => this.toast.error(getApiErrorMessage(err)),
+    });
     if (!this.selectedPlan()) {
       this.coordService.getPlanesEstudio().subscribe({
         next: (res) => this.planes.set(res.datos || []),

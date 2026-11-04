@@ -21,6 +21,7 @@ import {
   EstudianteDirectorioItem,
   SolicitudMatriculaItem,
   PeriodoAcademicoItem,
+  AreaConocimientoItem,
 } from '../models/role-management.model';
 import { EstudiantePaginaApiDto } from '../api/models/estudiante-api-dto.model';
 import { AsistenciaSesionItem, GrupoProgramaItem, SesionGrupoItem } from '../models/asistencia-programa.model';
@@ -83,6 +84,22 @@ export function normalizarAsignaturaPlan(raw: any): AsignaturaPlanItem {
     area: raw?.area ?? raw?.nombreArea ?? '',
     componente: raw?.componente ?? raw?.nombreComponente ?? '',
     horasSemanales: raw?.horasSemanales ?? 0,
+  };
+}
+
+/**
+ * P5/HU147 (decisión de John, 2026-11-04): cuerpo que espera el backend al crear o editar una asignatura. El área y el
+ * componente viajan por su nombre (la DB los resuelve por código o nombre exactos y rechaza los que no existen); los
+ * créditos son obligatorios y mayores que cero, y el semestre debe existir en el plan.
+ */
+export function aSolicitudAsignatura(datos: Partial<AsignaturaPlanItem>): Record<string, unknown> {
+  return {
+    codigo: datos.codigo,
+    nombre: datos.nombre,
+    creditos: datos.creditos,
+    semestreNumero: datos.semestre,
+    nombreArea: datos.area,
+    nombreComponente: datos.componente,
   };
 }
 
@@ -291,7 +308,7 @@ export class CoordinatorManagementService {
   }
 
   crearAsignaturaPlan(planId: string, datos: Partial<AsignaturaPlanItem>): Observable<ApiResponse<AsignaturaPlanItem>> {
-    return this.http.post<ApiResponse<AsignaturaPlanItem>>(`${environment.apiUrl}/coordinador/planes-estudio/${planId}/asignaturas`, datos).pipe(
+    return this.http.post<ApiResponse<AsignaturaPlanItem>>(`${environment.apiUrl}/coordinador/planes-estudio/${planId}/asignaturas`, aSolicitudAsignatura(datos)).pipe(
       tap((res) => {
         if (res.exitoso && res.datos) {
           this.asignaturasSignal.update((map) => ({
@@ -307,7 +324,7 @@ export class CoordinatorManagementService {
   }
 
   actualizarAsignaturaPlan(planId: string, asigId: string, cambios: Partial<AsignaturaPlanItem>): Observable<ApiResponse<AsignaturaPlanItem>> {
-    return this.http.put<ApiResponse<AsignaturaPlanItem>>(`${environment.apiUrl}/coordinador/planes-estudio/${planId}/asignaturas/${asigId}`, cambios).pipe(
+    return this.http.put<ApiResponse<AsignaturaPlanItem>>(`${environment.apiUrl}/coordinador/planes-estudio/${planId}/asignaturas/${asigId}`, aSolicitudAsignatura(cambios)).pipe(
       tap((res) => {
         if (res.exitoso && res.datos) {
           this.asignaturasSignal.update((map) => {
@@ -336,6 +353,11 @@ export class CoordinatorManagementService {
         }
       })
     );
+  }
+
+  /** P5: áreas de conocimiento reales para el formulario de asignaturas (GET /admin/areas, lectura compartida). */
+  getAreasConocimiento(): Observable<ApiResponse<AreaConocimientoItem[]>> {
+    return this.http.get<ApiResponse<AreaConocimientoItem[]>>(`${environment.apiUrl}/admin/areas`);
   }
 
   // --- PERÍODOS ACADÉMICOS ---

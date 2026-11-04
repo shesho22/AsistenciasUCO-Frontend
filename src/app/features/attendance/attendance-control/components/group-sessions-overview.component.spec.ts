@@ -72,6 +72,64 @@ describe('GroupSessionsOverviewComponent', () => {
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('50%');
   });
 
+  describe('SES-05: EX es una ausencia justificada, no una asistencia presencial', () => {
+    const conJustificada = () =>
+      session(1, [
+        { studentId: 'e1', status: 'AN' },
+        { studentId: 'e2', status: 'EX' },
+        { studentId: 'e3', status: 'SJC' },
+      ] as ClassSession['records']);
+
+    it('la columna Asistentes cuenta solo AN', () => {
+      const component = render([conJustificada()]);
+
+      expect(component.getPresentesCount(conJustificada())).toBe(1);
+      const celda = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="asistentes-sesion-1"]');
+      expect(celda?.textContent?.replace(/\s+/g, ' ').trim()).toContain('1 / 3');
+    });
+
+    it('las ausencias justificadas se muestran aparte', () => {
+      const component = render([conJustificada()]);
+
+      expect(component.getJustificadasCount(conJustificada())).toBe(1);
+      const celda = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="asistentes-sesion-1"]');
+      expect(celda?.textContent).toContain('1 justificada');
+    });
+
+    it('una sesión sin registros cuenta 0 asistentes y 0 justificadas', () => {
+      const component = render([session(1)]);
+      const sinRegistros = { ...session(1), records: undefined } as unknown as ClassSession;
+
+      expect(component.getPresentesCount(sinRegistros)).toBe(0);
+      expect(component.getJustificadasCount(sinRegistros)).toBe(0);
+    });
+
+    it('con varias EX usa el plural «justificadas»', () => {
+      render([session(1, [
+        { studentId: 'e1', status: 'EX' },
+        { studentId: 'e2', status: 'EX' },
+      ] as ClassSession['records'])]);
+
+      const celda = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="asistentes-sesion-1"]');
+      expect(celda?.textContent).toContain('2 justificadas');
+    });
+
+    it('sin EX no muestra el indicador de justificadas', () => {
+      render([session(1, [{ studentId: 'e1', status: 'AN' }] as ClassSession['records'])]);
+
+      const celda = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="asistentes-sesion-1"]');
+      expect(celda?.textContent).not.toContain('justificada');
+    });
+
+    // Fórmula oficial PENDIENTE DE DECISIÓN FUNCIONAL: hoy el promedio suma EX con AN. Esta prueba fija el
+    // comportamiento vigente para que el cambio de política sea explícito (debe cambiarse junto con la decisión).
+    it('el promedio conserva la fórmula vigente (AN + EX) hasta que exista la decisión académica', () => {
+      const component = render([conJustificada()]);
+
+      expect(component.promedioAsistencia()).toBe(67);
+    });
+  });
+
   it('muestra las dos sesiones y el grupo sin código ni separador huérfano', () => {
     render([session(1), session(2)]);
 

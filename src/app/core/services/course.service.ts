@@ -156,6 +156,10 @@ export class CourseService {
         asignaturaId: asignacion.idAsignatura,
         colorCategory: colors[index % colors.length],
       };
+      if (asignacion.idTipoPrograma) {
+        course.idTipoPrograma = asignacion.idTipoPrograma;
+        course.nombreTipoPrograma = asignacion.nombreTipoPrograma ?? undefined;
+      }
       if (primero) {
         course.code = primero.codigoMateria;
         course.enrolledStudentsCount = primero.totalEstudiantes;

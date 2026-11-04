@@ -11,7 +11,6 @@ import {
   AreaConocimientoItem,
   TipoProgramaItem,
   ParametroAdminDto,
-  RegistroAuditoriaItem,
   CierrePeriodoReporte,
   InstitucionItem,
 } from '../models/role-management.model';
@@ -53,8 +52,6 @@ export class AdminManagementService {
   parametros = this._parametros.asReadonly();
 
   // Auditoría
-  private _auditoria = signal<RegistroAuditoriaItem[]>([]);
-  auditoria = this._auditoria.asReadonly();
 
   // Reportes Cierre Masivo
   private _reportesCierre = signal<CierrePeriodoReporte[]>([]);
@@ -304,37 +301,7 @@ export class AdminManagementService {
     );
   }
 
-  /** La señal solo cambia con la respuesta exitosa del backend; los errores HTTP llegan al llamador. */
-  crearArea(item: { codigo: string; nombre: string }): Observable<ApiResponse<AreaConocimientoItem>> {
-    return this.http.post<ApiResponse<AreaConocimientoItem>>(`${environment.apiUrl}/admin/areas`, item).pipe(
-      tap((res) => {
-        if (res.exitoso && res.datos) {
-          this._areas.update((prev) => [...prev, res.datos]);
-        }
-      })
-    );
-  }
-
-  actualizarArea(id: string, cambios: { nombre: string }): Observable<ApiResponse<AreaConocimientoItem>> {
-    return this.http.put<ApiResponse<AreaConocimientoItem>>(`${environment.apiUrl}/admin/areas/${id}`, cambios).pipe(
-      tap((res) => this.reemplazarArea(id, res))
-    );
-  }
-
-  /** Recibe el estado deseado (idempotente), no un toggle ciego. */
-  cambiarEstadoArea(id: string, activa: boolean): Observable<ApiResponse<AreaConocimientoItem>> {
-    return this.http.patch<ApiResponse<AreaConocimientoItem>>(`${environment.apiUrl}/admin/areas/${id}/estado`, { activa }).pipe(
-      tap((res) => this.reemplazarArea(id, res))
-    );
-  }
-
-  private reemplazarArea(id: string, res: ApiResponse<AreaConocimientoItem>): void {
-    if (res.exitoso && res.datos) {
-      this._areas.update((prev) => prev.map((a) => (a.id === id ? res.datos : a)));
-    }
-  }
-
-  // ================= TIPOS DE PROGRAMA (HU154) =================
+  // ================= TIPOS DE PROGRAMA (HU154, solo consulta) =================
   cargarTiposPrograma(): Observable<ApiResponse<TipoProgramaItem[]>> {
     return this.http.get<ApiResponse<TipoProgramaItem[]>>(`${environment.apiUrl}/admin/tipos-programa`).pipe(
       tap((res) => {
@@ -345,53 +312,12 @@ export class AdminManagementService {
     );
   }
 
-  /** La señal solo cambia con la respuesta exitosa del backend; los errores HTTP llegan al llamador. */
-  crearTipoPrograma(item: { codigo: string; nombre: string }): Observable<ApiResponse<TipoProgramaItem>> {
-    return this.http.post<ApiResponse<TipoProgramaItem>>(`${environment.apiUrl}/admin/tipos-programa`, item).pipe(
-      tap((res) => {
-        if (res.exitoso && res.datos) {
-          this._tiposPrograma.update((prev) => [...prev, res.datos]);
-        }
-      })
-    );
-  }
-
-  actualizarTipoPrograma(id: string, cambios: { nombre: string }): Observable<ApiResponse<TipoProgramaItem>> {
-    return this.http.put<ApiResponse<TipoProgramaItem>>(`${environment.apiUrl}/admin/tipos-programa/${id}`, cambios).pipe(
-      tap((res) => this.reemplazarTipoPrograma(id, res))
-    );
-  }
-
-  /** Recibe el estado deseado (idempotente), no un toggle ciego. */
-  cambiarEstadoTipoPrograma(id: string, activo: boolean): Observable<ApiResponse<TipoProgramaItem>> {
-    return this.http.patch<ApiResponse<TipoProgramaItem>>(`${environment.apiUrl}/admin/tipos-programa/${id}/estado`, { activo }).pipe(
-      tap((res) => this.reemplazarTipoPrograma(id, res))
-    );
-  }
-
-  private reemplazarTipoPrograma(id: string, res: ApiResponse<TipoProgramaItem>): void {
-    if (res.exitoso && res.datos) {
-      this._tiposPrograma.update((prev) => prev.map((t) => (t.id === id ? res.datos : t)));
-    }
-  }
-
   // ================= PARÁMETROS INSTITUCIONALES =================
   cargarParametros(): Observable<ApiResponse<ParametroAdminDto[]>> {
     return this.http.get<ApiResponse<ParametroAdminDto[]>>(`${environment.apiUrl}/admin/parametros`).pipe(
       tap((res) => {
         if (res.exitoso && res.datos) {
           this._parametros.set(res.datos);
-        }
-      })
-    );
-  }
-
-  // ================= AUDITORÍA =================
-  cargarAuditoria(): Observable<ApiResponse<RegistroAuditoriaItem[]>> {
-    return this.http.get<ApiResponse<RegistroAuditoriaItem[]>>(`${environment.apiUrl}/admin/auditoria`).pipe(
-      tap((res) => {
-        if (res.exitoso && res.datos) {
-          this._auditoria.set(res.datos);
         }
       })
     );

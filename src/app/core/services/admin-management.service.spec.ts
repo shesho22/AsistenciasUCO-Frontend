@@ -454,34 +454,7 @@ describe('AdminManagementService', () => {
     expect(service.decanos()[0].facultad).toBe('Sin Facultad Asignada');
   });
 
-  it('cargarAuditoria y ejecutarCierreMasivo funcionan correctamente', () => {
-    service.cargarAuditoria().subscribe((res) => {
-      expect(res.exitoso).toBeTrue();
-      expect(res.datos?.length).toBe(1);
-    });
-
-    const getReq = http.expectOne(`${environment.apiUrl}/admin/auditoria`);
-    expect(getReq.request.method).toBe('GET');
-    getReq.flush({
-      exitoso: true,
-      datos: [
-        {
-          id: 'aud-1',
-          timestamp: '2026-01-01T00:00:00Z',
-          usuarioId: 'usr-1',
-          usuarioNombre: 'Admin',
-          rol: 'ADMINISTRADOR',
-          accion: 'LOGIN',
-          modulo: 'AUTH',
-          descripcion: 'Inicio de sesión',
-          direccionIp: '127.0.0.1',
-          nivel: 'INFO',
-        },
-      ],
-    });
-
-    expect(service.auditoria().length).toBe(1);
-
+  it('ejecutarCierreMasivo funciona correctamente', () => {
     service.ejecutarCierreMasivo('per-1', '2026-1').subscribe((res) => {
       expect(res.exitoso).toBeTrue();
     });

@@ -273,7 +273,8 @@ export interface AsignaturaPlanItem {
   creditos: number;
   semestre: number;
   area: string;
-  componente: 'Obligatoria' | 'Electiva' | 'Complementaria';
+  /** Nombre o código de un componente de formación real (BAS, INS, ESP; HU147). */
+  componente: string;
   horasSemanales: number;
 }
 

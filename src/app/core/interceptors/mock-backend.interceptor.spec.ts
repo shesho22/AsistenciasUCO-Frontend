@@ -151,22 +151,6 @@ describe('mockBackendInterceptor', () => {
     httpClient.get(`${environment.apiUrl}/admin/areas`).subscribe((r) => (areasRes = r));
     tick(250);
     expect(areasRes?.exitoso).toBeTrue();
-
-    let postAreaRes: any;
-    httpClient.post(`${environment.apiUrl}/admin/areas`, { nombre: 'Área Nueva', facultadId: facId }).subscribe((r) => (postAreaRes = r));
-    tick(300);
-    expect(postAreaRes?.exitoso).toBeTrue();
-
-    const areaId = mockStore.areasConocimiento[0].id;
-    let putAreaRes: any;
-    httpClient.put(`${environment.apiUrl}/admin/areas/${areaId}`, { nombre: 'Área Editada' }).subscribe((r) => (putAreaRes = r));
-    tick(300);
-    expect(putAreaRes?.exitoso).toBeTrue();
-
-    let patchAreaRes: any;
-    httpClient.patch(`${environment.apiUrl}/admin/areas/${areaId}/estado`, {}).subscribe((r) => (patchAreaRes = r));
-    tick(250);
-    expect(patchAreaRes?.exitoso).toBeTrue();
   }));
 
   it('simula parámetros, auditoría, cierre masivo e instituciones', fakeAsync(() => {

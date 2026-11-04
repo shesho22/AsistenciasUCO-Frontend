@@ -248,6 +248,18 @@ export class DashboardLayoutComponent {
       icon: 'catalogos',
     },
     {
+      label: 'Tipos de Programa',
+      route: '/app/admin/catalogos',
+      roles: ['ADMINISTRADOR', 'ADMIN'],
+      icon: 'catalogos',
+    },
+    {
+      label: 'Estados del Sistema',
+      route: '/app/admin/estados',
+      roles: ['ADMINISTRADOR', 'ADMIN'],
+      icon: 'catalogos',
+    },
+    {
       label: 'Áreas de Conocimiento',
       route: '/app/admin/areas',
       roles: ['ADMINISTRADOR', 'ADMIN'],
@@ -362,6 +374,12 @@ export class DashboardLayoutComponent {
       icon: 'materias',
     },
     {
+      label: 'Consolidado de Asistencia',
+      route: '/app/decano/consolidado-asistencia',
+      roles: ['DECANO'],
+      icon: 'asistencia',
+    },
+    {
       label: 'Gestión de Docentes',
       route: '/app/coordinador/docentes',
       roles: ['COORDINADOR'],
@@ -408,6 +426,12 @@ export class DashboardLayoutComponent {
       route: '/app/coordinador/asistencias',
       roles: ['COORDINADOR'],
       icon: 'grupos',
+    },
+    {
+      label: 'Consolidado de Asistencia',
+      route: '/app/coordinador/consolidado-asistencia',
+      roles: ['COORDINADOR'],
+      icon: 'asistencia',
     },
     {
       label: 'Mis Grupos',
