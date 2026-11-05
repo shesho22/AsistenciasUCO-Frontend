@@ -43,6 +43,11 @@ export class ConsultasTransversalesService {
     return this.listar(`${this.decano}/docentes`, filtro);
   }
 
+  /** HU136: docentes de toda la institución del administrador, filtrables por facultad y programa. */
+  getDocentesInstitucion(filtro: FiltroListado): Observable<ApiResponse<DocenteFacultadItem[]>> {
+    return this.listar(`${this.admin}/docentes`, filtro);
+  }
+
   /** HU143: el decano busca en su facultad; el administrador, en su institución (con filtro opcional por facultad). */
   buscarAsignaturas(filtro: FiltroListado, comoAdministrador = false): Observable<ApiResponse<AsignaturaInstitucionItem[]>> {
     return this.listar(`${comoAdministrador ? this.admin : this.decano}/asignaturas`, filtro);

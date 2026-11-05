@@ -182,16 +182,7 @@ describe('mockBackendInterceptor', () => {
     tick(250);
     expect(instRes?.exitoso).toBeTrue();
 
-    let postInstRes: any;
-    httpClient.post(`${environment.apiUrl}/admin/instituciones`, { nombre: 'UCO Nueva' }).subscribe((r) => (postInstRes = r));
-    tick(300);
-    expect(postInstRes?.exitoso).toBeTrue();
-
-    const instId = mockStore.instituciones[0].id;
-    let patchInstRes: any;
-    httpClient.patch(`${environment.apiUrl}/admin/instituciones/${instId}/toggle-estado`, {}).subscribe((r) => (patchInstRes = r));
-    tick(250);
-    expect(patchInstRes?.exitoso).toBeTrue();
+    // HU161/HU162/HU164 descartadas: el mock ya no simula escrituras de instituciones.
   }));
 
   it('simula endpoints de decano, estudiante y coordinador', fakeAsync(() => {

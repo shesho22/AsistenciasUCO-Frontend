@@ -465,7 +465,7 @@ describe('AdminManagementService', () => {
     postReq.flush({ exitoso: true, datos: null });
   });
 
-  it('getInstituciones, crearInstitucion, actualizarInstitucion y toggleEstadoInstitucion interactúan con API', () => {
+  it('getInstituciones consulta la API (las instituciones son de solo consulta, HU161/HU162/HU164 descartadas)', () => {
     service.getInstituciones().subscribe((res) => {
       expect(res.exitoso).toBeTrue();
     });
@@ -477,26 +477,11 @@ describe('AdminManagementService', () => {
       datos: [{ id: 'inst-1', nombre: 'UCO', nit: '890.980.040', direccion: 'Rionegro', telefono: '5698000', estado: 'ACTIVO' }],
     });
 
-    service.crearInstitucion({ nombre: 'UCO Nueva' }).subscribe((res) => {
-      expect(res.exitoso).toBeTrue();
-    });
-    const postReq = http.expectOne(`${environment.apiUrl}/admin/instituciones`);
-    expect(postReq.request.method).toBe('POST');
-    postReq.flush({ exitoso: true, datos: { id: 'inst-2', nombre: 'UCO Nueva' } });
-
-    service.actualizarInstitucion('inst-1', { direccion: 'Sector Llanogrande' }).subscribe((res) => {
-      expect(res.exitoso).toBeTrue();
-    });
-    const putReq = http.expectOne(`${environment.apiUrl}/admin/instituciones/inst-1`);
-    expect(putReq.request.method).toBe('PUT');
-    putReq.flush({ exitoso: true, datos: { id: 'inst-1', nombre: 'UCO', direccion: 'Sector Llanogrande' } });
-
-    service.toggleEstadoInstitucion('inst-1').subscribe((res) => {
-      expect(res.exitoso).toBeTrue();
-    });
-    const patchReq = http.expectOne(`${environment.apiUrl}/admin/instituciones/inst-1/toggle-estado`);
-    expect(patchReq.request.method).toBe('PATCH');
-    patchReq.flush({ exitoso: true, datos: { id: 'inst-1' } });
+    expect(service.instituciones().length).toBe(1);
+    const servicio = service as unknown as Record<string, unknown>;
+    expect(servicio['crearInstitucion']).toBeUndefined();
+    expect(servicio['actualizarInstitucion']).toBeUndefined();
+    expect(servicio['toggleEstadoInstitucion']).toBeUndefined();
   });
 
   it('no expone una operación de escritura de parámetros sin contrato aprobado', () => {

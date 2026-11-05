@@ -229,20 +229,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   if (url.endsWith('/admin/instituciones') && method === 'GET') {
     return of(okResponse(mockStore.instituciones)).pipe(delay(200));
   }
-  if (url.endsWith('/admin/instituciones') && method === 'POST') {
-    const body = req.body as any;
-    const nueva = { id: `INST-${mockStore.instituciones.length + 1}`, estado: 1, ...body };
-    mockStore.instituciones.push(nueva);
-    return of(okResponse(nueva, 'Institución registrada con éxito.')).pipe(delay(250));
-  }
-  if (url.includes('/admin/instituciones/') && url.endsWith('/toggle-estado') && method === 'PATCH') {
-    const segments = url.split('/');
-    const id = segments[segments.length - 2];
-    mockStore.instituciones = mockStore.instituciones.map((i) =>
-      i.id === id ? { ...i, estado: i.estado === 1 ? 0 : 1 } : i
-    );
-    return of(okResponse({ id }, 'Estado de institución alternado.')).pipe(delay(200));
-  }
+  // HU161/HU162/HU164 descartadas: las instituciones son de solo consulta (sin POST/PUT/PATCH).
 
   // ================= DECANO: COORDINADORES =================
   if (url.endsWith('/decano/coordinadores') && method === 'GET') {
