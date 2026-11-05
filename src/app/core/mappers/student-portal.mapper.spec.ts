@@ -186,6 +186,43 @@ describe('StudentPortalMapper', () => {
       expect(s.horario).toBe('13:00 - 15:00');
     });
 
+    it('APP-04: usa fechaHoraInicioUtc/FinUtc del backend aunque la hora v1 venga sin zona', () => {
+      const s = StudentPortalMapper.toSesion(
+        {
+          ...dto,
+          fechaHoraInicio: '2026-08-17T13:00:00',
+          fechaHoraFin: '2026-08-17T15:00:00',
+          fechaHoraInicioUtc: '2026-08-17T13:00:00Z',
+          fechaHoraFinUtc: '2026-08-17T15:00:00Z',
+          estadoTemporal: 'CONFIRMADA',
+        },
+        ASIGNATURA,
+        (utc: string) => ({ date: utc.slice(0, 10), time: utc === '2026-08-17T13:00:00Z' ? '08:00' : '10:00' })
+      )!;
+      expect(s.temporalidad).toBe('UTC');
+      expect(s.fechaHoraInicioUtc).toBe('2026-08-17T13:00:00Z');
+      expect(s.horario).toBe('08:00 - 10:00');
+    });
+
+    it('APP-04: procedencia INDETERMINADA (sin instantes UTC) sigue sin reinterpretarse', () => {
+      const s = StudentPortalMapper.toSesion(
+        {
+          ...dto,
+          fechaHoraInicio: '2026-10-13T08:00:00',
+          fechaHoraFin: '2026-10-13T10:00:00',
+          fechaHoraInicioUtc: null,
+          fechaHoraFinUtc: null,
+          estadoTemporal: 'INDETERMINADA',
+        },
+        ASIGNATURA,
+        () => {
+          throw new Error('no debe formatear instantes sin zona');
+        }
+      )!;
+      expect(s.temporalidad).toBe('SIN_ZONA');
+      expect(s.fechaHoraInicioUtc).toBeUndefined();
+    });
+
     it('una hora sin zona (LocalDateTime actual) NO se reinterpreta: se muestra tal cual y se marca SIN_ZONA', () => {
       const s = StudentPortalMapper.toSesion(
         { ...dto, fechaHoraInicio: '2026-10-19T13:00:00', fechaHoraFin: '2026-10-19T15:00:00' },

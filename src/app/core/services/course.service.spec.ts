@@ -96,6 +96,18 @@ describe('CourseService', () => {
     expect('room' in courses[0]).toBeFalse();
   });
 
+  it('estudiantesActivos de la asignación se muestra aunque el grupo no tenga horario', () => {
+    const { courses } = loadCourses([asignacion({ estudiantesActivos: 7 })], []);
+
+    expect(courses[0].enrolledStudentsCount).toBe(7);
+  });
+
+  it('estudiantesActivos (matrícula activa) prevalece sobre totalEstudiantes del horario', () => {
+    const { courses } = loadCourses([asignacion({ estudiantesActivos: 7 })], [horario({ totalEstudiantes: 25 })]);
+
+    expect(courses[0].enrolledStudentsCount).toBe(7);
+  });
+
   it('HU058: conserva el tipo de programa (nivel formativo) de la asignación', () => {
     const { courses } = loadCourses([asignacion({ idTipoPrograma: 'TP-PRE', nombreTipoPrograma: 'pregrado' })], []);
 
