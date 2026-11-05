@@ -16,6 +16,9 @@ import { parseIdentificationNumber, validateInstitutionalEmail } from '../../../
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
 import { finalize } from 'rxjs';
 import { IdentidadEsperada, UltimaPeticion, advertirRegistroNoListado } from '../../../core/utils/registro-confirmado.util';
+import { CorreccionIdentidadService } from '../../../core/services/correccion-identidad.service';
+import { CorregirIdentidadPayload, IdentidadActual } from '../../../core/models/correccion-identidad.model';
+import { CorreccionIdentidadModalComponent } from '../../../shared/components/correccion-identidad-modal/correccion-identidad-modal.component';
 
 type VistaAdmin = 'LISTA' | 'REGISTRO';
 
@@ -32,6 +35,7 @@ type VistaAdmin = 'LISTA' | 'REGISTRO';
     FormFieldComponent,
     UserPickerModalComponent,
     AccountAccessStatusComponent,
+    CorreccionIdentidadModalComponent,
   ],
   template: `
     <div class="space-y-6 animate-fade-in">
@@ -142,6 +146,15 @@ type VistaAdmin = 'LISTA' | 'REGISTRO';
                         [title]="decano.estado === 'ACTIVO' ? 'Desactivar decano' : 'Activar decano'"
                       >
                         {{ decano.estado === 'ACTIVO' ? 'Desactivar' : 'Reactivar' }}
+                      </button>
+                      <!-- HU159: el administrador corrige los datos de identidad del decano -->
+                      <button
+                        type="button"
+                        data-accion="corregir-identidad"
+                        (click)="decanoACorregir.set(decano)"
+                        class="text-xs px-2.5 py-1 rounded-lg border border-warm-200 hover:bg-warm-100 text-warm-700 transition-colors"
+                      >
+                        Corregir datos
                       </button>
                     </div>
 
@@ -363,6 +376,17 @@ type VistaAdmin = 'LISTA' | 'REGISTRO';
         (requestNew)="onSolicitarRegistroNuevo()"
         (cancelled)="isPickerModalOpen.set(false)"
       />
+
+      @if (decanoACorregir(); as d) {
+        <app-correccion-identidad-modal
+          titulo="Corregir datos del decano"
+          [actual]="identidadDe(d)"
+          [guardando]="guardandoCorreccion()"
+          [error]="errorCorreccion()"
+          (guardar)="corregirDecano(d, $event)"
+          (cancelar)="cerrarCorreccion()"
+        />
+      }
     </div>
   `,
 })
@@ -371,6 +395,12 @@ export class AdminDecanosComponent implements OnInit {
   private catalogService = inject(CatalogService);
   private toast = inject(ToastService);
   private sessionTimeZone = inject(SessionTimeZoneService);
+  private correccionIdentidad = inject(CorreccionIdentidadService);
+
+  /** HU159: decano cuya identidad se corrige (null = modal cerrado). */
+  decanoACorregir = signal<DecanoItem | null>(null);
+  guardandoCorreccion = signal(false);
+  errorCorreccion = signal<string | null>(null);
 
   isPickerModalOpen = signal<boolean>(false);
   /** Correo de la ultima cuenta registrada: el panel consulta su estado de acceso real. */
@@ -428,6 +458,46 @@ export class AdminDecanosComponent implements OnInit {
       return matchQuery && matchEstado;
     });
   });
+
+  identidadDe(d: DecanoItem): IdentidadActual {
+    const nombres = d.nombres?.trim().split(/\s+/).filter(Boolean) ?? [];
+    const apellidos = d.apellidos?.trim().split(/\s+/).filter(Boolean) ?? [];
+    return {
+      primerNombre: d.primerNombre ?? nombres[0] ?? '',
+      segundoNombre: d.segundoNombre ?? (nombres.slice(1).join(' ') || null),
+      primerApellido: d.primerApellido ?? apellidos[0] ?? '',
+      segundoApellido: d.segundoApellido ?? (apellidos.slice(1).join(' ') || null),
+      numeroIdentificacion: d.numeroIdentificacion,
+      codigoTipoIdentificacion: d.tipoIdentificacion ?? null,
+      idTipoIdentificacion: d.tipoIdentificacionId ?? null,
+    };
+  }
+
+  corregirDecano(d: DecanoItem, payload: CorregirIdentidadPayload): void {
+    this.guardandoCorreccion.set(true);
+    this.errorCorreccion.set(null);
+    this.correccionIdentidad.corregirDecano(d.id, payload).subscribe({
+      next: (r) => {
+        this.guardandoCorreccion.set(false);
+        this.decanoACorregir.set(null);
+        if (r.datos?.sincronizacionIdentidad === 'PENDIENTE') {
+          this.toast.warning(r.datos.mensajeUsuario ?? 'Los datos se corrigieron; la cuenta de acceso queda pendiente de sincronizar.');
+        } else {
+          this.toast.success('Los datos del decano fueron corregidos.');
+        }
+        this.cargarDecanos();
+      },
+      error: (e) => {
+        this.guardandoCorreccion.set(false);
+        this.errorCorreccion.set(getApiErrorMessage(e));
+      },
+    });
+  }
+
+  cerrarCorreccion(): void {
+    this.decanoACorregir.set(null);
+    this.errorCorreccion.set(null);
+  }
 
   ngOnInit(): void {
     this.cargarTiposIdentificacion();

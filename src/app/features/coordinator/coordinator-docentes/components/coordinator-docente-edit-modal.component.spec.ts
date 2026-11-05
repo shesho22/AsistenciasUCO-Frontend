@@ -1,4 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { of } from 'rxjs';
+import { CatalogService } from '../../../../core/services/catalog.service';
+import { CorreccionIdentidadService } from '../../../../core/services/correccion-identidad.service';
 import { CoordinatorDocenteEditModalComponent } from './coordinator-docente-edit-modal.component';
 import { ActualizarDocentePayload, DocentePrograma, TipoVinculacionItem } from '../../../../core/models/docente-programa.model';
 
@@ -18,7 +21,13 @@ describe('CoordinatorDocenteEditModalComponent', () => {
   ];
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ imports: [CoordinatorDocenteEditModalComponent] });
+    TestBed.configureTestingModule({
+      imports: [CoordinatorDocenteEditModalComponent],
+      providers: [
+        { provide: CorreccionIdentidadService, useValue: { permiteCorregirDocumento: () => of(false) } },
+        { provide: CatalogService, useValue: { getTiposIdentificacion: () => of({ exitoso: true, datos: [] }) } },
+      ],
+    });
     fixture = TestBed.createComponent(CoordinatorDocenteEditModalComponent);
     component = fixture.componentInstance;
     fixture.componentRef.setInput('docente', docente);
@@ -93,5 +102,18 @@ describe('CoordinatorDocenteEditModalComponent', () => {
     component.cerrar.subscribe(() => (cerrado = true));
     component.solicitarCierre();
     expect(cerrado).toBeTrue();
+  });
+
+  it('HU159: envia el documento corregido con su motivo y bloquea si el bloque de documento es invalido', () => {
+    const emitidos: ActualizarDocentePayload[] = [];
+    component.guardar.subscribe((p) => emitidos.push(p));
+    component.documento.set({ valido: false, documento: null, motivo: '' });
+    component.enviar();
+    expect(emitidos.length).toBe(0);
+    expect(component.error()).toContain('documento');
+
+    component.documento.set({ valido: true, documento: { idTipoIdentificacion: 't-cc', numeroIdentificacion: 2002 }, motivo: 'Cédula mal digitada' });
+    component.enviar();
+    expect(emitidos).toEqual([{ idTipoIdentificacion: 't-cc', numeroIdentificacion: 2002, motivo: 'Cédula mal digitada' }]);
   });
 });

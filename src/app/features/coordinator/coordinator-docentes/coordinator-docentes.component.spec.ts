@@ -6,6 +6,7 @@ import { of, throwError } from 'rxjs';
 import { CoordinatorDocentesComponent } from './coordinator-docentes.component';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { CatalogService } from '../../../core/services/catalog.service';
+import { CorreccionIdentidadService } from '../../../core/services/correccion-identidad.service';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { AccountAccessService } from '../../../core/services/account-access.service';
 import { DocentePrograma, DocenteCandidato } from '../../../core/models/docente-programa.model';
@@ -107,6 +108,7 @@ describe('CoordinatorDocentesComponent', () => {
       providers: [
         { provide: CoordinatorManagementService, useValue: coordService },
         { provide: CatalogService, useValue: catalogService },
+        { provide: CorreccionIdentidadService, useValue: { permiteCorregirDocumento: () => of(false) } },
         { provide: ToastService, useValue: toast },
         { provide: AccountAccessService, useValue: accountAccess },
       ],

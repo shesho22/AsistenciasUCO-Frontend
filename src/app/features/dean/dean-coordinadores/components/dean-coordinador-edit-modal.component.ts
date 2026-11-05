@@ -3,27 +3,32 @@ import { FormsModule } from '@angular/forms';
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
 import { FormFieldComponent } from '../../../../shared/components/form-field/form-field.component';
 import { ActualizarCoordinadorPayload, CoordinadorItem } from '../../../../core/models/role-management.model';
+import { CorreccionDocumentoComponent } from '../../../../shared/components/correccion-documento/correccion-documento.component';
+import { EstadoCorreccionDocumento } from '../../../../core/models/correccion-identidad.model';
 
 const FORMATO_CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_NOMBRE = 50;
 const MAX_CORREO = 100;
 
 /**
- * HU121: edición de los datos personales de un coordinador. El documento de identidad no se edita
- * (es el nombre de usuario en el proveedor de identidad). La validación de negocio la hace el backend.
+ * HU121: edición de los datos personales de un coordinador. HU159 (2026-11-05): el decano también corrige el tipo y
+ * el número de documento si el parámetro lo permite; si cambia, exige motivo (el documento es el usuario de acceso).
+ * La validación de negocio la hace el backend.
  */
 @Component({
   selector: 'app-dean-coordinador-edit-modal',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ModalComponent, FormFieldComponent],
+  imports: [FormsModule, ModalComponent, FormFieldComponent, CorreccionDocumentoComponent],
   template: `
     <app-modal [isOpen]="true" title="Editar coordinador" (closed)="cancelar.emit()">
       <div class="space-y-4">
-        <p class="text-xs text-warm-600">
-          Documento: <span class="font-mono font-semibold text-warm-800">{{ coordinador().numeroIdentificacion }}</span>
-          (no se puede modificar).
-        </p>
+        <app-correccion-documento
+          [numeroActual]="coordinador().numeroIdentificacion"
+          [codigoTipoActual]="coordinador().tipoIdentificacion ?? null"
+          [idTipoActual]="coordinador().tipoIdentificacionId ?? null"
+          (estadoCambio)="documento.set($event)"
+        />
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <app-form-field label="Primer nombre" [required]="true">
@@ -115,6 +120,8 @@ export class DeanCoordinadorEditModalComponent {
   primerApellido = signal('');
   segundoApellido = signal('');
   correo = signal('');
+  /** HU159: documento corregido y motivo (por defecto, sin cambio). */
+  documento = signal<EstadoCorreccionDocumento>({ valido: true, documento: null, motivo: '' });
 
   correoInvalido = computed(() => {
     const valor = this.correo().trim();
@@ -128,7 +135,8 @@ export class DeanCoordinadorEditModalComponent {
       this.primerApellido().trim().length > 0 &&
       this.primerApellido().trim().length <= MAX_NOMBRE &&
       this.correo().trim().length > 0 &&
-      !this.correoInvalido(),
+      !this.correoInvalido() &&
+      this.documento().valido,
   );
 
   constructor() {
@@ -154,6 +162,7 @@ export class DeanCoordinadorEditModalComponent {
       primerApellido: this.primerApellido().trim(),
       segundoApellido: this.segundoApellido().trim(),
       correo: this.correo().trim(),
+      ...(this.documento().documento ? { ...this.documento().documento, motivo: this.documento().motivo } : {}),
     });
   }
 }

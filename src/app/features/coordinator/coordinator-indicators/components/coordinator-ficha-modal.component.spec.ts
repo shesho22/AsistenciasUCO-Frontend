@@ -114,4 +114,41 @@ describe('CoordinatorFichaModalComponent', () => {
     component.cancelar();
     expect(cerrado).toBeTrue();
   });
+
+  it("HU159: el coordinador corrige los datos del estudiante y la ficha se recarga", () => {
+    abrir();
+    http.expectOne(`${base}/ficha`).flush({ exitoso: true, datos: ficha });
+    http.expectOne((r) => r.url === `${base}/bitacora`).flush({ exitoso: true, datos: [], total: 0 });
+    fixture.detectChanges();
+
+    (fixture.nativeElement.querySelector("[data-accion=\"corregir-identidad\"]") as HTMLButtonElement).click();
+    fixture.detectChanges();
+    http.expectOne(`${environment.apiUrl}/configuracion/identidad`).flush({ exitoso: true, datos: { permitirCorregirDocumento: true } });
+    http.expectOne(`${environment.apiUrl}/tipos-identificacion`).flush([{ id: "t-cc", tipoIdentificacion: "CC", nombre: "Cedula" }]);
+    fixture.detectChanges();
+    expect(texto()).toContain("Corregir datos del estudiante");
+
+    component.corregir({ primerNombre: "Ana", segundoNombre: "Maria", primerApellido: "Perez", segundoApellido: "Gomez", motivo: "Tildes" });
+    const put = http.expectOne(`${base}/identidad`);
+    expect(put.request.method).toBe("PUT");
+    put.flush({ exitoso: true, datos: { idRegistro: "e-1", sincronizacionIdentidad: "OK", mensajeUsuario: null } });
+    http.expectOne(`${base}/ficha`).flush({ exitoso: true, datos: ficha });
+    expect(component.corrigiendo()).toBeFalse();
+  });
+
+  it("HU159: si el backend rechaza la correccion, el error se muestra en el modal", () => {
+    abrir();
+    http.expectOne(`${base}/ficha`).flush({ exitoso: true, datos: ficha });
+    http.expectOne((r) => r.url === `${base}/bitacora`).flush({ exitoso: true, datos: [], total: 0 });
+    component.corrigiendo.set(true);
+
+    component.corregir({ primerNombre: "Ana", segundoNombre: "", primerApellido: "Perez", segundoApellido: "", motivo: "x" });
+    http.expectOne(`${base}/identidad`).flush({ exitoso: false, mensaje: "Estudiante no encontrado" }, { status: 404, statusText: "Not Found" });
+
+    expect(component.corrigiendo()).toBeTrue();
+    expect(component.errorCorreccion()).toBeTruthy();
+    component.cerrarCorreccion();
+    expect(component.corrigiendo()).toBeFalse();
+    fixture.destroy();
+  });
 });
