@@ -5,6 +5,7 @@ import { environment } from '../../../environments/environment';
 import { ApiResponse } from '../models/api-response.model';
 import {
   AsignaturaInstitucionItem,
+  CategoriaJustificacionItem,
   ComponenteFormacionItem,
   ConsolidadoGrupoItem,
   DocenteFacultadItem,
@@ -71,6 +72,11 @@ export class ConsultasTransversalesService {
   /** HU155: estados del sistema (solo consulta, solo administrador). */
   getEstadosSistema(): Observable<ApiResponse<EstadoSistemaItem[]>> {
     return this.http.get<ApiResponse<EstadoSistemaItem[]>>(`${this.admin}/estados`);
+  }
+
+  /** HU005/HU016: motivos para justificar una inasistencia (solo consulta; cualquier usuario autenticado). */
+  getCategoriasJustificacion(): Observable<ApiResponse<CategoriaJustificacionItem[]>> {
+    return this.http.get<ApiResponse<CategoriaJustificacionItem[]>>(`${environment.apiUrl}/categorias-justificacion`);
   }
 
   /** HU147: componentes de formación reales (BAS, INS, ESP) para el formulario de asignaturas. */

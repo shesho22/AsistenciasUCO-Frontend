@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, input, output, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, computed, effect, input, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SOPORTE_ACCEPT } from '../../../../core/files/soporte-file.validator';
@@ -10,6 +10,7 @@ import {
   CategoriaJustificacion,
   SoporteAdjuntoItem,
 } from '../../../../core/models/role-management.model';
+import { CategoriaJustificacionItem } from '../../../../core/models/consultas-transversales.model';
 
 @Component({
   selector: 'app-student-claim-form',
@@ -68,12 +69,22 @@ import {
               <select
                 [ngModel]="categoria()"
                 (ngModelChange)="categoria.set($event)"
+                [disabled]="!categorias().length"
+                data-testid="categoria-justificacion"
                 class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm text-warm-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
               >
-                @for (cat of categorias; track cat) {
-                  <option [value]="cat">{{ cat }}</option>
+                @for (cat of categorias(); track cat.id) {
+                  <option [value]="cat.nombre">{{ cat.nombre }}</option>
                 }
               </select>
+              @if (categoriaSeleccionada()?.descripcion) {
+                <p class="text-xs text-warm-600 mt-1.5" data-testid="descripcion-categoria">{{ categoriaSeleccionada()?.descripcion }}</p>
+              }
+              @if (!categorias().length) {
+                <p class="text-xs font-medium text-red-700 mt-1.5" role="alert">
+                  No fue posible cargar los motivos de justificación. Vuelve a intentarlo más tarde.
+                </p>
+              }
             </app-form-field>
 
             <app-form-field label="Explicación detallada y justificación del reclamo" [required]="true">
@@ -170,7 +181,7 @@ import {
             <app-button
               variant="primary"
               size="md"
-              [disabled]="!justificacion().trim() || submitting() || subiendo()"
+              [disabled]="!categoria() || !justificacion().trim() || submitting() || subiendo()"
               [loading]="submitting()"
               (clicked)="onSubmit()"
             >
@@ -196,17 +207,23 @@ export class StudentClaimFormComponent {
 
   readonly accept = SOPORTE_ACCEPT;
 
-  categoria = signal<CategoriaJustificacion>('Médico / Salud');
+  /** HU005: motivos del catálogo de solo consulta; se envía el nombre (contrato vigente de la radicación). */
+  categorias = input<CategoriaJustificacionItem[]>([]);
+
+  categoria = signal<CategoriaJustificacion>('');
   justificacion = signal<string>('');
 
-  readonly categorias: CategoriaJustificacion[] = [
-    'Médico / Salud',
-    'Calamidad Doméstica',
-    'Académico / Representación',
-    'Fuerza Mayor',
-    'Laboral',
-    'Otro',
-  ];
+  readonly categoriaSeleccionada = computed(() => this.categorias().find((c) => c.nombre === this.categoria()) ?? null);
+
+  constructor() {
+    // Primera categoría por defecto cuando llega el catálogo (o si la elegida ya no está en él).
+    effect(() => {
+      const categorias = this.categorias();
+      if (categorias.length && !categorias.some((c) => c.nombre === this.categoria())) {
+        this.categoria.set(categorias[0].nombre);
+      }
+    }, { allowSignalWrites: true });
+  }
 
   back = output<void>();
   fileSelected = output<Event>();
@@ -217,7 +234,7 @@ export class StudentClaimFormComponent {
   }>();
 
   onSubmit(): void {
-    if (!this.justificacion().trim()) return;
+    if (!this.categoria() || !this.justificacion().trim()) return;
     this.submitted.emit({
       categoria: this.categoria(),
       justificacion: this.justificacion().trim(),

@@ -73,8 +73,8 @@ Control centralizado de sesiones y registro de asistencia en aula.
   - **Componente:** `StudentCoursesComponent`
   - **Subcomponentes:**
     - `StudentCoursesListComponent`: Tarjetas de asignaturas inscritas.
-    - `StudentCourseDetailComponent`: Detalle de asistencias acumuladas y porcentaje de inasistencia (alerta de 20%).
-    - `StudentClaimFormComponent`: Radicación de reclamos e incapacidades.
+    - `StudentCourseDetailComponent`: Detalle de asistencias acumuladas y porcentaje de inasistencia (alerta de 20%). Incluye `MotivosJustificacionComponent` (HU016: motivos para justificar una inasistencia, del catálogo `GET /categorias-justificacion`).
+    - `StudentClaimFormComponent`: Radicación de reclamos e incapacidades. La categoría sale del catálogo de solo consulta y muestra su descripción (HU005).
     - `StudentCourseEnrollFormComponent`: Matrícula por código.
   - **Modales:**
     - `StudentAutoAsistenciaModalComponent`: Marcación de asistencia con validación de Wi-Fi institucional.

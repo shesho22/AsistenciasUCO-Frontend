@@ -23,6 +23,14 @@ import {
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { environment } from '../../../../environments/environment';
+import { ConsultasTransversalesService } from '../../../core/services/consultas-transversales.service';
+import { CategoriaJustificacionItem } from '../../../core/models/consultas-transversales.model';
+
+const CATEGORIAS: CategoriaJustificacionItem[] = [
+  { id: 'c-1', codigo: 'MED', nombre: 'Médico / Salud', descripcion: 'Enfermedad o cita médica.' },
+  { id: 'c-2', codigo: 'OTR', nombre: 'Otro', descripcion: null },
+];
+const consultasStub = { getCategoriasJustificacion: () => of({ exitoso: true, datos: CATEGORIAS }) };
 
 function archivo(name: string, size: number, type: string): File {
   const file = new File([new Uint8Array(Math.min(size, 8))], name, { type });
@@ -58,6 +66,7 @@ describe('StudentCoursesComponent — soporte y radicación (LB-004D FE-01..FE-0
         { provide: CourseService, useValue: {} },
         { provide: SessionService, useValue: {} },
         { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap({}) } } },
+        { provide: ConsultasTransversalesService, useValue: consultasStub },
       ],
     });
     component = TestBed.createComponent(StudentCoursesComponent).componentInstance;
@@ -280,6 +289,7 @@ describe('StudentCoursesComponent', () => {
         { provide: SessionService, useValue: sessionServiceSpy },
         { provide: ToastService, useValue: toastSpy },
         { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: { get: () => null } } } },
+        { provide: ConsultasTransversalesService, useValue: consultasStub },
       ],
     }).compileComponents();
 
@@ -295,6 +305,23 @@ describe('StudentCoursesComponent', () => {
     // Sin indicadores autoritativos: no hay promedio ni fallas (nunca 0 ni NaN).
     expect(component.promedioAsistencia()).toBeNull();
     expect(component.totalFallas()).toBeNull();
+  });
+
+  it('HU005/HU016: carga los motivos de justificación del catálogo y los muestra en el detalle', () => {
+    expect(component.categoriasJustificacion()).toEqual(CATEGORIAS);
+    component.verDetalleCompleto(mockMaterias[0]);
+    fixture.detectChanges();
+    const motivos = fixture.nativeElement.querySelector('[data-testid="motivos-justificacion"]') as HTMLElement;
+    expect(motivos).withContext('bloque de motivos').not.toBeNull();
+    expect(motivos.textContent).toContain('Médico / Salud');
+    expect(motivos.textContent).toContain('Enfermedad o cita médica.');
+  });
+
+  it('HU005: si el catálogo falla, queda vacío (sin lista fija de respaldo)', () => {
+    const consultas = TestBed.inject(ConsultasTransversalesService) as unknown as typeof consultasStub;
+    spyOn(consultas, 'getCategoriasJustificacion').and.returnValue(throwError(() => new Error('x')) as never);
+    component.cargarCategoriasJustificacion();
+    expect(component.categoriasJustificacion()).toEqual([]);
   });
 
   it('permite ver detalle completo de sesiones y regresar a la lista', () => {
@@ -407,6 +434,7 @@ describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', 
         { provide: CourseService, useValue: {} },
         { provide: SessionService, useValue: {} },
         { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap({}) } } },
+        { provide: ConsultasTransversalesService, useValue: consultasStub },
       ],
     }).compileComponents();
     http = TestBed.inject(HttpTestingController);

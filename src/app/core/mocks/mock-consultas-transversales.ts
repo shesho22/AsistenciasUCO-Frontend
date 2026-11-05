@@ -1,6 +1,7 @@
 import { HttpRequest } from '@angular/common/http';
 import {
   AsignaturaInstitucionItem,
+  CategoriaJustificacionItem,
   ComponenteFormacionItem,
   ConsolidadoGrupoItem,
   DocenteFacultadItem,
@@ -125,6 +126,16 @@ const ESTADOS: EstadoSistemaItem[] = [
   { catalogo: 'ESTUDIANTE_GRUPO', id: 'EEG-CI', codigo: 'CI', nombre: 'cancelado por inasistencia' },
 ];
 
+/** HU005/HU016: categorías de justificación del seed. */
+const CATEGORIAS_JUSTIFICACION: CategoriaJustificacionItem[] = [
+  { id: 'CAT-MED', codigo: 'MED', nombre: 'Médico / Salud', descripcion: 'Enfermedad, cita o urgencia médica, incapacidad u hospitalización.' },
+  { id: 'CAT-CAL', codigo: 'CAL', nombre: 'Calamidad Doméstica', descripcion: 'Situación grave e imprevista del núcleo familiar.' },
+  { id: 'CAT-ACA', codigo: 'ACA', nombre: 'Académico / Representación', descripcion: 'Actividad en representación de la universidad.' },
+  { id: 'CAT-FMA', codigo: 'FMA', nombre: 'Fuerza Mayor', descripcion: 'Hecho imprevisible e irresistible ajeno al estudiante.' },
+  { id: 'CAT-LAB', codigo: 'LAB', nombre: 'Laboral', descripcion: 'Obligación laboral comprobable que coincidió con la sesión.' },
+  { id: 'CAT-OTR', codigo: 'OTR', nombre: 'Otro', descripcion: 'Motivo distinto a los anteriores.' },
+];
+
 const COMPONENTES: ComponenteFormacionItem[] = [
   { idComponente: 'CMP-BAS', codigo: 'BAS', nombre: 'Básicas', totalAsignaturas: 1 },
   { idComponente: 'CMP-ESP', codigo: 'ESP', nombre: 'Específicas', totalAsignaturas: 1 },
@@ -160,6 +171,9 @@ export function respuestaConsultasTransversales(req: HttpRequest<unknown>, url: 
   if (url.endsWith('/admin/auditoria')) {
     const datos = AUDITORIA.filter((e) => req.params.get('soloAsistencia') === 'false' || e.accionAsistencia);
     return { datos, total: datos.length };
+  }
+  if (url.endsWith('/categorias-justificacion')) {
+    return { datos: CATEGORIAS_JUSTIFICACION, total: CATEGORIAS_JUSTIFICACION.length };
   }
   if (url.endsWith('/admin/estados')) return { datos: ESTADOS, total: ESTADOS.length };
   if (url.endsWith('/coordinador/componentes-formacion')) return { datos: COMPONENTES, total: COMPONENTES.length };
