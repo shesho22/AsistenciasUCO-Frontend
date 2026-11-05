@@ -7,6 +7,12 @@ import {
   SoporteAdjuntoItem,
 } from '../../../../core/models/role-management.model';
 import { crearMateria, crearSesion } from '../../../../core/testing/student-portal.fixtures';
+import { CategoriaJustificacionItem } from '../../../../core/models/consultas-transversales.model';
+
+const CATEGORIAS: CategoriaJustificacionItem[] = [
+  { id: 'c-1', codigo: 'MED', nombre: 'Médico / Salud', descripcion: 'Enfermedad o cita médica.' },
+  { id: 'c-2', codigo: 'LAB', nombre: 'Laboral', descripcion: 'Obligación laboral comprobable.' },
+];
 
 describe('StudentClaimFormComponent — soporte (LB-004D FE-01..FE-03)', () => {
   let fixture: ComponentFixture<StudentClaimFormComponent>;
@@ -25,6 +31,7 @@ describe('StudentClaimFormComponent — soporte (LB-004D FE-01..FE-03)', () => {
     setInputs({
       materia: { id: 'm-1', nombre: 'Matemáticas', docente: 'Prof. X' },
       sesion: { id: 's-1', numeroSesion: 3, fecha: '2026-10-19', horario: '08:00', estadoAsistencia: 'AUSENTE', tema: 'Álgebra' },
+      categorias: CATEGORIAS,
     });
   });
 
@@ -41,6 +48,28 @@ describe('StudentClaimFormComponent — soporte (LB-004D FE-01..FE-03)', () => {
     component.justificacion.set('  Cita médica  ');
     component.onSubmit();
     expect(emitted).toEqual([{ categoria: 'Médico / Salud', justificacion: 'Cita médica' }]);
+  });
+
+  it('HU005: lista los motivos del catálogo, preselecciona el primero y muestra su descripción', () => {
+    fixture.detectChanges(); // el efecto que preselecciona corre tras el primer render
+    const opciones = Array.from(host().querySelectorAll('[data-testid="categoria-justificacion"] option')).map((o) => o.textContent?.trim());
+    expect(opciones).toEqual(['Médico / Salud', 'Laboral']);
+    expect(host().querySelector('[data-testid="descripcion-categoria"]')?.textContent).toContain('Enfermedad o cita médica.');
+    component.categoria.set('Laboral');
+    fixture.detectChanges();
+    expect(host().querySelector('[data-testid="descripcion-categoria"]')?.textContent).toContain('Obligación laboral');
+  });
+
+  it('HU005: sin catálogo no permite radicar y lo informa', () => {
+    setInputs({ categorias: [] });
+    component.categoria.set('');
+    const emitted: unknown[] = [];
+    component.submitted.subscribe((value) => emitted.push(value));
+    component.justificacion.set('Cita médica');
+    component.onSubmit();
+    fixture.detectChanges();
+    expect(emitted).toEqual([]);
+    expect(host().textContent).toContain('No fue posible cargar los motivos');
   });
 
   it('no emite una justificación vacía', () => {
@@ -127,6 +156,7 @@ describe('StudentClaimFormComponent', () => {
   });
 
   function prepare() {
+    fixture.componentRef.setInput('categorias', CATEGORIAS);
     fixture.componentRef.setInput('materia', mockMateria);
     fixture.componentRef.setInput('sesion', mockSesion);
     fixture.detectChanges();

@@ -184,6 +184,15 @@ export interface ComponenteFormacionItem {
 }
 
 /** HU155: estado de un catálogo de negocio de solo consulta (estados de solicitudes o del estudiante en el grupo). */
+/** HU005/HU016: categoría (motivo) para justificar una inasistencia; catálogo de solo consulta. */
+export interface CategoriaJustificacionItem {
+  id: string;
+  codigo: string;
+  /** Texto que el formulario de reclamo envía como `categoria` (contrato vigente del radicado). */
+  nombre: string;
+  descripcion: string | null;
+}
+
 export interface EstadoSistemaItem {
   catalogo: 'SOLICITUD' | 'ESTUDIANTE_GRUPO';
   id: string;

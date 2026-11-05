@@ -149,13 +149,11 @@ export interface MateriaEstudianteItem {
 export type EstadoAsistenciaSesion = 'PRESENTE' | 'AUSENTE' | 'RETARDO' | 'JUSTIFICADA';
 export type EstadoSolicitudRevision = 'PENDIENTE' | 'APROBADA' | 'RECHAZADA';
 
-export type CategoriaJustificacion =
-  | 'Médico / Salud'
-  | 'Calamidad Doméstica'
-  | 'Académico / Representación'
-  | 'Fuerza Mayor'
-  | 'Laboral'
-  | 'Otro';
+/**
+ * Nombre de la categoría de justificación del reclamo. HU005/HU016: los valores salen del catálogo de solo consulta
+ * (`GET /categorias-justificacion`), no de una lista fija en el cliente.
+ */
+export type CategoriaJustificacion = string;
 
 export interface SoporteAdjuntoItem {
   /** Identificador opaco generado por el backend; unica fuente de verdad del vinculo del soporte. */

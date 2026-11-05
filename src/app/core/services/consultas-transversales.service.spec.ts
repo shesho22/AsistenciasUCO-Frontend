@@ -85,6 +85,13 @@ describe('ConsultasTransversalesService (HU112/HU128/HU143/HU157)', () => {
       .flush({ exitoso: true, datos: [{ idComponente: 'c', codigo: 'ESP', nombre: 'Específicas', totalAsignaturas: 0 }] });
   });
 
+  it('HU005/HU016: consulta los motivos de justificación del catálogo', () => {
+    service.getCategoriasJustificacion().subscribe((res) => expect(res.datos[0].codigo).toBe('MED'));
+    http
+      .expectOne(`${api}/categorias-justificacion`)
+      .flush({ exitoso: true, datos: [{ id: 'c', codigo: 'MED', nombre: 'Médico / Salud', descripcion: null }] });
+  });
+
   it('HU155: consulta los estados del sistema del administrador', () => {
     service.getEstadosSistema().subscribe((res) => expect(res.datos.length).toBe(1));
     http
