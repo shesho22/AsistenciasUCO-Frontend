@@ -1,4 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { of } from 'rxjs';
+import { CatalogService } from '../../../../core/services/catalog.service';
+import { CorreccionIdentidadService } from '../../../../core/services/correccion-identidad.service';
 import { DeanCoordinadorEditModalComponent } from './dean-coordinador-edit-modal.component';
 import { CoordinadorItem, ActualizarCoordinadorPayload } from '../../../../core/models/role-management.model';
 
@@ -49,7 +52,13 @@ describe('DeanCoordinadorEditModalComponent (HU121)', () => {
   beforeEach(async () => {
     guardados = [];
     cancelaciones = 0;
-    await TestBed.configureTestingModule({ imports: [DeanCoordinadorEditModalComponent] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [DeanCoordinadorEditModalComponent],
+      providers: [
+        { provide: CorreccionIdentidadService, useValue: { permiteCorregirDocumento: () => of(false) } },
+        { provide: CatalogService, useValue: { getTiposIdentificacion: () => of({ exitoso: true, datos: [] }) } },
+      ],
+    }).compileComponents();
     fixture = TestBed.createComponent(DeanCoordinadorEditModalComponent);
     component = fixture.componentInstance;
     component.guardar.subscribe((payload) => guardados.push(payload));
@@ -138,5 +147,15 @@ describe('DeanCoordinadorEditModalComponent (HU121)', () => {
 
     expect(cancelaciones).toBe(1);
     expect(guardados.length).toBe(0);
+  });
+
+  it('HU159: envia el documento corregido y su motivo solo si el documento cambia', async () => {
+    await render();
+    component.documento.set({ valido: true, documento: { idTipoIdentificacion: 't-cc', numeroIdentificacion: 2002 }, motivo: 'Digitación' });
+    component.onGuardar();
+    expect(guardados[guardados.length - 1]).toEqual(jasmine.objectContaining({ idTipoIdentificacion: 't-cc', numeroIdentificacion: 2002, motivo: 'Digitación' }));
+
+    component.documento.set({ valido: false, documento: null, motivo: '' });
+    expect(component.esValido()).toBeFalse();
   });
 });

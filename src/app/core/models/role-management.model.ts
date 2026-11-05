@@ -55,6 +55,10 @@ export interface ActualizarCoordinadorPayload {
   primerApellido: string;
   segundoApellido: string;
   correo: string;
+  /** HU159: corrección del documento (opcional; si viene, exige motivo). */
+  idTipoIdentificacion?: string;
+  numeroIdentificacion?: number;
+  motivo?: string;
 }
 
 /** HU121/HU122: resultado de editar o cambiar el estado de un coordinador. */

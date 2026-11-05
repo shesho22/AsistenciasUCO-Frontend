@@ -138,7 +138,7 @@ Control centralizado de sesiones y registro de asistencia en aula.
 | Ruta | Sidebar | Componente | Spec |
 | :--- | :--- | :--- | :--- |
 | `/app/admin/facultades` | Gestión de Facultades | [`AdminFacultadesComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/admin/admin-facultades/admin-facultades.component.ts) | ✅ |
-| `/app/admin/decanos` | Gestión de Decanos | [`AdminDecanosComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/admin/admin-decanos/admin-decanos.component.ts) | — |
+| `/app/admin/decanos` | Gestión de Decanos | [`AdminDecanosComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/admin/admin-decanos/admin-decanos.component.ts) (HU159: "Corregir datos" del decano con `CorreccionIdentidadModalComponent`) | — |
 | `/app/admin/sedes` | Sedes Institucionales | [`AdminSedesComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/admin/admin-sedes/admin-sedes.component.ts) | ✅ |
 | `/app/admin/areas` | Áreas de Conocimiento | [`AdminAreasComponent`](../src/app/features/admin/admin-areas/admin-areas.component.ts) (HU150: solo consulta sobre `CatalogoSoloConsultaComponent`; HU151/HU152 descartadas, regla de John 2026-11-04) | [spec](../src/app/features/admin/admin-areas/admin-areas.component.spec.ts) |
 | `/app/admin/periodos` | Períodos Académicos | [`AdminPeriodosComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/admin/admin-periodos/admin-periodos.component.ts) | ✅ |
@@ -173,6 +173,8 @@ Aplicado en Admin (`a3bbebc`), Decano y Coordinador (`UX-006`). Usarlo cuando un
 | `ModalComponent` | `app-modal` | Ventanas modales accesibles con backdrop difuminado y foco gestionado. |
 | `FormSelectComponent` | `app-form-select` | Selects reactivos estilizados compatibles con formularios y Signals. |
 | `FormFieldComponent` | `app-form-field` | Wrappers de inputs con etiquetas y mensajes de error automáticos. |
+| `CorreccionDocumentoComponent` | `app-correccion-documento` | HU159: tipo y número de documento y motivo de la corrección. Solo lectura si `IDENTIDAD.PERMITIR_CORREGIR_DOCUMENTO` está apagado; exige motivo si cambia el documento (o siempre, con `motivoSiempre`). Lo usan los modales de HU121 y HU092. |
+| `CorreccionIdentidadModalComponent` | `app-correccion-identidad-modal` | HU159: corrección de nombres, apellidos y documento con motivo obligatorio (estudiante desde la ficha del coordinador, decano desde Decanos del administrador). |
 | `AvatarComponent` | `app-avatar` | Avatar de usuario con iniciales o fotografía y anillos de color por rol. |
 | `PaginationComponent` | `app-pagination` | Controles de paginación para consultas con `ApiPageResponse<T>`. |
 | `ToastComponent` | `app-toast` | Notificaciones flotantes reactivas. |
