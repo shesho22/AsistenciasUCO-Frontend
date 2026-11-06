@@ -129,6 +129,24 @@ describe('MatriculaQrComponent (HU176B, página pública)', () => {
     expect(component.password()).toBe('');
   });
 
+  it('al terminar el registro avisa de forma destacada que debe verificar el correo antes de iniciar sesión', async () => {
+    await crear({ t: TOKEN });
+    component.mostrarRegistro();
+    llenarFormulario();
+
+    component.registrar();
+    fixture.detectChanges();
+
+    const aviso = q('matricula-verificar-correo');
+    expect(aviso).not.toBeNull();
+    expect(aviso?.getAttribute('role')).toBe('status');
+    const texto = aviso?.textContent ?? '';
+    expect(texto).toContain('Verifica tu correo');
+    expect(texto).toContain('ana@uco.edu.co');
+    expect(texto).toContain('antes de iniciar sesión');
+    expect(q('matricula-exito')?.textContent).toContain('Ir a iniciar sesión');
+  });
+
   it('no envía el formulario si faltan datos obligatorios o la contraseña es corta', async () => {
     await crear({ t: TOKEN });
     component.mostrarRegistro();

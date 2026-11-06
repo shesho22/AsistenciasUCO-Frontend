@@ -112,7 +112,13 @@ const PIN_SEIS_DIGITOS = /^[0-9]{6}$/;
             <p class="text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-xl p-3">
               Quedaste matriculado en el grupo. Inicia sesión con tu número de documento <strong>{{ usuario() }}</strong>.
             </p>
-            <p class="text-xs text-warm-500">Revisa tu correo institucional para verificar tu cuenta.</p>
+            <div role="status" data-testid="matricula-verificar-correo" class="text-left text-sm text-amber-900 bg-amber-50 border border-amber-300 rounded-xl p-3 space-y-1">
+              <p class="font-bold">Verifica tu correo para activar tu cuenta</p>
+              <p>
+                Te enviamos un enlace de verificación a <strong>{{ correoRegistrado() }}</strong>. Debes abrirlo antes de iniciar sesión: mientras no verifiques tu correo no podrás ingresar.
+              </p>
+              <p class="text-xs">Si no lo ves en unos minutos, revisa la carpeta de correo no deseado o pide a tu docente que te reenvíe el enlace.</p>
+            </div>
             <a routerLink="/login" class="inline-block text-sm font-semibold text-primary-600 hover:underline">Ir a iniciar sesión</a>
           </div>
         }
@@ -135,6 +141,8 @@ export class MatriculaQrComponent implements OnInit {
   readonly mensaje = signal<string>('');
   readonly curso = signal<CursoMatriculaQr | null>(null);
   readonly usuario = signal<string>('');
+  /** Correo con el que se registro la cuenta nueva: solo para indicar donde llego el enlace de verificacion. */
+  readonly correoRegistrado = signal<string>('');
 
   readonly pin = signal<string>('');
   readonly tipoId = signal<string>('');
@@ -214,6 +222,7 @@ export class MatriculaQrComponent implements OnInit {
     this.matriculaQr.registrar(payload).subscribe({
       next: (resultado) => {
         this.usuario.set(resultado.usuario);
+        this.correoRegistrado.set(payload.correo);
         this.descartarDatos();
         this.estado.set('EXITO');
       },
