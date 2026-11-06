@@ -302,6 +302,12 @@ export class DashboardLayoutComponent {
       icon: 'sistema',
     },
     {
+      label: 'Gestión de Correos',
+      route: '/app/admin/correos',
+      roles: ['ADMINISTRADOR', 'ADMIN'],
+      icon: 'correo',
+    },
+    {
       label: 'Indicadores',
       route: '/app/decano/indicadores',
       roles: ['DECANO'],

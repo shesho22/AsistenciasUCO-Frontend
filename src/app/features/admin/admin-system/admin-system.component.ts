@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal, ChangeDetectionStrategy, DestroyRef 
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { AdminManagementService } from '../../../core/services/admin-management.service';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { ToastService } from '../../../shared/components/toast/toast.component';
@@ -18,7 +19,7 @@ type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
   selector: 'app-admin-system',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, AdminAuditoriaComponent],
+  imports: [CommonModule, FormsModule, RouterLink, AdminAuditoriaComponent],
   template: `
     <div class="space-y-6">
       <!-- ================= HEADER & BREADCRUMB ================= -->
@@ -36,6 +37,14 @@ type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
         </div>
 
         <div class="flex items-center gap-2">
+          <a
+            routerLink="/app/admin/correos"
+            class="px-4 py-2 bg-warm-100 text-warm-800 border border-warm-300 rounded-xl text-xs font-bold hover:bg-warm-200 shadow-sm transition-all flex items-center gap-2"
+            title="Gestión de plantillas, cola outbox y canal SMTP"
+          >
+            <svg class="w-4 h-4 text-warm-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+            <span>Gestión de Correos (SMTP)</span>
+          </a>
           <button
             (click)="tabActiva.set('CIERRE_MASIVO')"
             class="px-4 py-2 bg-primary-700 text-white rounded-xl text-xs font-bold hover:bg-primary-800 shadow-sm transition-all flex items-center gap-2"
