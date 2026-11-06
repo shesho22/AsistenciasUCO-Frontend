@@ -79,11 +79,42 @@ describe('DeanManagementService', () => {
       expect(res.datos?.[0].apellidos).toBe('Henao Perez');
       expect(res.datos?.[0].programaAcademico).toBe('Sin Programa Asignado');
       expect(res.datos?.[0].estado).toBe('ACTIVO');
+      // Certificación F3: el contrato no trae facultad ni conteos; no se inventan "Sin Facultad Asignada" ni ceros.
+      expect(res.datos?.[0].facultad).toBe('');
+      expect(res.datos?.[0].totalDocentes).toBeNull();
+      expect(res.datos?.[0].totalGrupos).toBeNull();
     });
 
     const req = http.expectOne(`${environment.apiUrl}/decano/coordinadores`);
     expect(req.request.method).toBe('GET');
     req.flush({ exitoso: true, datos: backendDtos });
+  });
+
+  it('certificación F3: usa la facultad y los conteos reales que envía /decano/coordinadores', () => {
+    service.getCoordinadores().subscribe((res) => {
+      expect(res.datos?.[0].facultad).toBe('Facultad de Ingeniería');
+      expect(res.datos?.[0].totalDocentes).toBe(1);
+      expect(res.datos?.[0].totalGrupos).toBe(2);
+    });
+
+    const req = http.expectOne(`${environment.apiUrl}/decano/coordinadores`);
+    req.flush({
+      exitoso: true,
+      datos: [
+        {
+          id: 'coord-3',
+          idUsuario: 'usr-3',
+          numeroIdentificacion: '1017000002',
+          nombreCompleto: 'Andres Felipe Lopez Martinez',
+          idPrograma: 'prog-1',
+          nombrePrograma: 'Ingeniería de Sistemas',
+          estaActivoCoordinador: true,
+          nombreFacultad: 'Facultad de Ingeniería',
+          totalDocentes: 1,
+          totalGrupos: 2,
+        },
+      ],
+    });
   });
 
   it('createCoordinador envía POST con los datos del nuevo coordinador', () => {

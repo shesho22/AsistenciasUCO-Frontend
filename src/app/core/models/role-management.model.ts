@@ -41,8 +41,9 @@ export interface CoordinadorItem {
   facultad: string;
   programaAcademico: string;
   nombrePrograma?: string;
-  totalDocentes: number;
-  totalGrupos: number;
+  /** `null` cuando `/decano/coordinadores` no informa el conteo: se muestra "—", no un 0 inventado (certificación F3). */
+  totalDocentes: number | null;
+  totalGrupos: number | null;
   estado: 'ACTIVO' | 'INACTIVO';
   estaActivoCoordinador?: boolean;
   estaActivoRolCoordinador?: boolean;
@@ -260,9 +261,10 @@ export interface PlanEstudioItem {
   anioVigencia: number;
   programa: string;
   facultad: string;
-  totalCreditos: number;
+  /** `null` cuando el backend no informa el total (p. ej. `/coordinador/planes-estudio`): no se inventa un 0. */
+  totalCreditos: number | null;
   totalSemestres: number;
-  totalAsignaturas: number;
+  totalAsignaturas: number | null;
   estado: 'VIGENTE' | 'EN_TRANSICION' | 'HISTORICO' | 'INACTIVO';
   descripcion: string;
 }

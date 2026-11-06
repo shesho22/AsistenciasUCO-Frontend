@@ -36,10 +36,6 @@ import { Course } from '../../../../core/models/course.model';
               <span class="font-medium text-warm-800">{{ course()?.schedule }}</span>
             </div>
             <div>
-              <span class="text-warm-400 block text-[10px] uppercase font-bold">Aula Asignada:</span>
-              <span class="font-medium text-warm-800">{{ course()?.room }}</span>
-            </div>
-            <div>
               <span class="text-warm-400 block text-[10px] uppercase font-bold">Docente Titular:</span>
               <span class="font-medium text-warm-800">{{ course()?.docenteName }}</span>
             </div>

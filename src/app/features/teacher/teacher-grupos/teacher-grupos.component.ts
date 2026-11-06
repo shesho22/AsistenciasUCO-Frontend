@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription, forkJoin, of } from 'rxjs';
 import { CourseService, GrupoCoordinadorPayload } from '../../../core/services/course.service';
 import { CatalogService } from '../../../core/services/catalog.service';
@@ -101,6 +101,7 @@ type VistaGrupos = 'LISTA' | 'HUB_GRUPO' | 'FORM_SESION' | 'FORM_GRUPO';
           (ajustarHorarioSesion)="abrirEditarSesion($event)"
           (cancelarSesion)="abrirModalCancelarSesion($event)"
           (retirarEstudiante)="abrirModalRetiro($event)"
+          (padronCambiado)="cargarEstudiantesGrupo(selectedCourse()!.id)"
           (irReclamos)="irAGestionReclamos()"
           (reintentarReclamos)="reintentarCargaReclamosGrupo()"
         />
@@ -168,6 +169,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   private studentService = inject(StudentService);
   private claimService = inject(AttendanceClaimService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute, { optional: true });
   private toast = inject(ToastService);
   private timeZone = inject(SessionTimeZoneService);
 
@@ -255,12 +257,25 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
         const teacherCourses = coursesRes.datos || [];
         this.courses.set(teacherCourses);
         this.isLoading.set(false);
+        this.abrirHubSolicitado(teacherCourses);
       },
       error: (err: unknown) => {
         this.isLoading.set(false);
         this.toast.error(getApiErrorMessage(err) || 'Error al cargar grupos.');
       },
     });
+  }
+
+  /**
+   * HU051/HU053-HU055: `?grupo=<id>` (botón "Padrón y solicitudes" de la vista del grupo) abre el hub de ese grupo,
+   * donde están el retiro con motivo y las solicitudes de ingreso. Un id ajeno se ignora y queda la lista.
+   */
+  private abrirHubSolicitado(cursos: Course[]): void {
+    const id = this.route?.snapshot.queryParamMap.get('grupo');
+    const curso = id ? cursos.find((c) => c.id === id) : undefined;
+    if (curso) {
+      this.verHubGrupo(curso);
+    }
   }
 
   /** F3: abre el formulario de nuevo grupo con la oferta de asignaturas de los programas del docente. */

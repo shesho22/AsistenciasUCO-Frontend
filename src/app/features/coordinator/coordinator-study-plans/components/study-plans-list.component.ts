@@ -68,7 +68,7 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
                   <div class="grid grid-cols-3 gap-2.5 p-3 rounded-xl bg-warm-50 border border-warm-100 text-center">
                     <div>
                       <span class="text-[11px] text-warm-400 block font-medium">Créditos</span>
-                      <strong class="font-serif text-lg font-bold text-warm-900">{{ plan.totalCreditos }}</strong>
+                      <strong class="font-serif text-lg font-bold text-warm-900">{{ plan.totalCreditos ?? '—' }}</strong>
                     </div>
                     <div class="border-x border-warm-200">
                       <span class="text-[11px] text-warm-400 block font-medium">Duración</span>
@@ -76,7 +76,7 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
                     </div>
                     <div>
                       <span class="text-[11px] text-warm-400 block font-medium">Asignaturas</span>
-                      <strong class="font-serif text-lg font-bold text-primary-800">{{ plan.totalAsignaturas }}</strong>
+                      <strong class="font-serif text-lg font-bold text-primary-800">{{ plan.totalAsignaturas ?? '—' }}</strong>
                     </div>
                   </div>
                 </div>

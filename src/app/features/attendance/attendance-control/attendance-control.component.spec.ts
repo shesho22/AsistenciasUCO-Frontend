@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NEVER, Observable, Subject, of, throwError } from 'rxjs';
-import { AttendanceControlComponent } from './attendance-control.component';
+import { AttendanceControlComponent, MENSAJE_MATRICULA_DUPLICADA_DOCENTE } from './attendance-control.component';
+import { HttpErrorResponse } from '@angular/common/http';
 import { CourseService } from '../../../core/services/course.service';
 import { SessionService } from '../../../core/services/session.service';
 import { GroupService } from '../../../core/services/group.service';
@@ -327,6 +328,41 @@ describe('AttendanceControlComponent contract corrections', () => {
     expect(component.studentFieldErrors()['password']).toBeTruthy();
   });
 
+  it('Certificación F3: el 409 ERR_MATRICULA_DUPLICADA orienta al docente al reingreso por solicitud', () => {
+    const component = createComponent();
+    component.selectedCourseId.set('grupo-1');
+    studentService.enrollStudentInGroup.and.returnValue(
+      throwError(
+        () =>
+          new HttpErrorResponse({
+            status: 409,
+            error: {
+              timestamp: '2026-11-06T00:00:00Z',
+              status: 409,
+              error: 'Conflict',
+              code: 'ERR_MATRICULA_DUPLICADA',
+              message: 'Usted ya se encuentra registrado o matriculado en este grupo.',
+              path: '/api/v1/grupos/estudiantes',
+              correlationId: null,
+            },
+          })
+      ) as never
+    );
+
+    component.onRegisterStudentSubmit({
+      tipoIdentificacionId: 'tipo-1',
+      numeroIdentificacion: '123456',
+      primerNombre: 'Ada',
+      primerApellido: 'Lovelace',
+      correo: 'ada@uco.edu.co',
+      password: 'Clave-Prueba-123',
+    });
+
+    expect(studentService.enrollStudentInGroup).toHaveBeenCalled();
+    expect(component.toastMessage()).toBe(MENSAJE_MATRICULA_DUPLICADA_DOCENTE);
+    expect(component.toastMessage()).toContain('solicitud de ingreso');
+  });
+
   it('muestra feedback cuando falla la carga de sesiones', () => {
     sessionService.getSessionsByGroup.and.returnValue(
       throwError(() => new Error('session load failed'))
@@ -506,6 +542,17 @@ describe('AttendanceControlComponent contract corrections', () => {
     component.irABandejaGeneralReclamos();
 
     expect(component.isGroupClaimsModalOpen()).toBeFalse();
+  });
+
+  it('HU051/HU053: "Padrón y solicitudes" abre el hub del grupo del docente', () => {
+    const component = createComponent([activeStudent], []);
+    const navigate = jasmine.createSpy('navigate').and.resolveTo(true);
+    (component as unknown as { router: unknown }).router = { navigate };
+    component.selectedCourseId.set('course-1');
+
+    component.irAPadronYSolicitudes();
+
+    expect(navigate).toHaveBeenCalledWith(['/app/docente/grupos'], { queryParams: { grupo: 'course-1' } });
   });
 
   it('abre modales de información del grupo, reclamos y proyección de sesión', () => {

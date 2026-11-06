@@ -62,7 +62,7 @@ export interface FilaCatalogo {
               </tr>
             } @empty {
               <tr>
-                <td [attr.colspan]="conEstado() ? 3 : 2" class="px-4 py-8 text-center text-warm-500">{{ vacio() }}</td>
+                <td [attr.colspan]="conEstado() ? 3 : 2" class="px-4 py-8 text-center text-warm-500">{{ cargando() ? 'Cargando…' : vacio() }}</td>
               </tr>
             }
           </tbody>
@@ -80,4 +80,6 @@ export class CatalogoSoloConsultaComponent {
   conEstado = input(true);
   /** Encabezado de sección (h2) en lugar de encabezado de página, para varias tablas en una misma pantalla. */
   seccion = input(false);
+  /** Mientras llega la primera respuesta no se afirma que el catálogo está vacío (certificación F3, HU154). */
+  cargando = input(false);
 }

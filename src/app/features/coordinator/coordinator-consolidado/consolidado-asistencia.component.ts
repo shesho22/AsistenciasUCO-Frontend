@@ -93,7 +93,7 @@ export function acumularOpciones(opciones: Opcion[], filas: ConsolidadoGrupoItem
                   <th class="py-2 pr-3">Materia / Grupo</th>
                   <th class="py-2 pr-3">Docente</th>
                   <th class="py-2 pr-3 text-right">Activos</th>
-                  <th class="py-2 pr-3 text-right">Sesiones</th>
+                  <th class="py-2 pr-3 text-right" title="Sesiones ya vencidas con asistencia registrada; las programadas a futuro no cuentan.">Sesiones ejecutadas</th>
                   <th class="py-2 pr-3 text-right">% Asistencia</th>
                   <th class="py-2 pr-3 text-right">% Inasistencia</th>
                   <th class="py-2 pr-3 text-right">En riesgo</th>

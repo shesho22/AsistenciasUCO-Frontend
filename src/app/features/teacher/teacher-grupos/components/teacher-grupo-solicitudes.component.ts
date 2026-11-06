@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, input, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -39,9 +39,11 @@ const MOTIVO_MAXIMO = 500;
           <p class="text-xs text-warm-500">Orden de llegada. Sin cupo, aceptar deja la solicitud en lista de espera.</p>
         </div>
         <div class="flex items-center gap-3">
-          <span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-            Cupos disponibles: {{ cupos().disponibles }} de {{ cupos().capacidad }}
-          </span>
+          @if (cupos(); as c) {
+            <span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+              Cupos disponibles: {{ c.disponibles }} de {{ c.capacidad }}
+            </span>
+          }
           <select
             class="px-3 py-1.5 bg-white border border-warm-200 rounded-xl text-xs"
             [value]="estadoFiltro()"
@@ -140,9 +142,12 @@ export class TeacherGrupoSolicitudesComponent implements OnInit {
   private readonly toast = inject(ToastService);
 
   readonly grupoId = input.required<string>();
+  /** Una aceptación con cupo matricula (o reactiva) al estudiante: el padrón del hub debe recargarse. */
+  readonly matriculaCambiada = output<void>();
 
   readonly solicitudes = signal<SolicitudIngresoDocente[]>([]);
-  readonly cupos = signal({ disponibles: 0, capacidad: 0 });
+  /** Los cupos llegan en cada solicitud; sin solicitudes no se conocen y no se muestra "0 de 0". */
+  readonly cupos = signal<{ disponibles: number; capacidad: number } | null>(null);
   readonly estadoFiltro = signal<EstadoFiltro>('TODOS');
   readonly cargando = signal(false);
   readonly procesando = signal(false);
@@ -191,6 +196,7 @@ export class TeacherGrupoSolicitudesComponent implements OnInit {
           this.toast.info(`El grupo no tiene cupo: ${solicitud.estudianteNombre} quedó en lista de espera.`);
         } else {
           this.toast.success(`${solicitud.estudianteNombre} quedó matriculado en el grupo.`);
+          this.matriculaCambiada.emit();
         }
         this.cargar();
       },

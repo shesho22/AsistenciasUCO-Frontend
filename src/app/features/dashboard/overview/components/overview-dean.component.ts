@@ -64,11 +64,11 @@ import { CoordinadorItem } from '../../../../core/models/role-management.model';
                 <div class="grid grid-cols-2 gap-2 pt-2 border-t border-warm-100">
                   <div class="bg-warm-50 p-2 rounded-lg text-center">
                     <span class="block text-warm-500 text-[10px]">Docentes</span>
-                    <span class="font-bold text-warm-900 text-sm">{{ coord.totalDocentes }}</span>
+                    <span class="font-bold text-warm-900 text-sm">{{ coord.totalDocentes ?? '—' }}</span>
                   </div>
                   <div class="bg-warm-50 p-2 rounded-lg text-center">
                     <span class="block text-warm-500 text-[10px]">Grupos</span>
-                    <span class="font-bold text-warm-900 text-sm">{{ coord.totalGrupos }}</span>
+                    <span class="font-bold text-warm-900 text-sm">{{ coord.totalGrupos ?? '—' }}</span>
                   </div>
                 </div>
               </div>

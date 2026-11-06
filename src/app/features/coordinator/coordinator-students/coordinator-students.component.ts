@@ -14,6 +14,7 @@ import { Subject, EMPTY } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, finalize, switchMap } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { EstudianteResumenApiDto } from '../../../core/api/models/estudiante-api-dto.model';
+import { CoordinatorFichaModalComponent } from '../coordinator-indicators/components/coordinator-ficha-modal.component';
 
 type PestanaModulo = 'DIRECTORIO' | 'MATRICULA_GRUPO' | 'SOLICITUDES';
 
@@ -28,6 +29,7 @@ type PestanaModulo = 'DIRECTORIO' | 'MATRICULA_GRUPO' | 'SOLICITUDES';
     ButtonComponent,
     AvatarComponent,
     PaginationComponent,
+    CoordinatorFichaModalComponent,
   ],
   template: `
     <div class="space-y-6">
@@ -161,11 +163,18 @@ type PestanaModulo = 'DIRECTORIO' | 'MATRICULA_GRUPO' | 'SOLICITUDES';
 
               <div class="flex items-center justify-between pt-2 border-t border-warm-100 text-xs text-warm-500">
                 <span>{{ est.gruposInscritos ? est.gruposInscritos.length + ' asignaturas matriculadas' : 'Matrícula gestionada por grupo docente' }}</span>
-                <span class="text-primary-700 font-semibold">UCO Estudiante</span>
+                <!-- HU159: la ficha (historial y "Corregir datos") también desde el padrón del programa -->
+                <button type="button" data-testid="ver-ficha-estudiante" (click)="abrirFicha(est)" class="text-primary-700 font-semibold hover:underline">
+                  Ver ficha
+                </button>
               </div>
             </div>
           }
         </div>
+      }
+
+      @if (estudianteFicha(); as e) {
+        <app-coordinator-ficha-modal [idEstudiante]="e.id" [nombre]="e.nombreCompleto" (cerrar)="estudianteFicha.set(null)" />
       }
 
       <!-- Paginador del Directorio -->
@@ -180,6 +189,10 @@ type PestanaModulo = 'DIRECTORIO' | 'MATRICULA_GRUPO' | 'SOLICITUDES';
   `,
 })
 export class CoordinatorStudentsComponent implements OnInit {
+  abrirFicha(estudiante: EstudianteDirectorioItem): void {
+    this.estudianteFicha.set(estudiante);
+  }
+
   private readonly coordinatorService = inject(CoordinatorManagementService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
@@ -189,6 +202,9 @@ export class CoordinatorStudentsComponent implements OnInit {
   // Propiedades preservadas por compatibilidad con specs preexistentes (LB-001B.1B)
   pestanaActiva = signal<PestanaModulo>('DIRECTORIO');
   selectedCourseId = signal<string>('crs-1');
+
+  /** HU159: estudiante cuya ficha (con "Corregir datos") está abierta. */
+  estudianteFicha = signal<EstudianteDirectorioItem | null>(null);
 
   // Directorio Estudiantil del Programa
   directorio = signal<EstudianteDirectorioItem[]>([]);

@@ -23,7 +23,7 @@ import { Course } from '../../../../core/models/course.model';
 
         <div class="p-5 rounded-2xl bg-warm-50 border border-warm-200/80 space-y-2">
           <span class="text-xs font-bold uppercase tracking-wider text-warm-500">Aforo y Capacidad</span>
-          <p class="text-xl font-bold text-emerald-700">{{ curso()?.cupoMaximo || 35 }} Cupos Máximos</p>
+          <p class="text-xl font-bold text-emerald-700">{{ curso()?.cupoMaximo ?? '—' }} Cupos Máximos</p>
           <p class="text-xs text-warm-600">Ocupación actual: {{ curso()?.enrolledStudentsCount || totalMatriculados() }} matriculados</p>
         </div>
       </div>

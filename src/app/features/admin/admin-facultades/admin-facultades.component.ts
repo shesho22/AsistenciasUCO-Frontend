@@ -521,7 +521,7 @@ type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
                             <span class="font-bold text-sm text-warm-900 ml-2">{{ plan.nombre }}</span>
                           </div>
                           <span class="text-xs font-bold text-warm-600">
-                            {{ plan.totalCreditos }} créditos
+                            {{ plan.totalCreditos ?? '—' }} créditos
                           </span>
                         </div>
 

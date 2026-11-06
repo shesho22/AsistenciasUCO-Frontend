@@ -173,7 +173,7 @@ import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
                 }
 
                 <div class="flex items-center justify-between pt-2 border-t border-warm-100">
-                  <span class="text-xs text-warm-500">{{ materia.aula ?? 'Aula no informada' }}</span>
+                  <span class="text-xs text-warm-500">{{ materia.horario ?? 'Horario no informado' }}</span>
                   <div class="flex items-center gap-2">
                     <app-button variant="secondary" size="sm" (clicked)="viewDetail.emit(materia)">
                       <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">

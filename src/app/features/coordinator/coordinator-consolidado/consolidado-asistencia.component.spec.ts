@@ -54,6 +54,8 @@ describe('ConsolidadoAsistenciaComponent (HU061)', () => {
     expect(texto).toContain('Coordinación');
     expect(texto).toContain('Cálculo');
     expect(texto).toContain('93.75%');
+    // Certificación F3: la columna cuenta sesiones ejecutadas, no las programadas del cronograma.
+    expect(texto).toContain('Sesiones ejecutadas');
     expect(fixture.componentInstance.periodos().length).toBe(1);
     expect(fixture.componentInstance.asignaturas()).toEqual([{ id: 'ASG-1', nombre: 'Cálculo' }]);
   });

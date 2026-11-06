@@ -7,6 +7,7 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
+import { resolveSessionInstant } from '../../../core/time/session-timezone.util';
 
 /** HU145: cronograma de las sesiones de clase programadas en la facultad, por rango de fechas. Solo lectura. */
 @Component({
@@ -64,7 +65,7 @@ import { SessionTimeZoneService } from '../../../core/services/session-timezone.
               <tbody>
                 @for (s of sesiones(); track s.id) {
                   <tr class="border-b border-warm-50">
-                    <td class="py-2 pr-3 text-xs text-warm-600">{{ timeZone.formatTemporalRange(s.fechaHoraInicio, s.fechaHoraFin) }}</td>
+                    <td class="py-2 pr-3 text-xs text-warm-600">{{ horario(s) }}</td>
                     <td class="py-2 pr-3 font-semibold text-warm-900">{{ s.nombre }} <span class="text-warm-400 font-mono">{{ s.codigo }}</span></td>
                     <td class="py-2 pr-3 text-warm-700">{{ s.nombreAsignatura }} · {{ s.nombreGrupo }}</td>
                     <td class="py-2 text-warm-700">{{ s.nombrePrograma }}</td>
@@ -91,8 +92,11 @@ export class DeanCronogramaComponent implements OnInit {
   readonly timeZone = inject(SessionTimeZoneService);
 
   sesiones = signal<SesionFacultadItem[]>([]);
-  /** APP-04: el contrato v1 del decano entrega `LocalDateTime` sin zona; se muestra literal e identificado. */
-  sinZona = computed(() => this.timeZone.hasUnzonedValue(this.sesiones().map((s) => s.fechaHoraInicio)));
+  /**
+   * APP-04: solo la sesion con procedencia CONFIRMADA trae un instante UTC (mismo criterio que el cronograma del
+   * coordinador); el resto conserva el valor v1 sin zona, que se muestra literal e identificado.
+   */
+  sinZona = computed(() => this.timeZone.hasUnzonedValue(this.sesiones().map((s) => this.inicio(s))));
   total = signal(0);
   pagina = signal(1);
   tamano = signal(20);
@@ -102,6 +106,19 @@ export class DeanCronogramaComponent implements OnInit {
 
   ngOnInit(): void {
     this.cargar();
+  }
+
+  /** Horario de la sesion en la zona efectiva; el valor sin zona se muestra literal (APP-04). */
+  horario(sesion: SesionFacultadItem): string {
+    return this.timeZone.formatTemporalRange(this.inicio(sesion), this.fin(sesion));
+  }
+
+  private inicio(sesion: SesionFacultadItem): string | null {
+    return resolveSessionInstant(sesion.fechaHoraInicio, sesion.fechaHoraInicioUtc, sesion.estadoTemporal);
+  }
+
+  private fin(sesion: SesionFacultadItem): string | null {
+    return resolveSessionInstant(sesion.fechaHoraFin, sesion.fechaHoraFinUtc, sesion.estadoTemporal);
   }
 
   filtrar(): void {

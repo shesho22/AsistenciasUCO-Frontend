@@ -102,6 +102,14 @@ describe('CourseService', () => {
     expect(courses[0].enrolledStudentsCount).toBe(7);
   });
 
+  // Certificación Fase 3: el hub mostraba "35" inventado; el cupo real llega con la asignación.
+  it('capacidadMaximaPermitida de la asignación es el cupo máximo; sin ella no se inventa', () => {
+    const { courses } = loadCourses([asignacion({ estudiantesActivos: 2, capacidadMaximaPermitida: 30 })], []);
+    expect(courses[0].cupoMaximo).toBe(30);
+    const sinCupo = loadCourses([asignacion({ estudiantesActivos: 2 })], []);
+    expect(sinCupo.courses[0].cupoMaximo).toBeUndefined();
+  });
+
   it('estudiantesActivos (matrícula activa) prevalece sobre totalEstudiantes del horario', () => {
     const { courses } = loadCourses([asignacion({ estudiantesActivos: 7 })], [horario({ totalEstudiantes: 25 })]);
 

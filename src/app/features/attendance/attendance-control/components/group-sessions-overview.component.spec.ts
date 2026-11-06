@@ -139,4 +139,12 @@ describe('GroupSessionsOverviewComponent', () => {
     expect(text).toContain('Grupo 001 - Arq Software');
     expect(text).not.toContain('undefined');
   });
+
+  it('HU051/HU053: el botón "Padrón y solicitudes" emite gestionarPadron', () => {
+    const comp = render([session(1)]);
+    let emitido = false;
+    comp.gestionarPadron.subscribe(() => (emitido = true));
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('[data-testid="padron-solicitudes"]')!.click();
+    expect(emitido).toBeTrue();
+  });
 });

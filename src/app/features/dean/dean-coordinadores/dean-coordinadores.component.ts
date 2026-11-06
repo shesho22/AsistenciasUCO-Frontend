@@ -169,17 +169,19 @@ type VistaDecano = 'LISTA' | 'REGISTRO';
                         {{ coord.programaAcademico }}
                       </span>
                     </div>
-                    <p class="text-xs text-warm-500 mt-1">{{ coord.facultad }}</p>
+                    @if (coord.facultad) {
+                      <p class="text-xs text-warm-500 mt-1">{{ coord.facultad }}</p>
+                    }
                   </div>
 
                   <!-- Métricas Bento -->
                   <div class="grid grid-cols-2 gap-2 p-2.5 rounded-xl bg-warm-50 border border-warm-100">
                     <div class="text-center">
-                      <span class="block text-base font-bold text-warm-900 font-serif">{{ coord.totalDocentes }}</span>
+                      <span class="block text-base font-bold text-warm-900 font-serif">{{ coord.totalDocentes ?? '—' }}</span>
                       <span class="text-[11px] text-warm-500">Docentes activos</span>
                     </div>
                     <div class="text-center border-l border-warm-200">
-                      <span class="block text-base font-bold text-primary-700 font-serif">{{ coord.totalGrupos }}</span>
+                      <span class="block text-base font-bold text-primary-700 font-serif">{{ coord.totalGrupos ?? '—' }}</span>
                       <span class="text-[11px] text-warm-500">Grupos gestionados</span>
                     </div>
                   </div>

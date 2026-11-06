@@ -15,7 +15,7 @@ import { Course } from '../../../../core/models/course.model';
           <p class="text-xs text-warm-500">Listado oficial de estudiantes con asistencia habilitada para este grupo.</p>
         </div>
         <span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-          {{ estudiantes().length }} de {{ curso()?.cupoMaximo || 35 }} Cupos
+          {{ estudiantes().length }} de {{ curso()?.cupoMaximo ?? '—' }} Cupos
         </span>
       </div>
 

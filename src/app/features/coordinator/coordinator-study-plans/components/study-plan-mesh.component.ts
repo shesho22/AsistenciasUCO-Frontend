@@ -42,7 +42,7 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
           </div>
           <h2 class="font-serif font-bold text-2xl text-warm-900">{{ plan().nombre }}</h2>
           <p class="text-xs text-warm-600">
-            Duración: <strong>{{ plan().totalSemestres }} Semestres</strong> • Créditos: <strong>{{ plan().totalCreditos }}</strong> • Asignaturas: <strong>{{ asignaturas().length }}</strong>
+            Duración: <strong>{{ plan().totalSemestres }} Semestres</strong> • Créditos: <strong>{{ creditosMalla() }}</strong> • Asignaturas: <strong>{{ asignaturas().length }}</strong>
           </p>
         </div>
 
@@ -182,6 +182,10 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
 export class StudyPlanMeshComponent {
   plan = input.required<PlanEstudioItem>();
   asignaturas = input.required<AsignaturaPlanItem[]>();
+  /** Certificación F3: créditos reales de la malla cargada (el plan no trae el total). */
+  creditosMalla = computed(() =>
+    this.asignaturas().reduce((total, a) => total + (Number(a.creditos) || 0), 0)
+  );
 
   back = output<void>();
   addSemester = output<void>();

@@ -206,7 +206,9 @@ export class TeacherGruposListComponent {
   });
 
   getPorcentajeCupo(course: Course): number {
-    const max = course.cupoMaximo || 35;
+    // Sin cupo máximo informado no se inventa uno (antes 35): la barra queda en 0.
+    const max = course.cupoMaximo;
+    if (!max) return 0;
     const actuales = course.enrolledStudentsCount || 0;
     return Math.min(Math.round((actuales / max) * 100), 100);
   }

@@ -173,8 +173,14 @@ export class DeanPlanMallaComponent implements OnInit {
     };
   });
 
+  /**
+   * Certificación Fase 3: el selector iba de 1 a `totalSemestres` (o 10 inventados), y una asignatura en un semestre
+   * mayor (p. ej. S8 en un plan con un solo semestre registrado) no se podía filtrar. Se cubre hasta el mayor de
+   * `totalSemestres` y el semestre más alto de las asignaturas, sin inventar valores.
+   */
   semestresDisponibles = computed(() => {
-    const total = this.selectedPlan()?.totalSemestres || 10;
+    const maximoAsignaturas = this.asignaturas().reduce((max, a) => Math.max(max, Number(a.semestre) || 0), 0);
+    const total = Math.max(this.selectedPlan()?.totalSemestres || 0, maximoAsignaturas);
     return Array.from({ length: total }, (_, i) => i + 1);
   });
 
