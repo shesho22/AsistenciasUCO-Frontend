@@ -178,6 +178,15 @@ export const routes: Routes = [
             (m) => m.MessageAdministrationComponent
           ),
       },
+      {
+        path: 'admin/correos',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMINISTRADOR', 'ADMIN'] },
+        loadComponent: () =>
+          import('./features/admin/admin-email-management/admin-email-management.component').then(
+            (m) => m.AdminEmailManagementComponent
+          ),
+      },
       // Rutas Decano
       {
         path: 'decano/facultad',
