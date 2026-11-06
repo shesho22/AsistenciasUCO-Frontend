@@ -31,26 +31,8 @@ describe('DeanInfraestructuraComponent', () => {
     http.expectOne(`${environment.apiUrl}/admin/areas`).flush({
       exitoso: true,
       datos: [
-        {
-          id: 'area-1',
-          codigo: 'AREA-SOFT',
-          nombre: 'Ingeniería de Software',
-          activa: true,
-        },
-      ],
-    });
-    http.expectOne(`${environment.apiUrl}/admin/sedes`).flush({
-      exitoso: true,
-      datos: [
-        {
-          id: 'sede-1',
-          codigo: 'RION',
-          nombre: 'Campus Rionegro',
-          municipio: 'Rionegro',
-          direccion: 'Sector 3',
-          telefono: '5698000',
-          estado: 'ACTIVO',
-        },
+        { id: 'area-1', codigo: 'AREA-SOFT', nombre: 'Ingeniería de Software', activa: true },
+        { id: 'area-2', codigo: 'AREA-MAT', nombre: 'Matemáticas', activa: true },
       ],
     });
     fixture.detectChanges();
@@ -60,18 +42,30 @@ describe('DeanInfraestructuraComponent', () => {
     http.verify();
   });
 
-  it('carga áreas, sedes y espacios de la facultad y permite filtrar', () => {
-    expect(component.areas().length).toBe(1);
-    expect(component.sedes().length).toBe(1);
+  it('carga las áreas de la facultad y permite filtrar', () => {
+    expect(component.areas().length).toBe(2);
+    expect(component.areasTotal()).toBe('2');
 
     component.filtroTexto.set('Software');
     expect(component.areasFiltradas().length).toBe(1);
-    expect(component.sedesFiltradas().length).toBe(0);
+  });
+
+  // HU020/HU140 descartadas (2026-11-06): sedes y espacios físicos no se piden; la pantalla no los consulta ni los muestra.
+  it('no consulta sedes ni espacios físicos', () => {
+    http.expectNone(`${environment.apiUrl}/admin/sedes`);
+    http.expectNone(`${environment.apiUrl}/admin/espacios-fisicos`);
+    const text = (fixture.nativeElement as HTMLElement).textContent || '';
+    expect(text).not.toContain('Sedes');
+    expect(text).not.toContain('Espacios Físicos');
+  });
+
+  it('vuelve al resumen de la facultad', () => {
+    component.volverAFacultad();
+    expect(routerSpy.navigate).toHaveBeenCalledWith(['/app/decano/facultad']);
   });
 });
 
-
-// UX-09 / AUTH-04: un 403/501 de áreas o sedes no es «0».
+// UX-09 / AUTH-04: un 403/500 de áreas no es «0».
 describe('DeanInfraestructuraComponent con errores HTTP', () => {
   let http: HttpTestingController;
 
@@ -85,24 +79,18 @@ describe('DeanInfraestructuraComponent con errores HTTP', () => {
 
   afterEach(() => http.verify());
 
-  it('sedes no disponibles (501) se informan y las áreas cargadas se conservan', () => {
+  it('áreas no disponibles se informan y el total muestra «—»', () => {
     const fixture = TestBed.createComponent(DeanInfraestructuraComponent);
     fixture.detectChanges();
-    http.expectOne(`${environment.apiUrl}/admin/areas`).flush({
-      exitoso: true,
-      datos: [{ id: 'area-1', codigo: 'AREA-SOFT', nombre: 'Ingeniería de Software', activa: true }],
-    });
-    http.expectOne(`${environment.apiUrl}/admin/sedes`).flush(
-      { exitoso: false, codigo: 'FEATURE_UNAVAILABLE', mensajeUsuario: 'No disponible.' },
-      { status: 501, statusText: 'Not Implemented' }
+    http.expectOne(`${environment.apiUrl}/admin/areas`).flush(
+      { exitoso: false, codigo: 'FORBIDDEN', mensajeUsuario: 'No autorizado.' },
+      { status: 403, statusText: 'Forbidden' }
     );
     fixture.detectChanges();
 
     const text = (fixture.nativeElement as HTMLElement).textContent || '';
-    expect(fixture.componentInstance.sedesTotal()).toBe('—');
-    expect(fixture.componentInstance.areasTotal()).toBe('1');
-    expect(text).toContain('No fue posible cargar las sedes.');
-    expect(text).not.toContain('No se encontraron sedes registradas.');
-    expect(text).not.toContain('Espacios Físicos0');
+    expect(fixture.componentInstance.areasTotal()).toBe('—');
+    expect(text).toContain('No fue posible cargar las áreas.');
+    expect(text).not.toContain('No se encontraron áreas de conocimiento.');
   });
 });

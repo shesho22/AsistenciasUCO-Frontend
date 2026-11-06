@@ -337,32 +337,6 @@ export interface InstitucionItem {
   estaActivaTextoInstitucion?: string;
 }
 
-export interface SedeInstitucionalItem {
-  id: string;
-  codigo: string;
-  nombre: string;
-  direccion: string;
-  municipio: string;
-  telefono: string;
-  estado: 'ACTIVO' | 'INACTIVO';
-  totalBloques?: number;
-  totalAulas?: number;
-}
-
-export interface EspacioFisicoItem {
-  id: string;
-  sedeId: string;
-  sedeNombre?: string;
-  codigo: string;
-  bloque: string;
-  piso: string;
-  tipo: 'AULA_REGULAR' | 'LABORATORIO' | 'AUDITORIO' | 'SALA_SISTEMAS' | 'TALLER';
-  capacidad: number;
-  tieneProyector: boolean;
-  tieneAireAcondicionado: boolean;
-  estado: 'DISPONIBLE' | 'MANTENIMIENTO' | 'INACTIVO';
-}
-
 export interface FacultadItem {
   id: string;
   codigo: string;

@@ -21,13 +21,13 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
               Decanatura Institucional
             </span>
             <span class="text-xs text-warm-400">•</span>
-            <span class="text-xs font-medium text-warm-500">Estructura Académica y Física</span>
+            <span class="text-xs font-medium text-warm-500">Estructura Académica</span>
           </div>
           <h1 class="font-serif font-bold text-2xl sm:text-3xl text-warm-900 tracking-tight">
-            Áreas de Conocimiento y Sedes Universitarias
+            Áreas de Conocimiento
           </h1>
           <p class="text-sm text-warm-600 mt-1">
-            Supervisión de las áreas temáticas adscritas a la facultad y las sedes donde opera.
+            Supervisión de las áreas temáticas adscritas a la facultad.
           </p>
         </div>
 
@@ -40,20 +40,20 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
             ← Resumen de Facultad
           </button>
           <span class="px-3.5 py-2 rounded-xl bg-warm-100 text-xs font-bold text-warm-800 border border-warm-200">
-            {{ areasTotal() }} Áreas • {{ sedesTotal() }} Sedes
+            {{ areasTotal() }} Áreas
           </span>
         </div>
       </div>
 
-      @if (errorAreas() || errorSedes()) {
+      @if (errorAreas()) {
         <div class="rounded-2xl border border-red-200 bg-red-50 p-4 text-xs text-red-800" role="alert">
-          <p class="font-semibold">No fue posible cargar: {{ errorAreas() ? 'áreas' : '' }}{{ errorAreas() && errorSedes() ? ' y ' : '' }}{{ errorSedes() ? 'sedes' : '' }}.</p>
-          <p class="mt-1">Los totales afectados muestran «—». No equivalen a cero registros.</p>
+          <p class="font-semibold">No fue posible cargar las áreas.</p>
+          <p class="mt-1">El total muestra «—». No equivale a cero registros.</p>
         </div>
       }
 
       <!-- KPIs Bento -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 gap-4">
         <div class="p-4 rounded-2xl bg-white border border-warm-200 shadow-warm-sm flex items-center justify-between">
           <div>
             <span class="text-xs text-warm-500 font-medium">Áreas de Conocimiento</span>
@@ -65,31 +65,6 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
             </svg>
           </div>
         </div>
-
-        <div class="p-4 rounded-2xl bg-white border border-warm-200 shadow-warm-sm flex items-center justify-between">
-          <div>
-            <span class="text-xs text-warm-500 font-medium">Sedes Operativas</span>
-            <p class="text-2xl font-serif font-bold text-emerald-700">{{ sedesTotal() }}</p>
-          </div>
-          <div class="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-            </svg>
-          </div>
-        </div>
-
-        <div class="p-4 rounded-2xl bg-white border border-warm-200 shadow-warm-sm flex items-center justify-between">
-          <div>
-            <span class="text-xs text-warm-500 font-medium">Espacios Físicos</span>
-            <p class="text-2xl font-serif font-bold text-primary-800">—</p>
-            <span class="text-[11px] text-warm-500">Sin consulta de lectura para la decanatura</span>
-          </div>
-          <div class="w-11 h-11 rounded-xl bg-accent-100 text-accent-800 flex items-center justify-center shrink-0">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
-            </svg>
-          </div>
-        </div>
       </div>
 
       <!-- Buscador -->
@@ -98,7 +73,7 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
           type="text"
           [ngModel]="filtroTexto()"
           (ngModelChange)="filtroTexto.set($event)"
-          placeholder="Filtrar áreas o sedes por nombre, código o municipio..."
+          placeholder="Filtrar áreas por nombre o código..."
           class="w-full pl-10 pr-4 py-2.5 bg-white border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
         />
         <svg class="w-4 h-4 text-warm-400 absolute left-3.5 top-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -136,37 +111,6 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
         }
       </div>
 
-      <!-- Sedes y Campus Operativos -->
-      <div>
-        <h2 class="font-serif font-bold text-lg text-warm-900 mb-3">Sedes Universitarias donde Opera la Facultad</h2>
-        @if (errorSedes()) {
-          <div class="bg-white rounded-2xl border border-red-200 p-8 text-center shadow-warm-sm" role="alert">
-            <p class="text-sm text-red-700">No fue posible cargar las sedes.</p>
-          </div>
-        } @else if (sedesFiltradas().length === 0) {
-          <div class="bg-white rounded-2xl border border-warm-200 p-8 text-center shadow-warm-sm">
-            <p class="text-sm text-warm-500">No se encontraron sedes registradas.</p>
-          </div>
-        } @else {
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-            @for (s of sedesFiltradas(); track s.id) {
-              <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm space-y-2 flex flex-col justify-between h-full">
-                <div class="flex items-center justify-between">
-                  <span class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-primary-50 text-primary-800">
-                    {{ s.codigo }}
-                  </span>
-                  <app-badge [variant]="s.estado === 'ACTIVO' ? 'success' : 'neutral'" size="sm">
-                    {{ s.estado }}
-                  </app-badge>
-                </div>
-                <h3 class="font-bold text-base text-warm-900">{{ s.nombre }}</h3>
-                <p class="text-xs text-warm-600">{{ s.direccion }} ({{ s.municipio }})</p>
-                <p class="text-xs text-warm-400">Teléfono: {{ s.telefono || 'No registrado' }}</p>
-              </div>
-            }
-          </div>
-        }
-      </div>
     </div>
   `,
 })
@@ -175,13 +119,10 @@ export class DeanInfraestructuraComponent implements OnInit {
   private router = inject(Router);
 
   areas = this.adminService.areas;
-  sedes = this.adminService.sedes;
 
-  /** Un error HTTP (403/501/500) no es «0 registros»: se conserva aparte para mostrar «—» y un aviso. */
+  /** Un error HTTP (403/500) no es «0 registros»: se conserva aparte para mostrar «—» y un aviso. */
   errorAreas = signal(false);
-  errorSedes = signal(false);
   areasTotal = computed(() => (this.errorAreas() ? '—' : String(this.areas().length)));
-  sedesTotal = computed(() => (this.errorSedes() ? '—' : String(this.sedes().length)));
 
   filtroTexto = signal('');
 
@@ -195,20 +136,8 @@ export class DeanInfraestructuraComponent implements OnInit {
     );
   });
 
-  sedesFiltradas = computed(() => {
-    const q = this.filtroTexto().toLowerCase().trim();
-    if (!q) return this.sedes();
-    return this.sedes().filter(
-      (s) =>
-        s.codigo.toLowerCase().includes(q) ||
-        s.nombre.toLowerCase().includes(q) ||
-        s.municipio.toLowerCase().includes(q)
-    );
-  });
-
   ngOnInit(): void {
     this.adminService.cargarAreas().subscribe({ error: () => this.errorAreas.set(true) });
-    this.adminService.cargarSedes().subscribe({ error: () => this.errorSedes.set(true) });
   }
 
   volverAFacultad(): void {

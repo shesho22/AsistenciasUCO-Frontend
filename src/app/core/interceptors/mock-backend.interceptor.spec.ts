@@ -60,7 +60,7 @@ describe('mockBackendInterceptor', () => {
     request.flush('body');
   });
 
-  it('simula endpoints de administración (decanos, sedes, espacios, facultades, áreas)', fakeAsync(() => {
+  it('simula endpoints de administración (decanos, facultades, áreas)', fakeAsync(() => {
     auth.setMockMode(true);
 
     // Decanos
@@ -79,50 +79,6 @@ describe('mockBackendInterceptor', () => {
     httpClient.patch(`${environment.apiUrl}/admin/decanos/${decanoId}/toggle`, {}).subscribe((r) => (toggleDecanoRes = r));
     tick(250);
     expect(toggleDecanoRes?.exitoso).toBeTrue();
-
-    // Sedes
-    let sedesRes: any;
-    httpClient.get(`${environment.apiUrl}/admin/sedes`).subscribe((r) => (sedesRes = r));
-    tick(250);
-    expect(sedesRes?.exitoso).toBeTrue();
-
-    let postSedeRes: any;
-    httpClient.post(`${environment.apiUrl}/admin/sedes`, { nombre: 'Sede Oriente', codigo: 'SED-ORI' }).subscribe((r) => (postSedeRes = r));
-    tick(300);
-    expect(postSedeRes?.exitoso).toBeTrue();
-
-    const sedeId = mockStore.sedes[0].id;
-    let putSedeRes: any;
-    httpClient.put(`${environment.apiUrl}/admin/sedes/${sedeId}`, { nombre: 'Sede Modificada' }).subscribe((r) => (putSedeRes = r));
-    tick(300);
-    expect(putSedeRes?.exitoso).toBeTrue();
-
-    let patchSedeRes: any;
-    httpClient.patch(`${environment.apiUrl}/admin/sedes/${sedeId}/estado`, {}).subscribe((r) => (patchSedeRes = r));
-    tick(250);
-    expect(patchSedeRes?.exitoso).toBeTrue();
-
-    // Espacios Físicos
-    let espaciosRes: any;
-    httpClient.get(`${environment.apiUrl}/admin/espacios-fisicos`).subscribe((r) => (espaciosRes = r));
-    tick(250);
-    expect(espaciosRes?.exitoso).toBeTrue();
-
-    let postEspacioRes: any;
-    httpClient.post(`${environment.apiUrl}/admin/espacios-fisicos`, { nombre: 'Aula 101', sedeId: sedeId }).subscribe((r) => (postEspacioRes = r));
-    tick(300);
-    expect(postEspacioRes?.exitoso).toBeTrue();
-
-    const espacioId = mockStore.espaciosFisicos[0].id;
-    let putEspacioRes: any;
-    httpClient.put(`${environment.apiUrl}/admin/espacios-fisicos/${espacioId}`, { nombre: 'Aula 101 Renovada' }).subscribe((r) => (putEspacioRes = r));
-    tick(300);
-    expect(putEspacioRes?.exitoso).toBeTrue();
-
-    let patchEspacioRes: any;
-    httpClient.patch(`${environment.apiUrl}/admin/espacios-fisicos/${espacioId}/estado`, {}).subscribe((r) => (patchEspacioRes = r));
-    tick(250);
-    expect(patchEspacioRes?.exitoso).toBeTrue();
 
     // Facultades
     let facRes: any;

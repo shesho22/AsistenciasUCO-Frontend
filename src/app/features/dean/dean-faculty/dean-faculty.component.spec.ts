@@ -73,7 +73,6 @@ describe('DeanFacultyComponent', () => {
     fixture.detectChanges();
     responder('/decano/grupos', respuestas['/decano/grupos'] ?? ok([]));
     responder('/decano/estructura', respuestas['/decano/estructura'] ?? ok(estructura));
-    responder('/admin/sedes', respuestas['/admin/sedes'] ?? ok([{ id: 's1', nombre: 'Sede Rionegro', estado: 'ACTIVO' }]));
     responder('/admin/areas', respuestas['/admin/areas'] ?? ok([{ id: 'a1', nombre: 'Matemáticas', estado: 'ACTIVO' }]));
     responder('/coordinador/periodos-academicos', respuestas['/coordinador/periodos-academicos'] ?? ok([
       { id: 'p1', codigo: '2026-2', nombre: 'Segundo 2026', fechaInicio: '2026-07-15', fechaFin: '2026-11-30', estado: 'ACTIVO', esActual: true },
@@ -92,9 +91,10 @@ describe('DeanFacultyComponent', () => {
   afterEach(() => http.verify());
 
   // INT-05: estas rutas son del ADMINISTRADOR o del COORDINADOR; el decano recibía 403 en cada carga.
-  it('no consume rutas de otros roles (espacios, facultades, parámetros, auditoría ni planes del coordinador)', () => {
+  it('no consume rutas de otros roles (sedes, espacios, facultades, parámetros, auditoría ni planes del coordinador)', () => {
     crear();
     for (const ruta of [
+      '/admin/sedes',
       '/admin/espacios-fisicos',
       '/admin/facultades',
       '/admin/parametros',
@@ -136,11 +136,13 @@ describe('DeanFacultyComponent', () => {
     expect(text).toContain('No fue posible cargar');
   });
 
-  it('sedes no disponibles (501) se muestran como no disponibles, no como 0 sedes', () => {
-    crear({ '/admin/sedes': fallo(501) });
-    expect(component.sedesTotal()).toBe('—');
+  // Sedes y espacios físicos no se piden (HU020/HU140 descartadas, 2026-11-06): la ficha ya no los muestra.
+  it('no muestra sedes ni espacios físicos', () => {
+    crear();
     const text = (fixture.nativeElement as HTMLElement).textContent || '';
-    expect(text).not.toContain('0 sedes');
+    expect(text).not.toContain('Sede Principal');
+    expect(text).not.toContain('Espacios Físicos');
+    expect(text).toContain('Áreas de Conocimiento');
   });
 
   it('un 200 vacío sí es cero legítimo', () => {

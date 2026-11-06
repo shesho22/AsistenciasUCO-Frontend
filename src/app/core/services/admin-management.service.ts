@@ -5,8 +5,6 @@ import { environment } from '../../../environments/environment';
 import { ApiResponse } from '../models/api-response.model';
 import {
   DecanoItem,
-  SedeInstitucionalItem,
-  EspacioFisicoItem,
   FacultadItem,
   AreaConocimientoItem,
   TipoProgramaItem,
@@ -26,14 +24,6 @@ export class AdminManagementService {
   // Instituciones
   private _instituciones = signal<InstitucionItem[]>([]);
   instituciones = this._instituciones.asReadonly();
-
-  // Sedes
-  private _sedes = signal<SedeInstitucionalItem[]>([]);
-  sedes = this._sedes.asReadonly();
-
-  // Espacios Físicos
-  private _espacios = signal<EspacioFisicoItem[]>([]);
-  espacios = this._espacios.asReadonly();
 
   // Facultades
   private _facultades = signal<FacultadItem[]>([]);
@@ -122,88 +112,6 @@ export class AdminManagementService {
 
   toggleDecanoStatus(id: string): Observable<ApiResponse<DecanoItem | null>> {
     return this.http.patch<ApiResponse<DecanoItem | null>>(`${environment.apiUrl}/admin/decanos/${id}/toggle`, {});
-  }
-
-  // ================= SEDES =================
-  cargarSedes(): Observable<ApiResponse<SedeInstitucionalItem[]>> {
-    return this.http.get<ApiResponse<SedeInstitucionalItem[]>>(`${environment.apiUrl}/admin/sedes`).pipe(
-      tap((res) => {
-        if (res.exitoso && res.datos) {
-          this._sedes.set(res.datos);
-        }
-      })
-    );
-  }
-
-  crearSede(item: Omit<SedeInstitucionalItem, 'id'>): void {
-    this.http.post<ApiResponse<SedeInstitucionalItem>>(`${environment.apiUrl}/admin/sedes`, item).pipe(
-      tap((res) => {
-        if (res.exitoso && res.datos) {
-          this._sedes.update((prev) => [res.datos, ...prev]);
-        }
-      })
-    ).subscribe();
-  }
-
-  actualizarSede(id: string, cambios: Partial<SedeInstitucionalItem>): void {
-    this.http.put<ApiResponse<SedeInstitucionalItem>>(`${environment.apiUrl}/admin/sedes/${id}`, cambios).pipe(
-      tap((res) => {
-        if (res.exitoso && res.datos) {
-          this._sedes.update((prev) => prev.map((s) => (s.id === id ? res.datos : s)));
-        }
-      })
-    ).subscribe();
-  }
-
-  cambiarEstadoSede(id: string): void {
-    this.http.patch<ApiResponse<SedeInstitucionalItem>>(`${environment.apiUrl}/admin/sedes/${id}/estado`, {}).pipe(
-      tap((res) => {
-        if (res.exitoso && res.datos) {
-          this._sedes.update((prev) => prev.map((s) => (s.id === id ? res.datos : s)));
-        }
-      })
-    ).subscribe();
-  }
-
-  // ================= ESPACIOS FÍSICOS =================
-  cargarEspacios(): Observable<ApiResponse<EspacioFisicoItem[]>> {
-    return this.http.get<ApiResponse<EspacioFisicoItem[]>>(`${environment.apiUrl}/admin/espacios-fisicos`).pipe(
-      tap((res) => {
-        if (res.exitoso && res.datos) {
-          this._espacios.set(res.datos);
-        }
-      })
-    );
-  }
-
-  crearEspacio(item: Omit<EspacioFisicoItem, 'id'>): void {
-    this.http.post<ApiResponse<EspacioFisicoItem>>(`${environment.apiUrl}/admin/espacios-fisicos`, item).pipe(
-      tap((res) => {
-        if (res.exitoso && res.datos) {
-          this._espacios.update((prev) => [res.datos, ...prev]);
-        }
-      })
-    ).subscribe();
-  }
-
-  actualizarEspacio(id: string, cambios: Partial<EspacioFisicoItem>): void {
-    this.http.put<ApiResponse<EspacioFisicoItem>>(`${environment.apiUrl}/admin/espacios-fisicos/${id}`, cambios).pipe(
-      tap((res) => {
-        if (res.exitoso && res.datos) {
-          this._espacios.update((prev) => prev.map((e) => (e.id === id ? res.datos : e)));
-        }
-      })
-    ).subscribe();
-  }
-
-  cambiarEstadoEspacio(id: string): void {
-    this.http.patch<ApiResponse<EspacioFisicoItem>>(`${environment.apiUrl}/admin/espacios-fisicos/${id}/estado`, {}).pipe(
-      tap((res) => {
-        if (res.exitoso && res.datos) {
-          this._espacios.update((prev) => prev.map((e) => (e.id === id ? res.datos : e)));
-        }
-      })
-    ).subscribe();
   }
 
   // ================= FACULTADES Y ÁREAS =================
