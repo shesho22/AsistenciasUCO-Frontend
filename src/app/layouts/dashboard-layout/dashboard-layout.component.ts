@@ -242,8 +242,14 @@ export class DashboardLayoutComponent {
       icon: 'decanos',
     },
     {
-      label: 'Sedes Institucionales',
-      route: '/app/admin/sedes',
+      label: 'Tipos de Programa',
+      route: '/app/admin/catalogos',
+      roles: ['ADMINISTRADOR', 'ADMIN'],
+      icon: 'catalogos',
+    },
+    {
+      label: 'Estados del Sistema',
+      route: '/app/admin/estados',
       roles: ['ADMINISTRADOR', 'ADMIN'],
       icon: 'catalogos',
     },
@@ -258,6 +264,12 @@ export class DashboardLayoutComponent {
       route: '/app/admin/periodos',
       roles: ['ADMINISTRADOR', 'ADMIN'],
       icon: 'horarios',
+    },
+    {
+      label: 'Docentes',
+      route: '/app/admin/docentes',
+      roles: ['ADMINISTRADOR', 'ADMIN'],
+      icon: 'docentes',
     },
     {
       label: 'Estudiantes',
@@ -320,7 +332,7 @@ export class DashboardLayoutComponent {
       icon: 'horarios',
     },
     {
-      label: 'Áreas y Sedes',
+      label: 'Áreas de Conocimiento',
       route: '/app/decano/infraestructura',
       roles: ['DECANO'],
       icon: 'catalogos',
@@ -360,6 +372,12 @@ export class DashboardLayoutComponent {
       route: '/app/decano/asignaturas',
       roles: ['DECANO'],
       icon: 'materias',
+    },
+    {
+      label: 'Consolidado de Asistencia',
+      route: '/app/decano/consolidado-asistencia',
+      roles: ['DECANO'],
+      icon: 'asistencia',
     },
     {
       label: 'Gestión de Docentes',
@@ -408,6 +426,12 @@ export class DashboardLayoutComponent {
       route: '/app/coordinador/asistencias',
       roles: ['COORDINADOR'],
       icon: 'grupos',
+    },
+    {
+      label: 'Consolidado de Asistencia',
+      route: '/app/coordinador/consolidado-asistencia',
+      roles: ['COORDINADOR'],
+      icon: 'asistencia',
     },
     {
       label: 'Mis Grupos',

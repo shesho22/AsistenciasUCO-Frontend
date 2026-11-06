@@ -3,6 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, delay, map, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { TipoIdentificacionApiDto } from '../api/models/tipo-identificacion-api-dto.model';
+import { CatalogoPrograma } from '../models/programa-academico.model';
 
 export type IdentityDocumentTypeDTO = TipoIdentificacionApiDto;
 export type TipoIdentificacionItem = TipoIdentificacionApiDto;
@@ -44,6 +45,17 @@ export class CatalogService {
     ).pipe(
       map((items) => ({ exitoso: true, datos: items }))
     );
+  }
+
+  /** HU058: catálogo real de tipos de programa (nivel formativo), de solo consulta (GET /tipos-programa). */
+  getTiposPrograma(): Observable<CatalogoPrograma[]> {
+    if (environment.useFrontendMocks) {
+      return of([
+        { id: 'TP-PRE', codigo: 'PRE', nombre: 'pregrado' },
+        { id: 'TP-POS', codigo: 'POS', nombre: 'postgrado' },
+      ]).pipe(delay(150));
+    }
+    return this.http.get<CatalogoPrograma[]>(`${environment.apiUrl}/tipos-programa`);
   }
 
   getFacultades(): Observable<{ exitoso: boolean; datos: Array<{ id: string; nombre: string }> }> {

@@ -60,7 +60,7 @@ describe('mockBackendInterceptor', () => {
     request.flush('body');
   });
 
-  it('simula endpoints de administración (decanos, sedes, espacios, facultades, áreas)', fakeAsync(() => {
+  it('simula endpoints de administración (decanos, facultades, áreas)', fakeAsync(() => {
     auth.setMockMode(true);
 
     // Decanos
@@ -79,50 +79,6 @@ describe('mockBackendInterceptor', () => {
     httpClient.patch(`${environment.apiUrl}/admin/decanos/${decanoId}/toggle`, {}).subscribe((r) => (toggleDecanoRes = r));
     tick(250);
     expect(toggleDecanoRes?.exitoso).toBeTrue();
-
-    // Sedes
-    let sedesRes: any;
-    httpClient.get(`${environment.apiUrl}/admin/sedes`).subscribe((r) => (sedesRes = r));
-    tick(250);
-    expect(sedesRes?.exitoso).toBeTrue();
-
-    let postSedeRes: any;
-    httpClient.post(`${environment.apiUrl}/admin/sedes`, { nombre: 'Sede Oriente', codigo: 'SED-ORI' }).subscribe((r) => (postSedeRes = r));
-    tick(300);
-    expect(postSedeRes?.exitoso).toBeTrue();
-
-    const sedeId = mockStore.sedes[0].id;
-    let putSedeRes: any;
-    httpClient.put(`${environment.apiUrl}/admin/sedes/${sedeId}`, { nombre: 'Sede Modificada' }).subscribe((r) => (putSedeRes = r));
-    tick(300);
-    expect(putSedeRes?.exitoso).toBeTrue();
-
-    let patchSedeRes: any;
-    httpClient.patch(`${environment.apiUrl}/admin/sedes/${sedeId}/estado`, {}).subscribe((r) => (patchSedeRes = r));
-    tick(250);
-    expect(patchSedeRes?.exitoso).toBeTrue();
-
-    // Espacios Físicos
-    let espaciosRes: any;
-    httpClient.get(`${environment.apiUrl}/admin/espacios-fisicos`).subscribe((r) => (espaciosRes = r));
-    tick(250);
-    expect(espaciosRes?.exitoso).toBeTrue();
-
-    let postEspacioRes: any;
-    httpClient.post(`${environment.apiUrl}/admin/espacios-fisicos`, { nombre: 'Aula 101', sedeId: sedeId }).subscribe((r) => (postEspacioRes = r));
-    tick(300);
-    expect(postEspacioRes?.exitoso).toBeTrue();
-
-    const espacioId = mockStore.espaciosFisicos[0].id;
-    let putEspacioRes: any;
-    httpClient.put(`${environment.apiUrl}/admin/espacios-fisicos/${espacioId}`, { nombre: 'Aula 101 Renovada' }).subscribe((r) => (putEspacioRes = r));
-    tick(300);
-    expect(putEspacioRes?.exitoso).toBeTrue();
-
-    let patchEspacioRes: any;
-    httpClient.patch(`${environment.apiUrl}/admin/espacios-fisicos/${espacioId}/estado`, {}).subscribe((r) => (patchEspacioRes = r));
-    tick(250);
-    expect(patchEspacioRes?.exitoso).toBeTrue();
 
     // Facultades
     let facRes: any;
@@ -151,22 +107,6 @@ describe('mockBackendInterceptor', () => {
     httpClient.get(`${environment.apiUrl}/admin/areas`).subscribe((r) => (areasRes = r));
     tick(250);
     expect(areasRes?.exitoso).toBeTrue();
-
-    let postAreaRes: any;
-    httpClient.post(`${environment.apiUrl}/admin/areas`, { nombre: 'Área Nueva', facultadId: facId }).subscribe((r) => (postAreaRes = r));
-    tick(300);
-    expect(postAreaRes?.exitoso).toBeTrue();
-
-    const areaId = mockStore.areasConocimiento[0].id;
-    let putAreaRes: any;
-    httpClient.put(`${environment.apiUrl}/admin/areas/${areaId}`, { nombre: 'Área Editada' }).subscribe((r) => (putAreaRes = r));
-    tick(300);
-    expect(putAreaRes?.exitoso).toBeTrue();
-
-    let patchAreaRes: any;
-    httpClient.patch(`${environment.apiUrl}/admin/areas/${areaId}/estado`, {}).subscribe((r) => (patchAreaRes = r));
-    tick(250);
-    expect(patchAreaRes?.exitoso).toBeTrue();
   }));
 
   it('simula parámetros, auditoría, cierre masivo e instituciones', fakeAsync(() => {
@@ -198,16 +138,7 @@ describe('mockBackendInterceptor', () => {
     tick(250);
     expect(instRes?.exitoso).toBeTrue();
 
-    let postInstRes: any;
-    httpClient.post(`${environment.apiUrl}/admin/instituciones`, { nombre: 'UCO Nueva' }).subscribe((r) => (postInstRes = r));
-    tick(300);
-    expect(postInstRes?.exitoso).toBeTrue();
-
-    const instId = mockStore.instituciones[0].id;
-    let patchInstRes: any;
-    httpClient.patch(`${environment.apiUrl}/admin/instituciones/${instId}/toggle-estado`, {}).subscribe((r) => (patchInstRes = r));
-    tick(250);
-    expect(patchInstRes?.exitoso).toBeTrue();
+    // HU161/HU162/HU164 descartadas: el mock ya no simula escrituras de instituciones.
   }));
 
   it('simula endpoints de decano, estudiante y coordinador', fakeAsync(() => {

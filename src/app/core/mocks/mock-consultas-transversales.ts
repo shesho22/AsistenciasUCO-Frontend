@@ -1,8 +1,13 @@
 import { HttpRequest } from '@angular/common/http';
 import {
   AsignaturaInstitucionItem,
+  CategoriaJustificacionItem,
+  ComponenteFormacionItem,
+  ConsolidadoGrupoItem,
   DocenteFacultadItem,
   EstudianteInstitucionItem,
+  EstadoSistemaItem,
+  EventoAuditoriaItem,
   FichaUnificadaEstudiante,
   ProgramaCreditosItem,
 } from '../models/consultas-transversales.model';
@@ -78,6 +83,65 @@ function historial(idEstudiante: string): FichaUnificadaEstudiante {
 }
 
 /** Filtra por el texto de `busqueda` en los campos indicados (sin distinguir mayúsculas). */
+/** HU061: dos grupos del período 2026-2 (uno con estudiantes en riesgo). */
+const CONSOLIDADO: ConsolidadoGrupoItem[] = [
+  {
+    idGrupo: 'GRP-1', codigoGrupo: 1, nombreGrupo: 'Grupo 01', idPeriodoAcademico: 'PER-2026-2',
+    nombrePeriodoAcademico: '2026-2', idPrograma: 'PRG-1', nombrePrograma: 'Ingeniería de Sistemas',
+    idAsignatura: 'ASG-1', nombreAsignatura: 'Cálculo Diferencial', idDocente: 'DOC-1', nombreDocente: 'Carlos Pérez',
+    estudiantesActivos: 20, sesionesEjecutadas: 8, asistencias: 150, faltasSinJustaCausa: 10, excusas: 0,
+    porcentajeAsistencia: 93.75, porcentajeInasistencia: 6.25, estudiantesRiesgo: 2, estudiantesPerdida: 1,
+  },
+  {
+    idGrupo: 'GRP-2', codigoGrupo: 2, nombreGrupo: 'Grupo 02', idPeriodoAcademico: 'PER-2026-2',
+    nombrePeriodoAcademico: '2026-2', idPrograma: 'PRG-1', nombrePrograma: 'Ingeniería de Sistemas',
+    idAsignatura: 'ASG-2', nombreAsignatura: 'Estructuras de Datos', idDocente: 'DOC-2', nombreDocente: 'Lucía Gómez',
+    estudiantesActivos: 15, sesionesEjecutadas: 6, asistencias: 88, faltasSinJustaCausa: 2, excusas: 0,
+    porcentajeAsistencia: 97.78, porcentajeInasistencia: 2.22, estudiantesRiesgo: 0, estudiantesPerdida: 0,
+  },
+];
+
+/** HU172: un evento de asistencia y uno administrativo con fallo. */
+const AUDITORIA: EventoAuditoriaItem[] = [
+  {
+    id: 'AUD-1', ocurridoEn: '2026-11-04T14:05:00Z', idActor: 'USR-DOC-1', tipoActor: 'USER', nombreActor: 'Carlos Pérez',
+    accion: 'REGISTRAR_ASISTENCIAS_SESION', tipoRecurso: 'SESION', idRecurso: 'SES-1', resultado: 'SUCCESS',
+    idTraza: 'COR-1', metodoHttp: 'POST', ruta: '/api/v1/asistencias/sesion', estadoHttp: 200, ipCliente: null,
+    codigoError: null, metadatos: null, accionAsistencia: true,
+  },
+  {
+    id: 'AUD-2', ocurridoEn: '2026-11-03T10:00:00Z', idActor: 'USR-COO-1', tipoActor: 'USER', nombreActor: 'Ana Ruiz',
+    accion: 'VINCULAR_DOCENTE_PROGRAMA', tipoRecurso: 'DOCENTE', idRecurso: 'DOC-9', resultado: 'FAILURE',
+    idTraza: 'COR-2', metodoHttp: 'POST', ruta: '/api/v1/coordinador/docentes', estadoHttp: 409, ipCliente: null,
+    codigoError: 'CONFLICT', metadatos: null, accionAsistencia: false,
+  },
+];
+
+/** HU155: estados de negocio del seed. */
+const ESTADOS: EstadoSistemaItem[] = [
+  { catalogo: 'SOLICITUD', id: 'EST-P', codigo: 'P', nombre: 'pendiente' },
+  { catalogo: 'SOLICITUD', id: 'EST-A', codigo: 'A', nombre: 'aceptada' },
+  { catalogo: 'SOLICITUD', id: 'EST-R', codigo: 'R', nombre: 'rechazada' },
+  { catalogo: 'ESTUDIANTE_GRUPO', id: 'EEG-A', codigo: 'A', nombre: 'activo' },
+  { catalogo: 'ESTUDIANTE_GRUPO', id: 'EEG-CI', codigo: 'CI', nombre: 'cancelado por inasistencia' },
+];
+
+/** HU005/HU016: categorías de justificación del seed. */
+const CATEGORIAS_JUSTIFICACION: CategoriaJustificacionItem[] = [
+  { id: 'CAT-MED', codigo: 'MED', nombre: 'Médico / Salud', descripcion: 'Enfermedad, cita o urgencia médica, incapacidad u hospitalización.' },
+  { id: 'CAT-CAL', codigo: 'CAL', nombre: 'Calamidad Doméstica', descripcion: 'Situación grave e imprevista del núcleo familiar.' },
+  { id: 'CAT-ACA', codigo: 'ACA', nombre: 'Académico / Representación', descripcion: 'Actividad en representación de la universidad.' },
+  { id: 'CAT-FMA', codigo: 'FMA', nombre: 'Fuerza Mayor', descripcion: 'Hecho imprevisible e irresistible ajeno al estudiante.' },
+  { id: 'CAT-LAB', codigo: 'LAB', nombre: 'Laboral', descripcion: 'Obligación laboral comprobable que coincidió con la sesión.' },
+  { id: 'CAT-OTR', codigo: 'OTR', nombre: 'Otro', descripcion: 'Motivo distinto a los anteriores.' },
+];
+
+const COMPONENTES: ComponenteFormacionItem[] = [
+  { idComponente: 'CMP-BAS', codigo: 'BAS', nombre: 'Básicas', totalAsignaturas: 1 },
+  { idComponente: 'CMP-ESP', codigo: 'ESP', nombre: 'Específicas', totalAsignaturas: 1 },
+  { idComponente: 'CMP-INS', codigo: 'INS', nombre: 'Institucionales', totalAsignaturas: 0 },
+];
+
 function filtrar<T>(req: HttpRequest<unknown>, filas: T[], campos: (keyof T)[]): RespuestaSimulada {
   const busqueda = (req.params.get('busqueda') ?? '').toLowerCase();
   const datos = filas.filter((f) => !busqueda || campos.some((c) => String(f[c] ?? '').toLowerCase().includes(busqueda)));
@@ -99,6 +163,20 @@ export function respuestaConsultasTransversales(req: HttpRequest<unknown>, url: 
   if (url.endsWith('/decano/asignaturas') || url.endsWith('/admin/asignaturas')) {
     return filtrar(req, ASIGNATURAS, ['codigo', 'nombre']);
   }
+  if (url.endsWith('/consolidado-asistencia')) {
+    const asignatura = req.params.get('idAsignatura');
+    const datos = CONSOLIDADO.filter((g) => !asignatura || g.idAsignatura === asignatura);
+    return { datos, total: datos.length };
+  }
+  if (url.endsWith('/admin/auditoria')) {
+    const datos = AUDITORIA.filter((e) => req.params.get('soloAsistencia') === 'false' || e.accionAsistencia);
+    return { datos, total: datos.length };
+  }
+  if (url.endsWith('/categorias-justificacion')) {
+    return { datos: CATEGORIAS_JUSTIFICACION, total: CATEGORIAS_JUSTIFICACION.length };
+  }
+  if (url.endsWith('/admin/estados')) return { datos: ESTADOS, total: ESTADOS.length };
+  if (url.endsWith('/coordinador/componentes-formacion')) return { datos: COMPONENTES, total: COMPONENTES.length };
   if (url.endsWith('/admin/estudiantes')) return filtrar(req, ESTUDIANTES, ['nombreCompleto', 'numeroIdentificacion']);
   return null;
 }

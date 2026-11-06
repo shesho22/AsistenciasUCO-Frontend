@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -8,9 +8,9 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import {
   ParametroAdminDto,
-  RegistroAuditoriaItem,
   CierrePeriodoReporte,
 } from '../../../core/models/role-management.model';
+import { AdminAuditoriaComponent } from './admin-auditoria.component';
 
 type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
 
@@ -18,7 +18,7 @@ type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
   selector: 'app-admin-system',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AdminAuditoriaComponent],
   template: `
     <div class="space-y-6">
       <!-- ================= HEADER & BREADCRUMB ================= -->
@@ -63,7 +63,7 @@ type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
           class="px-4 py-3 text-sm flex items-center gap-2 transition-colors"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
-          <span>Trazabilidad y Auditoría ({{ auditoria().length }})</span>
+          <span>Trazabilidad y Auditoría</span>
         </button>
 
         <button
@@ -118,88 +118,9 @@ type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
         </div>
       }
 
-      <!-- ================= TAB 2: AUDITORÍA Y TRAZABILIDAD ================= -->
+      <!-- ================= TAB 2: AUDITORÍA Y TRAZABILIDAD (HU172) ================= -->
       @if (tabActiva() === 'AUDITORIA') {
-        <div class="space-y-4">
-          <!-- Filtros de Auditoría -->
-          <div class="flex flex-col sm:flex-row gap-3">
-            <div class="flex-1 relative">
-              <input
-                type="text"
-                [(ngModel)]="filtroAuditoria"
-                placeholder="Filtrar por usuario, acción, módulo o descripción..."
-                class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-warm-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-700/20 bg-white"
-              />
-              <svg class="w-4 h-4 text-warm-400 absolute left-3.5 top-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-            </div>
-            <select
-              [(ngModel)]="moduloAuditoriaFiltro"
-              class="px-4 py-2.5 rounded-xl border border-warm-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-700/20 bg-white"
-            >
-              <option value="TODOS">Todos los Módulos</option>
-              <option value="ASISTENCIA">Asistencia</option>
-              <option value="MATRICULA">Matrícula</option>
-              <option value="PLANES_ESTUDIO">Planes de Estudio</option>
-              <option value="SISTEMA">Sistema y Parámetros</option>
-            </select>
-          </div>
-
-          <div class="bg-white border border-warm-200 rounded-2xl overflow-hidden shadow-warm-sm">
-            <div class="overflow-x-auto">
-              <table class="w-full text-left text-sm">
-                <thead class="bg-warm-50 border-b border-warm-200 text-xs font-bold text-warm-600 uppercase tracking-wider">
-                  <tr>
-                    <th class="px-5 py-3.5">Timestamp</th>
-                    <th class="px-5 py-3.5">Usuario & Rol</th>
-                    <th class="px-5 py-3.5">Módulo / Acción</th>
-                    <th class="px-5 py-3.5">Detalle del Evento</th>
-                    <th class="px-5 py-3.5">IP</th>
-                    <th class="px-5 py-3.5 text-center">Nivel</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-warm-100">
-                  @for (log of auditoriaFiltrada(); track log.id) {
-                    <tr class="hover:bg-warm-50/70 transition-colors">
-                      <td class="px-5 py-4 font-mono text-xs text-warm-500 whitespace-nowrap">
-                        {{ log.timestamp }}
-                      </td>
-                      <td class="px-5 py-4">
-                        <div class="font-bold text-warm-900 text-xs">{{ log.usuarioNombre }}</div>
-                        <div class="text-[10px] text-warm-500 font-semibold uppercase">{{ log.rol }}</div>
-                      </td>
-                      <td class="px-5 py-4">
-                        <span class="text-xs font-semibold px-2 py-0.5 rounded bg-warm-100 text-warm-800">
-                          {{ log.modulo }}
-                        </span>
-                        <div class="text-[10px] text-warm-600 font-mono mt-0.5">{{ log.accion }}</div>
-                      </td>
-                      <td class="px-5 py-4 text-xs text-warm-800 max-w-md">
-                        {{ log.descripcion }}
-                      </td>
-                      <td class="px-5 py-4 font-mono text-xs text-warm-400">
-                        {{ log.direccionIp }}
-                      </td>
-                      <td class="px-5 py-4 text-center">
-                        <span
-                          class="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                          [class]="
-                            log.nivel === 'CRITICO'
-                              ? 'bg-red-100 text-red-800'
-                              : log.nivel === 'WARNING'
-                              ? 'bg-amber-100 text-amber-800'
-                              : 'bg-blue-100 text-blue-800'
-                          "
-                        >
-                          {{ log.nivel }}
-                        </span>
-                      </td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
+        <app-admin-auditoria />
       }
 
       <!-- ================= TAB 3: CIERRE MASIVO DE ASISTENCIA ================= -->
@@ -297,38 +218,17 @@ export class AdminSystemComponent implements OnInit {
   private toast = inject(ToastService);
 
   tabActiva = signal<TabAdminSystem>('PARAMETROS');
-  filtroAuditoria = '';
-  moduloAuditoriaFiltro = 'TODOS';
   periodoSeleccionadoCierre = '2026-2';
   isProcesandoCierre = signal<boolean>(false);
 
   parametros = this.adminService.parametros;
-  auditoria = this.adminService.auditoria;
   reportesCierre = this.adminService.reportesCierre;
   periodos = this.coordService.periodos;
 
   ngOnInit(): void {
     this.coordService.cargarPeriodosAcademicosBase();
     this.adminService.cargarParametros().subscribe();
-    this.adminService.cargarAuditoria().subscribe();
   }
-
-  auditoriaFiltrada = computed(() => {
-    let logs = this.auditoria();
-    const mod = this.moduloAuditoriaFiltro;
-    if (mod !== 'TODOS') {
-      logs = logs.filter((l) => l.modulo === mod);
-    }
-    const q = this.filtroAuditoria.toLowerCase().trim();
-    if (!q) return logs;
-    return logs.filter(
-      (l) =>
-        l.usuarioNombre.toLowerCase().includes(q) ||
-        l.accion.toLowerCase().includes(q) ||
-        l.descripcion.toLowerCase().includes(q) ||
-        l.modulo.toLowerCase().includes(q)
-    );
-  });
 
   private destroyRef = inject(DestroyRef);
 

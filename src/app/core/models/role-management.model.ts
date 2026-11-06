@@ -55,6 +55,10 @@ export interface ActualizarCoordinadorPayload {
   primerApellido: string;
   segundoApellido: string;
   correo: string;
+  /** HU159: corrección del documento (opcional; si viene, exige motivo). */
+  idTipoIdentificacion?: string;
+  numeroIdentificacion?: number;
+  motivo?: string;
 }
 
 /** HU121/HU122: resultado de editar o cambiar el estado de un coordinador. */
@@ -149,13 +153,11 @@ export interface MateriaEstudianteItem {
 export type EstadoAsistenciaSesion = 'PRESENTE' | 'AUSENTE' | 'RETARDO' | 'JUSTIFICADA';
 export type EstadoSolicitudRevision = 'PENDIENTE' | 'APROBADA' | 'RECHAZADA';
 
-export type CategoriaJustificacion =
-  | 'Médico / Salud'
-  | 'Calamidad Doméstica'
-  | 'Académico / Representación'
-  | 'Fuerza Mayor'
-  | 'Laboral'
-  | 'Otro';
+/**
+ * Nombre de la categoría de justificación del reclamo. HU005/HU016: los valores salen del catálogo de solo consulta
+ * (`GET /categorias-justificacion`), no de una lista fija en el cliente.
+ */
+export type CategoriaJustificacion = string;
 
 export interface SoporteAdjuntoItem {
   /** Identificador opaco generado por el backend; unica fuente de verdad del vinculo del soporte. */
@@ -273,7 +275,8 @@ export interface AsignaturaPlanItem {
   creditos: number;
   semestre: number;
   area: string;
-  componente: 'Obligatoria' | 'Electiva' | 'Complementaria';
+  /** Nombre o código de un componente de formación real (BAS, INS, ESP; HU147). */
+  componente: string;
   horasSemanales: number;
 }
 
@@ -332,32 +335,6 @@ export interface InstitucionItem {
   estado?: number;
   estaActivaInstitucion?: boolean;
   estaActivaTextoInstitucion?: string;
-}
-
-export interface SedeInstitucionalItem {
-  id: string;
-  codigo: string;
-  nombre: string;
-  direccion: string;
-  municipio: string;
-  telefono: string;
-  estado: 'ACTIVO' | 'INACTIVO';
-  totalBloques?: number;
-  totalAulas?: number;
-}
-
-export interface EspacioFisicoItem {
-  id: string;
-  sedeId: string;
-  sedeNombre?: string;
-  codigo: string;
-  bloque: string;
-  piso: string;
-  tipo: 'AULA_REGULAR' | 'LABORATORIO' | 'AUDITORIO' | 'SALA_SISTEMAS' | 'TALLER';
-  capacidad: number;
-  tieneProyector: boolean;
-  tieneAireAcondicionado: boolean;
-  estado: 'DISPONIBLE' | 'MANTENIMIENTO' | 'INACTIVO';
 }
 
 export interface FacultadItem {

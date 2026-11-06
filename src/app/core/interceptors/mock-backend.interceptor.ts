@@ -97,72 +97,6 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     }
   }
 
-  // ================= ADMIN: SEDES =================
-  if (url.endsWith('/admin/sedes') && method === 'GET') {
-    return of(okResponse(mockStore.sedes)).pipe(delay(200));
-  }
-  if (url.endsWith('/admin/sedes') && method === 'POST') {
-    const body = req.body as any;
-    const nueva = { ...body, id: `SED-${mockStore.sedes.length + 1}`, estado: 'ACTIVO' };
-    mockStore.sedes = [nueva, ...mockStore.sedes];
-    mockStore.registrarAuditoria({
-      modulo: 'SISTEMA',
-      accion: 'CREAR',
-      descripcion: `Se creó la sede ${nueva.nombre} (${nueva.codigo})`,
-      nivel: 'INFO',
-    });
-    return of(okResponse(nueva, 'Sede creada con éxito.')).pipe(delay(250));
-  }
-  if (url.includes('/admin/sedes/') && method === 'PUT') {
-    const id = url.split('/').pop()!;
-    const body = req.body as any;
-    mockStore.sedes = mockStore.sedes.map((s) => (s.id === id ? { ...s, ...body } : s));
-    const actualizada = mockStore.sedes.find((s) => s.id === id);
-    return of(okResponse(actualizada, 'Sede actualizada.')).pipe(delay(250));
-  }
-  if (url.includes('/admin/sedes/') && url.endsWith('/estado') && method === 'PATCH') {
-    const segments = url.split('/');
-    const id = segments[segments.length - 2];
-    mockStore.sedes = mockStore.sedes.map((s) =>
-      s.id === id ? { ...s, estado: s.estado === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO' } : s
-    );
-    const sede = mockStore.sedes.find((s) => s.id === id);
-    return of(okResponse(sede, 'Estado de sede alternado.')).pipe(delay(200));
-  }
-
-  // ================= ADMIN: ESPACIOS FÍSICOS =================
-  if (url.endsWith('/admin/espacios-fisicos') && method === 'GET') {
-    return of(okResponse(mockStore.espaciosFisicos)).pipe(delay(200));
-  }
-  if (url.endsWith('/admin/espacios-fisicos') && method === 'POST') {
-    const body = req.body as any;
-    const sede = mockStore.sedes.find((s) => s.id === body.sedeId);
-    const nuevo = {
-      ...body,
-      id: `ESP-${mockStore.espaciosFisicos.length + 1}`,
-      sedeNombre: sede ? sede.nombre : body.sedeNombre,
-      estado: 'DISPONIBLE',
-    };
-    mockStore.espaciosFisicos = [nuevo, ...mockStore.espaciosFisicos];
-    return of(okResponse(nuevo, 'Espacio físico registrado.')).pipe(delay(250));
-  }
-  if (url.includes('/admin/espacios-fisicos/') && method === 'PUT') {
-    const id = url.split('/').pop()!;
-    const body = req.body as any;
-    mockStore.espaciosFisicos = mockStore.espaciosFisicos.map((e) => (e.id === id ? { ...e, ...body } : e));
-    const actualizado = mockStore.espaciosFisicos.find((e) => e.id === id);
-    return of(okResponse(actualizado, 'Espacio físico actualizado.')).pipe(delay(250));
-  }
-  if (url.includes('/admin/espacios-fisicos/') && url.endsWith('/estado') && method === 'PATCH') {
-    const segments = url.split('/');
-    const id = segments[segments.length - 2];
-    mockStore.espaciosFisicos = mockStore.espaciosFisicos.map((e) =>
-      e.id === id ? { ...e, estado: e.estado === 'DISPONIBLE' ? 'INACTIVO' : 'DISPONIBLE' } : e
-    );
-    const espacio = mockStore.espaciosFisicos.find((e) => e.id === id);
-    return of(okResponse(espacio, 'Estado de espacio alternado.')).pipe(delay(200));
-  }
-
   // ================= ADMIN: FACULTADES =================
   if (url.endsWith('/admin/facultades') && method === 'GET') {
     return of(okResponse(mockStore.facultades)).pipe(delay(200));
@@ -194,34 +128,6 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   if (url.endsWith('/admin/areas') && method === 'GET') {
     return of(okResponse(mockStore.areasConocimiento)).pipe(delay(200));
   }
-  if (url.endsWith('/admin/areas') && method === 'POST') {
-    const body = req.body as any;
-    const nueva = {
-      id: `AREA-${mockStore.areasConocimiento.length + 1}`,
-      codigo: String(body.codigo ?? '').trim().toUpperCase(),
-      nombre: body.nombre,
-      activa: true,
-    };
-    mockStore.areasConocimiento = [nueva, ...mockStore.areasConocimiento];
-    return of(okResponse(nueva, 'Área registrada exitosamente.')).pipe(delay(250));
-  }
-  if (url.includes('/admin/areas/') && method === 'PUT') {
-    const id = url.split('/').pop()!;
-    const body = req.body as any;
-    mockStore.areasConocimiento = mockStore.areasConocimiento.map((a) => (a.id === id ? { ...a, nombre: body.nombre ?? a.nombre } : a));
-    const actualizada = mockStore.areasConocimiento.find((a) => a.id === id);
-    return of(okResponse(actualizada, 'Área actualizada.')).pipe(delay(250));
-  }
-  if (url.includes('/admin/areas/') && url.endsWith('/estado') && method === 'PATCH') {
-    const segments = url.split('/');
-    const id = segments[segments.length - 2];
-    const deseada = (req.body as any)?.activa;
-    mockStore.areasConocimiento = mockStore.areasConocimiento.map((a) =>
-      a.id === id ? { ...a, activa: typeof deseada === 'boolean' ? deseada : a.activa } : a
-    );
-    const area = mockStore.areasConocimiento.find((a) => a.id === id);
-    return of(okResponse(area, 'Estado de área actualizado.')).pipe(delay(200));
-  }
 
   // ================= ADMIN: PARÁMETROS, AUDITORÍA Y CIERRE MASIVO =================
   if (url.endsWith('/admin/parametros') && method === 'GET') {
@@ -235,9 +141,6 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     );
     const param = mockStore.parametros.find((p) => p.id === id);
     return of(okResponse(param, 'Parámetro actualizado.')).pipe(delay(150));
-  }
-  if (url.endsWith('/admin/auditoria') && method === 'GET') {
-    return of(okResponse(mockStore.auditoria)).pipe(delay(200));
   }
   if (url.endsWith('/admin/cierre-masivo') && method === 'POST') {
     const body = req.body as any;
@@ -260,20 +163,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   if (url.endsWith('/admin/instituciones') && method === 'GET') {
     return of(okResponse(mockStore.instituciones)).pipe(delay(200));
   }
-  if (url.endsWith('/admin/instituciones') && method === 'POST') {
-    const body = req.body as any;
-    const nueva = { id: `INST-${mockStore.instituciones.length + 1}`, estado: 1, ...body };
-    mockStore.instituciones.push(nueva);
-    return of(okResponse(nueva, 'Institución registrada con éxito.')).pipe(delay(250));
-  }
-  if (url.includes('/admin/instituciones/') && url.endsWith('/toggle-estado') && method === 'PATCH') {
-    const segments = url.split('/');
-    const id = segments[segments.length - 2];
-    mockStore.instituciones = mockStore.instituciones.map((i) =>
-      i.id === id ? { ...i, estado: i.estado === 1 ? 0 : 1 } : i
-    );
-    return of(okResponse({ id }, 'Estado de institución alternado.')).pipe(delay(200));
-  }
+  // HU161/HU162/HU164 descartadas: las instituciones son de solo consulta (sin POST/PUT/PATCH).
 
   // ================= DECANO: COORDINADORES =================
   if (url.endsWith('/decano/coordinadores') && method === 'GET') {

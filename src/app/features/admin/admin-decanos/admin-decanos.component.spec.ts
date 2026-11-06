@@ -487,4 +487,36 @@ describe('AdminDecanosComponent', () => {
       expect(toastService.info).toHaveBeenCalled();
     });
   });
+
+  it("HU159: el administrador corrige los datos del decano, con aviso si la cuenta queda pendiente", () => {
+    fixture.detectChanges();
+    satisfyInitRequests();
+    const decano = component.decanos()[0];
+    const actual = component.identidadDe(decano);
+    expect(actual.numeroIdentificacion).toBe(decano.numeroIdentificacion);
+
+    component.decanoACorregir.set(decano);
+    component.corregirDecano(decano, { primerNombre: "Luis", segundoNombre: "", primerApellido: "Ruiz", segundoApellido: "", motivo: "Tilde" });
+    const put = http.expectOne(`${environment.apiUrl}/admin/decanos/${decano.id}/identidad`);
+    expect(put.request.method).toBe("PUT");
+    put.flush({ exitoso: true, datos: { idRegistro: decano.id, sincronizacionIdentidad: "PENDIENTE", mensajeUsuario: "Pendiente" } });
+    http.expectOne(`${environment.apiUrl}/admin/decanos`).flush({ exitoso: true, datos: mockDecanos });
+
+    expect(toastService.warning).toHaveBeenCalledWith("Pendiente");
+    expect(component.decanoACorregir()).toBeNull();
+  });
+
+  it("HU159: un rechazo del backend deja el modal abierto con el error", () => {
+    fixture.detectChanges();
+    satisfyInitRequests();
+    const decano = component.decanos()[0];
+    component.decanoACorregir.set(decano);
+    component.corregirDecano(decano, { primerNombre: "Luis", segundoNombre: "", primerApellido: "Ruiz", segundoApellido: "", motivo: "x" });
+    http.expectOne(`${environment.apiUrl}/admin/decanos/${decano.id}/identidad`).flush({ exitoso: false }, { status: 409, statusText: "Conflict" });
+
+    expect(component.errorCorreccion()).toBeTruthy();
+    expect(component.decanoACorregir()).not.toBeNull();
+    component.cerrarCorreccion();
+    expect(component.decanoACorregir()).toBeNull();
+  });
 });

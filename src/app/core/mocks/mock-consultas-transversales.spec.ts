@@ -21,6 +21,27 @@ describe('respuestaConsultasTransversales (mock HU112/HU128/HU143/HU157)', () =>
     expect((respuesta?.datos as { idEstudiante: string }).idEstudiante).toBe('EST-9');
   });
 
+  it('simula el consolidado (HU061), la auditoría (HU172) y los componentes (HU147)', () => {
+    const consolidado = '/api/v1/coordinador/consolidado-asistencia';
+    expect(respuestaConsultasTransversales(get(consolidado), consolidado)?.total).toBe(2);
+    const porMateria = new HttpRequest('GET', consolidado, { params: new HttpParams().set('idAsignatura', 'ASG-2') });
+    expect(respuestaConsultasTransversales(porMateria, consolidado)?.total).toBe(1);
+
+    const auditoria = '/api/v1/admin/auditoria';
+    expect(respuestaConsultasTransversales(get(auditoria), auditoria)?.total).toBe(1);
+    const todas = new HttpRequest('GET', auditoria, { params: new HttpParams().set('soloAsistencia', 'false') });
+    expect(respuestaConsultasTransversales(todas, auditoria)?.total).toBe(2);
+
+    const estados = '/api/v1/admin/estados';
+    expect(respuestaConsultasTransversales(get(estados), estados)?.total).toBe(5);
+
+    const categorias = '/api/v1/categorias-justificacion';
+    expect(respuestaConsultasTransversales(get(categorias), categorias)?.total).toBe(6);
+
+    const componentes = '/api/v1/coordinador/componentes-formacion';
+    expect(respuestaConsultasTransversales(get(componentes), componentes)?.total).toBe(3);
+  });
+
   it('no responde otras rutas ni otros métodos', () => {
     expect(respuestaConsultasTransversales(get('/api/v1/decano/estudiantes/EST-1'), '/api/v1/decano/estudiantes/EST-1')).toBeNull();
     const post = new HttpRequest('POST', '/api/v1/decano/docentes', {});

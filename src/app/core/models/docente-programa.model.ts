@@ -68,6 +68,10 @@ export interface ActualizarDocentePayload {
   segundoNombre?: string;
   primerApellido?: string;
   segundoApellido?: string;
+  /** HU159: corrección del documento (opcional; si viene, exige motivo). */
+  idTipoIdentificacion?: string;
+  numeroIdentificacion?: number;
+  motivo?: string;
 }
 
 /** Estado del periodo del grupo segun la fecha local institucional (HU094). */

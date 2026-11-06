@@ -60,7 +60,34 @@ describe('CoordinatorSubjectFormPageComponent', () => {
     http
       .match(`${environment.apiUrl}/coordinador/planes-estudio/PLAN-SIS-2024/asignaturas`)
       .forEach((req) => req.flush({ exitoso: true, datos: [] }));
+    http.match(`${environment.apiUrl}/coordinador/componentes-formacion`).forEach((req) =>
+      req.flush({ exitoso: true, datos: [{ idComponente: 'CMP-ESP', codigo: 'ESP', nombre: 'Específicas', totalAsignaturas: 0 }] })
+    );
+    http.match(`${environment.apiUrl}/admin/areas`).forEach((req) =>
+      req.flush({ exitoso: true, datos: [{ id: 'AR-1', codigo: 'ISW', nombre: 'Ingeniería de Software', activa: true }] })
+    );
     fixture.detectChanges();
+  });
+
+  it('HU147/P5: carga componentes y áreas reales para el formulario', () => {
+    expect(component.componentes().map((c) => c.codigo)).toEqual(['ESP']);
+    expect(component.areas().map((a) => a.codigo)).toEqual(['ISW']);
+  });
+
+  it('P5: envía al backend semestreNumero, nombreArea y nombreComponente', () => {
+    component.guardarAsignatura({
+      datos: {
+        codigo: 'SIS-301', nombre: 'Bases de Datos', creditos: 3, semestre: 4,
+        area: 'Ingeniería de Software', componente: 'Específicas',
+      },
+    });
+
+    const req = http.expectOne(`${environment.apiUrl}/coordinador/planes-estudio/PLAN-SIS-2024/asignaturas`);
+    expect(req.request.body).toEqual({
+      codigo: 'SIS-301', nombre: 'Bases de Datos', creditos: 3, semestreNumero: 4,
+      nombreArea: 'Ingeniería de Software', nombreComponente: 'Específicas',
+    });
+    req.flush({ exitoso: true, datos: { id: 'asig-3' } });
   });
 
   afterEach(() => {

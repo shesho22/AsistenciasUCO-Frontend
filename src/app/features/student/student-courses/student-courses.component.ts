@@ -9,6 +9,8 @@ import { AuthService } from '../../../core/services/auth.service';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { CourseService } from '../../../core/services/course.service';
 import { SessionService } from '../../../core/services/session.service';
+import { ConsultasTransversalesService } from '../../../core/services/consultas-transversales.service';
+import { CategoriaJustificacionItem } from '../../../core/models/consultas-transversales.model';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { LoadErrorState, classifyLoadError, loadErrorState } from '../../../core/api/errors/load-error.util';
@@ -67,6 +69,7 @@ type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO' | 'SOLICITAR_MATRICULA';
         <app-student-course-detail
           [materia]="selectedMateria()"
           [sesiones]="sesiones()"
+          [categorias]="categoriasJustificacion()"
           [loading]="loadingSesiones()"
           [error]="sesionesError()"
           (retry)="reintentarSesiones()"
@@ -81,6 +84,7 @@ type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO' | 'SOLICITAR_MATRICULA';
         <app-student-claim-form
           [materia]="selectedMateria()"
           [sesion]="sesionReclamar()"
+          [categorias]="categoriasJustificacion()"
           [archivo]="archivoAdjunto()"
           [subiendo]="subiendoSoporte()"
           [submitting]="enviandoReclamo()"
@@ -120,6 +124,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
   private readonly coordinatorService = inject(CoordinatorManagementService);
   private readonly courseService = inject(CourseService);
   private readonly sessionService = inject(SessionService);
+  private readonly consultasService = inject(ConsultasTransversalesService);
   private readonly toast = inject(ToastService);
   private readonly sessionTimeZone = inject(SessionTimeZoneService);
 
@@ -149,6 +154,8 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
 
   // Radicación reclamo
   sesionReclamar = signal<SesionMateriaDetalle | null>(null);
+  /** HU005/HU016: motivos de justificación del catálogo de solo consulta. */
+  categoriasJustificacion = signal<CategoriaJustificacionItem[]>([]);
   archivoAdjunto = signal<SoporteAdjuntoItem | null>(null);
   subiendoSoporte = signal<boolean>(false);
   enviandoReclamo = signal<boolean>(false);
@@ -178,6 +185,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.cargarMaterias();
+    this.cargarCategoriasJustificacion();
 
     // HU176B: el login devuelve aqui con `?matricula=<PIN>` (o `1` si solo se conoce el QR): se abre el modal del codigo.
     const paramMatricula = this.route.snapshot.queryParamMap.get('matricula');
@@ -187,6 +195,14 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
       }
       this.abrirModalMatriculaGrupo();
     }
+  }
+
+  /** Sin catálogo el formulario no deja radicar y lo informa; no se usa una lista fija de respaldo. */
+  cargarCategoriasJustificacion(): void {
+    this.consultasService.getCategoriasJustificacion().subscribe({
+      next: (res) => this.categoriasJustificacion.set(res.datos ?? []),
+      error: () => this.categoriasJustificacion.set([]),
+    });
   }
 
   cargarMaterias(): void {

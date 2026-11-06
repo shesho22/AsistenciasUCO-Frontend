@@ -33,7 +33,7 @@ export const ROLE_SCOPE_READ_EXCEPTIONS: ReadonlyArray<{
   subrutas: readonly string[];
   roles: readonly UserRole[];
 }> = [
-  { prefix: 'admin', subrutas: ['sedes', 'areas'], roles: ['ADMINISTRADOR', 'DECANO', 'COORDINADOR'] },
+  { prefix: 'admin', subrutas: ['areas'], roles: ['ADMINISTRADOR', 'DECANO', 'COORDINADOR'] },
   {
     prefix: 'coordinador',
     subrutas: ['planes-estudio', 'periodos-academicos', 'asignaturas'],

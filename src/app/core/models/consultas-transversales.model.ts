@@ -27,6 +27,8 @@ export interface DocenteFacultadItem {
   programas: string | null;
   totalProgramas: number;
   totalGrupos: number;
+  /** HU136: falso para un docente retirado de todos sus programas (solo en la vista del administrador). */
+  tieneVinculoActivo?: boolean;
 }
 
 export interface AsignaturaInstitucionItem {
@@ -96,12 +98,110 @@ export interface FichaUnificadaEstudiante {
 }
 
 /** Filtro común de los listados paginados: el backend aplica sus valores por defecto a lo que llegue vacío. */
+/** HU136: vínculo de los docentes en la vista del administrador. */
+export type EstadoVinculoDocente = 'ACTIVO' | 'SIN_VINCULO' | 'TODOS';
+
 export interface FiltroListado {
   busqueda?: string | null;
+  estadoVinculo?: EstadoVinculoDocente | null;
   estaActivo?: boolean | null;
   idPrograma?: string | null;
   idFacultad?: string | null;
   estaActiva?: boolean | null;
   pagina: number;
   tamano: number;
+}
+
+/**
+ * HU061: consolidado de asistencia por grupo. La cohorte es el período académico del grupo (decisión de John,
+ * 2026-11-04); el coordinador ve su programa, el decano su facultad y el administrador su institución.
+ */
+export interface ConsolidadoGrupoItem {
+  idGrupo: string;
+  codigoGrupo: number | null;
+  nombreGrupo: string | null;
+  idPeriodoAcademico: string | null;
+  nombrePeriodoAcademico: string | null;
+  idPrograma: string | null;
+  nombrePrograma: string | null;
+  idAsignatura: string | null;
+  nombreAsignatura: string | null;
+  idDocente: string | null;
+  nombreDocente: string | null;
+  estudiantesActivos: number;
+  sesionesEjecutadas: number;
+  asistencias: number;
+  faltasSinJustaCausa: number;
+  excusas: number;
+  /** Sobre sesiones ejecutadas × estudiantes activos. */
+  porcentajeAsistencia: number;
+  porcentajeInasistencia: number;
+  estudiantesRiesgo: number;
+  estudiantesPerdida: number;
+}
+
+export interface FiltroConsolidado {
+  idPeriodoAcademico?: string | null;
+  idPrograma?: string | null;
+  idAsignatura?: string | null;
+  idDocente?: string | null;
+  pagina: number;
+  tamano: number;
+}
+
+/** HU172: un evento del rastro de auditoría (solo lectura, solo administrador). */
+export interface EventoAuditoriaItem {
+  id: string;
+  ocurridoEn: string;
+  idActor: string | null;
+  tipoActor: string;
+  nombreActor: string | null;
+  accion: string;
+  tipoRecurso: string;
+  idRecurso: string | null;
+  resultado: 'SUCCESS' | 'FAILURE' | string;
+  idTraza: string | null;
+  metodoHttp: string;
+  ruta: string;
+  estadoHttp: number;
+  ipCliente: string | null;
+  codigoError: string | null;
+  metadatos: string | null;
+  accionAsistencia: boolean;
+}
+
+/** Rango [desde, hasta) en ISO-8601 con zona; sin rango el backend usa los últimos 7 días (máximo 90). */
+export interface FiltroAuditoria {
+  desde?: string | null;
+  hasta?: string | null;
+  accion?: string | null;
+  resultado?: string | null;
+  soloAsistencia?: boolean | null;
+  pagina: number;
+  tamano: number;
+}
+
+/** HU147: componentes de formación (BAS, INS, ESP); fijos por regla de negocio. */
+export interface ComponenteFormacionItem {
+  idComponente: string;
+  codigo: string;
+  nombre: string;
+  totalAsignaturas: number;
+}
+
+/** HU155: estado de un catálogo de negocio de solo consulta (estados de solicitudes o del estudiante en el grupo). */
+/** HU005/HU016: categoría (motivo) para justificar una inasistencia; catálogo de solo consulta. */
+export interface CategoriaJustificacionItem {
+  id: string;
+  codigo: string;
+  /** Texto que el formulario de reclamo envía como `categoria` (contrato vigente del radicado). */
+  nombre: string;
+  descripcion: string | null;
+}
+
+export interface EstadoSistemaItem {
+  catalogo: 'SOLICITUD' | 'ESTUDIANTE_GRUPO';
+  id: string;
+  codigo: string;
+  nombre: string;
 }

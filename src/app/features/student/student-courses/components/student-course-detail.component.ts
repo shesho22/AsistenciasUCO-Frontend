@@ -8,12 +8,14 @@ import {
   EstadoAsistenciaSesionEstudiante,
 } from '../../../../core/models/role-management.model';
 import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
+import { CategoriaJustificacionItem } from '../../../../core/models/consultas-transversales.model';
+import { MotivosJustificacionComponent } from './motivos-justificacion.component';
 
 @Component({
   selector: 'app-student-course-detail',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, BadgeComponent, ButtonComponent],
+  imports: [CommonModule, BadgeComponent, ButtonComponent, MotivosJustificacionComponent],
   template: `
     @if (materia()) {
       <div class="space-y-6">
@@ -92,6 +94,9 @@ import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
             }
           </div>
         </div>
+
+        <!-- HU016: motivos posibles para justificar una inasistencia o llegada tarde -->
+        <app-motivos-justificacion [categorias]="categorias()" />
 
         <!-- Tabla Completa de Sesiones de Clase -->
         <div class="bg-white rounded-2xl border border-warm-200 shadow-warm-sm overflow-hidden">
@@ -241,6 +246,8 @@ import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
 export class StudentCourseDetailComponent {
   materia = input<MateriaEstudianteItem | null>(null);
   sesiones = input<SesionMateriaDetalle[]>([]);
+  /** HU016: catálogo de motivos de justificación (solo consulta). */
+  categorias = input<CategoriaJustificacionItem[]>([]);
   loading = input<boolean>(false);
   error = input<LoadErrorState | null>(null);
 

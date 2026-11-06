@@ -55,4 +55,55 @@ describe('ConsultasTransversalesService (HU112/HU128/HU143/HU157)', () => {
     service.getHistorialEstudiante('e-1').subscribe();
     http.expectOne(`${api}/decano/estudiantes/e-1/historial`).flush({ exitoso: true, datos: null });
   });
+
+  it('HU061: el coordinador y el decano consultan el consolidado por su propia ruta con los filtros', () => {
+    service.getConsolidadoAsistencia({ idPeriodoAcademico: 'per-1', idDocente: null, pagina: 1, tamano: 10 }).subscribe();
+    const req = http.expectOne((r) => r.url === `${api}/coordinador/consolidado-asistencia`);
+    expect(req.request.params.get('idPeriodoAcademico')).toBe('per-1');
+    expect(req.request.params.has('idDocente')).toBeFalse();
+    req.flush({ exitoso: true, datos: [] });
+
+    service.getConsolidadoAsistencia({ pagina: 1, tamano: 10 }, true).subscribe();
+    http.expectOne((r) => r.url === `${api}/decano/consolidado-asistencia`).flush({ exitoso: true, datos: [] });
+  });
+
+  it('HU172: la auditoría envía el rango, la acción y el filtro de asistencia', () => {
+    service
+      .getAuditoria({ desde: '2026-11-01T05:00:00.000Z', hasta: '2026-11-04T05:00:00.000Z', accion: 'CREAR_SESION', soloAsistencia: false, pagina: 2, tamano: 25 })
+      .subscribe();
+    const req = http.expectOne((r) => r.url === `${api}/admin/auditoria`);
+    expect(req.request.params.get('desde')).toBe('2026-11-01T05:00:00.000Z');
+    expect(req.request.params.get('soloAsistencia')).toBe('false');
+    expect(req.request.params.get('pagina')).toBe('2');
+    req.flush({ exitoso: true, datos: [] });
+  });
+
+  it('HU147: consulta los componentes de formación', () => {
+    service.getComponentesFormacion().subscribe((res) => expect(res.datos.length).toBe(1));
+    http
+      .expectOne(`${api}/coordinador/componentes-formacion`)
+      .flush({ exitoso: true, datos: [{ idComponente: 'c', codigo: 'ESP', nombre: 'Específicas', totalAsignaturas: 0 }] });
+  });
+
+  it('HU136: consulta los docentes de la institución del administrador con facultad y programa', () => {
+    service.getDocentesInstitucion({ busqueda: 'ana', idFacultad: 'f-1', idPrograma: 'p-1', pagina: 1, tamano: 20 }).subscribe();
+    const req = http.expectOne((r) => r.url === `${api}/admin/docentes`);
+    expect(req.request.params.get('idFacultad')).toBe('f-1');
+    expect(req.request.params.get('idPrograma')).toBe('p-1');
+    req.flush({ exitoso: true, datos: [], total: 0 });
+  });
+
+  it('HU005/HU016: consulta los motivos de justificación del catálogo', () => {
+    service.getCategoriasJustificacion().subscribe((res) => expect(res.datos[0].codigo).toBe('MED'));
+    http
+      .expectOne(`${api}/categorias-justificacion`)
+      .flush({ exitoso: true, datos: [{ id: 'c', codigo: 'MED', nombre: 'Médico / Salud', descripcion: null }] });
+  });
+
+  it('HU155: consulta los estados del sistema del administrador', () => {
+    service.getEstadosSistema().subscribe((res) => expect(res.datos.length).toBe(1));
+    http
+      .expectOne(`${api}/admin/estados`)
+      .flush({ exitoso: true, datos: [{ catalogo: 'SOLICITUD', id: 'e', codigo: 'P', nombre: 'pendiente' }] });
+  });
 });

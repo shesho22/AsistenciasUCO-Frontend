@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { Subscription, forkJoin, of } from 'rxjs';
 import { CourseService, GrupoCoordinadorPayload } from '../../../core/services/course.service';
+import { CatalogService } from '../../../core/services/catalog.service';
+import { CatalogoPrograma } from '../../../core/models/programa-academico.model';
 import { OfertaCreacionGruposDocenteApiDto } from '../../../core/api/models/oferta-creacion-grupos-docente-api-dto.model';
 import { SessionService } from '../../../core/services/session.service';
 import { GroupService } from '../../../core/services/group.service';
@@ -53,6 +55,7 @@ type VistaGrupos = 'LISTA' | 'HUB_GRUPO' | 'FORM_SESION' | 'FORM_GRUPO';
       @if (vistaActual() === 'LISTA') {
         <app-teacher-grupos-list
           [courses]="courses()"
+          [tiposPrograma]="tiposPrograma()"
           [isLoading]="isLoading()"
           [sessionQrEnabled]="sessionQrEnabled"
           (irAsistencia)="irATomaAsistencia()"
@@ -159,6 +162,7 @@ type VistaGrupos = 'LISTA' | 'HUB_GRUPO' | 'FORM_SESION' | 'FORM_GRUPO';
 })
 export class TeacherGruposComponent implements OnInit, OnDestroy {
   private courseService = inject(CourseService);
+  private catalogService = inject(CatalogService);
   private sessionService = inject(SessionService);
   private groupService = inject(GroupService);
   private studentService = inject(StudentService);
@@ -173,6 +177,8 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
 
   vistaActual = signal<VistaGrupos>('LISTA');
   courses = signal<Course[]>([]);
+  /** HU058: opciones del filtro "Nivel formativo" (catálogo real de tipos de programa). */
+  tiposPrograma = signal<CatalogoPrograma[]>([]);
   isLoading = signal<boolean>(true);
 
   // Nuevo grupo (F3)
@@ -230,6 +236,11 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.cargarGrupos();
+    // Si el catálogo no carga, el filtro simplemente no se muestra.
+    this.catalogService.getTiposPrograma().subscribe({
+      next: (tipos) => this.tiposPrograma.set(tipos ?? []),
+      error: () => this.tiposPrograma.set([]),
+    });
   }
 
   ngOnDestroy(): void {

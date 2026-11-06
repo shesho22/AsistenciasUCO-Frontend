@@ -45,6 +45,7 @@ describe('roleScopeInterceptor', () => {
     for (const ruta of [
       'admin/facultades',
       'admin/espacios-fisicos',
+      'admin/sedes',
       'admin/parametros',
       'admin/auditoria',
       'coordinador/estudiantes',
@@ -58,10 +59,9 @@ describe('roleScopeInterceptor', () => {
 
   // AUTH-03/AUTH-04/INT-05: SecurityConfig y access-catalog.json conceden estas LECTURAS al DECANO (y al COORDINADOR en
   // los catalogos). El interceptor las cortaba con un 403 local que parecia del servidor y nunca llegaba al backend.
-  it('un Decano SI envia al backend las lecturas que SecurityConfig le concede (sedes, areas, planes, periodos, asignaturas)', () => {
+  it('un Decano SI envia al backend las lecturas que SecurityConfig le concede (areas, planes, periodos, asignaturas)', () => {
     como('DECANO');
     const rutas = [
-      'admin/sedes',
       'admin/areas',
       'admin/areas/abc',
       'coordinador/planes-estudio',
@@ -77,13 +77,12 @@ describe('roleScopeInterceptor', () => {
     }
   });
 
-  it('un Coordinador SI envia admin/sedes y admin/areas, pero no admin/facultades', async () => {
+  it('un Coordinador SI envia admin/areas, pero no admin/sedes (retirada) ni admin/facultades', async () => {
     como('COORDINADOR');
-    http.get(`${environment.apiUrl}/admin/sedes`).subscribe();
     http.get(`${environment.apiUrl}/admin/areas`).subscribe();
-    ctrl.expectOne(`${environment.apiUrl}/admin/sedes`).flush({});
     ctrl.expectOne(`${environment.apiUrl}/admin/areas`).flush({});
     expect(await estado(`${environment.apiUrl}/admin/facultades`)).toBe(403);
+    expect(await estado(`${environment.apiUrl}/admin/sedes`)).toBe(403);
     ctrl.expectNone(() => true);
   });
 
@@ -158,7 +157,7 @@ describe('roleScopeInterceptor', () => {
   describe('excepciones de lectura (espejo de SecurityConfig)', () => {
     const decano: UserRole = 'DECANO';
     it('rolPuedeLeerRuta concede solo las subrutas de la excepcion', () => {
-      expect(rolPuedeLeerRuta(decano, 'admin', 'sedes')).toBeTrue();
+      expect(rolPuedeLeerRuta(decano, 'admin', 'sedes')).toBeFalse();
       expect(rolPuedeLeerRuta(decano, 'admin', 'areas')).toBeTrue();
       expect(rolPuedeLeerRuta(decano, 'admin', 'facultades')).toBeFalse();
       expect(rolPuedeLeerRuta(decano, 'admin', null)).toBeFalse();

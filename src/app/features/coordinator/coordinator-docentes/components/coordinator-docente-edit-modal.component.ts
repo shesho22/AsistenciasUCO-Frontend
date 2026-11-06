@@ -1,19 +1,22 @@
 import { ChangeDetectionStrategy, Component, OnInit, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActualizarDocentePayload, DocentePrograma, TipoVinculacionItem } from '../../../../core/models/docente-programa.model';
+import { CorreccionDocumentoComponent } from '../../../../shared/components/correccion-documento/correccion-documento.component';
+import { EstadoCorreccionDocumento } from '../../../../core/models/correccion-identidad.model';
 
 const CLASE_CONTROL =
   'w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20';
 
 /**
  * Edicion de un docente del programa (HU092): tipo de vinculacion del vinculo y nombres de la persona.
- * Documento y correo se muestran de solo lectura (el correo exige sincronizar la cuenta de acceso: IAM-001).
+ * El correo se muestra de solo lectura (exige sincronizar la cuenta de acceso: IAM-001). HU159 (2026-11-05): el
+ * documento se corrige si el parámetro lo permite; si cambia, exige motivo.
  */
 @Component({
   selector: 'app-coordinator-docente-edit-modal',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule],
+  imports: [FormsModule, CorreccionDocumentoComponent],
   template: `
     <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-warm-900/60 backdrop-blur-xs">
       <div class="bg-white rounded-3xl shadow-warm-2xl border border-warm-200/80 w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden">
@@ -30,7 +33,7 @@ const CLASE_CONTROL =
             <p role="alert" class="text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2">{{ error() }}</p>
           }
           <p class="text-xs text-warm-600 bg-warm-50 border border-warm-100 rounded-xl px-3 py-2">
-            El cambio de nombres aplica a la persona en todos sus programas. El documento y el correo no se pueden editar aquí.
+            El cambio de nombres y de documento aplica a la persona en todos sus programas. El correo no se puede editar aquí.
           </p>
           <label class="block text-xs font-semibold text-warm-700">Tipo de vinculación
             <select name="idTipoVinculacion" [(ngModel)]="form.idTipoVinculacion" [class]="clase">
@@ -53,6 +56,11 @@ const CLASE_CONTROL =
               <input type="text" name="segundoApellido" [(ngModel)]="form.segundoApellido" maxlength="50" [class]="clase" />
             </label>
           </div>
+          <app-correccion-documento
+            [numeroActual]="docente().numeroIdentificacion"
+            [codigoTipoActual]="docente().codigoTipoIdentificacion"
+            (estadoCambio)="documento.set($event)"
+          />
           <div class="flex justify-end gap-3 pt-3 border-t border-warm-100">
             <button type="button" (click)="solicitarCierre()" class="px-4 py-2 rounded-xl text-sm font-semibold bg-warm-100 text-warm-800 hover:bg-warm-200">Cancelar</button>
             <button type="submit" class="px-4 py-2 rounded-xl text-sm font-semibold bg-primary-700 text-white hover:bg-primary-800">Guardar cambios</button>
@@ -71,6 +79,8 @@ export class CoordinatorDocenteEditModalComponent implements OnInit {
 
   readonly clase = CLASE_CONTROL;
   readonly error = signal<string | null>(null);
+  /** HU159: documento corregido y motivo (por defecto, sin cambio). */
+  readonly documento = signal<EstadoCorreccionDocumento>({ valido: true, documento: null, motivo: '' });
 
   form = {
     idTipoVinculacion: '',
@@ -102,6 +112,14 @@ export class CoordinatorDocenteEditModalComponent implements OnInit {
     }
 
     const payload: ActualizarDocentePayload = {};
+    const estado = this.documento();
+    if (!estado.valido) {
+      this.error.set('Revisa el documento y el motivo de la corrección.');
+      return;
+    }
+    if (estado.documento) {
+      Object.assign(payload, estado.documento, { motivo: estado.motivo });
+    }
     if (f.idTipoVinculacion && f.idTipoVinculacion !== actual.idTipoVinculacion) {
       payload.idTipoVinculacion = f.idTipoVinculacion;
     }

@@ -156,10 +156,18 @@ export class CourseService {
         asignaturaId: asignacion.idAsignatura,
         colorCategory: colors[index % colors.length],
       };
+      if (asignacion.idTipoPrograma) {
+        course.idTipoPrograma = asignacion.idTipoPrograma;
+        course.nombreTipoPrograma = asignacion.nombreTipoPrograma ?? undefined;
+      }
       if (primero) {
         course.code = primero.codigoMateria;
         course.enrolledStudentsCount = primero.totalEstudiantes;
         course.docenteId = primero.idDocente;
+      }
+      // Matrícula activa del grupo desde /docente/asignaturas: existe aunque el grupo aún no tenga horario.
+      if (typeof asignacion.estudiantesActivos === 'number') {
+        course.enrolledStudentsCount = asignacion.estudiantesActivos;
       }
       return course;
     });

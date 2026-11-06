@@ -454,34 +454,7 @@ describe('AdminManagementService', () => {
     expect(service.decanos()[0].facultad).toBe('Sin Facultad Asignada');
   });
 
-  it('cargarAuditoria y ejecutarCierreMasivo funcionan correctamente', () => {
-    service.cargarAuditoria().subscribe((res) => {
-      expect(res.exitoso).toBeTrue();
-      expect(res.datos?.length).toBe(1);
-    });
-
-    const getReq = http.expectOne(`${environment.apiUrl}/admin/auditoria`);
-    expect(getReq.request.method).toBe('GET');
-    getReq.flush({
-      exitoso: true,
-      datos: [
-        {
-          id: 'aud-1',
-          timestamp: '2026-01-01T00:00:00Z',
-          usuarioId: 'usr-1',
-          usuarioNombre: 'Admin',
-          rol: 'ADMINISTRADOR',
-          accion: 'LOGIN',
-          modulo: 'AUTH',
-          descripcion: 'Inicio de sesión',
-          direccionIp: '127.0.0.1',
-          nivel: 'INFO',
-        },
-      ],
-    });
-
-    expect(service.auditoria().length).toBe(1);
-
+  it('ejecutarCierreMasivo funciona correctamente', () => {
     service.ejecutarCierreMasivo('per-1', '2026-1').subscribe((res) => {
       expect(res.exitoso).toBeTrue();
     });
@@ -492,7 +465,7 @@ describe('AdminManagementService', () => {
     postReq.flush({ exitoso: true, datos: null });
   });
 
-  it('getInstituciones, crearInstitucion, actualizarInstitucion y toggleEstadoInstitucion interactúan con API', () => {
+  it('getInstituciones consulta la API (las instituciones son de solo consulta, HU161/HU162/HU164 descartadas)', () => {
     service.getInstituciones().subscribe((res) => {
       expect(res.exitoso).toBeTrue();
     });
@@ -504,26 +477,11 @@ describe('AdminManagementService', () => {
       datos: [{ id: 'inst-1', nombre: 'UCO', nit: '890.980.040', direccion: 'Rionegro', telefono: '5698000', estado: 'ACTIVO' }],
     });
 
-    service.crearInstitucion({ nombre: 'UCO Nueva' }).subscribe((res) => {
-      expect(res.exitoso).toBeTrue();
-    });
-    const postReq = http.expectOne(`${environment.apiUrl}/admin/instituciones`);
-    expect(postReq.request.method).toBe('POST');
-    postReq.flush({ exitoso: true, datos: { id: 'inst-2', nombre: 'UCO Nueva' } });
-
-    service.actualizarInstitucion('inst-1', { direccion: 'Sector Llanogrande' }).subscribe((res) => {
-      expect(res.exitoso).toBeTrue();
-    });
-    const putReq = http.expectOne(`${environment.apiUrl}/admin/instituciones/inst-1`);
-    expect(putReq.request.method).toBe('PUT');
-    putReq.flush({ exitoso: true, datos: { id: 'inst-1', nombre: 'UCO', direccion: 'Sector Llanogrande' } });
-
-    service.toggleEstadoInstitucion('inst-1').subscribe((res) => {
-      expect(res.exitoso).toBeTrue();
-    });
-    const patchReq = http.expectOne(`${environment.apiUrl}/admin/instituciones/inst-1/toggle-estado`);
-    expect(patchReq.request.method).toBe('PATCH');
-    patchReq.flush({ exitoso: true, datos: { id: 'inst-1' } });
+    expect(service.instituciones().length).toBe(1);
+    const servicio = service as unknown as Record<string, unknown>;
+    expect(servicio['crearInstitucion']).toBeUndefined();
+    expect(servicio['actualizarInstitucion']).toBeUndefined();
+    expect(servicio['toggleEstadoInstitucion']).toBeUndefined();
   });
 
   it('no expone una operación de escritura de parámetros sin contrato aprobado', () => {
@@ -531,46 +489,6 @@ describe('AdminManagementService', () => {
     expect(publicService['actualizarParametro']).toBeUndefined();
     http.expectNone((request) => request.url.includes('/admin/parametros/') &&
       (request.method === 'PATCH' || request.method === 'PUT'));
-  });
-
-  it('crearSede, actualizarSede y cambiarEstadoSede actualizan reactivamente la señal _sedes', () => {
-    service.crearSede({ codigo: 'SED-01', nombre: 'Sede Rionegro', direccion: 'Calle 10', municipio: 'Rionegro', telefono: '5698000', estado: 'ACTIVO' });
-    const postReq = http.expectOne(`${environment.apiUrl}/admin/sedes`);
-    expect(postReq.request.method).toBe('POST');
-    postReq.flush({ exitoso: true, datos: { id: 'sede-1', codigo: 'SED-01', nombre: 'Sede Rionegro', direccion: 'Calle 10', municipio: 'Rionegro', telefono: '5698000', estado: 'ACTIVO' } });
-    expect(service.sedes().length).toBe(1);
-
-    service.actualizarSede('sede-1', { nombre: 'Sede Rionegro Principal' });
-    const putReq = http.expectOne(`${environment.apiUrl}/admin/sedes/sede-1`);
-    expect(putReq.request.method).toBe('PUT');
-    putReq.flush({ exitoso: true, datos: { id: 'sede-1', codigo: 'SED-01', nombre: 'Sede Rionegro Principal', direccion: 'Calle 10', municipio: 'Rionegro', telefono: '5698000', estado: 'ACTIVO' } });
-    expect(service.sedes()[0].nombre).toBe('Sede Rionegro Principal');
-
-    service.cambiarEstadoSede('sede-1');
-    const patchReq = http.expectOne(`${environment.apiUrl}/admin/sedes/sede-1/estado`);
-    expect(patchReq.request.method).toBe('PATCH');
-    patchReq.flush({ exitoso: true, datos: { id: 'sede-1', codigo: 'SED-01', nombre: 'Sede Rionegro Principal', direccion: 'Calle 10', municipio: 'Rionegro', telefono: '5698000', estado: 'INACTIVO' } });
-    expect(service.sedes()[0].estado).toBe('INACTIVO');
-  });
-
-  it('crearEspacio, actualizarEspacio y cambiarEstadoEspacio gestionan espacios físicos', () => {
-    service.crearEspacio({ codigo: 'A101', bloque: 'B1', piso: '1', tipo: 'AULA_REGULAR', capacidad: 30, tieneProyector: true, tieneAireAcondicionado: false, sedeId: 'sede-1', estado: 'DISPONIBLE' });
-    const postReq = http.expectOne(`${environment.apiUrl}/admin/espacios-fisicos`);
-    expect(postReq.request.method).toBe('POST');
-    postReq.flush({ exitoso: true, datos: { id: 'esp-1', codigo: 'A101', bloque: 'B1', piso: '1', tipo: 'AULA_REGULAR', capacidad: 30, tieneProyector: true, tieneAireAcondicionado: false, sedeId: 'sede-1', estado: 'DISPONIBLE' } });
-    expect(service.espacios().length).toBe(1);
-
-    service.actualizarEspacio('esp-1', { capacidad: 35 });
-    const putReq = http.expectOne(`${environment.apiUrl}/admin/espacios-fisicos/esp-1`);
-    expect(putReq.request.method).toBe('PUT');
-    putReq.flush({ exitoso: true, datos: { id: 'esp-1', codigo: 'A101', bloque: 'B1', piso: '1', tipo: 'AULA_REGULAR', capacidad: 35, tieneProyector: true, tieneAireAcondicionado: false, sedeId: 'sede-1', estado: 'DISPONIBLE' } });
-    expect(service.espacios()[0].capacidad).toBe(35);
-
-    service.cambiarEstadoEspacio('esp-1');
-    const patchReq = http.expectOne(`${environment.apiUrl}/admin/espacios-fisicos/esp-1/estado`);
-    expect(patchReq.request.method).toBe('PATCH');
-    patchReq.flush({ exitoso: true, datos: { id: 'esp-1', codigo: 'A101', bloque: 'B1', piso: '1', tipo: 'AULA_REGULAR', capacidad: 35, tieneProyector: true, tieneAireAcondicionado: false, sedeId: 'sede-1', estado: 'INACTIVO' } });
-    expect(service.espacios()[0].estado).toBe('INACTIVO');
   });
 
   it('toggleDecanoStatus invoca PATCH al endpoint correspondiente', () => {

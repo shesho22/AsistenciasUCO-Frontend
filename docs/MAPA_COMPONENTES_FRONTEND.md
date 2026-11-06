@@ -73,8 +73,8 @@ Control centralizado de sesiones y registro de asistencia en aula.
   - **Componente:** `StudentCoursesComponent`
   - **Subcomponentes:**
     - `StudentCoursesListComponent`: Tarjetas de asignaturas inscritas.
-    - `StudentCourseDetailComponent`: Detalle de asistencias acumuladas y porcentaje de inasistencia (alerta de 20%).
-    - `StudentClaimFormComponent`: Radicación de reclamos e incapacidades.
+    - `StudentCourseDetailComponent`: Detalle de asistencias acumuladas y porcentaje de inasistencia (alerta de 20%). Incluye `MotivosJustificacionComponent` (HU016: motivos para justificar una inasistencia, del catálogo `GET /categorias-justificacion`).
+    - `StudentClaimFormComponent`: Radicación de reclamos e incapacidades. La categoría sale del catálogo de solo consulta y muestra su descripción (HU005).
     - `StudentCourseEnrollFormComponent`: Matrícula por código.
   - **Modales:**
     - `StudentAutoAsistenciaModalComponent`: Marcación de asistencia con validación de Wi-Fi institucional.
@@ -106,6 +106,7 @@ Control centralizado de sesiones y registro de asistencia en aula.
 | `/app/coordinador/grupos` | Grupos y Horarios | [`CoordinatorGroupsComponent`](../src/app/features/coordinator/coordinator-groups/coordinator-groups.component.ts) | — (F1: crear y editar grupos del programa con su horario semanal; POST/PUT `/grupos` con `franjas`) | ✅ |
 | `/app/coordinador/materias` | Materias del Programa | [`CoordinatorSubjectsComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/coordinator/coordinator-subjects/coordinator-subjects.component.ts) | — (Catálogo de grupos ofertados, consulta de inscritos y asignaturas curriculares) | ✅ |
 | `/app/coordinador/asistencias` | Asistencias del Programa | [`CoordinatorAttendanceComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/coordinator/coordinator-attendance/coordinator-attendance.component.ts) | — (HU064/HU060/HU061: grupos → sesiones → detalle de asistencia, solo lectura) | ✅ |
+| `/app/coordinador/consolidado-asistencia` | Consolidado de Asistencia | [`ConsolidadoAsistenciaComponent`](../src/app/features/coordinator/coordinator-consolidado/consolidado-asistencia.component.ts) (HU061: grupos del programa por cohorte, materia y docente) | — | [spec](../src/app/features/coordinator/coordinator-consolidado/consolidado-asistencia.component.spec.ts) |
 
 ---
 
@@ -120,13 +121,14 @@ Control centralizado de sesiones y registro de asistencia en aula.
 | `/app/decano/programas` | Programas y Planes | [`DeanProgramasComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/dean/dean-programas/dean-programas.component.ts) | Catálogo de programas académicos y planes de estudio adscritos a la facultad (HU108: planes desde `/decano/estructura`). HU112: tabla unificada [`DeanProgramasCreditosComponent`](../src/app/features/dean/dean-programas/components/dean-programas-creditos.component.ts) desde `/decano/programas-creditos`; las tarjetas toman de ella créditos y asignaturas (una consulta, no una malla por plan). | ✅ |
 | `/app/decano/programas/:planId` | — (deep-link) | [`DeanPlanMallaComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/dean/dean-plan-malla/dean-plan-malla.component.ts) | Vista dedicada de solo lectura de la malla curricular y asignaturas por semestre (HU108: `/decano/planes-estudio/{id}/asignaturas`). | ✅ |
 | `/app/decano/periodos` | Períodos Académicos | [`DeanPeriodosComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/dean/dean-periodos/dean-periodos.component.ts) | Consulta del calendario académico y vigencias semestrales. | ✅ |
-| `/app/decano/infraestructura` | Áreas y Sedes | [`DeanInfraestructuraComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/dean/dean-infraestructura/dean-infraestructura.component.ts) | Consulta de áreas de conocimiento, sedes universitarias y espacios físicos. | ✅ |
+| `/app/decano/infraestructura` | Áreas de Conocimiento | [`DeanInfraestructuraComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/dean/dean-infraestructura/dean-infraestructura.component.ts) | Consulta de áreas de conocimiento. Sin sedes ni espacios físicos (HU020/HU140 descartadas, 2026-11-06). | ✅ |
 | `/app/decano/coordinadores` | Gestión de Coordinadores | [`DeanCoordinadoresComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/dean/dean-coordinadores/dean-coordinadores.component.ts) | Administración y nombramiento de coordinadores de programa. | — |
 | `/app/decano/estudiantes` | Estudiantes de la Facultad | [`DeanEstudiantesComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/dean/dean-estudiantes/dean-estudiantes.component.ts) | HU104/HU105: directorio, búsqueda por nombre o documento y ficha con matrículas. HU157: la ficha incluye el historial completo ([`HistorialEstudianteComponent`](../src/app/shared/components/historial-estudiante/historial-estudiante.component.ts)) limitado a la facultad. | ✅ |
 | `/app/decano/estructura` | Estructura de la Facultad | [`DeanEstructuraComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/dean/dean-estructura/dean-estructura.component.ts) | HU109/HU119: árbol Facultad → Programa → Plan. | ✅ |
 | `/app/decano/cronograma` | Cronograma de Sesiones | [`DeanCronogramaComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/dean/dean-cronograma/dean-cronograma.component.ts) | HU145: sesiones de la facultad por rango de fechas. | ✅ |
 | `/app/decano/docentes` | Docentes de la Facultad | [`DeanDocentesComponent`](../src/app/features/dean/dean-docentes/dean-docentes.component.ts) | HU128: docentes con vínculo activo, filtrables por programa, nombre o documento y estado. | ✅ |
 | `/app/decano/asignaturas` | Búsqueda de Asignaturas | [`DeanAsignaturasComponent`](../src/app/features/dean/dean-asignaturas/dean-asignaturas.component.ts) | HU143: asignaturas de la facultad por código o nombre, con programa, plan, semestre y créditos. | ✅ |
+| `/app/decano/consolidado-asistencia` | Consolidado de Asistencia | [`ConsolidadoAsistenciaComponent`](../src/app/features/coordinator/coordinator-consolidado/consolidado-asistencia.component.ts) con `data.comoDecano` | HU061: grupos de la facultad por cohorte, materia y docente | [spec](../src/app/features/coordinator/coordinator-consolidado/consolidado-asistencia.component.spec.ts) |
 
 ---
 
@@ -136,17 +138,17 @@ Control centralizado de sesiones y registro de asistencia en aula.
 | Ruta | Sidebar | Componente | Spec |
 | :--- | :--- | :--- | :--- |
 | `/app/admin/facultades` | Gestión de Facultades | [`AdminFacultadesComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/admin/admin-facultades/admin-facultades.component.ts) | ✅ |
-| `/app/admin/decanos` | Gestión de Decanos | [`AdminDecanosComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/admin/admin-decanos/admin-decanos.component.ts) | — |
-| `/app/admin/sedes` | Sedes Institucionales | [`AdminSedesComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/admin/admin-sedes/admin-sedes.component.ts) | ✅ |
-| `/app/admin/areas` | Áreas de Conocimiento | [`AdminAreasComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/admin/admin-areas/admin-areas.component.ts) | ✅ |
+| `/app/admin/decanos` | Gestión de Decanos | [`AdminDecanosComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/admin/admin-decanos/admin-decanos.component.ts) (HU159: "Corregir datos" del decano con `CorreccionIdentidadModalComponent`) | — |
+| `/app/admin/docentes` | Docentes de la Institución | [`DeanDocentesComponent`](../src/app/features/dean/dean-docentes/dean-docentes.component.ts) con `data.comoAdministrador` (HU136: docentes con vínculo activo de toda la institución; filtros de facultad, programa, estado y búsqueda; solo consulta) | [spec](../src/app/features/dean/dean-docentes/dean-docentes.component.spec.ts) |
+| `/app/admin/areas` | Áreas de Conocimiento | [`AdminAreasComponent`](../src/app/features/admin/admin-areas/admin-areas.component.ts) (HU150: solo consulta sobre `CatalogoSoloConsultaComponent`; HU151/HU152 descartadas, regla de John 2026-11-04) | [spec](../src/app/features/admin/admin-areas/admin-areas.component.spec.ts) |
 | `/app/admin/periodos` | Períodos Académicos | [`AdminPeriodosComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/admin/admin-periodos/admin-periodos.component.ts) | ✅ |
 | `/app/admin/estudiantes` | Estudiantes | [`AdminEstudiantesComponent`](../src/app/features/admin/admin-estudiantes/admin-estudiantes.component.ts) (HU157: buscador de la institución y ficha unificada con historial) | ✅ |
 | `/app/admin/asignaturas` | Búsqueda de Asignaturas | [`DeanAsignaturasComponent`](../src/app/features/dean/dean-asignaturas/dean-asignaturas.component.ts) con `data.comoAdministrador` (HU143: toda la institución, filtro por facultad) | ✅ |
 | `/app/admin/sistema` | Sistema & Auditoría | [`AdminSystemComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/admin/admin-system/admin-system.component.ts) | — |
-| `/app/admin/catalogos` | — | `redirectTo: 'admin/facultades'` (ruta legada) | — |
+| ↳ pestaña "Trazabilidad y Auditoría" | — | [`AdminAuditoriaComponent`](../src/app/features/admin/admin-system/admin-auditoria.component.ts) (HU172: rastro real paginado; 7 días por defecto, máximo 90, solo asistencia por defecto) | [spec](../src/app/features/admin/admin-system/admin-auditoria.component.spec.ts) |
+| `/app/admin/catalogos` | Tipos de Programa | [`AdminCatalogsComponent`](../src/app/features/admin/admin-catalogs/admin-catalogs.component.ts) (HU154: solo consulta sobre [`CatalogoSoloConsultaComponent`](../src/app/shared/components/catalogo-solo-consulta/catalogo-solo-consulta.component.ts); regla de John 2026-11-04, catálogos base sin CRUD) | [spec](../src/app/features/admin/admin-catalogs/admin-catalogs.component.spec.ts) |
+| `/app/admin/estados` | Estados del Sistema | [`AdminEstadosComponent`](../src/app/features/admin/admin-estados/admin-estados.component.ts) (HU155/HU167: estados de solicitudes y del estudiante en el grupo, solo consulta) | [spec](../src/app/features/admin/admin-estados/admin-estados.component.spec.ts) |
 
-> [!WARNING]
-> [`admin-catalogs.component.ts`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/admin/admin-catalogs/admin-catalogs.component.ts) sigue en disco pero ya no está enrutado (los `Catalog*Component` fueron eliminados). Candidato a limpieza.
 
 ---
 
@@ -171,6 +173,8 @@ Aplicado en Admin (`a3bbebc`), Decano y Coordinador (`UX-006`). Usarlo cuando un
 | `ModalComponent` | `app-modal` | Ventanas modales accesibles con backdrop difuminado y foco gestionado. |
 | `FormSelectComponent` | `app-form-select` | Selects reactivos estilizados compatibles con formularios y Signals. |
 | `FormFieldComponent` | `app-form-field` | Wrappers de inputs con etiquetas y mensajes de error automáticos. |
+| `CorreccionDocumentoComponent` | `app-correccion-documento` | HU159: tipo y número de documento y motivo de la corrección. Solo lectura si `IDENTIDAD.PERMITIR_CORREGIR_DOCUMENTO` está apagado; exige motivo si cambia el documento (o siempre, con `motivoSiempre`). Lo usan los modales de HU121 y HU092. |
+| `CorreccionIdentidadModalComponent` | `app-correccion-identidad-modal` | HU159: corrección de nombres, apellidos y documento con motivo obligatorio (estudiante desde la ficha del coordinador, decano desde Decanos del administrador). |
 | `AvatarComponent` | `app-avatar` | Avatar de usuario con iniciales o fotografía y anillos de color por rol. |
 | `PaginationComponent` | `app-pagination` | Controles de paginación para consultas con `ApiPageResponse<T>`. |
 | `ToastComponent` | `app-toast` | Notificaciones flotantes reactivas. |

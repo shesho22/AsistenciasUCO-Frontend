@@ -4,11 +4,15 @@ import { BitacoraSesion, FichaEstudiante } from '../../../../core/models/coordin
 import { getApiErrorMessage } from '../../../../core/api/errors/api-error.util';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 import { SessionTimeZoneService } from '../../../../core/services/session-timezone.service';
+import { CorreccionIdentidadService } from '../../../../core/services/correccion-identidad.service';
+import { CorregirIdentidadPayload, IdentidadActual } from '../../../../core/models/correccion-identidad.model';
+import { CorreccionIdentidadModalComponent } from '../../../../shared/components/correccion-identidad-modal/correccion-identidad-modal.component';
+import { ToastService } from '../../../../shared/components/toast/toast.component';
 
 @Component({
   selector: 'app-coordinator-ficha-modal',
   standalone: true,
-  imports: [PaginationComponent],
+  imports: [PaginationComponent, CorreccionIdentidadModalComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
@@ -29,6 +33,21 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
             <p><span class="font-medium">Correo:</span> {{ f.correo }}</p>
             <p><span class="font-medium">Programa:</span> {{ f.nombrePrograma }}</p>
           </section>
+          <!-- HU159: el coordinador corrige los datos de identidad de un estudiante de su programa -->
+          <div class="mb-6 -mt-3">
+            <button type="button" data-accion="corregir-identidad" (click)="corrigiendo.set(true)"
+              class="text-xs px-3 py-1.5 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-100">Corregir datos</button>
+          </div>
+          @if (corrigiendo()) {
+            <app-correccion-identidad-modal
+              titulo="Corregir datos del estudiante"
+              [actual]="identidadActual(f)"
+              [guardando]="guardandoCorreccion()"
+              [error]="errorCorreccion()"
+              (guardar)="corregir($event)"
+              (cancelar)="cerrarCorreccion()"
+            />
+          }
 
           <h3 class="mb-2 text-sm font-semibold text-gray-900">Resumen por asignatura</h3>
           <div class="mb-6 overflow-x-auto">
@@ -82,6 +101,8 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
 })
 export class CoordinatorFichaModalComponent implements OnInit {
   private readonly service = inject(CoordinatorIndicatorsService);
+  private readonly correccion = inject(CorreccionIdentidadService);
+  private readonly toast = inject(ToastService);
   readonly timeZone = inject(SessionTimeZoneService);
 
   readonly idEstudiante = input.required<string>();
@@ -94,13 +115,57 @@ export class CoordinatorFichaModalComponent implements OnInit {
   readonly totalBitacora = signal(0);
   readonly pagina = signal(1);
   readonly error = signal<string | null>(null);
+  readonly corrigiendo = signal(false);
+  readonly guardandoCorreccion = signal(false);
+  readonly errorCorreccion = signal<string | null>(null);
 
   ngOnInit(): void {
+    this.cargarFicha();
+    this.cargarBitacora();
+  }
+
+  identidadActual(f: FichaEstudiante): IdentidadActual {
+    return {
+      primerNombre: f.primerNombre,
+      segundoNombre: f.segundoNombre,
+      primerApellido: f.primerApellido,
+      segundoApellido: f.segundoApellido,
+      numeroIdentificacion: f.numeroIdentificacion,
+      codigoTipoIdentificacion: f.tipoIdentificacion,
+    };
+  }
+
+  corregir(payload: CorregirIdentidadPayload): void {
+    this.guardandoCorreccion.set(true);
+    this.errorCorreccion.set(null);
+    this.correccion.corregirEstudiante(this.idEstudiante(), payload).subscribe({
+      next: (r) => {
+        this.guardandoCorreccion.set(false);
+        this.corrigiendo.set(false);
+        if (r.datos?.sincronizacionIdentidad === 'PENDIENTE') {
+          this.toast.warning(r.datos.mensajeUsuario ?? 'Los datos se corrigieron; la cuenta de acceso queda pendiente de sincronizar.');
+        } else {
+          this.toast.success('Los datos del estudiante fueron corregidos.');
+        }
+        this.cargarFicha();
+      },
+      error: (e) => {
+        this.guardandoCorreccion.set(false);
+        this.errorCorreccion.set(getApiErrorMessage(e));
+      },
+    });
+  }
+
+  cerrarCorreccion(): void {
+    this.corrigiendo.set(false);
+    this.errorCorreccion.set(null);
+  }
+
+  private cargarFicha(): void {
     this.service.consultarFicha(this.idEstudiante()).subscribe({
       next: (r) => this.ficha.set(r.datos),
       error: (e) => this.error.set(getApiErrorMessage(e)),
     });
-    this.cargarBitacora();
   }
 
   onPageChange(pagina: number): void {
