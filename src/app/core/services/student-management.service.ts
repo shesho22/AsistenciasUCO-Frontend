@@ -40,12 +40,5 @@ export class StudentManagementService {
         })
       );
   }
-
-
-  matricularGrupo(codigoOPin: string): Observable<ApiResponse<any>> {
-    return this.http.post<ApiResponse<any>>(`${environment.apiUrl}/estudiante/matricular-grupo`, {
-      codigo: codigoOPin,
-    });
-  }
 }
 

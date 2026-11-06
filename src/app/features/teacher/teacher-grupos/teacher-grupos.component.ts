@@ -134,6 +134,7 @@ type VistaGrupos = 'LISTA' | 'HUB_GRUPO' | 'FORM_SESION' | 'FORM_GRUPO';
         [isOpen]="modalMatriculaGrupoVisible()"
         [curso]="grupoMatricula()"
         (closed)="cerrarModalMatriculaGrupo()"
+        (matriculado)="cargarEstudiantesGrupo($event)"
       />
 
       <app-teacher-sesion-cancelar-modal

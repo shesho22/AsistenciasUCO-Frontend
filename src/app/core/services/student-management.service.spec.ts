@@ -87,15 +87,4 @@ describe('StudentManagementService', () => {
     expect(resultado[0].grupo).toBe('Grupo 001 - Arq Software');
     expect(resultado[0].indicadores).toBeNull();
   });
-
-  it('matricularGrupo realiza petición POST con el código o pin', () => {
-    service.matricularGrupo('PIN-12345').subscribe((res) => {
-      expect(res.exitoso).toBeTrue();
-    });
-
-    const req = http.expectOne(`${environment.apiUrl}/estudiante/matricular-grupo`);
-    expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual({ codigo: 'PIN-12345' });
-    req.flush({ exitoso: true, datos: { matriculado: true } });
-  });
 });
