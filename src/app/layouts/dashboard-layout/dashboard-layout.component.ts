@@ -272,6 +272,12 @@ export class DashboardLayoutComponent {
       icon: 'horarios',
     },
     {
+      label: 'Docentes',
+      route: '/app/admin/docentes',
+      roles: ['ADMINISTRADOR', 'ADMIN'],
+      icon: 'docentes',
+    },
+    {
       label: 'Estudiantes',
       route: '/app/admin/estudiantes',
       roles: ['ADMINISTRADOR', 'ADMIN'],

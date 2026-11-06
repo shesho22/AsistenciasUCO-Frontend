@@ -27,6 +27,8 @@ export interface DocenteFacultadItem {
   programas: string | null;
   totalProgramas: number;
   totalGrupos: number;
+  /** HU136: falso para un docente retirado de todos sus programas (solo en la vista del administrador). */
+  tieneVinculoActivo?: boolean;
 }
 
 export interface AsignaturaInstitucionItem {
@@ -96,8 +98,12 @@ export interface FichaUnificadaEstudiante {
 }
 
 /** Filtro común de los listados paginados: el backend aplica sus valores por defecto a lo que llegue vacío. */
+/** HU136: vínculo de los docentes en la vista del administrador. */
+export type EstadoVinculoDocente = 'ACTIVO' | 'SIN_VINCULO' | 'TODOS';
+
 export interface FiltroListado {
   busqueda?: string | null;
+  estadoVinculo?: EstadoVinculoDocente | null;
   estaActivo?: boolean | null;
   idPrograma?: string | null;
   idFacultad?: string | null;

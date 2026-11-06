@@ -299,6 +299,13 @@ export const routes: Routes = [
           import('./features/dean/dean-asignaturas/dean-asignaturas.component').then((m) => m.DeanAsignaturasComponent),
       },
       {
+        path: 'admin/docentes',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMINISTRADOR', 'ADMIN'], comoAdministrador: true },
+        loadComponent: () =>
+          import('./features/dean/dean-docentes/dean-docentes.component').then((m) => m.DeanDocentesComponent),
+      },
+      {
         path: 'admin/estudiantes',
         canActivate: [roleGuard],
         data: { roles: ['ADMINISTRADOR', 'ADMIN'] },

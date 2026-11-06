@@ -342,15 +342,5 @@ export class AdminManagementService {
     );
   }
 
-  crearInstitucion(data: Partial<InstitucionItem>): Observable<ApiResponse<InstitucionItem>> {
-    return this.http.post<ApiResponse<InstitucionItem>>(`${environment.apiUrl}/admin/instituciones`, data);
-  }
-
-  actualizarInstitucion(id: string, data: Partial<InstitucionItem>): Observable<ApiResponse<InstitucionItem>> {
-    return this.http.put<ApiResponse<InstitucionItem>>(`${environment.apiUrl}/admin/instituciones/${id}`, data);
-  }
-
-  toggleEstadoInstitucion(id: string): Observable<ApiResponse<{ id: string }>> {
-    return this.http.patch<ApiResponse<{ id: string }>>(`${environment.apiUrl}/admin/instituciones/${id}/toggle-estado`, {});
-  }
+  // HU161/HU162/HU164 descartadas (decision de John 2026-11-05): Institucion es un catalogo de solo consulta.
 }

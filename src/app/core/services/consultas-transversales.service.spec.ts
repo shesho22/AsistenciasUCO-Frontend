@@ -85,6 +85,14 @@ describe('ConsultasTransversalesService (HU112/HU128/HU143/HU157)', () => {
       .flush({ exitoso: true, datos: [{ idComponente: 'c', codigo: 'ESP', nombre: 'Específicas', totalAsignaturas: 0 }] });
   });
 
+  it('HU136: consulta los docentes de la institución del administrador con facultad y programa', () => {
+    service.getDocentesInstitucion({ busqueda: 'ana', idFacultad: 'f-1', idPrograma: 'p-1', pagina: 1, tamano: 20 }).subscribe();
+    const req = http.expectOne((r) => r.url === `${api}/admin/docentes`);
+    expect(req.request.params.get('idFacultad')).toBe('f-1');
+    expect(req.request.params.get('idPrograma')).toBe('p-1');
+    req.flush({ exitoso: true, datos: [], total: 0 });
+  });
+
   it('HU005/HU016: consulta los motivos de justificación del catálogo', () => {
     service.getCategoriasJustificacion().subscribe((res) => expect(res.datos[0].codigo).toBe('MED'));
     http
