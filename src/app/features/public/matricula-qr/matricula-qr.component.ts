@@ -88,6 +88,13 @@ const PIN_SEIS_DIGITOS = /^[0-9]{6}$/;
             </div>
             <input name="correo" type="email" placeholder="Correo institucional" autocomplete="email" [ngModel]="correo()" (ngModelChange)="correo.set($event)" class="w-full px-3 py-2 border border-warm-300 rounded-xl text-sm" />
             <input name="password" type="password" placeholder="Contraseña (mínimo 8 caracteres)" autocomplete="new-password" [ngModel]="password()" (ngModelChange)="password.set($event)" class="w-full px-3 py-2 border border-warm-300 rounded-xl text-sm" />
+            @if (password() !== '' && !passwordLongitudValida()) {
+              <p class="text-xs text-red-700" role="alert" data-testid="matricula-password-corta">La contraseña debe tener al menos 8 caracteres.</p>
+            }
+            <input name="confirmarPassword" type="password" placeholder="Confirmar contraseña" autocomplete="new-password" aria-label="Confirmar contraseña" [ngModel]="confirmarPassword()" (ngModelChange)="confirmarPassword.set($event)" class="w-full px-3 py-2 border border-warm-300 rounded-xl text-sm" />
+            @if (confirmarPassword() !== '' && !passwordsCoinciden()) {
+              <p class="text-xs text-red-700" role="alert" data-testid="matricula-password-no-coincide">Las contraseñas no coinciden.</p>
+            }
             @if (mensaje()) {
               <p class="text-sm text-red-800 bg-red-50 border border-red-200 rounded-xl p-3" role="alert" data-testid="matricula-mensaje">{{ mensaje() }}</p>
               <button type="button" (click)="yaTengoCuenta()" class="text-xs font-semibold text-primary-700 hover:underline">Ya tengo cuenta</button>
@@ -138,6 +145,7 @@ export class MatriculaQrComponent implements OnInit {
   readonly segundoApellido = signal<string>('');
   readonly correo = signal<string>('');
   readonly password = signal<string>('');
+  readonly confirmarPassword = signal<string>('');
 
   /** Credencial en memoria; se descarta al terminar. Nunca se guarda en storage ni se vuelve a poner en la URL. */
   private credencial: CredencialMatricula | null = null;
@@ -166,6 +174,14 @@ export class MatriculaQrComponent implements OnInit {
     this.estado.set('REGISTRO');
   }
 
+  passwordLongitudValida(): boolean {
+    return this.password().length >= 8;
+  }
+
+  passwordsCoinciden(): boolean {
+    return this.password() === this.confirmarPassword();
+  }
+
   formularioCompleto(): boolean {
     return (
       this.tipoId() !== '' &&
@@ -173,7 +189,8 @@ export class MatriculaQrComponent implements OnInit {
       this.primerNombre().trim() !== '' &&
       this.primerApellido().trim() !== '' &&
       this.correo().trim() !== '' &&
-      this.password().length >= 8
+      this.passwordLongitudValida() &&
+      this.passwordsCoinciden()
     );
   }
 
@@ -243,6 +260,7 @@ export class MatriculaQrComponent implements OnInit {
   private descartarDatos(): void {
     this.credencial = null;
     this.password.set('');
+    this.confirmarPassword.set('');
     this.pin.set('');
   }
 }

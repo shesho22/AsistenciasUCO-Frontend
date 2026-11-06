@@ -54,6 +54,7 @@ describe('MatriculaQrComponent (HU176B, página pública)', () => {
     component.primerApellido.set('Gómez');
     component.correo.set('ana@uco.edu.co');
     component.password.set('Clave-segura-1');
+    component.confirmarPassword.set('Clave-segura-1');
   }
 
   it('T-FE-01: sin sesión valida el token del QR y lo borra de la URL', async () => {
@@ -133,10 +134,54 @@ describe('MatriculaQrComponent (HU176B, página pública)', () => {
     component.mostrarRegistro();
     llenarFormulario();
     component.password.set('corta');
+    component.confirmarPassword.set('corta');
 
     expect(component.formularioCompleto()).toBeFalse();
     component.registrar();
     expect(servicio.registrar).not.toHaveBeenCalled();
+  });
+
+  it('avisa si la contraseña es corta y no deja enviar', async () => {
+    await crear({ t: TOKEN });
+    component.mostrarRegistro();
+    llenarFormulario();
+    component.password.set('corta');
+    component.confirmarPassword.set('corta');
+    fixture.detectChanges();
+
+    expect(component.passwordLongitudValida()).toBeFalse();
+    expect(q('matricula-password-corta')?.textContent).toContain('al menos 8 caracteres');
+    expect(q('matricula-enviar')?.hasAttribute('disabled')).toBeTrue();
+  });
+
+  it('exige confirmar la contraseña: si no coincide avisa y bloquea el envío', async () => {
+    await crear({ t: TOKEN });
+    component.mostrarRegistro();
+    llenarFormulario();
+    component.confirmarPassword.set('Clave-segura-2');
+    fixture.detectChanges();
+
+    expect(component.passwordsCoinciden()).toBeFalse();
+    expect(component.formularioCompleto()).toBeFalse();
+    expect(q('matricula-password-no-coincide')?.textContent).toContain('no coinciden');
+    expect(q('matricula-enviar')?.hasAttribute('disabled')).toBeTrue();
+    component.registrar();
+    expect(servicio.registrar).not.toHaveBeenCalled();
+  });
+
+  it('con contraseñas iguales no muestra avisos y permite enviar; al terminar limpia ambos campos', async () => {
+    await crear({ t: TOKEN });
+    component.mostrarRegistro();
+    llenarFormulario();
+    fixture.detectChanges();
+
+    expect(q('matricula-password-no-coincide')).toBeNull();
+    expect(q('matricula-password-corta')).toBeNull();
+    expect(q('matricula-enviar')?.hasAttribute('disabled')).toBeFalse();
+
+    component.registrar();
+    expect(component.password()).toBe('');
+    expect(component.confirmarPassword()).toBe('');
   });
 
   it('un error del registro (p. ej. cuenta existente) vuelve al formulario con el mensaje del backend', async () => {
