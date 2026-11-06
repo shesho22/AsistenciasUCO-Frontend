@@ -10,8 +10,6 @@ import {
   EstudianteDirectorioItem,
   SolicitudMatriculaItem,
   PeriodoAcademicoItem,
-  SedeInstitucionalItem,
-  EspacioFisicoItem,
   FacultadItem,
   AreaConocimientoItem,
   ParametroInstitucionalItem,
@@ -35,8 +33,6 @@ import {
   MOCK_ESTUDIANTES_DIRECTORIO,
   MOCK_SOLICITUDES_MATRICULA,
   MOCK_PERIODOS_ACADEMICOS,
-  MOCK_SEDES,
-  MOCK_ESPACIOS_FISICOS,
   MOCK_FACULTADES,
   MOCK_AREAS_CONOCIMIENTO,
   MOCK_PARAMETROS,
@@ -64,8 +60,6 @@ class MockDataStore {
   estudiantesDirectorio: EstudianteDirectorioItem[] = JSON.parse(JSON.stringify(MOCK_ESTUDIANTES_DIRECTORIO));
   solicitudesMatricula: SolicitudMatriculaItem[] = JSON.parse(JSON.stringify(MOCK_SOLICITUDES_MATRICULA));
   periodosAcademicos: PeriodoAcademicoItem[] = JSON.parse(JSON.stringify(MOCK_PERIODOS_ACADEMICOS));
-  sedes: SedeInstitucionalItem[] = JSON.parse(JSON.stringify(MOCK_SEDES));
-  espaciosFisicos: EspacioFisicoItem[] = JSON.parse(JSON.stringify(MOCK_ESPACIOS_FISICOS));
   facultades: FacultadItem[] = JSON.parse(JSON.stringify(MOCK_FACULTADES));
   areasConocimiento: AreaConocimientoItem[] = JSON.parse(JSON.stringify(MOCK_AREAS_CONOCIMIENTO));
   parametros: ParametroInstitucionalItem[] = JSON.parse(JSON.stringify(MOCK_PARAMETROS));

@@ -242,12 +242,6 @@ export class DashboardLayoutComponent {
       icon: 'decanos',
     },
     {
-      label: 'Sedes Institucionales',
-      route: '/app/admin/sedes',
-      roles: ['ADMINISTRADOR', 'ADMIN'],
-      icon: 'catalogos',
-    },
-    {
       label: 'Tipos de Programa',
       route: '/app/admin/catalogos',
       roles: ['ADMINISTRADOR', 'ADMIN'],
@@ -338,7 +332,7 @@ export class DashboardLayoutComponent {
       icon: 'horarios',
     },
     {
-      label: 'Áreas y Sedes',
+      label: 'Áreas de Conocimiento',
       route: '/app/decano/infraestructura',
       roles: ['DECANO'],
       icon: 'catalogos',

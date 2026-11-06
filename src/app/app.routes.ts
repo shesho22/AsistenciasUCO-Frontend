@@ -83,15 +83,6 @@ export const routes: Routes = [
           ),
       },
       {
-        path: 'admin/sedes',
-        canActivate: [roleGuard],
-        data: { roles: ['ADMINISTRADOR', 'ADMIN'] },
-        loadComponent: () =>
-          import('./features/admin/admin-sedes/admin-sedes.component').then(
-            (m) => m.AdminSedesComponent
-          ),
-      },
-      {
         path: 'admin/areas',
         canActivate: [roleGuard],
         data: { roles: ['ADMINISTRADOR', 'ADMIN'] },

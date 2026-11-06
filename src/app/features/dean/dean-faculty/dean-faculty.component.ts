@@ -51,7 +51,7 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
       }
 
       <!-- KPIs Bento Globales -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div class="p-5 rounded-2xl bg-white border border-warm-200 shadow-warm-sm flex items-center justify-between">
           <div>
             <span class="text-xs font-bold uppercase tracking-wider text-warm-500">Grupos en Facultad</span>
@@ -91,18 +91,6 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
           </div>
         </div>
 
-        <div class="p-5 rounded-2xl bg-white border border-warm-200 shadow-warm-sm flex items-center justify-between">
-          <div>
-            <span class="text-xs font-bold uppercase tracking-wider text-warm-500">Sedes y Espacios</span>
-            <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ sedesTotal() }} sedes</p>
-            <span class="text-[11px] text-warm-500">Aulas y laboratorios: sin consulta de lectura para la decanatura</span>
-          </div>
-          <div class="w-11 h-11 rounded-xl bg-warm-100 text-warm-700 flex items-center justify-center shrink-0">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-            </svg>
-          </div>
-        </div>
       </div>
 
       <!-- Ficha Institucional de la Facultad -->
@@ -113,7 +101,7 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
             {{ nombreFacultad() }}
           </h2>
           <p class="text-xs text-warm-600 leading-relaxed">
-            Supervisión integral de docencia, planes curriculares, grupos ofertados, periodos lectivos y capacidad física instalada de la facultad.
+            Supervisión integral de docencia, planes curriculares, grupos ofertados y periodos lectivos de la facultad.
           </p>
         </div>
 
@@ -121,10 +109,6 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
           <div class="flex justify-between pb-1.5 border-b border-warm-200/60">
             <span class="text-warm-500">Decano(a) Responsable:</span>
             <span class="font-bold text-warm-900">{{ decanoResponsable() }}</span>
-          </div>
-          <div class="flex justify-between pb-1.5 border-b border-warm-200/60">
-            <span class="text-warm-500">Sede Principal:</span>
-            <span class="font-semibold text-warm-800">{{ sedePrincipalNombre() }}</span>
           </div>
           <div class="flex justify-between">
             <span class="text-warm-500">Período en Curso:</span>
@@ -136,10 +120,6 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
           <div class="flex justify-between pb-1.5 border-b border-warm-200/60">
             <span class="text-warm-500">Total Áreas Temáticas:</span>
             <span class="font-bold text-warm-900">{{ areasTotal() }}</span>
-          </div>
-          <div class="flex justify-between pb-1.5 border-b border-warm-200/60">
-            <span class="text-warm-500">Total Espacios Físicos:</span>
-            <span class="font-bold text-warm-900">No disponible</span>
           </div>
           <div class="flex justify-between">
             <span class="text-warm-500">Estado de Facultad:</span>
@@ -219,16 +199,16 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
             </button>
           </div>
 
-          <!-- Áreas y Sedes -->
+          <!-- Áreas de Conocimiento -->
           <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm hover:border-primary-300 transition-all flex flex-col justify-between gap-4">
             <div class="space-y-2">
               <div class="flex items-center justify-between">
                 <span class="text-xs font-bold px-2.5 py-1 rounded-lg bg-warm-100 text-warm-800">Infraestructura</span>
-                <span class="text-xs font-mono font-bold text-warm-600">{{ areasTotal() }} áreas • {{ sedesTotal() }} sedes</span>
+                <span class="text-xs font-mono font-bold text-warm-600">{{ areasTotal() }} áreas</span>
               </div>
-              <h3 class="font-serif font-bold text-base text-warm-900">Áreas de Conocimiento y Sedes</h3>
+              <h3 class="font-serif font-bold text-base text-warm-900">Áreas de Conocimiento</h3>
               <p class="text-xs text-warm-600">
-                Consulta las áreas temáticas de la facultad, sus coordinadores de área y las sedes operativas.
+                Consulta las áreas temáticas de la facultad y sus coordinadores de área.
               </p>
             </div>
             <button
@@ -236,7 +216,7 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
               (click)="irARuta('/app/decano/infraestructura')"
               class="w-full py-2 px-3 bg-primary-50 hover:bg-primary-100 text-primary-900 rounded-xl text-xs font-bold border border-primary-200 transition-colors"
             >
-              Ir a Áreas y Sedes →
+              Ir a Áreas de Conocimiento →
             </button>
           </div>
 
@@ -281,8 +261,7 @@ export class DeanFacultyComponent implements OnInit {
   }
 
   courses = signal<Course[]>([]);
-  /** Sedes y áreas: lecturas autorizadas al DECANO (GET /admin/sedes y /admin/areas). */
-  sedes = this.adminService.sedes;
+  /** Áreas: lectura autorizada al DECANO (GET /admin/areas). */
   areas = this.adminService.areas;
   /** Facultad del decano autenticado (GET /decano/estructura); el ámbito lo fuerza el backend. */
   facultad = signal<FacultadNodo | null>(null);
@@ -292,7 +271,6 @@ export class DeanFacultyComponent implements OnInit {
   errorGrupos = signal(false);
   errorEstructura = signal(false);
   errorPeriodos = signal(false);
-  errorSedes = signal(false);
   errorAreas = signal(false);
 
   selectedCourse = signal<Course | null>(null);
@@ -302,14 +280,12 @@ export class DeanFacultyComponent implements OnInit {
     if (this.errorGrupos()) secciones.push('grupos');
     if (this.errorEstructura()) secciones.push('facultad y planes');
     if (this.errorPeriodos()) secciones.push('períodos');
-    if (this.errorSedes()) secciones.push('sedes');
     if (this.errorAreas()) secciones.push('áreas');
     return secciones;
   });
 
   planesTotal = computed(() => (this.errorEstructura() ? '—' : String(this.planes().length)));
   periodosTotal = computed(() => (this.errorPeriodos() ? '—' : String(this.periodos().length)));
-  sedesTotal = computed(() => (this.errorSedes() ? '—' : String(this.sedes().length)));
   areasTotal = computed(() => (this.errorAreas() ? '—' : String(this.areas().length)));
 
   nombreFacultad = computed(() => this.facultad()?.nombre ?? 'Mi Facultad');
@@ -320,8 +296,6 @@ export class DeanFacultyComponent implements OnInit {
   });
 
   decanoResponsable = computed(() => this.facultad()?.nombreDecano ?? '—');
-
-  sedePrincipalNombre = computed(() => this.sedes()[0]?.nombre ?? '—');
 
   periodoActualCodigo = computed(() => {
     const actual = this.periodos().find((p) => p.esActual || p.estado === 'ACTIVO');
@@ -367,7 +341,6 @@ export class DeanFacultyComponent implements OnInit {
       next: (res) => this.periodos.set(res.datos || []),
       error: () => this.errorPeriodos.set(true),
     });
-    this.adminService.cargarSedes().subscribe({ error: () => this.errorSedes.set(true) });
     this.adminService.cargarAreas().subscribe({ error: () => this.errorAreas.set(true) });
   }
 
