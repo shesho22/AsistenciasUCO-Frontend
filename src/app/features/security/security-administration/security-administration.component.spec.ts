@@ -6,6 +6,7 @@ import {
   SECURITY_UI_LOADER,
   SecurityAdministrationComponent,
   SecurityUiModuleLoader,
+  ensureBrowserProcessShim,
 } from './security-administration.component';
 
 describe('SecurityAdministrationComponent', () => {
@@ -260,5 +261,63 @@ describe('SecurityAdministrationComponent', () => {
     expect(component.state()).toBe('forbidden');
     expect(authService.currentUser()).toEqual(jasmine.objectContaining({ role: 'DOCENTE', roles: [] }));
     expect(securityUiLoader.load).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * El bundle publicado de security-ui referencia `process.env.NODE_ENV` (184 veces) y su build no lo reemplaza: en el
+ * navegador `import()` falla con "process is not defined". El anfitrion lo define de forma minima antes de importarlo.
+ */
+describe('SecurityAdministrationComponent: process para el bundle de Security UI', () => {
+  const global = globalThis as { process?: unknown };
+  let procesoOriginal: unknown;
+  let teniaProceso: boolean;
+
+  beforeEach(() => {
+    teniaProceso = 'process' in global;
+    procesoOriginal = global.process;
+    delete global.process;
+  });
+
+  afterEach(() => {
+    if (teniaProceso) {
+      global.process = procesoOriginal;
+    } else {
+      delete global.process;
+    }
+  });
+
+  it('define process.env.NODE_ENV=production cuando el navegador no tiene process', () => {
+    ensureBrowserProcessShim();
+
+    expect((global.process as { env: { NODE_ENV: string } }).env.NODE_ENV).toBe('production');
+  });
+
+  it('no pisa un process existente ni su NODE_ENV', () => {
+    global.process = { env: { NODE_ENV: 'development', OTRA: 'x' } };
+
+    ensureBrowserProcessShim();
+
+    expect(global.process).toEqual({ env: { NODE_ENV: 'development', OTRA: 'x' } });
+  });
+
+  it('completa env/NODE_ENV si process existe pero sin env', () => {
+    global.process = { version: 'v0' };
+
+    ensureBrowserProcessShim();
+
+    expect(global.process).toEqual({ version: 'v0', env: { NODE_ENV: 'production' } });
+  });
+
+  it('el cargador por defecto define process antes de intentar importar el modulo remoto', async () => {
+    // Karma reescribe el import() dinamico con su empaquetador, por lo que no se puede evaluar un modulo real aqui: se
+    // comprueba el orden, es decir, que process ya existe cuando el import se intenta (aunque este falle).
+    TestBed.configureTestingModule({});
+    const loader = TestBed.inject(SECURITY_UI_LOADER);
+    expect('process' in global).toBeFalse();
+
+    await loader.load('http://127.0.0.1:1/no-existe.js').catch(() => undefined);
+
+    expect((global.process as { env: { NODE_ENV: string } }).env.NODE_ENV).toBe('production');
   });
 });
