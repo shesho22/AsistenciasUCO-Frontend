@@ -356,6 +356,65 @@ describe('AuthService', () => {
       expect(window.location.pathname).toBe('/app/docente/grupos');
     });
 
+    it('callback válido con el perfil habilitado: el nombre visible sale del perfil de la DB, porque el JWT no trae claims de nombre', async () => {
+      const features = environment.features as { userProfileEndpointEnabled: boolean };
+      const flagOriginal = features.userProfileEndpointEnabled;
+      features.userProfileEndpointEnabled = true;
+      try {
+        const payload = basePayload();
+        for (const claim of ['given_name', 'family_name', 'name', 'preferred_username']) {
+          delete (payload as Record<string, unknown>)[claim];
+        }
+        fetchSpy.and.callFake(((url: string) => {
+          if (url.endsWith('/usuarios/perfil')) {
+            return Promise.resolve({
+              ok: true,
+              status: 200,
+              json: () =>
+                Promise.resolve({ datos: { primerNombre: 'Sergio', primerApellido: 'Test', nombreCompleto: 'Sergio Test' } }),
+            } as Response);
+          }
+          if (url.endsWith('/auth/me')) {
+            return Promise.resolve({
+              ok: true,
+              status: 200,
+              json: () => Promise.resolve({ exitoso: true, datos: { idUsuario: VALID_UUID, roles: ['ESTUDIANTE'] } }),
+            } as Response);
+          }
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ access_token: makeJwt(payload), token_type: 'Bearer' }),
+          } as Response);
+        }) as typeof fetch);
+
+        expect(await completeCallback()).toBeTrue();
+        await new Promise((resolve) => setTimeout(resolve));
+
+        expect(service.currentUser()?.name).toBe('Sergio Test');
+        const llamadas = fetchSpy.calls.allArgs().map((args) => String(args[0]));
+        expect(llamadas.some((u) => u.endsWith('/usuarios/perfil'))).toBeTrue();
+      } finally {
+        features.userProfileEndpointEnabled = flagOriginal;
+      }
+    });
+
+    it('callback válido con el perfil apagado: no consulta /usuarios/perfil', async () => {
+      const features = environment.features as { userProfileEndpointEnabled: boolean };
+      const flagOriginal = features.userProfileEndpointEnabled;
+      features.userProfileEndpointEnabled = false;
+      try {
+        tokenEndpointResponse(basePayload());
+
+        expect(await completeCallback()).toBeTrue();
+        await new Promise((resolve) => setTimeout(resolve));
+
+        const llamadas = fetchSpy.calls.allArgs().map((args) => String(args[0]));
+        expect(llamadas.some((u) => u.endsWith('/usuarios/perfil'))).toBeFalse();
+      } finally {
+        features.userProfileEndpointEnabled = flagOriginal;
+      }
+    });
+
     it('state que no coincide: rechaza sin intercambiar el código', async () => {
       pendingLogin();
       window.history.replaceState({}, '', '/login?code=code-1&state=otro-state');

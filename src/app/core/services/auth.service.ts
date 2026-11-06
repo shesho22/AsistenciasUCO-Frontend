@@ -392,6 +392,9 @@ export class AuthService implements OnDestroy {
       }
       this.token.set(accessToken);
       this.currentUser.set(user);
+      // El JWT de baseline no trae claims de nombre: el nombre visible se hidrata desde el perfil de la DB (HU006) sin
+      // retrasar la navegacion. Si el perfil esta apagado o falla, la sesion sigue con los datos del token.
+      void this.fetchProfileFromBackend(accessToken);
       const target = pending.returnUrl === '/' || pending.returnUrl.startsWith('/login')
         ? this.homePathForRole(user.role)
         : pending.returnUrl;
