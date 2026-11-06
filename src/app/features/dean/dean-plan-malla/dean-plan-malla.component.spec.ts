@@ -90,6 +90,20 @@ describe('DeanPlanMallaComponent (HU108)', () => {
     expect(component.asignaturasFiltradas().map((a) => a.codigo)).toEqual(['SIS-101']);
   });
 
+  // Certificación Fase 3: plan con 1 semestre registrado y la asignatura en S8; el selector solo ofrecía "Semestre 1".
+  it('el selector de semestres cubre el semestre más alto de las asignaturas, sin inventar 10', () => {
+    crear();
+    const unSemestre = estructura.map((f: any) => ({
+      ...f,
+      programas: f.programas.map((p: any) => ({ ...p, planes: p.planes.map((pl: any) => ({ ...pl, totalSemestres: 1 })) })),
+    }));
+    http.expectOne(`${API}/decano/estructura`).flush({ exitoso: true, datos: unSemestre });
+    http.expectOne(`${API}/decano/planes-estudio/PLAN-SIS-2024/asignaturas`).flush({ exitoso: true, datos: asignaturasApi });
+    const maximo = Math.max(...component.asignaturas().map((a) => a.semestre));
+    expect(component.semestresDisponibles().length).toBe(Math.max(1, maximo));
+    expect(component.semestresDisponibles()).toContain(maximo);
+  });
+
   it('muestra el mensaje del backend si el plan no es de la facultad (403)', () => {
     crear();
     http.expectOne(`${API}/decano/estructura`).flush({ exitoso: true, datos: [] });

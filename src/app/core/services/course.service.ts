@@ -169,6 +169,9 @@ export class CourseService {
       if (typeof asignacion.estudiantesActivos === 'number') {
         course.enrolledStudentsCount = asignacion.estudiantesActivos;
       }
+      if (typeof asignacion.capacidadMaximaPermitida === 'number') {
+        course.cupoMaximo = asignacion.capacidadMaximaPermitida;
+      }
       return course;
     });
   }

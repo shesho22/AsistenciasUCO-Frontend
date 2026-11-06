@@ -42,7 +42,7 @@ import { AvatarComponent } from '../../../shared/components/avatar/avatar.compon
             Materias del Programa
           </h1>
           <p class="text-sm text-warm-600 mt-1">
-            Consulta todas las materias y grupos activos de la carrera, sus horarios, aulas y el listado de estudiantes inscritos por grupo.
+            Consulta todas las materias y grupos activos de la carrera, sus horarios y el listado de estudiantes inscritos por grupo.
           </p>
         </div>
 
@@ -88,7 +88,7 @@ import { AvatarComponent } from '../../../shared/components/avatar/avatar.compon
             type="text"
             [ngModel]="searchQuery()"
             (ngModelChange)="searchQuery.set($event)"
-            placeholder="Buscar materia por código, nombre, grupo o aula..."
+            placeholder="Buscar materia por código, nombre o grupo..."
             class="w-full pl-10 pr-4 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-900 placeholder-warm-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 shadow-warm-sm"
           />
           <svg class="w-4 h-4 text-warm-400 absolute left-3.5 top-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -154,12 +154,6 @@ import { AvatarComponent } from '../../../shared/components/avatar/avatar.compon
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       <span>{{ curso.schedule }}</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                      <svg class="w-3.5 h-3.5 text-warm-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5" />
-                      </svg>
-                      <span>Aula {{ curso.room }}</span>
                     </div>
                   </div>
                 </div>

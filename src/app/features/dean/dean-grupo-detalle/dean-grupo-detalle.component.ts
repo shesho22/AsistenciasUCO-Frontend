@@ -58,10 +58,6 @@ const MAX_PAGINAS_SESIONES = 50;
                 <span class="text-warm-400 block text-[11px]">Horario Regular</span>
                 <strong class="text-warm-800">{{ curso.schedule }}</strong>
               </div>
-              <div>
-                <span class="text-warm-400 block text-[11px]">Aula Asignada</span>
-                <strong class="text-warm-800">{{ curso.room || 'Por definir' }}</strong>
-              </div>
             </div>
           </div>
 
@@ -84,7 +80,7 @@ const MAX_PAGINAS_SESIONES = 50;
         <div class="p-5 border-b border-warm-100 flex items-center justify-between">
           <div>
             <h2 class="font-serif font-bold text-lg text-warm-900">Sesiones de Clase Registradas</h2>
-            <p class="text-xs text-warm-500">Cronograma de clases del grupo, asistencias consolidadas y aulas utilizadas.</p>
+            <p class="text-xs text-warm-500">Cronograma de clases del grupo y asistencias consolidadas.</p>
           </div>
           <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-warm-100 text-warm-700">
             {{ sessions().length }} sesiones
@@ -123,10 +119,6 @@ const MAX_PAGINAS_SESIONES = 50;
                     } @else {
                       <span class="text-xs font-semibold text-amber-800">Horario no confirmado</span>
                     }
-                    <span class="text-warm-300">•</span>
-                    <span class="text-xs text-warm-600 bg-warm-100/60 px-2 py-0.5 rounded-md">
-                      Aula: {{ selectedCourse()?.room || 'Por definir' }}
-                    </span>
                   </div>
                   <h3 class="font-bold text-sm text-warm-900">{{ s.nombre }}</h3>
                 </div>

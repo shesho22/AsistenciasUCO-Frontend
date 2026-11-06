@@ -39,9 +39,10 @@ export function normalizarPlanEstudio(raw: any): PlanEstudioItem {
     anioVigencia: raw?.anioVigencia ?? (Number(inp) || 0),
     programa: raw?.programa ?? raw?.nombrePrograma ?? '',
     facultad: raw?.facultad ?? '',
-    totalCreditos: raw?.totalCreditos ?? 0,
+    // Certificación F3: el contrato no trae créditos ni asignaturas; sin dato se muestra "—", no un 0 inventado.
+    totalCreditos: raw?.totalCreditos ?? null,
     totalSemestres: raw?.totalSemestres ?? 0,
-    totalAsignaturas: raw?.totalAsignaturas ?? 0,
+    totalAsignaturas: raw?.totalAsignaturas ?? null,
     estado: raw?.estado ?? (raw?.estaActivoPlanEstudio === false ? 'INACTIVO' : 'VIGENTE'),
     descripcion: raw?.descripcion ?? raw?.justificacionEstado ?? '',
   };
@@ -316,7 +317,15 @@ export class CoordinatorManagementService {
             [planId]: [...(map[planId] || []), res.datos],
           }));
           this.planesSignal.update((prev) =>
-            prev.map((p) => (p.id === planId ? { ...p, totalAsignaturas: p.totalAsignaturas + 1 } : p))
+            prev.map((p) =>
+              p.id === planId
+                ? {
+                    ...p,
+                    totalAsignaturas: (p.totalAsignaturas ?? 0) + 1,
+                    totalCreditos: (p.totalCreditos ?? 0) + (Number(res.datos?.creditos) || 0),
+                  }
+                : p
+            )
           );
         }
       })
@@ -343,12 +352,21 @@ export class CoordinatorManagementService {
     return this.http.delete<ApiResponse<boolean>>(`${environment.apiUrl}/coordinador/planes-estudio/${planId}/asignaturas/${asigId}`).pipe(
       tap((res) => {
         if (res.exitoso) {
+          const eliminada = (this.asignaturasSignal()[planId] || []).find((a) => a.id === asigId);
           this.asignaturasSignal.update((map) => ({
             ...map,
             [planId]: (map[planId] || []).filter((a) => a.id !== asigId),
           }));
           this.planesSignal.update((prev) =>
-            prev.map((p) => (p.id === planId ? { ...p, totalAsignaturas: Math.max(0, p.totalAsignaturas - 1) } : p))
+            prev.map((p) =>
+              p.id === planId
+                ? {
+                    ...p,
+                    totalAsignaturas: Math.max(0, (p.totalAsignaturas ?? 0) - 1),
+                    totalCreditos: Math.max(0, (p.totalCreditos ?? 0) - (Number(eliminada?.creditos) || 0)),
+                  }
+                : p
+            )
           );
         }
       })

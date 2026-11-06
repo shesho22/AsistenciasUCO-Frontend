@@ -187,7 +187,7 @@ export class StudyPlanFormComponent implements OnInit {
         programa: p.programa,
         facultad: p.facultad,
         totalSemestres: p.totalSemestres,
-        totalCreditos: p.totalCreditos,
+        totalCreditos: p.totalCreditos ?? 0,
         estado: p.estado,
         descripcion: p.descripcion,
       };

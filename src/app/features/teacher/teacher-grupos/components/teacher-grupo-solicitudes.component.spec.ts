@@ -66,11 +66,14 @@ describe('TeacherGrupoSolicitudesComponent (HU053-HU055: solicitudes de ingreso 
     http.expectOne((r) => r.url === BANDEJA).flush({ exitoso: true, datos: [], total: 0 });
   });
 
-  it('TS-03 aceptar con cupo (cualquiera de la lista de espera) matricula y avisa', () => {
+  it('TS-03 aceptar con cupo (cualquiera de la lista de espera) matricula, avisa y pide recargar el padrón', () => {
+    let padronRecargado = false;
+    component.matriculaCambiada.subscribe(() => (padronRecargado = true));
     component.aceptar(component.solicitudes()[1]);
     http.expectOne(`${environment.apiUrl}/docente/solicitudes-ingreso/s2`)
       .flush({ exitoso: true, datos: { id: 's2', estadoResultante: 'ACEPTADA' } });
     expect(toastSpy.success).toHaveBeenCalled();
+    expect(padronRecargado).toBeTrue();
     http.expectOne((r) => r.url === BANDEJA).flush({ exitoso: true, datos: [], total: 0 });
   });
 
@@ -100,5 +103,20 @@ describe('TeacherGrupoSolicitudesComponent (HU053-HU055: solicitudes de ingreso 
 
     component.onEstadoChange('EN_ESPERA');
     expect(http.expectOne((r) => r.url === BANDEJA).request.params.get('estado')).toBe('EN_ESPERA');
+  });
+
+  // Certificación Fase 3: sin solicitudes los cupos no se conocen; antes se mostraba "Cupos disponibles: 0 de 0".
+  it('TS-10 sin solicitudes no muestra un cupo inventado', () => {
+    component.onEstadoChange('PENDIENTE');
+    http.expectOne((r) => r.url === BANDEJA).flush({ exitoso: true, total: 0, datos: [] });
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent as string).toContain('Cupos disponibles: 0 de 30');
+
+    const nuevo = TestBed.createComponent(TeacherGrupoSolicitudesComponent);
+    nuevo.componentRef.setInput('grupoId', 'grp-1');
+    nuevo.detectChanges();
+    http.expectOne((r) => r.url === BANDEJA).flush({ exitoso: true, total: 0, datos: [] });
+    nuevo.detectChanges();
+    expect(nuevo.nativeElement.textContent as string).not.toContain('Cupos disponibles');
   });
 });

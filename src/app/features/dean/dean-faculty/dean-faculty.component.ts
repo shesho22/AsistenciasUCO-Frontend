@@ -145,7 +145,7 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
               </div>
               <h3 class="font-serif font-bold text-base text-warm-900">Grupos de la Facultad</h3>
               <p class="text-xs text-warm-600">
-                Consulta los grupos activos, horarios, aulas asignadas, cupos y el cronograma detallado de sesiones.
+                Consulta los grupos activos, horarios, cupos y el cronograma detallado de sesiones.
               </p>
             </div>
             <button

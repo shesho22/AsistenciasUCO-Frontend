@@ -65,7 +65,7 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
                 {{ pc.tiempoRestanteTexto }}
               </p>
               <p class="text-xs font-semibold text-primary-800 truncate mt-0.5" [title]="pc.materia">{{ pc.materia }}</p>
-              <span class="text-[11px] text-warm-500 font-medium block truncate mt-0.5">{{ pc.aula }} • {{ pc.tiempoDetalleBadge }}</span>
+              <span class="text-[11px] text-warm-500 font-medium block truncate mt-0.5">{{ pc.tiempoDetalleBadge }}</span>
             </div>
           } @else {
             <div>
@@ -112,8 +112,6 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
                 {{ pc.materia }}
               </h3>
               <p class="text-xs text-warm-600 flex flex-wrap items-center gap-2 mt-0.5">
-                <span class="font-semibold text-warm-800">Aula: {{ pc.aula }}</span>
-                <span>•</span>
                 <span>{{ pc.subtitulo }}</span>
                 <span>•</span>
                 <span class="text-primary-700 font-medium">{{ pc.tiempoDetalleBadge }}</span>
@@ -177,8 +175,8 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
                     <span class="font-semibold text-warm-900 text-xs">{{ mat.docente ?? 'No informado' }}</span>
                   </div>
                   <div>
-                    <span class="text-warm-400 text-[10px] block">Horario y Aula</span>
-                    <span class="font-semibold text-warm-900 text-xs">{{ mat.horario ?? 'No informado' }}{{ mat.aula ? ' (' + mat.aula + ')' : '' }}</span>
+                    <span class="text-warm-400 text-[10px] block">Horario</span>
+                    <span class="font-semibold text-warm-900 text-xs">{{ mat.horario ?? 'No informado' }}</span>
                   </div>
                 </div>
 

@@ -29,7 +29,7 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
             Grupos Académicos de la Facultad
           </h1>
           <p class="text-sm text-warm-600 mt-1">
-            Supervisa los grupos activos, horarios, aulas asignadas, cupos ofertados y sesiones registradas.
+            Supervisa los grupos activos, horarios, cupos ofertados y sesiones registradas.
           </p>
         </div>
 
@@ -92,7 +92,7 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
           type="text"
           [ngModel]="filtroTexto()"
           (ngModelChange)="onFiltroChange($event)"
-          placeholder="Filtrar por código de materia, nombre o aula..."
+          placeholder="Filtrar por código de materia o nombre..."
           class="w-full pl-10 pr-4 py-2.5 bg-white border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
         />
         <svg class="w-4 h-4 text-warm-400 absolute left-3.5 top-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -113,7 +113,7 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
                 <tr>
                   <th class="px-5 py-3.5">Asignatura & Grupo</th>
                   <th class="px-5 py-3.5">Modalidad</th>
-                  <th class="px-5 py-3.5">Horario & Aula</th>
+                  <th class="px-5 py-3.5">Horario</th>
                   <th class="px-5 py-3.5 text-center">Inscritos / Aforo</th>
                   <th class="px-5 py-3.5 text-center">Estado</th>
                   <th class="px-5 py-3.5 text-right">Acción</th>
@@ -131,7 +131,6 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
                     </td>
                     <td class="px-5 py-4">
                       <div class="text-xs font-semibold text-warm-800">{{ c.schedule }}</div>
-                      <div class="text-[11px] text-warm-500">Aula: {{ c.room || 'Por definir' }}</div>
                     </td>
                     <td class="px-5 py-4 text-center">
                       <span class="font-bold text-warm-900 text-xs">

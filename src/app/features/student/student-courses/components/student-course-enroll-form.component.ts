@@ -49,7 +49,7 @@ import { Course } from '../../../../core/models/course.model';
               <option value="">Selecciona una asignatura disponible...</option>
               @for (c of cursos(); track c.id) {
                 <option [value]="c.id">
-                  {{ c.code }} — {{ c.name }} ({{ c.section }}) • {{ c.schedule }} • Aula {{ c.room }}
+                  {{ c.code }} — {{ c.name }} ({{ c.section }}) • {{ c.schedule }}
                 </option>
               }
             </select>

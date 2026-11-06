@@ -59,6 +59,11 @@ import { ATTENDANCE_NOW } from '../../../core/utils/attendance-now.token';
 /** Re-evaluación máxima de la ventana aunque no haya límite cercano (suspensión, reloj ajustado). */
 const MAX_ATTENDANCE_WINDOW_TICK_MS = 30_000;
 
+/** Certificación F3: 409 ERR_MATRICULA_DUPLICADA visto por el docente. */
+export const MENSAJE_MATRICULA_DUPLICADA_DOCENTE =
+  'El estudiante ya tiene una matrícula en este grupo. Si fue retirado, su reingreso se hace por solicitud de ingreso: ' +
+  'el estudiante la pide desde "Oferta de Grupos" y usted la acepta en "Padrón y solicitudes".';
+
 type StudentEnrollmentField =
   | 'tipoIdentificacionId'
   | 'primerNombre'
@@ -129,6 +134,7 @@ type StudentEnrollmentField =
           (openMatriculaQr)="isMatriculaQrModalOpen.set(true)"
           (exportExcel)="descargarPlanillaExcel()"
           (verAlumnos)="abrirInfoGrupo()"
+          (gestionarPadron)="irAPadronYSolicitudes()"
           (verReclamos)="abrirReclamosGrupo()"
         />
       }
@@ -303,6 +309,13 @@ export class AttendanceControlComponent {
 
   volverAListaGrupos(): void {
     void this.router?.navigate(['/app/docente/grupos']);
+  }
+
+  /** HU051/HU053-HU055: el hub del grupo vive en la pantalla de grupos del docente. */
+  irAPadronYSolicitudes(): void {
+    const courseId = this.selectedCourseId();
+    if (!courseId) return;
+    void this.router?.navigate(["/app/docente/grupos"], { queryParams: { grupo: courseId } });
   }
 
   irABandejaGeneralReclamos(): void {
@@ -862,7 +875,13 @@ export class AttendanceControlComponent {
         error: (error: unknown) => {
           this.toastType.set('error');
           this.setStudentApiFieldErrors(error);
-          this.toastMessage.set(getApiErrorMessage(error) || 'Error al matricular estudiante.');
+          // Certificación F3: el mensaje del catálogo habla al estudiante ("Usted ya se encuentra registrado…"). Para
+          // el docente se explica que el reingreso de un retirado va por solicitud (decisión de John 2026-10-28).
+          this.toastMessage.set(
+            getApiErrorCode(error) === 'ERR_MATRICULA_DUPLICADA'
+              ? MENSAJE_MATRICULA_DUPLICADA_DOCENTE
+              : getApiErrorMessage(error) || 'Error al matricular estudiante.'
+          );
           this.showToast.set(true);
         },
       });

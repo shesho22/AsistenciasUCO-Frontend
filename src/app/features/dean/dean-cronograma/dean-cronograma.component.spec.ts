@@ -62,6 +62,41 @@ describe('DeanCronogramaComponent (HU145)', () => {
     expect(texto).toContain('sin zona horaria');
   });
 
+  it('HU145: una sesión CONFIRMADA se muestra en la zona efectiva desde su instante UTC', () => {
+    component.onPagina(1);
+    http.expectOne((r) => r.url === URL).flush({
+      exitoso: true,
+      total: 1,
+      datos: [
+        {
+          id: 's-2',
+          nombre: 'Sesión 2',
+          codigo: 'S-02',
+          numeroSemana: 2,
+          fechaHoraInicio: '2026-02-03T13:00:00',
+          fechaHoraFin: '2026-02-03T15:00:00',
+          fechaHoraInicioUtc: '2026-02-03T13:00:00.0000000Z',
+          fechaHoraFinUtc: '2026-02-03T15:00:00.0000000Z',
+          estadoTemporal: 'CONFIRMADA',
+          idGrupo: 'g-1',
+          codigoGrupo: 1,
+          nombreGrupo: 'Grupo 1',
+          idAsignatura: 'a-1',
+          nombreAsignatura: 'Cálculo',
+          idPrograma: 'p-1',
+          nombrePrograma: 'Ingeniería de Sistemas',
+        },
+      ],
+    });
+    fixture.detectChanges();
+    const esperado = component.timeZone.formatTemporalRange('2026-02-03T13:00:00.0000000Z', '2026-02-03T15:00:00.0000000Z');
+    const texto = fixture.nativeElement.textContent as string;
+    expect(component.horario(component.sesiones()[0])).toBe(esperado);
+    expect(texto).toContain(esperado);
+    expect(texto).not.toContain('sin zona horaria');
+    expect(texto).toContain('Horas en');
+  });
+
   it('HU145: lista las sesiones con asignatura, grupo y programa', () => {
     const texto = fixture.nativeElement.textContent as string;
     expect(component.total()).toBe(1);

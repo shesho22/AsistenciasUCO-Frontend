@@ -136,4 +136,19 @@ describe('CoordinatorStudentsComponent', () => {
     component.onDirectorioSearchChange('Carlos');
     expect(component.searchDirectorio()).toBe('Carlos');
   });
+
+  // HU159 (certificación Fase 3): "Corregir datos" solo se alcanzaba desde las alertas de Indicadores.
+  it('HU159: "Ver ficha" en el padrón abre la ficha del estudiante (con "Corregir datos")', () => {
+    const estudiante = {
+      id: 'est-1', documento: '1017334455', codigo: '1017334455', nombreCompleto: 'Ana Sofia Gomez Rios',
+      correo: 'ana.gomez@uco.edu.co', programa: 'Ingenieria de Sistemas', estadoMatricula: 'ACTIVO' as const,
+    };
+    component.directorio.set([estudiante]);
+    fixture.detectChanges();
+
+    const boton = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('[data-testid="ver-ficha-estudiante"]');
+    expect(boton).not.toBeNull();
+    component.abrirFicha(estudiante);
+    expect(component.estudianteFicha()?.id).toBe('est-1');
+  });
 });

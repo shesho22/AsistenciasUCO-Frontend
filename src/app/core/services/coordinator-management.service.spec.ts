@@ -437,6 +437,15 @@ describe('CoordinatorManagementService', () => {
       expect(normalizarPlanEstudio({ id: 'p-3' }).totalSemestres).toBe(0);
     });
 
+    it('certificación F3: usa los totales reales de la malla y sin dato no inventa un 0', () => {
+      const conTotales = normalizarPlanEstudio({ id: 'p-4', inp: 2024, totalSemestres: 8, totalAsignaturas: 1, totalCreditos: 3 });
+      expect(conTotales.totalAsignaturas).toBe(1);
+      expect(conTotales.totalCreditos).toBe(3);
+      const sinTotales = normalizarPlanEstudio({ id: 'p-5', inp: 2024 });
+      expect(sinTotales.totalAsignaturas).toBeNull();
+      expect(sinTotales.totalCreditos).toBeNull();
+    });
+
     it('getAsignaturasPorPlan actualiza las asignaturas del plan', () => {
       const mockAsigs: AsignaturaPlanItem[] = [
         {
@@ -481,6 +490,7 @@ describe('CoordinatorManagementService', () => {
 
       const plan = service.planes().find((p) => p.id === 'plan-1');
       expect(plan?.totalAsignaturas).toBe(51);
+      expect(plan?.totalCreditos).toBe(163);
     });
 
     it('eliminarAsignaturaPlan remueve la asignatura y decrementa el contador', () => {

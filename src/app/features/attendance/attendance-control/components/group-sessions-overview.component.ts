@@ -191,6 +191,17 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
               <span>Info & Alumnos</span>
             </button>
 
+            <!-- HU051/HU053-HU055: padrón con retiro y solicitudes de ingreso (hub del grupo del docente) -->
+            <button
+              type="button"
+              data-testid="padron-solicitudes"
+              (click)="gestionarPadron.emit()"
+              class="text-xs font-semibold text-warm-700 hover:text-warm-900 bg-warm-50 hover:bg-warm-100 border border-warm-200 px-3 py-1.5 rounded-xl transition-colors inline-flex items-center gap-1.5 shadow-2xs"
+              title="Retirar estudiantes del padrón y resolver solicitudes de ingreso al grupo"
+            >
+              <span>Padrón y solicitudes</span>
+            </button>
+
             <button
               type="button"
               (click)="verReclamos.emit()"
@@ -319,6 +330,8 @@ export class GroupSessionsOverviewComponent {
   openMatriculaQr = output<void>();
   exportExcel = output<void>();
   verAlumnos = output<void>();
+  /** HU051/HU053-HU055: abre el hub del grupo del docente (padrón con retiro y solicitudes de ingreso). */
+  gestionarPadron = output<void>();
   verReclamos = output<void>();
 
   totalSesiones = computed(() => this.sessions().length);

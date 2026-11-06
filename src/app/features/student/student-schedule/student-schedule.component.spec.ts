@@ -110,7 +110,7 @@ describe('StudentScheduleComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('Sábado');
   });
 
-  it('renderiza "no informada/o" para aula y docente ausentes en lugar de textos vacios', () => {
+  it('renderiza "no informado" para el docente ausente y no muestra aula (certificación F3: aulas no se piden)', () => {
     studentServiceSpy.getHorarios.and.returnValue(
       of({ exitoso: true, datos: [{ ...mockHorarios[0], aula: null, docente: null }] })
     );
@@ -118,7 +118,7 @@ describe('StudentScheduleComponent', () => {
     fixture.detectChanges();
 
     const texto: string = fixture.nativeElement.textContent;
-    expect(texto).toContain('Aula no informada');
+    expect(texto).not.toContain('Aula');
     expect(texto).toContain('Docente no informado');
     expect(texto).not.toContain('null');
   });

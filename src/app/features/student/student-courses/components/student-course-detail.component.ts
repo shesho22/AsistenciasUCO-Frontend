@@ -67,10 +67,6 @@ import { MotivosJustificacionComponent } from './motivos-justificacion.component
                 <span class="text-warm-400 block text-[11px]">Horario Asignado</span>
                 <strong class="text-warm-800">{{ materia()?.horario ?? 'No informado' }}</strong>
               </div>
-              <div>
-                <span class="text-warm-400 block text-[11px]">Aula de Clase</span>
-                <strong class="text-warm-800">{{ materia()?.aula ?? 'No informada' }}</strong>
-              </div>
             </div>
           </div>
 

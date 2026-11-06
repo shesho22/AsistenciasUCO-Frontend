@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Router } from '@angular/router';
+import { convertToParamMap, Router } from '@angular/router';
 import { of, Subject, throwError } from 'rxjs';
 import { TeacherGruposComponent } from './teacher-grupos.component';
 import { CourseService } from '../../../core/services/course.service';
@@ -471,5 +471,20 @@ describe('TeacherGruposComponent', () => {
 
   it('HU058: carga el catálogo de tipos de programa para el filtro de nivel formativo', () => {
     expect(component.tiposPrograma().map((t) => t.codigo)).toEqual(['PRE']);
+  });
+
+  // Certificación Fase 3: el hub (retiro HU051, solicitudes HU053-HU055) no era alcanzable desde la pantalla.
+  it('HU051/HU053: ?grupo=<id> abre el hub de ese grupo; un id ajeno deja la lista', () => {
+    const conGrupo = (id: string) => ({ snapshot: { queryParamMap: convertToParamMap({ grupo: id }) } });
+
+    (component as unknown as { route: unknown }).route = conGrupo('otro-grupo');
+    component.cargarGrupos();
+    expect(component.vistaActual()).toBe('LISTA');
+
+    (component as unknown as { route: unknown }).route = conGrupo('crs-1');
+    component.cargarGrupos();
+    expect(component.vistaActual()).toBe('HUB_GRUPO');
+    expect(component.selectedCourse()?.id).toBe('crs-1');
+    expect(sessionService.getSessionsByGroup).toHaveBeenCalled();
   });
 });

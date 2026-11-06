@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
-import { of, throwError } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 import { AdminCatalogsComponent } from './admin-catalogs.component';
 import { AdminManagementService } from '../../../core/services/admin-management.service';
 import { ToastService } from '../../../shared/components/toast/toast.component';
@@ -48,5 +48,31 @@ describe('AdminCatalogsComponent - tipos de programa (HU154, solo consulta)', ()
     fixture.componentInstance.ngOnInit();
 
     expect(toast.error).toHaveBeenCalled();
+    expect(fixture.componentInstance.cargando()).toBeFalse();
+  });
+
+  it('certificación F3: mientras carga no afirma que el catálogo está vacío', async () => {
+    const pendiente = new Subject<{ exitoso: boolean; datos: TipoProgramaItem[] }>();
+    const vacio = Object.assign(jasmine.createSpyObj('AdminManagementService', ['cargarTiposPrograma']), {
+      tiposPrograma: signal<TipoProgramaItem[]>([]).asReadonly(),
+    });
+    vacio.cargarTiposPrograma.and.returnValue(pendiente.asObservable());
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({
+      imports: [AdminCatalogsComponent],
+      providers: [
+        { provide: AdminManagementService, useValue: vacio },
+        { provide: ToastService, useValue: toast },
+      ],
+    }).compileComponents();
+    const f = TestBed.createComponent(AdminCatalogsComponent);
+    f.detectChanges();
+    const host = f.nativeElement as HTMLElement;
+    expect(host.textContent).toContain('Cargando…');
+    expect(host.textContent).not.toContain('No hay tipos de programa registrados.');
+
+    pendiente.next({ exitoso: true, datos: [] });
+    f.detectChanges();
+    expect(host.textContent).toContain('No hay tipos de programa registrados.');
   });
 });

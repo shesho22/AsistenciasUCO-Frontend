@@ -225,7 +225,7 @@ import { TeacherGrupoSabanaComponent } from './teacher-grupo-sabana.component';
         }
 
         @if (subPestanaHub() === 'SOLICITUDES' && selectedCourse()) {
-          <app-teacher-grupo-solicitudes [grupoId]="selectedCourse()!.id" />
+          <app-teacher-grupo-solicitudes [grupoId]="selectedCourse()!.id" (matriculaCambiada)="padronCambiado.emit()" />
         }
 
         @if (subPestanaHub() === 'RECLAMOS') {
@@ -271,6 +271,8 @@ export class TeacherGrupoHubComponent {
   matricular = output<Course>();
   /** HU051: el docente pide retirar a un estudiante activo del padrón. */
   retirarEstudiante = output<any>();
+  /** HU054: una solicitud aceptada cambió el padrón del grupo. */
+  padronCambiado = output<void>();
   programarExtraordinaria = output<void>();
   proyectarSesion = output<ClassSession>();
   verDetalleSesion = output<ClassSession>();
