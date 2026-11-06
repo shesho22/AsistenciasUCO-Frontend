@@ -877,6 +877,14 @@ export class AuthService implements OnDestroy {
       const current = this.currentUser();
       if (!current) return null;
 
+      // Nombre visible: el DTO del perfil (HU006) lo entrega como `nombreCompleto`. En modo baseline el JWT no trae
+      // claims de nombre, asi que sin esto la interfaz se queda con el texto generico de respaldo.
+      const nombreVisible =
+        dbData.nombreCompleto ||
+        dbData.name ||
+        [dbData.primerNombre, dbData.primerApellido].filter(Boolean).join(' ') ||
+        current.name;
+
       const syncedUser: User = {
         ...current,
         primerNombre: dbData.primerNombre || current.primerNombre,
@@ -884,7 +892,7 @@ export class AuthService implements OnDestroy {
         primerApellido: dbData.primerApellido || current.primerApellido,
         segundoApellido: dbData.segundoApellido || current.segundoApellido,
         numeroIdentificacion: dbData.numeroIdentificacion || current.numeroIdentificacion,
-        name: dbData.name || current.name,
+        name: nombreVisible,
         email: dbData.email || dbData.correo || current.email,
         status: dbData.estado || current.status,
       };

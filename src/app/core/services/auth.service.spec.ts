@@ -1402,6 +1402,34 @@ describe('AuthService', () => {
       expect(result).toBeNull();
     });
 
+    it('toma el nombre visible de nombreCompleto del perfil (DTO de HU006), no de un campo "name" inexistente', async () => {
+      mockTokenResponse(basePayload());
+      await service.loginWithCredentials('docente@uco.edu.co', 'pass');
+      fetchSpy.and.resolveTo({
+        ok: true,
+        json: () =>
+          Promise.resolve({ datos: { primerNombre: 'Sergio', primerApellido: 'Test', nombreCompleto: 'Sergio Test' } }),
+      } as Response);
+
+      const result = await service.fetchProfileFromBackend();
+
+      expect(result?.name).toBe('Sergio Test');
+      expect(service.currentUser()?.name).toBe('Sergio Test');
+    });
+
+    it('sin nombreCompleto compone el nombre visible con primerNombre y primerApellido del perfil', async () => {
+      mockTokenResponse(basePayload());
+      await service.loginWithCredentials('docente@uco.edu.co', 'pass');
+      fetchSpy.and.resolveTo({
+        ok: true,
+        json: () => Promise.resolve({ datos: { primerNombre: 'Ana', primerApellido: 'Gomez' } }),
+      } as Response);
+
+      const result = await service.fetchProfileFromBackend();
+
+      expect(result?.name).toBe('Ana Gomez');
+    });
+
     it('sincroniza campos del perfil recibido del backend', async () => {
       mockTokenResponse(basePayload());
       await service.loginWithCredentials('docente@uco.edu.co', 'pass');
