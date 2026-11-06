@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, input, output, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, effect, input, output, signal, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonComponent } from '../../../../../shared/components/button/button.component';
@@ -25,7 +25,7 @@ import { ButtonComponent } from '../../../../../shared/components/button/button.
                   Matricúlate a un Grupo
                 </h3>
                 <p class="text-xs text-primary-200">
-                  Ingresa el PIN o código proporcionado por tu docente
+                  Ingresa el PIN de 6 dígitos que proyecta tu docente
                 </p>
               </div>
             </div>
@@ -45,7 +45,7 @@ import { ButtonComponent } from '../../../../../shared/components/button/button.
           <div class="p-6 sm:p-7 space-y-5">
             <div class="text-center space-y-1">
               <p class="text-xs font-semibold text-warm-500 uppercase tracking-wider">
-                Código de Matrícula o PIN de Grupo
+                PIN de matrícula
               </p>
               <p class="text-xs text-warm-600">
                 Digita el código institucional del grupo o el identificador que aparece en el proyector de tu clase.
@@ -58,7 +58,10 @@ import { ButtonComponent } from '../../../../../shared/components/button/button.
                 type="text"
                 [ngModel]="codigo()"
                 (ngModelChange)="codigo.set($event)"
-                placeholder="Ej: SIS-301 o código de grupo"
+                placeholder="PIN de 6 dígitos"
+                inputmode="numeric"
+                maxlength="6"
+                autocomplete="off"
                 class="w-full text-center font-mono font-bold text-xl tracking-wider py-3 px-4 bg-warm-50 border-2 border-warm-300 rounded-2xl text-warm-900 focus:outline-none focus:border-primary-600 focus:ring-4 focus:ring-primary-500/20"
               />
             </div>
@@ -84,7 +87,7 @@ import { ButtonComponent } from '../../../../../shared/components/button/button.
             </app-button>
             <button
               type="button"
-              [disabled]="!codigo().trim() || processing()"
+              [disabled]="!pinValido() || processing()"
               (click)="onSubmit()"
               class="px-5 py-2 text-xs font-bold text-white bg-primary-700 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-all shadow-sm inline-flex items-center gap-2"
             >
@@ -107,7 +110,22 @@ import { ButtonComponent } from '../../../../../shared/components/button/button.
 export class StudentMatriculaCodigoModalComponent {
   isOpen = input<boolean>(false);
   processing = input<boolean>(false);
+  /** PIN que ya conoce el flujo (p. ej. viene del login); se copia al campo al abrir el modal. */
+  codigoInicial = input<string>('');
   codigo = signal<string>('');
+
+  constructor() {
+    effect(() => {
+      const inicial = this.codigoInicial();
+      if (inicial) {
+        untracked(() => this.codigo.set(inicial));
+      }
+    });
+  }
+
+  pinValido(): boolean {
+    return /^[0-9]{6}$/.test(this.codigo().trim());
+  }
 
   submitted = output<string>();
   closed = output<void>();

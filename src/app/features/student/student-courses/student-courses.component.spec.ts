@@ -3,6 +3,8 @@ import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Subject, of, throwError } from 'rxjs';
 import { StudentCoursesComponent } from './student-courses.component';
+import { apiHttpError } from '../../../core/testing/api-error.fixture';
+import { MatriculaQrService } from '../../../core/services/matricula-qr.service';
 import { StudentManagementService } from '../../../core/services/student-management.service';
 import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -50,6 +52,8 @@ describe('StudentCoursesComponent — soporte y radicación (LB-004D FE-01..FE-0
     TestBed.configureTestingModule({
       imports: [StudentCoursesComponent],
       providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: AttendanceClaimService, useValue: claims },
         { provide: ToastService, useValue: toast },
         { provide: StudentManagementService, useValue: { getMaterias: () => of({ exitoso: true, datos: [] }) } },
@@ -251,6 +255,7 @@ describe('StudentCoursesComponent', () => {
   let courseServiceSpy: jasmine.SpyObj<CourseService>;
   let sessionServiceSpy: jasmine.SpyObj<SessionService>;
   let toastSpy: jasmine.SpyObj<ToastService>;
+  let matriculaQrSpy: jasmine.SpyObj<MatriculaQrService>;
 
   const mockMaterias: MateriaEstudianteItem[] = [crearMateria({ nombre: 'Arquitectura de Software' })];
 
@@ -259,13 +264,14 @@ describe('StudentCoursesComponent', () => {
   ];
 
   beforeEach(async () => {
-    studentServiceSpy = jasmine.createSpyObj('StudentManagementService', ['getMaterias', 'matricularGrupo']);
+    studentServiceSpy = jasmine.createSpyObj('StudentManagementService', ['getMaterias']);
     claimServiceSpy = jasmine.createSpyObj('AttendanceClaimService', ['getSesionesPorMateria', 'crearReclamo', 'eliminarReclamo', 'subirSoporte']);
     authServiceSpy = jasmine.createSpyObj('AuthService', ['currentUser']);
     coordinatorServiceSpy = jasmine.createSpyObj('CoordinatorManagementService', ['crearSolicitudMatricula']);
     courseServiceSpy = jasmine.createSpyObj('CourseService', ['getTeacherCourses']);
     sessionServiceSpy = jasmine.createSpyObj('SessionService', ['registrarAutoAsistencia']);
     toastSpy = jasmine.createSpyObj('ToastService', ['success', 'error', 'info', 'warning']);
+    matriculaQrSpy = jasmine.createSpyObj('MatriculaQrService', ['matricularAutenticado']);
     studentServiceSpy.getMaterias.and.returnValue(of({ exitoso: true, datos: mockMaterias }));
     claimServiceSpy.getSesionesPorMateria.and.returnValue(of({ exitoso: true, datos: mockSesiones }));
 
@@ -279,6 +285,7 @@ describe('StudentCoursesComponent', () => {
         { provide: CourseService, useValue: courseServiceSpy },
         { provide: SessionService, useValue: sessionServiceSpy },
         { provide: ToastService, useValue: toastSpy },
+        { provide: MatriculaQrService, useValue: matriculaQrSpy },
         { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: { get: () => null } } } },
       ],
     }).compileComponents();
@@ -338,14 +345,31 @@ describe('StudentCoursesComponent', () => {
     expect(component.modalAutoAsistenciaVisible()).toBeFalse();
   });
 
-  it('registra matrícula por código o PIN exitosamente', () => {
-    studentServiceSpy.matricularGrupo.and.returnValue(of({ exitoso: true, mensajeUsuario: 'Matrícula confirmada' } as any));
+  it('HU176B: registra la matrícula con el PIN de 6 dígitos usando el servicio de matrícula por QR', () => {
+    matriculaQrSpy.matricularAutenticado.and.returnValue(of({ idGrupo: 'g-1' }));
     component.abrirModalMatriculaGrupo();
     expect(component.modalMatriculaGrupoVisible()).toBeTrue();
-    component.enviarMatriculaPorCodigo('GRP-101');
-    expect(studentServiceSpy.matricularGrupo).toHaveBeenCalledWith('GRP-101');
-    expect(toastSpy.success).toHaveBeenCalledWith('Matrícula confirmada');
+    component.enviarMatriculaPorCodigo('482913');
+    expect(matriculaQrSpy.matricularAutenticado).toHaveBeenCalledOnceWith({ pin: '482913' });
+    expect(toastSpy.success).toHaveBeenCalled();
     expect(component.modalMatriculaGrupoVisible()).toBeFalse();
+  });
+
+  it('HU176B: un PIN que no tiene 6 dígitos (p. ej. el id del grupo) no llega al backend', () => {
+    component.enviarMatriculaPorCodigo('GRP-101');
+    component.enviarMatriculaPorCodigo('');
+    expect(matriculaQrSpy.matricularAutenticado).not.toHaveBeenCalled();
+    expect(toastSpy.error).toHaveBeenCalledTimes(2);
+  });
+
+  it('HU176B: un error del backend se muestra tal cual y el modal sigue abierto', () => {
+    matriculaQrSpy.matricularAutenticado.and.returnValue(
+      throwError(() => apiHttpError(403, 'Solo desde la red Wi-Fi del campus.')));
+    component.abrirModalMatriculaGrupo();
+    component.enviarMatriculaPorCodigo('482913');
+    expect(toastSpy.error).toHaveBeenCalledWith('Solo desde la red Wi-Fi del campus.');
+    expect(component.modalMatriculaGrupoVisible()).toBeTrue();
+    expect(component.procesandoMatriculaGrupo()).toBeFalse();
   });
 });
 

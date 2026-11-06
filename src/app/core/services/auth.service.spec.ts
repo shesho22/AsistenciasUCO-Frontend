@@ -567,6 +567,28 @@ describe('AuthService', () => {
 
     });
 
+    it('HU176B: en una ruta publica (QR de matrícula, verificación de correo) no redirige al IdP y deja ver la página', async () => {
+      for (const ruta of ['/matricula/qr?t=ABC', '/matricula/pin', '/verificar-correo']) {
+        navigatorSpy.assign.calls.reset();
+        window.history.replaceState({}, '', ruta);
+
+        expect(await service.initKeycloak()).toBeFalse();
+
+        expect(navigatorSpy.assign).not.toHaveBeenCalled();
+        expect(window.location.pathname + window.location.search).toBe(ruta);
+        expect(loadPending()).toBeNull();
+        expect(service.isAuthenticated()).toBeFalse();
+      }
+    });
+
+    it('HU176B: una ruta que solo se parece a una pública (p. ej. /app/matricula/x) sigue usando la re-autenticación silenciosa', async () => {
+      window.history.replaceState({}, '', '/app/matricula/x');
+
+      expect(await service.initKeycloak()).toBeFalse();
+
+      expect(new URL(navigatorSpy.assign.calls.mostRecent().args[0]).searchParams.get('prompt')).toBe('none');
+    });
+
     it('un intento silencioso reciente no vuelve a redirigir (evita bucles)', async () => {
       pendingLogin();
 

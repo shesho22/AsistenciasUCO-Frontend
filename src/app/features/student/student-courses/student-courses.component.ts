@@ -3,6 +3,7 @@ import { Subscription, finalize } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { StudentManagementService } from '../../../core/services/student-management.service';
+import { MatriculaQrService } from '../../../core/services/matricula-qr.service';
 import { AttendanceClaimService, IdentificadorInvalidoError } from '../../../core/services/attendance-claim.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
@@ -103,6 +104,7 @@ type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO' | 'SOLICITAR_MATRICULA';
       <app-student-matricula-codigo-modal
         [isOpen]="modalMatriculaGrupoVisible()"
         [processing]="procesandoMatriculaGrupo()"
+        [codigoInicial]="pinPrecargado()"
         (submitted)="enviarMatriculaPorCodigo($event)"
         (closed)="cerrarModalMatriculaGrupo()"
       />
@@ -112,6 +114,7 @@ type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO' | 'SOLICITAR_MATRICULA';
 export class StudentCoursesComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly studentService = inject(StudentManagementService);
+  private readonly matriculaQrService = inject(MatriculaQrService);
   private readonly claimService = inject(AttendanceClaimService);
   private readonly authService = inject(AuthService);
   private readonly coordinatorService = inject(CoordinatorManagementService);
@@ -132,6 +135,8 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
   // Matrícula por Código o PIN de Grupo
   modalMatriculaGrupoVisible = signal<boolean>(false);
   procesandoMatriculaGrupo = signal<boolean>(false);
+  /** PIN que trae el login (`?matricula=<PIN>`); el modal lo muestra precargado. */
+  pinPrecargado = signal<string>('');
 
   // Solicitud de Matrícula
   cursosDisponibles = signal<Course[]>([]);
@@ -174,8 +179,12 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.cargarMaterias();
 
-    const paramMatricula = this.route.snapshot.queryParamMap.get('matricularGrupo');
+    // HU176B: el login devuelve aqui con `?matricula=<PIN>` (o `1` si solo se conoce el QR): se abre el modal del codigo.
+    const paramMatricula = this.route.snapshot.queryParamMap.get('matricula');
     if (paramMatricula) {
+      if (/^[0-9]{6}$/.test(paramMatricula)) {
+        this.pinPrecargado.set(paramMatricula);
+      }
       this.abrirModalMatriculaGrupo();
     }
   }
@@ -530,16 +539,16 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
   }
 
   enviarMatriculaPorCodigo(pin: string): void {
-    if (!pin) {
-      this.toast.error('Por favor ingresa el código o PIN del grupo.');
+    if (!/^[0-9]{6}$/.test(pin)) {
+      this.toast.error('Ingresa el PIN de 6 dígitos que proyecta tu docente.');
       return;
     }
 
     this.procesandoMatriculaGrupo.set(true);
-    this.studentService.matricularGrupo(pin).subscribe({
-      next: (res) => {
+    this.matriculaQrService.matricularAutenticado({ pin }).subscribe({
+      next: () => {
         this.procesandoMatriculaGrupo.set(false);
-        this.toast.success(res?.mensajeUsuario || '¡Matrícula confirmada exitosamente en el grupo!');
+        this.toast.success('¡Matrícula confirmada exitosamente en el grupo!');
         this.cerrarModalMatriculaGrupo();
         this.cargarMaterias();
       },

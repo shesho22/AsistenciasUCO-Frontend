@@ -17,6 +17,7 @@ import {
   parseCallback,
   pkceChallenge,
   randomUrlSafe,
+  isPublicRoute,
   recentSilentAttempt,
   safeInternalPath,
   savePending,
@@ -319,6 +320,12 @@ export class AuthService implements OnDestroy {
     const callback = parseCallback(window.location.search);
     if (callback.code || callback.error) {
       return this.completeBaselineCallback(callback);
+    }
+
+    // Rutas publicas (QR de matricula, verificacion de correo): sin sesion no se redirige al IdP; la pagina se muestra tal cual.
+    if (isPublicRoute(window.location.pathname)) {
+      clearPending();
+      return false;
     }
 
     if (recentSilentAttempt()) {

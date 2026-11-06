@@ -31,6 +31,22 @@ export const routes: Routes = [
           ),
       },
       {
+        // HU176B: matricula publica por QR (token en `?t=`, que la pagina borra de la URL) o por PIN. Sin authGuard: el
+        // estudiante aun puede no tener cuenta. El backend exige red del campus y limita los intentos.
+        path: 'matricula/qr',
+        loadComponent: () =>
+          import('./features/public/matricula-qr/matricula-qr.component').then(
+            (m) => m.MatriculaQrComponent
+          ),
+      },
+      {
+        path: 'matricula/pin',
+        loadComponent: () =>
+          import('./features/public/matricula-qr/matricula-qr.component').then(
+            (m) => m.MatriculaQrComponent
+          ),
+      },
+      {
         path: 'register',
         redirectTo: 'login',
       },
