@@ -171,6 +171,7 @@ type StudentEnrollmentField =
         [isOpen]="isMatriculaQrModalOpen()"
         [curso]="currentCourse() || null"
         (closed)="isMatriculaQrModalOpen.set(false)"
+        (matriculado)="onEstudianteMatriculado($event)"
       />
 
       <!-- 5. Modal de Creación de Sesión -->
@@ -334,6 +335,13 @@ export class AttendanceControlComponent {
 
     this.isGroupInfoModalOpen.set(true);
     this.cargarEstudiantesGrupo(courseId);
+  }
+
+  /** HU176B: un estudiante se matriculó por QR/PIN (evento SSE del grupo); si el listado del grupo está abierto, se actualiza. */
+  onEstudianteMatriculado(grupoId: string): void {
+    if (this.selectedCourseId() === grupoId && this.isGroupInfoModalOpen()) {
+      this.cargarEstudiantesGrupo(grupoId);
+    }
   }
 
   abrirReclamosGrupo(): void {

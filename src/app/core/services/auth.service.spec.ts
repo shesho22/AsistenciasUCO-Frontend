@@ -356,6 +356,65 @@ describe('AuthService', () => {
       expect(window.location.pathname).toBe('/app/docente/grupos');
     });
 
+    it('callback válido con el perfil habilitado: el nombre visible sale del perfil de la DB, porque el JWT no trae claims de nombre', async () => {
+      const features = environment.features as { userProfileEndpointEnabled: boolean };
+      const flagOriginal = features.userProfileEndpointEnabled;
+      features.userProfileEndpointEnabled = true;
+      try {
+        const payload = basePayload();
+        for (const claim of ['given_name', 'family_name', 'name', 'preferred_username']) {
+          delete (payload as Record<string, unknown>)[claim];
+        }
+        fetchSpy.and.callFake(((url: string) => {
+          if (url.endsWith('/usuarios/perfil')) {
+            return Promise.resolve({
+              ok: true,
+              status: 200,
+              json: () =>
+                Promise.resolve({ datos: { primerNombre: 'Sergio', primerApellido: 'Test', nombreCompleto: 'Sergio Test' } }),
+            } as Response);
+          }
+          if (url.endsWith('/auth/me')) {
+            return Promise.resolve({
+              ok: true,
+              status: 200,
+              json: () => Promise.resolve({ exitoso: true, datos: { idUsuario: VALID_UUID, roles: ['ESTUDIANTE'] } }),
+            } as Response);
+          }
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ access_token: makeJwt(payload), token_type: 'Bearer' }),
+          } as Response);
+        }) as typeof fetch);
+
+        expect(await completeCallback()).toBeTrue();
+        await new Promise((resolve) => setTimeout(resolve));
+
+        expect(service.currentUser()?.name).toBe('Sergio Test');
+        const llamadas = fetchSpy.calls.allArgs().map((args) => String(args[0]));
+        expect(llamadas.some((u) => u.endsWith('/usuarios/perfil'))).toBeTrue();
+      } finally {
+        features.userProfileEndpointEnabled = flagOriginal;
+      }
+    });
+
+    it('callback válido con el perfil apagado: no consulta /usuarios/perfil', async () => {
+      const features = environment.features as { userProfileEndpointEnabled: boolean };
+      const flagOriginal = features.userProfileEndpointEnabled;
+      features.userProfileEndpointEnabled = false;
+      try {
+        tokenEndpointResponse(basePayload());
+
+        expect(await completeCallback()).toBeTrue();
+        await new Promise((resolve) => setTimeout(resolve));
+
+        const llamadas = fetchSpy.calls.allArgs().map((args) => String(args[0]));
+        expect(llamadas.some((u) => u.endsWith('/usuarios/perfil'))).toBeFalse();
+      } finally {
+        features.userProfileEndpointEnabled = flagOriginal;
+      }
+    });
+
     it('state que no coincide: rechaza sin intercambiar el código', async () => {
       pendingLogin();
       window.history.replaceState({}, '', '/login?code=code-1&state=otro-state');
@@ -565,6 +624,28 @@ describe('AuthService', () => {
       expect(pending?.returnUrl).toBe('/app/docente/grupos');
       expect(pending?.state).toBe(target.searchParams.get('state') ?? undefined);
 
+    });
+
+    it('HU176B: en una ruta publica (QR de matrícula, verificación de correo) no redirige al IdP y deja ver la página', async () => {
+      for (const ruta of ['/matricula/qr?t=ABC', '/matricula/pin', '/verificar-correo']) {
+        navigatorSpy.assign.calls.reset();
+        window.history.replaceState({}, '', ruta);
+
+        expect(await service.initKeycloak()).toBeFalse();
+
+        expect(navigatorSpy.assign).not.toHaveBeenCalled();
+        expect(window.location.pathname + window.location.search).toBe(ruta);
+        expect(loadPending()).toBeNull();
+        expect(service.isAuthenticated()).toBeFalse();
+      }
+    });
+
+    it('HU176B: una ruta que solo se parece a una pública (p. ej. /app/matricula/x) sigue usando la re-autenticación silenciosa', async () => {
+      window.history.replaceState({}, '', '/app/matricula/x');
+
+      expect(await service.initKeycloak()).toBeFalse();
+
+      expect(new URL(navigatorSpy.assign.calls.mostRecent().args[0]).searchParams.get('prompt')).toBe('none');
     });
 
     it('un intento silencioso reciente no vuelve a redirigir (evita bucles)', async () => {
@@ -1378,6 +1459,34 @@ describe('AuthService', () => {
       const result = await service.fetchProfileFromBackend();
 
       expect(result).toBeNull();
+    });
+
+    it('toma el nombre visible de nombreCompleto del perfil (DTO de HU006), no de un campo "name" inexistente', async () => {
+      mockTokenResponse(basePayload());
+      await service.loginWithCredentials('docente@uco.edu.co', 'pass');
+      fetchSpy.and.resolveTo({
+        ok: true,
+        json: () =>
+          Promise.resolve({ datos: { primerNombre: 'Sergio', primerApellido: 'Test', nombreCompleto: 'Sergio Test' } }),
+      } as Response);
+
+      const result = await service.fetchProfileFromBackend();
+
+      expect(result?.name).toBe('Sergio Test');
+      expect(service.currentUser()?.name).toBe('Sergio Test');
+    });
+
+    it('sin nombreCompleto compone el nombre visible con primerNombre y primerApellido del perfil', async () => {
+      mockTokenResponse(basePayload());
+      await service.loginWithCredentials('docente@uco.edu.co', 'pass');
+      fetchSpy.and.resolveTo({
+        ok: true,
+        json: () => Promise.resolve({ datos: { primerNombre: 'Ana', primerApellido: 'Gomez' } }),
+      } as Response);
+
+      const result = await service.fetchProfileFromBackend();
+
+      expect(result?.name).toBe('Ana Gomez');
     });
 
     it('sincroniza campos del perfil recibido del backend', async () => {

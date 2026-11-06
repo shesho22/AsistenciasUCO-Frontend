@@ -38,10 +38,26 @@ export interface SecurityUiModuleLoader {
   load: (url: string) => Promise<SecurityUiModule>;
 }
 
+/**
+ * El bundle publicado de Security UI (`security-administration.js`) referencia `process.env.NODE_ENV` y su build no lo
+ * reemplaza, asi que en el navegador `import()` falla con "process is not defined". Se define de forma minima y solo si
+ * falta; nunca pisa un `process` o un `NODE_ENV` existentes. Solucion provisional hasta que el equipo de seguridad
+ * corrija el `vite.config.ts` de security-ui (`define: { 'process.env.NODE_ENV': '"production"' }`).
+ */
+export function ensureBrowserProcessShim(): void {
+  const global = globalThis as { process?: { env?: Record<string, string> } };
+  global.process ??= {};
+  global.process.env ??= {};
+  global.process.env['NODE_ENV'] ??= 'production';
+}
+
 export const SECURITY_UI_LOADER = new InjectionToken<SecurityUiModuleLoader>('SECURITY_UI_LOADER', {
   providedIn: 'root',
   factory: () => ({
-    load: (url: string) => import(/* @vite-ignore */ url) as Promise<SecurityUiModule>,
+    load: (url: string) => {
+      ensureBrowserProcessShim();
+      return import(/* @vite-ignore */ url) as Promise<SecurityUiModule>;
+    },
   }),
 });
 

@@ -570,6 +570,26 @@ describe('AttendanceControlComponent contract corrections', () => {
     expect(component.isGroupClaimsModalOpen()).toBeTrue();
   });
 
+  it('HU176B: al matricularse un estudiante por QR refresca el listado solo si el listado del grupo está abierto', () => {
+    const component = createComponent([activeStudent], []);
+    groupService.getStudentsByGroup.calls.reset();
+
+    // Listado cerrado: no hay nada que refrescar.
+    component.onEstudianteMatriculado('group-1');
+    expect(groupService.getStudentsByGroup).not.toHaveBeenCalled();
+
+    component.abrirInfoGrupo();
+    groupService.getStudentsByGroup.calls.reset();
+
+    // Evento de otro grupo: se ignora.
+    component.onEstudianteMatriculado('otro-grupo');
+    expect(groupService.getStudentsByGroup).not.toHaveBeenCalled();
+
+    // Evento del grupo con el listado abierto: vuelve a pedir el roster.
+    component.onEstudianteMatriculado('group-1');
+    expect(groupService.getStudentsByGroup).toHaveBeenCalledOnceWith('group-1');
+  });
+
   describe('APP-05 dialogo de reclamos por grupo', () => {
     const GROUP_A = '3f0c1d2e-0000-4000-8000-000000000001';
     const GROUP_B = '3f0c1d2e-0000-4000-8000-000000000002';
