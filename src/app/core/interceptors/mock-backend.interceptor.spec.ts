@@ -194,11 +194,6 @@ describe('mockBackendInterceptor', () => {
     tick(300);
     expect(matrGrupoRes?.exitoso).toBeTrue();
 
-    let cupoRes: any;
-    httpClient.post(`${environment.apiUrl}/estudiante/cupos/solicitar`, { cursoNombre: 'Física' }).subscribe((r) => (cupoRes = r));
-    tick(350);
-    expect(cupoRes?.exitoso).toBeTrue();
-
     // Coordinador
     let docCoordRes: any;
     httpClient.get(`${environment.apiUrl}/coordinador/docentes`).subscribe((r) => (docCoordRes = r));
@@ -298,11 +293,9 @@ describe('mockBackendInterceptor', () => {
       let error: any;
       httpClient.request(metodo, url).subscribe({ next: (r) => (resultado = r), error: (e) => (error = e) });
       tick(300);
-      // No lo atiende el mock: o pasa al siguiente handler (peticion pendiente en HttpTestingController) o responde error.
-      expect(resultado?.exitoso).not.toBeTrue();
-      http.match(url).forEach((req) => req.flush({}, { status: 404, statusText: 'Not Found' }));
-      tick(300);
-      expect(error === undefined || error.status === 404).toBeTrue();
+      // El mock ya no tiene la ruta: responde 501 "Mock route not implemented" (patron del interceptor).
+      expect(resultado).toBeUndefined();
+      expect([404, 501]).toContain(error?.status);
     }
   }));
 

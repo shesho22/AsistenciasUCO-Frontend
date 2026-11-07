@@ -8,7 +8,6 @@ import {
   PlanEstudioItem,
   AsignaturaPlanItem,
   EstudianteDirectorioItem,
-  SolicitudMatriculaItem,
   PeriodoAcademicoItem,
   FacultadItem,
   AreaConocimientoItem,
@@ -31,7 +30,6 @@ import {
   MOCK_PLANES_ESTUDIO,
   MOCK_ASIGNATURAS_PLAN,
   MOCK_ESTUDIANTES_DIRECTORIO,
-  MOCK_SOLICITUDES_MATRICULA,
   MOCK_PERIODOS_ACADEMICOS,
   MOCK_FACULTADES,
   MOCK_AREAS_CONOCIMIENTO,
@@ -58,7 +56,6 @@ class MockDataStore {
   planesEstudio: PlanEstudioItem[] = JSON.parse(JSON.stringify(MOCK_PLANES_ESTUDIO));
   asignaturasPlan: Record<string, AsignaturaPlanItem[]> = JSON.parse(JSON.stringify(MOCK_ASIGNATURAS_PLAN));
   estudiantesDirectorio: EstudianteDirectorioItem[] = JSON.parse(JSON.stringify(MOCK_ESTUDIANTES_DIRECTORIO));
-  solicitudesMatricula: SolicitudMatriculaItem[] = JSON.parse(JSON.stringify(MOCK_SOLICITUDES_MATRICULA));
   periodosAcademicos: PeriodoAcademicoItem[] = JSON.parse(JSON.stringify(MOCK_PERIODOS_ACADEMICOS));
   facultades: FacultadItem[] = JSON.parse(JSON.stringify(MOCK_FACULTADES));
   areasConocimiento: AreaConocimientoItem[] = JSON.parse(JSON.stringify(MOCK_AREAS_CONOCIMIENTO));

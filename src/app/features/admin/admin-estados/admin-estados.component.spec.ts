@@ -34,7 +34,7 @@ describe('AdminEstadosComponent (HU155, solo consulta)', () => {
 
   it('muestra los dos catálogos de estados sin columna de estado ni acciones', () => {
     const host = fixture.nativeElement as HTMLElement;
-    expect(host.textContent).toContain('Estados de solicitudes');
+    expect(host.textContent).toContain('Estados de reclamos de asistencia (P, A, R)');
     expect(host.textContent).toContain('pendiente');
     expect(host.textContent).toContain('cancelado por inasistencia');
     expect(host.textContent).not.toContain('Inactivo');

@@ -53,21 +53,6 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
     hu: 'HU051',
     descripcion: 'Notificación oficial cuando el docente titular desvincula un estudiante del grupo.',
   },
-  SOLICITUD_INGRESO_REGISTRADA: {
-    titulo: 'Nueva Solicitud de Ingreso a Grupo',
-    hu: 'HU053',
-    descripcion: 'Aviso al docente titular cuando un alumno solicita cupo en su asignatura.',
-  },
-  SOLICITUD_INGRESO_RESUELTA: {
-    titulo: 'Resolución de Solicitud de Ingreso',
-    hu: 'HU054 / HU055',
-    descripcion: 'Aviso al estudiante con la decisión del docente (aceptada, espera o rechazada).',
-  },
-  SOLICITUD_INGRESO_RETIRADA: {
-    titulo: 'Cancelación de Solicitud de Ingreso',
-    hu: 'HU055',
-    descripcion: 'Aviso al docente informando que el estudiante canceló su petición de cupo.',
-  },
   RECLAMO_ASISTENCIA_RADICADO: {
     titulo: 'Nueva Solicitud de Revisión de Asistencia',
     hu: 'HU010 / HU035',
