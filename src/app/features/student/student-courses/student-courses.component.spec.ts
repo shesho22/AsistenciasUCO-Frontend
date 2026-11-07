@@ -346,12 +346,23 @@ describe('StudentCoursesComponent', () => {
     expect(component.vistaActual()).toBe('DETALLE');
   });
 
-  it('permite retirar un reclamo existente', () => {
+  it('A2-F-01 retirar un reclamo llama a eliminarReclamo(id), muestra el mensaje del backend y recarga las sesiones', () => {
     component.selectedMateria.set(mockMaterias[0]);
-    claimServiceSpy.eliminarReclamo.and.returnValue(of({ exitoso: true, mensajeUsuario: 'Reclamo retirado.' } as any));
+    claimServiceSpy.eliminarReclamo.and.returnValue(of({ exitoso: true, mensajeUsuario: 'La solicitud de revisión fue retirada.' } as any));
+    claimServiceSpy.getSesionesPorMateria.calls.reset();
     component.retirarReclamo(mockSesiones[0]);
-    expect(claimServiceSpy.eliminarReclamo).toHaveBeenCalledWith('rec-1', ASIGNATURA_ID, 'ses-1');
-    expect(toastSpy.success).toHaveBeenCalledWith('Reclamo retirado.');
+    expect(claimServiceSpy.eliminarReclamo).toHaveBeenCalledOnceWith('rec-1');
+    expect(toastSpy.success).toHaveBeenCalledWith('La solicitud de revisión fue retirada.');
+    expect(claimServiceSpy.getSesionesPorMateria).toHaveBeenCalled();
+  });
+
+  it('A2-F-01 un error al retirar muestra el message del backend', () => {
+    component.selectedMateria.set(mockMaterias[0]);
+    claimServiceSpy.eliminarReclamo.and.returnValue(
+      throwError(() => new HttpErrorResponse({ status: 409, error: { message: 'Solo se puede retirar una solicitud de revisión pendiente.' } }))
+    );
+    component.retirarReclamo(mockSesiones[0]);
+    expect(toastSpy.error).toHaveBeenCalledWith('Solo se puede retirar una solicitud de revisión pendiente.');
   });
 
   it('registra autoasistencia por PIN o Token exitosamente', () => {

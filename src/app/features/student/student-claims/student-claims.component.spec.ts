@@ -81,6 +81,35 @@ describe('StudentClaimsComponent (HU010/HU011: consulta del estudiante)', () => 
     expect(component.reclamos()[0].soporteAdjunto?.fileId).toBe('file-1');
   });
 
+  it('A2-F-07 un reclamo RETIRADA muestra la insignia "Retirada" y no ofrece retirarlo', () => {
+    component.reclamos.set([{ ...component.reclamos()[0], id: 'sol-3', estadoSolicitud: 'RETIRADA' }]);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.textContent).toContain('Retirada');
+    expect(el.querySelector('[data-accion="retirar-reclamo"]')).toBeNull();
+  });
+
+  it('A2-F-01 solo los reclamos PENDIENTE ofrecen Retirar; al retirar muestra el mensaje del backend y recarga', () => {
+    const el = fixture.nativeElement as HTMLElement;
+    const botones = el.querySelectorAll<HTMLButtonElement>('[data-accion="retirar-reclamo"]');
+    expect(botones.length).toBe(1);
+
+    botones[0].click();
+    const del = http.expectOne(`${ENDPOINT}/sol-1`);
+    expect(del.request.method).toBe('DELETE');
+    del.flush({ exitoso: true, mensajeUsuario: 'La solicitud de revisión fue retirada.' });
+    expect(toastSpy.success).toHaveBeenCalledWith('La solicitud de revisión fue retirada.');
+    http.expectOne((r) => r.url === ENDPOINT && r.method === 'GET').flush({ exitoso: true, total: 0, datos: [] });
+  });
+
+  it('A2-F-01 un 409 al retirar muestra el message del backend y no recarga', () => {
+    (fixture.nativeElement.querySelector('[data-accion="retirar-reclamo"]') as HTMLButtonElement).click();
+    http
+      .expectOne(`${ENDPOINT}/sol-1`)
+      .flush({ message: 'Solo se puede retirar una solicitud de revisión pendiente.' }, { status: 409, statusText: 'Conflict' });
+    expect(toastSpy.error).toHaveBeenCalledWith('Solo se puede retirar una solicitud de revisión pendiente.');
+  });
+
   it('SC-02 filtra por estado y reinicia la página', () => {
     component.pagina.set(3);
     component.onEstadoChange('RECHAZADA');

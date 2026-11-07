@@ -289,6 +289,7 @@ describe('StudentPortalMapper', () => {
       expect(solicitud('pendiente')).toBe('PENDIENTE');
       expect(solicitud('Aceptada')).toBe('APROBADA');
       expect(solicitud('rechazada')).toBe('RECHAZADA');
+      expect(solicitud('Retirada')).toBe('RETIRADA');
       expect(solicitud('DESCONOCIDO')).toBe('DESCONOCIDA');
       expect(solicitud(null)).toBeNull();
       expect(solicitud('   ')).toBeNull();

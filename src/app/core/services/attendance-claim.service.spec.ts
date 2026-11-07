@@ -230,7 +230,7 @@ describe('AttendanceClaimService', () => {
     http.expectOne(`${environment.apiUrl}/docente/horarios`).flush({ exitoso: true, datos: [] });
   });
 
-  it('crearReclamo envía solo soporteArchivoId y eliminarReclamo conserva su ruta', () => {
+  it('crearReclamo envía solo soporteArchivoId', () => {
     service
       .crearReclamo({
         sesionId: 'ses-1',
@@ -259,10 +259,16 @@ describe('AttendanceClaimService', () => {
     expect(JSON.stringify(postRequest.request.body)).not.toContain('soporteNombre');
     postRequest.flush({ exitoso: true, datos: {} });
 
-    service.eliminarReclamo('rec-99', 'mat-1', 'ses-1').subscribe();
+  });
+
+  it('A2-F-02 eliminarReclamo hace DELETE a /estudiante/reclamos/{id} con un solo argumento', () => {
+    expect(service.eliminarReclamo.length).toBe(1);
+    let respuesta: { exitoso: boolean; mensajeUsuario?: string } | undefined;
+    service.eliminarReclamo('rec-99').subscribe((r) => (respuesta = r));
     const deleteRequest = http.expectOne(`${environment.apiUrl}/estudiante/reclamos/rec-99`);
     expect(deleteRequest.request.method).toBe('DELETE');
-    deleteRequest.flush({ exitoso: true, datos: true });
+    deleteRequest.flush({ exitoso: true, mensajeUsuario: 'La solicitud de revisión fue retirada.' });
+    expect(respuesta?.mensajeUsuario).toBe('La solicitud de revisión fue retirada.');
   });
 
   it('crearReclamo sin soporte no envía ningún campo de soporte', () => {

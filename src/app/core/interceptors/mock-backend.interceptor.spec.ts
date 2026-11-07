@@ -299,6 +299,41 @@ describe('mockBackendInterceptor', () => {
     }
   }));
 
+  it('A2-F-08 el mock ya no resuelve POST /estudiante/reclamos (el flujo real es /asistencias/revisiones)', fakeAsync(() => {
+    auth.setMockMode(true);
+    let resultado: any;
+    let error: any;
+    httpClient
+      .post(`${environment.apiUrl}/estudiante/reclamos`, { sesionId: 'ses-1' })
+      .subscribe({ next: (r) => (resultado = r), error: (e) => (error = e) });
+    tick(400);
+    expect(resultado).toBeUndefined();
+    expect(error?.status).toBe(501);
+
+    let revision: any;
+    httpClient.post(`${environment.apiUrl}/asistencias/revisiones`, { sesionId: 'ses-1' }).subscribe((r) => (revision = r));
+    tick(400);
+    expect(revision?.exitoso).toBeTrue();
+  }));
+
+  it('A2-F-08 DELETE /estudiante/reclamos/{id} retira un reclamo pendiente y lo deja RETIRADA', fakeAsync(() => {
+    auth.setMockMode(true);
+    const copia = JSON.parse(JSON.stringify(mockStore.solicitudesRevision));
+    const pendiente = mockStore.solicitudesRevision.find((r) => r.estadoSolicitud === 'PENDIENTE')!;
+    let res: any;
+    httpClient.delete(`${environment.apiUrl}/estudiante/reclamos/${pendiente.id}`).subscribe((r) => (res = r));
+    tick(300);
+    expect(res?.exitoso).toBeTrue();
+    expect(res?.mensajeUsuario).toBe('La solicitud de revisión fue retirada.');
+    expect(mockStore.solicitudesRevision.find((r) => r.id === pendiente.id)?.estadoSolicitud as string).toBe('RETIRADA');
+
+    let error: any;
+    httpClient.delete(`${environment.apiUrl}/estudiante/reclamos/${pendiente.id}`).subscribe({ error: (e) => (error = e) });
+    tick(300);
+    expect(error?.status).toBe(409);
+    mockStore.solicitudesRevision = copia;
+  }));
+
   it('HU006 MK-06 simula el perfil propio con sus vínculos', fakeAsync(() => {
     auth.setMockMode(true);
     let perfil: any;

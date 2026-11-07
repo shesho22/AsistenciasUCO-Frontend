@@ -201,6 +201,46 @@ describe('AdminDecanosComponent', () => {
     expect(component.decanos().find((d) => d.id === 'dec-1')?.estado).toBe('INACTIVO');
   });
 
+  it('A2-F-03 el toggle refleja el estado que devuelve el backend (DecanoItemDTO) en la tarjeta', () => {
+    fixture.detectChanges();
+    satisfyInitRequests();
+
+    component.toggleEstado(mockDecanos[0]);
+    const req = http.expectOne(`${environment.apiUrl}/admin/decanos/dec-1/toggle`);
+    // El backend responde con el DTO del decano sin el campo `estado` de presentacion.
+    const { estado: _estado, ...dto } = { ...mockDecanos[0], estaActivoDecano: false };
+    req.flush({ exitoso: true, datos: dto, mensajeUsuario: 'Se actualizó el estado del decano.' });
+
+    expect(toastService.success).toHaveBeenCalledWith('Se actualizó el estado del decano.');
+    const tarjeta = component.decanos().find((d) => d.id === 'dec-1');
+    expect(tarjeta?.estaActivoDecano).toBeFalse();
+    expect(tarjeta?.estado).toBe('INACTIVO');
+
+    component.toggleEstado(tarjeta!);
+    http.expectOne(`${environment.apiUrl}/admin/decanos/dec-1/toggle`).flush({
+      exitoso: true,
+      datos: { ...dto, estaActivoDecano: true },
+      mensajeUsuario: 'Se actualizó el estado del decano.',
+    });
+    expect(component.decanos().find((d) => d.id === 'dec-1')?.estado).toBe('ACTIVO');
+  });
+
+  it('A2-F-03 un 409 al desactivar muestra el message del backend y no cambia la tarjeta', () => {
+    fixture.detectChanges();
+    satisfyInitRequests();
+
+    component.toggleEstado(mockDecanos[0]);
+    http
+      .expectOne(`${environment.apiUrl}/admin/decanos/dec-1/toggle`)
+      .flush(
+        { message: 'No se puede desactivar al decano de una facultad con programas activos.' },
+        { status: 409, statusText: 'Conflict' }
+      );
+
+    expect(toastService.error).toHaveBeenCalledWith('No se puede desactivar al decano de una facultad con programas activos.');
+    expect(component.decanos().find((d) => d.id === 'dec-1')?.estado).toBe('ACTIVO');
+  });
+
   it('toggleEstado notifica error cuando la llamada a la api falla', () => {
     fixture.detectChanges();
     satisfyInitRequests();

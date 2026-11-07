@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NEVER, Observable, Subject, of, throwError } from 'rxjs';
+import { apiHttpError } from '../../../core/testing/api-error.fixture';
 import { AttendanceControlComponent, MENSAJE_MATRICULA_DUPLICADA_DOCENTE } from './attendance-control.component';
 import { HttpErrorResponse } from '@angular/common/http';
 import { CourseService } from '../../../core/services/course.service';
@@ -687,6 +688,17 @@ describe('AttendanceControlComponent contract corrections', () => {
     expect(component.showToast()).toBeTrue();
     expect(component.toastType()).toBe('success');
     expect(component.isNewSessionModalOpen()).toBeFalse();
+  });
+
+  it('A2-F-09 un 400 SES_017 al crear la sesión muestra el message del backend, sin texto local', () => {
+    sessionService.createSession.and.returnValue(throwError(() => apiHttpError(400, 'La sesión se cruza con otra sesión del grupo o del docente en ese horario.', 'VALIDATION_ERROR')));
+    const component = createComponent([activeStudent], []);
+
+    component.onCreateSessionSubmit({ title: 'Sesión solapada', date: '2026-09-20', startTime: '08:00', endTime: '10:00' });
+
+    expect(component.toastType()).toBe('error');
+    expect(component.toastMessage()).toBe('La sesión se cruza con otra sesión del grupo o del docente en ese horario.');
+    expect(component.showToast()).toBeTrue();
   });
 
   it('onStudentStatusChange actualiza el estado del estudiante', () => {

@@ -194,6 +194,45 @@ describe('StudentCourseDetailComponent', () => {
       expect(texto()).not.toContain('Radicar Reclamo');
     });
 
+    it('A2-F-01 "Retirar" solo aparece en reclamos PENDIENTE y emite withdrawClaim', () => {
+      const pendiente = crearSesion({ id: 'p', estadoAsistencia: 'AUSENTE', reclamoId: 'rec-p', estadoReclamo: 'PENDIENTE' });
+      const aprobada = crearSesion({ id: 'a', numeroSesion: 2, estadoAsistencia: 'AUSENTE', reclamoId: 'rec-a', estadoReclamo: 'APROBADA' });
+      fixture.componentRef.setInput('materia', crearMateria());
+      fixture.componentRef.setInput('sesiones', [pendiente, aprobada]);
+      fixture.detectChanges();
+
+      const botones = Array.from(fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>)
+        .filter((b) => b.textContent?.trim() === 'Retirar');
+      expect(botones.length).toBe(1);
+      const emitido: SesionMateriaDetalle[] = [];
+      component.withdrawClaim.subscribe((s) => emitido.push(s));
+      botones[0].click();
+      expect(emitido).toEqual([pendiente]);
+    });
+
+    it('A2-F-07 un reclamo RETIRADA muestra la insignia "Retirada" y no ofrece Retirar', () => {
+      fixture.componentRef.setInput('materia', crearMateria());
+      fixture.componentRef.setInput('sesiones', [
+        crearSesion({ estadoAsistencia: 'AUSENTE', reclamoId: 'rec-r', estadoReclamo: 'RETIRADA' }),
+      ]);
+      fixture.detectChanges();
+
+      expect(texto()).toContain('Retirada');
+      const botones = Array.from(fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>)
+        .filter((b) => b.textContent?.trim() === 'Retirar');
+      expect(botones.length).toBe(0);
+    });
+
+    it('A2-F-07 una solicitud existente RETIRADA se informa como retirada', () => {
+      fixture.componentRef.setInput('materia', crearMateria());
+      fixture.componentRef.setInput('sesiones', [
+        crearSesion({ estadoAsistencia: 'AUSENTE', reclamable: false, solicitudRevision: 'RETIRADA' }),
+      ]);
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('[data-testid="solicitud-existente"]').textContent).toContain('retirada');
+    });
+
     it('sin indicadores no renderiza NaN ni porcentajes inventados', () => {
       fixture.componentRef.setInput('materia', crearMateria());
       fixture.detectChanges();
