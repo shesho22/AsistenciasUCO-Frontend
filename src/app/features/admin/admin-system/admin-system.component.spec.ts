@@ -115,4 +115,54 @@ describe('AdminSystemComponent', () => {
     expect(card.querySelectorAll('button').length).toBe(0);
     expect(toastServiceSpy.success).not.toHaveBeenCalled();
   });
+
+  describe('cierre masivo y accesibilidad (F-ADM-006, F-ADM-007, F-ADM-014, F-ADM-S14)', () => {
+    const el = () => fixture.nativeElement as HTMLElement;
+
+    it('los rotulos no dicen "Simulador" porque el cierre es real e irreversible', () => {
+      component.tabActiva.set('CIERRE_MASIVO');
+      fixture.detectChanges();
+      expect(el().textContent).not.toContain('Simulador');
+      expect(el().textContent).toContain('irreversible');
+    });
+
+    it('ejecutar pide confirmacion en un alertdialog y no usa window.confirm', () => {
+      const nativo = spyOn(window, 'confirm');
+      adminServiceSpy.ejecutarCierreMasivo.and.returnValue(of({ exitoso: true, datos: undefined }));
+      component.tabActiva.set('CIERRE_MASIVO');
+      fixture.detectChanges();
+      component.iniciarCierreSemestral();
+      fixture.detectChanges();
+      expect(el().querySelector('[role="alertdialog"]')).toBeTruthy();
+      expect(adminServiceSpy.ejecutarCierreMasivo).not.toHaveBeenCalled();
+      expect(nativo).not.toHaveBeenCalled();
+      component.confirmarCierre();
+      expect(adminServiceSpy.ejecutarCierreMasivo).toHaveBeenCalledWith('per-1', '2026-2');
+      expect(component.cierrePendiente()).toBeFalse();
+    });
+
+    it('el porcentaje no produce NaN con total 0 y el historial vacio lo explica con overflow horizontal', () => {
+      expect(component.porcentaje(0, 0)).toBe('—');
+      expect(component.porcentaje(1, 4)).toBe('25.0%');
+      component.tabActiva.set('CIERRE_MASIVO');
+      fixture.detectChanges();
+      expect(el().textContent).not.toContain('NaN');
+      expect(el().querySelector('table')?.parentElement?.className).toContain('overflow-x-auto');
+      expect(el().textContent).toContain('historial de cierres');
+    });
+
+    it('las pestanas usan tablist/tab/aria-selected y las flechas cambian de pestana', () => {
+      const tablist = el().querySelector('[role="tablist"]');
+      expect(tablist).toBeTruthy();
+      const tabs = Array.from(el().querySelectorAll('[role="tab"]')) as HTMLElement[];
+      expect(tabs.length).toBe(3);
+      expect(tabs[0].getAttribute('aria-selected')).toBe('true');
+      expect(tabs[1].getAttribute('aria-selected')).toBe('false');
+      tabs[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+      fixture.detectChanges();
+      expect(component.tabActiva()).toBe('AUDITORIA');
+      expect(el().querySelector('[role="tabpanel"]')).toBeTruthy();
+      expect(el().querySelectorAll('svg:not([aria-hidden="true"])').length).toBe(0);
+    });
+  });
 });

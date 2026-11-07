@@ -36,8 +36,9 @@ let modalIdCounter = 0;
         <!-- Modal Box -->
         <div
           class="relative w-full max-w-lg bg-white rounded-2xl shadow-warm-lg border border-warm-200 p-6 z-10 animate-scale-up focus:outline-none"
-          role="dialog"
+          [attr.role]="dialogRole()"
           aria-modal="true"
+          [attr.aria-describedby]="descriptionId()"
           [attr.aria-labelledby]="titleId"
           tabindex="-1"
           #dialog
@@ -74,6 +75,10 @@ let modalIdCounter = 0;
 export class ModalComponent {
   isOpen = input<boolean>(false);
   title = input<string>('Diálogo');
+  /** `alertdialog` para confirmaciones que interrumpen una acción destructiva. */
+  dialogRole = input<'dialog' | 'alertdialog'>('dialog');
+  /** id del elemento que describe el diálogo (aria-describedby). */
+  descriptionId = input<string | null>(null);
 
   closed = output<void>();
 
