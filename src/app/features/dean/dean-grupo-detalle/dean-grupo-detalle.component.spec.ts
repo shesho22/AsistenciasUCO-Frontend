@@ -165,4 +165,41 @@ describe('DeanGrupoDetalleComponent', () => {
     component.volverAGrupos();
     expect(routerSpy.navigate).toHaveBeenCalledWith(['/app/decano/grupos']);
   });
+
+  it('B1-F-28 HU145: las sesiones canceladas del grupo muestran la etiqueta Cancelada', () => {
+    crear();
+    http.expectOne(pagina(1)).flush({
+      exitoso: true,
+      total: 2,
+      datos: [
+        sesion('s1', 'crs-1'),
+        {
+          ...sesion('s2', 'crs-1', 39),
+          estado: 'CANCELADA',
+          cancelacion: { tipo: 'DOCENTE', motivo: 'Incapacidad', nombreFestivo: null, fechaCancelacionUtc: null },
+        },
+      ],
+    });
+    fixture.detectChanges();
+
+    const filas = fixture.nativeElement.querySelectorAll('[data-testid^="sesion-fila-"]') as NodeListOf<HTMLElement>;
+    expect(filas.length).toBe(2);
+    expect(filas[0].textContent).not.toContain('Cancelada');
+    expect(filas[1].textContent).toContain('Cancelada');
+    expect(filas[1].textContent).toContain('Incapacidad');
+  });
+
+  it('un 403/500 al cargar la ficha del grupo muestra el mensaje del backend (F-DEC-006)', () => {
+    fixture = TestBed.createComponent(DeanGrupoDetalleComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+    http.expectOne(`${environment.apiUrl}/decano/grupos`).flush(
+      { code: 'ERR_INTERNAL', message: 'Servicio no disponible por mantenimiento.', correlationId: 'c1' },
+      { status: 500, statusText: 'Server Error' },
+    );
+    http.expectOne(pagina(1)).flush({ exitoso: true, total: 0, datos: [] });
+    fixture.detectChanges();
+    const alerta = (fixture.nativeElement as HTMLElement).querySelector('[role="alert"]');
+    expect(alerta?.textContent).toContain('Servicio no disponible por mantenimiento.');
+  });
 });

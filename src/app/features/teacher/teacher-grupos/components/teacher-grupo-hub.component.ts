@@ -6,9 +6,9 @@ import { ClassSession } from '../../../../core/models/attendance.model';
 import { TeacherGrupoSesionesComponent } from './teacher-grupo-sesiones.component';
 import { TeacherGrupoHorariosComponent } from './teacher-grupo-horarios.component';
 import { TeacherGrupoEstudiantesComponent } from './teacher-grupo-estudiantes.component';
-import { TeacherGrupoSolicitudesComponent } from './teacher-grupo-solicitudes.component';
 import { TeacherGrupoReclamosComponent } from './teacher-grupo-reclamos.component';
-import { type EstadoCargaReclamos } from '../../../../core/models/role-management.model';
+import { EstudianteGrupoItem } from '../../../../core/models/estudiante-grupo-item.model';
+import { SolicitudRevisionItem, type EstadoCargaReclamos } from '../../../../core/models/role-management.model';
 import { TeacherGrupoSabanaComponent } from './teacher-grupo-sabana.component';
 
 @Component({
@@ -21,7 +21,6 @@ import { TeacherGrupoSabanaComponent } from './teacher-grupo-sabana.component';
     TeacherGrupoSesionesComponent,
     TeacherGrupoHorariosComponent,
     TeacherGrupoEstudiantesComponent,
-    TeacherGrupoSolicitudesComponent,
     TeacherGrupoReclamosComponent,
     TeacherGrupoSabanaComponent,
   ],
@@ -60,7 +59,7 @@ import { TeacherGrupoSabanaComponent } from './teacher-grupo-sabana.component';
               }
               <span class="text-xs font-bold text-warm-600">{{ selectedCourse()?.section }}</span>
               <span class="text-xs text-warm-400">•</span>
-              <span class="text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+              <span class="text-xs font-medium text-success-700 bg-success-50 px-2 py-0.5 rounded-full border border-success-200">
                 {{ selectedCourse()?.enrolledStudentsCount || estudiantes().length }} alumnos matriculados
               </span>
             </div>
@@ -75,9 +74,9 @@ import { TeacherGrupoSabanaComponent } from './teacher-grupo-sabana.component';
             <button
               type="button"
               (click)="matricular.emit(selectedCourse()!)"
-              class="text-xs font-bold text-emerald-800 hover:text-emerald-950 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 px-3.5 py-2 rounded-xl transition-colors inline-flex items-center gap-1.5 shadow-xs"
+              class="text-xs font-bold text-primary-800 hover:text-primary-950 bg-primary-50 hover:bg-primary-100 border border-primary-300 px-3.5 py-2 rounded-xl transition-colors inline-flex items-center gap-1.5 shadow-xs"
             >
-              <svg class="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-4 h-4 text-success-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
               </svg>
               QR / PIN Matrícula
@@ -146,20 +145,7 @@ import { TeacherGrupoSabanaComponent } from './teacher-grupo-sabana.component';
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
             Alumnos Matriculados
-            <span class="px-2 py-0.5 rounded-full text-[11px] bg-emerald-100 text-emerald-800">{{ estudiantes().length }}</span>
-          </button>
-
-          <button
-            type="button"
-            data-tab="solicitudes"
-            (click)="subPestanaHub.set('SOLICITUDES')"
-            [class]="subPestanaHub() === 'SOLICITUDES' ? 'border-primary-700 text-primary-900 font-bold' : 'border-transparent text-warm-500 hover:text-warm-800 font-medium'"
-            class="px-4 py-3 text-xs sm:text-sm border-b-2 transition-colors inline-flex items-center gap-2 whitespace-nowrap"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-            </svg>
-            Solicitudes de Ingreso
+            <span class="px-2 py-0.5 rounded-full text-[11px] bg-success-100 text-success-800">{{ estudiantes().length }}</span>
           </button>
 
           <button
@@ -174,7 +160,7 @@ import { TeacherGrupoSabanaComponent } from './teacher-grupo-sabana.component';
             Reclamos & Novedades
             <span
               data-testid="grupo-reclamos-count"
-              class="px-2 py-0.5 rounded-full text-[11px] bg-amber-100 text-amber-800"
+              class="px-2 py-0.5 rounded-full text-[11px] bg-warning-100 text-warning-800"
             >{{ estadoCargaReclamos() === 'LOADED' ? reclamos().length : (estadoCargaReclamos() === 'LOADING' ? '…' : '—') }}</span>
           </button>
 
@@ -224,10 +210,6 @@ import { TeacherGrupoSabanaComponent } from './teacher-grupo-sabana.component';
           />
         }
 
-        @if (subPestanaHub() === 'SOLICITUDES' && selectedCourse()) {
-          <app-teacher-grupo-solicitudes [grupoId]="selectedCourse()!.id" (matriculaCambiada)="padronCambiado.emit()" />
-        }
-
         @if (subPestanaHub() === 'RECLAMOS') {
           <app-teacher-grupo-reclamos
             [reclamos]="reclamos()"
@@ -239,6 +221,7 @@ import { TeacherGrupoSabanaComponent } from './teacher-grupo-sabana.component';
 
         @if (subPestanaHub() === 'SABANA') {
           <app-teacher-grupo-sabana
+            [grupoId]="selectedCourse()?.id ?? ''"
             [estudiantes]="estudiantes()"
             [sessions]="sessions()"
             [cargando]="cargandoEstudiantes() || loadingSessions()"
@@ -252,15 +235,15 @@ export class TeacherGrupoHubComponent {
   selectedCourse = input<Course | null>(null);
   sessions = input<ClassSession[]>([]);
   loadingSessions = input<boolean>(false);
-  estudiantes = input<any[]>([]);
+  estudiantes = input<EstudianteGrupoItem[]>([]);
   cargandoEstudiantes = input<boolean>(false);
-  reclamos = input<any[]>([]);
+  reclamos = input<SolicitudRevisionItem[]>([]);
   estadoCargaReclamos = input<EstadoCargaReclamos>('IDLE');
   // OUT_OF_GOLDEN_PATH: acciones de sesión sin contrato backend; ocultas salvo feature explícita.
   sessionQrEnabled = input<boolean>(false);
   sessionCancelEnabled = input<boolean>(false);
 
-  subPestanaHub = model<'SESIONES' | 'HORARIOS' | 'ESTUDIANTES' | 'SOLICITUDES' | 'RECLAMOS' | 'SABANA'>('SESIONES');
+  subPestanaHub = model<'SESIONES' | 'HORARIOS' | 'ESTUDIANTES' | 'RECLAMOS' | 'SABANA'>('SESIONES');
 
   reintentarReclamos = output<void>();
 
@@ -270,9 +253,7 @@ export class TeacherGrupoHubComponent {
   proyectarQr = output<Course>();
   matricular = output<Course>();
   /** HU051: el docente pide retirar a un estudiante activo del padrón. */
-  retirarEstudiante = output<any>();
-  /** HU054: una solicitud aceptada cambió el padrón del grupo. */
-  padronCambiado = output<void>();
+  retirarEstudiante = output<EstudianteGrupoItem>();
   programarExtraordinaria = output<void>();
   proyectarSesion = output<ClassSession>();
   verDetalleSesion = output<ClassSession>();

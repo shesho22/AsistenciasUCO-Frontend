@@ -214,6 +214,64 @@ describe('AttendanceClaimService', () => {
       expect(sesiones[0].fechaHoraInicioUtc).toBe('2026-10-19T13:00:00Z');
     });
 
+    describe('CULM-001 D.1 plazo de justificacion', () => {
+      const base = {
+        nombre: 'S1', numero: 1, numeroSemana: 1, idGrupo: GRUPO, codigoGrupo: 'G1', nombreGrupo: 'Grupo 001',
+        fechaHoraInicio: '2026-11-04T13:00:00Z', fechaHoraFin: '2026-11-04T15:00:00Z',
+      };
+      const cargar = (sesion: Record<string, unknown>): SesionMateriaDetalle => {
+        const zona = TestBed.inject(SessionTimeZoneService);
+        zona.setManualTimeZone('America/Bogota');
+        let sesiones: SesionMateriaDetalle[] = [];
+        service.getSesionesPorMateria(ASIGNATURA).subscribe((res) => (sesiones = res.datos));
+        http.expectOne(`${environment.apiUrl}/estudiante/materias/${ASIGNATURA}/sesiones`).flush({
+          exitoso: true,
+          datos: [{ id: 'd1d2d3d4-0000-4000-8000-000000000001', ...base, ...sesion }],
+        });
+        return sesiones[0];
+      };
+
+      it('vigente: expone la fecha limite en hora local y el indicador', () => {
+        const s = cargar({ fechaLimiteJustificacionUtc: '2026-11-10T04:59:59Z', plazoJustificacionVigente: true });
+        expect(s.plazoJustificacionVigente).toBeTrue();
+        expect(s.fechaLimiteJustificacionUtc).toBe('2026-11-10T04:59:59Z');
+        expect(s.fechaLimiteJustificacionLocal).toBe('2026-11-09 23:59');
+      });
+
+      it('vencido: conserva la fecha y marca el plazo como no vigente', () => {
+        const s = cargar({ fechaLimiteJustificacionUtc: '2026-11-10T04:59:59Z', plazoJustificacionVigente: false });
+        expect(s.plazoJustificacionVigente).toBeFalse();
+        expect(s.fechaLimiteJustificacionLocal).toBe('2026-11-09 23:59');
+      });
+
+      it('fecha null: sin plazo y sin fecha local', () => {
+        const s = cargar({ fechaLimiteJustificacionUtc: null, plazoJustificacionVigente: false });
+        expect(s.plazoJustificacionVigente).toBeFalse();
+        expect(s.fechaLimiteJustificacionUtc).toBeUndefined();
+        expect(s.fechaLimiteJustificacionLocal).toBeUndefined();
+      });
+
+      it('sesion cancelada: el plazo no esta vigente', () => {
+        const s = cargar({ estado: 'CANCELADA', fechaLimiteJustificacionUtc: '2026-11-10T04:59:59Z', plazoJustificacionVigente: false });
+        expect(s.estado).toBe('CANCELADA');
+        expect(s.plazoJustificacionVigente).toBeFalse();
+      });
+
+      it('despliegue anterior sin los campos: el indicador queda indefinido (no bloquea)', () => {
+        const s = cargar({});
+        expect(s.plazoJustificacionVigente).toBeUndefined();
+        expect(s.fechaLimiteJustificacionLocal).toBeUndefined();
+      });
+
+      it('envia pagina y tamano cuando se indican', () => {
+        service.getSesionesPorMateria(ASIGNATURA, { pagina: 2, tamano: 25 }).subscribe();
+        const req = http.expectOne((r) => r.url === `${environment.apiUrl}/estudiante/materias/${ASIGNATURA}/sesiones`);
+        expect(req.request.params.get('pagina')).toBe('2');
+        expect(req.request.params.get('tamano')).toBe('25');
+        req.flush({ exitoso: true, datos: [] });
+      });
+    });
+
     for (const invalido of [undefined, null, '', 'undefined', 'null', 'mat-123', '123']) {
       it(`no emite ninguna peticion HTTP con el identificador ${JSON.stringify(invalido)}`, () => {
         let error: unknown;
@@ -230,7 +288,7 @@ describe('AttendanceClaimService', () => {
     http.expectOne(`${environment.apiUrl}/docente/horarios`).flush({ exitoso: true, datos: [] });
   });
 
-  it('crearReclamo envía solo soporteArchivoId y eliminarReclamo conserva su ruta', () => {
+  it('crearReclamo envía solo soporteArchivoId', () => {
     service
       .crearReclamo({
         sesionId: 'ses-1',
@@ -259,10 +317,16 @@ describe('AttendanceClaimService', () => {
     expect(JSON.stringify(postRequest.request.body)).not.toContain('soporteNombre');
     postRequest.flush({ exitoso: true, datos: {} });
 
-    service.eliminarReclamo('rec-99', 'mat-1', 'ses-1').subscribe();
+  });
+
+  it('A2-F-02 eliminarReclamo hace DELETE a /estudiante/reclamos/{id} con un solo argumento', () => {
+    expect(service.eliminarReclamo.length).toBe(1);
+    let respuesta: { exitoso: boolean; mensaje: string } | undefined;
+    service.eliminarReclamo('rec-99').subscribe((r) => (respuesta = r));
     const deleteRequest = http.expectOne(`${environment.apiUrl}/estudiante/reclamos/rec-99`);
     expect(deleteRequest.request.method).toBe('DELETE');
-    deleteRequest.flush({ exitoso: true, datos: true });
+    deleteRequest.flush({ exitoso: true, mensaje: 'La solicitud de revisión fue retirada.' });
+    expect(respuesta?.mensaje).toBe('La solicitud de revisión fue retirada.');
   });
 
   it('crearReclamo sin soporte no envía ningún campo de soporte', () => {

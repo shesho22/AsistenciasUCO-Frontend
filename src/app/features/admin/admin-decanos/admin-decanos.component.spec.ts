@@ -129,7 +129,8 @@ describe('AdminDecanosComponent', () => {
 
     expect(console.warn).toHaveBeenCalledWith('Usando catálogo local de tipos de documento.');
     expect(console.warn).toHaveBeenCalledWith('Usando catálogo local de facultades.');
-    expect(toastService.error).toHaveBeenCalledWith('Error al cargar la lista de decanos.');
+    // F-ADM-010: el mensaje ya no es un texto fijo; sin respuesta HTTP se usa el mensaje semántico de red.
+    expect(toastService.error).toHaveBeenCalledWith('No fue posible conectar con el servidor. Verifique su conexión de red.');
     expect(component.isLoading()).toBeFalse();
   });
 
@@ -199,6 +200,46 @@ describe('AdminDecanosComponent', () => {
 
     expect(toastService.success).toHaveBeenCalledWith('Decano desactivado.');
     expect(component.decanos().find((d) => d.id === 'dec-1')?.estado).toBe('INACTIVO');
+  });
+
+  it('A2-F-03 el toggle refleja el estado que devuelve el backend (DecanoItemDTO) en la tarjeta', () => {
+    fixture.detectChanges();
+    satisfyInitRequests();
+
+    component.toggleEstado(mockDecanos[0]);
+    const req = http.expectOne(`${environment.apiUrl}/admin/decanos/dec-1/toggle`);
+    // El backend responde con el DTO del decano sin el campo `estado` de presentacion.
+    const { estado: _estado, ...dto } = { ...mockDecanos[0], estaActivoDecano: false };
+    req.flush({ exitoso: true, datos: dto, mensajeUsuario: 'Se actualizó el estado del decano.' });
+
+    expect(toastService.success).toHaveBeenCalledWith('Se actualizó el estado del decano.');
+    const tarjeta = component.decanos().find((d) => d.id === 'dec-1');
+    expect(tarjeta?.estaActivoDecano).toBeFalse();
+    expect(tarjeta?.estado).toBe('INACTIVO');
+
+    component.toggleEstado(tarjeta!);
+    http.expectOne(`${environment.apiUrl}/admin/decanos/dec-1/toggle`).flush({
+      exitoso: true,
+      datos: { ...dto, estaActivoDecano: true },
+      mensajeUsuario: 'Se actualizó el estado del decano.',
+    });
+    expect(component.decanos().find((d) => d.id === 'dec-1')?.estado).toBe('ACTIVO');
+  });
+
+  it('A2-F-03 un 409 al desactivar muestra el message del backend y no cambia la tarjeta', () => {
+    fixture.detectChanges();
+    satisfyInitRequests();
+
+    component.toggleEstado(mockDecanos[0]);
+    http
+      .expectOne(`${environment.apiUrl}/admin/decanos/dec-1/toggle`)
+      .flush(
+        { message: 'No se puede desactivar al decano de una facultad con programas activos.' },
+        { status: 409, statusText: 'Conflict' }
+      );
+
+    expect(toastService.error).toHaveBeenCalledWith('No se puede desactivar al decano de una facultad con programas activos.');
+    expect(component.decanos().find((d) => d.id === 'dec-1')?.estado).toBe('ACTIVO');
   });
 
   it('toggleEstado notifica error cuando la llamada a la api falla', () => {

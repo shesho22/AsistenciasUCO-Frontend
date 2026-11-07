@@ -38,20 +38,27 @@ interface OpcionFacultad {
           <h1 class="font-serif font-bold text-2xl sm:text-3xl text-warm-900 tracking-tight">Estudiantes de la Institución</h1>
           <p class="text-sm text-warm-600 mt-1">Busca un estudiante y consulta su historial completo de programas, grupos y asistencia.</p>
         </div>
-        <span class="px-3.5 py-2 rounded-xl bg-warm-100 text-xs font-bold text-warm-800 border border-warm-200">{{ listado.total() }} Estudiantes</span>
+        <span class="px-3.5 py-2 rounded-xl bg-warm-100 text-xs font-bold text-warm-800 border border-warm-200">{{ listado.cargando() && listado.filas().length === 0 ? '…' : listado.total() }} Estudiantes</span>
       </div>
 
       <section class="bg-white p-6 rounded-2xl border border-warm-200 shadow-warm-sm space-y-4">
-        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-5 gap-3">
           <input
-            type="text"
+            type="search"
             aria-label="Buscar estudiante"
             [ngModel]="busqueda()"
             (ngModelChange)="busqueda.set($event)"
             (keyup.enter)="listado.buscar()"
-            placeholder="Buscar por nombre o documento y presiona Enter..."
+            placeholder="Buscar por nombre o documento..."
             class="sm:col-span-2 px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-900"
           />
+          <button
+            type="button"
+            (click)="listado.buscar()"
+            class="min-h-[44px] px-4 rounded-xl bg-primary-700 hover:bg-primary-800 text-white text-sm font-semibold sm:col-span-1"
+          >
+            Buscar
+          </button>
           <select
             aria-label="Facultad"
             [ngModel]="idFacultad()"
@@ -75,19 +82,21 @@ interface OpcionFacultad {
           </select>
         </div>
 
-        @if (listado.filas().length === 0 && !listado.cargando()) {
+        @if (listado.cargando() && listado.filas().length === 0) {
+          <p role="status" class="text-sm text-warm-500 text-center py-6">Cargando estudiantes…</p>
+        } @else if (listado.filas().length === 0) {
           <p class="text-sm text-warm-500 text-center py-6">No hay estudiantes que coincidan con la búsqueda.</p>
         } @else {
           <div class="overflow-x-auto">
             <table class="w-full text-sm">
               <thead>
                 <tr class="text-left text-xs uppercase tracking-wider text-warm-500 border-b border-warm-100">
-                  <th class="py-2 pr-3">Estudiante</th>
-                  <th class="py-2 pr-3">Documento</th>
-                  <th class="py-2 pr-3">Facultades y programas</th>
-                  <th class="py-2 pr-3">Grupos</th>
-                  <th class="py-2 pr-3">Estado</th>
-                  <th class="py-2"></th>
+                  <th scope="col" class="py-2 pr-3">Estudiante</th>
+                  <th scope="col" class="py-2 pr-3">Documento</th>
+                  <th scope="col" class="py-2 pr-3">Facultades y programas</th>
+                  <th scope="col" class="py-2 pr-3">Grupos</th>
+                  <th scope="col" class="py-2 pr-3">Estado</th>
+                  <th scope="col" class="py-2"><span class="sr-only">Acciones</span></th>
                 </tr>
               </thead>
               <tbody>
@@ -107,7 +116,7 @@ interface OpcionFacultad {
                       <app-badge [variant]="e.activo ? 'success' : 'neutral'">{{ e.activo ? 'Activo' : 'Inactivo' }}</app-badge>
                     </td>
                     <td class="py-2 text-right">
-                      <button type="button" class="text-xs font-semibold text-primary-700 hover:underline" (click)="verFicha(e)">Ver ficha</button>
+                      <button type="button" class="min-h-[44px] px-2 text-xs font-semibold text-primary-700 hover:underline" (click)="verFicha(e)">Ver ficha</button>
                     </td>
                   </tr>
                 }

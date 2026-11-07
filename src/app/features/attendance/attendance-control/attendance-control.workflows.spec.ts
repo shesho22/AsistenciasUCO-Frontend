@@ -1,4 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { TeacherAttendanceSummaryService } from '../../../core/services/teacher-attendance-summary.service';
+import { TomaAsistenciaService } from '../../../core/services/toma-asistencia.service';
+import { AsistenciaQrService } from '../../../core/services/asistencia-qr.service';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NEVER, of, throwError } from 'rxjs';
 import { AttendanceService } from '../../../core/services/attendance.service';
@@ -69,6 +72,7 @@ describe('AttendanceControlComponent public workflows', () => {
     ]);
     realtime = jasmine.createSpyObj('AttendanceRealtimeSyncService', [
       'watch',
+      'watchCancelaciones', 'watchTomas',
       'connectionAlerts',
       'connectGroup',
       'disconnect',
@@ -103,6 +107,8 @@ describe('AttendanceControlComponent public workflows', () => {
       of({ exitoso: true, mensajeUsuario: 'Matriculada' })
     );
     realtime.watch.and.returnValue(NEVER);
+    (realtime as any).watchCancelaciones.and.returnValue(NEVER);
+    (realtime as any).watchTomas.and.returnValue(NEVER);
     realtime.connectionAlerts.and.returnValue(NEVER);
     registrationConfig = jasmine.createSpyObj('StudentRegistrationConfigService', ['getEmailDomain']);
     registrationConfig.getEmailDomain.and.returnValue(of('@uco.edu.co'));
@@ -127,6 +133,9 @@ describe('AttendanceControlComponent public workflows', () => {
         { provide: GroupService, useValue: groupService },
         { provide: StudentService, useValue: studentService },
         { provide: AttendanceService, useValue: attendanceService },
+        { provide: TomaAsistenciaService, useValue: { consultarTomas: () => NEVER, abrirToma: () => NEVER, cerrarToma: () => NEVER, registrarAsistencias: () => NEVER, consultarFaltantes: () => NEVER } },
+        { provide: TeacherAttendanceSummaryService, useValue: { consultarResumen: () => NEVER } },
+        { provide: AsistenciaQrService, useValue: { abrirQr: () => NEVER, rotarQr: () => NEVER, cerrarQr: () => NEVER } },
         { provide: AttendanceClaimService, useValue: attendanceClaimService },
         {
           provide: CatalogService,

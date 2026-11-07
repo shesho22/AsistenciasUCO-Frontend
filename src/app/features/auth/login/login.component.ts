@@ -33,8 +33,8 @@ import { CardComponent } from '../../../shared/components/card/card.component';
 
         <!-- Mensaje de Error si las credenciales fallan, la cuenta no es válida o la configuración es inválida -->
         @if (visibleError()) {
-          <div class="mb-4 p-3 rounded-xl bg-red-50/90 border border-red-200 text-red-700 text-xs flex items-center gap-2.5 animate-fade-in shadow-sm">
-            <svg class="w-4 h-4 shrink-0 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="mb-4 p-3 rounded-xl bg-danger-50/90 border border-danger-200 text-danger-700 text-xs flex items-center gap-2.5 animate-fade-in shadow-sm">
+            <svg class="w-4 h-4 shrink-0 text-danger-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <span class="font-medium">{{ visibleError() }}</span>

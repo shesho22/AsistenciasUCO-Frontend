@@ -75,4 +75,36 @@ describe('DashboardLayoutComponent', () => {
     // Para un docente, debe incluir grupos y reclamos
     expect(items.some((item) => item.label.includes('Grupos'))).toBeTrue();
   });
+
+  it('F-DOC-008: el menu del docente ofrece Tomar Asistencia y Reclamos ademas de Mis Grupos y Mis Horarios', () => {
+    const rutas = component.filteredNavItems().map((i) => i.route);
+    expect(rutas).toContain('/app/asistencia');
+    expect(rutas).toContain('/app/docente/reclamos');
+    expect(rutas).toContain('/app/docente/grupos');
+    expect(rutas).toContain('/app/docente/horarios');
+  });
+});
+
+describe('DashboardLayoutComponent (ESTUDIANTE, CULM-001 A.1)', () => {
+  it('F-RED-03 el menú del estudiante ya no ofrece Solicitudes de Ingreso y conserva Oferta de Grupos', async () => {
+    const user = signal({ id: 'usr-2', name: 'Est Uno', email: 'est@uco.edu.co', role: 'ESTUDIANTE' as UserRole });
+    const auth = jasmine.createSpyObj('AuthService', ['logout', 'loginAsMockUser'], {
+      currentUser: user.asReadonly(),
+      isMockMode: signal(false).asReadonly(),
+    });
+    const toast = jasmine.createSpyObj('ToastService', ['dismiss'], {
+      currentToast: signal({ visible: false, message: '', type: 'info' as const }).asReadonly(),
+    });
+    await TestBed.configureTestingModule({
+      imports: [DashboardLayoutComponent],
+      providers: [provideRouter([]), { provide: AuthService, useValue: auth }, { provide: ToastService, useValue: toast }],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(DashboardLayoutComponent);
+    fixture.detectChanges();
+
+    const items = fixture.componentInstance.filteredNavItems();
+    expect(items.some((i) => i.route === '/app/estudiante/solicitudes')).toBeFalse();
+    expect(items.some((i) => i.label.includes('Solicitudes de Ingreso'))).toBeFalse();
+    expect(items.some((i) => i.label === 'Oferta de Grupos')).toBeTrue();
+  });
 });

@@ -13,6 +13,7 @@ import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../core/services/auth.service';
 import { hasAnyRole } from '../../../core/models/user.model';
 import { environment } from '../../../../environments/environment';
+import { readDesignToken } from '../../../shared/utils/design-tokens';
 
 interface SecurityUiOptions {
   applicationId: string;
@@ -72,7 +73,7 @@ type ViewState = 'loading' | 'ready' | 'error' | 'unauthorized' | 'forbidden';
     <section class="rounded-2xl border border-warm-200 bg-white p-6 shadow-warm-sm">
       <div class="mb-5">
         <p class="text-xs font-bold uppercase tracking-wider text-primary-700">Security Baseline</p>
-        <h1 class="mt-1 text-2xl font-bold text-warm-900">Administración de seguridad</h1>
+        <h1 class="mt-1 font-serif text-2xl font-bold text-warm-900">Administración de seguridad</h1>
         <p class="mt-2 text-sm text-warm-600">
           Recursos, roles, perfiles y asignaciones de <strong>AsistenciasUCO</strong>.
         </p>
@@ -85,7 +86,7 @@ type ViewState = 'loading' | 'ready' | 'error' | 'unauthorized' | 'forbidden';
       }
 
       @if (state() === 'unauthorized' || state() === 'forbidden' || state() === 'error') {
-        <div class="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800" role="alert">
+        <div class="rounded-xl border border-danger-200 bg-danger-50 p-4 text-sm text-danger-800" role="alert">
           <p>{{ message() }}</p>
           <div class="mt-3 flex gap-2">
             @if (state() === 'unauthorized') {
@@ -93,14 +94,14 @@ type ViewState = 'loading' | 'ready' | 'error' | 'unauthorized' | 'forbidden';
                 Iniciar sesión Security Baseline
               </button>
             }
-            <button type="button" class="rounded-lg border border-rose-300 px-3 py-2 font-semibold" (click)="load()">
+            <button type="button" class="rounded-lg border border-danger-300 px-3 py-2 font-semibold" (click)="load()">
               Reintentar
             </button>
           </div>
         </div>
       }
 
-      <div #mountPoint class="mt-4" [hidden]="state() !== 'ready'"></div>
+      <div #mountPoint class="mt-4 max-w-full overflow-x-auto" [hidden]="state() !== 'ready'"></div>
     </section>
   `,
 })
@@ -189,8 +190,8 @@ export class SecurityAdministrationComponent implements AfterViewInit, OnDestroy
         apiBaseUrl: environment.security.baselineUrl,
         allowApplicationLifecycleManagement: false,
         theme: {
-          accent: '#087443',
-          fontFamily: 'Inter, sans-serif',
+          accent: readDesignToken('--color-primary-700'),
+          fontFamily: readDesignToken('--font-sans'),
           radius: '12px',
         },
       });

@@ -51,7 +51,7 @@ const TAMANO_CREDITOS = 100;
             ← Resumen de Facultad
           </button>
           <span class="px-3.5 py-2 rounded-xl bg-primary-50 text-xs font-bold text-primary-800 border border-primary-200">
-            {{ planes().length }} Planes
+            {{ cargandoEstructura() ? '…' : planes().length }} Planes
           </span>
         </div>
       </div>
@@ -67,7 +67,7 @@ const TAMANO_CREDITOS = 100;
         <div class="p-4 rounded-2xl bg-white border border-warm-200 shadow-warm-sm flex items-center justify-between">
           <div>
             <span class="text-xs text-warm-500 font-medium">Planes Registrados</span>
-            <p class="text-2xl font-serif font-bold text-warm-900">{{ planes().length }}</p>
+            <p class="text-2xl font-serif font-bold text-warm-900">{{ cargandoEstructura() ? '—' : planes().length }}</p>
           </div>
           <div class="w-11 h-11 rounded-xl bg-primary-50 text-primary-700 flex items-center justify-center shrink-0">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -79,9 +79,9 @@ const TAMANO_CREDITOS = 100;
         <div class="p-4 rounded-2xl bg-white border border-warm-200 shadow-warm-sm flex items-center justify-between">
           <div>
             <span class="text-xs text-warm-500 font-medium">Planes Vigentes</span>
-            <p class="text-2xl font-serif font-bold text-emerald-700">{{ planesVigentes() }}</p>
+            <p class="text-2xl font-serif font-bold text-success-700">{{ cargandoEstructura() ? '—' : planesVigentes() }}</p>
           </div>
-          <div class="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
+          <div class="w-11 h-11 rounded-xl bg-success-50 text-success-700 flex items-center justify-center shrink-0">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -104,7 +104,8 @@ const TAMANO_CREDITOS = 100;
       <!-- Buscador -->
       <div class="relative">
         <input
-          type="text"
+          type="search"
+          aria-label="Buscar programa o plan de estudios por código o nombre"
           [ngModel]="filtroTexto()"
           (ngModelChange)="onFiltroChange($event)"
           placeholder="Buscar programa o plan de estudios por código o nombre..."
@@ -117,9 +118,13 @@ const TAMANO_CREDITOS = 100;
 
       <!-- Grid de Programas y Planes -->
       @if (errorEstructura()) {
-        <div class="bg-white rounded-2xl border border-red-200 p-12 text-center shadow-warm-sm" role="alert">
-          <p class="text-sm font-semibold text-red-700">No fue posible cargar los planes de estudio de la facultad.</p>
-          <p class="text-xs text-red-700 mt-1">{{ errorEstructura() }}</p>
+        <div class="bg-white rounded-2xl border border-danger-200 p-12 text-center shadow-warm-sm" role="alert">
+          <p class="text-sm font-semibold text-danger-700">No fue posible cargar los planes de estudio de la facultad.</p>
+          <p class="text-xs text-danger-700 mt-1">{{ errorEstructura() }}</p>
+        </div>
+      } @else if (cargandoEstructura()) {
+        <div class="bg-white rounded-2xl border border-warm-200 p-12 text-center shadow-warm-sm" role="status">
+          <p class="text-sm text-warm-500">Cargando planes de estudio…</p>
         </div>
       } @else if (pagedPlanes().length === 0) {
         <div class="bg-white rounded-2xl border border-warm-200 p-12 text-center shadow-warm-sm">
@@ -192,6 +197,7 @@ export class DeanProgramasComponent implements OnInit {
 
   planes = signal<PlanEstudioItem[]>([]);
   errorEstructura = signal<string | null>(null);
+  cargandoEstructura = signal(true);
   /** HU112: filas de programas y créditos; alimentan la tabla unificada y los créditos de las tarjetas. */
   creditos = signal<ProgramaCreditosItem[]>([]);
   errorCreditos = signal<string | null>(null);
@@ -248,8 +254,10 @@ export class DeanProgramasComponent implements OnInit {
       next: (res) => {
         const planes = planesDeLaEstructura(res.datos || []);
         this.planes.set(planes);
+        this.cargandoEstructura.set(false);
       },
       error: (error: unknown) => {
+        this.cargandoEstructura.set(false);
         this.planes.set([]);
         this.errorEstructura.set(getApiErrorMessage(error));
       },

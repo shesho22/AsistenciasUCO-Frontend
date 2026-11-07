@@ -37,10 +37,10 @@ export interface FilaCatalogo {
         <table class="w-full text-sm">
           <thead class="bg-warm-50 text-xs uppercase text-warm-600">
             <tr>
-              <th class="text-left px-4 py-3">Código</th>
-              <th class="text-left px-4 py-3">Nombre</th>
+              <th scope="col" class="text-left px-4 py-3">Código</th>
+              <th scope="col" class="text-left px-4 py-3">Nombre</th>
               @if (conEstado()) {
-                <th class="text-left px-4 py-3">Estado</th>
+                <th scope="col" class="text-left px-4 py-3">Estado</th>
               }
             </tr>
           </thead>
@@ -53,7 +53,7 @@ export interface FilaCatalogo {
                 <td class="px-4 py-3">
                   <span
                     class="px-2 py-0.5 rounded-full text-xs font-bold"
-                    [class]="fila.activo ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'"
+                    [class]="fila.activo ? 'bg-success-100 text-success-800' : 'bg-danger-100 text-danger-800'"
                   >
                     {{ fila.activo ? 'Activo' : 'Inactivo' }}
                   </span>

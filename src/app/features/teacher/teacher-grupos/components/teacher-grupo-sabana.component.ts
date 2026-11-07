@@ -1,13 +1,21 @@
-import { Component, ChangeDetectionStrategy, input, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, DestroyRef, input, inject, computed, effect, signal, untracked } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
+import { EstudianteGrupoItem, idEstudianteDe } from '../../../../core/models/estudiante-grupo-item.model';
 import { ClassSession } from '../../../../core/models/attendance.model';
+import { estaCancelada } from '../../../../core/models/sesion-estado.model';
 import { SessionTimeZoneService } from '../../../../core/services/session-timezone.service';
+import { TeacherAttendanceSummaryService } from '../../../../core/services/teacher-attendance-summary.service';
+import { ResumenAsistenciaEstudiante } from '../../../../core/models/indicadores-asistencia.model';
+import { AttendanceStatusBadgeComponent } from '../../../../shared/components/attendance-status-badge/attendance-status-badge.component';
+import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
+import { getApiErrorMessage } from '../../../../core/api/errors/api-error.util';
 
 @Component({
   selector: 'app-teacher-grupo-sabana',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule],
+  imports: [CommonModule, AttendanceStatusBadgeComponent, PaginationComponent],
   template: `
     <div class="bg-white rounded-b-2xl border-x border-b border-warm-200 shadow-warm-sm p-6 space-y-6">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-warm-100">
@@ -17,7 +25,7 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
               Sábana Académica Institucional
             </span>
             <span class="text-xs text-warm-400">•</span>
-            <span class="text-xs font-semibold text-warm-600">Regla Oficial UCO 20% Inasistencias</span>
+            <span class="text-xs font-semibold text-warm-600">Inasistencia calculada por horas</span>
           </div>
           <h3 class="font-serif font-bold text-xl text-warm-900">Matriz General de Asistencia Semestral</h3>
           <p class="text-xs text-warm-500">
@@ -27,21 +35,17 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
 
         <!-- Leyenda Aurora & Semáforo UCO -->
         <div class="flex flex-wrap items-center gap-3 text-xs bg-warm-50 p-2.5 rounded-xl border border-warm-200">
-          <span class="flex items-center gap-1.5 font-semibold text-emerald-800">
-            <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span>
+          <span class="flex items-center gap-1.5 font-semibold text-success-800">
+            <span class="w-3 h-3 rounded-full bg-success-500 inline-block"></span>
             Presente (AN)
           </span>
-          <span class="flex items-center gap-1.5 font-semibold text-amber-800">
-            <span class="w-3 h-3 rounded-full bg-amber-400 inline-block"></span>
+          <span class="flex items-center gap-1.5 font-semibold text-warning-800">
+            <span class="w-3 h-3 rounded-full bg-warning-400 inline-block"></span>
             Excusa (EX)
           </span>
-          <span class="flex items-center gap-1.5 font-semibold text-red-800">
-            <span class="w-3 h-3 rounded-full bg-red-500 inline-block"></span>
+          <span class="flex items-center gap-1.5 font-semibold text-danger-800">
+            <span class="w-3 h-3 rounded-full bg-danger-500 inline-block"></span>
             Falta Injustificada (SJC)
-          </span>
-          <span class="text-warm-300">|</span>
-          <span class="text-[11px] font-bold text-red-700 bg-red-100 px-2 py-0.5 rounded-md">
-            ≥20% = Pérdida de Asignatura
           </span>
         </div>
       </div>
@@ -61,62 +65,80 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
           <p class="text-sm font-medium">No se han programado sesiones lectivas para este grupo todavía.</p>
         </div>
       } @else {
+        @if (errorResumen()) {
+          <p class="rounded-xl bg-danger-100 text-danger-900 px-4 py-2 text-sm font-medium" role="alert" data-testid="sabana-resumen-error">
+            {{ errorResumen() }}
+          </p>
+        }
         <!-- Tabla Matriz con Scroll Horizontal Fluido -->
         <div class="overflow-x-auto border border-warm-200 rounded-2xl shadow-xs">
           <table class="w-full text-left border-collapse text-xs">
             <thead>
-              <tr class="bg-warm-100/80 border-b border-warm-200 text-warm-800 uppercase tracking-wider text-[11px]">
-                <th class="p-3.5 sticky left-0 z-20 bg-warm-100/95 font-bold min-w-[200px] border-r border-warm-200 shadow-xs">
+              <tr class="bg-warm-100/80 border-b border-warm-200 text-warm-800 uppercase tracking-wider text-xs">
+                <th scope="col" class="p-3.5 sticky left-0 z-20 bg-warm-100/95 font-bold min-w-[200px] border-r border-warm-200 shadow-xs">
                   Estudiante (Documento)
                 </th>
                 @for (ses of sessions(); track ses.id) {
-                  <th class="p-2.5 text-center min-w-[70px] border-r border-warm-200" [title]="ses.title + ' - ' + displayDate(ses)">
+                  <th
+                    scope="col"
+                    class="p-2.5 text-center min-w-[70px] border-r border-warm-200"
+                    [class.opacity-60]="esCancelada(ses)"
+                    [attr.data-testid]="'sabana-col-' + ses.id"
+                    [title]="ses.title + ' - ' + displayDate(ses)"
+                  >
                     <div class="font-mono font-bold text-primary-900">#{{ ses.sessionNumber }}</div>
                     @if (ses.estadoTemporal === 'INDETERMINADA') {
-                      <div class="text-[10px] text-amber-700 font-semibold truncate">Sin fecha</div>
+                      <div class="text-xs text-warning-700 font-semibold truncate">Sin fecha</div>
                     } @else {
-                      <div class="text-[10px] text-warm-500 font-normal truncate">{{ displayDate(ses) | slice:5 }}</div>
+                      <div class="text-xs text-warm-500 font-normal truncate">{{ displayDate(ses) | slice:5 }}</div>
+                    }
+                    @if (esCancelada(ses)) {
+                      <div class="text-xs font-semibold text-warning-800">Cancelada</div>
                     }
                     <span
-                      class="inline-block w-1.5 h-1.5 rounded-full mt-0.5 bg-emerald-500"
+                      class="inline-block w-1.5 h-1.5 rounded-full mt-0.5 bg-success-500"
                       [title]="ses.estadoTemporal === 'INDETERMINADA' ? 'Horario no confirmado' : displayDate(ses)"
                     ></span>
                   </th>
                 }
-                <th class="p-3 text-center bg-warm-200/60 font-bold min-w-[80px] border-r border-warm-200">
-                  Inasistencias (SJC)
+                <th scope="col" class="p-3 text-center bg-warm-200/60 font-bold min-w-[110px] border-r border-warm-200">
+                  Horas de falta
                 </th>
-                <th class="p-3 text-center bg-warm-200/60 font-bold min-w-[90px] border-r border-warm-200">
+                <th scope="col" class="p-3 text-center bg-warm-200/60 font-bold min-w-[90px] border-r border-warm-200">
                   % Inasistencia
                 </th>
-                <th class="p-3 text-center bg-warm-200/60 font-bold min-w-[110px]">
+                <th scope="col" class="p-3 text-center bg-warm-200/60 font-bold min-w-[110px]">
                   Estado Académico
                 </th>
               </tr>
             </thead>
             <tbody class="divide-y divide-warm-100 bg-white">
-              @for (est of estudiantes(); track est.studentId || est.id) {
-                <tr class="hover:bg-warm-50/60 transition-colors">
+              @for (est of estudiantesPagina(); track idDe(est)) {
+                <tr class="hover:bg-warm-50/60 transition-colors" [attr.data-testid]="'sabana-resumen-' + idDe(est)">
                   <!-- Nombre Estudiante Sticky -->
                   <td class="p-3.5 sticky left-0 z-10 bg-white group-hover:bg-warm-50/60 border-r border-warm-200 font-medium text-warm-900 shadow-xs">
-                    <div class="font-bold text-xs">{{ est.studentName || est.nombres + ' ' + est.apellidos }}</div>
-                    <div class="font-mono text-[11px] text-warm-500">ID: {{ est.studentCode || est.numeroIdentificacion || 'N/A' }}</div>
+                    <div class="font-bold text-xs">{{ est.studentName || est.nombreCompleto || (est.nombres + ' ' + est.apellidos) }}</div>
+                    <div class="font-mono text-xs text-warm-500">ID: {{ est.studentCode || est.documento || est.numeroIdentificacion || 'N/A' }}</div>
                   </td>
 
                   <!-- Columnas de Cada Sesión -->
                   @for (ses of sessions(); track ses.id) {
-                    <td class="p-2 text-center border-r border-warm-100">
-                      @let estado = getAsistenciaEstudianteEnSesion(est.studentId || est.id, ses);
+                    <td
+                      class="p-2 text-center border-r border-warm-100"
+                      [class.opacity-60]="esCancelada(ses)"
+                      [attr.data-testid]="'sabana-celda-' + idDe(est) + '-' + ses.id"
+                    >
+                      @let estado = esCancelada(ses) ? '—' : getAsistenciaEstudianteEnSesion(idDe(est), ses);
                       @if (estado === 'AN') {
-                        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]" title="Asistencia Normal (Presente)">
+                        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-success-100 text-success-800 font-bold text-xs" title="Asistencia Normal (Presente)">
                           AN
                         </span>
                       } @else if (estado === 'EX') {
-                        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-100 text-amber-900 font-bold text-[10px]" title="Excusa Justificada">
+                        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-warning-100 text-warning-900 font-bold text-xs" title="Excusa Justificada">
                           EX
                         </span>
                       } @else if (estado === 'SJC') {
-                        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-100 text-red-800 font-bold text-[10px]" title="Falta Injustificada">
+                        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-danger-100 text-danger-800 font-bold text-xs" title="Falta Injustificada">
                           SJC
                         </span>
                       } @else {
@@ -127,34 +149,19 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
                     </td>
                   }
 
-                  <!-- Inasistencias Acumuladas -->
+                  <!-- Resumen por horas: lo calcula el backend; aquí solo se pinta -->
+                  @let r = resumenDe(idDe(est));
                   <td class="p-3 text-center font-mono font-bold text-xs text-warm-800 bg-warm-50/40 border-r border-warm-100">
-                    {{ getFaltasSjcEstudiante(est.studentId || est.id) }} / {{ sessions().length }}
+                    {{ r ? r.horasFalta + ' / ' + r.horasDictadas + ' h' : '—' }}
                   </td>
-
-                  <!-- Porcentaje UCO -->
-                  <td class="p-3 text-center font-mono font-bold text-xs border-r border-warm-100 bg-warm-50/40"
-                    [class]="getPorcentajeFaltasEstudiante(est.studentId || est.id) >= 20 ? 'text-red-700' : (getPorcentajeFaltasEstudiante(est.studentId || est.id) >= 10 ? 'text-amber-700' : 'text-emerald-700')">
-                    {{ getPorcentajeFaltasEstudiante(est.studentId || est.id) }}%
+                  <td class="p-3 text-center font-mono font-bold text-xs border-r border-warm-100 bg-warm-50/40">
+                    {{ r ? r.porcentajeInasistencia + '%' : '—' }}
                   </td>
-
-                  <!-- Estado Académico UCO -->
                   <td class="p-3 text-center bg-warm-50/40">
-                    @if (getPorcentajeFaltasEstudiante(est.studentId || est.id) >= 20) {
-                      <span class="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold rounded-full bg-red-100 text-red-800 border border-red-200">
-                        <svg class="w-3 h-3 text-red-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
-                        Reprobado (20%)
-                      </span>
-                    } @else if (getPorcentajeFaltasEstudiante(est.studentId || est.id) >= 10) {
-                      <span class="px-2.5 py-1 text-[10px] font-bold rounded-full bg-amber-100 text-amber-800 border border-amber-200">
-                        Alerta de Riesgo
-                      </span>
+                    @if (r) {
+                      <app-attendance-status-badge [codigoPermanencia]="r.codigoPermanencia" />
                     } @else {
-                      <span class="px-2.5 py-1 text-[10px] font-bold rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
-                        Regular Normal
-                      </span>
+                      <span class="text-warm-300 font-mono text-xs">—</span>
                     }
                   </td>
                 </tr>
@@ -162,15 +169,77 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
             </tbody>
           </table>
         </div>
+        <app-pagination
+          [totalItems]="totalFilas()"
+          [pageSize]="tamano"
+          [currentPage]="pagina()"
+          [showPageSizeSelector]="false"
+          (pageChange)="cambiarPagina($event)"
+        />
       }
     </div>
   `,
 })
 export class TeacherGrupoSabanaComponent {
   readonly timeZone = inject(SessionTimeZoneService);
-  estudiantes = input<any[]>([]);
+  private readonly resumenService = inject(TeacherAttendanceSummaryService);
+  private readonly destroyRef = inject(DestroyRef);
+
+  grupoId = input<string>('');
+  estudiantes = input<EstudianteGrupoItem[]>([]);
   sessions = input<ClassSession[]>([]);
   cargando = input<boolean>(false);
+  protected esCancelada = estaCancelada;
+
+  protected readonly tamano = 50;
+  protected readonly pagina = signal(1);
+  protected readonly totalResumen = signal(0);
+  protected readonly errorResumen = signal<string | null>(null);
+  private readonly resumenes = signal<ReadonlyMap<string, ResumenAsistenciaEstudiante>>(new Map());
+  protected readonly totalFilas = computed(() => Math.max(this.totalResumen(), this.estudiantes().length));
+  /** F-DOC-007: la matriz pinta solo la pagina vigente (la misma que se pide al backend para el resumen). */
+  protected readonly estudiantesPagina = computed(() => {
+    const inicio = (this.pagina() - 1) * this.tamano;
+    return this.estudiantes().slice(inicio, inicio + this.tamano);
+  });
+  protected idDe(est: EstudianteGrupoItem): string {
+    return idEstudianteDe(est);
+  }
+  protected readonly hayResumen = computed(() => this.resumenes().size > 0);
+
+  constructor() {
+    effect(() => {
+      const grupo = this.grupoId();
+      untracked(() => {
+        this.pagina.set(1);
+        if (grupo) this.cargarResumen(grupo);
+      });
+    });
+  }
+
+  /** El resumen (horas, % de inasistencia y semaforo) lo calcula el backend; el cliente no recalcula nada. */
+  protected resumenDe(estudianteId: string): ResumenAsistenciaEstudiante | undefined {
+    return this.resumenes().get(estudianteId);
+  }
+
+  protected cambiarPagina(pagina: number): void {
+    this.pagina.set(pagina);
+    this.cargarResumen(this.grupoId());
+  }
+
+  private cargarResumen(grupo: string): void {
+    this.errorResumen.set(null);
+    this.resumenService
+      .consultarResumen(grupo, this.pagina(), this.tamano)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (respuesta) => {
+          this.resumenes.set(new Map(respuesta.elementos.map((r) => [r.estudianteId, r])));
+          this.totalResumen.set(respuesta.totalElementos);
+        },
+        error: (err: unknown) => this.errorResumen.set(getApiErrorMessage(err)),
+      });
+  }
 
   displayDate(session: ClassSession): string {
     return session.estadoTemporal === 'INDETERMINADA'
@@ -184,25 +253,5 @@ export class TeacherGrupoSabanaComponent {
     }
     const rec = sesion.records.find((r) => r.studentId === estudianteId);
     return rec?.status ?? '—';
-  }
-
-  getFaltasSjcEstudiante(estudianteId: string): number {
-    const list = this.sessions();
-    if (!list || list.length === 0) return 0;
-    let faltas = 0;
-    for (const ses of list) {
-      const estado = this.getAsistenciaEstudianteEnSesion(estudianteId, ses);
-      if (estado === 'SJC') {
-        faltas++;
-      }
-    }
-    return faltas;
-  }
-
-  getPorcentajeFaltasEstudiante(estudianteId: string): number {
-    const total = this.sessions().length;
-    if (total === 0) return 0;
-    const faltas = this.getFaltasSjcEstudiante(estudianteId);
-    return Math.round((faltas / total) * 100);
   }
 }

@@ -2,13 +2,15 @@ import { Component, ChangeDetectionStrategy, input, output, inject } from '@angu
 import { CommonModule } from '@angular/common';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { ClassSession } from '../../../../core/models/attendance.model';
+import { SesionEstadoBadgeComponent } from '../../../../shared/components/sesion-estado-badge/sesion-estado-badge.component';
+import { estaCancelada } from '../../../../core/models/sesion-estado.model';
 import { SessionTimeZoneService } from '../../../../core/services/session-timezone.service';
 
 @Component({
   selector: 'app-teacher-grupo-sesiones',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, ButtonComponent],
+  imports: [CommonModule, ButtonComponent, SesionEstadoBadgeComponent],
   template: `
     <div class="bg-white rounded-b-2xl border-x border-b border-warm-200 shadow-warm-sm overflow-hidden space-y-4 p-5">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-warm-100">
@@ -37,14 +39,18 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
       } @else {
         <div class="divide-y divide-warm-100">
           @for (sesion of sessions(); track sesion.id) {
-            <div class="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-warm-50/50 transition-colors">
+            <div
+              class="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-warm-50/50 transition-colors"
+              [class.opacity-80]="esCancelada(sesion)"
+              [attr.data-testid]="'sesion-' + sesion.id"
+            >
               <div class="space-y-1.5 flex-1 min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
                   <span class="text-xs font-mono font-bold px-2.5 py-0.5 rounded-md bg-warm-100 text-warm-800">
                     #{{ sesion.sessionNumber }}
                   </span>
                   @if (sesion.estadoTemporal === 'INDETERMINADA') {
-                    <span class="text-xs font-semibold text-amber-800 bg-amber-50 px-2 py-0.5 rounded">Horario no confirmado</span>
+                    <span class="text-xs font-semibold text-warning-800 bg-warning-50 px-2 py-0.5 rounded">Horario no confirmado</span>
                   } @else {
                     <span class="text-xs font-medium text-warm-600">
                       {{ timeZone.displaySessionDate(sesion) }}{{ timeZone.displaySessionEndDate(sesion) !== timeZone.displaySessionDate(sesion) ? ' – ' + timeZone.displaySessionEndDate(sesion) : '' }}
@@ -54,17 +60,19 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
                   }
                 </div>
 
-                <h4 class="font-bold text-sm text-warm-900 leading-snug">
+                <h4 class="font-bold text-sm text-warm-900 leading-snug" [class.line-through]="esCancelada(sesion)">
                   {{ sesion.title }}
                 </h4>
+                <app-sesion-estado-badge [estado]="sesion.estado" [cancelacion]="sesion.cancelacion" />
               </div>
 
               <!-- Botones de Acción sobre la Sesión -->
-              <div class="flex items-center gap-2 shrink-0">
+              <div data-testid="sesion-acciones" class="flex flex-wrap items-center gap-2 sm:shrink-0">
                 <button
                   type="button"
                   (click)="tomarAsistencia.emit(sesion)"
-                  class="text-xs font-bold text-white bg-primary-800 hover:bg-primary-900 px-3 py-1.5 rounded-lg transition-colors inline-flex items-center gap-1.5 shadow-xs"
+                  [disabled]="esCancelada(sesion)"
+                  class="text-xs font-bold text-white bg-primary-800 hover:bg-primary-900 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] px-3 py-1.5 rounded-lg transition-colors inline-flex items-center gap-1.5 shadow-xs"
                   title="Tomar o registrar asistencia de esta sesión"
                 >
                   <svg class="w-3.5 h-3.5 text-primary-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -77,7 +85,8 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
                   <button
                     type="button"
                     (click)="proyectar.emit(sesion)"
-                    class="text-xs font-bold text-primary-800 hover:text-primary-950 bg-accent-100 hover:bg-accent-200 border border-accent-300 px-3 py-1.5 rounded-lg transition-colors inline-flex items-center gap-1.5"
+                    [disabled]="esCancelada(sesion)"
+                    class="text-xs font-bold text-primary-800 hover:text-primary-950 bg-accent-100 hover:bg-accent-200 border border-accent-300 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] px-3 py-1.5 rounded-lg transition-colors inline-flex items-center gap-1.5"
                     title="Proyectar QR/PIN específico de esta sesión"
                   >
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -90,7 +99,7 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
                 <button
                   type="button"
                   (click)="verDetalle.emit(sesion)"
-                  class="text-xs font-semibold text-warm-700 hover:text-warm-900 bg-warm-100 hover:bg-warm-200 border border-warm-200 px-3 py-1.5 rounded-lg transition-colors inline-flex items-center gap-1"
+                  class="text-xs font-semibold text-warm-700 hover:text-warm-900 bg-warm-100 hover:bg-warm-200 border border-warm-200 min-h-[44px] px-3 py-1.5 rounded-lg transition-colors inline-flex items-center gap-1"
                   title="Ver detalles e historial de asistencia de esta sesión"
                 >
                   <svg class="w-3.5 h-3.5 text-warm-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -103,7 +112,8 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
                 <button
                   type="button"
                   (click)="ajustarHorario.emit(sesion)"
-                  class="text-xs font-semibold text-primary-800 hover:text-primary-950 bg-primary-50 hover:bg-primary-100 border border-primary-200 px-3 py-1.5 rounded-lg transition-colors inline-flex items-center gap-1"
+                  [disabled]="esCancelada(sesion)"
+                  class="text-xs font-semibold text-primary-800 hover:text-primary-950 bg-primary-50 hover:bg-primary-100 border border-primary-200 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] px-3 py-1.5 rounded-lg transition-colors inline-flex items-center gap-1"
                   title="Modificar horario de la sesión"
                 >
                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -112,11 +122,11 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
                   Ajustar Horario
                 </button>
 
-                @if (cancelEnabled()) {
+                @if (cancelEnabled() && !esCancelada(sesion)) {
                   <button
                     type="button"
                     (click)="cancelar.emit(sesion)"
-                    class="text-xs font-semibold text-red-700 hover:text-red-900 bg-red-50 hover:bg-red-100 border border-red-200 px-3 py-1.5 rounded-lg transition-colors inline-flex items-center gap-1"
+                    class="text-xs font-semibold text-danger-700 hover:text-danger-900 bg-danger-50 hover:bg-danger-100 border border-danger-200 min-h-[44px] px-3 py-1.5 rounded-lg transition-colors inline-flex items-center gap-1"
                     title="Cancelar una sesión de clase con motivo lectivo"
                   >
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -137,9 +147,11 @@ export class TeacherGrupoSesionesComponent {
   readonly timeZone = inject(SessionTimeZoneService);
   sessions = input<ClassSession[]>([]);
   loading = input<boolean>(false);
-  // OUT_OF_GOLDEN_PATH: QR/PIN y Cancelar no tienen contrato backend; ocultas salvo feature explícita.
+  // QR/PIN sigue fuera de contrato hasta B.2; Cancelar (HU047) se habilita con la bandera sessionCancelEnabled.
   qrEnabled = input<boolean>(false);
   cancelEnabled = input<boolean>(false);
+
+  protected esCancelada = estaCancelada;
 
   programarExtraordinaria = output<void>();
   tomarAsistencia = output<ClassSession>();

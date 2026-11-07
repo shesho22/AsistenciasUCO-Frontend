@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { AuthService } from '../../../core/services/auth.service';
 import { User } from '../../../core/models/user.model';
+import { readDesignToken } from '../../../shared/utils/design-tokens';
 import {
   SECURITY_UI_LOADER,
   SecurityAdministrationComponent,
@@ -91,6 +92,13 @@ describe('SecurityAdministrationComponent', () => {
     expect(component.message()).toBe('');
   });
 
+  it('F-ADM-S14: el contenedor del modulo externo permite desplazar las pestanas en 375 px', () => {
+    fixture.detectChanges();
+    const punto = (fixture.nativeElement as HTMLElement).querySelector('div.mt-4') as HTMLElement;
+    expect(punto.className).toContain('overflow-x-auto');
+    expect((fixture.nativeElement as HTMLElement).querySelector('h1')?.className).toContain('font-serif');
+  });
+
   it('rechaza el modo legacy sin consultar el BFF ni asignar permisos', async () => {
     authService.isBaselineMode.and.returnValue(false);
 
@@ -140,7 +148,7 @@ describe('SecurityAdministrationComponent', () => {
       applicationName: 'AsistenciasUCO',
       apiBaseUrl: 'http://pdp.test',
       allowApplicationLifecycleManagement: false,
-      theme: { accent: '#087443', fontFamily: 'Inter, sans-serif', radius: '12px' },
+      theme: { accent: readDesignToken('--color-primary-700'), fontFamily: readDesignToken('--font-sans'), radius: '12px' },
     });
   });
 

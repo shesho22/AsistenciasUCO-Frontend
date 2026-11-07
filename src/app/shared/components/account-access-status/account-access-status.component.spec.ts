@@ -111,4 +111,17 @@ describe('AccountAccessStatusComponent', () => {
     expect(service.consult.calls.allArgs()).toEqual([['a@uco.edu.co'], ['b@uco.edu.co']]);
     expect(fixture.nativeElement.textContent).toContain('PENDIENTE DE SINCRONIZACIÓN');
   });
+
+  it('F-ADM-S07: el detalle tecnico va plegado y el boton y la ayuda no usan jerga interna', () => {
+    service.consult.and.returnValue(of({ exitoso: true, datos: acceso('PENDIENTE_SINCRONIZACION', 'la credencial de servicio del PDP no esta configurada') }));
+    const fixture = crear('persona@uco.edu.co');
+    const el = fixture.nativeElement as HTMLElement;
+    const detalle = el.querySelector('details') as HTMLDetailsElement;
+    expect(detalle).toBeTruthy();
+    expect(detalle.open).toBeFalse();
+    expect(detalle.textContent).toContain('credencial de servicio del PDP');
+    expect(el.textContent).not.toContain('Reconciliar');
+    expect(el.textContent).not.toContain('idempotente');
+    expect(el.querySelector('button')?.textContent).toContain('Reintentar activación');
+  });
 });

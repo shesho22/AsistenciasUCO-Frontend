@@ -2,10 +2,9 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, delay, of, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import {
-  EstudianteDetalleApiDto,
-  EstudiantePaginaApiDto,
-} from '../api/models/estudiante-api-dto.model';
+import { EstudianteDetalleApiDto } from '../api/models/estudiante-api-dto.model';
+import { EstudianteBusquedaApiDto } from '../api/models/estudiante-busqueda-api-dto.model';
+import { ApiResponse } from '../models/api-response.model';
 import { ApiListResponse } from '../api/models/api-list-response.model';
 import { EstudianteGrupoApiDto } from '../api/models/estudiante-grupo-api-dto.model';
 import { MOCK_ESTUDIANTES_DIRECTORIO } from '../mocks/role-management.mock';
@@ -21,8 +20,9 @@ export interface EnrollStudentFormValue {
   segundoNombre?: string;
   primerApellido: string;
   segundoApellido?: string;
-  correoElectronico: string;
-  password: string;
+  /** Solo en el alta de un estudiante nuevo; al matricular a uno existente se omiten. */
+  correoElectronico?: string;
+  password?: string;
 }
 
 export type EnrollStudentDTO = EnrollStudentFormValue;
@@ -43,13 +43,13 @@ export class StudentService {
       }).pipe(delay(400));
     }
 
+    const esAltaNueva = Boolean(dto.correoElectronico?.trim() || dto.password?.trim());
     const password = dto.password?.trim() ?? '';
-    const passwordError = getPasswordValidationError(
-      password,
-      String(dto.numeroIdentificacion)
-    );
-    if (passwordError) {
-      return throwError(() => new Error(passwordError));
+    if (esAltaNueva) {
+      const passwordError = getPasswordValidationError(password, String(dto.numeroIdentificacion));
+      if (passwordError) {
+        return throwError(() => new Error(passwordError));
+      }
     }
 
     const request: RegistrarEstudianteEnGrupoRequest = {
@@ -57,9 +57,12 @@ export class StudentService {
       numeroIdentificacion: dto.numeroIdentificacion,
       primerNombre: dto.primerNombre.trim(),
       primerApellido: dto.primerApellido.trim(),
-      correo: dto.correoElectronico.trim(),
-      password,
     };
+
+    if (esAltaNueva) {
+      request.correo = dto.correoElectronico?.trim() ?? '';
+      request.password = password;
+    }
 
     if (dto.segundoNombre?.trim()) {
       request.segundoNombre = dto.segundoNombre.trim();
@@ -110,28 +113,25 @@ export class StudentService {
     );
   }
 
+  /**
+   * A.2-15 (DEC-027): el docente titular busca por documento exacto, dentro de su grupo, al estudiante que va a
+   * matricular. Devuelve datos mínimos (correo enmascarado) o `datos: null` si no existe; nunca lista el directorio.
+   */
   searchStudentByIdentification(
+    grupoId: string,
     tipoIdentificacionId: string,
     numeroIdentificacion: number
-  ): Observable<EstudiantePaginaApiDto> {
+  ): Observable<ApiResponse<EstudianteBusquedaApiDto | null>> {
     if (environment.useFrontendMocks) {
-      return of({
-        items: [],
-        totalItems: 0,
-        totalPages: 0,
-        page: 0,
-        size: 0,
-      }).pipe(delay(200));
+      return of({ exitoso: true, datos: null }).pipe(delay(200));
     }
 
-    return this.http.get<EstudiantePaginaApiDto>(
-      `${environment.apiUrl}/estudiantes`,
+    return this.http.get<ApiResponse<EstudianteBusquedaApiDto | null>>(
+      `${environment.apiUrl}/grupos/${encodeURIComponent(grupoId)}/estudiantes/busqueda`,
       {
         params: {
           tipoIdentificacionId,
-          numeroIdentificacion: numeroIdentificacion.toString(),
-          page: '0',
-          size: '1',
+          documento: numeroIdentificacion.toString(),
         },
       }
     );

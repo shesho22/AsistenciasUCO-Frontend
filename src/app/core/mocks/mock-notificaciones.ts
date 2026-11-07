@@ -38,38 +38,6 @@ const SEMILLAS: PlantillaSemilla[] = [
     ]
   },
   {
-    tipo: 'SOLICITUD_INGRESO_REGISTRADA',
-    asunto: 'Nueva solicitud de ingreso al grupo {grupo}',
-    cuerpo: '{estudiante} solicitó ingresar al grupo {grupo}.',
-    obligatorios: [
-      'grupo',
-      'estudiante'
-    ],
-    opcionales: []
-  },
-  {
-    tipo: 'SOLICITUD_INGRESO_RESUELTA',
-    asunto: 'Tu solicitud de ingreso al grupo {grupo} fue {resultado}',
-    cuerpo: 'Tu solicitud de ingreso al grupo {grupo} fue {resultado}.',
-    obligatorios: [
-      'grupo',
-      'resultado'
-    ],
-    opcionales: [
-      'observacion'
-    ]
-  },
-  {
-    tipo: 'SOLICITUD_INGRESO_RETIRADA',
-    asunto: 'Solicitud de ingreso retirada del grupo {grupo}',
-    cuerpo: '{estudiante} retiró su solicitud de ingreso al grupo {grupo}.',
-    obligatorios: [
-      'grupo',
-      'estudiante'
-    ],
-    opcionales: []
-  },
-  {
     tipo: 'RECLAMO_ASISTENCIA_RADICADO',
     asunto: 'Nueva solicitud de revisión de asistencia en {grupo}',
     cuerpo: 'El estudiante {estudiante} radicó una solicitud de revisión de asistencia para la sesión del {fecha} en el grupo {grupo}. Motivo: {motivo}.',

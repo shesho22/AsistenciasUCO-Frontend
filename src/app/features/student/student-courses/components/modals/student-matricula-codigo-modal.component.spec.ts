@@ -66,4 +66,43 @@ describe('StudentMatriculaCodigoModalComponent (HU176B)', () => {
 
     expect(cerrado).toBeTrue();
   });
+
+  describe('accesibilidad (F-EST-010)', () => {
+    const el = () => fixture.nativeElement as HTMLElement;
+
+    it('es un dialogo modal con titulo asociado', () => {
+      const dialogo = el().querySelector('[role="dialog"]') as HTMLElement;
+      expect(dialogo).not.toBeNull();
+      expect(dialogo.getAttribute('aria-modal')).toBe('true');
+      expect(dialogo.getAttribute('aria-labelledby')).toBeTruthy();
+    });
+
+    it('el campo PIN tiene etiqueta visible, inputmode numerico y patron', () => {
+      const input = el().querySelector('input') as HTMLInputElement;
+      expect(input.getAttribute('inputmode')).toBe('numeric');
+      expect(input.getAttribute('pattern')).toBe('[0-9]*');
+      const label = el().querySelector(`label[for="${input.id}"]`);
+      expect(input.id).toBeTruthy();
+      expect(label?.textContent).toContain('PIN');
+    });
+
+    it('descarta letras y simbolos al escribir el PIN', () => {
+      const input = el().querySelector('input') as HTMLInputElement;
+      input.value = '12ab-34';
+      input.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+      expect(component.codigo()).toBe('1234');
+    });
+
+    it('Escape cierra el modal', () => {
+      let cerrado = false;
+      component.closed.subscribe(() => (cerrado = true));
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+      expect(cerrado).toBeTrue();
+    });
+
+    it('el boton de cierre tiene nombre accesible', () => {
+      expect(el().querySelector('button[aria-label="Cerrar modal"]')).not.toBeNull();
+    });
+  });
 });

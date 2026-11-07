@@ -32,7 +32,7 @@ import { AvatarComponent } from '../../../shared/components/avatar/avatar.compon
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
         <div>
           <div class="flex items-center gap-2 mb-1">
-            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-sky-50 text-sky-800 border border-sky-200">
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-info-50 text-info-800 border border-info-200">
               Coordinación de Programa
             </span>
             <span class="text-xs text-warm-400">•</span>
@@ -69,12 +69,12 @@ import { AvatarComponent } from '../../../shared/components/avatar/avatar.compon
         </div>
         <div class="bg-white p-4 rounded-2xl border border-warm-200 shadow-warm-sm">
           <span class="text-xs text-warm-500 font-medium">Asignaturas en Malla Curricular</span>
-          <p class="text-2xl font-serif font-bold text-emerald-700 mt-1">{{ asignaturasCurriculares().length }}</p>
+          <p class="text-2xl font-serif font-bold text-success-700 mt-1">{{ asignaturasCurriculares().length }}</p>
           <span class="text-[11px] text-warm-500">En {{ planes().length }} planes de estudio</span>
         </div>
         <div class="bg-white p-4 rounded-2xl border border-warm-200 shadow-warm-sm">
           <span class="text-xs text-warm-500 font-medium">Ocupación Total de Cupos</span>
-          <p class="text-2xl font-serif font-bold text-sky-800 mt-1">
+          <p class="text-2xl font-serif font-bold text-info-800 mt-1">
             {{ totalInscritosGrupos() }} / {{ totalCapacidadGrupos() }}
           </p>
           <span class="text-[11px] text-warm-500">Matrícula gestionada por cada docente</span>
@@ -84,7 +84,7 @@ import { AvatarComponent } from '../../../shared/components/avatar/avatar.compon
       <!-- Barra de Búsqueda de Materias -->
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div class="sm:col-span-2 relative">
-          <input
+          <input aria-label="Buscar asignatura por código o nombre"
             type="text"
             [ngModel]="searchQuery()"
             (ngModelChange)="searchQuery.set($event)"
@@ -97,7 +97,7 @@ import { AvatarComponent } from '../../../shared/components/avatar/avatar.compon
         </div>
 
         <div>
-          <select
+          <select aria-label="Filtrar asignaturas por tipo"
             [ngModel]="filtroTipoAsignatura()"
             (ngModelChange)="filtroTipoAsignatura.set($event)"
             class="w-full px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20 shadow-warm-sm"

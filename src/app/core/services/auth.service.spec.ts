@@ -4,6 +4,7 @@ import { AuthService } from './auth.service';
 import { environment } from '../../../environments/environment';
 import { BrowserNavigator } from '../security/browser-navigator';
 import { BASELINE_HTTP_TIMEOUT_MS, loadPending, savePending } from '../security/baseline-oidc';
+import { guardarRetornoQr, QR_RETORNO_STORAGE_KEY } from '../utils/qr-return-url.util';
 
 function base64UrlEncode(json: object): string {
   // UTF-8 safe base64 (parseJwt reverses this exact encoding via atob + decodeURIComponent).
@@ -624,6 +625,31 @@ describe('AuthService', () => {
       expect(pending?.returnUrl).toBe('/app/docente/grupos');
       expect(pending?.state).toBe(target.searchParams.get('state') ?? undefined);
 
+    });
+
+    it('B2-F-22 NB-8: el login interactivo no envia al IdP la URL de retorno del QR ni su token', () => {
+      guardarRetornoQr('/app/asistencia/qr?t=TOKEN-SECRETO');
+      window.history.replaceState({}, '', '/login');
+
+      service.startBaselineLogin();
+
+      const enviado = navigatorSpy.assign.calls.mostRecent().args[0] as string;
+      expect(enviado).not.toContain('TOKEN-SECRETO');
+      expect(decodeURIComponent(enviado)).not.toContain('asistencia/qr');
+      sessionStorage.removeItem(QR_RETORNO_STORAGE_KEY);
+    });
+
+    it('B2-F-22 NB-8: tras el login vuelve a la URL del QR con ?t= y borra la clave', async () => {
+      guardarRetornoQr('/app/asistencia/qr?t=TOKEN-SECRETO');
+      const state = 'state-nb8';
+      savePending({ state, verifier: 'verifier-abc', returnUrl: '/', silent: false, createdAt: Date.now() });
+      window.history.replaceState({}, '', `/login?code=code-1&state=${state}`);
+      tokenEndpointResponse(basePayload());
+
+      expect(await service.initKeycloak()).toBeTrue();
+
+      expect(window.location.pathname + window.location.search).toBe('/app/asistencia/qr?t=TOKEN-SECRETO');
+      expect(sessionStorage.getItem(QR_RETORNO_STORAGE_KEY)).toBeNull();
     });
 
     it('HU176B: en una ruta publica (QR de matrícula, verificación de correo) no redirige al IdP y deja ver la página', async () => {
@@ -1336,63 +1362,9 @@ describe('AuthService', () => {
     });
   });
 
-  describe('updateUserProfile', () => {
-    it('sin usuario autenticado devuelve un ApiResponse fallido', (done) => {
-      service.updateUserProfile({ primerNombre: 'X' }).subscribe((res) => {
-        expect(res.exitoso).toBeFalse();
-        done();
-      });
-    });
-
-    it('en modo mock actualiza el usuario localmente', (done) => {
-      service.setMockMode(true);
-      service.loginAsMockUser('DOCENTE', false);
-
-      service.updateUserProfile({ primerNombre: 'Nuevo' }).subscribe((res) => {
-        expect(res.exitoso).toBeTrue();
-        expect(res.datos.primerNombre).toBe('Nuevo');
-        expect(service.currentUser()?.primerNombre).toBe('Nuevo');
-        done();
-      });
-    });
-
-    it('en modo real hace PUT al backend y sincroniza la respuesta', (done) => {
-      mockTokenResponse(basePayload());
-      service.loginWithCredentials('docente@uco.edu.co', 'pass').then(() => {
-        fetchSpy.and.resolveTo({
-          ok: true,
-          json: () =>
-            Promise.resolve({
-              idTransaccion: 'tx-1',
-              datos: { primerNombre: 'Actualizado' },
-            }),
-        } as Response);
-
-        service.updateUserProfile({ primerNombre: 'Nuevo' }).subscribe((res) => {
-          expect(res.exitoso).toBeTrue();
-          expect(res.datos.primerNombre).toBe('Actualizado');
-          const [url, init] = fetchSpy.calls.mostRecent().args as [string, RequestInit];
-          expect(url).toContain('/usuarios/perfil');
-          expect(init.method).toBe('PUT');
-          expect(init.credentials).toBe('omit');
-          expect((init.headers as Record<string, string>)['Authorization']).toMatch(/^Bearer /);
-          done();
-        });
-      });
-    });
-
-    it('en modo real propaga el error si el backend responde con fallo', (done) => {
-      mockTokenResponse(basePayload());
-      service.loginWithCredentials('docente@uco.edu.co', 'pass').then(() => {
-        fetchSpy.and.resolveTo({ ok: false } as Response);
-
-        service.updateUserProfile({ primerNombre: 'Nuevo' }).subscribe({
-          error: (err) => {
-            expect(err).toBeTruthy();
-            done();
-          },
-        });
-      });
+  describe('perfil de solo consulta (A2-F-05)', () => {
+    it('AuthService no expone updateUserProfile ni hace PUT a /usuarios/perfil', () => {
+      expect('updateUserProfile' in service).toBeFalse();
     });
   });
 
@@ -1580,34 +1552,6 @@ describe('AuthService', () => {
       const user = await service.loginWithCredentials('docente@uco.edu.co', 'pass');
 
       expect(user.name).toBe('Usuario Institucional');
-    });
-  });
-
-  describe('updateUserProfile: fallbacks de campos', () => {
-    it('sin overrides conserva los campos individuales actuales', (done) => {
-      service.setMockMode(true);
-      service.loginAsMockUser('DOCENTE', false);
-      const before = service.currentUser()!;
-
-      service.updateUserProfile({}).subscribe((res) => {
-        expect(res.datos.primerNombre).toBe(before.primerNombre || '');
-        expect(res.datos.primerApellido).toBe(before.primerApellido || '');
-        done();
-      });
-    });
-
-    it('con segundoNombre y segundoApellido provistos, los usa en el nombre completo', (done) => {
-      service.setMockMode(true);
-      service.loginAsMockUser('DOCENTE', false);
-
-      service
-        .updateUserProfile({ segundoNombre: 'Del Carmen', segundoApellido: 'Restrepo' })
-        .subscribe((res) => {
-          expect(res.datos.segundoNombre).toBe('Del Carmen');
-          expect(res.datos.segundoApellido).toBe('Restrepo');
-          expect(res.datos.name).toContain('Del Carmen');
-          done();
-        });
     });
   });
 

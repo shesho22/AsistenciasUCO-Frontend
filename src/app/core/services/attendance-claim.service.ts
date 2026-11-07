@@ -4,6 +4,7 @@ import { Observable, defer, map, of, switchMap, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiResponse } from '../models/api-response.model';
 import { ApiDataResponse } from '../api/models/api-data-response.model';
+import { ApiMessageResponse } from '../api/models/api-message-response.model';
 import { ClaimMapper, DetalleReclamoDocenteApi, ReclamoDocenteApi, ReclamoEstudianteApi } from '../mappers/claim.mapper';
 import { StudentPortalMapper } from '../mappers/student-portal.mapper';
 import { ApiListResponse } from '../api/models/api-list-response.model';
@@ -223,14 +224,21 @@ export class AttendanceClaimService {
    * devuelve las sesiones de todos los grupos del estudiante en esa asignatura: el consumidor filtra por `grupoId`.
    * El error HTTP se propaga sin toast global; la vista lo presenta localmente.
    */
-  getSesionesPorMateria(materiaId: string): Observable<ApiResponse<SesionMateriaDetalle[]>> {
+  getSesionesPorMateria(
+    materiaId: string,
+    paginacion?: { pagina?: number; tamano?: number }
+  ): Observable<ApiResponse<SesionMateriaDetalle[]>> {
     if (!isUuid(materiaId)) {
       return throwError(() => new IdentificadorInvalidoError(materiaId));
     }
+    // CULM-001 D.1: `pagina` (1) y `tamano` son opcionales; sin ellos el backend usa su maximo configurado.
+    let params = new HttpParams();
+    if (paginacion?.pagina !== undefined) params = params.set('pagina', paginacion.pagina);
+    if (paginacion?.tamano !== undefined) params = params.set('tamano', paginacion.tamano);
     return this.http
       .get<ApiListResponse<SesionMateriaEstudianteApiDto>>(
         `${environment.apiUrl}/estudiante/materias/${materiaId}/sesiones`,
-        { context: new HttpContext().set(BYPASS_GLOBAL_ERROR_TOAST, true) }
+        { params, context: new HttpContext().set(BYPASS_GLOBAL_ERROR_TOAST, true) }
       )
       .pipe(
         map((res) => {
@@ -273,12 +281,9 @@ export class AttendanceClaimService {
     );
   }
 
-  eliminarReclamo(
-    id: string,
-    materiaId: string,
-    sesionId: string
-  ): Observable<ApiResponse<boolean>> {
-    return this.http.delete<ApiResponse<boolean>>(`${environment.apiUrl}/estudiante/reclamos/${id}`);
+  /** A.2-7: el estudiante retira su solicitud de revisión pendiente (404 si no es suya, 409 si ya no está pendiente). */
+  eliminarReclamo(id: string): Observable<ApiMessageResponse> {
+    return this.http.delete<ApiMessageResponse>(`${environment.apiUrl}/estudiante/reclamos/${id}`);
   }
 
   resolverReclamo(

@@ -70,4 +70,12 @@ describe('session-attendance-window.util (SES-01)', () => {
     expect(ATTENDANCE_WINDOW_MESSAGES.NO_INICIADA).toContain('no ha iniciado');
     expect(ATTENDANCE_WINDOW_MESSAGES.INDETERMINADA).toContain('no está confirmado');
   });
+
+  it('B1-F-15 una sesión cancelada bloquea la toma aunque su ventana horaria esté abierta', () => {
+    const cancelada = { ...session, estado: 'CANCELADA' as const };
+    expect(getAttendanceWindowState(cancelada, at('2026-11-03T14:00:00Z'))).toBe('CANCELADA');
+    expect(getAttendanceWindowState({ ...session, estado: 'PROGRAMADA' }, at('2026-11-03T14:00:00Z'))).toBe('ABIERTA');
+    expect(msUntilAttendanceWindowChange(cancelada, at('2026-11-03T12:00:00Z'))).toBeNull();
+    expect(ATTENDANCE_WINDOW_MESSAGES.CANCELADA).toContain('cancelada');
+  });
 });

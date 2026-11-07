@@ -12,6 +12,7 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
+import { SesionEstadoBadgeComponent } from '../../../shared/components/sesion-estado-badge/sesion-estado-badge.component';
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
 import { resolveSessionInstant } from '../../../core/time/session-timezone.util';
 
@@ -26,7 +27,7 @@ type FiltroAsistio = 'TODOS' | 'ASISTIO' | 'NO_ASISTIO';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full' },
-  imports: [CommonModule, FormsModule, BadgeComponent, PaginationComponent],
+  imports: [CommonModule, FormsModule, BadgeComponent, PaginationComponent, SesionEstadoBadgeComponent],
   template: `
     <div class="space-y-6 animate-fade-in">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
@@ -81,12 +82,12 @@ type FiltroAsistio = 'TODOS' | 'ASISTIO' | 'NO_ASISTIO';
             <table class="w-full text-sm">
               <thead>
                 <tr class="text-left text-xs uppercase tracking-wider text-warm-500 border-b border-warm-100">
-                  <th class="py-2 pr-3">Grupo</th>
-                  <th class="py-2 pr-3">Asignatura</th>
-                  <th class="py-2 pr-3">Período</th>
-                  <th class="py-2 pr-3">Cupo</th>
-                  <th class="py-2 pr-3">Estado</th>
-                  <th class="py-2"></th>
+                  <th scope="col" class="py-2 pr-3">Grupo</th>
+                  <th scope="col" class="py-2 pr-3">Asignatura</th>
+                  <th scope="col" class="py-2 pr-3">Período</th>
+                  <th scope="col" class="py-2 pr-3">Cupo</th>
+                  <th scope="col" class="py-2 pr-3">Estado</th>
+                  <th scope="col" class="py-2"></th>
                 </tr>
               </thead>
               <tbody>
@@ -148,16 +149,19 @@ type FiltroAsistio = 'TODOS' | 'ASISTIO' | 'NO_ASISTIO';
               <table class="w-full text-sm">
                 <thead>
                   <tr class="text-left text-xs uppercase tracking-wider text-warm-500 border-b border-warm-100">
-                    <th class="py-2 pr-3">Sesión</th>
-                    <th class="py-2 pr-3">Semana</th>
-                    <th class="py-2 pr-3">Fecha y hora</th>
-                    <th class="py-2"></th>
+                    <th scope="col" class="py-2 pr-3">Sesión</th>
+                    <th scope="col" class="py-2 pr-3">Semana</th>
+                    <th scope="col" class="py-2 pr-3">Fecha y hora</th>
+                    <th scope="col" class="py-2"></th>
                   </tr>
                 </thead>
                 <tbody>
                   @for (s of sesiones(); track s.id) {
-                    <tr class="border-b border-warm-50" [class.bg-primary-50]="sesionSeleccionada()?.id === s.id">
-                      <td class="py-2 pr-3 font-semibold text-warm-900">{{ s.nombre }} <span class="text-warm-400 font-mono">{{ s.codigo }}</span></td>
+                    <tr class="border-b border-warm-50" [class.bg-primary-50]="sesionSeleccionada()?.id === s.id" [attr.data-testid]="'sesion-fila-' + s.id">
+                      <td class="py-2 pr-3 font-semibold text-warm-900">
+                        {{ s.nombre }} <span class="text-warm-400 font-mono">{{ s.codigo }}</span>
+                        <app-sesion-estado-badge class="block font-normal" [estado]="s.estado" [cancelacion]="s.cancelacion" />
+                      </td>
                       <td class="py-2 pr-3 text-warm-700">{{ s.numeroSemana ?? '—' }}</td>
                       <td class="py-2 pr-3 text-warm-600 text-xs">{{ horario(s) }}</td>
                       <td class="py-2 text-right">
@@ -210,10 +214,10 @@ type FiltroAsistio = 'TODOS' | 'ASISTIO' | 'NO_ASISTIO';
               <table class="w-full text-sm">
                 <thead>
                   <tr class="text-left text-xs uppercase tracking-wider text-warm-500 border-b border-warm-100">
-                    <th class="py-2 pr-3">Estudiante</th>
-                    <th class="py-2 pr-3">Documento</th>
-                    <th class="py-2 pr-3">Asistencia</th>
-                    <th class="py-2">Razón / causa</th>
+                    <th scope="col" class="py-2 pr-3">Estudiante</th>
+                    <th scope="col" class="py-2 pr-3">Documento</th>
+                    <th scope="col" class="py-2 pr-3">Asistencia</th>
+                    <th scope="col" class="py-2">Razón / causa</th>
                   </tr>
                 </thead>
                 <tbody>

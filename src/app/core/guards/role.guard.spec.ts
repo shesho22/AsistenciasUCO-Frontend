@@ -3,6 +3,7 @@ import { ActivatedRouteSnapshot, Router } from '@angular/router';
 import { roleGuard } from './role.guard';
 import { AuthService } from '../services/auth.service';
 import { User } from '../models/user.model';
+import { ToastService } from '../../shared/components/toast/toast.component';
 
 describe('roleGuard', () => {
   let router: jasmine.SpyObj<Router>;
@@ -104,5 +105,14 @@ describe('roleGuard', () => {
     const route = { data: { roles: ['DOCENTE'] } } as unknown as ActivatedRouteSnapshot;
 
     expect(TestBed.runInInjectionContext(() => roleGuard(route, {} as any))).not.toBeTrue();
+  });
+
+  it('F-DEC-S09: al denegar el acceso avisa con un error visible y no avisa cuando permite', () => {
+    const toast = TestBed.inject(ToastService);
+    spyOn(toast, 'error');
+    runFor('DOCENTE');
+    expect(toast.error).not.toHaveBeenCalled();
+    runFor('DECANO');
+    expect(toast.error).toHaveBeenCalledWith(jasmine.stringContaining('Acceso denegado'));
   });
 });

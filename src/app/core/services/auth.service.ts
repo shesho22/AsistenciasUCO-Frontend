@@ -1,3 +1,4 @@
+import { consumirRetornoQr, esRutaAsistenciaQr, guardarRetornoQr } from '../utils/qr-return-url.util';
 import { Injectable, OnDestroy, inject, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, of } from 'rxjs';
@@ -395,9 +396,12 @@ export class AuthService implements OnDestroy {
       // El JWT de baseline no trae claims de nombre: el nombre visible se hidrata desde el perfil de la DB (HU006) sin
       // retrasar la navegacion. Si el perfil esta apagado o falla, la sesion sigue con los datos del token.
       void this.fetchProfileFromBackend(accessToken);
-      const target = pending.returnUrl === '/' || pending.returnUrl.startsWith('/login')
-        ? this.homePathForRole(user.role)
-        : pending.returnUrl;
+      // CULM-001 B.2 (NB-8): el estudiante que abrio el QR sin sesion vuelve a esa URL (clave de un solo uso).
+      const retornoQr = consumirRetornoQr();
+      const target = retornoQr
+        ?? (pending.returnUrl === '/' || pending.returnUrl.startsWith('/login')
+          ? this.homePathForRole(user.role)
+          : pending.returnUrl);
       this.replaceBaselineUrl(target);
       return true;
     } catch {
@@ -437,6 +441,8 @@ export class AuthService implements OnDestroy {
     const state = randomUrlSafe(16);
     const verifier = randomUrlSafe(48);
     const challenge = await pkceChallenge(verifier);
+    // La URL del QR (con su token) solo se conserva en sessionStorage; nunca viaja al IdP.
+    if (esRutaAsistenciaQr(returnUrl)) guardarRetornoQr(returnUrl);
     savePending({ state, verifier, returnUrl: safeInternalPath(returnUrl), silent, createdAt: Date.now() });
     this.navigator.assign(buildAuthorizeUrl(this.baselineConfig(), { state, challenge, silent }));
   }
@@ -764,93 +770,6 @@ export class AuthService implements OnDestroy {
     }
   }
 
-
-  updateUserProfile(updatedData: Partial<User>): Observable<ApiResponse<User>> {
-    const current = this.currentUser();
-    if (!current) {
-      return of({
-        idTransaccion: 'tx-profile-error',
-        exitoso: false,
-        mensajeUsuario: 'No hay usuario autenticado para actualizar.',
-        datos: {} as User,
-      });
-    }
-
-    const primerNombre = updatedData.primerNombre !== undefined ? updatedData.primerNombre : (current.primerNombre || '');
-    const segundoNombre = updatedData.segundoNombre !== undefined ? updatedData.segundoNombre : (current.segundoNombre || '');
-    const primerApellido = updatedData.primerApellido !== undefined ? updatedData.primerApellido : (current.primerApellido || '');
-    const segundoApellido = updatedData.segundoApellido !== undefined ? updatedData.segundoApellido : (current.segundoApellido || '');
-
-    const computedFullName = [primerNombre, segundoNombre, primerApellido, segundoApellido].filter(Boolean).join(' ') || updatedData.name || current.name;
-
-    const updatedUser: User = {
-      ...current,
-      ...updatedData,
-      primerNombre,
-      segundoNombre,
-      primerApellido,
-      segundoApellido,
-      name: computedFullName,
-    };
-
-    if (this.mockModeSignal()) {
-      this.currentUser.set(updatedUser);
-      // En modo mock, el usuario sincronizado vive solo en el signal de memoria.
-      return of({
-        idTransaccion: 'mock-tx-update-profile',
-        exitoso: true,
-        mensajeUsuario: 'Información de perfil actualizada exitosamente.',
-        datos: updatedUser,
-      });
-    }
-
-    return new Observable<ApiResponse<User>>((subscriber) => {
-      const token = this.token();
-      fetch(`${environment.apiUrl}/usuarios/perfil`, {
-        method: 'PUT',
-        // API Bearer-only: no se adjuntan cookies del navegador.
-        credentials: 'omit',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          primerNombre,
-          segundoNombre,
-          primerApellido,
-          segundoApellido,
-        }),
-      })
-        .then((res) => {
-          if (!res.ok) throw new Error('Error al actualizar perfil en el servidor.');
-          return res.json();
-        })
-        .then((data) => {
-          const raw = data.datos || {};
-          const syncedUser: User = {
-            ...updatedUser,
-            primerNombre: raw.primerNombre || updatedUser.primerNombre,
-            segundoNombre: raw.segundoNombre || updatedUser.segundoNombre,
-            primerApellido: raw.primerApellido || updatedUser.primerApellido,
-            segundoApellido: raw.segundoApellido || updatedUser.segundoApellido,
-            name: raw.name || updatedUser.name,
-            numeroIdentificacion: raw.numeroIdentificacion || updatedUser.numeroIdentificacion,
-          };
-          this.currentUser.set(syncedUser);
-          // Usuario sincronizado solo en signal de memoria — sin localStorage.
-          subscriber.next({
-            idTransaccion: data.idTransaccion || 'tx-profile-ok',
-            exitoso: true,
-            mensajeUsuario: 'Información de perfil actualizada exitosamente en el sistema institucional.',
-            datos: syncedUser,
-          });
-          subscriber.complete();
-        })
-        .catch((err) => {
-          subscriber.error(err);
-        });
-    });
-  }
 
   async fetchProfileFromBackend(token?: string): Promise<User | null> {
     if (this.mockModeSignal() || !environment.features.userProfileEndpointEnabled) {

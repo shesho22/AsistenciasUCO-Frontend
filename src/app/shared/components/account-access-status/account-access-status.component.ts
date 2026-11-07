@@ -51,19 +51,22 @@ const VARIANTS: Record<AccountAccessState, BadgeVariant> = {
         </div>
         @if (!loading() && access(); as acceso) {
           @if (acceso.detalle) {
-            <p class="text-xs text-warm-600">{{ acceso.detalle }}</p>
+            <details class="text-xs text-warm-600">
+              <summary class="cursor-pointer font-semibold text-warm-700">Ver detalle para soporte</summary>
+              <p class="mt-1 break-words">{{ acceso.detalle }}</p>
+            </details>
           }
           @if (acceso.estado === 'PENDIENTE_SINCRONIZACION' || acceso.estado === 'PROBLEMA') {
-            <p class="text-xs text-warm-600">La persona aún no tiene acceso completo. Reintente la reconciliación; es idempotente.</p>
+            <p class="text-xs text-warm-600">La persona aún no puede ingresar con su cuenta. Puede reintentar la activación las veces que sea necesario.</p>
           }
         }
         @if (error(); as mensaje) {
-          <p class="text-xs text-red-700" role="alert">{{ mensaje }}</p>
+          <p class="text-xs text-danger-700" role="alert">{{ mensaje }}</p>
         }
         @if (!loading() && (needsReconciliation() || error())) {
           <div>
             <app-button size="sm" variant="secondary" [loading]="reconciling()" (clicked)="reconcile()">
-              {{ error() && !access() ? 'Reintentar verificación' : 'Reconciliar ahora' }}
+              {{ error() && !access() ? 'Reintentar verificación' : 'Reintentar activación' }}
             </app-button>
           </div>
         }

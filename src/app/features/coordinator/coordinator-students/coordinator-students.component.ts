@@ -16,7 +16,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { EstudianteResumenApiDto } from '../../../core/api/models/estudiante-api-dto.model';
 import { CoordinatorFichaModalComponent } from '../coordinator-indicators/components/coordinator-ficha-modal.component';
 
-type PestanaModulo = 'DIRECTORIO' | 'MATRICULA_GRUPO' | 'SOLICITUDES';
+type PestanaModulo = 'DIRECTORIO';
 
 @Component({
   selector: 'app-coordinator-students',
@@ -37,7 +37,7 @@ type PestanaModulo = 'DIRECTORIO' | 'MATRICULA_GRUPO' | 'SOLICITUDES';
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
         <div>
           <div class="flex items-center gap-2 mb-1">
-            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-sky-50 text-sky-800 border border-sky-200">
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-info-50 text-info-800 border border-info-200">
               Coordinación de Programa
             </span>
             <span class="text-xs text-warm-400">•</span>
@@ -70,8 +70,8 @@ type PestanaModulo = 'DIRECTORIO' | 'MATRICULA_GRUPO' | 'SOLICITUDES';
         </div>
         <div class="bg-white p-4 rounded-2xl border border-warm-200 shadow-warm-sm">
           <span class="text-xs text-warm-500 font-medium">Activos en Página Actual</span>
-          <p class="text-2xl font-serif font-bold text-emerald-700 mt-1">{{ totalActivosPagina() }}</p>
-          <span class="text-[11px] text-emerald-700">Matrícula académica vigente</span>
+          <p class="text-2xl font-serif font-bold text-success-700 mt-1">{{ totalActivosPagina() }}</p>
+          <span class="text-[11px] text-success-700">Matrícula académica vigente</span>
         </div>
         <div class="bg-white p-4 rounded-2xl border border-warm-200 shadow-warm-sm">
           <span class="text-xs text-warm-500 font-medium">Inactivos en Página Actual</span>
@@ -83,7 +83,7 @@ type PestanaModulo = 'DIRECTORIO' | 'MATRICULA_GRUPO' | 'SOLICITUDES';
       <!-- Filtros de Directorio -->
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div class="sm:col-span-2 relative">
-          <input
+          <input aria-label="Buscar estudiante por nombre, documento o correo"
             type="text"
             [ngModel]="searchDirectorio()"
             (ngModelChange)="onDirectorioSearchChange($event)"
@@ -96,7 +96,7 @@ type PestanaModulo = 'DIRECTORIO' | 'MATRICULA_GRUPO' | 'SOLICITUDES';
         </div>
 
         <div>
-          <select
+          <select aria-label="Filtrar estudiantes por estado"
             [ngModel]="filtroEstadoDirectorio()"
             (ngModelChange)="onDirectorioStatusChange($event)"
             class="w-full px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20 shadow-warm-sm"
@@ -152,7 +152,7 @@ type PestanaModulo = 'DIRECTORIO' | 'MATRICULA_GRUPO' | 'SOLICITUDES';
                 <div class="space-y-1 text-xs pt-1">
                   <div class="flex items-center justify-between">
                     <span class="text-warm-500">Estado Financiero</span>
-                    <span class="font-semibold text-emerald-700">Al Día</span>
+                    <span class="font-semibold text-success-700">Al Día</span>
                   </div>
                   <div class="flex items-center justify-between">
                     <span class="text-warm-500">Promedio Ponderado</span>

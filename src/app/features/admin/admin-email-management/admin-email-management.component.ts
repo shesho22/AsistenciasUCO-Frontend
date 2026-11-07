@@ -19,6 +19,8 @@ import {
   TipoPlantillaAdminDto,
 } from '../../../core/services/admin-email-notification.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { getBackendUserMessage } from '../../../core/api/errors/api-error.util';
+import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { IconComponent } from '../../../shared/components/icon/icon.component';
 
@@ -52,21 +54,6 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
     titulo: 'Retiro de Estudiante de Grupo',
     hu: 'HU051',
     descripcion: 'Notificación oficial cuando el docente titular desvincula un estudiante del grupo.',
-  },
-  SOLICITUD_INGRESO_REGISTRADA: {
-    titulo: 'Nueva Solicitud de Ingreso a Grupo',
-    hu: 'HU053',
-    descripcion: 'Aviso al docente titular cuando un alumno solicita cupo en su asignatura.',
-  },
-  SOLICITUD_INGRESO_RESUELTA: {
-    titulo: 'Resolución de Solicitud de Ingreso',
-    hu: 'HU054 / HU055',
-    descripcion: 'Aviso al estudiante con la decisión del docente (aceptada, espera o rechazada).',
-  },
-  SOLICITUD_INGRESO_RETIRADA: {
-    titulo: 'Cancelación de Solicitud de Ingreso',
-    hu: 'HU055',
-    descripcion: 'Aviso al docente informando que el estudiante canceló su petición de cupo.',
   },
   RECLAMO_ASISTENCIA_RADICADO: {
     titulo: 'Nueva Solicitud de Revisión de Asistencia',
@@ -119,7 +106,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
   selector: 'app-admin-email-management',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, IconComponent],
+  imports: [CommonModule, FormsModule, IconComponent, PaginationComponent],
   template: `
     <div class="space-y-6">
       <!-- ================= HEADER & BREADCRUMB ================= -->
@@ -128,11 +115,11 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
           <div class="flex items-center gap-2 text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1">
             <span>Gobierno de TI & Comunicaciones</span>
             <span>/</span>
-            <span class="text-primary-700">NOTIF-002B · TD-069</span>
+            <span class="text-primary-700">Correos y notificaciones</span>
           </div>
           <h1 class="text-2xl font-serif font-bold text-warm-900">Gestión de Correos y Notificaciones</h1>
           <p class="text-sm text-warm-600">
-            Administración de plantillas institucionales, supervisión de la cola transaccional outbox y diagnóstico del canal SMTP/Gmail.
+            Administración de las plantillas de correo, seguimiento de los envíos pendientes y diagnóstico del canal de correo institucional.
           </p>
         </div>
 
@@ -158,13 +145,12 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
             <div>
               <h2 class="text-base font-bold text-warm-900">Consola Externa de Notificaciones</h2>
               <p class="text-sm text-warm-700 mt-1 leading-relaxed">
-                El canal y las plantillas de correo se encuentran gestionados de forma externa a través del micro-frontend
-                institucional de notificaciones (<code class="px-1.5 py-0.5 rounded bg-primary-100/80 font-mono text-xs">EMAIL_ADMIN_EXTERNAL_MODE = true</code>).
-                La arquitectura del sistema mantiene el principio de Clean Architecture y la interfaz unificada <code class="px-1.5 py-0.5 rounded bg-primary-100/80 font-mono text-xs">NotificacionPort</code>.
+                El canal y las plantillas de correo se gestionan de forma externa en el servicio institucional de notificaciones.
+                Desde esta pantalla no es necesario hacer ninguna configuración.
               </p>
               <div class="mt-4 flex gap-3">
-                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
-                  <span class="w-2 h-2 rounded-full bg-emerald-600"></span>
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-success-100 text-success-800">
+                  <span class="w-2 h-2 rounded-full bg-success-600"></span>
                   Proveedor Externo Operativo
                 </span>
               </div>
@@ -191,7 +177,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
             <span>Cola de Envíos y Reintentos (Outbox)</span>
             @if (resumenCola().fallidasDefinitivas > 0) {
-              <span class="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">
+              <span class="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-danger-100 text-danger-800">
                 {{ resumenCola().fallidasDefinitivas }}
               </span>
             }
@@ -219,7 +205,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
 
               <!-- Search Input -->
               <div class="relative">
-                <input
+                <input aria-label="Buscar plantilla de correo"
                   type="text"
                   [ngModel]="busquedaPlantilla()"
                   (ngModelChange)="busquedaPlantilla.set($event)"
@@ -280,7 +266,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
 
                     <div class="flex items-center gap-2 shrink-0">
                       <span class="text-xs text-warm-500">Versión activa:</span>
-                      <span class="text-xs font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-200">
+                      <span class="text-xs font-bold px-2 py-0.5 rounded-md bg-success-100 text-success-800 border border-success-200">
                         v{{ tpl.versionActiva }} Activa
                       </span>
                     </div>
@@ -305,7 +291,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
                             {{ '{' + m.marcador + '}' }}
                           </button>
                           <span
-                            [class]="m.obligatorio ? 'bg-amber-100 text-amber-800' : 'bg-warm-200 text-warm-700'"
+                            [class]="m.obligatorio ? 'bg-warning-100 text-warning-800' : 'bg-warm-200 text-warm-700'"
                             class="text-[9px] font-bold px-1.5 py-0.2 rounded ml-1"
                           >
                             {{ m.obligatorio ? 'Obligatorio' : 'Opcional' }}
@@ -325,16 +311,16 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
                     <!-- Client Validation Warning / Success Indicator -->
                     <div class="mt-3">
                       @if (marcadoresObligatoriosFaltantes().length > 0) {
-                        <div class="flex items-center gap-2 p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs">
-                          <svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        <div class="flex items-center gap-2 p-2.5 rounded-xl bg-warning-50 border border-warning-200 text-warning-900 text-xs">
+                          <svg class="w-4 h-4 text-warning-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                           <span>
                             Faltan marcadores obligatorios en el texto:
                             <strong>{{ formatMissingMarkers() }}</strong>. Deben estar presentes en el asunto o cuerpo.
                           </span>
                         </div>
                       } @else {
-                        <div class="flex items-center gap-2 p-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs">
-                          <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        <div class="flex items-center gap-2 p-2 rounded-xl bg-success-50 border border-success-200 text-success-800 text-xs">
+                          <svg class="w-4 h-4 text-success-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                           <span>Todos los marcadores obligatorios están presentes en la plantilla.</span>
                         </div>
                       }
@@ -345,10 +331,11 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
                   <div class="mt-5 space-y-4">
                     <div>
                       <div class="flex items-center justify-between mb-1">
-                        <label class="text-xs font-bold text-warm-700">Asunto del Correo Electrónico</label>
+                        <label for="correo-asunto" class="text-xs font-bold text-warm-700">Asunto del Correo Electrónico</label>
                         <span class="text-[11px] text-warm-400 font-mono">{{ asuntoEditado().length }} / 200</span>
                       </div>
                       <input
+                        id="correo-asunto"
                         type="text"
                         [ngModel]="asuntoEditado()"
                         (ngModelChange)="asuntoEditado.set($event)"
@@ -360,10 +347,11 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
 
                     <div>
                       <div class="flex items-center justify-between mb-1">
-                        <label class="text-xs font-bold text-warm-700">Cuerpo del Mensaje (Texto con Marcadores)</label>
+                        <label for="correo-cuerpo" class="text-xs font-bold text-warm-700">Cuerpo del Mensaje (Texto con Marcadores)</label>
                         <span class="text-[11px] text-warm-400 font-mono">{{ cuerpoEditado().length }} / 4000</span>
                       </div>
                       <textarea
+                        id="correo-cuerpo"
                         rows="7"
                         [ngModel]="cuerpoEditado()"
                         (ngModelChange)="cuerpoEditado.set($event)"
@@ -460,11 +448,11 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
                     <table class="w-full text-left text-xs">
                       <thead class="bg-warm-50 text-warm-600 uppercase text-[10px] font-bold">
                         <tr>
-                          <th class="py-2.5 px-3">Versión</th>
-                          <th class="py-2.5 px-3">Fecha</th>
-                          <th class="py-2.5 px-3">Asunto</th>
-                          <th class="py-2.5 px-3">Estado</th>
-                          <th class="py-2.5 px-3 text-right">Acción</th>
+                          <th scope="col" class="py-2.5 px-3">Versión</th>
+                          <th scope="col" class="py-2.5 px-3">Fecha</th>
+                          <th scope="col" class="py-2.5 px-3">Asunto</th>
+                          <th scope="col" class="py-2.5 px-3">Estado</th>
+                          <th scope="col" class="py-2.5 px-3 text-right">Acción</th>
                         </tr>
                       </thead>
                       <tbody class="divide-y divide-warm-100 text-warm-800">
@@ -475,7 +463,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
                             <td class="py-2.5 px-3 max-w-[260px] truncate font-medium" [title]="v.asunto">{{ v.asunto }}</td>
                             <td class="py-2.5 px-3">
                               @if (v.activa) {
-                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-success-100 text-success-800 border border-success-200">
                                   Activa
                                 </span>
                               } @else {
@@ -513,7 +501,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
             <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
               <!-- Entregadas -->
               <div class="bg-white border border-warm-200 rounded-2xl p-4 shadow-warm-sm flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-100">
+                <div class="w-10 h-10 rounded-xl bg-success-50 text-success-700 flex items-center justify-center shrink-0 border border-success-100">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                 </div>
                 <div>
@@ -524,7 +512,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
 
               <!-- Pendientes -->
               <div class="bg-white border border-warm-200 rounded-2xl p-4 shadow-warm-sm flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center shrink-0 border border-amber-100">
+                <div class="w-10 h-10 rounded-xl bg-warning-50 text-warning-700 flex items-center justify-center shrink-0 border border-warning-100">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 </div>
                 <div>
@@ -535,7 +523,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
 
               <!-- Reservadas (En Proceso) -->
               <div class="bg-white border border-warm-200 rounded-2xl p-4 shadow-warm-sm flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-sky-50 text-sky-700 flex items-center justify-center shrink-0 border border-sky-100">
+                <div class="w-10 h-10 rounded-xl bg-info-50 text-info-700 flex items-center justify-center shrink-0 border border-info-100">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                 </div>
                 <div>
@@ -546,7 +534,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
 
               <!-- Reintentables -->
               <div class="bg-white border border-warm-200 rounded-2xl p-4 shadow-warm-sm flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0 border border-amber-200">
+                <div class="w-10 h-10 rounded-xl bg-warning-100 text-warning-800 flex items-center justify-center shrink-0 border border-warning-200">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 </div>
                 <div>
@@ -557,7 +545,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
 
               <!-- Fallidas Definitivas -->
               <div class="bg-white border border-warm-200 rounded-2xl p-4 shadow-warm-sm flex items-center gap-3 col-span-2 sm:col-span-1">
-                <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-700 flex items-center justify-center shrink-0 border border-rose-100">
+                <div class="w-10 h-10 rounded-xl bg-danger-50 text-danger-700 flex items-center justify-center shrink-0 border border-danger-100">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                 </div>
                 <div>
@@ -572,7 +560,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
               <div class="flex flex-wrap items-center gap-3">
                 <div>
                   <label class="text-[10px] font-bold text-warm-500 uppercase block mb-1">Estado</label>
-                  <select
+                  <select aria-label="Filtrar la cola de correos por estado"
                     [ngModel]="filtroEstado()"
                     (ngModelChange)="cambiarFiltroEstado($event)"
                     class="text-xs font-semibold py-1.5 px-3 bg-warm-50 border border-warm-300 rounded-lg text-warm-800 focus:outline-none focus:ring-1 focus:ring-primary-500"
@@ -588,7 +576,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
 
                 <div>
                   <label class="text-[10px] font-bold text-warm-500 uppercase block mb-1">Tipo de Evento</label>
-                  <select
+                  <select aria-label="Filtrar la cola de correos por tipo"
                     [ngModel]="filtroTipo()"
                     (ngModelChange)="cambiarFiltroTipo($event)"
                     class="text-xs font-semibold py-1.5 px-3 bg-warm-50 border border-warm-300 rounded-lg text-warm-800 focus:outline-none focus:ring-1 focus:ring-primary-500"
@@ -619,14 +607,14 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
                 <table class="w-full text-left text-xs">
                   <thead class="bg-warm-50 text-warm-600 uppercase text-[10px] font-bold border-b border-warm-200">
                     <tr>
-                      <th class="py-3 px-4">Tipo / Evento</th>
-                      <th class="py-3 px-4">Asunto</th>
-                      <th class="py-3 px-4">Destinatarios</th>
-                      <th class="py-3 px-4">Estado</th>
-                      <th class="py-3 px-4">Intentos</th>
-                      <th class="py-3 px-4">Fecha Creación</th>
-                      <th class="py-3 px-4">Error / Detalle</th>
-                      <th class="py-3 px-4 text-right">Acción</th>
+                      <th scope="col" class="py-3 px-4">Tipo / Evento</th>
+                      <th scope="col" class="py-3 px-4">Asunto</th>
+                      <th scope="col" class="py-3 px-4">Destinatarios</th>
+                      <th scope="col" class="py-3 px-4">Estado</th>
+                      <th scope="col" class="py-3 px-4">Intentos</th>
+                      <th scope="col" class="py-3 px-4">Fecha Creación</th>
+                      <th scope="col" class="py-3 px-4">Error / Detalle</th>
+                      <th scope="col" class="py-3 px-4 text-right">Acción</th>
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-warm-100 text-warm-800">
@@ -656,12 +644,12 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
                         <td class="py-3 px-4 text-warm-500 whitespace-nowrap">
                           <div>{{ formatearFecha(item.creadoEn) }}</div>
                           @if (item.entregadoEn) {
-                            <div class="text-[10px] text-emerald-700">Entregado: {{ formatearFecha(item.entregadoEn) }}</div>
+                            <div class="text-[10px] text-success-700">Entregado: {{ formatearFecha(item.entregadoEn) }}</div>
                           }
                         </td>
                         <td class="py-3 px-4 max-w-[220px]">
                           @if (item.detalleError) {
-                            <div class="text-[11px] text-rose-700 bg-rose-50 border border-rose-100 p-1.5 rounded-lg font-mono truncate" [title]="item.detalleError">
+                            <div class="text-[11px] text-danger-700 bg-danger-50 border border-danger-100 p-1.5 rounded-lg font-mono truncate" [title]="item.detalleError">
                               {{ item.codigoError ? item.codigoError + ': ' : '' }}{{ item.detalleError }}
                             </div>
                           } @else {
@@ -674,7 +662,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
                               type="button"
                               (click)="reintentar(item.id)"
                               [disabled]="reintentandoId() === item.id"
-                              class="px-3 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                              class="px-3 py-1 bg-warning-100 hover:bg-warning-200 text-warning-900 rounded-lg text-xs font-bold transition-colors cursor-pointer"
                             >
                               {{ reintentandoId() === item.id ? 'Reintentando...' : 'Reintentar' }}
                             </button>
@@ -692,29 +680,14 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
                 </table>
               </div>
 
-              <!-- Pagination Footer -->
-              <div class="p-3 bg-warm-50 border-t border-warm-200 flex items-center justify-between text-xs text-warm-600">
-                <span>Total: <strong>{{ totalCola() }}</strong> elementos</span>
-                <div class="flex items-center gap-2">
-                  <button
-                    type="button"
-                    (click)="cambiarPagina(paginaActual() - 1)"
-                    [disabled]="paginaActual() <= 1"
-                    class="px-2.5 py-1 rounded bg-white border border-warm-300 disabled:opacity-40 text-warm-700 hover:bg-warm-100 font-semibold"
-                  >
-                    Anterior
-                  </button>
-                  <span class="font-bold text-warm-800">Pág. {{ paginaActual() }} de {{ totalPaginasCola() || 1 }}</span>
-                  <button
-                    type="button"
-                    (click)="cambiarPagina(paginaActual() + 1)"
-                    [disabled]="paginaActual() >= totalPaginasCola()"
-                    class="px-2.5 py-1 rounded bg-white border border-warm-300 disabled:opacity-40 text-warm-700 hover:bg-warm-100 font-semibold"
-                  >
-                    Siguiente
-                  </button>
-                </div>
-              </div>
+              <!-- Paginación compartida -->
+              <app-pagination
+                [totalItems]="totalCola()"
+                [pageSize]="tamanoPagina()"
+                [currentPage]="paginaActual()"
+                [showPageSizeSelector]="false"
+                (pageChange)="cambiarPagina($event)"
+              />
             </div>
           </div>
         }
@@ -726,11 +699,11 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
             <div class="bg-white border border-warm-200 rounded-2xl p-5 shadow-warm-sm space-y-4">
               <div class="flex items-center justify-between pb-3 border-b border-warm-100">
                 <div>
-                  <span class="text-xs font-bold uppercase tracking-wider text-primary-700">Clean Architecture & Hexagonal</span>
-                  <h3 class="text-lg font-serif font-bold text-warm-900 mt-0.5">Estado del Puerto de Notificaciones y Canal de Transporte</h3>
+                  <span class="text-xs font-bold uppercase tracking-wider text-primary-700">Canal de envío</span>
+                  <h3 class="text-lg font-serif font-bold text-warm-900 mt-0.5">Estado del canal de correo</h3>
                 </div>
-                <span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                  Desacoplado vía NotificacionPort
+                <span class="px-3 py-1 rounded-full text-xs font-bold bg-success-100 text-success-800 border border-success-200">
+                  Canal desacoplado
                 </span>
               </div>
 
@@ -739,35 +712,33 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
                 <div class="p-4 rounded-xl bg-warm-50 border border-warm-200">
                   <span class="text-[10px] font-bold text-warm-500 uppercase block mb-1">Proveedor Primario Activo</span>
                   <span class="text-sm font-mono font-bold text-warm-900 block">{{ canalEstado()?.provider || 'outbox' }}</span>
-                  <span class="text-[11px] text-warm-500 mt-1 block">Cola durable transaccional en SQL Server</span>
+                  <span class="text-[11px] text-warm-500 mt-1 block">Cola de envíos pendientes</span>
                 </div>
 
                 <div class="p-4 rounded-xl bg-warm-50 border border-warm-200">
                   <span class="text-[10px] font-bold text-warm-500 uppercase block mb-1">Canal de Salida (Sender)</span>
                   <span class="text-sm font-mono font-bold text-primary-800 block">{{ canalEstado()?.sender || 'smtp' }}</span>
-                  <span class="text-[11px] text-warm-500 mt-1 block">Implementación NotificacionChannelSender</span>
+                  <span class="text-[11px] text-warm-500 mt-1 block">Medio por el que se envían los correos</span>
                 </div>
 
                 <div class="p-4 rounded-xl bg-warm-50 border border-warm-200">
                   <span class="text-[10px] font-bold text-warm-500 uppercase block mb-1">Despachador en Segundo Plano</span>
                   <div class="flex items-center gap-1.5 mt-1">
-                    <span class="w-2.5 h-2.5 rounded-full" [class]="canalEstado()?.dispatcherEnabled ? 'bg-emerald-500' : 'bg-rose-500'"></span>
-                    <span class="text-xs font-bold" [class]="canalEstado()?.dispatcherEnabled ? 'text-emerald-800' : 'text-rose-800'">
-                      {{ canalEstado()?.dispatcherEnabled ? 'Activo (Hilo outbox activo)' : 'Inactivo' }}
+                    <span class="w-2.5 h-2.5 rounded-full" [class]="canalEstado()?.dispatcherEnabled ? 'bg-success-500' : 'bg-danger-500'"></span>
+                    <span class="text-xs font-bold" [class]="canalEstado()?.dispatcherEnabled ? 'text-success-800' : 'text-danger-800'">
+                      {{ canalEstado()?.dispatcherEnabled ? 'Activo' : 'Inactivo' }}
                     </span>
                   </div>
-                  <span class="text-[11px] text-warm-500 mt-1 block">Barrido configurable cada X segundos</span>
+                  <span class="text-[11px] text-warm-500 mt-1 block">Envía los correos pendientes en segundo plano</span>
                 </div>
               </div>
 
               <!-- Informative Banner about Third Party Retiring Plan -->
               <div class="p-4 rounded-xl bg-primary-50/60 border border-primary-200 text-xs text-warm-800 leading-relaxed">
-                <p class="font-bold text-primary-900 mb-1">Gobernanza de Retiro y Reemplazo (NOTIF-001 / ADR-005):</p>
+                <p class="font-bold text-primary-900 mb-1">Cambio de proveedor de correo</p>
                 <p>
-                  El núcleo de dominio y los casos de uso universitarios solo interactúan con <code class="px-1 py-0.5 rounded bg-primary-100 font-mono text-[11px]">NotificacionPort</code>.
-                  El canal SMTP actual (<code class="px-1 py-0.5 rounded bg-primary-100 font-mono text-[11px]">SmtpNotificacionChannelSender</code>) envía a través de credenciales de aplicación Gmail.
-                  Cuando el componente transversal del otro equipo sea homologado, bastará con alternar <code class="px-1 py-0.5 rounded bg-primary-100 font-mono text-[11px]">OUTBOX_NOTIFICATION_SENDER=http</code>
-                  o suministrar el proveedor externo sin alterar la lógica de negocio ni las vistas de usuario.
+                  El canal actual envía con la cuenta de correo institucional de la aplicación. Si el servicio institucional de
+                  notificaciones lo reemplaza, las pantallas y las reglas del sistema no cambian.
                 </p>
               </div>
             </div>
@@ -794,7 +765,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
 
                   <div class="p-3 rounded-xl bg-warm-50 border border-warm-100">
                     <span class="text-[10px] text-warm-500 font-bold uppercase block mb-1">Seguridad TLS</span>
-                    <span class="font-bold text-emerald-800">
+                    <span class="font-bold text-success-800">
                       {{ canalEstado()?.starttls ? 'STARTTLS Activo' : (canalEstado()?.ssl ? 'SSL' : 'Plano') }}
                     </span>
                   </div>
@@ -802,7 +773,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
                   <div class="p-3 rounded-xl bg-warm-50 border border-warm-100">
                     <span class="text-[10px] text-warm-500 font-bold uppercase block mb-1">Password Configurada</span>
                     <span
-                      [class]="canalEstado()?.tienePasswordConfigurado ? 'text-emerald-800 bg-emerald-100' : 'text-rose-800 bg-rose-100'"
+                      [class]="canalEstado()?.tienePasswordConfigurado ? 'text-success-800 bg-success-100' : 'text-danger-800 bg-danger-100'"
                       class="text-[10px] font-bold px-2 py-0.5 rounded-full inline-block"
                     >
                       {{ canalEstado()?.tienePasswordConfigurado ? 'Configurada (Protegida)' : 'Sin Configurar' }}
@@ -833,11 +804,11 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
                   <div class="flex items-center justify-between p-2.5 rounded-xl bg-warm-50 border border-warm-100">
                     <span class="text-warm-600">Modo de Pruebas (Redirección):</span>
                     @if (canalEstado()?.testModeEnabled) {
-                      <span class="text-amber-800 font-bold text-[11px] bg-amber-100 px-2 py-0.5 rounded-full">
+                      <span class="text-warning-800 font-bold text-[11px] bg-warning-100 px-2 py-0.5 rounded-full">
                         Activo ({{ canalEstado()?.testModeRedirectCount || 0 }} redirigidos)
                       </span>
                     } @else {
-                      <span class="text-emerald-800 font-bold text-[11px] bg-emerald-100 px-2 py-0.5 rounded-full">
+                      <span class="text-success-800 font-bold text-[11px] bg-success-100 px-2 py-0.5 rounded-full">
                         Producción (Envíos directos)
                       </span>
                     }
@@ -856,8 +827,9 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
 
                 <div class="space-y-3">
                   <div>
-                    <label class="text-xs font-bold text-warm-700 block mb-1">Tipo de Plantilla de Prueba</label>
+                    <label for="correo-prueba-tipo" class="text-xs font-bold text-warm-700 block mb-1">Tipo de Plantilla de Prueba</label>
                     <select
+                      id="correo-prueba-tipo"
                       [ngModel]="pruebaTipo()"
                       (ngModelChange)="pruebaTipo.set($event)"
                       class="w-full text-xs font-semibold py-2 px-3 bg-white border border-warm-300 rounded-xl text-warm-900 focus:outline-none focus:ring-1 focus:ring-primary-500"
@@ -869,8 +841,9 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
                   </div>
 
                   <div>
-                    <label class="text-xs font-bold text-warm-700 block mb-1">Correo Electrónico de Destino</label>
+                    <label for="correo-prueba-destino" class="text-xs font-bold text-warm-700 block mb-1">Correo Electrónico de Destino</label>
                     <input
+                      id="correo-prueba-destino"
                       type="email"
                       [ngModel]="pruebaCorreoDestino()"
                       (ngModelChange)="pruebaCorreoDestino.set($event)"
@@ -896,7 +869,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
 
                   @if (resultadoPrueba()) {
                     <div
-                      [class]="resultadoPrueba()?.exitoso ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-rose-50 border-rose-200 text-rose-900'"
+                      [class]="resultadoPrueba()?.exitoso ? 'bg-success-50 border-success-200 text-success-900' : 'bg-danger-50 border-danger-200 text-danger-900'"
                       class="p-3 rounded-xl border text-xs"
                     >
                       <p class="font-bold">{{ resultadoPrueba()?.exitoso ? '¡Envío Exitoso!' : 'Error de Envío' }}</p>
@@ -1041,9 +1014,9 @@ export class AdminEmailManagementComponent implements OnInit {
             this.seleccionarPlantilla(items[0]);
           }
         },
-        error: () => {
+        error: (err: unknown) => {
           this.cargando.set(false);
-          this.toast.error('No fue posible cargar el catálogo de plantillas.');
+          this.toast.error(getBackendUserMessage(err, 'No fue posible cargar el catálogo de plantillas.'));
         },
       });
   }
@@ -1094,9 +1067,9 @@ export class AdminEmailManagementComponent implements OnInit {
           this.generandoPreview.set(false);
           this.vistaPrevia.set(res);
         },
-        error: () => {
+        error: (err: unknown) => {
           this.generandoPreview.set(false);
-          this.toast.error('No fue posible generar la vista previa institucional.');
+          this.toast.error(getBackendUserMessage(err, 'No fue posible generar la vista previa institucional.'));
         },
       });
   }
@@ -1126,16 +1099,16 @@ export class AdminEmailManagementComponent implements OnInit {
                 this.toast.success(`Versión v${nuevaVersion.version} guardada y activada con éxito.`);
                 this.cargarPlantillas();
               },
-              error: () => {
+              error: (err: unknown) => {
                 this.guardando.set(false);
                 this.toast.warning(`Versión v${nuevaVersion.version} guardada pero pendiente de activación.`);
                 this.cargarPlantillas();
               },
             });
         },
-        error: () => {
+        error: (err: unknown) => {
           this.guardando.set(false);
-          this.toast.error('Error al guardar la nueva versión de la plantilla.');
+          this.toast.error(getBackendUserMessage(err, 'Error al guardar la nueva versión de la plantilla.'));
         },
       });
   }
@@ -1149,8 +1122,8 @@ export class AdminEmailManagementComponent implements OnInit {
           this.toast.success(`Versión v${version} activada como la plantilla oficial.`);
           this.cargarPlantillas();
         },
-        error: () => {
-          this.toast.error(`Error al activar la versión v${version}.`);
+        error: (err: unknown) => {
+          this.toast.error(getBackendUserMessage(err, `Error al activar la versión v${version}.`));
         },
       });
   }
@@ -1188,8 +1161,8 @@ export class AdminEmailManagementComponent implements OnInit {
             this.resumenCola.set(resp.resumen);
           }
         },
-        error: () => {
-          this.toast.error('No fue posible consultar la cola outbox.');
+        error: (err: unknown) => {
+          this.toast.error(getBackendUserMessage(err, 'No fue posible consultar la cola outbox.'));
         },
       });
   }
@@ -1228,9 +1201,9 @@ export class AdminEmailManagementComponent implements OnInit {
           this.toast.success('Notificación reprogramada para reintento inmediato.');
           this.cargarCola();
         },
-        error: () => {
+        error: (err: unknown) => {
           this.reintentandoId.set(null);
-          this.toast.error('Error al solicitar el reintento de la notificación.');
+          this.toast.error(getBackendUserMessage(err, 'Error al solicitar el reintento de la notificación.'));
         },
       });
   }
@@ -1238,15 +1211,15 @@ export class AdminEmailManagementComponent implements OnInit {
   getEstadoBadgeClass(codigo: string): string {
     switch (codigo) {
       case 'ENTREGADA':
-        return 'bg-emerald-100 text-emerald-800 border border-emerald-200';
+        return 'bg-success-100 text-success-800 border border-success-200';
       case 'PENDIENTE':
-        return 'bg-amber-100 text-amber-800 border border-amber-200';
+        return 'bg-warning-100 text-warning-800 border border-warning-200';
       case 'RESERVADA':
-        return 'bg-sky-100 text-sky-800 border border-sky-200';
+        return 'bg-info-100 text-info-800 border border-info-200';
       case 'FALLIDA_REINTENTABLE':
-        return 'bg-amber-100 text-amber-900 border border-amber-300';
+        return 'bg-warning-100 text-warning-900 border border-warning-300';
       case 'FALLIDA_DEFINITIVA':
-        return 'bg-rose-100 text-rose-800 border border-rose-200';
+        return 'bg-danger-100 text-danger-800 border border-danger-200';
       default:
         return 'bg-warm-100 text-warm-700';
     }
@@ -1255,14 +1228,14 @@ export class AdminEmailManagementComponent implements OnInit {
   getEstadoDotClass(codigo: string): string {
     switch (codigo) {
       case 'ENTREGADA':
-        return 'bg-emerald-500';
+        return 'bg-success-500';
       case 'PENDIENTE':
       case 'FALLIDA_REINTENTABLE':
-        return 'bg-amber-500';
+        return 'bg-warning-500';
       case 'RESERVADA':
-        return 'bg-sky-500';
+        return 'bg-info-500';
       case 'FALLIDA_DEFINITIVA':
-        return 'bg-rose-500';
+        return 'bg-danger-500';
       default:
         return 'bg-warm-400';
     }
@@ -1277,8 +1250,8 @@ export class AdminEmailManagementComponent implements OnInit {
         next: (estado) => {
           this.canalEstado.set(estado);
         },
-        error: () => {
-          this.toast.error('No se pudo obtener el diagnóstico del canal SMTP.');
+        error: (err: unknown) => {
+          this.toast.error(getBackendUserMessage(err, 'No se pudo obtener el diagnóstico del canal SMTP.'));
         },
       });
   }
@@ -1306,9 +1279,9 @@ export class AdminEmailManagementComponent implements OnInit {
           this.cargarEstadoCanal();
           this.cargarCola();
         },
-        error: (err) => {
+        error: (err: unknown) => {
           this.enviandoPrueba.set(false);
-          const msg = err?.error?.message || err?.error?.mensajeUsuario || 'Error al conectar con el servidor SMTP.';
+          const msg = getBackendUserMessage(err, 'No fue posible conectar con el canal de correo.');
           this.resultadoPrueba.set({
             exitoso: false,
             mensaje: msg,

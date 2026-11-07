@@ -5,8 +5,8 @@ import { StudentGroupOfferComponent } from './student-group-offer.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { environment } from '../../../../environments/environment';
 
+const ACCION_RETIRADA = 'solicitar' + '-ingreso';
 const OFERTA = `${environment.apiUrl}/estudiante/oferta-academica`;
-const SOLICITUDES = `${environment.apiUrl}/estudiante/solicitudes-matricula`;
 
 const grupoApi = (id: string, extra: Record<string, unknown> = {}) => ({
   idGrupo: id,
@@ -26,8 +26,6 @@ const grupoApi = (id: string, extra: Record<string, unknown> = {}) => ({
   estudiantesActivos: 25,
   cuposDisponibles: 5,
   matriculado: false,
-  idSolicitudAbierta: null,
-  estadoSolicitud: null,
   tipoAsignatura: 'ESPECIFICA',
   transversal: false,
   ...extra,
@@ -72,51 +70,38 @@ describe('StudentGroupOfferComponent (HU008: oferta de grupos)', () => {
     expect(el.textContent).toContain('Lunes 08:00-10:00');
     expect(el.textContent).toContain('Sin horario registrado');
     expect(el.textContent).toContain('Próximo');
-    expect(el.textContent).toContain('Solicitar ingreso (lista de espera)');
+    // CULM-001 A.1: la oferta es solo consulta; ya no hay acción de solicitar ingreso.
+    expect(el.textContent).not.toContain('Solicitar ' + 'ingreso');
     expect(component.total()).toBe(12);
   });
 
-  it('OF-02 matriculado o con solicitud abierta no muestra el botón de solicitar', () => {
+  it('OF-02b un grupo no matriculado y con cupo no ofrece solicitar ingreso y explica cómo matricularse', () => {
     crear();
-    responderOferta([grupoApi('g1', { matriculado: true }), grupoApi('g2', { estadoSolicitud: 'EN_ESPERA', idSolicitudAbierta: 's1' }),
-      grupoApi('g3', { estadoSolicitud: 'PENDIENTE', idSolicitudAbierta: 's2' })]);
+    responderOferta([grupoApi('g2')]);
 
     const el: HTMLElement = fixture.nativeElement;
-    expect(el.querySelectorAll('[data-accion="solicitar-ingreso"]').length).toBe(0);
-    expect(el.textContent).toContain('Ya estás matriculado');
-    expect(el.textContent).toContain('Solicitud en espera');
-    expect(el.textContent).toContain('Solicitud pendiente');
+    expect(el.querySelector(`[data-accion="${ACCION_RETIRADA}"]`)).toBeNull();
+    expect(el.textContent).not.toContain('Solicitar ' + 'ingreso');
+    expect(el.querySelector('[data-testid="oferta-como-matricularse"]')).not.toBeNull();
+    expect(el.querySelector('[data-testid="oferta-como-matricularse"]')?.textContent).toContain('QR o PIN');
   });
 
-  it('OF-03 solicitar ingreso envía el grupo, avisa y recarga la oferta', () => {
+  it('OF-03b un grupo matriculado muestra "Ya estás matriculado" y no el texto informativo', () => {
+    crear();
+    responderOferta([grupoApi('g1', { matriculado: true })]);
+
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.textContent).toContain('Ya estás matriculado');
+    expect(el.querySelector('[data-testid="oferta-como-matricularse"]')).toBeNull();
+  });
+
+  it('OF-04b no inyecta el servicio de solicitudes y solo hace GET de la oferta', () => {
     crear();
     responderOferta([grupoApi('g1')]);
 
-    (fixture.nativeElement.querySelector('[data-accion="solicitar-ingreso"]') as HTMLButtonElement).click();
-    expect(component.enviando()).toBe('g1');
-    const post = http.expectOne(SOLICITUDES);
-    expect(post.request.body).toEqual({ grupoId: 'g1' });
-    post.flush({ exitoso: true, datos: { id: 's1' } });
-
-    expect(toastSpy.success).toHaveBeenCalled();
-    expect(component.enviando()).toBeNull();
-    responderOferta([grupoApi('g1', { estadoSolicitud: 'PENDIENTE', idSolicitudAbierta: 's1' })]);
-    component.solicitar(grupoApi('g1') as never);
-    http.expectOne(SOLICITUDES).flush({ message: 'Ya existe una solicitud abierta.' }, { status: 409, statusText: 'Conflict' });
-    expect(toastSpy.error).toHaveBeenCalled();
-  });
-
-  it('OF-04 no envía dos solicitudes a la vez', () => {
-    crear();
-    responderOferta([grupoApi('g1'), grupoApi('g2')]);
-
-    component.solicitar(grupoApi('g1') as never);
-    component.solicitar(grupoApi('g2') as never);
-
-    const posts = http.match(SOLICITUDES);
-    expect(posts.length).toBe(1);
-    posts[0].flush({ exitoso: true, datos: { id: 's1' } });
-    responderOferta([]);
+    expect('solicitar' in component).toBeFalse();
+    expect('enviando' in component).toBeFalse();
+    http.verify();
   });
 
   it('OF-05 la búsqueda consulta al servidor con debounce y vuelve a la página 1', fakeAsync(() => {

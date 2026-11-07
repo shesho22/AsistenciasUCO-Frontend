@@ -61,7 +61,7 @@ export class ButtonComponent {
       accent:
         'bg-accent-500 text-warm-950 hover:bg-accent-600 font-semibold focus-visible:ring-accent-400 shadow-warm-sm',
       danger:
-        'bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-500 shadow-warm-sm',
+        'bg-danger-600 text-white hover:bg-danger-700 focus-visible:ring-danger-500 shadow-warm-sm',
       ghost:
         'bg-transparent text-warm-700 hover:bg-warm-200/60 hover:text-warm-900 focus-visible:ring-warm-400 shadow-none',
     }[this.variant()];

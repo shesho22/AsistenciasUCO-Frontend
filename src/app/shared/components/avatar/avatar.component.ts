@@ -38,16 +38,7 @@ export class AvatarComponent {
    * Genera un color armónico y consistente para el usuario dentro de la paleta institucional.
    */
   readonly bgColor = computed(() => {
-    const colors = [
-      '#065f46', // Esmeralda profundo
-      '#047857', // Esmeralda UCO
-      '#1e40af', // Azul institucional
-      '#b45309', // Oro ámbar
-      '#0f766e', // Turquesa sobrio
-      '#86198f', // Ciruela académico
-      '#334155', // Pizarra grafito
-      '#0284c7', // Azul cerúleo
-    ];
+    const colors = Array.from({ length: 8 }, (_, i) => `var(--color-avatar-${i + 1})`);
     let hash = 0;
     const raw = this.name();
     const clean = (raw || '').replace(/^(Dr\.|Dra\.|Ing\.|Prof\.|Lic\.|Sr\.|Sra\.)\s+/i, '').trim();

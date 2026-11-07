@@ -28,7 +28,7 @@ import { FranjasEditorComponent } from '../../../../shared/components/franjas-ed
       @if (cargando()) {
         <p class="text-sm text-warm-500" data-testid="cargando-oferta">Cargando tus asignaturas...</p>
       } @else if (asignaturas().length === 0) {
-        <p class="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-3" data-testid="sin-oferta">
+        <p class="text-sm text-warning-800 bg-warning-50 border border-warning-200 rounded-xl p-3" data-testid="sin-oferta">
           No tienes asignaturas disponibles: pide al coordinador que te vincule a un programa académico.
         </p>
       } @else {
@@ -53,7 +53,7 @@ import { FranjasEditorComponent } from '../../../../shared/components/franjas-ed
       }
 
       @if (error()) {
-        <p class="text-xs text-red-700" role="alert" data-testid="error-grupo">{{ error() }}</p>
+        <p class="text-xs text-danger-700" role="alert" data-testid="error-grupo">{{ error() }}</p>
       }
 
       <div class="flex justify-end gap-2 pt-2 border-t border-warm-100">

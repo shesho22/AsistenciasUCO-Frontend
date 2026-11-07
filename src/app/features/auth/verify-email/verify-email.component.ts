@@ -31,13 +31,13 @@ export type VerifyEmailState = 'VERIFICANDO' | 'EXITO' | 'ERROR';
         }
         @case ('EXITO') {
           <div role="status" aria-live="polite" class="space-y-4" data-testid="verify-success">
-            <p class="text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-xl p-3">{{ message() }}</p>
+            <p class="text-sm text-success-800 bg-success-50 border border-success-200 rounded-xl p-3">{{ message() }}</p>
             <a routerLink="/login" class="inline-block text-sm font-semibold text-primary-600 hover:underline">Ir a iniciar sesión</a>
           </div>
         }
         @case ('ERROR') {
           <div role="alert" class="space-y-4" data-testid="verify-error">
-            <p class="text-sm text-red-800 bg-red-50 border border-red-200 rounded-xl p-3">{{ message() }}</p>
+            <p class="text-sm text-danger-800 bg-danger-50 border border-danger-200 rounded-xl p-3">{{ message() }}</p>
             <p class="text-xs text-warm-500">Solicite a su docente que le reenvíe el enlace de verificación.</p>
             <a routerLink="/login" class="inline-block text-sm font-semibold text-primary-600 hover:underline">Ir a iniciar sesión</a>
           </div>

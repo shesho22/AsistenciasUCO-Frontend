@@ -33,7 +33,7 @@ import { CategoriaJustificacionItem } from '../../../../core/models/consultas-tr
             Volver a {{ materia()?.nombre }}
           </button>
 
-          <span class="text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full">
+          <span class="text-xs font-bold text-warning-800 bg-warning-50 border border-warning-200 px-3 py-1 rounded-full">
             Radicación de Novedad
           </span>
         </div>
@@ -49,17 +49,20 @@ import { CategoriaJustificacionItem } from '../../../../core/models/consultas-tr
           </div>
 
           <!-- Ficha de la Sesión Afectada -->
-          <div class="p-4 rounded-xl bg-amber-50/70 border border-amber-200 text-xs space-y-2">
+          <div class="p-4 rounded-xl bg-warning-50/70 border border-warning-200 text-xs space-y-2">
             <div class="flex items-center justify-between">
-              <span class="font-mono font-bold text-amber-900">
+              <span class="font-mono font-bold text-warning-900">
                 Sesión #{{ sesion()?.numeroSesion }} — {{ sesion()?.fecha }} ({{ sesion()?.horario }})
               </span>
-              <span class="px-2 py-0.5 rounded-full font-bold bg-white text-red-700 border border-red-200">
+              <span class="px-2 py-0.5 rounded-full font-bold bg-white text-danger-700 border border-danger-200">
                 Estado Actual: {{ sesion()?.estadoAsistencia }}
               </span>
             </div>
-            <p class="text-amber-950 font-medium">Tema: {{ sesion()?.tema }}</p>
-            <p class="text-amber-800">Docente a cargo: {{ materia()?.docente ?? 'No informado' }}</p>
+            <p class="text-warning-950 font-medium">Tema: {{ sesion()?.tema }}</p>
+            <p class="text-warning-800">Docente a cargo: {{ materia()?.docente ?? 'No informado' }}</p>
+            @if (sesion()?.fechaLimiteJustificacionLocal; as limite) {
+              <p class="text-warning-900 font-semibold" data-testid="claim-plazo">Puedes justificar hasta {{ limite }}</p>
+            }
           </div>
 
           <!-- Formulario de Justificación -->
@@ -81,7 +84,7 @@ import { CategoriaJustificacionItem } from '../../../../core/models/consultas-tr
                 <p class="text-xs text-warm-600 mt-1.5" data-testid="descripcion-categoria">{{ categoriaSeleccionada()?.descripcion }}</p>
               }
               @if (!categorias().length) {
-                <p class="text-xs font-medium text-red-700 mt-1.5" role="alert">
+                <p class="text-xs font-medium text-danger-700 mt-1.5" role="alert">
                   No fue posible cargar los motivos de justificación. Vuelve a intentarlo más tarde.
                 </p>
               }
@@ -107,14 +110,14 @@ import { CategoriaJustificacionItem } from '../../../../core/models/consultas-tr
                 <div class="flex items-center gap-3 p-3.5 bg-warm-50 border border-warm-200 rounded-xl text-xs text-warm-700" role="status">
                   <span class="inline-block w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></span>
                   Subiendo y analizando el archivo…
-                  <button type="button" (click)="removeFile.emit()" class="ml-auto font-semibold text-red-700 hover:underline">
+                  <button type="button" (click)="removeFile.emit()" class="ml-auto font-semibold text-danger-700 hover:underline">
                     Cancelar
                   </button>
                 </div>
               }
 
               @if (errorSoporte()) {
-                <p class="text-xs font-medium text-red-700" role="alert">{{ errorSoporte() }}</p>
+                <p class="text-xs font-medium text-danger-700" role="alert">{{ errorSoporte() }}</p>
               }
 
               @if (archivo()) {
@@ -127,13 +130,13 @@ import { CategoriaJustificacionItem } from '../../../../core/models/consultas-tr
                     </div>
                     <div>
                       <p class="text-xs font-bold text-warm-900">{{ archivo()?.nombre }}</p>
-                      <p class="text-[11px] text-warm-500">{{ archivo()?.tamanioKb }} KB • {{ archivo()?.tipo }}</p>
+                      <p class="text-xs text-warm-500">{{ archivo()?.tamanioKb }} KB • {{ archivo()?.tipo }}</p>
                     </div>
                   </div>
                   <button
                     type="button"
                     (click)="removeFile.emit()"
-                    class="p-1.5 text-warm-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                    class="p-1.5 text-warm-400 hover:text-danger-600 rounded-lg hover:bg-danger-50 transition-colors"
                     title="Remover adjunto"
                   >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -158,7 +161,7 @@ import { CategoriaJustificacionItem } from '../../../../core/models/consultas-tr
                   </div>
                   <div>
                     <span class="text-xs font-semibold text-primary-700">Haz clic para adjuntar un documento</span>
-                    <p class="text-[11px] text-warm-400 mt-0.5">Certificado médico, constancia laboral o justificación institucional</p>
+                    <p class="text-xs text-warm-400 mt-0.5">Certificado médico, constancia laboral o justificación institucional</p>
                   </div>
                 </label>
               }
@@ -173,6 +176,10 @@ import { CategoriaJustificacionItem } from '../../../../core/models/consultas-tr
               </span>
             </div>
           </div>
+
+          @if (errorEnvio()) {
+            <p class="text-xs font-medium text-danger-700 text-right" role="alert" data-testid="error-envio">{{ errorEnvio() }}</p>
+          }
 
           <div class="flex items-center justify-end gap-3 pt-4 border-t border-warm-100">
             <app-button variant="secondary" size="md" (clicked)="back.emit()">
@@ -204,6 +211,8 @@ export class StudentClaimFormComponent {
   /** Hay una subida del soporte en curso: no se puede radicar hasta conocer el `fileId`. */
   subiendo = input<boolean>(false);
   errorSoporte = input<string | null>(null);
+  /** CULM-001 D.1: mensaje del backend cuando la radicacion fue rechazada (p. ej. plazo vencido). */
+  errorEnvio = input<string | null>(null);
 
   readonly accept = SOPORTE_ACCEPT;
 

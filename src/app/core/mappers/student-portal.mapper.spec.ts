@@ -176,6 +176,44 @@ describe('StudentPortalMapper', () => {
       expect(s.numeroSesion).toBe(1);
     });
 
+    describe('sesión cancelada (HU047, CULM-001 B.1)', () => {
+      const cancelacion = {
+        tipo: 'DOCENTE' as const,
+        motivo: 'Incapacidad médica del docente',
+        nombreFestivo: null,
+        fechaCancelacionUtc: '2026-10-19T12:00:00Z',
+      };
+
+      it('B1-F-24 mapea estado y cancelacion; sin ellos asume PROGRAMADA sin cancelación', () => {
+        const programada = StudentPortalMapper.toSesion(dto, ASIGNATURA, formato)!;
+        expect(programada.estado).toBe('PROGRAMADA');
+        expect(programada.cancelacion).toBeNull();
+
+        const cancelada = StudentPortalMapper.toSesion(
+          { ...dto, estado: 'CANCELADA', cancelacion, estadoAsistencia: 'NO_DISPONIBLE' },
+          ASIGNATURA,
+          formato
+        )!;
+        expect(cancelada.estado).toBe('CANCELADA');
+        expect(cancelada.cancelacion).toEqual(cancelacion);
+      });
+
+      it('B1-F-24 una sesión cancelada nunca es reclamable aunque el dto lo insinúe', () => {
+        const s = StudentPortalMapper.toSesion(
+          { ...dto, estado: 'CANCELADA', cancelacion, estadoAsistencia: 'AUSENTE', reclamable: true },
+          ASIGNATURA,
+          formato
+        )!;
+        expect(s.reclamable).toBeFalse();
+      });
+
+      it('B1-F-24 el dto sin codigo (ya no lo entrega el backend) no rompe el mapeo', () => {
+        const { codigo: _omitido, ...sinCodigo } = dto;
+        const s = StudentPortalMapper.toSesion({ ...sinCodigo, nombre: '' } as SesionMateriaEstudianteApiDto, ASIGNATURA, formato)!;
+        expect(s.tema).toBe('Sesión 1');
+      });
+    });
+
     it('convierte un offset a UTC antes de formatear', () => {
       const s = StudentPortalMapper.toSesion(
         { ...dto, fechaHoraInicio: '2026-10-19T08:00:00-05:00', fechaHoraFin: '2026-10-19T10:00:00-05:00' },
@@ -289,6 +327,7 @@ describe('StudentPortalMapper', () => {
       expect(solicitud('pendiente')).toBe('PENDIENTE');
       expect(solicitud('Aceptada')).toBe('APROBADA');
       expect(solicitud('rechazada')).toBe('RECHAZADA');
+      expect(solicitud('Retirada')).toBe('RETIRADA');
       expect(solicitud('DESCONOCIDO')).toBe('DESCONOCIDA');
       expect(solicitud(null)).toBeNull();
       expect(solicitud('   ')).toBeNull();

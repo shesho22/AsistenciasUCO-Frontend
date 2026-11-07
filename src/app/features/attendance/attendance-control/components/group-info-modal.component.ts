@@ -1,3 +1,4 @@
+import { EstudianteGrupoItem } from '../../../../core/models/estudiante-grupo-item.model';
 import { Component, ChangeDetectionStrategy, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
@@ -42,9 +43,9 @@ import { Course } from '../../../../core/models/course.model';
             <div>
               <span class="text-warm-400 block text-[10px] uppercase font-bold">Capacidad / Cupo:</span>
               @if (course()?.cupoMaximo) {
-                <span class="font-bold text-emerald-800">{{ students().length }} / {{ course()?.cupoMaximo }} cupos</span>
+                <span class="font-bold text-success-800">{{ students().length }} / {{ course()?.cupoMaximo }} cupos</span>
               } @else {
-                <span class="font-bold text-emerald-800">{{ students().length }} estudiantes inscritos</span>
+                <span class="font-bold text-success-800">{{ students().length }} estudiantes inscritos</span>
               }
             </div>
           </div>
@@ -103,7 +104,7 @@ import { Course } from '../../../../core/models/course.model';
                         {{ resendingStudentId() === st.idEstudiante ? 'Enviando…' : 'Reenviar enlace' }}
                       </button>
                     }
-                    <span class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <span class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-success-50 text-success-700 border border-success-200">
                       {{ st.nombreEstado || st.codigoEstado || 'Matriculado' }}
                     </span>
                   </div>
@@ -126,7 +127,7 @@ import { Course } from '../../../../core/models/course.model';
 export class GroupInfoModalComponent {
   isOpen = input<boolean>(false);
   course = input<Course | null | undefined>(null);
-  students = input<any[]>([]);
+  students = input<EstudianteGrupoItem[]>([]);
   isLoading = input<boolean>(false);
   /** Id del estudiante cuyo enlace de verificacion se esta reenviando (IDENT-001); vacio si ninguno. */
   resendingStudentId = input<string>('');

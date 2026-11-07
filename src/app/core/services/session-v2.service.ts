@@ -142,6 +142,8 @@ export class SessionV2Service {
       numeroSemana: session.numeroSemana,
       codigoGrupo: session.codigoGrupo,
       nombreGrupo: session.nombreGrupo,
+      estado: session.estado ?? 'PROGRAMADA',
+      cancelacion: session.cancelacion ?? null,
     };
   }
 }

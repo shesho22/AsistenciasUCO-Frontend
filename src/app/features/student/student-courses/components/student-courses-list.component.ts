@@ -1,8 +1,10 @@
-import { Component, ChangeDetectionStrategy, input, output } from '@angular/core';
+import { Component, ChangeDetectionStrategy, computed, input, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { AttendanceStatusBadgeComponent } from '../../../../shared/components/attendance-status-badge/attendance-status-badge.component';
 import { CardComponent } from '../../../../shared/components/card/card.component';
 import { BadgeComponent, BadgeVariant } from '../../../../shared/components/badge/badge.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
+import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 import { MateriaEstudianteItem } from '../../../../core/models/role-management.model';
 import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
 
@@ -10,7 +12,7 @@ import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
   selector: 'app-student-courses-list',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, CardComponent, BadgeComponent, ButtonComponent],
+  imports: [CommonModule, CardComponent, BadgeComponent, ButtonComponent, AttendanceStatusBadgeComponent, PaginationComponent],
   template: `
     <div class="space-y-6">
       <!-- Header Bento -->
@@ -35,7 +37,7 @@ import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
           <button
             type="button"
             (click)="openCodeEnrollment.emit()"
-            class="px-3.5 py-2 text-xs font-bold text-white bg-primary-700 hover:bg-primary-800 rounded-xl transition-all shadow-xs inline-flex items-center gap-1.5"
+            class="min-h-[44px] px-4 py-2 text-xs font-bold text-white bg-primary-700 hover:bg-primary-800 rounded-xl transition-all shadow-xs inline-flex items-center gap-1.5"
             title="Matricularse a un grupo académico ingresando el código PIN o enlace provisto por el docente"
           >
             <svg class="w-4 h-4 text-primary-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -46,14 +48,15 @@ import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
 
           <button
             type="button"
-            (click)="openAutoAttendance.emit()"
-            class="px-3.5 py-2 text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 rounded-xl transition-all shadow-xs inline-flex items-center gap-1.5"
-            title="HU176: Auto-registrar asistencia con código PIN de 6 dígitos o QR"
+            (click)="registrarConPin.emit()"
+            data-testid="registrar-con-pin"
+            class="min-h-[44px] px-4 py-2 text-xs font-bold text-white bg-primary-700 hover:bg-primary-800 rounded-xl transition-all shadow-xs inline-flex items-center gap-1.5"
+            title="Registrar tu asistencia con el PIN de 6 dígitos que proyecta el docente"
           >
-            <svg class="w-4 h-4 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-4 h-4 text-success-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
             </svg>
-            Auto-Registro Asistencia
+            Registrar asistencia con PIN
           </button>
         </div>
       </div>
@@ -73,33 +76,33 @@ import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
         </div>
 
         <div class="p-4 rounded-2xl bg-white border border-warm-200 shadow-warm-sm flex items-center gap-4">
-          <div class="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
+          <div class="w-11 h-11 rounded-xl bg-success-50 text-success-700 flex items-center justify-center shrink-0">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
           <div>
-            <span class="text-xs text-warm-500 font-medium">Promedio de Asistencia</span>
-            @if (promedioAsistencia() !== null) {
-              <p class="text-2xl font-serif font-bold text-emerald-700">{{ promedioAsistencia() }}%</p>
+            <span class="text-xs text-warm-500 font-medium">Materias en riesgo</span>
+            @if (materiasEnRiesgo() !== null) {
+              <p class="text-2xl font-serif font-bold text-warm-900">{{ materiasEnRiesgo() }}</p>
             } @else {
-              <p class="text-base font-serif font-bold text-warm-500" data-testid="promedio-no-disponible">No disponible</p>
+              <p class="text-base font-serif font-bold text-warm-500" data-testid="riesgo-no-disponible">No disponible</p>
             }
           </div>
         </div>
 
         <div class="p-4 rounded-2xl bg-white border border-warm-200 shadow-warm-sm flex items-center gap-4">
-          <div class="w-11 h-11 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center shrink-0">
+          <div class="w-11 h-11 rounded-xl bg-warning-50 text-warning-700 flex items-center justify-center shrink-0">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
           </div>
           <div>
-            <span class="text-xs text-warm-500 font-medium">Fallas Registradas</span>
-            @if (totalFallas() !== null) {
-              <p class="text-2xl font-serif font-bold text-warm-900">{{ totalFallas() }}</p>
+            <span class="text-xs text-warm-500 font-medium">Horas de falta</span>
+            @if (totalHorasFalta() !== null) {
+              <p class="text-2xl font-serif font-bold text-warm-900">{{ totalHorasFalta() }} h</p>
             } @else {
-              <p class="text-base font-serif font-bold text-warm-500" data-testid="fallas-no-disponible">No disponible</p>
+              <p class="text-base font-serif font-bold text-warm-500" data-testid="horas-falta-no-disponible">No disponible</p>
             }
           </div>
         </div>
@@ -113,14 +116,14 @@ import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
           }
         </div>
       } @else if (error()) {
-        <div class="bg-white p-8 rounded-2xl border border-red-200 text-center space-y-3" role="alert" data-testid="materias-error">
-          <p class="text-sm font-bold text-red-800">{{ error()!.titulo }}</p>
+        <div class="bg-white p-8 rounded-2xl border border-danger-200 text-center space-y-3" role="alert" data-testid="materias-error">
+          <p class="text-sm font-bold text-danger-800">{{ error()!.titulo }}</p>
           <p class="text-xs text-warm-600">{{ error()!.mensaje }}</p>
           <app-button variant="secondary" size="sm" (clicked)="retry.emit()">Reintentar</app-button>
         </div>
       } @else {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-          @for (materia of materias(); track materia.claveGrupo) {
+          @for (materia of materiasPagina(); track materia.claveGrupo) {
             <app-card [hoverable]="true" padding="md">
               <div class="flex flex-col h-full justify-between gap-4">
                 <div>
@@ -147,24 +150,15 @@ import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
                   <p class="text-xs text-warm-500 mt-1">Docente: {{ materia.docente ?? 'No informado' }}</p>
                 </div>
 
-                <!-- Indicadores de Asistencia (solo con fuente autoritativa) -->
+                <!-- Indicadores por horas (solo con fuente autoritativa: los entrega el backend) -->
                 @if (materia.indicadores; as ind) {
                   <div class="space-y-1.5 p-3 rounded-xl bg-warm-50 border border-warm-100">
-                    <div class="flex items-center justify-between text-xs">
-                      <span class="font-medium text-warm-600">Asistencia Registrada</span>
-                      <span class="font-bold text-warm-900">{{ ind.porcentajeAsistencia }}%</span>
+                    <div class="flex items-center justify-between gap-2 text-xs">
+                      <span class="font-bold text-warm-900" data-testid="porcentaje-inasistencia">{{ ind.porcentajeInasistencia }}% de inasistencia</span>
+                      <app-attendance-status-badge [codigoPermanencia]="ind.codigoPermanencia" />
                     </div>
-                    <div class="w-full h-2 bg-warm-200 rounded-full overflow-hidden">
-                      <div
-                        [class]="getProgressColor(ind.porcentajeAsistencia)"
-                        [style.width.%]="ind.porcentajeAsistencia"
-                        class="h-full rounded-full transition-all duration-500"
-                      ></div>
-                    </div>
-                    <div class="flex items-center justify-between text-[11px] text-warm-500 pt-0.5">
-                      <span>{{ ind.asistencias }} asistencias</span>
-                      <span>{{ ind.inasistencias }} fallas de {{ ind.totalClases }} clases</span>
-                    </div>
+                    <p class="text-xs text-warm-600">{{ ind.horasFalta }} h de falta de {{ ind.horasDictadas }} h dictadas</p>
+                    <p class="text-xs text-warm-500">Advertencia desde {{ ind.umbralAdvertencia }}% · pérdida desde {{ ind.umbralPerdida }}%</p>
                   </div>
                 } @else {
                   <div class="p-3 rounded-xl bg-warm-50 border border-warm-100 text-xs text-warm-500" data-testid="asistencia-no-disponible">
@@ -187,11 +181,19 @@ import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
               </div>
             </app-card>
           } @empty {
-            <div class="col-span-2 bg-white p-12 rounded-2xl border border-warm-200 text-center space-y-3" data-testid="materias-vacio">
+            <div class="md:col-span-2 bg-white p-12 rounded-2xl border border-warm-200 text-center space-y-3" data-testid="materias-vacio">
               <p class="text-xs text-warm-500">No tienes asignaturas matriculadas actualmente.</p>
             </div>
           }
         </div>
+        <app-pagination
+          [totalItems]="materias().length"
+          [pageSize]="tamano()"
+          [currentPage]="paginaEfectiva()"
+          [pageSizeOptions]="[6, 12, 24]"
+          (pageChange)="pagina.set($event)"
+          (pageSizeChange)="cambiarTamano($event)"
+        />
       }
     </div>
   `,
@@ -202,13 +204,27 @@ export class StudentCoursesListComponent {
   error = input<LoadErrorState | null>(null);
   totalCreditos = input<number>(0);
   /** `null` = sin fuente autoritativa de asistencia. */
-  promedioAsistencia = input<string | null>(null);
-  totalFallas = input<number | null>(null);
+  materiasEnRiesgo = input<number | null>(null);
+  totalHorasFalta = input<number | null>(null);
+
+  readonly pagina = signal(1);
+  readonly tamano = signal(12);
+  readonly paginaEfectiva = computed(() =>
+    Math.min(this.pagina(), Math.max(1, Math.ceil(this.materias().length / this.tamano())))
+  );
+  readonly materiasPagina = computed(() => {
+    const inicio = (this.paginaEfectiva() - 1) * this.tamano();
+    return this.materias().slice(inicio, inicio + this.tamano());
+  });
+
+  cambiarTamano(tamano: number): void {
+    this.tamano.set(tamano);
+    this.pagina.set(1);
+  }
 
   retry = output<void>();
   openCodeEnrollment = output<void>();
-  openAutoAttendance = output<void>();
-  openEnrollmentRequest = output<void>();
+  registrarConPin = output<void>();
   viewDetail = output<MateriaEstudianteItem>();
 
   getBadgeVariant(estado: MateriaEstudianteItem['estado'] | null): BadgeVariant {
@@ -222,11 +238,5 @@ export class StudentCoursesListComponent {
       default:
         return 'neutral';
     }
-  }
-
-  getProgressColor(porcentaje: number): string {
-    if (porcentaje >= 85) return 'bg-emerald-500';
-    if (porcentaje >= 75) return 'bg-amber-500';
-    return 'bg-red-500';
   }
 }

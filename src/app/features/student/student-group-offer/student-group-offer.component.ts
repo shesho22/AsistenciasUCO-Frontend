@@ -4,11 +4,9 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subject, debounceTime, finalize } from 'rxjs';
 import { GrupoOferta, OfertaAcademicaService } from '../../../core/services/oferta-academica.service';
-import { SolicitudIngresoService } from '../../../core/services/solicitud-ingreso.service';
 import { CardComponent } from '../../../shared/components/card/card.component';
 import { BadgeComponent } from '../../../shared/components/badge/badge.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
-import { ToastService } from '../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 
 const DEBOUNCE_MS = 300;
@@ -16,8 +14,7 @@ const DEBOUNCE_MS = 300;
 /**
  * HU008 (estudiante): oferta de grupos en periodos vigentes o proximos (especificas de sus programas y transversales de
  * su institucion, marcadas "Transversal"), con docente, horario y cupos.
- * Desde aqui solicita el ingreso a un grupo (flujo HU053); si ya esta matriculado o tiene una solicitud abierta, lo ve
- * indicado en lugar del boton.
+ * Es solo consulta de oferta y cupos: la matricula se hace con el QR o PIN del docente o por matricula manual del docente.
  */
 @Component({
   selector: 'app-student-group-offer',
@@ -36,13 +33,16 @@ const DEBOUNCE_MS = 300;
         [ngModel]="busqueda()"
         (ngModelChange)="onBusquedaChange($event)"
         name="busquedaOferta"
+        aria-label="Buscar grupos por asignatura, código o grupo"
+        inputmode="search"
+        autocomplete="off"
         maxlength="50"
         placeholder="Buscar por asignatura, código o grupo..."
-        class="w-full px-4 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-900 placeholder-warm-400 shadow-warm-sm"
+        class="w-full px-4 py-2.5 min-h-[44px] bg-white border border-warm-200 rounded-xl text-sm text-warm-900 placeholder-warm-400 shadow-warm-sm"
       />
 
       @if (error()) {
-        <p role="alert" class="text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2">{{ error() }}</p>
+        <p role="alert" class="text-xs font-medium text-danger-700 bg-danger-50 border border-danger-200 rounded-xl px-3 py-2">{{ error() }}</p>
       }
 
       @if (cargando()) {
@@ -61,7 +61,7 @@ const DEBOUNCE_MS = 300;
                     <p class="text-xs font-mono text-warm-500">
                       {{ g.codigoAsignatura }}
                       @if (g.transversal) {
-                        <span data-testid="etiqueta-transversal" class="ml-1 px-2 py-0.5 rounded-full text-[10px] font-semibold font-sans bg-primary-50 text-primary-800 border border-primary-200">
+                        <span data-testid="etiqueta-transversal" class="ml-1 px-2 py-0.5 rounded-full text-xs font-semibold font-sans bg-primary-50 text-primary-800 border border-primary-200">
                           Transversal · {{ g.tipoAsignatura === 'BASICA' ? 'Básica' : 'Institucional' }}
                         </span>
                       }
@@ -81,25 +81,17 @@ const DEBOUNCE_MS = 300;
                   <span class="text-xs text-warm-600 font-medium">Cupos disponibles</span>
                   <span
                     class="px-2.5 py-0.5 rounded-full text-xs font-bold border"
-                    [class]="g.cuposDisponibles > 0 ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-red-50 text-red-800 border-red-200'"
+                    [class]="g.cuposDisponibles > 0 ? 'bg-success-50 text-success-800 border-success-200' : 'bg-danger-50 text-danger-800 border-danger-200'"
                   >
                     {{ g.cuposDisponibles }} de {{ g.capacidadMaxima }}
                   </span>
                 </div>
                 @if (g.matriculado) {
                   <app-badge variant="success">Ya estás matriculado</app-badge>
-                } @else if (g.estadoSolicitud) {
-                  <app-badge variant="warning">Solicitud {{ g.estadoSolicitud === 'EN_ESPERA' ? 'en espera' : 'pendiente' }}</app-badge>
                 } @else {
-                  <button
-                    type="button"
-                    data-accion="solicitar-ingreso"
-                    [disabled]="enviando() === g.idGrupo"
-                    (click)="solicitar(g)"
-                    class="w-full px-4 py-2 text-sm font-semibold rounded-xl text-white bg-primary-700 hover:bg-primary-800 disabled:opacity-60"
-                  >
-                    {{ enviando() === g.idGrupo ? 'Enviando...' : g.cuposDisponibles > 0 ? 'Solicitar ingreso' : 'Solicitar ingreso (lista de espera)' }}
-                  </button>
+                  <p data-testid="oferta-como-matricularse" class="text-xs text-warm-600">
+                    Para matricularte, usa el QR o PIN que proyecta el docente en clase o pídele la matrícula manual.
+                  </p>
                 }
               </div>
             </app-card>
@@ -119,8 +111,6 @@ const DEBOUNCE_MS = 300;
 })
 export class StudentGroupOfferComponent implements OnInit {
   private readonly ofertaService = inject(OfertaAcademicaService);
-  private readonly solicitudService = inject(SolicitudIngresoService);
-  private readonly toast = inject(ToastService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly busquedas = new Subject<void>();
 
@@ -131,8 +121,6 @@ export class StudentGroupOfferComponent implements OnInit {
   readonly busqueda = signal('');
   readonly cargando = signal(false);
   readonly error = signal('');
-  /** id del grupo cuya solicitud se esta enviando (evita doble envio). */
-  readonly enviando = signal<string | null>(null);
 
   constructor() {
     this.busquedas.pipe(debounceTime(DEBOUNCE_MS), takeUntilDestroyed(this.destroyRef)).subscribe(() => this.cargar());
@@ -175,21 +163,6 @@ export class StudentGroupOfferComponent implements OnInit {
           this.total.set(0);
           this.error.set(getApiErrorMessage(error));
         },
-      });
-  }
-
-  solicitar(grupo: GrupoOferta): void {
-    if (this.enviando()) return;
-    this.enviando.set(grupo.idGrupo);
-    this.solicitudService
-      .solicitar(grupo.idGrupo)
-      .pipe(finalize(() => this.enviando.set(null)))
-      .subscribe({
-        next: () => {
-          this.toast.success(`Solicitud enviada para ${grupo.nombreAsignatura}. El docente del grupo la revisará.`);
-          this.cargar();
-        },
-        error: (error: unknown) => this.toast.error(getApiErrorMessage(error)),
       });
   }
 }

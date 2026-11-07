@@ -88,6 +88,16 @@ export const routes: Routes = [
             './features/attendance/attendance-control/attendance-control.component'
           ).then((m) => m.AttendanceControlComponent),
       },
+      // CULM-001 B.2 (HU176): el estudiante registra su asistencia con el QR (camara nativa) o con el PIN.
+      ...['asistencia/qr', 'asistencia/pin'].map((path) => ({
+        path,
+        canActivate: [roleGuard],
+        data: { roles: ['ESTUDIANTE'] },
+        loadComponent: () =>
+          import('./features/student/student-attendance-qr/student-attendance-qr.component').then(
+            (m) => m.StudentAttendanceQrComponent
+          ),
+      })),
       // Rutas Administrador
       {
         path: 'admin/facultades',
@@ -150,6 +160,14 @@ export const routes: Routes = [
         data: { roles: ['ADMINISTRADOR', 'ADMIN'] },
         loadComponent: () =>
           import('./features/admin/admin-estados/admin-estados.component').then((m) => m.AdminEstadosComponent),
+      },
+      {
+        // CULM-001 B.1 (pantalla 3.7): festivos de Colombia (consulta, recarga y sesiones en festivo con asistencia).
+        path: 'admin/festivos',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMINISTRADOR', 'ADMIN'] },
+        loadComponent: () =>
+          import('./features/admin/admin-festivos/admin-festivos.component').then((m) => m.AdminFestivosComponent),
       },
       {
         path: 'admin/sistema',
@@ -243,14 +261,16 @@ export const routes: Routes = [
           ),
       },
       {
-        path: 'decano/infraestructura',
+        path: 'decano/areas',
         canActivate: [roleGuard],
         data: { roles: ['DECANO'] },
         loadComponent: () =>
-          import('./features/dean/dean-infraestructura/dean-infraestructura.component').then(
-            (m) => m.DeanInfraestructuraComponent
+          import('./features/dean/dean-areas/dean-areas.component').then(
+            (m) => m.DeanAreasComponent
           ),
       },
+      // Ruta heredada: se conserva solo para no romper marcadores guardados.
+      { path: 'decano/infraestructura', redirectTo: 'decano/areas', pathMatch: 'full' },
       {
         path: 'decano/coordinadores',
         canActivate: [roleGuard],
@@ -519,15 +539,6 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/student/student-claims/student-claims.component').then(
             (m) => m.StudentClaimsComponent
-          ),
-      },
-      {
-        path: 'estudiante/solicitudes',
-        canActivate: [roleGuard],
-        data: { roles: ['ESTUDIANTE'] },
-        loadComponent: () =>
-          import('./features/student/student-enrollment-requests/student-enrollment-requests.component').then(
-            (m) => m.StudentEnrollmentRequestsComponent
           ),
       },
       {

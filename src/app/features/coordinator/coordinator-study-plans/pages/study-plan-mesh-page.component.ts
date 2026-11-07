@@ -21,10 +21,10 @@ const MAX_SEMESTRES = 10;
       @if (aviso(); as mensaje) {
         <div
           role="alert"
-          class="flex items-start justify-between gap-3 p-4 rounded-2xl border border-red-200 bg-red-50 text-sm text-red-800"
+          class="flex items-start justify-between gap-3 p-4 rounded-2xl border border-danger-200 bg-danger-50 text-sm text-danger-800"
         >
           <span>{{ mensaje }}</span>
-          <button type="button" (click)="aviso.set(null)" class="text-xs font-bold text-red-700 hover:text-red-900">✕</button>
+          <button type="button" (click)="aviso.set(null)" class="text-xs font-bold text-danger-700 hover:text-danger-900">✕</button>
         </div>
       }
       @if (selectedPlan(); as plan) {
@@ -36,7 +36,6 @@ const MAX_SEMESTRES = 10;
           (removeSemester)="eliminarSemestreVacio()"
           (createSubject)="abrirCrearAsignatura()"
           (editSubject)="abrirEditarAsignatura($event)"
-          (deleteSubject)="eliminarAsignatura($event)"
         />
       } @else {
         <div class="bg-white rounded-2xl border border-warm-200 p-12 text-center shadow-warm-sm space-y-3">
@@ -182,24 +181,6 @@ export class CoordinatorStudyPlanMeshPageComponent implements OnInit {
     const id = this.effectivePlanId();
     if (!id) return;
     void this.router.navigate(['/app/coordinador/planes-estudio', id, 'asignaturas', asig.id, 'editar']);
-  }
-
-  eliminarAsignatura(asig: AsignaturaPlanItem): void {
-    const id = this.effectivePlanId();
-    if (!id) return;
-
-    if (confirm(`¿Estás seguro de que deseas desvincular la asignatura ${asig.nombre} (${asig.codigo})?`)) {
-      this.coordService.eliminarAsignaturaPlan(id, asig.id).subscribe({
-        next: (res) => {
-          if (res.exitoso) {
-            this.toast.success(res.mensajeUsuario || 'Asignatura eliminada.');
-            this.cargarAsignaturas(id);
-            this.planes.set(this.coordService.planes());
-          }
-        },
-        error: (err) => this.toast.error(getApiErrorMessage(err)),
-      });
-    }
   }
 
   volver(): void {

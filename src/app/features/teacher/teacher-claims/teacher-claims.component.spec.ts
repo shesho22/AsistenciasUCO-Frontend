@@ -282,6 +282,17 @@ describe('TeacherClaimsComponent — bandeja paginada y detalle (HU035/HU036)', 
     fixture.detectChanges();
   }
 
+  it('A2-F-07 un reclamo RETIRADA se ve como retirado y no cuenta como pendiente', () => {
+    cargarInicial([fila(ID_1, { estadoSolicitud: 'RETIRADA' })], 1, 0);
+
+    const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(texto).toContain('Retirada');
+    expect(texto).not.toContain('Pendiente de evaluación');
+    expect(texto).not.toContain('Evaluado');
+    expect(component.totalPendientes()).toBe(0);
+    expect(component.getReclamoBadgeVariant('RETIRADA' as never)).toBe('neutral');
+  });
+
   it('FE-01 pide la primera página al servidor y enlaza el paginador con el total', () => {
     fixture.detectChanges();
     const req = listaReq();

@@ -100,6 +100,15 @@ const CODE_MESSAGES: Record<string, string> = {
     'No fue posible conectar con el servidor. Verifique su conexión de red.',
 };
 
+/** Códigos de negocio cuyo `message` ya es el texto institucional listo para mostrar. */
+const MENSAJE_DEL_BACKEND: ReadonlySet<string> = new Set([
+  API_ERROR_CODE.VALIDATION_ERROR,
+  API_ERROR_CODE.INVALID_REQUEST,
+  API_ERROR_CODE.FORBIDDEN,
+  API_ERROR_CODE.RESOURCE_NOT_FOUND,
+  API_ERROR_CODE.CONFLICT,
+]);
+
 function codeFromHttpStatus(status: number): string {
   if (status === 0) return API_ERROR_CODE.NETWORK_ERROR;
   if (status === 400) return API_ERROR_CODE.INVALID_REQUEST;
@@ -155,6 +164,12 @@ export function getApiErrorMessage(error: unknown): string {
     }
   }
 
+  // CULM-001 A.2: los errores de negocio (400/403/404/409) traen en `message` el texto del catálogo institucional
+  // (por ejemplo SES_017, REV_007, DEC_002, SEC_002): el backend es el único que traduce, la UI solo lo presenta.
+  if (envelope && MENSAJE_DEL_BACKEND.has(code) && envelope.message.trim()) {
+    return envelope.message.trim();
+  }
+
   const known = CODE_MESSAGES[code];
   if (known) {
     return known;
@@ -181,4 +196,39 @@ export function getApiFieldError(
 
 export function getApiCorrelationId(error: unknown): string | undefined {
   return getApiErrorResponse(error)?.correlationId ?? undefined;
+}
+
+/**
+ * Texto del backend para mostrar al usuario ante un error de operación. Acepta el HttpErrorResponse real y, por
+ * compatibilidad, objetos con la forma `{ error: { message | mensajeUsuario } }`. Nunca usa `mensajeTecnico` ni
+ * `err.message` (texto de infraestructura): sin texto del backend cae al mensaje semántico por código.
+ */
+export function getBackendUserMessage(error: unknown, respaldo?: string): string {
+  if (!(error instanceof HttpErrorResponse) && isRecord(error) && isRecord(error['error'])) {
+    const cuerpo = error['error'];
+    const texto = cuerpo['message'] ?? cuerpo['mensajeUsuario'];
+    if (typeof texto === 'string' && texto.trim()) {
+      return texto.trim();
+    }
+  }
+  if (respaldo && !(error instanceof HttpErrorResponse)) {
+    return respaldo;
+  }
+  return getApiErrorMessage(error);
+}
+
+/**
+ * Texto de éxito entregado por el backend (`mensajeUsuario` del contrato ApiResponse o, en endpoints legados,
+ * `mensaje`). El respaldo solo se usa cuando la respuesta no trae texto; nunca sustituye al del backend.
+ */
+export function getApiSuccessMessage(respuesta: unknown, respaldo: string): string {
+  if (isRecord(respuesta)) {
+    for (const clave of ['mensajeUsuario', 'mensaje']) {
+      const texto = respuesta[clave];
+      if (typeof texto === 'string' && texto.trim()) {
+        return texto.trim();
+      }
+    }
+  }
+  return respaldo;
 }

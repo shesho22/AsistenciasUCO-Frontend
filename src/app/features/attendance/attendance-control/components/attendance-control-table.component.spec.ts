@@ -54,18 +54,18 @@ describe('AttendanceControlTableComponent', () => {
     expect(component.desktopRowClasses(1)).toContain('bg-primary-50');
     expect(component.desktopRowClasses(0)).toContain('hover:bg-warm-50');
 
-    expect(component.mobileStatusBtnClasses('AN', 'AN')).toContain('bg-emerald-600');
+    expect(component.mobileStatusBtnClasses('AN', 'AN')).toContain('bg-success-600');
     expect(component.mobileStatusBtnClasses(null, 'AN')).toContain('bg-warm-100');
-    expect(component.mobileStatusBtnClasses('SJC', 'SJC')).toContain('bg-red-600');
+    expect(component.mobileStatusBtnClasses('SJC', 'SJC')).toContain('bg-danger-600');
     expect(component.mobileStatusBtnClasses(null, 'SJC')).toContain('bg-warm-100');
-    expect(component.mobileStatusBtnClasses('EX', 'EX')).toContain('bg-amber-600');
+    expect(component.mobileStatusBtnClasses('EX', 'EX')).toContain('bg-warning-600');
     expect(component.mobileStatusBtnClasses(null, 'EX')).toContain('bg-warm-100');
 
-    expect(component.segmentedChipClasses('AN', 'AN')).toContain('bg-emerald-600');
+    expect(component.segmentedChipClasses('AN', 'AN')).toContain('bg-success-600');
     expect(component.segmentedChipClasses(null, 'AN')).toContain('font-medium');
-    expect(component.segmentedChipClasses('SJC', 'SJC')).toContain('bg-red-600');
+    expect(component.segmentedChipClasses('SJC', 'SJC')).toContain('bg-danger-600');
     expect(component.segmentedChipClasses(null, 'SJC')).toContain('font-medium');
-    expect(component.segmentedChipClasses('EX', 'EX')).toContain('bg-amber-600');
+    expect(component.segmentedChipClasses('EX', 'EX')).toContain('bg-warning-600');
     expect(component.segmentedChipClasses(null, 'EX')).toContain('font-medium');
   });
 

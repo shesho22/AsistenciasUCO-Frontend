@@ -1,6 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { TeacherGrupoSabanaComponent } from './teacher-grupo-sabana.component';
+import { NEVER } from 'rxjs';
+import { TeacherAttendanceSummaryService } from '../../../../core/services/teacher-attendance-summary.service';
 import { ClassSession } from '../../../../core/models/attendance.model';
 
 // LB-001B.1B (DB source of truth cleanup, PLAN.md AS-IS #25): el indicador visual por
@@ -25,6 +27,7 @@ describe('TeacherGrupoSabanaComponent', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [TeacherGrupoSabanaComponent],
+      providers: [{ provide: TeacherAttendanceSummaryService, useValue: { consultarResumen: () => NEVER } }],
     });
     fixture = TestBed.createComponent(TeacherGrupoSabanaComponent);
     fixture.componentRef.setInput('estudiantes', [
@@ -39,5 +42,37 @@ describe('TeacherGrupoSabanaComponent', () => {
     const dot = fixture.debugElement.query(By.css('th span[title]'));
     expect(dot).toBeTruthy();
     expect((dot.nativeElement as HTMLElement).getAttribute('title')).not.toBe('CONCLUIDA');
+  });
+
+  describe('sesión cancelada (HU047, CULM-001 B.1)', () => {
+    const cancelada: ClassSession = {
+      ...session,
+      id: 'ses-2',
+      sessionNumber: 2,
+      estado: 'CANCELADA',
+      cancelacion: { tipo: 'DOCENTE', motivo: 'Incapacidad médica', nombreFestivo: null, fechaCancelacionUtc: null },
+    };
+
+    beforeEach(() => {
+      fixture.componentRef.setInput('sessions', [session, cancelada]);
+      fixture.detectChanges();
+    });
+
+    it('B1-F-13 la columna cancelada se atenúa y lleva la etiqueta Cancelada', () => {
+      const encabezado = (fixture.nativeElement as HTMLElement).querySelector(
+        '[data-testid="sabana-col-ses-2"]'
+      ) as HTMLElement;
+      expect(encabezado.textContent).toContain('Cancelada');
+      expect(encabezado.className).toContain('opacity-');
+      expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="sabana-col-ses-1"]')?.className).not.toContain('opacity-');
+    });
+
+    it('B1-F-13 las celdas de una sesión cancelada no muestran estado de asistencia', () => {
+      const celda = (fixture.nativeElement as HTMLElement).querySelector(
+        '[data-testid="sabana-celda-st-1-ses-2"]'
+      ) as HTMLElement;
+      expect(celda.className).toContain('opacity-');
+      expect(celda.textContent?.trim()).toBe('—');
+    });
   });
 });

@@ -10,6 +10,15 @@ import {
 } from '../../../../core/validation/session-name.util';
 import { SessionTimeZoneService } from '../../../../core/services/session-timezone.service';
 
+/** Valores editables del formulario de programacion de sesion. */
+export interface SesionFormValue {
+  title: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  sessionNumber: number;
+}
+
 @Component({
   selector: 'app-teacher-sesion-form',
   standalone: true,
@@ -29,7 +38,7 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
           Volver a Sesiones de {{ codigoCurso() }}
         </button>
 
-        <span class="text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full">
+        <span class="text-xs font-bold text-warning-800 bg-warning-50 border border-warning-200 px-3 py-1 rounded-full">
           {{ modo() === 'CREAR' ? 'Programar sesión' : 'Modificar sesión' }}
         </span>
       </div>
@@ -58,7 +67,7 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
                 class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
               />
               @if (nombreDemasiadoLargo()) {
-                <p class="mt-1 text-xs text-red-600" role="alert">{{ nombreLengthMessage }}</p>
+                <p class="mt-1 text-xs text-danger-600" role="alert">{{ nombreLengthMessage }}</p>
               }
             </app-form-field>
           </div>
@@ -112,7 +121,7 @@ export class TeacherSesionFormComponent {
   readonly timeZone = inject(SessionTimeZoneService);
   modo = input<'CREAR' | 'EDITAR'>('CREAR');
   codigoCurso = input<string>('');
-  form = model<any>({
+  form = model<SesionFormValue>({
     title: '',
     date: '',
     startTime: '08:00',

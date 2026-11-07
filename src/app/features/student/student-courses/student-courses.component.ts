@@ -1,18 +1,15 @@
 import { Component, OnDestroy, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { Subscription, finalize } from 'rxjs';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { StudentManagementService } from '../../../core/services/student-management.service';
 import { MatriculaQrService } from '../../../core/services/matricula-qr.service';
 import { AttendanceClaimService, IdentificadorInvalidoError } from '../../../core/services/attendance-claim.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
-import { CourseService } from '../../../core/services/course.service';
-import { SessionService } from '../../../core/services/session.service';
 import { ConsultasTransversalesService } from '../../../core/services/consultas-transversales.service';
 import { CategoriaJustificacionItem } from '../../../core/models/consultas-transversales.model';
 import { ToastService } from '../../../shared/components/toast/toast.component';
-import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
+import { getApiErrorCode, getApiErrorMessage, getApiSuccessMessage } from '../../../core/api/errors/api-error.util';
 import { LoadErrorState, classifyLoadError, loadErrorState } from '../../../core/api/errors/load-error.util';
 import { isUuid } from '../../../core/utils/uuid.util';
 import { RadicacionIntento, huellaRadicacion } from '../../../core/utils/radicacion-intento.util';
@@ -24,16 +21,14 @@ import {
   CategoriaJustificacion,
   SoporteAdjuntoItem,
 } from '../../../core/models/role-management.model';
-import { Course } from '../../../core/models/course.model';
 
 // Subcomponentes Desacoplados
 import { StudentCoursesListComponent } from './components/student-courses-list.component';
 import { StudentCourseDetailComponent } from './components/student-course-detail.component';
 import { StudentClaimFormComponent } from './components/student-claim-form.component';
-import { StudentAutoAsistenciaModalComponent } from './components/modals/student-auto-asistencia-modal.component';
 import { StudentMatriculaCodigoModalComponent } from './components/modals/student-matricula-codigo-modal.component';
 
-type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO' | 'SOLICITAR_MATRICULA';
+type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO';
 
 @Component({
   selector: 'app-student-courses',
@@ -44,7 +39,6 @@ type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO' | 'SOLICITAR_MATRICULA';
     StudentCoursesListComponent,
     StudentCourseDetailComponent,
     StudentClaimFormComponent,
-    StudentAutoAsistenciaModalComponent,
     StudentMatriculaCodigoModalComponent,
   ],
   template: `
@@ -55,11 +49,11 @@ type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO' | 'SOLICITAR_MATRICULA';
           [materias]="materias()"
           [isLoading]="isLoading()"
           [error]="materiasError()"
-          [promedioAsistencia]="promedioAsistencia()"
-          [totalFallas]="totalFallas()"
+          [materiasEnRiesgo]="materiasEnRiesgo()"
+          [totalHorasFalta]="totalHorasFalta()"
           (retry)="cargarMaterias()"
           (openCodeEnrollment)="abrirModalMatriculaGrupo()"
-          (openAutoAttendance)="abrirModalAutoAsistencia()"
+          (registrarConPin)="irARegistroConPin()"
           (viewDetail)="verDetalleCompleto($event)"
         />
       }
@@ -89,20 +83,13 @@ type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO' | 'SOLICITAR_MATRICULA';
           [subiendo]="subiendoSoporte()"
           [submitting]="enviandoReclamo()"
           [errorSoporte]="errorSoporte()"
+          [errorEnvio]="errorEnvio()"
           (back)="volverADetalle()"
           (fileSelected)="onFileSelected($event)"
           (removeFile)="removerAdjunto()"
           (submitted)="enviarReclamo($event)"
         />
       }
-
-      <!-- 6. Modal: Auto-Registro de Asistencia (HU176 - PIN / QR) -->
-      <app-student-auto-asistencia-modal
-        [isOpen]="modalAutoAsistenciaVisible()"
-        [processing]="procesandoAutoAsistencia()"
-        (submitted)="enviarAutoAsistencia($event)"
-        (closed)="cerrarModalAutoAsistencia()"
-      />
 
       <!-- 7. Modal: Matrícula a Grupo por Código o PIN -->
       <app-student-matricula-codigo-modal
@@ -121,9 +108,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
   private readonly matriculaQrService = inject(MatriculaQrService);
   private readonly claimService = inject(AttendanceClaimService);
   private readonly authService = inject(AuthService);
-  private readonly coordinatorService = inject(CoordinatorManagementService);
-  private readonly courseService = inject(CourseService);
-  private readonly sessionService = inject(SessionService);
+  private readonly router = inject(Router);
   private readonly consultasService = inject(ConsultasTransversalesService);
   private readonly toast = inject(ToastService);
   private readonly sessionTimeZone = inject(SessionTimeZoneService);
@@ -134,17 +119,12 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
   materiasError = signal<LoadErrorState | null>(null);
 
   // Auto-Registro de Asistencia (HU176)
-  modalAutoAsistenciaVisible = signal<boolean>(false);
-  procesandoAutoAsistencia = signal<boolean>(false);
 
   // Matrícula por Código o PIN de Grupo
   modalMatriculaGrupoVisible = signal<boolean>(false);
   procesandoMatriculaGrupo = signal<boolean>(false);
   /** PIN que trae el login (`?matricula=<PIN>`); el modal lo muestra precargado. */
   pinPrecargado = signal<string>('');
-
-  // Solicitud de Matrícula
-  cursosDisponibles = signal<Course[]>([]);
 
   // Drill-down sesiones
   selectedMateria = signal<MateriaEstudianteItem | null>(null);
@@ -160,6 +140,8 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
   subiendoSoporte = signal<boolean>(false);
   enviandoReclamo = signal<boolean>(false);
   errorSoporte = signal<string | null>(null);
+  /** CULM-001 D.1: rechazo de la radicacion por plazo vencido, mostrado junto al boton. */
+  errorEnvio = signal<string | null>(null);
   private subidaEnCurso: Subscription | null = null;
   /** Un reintento tecnico del mismo contenido reutiliza la correlacion; solo un exito la renueva. */
   private readonly intentoRadicacion = new RadicacionIntento();
@@ -168,19 +150,23 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
     return this.materias().reduce((sum, m) => sum + (m.creditos ?? 0), 0);
   }
 
-  /** Promedio solo sobre las materias con indicadores autoritativos; `null` = no disponible (nunca 0 ni NaN). */
-  promedioAsistencia(): string | null {
+  /** Cuenta de materias con `codigoPermanencia` RIESGO o PERDIDA (valor del backend); `null` = sin indicadores. */
+  materiasEnRiesgo(): number | null {
     const conIndicadores = this.materias().filter((m) => m.indicadores !== null);
     if (conIndicadores.length === 0) return null;
-    const total = conIndicadores.reduce((sum, m) => sum + m.indicadores!.porcentajeAsistencia, 0);
-    return (total / conIndicadores.length).toFixed(1);
+    return conIndicadores.filter((m) => m.indicadores!.codigoPermanencia === 'RIESGO' || m.indicadores!.codigoPermanencia === 'PERDIDA').length;
   }
 
-  /** Suma de inasistencias solo si alguna materia tiene fuente autoritativa; `null` = no disponible. */
-  totalFallas(): number | null {
+  /** Suma de `horasFalta` entregadas por el backend; `null` = no disponible (nunca 0 ni NaN). */
+  totalHorasFalta(): number | null {
     const conIndicadores = this.materias().filter((m) => m.indicadores !== null);
     if (conIndicadores.length === 0) return null;
-    return conIndicadores.reduce((sum, m) => sum + m.indicadores!.inasistencias, 0);
+    return conIndicadores.reduce((sum, m) => sum + m.indicadores!.horasFalta, 0);
+  }
+
+  /** HU176: el registro por PIN vive en su propia pantalla (`/app/asistencia/pin`). */
+  irARegistroConPin(): void {
+    void this.router.navigate(['/app/asistencia/pin']);
   }
 
   ngOnInit(): void {
@@ -234,49 +220,10 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
     this.sesionesError.set(null);
   }
 
-  abrirSolicitudMatricula(): void {
-    this.courseService.getTeacherCourses().subscribe({
-      next: (res) => {
-        this.cursosDisponibles.set(res.datos || []);
-        this.vistaActual.set('SOLICITAR_MATRICULA');
-      },
-      error: () => {
-        this.toast.error('Error al cargar la oferta de asignaturas.');
-      },
-    });
-  }
-
-  enviarSolicitudMatricula(event: { cursoId: string; motivo: string }): void {
-    const curso = this.cursosDisponibles().find((c) => c.id === event.cursoId);
-    const currentUser = this.authService.currentUser();
-    if (!curso || !event.motivo.trim()) return;
-
-    this.coordinatorService
-      .crearSolicitudMatricula({
-        estudianteId: currentUser?.id || 'EST-101',
-        estudianteNombre: currentUser?.name || 'Estudiante UCO',
-        estudianteCodigo: '202210101',
-        estudianteCorreo: currentUser?.email || 'estudiante@uco.edu.co',
-        cursoId: curso.id,
-        cursoCodigo: curso.code ?? '',
-        cursoNombre: curso.name,
-        grupo: curso.section,
-        motivo: event.motivo.trim(),
-      })
-      .subscribe({
-        next: (res) => {
-          if (res.exitoso) {
-            this.toast.success(res.mensajeUsuario || 'Solicitud radicada ante Coordinación.');
-            this.volverALista();
-          }
-        },
-        error: (err) => this.toast.error(getApiErrorMessage(err)),
-      });
-  }
-
   iniciarReclamo(sesion: SesionMateriaDetalle): void {
     // Sin ausencia/retardo confirmado, o con una solicitud ya existente, no se abre la radicacion.
     if (!sesion.reclamable || sesion.estadoAsistencia === 'NO_DISPONIBLE') return;
+    this.errorEnvio.set(null);
     this.sesionReclamar.set(sesion);
     this.limpiarSoporte();
     this.vistaActual.set('RECLAMO');
@@ -329,13 +276,13 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
               fechaSubida: this.sessionTimeZone.currentDate(),
               urlSimulada: res.datos.url,
             });
-            this.toast.success(`Archivo "${file.name}" cargado y analizado correctamente.`);
+            this.toast.success(getApiSuccessMessage(res, `Archivo "${file.name}" cargado y analizado correctamente.`));
           } else {
             this.errorSoporte.set('No fue posible almacenar el archivo adjunto.');
           }
         },
         error: (err) => {
-          const mensaje = this.mensajeErrorSubida(err);
+          const mensaje = getApiErrorMessage(err);
           this.errorSoporte.set(mensaje);
           this.toast.error(mensaje);
         },
@@ -362,27 +309,15 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
     this.subiendoSoporte.set(false);
   }
 
-  private mensajeErrorSubida(err: unknown): string {
-    const status = (err as { status?: number })?.status;
-    if (status === 401) return 'Tu sesión expiró. Inicia sesión nuevamente para adjuntar el soporte.';
-    if (status === 403) return 'No tienes permiso para adjuntar soportes.';
-    // El frontend decide por codigo/status, no por el texto del backend: 400 cubre malware, formato y contenido invalido.
-    if (status === 400 || status === 413) {
-      return 'El archivo fue rechazado: no cumple los requisitos de seguridad o formato (PDF, PNG o JPG de hasta 5 MB).';
-    }
-    if (status === 0) return 'No se pudo conectar con el servidor. Verifica tu conexión e inténtalo de nuevo.';
-    return 'El servicio de archivos no está disponible. Inténtalo de nuevo en unos minutos.';
-  }
-
   retirarReclamo(sesion: SesionMateriaDetalle): void {
     if (!sesion.reclamoId) return;
     const materia = this.selectedMateria();
     if (!materia) return;
 
-    this.claimService.eliminarReclamo(sesion.reclamoId, materia.id, sesion.id).subscribe({
+    this.claimService.eliminarReclamo(sesion.reclamoId).subscribe({
       next: (res) => {
         if (res.exitoso) {
-          this.toast.success(res.mensajeUsuario || 'Solicitud de revisión retirada.');
+          this.toast.success(getApiSuccessMessage(res, 'Solicitud retirada.'));
           this.cargarSesiones(materia);
         }
       },
@@ -430,7 +365,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
 
     if (!sesion || !materia || !event.justificacion.trim()) return;
     const estadoOriginal = sesion.estadoAsistencia;
-    if (!sesion.reclamable || estadoOriginal === 'NO_DISPONIBLE') return;
+    if (!sesion.reclamable || estadoOriginal === 'NO_DISPONIBLE' || estadoOriginal === 'PARCIAL') return;
     // Sin doble envio: ni mientras sube el soporte (aun no hay fileId) ni mientras otra radicacion esta en curso.
     if (this.enviandoReclamo() || this.subiendoSoporte()) return;
 
@@ -446,6 +381,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
     );
 
     this.enviandoReclamo.set(true);
+    this.errorEnvio.set(null);
     this.claimService
       .crearReclamo(
         {
@@ -471,7 +407,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
         next: (res) => {
           if (res.exitoso) {
             this.intentoRadicacion.reiniciar();
-            this.toast.success(res.mensajeUsuario || 'Reclamo enviado.');
+            this.toast.success(getApiSuccessMessage(res, 'Reclamo enviado.'));
             this.volverADetalle();
             this.cargarSesiones(materia);
           }
@@ -488,6 +424,11 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
             this.toast.error('El soporte adjunto ya no está disponible. Adjúntalo nuevamente.');
             return;
           }
+          if (getApiErrorCode(err) === 'ERR_PLAZO_JUSTIFICACION_VENCIDO') {
+            // El backend entrega el texto institucional (con la fecha limite): se muestra junto al boton, que sigue activo.
+            this.errorEnvio.set(getApiErrorMessage(err));
+            return;
+          }
           this.toast.error(getApiErrorMessage(err));
         },
       });
@@ -497,53 +438,6 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
   private resultadoIncierto(err: unknown): boolean {
     const status = (err as { status?: number })?.status;
     return status === 0 || status === 408 || (typeof status === 'number' && status >= 500);
-  }
-
-  abrirModalAutoAsistencia(): void {
-    this.modalAutoAsistenciaVisible.set(true);
-  }
-
-  cerrarModalAutoAsistencia(): void {
-    this.modalAutoAsistenciaVisible.set(false);
-  }
-
-  enviarAutoAsistencia(event: { pin: string; token: string }): void {
-    if (!event.pin && !event.token) {
-      this.toast.error('Por favor ingresa el PIN de 6 caracteres o el token QR.');
-      return;
-    }
-
-    this.procesandoAutoAsistencia.set(true);
-    this.sessionService
-      .registrarAutoAsistencia({
-        codigoAcceso: event.pin || undefined,
-        token: event.token || undefined,
-      })
-      .subscribe({
-        next: (res: any) => {
-          this.procesandoAutoAsistencia.set(false);
-          const yaRegistrado = res?.datos?.yaRegistrado;
-          if (yaRegistrado) {
-            this.toast.info(
-              res?.datos?.mensaje || 'Ya tenías tu asistencia registrada previamente para esta sesión.'
-            );
-          } else {
-            this.toast.success(
-              res?.mensajeUsuario || res?.datos?.mensaje || '¡Asistencia registrada con éxito!'
-            );
-          }
-          this.cerrarModalAutoAsistencia();
-          this.cargarMaterias();
-          const actual = this.selectedMateria();
-          if (actual) {
-            this.cargarSesiones(actual);
-          }
-        },
-        error: (err) => {
-          this.procesandoAutoAsistencia.set(false);
-          this.toast.error(getApiErrorMessage(err));
-        },
-      });
   }
 
   abrirModalMatriculaGrupo(): void {
@@ -562,9 +456,9 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
 
     this.procesandoMatriculaGrupo.set(true);
     this.matriculaQrService.matricularAutenticado({ pin }).subscribe({
-      next: () => {
+      next: (resultado) => {
         this.procesandoMatriculaGrupo.set(false);
-        this.toast.success('¡Matrícula confirmada exitosamente en el grupo!');
+        this.toast.success(getApiSuccessMessage(resultado, '¡Matrícula confirmada exitosamente en el grupo!'));
         this.cerrarModalMatriculaGrupo();
         this.cargarMaterias();
       },

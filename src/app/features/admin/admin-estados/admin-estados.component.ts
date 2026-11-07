@@ -15,7 +15,7 @@ export function filasDe(estados: EstadoSistemaItem[], catalogo: EstadoSistemaIte
 
 /**
  * HU155 / HU167: consulta de los estados que usa el sistema. Regla de John (2026-11-04): catálogos base de solo
- * consulta; se muestran los estados de las solicitudes y los del estudiante en el grupo (no los técnicos de envío).
+ * consulta; se muestran los estados de los reclamos de asistencia y los del estudiante en el grupo (no los técnicos de envío).
  */
 @Component({
   selector: 'app-admin-estados',
@@ -32,10 +32,11 @@ export function filasDe(estados: EstadoSistemaItem[], catalogo: EstadoSistemaIte
       <app-catalogo-solo-consulta
         [seccion]="true"
         [conEstado]="false"
-        titulo="Estados de solicitudes"
-        descripcion="Reclamos de asistencia y solicitudes de ingreso a grupo."
+        titulo="Estados de reclamos de asistencia (P, A, R)"
+        descripcion="Estados de las solicitudes de revisión (reclamos) de asistencia."
         vacio="No hay estados de solicitud registrados."
         [filas]="solicitudes()"
+        [cargando]="cargando()"
       />
       <app-catalogo-solo-consulta
         [seccion]="true"
@@ -44,6 +45,7 @@ export function filasDe(estados: EstadoSistemaItem[], catalogo: EstadoSistemaIte
         descripcion="Situación de cada estudiante en los grupos en que está inscrito."
         vacio="No hay estados de estudiante registrados."
         [filas]="estudianteGrupo()"
+        [cargando]="cargando()"
       />
     </div>
   `,
@@ -53,13 +55,20 @@ export class AdminEstadosComponent implements OnInit {
   private readonly toast = inject(ToastService);
 
   readonly estados = signal<EstadoSistemaItem[]>([]);
+  readonly cargando = signal(true);
   readonly solicitudes = computed(() => filasDe(this.estados(), 'SOLICITUD'));
   readonly estudianteGrupo = computed(() => filasDe(this.estados(), 'ESTUDIANTE_GRUPO'));
 
   ngOnInit(): void {
     this.service.getEstadosSistema().subscribe({
-      next: (res) => this.estados.set(res.datos ?? []),
-      error: (err) => this.toast.error(getApiErrorMessage(err)),
+      next: (res) => {
+        this.estados.set(res.datos ?? []);
+        this.cargando.set(false);
+      },
+      error: (err) => {
+        this.cargando.set(false);
+        this.toast.error(getApiErrorMessage(err));
+      },
     });
   }
 }

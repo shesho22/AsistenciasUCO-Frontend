@@ -8,7 +8,6 @@ import {
   PlanEstudioItem,
   AsignaturaPlanItem,
   EstudianteDirectorioItem,
-  SolicitudMatriculaItem,
   PeriodoAcademicoItem,
   FacultadItem,
   AreaConocimientoItem,
@@ -201,7 +200,7 @@ export interface MockSesionMateria {
   tema: string;
   estadoAsistencia: 'PRESENTE' | 'AUSENTE' | 'RETARDO' | 'JUSTIFICADA';
   reclamoId?: string;
-  estadoReclamo?: 'PENDIENTE' | 'APROBADA' | 'RECHAZADA';
+  estadoReclamo?: 'PENDIENTE' | 'APROBADA' | 'RECHAZADA' | 'RETIRADA';
   categoriaReclamo?: string;
   justificacionEstudiante?: string;
   soporteAdjuntoNombre?: string;
@@ -896,55 +895,6 @@ export const MOCK_ESTUDIANTES_DIRECTORIO: EstudianteDirectorioItem[] = [
     estadoMatricula: 'ACTIVO',
     promedioAcumulado: 4.3,
     gruposInscritos: ['crs-1'],
-  },
-];
-
-export const MOCK_SOLICITUDES_MATRICULA: SolicitudMatriculaItem[] = [
-  {
-    id: 'SOL-MAT-001',
-    estudianteId: 'EST-104',
-    estudianteNombre: 'Mateo Henao Ceballos',
-    estudianteCodigo: '202110104',
-    estudianteCorreo: 'mateo.henao@uco.edu.co',
-    cursoId: 'crs-1',
-    cursoCodigo: 'MAT-301',
-    cursoNombre: 'Matemática Avanzada III',
-    grupo: 'Sección A',
-    fechaSolicitud: '2026-08-20',
-    motivo: 'Cruce de horario con materia obligatoria de carrera, requiero cambio a la Sección A.',
-    estado: 'PENDIENTE',
-  },
-  {
-    id: 'SOL-MAT-002',
-    estudianteId: 'EST-103',
-    estudianteNombre: 'Sofía Montoya Zapata',
-    estudianteCodigo: '202310103',
-    estudianteCorreo: 'sofia.montoya@uco.edu.co',
-    cursoId: 'crs-1',
-    cursoCodigo: 'MAT-301',
-    cursoNombre: 'Matemática Avanzada III',
-    grupo: 'Sección A',
-    fechaSolicitud: '2026-08-19',
-    motivo: 'Nivelación académica de semestre anterior.',
-    estado: 'APROBADA',
-    respuestaCoordinador: 'Cupo habilitado.',
-    fechaRespuesta: '2026-08-21',
-  },
-  {
-    id: 'SOL-MAT-003',
-    estudianteId: 'EST-105',
-    estudianteNombre: 'Daniela Salazar Franco',
-    estudianteCodigo: '202010105',
-    estudianteCorreo: 'daniela.salazar@uco.edu.co',
-    cursoId: 'crs-2',
-    cursoCodigo: 'FIS-202',
-    cursoNombre: 'Física Cuántica Aplicada',
-    grupo: 'Sección B',
-    fechaSolicitud: '2026-08-18',
-    motivo: 'Reintegro académico al semestre lectivo.',
-    estado: 'RECHAZADA',
-    respuestaCoordinador: 'Estado de matrícula inactivo en sistema financiero.',
-    fechaRespuesta: '2026-08-19',
   },
 ];
 

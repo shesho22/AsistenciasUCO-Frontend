@@ -56,14 +56,12 @@ export const environment = {
     sessionsEnabled: true,
     attendanceEnabled: true,
     sessionsV2Enabled: true,
-    // OUT_OF_GOLDEN_PATH (LB-001B.5A): acciones de sesión sin contrato en
-    // BACKEND_GOLDEN_PATH_CONTRACT. Deshabilitadas hasta que exista un contrato propio.
-    sessionCancelEnabled: false,
-    sessionQrEnabled: false,
-    // GET/PUT /usuarios/perfil responden 501 (FEATURE_UNAVAILABLE): apagado por defecto; habilitar con USER_PROFILE_ENDPOINT_ENABLED=true cuando el backend lo implemente
+    // CULM-001 B.1 (HU047): la cancelación de sesión tiene contrato (CONTRACT B 3.2.1). La bandera queda como
+    // interruptor de retirada. CULM-001 B.2 (HU175): el QR de asistencia tiene contrato (CONTRACT B 3.2.6).
+    sessionCancelEnabled: true,
+    sessionQrEnabled: true,
+    // GET /usuarios/perfil para hidratar el nombre al iniciar sesión: apagado por defecto; habilitar con USER_PROFILE_ENDPOINT_ENABLED=true (el PUT fue retirado en CULM-001 A.2-14)
     userProfileEndpointEnabled: runtimeFlag('USER_PROFILE_ENDPOINT_ENABLED'),
-    // Módulo de reclamos docente en backend responde 501 (fuera de alcance en esta fase)
-    teacherClaimsEnabled: false,
   },
   keycloak: {
     get url(): string {

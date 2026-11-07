@@ -60,18 +60,6 @@ describe('GroupSessionsOverviewComponent', () => {
     expect(text).not.toContain('0% Institucional');
   });
 
-  it('con registros calcula el promedio real', () => {
-    const component = render([
-      session(1, [
-        { studentId: 'e1', status: 'AN' },
-        { studentId: 'e2', status: 'SJC' },
-      ] as ClassSession['records']),
-    ]);
-
-    expect(component.promedioAsistencia()).toBe(50);
-    expect((fixture.nativeElement as HTMLElement).textContent).toContain('50%');
-  });
-
   describe('SES-05: EX es una ausencia justificada, no una asistencia presencial', () => {
     const conJustificada = () =>
       session(1, [
@@ -120,14 +108,6 @@ describe('GroupSessionsOverviewComponent', () => {
       const celda = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="asistentes-sesion-1"]');
       expect(celda?.textContent).not.toContain('justificada');
     });
-
-    // Fórmula oficial PENDIENTE DE DECISIÓN FUNCIONAL: hoy el promedio suma EX con AN. Esta prueba fija el
-    // comportamiento vigente para que el cambio de política sea explícito (debe cambiarse junto con la decisión).
-    it('el promedio conserva la fórmula vigente (AN + EX) hasta que exista la decisión académica', () => {
-      const component = render([conJustificada()]);
-
-      expect(component.promedioAsistencia()).toBe(67);
-    });
   });
 
   it('muestra las dos sesiones y el grupo sin código ni separador huérfano', () => {
@@ -140,11 +120,29 @@ describe('GroupSessionsOverviewComponent', () => {
     expect(text).not.toContain('undefined');
   });
 
-  it('HU051/HU053: el botón "Padrón y solicitudes" emite gestionarPadron', () => {
+  it('HU051: el botón "Padrón" emite gestionarPadron', () => {
     const comp = render([session(1)]);
     let emitido = false;
     comp.gestionarPadron.subscribe(() => (emitido = true));
-    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('[data-testid="padron-solicitudes"]')!.click();
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('[data-testid="padron"]')!.click();
     expect(emitido).toBeTrue();
+  });
+
+  it('B1-F-14 las sesiones canceladas no cuentan en el total', () => {
+    const cancelada: ClassSession = { ...session(3), estado: 'CANCELADA' };
+    const component = render([
+      session(1, [{ studentId: 'e1', status: 'SJC' }] as ClassSession['records']),
+      session(2),
+      cancelada,
+    ]);
+
+    expect(component.totalSesiones()).toBe(2);
+  });
+
+  it('B1-F-14 una sesión cancelada se muestra con la etiqueta Cancelada en el listado', () => {
+    render([{ ...session(1), estado: 'CANCELADA', cancelacion: { tipo: 'DOCENTE', motivo: 'Paro', nombreFestivo: null, fechaCancelacionUtc: null } }]);
+
+    const text = (fixture.nativeElement as HTMLElement).textContent || '';
+    expect(text).toContain('Cancelada');
   });
 });

@@ -36,17 +36,19 @@ const ESTADOS_ASISTENCIA: readonly EstadoAsistenciaSesionEstudiante[] = [
   'AUSENTE',
   'RETARDO',
   'JUSTIFICADA',
+  'PARCIAL',
   'NO_DISPONIBLE',
 ];
 
 /** Estados con los que el estudiante puede pedir revision; `NO_DISPONIBLE` jamas habilita un reclamo. */
 const ESTADOS_RECLAMABLES = new Set<EstadoAsistenciaSesionEstudiante>(['AUSENTE', 'RETARDO']);
 
-/** Nombres de estado de solicitud que entrega el catalogo de la DB (`pendiente`, `aceptada`, `rechazada`). */
+/** Nombres de estado de solicitud que entrega el catalogo de la DB (`pendiente`, `aceptada`, `rechazada`, `retirada`). */
 const SOLICITUD_POR_NOMBRE: Record<string, EstadoSolicitudRevision> = {
   pendiente: 'PENDIENTE',
   aceptada: 'APROBADA',
   rechazada: 'RECHAZADA',
+  retirada: 'RETIRADA',
 };
 
 const NAIVE_LOCAL_DATE_TIME = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})(?::\d{2}(?:\.\d{1,9})?)?$/;
@@ -135,7 +137,7 @@ export class StudentPortalMapper {
       aula: null,
       horario: null,
       creditos: null,
-      indicadores: null,
+      indicadores: dto.indicadores ?? null,
       estado: null,
     };
   }
@@ -201,6 +203,8 @@ export class StudentPortalMapper {
     if (inicio) horario = fin ? `${inicio.time} - ${fin.time}` : inicio.time;
     const estado = ESTADOS_ASISTENCIA.find((valor) => valor === dto.estadoAsistencia) ?? 'NO_DISPONIBLE';
     const solicitudRevision = estadoSolicitud(dto.estadoSolicitudRevision);
+    const cancelada = dto.estado === 'CANCELADA';
+    const limite = StudentPortalMapper.presentarInstante(dto.fechaLimiteJustificacionUtc, format);
 
     return {
       id: dto.id,
@@ -214,7 +218,13 @@ export class StudentPortalMapper {
       tema: texto(dto.nombre) ?? texto(dto.codigo) ?? `Sesión ${dto.numero}`,
       estadoAsistencia: estado,
       solicitudRevision,
-      reclamable: dto.reclamable === true && ESTADOS_RECLAMABLES.has(estado) && solicitudRevision === null,
+      estado: cancelada ? 'CANCELADA' : 'PROGRAMADA',
+      cancelacion: dto.cancelacion ?? null,
+      horasSesion: typeof dto.horasSesion === 'number' ? dto.horasSesion : undefined,
+      fechaLimiteJustificacionUtc: limite?.utc,
+      fechaLimiteJustificacionLocal: limite ? `${limite.date} ${limite.time}` : undefined,
+      plazoJustificacionVigente: typeof dto.plazoJustificacionVigente === 'boolean' ? dto.plazoJustificacionVigente : undefined,
+      reclamable: !cancelada && dto.reclamable === true && ESTADOS_RECLAMABLES.has(estado) && solicitudRevision === null,
     };
   }
 

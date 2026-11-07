@@ -27,6 +27,11 @@ interface NavItem {
       [type]="toastState().type"
       (dismissed)="toastService.dismiss()"
     ></app-toast>
+    <a
+      href="#contenido-principal"
+      (click)="irAlContenido($event)"
+      class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:rounded-xl focus:bg-primary-700 focus:text-white focus:font-semibold"
+    >Saltar al contenido principal</a>
     <div class="h-dvh max-h-dvh w-full bg-warm-50 flex flex-col md:flex-row overflow-hidden">
       <!-- Mobile Top Navbar -->
       <header class="md:hidden bg-white border-b border-warm-200 px-4 py-3 flex items-center justify-between shrink-0 sticky top-0 z-30 shadow-warm-sm">
@@ -37,10 +42,12 @@ interface NavItem {
         <button
           type="button"
           (click)="toggleMobileMenu()"
-          class="p-2 text-warm-600 hover:text-warm-900 rounded-lg hover:bg-warm-100"
+          class="p-2 min-w-[44px] min-h-[44px] inline-flex items-center justify-center text-warm-600 hover:text-warm-900 rounded-lg hover:bg-warm-100 focus-visible:ring-2 focus-visible:ring-primary-500"
           aria-label="Menú principal"
+          aria-controls="menu-lateral"
+          [attr.aria-expanded]="isMobileMenuOpen()"
         >
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-6 h-6" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             @if (isMobileMenuOpen()) {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             } @else {
@@ -59,7 +66,7 @@ interface NavItem {
       }
 
       <!-- Sidebar Container -->
-      <aside [class]="sidebarClasses()">
+      <aside id="menu-lateral" [class]="sidebarClasses()">
         <!-- Brand Header -->
         <div class="p-5 flex items-center justify-between border-b border-warm-200/80 shrink-0">
           <div class="flex items-center gap-3">
@@ -160,7 +167,7 @@ interface NavItem {
               <button
                 type="button"
                 (click)="logout()"
-                class="p-2 text-warm-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors shrink-0"
+                class="p-2 text-warm-400 hover:text-danger-600 rounded-lg hover:bg-danger-50 transition-colors shrink-0"
                 title="Cerrar sesión"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -173,7 +180,7 @@ interface NavItem {
       </aside>
 
       <!-- Main Content Area -->
-      <main class="flex-1 flex flex-col min-w-0 h-full overflow-y-auto">
+      <main id="contenido-principal" tabindex="-1" class="flex-1 flex flex-col min-w-0 h-full overflow-y-auto focus:outline-none">
         <!-- Top Desktop Bar -->
         <div class="hidden md:flex items-center justify-between bg-white border-b border-warm-200 px-8 py-3.5 shadow-warm-sm shrink-0 sticky top-0 z-20">
           <div class="flex items-center gap-3">
@@ -252,6 +259,12 @@ export class DashboardLayoutComponent {
       route: '/app/admin/estados',
       roles: ['ADMINISTRADOR', 'ADMIN'],
       icon: 'catalogos',
+    },
+    {
+      label: 'Festivos',
+      route: '/app/admin/festivos',
+      roles: ['ADMINISTRADOR', 'ADMIN'],
+      icon: 'horarios',
     },
     {
       label: 'Áreas de Conocimiento',
@@ -339,7 +352,7 @@ export class DashboardLayoutComponent {
     },
     {
       label: 'Áreas de Conocimiento',
-      route: '/app/decano/infraestructura',
+      route: '/app/decano/areas',
       roles: ['DECANO'],
       icon: 'catalogos',
     },
@@ -446,6 +459,18 @@ export class DashboardLayoutComponent {
       icon: 'grupos',
     },
     {
+      label: 'Tomar Asistencia',
+      route: '/app/asistencia',
+      roles: ['DOCENTE'],
+      icon: 'asistencia',
+    },
+    {
+      label: 'Reclamos',
+      route: '/app/docente/reclamos',
+      roles: ['DOCENTE'],
+      icon: 'reclamos',
+    },
+    {
       label: 'Mis Horarios',
       route: '/app/docente/horarios',
       roles: ['DOCENTE'],
@@ -475,12 +500,6 @@ export class DashboardLayoutComponent {
       roles: ['ESTUDIANTE'],
       icon: 'grupos',
     },
-    {
-      label: 'Solicitudes de Ingreso',
-      route: '/app/estudiante/solicitudes',
-      roles: ['ESTUDIANTE'],
-      icon: 'grupos',
-    },
   ];
 
   filteredNavItems = computed<NavItem[]>(() => {
@@ -491,6 +510,11 @@ export class DashboardLayoutComponent {
 
   toggleCollapsed(): void {
     this.isCollapsed.update((val) => !val);
+  }
+
+  irAlContenido(event: Event): void {
+    event.preventDefault();
+    document.getElementById('contenido-principal')?.focus();
   }
 
   toggleMobileMenu(): void {

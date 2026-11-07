@@ -69,12 +69,12 @@ type FiltroEstado = 'TODOS' | 'ACTIVO' | 'INACTIVO';
             <table class="w-full text-sm">
               <thead>
                 <tr class="text-left text-xs uppercase tracking-wider text-warm-500 border-b border-warm-100">
-                  <th class="py-2 pr-3">Estudiante</th>
-                  <th class="py-2 pr-3">Documento</th>
-                  <th class="py-2 pr-3">Programas</th>
-                  <th class="py-2 pr-3">Grupos</th>
-                  <th class="py-2 pr-3">Estado</th>
-                  <th class="py-2"></th>
+                  <th scope="col" class="py-2 pr-3">Estudiante</th>
+                  <th scope="col" class="py-2 pr-3">Documento</th>
+                  <th scope="col" class="py-2 pr-3">Programas</th>
+                  <th scope="col" class="py-2 pr-3">Grupos</th>
+                  <th scope="col" class="py-2 pr-3">Estado</th>
+                  <th scope="col" class="py-2"></th>
                 </tr>
               </thead>
               <tbody>
@@ -127,10 +127,10 @@ type FiltroEstado = 'TODOS' | 'ACTIVO' | 'INACTIVO';
             <table class="w-full text-sm">
               <thead>
                 <tr class="text-left text-xs uppercase tracking-wider text-warm-500 border-b border-warm-100">
-                  <th class="py-2 pr-3">Programa</th>
-                  <th class="py-2 pr-3">Plan</th>
-                  <th class="py-2 pr-3">Asignatura</th>
-                  <th class="py-2">Grupo</th>
+                  <th scope="col" class="py-2 pr-3">Programa</th>
+                  <th scope="col" class="py-2 pr-3">Plan</th>
+                  <th scope="col" class="py-2 pr-3">Asignatura</th>
+                  <th scope="col" class="py-2">Grupo</th>
                 </tr>
               </thead>
               <tbody>

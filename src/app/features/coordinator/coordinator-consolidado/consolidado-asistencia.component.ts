@@ -89,15 +89,15 @@ export function acumularOpciones(opciones: Opcion[], filas: ConsolidadoGrupoItem
             <table class="w-full text-sm">
               <thead>
                 <tr class="text-left text-xs uppercase tracking-wider text-warm-500 border-b border-warm-100">
-                  <th class="py-2 pr-3">Cohorte</th>
-                  <th class="py-2 pr-3">Materia / Grupo</th>
-                  <th class="py-2 pr-3">Docente</th>
-                  <th class="py-2 pr-3 text-right">Activos</th>
-                  <th class="py-2 pr-3 text-right" title="Sesiones ya vencidas con asistencia registrada; las programadas a futuro no cuentan.">Sesiones ejecutadas</th>
-                  <th class="py-2 pr-3 text-right">% Asistencia</th>
-                  <th class="py-2 pr-3 text-right">% Inasistencia</th>
-                  <th class="py-2 pr-3 text-right">En riesgo</th>
-                  <th class="py-2 text-right">Pérdida</th>
+                  <th scope="col" class="py-2 pr-3">Cohorte</th>
+                  <th scope="col" class="py-2 pr-3">Materia / Grupo</th>
+                  <th scope="col" class="py-2 pr-3">Docente</th>
+                  <th scope="col" class="py-2 pr-3 text-right">Activos</th>
+                  <th scope="col" class="py-2 pr-3 text-right" title="Sesiones ya vencidas con asistencia registrada; las programadas a futuro no cuentan.">Sesiones ejecutadas</th>
+                  <th scope="col" class="py-2 pr-3 text-right">% Asistencia</th>
+                  <th scope="col" class="py-2 pr-3 text-right">% Inasistencia</th>
+                  <th scope="col" class="py-2 pr-3 text-right">En riesgo</th>
+                  <th scope="col" class="py-2 text-right">Pérdida</th>
                 </tr>
               </thead>
               <tbody>
@@ -112,11 +112,11 @@ export function acumularOpciones(opciones: Opcion[], filas: ConsolidadoGrupoItem
                     <td class="py-2 pr-3 text-right text-warm-700">{{ g.estudiantesActivos }}</td>
                     <td class="py-2 pr-3 text-right text-warm-700">{{ g.sesionesEjecutadas }}</td>
                     <td class="py-2 pr-3 text-right font-semibold text-warm-900">{{ g.porcentajeAsistencia | number: '1.0-2' }}%</td>
-                    <td class="py-2 pr-3 text-right" [class]="g.porcentajeInasistencia >= 15 ? 'text-red-700 font-semibold' : 'text-warm-700'">
+                    <td class="py-2 pr-3 text-right" [class]="g.porcentajeInasistencia >= 15 ? 'text-danger-700 font-semibold' : 'text-warm-700'">
                       {{ g.porcentajeInasistencia | number: '1.0-2' }}%
                     </td>
-                    <td class="py-2 pr-3 text-right" [class]="g.estudiantesRiesgo > 0 ? 'text-amber-700 font-semibold' : 'text-warm-700'">{{ g.estudiantesRiesgo }}</td>
-                    <td class="py-2 text-right" [class]="g.estudiantesPerdida > 0 ? 'text-red-700 font-semibold' : 'text-warm-700'">{{ g.estudiantesPerdida }}</td>
+                    <td class="py-2 pr-3 text-right" [class]="g.estudiantesRiesgo > 0 ? 'text-warning-700 font-semibold' : 'text-warm-700'">{{ g.estudiantesRiesgo }}</td>
+                    <td class="py-2 text-right" [class]="g.estudiantesPerdida > 0 ? 'text-danger-700 font-semibold' : 'text-warm-700'">{{ g.estudiantesPerdida }}</td>
                   </tr>
                 }
               </tbody>

@@ -1,3 +1,4 @@
+import { CancelacionSesion, detalleCancelacion } from '../../../../core/models/sesion-estado.model';
 import { Component, ChangeDetectionStrategy, input, output, signal, computed, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -23,12 +24,12 @@ import {
       @if (windowMessage()) {
         <div
           role="status"
-          class="flex items-start gap-2 bg-amber-50 border border-amber-200 text-amber-900 text-xs font-medium rounded-2xl px-3.5 py-2.5"
+          class="flex items-start gap-2 bg-warning-50 border border-warning-200 text-warning-900 text-xs font-medium rounded-2xl px-3.5 py-2.5"
         >
           <svg class="w-4 h-4 shrink-0 mt-px" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <span>{{ windowMessage() }} La consulta del registro sigue disponible.</span>
+          <span>{{ windowMessage() }}@if (detalleCancelacion()) { <strong class="font-semibold"> {{ detalleCancelacion() }}.</strong> } La consulta del registro sigue disponible.</span>
         </div>
       }
       <!-- Barra Unificada Compacta: Buscador + Filtros -->
@@ -115,7 +116,7 @@ import {
                     <p class="font-semibold text-warm-900 text-xs truncate leading-tight">{{ student.studentName }}</p>
                     <p class="text-[10px] font-mono text-warm-500 mt-0.5">{{ student.studentCode }}</p>
                     @if (student.status === null) {
-                      <p class="text-[10px] font-semibold text-amber-700 mt-0.5">Sin registrar</p>
+                      <p class="text-[10px] font-semibold text-warning-700 mt-0.5">Sin registrar</p>
                     }
                   </div>
                 </div>
@@ -200,7 +201,7 @@ import {
                               {{ student.studentName }}
                             </p>
                             @if (student.status === null) {
-                              <p class="text-[10px] font-semibold text-amber-700 mt-0.5">Sin registrar</p>
+                              <p class="text-[10px] font-semibold text-warning-700 mt-0.5">Sin registrar</p>
                             }
                           </div>
                         </div>
@@ -271,6 +272,11 @@ export class AttendanceControlTableComponent {
   attendanceEnabled = input<boolean>(true);
   /** SES-01: estado derivado de los instantes v2; no es un estado persistido de la sesión. */
   attendanceWindowState = input<AttendanceWindowState>('ABIERTA');
+  /** HU047: detalle de la cancelación de la sesión mostrada (motivo o festivo), tal como lo entrega el backend. */
+  cancelacion = input<CancelacionSesion | null | undefined>(null);
+  detalleCancelacion = computed(() =>
+    this.attendanceWindowState() === 'CANCELADA' ? detalleCancelacion(this.cancelacion()) : ''
+  );
 
   // Gate de los controles: features + guardado en curso + ventana de registro (SES-01). La ventana
   // se deriva en el frontend solo para presentar; backend/DB la validan con su reloj y rechazan con 409.
@@ -328,16 +334,16 @@ export class AttendanceControlTableComponent {
     const isSelected = current === target;
     if (target === 'AN') {
       return isSelected
-        ? 'py-1.5 px-2 rounded-xl text-[11px] font-bold bg-emerald-600 text-white shadow-xs'
+        ? 'py-1.5 px-2 rounded-xl text-[11px] font-bold bg-success-600 text-white shadow-xs'
         : 'py-1.5 px-2 rounded-xl text-[11px] font-medium bg-warm-100 text-warm-700';
     }
     if (target === 'SJC') {
       return isSelected
-        ? 'py-1.5 px-2 rounded-xl text-[11px] font-bold bg-red-600 text-white shadow-xs'
+        ? 'py-1.5 px-2 rounded-xl text-[11px] font-bold bg-danger-600 text-white shadow-xs'
         : 'py-1.5 px-2 rounded-xl text-[11px] font-medium bg-warm-100 text-warm-700';
     }
     return isSelected
-      ? 'py-1.5 px-2 rounded-xl text-[11px] font-bold bg-amber-600 text-white shadow-xs'
+      ? 'py-1.5 px-2 rounded-xl text-[11px] font-bold bg-warning-600 text-white shadow-xs'
       : 'py-1.5 px-2 rounded-xl text-[11px] font-medium bg-warm-100 text-warm-700';
   }
 
@@ -350,16 +356,16 @@ export class AttendanceControlTableComponent {
     const isSelected = current === target;
     if (target === 'AN') {
       return isSelected
-        ? 'px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 text-white shadow-xs transition-all'
+        ? 'px-3 py-1.5 rounded-lg text-xs font-bold bg-success-600 text-white shadow-xs transition-all'
         : 'px-3 py-1.5 rounded-lg text-xs font-medium text-warm-600 hover:text-warm-900 transition-all';
     }
     if (target === 'SJC') {
       return isSelected
-        ? 'px-3 py-1.5 rounded-lg text-xs font-bold bg-red-600 text-white shadow-xs transition-all'
+        ? 'px-3 py-1.5 rounded-lg text-xs font-bold bg-danger-600 text-white shadow-xs transition-all'
         : 'px-3 py-1.5 rounded-lg text-xs font-medium text-warm-600 hover:text-warm-900 transition-all';
     }
     return isSelected
-      ? 'px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-600 text-white shadow-xs transition-all'
+      ? 'px-3 py-1.5 rounded-lg text-xs font-bold bg-warning-600 text-white shadow-xs transition-all'
       : 'px-3 py-1.5 rounded-lg text-xs font-medium text-warm-600 hover:text-warm-900 transition-all';
   }
 

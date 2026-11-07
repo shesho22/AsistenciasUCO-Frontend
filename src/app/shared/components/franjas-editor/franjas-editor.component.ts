@@ -32,7 +32,7 @@ import { DIAS_SEMANA, franjaNueva } from '../../../core/validation/franjas.util'
           </select>
           <input [name]="'inicio' + i" type="time" [ngModel]="franja.horaInicio" (ngModelChange)="cambiar(i, { horaInicio: $event })" class="px-3 py-2 border border-warm-200 rounded-xl text-sm" />
           <input [name]="'fin' + i" type="time" [ngModel]="franja.horaFin" (ngModelChange)="cambiar(i, { horaFin: $event })" class="px-3 py-2 border border-warm-200 rounded-xl text-sm" />
-          <button type="button" (click)="quitar(i)" class="text-xs text-red-600 hover:underline" title="Quitar franja">Quitar</button>
+          <button type="button" (click)="quitar(i)" class="text-xs text-danger-600 hover:underline" title="Quitar franja">Quitar</button>
         </div>
       }
     </div>

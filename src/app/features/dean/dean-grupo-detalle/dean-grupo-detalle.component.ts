@@ -5,6 +5,7 @@ import { CourseService } from '../../../core/services/course.service';
 import { DeanFacultadService } from '../../../core/services/dean-facultad.service';
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
 import { Course } from '../../../core/models/course.model';
+import { SesionEstadoBadgeComponent } from '../../../shared/components/sesion-estado-badge/sesion-estado-badge.component';
 import { SesionFacultadItem } from '../../../core/models/facultad-decano.model';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
@@ -19,7 +20,7 @@ const MAX_PAGINAS_SESIONES = 50;
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full' },
-  imports: [CommonModule],
+  imports: [CommonModule, SesionEstadoBadgeComponent],
   template: `
     <div class="space-y-6 animate-fade-in">
       <!-- Barra de Retorno -->
@@ -42,7 +43,14 @@ const MAX_PAGINAS_SESIONES = 50;
         }
       </div>
 
-      @if (selectedCourse(); as curso) {
+      @if (errorGrupo() !== null) {
+        <div class="bg-white p-6 rounded-2xl border border-danger-200 text-center" role="alert">
+          <p class="text-sm font-semibold text-danger-700">No fue posible cargar los datos del grupo.</p>
+          <p class="text-xs text-danger-700 mt-1">{{ errorGrupo() }}</p>
+        </div>
+      }
+
+      @if (errorGrupo() === null ? selectedCourse() : null; as curso) {
         <!-- Ficha Resumen del Grupo -->
         <div class="bg-white p-6 rounded-2xl border border-warm-200 shadow-warm-sm grid grid-cols-1 md:grid-cols-4 gap-6">
           <div class="md:col-span-3 space-y-2">
@@ -65,11 +73,11 @@ const MAX_PAGINAS_SESIONES = 50;
             <div>
               <span class="text-xs text-warm-500 font-medium">Aforo Ocupado</span>
               <p class="text-3xl font-serif font-bold text-primary-800 my-1">
-                {{ curso.enrolledStudentsCount }} / {{ curso.cupoMaximo ?? '—' }}
+                @if (curso.cupoMaximo) { {{ curso.enrolledStudentsCount }} / {{ curso.cupoMaximo }} } @else { {{ curso.enrolledStudentsCount ?? 0 }} }
               </p>
             </div>
             <div class="text-[11px] text-warm-500 pt-2 border-t border-warm-200/80">
-              <span>Cupo Ofertado Facultad</span>
+              <span>{{ curso.cupoMaximo ? 'Cupo Ofertado Facultad' : 'Sin cupo definido' }}</span>
             </div>
           </div>
         </div>
@@ -90,10 +98,10 @@ const MAX_PAGINAS_SESIONES = 50;
         @if (cargandoSesiones()) {
           <div class="p-10 text-center text-sm text-warm-500" role="status">Cargando sesiones…</div>
         } @else if (errorSesiones() !== null) {
-          <div class="p-10 text-center text-sm text-red-700" role="alert">
+          <div class="p-10 text-center text-sm text-danger-700" role="alert">
             <p class="font-semibold">No fue posible cargar las sesiones del grupo.</p>
             <p class="text-xs mt-1">{{ errorSesiones() }}</p>
-            <button type="button" (click)="cargarSesiones()" class="mt-3 text-xs font-semibold px-3 py-1.5 rounded-lg border border-red-200 hover:bg-red-50">
+            <button type="button" (click)="cargarSesiones()" class="mt-3 text-xs font-semibold px-3 py-1.5 rounded-lg border border-danger-200 hover:bg-danger-50">
               Reintentar
             </button>
           </div>
@@ -104,7 +112,10 @@ const MAX_PAGINAS_SESIONES = 50;
         } @else {
           <div class="divide-y divide-warm-100">
             @for (s of sessions(); track s.id) {
-              <div class="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-warm-50/50 transition-colors">
+              <div
+                class="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-warm-50/50 transition-colors"
+                [attr.data-testid]="'sesion-fila-' + s.id"
+              >
                 <div class="space-y-1 flex-1 min-w-0">
                   <div class="flex flex-wrap items-center gap-2">
                     @if (s.numeroSemana !== null) {
@@ -117,10 +128,11 @@ const MAX_PAGINAS_SESIONES = 50;
                         {{ fecha(s.fechaHoraInicio).time }} - {{ fecha(s.fechaHoraFin).time }}
                       </span>
                     } @else {
-                      <span class="text-xs font-semibold text-amber-800">Horario no confirmado</span>
+                      <span class="text-xs font-semibold text-warning-800">Horario no confirmado</span>
                     }
                   </div>
                   <h3 class="font-bold text-sm text-warm-900">{{ s.nombre }}</h3>
+                  <app-sesion-estado-badge [estado]="s.estado" [cancelacion]="s.cancelacion" />
                 </div>
               </div>
             }
@@ -145,6 +157,8 @@ export class DeanGrupoDetalleComponent implements OnInit {
   cargandoSesiones = signal(false);
   /** Mensaje del último error al cargar sesiones; `null` si la última carga terminó bien (aunque sea vacía). */
   errorSesiones = signal<string | null>(null);
+  /** Mensaje del backend si falla la carga de la ficha del grupo (403/500). */
+  errorGrupo = signal<string | null>(null);
 
   effectiveGrupoId = computed(() => {
     return this.grupoId() || this.route.snapshot.paramMap.get('grupoId') || '';
@@ -159,6 +173,7 @@ export class DeanGrupoDetalleComponent implements OnInit {
   ngOnInit(): void {
     this.courseService.getDeanCourses().subscribe({
       next: (res) => this.courses.set(res.datos || []),
+      error: (error: unknown) => this.errorGrupo.set(getApiErrorMessage(error)),
     });
     this.cargarSesiones();
   }

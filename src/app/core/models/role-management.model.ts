@@ -1,3 +1,5 @@
+import { IndicadoresAsistenciaResponse } from './indicadores-asistencia.model';
+import { CancelacionSesion, EstadoSesion } from './sesion-estado.model';
 export interface DecanoItem {
   id: string;
   idUsuario?: string;
@@ -119,13 +121,8 @@ export interface HorarioDocenteItem {
   colorCategory: 'emerald' | 'amber' | 'blue' | 'purple';
 }
 
-/** Indicadores de asistencia calculados por una fuente autoritativa. Hoy el backend no los entrega. */
-export interface IndicadoresAsistenciaMateria {
-  totalClases: number;
-  asistencias: number;
-  inasistencias: number;
-  porcentajeAsistencia: number;
-}
+/** Indicadores por horas calculados por el backend (CULM-001 B.2, CONTRACT 3.2.8); el cliente solo los pinta. */
+export type IndicadoresAsistenciaMateria = IndicadoresAsistenciaResponse;
 
 /**
  * Materia del estudiante tal como la entrega `GET /estudiante/materias` (una fila por asignatura + grupo).
@@ -152,7 +149,8 @@ export interface MateriaEstudianteItem {
 }
 
 export type EstadoAsistenciaSesion = 'PRESENTE' | 'AUSENTE' | 'RETARDO' | 'JUSTIFICADA';
-export type EstadoSolicitudRevision = 'PENDIENTE' | 'APROBADA' | 'RECHAZADA';
+/** `RETIRADA`: el estudiante retiró su solicitud mientras estaba pendiente (CULM-001 A.2-7). */
+export type EstadoSolicitudRevision = 'PENDIENTE' | 'APROBADA' | 'RECHAZADA' | 'RETIRADA';
 
 /**
  * Nombre de la categoría de justificación del reclamo. HU005/HU016: los valores salen del catálogo de solo consulta
@@ -176,7 +174,7 @@ export interface SoporteAdjuntoItem {
 }
 
 /** Estado de asistencia de una sesion vista por el estudiante; `NO_DISPONIBLE` jamas equivale a `AUSENTE`. */
-export type EstadoAsistenciaSesionEstudiante = EstadoAsistenciaSesion | 'NO_DISPONIBLE';
+export type EstadoAsistenciaSesionEstudiante = EstadoAsistenciaSesion | 'PARCIAL' | 'NO_DISPONIBLE';
 
 /**
  * Sesion de una materia del estudiante. `estadoAsistencia` proviene del backend para el estudiante autenticado y es
@@ -203,6 +201,16 @@ export interface SesionMateriaDetalle {
   /** El backend ya tiene una solicitud de revision para la asistencia de esta sesion (estado informado). */
   solicitudRevision: EstadoSolicitudRevision | 'DESCONOCIDA' | null;
   reclamable: boolean;
+  /** CULM-001 B.1: una sesion cancelada no cuenta, no es reclamable y se muestra rotulada. */
+  estado?: EstadoSesion;
+  cancelacion?: CancelacionSesion | null;
+  /** CULM-001 B.2: horas de la sesion entregadas por el backend. */
+  horasSesion?: number;
+  /** CULM-001 D.1: limite UTC de justificacion y su presentacion en la zona del usuario (`AAAA-MM-DD HH:mm`). */
+  fechaLimiteJustificacionUtc?: string;
+  fechaLimiteJustificacionLocal?: string;
+  /** `false` = plazo vencido o sin plazo; `undefined` = el backend no lo informo (no bloquea). */
+  plazoJustificacionVigente?: boolean;
   reclamoId?: string;
   estadoReclamo?: EstadoSolicitudRevision;
   categoriaReclamo?: CategoriaJustificacion;
@@ -293,23 +301,6 @@ export interface EstudianteDirectorioItem {
   estadoMatricula: 'ACTIVO' | 'INACTIVO' | 'BLOQUEADO';
   promedioAcumulado?: number;
   gruposInscritos?: string[];
-}
-
-export interface SolicitudMatriculaItem {
-  id: string;
-  estudianteId: string;
-  estudianteNombre: string;
-  estudianteCodigo: string;
-  estudianteCorreo: string;
-  cursoId: string;
-  cursoCodigo: string;
-  cursoNombre: string;
-  grupo: string;
-  fechaSolicitud: string;
-  motivo: string;
-  estado: 'PENDIENTE' | 'APROBADA' | 'RECHAZADA';
-  respuestaCoordinador?: string;
-  fechaRespuesta?: string;
 }
 
 export interface PeriodoAcademicoItem {

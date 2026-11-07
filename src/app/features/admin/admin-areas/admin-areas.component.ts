@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { AdminManagementService } from '../../../core/services/admin-management.service';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
@@ -22,6 +22,7 @@ import {
       descripcion="Catálogo institucional de áreas de conocimiento asociadas a las asignaturas."
       vacio="No hay áreas de conocimiento registradas."
       [filas]="filas()"
+      [cargando]="cargando()"
     />
   `,
 })
@@ -29,11 +30,19 @@ export class AdminAreasComponent implements OnInit {
   private readonly adminService = inject(AdminManagementService);
   private readonly toast = inject(ToastService);
 
+  readonly cargando = signal(true);
+
   readonly filas = computed<FilaCatalogo[]>(() =>
     this.adminService.areas().map((a) => ({ id: a.id, codigo: a.codigo, nombre: a.nombre, activo: a.activa }))
   );
 
   ngOnInit(): void {
-    this.adminService.cargarAreas().subscribe({ error: (err) => this.toast.error(getApiErrorMessage(err)) });
+    this.adminService.cargarAreas().subscribe({
+      next: () => this.cargando.set(false),
+      error: (err) => {
+        this.cargando.set(false);
+        this.toast.error(getApiErrorMessage(err));
+      },
+    });
   }
 }

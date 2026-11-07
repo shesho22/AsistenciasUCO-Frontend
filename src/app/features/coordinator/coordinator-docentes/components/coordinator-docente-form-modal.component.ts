@@ -49,7 +49,7 @@ const CLASE_CONTROL =
 
         <div class="p-6 overflow-y-auto space-y-4">
           @if (error()) {
-            <p role="alert" class="text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2">{{ error() }}</p>
+            <p role="alert" class="text-xs font-medium text-danger-700 bg-danger-50 border border-danger-200 rounded-xl px-3 py-2">{{ error() }}</p>
           }
 
           @if (modo() === 'NUEVO') {

@@ -38,7 +38,16 @@ describe('TeacherGrupoReclamosComponent', () => {
     const text = fixture.nativeElement.textContent;
     expect(text).toContain('Laura Gómez');
     expect(text).toContain('Incapacidad médica EPS');
-    expect(text).toContain('PENDIENTE');
+    expect(text).toContain('Pendiente');
+  });
+
+  it('A2-F-07 un reclamo RETIRADA muestra la insignia "Retirada" en estilo neutro, no como rechazado', () => {
+    fixture.componentRef.setInput('reclamos', [{ ...mockReclamos[0], estadoSolicitud: 'RETIRADA' }]);
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.textContent).toContain('Retirada');
+    expect(el.querySelector('.bg-danger-50')).toBeNull();
   });
 
   it('emite irAReclamos al hacer clic en el botón del portal', () => {

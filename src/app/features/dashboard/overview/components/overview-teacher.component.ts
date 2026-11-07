@@ -30,22 +30,22 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
         </div>
         <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Reclamos Pendientes</span>
-          <p class="text-2xl font-serif font-bold text-warm-900 mt-1" [ngClass]="(pendingClaimsCount() ?? 0) > 0 ? 'text-amber-600' : 'text-warm-900'">
+          <p class="text-2xl font-serif font-bold text-warm-900 mt-1" [ngClass]="(pendingClaimsCount() ?? 0) > 0 ? 'text-warning-600' : 'text-warm-900'">
             {{ pendingClaimsCount() ?? '—' }}
           </p>
           @if (pendingClaimsCount() !== null) {
-            <span class="text-[11px] font-medium" [ngClass]="pendingClaimsCount()! > 0 ? 'text-amber-600' : 'text-emerald-700'">
+            <span class="text-[11px] font-medium" [ngClass]="pendingClaimsCount()! > 0 ? 'text-warning-600' : 'text-success-700'">
               {{ pendingClaimsCount()! > 0 ? 'Requieren revisión' : 'Bandeja al día' }}
             </span>
           }
         </div>
         <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px]"
-             [ngClass]="{'border-emerald-300 bg-emerald-50/30 ring-1 ring-emerald-400/20': proximaClase()?.enCurso, 'border-primary-200/60': proximaClase() && !proximaClase()?.enCurso}">
+             [ngClass]="{'border-primary-300 bg-primary-50/30 ring-1 ring-primary-400/20': proximaClase()?.enCurso, 'border-primary-200/60': proximaClase() && !proximaClase()?.enCurso}">
           <div class="flex items-center justify-between">
             <span class="text-xs text-warm-500 font-medium">Próxima Clase</span>
             @if (proximaClase()?.enCurso) {
-              <span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full animate-pulse">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+              <span class="inline-flex items-center gap-1 text-[10px] font-bold text-success-700 bg-success-100 px-2 py-0.5 rounded-full animate-pulse">
+                <span class="w-1.5 h-1.5 rounded-full bg-success-600"></span>
                 En curso
               </span>
             } @else if (proximaClase()) {
@@ -73,16 +73,16 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
 
       <!-- Alerta destacada si hay reclamos pendientes -->
       @if ((pendingClaimsCount() ?? 0) > 0) {
-        <div class="bg-amber-50 border border-amber-200 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div class="bg-warning-50 border border-warning-200 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-amber-700 shrink-0">
+            <div class="w-10 h-10 rounded-xl bg-warning-100 flex items-center justify-center text-warning-700 shrink-0">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
             </div>
             <div>
-              <h3 class="font-bold text-amber-900 text-sm">Tienes {{ pendingClaimsCount() }} reclamos de asistencia pendientes</h3>
-              <p class="text-xs text-amber-700">Revisa las solicitudes radicadas por estudiantes antes de que expiren los plazos de corte.</p>
+              <h3 class="font-bold text-warning-900 text-sm">Tienes {{ pendingClaimsCount() }} reclamos de asistencia pendientes</h3>
+              <p class="text-xs text-warning-700">Revisa las solicitudes radicadas por estudiantes antes de que expiren los plazos de corte.</p>
             </div>
           </div>
           <a routerLink="/app/docente/reclamos" class="shrink-0">
@@ -97,11 +97,11 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
       @if (proximaClase(); as pc) {
         <div class="rounded-2xl p-5 border transition-all duration-300 shadow-warm-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
              [ngClass]="pc.enCurso 
-               ? 'bg-gradient-to-r from-emerald-50 via-teal-50 to-warm-50 border-emerald-300 ring-1 ring-emerald-400/30' 
+               ? 'bg-gradient-to-r from-primary-50 via-primary-50 to-warm-50 border-primary-300 ring-1 ring-primary-400/30' 
                : 'bg-gradient-to-r from-warm-50 via-white to-primary-50/40 border-primary-200/80'">
           <div class="flex items-center gap-4">
             <div class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
-                 [ngClass]="pc.enCurso ? 'bg-emerald-600 text-white shadow-emerald-sm' : 'bg-primary-900 text-white shadow-warm-sm'">
+                 [ngClass]="pc.enCurso ? 'bg-success-600 text-white shadow-warm-sm' : 'bg-primary-900 text-white shadow-warm-sm'">
               @if (pc.enCurso) {
                 <svg class="w-6 h-6 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
@@ -116,11 +116,11 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
             <div>
               <div class="flex flex-wrap items-center gap-2">
                 <span class="text-xs font-mono font-bold px-2.5 py-0.5 rounded-md"
-                      [ngClass]="pc.enCurso ? 'bg-emerald-100 text-emerald-800' : 'bg-primary-100 text-primary-900'">
+                      [ngClass]="pc.enCurso ? 'bg-success-100 text-success-800' : 'bg-primary-100 text-primary-900'">
                   {{ pc.codigo }}
                 </span>
                 <span class="text-xs font-bold px-2.5 py-0.5 rounded-full"
-                      [ngClass]="pc.enCurso ? 'bg-emerald-600 text-white animate-pulse' : 'bg-warm-200 text-warm-800'">
+                      [ngClass]="pc.enCurso ? 'bg-success-600 text-white animate-pulse' : 'bg-warm-200 text-warm-800'">
                   {{ pc.tiempoRestanteTexto }}
                 </span>
                 <span class="text-xs text-warm-500 font-medium">| {{ pc.dia }} {{ pc.horaInicio }} - {{ pc.horaFin }}</span>
@@ -171,7 +171,7 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
         } @else {
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             @for (course of courses(); track course.id) {
-              <app-card [hoverable]="true" [title]="course.name" [subtitle]="course.code + ' • ' + course.section">
+              <app-card [hoverable]="true" [title]="course.name" [subtitle]="subtituloCurso(course)">
                 <div class="space-y-3 my-2 text-xs text-warm-700">
                   <div class="flex items-center gap-2">
                     <svg class="w-4 h-4 text-primary-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -197,7 +197,7 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
                 </div>
               </app-card>
             } @empty {
-              <div class="col-span-3 bg-white p-12 rounded-2xl border border-warm-200 text-center space-y-3">
+              <div class="md:col-span-3 bg-white p-12 rounded-2xl border border-warm-200 text-center space-y-3">
                 <p class="text-xs text-warm-500">No tienes asignaturas programadas para el día de hoy.</p>
               </div>
             }
@@ -213,4 +213,9 @@ export class OverviewTeacherComponent {
   pendingClaimsCount = input<number | null>(0);
   proximaClase = input<ProximaClaseInfo | null>(null);
   isLoading = input<boolean>(false);
+
+  /** Codigo y grupo; sin codigo solo el grupo (nunca el literal "undefined"). */
+  subtituloCurso(course: Course): string {
+    return [course.code, course.section].filter((parte) => !!parte && parte !== '-').join(' • ');
+  }
 }

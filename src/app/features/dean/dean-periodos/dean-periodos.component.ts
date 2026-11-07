@@ -49,7 +49,7 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 
       <!-- Buscador -->
       <div class="relative">
-        <input
+        <input aria-label="Buscar período académico"
           type="text"
           [ngModel]="filtroTexto()"
           (ngModelChange)="filtroTexto.set($event)"
@@ -63,10 +63,10 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 
       <!-- Grid de Períodos -->
       @if (errorPeriodos()) {
-        <div class="bg-white rounded-2xl border border-red-200 p-12 text-center shadow-warm-sm" role="alert">
-          <p class="text-sm font-semibold text-red-700">No fue posible cargar los períodos académicos.</p>
-          <p class="text-xs text-red-700 mt-1">{{ errorPeriodos() }}</p>
-          <button type="button" (click)="cargar()" class="mt-3 text-xs font-semibold px-3 py-1.5 rounded-lg border border-red-200 hover:bg-red-50">
+        <div class="bg-white rounded-2xl border border-danger-200 p-12 text-center shadow-warm-sm" role="alert">
+          <p class="text-sm font-semibold text-danger-700">No fue posible cargar los períodos académicos.</p>
+          <p class="text-xs text-danger-700 mt-1">{{ errorPeriodos() }}</p>
+          <button type="button" (click)="cargar()" class="mt-3 text-xs font-semibold px-3 py-1.5 rounded-lg border border-danger-200 hover:bg-danger-50">
             Reintentar
           </button>
         </div>
@@ -95,8 +95,8 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
               </div>
 
               @if (p.esActual) {
-                <div class="p-2 bg-emerald-50 rounded-xl border border-emerald-200 text-center">
-                  <span class="text-[11px] font-bold text-emerald-800">● Período Académico en Curso</span>
+                <div class="p-2 bg-success-50 rounded-xl border border-success-200 text-center">
+                  <span class="text-[11px] font-bold text-success-800">● Período Académico en Curso</span>
                 </div>
               }
             </div>

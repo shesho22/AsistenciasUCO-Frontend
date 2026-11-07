@@ -35,8 +35,9 @@ import { DeanProgramaEstadoModalComponent } from './dean-programa-estado-modal.c
 
       <div class="flex flex-col sm:flex-row gap-3">
         <input
-          type="text"
+          type="search"
           name="filtroNombre"
+          aria-label="Buscar programa por nombre"
           placeholder="Buscar programa por nombre..."
           [ngModel]="filtroNombre()"
           (ngModelChange)="filtroNombre.set($event)"
@@ -45,6 +46,7 @@ import { DeanProgramaEstadoModalComponent } from './dean-programa-estado-modal.c
         />
         <select
           name="filtroEstado"
+          aria-label="Filtrar programas por estado"
           [ngModel]="filtroEstado()"
           (ngModelChange)="filtroEstado.set($event); aplicarFiltros()"
           class="px-3.5 py-2 bg-white border border-warm-200 rounded-xl text-sm"
@@ -59,7 +61,7 @@ import { DeanProgramaEstadoModalComponent } from './dean-programa-estado-modal.c
       </div>
 
       @if (service.programas().length === 0) {
-        <div class="bg-white rounded-2xl border border-warm-200 p-8 text-center shadow-warm-sm">
+        <div class="bg-white rounded-2xl border border-warm-200 p-8 text-center shadow-warm-sm" [attr.role]="service.cargando() ? 'status' : null">
           <p class="text-sm text-warm-500">
             {{ service.cargando() ? 'Cargando programas...' : 'No hay programas académicos para los filtros indicados.' }}
           </p>
@@ -69,12 +71,12 @@ import { DeanProgramaEstadoModalComponent } from './dean-programa-estado-modal.c
           <table class="min-w-full text-sm">
             <thead class="bg-warm-50 text-xs uppercase text-warm-500">
               <tr>
-                <th class="text-left px-4 py-2.5">Programa</th>
-                <th class="text-left px-4 py-2.5">Tipo</th>
-                <th class="text-left px-4 py-2.5">Modalidad / Jornada</th>
-                <th class="text-left px-4 py-2.5">Coordinador</th>
-                <th class="text-left px-4 py-2.5">Estado</th>
-                <th class="px-4 py-2.5"></th>
+                <th scope="col" class="text-left px-4 py-2.5">Programa</th>
+                <th scope="col" class="text-left px-4 py-2.5">Tipo</th>
+                <th scope="col" class="text-left px-4 py-2.5">Modalidad / Jornada</th>
+                <th scope="col" class="text-left px-4 py-2.5">Coordinador</th>
+                <th scope="col" class="text-left px-4 py-2.5">Estado</th>
+                <th scope="col" class="px-4 py-2.5"><span class="sr-only">Acciones</span></th>
               </tr>
             </thead>
             <tbody>

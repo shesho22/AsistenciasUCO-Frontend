@@ -2,6 +2,7 @@ import { Component, ChangeDetectionStrategy, input, output } from '@angular/core
 import { CommonModule } from '@angular/common';
 import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
 import { type EstadoCargaReclamos, SolicitudRevisionItem } from '../../../../core/models/role-management.model';
+import { etiquetaEstadoReclamo, varianteEstadoReclamo } from '../../../../core/utils/reclamo-estado.util';
 
 @Component({
   selector: 'app-teacher-grupo-reclamos',
@@ -46,8 +47,8 @@ import { type EstadoCargaReclamos, SolicitudRevisionItem } from '../../../../cor
                   </span>
                   <span class="text-xs font-bold text-warm-900">{{ rec.estudianteNombre }}</span>
                 </div>
-                <app-badge [variant]="rec.estadoSolicitud === 'PENDIENTE' ? 'warning' : (rec.estadoSolicitud === 'APROBADA' ? 'success' : 'danger')">
-                  {{ rec.estadoSolicitud }}
+                <app-badge [variant]="varianteEstado(rec.estadoSolicitud)">
+                  {{ etiquetaEstado(rec.estadoSolicitud) }}
                 </app-badge>
               </div>
               <p class="text-xs text-warm-700 italic">"{{ rec.justificacionSolicitud }}"</p>
@@ -61,13 +62,13 @@ import { type EstadoCargaReclamos, SolicitudRevisionItem } from '../../../../cor
       } @else if (estadoCarga() === 'FORBIDDEN' || estadoCarga() === 'UNAVAILABLE' || estadoCarga() === 'NETWORK_ERROR' || estadoCarga() === 'SERVER_ERROR') {
         <div role="alert" class="p-8 text-center space-y-3">
           @if (estadoCarga() === 'FORBIDDEN') {
-            <p class="text-sm text-rose-700">No tienes autorización para consultar reclamos de este grupo.</p>
+            <p class="text-sm text-danger-700">No tienes autorización para consultar reclamos de este grupo.</p>
           } @else if (estadoCarga() === 'UNAVAILABLE') {
-            <p class="text-sm text-amber-800">El servicio de reclamos no está disponible (HTTP 501).</p>
+            <p class="text-sm text-warning-800">El servicio de reclamos no está disponible (HTTP 501).</p>
           } @else if (estadoCarga() === 'NETWORK_ERROR') {
-            <p class="text-sm text-rose-700">No fue posible conectar con el servicio de reclamos.</p>
+            <p class="text-sm text-danger-700">No fue posible conectar con el servicio de reclamos.</p>
           } @else {
-            <p class="text-sm text-rose-700">No fue posible cargar los reclamos del grupo. Intenta nuevamente.</p>
+            <p class="text-sm text-danger-700">No fue posible cargar los reclamos del grupo. Intenta nuevamente.</p>
           }
           <button
             type="button"
@@ -88,4 +89,8 @@ export class TeacherGrupoReclamosComponent {
   estadoCarga = input<EstadoCargaReclamos>('LOADED');
   irAReclamos = output<void>();
   reintentar = output<void>();
+
+  /** Una solicitud retirada por el estudiante se ve neutra: no es pendiente, rechazada ni resuelta. */
+  readonly varianteEstado = varianteEstadoReclamo;
+  readonly etiquetaEstado = etiquetaEstadoReclamo;
 }

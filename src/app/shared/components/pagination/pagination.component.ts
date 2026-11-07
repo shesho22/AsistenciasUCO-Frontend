@@ -8,7 +8,7 @@ import { CommonModule } from '@angular/common';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (totalItems() > 0) {
-      <div class="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 bg-white border border-warm-200 rounded-2xl shadow-warm-sm text-xs text-warm-600">
+      <nav aria-label="Paginación" class="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 bg-white border border-warm-200 rounded-2xl shadow-warm-sm text-xs text-warm-600">
         <!-- Resumen de Conteo -->
         <div class="flex items-center gap-2">
           <span>
@@ -26,6 +26,7 @@ import { CommonModule } from '@angular/common';
             <div class="hidden sm:flex items-center gap-1.5 ml-3 pl-3 border-l border-warm-200">
               <span class="text-warm-400">Por página:</span>
               <select
+                aria-label="Resultados por página"
                 [value]="pageSize()"
                 (change)="onPageSizeChange($event)"
                 class="bg-warm-50 border border-warm-200 rounded-lg px-2 py-0.5 text-xs font-semibold text-warm-800 focus:outline-none focus:ring-1 focus:ring-primary-500"
@@ -45,10 +46,11 @@ import { CommonModule } from '@angular/common';
             type="button"
             (click)="goToPage(1)"
             [disabled]="currentPage() === 1"
-            class="p-1.5 rounded-lg border border-warm-200 text-warm-500 hover:text-warm-900 hover:bg-warm-100 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+            class="min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded-lg border border-warm-200 text-warm-500 hover:text-warm-900 hover:bg-warm-100 disabled:opacity-40 disabled:pointer-events-none transition-colors"
             title="Primera página"
+            aria-label="Primera página"
           >
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" /></svg>
+            <svg class="w-3.5 h-3.5" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" /></svg>
           </button>
 
           <!-- Botón Anterior -->
@@ -56,9 +58,10 @@ import { CommonModule } from '@angular/common';
             type="button"
             (click)="goToPage(currentPage() - 1)"
             [disabled]="currentPage() === 1"
-            class="p-1.5 px-2.5 rounded-lg border border-warm-200 text-warm-600 hover:text-warm-900 hover:bg-warm-100 disabled:opacity-40 disabled:pointer-events-none transition-colors inline-flex items-center gap-1"
+            aria-label="Página anterior"
+            class="min-h-[44px] min-w-[44px] px-2.5 justify-center rounded-lg border border-warm-200 text-warm-600 hover:text-warm-900 hover:bg-warm-100 disabled:opacity-40 disabled:pointer-events-none transition-colors inline-flex items-center gap-1"
           >
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+            <svg class="w-3.5 h-3.5" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
             <span class="hidden sm:inline">Anterior</span>
           </button>
 
@@ -66,13 +69,15 @@ import { CommonModule } from '@angular/common';
           <div class="flex items-center gap-1 mx-1">
             @for (p of visiblePages(); track p) {
               @if (p === -1) {
-                <span class="px-1 text-warm-400">...</span>
+                <span class="px-1 text-warm-400" aria-hidden="true">...</span>
               } @else {
                 <button
                   type="button"
                   (click)="goToPage(p)"
+                  [attr.aria-label]="'Página ' + p"
+                  [attr.aria-current]="p === currentPage() ? 'page' : null"
                   [class]="p === currentPage() ? 'bg-primary-700 text-white font-bold shadow-xs' : 'bg-warm-50 text-warm-700 hover:bg-warm-100'"
-                  class="w-7 h-7 rounded-lg text-xs transition-colors flex items-center justify-center font-medium"
+                  class="min-w-[44px] min-h-[44px] rounded-lg text-xs transition-colors flex items-center justify-center font-medium"
                 >
                   {{ p }}
                 </button>
@@ -85,10 +90,11 @@ import { CommonModule } from '@angular/common';
             type="button"
             (click)="goToPage(currentPage() + 1)"
             [disabled]="currentPage() >= totalPages()"
-            class="p-1.5 px-2.5 rounded-lg border border-warm-200 text-warm-600 hover:text-warm-900 hover:bg-warm-100 disabled:opacity-40 disabled:pointer-events-none transition-colors inline-flex items-center gap-1"
+            aria-label="Página siguiente"
+            class="min-h-[44px] min-w-[44px] px-2.5 justify-center rounded-lg border border-warm-200 text-warm-600 hover:text-warm-900 hover:bg-warm-100 disabled:opacity-40 disabled:pointer-events-none transition-colors inline-flex items-center gap-1"
           >
             <span class="hidden sm:inline">Siguiente</span>
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+            <svg class="w-3.5 h-3.5" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
           </button>
 
           <!-- Botón Última Página -->
@@ -96,13 +102,14 @@ import { CommonModule } from '@angular/common';
             type="button"
             (click)="goToPage(totalPages())"
             [disabled]="currentPage() >= totalPages()"
-            class="p-1.5 rounded-lg border border-warm-200 text-warm-500 hover:text-warm-900 hover:bg-warm-100 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+            class="min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded-lg border border-warm-200 text-warm-500 hover:text-warm-900 hover:bg-warm-100 disabled:opacity-40 disabled:pointer-events-none transition-colors"
             title="Última página"
+            aria-label="Última página"
           >
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
+            <svg class="w-3.5 h-3.5" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
           </button>
         </div>
-      </div>
+      </nav>
     }
   `,
 })

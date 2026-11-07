@@ -21,7 +21,7 @@ import { DecanoItem } from '../../../../core/models/role-management.model';
         <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Facultades Activas</span>
           <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ totalFacultades() }}</p>
-          <span class="text-[11px] text-emerald-700 font-medium">Sincronizadas con base de datos</span>
+          <span class="text-[11px] text-success-700 font-medium">Sincronizadas con base de datos</span>
         </div>
         <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Decanos Registrados</span>
@@ -36,7 +36,7 @@ import { DecanoItem } from '../../../../core/models/role-management.model';
         <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Asistencia Promedio Campus</span>
           <p class="text-2xl font-serif font-bold text-accent-700 mt-1">100%</p>
-          <span class="text-[11px] text-emerald-700 font-medium">Monitoreo activo</span>
+          <span class="text-[11px] text-success-700 font-medium">Monitoreo activo</span>
         </div>
       </section>
 

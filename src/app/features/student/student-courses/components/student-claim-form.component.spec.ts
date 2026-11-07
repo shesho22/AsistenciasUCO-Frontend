@@ -87,7 +87,7 @@ describe('StudentClaimFormComponent — soporte (LB-004D FE-01..FE-03)', () => {
 
     expect(host().textContent).toContain('Subiendo y analizando');
     expect(host().querySelector('input[type="file"]')).toBeNull();
-    (Array.from(host().querySelectorAll('button')).find((b) => b.textContent?.includes('Cancelar') && b.className.includes('red')) as HTMLButtonElement).click();
+    (Array.from(host().querySelectorAll('button')).find((b) => b.textContent?.includes('Cancelar') && b.className.includes('danger')) as HTMLButtonElement).click();
     expect(removed).toBe(1);
   });
 
@@ -114,6 +114,33 @@ describe('StudentClaimFormComponent — soporte (LB-004D FE-01..FE-03)', () => {
     input.dispatchEvent(new Event('change'));
     expect(events.length).toBe(1);
   });
+
+  describe('CULM-001 D.1 plazo y rechazo por plazo vencido', () => {
+    it('anuncia "Puedes justificar hasta" cuando hay fecha limite local', () => {
+      fixture.componentRef.setInput('sesion', crearSesion({ fechaLimiteJustificacionLocal: '2026-11-09 23:59', plazoJustificacionVigente: true }));
+      fixture.detectChanges();
+      expect(host().querySelector('[data-testid="claim-plazo"]')!.textContent).toContain('Puedes justificar hasta 2026-11-09 23:59');
+    });
+
+    it('sin fecha limite no muestra el aviso', () => {
+      expect(host().querySelector('[data-testid="claim-plazo"]')).toBeNull();
+    });
+
+    it('muestra el mensaje del backend junto al boton y el boton sigue habilitado', () => {
+      component.justificacion.set('Cita');
+      fixture.componentRef.setInput('errorEnvio', 'El plazo para justificar esta inasistencia venció el 9 de noviembre.');
+      fixture.detectChanges();
+      const alerta = host().querySelector('[data-testid="error-envio"]') as HTMLElement;
+      expect(alerta.getAttribute('role')).toBe('alert');
+      expect(alerta.textContent).toContain('El plazo para justificar esta inasistencia venció el 9 de noviembre.');
+      const enviar = Array.from(host().querySelectorAll('button')).find((b) => b.textContent?.includes('Radicar Reclamo'))!;
+      expect(enviar.disabled).toBeFalse();
+    });
+
+    it('sin error de envio no hay alerta', () => {
+      expect(host().querySelector('[data-testid="error-envio"]')).toBeNull();
+    });
+  });
 });
 
 describe('StudentClaimFormComponent', () => {
@@ -128,7 +155,7 @@ describe('StudentClaimFormComponent', () => {
     horario: 'Lunes 08:00 - 10:00',
     aula: 'Lab 2',
     creditos: 3,
-    indicadores: { porcentajeAsistencia: 85, asistencias: 8, inasistencias: 2, totalClases: 10 },
+    indicadores: { sesionesEjecutadas: 10, horasDictadas: 20, horasAsistidas: 18, horasFalta: 2, horasExcusa: 0, horasSinRegistro: 0, porcentajeInasistencia: 10, porcentajeAsistencia: 90, codigoPermanencia: 'REGULAR', umbralAdvertencia: 15, umbralPerdida: 20 },
     estado: 'Al día',
   });
 

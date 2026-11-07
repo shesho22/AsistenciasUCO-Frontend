@@ -4,6 +4,7 @@ import { CoordinatorManagementService } from '../../../core/services/coordinator
 import { PeriodoAcademicoItem } from '../../../core/models/role-management.model';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
+import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { AcademicPeriodsTabComponent } from '../../coordinator/coordinator-study-plans/components/academic-periods-tab.component';
 
 /**
@@ -15,7 +16,7 @@ import { AcademicPeriodsTabComponent } from '../../coordinator/coordinator-study
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full' },
-  imports: [CommonModule, AcademicPeriodsTabComponent],
+  imports: [CommonModule, AcademicPeriodsTabComponent, ConfirmDialogComponent],
   template: `
     <div class="space-y-6 animate-fade-in">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
@@ -44,6 +45,16 @@ import { AcademicPeriodsTabComponent } from '../../coordinator/coordinator-study
         (savePeriodo)="guardarPeriodo($event)"
         (deletePeriodo)="eliminarPeriodo($event)"
       />
+
+      <app-confirm-dialog
+        [isOpen]="periodoPorEliminar() !== null"
+        title="Eliminar período académico"
+        [message]="'¿Eliminar el período ' + (periodoPorEliminar()?.codigo ?? '') + '? Solo es posible si no tiene grupos ni sesiones.'"
+        confirmLabel="Eliminar período"
+        [destructive]="true"
+        (confirmed)="confirmarEliminacion()"
+        (cancelled)="cancelarEliminacion()"
+      />
     </div>
   `,
 })
@@ -52,6 +63,8 @@ export class AdminPeriodosComponent implements OnInit {
   private toast = inject(ToastService);
 
   periodos = signal<PeriodoAcademicoItem[]>(this.coordService.periodos());
+  /** Período pendiente de confirmación en el diálogo de eliminación (HU098). */
+  periodoPorEliminar = signal<PeriodoAcademicoItem | null>(null);
 
   ngOnInit(): void {
     this.cargarPeriodos();
@@ -81,7 +94,17 @@ export class AdminPeriodosComponent implements OnInit {
   }
 
   eliminarPeriodo(periodo: PeriodoAcademicoItem): void {
-    if (!confirm(`¿Eliminar el período ${periodo.codigo}? Solo es posible si no tiene grupos ni sesiones.`)) {
+    this.periodoPorEliminar.set(periodo);
+  }
+
+  cancelarEliminacion(): void {
+    this.periodoPorEliminar.set(null);
+  }
+
+  confirmarEliminacion(): void {
+    const periodo = this.periodoPorEliminar();
+    this.periodoPorEliminar.set(null);
+    if (!periodo) {
       return;
     }
     this.coordService.eliminarPeriodoAcademico(periodo.id).subscribe({

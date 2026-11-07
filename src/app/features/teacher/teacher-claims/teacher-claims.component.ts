@@ -17,6 +17,7 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
 import { AvatarComponent } from '../../../shared/components/avatar/avatar.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { getApiErrorCode, getApiErrorMessage, getApiErrorResponse } from '../../../core/api/errors/api-error.util';
+import { etiquetaEstadoReclamo, varianteEstadoReclamo } from '../../../core/utils/reclamo-estado.util';
 
 type VistaDocenteReclamos = 'BANDEJA' | 'RESOLUCION';
 type EstadoFiltroReclamos = 'TODOS' | 'P' | 'A' | 'R';
@@ -60,14 +61,14 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
 
           <!-- Indicador de Pendientes -->
           <div class="flex items-center gap-3">
-            <span class="px-3.5 py-1.5 rounded-xl bg-amber-50 text-amber-900 text-xs font-bold border border-amber-200">
+            <span class="px-3.5 py-1.5 rounded-xl bg-warning-50 text-warning-900 text-xs font-bold border border-warning-200">
               {{ totalPendientes() ?? '—' }} Pendientes por Resolver
             </span>
           </div>
         </div>
 
         @if (listUnavailable()) {
-          <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-900">
+          <div class="bg-warning-50 border border-warning-200 rounded-2xl p-4 text-sm text-warning-900">
             El listado de reclamos docentes está pendiente del contrato backend y responde <strong>501 Not Implemented</strong>.
             La resolución individual permanece disponible cuando se conoce el identificador del reclamo.
           </div>
@@ -79,6 +80,7 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
             <div class="relative">
               <input
                 type="text"
+                aria-label="Buscar reclamos por estudiante, materia o motivo"
                 [value]="searchQuery()"
                 (input)="onBuscar($event)"
                 placeholder="Buscar por estudiante, materia o motivo..."
@@ -92,6 +94,7 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
 
           <div>
             <select
+              aria-label="Filtrar reclamos por estado"
               [value]="estadoFiltro()"
               (change)="onEstadoChange($event)"
               class="w-full px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 shadow-warm-sm"
@@ -112,7 +115,7 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
             }
           </div>
         } @else if (listState() !== 'LOADED') {
-          <div class="bg-red-50 border border-red-200 rounded-2xl p-6 text-center text-sm text-red-900">
+          <div class="bg-danger-50 border border-danger-200 rounded-2xl p-6 text-center text-sm text-danger-900">
             {{ listStateMessage() }}
           </div>
         } @else if (filteredReclamos().length === 0) {
@@ -137,7 +140,7 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
                           REC-#{{ reclamo.id.slice(0, 8).toUpperCase() }}
                         </span>
                         @if (reclamo.categoria) {
-                          <span class="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200">
+                          <span class="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-warning-50 text-warning-900 border border-warning-200">
                             {{ reclamo.categoria }}
                           </span>
                         }
@@ -150,7 +153,7 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
                           </span>
                         }
                         <app-badge [variant]="getReclamoBadgeVariant(reclamo.estadoSolicitud)">
-                          {{ reclamo.estadoSolicitud }}
+                          {{ etiquetaEstado(reclamo.estadoSolicitud) }}
                         </app-badge>
                       </div>
 
@@ -189,7 +192,7 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
 
                   <div class="flex items-center justify-between pt-3 border-t border-warm-100">
                     <span class="text-xs text-warm-400">
-                      {{ reclamo.estadoSolicitud === 'PENDIENTE' ? 'Pendiente de evaluación' : 'Evaluado' }}
+                      {{ reclamo.estadoSolicitud === 'PENDIENTE' ? 'Pendiente de evaluación' : (reclamo.estadoSolicitud === 'RETIRADA' ? 'Retirada por el estudiante' : 'Evaluado') }}
                     </span>
                     <app-button
                       variant="secondary"
@@ -255,12 +258,12 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
 
             <div class="flex items-center gap-2">
               @if (selectedReclamo()?.categoria) {
-                <span class="px-3 py-1 rounded-xl text-xs font-semibold bg-amber-50 text-amber-900 border border-amber-200">
+                <span class="px-3 py-1 rounded-xl text-xs font-semibold bg-warning-50 text-warning-900 border border-warning-200">
                   {{ selectedReclamo()?.categoria }}
                 </span>
               }
               <app-badge [variant]="getReclamoBadgeVariant(selectedReclamo()!.estadoSolicitud)" size="md">
-                Estado: {{ selectedReclamo()?.estadoSolicitud }}
+                Estado: {{ etiquetaEstado(selectedReclamo()?.estadoSolicitud) }}
               </app-badge>
             </div>
           </div>
@@ -287,7 +290,7 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
                 Grupo: {{ selectedReclamo()?.grupo }} • Sesión #{{ selectedReclamo()?.sesionNumero }} ({{ selectedReclamo()?.fechaSesion }})
               </p>
               @if (selectedReclamo()?.causalInasistencia; as causal) {
-                <p class="text-xs font-bold text-red-700">
+                <p class="text-xs font-bold text-danger-700">
                   Registro original: {{ causal.nombre }}
                   @if (causal.asistio !== null) {
                     ({{ causal.asistio ? 'Asistió' : 'No asistió' }})
@@ -639,16 +642,9 @@ export class TeacherClaimsComponent implements OnInit, OnDestroy {
     }
   }
 
+  readonly etiquetaEstado = etiquetaEstadoReclamo;
+
   getReclamoBadgeVariant(estado: EstadoSolicitudRevision): BadgeVariant {
-    switch (estado) {
-      case 'APROBADA':
-        return 'success';
-      case 'RECHAZADA':
-        return 'danger';
-      case 'PENDIENTE':
-        return 'warning';
-      default:
-        return 'neutral';
-    }
+    return varianteEstadoReclamo(estado);
   }
 }

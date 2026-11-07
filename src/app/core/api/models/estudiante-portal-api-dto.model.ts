@@ -1,3 +1,5 @@
+import { IndicadoresAsistenciaResponse } from '../../models/indicadores-asistencia.model';
+import { CancelacionSesion, EstadoSesion } from '../../models/sesion-estado.model';
 /**
  * DTO HTTP reales del portal estudiantil (`/api/v1/estudiante/**`).
  * Espejo de los records Java vigentes en el backend; no se agregan campos que el backend no entrega.
@@ -9,6 +11,8 @@ export interface MateriaEstudianteApiDto {
   nombreAsignatura: string;
   idGrupo: string;
   nombreGrupo: string;
+  /** CULM-001 B.2: indicadores por horas calculados por el backend (nunca `null` en B.2; opcional por compatibilidad). */
+  indicadores?: IndicadoresAsistenciaResponse | null;
 }
 
 /** `HorarioEstudianteDTO`. `dia` y las horas llegan como texto (`LocalTime`: `HH:mm` o `HH:mm:ss`). */
@@ -44,13 +48,17 @@ export interface SesionMateriaEstudianteApiDto {
   id: string;
   nombre: string;
   numero: number;
-  codigo: string;
+  /** CULM-001 B.1 (SUPUESTO-B-18): el backend ya no entrega el codigo de la sesion al estudiante (no es credencial). */
+  codigo?: string | null;
   numeroSemana: number;
   idGrupo: string;
   codigoGrupo: string;
   nombreGrupo: string;
   fechaHoraInicio: string;
   fechaHoraFin: string;
+  /** CULM-001 B.1 (aditivo): estado de la sesion y detalle de la cancelacion. */
+  estado?: EstadoSesion | null;
+  cancelacion?: CancelacionSesion | null;
   /** APP-04 (aditivo): instante UTC con sufijo Z solo si estadoTemporal = CONFIRMADA; null en otro caso. */
   fechaHoraInicioUtc?: string | null;
   fechaHoraFinUtc?: string | null;
@@ -58,4 +66,10 @@ export interface SesionMateriaEstudianteApiDto {
   estadoAsistencia?: string | null;
   estadoSolicitudRevision?: string | null;
   reclamable?: boolean | null;
+  /** CULM-001 B.2: horas de la sesion (y de sus tomas) calculadas por el backend. */
+  horasSesion?: number | null;
+  totalTomas?: number | null;
+  /** CULM-001 D.1 (HU026B): limite UTC para justificar (`null` si no hay plazo calculable) e indicador del backend. */
+  fechaLimiteJustificacionUtc?: string | null;
+  plazoJustificacionVigente?: boolean | null;
 }

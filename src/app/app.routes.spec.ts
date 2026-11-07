@@ -1,3 +1,5 @@
+import { TestBed } from '@angular/core/testing';
+import { Router, provideRouter } from '@angular/router';
 import { routes } from './app.routes';
 
 describe('application routes', () => {
@@ -20,6 +22,19 @@ describe('application routes', () => {
     }
   });
 
+  it('B1-F-39 /app/admin/festivos existe y autoriza exclusivamente al administrador', () => {
+    const appRoute = routes.find((route) => route.path === 'app');
+    const festivos = appRoute?.children?.find((route) => route.path === 'admin/festivos');
+
+    expect(festivos).toBeDefined();
+    expect(festivos?.canActivate?.length).toBeGreaterThan(0);
+    const roles = festivos?.data?.['roles'] as string[];
+    expect(roles).toContain('ADMINISTRADOR');
+    for (const role of ['DOCENTE', 'ESTUDIANTE', 'COORDINADOR', 'DECANO']) {
+      expect(roles).not.toContain(role);
+    }
+  });
+
   it('resuelve adecuadamente los componentes cargados de forma perezosa en todas las rutas', async () => {
     const resolverRutas = async (listaRutas: typeof routes) => {
       for (const ruta of listaRutas) {
@@ -35,5 +50,23 @@ describe('application routes', () => {
 
     await resolverRutas(routes);
   });
-});
 
+  it('las rutas de solicitudes de ingreso fueron retiradas', async () => {
+    const appRoute = routes.find((route) => route.path === 'app');
+    expect(appRoute?.children?.some((r) => r.path === 'estudiante/solicitudes')).toBeFalse();
+
+    TestBed.configureTestingModule({ providers: [provideRouter(routes)] });
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/app/estudiante/solicitudes');
+    expect(router.url).toContain('/login');
+  });
+
+  it('F-DEC-009 las areas del decano viven en /app/decano/areas y la ruta heredada solo redirige', () => {
+    const appRoute = routes.find((route) => route.path === 'app');
+    const areas = appRoute?.children?.find((route) => route.path === 'decano/areas');
+    expect(areas?.data?.['roles']).toEqual(['DECANO']);
+    const heredada = appRoute?.children?.find((route) => route.path === 'decano/infraestructura');
+    expect(heredada?.redirectTo).toBe('decano/areas');
+    expect(heredada?.loadComponent).toBeUndefined();
+  });
+});

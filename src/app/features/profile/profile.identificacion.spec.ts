@@ -188,19 +188,12 @@ describe('ProfileComponent — identificación institucional (APP-06)', () => {
     }
   });
 
-  it('ID-12 en sesión institucional real se conserva el modo consulta', () => {
+  it('ID-12 en sesión institucional real se conserva el modo consulta, sin edición ni PUT', () => {
     responder({ exitoso: true, datos: perfilApi() });
 
     const botones = Array.from(fixture.nativeElement.querySelectorAll('button')) as HTMLButtonElement[];
-    const editar = botones.filter((b) => /Editar/.test(b.textContent ?? ''));
-    expect(editar.length).toBeGreaterThan(0);
-    expect(editar.every((b) => b.disabled)).toBeTrue();
-
-    component.enableEditing();
-    component.saveProfile();
-    expect(component.isEditing()).toBeFalse();
+    expect(botones.some((b) => /Editar/.test(b.textContent ?? ''))).toBeFalse();
     expect(fixture.nativeElement.textContent).toContain('Modo Consulta');
-    expect(toast.show).toHaveBeenCalledWith('La edición de perfil está pendiente del contrato backend.', 'info');
     http.expectNone((req) => req.method === 'PUT');
   });
 });

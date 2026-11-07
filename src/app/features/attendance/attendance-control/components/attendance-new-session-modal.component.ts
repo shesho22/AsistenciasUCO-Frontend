@@ -12,6 +12,14 @@ import {
 } from '../../../../core/validation/session-name.util';
 import { SessionTimeZoneService } from '../../../../core/services/session-timezone.service';
 
+/** Datos del formulario de programacion de sesion que emite el modal. */
+export interface NuevaSesionSolicitud {
+  date: string;
+  startTime: string;
+  endTime: string;
+  title: string;
+}
+
 @Component({
   selector: 'app-attendance-new-session-modal',
   standalone: true,
@@ -49,7 +57,7 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
             class="w-full bg-white text-warm-900 border border-warm-300 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
           @if (nombreDemasiadoLargo()) {
-            <p class="mt-1 text-xs text-red-600" role="alert">{{ nombreLengthMessage }}</p>
+            <p class="mt-1 text-xs text-danger-600" role="alert">{{ nombreLengthMessage }}</p>
           }
         </app-form-field>
 
@@ -132,12 +140,7 @@ export class AttendanceNewSessionModalComponent {
     return this.title().trim().length > SESSION_NAME_MAX_LENGTH;
   }
 
-  submitted = output<{
-    date: string;
-    startTime: string;
-    endTime: string;
-    title: string;
-  }>();
+  submitted = output<NuevaSesionSolicitud>();
   closed = output<void>();
 
   readonly timeZone = inject(SessionTimeZoneService);

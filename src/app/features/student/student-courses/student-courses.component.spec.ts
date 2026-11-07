@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ActivatedRoute, convertToParamMap } from '@angular/router';
+import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Subject, of, throwError } from 'rxjs';
 import { StudentCoursesComponent } from './student-courses.component';
@@ -9,7 +9,6 @@ import { StudentManagementService } from '../../../core/services/student-managem
 import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
-import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { CourseService } from '../../../core/services/course.service';
 import { SessionService } from '../../../core/services/session.service';
 import { ToastService } from '../../../shared/components/toast/toast.component';
@@ -66,7 +65,6 @@ describe('StudentCoursesComponent — soporte y radicación (LB-004D FE-01..FE-0
         { provide: ToastService, useValue: toast },
         { provide: StudentManagementService, useValue: { getMaterias: () => of({ exitoso: true, datos: [] }) } },
         { provide: AuthService, useValue: { currentUser: () => ({ id: 'u-1', name: 'Ana', email: 'ana@uco.edu.co' }) } },
-        { provide: CoordinatorManagementService, useValue: {} },
         { provide: CourseService, useValue: {} },
         { provide: SessionService, useValue: {} },
         { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap({}) } } },
@@ -214,6 +212,44 @@ describe('StudentCoursesComponent — soporte y radicación (LB-004D FE-01..FE-0
       expect(intentoDe(1)).toBe(intentoDe(0));
     });
 
+    const envelope = (status: number, code: string) => ({
+      timestamp: '2026-11-07T00:00:00Z', status, error: 'Error', code, message: '', path: '/api/v1/asistencias/revisiones', correlationId: null,
+    });
+    const plazoVencido = () =>
+      new HttpErrorResponse({
+        status: 409,
+        error: { ...envelope(409, 'ERR_PLAZO_JUSTIFICACION_VENCIDO'), message: 'El plazo para justificar esta inasistencia venció el 9 de noviembre.' },
+      });
+
+    it('409 de plazo vencido: expone el message del backend junto al boton y reactiva el envio', () => {
+      claims.crearReclamo.and.returnValue(throwError(() => plazoVencido()));
+      component.enviarReclamo({ categoria: 'Otro', justificacion: 'motivo' });
+
+      expect(component.errorEnvio()).toBe('El plazo para justificar esta inasistencia venció el 9 de noviembre.');
+      expect(component.enviandoReclamo()).toBeFalse();
+      expect(toast.error).not.toHaveBeenCalled();
+      expect(claims.getSesionesPorMateria).not.toHaveBeenCalled();
+    });
+
+    it('el error de plazo se limpia al reintentar', () => {
+      claims.crearReclamo.and.returnValue(throwError(() => plazoVencido()));
+      component.enviarReclamo({ categoria: 'Otro', justificacion: 'motivo' });
+      claims.crearReclamo.and.returnValue(new Subject<never>().asObservable() as never);
+      component.enviarReclamo({ categoria: 'Otro', justificacion: 'motivo' });
+      expect(component.errorEnvio()).toBeNull();
+    });
+
+    it('500 ERR_CONFIGURACION_PLAZO_JUSTIFICACION: error generico del backend por toast, sin error de plazo', () => {
+      claims.crearReclamo.and.returnValue(throwError(() => new HttpErrorResponse({
+        status: 500,
+        error: { ...envelope(500, 'ERR_CONFIGURACION_PLAZO_JUSTIFICACION'), message: 'No fue posible verificar el plazo de justificación.' },
+      })));
+      component.enviarReclamo({ categoria: 'Otro', justificacion: 'motivo' });
+
+      expect(component.errorEnvio()).toBeNull();
+      expect(toast.error).toHaveBeenCalledTimes(1);
+    });
+
     it('un contenido distinto es una solicitud nueva y usa otra correlación', () => {
       claims.crearReclamo.and.returnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
       component.enviarReclamo({ categoria: 'Otro', justificacion: 'motivo A' });
@@ -260,9 +296,7 @@ describe('StudentCoursesComponent', () => {
   let studentServiceSpy: jasmine.SpyObj<StudentManagementService>;
   let claimServiceSpy: jasmine.SpyObj<AttendanceClaimService>;
   let authServiceSpy: jasmine.SpyObj<AuthService>;
-  let coordinatorServiceSpy: jasmine.SpyObj<CoordinatorManagementService>;
-  let courseServiceSpy: jasmine.SpyObj<CourseService>;
-  let sessionServiceSpy: jasmine.SpyObj<SessionService>;
+  let routerSpy: jasmine.SpyObj<Router>;
   let toastSpy: jasmine.SpyObj<ToastService>;
   let matriculaQrSpy: jasmine.SpyObj<MatriculaQrService>;
 
@@ -276,9 +310,8 @@ describe('StudentCoursesComponent', () => {
     studentServiceSpy = jasmine.createSpyObj('StudentManagementService', ['getMaterias']);
     claimServiceSpy = jasmine.createSpyObj('AttendanceClaimService', ['getSesionesPorMateria', 'crearReclamo', 'eliminarReclamo', 'subirSoporte']);
     authServiceSpy = jasmine.createSpyObj('AuthService', ['currentUser']);
-    coordinatorServiceSpy = jasmine.createSpyObj('CoordinatorManagementService', ['crearSolicitudMatricula']);
-    courseServiceSpy = jasmine.createSpyObj('CourseService', ['getTeacherCourses']);
-    sessionServiceSpy = jasmine.createSpyObj('SessionService', ['registrarAutoAsistencia']);
+    routerSpy = jasmine.createSpyObj('Router', ['navigate']);
+    routerSpy.navigate.and.resolveTo(true);
     toastSpy = jasmine.createSpyObj('ToastService', ['success', 'error', 'info', 'warning']);
     matriculaQrSpy = jasmine.createSpyObj('MatriculaQrService', ['matricularAutenticado']);
     studentServiceSpy.getMaterias.and.returnValue(of({ exitoso: true, datos: mockMaterias }));
@@ -290,9 +323,7 @@ describe('StudentCoursesComponent', () => {
         { provide: StudentManagementService, useValue: studentServiceSpy },
         { provide: AttendanceClaimService, useValue: claimServiceSpy },
         { provide: AuthService, useValue: authServiceSpy },
-        { provide: CoordinatorManagementService, useValue: coordinatorServiceSpy },
-        { provide: CourseService, useValue: courseServiceSpy },
-        { provide: SessionService, useValue: sessionServiceSpy },
+        { provide: Router, useValue: routerSpy },
         { provide: ToastService, useValue: toastSpy },
         { provide: MatriculaQrService, useValue: matriculaQrSpy },
         { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: { get: () => null } } } },
@@ -310,8 +341,8 @@ describe('StudentCoursesComponent', () => {
     expect(component.materias().length).toBe(1);
     expect(component.totalCreditos()).toBe(0);
     // Sin indicadores autoritativos: no hay promedio ni fallas (nunca 0 ni NaN).
-    expect(component.promedioAsistencia()).toBeNull();
-    expect(component.totalFallas()).toBeNull();
+    expect(component.materiasEnRiesgo()).toBeNull();
+    expect(component.totalHorasFalta()).toBeNull();
   });
 
   it('HU005/HU016: carga los motivos de justificación del catálogo y los muestra en el detalle', () => {
@@ -329,6 +360,19 @@ describe('StudentCoursesComponent', () => {
     spyOn(consultas, 'getCategoriasJustificacion').and.returnValue(throwError(() => new Error('x')) as never);
     component.cargarCategoriasJustificacion();
     expect(component.categoriasJustificacion()).toEqual([]);
+  });
+
+  it('F-EST-S18: el catalogo de motivos se pide una sola vez por visita, aunque se abra el detalle y los motivos', () => {
+    const espia = spyOn(consultasStub, 'getCategoriasJustificacion').and.callThrough();
+    const otro = TestBed.createComponent(StudentCoursesComponent);
+    otro.detectChanges();
+    otro.componentInstance.verDetalleCompleto(mockMaterias[0]);
+    otro.detectChanges();
+    otro.componentInstance.volverALista();
+    otro.componentInstance.verDetalleCompleto(mockMaterias[0]);
+    otro.detectChanges();
+
+    expect(espia).toHaveBeenCalledTimes(1);
   });
 
   it('permite ver detalle completo de sesiones y regresar a la lista', () => {
@@ -354,22 +398,28 @@ describe('StudentCoursesComponent', () => {
     expect(component.vistaActual()).toBe('DETALLE');
   });
 
-  it('permite retirar un reclamo existente', () => {
+  it('A2-F-01 retirar un reclamo llama a eliminarReclamo(id), muestra el mensaje del backend y recarga las sesiones', () => {
     component.selectedMateria.set(mockMaterias[0]);
-    claimServiceSpy.eliminarReclamo.and.returnValue(of({ exitoso: true, mensajeUsuario: 'Reclamo retirado.' } as any));
+    claimServiceSpy.eliminarReclamo.and.returnValue(of({ exitoso: true, mensaje: 'La solicitud de revisión fue retirada.' }));
+    claimServiceSpy.getSesionesPorMateria.calls.reset();
     component.retirarReclamo(mockSesiones[0]);
-    expect(claimServiceSpy.eliminarReclamo).toHaveBeenCalledWith('rec-1', ASIGNATURA_ID, 'ses-1');
-    expect(toastSpy.success).toHaveBeenCalledWith('Reclamo retirado.');
+    expect(claimServiceSpy.eliminarReclamo).toHaveBeenCalledOnceWith('rec-1');
+    expect(toastSpy.success).toHaveBeenCalledWith('La solicitud de revisión fue retirada.');
+    expect(claimServiceSpy.getSesionesPorMateria).toHaveBeenCalled();
   });
 
-  it('registra autoasistencia por PIN o Token exitosamente', () => {
-    sessionServiceSpy.registrarAutoAsistencia.and.returnValue(of({ exitoso: true, mensajeUsuario: 'Asistencia registrada' } as any));
-    component.abrirModalAutoAsistencia();
-    expect(component.modalAutoAsistenciaVisible()).toBeTrue();
-    component.enviarAutoAsistencia({ pin: '123456', token: '' });
-    expect(sessionServiceSpy.registrarAutoAsistencia).toHaveBeenCalledWith({ codigoAcceso: '123456', token: undefined });
-    expect(toastSpy.success).toHaveBeenCalledWith('Asistencia registrada');
-    expect(component.modalAutoAsistenciaVisible()).toBeFalse();
+  it('A2-F-01 un error al retirar muestra el message del backend', () => {
+    component.selectedMateria.set(mockMaterias[0]);
+    claimServiceSpy.eliminarReclamo.and.returnValue(
+      throwError(() => new HttpErrorResponse({ status: 409, error: { message: 'Solo se puede retirar una solicitud de revisión pendiente.' } }))
+    );
+    component.retirarReclamo(mockSesiones[0]);
+    expect(toastSpy.error).toHaveBeenCalledWith('Solo se puede retirar una solicitud de revisión pendiente.');
+  });
+
+  it('B2-F-17 "Registrar asistencia con PIN" lleva a /app/asistencia/pin (F-EST-005, F-EST-017)', () => {
+    component.irARegistroConPin();
+    expect(routerSpy.navigate).toHaveBeenCalledOnceWith(['/app/asistencia/pin']);
   });
 
   it('HU176B: registra la matrícula con el PIN de 6 dígitos usando el servicio de matrícula por QR', () => {
@@ -475,8 +525,8 @@ describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', 
     expect(texto()).not.toContain('undefined');
     expect(texto()).not.toContain('null');
     expect(fixture.nativeElement.querySelector('[data-testid="asistencia-no-disponible"]')).not.toBeNull();
-    expect(fixture.nativeElement.querySelector('[data-testid="promedio-no-disponible"]')).not.toBeNull();
-    expect(fixture.nativeElement.querySelector('[data-testid="fallas-no-disponible"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="riesgo-no-disponible"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="horas-falta-no-disponible"]')).not.toBeNull();
     expect(texto()).toContain('No informado');
   });
 

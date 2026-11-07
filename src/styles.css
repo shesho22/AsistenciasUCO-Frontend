@@ -1,7 +1,45 @@
+/*
+ * ============================================================================
+ *  SISTEMA DE DISENO - UNICA FUENTE DE VERDAD DE LA IDENTIDAD VISUAL
+ * ============================================================================
+ *  Colores, tipografia, radios y sombras se definen SOLO en este archivo.
+ *  Ningun componente puede usar la paleta por defecto de Tailwind (emerald-*,
+ *  red-*, gray-*...), hex ni rgb()/hsl(): lo impide `npm run lint:tokens`.
+ *  Para cambiar la identidad (colores, fuente) se edita este archivo y, a mano,
+ *  public/logo.svg y public/favicon.svg.
+ *
+ *  Mapa de significado (que token usar segun lo que se comunica):
+ *    primary-*     marca institucional: botones principales, navegacion activa,
+ *                  foco, cabeceras destacadas, enlaces de accion.
+ *    accent-*      acento secundario de marca (oro).
+ *    warm-*        neutros calidos de marca (fondos, texto, bordes de la UI).
+ *    success-*     estado exitoso / activo / vigente / presente / cupo disponible.
+ *    danger-*      error, rechazo, ausente, destructivo, cupo agotado.
+ *    warning-*     advertencia, pendiente, riesgo, atencion requerida.
+ *    info-*        informacion neutra, ayudas, enlaces informativos.
+ *    neutral-*     texto secundario, bordes y fondos de estados inactivos/grises.
+ *    category-*    color categorico (p. ej. bloques de horario), no es estado.
+ *    surface, surface-muted, on-surface, on-primary, border-subtle
+ *                  roles de superficie: fondo de tarjeta, fondo de pagina,
+ *                  texto sobre superficie, texto sobre primary, borde sutil.
+ *    attendance-*  estados de asistencia (presente, ausente, excusa, riesgo).
+ *    avatar-1..8   colores de fondo de los avatares de iniciales.
+ *  Las escalas semanticas apuntan a la paleta de marca con var(); solo las
+ *  escalas base (primary, accent, warm, danger, info, category) contienen hex.
+ * ============================================================================
+ */
+
+/* Tipografia: la carga de la fuente y sus variables viven juntas aqui. */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&display=swap');
 @import "tailwindcss";
 
 @theme {
-  /* Tipografías */
+  /* Se elimina la paleta por defecto de Tailwind: solo existen los tokens de abajo. */
+  --color-*: initial;
+  --color-white: #ffffff;
+  --color-black: #000000;
+
+  /* Tipografias */
   --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   --font-serif: 'Fraunces', Georgia, serif;
 
@@ -11,8 +49,8 @@
   --color-primary-200: #a7f3d0;
   --color-primary-300: #6ee7b7;
   --color-primary-400: #34d399;
-  --color-primary-500: #10b981;
-  --color-primary-600: #059669;
+  --color-primary-500: #059669;
+  --color-primary-600: #05805c;
   --color-primary-700: #047857;
   --color-primary-800: #065f46;
   --color-primary-900: #064e3b;
@@ -36,13 +74,109 @@
   --color-warm-100: #f5f5f4;
   --color-warm-200: #e7e5e4;
   --color-warm-300: #d6d3d1;
-  --color-warm-400: #a8a29e;
-  --color-warm-500: #78716c;
+  --color-warm-400: #78716c;
+  --color-warm-500: #6b655f;
   --color-warm-600: #57534e;
   --color-warm-700: #44403c;
   --color-warm-800: #292524;
   --color-warm-900: #1c1917;
   --color-warm-950: #0c0a09;
+
+  /* Rojo alerta (base de danger) */
+  --color-danger-50: #fef2f2;
+  --color-danger-100: #fee2e2;
+  --color-danger-200: #fecaca;
+  --color-danger-300: #fca5a5;
+  --color-danger-400: #f87171;
+  --color-danger-500: #ef4444;
+  --color-danger-600: #dc2626;
+  --color-danger-700: #b91c1c;
+  --color-danger-800: #991b1b;
+  --color-danger-900: #7f1d1d;
+  --color-danger-950: #450a0a;
+
+  /* Azul cielo (base de info) */
+  --color-info-50: #f0f9ff;
+  --color-info-100: #e0f2fe;
+  --color-info-200: #bae6fd;
+  --color-info-300: #7dd3fc;
+  --color-info-400: #38bdf8;
+  --color-info-500: #0ea5e9;
+  --color-info-600: #0284c7;
+  --color-info-700: #0369a1;
+  --color-info-800: #075985;
+  --color-info-900: #0c4a6e;
+  --color-info-950: #082f49;
+
+  /* Ciruela (color categorico) */
+  --color-category-50: #faf5ff;
+  --color-category-100: #f3e8ff;
+  --color-category-200: #e9d5ff;
+  --color-category-700: #7e22ce;
+
+  /* Estados semanticos: apuntan a la paleta de marca */
+  --color-success-50: var(--color-primary-50);
+  --color-success-100: var(--color-primary-100);
+  --color-success-200: var(--color-primary-200);
+  --color-success-300: var(--color-primary-300);
+  --color-success-400: var(--color-primary-400);
+  --color-success-500: var(--color-primary-500);
+  --color-success-600: var(--color-primary-600);
+  --color-success-700: var(--color-primary-700);
+  --color-success-800: var(--color-primary-800);
+  --color-success-900: var(--color-primary-900);
+  --color-success-950: var(--color-primary-950);
+
+  --color-warning-50: var(--color-accent-50);
+  --color-warning-100: var(--color-accent-100);
+  --color-warning-200: var(--color-accent-200);
+  --color-warning-300: var(--color-accent-300);
+  --color-warning-400: var(--color-accent-400);
+  --color-warning-500: var(--color-accent-500);
+  --color-warning-600: var(--color-accent-600);
+  --color-warning-700: var(--color-accent-700);
+  --color-warning-800: var(--color-accent-800);
+  --color-warning-900: var(--color-accent-900);
+  --color-warning-950: var(--color-accent-950);
+
+  --color-neutral-50: var(--color-warm-50);
+  --color-neutral-100: var(--color-warm-100);
+  --color-neutral-200: var(--color-warm-200);
+  --color-neutral-300: var(--color-warm-300);
+  --color-neutral-400: var(--color-warm-400);
+  --color-neutral-500: var(--color-warm-500);
+  --color-neutral-600: var(--color-warm-600);
+  --color-neutral-700: var(--color-warm-700);
+  --color-neutral-800: var(--color-warm-800);
+  --color-neutral-900: var(--color-warm-900);
+  --color-neutral-950: var(--color-warm-950);
+
+  /* Roles de superficie y texto */
+  --color-surface: var(--color-white);
+  --color-surface-muted: var(--color-warm-50);
+  --color-on-surface: var(--color-warm-900);
+  --color-on-primary: var(--color-white);
+  --color-border-subtle: var(--color-warm-200);
+
+  /* Estados de asistencia */
+  --color-attendance-present: var(--color-success-600);
+  --color-attendance-present-soft: var(--color-success-100);
+  --color-attendance-absent: var(--color-danger-600);
+  --color-attendance-absent-soft: var(--color-danger-100);
+  --color-attendance-excused: var(--color-info-600);
+  --color-attendance-excused-soft: var(--color-info-100);
+  --color-attendance-risk: var(--color-warning-600);
+  --color-attendance-risk-soft: var(--color-warning-100);
+
+  /* Avatares de iniciales */
+  --color-avatar-1: var(--color-primary-800);
+  --color-avatar-2: var(--color-primary-700);
+  --color-avatar-3: var(--color-info-800);
+  --color-avatar-4: var(--color-accent-700);
+  --color-avatar-5: var(--color-primary-900);
+  --color-avatar-6: var(--color-category-700);
+  --color-avatar-7: var(--color-warm-700);
+  --color-avatar-8: var(--color-info-700);
 
   /* Radios de borde Bento */
   --radius-bento-sm: 0.5rem;

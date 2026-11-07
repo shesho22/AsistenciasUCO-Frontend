@@ -54,4 +54,76 @@ describe('TeacherGrupoSesionesComponent', () => {
     expect(text()).toContain('QR / PIN');
     expect(text()).toContain('Cancelar');
   });
+
+  describe('sesión cancelada (HU047, CULM-001 B.1)', () => {
+    const cancelada: ClassSession = {
+      ...sesion,
+      id: 'ses-2',
+      sessionNumber: 2,
+      estado: 'CANCELADA',
+      cancelacion: {
+        tipo: 'DOCENTE',
+        motivo: 'Incapacidad médica del docente',
+        nombreFestivo: null,
+        fechaCancelacionUtc: '2026-11-10T14:00:00Z',
+      },
+    };
+    const festiva: ClassSession = {
+      ...sesion,
+      id: 'ses-3',
+      sessionNumber: 3,
+      estado: 'CANCELADA',
+      cancelacion: { tipo: 'FESTIVO', motivo: null, nombreFestivo: 'San José', fechaCancelacionUtc: null },
+    };
+    const fila = (id: string) =>
+      (fixture.nativeElement as HTMLElement).querySelector(`[data-testid="sesion-${id}"]`) as HTMLElement;
+    const boton = (id: string, etiqueta: string) =>
+      Array.from(fila(id).querySelectorAll<HTMLButtonElement>('button')).find((b) =>
+        (b.textContent || '').includes(etiqueta)
+      );
+
+    beforeEach(() => {
+      fixture.componentRef.setInput('cancelEnabled', true);
+      fixture.componentRef.setInput('sessions', [sesion, cancelada, festiva]);
+      fixture.detectChanges();
+    });
+
+    it('B1-F-11 muestra la etiqueta Cancelada con el motivo del docente', () => {
+      expect(fila('ses-2').textContent).toContain('Cancelada');
+      expect(fila('ses-2').textContent).toContain('Incapacidad médica del docente');
+    });
+
+    it('B1-F-11 muestra "Día festivo: <nombre>" en la sesión cancelada por festivo', () => {
+      expect(fila('ses-3').textContent).toContain('Día festivo: San José');
+    });
+
+    it('B1-F-11 la sesión cancelada no ofrece Cancelar y deshabilita Tomar Asistencia y Ajustar Horario', () => {
+      expect(boton('ses-2', 'Cancelar')).toBeUndefined();
+      expect(boton('ses-2', 'Tomar Asistencia')?.disabled).toBeTrue();
+      expect(boton('ses-2', 'Ajustar Horario')?.disabled).toBeTrue();
+      expect(boton('ses-2', 'Detalles')?.disabled).toBeFalse();
+    });
+
+    it('B1-F-11 la sesión programada conserva Cancelar y acciones habilitadas, sin etiqueta Cancelada', () => {
+      expect(boton('ses-1', 'Cancelar')?.disabled).toBeFalse();
+      expect(boton('ses-1', 'Tomar Asistencia')?.disabled).toBeFalse();
+      expect(fila('ses-1').querySelector('[data-testid="sesion-cancelada-badge"]')).toBeNull();
+    });
+
+    it('B1-F-11 emite cancelar con la sesión al pulsar el botón de una sesión programada', () => {
+      const emitidas: ClassSession[] = [];
+      fixture.componentInstance.cancelar.subscribe((s) => emitidas.push(s));
+
+      boton('ses-1', 'Cancelar')?.click();
+
+      expect(emitidas).toEqual([sesion]);
+    });
+
+    it('B1-F-12 móvil: las acciones envuelven en pantallas estrechas y los botones miden al menos 44 px', () => {
+      const acciones = fila('ses-1').querySelector('[data-testid="sesion-acciones"]') as HTMLElement;
+      expect(acciones.className).toContain('flex-wrap');
+      expect(boton('ses-1', 'Tomar Asistencia')?.className).toContain('min-h-[44px]');
+      expect(boton('ses-1', 'Cancelar')?.className).toContain('min-h-[44px]');
+    });
+  });
 });

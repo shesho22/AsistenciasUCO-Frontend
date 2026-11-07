@@ -5,6 +5,7 @@ export interface RegistrarEstudianteEnGrupoRequest {
   segundoNombre?: string;
   primerApellido: string;
   segundoApellido?: string;
-  correo: string;
-  password: string;
+  /** Obligatorios solo en el alta de un estudiante nuevo; al matricular a uno existente no se envían. */
+  correo?: string;
+  password?: string;
 }
