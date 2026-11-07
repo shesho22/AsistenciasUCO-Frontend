@@ -565,6 +565,13 @@ describe('AttendanceControlComponent contract corrections', () => {
     expect(navigate).toHaveBeenCalledWith(['/app/docente/grupos'], { queryParams: { grupo: 'course-1' } });
   });
 
+  it('F-DOC-S10: al seleccionar el grupo el padron y las asistencias se piden una sola vez', () => {
+    createComponent([activeStudent], []);
+
+    expect(groupService.getStudentsByGroup).toHaveBeenCalledTimes(1);
+    expect(attendanceService.getAttendancesByGroup).toHaveBeenCalledTimes(1);
+  });
+
   it('abre modales de información del grupo, reclamos y el selector de modo de toma', () => {
     const component = createComponent([activeStudent], []);
 
