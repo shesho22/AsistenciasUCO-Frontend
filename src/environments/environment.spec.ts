@@ -5,7 +5,7 @@ describe('environment.features (CULM-001 B.1)', () => {
     expect(environment.features.sessionCancelEnabled).toBeTrue();
   });
 
-  it('B1-F-04 la proyección QR sigue deshabilitada hasta el subpaquete B.2', () => {
-    expect(environment.features.sessionQrEnabled).toBeFalse();
+  it('B2-F-04 la proyección QR (HU175) está habilitada con el contrato de B.2', () => {
+    expect(environment.features.sessionQrEnabled).toBeTrue();
   });
 });

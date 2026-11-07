@@ -1,4 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { TomaAsistenciaService } from '../../../core/services/toma-asistencia.service';
+import { AsistenciaQrService } from '../../../core/services/asistencia-qr.service';
 import { NEVER, Subject, of } from 'rxjs';
 import { AttendanceService } from '../../../core/services/attendance.service';
 import { CatalogService } from '../../../core/services/catalog.service';
@@ -50,7 +52,7 @@ describe('AttendanceControlComponent sesión cancelada (B.1)', () => {
     const groupService = jasmine.createSpyObj('GroupService', ['getStudentsByGroup']);
     attendanceService = jasmine.createSpyObj('AttendanceService', ['getAttendancesByGroup', 'saveBatchAttendance']);
     const realtime = jasmine.createSpyObj<AttendanceRealtimeSyncService>('AttendanceRealtimeSyncService', [
-      'watch', 'watchCancelaciones', 'connectionAlerts', 'connectGroup', 'disconnect',
+      'watch', 'watchCancelaciones', 'watchTomas', 'connectionAlerts', 'connectGroup', 'disconnect',
     ]);
     const claims = jasmine.createSpyObj<AttendanceClaimService>('AttendanceClaimService', [
       'getReclamosDocente', 'getReclamosDocentePorGrupo', 'resolverReclamo',
@@ -75,6 +77,7 @@ describe('AttendanceControlComponent sesión cancelada (B.1)', () => {
     attendanceService.saveBatchAttendance.and.returnValue(of({ exitoso: true, mensaje: 'Guardada' }));
     realtime.watch.and.returnValue(NEVER);
     watchCancelaciones = realtime.watchCancelaciones.and.returnValue(cancelaciones$.asObservable());
+    (realtime as any).watchTomas.and.returnValue(NEVER);
     realtime.connectionAlerts.and.returnValue(NEVER);
     claims.getReclamosDocente.and.returnValue(of({ exitoso: true, datos: [] }) as any);
     claims.getReclamosDocentePorGrupo.and.returnValue(of([]));
@@ -89,6 +92,8 @@ describe('AttendanceControlComponent sesión cancelada (B.1)', () => {
         { provide: GroupService, useValue: groupService },
         { provide: StudentService, useValue: jasmine.createSpyObj('StudentService', ['enrollStudentInGroup']) },
         { provide: AttendanceService, useValue: attendanceService },
+        { provide: TomaAsistenciaService, useValue: { consultarTomas: () => NEVER, abrirToma: () => NEVER, cerrarToma: () => NEVER, registrarAsistencias: () => NEVER, consultarFaltantes: () => NEVER } },
+        { provide: AsistenciaQrService, useValue: { abrirQr: () => NEVER, rotarQr: () => NEVER, cerrarQr: () => NEVER } },
         { provide: AttendanceClaimService, useValue: claims },
         { provide: CatalogService, useValue: { getIdentityDocumentTypes: () => of([]) } },
         { provide: AttendanceRealtimeSyncService, useValue: realtime },

@@ -327,7 +327,6 @@ export class GroupSessionsOverviewComponent {
   totalReclamosPendientes = input<number>(0);
 
   selectSession = output<string>();
-  openProjectionSesion = output<string>();
   openNewSession = output<void>();
   openEnrollment = output<void>();
   openMatriculaQr = output<void>();

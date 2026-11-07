@@ -23,6 +23,12 @@ import {
  * una ráfaga (ej. registro masivo consecutivo sobre el mismo grupo/sesión). */
 export const ATTENDANCE_REALTIME_COALESCE_MS = 250;
 
+interface TomaGrupoPayload {
+  grupo: string;
+  sesion: string;
+  toma: string;
+}
+
 interface ReconnectRecoveryState {
   /** Se observó `RECONNECTING` y aún no ha vuelto `CONNECTED`. */
   readonly recovering: boolean;
@@ -95,6 +101,23 @@ export class AttendanceRealtimeSyncService {
           return !!groupId && evt.payload?.grupo === groupId;
         })
       );
+  }
+
+  /**
+   * CULM-001 B.2: `TOMA_ABIERTA`, `TOMA_CERRADA` y `ASISTENCIAS_TOMA_ACTUALIZADAS` del grupo visible. Cada evento
+   * pide recargar las tomas de la sesion; no hay temporizadores.
+   */
+  watchTomas(getGroupId: () => string): Observable<RealtimeEvent> {
+    return merge(
+      this.realtimeService.listenType<TomaGrupoPayload>(REALTIME_EVENT_TYPE.TOMA_ABIERTA),
+      this.realtimeService.listenType<TomaGrupoPayload>(REALTIME_EVENT_TYPE.TOMA_CERRADA),
+      this.realtimeService.listenType<TomaGrupoPayload>(REALTIME_EVENT_TYPE.ASISTENCIAS_TOMA_ACTUALIZADAS)
+    ).pipe(
+      filter((evt) => {
+        const groupId = getGroupId();
+        return !!groupId && evt.payload?.grupo === groupId;
+      })
+    );
   }
 
   watch(

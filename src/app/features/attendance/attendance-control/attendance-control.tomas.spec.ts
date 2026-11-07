@@ -80,8 +80,8 @@ describe('AttendanceControlComponent tomas (CULM-001 B.2)', () => {
       'getReclamosDocente', 'getReclamosDocentePorGrupo', 'resolverReclamo',
     ]);
 
-    courseService.getCurrentTeacherCourses.and.returnValue(of({ exitoso: true, datos: [course] } as never));
-    sessionService.getSessionsByGroup.and.returnValue(of({ exitoso: true, datos: [session], total: 1 } as never));
+    courseService.getCurrentTeacherCourses.and.returnValue(of({ exitoso: true, datos: [course] } as any));
+    sessionService.getSessionsByGroup.and.returnValue(of({ exitoso: true, datos: [session], total: 1 } as any));
     groupService.getStudentsByGroup.and.returnValue(of({
       exitoso: true, total: 1,
       datos: [{ id: 'm-1', idEstudiante: 'student-1', documento: '1', nombreCompleto: 'Ada', correo: 'a@x.test', codigoEstado: 'A', nombreEstado: 'Activo' }],
@@ -94,7 +94,7 @@ describe('AttendanceControlComponent tomas (CULM-001 B.2)', () => {
     (realtime as never as { watchCancelaciones: jasmine.Spy }).watchCancelaciones.and.returnValue(NEVER);
     (realtime as never as { watchTomas: jasmine.Spy }).watchTomas.and.returnValue(tomasEvents$.asObservable());
     realtime.connectionAlerts.and.returnValue(NEVER);
-    claims.getReclamosDocente.and.returnValue(of({ exitoso: true, datos: [] }) as never);
+    claims.getReclamosDocente.and.returnValue(of({ exitoso: true, datos: [] }) as any);
     claims.getReclamosDocentePorGrupo.and.returnValue(of([]));
 
     TestBed.configureTestingModule({
@@ -214,6 +214,7 @@ describe('AttendanceControlComponent tomas (CULM-001 B.2)', () => {
   });
 
   it('B2-F-13 el componente no usa setInterval', () => {
+    tomaService.abrirToma.and.returnValue(of({ exitoso: true, datos: toma() }));
     const intervalo = spyOn(window, 'setInterval').and.callThrough();
     const c = entrar();
     c.onModoElegido('MANUAL');
