@@ -92,6 +92,13 @@ describe('SecurityAdministrationComponent', () => {
     expect(component.message()).toBe('');
   });
 
+  it('F-ADM-S14: el contenedor del modulo externo permite desplazar las pestanas en 375 px', () => {
+    fixture.detectChanges();
+    const punto = (fixture.nativeElement as HTMLElement).querySelector('div.mt-4') as HTMLElement;
+    expect(punto.className).toContain('overflow-x-auto');
+    expect((fixture.nativeElement as HTMLElement).querySelector('h1')?.className).toContain('font-serif');
+  });
+
   it('rechaza el modo legacy sin consultar el BFF ni asignar permisos', async () => {
     authService.isBaselineMode.and.returnValue(false);
 
