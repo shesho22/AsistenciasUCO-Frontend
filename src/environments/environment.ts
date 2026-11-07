@@ -56,9 +56,9 @@ export const environment = {
     sessionsEnabled: true,
     attendanceEnabled: true,
     sessionsV2Enabled: true,
-    // OUT_OF_GOLDEN_PATH (LB-001B.5A): acciones de sesión sin contrato en
-    // BACKEND_GOLDEN_PATH_CONTRACT. Deshabilitadas hasta que exista un contrato propio.
-    sessionCancelEnabled: false,
+    // CULM-001 B.1 (HU047): la cancelación de sesión tiene contrato (CONTRACT B 3.2.1). La bandera queda como
+    // interruptor de retirada. El QR de asistencia sigue apagado hasta el subpaquete B.2.
+    sessionCancelEnabled: true,
     sessionQrEnabled: false,
     // GET/PUT /usuarios/perfil responden 501 (FEATURE_UNAVAILABLE): apagado por defecto; habilitar con USER_PROFILE_ENDPOINT_ENABLED=true cuando el backend lo implemente
     userProfileEndpointEnabled: runtimeFlag('USER_PROFILE_ENDPOINT_ENABLED'),

@@ -171,9 +171,9 @@ describe('TeacherGruposComponent', () => {
 
   // --- LB-001B.5A: acciones de sesión fuera de BACKEND_GOLDEN_PATH_CONTRACT ---
 
-  it('QR/PIN y Cancelar sesión están deshabilitados por feature: no llaman a getQrToken ni cancelarSesion', () => {
+  it('QR/PIN está deshabilitado por feature (hasta B.2) y la cancelación está habilitada (B.1)', () => {
     expect(component.sessionQrEnabled).toBeFalse();
-    expect(component.sessionCancelEnabled).toBeFalse();
+    expect(component.sessionCancelEnabled).toBeTrue();
     const sesion: ClassSession = {
       id: 'ses-1', courseId: 'crs-1', sessionNumber: 1, title: 'S',
       date: '2026-09-10', startTime: '08:00', endTime: '10:00', records: [],
@@ -182,13 +182,9 @@ describe('TeacherGruposComponent', () => {
     component.abrirModalProyeccionParaGrupo(course);
     component.proyectarSesionEspecifica(sesion);
     component.cambiarSesionActiva('ses-1');
-    component.abrirModalCancelarSesion(sesion);
-    component.confirmarCancelarSesionConMotivo('Fuerza mayor');
 
     expect(component.modalProyeccionVisible()).toBeFalse();
-    expect(component.modalCancelarVisible()).toBeFalse();
     expect(sessionService.getQrToken).not.toHaveBeenCalled();
-    expect(sessionService.cancelarSesion).not.toHaveBeenCalled();
   });
 
   it('actualizar sesión consume ApiDataResponse<Void>: éxito con solo `exitoso` recarga por HTTP', () => {
@@ -308,11 +304,10 @@ describe('TeacherGruposComponent', () => {
     expect(component.grupoMatricula()).toBeNull();
   });
 
-  it('permite cancelar sesión cuando el switch está activo', () => {
+  it('permite cancelar sesión con la bandera activa (B.1)', () => {
     sessionService.cancelarSesion.and.returnValue(
-      of({ exitoso: true, mensajeUsuario: 'Cancelada' } as any)
+      of({ exitoso: true, datos: { idSesion: 'ses-cancelar', idGrupo: 'crs-1', estado: 'CANCELADA', cancelacion: null, estudiantesNotificados: 0 } } as any)
     );
-    (component as any).sessionCancelEnabled = true;
     component.verHubGrupo(course);
     const sesion: ClassSession = {
       id: 'ses-cancelar',

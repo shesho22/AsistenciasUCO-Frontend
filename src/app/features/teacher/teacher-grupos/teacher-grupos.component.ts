@@ -173,7 +173,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   private toast = inject(ToastService);
   private timeZone = inject(SessionTimeZoneService);
 
-  // OUT_OF_GOLDEN_PATH (LB-001B.5A): sin contrato backend → deshabilitadas por feature explícita.
+  // QR/PIN sigue OUT_OF_GOLDEN_PATH hasta B.2; la cancelación (HU047) ya tiene contrato (CULM-001 B.1).
   readonly sessionQrEnabled = environment.features.sessionQrEnabled;
   readonly sessionCancelEnabled = environment.features.sessionCancelEnabled;
 
@@ -587,13 +587,11 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
     this.sessionService.cancelarSesion(sesion.id, motivo.trim()).subscribe({
       next: (res) => {
         if (res.exitoso) {
-          this.toast.success(res.mensajeUsuario || 'Sesión cancelada formalmente.');
+          this.toast.success('Sesión cancelada.');
           this.cerrarModalCancelar();
           if (course) {
             this.cargarSesiones(course.id);
           }
-        } else {
-          this.toast.error(res.mensajeUsuario || 'No fue posible cancelar la sesión.');
         }
       },
       error: (err: unknown) => this.toast.error(getApiErrorMessage(err)),

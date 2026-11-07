@@ -202,8 +202,10 @@ describe('SessionService contract operations', () => {
   it('B1-F-02 cancelarSesion usa HTTP aunque estén activos los mocks (ya no existe respuesta simulada)', () => {
     localStorage.setItem('USE_MOCKS', 'true');
     try {
-      service.cancelarSesion('ses-9', 'Motivo suficientemente largo').subscribe();
+      let response: any;
+      service.cancelarSesion('ses-9', 'Motivo suficientemente largo').subscribe((value) => (response = value));
       http.expectOne(`${environment.apiUrl}/docente/sesiones/ses-9/cancelar`).flush({ exitoso: true, datos: {} });
+      expect(response).toEqual({ exitoso: true, datos: {} });
     } finally {
       localStorage.removeItem('USE_MOCKS');
     }
