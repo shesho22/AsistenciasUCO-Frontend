@@ -62,41 +62,7 @@ export class AdminManagementService {
             }
           }
 
-          const normalizados: DecanoItem[] = Array.from(decanosMap.values()).map((raw) => {
-            const nombreCompleto = (raw.nombreCompleto || '').trim();
-            let nombres = raw.nombres || '';
-            let apellidos = raw.apellidos || '';
-
-            if (!nombres && nombreCompleto) {
-              const partes = nombreCompleto.split(/\s+/);
-              if (partes.length <= 2) {
-                nombres = partes[0] || '';
-                apellidos = partes[1] || '';
-              } else {
-                nombres = partes.slice(0, 2).join(' ');
-                apellidos = partes.slice(2).join(' ');
-              }
-            }
-
-            return {
-              id: raw.id,
-              idUsuario: raw.idUsuario,
-              tipoIdentificacion: raw.tipoIdentificacion || 'CC',
-              tipoIdentificacionId: raw.tipoIdentificacionId,
-              numeroIdentificacion: String(raw.numeroIdentificacion || ''),
-              nombreCompleto: nombreCompleto || `${nombres} ${apellidos}`.trim(),
-              nombres: nombres || nombreCompleto,
-              apellidos: apellidos,
-              correo: raw.correo || '',
-              idFacultad: raw.idFacultad || undefined,
-              facultad: raw.nombreFacultad || raw.facultad || 'Sin Facultad Asignada',
-              nombreFacultad: raw.nombreFacultad || raw.facultad || 'Sin Facultad Asignada',
-              telefono: raw.telefono || '',
-              fechaAsignacion: raw.fechaAsignacion || '',
-              estado: raw.estado || (raw.estaActivoDecano === false ? 'INACTIVO' : 'ACTIVO'),
-              estaActivoDecano: raw.estaActivoDecano ?? true,
-            };
-          });
+          const normalizados: DecanoItem[] = Array.from(decanosMap.values()).map((raw) => this.normalizarDecano(raw));
 
           this._decanos.set(normalizados);
           return { ...res, datos: normalizados };
@@ -106,12 +72,53 @@ export class AdminManagementService {
     );
   }
 
+  /** Lleva el DecanoItemDTO del backend (o una fila ya normalizada) al modelo de presentación. */
+  private normalizarDecano(raw: any): DecanoItem {
+    const nombreCompleto = (raw.nombreCompleto || '').trim();
+    let nombres = raw.nombres || '';
+    let apellidos = raw.apellidos || '';
+
+    if (!nombres && nombreCompleto) {
+      const partes = nombreCompleto.split(/\s+/);
+      if (partes.length <= 2) {
+        nombres = partes[0] || '';
+        apellidos = partes[1] || '';
+      } else {
+        nombres = partes.slice(0, 2).join(' ');
+        apellidos = partes.slice(2).join(' ');
+      }
+    }
+
+    const estaActivo = raw.estaActivoDecano ?? raw.estaActivo;
+    return {
+      id: raw.id,
+      idUsuario: raw.idUsuario,
+      tipoIdentificacion: raw.tipoIdentificacion || 'CC',
+      tipoIdentificacionId: raw.tipoIdentificacionId,
+      numeroIdentificacion: String(raw.numeroIdentificacion || ''),
+      nombreCompleto: nombreCompleto || `${nombres} ${apellidos}`.trim(),
+      nombres: nombres || nombreCompleto,
+      apellidos: apellidos,
+      correo: raw.correo || '',
+      idFacultad: raw.idFacultad || undefined,
+      facultad: raw.nombreFacultad || raw.facultad || 'Sin Facultad Asignada',
+      nombreFacultad: raw.nombreFacultad || raw.facultad || 'Sin Facultad Asignada',
+      telefono: raw.telefono || '',
+      fechaAsignacion: raw.fechaAsignacion || '',
+      estado: raw.estado || (estaActivo === false ? 'INACTIVO' : 'ACTIVO'),
+      estaActivoDecano: estaActivo ?? true,
+    };
+  }
+
   createDecano(nuevoDecano: Omit<DecanoItem, 'id'> | Record<string, unknown>): Observable<ApiResponse<DecanoItem>> {
     return this.http.post<ApiResponse<DecanoItem>>(`${environment.apiUrl}/admin/decanos`, nuevoDecano);
   }
 
+  /** A.2-8: cambia el estado del decano; `datos` llega como DecanoItemDTO y se normaliza para la tarjeta. */
   toggleDecanoStatus(id: string): Observable<ApiResponse<DecanoItem | null>> {
-    return this.http.patch<ApiResponse<DecanoItem | null>>(`${environment.apiUrl}/admin/decanos/${id}/toggle`, {});
+    return this.http
+      .patch<ApiResponse<any | null>>(`${environment.apiUrl}/admin/decanos/${id}/toggle`, {})
+      .pipe(map((res) => (res?.exitoso && res.datos ? { ...res, datos: this.normalizarDecano(res.datos) } : res)));
   }
 
   // ================= FACULTADES Y ÁREAS =================
