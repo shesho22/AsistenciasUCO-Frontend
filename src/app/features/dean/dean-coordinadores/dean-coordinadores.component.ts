@@ -13,6 +13,7 @@ import { ButtonComponent } from '../../../shared/components/button/button.compon
 import { FormFieldComponent } from '../../../shared/components/form-field/form-field.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { UserPickerModalComponent, UserPickerItem } from '../../../shared/components/user-picker-modal/user-picker-modal.component';
+import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { AccountAccessStatusComponent } from '../../../shared/components/account-access-status/account-access-status.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import {
@@ -38,6 +39,7 @@ type VistaDecano = 'LISTA' | 'REGISTRO';
     FormFieldComponent,
     UserPickerModalComponent,
     AccountAccessStatusComponent,
+    PaginationComponent,
     DeanCoordinadorEditModalComponent,
     DeanCoordinadorEstadoModalComponent,
   ],
@@ -87,8 +89,11 @@ type VistaDecano = 'LISTA' | 'REGISTRO';
           <div class="sm:col-span-2">
             <div class="relative">
               <input
-                type="text"
-                [(ngModel)]="searchQuery"
+                type="search"
+                id="dean-coord-busqueda"
+                aria-label="Buscar coordinador por nombre, cédula o programa"
+                [ngModel]="searchQuery"
+                (ngModelChange)="searchQuery = $event"
                 placeholder="Buscar por coordinador, cédula o programa académico..."
                 class="w-full pl-10 pr-4 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-900 placeholder-warm-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 shadow-warm-sm transition-all"
               />
@@ -100,7 +105,10 @@ type VistaDecano = 'LISTA' | 'REGISTRO';
 
           <div>
             <select
-              [(ngModel)]="selectedEstado"
+              id="dean-coord-estado"
+              aria-label="Filtrar coordinadores por estado"
+              [ngModel]="selectedEstado"
+              (ngModelChange)="selectedEstado = $event"
               class="w-full px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 shadow-warm-sm"
             >
               <option value="TODOS">Todos los estados</option>
@@ -117,6 +125,12 @@ type VistaDecano = 'LISTA' | 'REGISTRO';
               <div class="h-44 bg-warm-100 rounded-2xl animate-pulse"></div>
             }
           </div>
+        } @else if (errorCarga() !== null) {
+          <div class="bg-white rounded-2xl border border-danger-200 p-12 text-center shadow-warm-sm" role="alert">
+            <h3 class="text-base font-semibold text-danger-700">No fue posible cargar los coordinadores</h3>
+            <p class="text-xs text-danger-700 mt-1">{{ errorCarga() }}</p>
+            <button type="button" (click)="cargarCoordinadores()" class="mt-4 min-h-[44px] px-4 text-xs font-semibold rounded-xl border border-danger-200 text-danger-700 hover:bg-danger-50">Reintentar</button>
+          </div>
         } @else if (filteredCoordinadores().length === 0) {
           <div class="bg-white rounded-2xl border border-warm-200 p-12 text-center shadow-warm-sm">
             <div class="w-12 h-12 rounded-full bg-warm-100 text-warm-400 flex items-center justify-center mx-auto mb-3">
@@ -129,7 +143,7 @@ type VistaDecano = 'LISTA' | 'REGISTRO';
           </div>
         } @else {
           <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-            @for (coord of filteredCoordinadores(); track coord.id) {
+            @for (coord of paginatedCoordinadores(); track coord.id) {
               <app-card [hoverable]="true" padding="md">
                 <div class="flex flex-col h-full justify-between gap-4">
                   <div>
@@ -204,6 +218,14 @@ type VistaDecano = 'LISTA' | 'REGISTRO';
               </app-card>
             }
           </div>
+          <app-pagination
+            [totalItems]="filteredCoordinadores().length"
+            [pageSize]="pageSize()"
+            [currentPage]="currentPage()"
+            [pageSizeOptions]="[6, 10, 20]"
+            (pageChange)="currentPage.set($event)"
+            (pageSizeChange)="onPageSizeChange($event)"
+          />
         }
       }
 
@@ -260,7 +282,7 @@ type VistaDecano = 'LISTA' | 'REGISTRO';
 
           <form (ngSubmit)="guardarCoordinador()" class="space-y-4">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <app-form-field label="Primer Nombre" [required]="true">
+              <app-form-field label="Primer Nombre" [required]="true" [errorMessage]="errorCampo('primerNombre')">
                 <input
                   type="text"
                   [(ngModel)]="formData.primerNombre"
@@ -282,7 +304,7 @@ type VistaDecano = 'LISTA' | 'REGISTRO';
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <app-form-field label="Primer Apellido" [required]="true">
+              <app-form-field label="Primer Apellido" [required]="true" [errorMessage]="errorCampo('primerApellido')">
                 <input
                   type="text"
                   [(ngModel)]="formData.primerApellido"
@@ -304,7 +326,7 @@ type VistaDecano = 'LISTA' | 'REGISTRO';
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <app-form-field label="Tipo de Documento" [required]="true">
+              <app-form-field label="Tipo de Documento" [required]="true" [errorMessage]="errorCampo('tipoIdentificacionId')">
                 <select
                   [(ngModel)]="formData.tipoIdentificacionId"
                   (change)="onTipoIdentificacionChange($event)"
@@ -319,7 +341,7 @@ type VistaDecano = 'LISTA' | 'REGISTRO';
               </app-form-field>
 
               <div class="sm:col-span-2">
-                <app-form-field label="Número de Identificación" [required]="true">
+                <app-form-field label="Número de Identificación" [required]="true" [errorMessage]="errorCampo('numeroIdentificacion')">
                   <input
                     type="text"
                     [(ngModel)]="formData.numeroIdentificacion"
@@ -334,7 +356,7 @@ type VistaDecano = 'LISTA' | 'REGISTRO';
               </div>
             </div>
 
-            <app-form-field label="Programa Académico" [required]="true">
+            <app-form-field label="Programa Académico" [required]="true" [errorMessage]="errorCampo('programaAcademico')">
               <select
                 [(ngModel)]="formData.programaAcademico"
                 name="programaAcademico"
@@ -350,7 +372,7 @@ type VistaDecano = 'LISTA' | 'REGISTRO';
             </app-form-field>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <app-form-field label="Correo Institucional UCO" [required]="true">
+              <app-form-field label="Correo Institucional UCO" [required]="true" [errorMessage]="errorCampo('correo')">
                 <input
                   type="email"
                   [(ngModel)]="formData.correo"
@@ -361,7 +383,7 @@ type VistaDecano = 'LISTA' | 'REGISTRO';
                 />
               </app-form-field>
 
-              <app-form-field label="Contraseña" [required]="true">
+              <app-form-field label="Contraseña" [required]="true" [errorMessage]="errorCampo('password')">
                 <input
                   type="text"
                   [(ngModel)]="formData.password"
@@ -387,7 +409,7 @@ type VistaDecano = 'LISTA' | 'REGISTRO';
               <app-button variant="secondary" size="md" type="button" (clicked)="volverALista()">
                 Cancelar
               </app-button>
-              <app-button variant="primary" size="md" type="submit" [loading]="isSubmitting()" [disabled]="!formData.primerNombre || !formData.primerApellido || !formData.correo || !formData.programaAcademico || !formData.password">
+              <app-button variant="primary" size="md" type="submit" [loading]="isSubmitting()">
                 Guardar Coordinador
               </app-button>
             </div>
@@ -442,8 +464,30 @@ export class DeanCoordinadoresComponent implements OnInit {
   programasAcademicos = signal<Array<{ id: string; nombre: string }>>([]);
   isLoading = signal<boolean>(true);
   isSubmitting = signal<boolean>(false);
-  searchQuery = '';
-  selectedEstado = 'TODOS';
+  private readonly searchQuerySig = signal('');
+  private readonly selectedEstadoSig = signal('TODOS');
+  currentPage = signal(1);
+  pageSize = signal(6);
+
+  get searchQuery(): string {
+    return this.searchQuerySig();
+  }
+  set searchQuery(valor: string) {
+    this.searchQuerySig.set(valor ?? '');
+    this.currentPage.set(1);
+  }
+
+  get selectedEstado(): string {
+    return this.selectedEstadoSig();
+  }
+  set selectedEstado(valor: string) {
+    this.selectedEstadoSig.set(valor);
+    this.currentPage.set(1);
+  }
+  /** Mensaje del backend si falla la carga del directorio de coordinadores. */
+  errorCarga = signal<string | null>(null);
+  /** Se activa al intentar guardar para mostrar los errores por campo. */
+  intentoGuardar = signal(false);
   private readonly ultimaPeticionCoordinadores = new UltimaPeticion();
 
   formData: Omit<CoordinadorItem, 'id' | 'totalDocentes' | 'totalGrupos'> = {
@@ -463,8 +507,8 @@ export class DeanCoordinadoresComponent implements OnInit {
   };
 
   filteredCoordinadores = computed(() => {
-    const query = this.searchQuery.toLowerCase().trim();
-    const estado = this.selectedEstado;
+    const query = this.searchQuerySig().toLowerCase().trim();
+    const estado = this.selectedEstadoSig();
 
     return this.coordinadores().filter((item) => {
       const matchQuery =
@@ -480,6 +524,16 @@ export class DeanCoordinadoresComponent implements OnInit {
     });
   });
 
+  paginatedCoordinadores = computed(() => {
+    const inicio = (this.currentPage() - 1) * this.pageSize();
+    return this.filteredCoordinadores().slice(inicio, inicio + this.pageSize());
+  });
+
+  onPageSizeChange(tamano: number): void {
+    this.pageSize.set(tamano);
+    this.currentPage.set(1);
+  }
+
   ngOnInit(): void {
     this.cargarTiposIdentificacion();
     this.cargarProgramasAcademicos();
@@ -493,7 +547,7 @@ export class DeanCoordinadoresComponent implements OnInit {
           this.programasAcademicos.set(res.datos);
         }
       },
-      error: () => console.warn('Usando catálogo local de programas.'),
+      error: (err) => this.toast.warning(getApiErrorMessage(err)),
     });
   }
 
@@ -506,7 +560,7 @@ export class DeanCoordinadoresComponent implements OnInit {
           this.formData.tipoIdentificacion = res.datos[0].tipoIdentificacion;
         }
       },
-      error: () => console.warn('Usando catálogo local de tipos de documento.'),
+      error: (err) => this.toast.warning(getApiErrorMessage(err)),
     });
   }
 
@@ -522,6 +576,7 @@ export class DeanCoordinadoresComponent implements OnInit {
   cargarCoordinadores(identidadEsperada?: IdentidadEsperada): void {
     const peticion = this.ultimaPeticionCoordinadores.iniciar();
     this.isLoading.set(true);
+    this.errorCarga.set(null);
     this.deanService.getCoordinadores().subscribe({
       next: (res) => {
         if (!this.ultimaPeticionCoordinadores.esVigente(peticion)) {
@@ -532,12 +587,14 @@ export class DeanCoordinadoresComponent implements OnInit {
         this.isLoading.set(false);
         advertirRegistroNoListado(datos, identidadEsperada, (aviso) => this.toast.warning(aviso));
       },
-      error: () => {
+      error: (err) => {
         if (!this.ultimaPeticionCoordinadores.esVigente(peticion)) {
           return;
         }
         this.isLoading.set(false);
-        this.toast.error('Error al cargar coordinadores.');
+        const mensaje = getApiErrorMessage(err);
+        this.errorCarga.set(mensaje);
+        this.toast.error(mensaje);
       },
     });
   }
@@ -621,6 +678,7 @@ export class DeanCoordinadoresComponent implements OnInit {
       idPrograma: null,
       estado: 'ACTIVO',
     };
+    this.intentoGuardar.set(false);
     this.vistaActual.set('REGISTRO');
   }
 
@@ -634,10 +692,44 @@ export class DeanCoordinadoresComponent implements OnInit {
     this.vistaActual.set('LISTA');
   }
 
+  /** Mensaje visible bajo el campo tras un intento de guardado; vacío si el campo es válido. */
+  errorCampo(campo: string): string {
+    if (!this.intentoGuardar()) {
+      return '';
+    }
+    const f = this.formData;
+    const vacio = (v: string | null | undefined) => !(v ?? '').toString().trim();
+    switch (campo) {
+      case 'primerNombre':
+        return vacio(f.primerNombre) ? 'El primer nombre es obligatorio.' : '';
+      case 'primerApellido':
+        return vacio(f.primerApellido) ? 'El primer apellido es obligatorio.' : '';
+      case 'tipoIdentificacionId':
+        return vacio(f.tipoIdentificacionId) ? 'Seleccione el tipo de documento.' : '';
+      case 'numeroIdentificacion': {
+        const r = parseIdentificationNumber(f.numeroIdentificacion);
+        return r.valid ? '' : r.error;
+      }
+      case 'programaAcademico':
+        return vacio(f.programaAcademico) ? 'Seleccione el programa académico.' : '';
+      case 'correo': {
+        const r = validateInstitutionalEmail(f.correo);
+        return r.valid ? '' : r.error || 'Correo institucional inválido.';
+      }
+      case 'password': {
+        if (vacio(f.password)) return 'La contraseña es obligatoria.';
+        return getPasswordValidationError((f.password ?? '').trim(), (f.numeroIdentificacion ?? '').trim()) ?? '';
+      }
+      default:
+        return '';
+    }
+  }
+
   guardarCoordinador(): void {
     if (this.isSubmitting()) {
       return;
     }
+    this.intentoGuardar.set(true);
     if (!this.formData.tipoIdentificacionId) {
       this.toast.warning('El campo Tipo de Documento es obligatorio.');
       return;
