@@ -3,6 +3,7 @@ import { inject } from '@angular/core';
 import { of, delay, throwError } from 'rxjs';
 import { mockStore } from '../mocks/mock-data-store';
 import { respuestaConsultasTransversales } from '../mocks/mock-consultas-transversales';
+import { plantillasNotificacionMock } from '../mocks/mock-notificaciones';
 import {
   mockHorariosToDto,
   mockMateriasToDto,
@@ -650,6 +651,171 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   }
   if (url.endsWith('/docente/horarios') && method === 'GET') {
     return of(okResponse(mockStore.horariosDocente)).pipe(delay(250));
+  }
+
+  // ================= ADMIN: NOTIFICACIONES (NOTIF-002B / TD-069) =================
+  if (url.endsWith('/admin/notificaciones/estado-canal') && method === 'GET') {
+    return of(okResponse({
+      provider: 'outbox',
+      sender: 'smtp',
+      dispatcherEnabled: true,
+      disponible: true,
+      host: 'smtp.gmail.com',
+      port: 587,
+      username: 'asistencias.notificaciones@uco.edu.co',
+      tienePasswordConfigurado: true,
+      fromAddress: 'asistencias.notificaciones@uco.edu.co',
+      fromName: 'Universidad Católica de Oriente',
+      starttls: true,
+      ssl: false,
+      maxBcc: 50,
+      ratePerMinute: 60,
+      ratePerDay: 500,
+      requireConfirmedEmail: false,
+      platformUrl: 'https://asistencias.uco.edu.co',
+      testModeEnabled: false,
+      testModeRedirectCount: 0,
+    })).pipe(delay(200));
+  }
+
+  if (url.includes('/admin/notificaciones/plantillas') && method === 'GET') {
+    return of(okResponse(plantillasNotificacionMock())).pipe(delay(250));
+  }
+
+  if (url.includes('/admin/notificaciones/plantillas/') && url.endsWith('/versiones') && method === 'POST') {
+    const body = (req.body ?? {}) as { asunto: string; cuerpo: string; idioma?: string };
+    const segments = url.split('/');
+    const tipo = decodeURIComponent(segments.at(-2) ?? '');
+    const nuevaVersion = {
+      id: `ver-${Date.now()}`,
+      tipo,
+      idioma: body.idioma || 'es',
+      version: 2,
+      asunto: body.asunto,
+      cuerpo: body.cuerpo,
+      activa: true,
+      creadoEn: new Date().toISOString(),
+    };
+    return of(okResponse(nuevaVersion, 'Nueva versión guardada con éxito.')).pipe(delay(250));
+  }
+
+  if (url.includes('/admin/notificaciones/plantillas/') && url.includes('/activar') && method === 'PATCH') {
+    return of(okResponse({ exitoso: true }, 'Versión activada exitosamente.')).pipe(delay(200));
+  }
+
+  if (url.includes('/admin/notificaciones/plantillas/') && url.endsWith('/vista-previa') && method === 'POST') {
+    const body = (req.body ?? {}) as { asunto: string; cuerpo: string };
+    const asuntoR = (body.asunto || '').replace(/\{(\w+)\}/g, '[$1_VALOR]');
+    const cuerpoR = (body.cuerpo || '').replace(/\{(\w+)\}/g, '[$1_VALOR]');
+    const htmlR = `
+      <div style="font-family: sans-serif; color: #1f2937; line-height: 1.6;">
+        <h2 style="color: #1e3a8a; margin-top: 0;">${asuntoR}</h2>
+        <div style="white-space: pre-line; background: #f9fafb; padding: 16px; border-radius: 8px; border: 1px solid #e5e7eb;">
+          ${cuerpoR}
+        </div>
+      </div>
+    `;
+    return of(okResponse({
+      asunto: asuntoR,
+      textoPlano: cuerpoR,
+      html: htmlR,
+      origen: 'BD',
+    })).pipe(delay(250));
+  }
+
+  if (url.includes('/admin/notificaciones/cola') && method === 'GET') {
+    const itemsMock = [
+      {
+        id: 'notif-sal-001',
+        tipo: 'VERIFICACION_CORREO',
+        asunto: 'Verifica tu correo electrónico en Asistencias UCO',
+        codigoEstado: 'ENTREGADA',
+        nombreEstado: 'ENTREGADA',
+        esTerminal: true,
+        cantidadDestinatarios: 1,
+        intentos: 1,
+        creadoEn: '2026-11-05T14:10:00Z',
+        entregadoEn: '2026-11-05T14:10:02Z',
+        idCorrelacion: 'corr-notif-001',
+      },
+      {
+        id: 'notif-sal-002',
+        tipo: 'RETIRO_ESTUDIANTE_GRUPO',
+        asunto: 'Retiro del grupo G01 de Ingeniería de Software',
+        codigoEstado: 'ENTREGADA',
+        nombreEstado: 'ENTREGADA',
+        esTerminal: true,
+        cantidadDestinatarios: 1,
+        intentos: 1,
+        creadoEn: '2026-11-05T15:20:00Z',
+        entregadoEn: '2026-11-05T15:20:04Z',
+        idCorrelacion: 'corr-notif-002',
+      },
+      {
+        id: 'notif-sal-003',
+        tipo: 'SOLICITUD_INGRESO_REGISTRADA',
+        asunto: 'Nueva solicitud de ingreso al grupo G02 de Bases de Datos',
+        codigoEstado: 'PENDIENTE',
+        nombreEstado: 'PENDIENTE',
+        esTerminal: false,
+        cantidadDestinatarios: 1,
+        intentos: 0,
+        creadoEn: '2026-11-06T07:15:00Z',
+        idCorrelacion: 'corr-notif-003',
+      },
+      {
+        id: 'notif-sal-004',
+        tipo: 'ALERTA_INASISTENCIA_15',
+        asunto: 'Alerta preventiva: Inasistencias al 15% en Cálculo Diferencial',
+        codigoEstado: 'FALLIDA_REINTENTABLE',
+        nombreEstado: 'FALLIDA_REINTENTABLE',
+        esTerminal: false,
+        cantidadDestinatarios: 1,
+        intentos: 2,
+        creadoEn: '2026-11-06T06:30:00Z',
+        proximoIntentoEn: '2026-11-06T07:30:00Z',
+        codigoError: 'SMTP_TIMEOUT',
+        detalleError: 'Tiempo de espera agotado al conectar con el servidor SMTP',
+        idCorrelacion: 'corr-notif-004',
+      },
+      {
+        id: 'notif-sal-005',
+        tipo: 'PERDIDA_ASIGNATURA_20',
+        asunto: 'Notificación oficial de pérdida por inasistencias en Física Mecánica',
+        codigoEstado: 'FALLIDA_DEFINITIVA',
+        nombreEstado: 'FALLIDA_DEFINITIVA',
+        esTerminal: true,
+        cantidadDestinatarios: 1,
+        intentos: 5,
+        creadoEn: '2026-11-05T18:00:00Z',
+        codigoError: 'MAILBOX_UNAVAILABLE',
+        detalleError: 'Dirección del destinatario no existe o rechazada permanentemente (550)',
+        idCorrelacion: 'corr-notif-005',
+      },
+    ];
+
+    return of(okResponse({
+      elementos: itemsMock,
+      numeroPagina: 1,
+      tamanoPagina: 10,
+      totalElementos: itemsMock.length,
+      totalPaginas: 1,
+      resumen: {
+        pendientes: 1,
+        reservadas: 0,
+        entregadas: 2,
+        fallidasReintentables: 1,
+        fallidasDefinitivas: 1,
+      },
+    })).pipe(delay(250));
+  }
+
+  if (url.includes('/admin/notificaciones/cola/') && url.endsWith('/reintentar') && method === 'POST') {
+    return of(okResponse({ exitoso: true }, 'Notificación reprogramada para reintento inmediato.')).pipe(delay(200));
+  }
+
+  if (url.endsWith('/admin/notificaciones/prueba') && method === 'POST') {
+    return of(okResponse({ exitoso: true }, 'Correo institucional de prueba despachado con éxito al canal SMTP.')).pipe(delay(350));
   }
 
   // En modo mock una ruta API desconocida nunca debe alcanzar backend real.
