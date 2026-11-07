@@ -198,4 +198,31 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
     component.volver();
     expect(component.vista()).toBe('LISTA');
   });
+
+  it('F-COO-009: el selector de docentes trae todas las paginas del directorio (mas de 100)', () => {
+    const docente = (n: number) => ({ idDocente: `doc-${n}`, nombreCompleto: `Docente ${n}` }) as any;
+    const pagina1 = Array.from({ length: 100 }, (_, i) => docente(i + 1));
+    const pagina2 = Array.from({ length: 20 }, (_, i) => docente(i + 101));
+    coordinatorService.getDocentesPrograma.calls.reset();
+    coordinatorService.getDocentesPrograma.and.callFake((filtro: any) =>
+      of({ exitoso: true, total: 120, datos: filtro.pagina === 1 ? pagina1 : pagina2 })
+    );
+    component.cargarCatalogos();
+    expect(coordinatorService.getDocentesPrograma).toHaveBeenCalledTimes(2);
+    expect(coordinatorService.getDocentesPrograma.calls.argsFor(1)[0]).toEqual({ pagina: 2, tamano: 100, estaActivo: true });
+    expect(component.docentes().length).toBe(120);
+  });
+
+  it('F-COO-009: el listado de grupos se pagina con PaginationComponent', () => {
+    const muchos = Array.from({ length: 25 }, (_, i) => ({ ...grupo, id: `g-${i}` }));
+    courseService.getCoordinatorCourses.and.returnValue(of({ exitoso: true, datos: muchos }));
+    component.cargarGrupos();
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('app-pagination')).toBeTruthy();
+    expect(el.querySelectorAll('tbody tr').length).toBe(10);
+    component.paginaActual.set(3);
+    fixture.detectChanges();
+    expect(el.querySelectorAll('tbody tr').length).toBe(5);
+  });
 });

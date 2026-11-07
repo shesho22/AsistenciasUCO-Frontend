@@ -1,8 +1,8 @@
 import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { forkJoin, of } from 'rxjs';
-import { catchError, map, switchMap } from 'rxjs/operators';
+import { EMPTY, forkJoin, of } from 'rxjs';
+import { catchError, expand, map, reduce, switchMap } from 'rxjs/operators';
 import { CourseService, GrupoCoordinadorPayload } from '../../../core/services/course.service';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { Course, FranjaHorario } from '../../../core/models/course.model';
@@ -11,6 +11,7 @@ import { DocentePrograma } from '../../../core/models/docente-programa.model';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { franjaNueva, validarFranjas } from '../../../core/validation/franjas.util';
+import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { FranjasEditorComponent } from '../../../shared/components/franjas-editor/franjas-editor.component';
 
 interface GrupoForm {
@@ -33,7 +34,7 @@ interface GrupoForm {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full' },
-  imports: [CommonModule, FormsModule, FranjasEditorComponent],
+  imports: [CommonModule, FormsModule, FranjasEditorComponent, PaginationComponent],
   template: `
     <div class="space-y-6 animate-fade-in">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
@@ -55,7 +56,7 @@ interface GrupoForm {
       </div>
 
       @if (vista() === 'LISTA') {
-        <div class="bg-white rounded-2xl border border-warm-200 shadow-warm-sm overflow-hidden">
+        <div class="bg-white rounded-2xl border border-warm-200 shadow-warm-sm overflow-x-auto">
           @if (cargando()) {
             <p class="p-6 text-sm text-warm-500">Cargando grupos...</p>
           } @else if (grupos().length === 0) {
@@ -73,7 +74,7 @@ interface GrupoForm {
                 </tr>
               </thead>
               <tbody>
-                @for (grupo of grupos(); track grupo.id) {
+                @for (grupo of gruposPagina(); track grupo.id) {
                   <tr class="border-t border-warm-100">
                     <td class="px-4 py-3 font-medium text-warm-900">{{ grupo.name }}</td>
                     <td class="px-4 py-3">{{ grupo.section }}</td>
@@ -91,6 +92,15 @@ interface GrupoForm {
             </table>
           }
         </div>
+        @if (!cargando() && grupos().length > 0) {
+          <app-pagination
+            [totalItems]="grupos().length"
+            [pageSize]="tamanoPagina()"
+            [currentPage]="paginaActual()"
+            (pageChange)="paginaActual.set($event)"
+            (pageSizeChange)="cambiarTamano($event)"
+          />
+        }
       }
 
       @if (vista() === 'FORM') {
@@ -162,6 +172,12 @@ export class CoordinatorGroupsComponent implements OnInit {
   cargando = signal<boolean>(true);
   guardando = signal<boolean>(false);
   grupos = signal<Course[]>([]);
+  paginaActual = signal(1);
+  tamanoPagina = signal(10);
+  gruposPagina = computed(() => {
+    const inicio = (this.paginaActual() - 1) * this.tamanoPagina();
+    return this.grupos().slice(inicio, inicio + this.tamanoPagina());
+  });
   asignaturas = signal<AsignaturaPlanItem[]>([]);
   periodos = signal<PeriodoAcademicoItem[]>([]);
   docentes = signal<DocentePrograma[]>([]);
@@ -180,6 +196,7 @@ export class CoordinatorGroupsComponent implements OnInit {
     this.courseService.getCoordinatorCourses().subscribe({
       next: (res) => {
         this.grupos.set(res.datos ?? []);
+        this.paginaActual.set(1);
         this.cargando.set(false);
       },
       error: (err: unknown) => {
@@ -187,6 +204,11 @@ export class CoordinatorGroupsComponent implements OnInit {
         this.toast.error(getApiErrorMessage(err) || 'No fue posible cargar los grupos.');
       },
     });
+  }
+
+  cambiarTamano(tamano: number): void {
+    this.tamanoPagina.set(tamano);
+    this.paginaActual.set(1);
   }
 
   /** Asignaturas de los planes del programa, docentes activos del programa y períodos académicos. */
@@ -207,10 +229,17 @@ export class CoordinatorGroupsComponent implements OnInit {
       )
       .subscribe((asignaturas) => this.asignaturas.set(asignaturas));
 
-    this.coordinatorService
-      .getDocentesPrograma({ pagina: 1, tamano: 100, estaActivo: true })
-      .pipe(catchError(() => of({ exitoso: false, datos: [] as DocentePrograma[] })))
-      .subscribe((res) => this.docentes.set(res.datos ?? []));
+    // Se piden todas las páginas del directorio (el backend limita a 100 por página): el selector no debe truncarse.
+    const TAMANO = 100;
+    const pedir = (pagina: number) => this.coordinatorService.getDocentesPrograma({ pagina, tamano: TAMANO, estaActivo: true });
+    let pagina = 1;
+    pedir(pagina)
+      .pipe(
+        expand((res) => (pagina * TAMANO < Number(res.total ?? 0) ? pedir(++pagina) : EMPTY)),
+        reduce((acumulados: DocentePrograma[], res) => [...acumulados, ...(res.datos ?? [])], []),
+        catchError(() => of([] as DocentePrograma[]))
+      )
+      .subscribe((docentes) => this.docentes.set(docentes));
 
     this.coordinatorService
       .getPeriodosAcademicos()
