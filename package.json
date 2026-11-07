@@ -12,7 +12,8 @@
     "coverage:realtime:check": "node scripts/check-realtime-coverage.mjs",
     "e2e:realtime:smoke": "node scripts/realtime-smoke.mjs",
     "lint:tokens": "node scripts/check-design-tokens.mjs",
-    "verify": "npm run lint:tokens && npm run test:ci && npm run coverage:realtime:check && npm run build -- --configuration=production"
+    "check:retiro-solicitudes": "node scripts/check-retiro-solicitudes.mjs",
+    "verify": "npm run lint:tokens && npm run test:ci && npm run coverage:realtime:check && npm run check:retiro-solicitudes && npm run build -- --configuration=production"
   },
   "private": true,
   "dependencies": {

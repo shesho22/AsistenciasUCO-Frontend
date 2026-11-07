@@ -39,4 +39,20 @@ describe('OfertaAcademicaService (HU008)', () => {
     expect(req.request.params.has('busqueda')).toBeFalse();
     req.flush({ exitoso: true, datos: [], total: 0 });
   });
+
+  it('F-RED-04 la oferta mapeada no trae claves de solicitud de ingreso', () => {
+    service.consultar({ pagina: 1, tamano: 10 }).subscribe((res) => {
+      const claves = Object.keys(res.datos[0]);
+      expect(claves).not.toContain('idSolicitud' + 'Abierta');
+      expect(claves).not.toContain('estadoSolicitud');
+      expect(claves.length).toBe(19);
+    });
+    const grupo = {
+      idGrupo: 'g1', codigoGrupo: 1, nombreGrupo: 'G1', idAsignatura: 'a', codigoAsignatura: 'M', nombreAsignatura: 'Mat',
+      nombreDocente: 'D', idPeriodoAcademico: 'p', nombrePeriodoAcademico: '2026-2', fechaInicioPeriodo: '2026-07-20',
+      fechaFinPeriodo: '2026-12-10', estadoPeriodo: 'VIGENTE', horario: null, capacidadMaxima: 30, estudiantesActivos: 1,
+      cuposDisponibles: 29, matriculado: false, tipoAsignatura: 'ESPECIFICA', transversal: false,
+    };
+    http.expectOne((r) => r.url === URL).flush({ exitoso: true, datos: [grupo], total: 1 });
+  });
 });

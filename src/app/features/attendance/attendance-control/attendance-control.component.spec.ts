@@ -328,7 +328,7 @@ describe('AttendanceControlComponent contract corrections', () => {
     expect(component.studentFieldErrors()['password']).toBeTruthy();
   });
 
-  it('Certificación F3: el 409 ERR_MATRICULA_DUPLICADA orienta al docente al reingreso por solicitud', () => {
+  it('el 409 ERR_MATRICULA_DUPLICADA indica matrícula activa', () => {
     const component = createComponent();
     component.selectedCourseId.set('grupo-1');
     studentService.enrollStudentInGroup.and.returnValue(
@@ -360,7 +360,7 @@ describe('AttendanceControlComponent contract corrections', () => {
 
     expect(studentService.enrollStudentInGroup).toHaveBeenCalled();
     expect(component.toastMessage()).toBe(MENSAJE_MATRICULA_DUPLICADA_DOCENTE);
-    expect(component.toastMessage()).toContain('solicitud de ingreso');
+    expect(component.toastMessage()).not.toContain('solicitud');
   });
 
   it('muestra feedback cuando falla la carga de sesiones', () => {
@@ -544,13 +544,13 @@ describe('AttendanceControlComponent contract corrections', () => {
     expect(component.isGroupClaimsModalOpen()).toBeFalse();
   });
 
-  it('HU051/HU053: "Padrón y solicitudes" abre el hub del grupo del docente', () => {
+  it('HU051: "Padrón" abre el hub del grupo del docente', () => {
     const component = createComponent([activeStudent], []);
     const navigate = jasmine.createSpy('navigate').and.resolveTo(true);
     (component as unknown as { router: unknown }).router = { navigate };
     component.selectedCourseId.set('course-1');
 
-    component.irAPadronYSolicitudes();
+    component.irAPadron();
 
     expect(navigate).toHaveBeenCalledWith(['/app/docente/grupos'], { queryParams: { grupo: 'course-1' } });
   });

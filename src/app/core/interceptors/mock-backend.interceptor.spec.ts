@@ -286,44 +286,24 @@ describe('mockBackendInterceptor', () => {
     expect(mockStore.periodosAcademicos.length).toBe(total);
   }));
 
-  it('HU053-HU055 MK-01 simula solicitar, listar, resolver y retirar solicitudes de ingreso', fakeAsync(() => {
+  it('F-RED-05 los endpoints de solicitudes de ingreso ya no los resuelve el mock', fakeAsync(() => {
     auth.setMockMode(true);
-    let creada: any;
-    httpClient
-      .post(`${environment.apiUrl}/estudiante/solicitudes-matricula`, { grupoId: 'grp-mock' })
-      .subscribe((r) => (creada = r));
-    tick(300);
-    expect(creada?.exitoso).toBeTrue();
-    const id = creada.datos.id;
-
-    let mias: any;
-    httpClient.get(`${environment.apiUrl}/estudiante/solicitudes-matricula`).subscribe((r) => (mias = r));
-    tick(300);
-    expect(mias.datos.some((s: any) => s.id === id && s.estado === 'PENDIENTE')).toBeTrue();
-
-    let bandeja: any;
-    httpClient.get(`${environment.apiUrl}/docente/grupos/grp-mock/solicitudes-ingreso`).subscribe((r) => (bandeja = r));
-    tick(300);
-    expect(bandeja.datos.some((s: any) => s.id === id)).toBeTrue();
-
-    let resuelta: any;
-    httpClient
-      .patch(`${environment.apiUrl}/docente/solicitudes-ingreso/${id}`, { accion: 'RECHAZAR', motivo: 'QA' })
-      .subscribe((r) => (resuelta = r));
-    tick(300);
-    expect(resuelta.datos.estadoResultante).toBe('RECHAZADA');
-
-    let otra: any;
-    httpClient
-      .post(`${environment.apiUrl}/estudiante/solicitudes-matricula`, { grupoId: 'grp-mock-2' })
-      .subscribe((r) => (otra = r));
-    tick(300);
-    let retirada: any;
-    httpClient
-      .post(`${environment.apiUrl}/estudiante/solicitudes-matricula/${otra.datos.id}/retiro`, {})
-      .subscribe((r) => (retirada = r));
-    tick(300);
-    expect(retirada?.exitoso).toBeTrue();
+    const rutas = [
+      ['GET', `${environment.apiUrl}/estudiante/solicitudes-` + 'matricula'],
+      ['GET', `${environment.apiUrl}/docente/grupos/grp-mock/solicitudes-` + 'ingreso'],
+      ['GET', `${environment.apiUrl}/coordinador/solicitudes-` + 'matricula'],
+    ];
+    for (const [metodo, url] of rutas) {
+      let resultado: any;
+      let error: any;
+      httpClient.request(metodo, url).subscribe({ next: (r) => (resultado = r), error: (e) => (error = e) });
+      tick(300);
+      // No lo atiende el mock: o pasa al siguiente handler (peticion pendiente en HttpTestingController) o responde error.
+      expect(resultado?.exitoso).not.toBeTrue();
+      http.match(url).forEach((req) => req.flush({}, { status: 404, statusText: 'Not Found' }));
+      tick(300);
+      expect(error === undefined || error.status === 404).toBeTrue();
+    }
   }));
 
   it('HU006 MK-06 simula el perfil propio con sus vínculos', fakeAsync(() => {
@@ -335,20 +315,15 @@ describe('mockBackendInterceptor', () => {
     expect(perfil.datos.vinculos.length).toBe(1);
   }));
 
-  it('HU008 MK-08 simula la oferta de grupos y refleja la solicitud abierta del estudiante', fakeAsync(() => {
+  it('HU008 MK-08 simula la oferta de grupos sin campos de solicitud de ingreso', fakeAsync(() => {
     auth.setMockMode(true);
     let oferta: any;
     httpClient.get(`${environment.apiUrl}/estudiante/oferta-academica`).subscribe((r) => (oferta = r));
     tick(300);
     expect(oferta.datos.length).toBe(2);
     expect(oferta.datos[0].cuposDisponibles).toBe(5);
-
-    httpClient.post(`${environment.apiUrl}/estudiante/solicitudes-matricula`, { grupoId: 'grp-oferta-1' }).subscribe();
-    tick(300);
-    httpClient.get(`${environment.apiUrl}/estudiante/oferta-academica`).subscribe((r) => (oferta = r));
-    tick(300);
-    expect(oferta.datos[0].estadoSolicitud).toBe('PENDIENTE');
-    expect(oferta.datos[1].estadoSolicitud).toBeNull();
+    expect('idSolicitud' + 'Abierta' in oferta.datos[0]).toBeFalse();
+    expect('estadoSolicitud' in oferta.datos[0]).toBeFalse();
   }));
 
   it('HU051 RT-09 simula el retiro de un estudiante por el docente', fakeAsync(() => {

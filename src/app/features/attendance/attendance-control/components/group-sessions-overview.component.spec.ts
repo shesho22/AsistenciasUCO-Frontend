@@ -140,11 +140,11 @@ describe('GroupSessionsOverviewComponent', () => {
     expect(text).not.toContain('undefined');
   });
 
-  it('HU051/HU053: el botón "Padrón y solicitudes" emite gestionarPadron', () => {
+  it('HU051: el botón "Padrón" emite gestionarPadron', () => {
     const comp = render([session(1)]);
     let emitido = false;
     comp.gestionarPadron.subscribe(() => (emitido = true));
-    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('[data-testid="padron-solicitudes"]')!.click();
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('[data-testid="padron"]')!.click();
     expect(emitido).toBeTrue();
   });
 });

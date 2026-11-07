@@ -706,4 +706,13 @@ describe('CoordinatorManagementService', () => {
       expect(service.getAsignaturasPlan('plan-inexistente')).toEqual([]);
     });
   });
+
+describe('CoordinatorManagementService (CULM-001 A.1: sin solicitudes ni matrícula de grupo)', () => {
+  it('F-RED-04 no expone los métodos retirados', () => {
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    const service = TestBed.inject(CoordinatorManagementService);
+    for (const metodo of ['getSolicitudesMatricula', 'crearSolicitudMatricula', 'resolverSolicitudMatricula', 'matricularEstudianteGrupo', 'retirarEstudianteGrupo']) {
+      expect(metodo in service).withContext(metodo).toBeFalse();
+    }
+  });
 });
