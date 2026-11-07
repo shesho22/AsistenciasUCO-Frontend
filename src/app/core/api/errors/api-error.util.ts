@@ -100,6 +100,15 @@ const CODE_MESSAGES: Record<string, string> = {
     'No fue posible conectar con el servidor. Verifique su conexión de red.',
 };
 
+/** Códigos de negocio cuyo `message` ya es el texto institucional listo para mostrar. */
+const MENSAJE_DEL_BACKEND: ReadonlySet<string> = new Set([
+  API_ERROR_CODE.VALIDATION_ERROR,
+  API_ERROR_CODE.INVALID_REQUEST,
+  API_ERROR_CODE.FORBIDDEN,
+  API_ERROR_CODE.RESOURCE_NOT_FOUND,
+  API_ERROR_CODE.CONFLICT,
+]);
+
 function codeFromHttpStatus(status: number): string {
   if (status === 0) return API_ERROR_CODE.NETWORK_ERROR;
   if (status === 400) return API_ERROR_CODE.INVALID_REQUEST;
@@ -153,6 +162,12 @@ export function getApiErrorMessage(error: unknown): string {
     if (typeof legacy === 'string' && legacy.trim()) {
       return legacy.trim();
     }
+  }
+
+  // CULM-001 A.2: los errores de negocio (400/403/404/409) traen en `message` el texto del catálogo institucional
+  // (por ejemplo SES_017, REV_007, DEC_002, SEC_002): el backend es el único que traduce, la UI solo lo presenta.
+  if (envelope && MENSAJE_DEL_BACKEND.has(code) && envelope.message.trim()) {
+    return envelope.message.trim();
   }
 
   const known = CODE_MESSAGES[code];
