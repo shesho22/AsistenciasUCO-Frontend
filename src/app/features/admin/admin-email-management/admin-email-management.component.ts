@@ -10,16 +10,13 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   AdminEmailNotificationService,
   EstadoCanalNotificacionDto,
-  MarcadorPlantillaDto,
   NotificacionSalienteAdminDto,
   ResumenColaNotificacionDto,
   TipoPlantillaAdminDto,
-  VersionPlantillaDto,
 } from '../../../core/services/admin-email-notification.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { ToastService } from '../../../shared/components/toast/toast.component';
@@ -919,7 +916,6 @@ export class AdminEmailManagementComponent implements OnInit {
   private readonly notificationService = inject(AdminEmailNotificationService);
   private readonly authService = inject(AuthService);
   private readonly toast = inject(ToastService);
-  private readonly sanitizer = inject(DomSanitizer);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly isExternalMode = inject(EMAIL_ADMIN_EXTERNAL_MODE);
@@ -1009,11 +1005,8 @@ export class AdminEmailManagementComponent implements OnInit {
     return this.plantillas().map((p) => p.tipo);
   });
 
-  readonly safeHtmlPreview = computed<SafeHtml>(() => {
-    const vp = this.vistaPrevia();
-    if (!vp) return '';
-    return this.sanitizer.bypassSecurityTrustHtml(vp.html);
-  });
+  /** HTML de la vista previa; Angular lo sanitiza al enlazarlo con [innerHTML] (sin bypassSecurityTrust). */
+  readonly safeHtmlPreview = computed<string>(() => this.vistaPrevia()?.html ?? '');
 
   ngOnInit(): void {
     if (this.isExternalMode) {

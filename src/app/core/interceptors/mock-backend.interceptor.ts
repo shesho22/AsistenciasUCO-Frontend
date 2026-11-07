@@ -940,7 +940,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   if (url.includes('/admin/notificaciones/plantillas/') && url.endsWith('/versiones') && method === 'POST') {
     const body = (req.body ?? {}) as { asunto: string; cuerpo: string; idioma?: string };
     const segments = url.split('/');
-    const tipo = decodeURIComponent(segments[segments.length - 2]);
+    const tipo = decodeURIComponent(segments.at(-2) ?? '');
     const nuevaVersion = {
       id: `ver-${Date.now()}`,
       tipo,
@@ -960,8 +960,8 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
 
   if (url.includes('/admin/notificaciones/plantillas/') && url.endsWith('/vista-previa') && method === 'POST') {
     const body = (req.body ?? {}) as { asunto: string; cuerpo: string };
-    const asuntoR = (body.asunto || '').replace(/\{([a-zA-Z0-9_]+)\}/g, '[$1_VALOR]');
-    const cuerpoR = (body.cuerpo || '').replace(/\{([a-zA-Z0-9_]+)\}/g, '[$1_VALOR]');
+    const asuntoR = (body.asunto || '').replace(/\{(\w+)\}/g, '[$1_VALOR]');
+    const cuerpoR = (body.cuerpo || '').replace(/\{(\w+)\}/g, '[$1_VALOR]');
     const htmlR = `
       <div style="font-family: sans-serif; color: #1f2937; line-height: 1.6;">
         <h2 style="color: #1e3a8a; margin-top: 0;">${asuntoR}</h2>

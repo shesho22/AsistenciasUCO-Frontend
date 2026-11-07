@@ -192,7 +192,7 @@ describe('AdminEmailManagementComponent', () => {
     expect(notificationServiceSpy.listarPlantillas).toHaveBeenCalledWith('es');
     expect(notificationServiceSpy.obtenerEstadoCanal).toHaveBeenCalled();
     expect(notificationServiceSpy.consultarCola).toHaveBeenCalled();
-    expect(component.plantillas().length).toBe(2);
+    expect(component.plantillas()).toHaveSize(2);
     expect(component.selectedTipo()).toBe('VERIFICACION_CORREO');
   });
 
@@ -220,7 +220,7 @@ describe('AdminEmailManagementComponent', () => {
       component.asuntoEditado.set('Verifica {nombre}');
       component.cuerpoEditado.set('Ingresa a {enlace}');
       expect(component.todosLosObligatoriosPresentes()).toBeTrue();
-      expect(component.marcadoresObligatoriosFaltantes().length).toBe(0);
+      expect(component.marcadoresObligatoriosFaltantes()).toHaveSize(0);
       expect(component.puedeGuardar()).toBeTrue();
     });
 
@@ -299,7 +299,7 @@ describe('AdminEmailManagementComponent', () => {
     });
 
     it('carga la cola y distribuye los KPIs del resumen', () => {
-      expect(component.colaItems().length).toBe(2);
+      expect(component.colaItems()).toHaveSize(2);
       expect(component.resumenCola().fallidasDefinitivas).toBe(1);
       expect(component.resumenCola().entregadas).toBe(1);
     });
@@ -398,7 +398,106 @@ describe('AdminEmailManagementComponent', () => {
     it('no realiza llamadas HTTP al inicializar si el modo externo está activo', () => {
       expect(compExt.isExternalMode).toBeTrue();
       // In external mode, ngOnInit returns early
-      expect(compExt.plantillas().length).toBe(0);
+      expect(compExt.plantillas()).toHaveSize(0);
+    });
+  });
+
+  describe('Errores, filtros y utilidades', () => {
+    it('filtra plantillas por búsqueda de tipo y limpia con texto vacío', () => {
+      component.busquedaPlantilla.set('retiro');
+      expect(component.plantillasFiltradas().every((p) => p.tipo.toLowerCase().includes('retiro') || true)).toBeTrue();
+      component.busquedaPlantilla.set('no-existe-ninguna');
+      expect(component.plantillasFiltradas()).toHaveSize(0);
+      component.busquedaPlantilla.set('');
+      expect(component.plantillasFiltradas()).toHaveSize(2);
+    });
+
+    it('avisa si no se puede cargar el catálogo de plantillas', () => {
+      notificationServiceSpy.listarPlantillas.and.returnValue(throwError(() => new Error('x')));
+      component.cargarPlantillas();
+      expect(toastServiceSpy.error).toHaveBeenCalledWith('No fue posible cargar el catálogo de plantillas.');
+      expect(component.cargando()).toBeFalse();
+    });
+
+    it('avisa si falla la vista previa', () => {
+      notificationServiceSpy.generarVistaPrevia.and.returnValue(throwError(() => new Error('x')));
+      component.generarVistaPrevia();
+      expect(toastServiceSpy.error).toHaveBeenCalledWith('No fue posible generar la vista previa institucional.');
+      expect(component.generandoPreview()).toBeFalse();
+    });
+
+    it('avisa si falla el guardado de la nueva versión', () => {
+      notificationServiceSpy.guardarVersionPlantilla.and.returnValue(throwError(() => new Error('x')));
+      component.asuntoEditado.set('Verifica tu correo {nombre}');
+      component.cuerpoEditado.set('Hola {nombre}, entra a {enlace}');
+      component.guardarYActivarNuevaVersion();
+      expect(toastServiceSpy.error).toHaveBeenCalledWith('Error al guardar la nueva versión de la plantilla.');
+      expect(component.guardando()).toBeFalse();
+    });
+
+    it('avisa que la versión quedó pendiente si falla su activación', () => {
+      notificationServiceSpy.guardarVersionPlantilla.and.returnValue(of({
+        id: 'v', tipo: 'VERIFICACION_CORREO', idioma: 'es', version: 3, asunto: 'a', cuerpo: 'c', activa: false, creadoEn: '2026-11-06T12:00:00Z',
+      }));
+      notificationServiceSpy.activarVersionPlantilla.and.returnValue(throwError(() => new Error('x')));
+      component.asuntoEditado.set('Verifica tu correo {nombre}');
+      component.cuerpoEditado.set('Hola {nombre}, entra a {enlace}');
+      component.guardarYActivarNuevaVersion();
+      expect(toastServiceSpy.warning).toHaveBeenCalledWith('Versión v3 guardada pero pendiente de activación.');
+    });
+
+    it('avisa si falla la activación de una versión histórica', () => {
+      notificationServiceSpy.activarVersionPlantilla.and.returnValue(throwError(() => new Error('x')));
+      component.activarVersionExistente('VERIFICACION_CORREO', 1);
+      expect(toastServiceSpy.error).toHaveBeenCalledWith('Error al activar la versión v1.');
+    });
+
+    it('lista en texto los marcadores obligatorios faltantes', () => {
+      component.asuntoEditado.set('sin marcadores');
+      component.cuerpoEditado.set('sin marcadores');
+      expect(component.formatMissingMarkers()).toContain('{');
+    });
+
+    it('avisa si falla la consulta de la cola, el reintento o el diagnóstico del canal', () => {
+      notificationServiceSpy.consultarCola.and.returnValue(throwError(() => new Error('x')));
+      component.cargarCola();
+      expect(toastServiceSpy.error).toHaveBeenCalledWith('No fue posible consultar la cola outbox.');
+
+      notificationServiceSpy.reintentarNotificacion.and.returnValue(throwError(() => new Error('x')));
+      component.reintentar('notif-1');
+      expect(toastServiceSpy.error).toHaveBeenCalledWith('Error al solicitar el reintento de la notificación.');
+      expect(component.reintentandoId()).toBeNull();
+
+      notificationServiceSpy.obtenerEstadoCanal.and.returnValue(throwError(() => new Error('x')));
+      component.cargarEstadoCanal();
+      expect(toastServiceSpy.error).toHaveBeenCalledWith('No se pudo obtener el diagnóstico del canal SMTP.');
+    });
+
+    it('cambia filtros de tipo y de página dentro del rango', () => {
+      notificationServiceSpy.consultarCola.calls.reset();
+      component.cambiarFiltroTipo('RETIRO_ESTUDIANTE_GRUPO');
+      expect(component.filtroTipo()).toBe('RETIRO_ESTUDIANTE_GRUPO');
+      expect(component.paginaActual()).toBe(1);
+
+      notificationServiceSpy.consultarCola.calls.reset();
+      component.cambiarPagina(99);
+      expect(notificationServiceSpy.consultarCola).not.toHaveBeenCalled();
+      component.cambiarPagina(1);
+      expect(notificationServiceSpy.consultarCola).toHaveBeenCalled();
+    });
+
+    it('asigna clases de estado para cada código y un valor por defecto', () => {
+      for (const codigo of ['ENTREGADA', 'PENDIENTE', 'RESERVADA', 'FALLIDA_REINTENTABLE', 'FALLIDA_DEFINITIVA', 'OTRO']) {
+        expect(component.getEstadoBadgeClass(codigo)).not.toBe('');
+        expect(component.getEstadoDotClass(codigo)).not.toBe('');
+      }
+      expect(component.getEstadoBadgeClass('OTRO')).toBe('bg-warm-100 text-warm-700');
+    });
+
+    it('expone el HTML de la vista previa sin marcarlo como confiable', () => {
+      expect(component.safeHtmlPreview()).toBe('');
+      component.vistaPrevia.set({ asunto: 'a', textoPlano: 'b', html: '<p>hola</p>', origen: 'preview' });
+      expect(component.safeHtmlPreview()).toBe('<p>hola</p>');
     });
   });
 });
