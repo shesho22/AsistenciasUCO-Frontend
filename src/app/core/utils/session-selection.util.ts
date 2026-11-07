@@ -24,16 +24,20 @@ export function findActiveOrUpcomingSession(
     return new Date(year, month - 1, day, hours || 0, minutes || 0, 0).getTime();
   };
 
-  const sessionTimings = sessions.map((s) => ({
-    session: s,
-    startMs: parseSessionTime(s.date, s.startTime),
-    endMs: parseSessionTime(s.date, s.endTime || s.startTime),
-  }));
+  const DIA_MS = 24 * 60 * 60 * 1000;
+  const sessionTimings = sessions.map((s) => {
+    const startMs = parseSessionTime(s.date, s.startTime);
+    let endMs = parseSessionTime(s.date, s.endTime || s.startTime);
+    // Una sesion que cruza la medianoche (22:30 - 00:35) termina al dia siguiente.
+    if (endMs < startMs) endMs += DIA_MS;
+    return { session: s, startMs, endMs };
+  });
 
-  // 1. Sesión activa en curso: startMs <= nowMs <= endMs
-  const activeSession = sessionTimings.find(
-    (t) => t.startMs <= nowMs && nowMs <= t.endMs
-  );
+  // 1. Sesión activa en curso: startMs <= nowMs <= endMs. Con sesiones solapadas gana la que empezó antes
+  //    (y, a igual inicio, la de menor número), sin depender del orden en que llegaron.
+  const activeSession = sessionTimings
+    .filter((t) => t.startMs <= nowMs && nowMs <= t.endMs)
+    .sort((a, b) => a.startMs - b.startMs || a.session.sessionNumber - b.session.sessionNumber)[0];
   if (activeSession) {
     return activeSession.session;
   }

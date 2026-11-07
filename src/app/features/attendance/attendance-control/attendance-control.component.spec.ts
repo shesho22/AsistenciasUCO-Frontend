@@ -374,14 +374,15 @@ describe('AttendanceControlComponent contract corrections', () => {
 
   it('muestra feedback cuando falla la carga de sesiones', () => {
     sessionService.getSessionsByGroup.and.returnValue(
-      throwError(() => new Error('session load failed'))
+      throwError(() => apiHttpError(409, 'Las sesiones del grupo no están disponibles.', 'CONFLICT'))
     );
     const component = createComponent();
 
     expect(component.sessions()).toEqual([]);
     expect(component.showToast()).toBeTrue();
     expect(component.toastType()).toBe('error');
-    expect(component.toastMessage()).toContain('sesiones');
+    // F-DOC-005: el texto es el del backend, no uno fijo del cliente.
+    expect(component.toastMessage()).toBe('Las sesiones del grupo no están disponibles.');
   });
 
   it('mantiene una lista vacía válida sin mostrar error', () => {
@@ -562,6 +563,13 @@ describe('AttendanceControlComponent contract corrections', () => {
     component.irAPadron();
 
     expect(navigate).toHaveBeenCalledWith(['/app/docente/grupos'], { queryParams: { grupo: 'course-1' } });
+  });
+
+  it('F-DOC-S10: al seleccionar el grupo el padron y las asistencias se piden una sola vez', () => {
+    createComponent([activeStudent], []);
+
+    expect(groupService.getStudentsByGroup).toHaveBeenCalledTimes(1);
+    expect(attendanceService.getAttendancesByGroup).toHaveBeenCalledTimes(1);
   });
 
   it('abre modales de información del grupo, reclamos y el selector de modo de toma', () => {

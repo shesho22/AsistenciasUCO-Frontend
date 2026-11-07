@@ -459,6 +459,18 @@ export class DashboardLayoutComponent {
       icon: 'grupos',
     },
     {
+      label: 'Tomar Asistencia',
+      route: '/app/asistencia',
+      roles: ['DOCENTE'],
+      icon: 'asistencia',
+    },
+    {
+      label: 'Reclamos',
+      route: '/app/docente/reclamos',
+      roles: ['DOCENTE'],
+      icon: 'reclamos',
+    },
+    {
       label: 'Mis Horarios',
       route: '/app/docente/horarios',
       roles: ['DOCENTE'],

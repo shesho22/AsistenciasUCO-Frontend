@@ -74,8 +74,8 @@ describe('StudentClaimsComponent (HU010/HU011: consulta del estudiante)', () => 
     expect(component.total()).toBe(2);
     expect(component.reclamos().length).toBe(2);
     expect(texto).toContain('Cálculo');
-    expect(texto).toContain('PENDIENTE');
-    expect(texto).toContain('APROBADA');
+    expect(texto).toContain('Pendiente');
+    expect(texto).toContain('Aprobada');
     expect(texto).toContain('Aprobada');
     expect(texto).toContain('incapacidad.pdf');
     expect(component.reclamos()[0].soporteAdjunto?.fileId).toBe('file-1');

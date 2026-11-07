@@ -15,6 +15,7 @@ import { StudentService } from '../../../core/services/student.service';
 import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { Course } from '../../../core/models/course.model';
+import { EstudianteGrupoItem } from '../../../core/models/estudiante-grupo-item.model';
 import { ClassSession } from '../../../core/models/attendance.model';
 import { type EstadoCargaReclamos, SolicitudRevisionItem } from '../../../core/models/role-management.model';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
@@ -182,7 +183,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
 
   // Hub del Grupo
   subPestanaHub = signal<'SESIONES' | 'HORARIOS' | 'ESTUDIANTES' | 'RECLAMOS' | 'SABANA'>('SESIONES');
-  estudiantesGrupo = signal<any[]>([]);
+  estudiantesGrupo = signal<EstudianteGrupoItem[]>([]);
   cargandoEstudiantes = signal<boolean>(false);
   reclamosGrupo = signal<SolicitudRevisionItem[]>([]);
   estadoCargaReclamos = signal<EstadoCargaReclamos>('IDLE');
@@ -327,9 +328,9 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
         this.sessions.set(res.datos || []);
         this.loadingSessions.set(false);
       },
-      error: () => {
+      error: (err: unknown) => {
         this.loadingSessions.set(false);
-        this.toast.error('Error al cargar sesiones del grupo.');
+        this.toast.error(getApiErrorMessage(err));
       },
     });
   }
@@ -337,14 +338,14 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   cargarEstudiantesGrupo(courseId: string): void {
     this.cargandoEstudiantes.set(true);
     this.studentService.getStudentsByGroup(courseId).subscribe({
-      next: (res: any) => {
-        const list = res?.items || res?.datos || (Array.isArray(res) ? res : []);
-        this.estudiantesGrupo.set(list);
+      next: (res) => {
+        this.estudiantesGrupo.set(res?.datos ?? []);
         this.cargandoEstudiantes.set(false);
       },
-      error: () => {
+      error: (err: unknown) => {
         this.estudiantesGrupo.set([]);
         this.cargandoEstudiantes.set(false);
+        this.toast.error(getApiErrorMessage(err));
       },
     });
   }
@@ -539,7 +540,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
     }
   }
 
-  abrirModalRetiro(estudiante: any): void {
+  abrirModalRetiro(estudiante: EstudianteGrupoItem): void {
     const idEstudiante = estudiante?.idEstudiante ?? estudiante?.studentId;
     if (!idEstudiante) {
       this.toast.warning('No se pudo identificar al estudiante a retirar.');

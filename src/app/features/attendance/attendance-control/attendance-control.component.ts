@@ -1,7 +1,9 @@
+import type { NuevaSesionSolicitud } from './components/attendance-new-session-modal.component';
+import type { MatriculaEstudianteSolicitud } from './components/attendance-enrollment-modal.component';
 import { Component, DestroyRef, signal, computed, effect, inject, ChangeDetectionStrategy } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
-import { Subscription, finalize, forkJoin, map } from 'rxjs';
+import { Subscription, finalize, forkJoin, map, of } from 'rxjs';
 import { StudentService } from '../../../core/services/student.service';
 import { StudentRegistrationConfigService } from '../../../core/services/student-registration-config.service';
 import { EmailVerificationService } from '../../../core/services/email-verification.service';
@@ -57,6 +59,7 @@ import { AttendanceClaimService } from '../../../core/services/attendance-claim.
 import { type EstadoCargaReclamos, SolicitudRevisionItem } from '../../../core/models/role-management.model';
 import { isUuid } from '../../../core/utils/uuid.util';
 import { EstudianteGrupoApiDto } from '../../../core/api/models/estudiante-grupo-api-dto.model';
+import { AsistenciaConsultadaApiDto } from '../../../core/api/models/asistencia-consultada-api-dto.model';
 import { detalleCancelacion, estaCancelada, marcarSesionCancelada } from '../../../core/models/sesion-estado.model';
 import { findActiveOrUpcomingSession } from '../../../core/utils/session-selection.util';
 import {
@@ -534,8 +537,9 @@ export class AttendanceControlComponent {
         next: (res) => {
           this.groupStudents.set(res.datos || []);
         },
-        error: () => {
+        error: (err: unknown) => {
           this.groupStudents.set([]);
+          this.mostrarError(err, 'No fue posible cargar el padrón del grupo.');
         },
       });
   }
@@ -873,7 +877,7 @@ export class AttendanceControlComponent {
     this.isNewSessionModalOpen.set(true);
   }
 
-  onCreateSessionSubmit(data: any): void {
+  onCreateSessionSubmit(data: NuevaSesionSolicitud): void {
     const course = this.currentCourse();
     if (!course) {
       this.toastType.set('error');
@@ -991,7 +995,7 @@ export class AttendanceControlComponent {
     });
   }
 
-  onRegisterStudentSubmit(data: any): void {
+  onRegisterStudentSubmit(data: Omit<MatriculaEstudianteSolicitud, 'password'> & { password?: string }): void {
     this.studentFieldErrors.set({});
     const identificationResult = parseIdentificationNumber(data.numeroIdentificacion);
     const effectivePassword = data.password?.trim() ?? '';
@@ -1177,14 +1181,16 @@ export class AttendanceControlComponent {
           const defaultSession = matchingSession || findActiveOrUpcomingSession(populatedSessions) || populatedSessions[0];
 
           this.selectedSessionId.set(defaultSession.id);
-          this.cargarEstudiantesYSesion(courseId, defaultSession.id);
+          // F-DOC-S10: el padron y las asistencias del grupo ya se acaban de pedir; no se vuelven a pedir.
+          this.cargarEstudiantesYSesion(courseId, defaultSession.id, {
+            students: studentsRes.datos || [],
+            attendances: attendances,
+          });
         }
       },
-      error: () => {
+      error: (err: unknown) => {
         this.sessions.set([]);
-        this.toastType.set('error');
-        this.toastMessage.set('No fue posible cargar las sesiones y asistencias del grupo.');
-        this.showToast.set(true);
+        this.mostrarError(err, 'No fue posible cargar las sesiones y asistencias del grupo.');
       },
     });
   }
@@ -1240,7 +1246,11 @@ export class AttendanceControlComponent {
     }
   }
 
-  private cargarEstudiantesYSesion(courseId: string, sessionId: string): void {
+  private cargarEstudiantesYSesion(
+    courseId: string,
+    sessionId: string,
+    precargados?: { students: EstudianteGrupoApiDto[]; attendances: AsistenciaConsultadaApiDto[] }
+  ): void {
     this.isLoadingSession.set(true);
     this.cargarTomas(sessionId);
     const pendingLocalStatus = new Map<string, AttendanceStatus>();
@@ -1250,10 +1260,16 @@ export class AttendanceControlComponent {
       }
     }
 
-    forkJoin({
-      students: this.groupService.getStudentsByGroup(courseId),
-      attendances: this.attendanceService.getAttendancesByGroup(courseId, sessionId),
-    })
+    const fuente$ = precargados
+      ? of({
+          students: { datos: precargados.students },
+          attendances: { datos: precargados.attendances.filter((a) => a.sesion === sessionId) },
+        })
+      : forkJoin({
+          students: this.groupService.getStudentsByGroup(courseId),
+          attendances: this.attendanceService.getAttendancesByGroup(courseId, sessionId),
+        });
+    fuente$
       .pipe(
         map(({ students, attendances }) =>
           AttendanceMapper.fromGroupStudentsAndAttendances(

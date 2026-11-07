@@ -216,3 +216,19 @@ export function getBackendUserMessage(error: unknown, respaldo?: string): string
   }
   return getApiErrorMessage(error);
 }
+
+/**
+ * Texto de éxito entregado por el backend (`mensajeUsuario` del contrato ApiResponse o, en endpoints legados,
+ * `mensaje`). El respaldo solo se usa cuando la respuesta no trae texto; nunca sustituye al del backend.
+ */
+export function getApiSuccessMessage(respuesta: unknown, respaldo: string): string {
+  if (isRecord(respuesta)) {
+    for (const clave of ['mensajeUsuario', 'mensaje']) {
+      const texto = respuesta[clave];
+      if (typeof texto === 'string' && texto.trim()) {
+        return texto.trim();
+      }
+    }
+  }
+  return respaldo;
+}

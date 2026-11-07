@@ -62,7 +62,7 @@ import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load
               <!-- Encabezado del Día -->
               <div class="p-3.5 bg-warm-50 border-b border-warm-200 flex items-center justify-between">
                 <span class="font-serif font-bold text-sm text-warm-900">{{ dia }}</span>
-                <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-white border border-warm-200 text-warm-600">
+                <span class="text-xs font-bold px-2 py-0.5 rounded-md bg-white border border-warm-200 text-warm-600">
                   {{ clasesPorDia(dia).length }} clases
                 </span>
               </div>
@@ -79,9 +79,9 @@ import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load
                 } @else {
                   @for (clase of clasesPorDia(dia); track clase.id) {
                     <div [class]="getClaseClasses(clase.colorCategory)">
-                      <div class="flex items-center justify-between text-[11px] font-semibold mb-1">
+                      <div class="flex items-center justify-between text-xs font-semibold mb-1">
                         <span class="font-mono">{{ clase.horaInicio }} - {{ clase.horaFin }}</span>
-                        <span class="uppercase tracking-wider px-1.5 py-0.2 rounded bg-white/70 text-[10px]">
+                        <span class="uppercase tracking-wider px-1.5 py-0.2 rounded bg-white/70 text-xs">
                           {{ clase.grupo }}
                         </span>
                       </div>
@@ -90,7 +90,7 @@ import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load
                         {{ clase.nombreMateria }}
                       </h4>
 
-                      <div class="mt-2 pt-2 border-t border-black/5 text-[11px] space-y-0.5">
+                      <div class="mt-2 pt-2 border-t border-black/5 text-xs space-y-0.5">
                         <div class="flex items-center gap-1.5 opacity-85">
                           <svg class="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />

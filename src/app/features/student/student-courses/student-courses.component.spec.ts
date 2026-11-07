@@ -324,6 +324,19 @@ describe('StudentCoursesComponent', () => {
     expect(component.categoriasJustificacion()).toEqual([]);
   });
 
+  it('F-EST-S18: el catalogo de motivos se pide una sola vez por visita, aunque se abra el detalle y los motivos', () => {
+    const espia = spyOn(consultasStub, 'getCategoriasJustificacion').and.callThrough();
+    const otro = TestBed.createComponent(StudentCoursesComponent);
+    otro.detectChanges();
+    otro.componentInstance.verDetalleCompleto(mockMaterias[0]);
+    otro.detectChanges();
+    otro.componentInstance.volverALista();
+    otro.componentInstance.verDetalleCompleto(mockMaterias[0]);
+    otro.detectChanges();
+
+    expect(espia).toHaveBeenCalledTimes(1);
+  });
+
   it('permite ver detalle completo de sesiones y regresar a la lista', () => {
     component.verDetalleCompleto(mockMaterias[0]);
     expect(component.vistaActual()).toBe('DETALLE');

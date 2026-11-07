@@ -1,5 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import {
+  getApiSuccessMessage,
   getApiCorrelationId,
   getApiErrorCode,
   getApiErrorMessage,
@@ -170,5 +171,15 @@ describe('getBackendUserMessage (F-ADM-010)', () => {
 
   it('cae al mensaje semantico por codigo cuando el backend no trae texto', () => {
     expect(getBackendUserMessage(new HttpErrorResponse({ status: 501 }))).toBe('Esta funcionalidad no está disponible por el momento.');
+  });
+});
+
+describe('getApiSuccessMessage', () => {
+  it('prefiere mensajeUsuario, luego mensaje legado y por ultimo el respaldo', () => {
+    expect(getApiSuccessMessage({ mensajeUsuario: ' Listo ', mensaje: 'x' }, 'r')).toBe('Listo');
+    expect(getApiSuccessMessage({ exitoso: true, mensaje: 'Solicitud registrada.' }, 'r')).toBe('Solicitud registrada.');
+    expect(getApiSuccessMessage({ exitoso: true }, 'r')).toBe('r');
+    expect(getApiSuccessMessage(null, 'r')).toBe('r');
+    expect(getApiSuccessMessage({ mensajeUsuario: '  ' }, 'r')).toBe('r');
   });
 });

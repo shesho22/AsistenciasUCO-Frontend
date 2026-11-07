@@ -127,7 +127,7 @@ import { CategoriaJustificacionItem } from '../../../../core/models/consultas-tr
                     </div>
                     <div>
                       <p class="text-xs font-bold text-warm-900">{{ archivo()?.nombre }}</p>
-                      <p class="text-[11px] text-warm-500">{{ archivo()?.tamanioKb }} KB • {{ archivo()?.tipo }}</p>
+                      <p class="text-xs text-warm-500">{{ archivo()?.tamanioKb }} KB • {{ archivo()?.tipo }}</p>
                     </div>
                   </div>
                   <button
@@ -158,7 +158,7 @@ import { CategoriaJustificacionItem } from '../../../../core/models/consultas-tr
                   </div>
                   <div>
                     <span class="text-xs font-semibold text-primary-700">Haz clic para adjuntar un documento</span>
-                    <p class="text-[11px] text-warm-400 mt-0.5">Certificado médico, constancia laboral o justificación institucional</p>
+                    <p class="text-xs text-warm-400 mt-0.5">Certificado médico, constancia laboral o justificación institucional</p>
                   </div>
                 </label>
               }

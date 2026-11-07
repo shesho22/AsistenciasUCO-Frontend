@@ -10,6 +10,15 @@ import {
 } from '../../../../core/validation/session-name.util';
 import { SessionTimeZoneService } from '../../../../core/services/session-timezone.service';
 
+/** Valores editables del formulario de programacion de sesion. */
+export interface SesionFormValue {
+  title: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  sessionNumber: number;
+}
+
 @Component({
   selector: 'app-teacher-sesion-form',
   standalone: true,
@@ -112,7 +121,7 @@ export class TeacherSesionFormComponent {
   readonly timeZone = inject(SessionTimeZoneService);
   modo = input<'CREAR' | 'EDITAR'>('CREAR');
   codigoCurso = input<string>('');
-  form = model<any>({
+  form = model<SesionFormValue>({
     title: '',
     date: '',
     startTime: '08:00',

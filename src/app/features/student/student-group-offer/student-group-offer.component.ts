@@ -33,9 +33,12 @@ const DEBOUNCE_MS = 300;
         [ngModel]="busqueda()"
         (ngModelChange)="onBusquedaChange($event)"
         name="busquedaOferta"
+        aria-label="Buscar grupos por asignatura, código o grupo"
+        inputmode="search"
+        autocomplete="off"
         maxlength="50"
         placeholder="Buscar por asignatura, código o grupo..."
-        class="w-full px-4 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-900 placeholder-warm-400 shadow-warm-sm"
+        class="w-full px-4 py-2.5 min-h-[44px] bg-white border border-warm-200 rounded-xl text-sm text-warm-900 placeholder-warm-400 shadow-warm-sm"
       />
 
       @if (error()) {
@@ -58,7 +61,7 @@ const DEBOUNCE_MS = 300;
                     <p class="text-xs font-mono text-warm-500">
                       {{ g.codigoAsignatura }}
                       @if (g.transversal) {
-                        <span data-testid="etiqueta-transversal" class="ml-1 px-2 py-0.5 rounded-full text-[10px] font-semibold font-sans bg-primary-50 text-primary-800 border border-primary-200">
+                        <span data-testid="etiqueta-transversal" class="ml-1 px-2 py-0.5 rounded-full text-xs font-semibold font-sans bg-primary-50 text-primary-800 border border-primary-200">
                           Transversal · {{ g.tipoAsignatura === 'BASICA' ? 'Básica' : 'Institucional' }}
                         </span>
                       }

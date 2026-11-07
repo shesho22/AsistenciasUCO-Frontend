@@ -83,4 +83,16 @@ describe('TeacherGrupoEstudiantesComponent', () => {
     const text = fixture.nativeElement.textContent;
     expect(text).not.toContain('No hay estudiantes');
   });
+
+  it('F-DOC-007: el padron se pinta por paginas (12) y no completo', () => {
+    const muchos = Array.from({ length: 30 }, (_, i) => ({ idEstudiante: `e-${i}`, nombreCompleto: `Estudiante ${i}`, documento: `${i}` }));
+    fixture.componentRef.setInput('estudiantes', muchos);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelectorAll('[data-testid="padron-fila"]').length).toBe(12);
+    expect(fixture.nativeElement.querySelector('app-pagination')).not.toBeNull();
+    component.pagina.set(3);
+    fixture.detectChanges();
+    expect(component.estudiantesPagina().length).toBe(6);
+  });
 });

@@ -171,7 +171,7 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
         } @else {
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             @for (course of courses(); track course.id) {
-              <app-card [hoverable]="true" [title]="course.name" [subtitle]="course.code + ' • ' + course.section">
+              <app-card [hoverable]="true" [title]="course.name" [subtitle]="subtituloCurso(course)">
                 <div class="space-y-3 my-2 text-xs text-warm-700">
                   <div class="flex items-center gap-2">
                     <svg class="w-4 h-4 text-primary-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -197,7 +197,7 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
                 </div>
               </app-card>
             } @empty {
-              <div class="col-span-3 bg-white p-12 rounded-2xl border border-warm-200 text-center space-y-3">
+              <div class="md:col-span-3 bg-white p-12 rounded-2xl border border-warm-200 text-center space-y-3">
                 <p class="text-xs text-warm-500">No tienes asignaturas programadas para el día de hoy.</p>
               </div>
             }
@@ -213,4 +213,9 @@ export class OverviewTeacherComponent {
   pendingClaimsCount = input<number | null>(0);
   proximaClase = input<ProximaClaseInfo | null>(null);
   isLoading = input<boolean>(false);
+
+  /** Codigo y grupo; sin codigo solo el grupo (nunca el literal "undefined"). */
+  subtituloCurso(course: Course): string {
+    return [course.code, course.section].filter((parte) => !!parte && parte !== '-').join(' • ');
+  }
 }

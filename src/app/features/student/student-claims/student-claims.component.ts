@@ -7,7 +7,7 @@ import { CardComponent } from '../../../shared/components/card/card.component';
 import { BadgeComponent, BadgeVariant } from '../../../shared/components/badge/badge.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
-import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
+import { getApiErrorMessage, getApiSuccessMessage } from '../../../core/api/errors/api-error.util';
 import { etiquetaEstadoReclamo, varianteEstadoReclamo } from '../../../core/utils/reclamo-estado.util';
 
 type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
@@ -32,7 +32,7 @@ type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
         <label class="flex flex-col gap-1 text-xs font-semibold text-warm-700">
           Estado
           <select
-            class="px-3 py-2 bg-white border border-warm-200 rounded-xl text-sm"
+            class="px-3 py-2 min-h-[44px] bg-white border border-warm-200 rounded-xl text-sm"
             [value]="estadoFiltro()"
             (change)="onEstadoChange($any($event.target).value)"
           >
@@ -45,7 +45,11 @@ type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
       </div>
 
       @if (isLoading()) {
-        <p class="text-sm text-warm-600">Cargando solicitudes...</p>
+        <div class="space-y-4" role="status" aria-live="polite" aria-label="Cargando solicitudes" data-testid="reclamos-cargando">
+          @for (n of [1, 2, 3]; track n) {
+            <div class="h-32 bg-warm-100 rounded-2xl animate-pulse"></div>
+          }
+        </div>
       } @else if (reclamos().length === 0) {
         <app-card>
           <p class="text-sm text-warm-600 text-center py-6">No tienes solicitudes de revisión con este filtro.</p>
@@ -73,7 +77,7 @@ type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
                         data-accion="retirar-reclamo"
                         [disabled]="retirando() === reclamo.id"
                         (click)="retirar(reclamo)"
-                        class="px-2.5 py-1 text-xs font-medium text-danger-700 bg-danger-50 hover:bg-danger-100 border border-danger-200 rounded-lg disabled:opacity-60"
+                        class="px-3 py-2 min-h-[44px] text-xs font-medium text-danger-700 bg-danger-50 hover:bg-danger-100 border border-danger-200 rounded-lg disabled:opacity-60"
                         title="Retirar solicitud de revisión pendiente"
                       >
                         Retirar
@@ -81,7 +85,7 @@ type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
                     }
                   </div>
                 </div>
-                <p class="text-xs text-warm-500">Radicada el {{ reclamo.fechaSolicitud }}</p>
+                <p class="text-xs text-warm-500">Radicada el {{ reclamo.fechaSolicitud | date: 'dd/MM/yyyy' }}</p>
                 <div>
                   <span class="text-xs font-bold uppercase tracking-wider text-warm-700">Mi justificación</span>
                   <p class="text-sm text-warm-800">{{ reclamo.justificacionSolicitud }}</p>
@@ -95,7 +99,7 @@ type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
                 @if (reclamo.soporteAdjunto; as soporte) {
                   <button
                     type="button"
-                    class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-primary-800 bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-xl"
+                    class="inline-flex items-center gap-1.5 px-3 py-2 min-h-[44px] text-xs font-semibold text-primary-800 bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-xl"
                     [disabled]="descargando()"
                     (click)="descargarSoporte(reclamo)"
                   >
@@ -204,7 +208,7 @@ export class StudentClaimsComponent implements OnInit, OnDestroy {
           URL.revokeObjectURL(url);
           this.toast.success(`Soporte "${soporte.nombre}" descargado.`);
         },
-        error: (error: unknown) => this.toast.error(this.mensajeErrorDescarga(error)),
+        error: (error: unknown) => this.toast.error(getApiErrorMessage(error)),
       });
   }
 
@@ -225,23 +229,10 @@ export class StudentClaimsComponent implements OnInit, OnDestroy {
       .pipe(finalize(() => this.retirando.set(null)))
       .subscribe({
         next: (res) => {
-          this.toast.success(res.mensaje);
+          this.toast.success(getApiSuccessMessage(res, 'Solicitud retirada.'));
           this.cargar();
         },
         error: (error: unknown) => this.toast.error(getApiErrorMessage(error)),
       });
-  }
-
-  private mensajeErrorDescarga(error: unknown): string {
-    switch ((error as { status?: number })?.status) {
-      case 401:
-        return 'Tu sesión expiró. Inicia sesión nuevamente para descargar el soporte.';
-      case 404:
-        return 'El soporte ya no está disponible o no tienes autorización para descargarlo.';
-      case 0:
-        return 'No se pudo conectar con el servidor. Inténtalo de nuevo.';
-      default:
-        return getApiErrorMessage(error);
-    }
   }
 }

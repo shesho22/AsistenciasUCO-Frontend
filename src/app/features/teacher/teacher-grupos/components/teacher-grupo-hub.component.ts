@@ -7,7 +7,8 @@ import { TeacherGrupoSesionesComponent } from './teacher-grupo-sesiones.componen
 import { TeacherGrupoHorariosComponent } from './teacher-grupo-horarios.component';
 import { TeacherGrupoEstudiantesComponent } from './teacher-grupo-estudiantes.component';
 import { TeacherGrupoReclamosComponent } from './teacher-grupo-reclamos.component';
-import { type EstadoCargaReclamos } from '../../../../core/models/role-management.model';
+import { EstudianteGrupoItem } from '../../../../core/models/estudiante-grupo-item.model';
+import { SolicitudRevisionItem, type EstadoCargaReclamos } from '../../../../core/models/role-management.model';
 import { TeacherGrupoSabanaComponent } from './teacher-grupo-sabana.component';
 
 @Component({
@@ -234,9 +235,9 @@ export class TeacherGrupoHubComponent {
   selectedCourse = input<Course | null>(null);
   sessions = input<ClassSession[]>([]);
   loadingSessions = input<boolean>(false);
-  estudiantes = input<any[]>([]);
+  estudiantes = input<EstudianteGrupoItem[]>([]);
   cargandoEstudiantes = input<boolean>(false);
-  reclamos = input<any[]>([]);
+  reclamos = input<SolicitudRevisionItem[]>([]);
   estadoCargaReclamos = input<EstadoCargaReclamos>('IDLE');
   // OUT_OF_GOLDEN_PATH: acciones de sesión sin contrato backend; ocultas salvo feature explícita.
   sessionQrEnabled = input<boolean>(false);
@@ -252,7 +253,7 @@ export class TeacherGrupoHubComponent {
   proyectarQr = output<Course>();
   matricular = output<Course>();
   /** HU051: el docente pide retirar a un estudiante activo del padrón. */
-  retirarEstudiante = output<any>();
+  retirarEstudiante = output<EstudianteGrupoItem>();
   programarExtraordinaria = output<void>();
   proyectarSesion = output<ClassSession>();
   verDetalleSesion = output<ClassSession>();

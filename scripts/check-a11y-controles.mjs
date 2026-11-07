@@ -6,7 +6,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, resolve, sep } from 'node:path';
 
-const roots = ['coordinator', 'dean', 'admin'].map((d) => resolve(process.cwd(), 'src/app/features', d));
+const roots = ['coordinator', 'dean', 'admin', 'student', 'teacher'].map((d) => resolve(process.cwd(), 'src/app/features', d));
 
 function walk(dir, out = []) {
   for (const name of readdirSync(dir)) {

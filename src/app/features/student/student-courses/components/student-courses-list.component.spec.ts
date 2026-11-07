@@ -56,3 +56,23 @@ describe('StudentCoursesListComponent — indicadores por horas (CULM-001 B.2)',
     expect(emitido).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('StudentCoursesListComponent: paginacion y vacio (F-EST-013, F-EST-015)', () => {
+  it('pagina las materias de a 12 y el estado vacio ocupa dos columnas solo desde md', () => {
+    const fixture = TestBed.createComponent(StudentCoursesListComponent);
+    fixture.componentRef.setInput('isLoading', false);
+    fixture.componentRef.setInput('materias', []);
+    fixture.detectChanges();
+    const vacio = fixture.nativeElement.querySelector('[data-testid="materias-vacio"]') as HTMLElement;
+    expect(vacio.className).toContain('md:col-span-2');
+    expect(vacio.className).not.toMatch(/(^|\s)col-span-2/);
+
+    fixture.componentRef.setInput(
+      'materias',
+      Array.from({ length: 15 }, (_, i) => crearMateria({ claveGrupo: `g-${i}`, nombre: `Materia ${i}` }))
+    );
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelectorAll('app-card').length).toBe(12);
+    expect(fixture.nativeElement.querySelector('app-pagination')).not.toBeNull();
+  });
+});

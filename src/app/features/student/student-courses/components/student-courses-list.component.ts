@@ -1,9 +1,10 @@
-import { Component, ChangeDetectionStrategy, input, output } from '@angular/core';
+import { Component, ChangeDetectionStrategy, computed, input, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AttendanceStatusBadgeComponent } from '../../../../shared/components/attendance-status-badge/attendance-status-badge.component';
 import { CardComponent } from '../../../../shared/components/card/card.component';
 import { BadgeComponent, BadgeVariant } from '../../../../shared/components/badge/badge.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
+import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 import { MateriaEstudianteItem } from '../../../../core/models/role-management.model';
 import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
 
@@ -11,7 +12,7 @@ import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
   selector: 'app-student-courses-list',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, CardComponent, BadgeComponent, ButtonComponent, AttendanceStatusBadgeComponent],
+  imports: [CommonModule, CardComponent, BadgeComponent, ButtonComponent, AttendanceStatusBadgeComponent, PaginationComponent],
   template: `
     <div class="space-y-6">
       <!-- Header Bento -->
@@ -36,7 +37,7 @@ import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
           <button
             type="button"
             (click)="openCodeEnrollment.emit()"
-            class="px-3.5 py-2 text-xs font-bold text-white bg-primary-700 hover:bg-primary-800 rounded-xl transition-all shadow-xs inline-flex items-center gap-1.5"
+            class="min-h-[44px] px-4 py-2 text-xs font-bold text-white bg-primary-700 hover:bg-primary-800 rounded-xl transition-all shadow-xs inline-flex items-center gap-1.5"
             title="Matricularse a un grupo académico ingresando el código PIN o enlace provisto por el docente"
           >
             <svg class="w-4 h-4 text-primary-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -50,7 +51,7 @@ import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
             (click)="registrarConPin.emit()"
             data-testid="registrar-con-pin"
             class="min-h-[44px] px-4 py-2 text-xs font-bold text-white bg-primary-700 hover:bg-primary-800 rounded-xl transition-all shadow-xs inline-flex items-center gap-1.5"
-            title="HU176: registrar tu asistencia con el PIN de 6 dígitos que proyecta el docente"
+            title="Registrar tu asistencia con el PIN de 6 dígitos que proyecta el docente"
           >
             <svg class="w-4 h-4 text-success-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
@@ -122,7 +123,7 @@ import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
         </div>
       } @else {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-          @for (materia of materias(); track materia.claveGrupo) {
+          @for (materia of materiasPagina(); track materia.claveGrupo) {
             <app-card [hoverable]="true" padding="md">
               <div class="flex flex-col h-full justify-between gap-4">
                 <div>
@@ -156,8 +157,8 @@ import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
                       <span class="font-bold text-warm-900" data-testid="porcentaje-inasistencia">{{ ind.porcentajeInasistencia }}% de inasistencia</span>
                       <app-attendance-status-badge [codigoPermanencia]="ind.codigoPermanencia" />
                     </div>
-                    <p class="text-[11px] text-warm-600">{{ ind.horasFalta }} h de falta de {{ ind.horasDictadas }} h dictadas</p>
-                    <p class="text-[11px] text-warm-500">Advertencia desde {{ ind.umbralAdvertencia }}% · pérdida desde {{ ind.umbralPerdida }}%</p>
+                    <p class="text-xs text-warm-600">{{ ind.horasFalta }} h de falta de {{ ind.horasDictadas }} h dictadas</p>
+                    <p class="text-xs text-warm-500">Advertencia desde {{ ind.umbralAdvertencia }}% · pérdida desde {{ ind.umbralPerdida }}%</p>
                   </div>
                 } @else {
                   <div class="p-3 rounded-xl bg-warm-50 border border-warm-100 text-xs text-warm-500" data-testid="asistencia-no-disponible">
@@ -180,11 +181,19 @@ import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
               </div>
             </app-card>
           } @empty {
-            <div class="col-span-2 bg-white p-12 rounded-2xl border border-warm-200 text-center space-y-3" data-testid="materias-vacio">
+            <div class="md:col-span-2 bg-white p-12 rounded-2xl border border-warm-200 text-center space-y-3" data-testid="materias-vacio">
               <p class="text-xs text-warm-500">No tienes asignaturas matriculadas actualmente.</p>
             </div>
           }
         </div>
+        <app-pagination
+          [totalItems]="materias().length"
+          [pageSize]="tamano()"
+          [currentPage]="paginaEfectiva()"
+          [pageSizeOptions]="[6, 12, 24]"
+          (pageChange)="pagina.set($event)"
+          (pageSizeChange)="cambiarTamano($event)"
+        />
       }
     </div>
   `,
@@ -197,6 +206,21 @@ export class StudentCoursesListComponent {
   /** `null` = sin fuente autoritativa de asistencia. */
   materiasEnRiesgo = input<number | null>(null);
   totalHorasFalta = input<number | null>(null);
+
+  readonly pagina = signal(1);
+  readonly tamano = signal(12);
+  readonly paginaEfectiva = computed(() =>
+    Math.min(this.pagina(), Math.max(1, Math.ceil(this.materias().length / this.tamano())))
+  );
+  readonly materiasPagina = computed(() => {
+    const inicio = (this.paginaEfectiva() - 1) * this.tamano();
+    return this.materias().slice(inicio, inicio + this.tamano());
+  });
+
+  cambiarTamano(tamano: number): void {
+    this.tamano.set(tamano);
+    this.pagina.set(1);
+  }
 
   retry = output<void>();
   openCodeEnrollment = output<void>();
