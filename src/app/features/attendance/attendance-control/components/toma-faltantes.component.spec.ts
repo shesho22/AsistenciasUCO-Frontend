@@ -27,7 +27,8 @@ describe('TomaFaltantesComponent (CULM-001 B.2)', () => {
     fixture = TestBed.createComponent(TomaFaltantesComponent);
     fixture.componentRef.setInput('tomaId', 't-1');
     fixture.componentRef.setInput('ventanaAbierta', ventanaAbierta);
-    fixture.detectChanges();
+    fixture.detectChanges(); // ejecuta el efecto de carga
+    fixture.detectChanges(); // pinta la respuesta
   }
 
   beforeEach(() => {

@@ -141,9 +141,16 @@ describe('TomaQrProyeccionComponent (CULM-001 B.2, HU175)', () => {
     expect(texto('qr-presentes')).toBe('Presentes: 7');
   });
 
-  it('B2-F-05 no usa setInterval ni setTimeout en ningun momento del ciclo de vida', () => {
+  it('B2-F-05 no usa setInterval ni setTimeout propios en ningun momento del ciclo de vida', () => {
+    // El planificador interno de Angular usa setTimeout para la deteccion de cambios; se verifica que ninguna
+    // llamada se origine en el codigo del componente (setInterval no debe llamarse por nadie).
+    const original = window.setTimeout.bind(window);
+    const origenes: string[] = [];
     const intervalSpy = spyOn(window, 'setInterval').and.callThrough();
-    const timeoutSpy = spyOn(window, 'setTimeout').and.callThrough();
+    spyOn(window, 'setTimeout').and.callFake(((...args: Parameters<typeof setTimeout>) => {
+      origenes.push(new Error().stack ?? '');
+      return original(...args);
+    }) as never);
     const otro = TestBed.createComponent(TomaQrProyeccionComponent);
     otro.componentRef.setInput('toma', toma);
     otro.componentRef.setInput('qr', qr);
@@ -157,7 +164,7 @@ describe('TomaQrProyeccionComponent (CULM-001 B.2, HU175)', () => {
     otro.detectChanges();
     otro.destroy();
     expect(intervalSpy).not.toHaveBeenCalled();
-    expect(timeoutSpy).not.toHaveBeenCalled();
+    expect(origenes.filter((stack) => stack.includes('toma-qr-proyeccion.component.ts'))).toEqual([]);
   });
 
   it('B2-F-05 la barra de rotacion es CSS: su duracion sale de las fechas del backend', () => {
