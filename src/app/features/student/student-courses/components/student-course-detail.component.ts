@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, input, output } from '@angular/core';
+import { Component, ChangeDetectionStrategy, computed, input, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AttendanceStatusBadgeComponent } from '../../../../shared/components/attendance-status-badge/attendance-status-badge.component';
 import { SesionEstadoBadgeComponent } from '../../../../shared/components/sesion-estado-badge/sesion-estado-badge.component';
@@ -11,13 +11,15 @@ import {
 } from '../../../../core/models/role-management.model';
 import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
 import { CategoriaJustificacionItem } from '../../../../core/models/consultas-transversales.model';
+import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
+import { ordenarSesionesCronologicamente } from '../../../../core/utils/sesiones-orden.util';
 import { MotivosJustificacionComponent } from './motivos-justificacion.component';
 
 @Component({
   selector: 'app-student-course-detail',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, BadgeComponent, ButtonComponent, MotivosJustificacionComponent, SesionEstadoBadgeComponent, AttendanceStatusBadgeComponent],
+  imports: [CommonModule, BadgeComponent, ButtonComponent, MotivosJustificacionComponent, SesionEstadoBadgeComponent, AttendanceStatusBadgeComponent, PaginationComponent],
   template: `
     @if (materia()) {
       <div class="space-y-6">
@@ -26,7 +28,7 @@ import { MotivosJustificacionComponent } from './motivos-justificacion.component
           <button
             type="button"
             (click)="back.emit()"
-            class="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-warm-700 hover:text-warm-950 bg-warm-50 hover:bg-warm-100 border border-warm-200 px-3.5 py-2 rounded-xl transition-all shadow-xs"
+            class="inline-flex items-center gap-2 min-h-[44px] text-xs sm:text-sm font-semibold text-warm-700 hover:text-warm-950 bg-warm-50 hover:bg-warm-100 border border-warm-200 px-3.5 py-2 rounded-xl transition-all shadow-xs"
           >
             <svg class="w-4 h-4 text-warm-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -132,7 +134,7 @@ import { MotivosJustificacionComponent } from './motivos-justificacion.component
             </div>
           } @else {
             <div class="divide-y divide-warm-100">
-              @for (sesion of sesiones(); track sesion.id) {
+              @for (sesion of sesionesPagina(); track sesion.id) {
                 <div
                   class="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-warm-50/50 transition-colors"
                   [attr.data-testid]="'sesion-' + sesion.id"
@@ -245,6 +247,15 @@ import { MotivosJustificacionComponent } from './motivos-justificacion.component
                 </div>
               }
             </div>
+            <app-pagination
+              [totalItems]="sesionesOrdenadas().length"
+              [pageSize]="tamano()"
+              [currentPage]="paginaEfectiva()"
+              [showPageSizeSelector]="true"
+              [pageSizeOptions]="[10, 20, 50]"
+              (pageChange)="pagina.set($event)"
+              (pageSizeChange)="cambiarTamano($event)"
+            />
           }
         </div>
       </div>
@@ -258,6 +269,23 @@ export class StudentCourseDetailComponent {
   categorias = input<CategoriaJustificacionItem[]>([]);
   loading = input<boolean>(false);
   error = input<LoadErrorState | null>(null);
+
+  /** Cronologico (F-EST-S17): el orden de llegada del backend no esta garantizado. */
+  readonly sesionesOrdenadas = computed(() => ordenarSesionesCronologicamente(this.sesiones()));
+  readonly pagina = signal(1);
+  readonly tamano = signal(10);
+  readonly paginaEfectiva = computed(() =>
+    Math.min(this.pagina(), Math.max(1, Math.ceil(this.sesionesOrdenadas().length / this.tamano())))
+  );
+  readonly sesionesPagina = computed(() => {
+    const inicio = (this.paginaEfectiva() - 1) * this.tamano();
+    return this.sesionesOrdenadas().slice(inicio, inicio + this.tamano());
+  });
+
+  cambiarTamano(tamano: number): void {
+    this.tamano.set(tamano);
+    this.pagina.set(1);
+  }
 
   retry = output<void>();
   back = output<void>();

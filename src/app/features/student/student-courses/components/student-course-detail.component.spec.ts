@@ -285,4 +285,40 @@ describe('StudentCourseDetailComponent', () => {
       expect(fila.className).toContain('sm:flex-row');
     });
   });
+
+  describe('orden y paginacion de sesiones (F-EST-S17, F-EST-013)', () => {
+    const numeros = () =>
+      Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('[data-testid^="sesion-ses"]')).map((n) =>
+        n.getAttribute('data-testid')
+      );
+
+    it('muestra las sesiones en orden cronologico aunque el backend las entregue desordenadas', () => {
+      fixture.componentRef.setInput('materia', mockMateria);
+      fixture.componentRef.setInput('sesiones', [
+        crearSesion({ id: 'ses-3', numeroSesion: 3, fecha: '2026-11-06', horario: '22:30 - 23:30' }),
+        crearSesion({ id: 'ses-4', numeroSesion: 4, fecha: '2026-11-07', horario: '23:35 - 00:35' }),
+        crearSesion({ id: 'ses-5', numeroSesion: 5, fecha: '2026-11-06', horario: '22:45 - 23:35' }),
+      ]);
+      fixture.detectChanges();
+
+      expect(numeros()).toEqual(['sesion-ses-3', 'sesion-ses-5', 'sesion-ses-4']);
+    });
+
+    it('pagina de a 10 y conserva el conteo total', () => {
+      const muchas = Array.from({ length: 25 }, (_, i) =>
+        crearSesion({ id: `ses-${i + 1}`, numeroSesion: i + 1, fecha: '2026-09-01', horario: `${String(8 + (i % 12)).padStart(2, '0')}:00 - 09:00` })
+      );
+      fixture.componentRef.setInput('materia', mockMateria);
+      fixture.componentRef.setInput('sesiones', muchas);
+      fixture.detectChanges();
+
+      expect(numeros().length).toBe(10);
+      expect(fixture.nativeElement.querySelector('[data-testid="conteo-sesiones"]').textContent).toContain('25 sesiones');
+      expect(fixture.nativeElement.querySelector('app-pagination')).not.toBeNull();
+
+      component.pagina.set(3);
+      fixture.detectChanges();
+      expect(numeros().length).toBe(5);
+    });
+  });
 });
