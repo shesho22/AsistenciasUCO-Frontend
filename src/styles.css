@@ -29,6 +29,8 @@
  * ============================================================================
  */
 
+/* Tipografia: la carga de la fuente y sus variables viven juntas aqui. */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&display=swap');
 @import "tailwindcss";
 
 @theme {
