@@ -20,7 +20,7 @@ const NOMBRE_MAXIMO = 50;
   template: `
     <app-modal [isOpen]="true" [title]="esEdicion() ? 'Editar programa académico' : 'Nuevo programa académico'" (closed)="cancelar()">
       <form class="space-y-4" (ngSubmit)="enviar()">
-        <app-form-field label="Nombre del programa" [required]="true">
+        <app-form-field label="Nombre del programa" [required]="true" [errorMessage]="errorNombre()">
           <input
             name="nombre"
             type="text"
@@ -31,7 +31,7 @@ const NOMBRE_MAXIMO = 50;
           />
         </app-form-field>
 
-        <app-form-field label="Tipo de programa" [required]="true">
+        <app-form-field label="Tipo de programa" [required]="true" [errorMessage]="errorTipo()">
           <select name="tipo" [ngModel]="idTipoPrograma()" (ngModelChange)="idTipoPrograma.set($event)" class="w-full px-3 py-2 bg-white border border-warm-200 rounded-xl text-sm">
             <option value="">-- Selecciona un tipo --</option>
             @for (t of tiposPrograma(); track t.id) {
@@ -40,7 +40,7 @@ const NOMBRE_MAXIMO = 50;
           </select>
         </app-form-field>
 
-        <app-form-field label="Coordinador" [required]="true">
+        <app-form-field label="Coordinador" [required]="true" [errorMessage]="errorCoordinador()">
           <select name="coordinador" [ngModel]="idCoordinador()" (ngModelChange)="idCoordinador.set($event)" class="w-full px-3 py-2 bg-white border border-warm-200 rounded-xl text-sm">
             <option value="">-- Selecciona un coordinador --</option>
             @for (c of opcionesCoordinador(); track c.id) {
@@ -76,7 +76,7 @@ const NOMBRE_MAXIMO = 50;
           <button type="button" (click)="cancelar()" class="px-3.5 py-2 rounded-xl bg-warm-50 hover:bg-warm-100 text-xs font-semibold text-warm-700 border border-warm-200">
             Cancelar
           </button>
-          <button type="submit" [disabled]="!valido() || guardando()" class="px-3.5 py-2 rounded-xl bg-primary-700 hover:bg-primary-800 disabled:opacity-40 text-xs font-bold text-white">
+          <button type="submit" [disabled]="guardando()" class="px-3.5 py-2 rounded-xl bg-primary-700 hover:bg-primary-800 disabled:opacity-40 text-xs font-bold text-white">
             {{ esEdicion() ? 'Guardar cambios' : 'Crear programa' }}
           </button>
         </div>
@@ -119,6 +119,18 @@ export class DeanProgramaFormModalComponent implements OnInit {
     return nombre.length > 0 && nombre.length <= NOMBRE_MAXIMO && !!this.idTipoPrograma() && !!this.idCoordinador();
   });
 
+  /** Se activa al intentar guardar para mostrar bajo cada campo lo que falta (F-DEC-S03). */
+  readonly intentado = signal(false);
+
+  readonly errorNombre = computed(() => {
+    if (!this.intentado()) return '';
+    const nombre = this.nombre().trim();
+    if (nombre.length === 0) return 'El nombre del programa es obligatorio.';
+    return nombre.length > NOMBRE_MAXIMO ? `El nombre no puede superar ${NOMBRE_MAXIMO} caracteres.` : '';
+  });
+  readonly errorTipo = computed(() => (this.intentado() && !this.idTipoPrograma() ? 'Seleccione el tipo de programa.' : ''));
+  readonly errorCoordinador = computed(() => (this.intentado() && !this.idCoordinador() ? 'Seleccione el coordinador del programa.' : ''));
+
   ngOnInit(): void {
     const p = this.programa();
     if (p) {
@@ -131,6 +143,7 @@ export class DeanProgramaFormModalComponent implements OnInit {
   }
 
   enviar(): void {
+    this.intentado.set(true);
     if (!this.valido()) {
       return;
     }

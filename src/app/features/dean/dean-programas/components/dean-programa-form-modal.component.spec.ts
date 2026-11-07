@@ -95,4 +95,18 @@ describe('DeanProgramaFormModalComponent', () => {
     fixture.detectChanges();
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('Ya existe un programa académico con ese nombre en la facultad.');
   });
+
+  it('F-DEC-S03: un envio vacio muestra bajo cada campo obligatorio su mensaje y el boton no esta deshabilitado', () => {
+    crear(null);
+    const el = fixture.nativeElement as HTMLElement;
+    const enviar = el.querySelector('button[type="submit"]') as HTMLButtonElement;
+    expect(enviar.disabled).toBeFalse();
+    expect(el.querySelectorAll('p[role="alert"]').length).toBe(0);
+    component.enviar();
+    fixture.detectChanges();
+    const textos = Array.from(el.querySelectorAll('p[role="alert"]')).map((p) => p.textContent);
+    expect(textos.some((t) => t?.includes('nombre del programa es obligatorio'))).toBeTrue();
+    expect(textos.some((t) => t?.includes('tipo de programa'))).toBeTrue();
+    expect(textos.some((t) => t?.includes('coordinador'))).toBeTrue();
+  });
 });
