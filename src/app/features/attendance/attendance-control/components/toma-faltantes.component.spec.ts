@@ -102,6 +102,16 @@ describe('TomaFaltantesComponent (CULM-001 B.2)', () => {
     expect(el('faltantes-error')!.textContent!.trim()).toBe('La ventana de la sesion ya cerro.');
   });
 
+  it('B2-F-08 SES_008: si el backend responde ERR_SESION_CERRADA los botones quedan deshabilitados con su mensaje', () => {
+    tomas.registrarAsistencias.and.returnValue(throwError(() => apiHttpError(409, 'La ventana de la sesion ya cerro.', 'ERR_SESION_CERRADA')));
+    crear();
+    boton('marcar-presente-a').click();
+    fixture.detectChanges();
+    expect(el('faltantes-error')!.textContent!.trim()).toBe('La ventana de la sesion ya cerro.');
+    expect(boton('marcar-presente-a').disabled).toBeTrue();
+    expect(boton('marcar-seleccionados').disabled).toBeTrue();
+  });
+
   it('B2-F-08 ASISTENCIAS_TOMA_ACTUALIZADAS de la toma recarga la lista; las de otra toma no', () => {
     crear();
     tomas.consultarFaltantes.calls.reset();

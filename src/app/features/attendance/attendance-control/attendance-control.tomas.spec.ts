@@ -215,6 +215,17 @@ describe('AttendanceControlComponent tomas (CULM-001 B.2)', () => {
     expect(tomaService.consultarTomas).toHaveBeenCalledWith('session-1');
   });
 
+  it('B2-F-24 el resumen del grupo se pide en paginas de 100 (maximo del backend) y se acumula', () => {
+    const resumenes = TestBed.inject(TeacherAttendanceSummaryService) as unknown as { consultarResumen: jasmine.Spy };
+    const fila = (id: string) => ({ estudianteId: id }) as never;
+    resumenes.consultarResumen = jasmine.createSpy('consultarResumen').and.callFake((_g: string, pagina: number) =>
+      of({ exitoso: true, elementos: [fila(`p${pagina}`)], numeroPagina: pagina, tamanoPagina: 100, totalElementos: 101, totalPaginas: 2 })
+    );
+    const c = entrar();
+    expect(resumenes.consultarResumen.calls.allArgs()).toEqual([['group-1', 1, 100], ['group-1', 2, 100]]);
+    expect(c.resumenGrupo().length).toBe(2);
+  });
+
   it('B2-F-13 el componente no usa setInterval', () => {
     tomaService.abrirToma.and.returnValue(of({ exitoso: true, datos: toma() }));
     const intervalo = spyOn(window, 'setInterval').and.callThrough();
