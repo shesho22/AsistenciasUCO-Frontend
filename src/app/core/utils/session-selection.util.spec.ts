@@ -58,4 +58,22 @@ describe('findActiveOrUpcomingSession', () => {
     expect(result).toBeDefined();
     expect(result?.id).toBe('ses-3');
   });
+
+  it('F-DOC-S09: con sesiones solapadas en curso elige la que empezo antes, sin importar el orden de llegada', () => {
+    const sessions: ClassSession[] = [
+      createSession('solape', '2026-11-06', '22:45', '23:35', 2),
+      createSession('hoy', '2026-11-06', '22:30', '23:30', 1),
+    ];
+    const now = new Date(2026, 10, 6, 22, 50, 0);
+    expect(findActiveOrUpcomingSession(sessions, now)?.id).toBe('hoy');
+  });
+
+  it('F-DOC-S09: una sesion que cruza la medianoche (22:30 - 00:35) cuenta como en curso despues de las 00:00', () => {
+    const sessions: ClassSession[] = [
+      createSession('noche', '2026-11-06', '22:30', '00:35', 1),
+      createSession('manana', '2026-11-07', '08:00', '10:00', 2),
+    ];
+    const now = new Date(2026, 10, 7, 0, 10, 0);
+    expect(findActiveOrUpcomingSession(sessions, now)?.id).toBe('noche');
+  });
 });
