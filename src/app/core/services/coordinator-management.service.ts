@@ -344,31 +344,6 @@ export class CoordinatorManagementService {
     );
   }
 
-  eliminarAsignaturaPlan(planId: string, asigId: string): Observable<ApiResponse<boolean>> {
-    return this.http.delete<ApiResponse<boolean>>(`${environment.apiUrl}/coordinador/planes-estudio/${planId}/asignaturas/${asigId}`).pipe(
-      tap((res) => {
-        if (res.exitoso) {
-          const eliminada = (this.asignaturasSignal()[planId] || []).find((a) => a.id === asigId);
-          this.asignaturasSignal.update((map) => ({
-            ...map,
-            [planId]: (map[planId] || []).filter((a) => a.id !== asigId),
-          }));
-          this.planesSignal.update((prev) =>
-            prev.map((p) =>
-              p.id === planId
-                ? {
-                    ...p,
-                    totalAsignaturas: Math.max(0, (p.totalAsignaturas ?? 0) - 1),
-                    totalCreditos: Math.max(0, (p.totalCreditos ?? 0) - (Number(eliminada?.creditos) || 0)),
-                  }
-                : p
-            )
-          );
-        }
-      })
-    );
-  }
-
   /** P5: áreas de conocimiento reales para el formulario de asignaturas (GET /admin/areas, lectura compartida). */
   getAreasConocimiento(): Observable<ApiResponse<AreaConocimientoItem[]>> {
     return this.http.get<ApiResponse<AreaConocimientoItem[]>>(`${environment.apiUrl}/admin/areas`);

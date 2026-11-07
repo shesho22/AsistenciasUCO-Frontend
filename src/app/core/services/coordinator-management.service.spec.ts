@@ -492,18 +492,6 @@ describe('CoordinatorManagementService', () => {
       expect(plan?.totalCreditos).toBe(163);
     });
 
-    it('eliminarAsignaturaPlan remueve la asignatura y decrementa el contador', () => {
-      service.eliminarAsignaturaPlan('plan-1', 'asig-1').subscribe((res) => {
-        expect(res.exitoso).toBeTrue();
-      });
-
-      const req = http.expectOne(`${environment.apiUrl}/coordinador/planes-estudio/plan-1/asignaturas/asig-1`);
-      expect(req.request.method).toBe('DELETE');
-      req.flush({ exitoso: true, datos: true });
-
-      const plan = service.planes().find((p) => p.id === 'plan-1');
-      expect(plan?.totalAsignaturas).toBe(49);
-    });
   });
 
   describe('Estudiantes y Matrículas', () => {
