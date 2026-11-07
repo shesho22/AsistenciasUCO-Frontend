@@ -106,4 +106,20 @@ describe('PaginationComponent', () => {
     fixture.detectChanges();
     expect(select.value).toBe('20');
   });
+
+  it('todos los botones tienen nombre accesible y la pagina actual se marca (F-TRX-014)', () => {
+    fixture.componentRef.setInput('totalItems', 100);
+    fixture.componentRef.setInput('pageSize', 10);
+    fixture.componentRef.setInput('currentPage', 3);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('nav[aria-label="Paginación"]')).toBeTruthy();
+    el.querySelectorAll('button').forEach((b) => {
+      expect(b.getAttribute('aria-label') || b.textContent?.trim()).toBeTruthy();
+    });
+    expect(el.querySelector('button[aria-label="Primera página"]')).toBeTruthy();
+    expect(el.querySelector('button[aria-label="Última página"]')).toBeTruthy();
+    expect(el.querySelector('button[aria-current="page"]')?.getAttribute('aria-label')).toBe('Página 3');
+    expect(el.querySelector('select')?.getAttribute('aria-label')).toBe('Resultados por página');
+  });
 });

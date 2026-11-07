@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, input } from '@angular/core';
+import { Component, ChangeDetectionStrategy, ElementRef, afterRender, inject, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 let fieldIdCounter = 0;
@@ -51,4 +51,35 @@ export class FormFieldComponent {
   error = input<string>('');
   required = input<boolean>(false);
   fieldId = input<string>(`form-field-ctrl-${++fieldIdCounter}`);
+
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+
+  constructor() {
+    // Asocia la etiqueta y el error al control proyectado (F-COO-010, F-ADM-S23): sin esto el label no nombra al input.
+    afterRender(() => this.vincularControl());
+  }
+
+  private vincularControl(): void {
+    const raiz = this.host.nativeElement;
+    const control = raiz.querySelector<HTMLElement>('input, select, textarea');
+    if (!control) return;
+    if (!control.id) {
+      control.id = this.fieldId();
+    }
+    const etiqueta = raiz.querySelector<HTMLLabelElement>('label');
+    if (etiqueta && etiqueta.htmlFor !== control.id) {
+      etiqueta.htmlFor = control.id;
+    }
+    const mensaje = this.errorMessage() || this.error();
+    const idError = `${this.fieldId()}-error`;
+    if (mensaje) {
+      control.setAttribute('aria-invalid', 'true');
+      control.setAttribute('aria-describedby', idError);
+    } else {
+      control.removeAttribute('aria-invalid');
+      if (control.getAttribute('aria-describedby') === idError) {
+        control.removeAttribute('aria-describedby');
+      }
+    }
+  }
 }

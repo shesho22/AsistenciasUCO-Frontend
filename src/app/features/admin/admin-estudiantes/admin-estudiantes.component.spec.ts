@@ -98,4 +98,21 @@ describe('AdminEstudiantesComponent (HU157)', () => {
     http.expectOne(`${environment.apiUrl}/admin/facultades`).flush({ exitoso: false }, { status: 500, statusText: 'Server Error' });
     expect(component.facultades()).toEqual([]);
   });
+
+  it('F-ADM-S15: al cargar no muestra "0 Estudiantes" ni tabla vacia; F-ADM-014: hay boton Buscar', () => {
+    const fixture2 = TestBed.createComponent(AdminEstudiantesComponent);
+    fixture2.detectChanges();
+    const el = fixture2.nativeElement as HTMLElement;
+    expect(el.textContent).toContain('Cargando estudiantes');
+    expect(el.textContent).not.toContain('0 Estudiantes');
+    expect(el.querySelector('table')).toBeNull();
+    http.expectOne((r) => r.url === BASE).flush({ exitoso: true, datos: [estudiante], total: 1 });
+    http.expectOne(`${environment.apiUrl}/admin/facultades`).flush({ exitoso: true, datos: [] });
+    fixture2.detectChanges();
+    expect(el.textContent).toContain('1 Estudiantes');
+    const buscar = Array.from(el.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Buscar') as HTMLButtonElement;
+    expect(buscar).toBeTruthy();
+    buscar.click();
+    http.expectOne((r) => r.url === BASE).flush({ exitoso: true, datos: [], total: 0 });
+  });
 });

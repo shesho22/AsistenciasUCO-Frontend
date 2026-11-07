@@ -96,7 +96,7 @@ const MIN_CARACTERES_CANDIDATOS = 3;
 
       <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <div class="sm:col-span-2">
-          <input
+          <input aria-label="Buscar docente por nombre, documento o correo"
             type="text"
             [ngModel]="busqueda()"
             (ngModelChange)="onBusquedaChange($event)"
@@ -106,7 +106,7 @@ const MIN_CARACTERES_CANDIDATOS = 3;
             class="w-full px-4 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-900 placeholder-warm-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 shadow-warm-sm"
           />
         </div>
-        <select
+        <select aria-label="Filtrar docentes por estado"
           [ngModel]="filtroEstado()"
           (ngModelChange)="onEstadoChange($event)"
           name="estadoDocentes"

@@ -82,12 +82,12 @@ type FiltroAsistio = 'TODOS' | 'ASISTIO' | 'NO_ASISTIO';
             <table class="w-full text-sm">
               <thead>
                 <tr class="text-left text-xs uppercase tracking-wider text-warm-500 border-b border-warm-100">
-                  <th class="py-2 pr-3">Grupo</th>
-                  <th class="py-2 pr-3">Asignatura</th>
-                  <th class="py-2 pr-3">Período</th>
-                  <th class="py-2 pr-3">Cupo</th>
-                  <th class="py-2 pr-3">Estado</th>
-                  <th class="py-2"></th>
+                  <th scope="col" class="py-2 pr-3">Grupo</th>
+                  <th scope="col" class="py-2 pr-3">Asignatura</th>
+                  <th scope="col" class="py-2 pr-3">Período</th>
+                  <th scope="col" class="py-2 pr-3">Cupo</th>
+                  <th scope="col" class="py-2 pr-3">Estado</th>
+                  <th scope="col" class="py-2"></th>
                 </tr>
               </thead>
               <tbody>
@@ -149,10 +149,10 @@ type FiltroAsistio = 'TODOS' | 'ASISTIO' | 'NO_ASISTIO';
               <table class="w-full text-sm">
                 <thead>
                   <tr class="text-left text-xs uppercase tracking-wider text-warm-500 border-b border-warm-100">
-                    <th class="py-2 pr-3">Sesión</th>
-                    <th class="py-2 pr-3">Semana</th>
-                    <th class="py-2 pr-3">Fecha y hora</th>
-                    <th class="py-2"></th>
+                    <th scope="col" class="py-2 pr-3">Sesión</th>
+                    <th scope="col" class="py-2 pr-3">Semana</th>
+                    <th scope="col" class="py-2 pr-3">Fecha y hora</th>
+                    <th scope="col" class="py-2"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -214,10 +214,10 @@ type FiltroAsistio = 'TODOS' | 'ASISTIO' | 'NO_ASISTIO';
               <table class="w-full text-sm">
                 <thead>
                   <tr class="text-left text-xs uppercase tracking-wider text-warm-500 border-b border-warm-100">
-                    <th class="py-2 pr-3">Estudiante</th>
-                    <th class="py-2 pr-3">Documento</th>
-                    <th class="py-2 pr-3">Asistencia</th>
-                    <th class="py-2">Razón / causa</th>
+                    <th scope="col" class="py-2 pr-3">Estudiante</th>
+                    <th scope="col" class="py-2 pr-3">Documento</th>
+                    <th scope="col" class="py-2 pr-3">Asistencia</th>
+                    <th scope="col" class="py-2">Razón / causa</th>
                   </tr>
                 </thead>
                 <tbody>

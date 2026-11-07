@@ -261,14 +261,16 @@ export const routes: Routes = [
           ),
       },
       {
-        path: 'decano/infraestructura',
+        path: 'decano/areas',
         canActivate: [roleGuard],
         data: { roles: ['DECANO'] },
         loadComponent: () =>
-          import('./features/dean/dean-infraestructura/dean-infraestructura.component').then(
-            (m) => m.DeanInfraestructuraComponent
+          import('./features/dean/dean-areas/dean-areas.component').then(
+            (m) => m.DeanAreasComponent
           ),
       },
+      // Ruta heredada: se conserva solo para no romper marcadores guardados.
+      { path: 'decano/infraestructura', redirectTo: 'decano/areas', pathMatch: 'full' },
       {
         path: 'decano/coordinadores',
         canActivate: [roleGuard],

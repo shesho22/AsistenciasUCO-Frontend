@@ -75,13 +75,15 @@ describe('AdminPeriodosComponent', () => {
     http.expectNone(`${environment.apiUrl}/coordinador/periodos-academicos`);
   });
 
-  it('HU098: elimina tras confirmar, no elimina si cancela y muestra el rechazo si tiene grupos', () => {
-    const confirmSpy = spyOn(window, 'confirm').and.returnValue(false);
+  it('HU098: elimina tras confirmar en el dialogo, no elimina si cancela y muestra el rechazo si tiene grupos', () => {
     component.eliminarPeriodo(mockPeriodos[0]);
+    expect(component.periodoPorEliminar()).toBe(mockPeriodos[0]);
+    component.cancelarEliminacion();
     http.expectNone(`${environment.apiUrl}/admin/periodos-academicos/per-2026-2`);
+    expect(component.periodoPorEliminar()).toBeNull();
 
-    confirmSpy.and.returnValue(true);
     component.eliminarPeriodo(mockPeriodos[0]);
+    component.confirmarEliminacion();
     const okReq = http.expectOne(`${environment.apiUrl}/admin/periodos-academicos/per-2026-2`);
     expect(okReq.request.method).toBe('DELETE');
     okReq.flush({ exitoso: true, datos: null });
@@ -89,10 +91,20 @@ describe('AdminPeriodosComponent', () => {
     expect(toastSpy.success).toHaveBeenCalledWith('Período 2026-2 eliminado.');
 
     component.eliminarPeriodo(mockPeriodos[0]);
+    component.confirmarEliminacion();
     http
       .expectOne(`${environment.apiUrl}/admin/periodos-academicos/per-2026-2`)
       .flush({ exitoso: false }, { status: 409, statusText: 'Conflict' });
     expect(toastSpy.error).toHaveBeenCalled();
+  });
+
+  it('F-ADM-007: la eliminacion pide confirmacion con un alertdialog y nunca usa window.confirm', () => {
+    const nativo = spyOn(window, 'confirm');
+    component.eliminarPeriodo(mockPeriodos[0]);
+    fixture.detectChanges();
+    const dialogo = (fixture.nativeElement as HTMLElement).querySelector('[role="alertdialog"]');
+    expect(dialogo?.textContent).toContain('2026-2');
+    expect(nativo).not.toHaveBeenCalled();
   });
 
   it('carga con error muestra el mensaje', () => {

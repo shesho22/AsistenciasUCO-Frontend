@@ -2,12 +2,12 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Router } from '@angular/router';
-import { DeanInfraestructuraComponent } from './dean-infraestructura.component';
+import { DeanAreasComponent } from './dean-areas.component';
 import { environment } from '../../../../environments/environment';
 
-describe('DeanInfraestructuraComponent', () => {
-  let fixture: ComponentFixture<DeanInfraestructuraComponent>;
-  let component: DeanInfraestructuraComponent;
+describe('DeanAreasComponent', () => {
+  let fixture: ComponentFixture<DeanAreasComponent>;
+  let component: DeanAreasComponent;
   let http: HttpTestingController;
   let routerSpy: jasmine.SpyObj<Router>;
 
@@ -15,7 +15,7 @@ describe('DeanInfraestructuraComponent', () => {
     routerSpy = jasmine.createSpyObj('Router', ['navigate']);
 
     TestBed.configureTestingModule({
-      imports: [DeanInfraestructuraComponent],
+      imports: [DeanAreasComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -24,7 +24,7 @@ describe('DeanInfraestructuraComponent', () => {
     });
 
     http = TestBed.inject(HttpTestingController);
-    fixture = TestBed.createComponent(DeanInfraestructuraComponent);
+    fixture = TestBed.createComponent(DeanAreasComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
 
@@ -66,12 +66,12 @@ describe('DeanInfraestructuraComponent', () => {
 });
 
 // UX-09 / AUTH-04: un 403/500 de áreas no es «0».
-describe('DeanInfraestructuraComponent con errores HTTP', () => {
+describe('DeanAreasComponent con errores HTTP', () => {
   let http: HttpTestingController;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [DeanInfraestructuraComponent],
+      imports: [DeanAreasComponent],
       providers: [provideHttpClient(), provideHttpClientTesting(), { provide: Router, useValue: { navigate: () => Promise.resolve(true) } }],
     });
     http = TestBed.inject(HttpTestingController);
@@ -80,7 +80,7 @@ describe('DeanInfraestructuraComponent con errores HTTP', () => {
   afterEach(() => http.verify());
 
   it('áreas no disponibles se informan y el total muestra «—»', () => {
-    const fixture = TestBed.createComponent(DeanInfraestructuraComponent);
+    const fixture = TestBed.createComponent(DeanAreasComponent);
     fixture.detectChanges();
     http.expectOne(`${environment.apiUrl}/admin/areas`).flush(
       { exitoso: false, codigo: 'FORBIDDEN', mensajeUsuario: 'No autorizado.' },

@@ -192,3 +192,24 @@ describe('DeanProgramasComponent con más de una página de créditos', () => {
     http.match(() => true).forEach((req) => req.flush({ exitoso: true, datos: [] }));
   });
 });
+
+// F-DEC-S08: mientras la estructura carga no se muestra "0 Planes" ni "No se encontraron planes".
+describe('DeanProgramasComponent mientras carga', () => {
+  it('muestra el estado de carga en lugar de ceros y vacios engañosos', () => {
+    TestBed.configureTestingModule({
+      imports: [DeanProgramasComponent],
+      providers: [provideHttpClient(), provideHttpClientTesting(), { provide: Router, useValue: jasmine.createSpyObj('Router', ['navigate']) }],
+    });
+    const http = TestBed.inject(HttpTestingController);
+    const fixture = TestBed.createComponent(DeanProgramasComponent);
+    fixture.detectChanges();
+    const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(texto).toContain('Cargando planes de estudio');
+    expect(texto).not.toContain('0 Planes');
+    expect(texto).not.toContain('No se encontraron planes');
+    http.expectOne(`${environment.apiUrl}/decano/estructura`).flush({ exitoso: true, datos: [] });
+    fixture.detectChanges();
+    expect(fixture.componentInstance.cargandoEstructura()).toBeFalse();
+    http.match(() => true).forEach((req) => req.flush({ exitoso: true, datos: [] }));
+  });
+});

@@ -26,12 +26,12 @@ describe('AdminAuditoriaComponent (HU172)', () => {
 
   afterEach(() => http.verify());
 
-  it('por defecto consulta los últimos 7 días, solo acciones de asistencia', () => {
+  it('por defecto consulta los últimos 7 días, todas las acciones (F-ADM-013: incluye las del administrador)', () => {
     const req = http.expectOne((r) => r.url === url);
     const desde = new Date(req.request.params.get('desde')!);
     const hasta = new Date(req.request.params.get('hasta')!);
     expect(Math.round((hasta.getTime() - desde.getTime()) / 86_400_000)).toBe(7);
-    expect(req.request.params.get('soloAsistencia')).toBe('true');
+    expect(req.request.params.get('soloAsistencia')).toBe('false');
     expect(req.request.params.has('accion')).toBeFalse();
     req.flush({
       exitoso: true,
@@ -48,6 +48,17 @@ describe('AdminAuditoriaComponent (HU172)', () => {
     expect(texto).toContain('Carlos Pérez');
     expect(texto).toContain('Fallido');
     expect(texto).toContain('CONFLICT');
+    // F-ADM-013: cada evento muestra su id de correlación (idTraza).
+    expect(texto).toContain('ID de correlación');
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="correlacion-AUD-1"]')?.textContent).toContain('C-1');
+  });
+
+  it('F-ADM-013: mientras carga muestra un indicador y no el vacio', () => {
+    fixture.detectChanges();
+    const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(texto).toContain('Cargando eventos');
+    expect(texto).not.toContain('No hay eventos');
+    http.expectOne((r) => r.url === url).flush({ exitoso: true, total: 0, datos: [] });
   });
 
   it('consultar envía acción en mayúsculas, resultado y todas las acciones', () => {

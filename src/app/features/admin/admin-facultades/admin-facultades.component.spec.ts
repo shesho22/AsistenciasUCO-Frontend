@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { AdminFacultadesComponent } from './admin-facultades.component';
 import { AdminManagementService } from '../../../core/services/admin-management.service';
@@ -469,6 +469,49 @@ describe('AdminFacultadesComponent', () => {
       component.confirmarAsignacionDecano();
 
       expect(adminService.actualizarFacultad).not.toHaveBeenCalled();
+    });
+  });
+
+  // F-ADM-S05 / F-ADM-S08 / F-ADM-S23
+  describe('mensajes en pantalla del formulario de facultad', () => {
+    it('S05/S08: un 409 al editar o crear muestra el message del backend junto al boton y libera "Guardando"', () => {
+      inicializar();
+      component.editarFacultad(mockFacultades[0]);
+      component.formFacultad.nombre = 'Nombre Nuevo';
+      const conflicto = new HttpErrorResponse({
+        status: 409,
+        error: { code: 'CONFLICT', message: 'El decano ya es titular de otra facultad.' },
+      });
+      spyOn(adminService, 'actualizarFacultad').and.returnValue(throwError(() => conflicto));
+      component.guardar();
+      fixture.detectChanges();
+
+      expect(component.guardando()).toBeFalse();
+      expect(component.errorGuardado()).toBe('El decano ya es titular de otra facultad.');
+      expect((fixture.nativeElement as HTMLElement).querySelector('[role="alert"]')?.textContent).toContain('El decano ya es titular de otra facultad.');
+      expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Conflicto 409');
+
+      component.abrirFormularioCrear();
+      component.formFacultad.nombre = 'Facultad Distinta';
+      component.formFacultad.idDecano = 'dec-1';
+      spyOn(adminService, 'crearFacultad').and.returnValue(throwError(() => conflicto));
+      component.guardar();
+      expect(toastService.error).toHaveBeenCalledWith('El decano ya es titular de otra facultad.');
+    });
+
+    it('S23: un nombre de 2 caracteres muestra un error asociado al campo y el boton sigue habilitado', () => {
+      inicializar();
+      component.abrirFormularioCrear();
+      component.formFacultad.nombre = 'ab';
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      const campo = el.querySelector("[id=\"fac-nombre\"]") as HTMLInputElement;
+      expect(campo.getAttribute('aria-invalid')).toBe('true');
+      expect(campo.getAttribute('aria-describedby')).toBe('fac-nombre-error');
+      expect(el.querySelector("[id=\"fac-nombre-error\"]")?.textContent).toContain('entre 3 y 50');
+      const guardar = Array.from(el.querySelectorAll('button')).find((b) => b.textContent?.includes('Guardar Facultad')) as HTMLButtonElement;
+      expect(guardar.disabled).toBeFalse();
+      expect(el.querySelector('label[for="fac-nombre"]')).toBeTruthy();
     });
   });
 });

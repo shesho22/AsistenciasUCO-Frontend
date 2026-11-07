@@ -6,6 +6,7 @@ import {
   getApiErrorResponse,
   getApiFieldError,
   getApiFieldErrors,
+  getBackendUserMessage,
 } from './api-error.util';
 
 describe('api error utilities', () => {
@@ -150,5 +151,24 @@ describe('api error utilities', () => {
       .toBe('No fue posible completar la operación. Intente nuevamente.');
     expect(getApiErrorMessage('fallo local'))
       .toBe('No fue posible completar la operación. Intente nuevamente.');
+  });
+});
+
+describe('getBackendUserMessage (F-ADM-010)', () => {
+  it('prefiere el message del backend en un HttpErrorResponse', () => {
+    const error = new HttpErrorResponse({ status: 409, error: { code: 'CONFLICT', message: 'La facultad ya existe.' } });
+    expect(getBackendUserMessage(error)).toBe('La facultad ya existe.');
+  });
+
+  it('acepta objetos con forma {error:{message|mensajeUsuario}} y descarta mensajeTecnico y err.message', () => {
+    expect(getBackendUserMessage({ error: { mensajeUsuario: 'Texto de usuario.' } })).toBe('Texto de usuario.');
+    const sinTexto = { message: 'Http failure response', error: { mensajeTecnico: 'SQLSTATE 23000' } };
+    const resultado = getBackendUserMessage(sinTexto);
+    expect(resultado).not.toContain('SQLSTATE');
+    expect(resultado).not.toContain('Http failure');
+  });
+
+  it('cae al mensaje semantico por codigo cuando el backend no trae texto', () => {
+    expect(getBackendUserMessage(new HttpErrorResponse({ status: 501 }))).toBe('Esta funcionalidad no está disponible por el momento.');
   });
 });

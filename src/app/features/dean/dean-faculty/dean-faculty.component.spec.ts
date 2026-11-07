@@ -90,6 +90,14 @@ describe('DeanFacultyComponent', () => {
 
   afterEach(() => http.verify());
 
+  it('F-DEC-009: la tarjeta de areas no habla de infraestructura ni de coordinadores de area', () => {
+    crear();
+    const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(texto).not.toMatch(/infraestructura/i);
+    expect(texto).not.toContain('coordinadores de área');
+    expect(texto).toContain('Áreas de Conocimiento');
+  });
+
   // INT-05: estas rutas son del ADMINISTRADOR o del COORDINADOR; el decano recibía 403 en cada carga.
   it('no consume rutas de otros roles (sedes, espacios, facultades, parámetros, auditoría ni planes del coordinador)', () => {
     crear();

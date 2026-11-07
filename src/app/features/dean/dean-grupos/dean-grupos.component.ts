@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { CourseService } from '../../../core/services/course.service';
 import { Course } from '../../../core/models/course.model';
 import { BadgeComponent } from '../../../shared/components/badge/badge.component';
+import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 
 @Component({
@@ -81,7 +82,9 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
           </div>
           <div>
             <span class="text-xs text-warm-500 font-medium">Cupo Total Ofertado</span>
-            <p class="text-2xl font-serif font-bold text-success-700">{{ totalCupos() }} cupos</p>
+            <p class="text-2xl font-serif font-bold text-success-700">
+              @if (hayCuposDefinidos()) { {{ totalCupos() }} cupos } @else { Sin cupo definido }
+            </p>
           </div>
         </div>
       </div>
@@ -89,19 +92,35 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
       <!-- Buscador Reactivo de Grupos -->
       <div class="relative">
         <input
-          type="text"
+          type="search"
+          id="dean-grupos-filtro"
+          aria-label="Filtrar grupos por código de materia o nombre"
           [ngModel]="filtroTexto()"
           (ngModelChange)="onFiltroChange($event)"
           placeholder="Filtrar por código de materia o nombre..."
           class="w-full pl-10 pr-4 py-2.5 bg-white border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
         />
-        <svg class="w-4 h-4 text-warm-400 absolute left-3.5 top-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-4 h-4 text-warm-400 absolute left-3.5 top-3.5" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
       </div>
 
       <!-- Tabla de Grupos -->
-      @if (paginatedCourses().length === 0) {
+      @if (cargando()) {
+        <div class="bg-white rounded-2xl border border-warm-200 p-12 text-center shadow-warm-sm" role="status">
+          <p class="text-sm text-warm-500">Cargando grupos…</p>
+        </div>
+      } @else if (errorCarga() !== null) {
+        <div class="bg-white rounded-2xl border border-danger-200 p-12 text-center shadow-warm-sm" role="alert">
+          <p class="text-sm font-semibold text-danger-700">No fue posible cargar los grupos de la facultad.</p>
+          <p class="text-xs text-danger-700 mt-1">{{ errorCarga() }}</p>
+          <button
+            type="button"
+            (click)="cargar()"
+            class="mt-4 min-h-[44px] px-4 text-xs font-semibold rounded-xl border border-danger-200 text-danger-700 hover:bg-danger-50"
+          >Reintentar</button>
+        </div>
+      } @else if (paginatedCourses().length === 0) {
         <div class="bg-white rounded-2xl border border-warm-200 p-12 text-center shadow-warm-sm">
           <p class="text-sm text-warm-500">No se encontraron grupos que coincidan con el filtro.</p>
         </div>
@@ -111,12 +130,12 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
             <table class="w-full text-left text-sm">
               <thead class="bg-warm-50 border-b border-warm-200 text-xs font-bold text-warm-600 uppercase tracking-wider">
                 <tr>
-                  <th class="px-5 py-3.5">Asignatura & Grupo</th>
-                  <th class="px-5 py-3.5">Modalidad</th>
-                  <th class="px-5 py-3.5">Horario</th>
-                  <th class="px-5 py-3.5 text-center">Inscritos / Aforo</th>
-                  <th class="px-5 py-3.5 text-center">Estado</th>
-                  <th class="px-5 py-3.5 text-right">Acción</th>
+                  <th scope="col" class="px-5 py-3.5">Asignatura & Grupo</th>
+                  <th scope="col" class="px-5 py-3.5">Modalidad</th>
+                  <th scope="col" class="px-5 py-3.5">Horario</th>
+                  <th scope="col" class="px-5 py-3.5 text-center">Inscritos / Aforo</th>
+                  <th scope="col" class="px-5 py-3.5 text-center">Estado</th>
+                  <th scope="col" class="px-5 py-3.5 text-right">Acción</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-warm-100">
@@ -133,15 +152,20 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
                       <div class="text-xs font-semibold text-warm-800">{{ c.schedule }}</div>
                     </td>
                     <td class="px-5 py-4 text-center">
-                      <span class="font-bold text-warm-900 text-xs">
-                        {{ c.enrolledStudentsCount }} / {{ c.cupoMaximo || 30 }}
-                      </span>
-                      <div class="w-20 bg-warm-200 rounded-full h-1.5 mx-auto mt-1 overflow-hidden">
-                        <div
-                          class="bg-primary-700 h-1.5 rounded-full"
-                          [style.width.%]="((c.enrolledStudentsCount ?? 0) / (c.cupoMaximo || 30)) * 100"
-                        ></div>
-                      </div>
+                      @if (tieneCupo(c)) {
+                        <span class="font-bold text-warm-900 text-xs">
+                          {{ c.enrolledStudentsCount }} / {{ c.cupoMaximo }}
+                        </span>
+                        <div class="w-20 bg-warm-200 rounded-full h-1.5 mx-auto mt-1 overflow-hidden">
+                          <div
+                            class="bg-primary-700 h-1.5 rounded-full"
+                            [style.width.%]="porcentajeAforo(c)"
+                          ></div>
+                        </div>
+                      } @else {
+                        <span class="font-bold text-warm-900 text-xs">{{ c.enrolledStudentsCount ?? 0 }}</span>
+                        <div class="text-xs text-warm-600 mt-1">Sin cupo definido</div>
+                      }
                     </td>
                     <td class="px-5 py-4 text-center">
                       <app-badge variant="success" size="sm">Habilitado</app-badge>
@@ -204,13 +228,41 @@ export class DeanGruposComponent implements OnInit {
   );
 
   totalCupos = computed(() =>
-    this.courses().reduce((sum: number, c: Course) => sum + (c.cupoMaximo || 30), 0)
+    this.courses().reduce((sum: number, c: Course) => sum + (this.tieneCupo(c) ? (c.cupoMaximo as number) : 0), 0)
   );
 
+  /** Verdadero si algún grupo informa cupo; si ninguno lo hace, el total no se inventa. */
+  hayCuposDefinidos = computed(() => this.courses().some((c) => this.tieneCupo(c)));
+
+  cargando = signal(true);
+  errorCarga = signal<string | null>(null);
+
   ngOnInit(): void {
+    this.cargar();
+  }
+
+  cargar(): void {
+    this.cargando.set(true);
+    this.errorCarga.set(null);
     this.courseService.getDeanCourses().subscribe({
-      next: (res) => this.courses.set(res.datos || []),
+      next: (res) => {
+        this.courses.set(res.datos || []);
+        this.cargando.set(false);
+      },
+      error: (error: unknown) => {
+        this.courses.set([]);
+        this.errorCarga.set(getApiErrorMessage(error));
+        this.cargando.set(false);
+      },
     });
+  }
+
+  tieneCupo(c: Course): boolean {
+    return typeof c.cupoMaximo === 'number' && c.cupoMaximo > 0;
+  }
+
+  porcentajeAforo(c: Course): number {
+    return this.tieneCupo(c) ? Math.min(100, ((c.enrolledStudentsCount ?? 0) / (c.cupoMaximo as number)) * 100) : 0;
   }
 
   onFiltroChange(valor: string): void {

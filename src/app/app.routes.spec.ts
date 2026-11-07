@@ -60,4 +60,13 @@ describe('application routes', () => {
     await router.navigateByUrl('/app/estudiante/solicitudes');
     expect(router.url).toContain('/login');
   });
+
+  it('F-DEC-009 las areas del decano viven en /app/decano/areas y la ruta heredada solo redirige', () => {
+    const appRoute = routes.find((route) => route.path === 'app');
+    const areas = appRoute?.children?.find((route) => route.path === 'decano/areas');
+    expect(areas?.data?.['roles']).toEqual(['DECANO']);
+    const heredada = appRoute?.children?.find((route) => route.path === 'decano/infraestructura');
+    expect(heredada?.redirectTo).toBe('decano/areas');
+    expect(heredada?.loadComponent).toBeUndefined();
+  });
 });

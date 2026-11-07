@@ -36,7 +36,7 @@ export function rangoUtc(desde: string, hasta: string): { desde: string; hasta: 
 }
 
 /**
- * HU172: rastro de auditoría del administrador (solo lectura). Por defecto muestra las acciones de asistencia de los
+ * HU172: rastro de auditoría del administrador (solo lectura). Por defecto muestra todas las acciones de los
  * últimos 7 días; el rango máximo es de 90 días y la consulta es paginada en el servidor.
  */
 @Component({
@@ -90,19 +90,22 @@ export function rangoUtc(desde: string, hasta: string): { desde: string; hasta: 
       }
 
       <section class="bg-white border border-warm-200 rounded-2xl overflow-hidden shadow-warm-sm">
-        @if (listado.filas().length === 0 && !listado.cargando()) {
+        @if (listado.cargando()) {
+          <p role="status" class="text-sm text-warm-500 text-center py-6">Cargando eventos de auditoría…</p>
+        } @else if (listado.filas().length === 0) {
           <p class="text-sm text-warm-500 text-center py-6">No hay eventos de auditoría en el rango y filtros seleccionados.</p>
         } @else {
           <div class="overflow-x-auto">
             <table class="w-full text-left text-sm">
               <thead class="bg-warm-50 border-b border-warm-200 text-xs font-bold text-warm-600 uppercase tracking-wider">
                 <tr>
-                  <th class="px-4 py-3">Fecha</th>
-                  <th class="px-4 py-3">Usuario</th>
-                  <th class="px-4 py-3">Acción</th>
-                  <th class="px-4 py-3">Recurso</th>
-                  <th class="px-4 py-3">Petición</th>
-                  <th class="px-4 py-3 text-center">Resultado</th>
+                  <th scope="col" class="px-4 py-3">Fecha</th>
+                  <th scope="col" class="px-4 py-3">Usuario</th>
+                  <th scope="col" class="px-4 py-3">Acción</th>
+                  <th scope="col" class="px-4 py-3">Recurso</th>
+                  <th scope="col" class="px-4 py-3">Petición</th>
+                  <th scope="col" class="px-4 py-3">ID de correlación</th>
+                  <th scope="col" class="px-4 py-3 text-center">Resultado</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-warm-100">
@@ -116,6 +119,7 @@ export function rangoUtc(desde: string, hasta: string): { desde: string; hasta: 
                     <td class="px-4 py-3 font-mono text-xs text-warm-800">{{ e.accion }}</td>
                     <td class="px-4 py-3 text-xs text-warm-700">{{ e.tipoRecurso }} {{ e.idRecurso || '' }}</td>
                     <td class="px-4 py-3 font-mono text-[11px] text-warm-500">{{ e.metodoHttp }} {{ e.ruta }} · {{ e.estadoHttp }}</td>
+                    <td class="px-4 py-3 font-mono text-[11px] text-warm-600 break-all" [attr.data-testid]="'correlacion-' + e.id">{{ e.idTraza || '—' }}</td>
                     <td class="px-4 py-3 text-center">
                       <app-badge [variant]="e.resultado === 'SUCCESS' ? 'success' : 'danger'">
                         {{ e.resultado === 'SUCCESS' ? 'Exitoso' : 'Fallido' }}
@@ -149,7 +153,8 @@ export class AdminAuditoriaComponent implements OnInit {
   hasta = signal(fechaLocal(new Date()));
   accion = signal('');
   resultado = signal('');
-  soloAsistencia = signal(true);
+  /** Desmarcado por defecto: el administrador debe ver también sus propias acciones administrativas. */
+  soloAsistencia = signal(false);
   errorRango = signal<string | null>(null);
 
   readonly listado = new ListadoPaginado<EventoAuditoriaItem>(

@@ -188,4 +188,18 @@ describe('DeanGrupoDetalleComponent', () => {
     expect(filas[1].textContent).toContain('Cancelada');
     expect(filas[1].textContent).toContain('Incapacidad');
   });
+
+  it('un 403/500 al cargar la ficha del grupo muestra el mensaje del backend (F-DEC-006)', () => {
+    fixture = TestBed.createComponent(DeanGrupoDetalleComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+    http.expectOne(`${environment.apiUrl}/decano/grupos`).flush(
+      { code: 'ERR_INTERNAL', message: 'Servicio no disponible por mantenimiento.', correlationId: 'c1' },
+      { status: 500, statusText: 'Server Error' },
+    );
+    http.expectOne(pagina(1)).flush({ exitoso: true, total: 0, datos: [] });
+    fixture.detectChanges();
+    const alerta = (fixture.nativeElement as HTMLElement).querySelector('[role="alert"]');
+    expect(alerta?.textContent).toContain('Servicio no disponible por mantenimiento.');
+  });
 });

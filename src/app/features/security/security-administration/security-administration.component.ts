@@ -73,7 +73,7 @@ type ViewState = 'loading' | 'ready' | 'error' | 'unauthorized' | 'forbidden';
     <section class="rounded-2xl border border-warm-200 bg-white p-6 shadow-warm-sm">
       <div class="mb-5">
         <p class="text-xs font-bold uppercase tracking-wider text-primary-700">Security Baseline</p>
-        <h1 class="mt-1 text-2xl font-bold text-warm-900">Administración de seguridad</h1>
+        <h1 class="mt-1 font-serif text-2xl font-bold text-warm-900">Administración de seguridad</h1>
         <p class="mt-2 text-sm text-warm-600">
           Recursos, roles, perfiles y asignaciones de <strong>AsistenciasUCO</strong>.
         </p>
@@ -101,7 +101,7 @@ type ViewState = 'loading' | 'ready' | 'error' | 'unauthorized' | 'forbidden';
         </div>
       }
 
-      <div #mountPoint class="mt-4" [hidden]="state() !== 'ready'"></div>
+      <div #mountPoint class="mt-4 max-w-full overflow-x-auto" [hidden]="state() !== 'ready'"></div>
     </section>
   `,
 })

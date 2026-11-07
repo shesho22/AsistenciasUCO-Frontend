@@ -49,7 +49,7 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 
       <!-- Buscador -->
       <div class="relative">
-        <input
+        <input aria-label="Buscar período académico"
           type="text"
           [ngModel]="filtroTexto()"
           (ngModelChange)="filtroTexto.set($event)"

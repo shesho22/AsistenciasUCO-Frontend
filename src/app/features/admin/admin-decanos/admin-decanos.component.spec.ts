@@ -129,7 +129,8 @@ describe('AdminDecanosComponent', () => {
 
     expect(console.warn).toHaveBeenCalledWith('Usando catálogo local de tipos de documento.');
     expect(console.warn).toHaveBeenCalledWith('Usando catálogo local de facultades.');
-    expect(toastService.error).toHaveBeenCalledWith('Error al cargar la lista de decanos.');
+    // F-ADM-010: el mensaje ya no es un texto fijo; sin respuesta HTTP se usa el mensaje semántico de red.
+    expect(toastService.error).toHaveBeenCalledWith('No fue posible conectar con el servidor. Verifique su conexión de red.');
     expect(component.isLoading()).toBeFalse();
   });
 

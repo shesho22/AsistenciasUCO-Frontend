@@ -6,7 +6,7 @@ import { AdminManagementService } from '../../../core/services/admin-management.
 import { BadgeComponent } from '../../../shared/components/badge/badge.component';
 
 @Component({
-  selector: 'app-dean-infraestructura',
+  selector: 'app-dean-areas',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full' },
@@ -69,7 +69,7 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
 
       <!-- Buscador -->
       <div class="relative">
-        <input
+        <input aria-label="Buscar área de conocimiento"
           type="text"
           [ngModel]="filtroTexto()"
           (ngModelChange)="filtroTexto.set($event)"
@@ -114,7 +114,7 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
     </div>
   `,
 })
-export class DeanInfraestructuraComponent implements OnInit {
+export class DeanAreasComponent implements OnInit {
   private adminService = inject(AdminManagementService);
   private router = inject(Router);
 

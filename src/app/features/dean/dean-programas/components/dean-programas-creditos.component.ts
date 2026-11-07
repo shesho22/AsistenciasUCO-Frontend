@@ -45,12 +45,12 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
             <table class="w-full text-sm">
               <thead>
                 <tr class="text-left text-xs uppercase tracking-wider text-warm-500 border-b border-warm-100">
-                  <th class="py-2 pr-3">Programa</th>
-                  <th class="py-2 pr-3">Plan</th>
-                  <th class="py-2 pr-3 text-right">Semestres</th>
-                  <th class="py-2 pr-3 text-right">Asignaturas</th>
-                  <th class="py-2 pr-3 text-right">Créditos</th>
-                  <th class="py-2">Estado</th>
+                  <th scope="col" class="py-2 pr-3">Programa</th>
+                  <th scope="col" class="py-2 pr-3">Plan</th>
+                  <th scope="col" class="py-2 pr-3 text-right">Semestres</th>
+                  <th scope="col" class="py-2 pr-3 text-right">Asignaturas</th>
+                  <th scope="col" class="py-2 pr-3 text-right">Créditos</th>
+                  <th scope="col" class="py-2">Estado</th>
                 </tr>
               </thead>
               <tbody>

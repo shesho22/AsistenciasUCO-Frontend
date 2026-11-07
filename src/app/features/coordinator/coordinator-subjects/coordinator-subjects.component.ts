@@ -84,7 +84,7 @@ import { AvatarComponent } from '../../../shared/components/avatar/avatar.compon
       <!-- Barra de Búsqueda de Materias -->
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div class="sm:col-span-2 relative">
-          <input
+          <input aria-label="Buscar asignatura por código o nombre"
             type="text"
             [ngModel]="searchQuery()"
             (ngModelChange)="searchQuery.set($event)"
@@ -97,7 +97,7 @@ import { AvatarComponent } from '../../../shared/components/avatar/avatar.compon
         </div>
 
         <div>
-          <select
+          <select aria-label="Filtrar asignaturas por tipo"
             [ngModel]="filtroTipoAsignatura()"
             (ngModelChange)="filtroTipoAsignatura.set($event)"
             class="w-full px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20 shadow-warm-sm"

@@ -55,8 +55,8 @@ export class ToastService {
     @if (visible() || isExiting()) {
       <div
         [class]="containerClasses()"
-        role="status"
-        aria-live="polite"
+        [attr.role]="type() === 'error' ? 'alert' : 'status'"
+        [attr.aria-live]="type() === 'error' ? 'assertive' : 'polite'"
       >
         <div class="flex items-center gap-3">
           @switch (type()) {
