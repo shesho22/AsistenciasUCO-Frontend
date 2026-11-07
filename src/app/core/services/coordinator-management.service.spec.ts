@@ -18,7 +18,6 @@ import {
   PlanEstudioItem,
   AsignaturaPlanItem,
   EstudianteDirectorioItem,
-  SolicitudMatriculaItem,
   PeriodoAcademicoItem,
 } from '../models/role-management.model';
 
@@ -536,84 +535,9 @@ describe('CoordinatorManagementService', () => {
       expect(service.estudiantes().length).toBe(1);
     });
 
-    it('matricularEstudianteGrupo registra al estudiante en el grupo', () => {
-      service.matricularEstudianteGrupo('grp-2', 'est-1').subscribe((res) => {
-        expect(res.exitoso).toBeTrue();
-      });
-
-      const req = http.expectOne(`${environment.apiUrl}/grupos/grp-2/estudiantes`);
-      expect(req.request.method).toBe('POST');
-      req.flush({ exitoso: true, datos: true });
-    });
-
-    it('retirarEstudianteGrupo retira al estudiante del grupo', () => {
-      service.retirarEstudianteGrupo('grp-1', 'est-1').subscribe((res) => {
-        expect(res.exitoso).toBeTrue();
-      });
-
-      const req = http.expectOne(`${environment.apiUrl}/grupos/grp-1/estudiantes/est-1`);
-      expect(req.request.method).toBe('DELETE');
-      req.flush({ exitoso: true, datos: true });
-    });
   });
 
-  describe('Solicitudes de Matrícula', () => {
-    it('getSolicitudesMatricula obtiene las solicitudes pendientes', () => {
-      const mockSolicitudes: SolicitudMatriculaItem[] = [
-        {
-          id: 'sol-1',
-          estudianteId: 'est-1',
-          estudianteNombre: 'Laura Restrepo',
-          estudianteCodigo: '1017009',
-          estudianteCorreo: 'lrestrepo@uco.edu.co',
-          cursoId: 'cur-1',
-          cursoCodigo: 'CUR1',
-          cursoNombre: 'Cálculo',
-          grupo: 'G01',
-          fechaSolicitud: '2026-02-05',
-          estado: 'PENDIENTE',
-          motivo: 'Cruce de horario',
-        },
-      ];
-
-      service.getSolicitudesMatricula().subscribe((res) => {
-        expect(res.exitoso).toBeTrue();
-      });
-
-      const req = http.expectOne(`${environment.apiUrl}/coordinador/solicitudes-matricula`);
-      expect(req.request.method).toBe('GET');
-      req.flush({ exitoso: true, datos: mockSolicitudes });
-
-      expect(service.solicitudesMatricula().length).toBe(1);
-    });
-
-    it('resolverSolicitudMatricula actualiza la solicitud en la señal', () => {
-      service.resolverSolicitudMatricula('sol-1', 'APROBADA', 'Aprobado sin conflicto').subscribe((res) => {
-        expect(res.exitoso).toBeTrue();
-      });
-
-      const req = http.expectOne(`${environment.apiUrl}/coordinador/solicitudes-matricula/sol-1`);
-      expect(req.request.method).toBe('PATCH');
-      req.flush({
-        exitoso: true,
-        datos: {
-          id: 'sol-1',
-          estudianteId: 'est-1',
-          estudianteNombre: 'Laura Restrepo',
-          estudianteCodigo: '1017009',
-          estudianteCorreo: 'lrestrepo@uco.edu.co',
-          cursoId: 'cur-1',
-          cursoCodigo: 'CUR1',
-          cursoNombre: 'Cálculo',
-          grupo: 'G01',
-          fechaSolicitud: '2026-02-05',
-          estado: 'APROBADA',
-          motivo: 'Cruce de horario',
-          respuestaCoordinador: 'Aprobado sin conflicto',
-        },
-      });
-    });
-
+  describe('Semestres de plan y directorio', () => {
     it('agregarSemestrePlan y eliminarSemestrePlan ejecutan endpoints correspondientes', () => {
       service.agregarSemestrePlan('plan-1').subscribe((res) => {
         expect(res.exitoso).toBeTrue();
@@ -630,57 +554,6 @@ describe('CoordinatorManagementService', () => {
       delReq.flush({ exitoso: true, datos: { planEstudioId: 'plan-1', semestreEliminado: 10 } });
     });
 
-    it('matricularEstudianteGrupo y retirarEstudianteGrupo gestionan grupos de estudiantes', () => {
-      service.matricularEstudianteGrupo('grp-1', 'est-1').subscribe((res) => {
-        expect(res.exitoso).toBeTrue();
-      });
-      const postReq = http.expectOne(`${environment.apiUrl}/grupos/grp-1/estudiantes`);
-      expect(postReq.request.method).toBe('POST');
-      postReq.flush({ exitoso: true, datos: true });
-
-      service.retirarEstudianteGrupo('grp-1', 'est-1').subscribe((res) => {
-        expect(res.exitoso).toBeTrue();
-      });
-      const delReq = http.expectOne(`${environment.apiUrl}/grupos/grp-1/estudiantes/est-1`);
-      expect(delReq.request.method).toBe('DELETE');
-      delReq.flush({ exitoso: true, datos: true });
-    });
-
-    it('crearSolicitudMatricula envía POST y actualiza la lista', () => {
-      service.crearSolicitudMatricula({
-        estudianteId: 'est-1',
-        estudianteNombre: 'Laura',
-        estudianteCodigo: '1017009',
-        estudianteCorreo: 'laura@uco.edu.co',
-        cursoId: 'cur-1',
-        cursoCodigo: 'SIS-101',
-        cursoNombre: 'Algoritmos',
-        grupo: 'G01',
-        motivo: 'Inscripción tardía',
-      }).subscribe((res) => {
-        expect(res.exitoso).toBeTrue();
-      });
-
-      const req = http.expectOne(`${environment.apiUrl}/estudiante/solicitudes-matricula`);
-      expect(req.request.method).toBe('POST');
-      req.flush({
-        exitoso: true,
-        datos: {
-          id: 'sol-nueva',
-          estudianteId: 'est-1',
-          estudianteNombre: 'Laura',
-          estudianteCodigo: '1017009',
-          estudianteCorreo: 'laura@uco.edu.co',
-          cursoId: 'cur-1',
-          cursoCodigo: 'SIS-101',
-          cursoNombre: 'Algoritmos',
-          grupo: 'G01',
-          fechaSolicitud: '2026-02-10',
-          estado: 'PENDIENTE',
-          motivo: 'Inscripción tardía',
-        },
-      });
-    });
     it('getEstudiantesDirectorioPagina y getEstudiantesPorGrupo funcionan', () => {
       service.getEstudiantesDirectorioPagina({ page: 0, size: 10, nombre: 'Laura', activo: true }).subscribe((res) => {
         expect(res.items.length).toBe(1);
@@ -706,6 +579,7 @@ describe('CoordinatorManagementService', () => {
       expect(service.getAsignaturasPlan('plan-inexistente')).toEqual([]);
     });
   });
+});
 
 describe('CoordinatorManagementService (CULM-001 A.1: sin solicitudes ni matrícula de grupo)', () => {
   it('F-RED-04 no expone los métodos retirados', () => {

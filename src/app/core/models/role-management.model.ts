@@ -295,23 +295,6 @@ export interface EstudianteDirectorioItem {
   gruposInscritos?: string[];
 }
 
-export interface SolicitudMatriculaItem {
-  id: string;
-  estudianteId: string;
-  estudianteNombre: string;
-  estudianteCodigo: string;
-  estudianteCorreo: string;
-  cursoId: string;
-  cursoCodigo: string;
-  cursoNombre: string;
-  grupo: string;
-  fechaSolicitud: string;
-  motivo: string;
-  estado: 'PENDIENTE' | 'APROBADA' | 'RECHAZADA';
-  respuestaCoordinador?: string;
-  fechaRespuesta?: string;
-}
-
 export interface PeriodoAcademicoItem {
   id: string;
   codigo: string;

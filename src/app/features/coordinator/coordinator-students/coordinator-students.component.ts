@@ -16,7 +16,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { EstudianteResumenApiDto } from '../../../core/api/models/estudiante-api-dto.model';
 import { CoordinatorFichaModalComponent } from '../coordinator-indicators/components/coordinator-ficha-modal.component';
 
-type PestanaModulo = 'DIRECTORIO' | 'MATRICULA_GRUPO' | 'SOLICITUDES';
+type PestanaModulo = 'DIRECTORIO';
 
 @Component({
   selector: 'app-coordinator-students',
