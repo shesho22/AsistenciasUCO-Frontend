@@ -12,7 +12,7 @@ El contrato y la validación de las 3 capas están en el work item homónimo del
 
 ## Cambios
 
-- **HU051, HU053-HU055 (hub del grupo del docente):**
+- **HU051, HU053-HU055 (hub del grupo del docente):** *(CULM-001 A.1 retiró las solicitudes de ingreso; el botón pasó a "Padrón" y el 409 ya no remite a solicitud.)*
   - Desde la unificación de la vista del grupo en `/app/asistencia`, `TeacherGrupoHubComponent` (padrón con retiro y solicitudes de ingreso) no se podía abrir.
   - Se agrega el botón "Padrón y solicitudes" en `GroupSessionsOverviewComponent`. Es el único cambio en la pantalla de Sergio.
   - El botón navega a `/app/docente/grupos?grupo=<id>`, y `TeacherGruposComponent` abre el hub de ese grupo. Un id ajeno deja la lista.
