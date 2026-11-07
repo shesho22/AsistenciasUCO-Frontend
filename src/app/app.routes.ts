@@ -152,6 +152,14 @@ export const routes: Routes = [
           import('./features/admin/admin-estados/admin-estados.component').then((m) => m.AdminEstadosComponent),
       },
       {
+        // CULM-001 B.1 (pantalla 3.7): festivos de Colombia (consulta, recarga y sesiones en festivo con asistencia).
+        path: 'admin/festivos',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMINISTRADOR', 'ADMIN'] },
+        loadComponent: () =>
+          import('./features/admin/admin-festivos/admin-festivos.component').then((m) => m.AdminFestivosComponent),
+      },
+      {
         path: 'admin/sistema',
         canActivate: [roleGuard],
         data: { roles: ['ADMINISTRADOR', 'ADMIN'] },

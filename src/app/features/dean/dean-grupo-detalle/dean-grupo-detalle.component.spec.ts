@@ -165,4 +165,27 @@ describe('DeanGrupoDetalleComponent', () => {
     component.volverAGrupos();
     expect(routerSpy.navigate).toHaveBeenCalledWith(['/app/decano/grupos']);
   });
+
+  it('B1-F-28 HU145: las sesiones canceladas del grupo muestran la etiqueta Cancelada', () => {
+    crear();
+    http.expectOne(pagina(1)).flush({
+      exitoso: true,
+      total: 2,
+      datos: [
+        sesion('s1', 'crs-1'),
+        {
+          ...sesion('s2', 'crs-1', 39),
+          estado: 'CANCELADA',
+          cancelacion: { tipo: 'DOCENTE', motivo: 'Incapacidad', nombreFestivo: null, fechaCancelacionUtc: null },
+        },
+      ],
+    });
+    fixture.detectChanges();
+
+    const filas = fixture.nativeElement.querySelectorAll('[data-testid^="sesion-fila-"]') as NodeListOf<HTMLElement>;
+    expect(filas.length).toBe(2);
+    expect(filas[0].textContent).not.toContain('Cancelada');
+    expect(filas[1].textContent).toContain('Cancelada');
+    expect(filas[1].textContent).toContain('Incapacidad');
+  });
 });

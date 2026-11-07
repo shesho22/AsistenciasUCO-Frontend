@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { Course } from '../../../../core/models/course.model';
 import { ClassSession } from '../../../../core/models/attendance.model';
+import { estaCancelada } from '../../../../core/models/sesion-estado.model';
+import { SesionEstadoBadgeComponent } from '../../../../shared/components/sesion-estado-badge/sesion-estado-badge.component';
 import { findActiveOrUpcomingSession } from '../../../../core/utils/session-selection.util';
 import { SessionTimeZoneService } from '../../../../core/services/session-timezone.service';
 
@@ -10,7 +12,7 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
   selector: 'app-group-sessions-overview',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, ButtonComponent],
+  imports: [CommonModule, ButtonComponent, SesionEstadoBadgeComponent],
   host: {
     class: 'block w-full'
   },
@@ -282,10 +284,11 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
                         <div class="text-[11px] text-warm-500 font-mono">{{ timeZone.displaySessionStartTime(s) }} - {{ timeZone.displaySessionEndTime(s) }}</div>
                       }
                     </td>
-                    <td class="px-5 py-4 max-w-xs truncate">
+                    <td class="px-5 py-4 max-w-xs">
                       <span class="font-medium text-warm-900 block truncate" [title]="s.title">
                         {{ s.title }}
                       </span>
+                      <app-sesion-estado-badge [estado]="s.estado" [cancelacion]="s.cancelacion" />
                     </td>
                     <td class="px-5 py-4 text-center" [attr.data-testid]="'asistentes-sesion-' + s.sessionNumber">
                       <span class="font-bold text-warm-900">
@@ -334,12 +337,15 @@ export class GroupSessionsOverviewComponent {
   gestionarPadron = output<void>();
   verReclamos = output<void>();
 
-  totalSesiones = computed(() => this.sessions().length);
+  /** Sesiones vigentes: una sesión cancelada no cuenta como clase dictada (CULM-001 B.1). */
+  private vigentes = computed(() => this.sessions().filter((s) => !estaCancelada(s)));
+
+  totalSesiones = computed(() => this.vigentes().length);
 
   promedioAsistencia = computed(() => {
     // Solo cuentan los estudiantes con estado registrado: una fila sin estado no es una inasistencia.
     const registrados = (s: ClassSession) => (s.records ?? []).filter((r) => r.status !== null);
-    const conRegistros = this.sessions().filter((s) => registrados(s).length > 0);
+    const conRegistros = this.vigentes().filter((s) => registrados(s).length > 0);
     if (conRegistros.length === 0) return null;
     let sumPorcentajes = 0;
     for (const s of conRegistros) {
@@ -354,7 +360,7 @@ export class GroupSessionsOverviewComponent {
     const total = this.totalSesiones();
     if (total === 0) return 0;
     const faltasPorEstudiante = new Map<string, number>();
-    for (const s of this.sessions()) {
+    for (const s of this.vigentes()) {
       if (s.records) {
         for (const r of s.records) {
           if (r.status === 'SJC') {

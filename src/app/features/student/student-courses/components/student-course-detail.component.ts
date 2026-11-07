@@ -1,5 +1,6 @@
 import { Component, ChangeDetectionStrategy, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { SesionEstadoBadgeComponent } from '../../../../shared/components/sesion-estado-badge/sesion-estado-badge.component';
 import { BadgeComponent, BadgeVariant } from '../../../../shared/components/badge/badge.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import {
@@ -15,7 +16,7 @@ import { MotivosJustificacionComponent } from './motivos-justificacion.component
   selector: 'app-student-course-detail',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, BadgeComponent, ButtonComponent, MotivosJustificacionComponent],
+  imports: [CommonModule, BadgeComponent, ButtonComponent, MotivosJustificacionComponent, SesionEstadoBadgeComponent],
   template: `
     @if (materia()) {
       <div class="space-y-6">
@@ -129,9 +130,12 @@ import { MotivosJustificacionComponent } from './motivos-justificacion.component
           } @else {
             <div class="divide-y divide-warm-100">
               @for (sesion of sesiones(); track sesion.id) {
-                <div class="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-warm-50/50 transition-colors">
+                <div
+                  class="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-warm-50/50 transition-colors"
+                  [attr.data-testid]="'sesion-' + sesion.id"
+                >
                   <div class="space-y-1.5 flex-1 min-w-0">
-                    <div class="flex items-center gap-3">
+                    <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
                       <span class="text-xs font-mono font-bold px-2.5 py-1 rounded-md bg-warm-100 text-warm-800">
                         Sesión #{{ sesion.numeroSesion }}
                       </span>
@@ -179,7 +183,9 @@ import { MotivosJustificacionComponent } from './motivos-justificacion.component
 
                   <!-- Estado y Botón de Reclamación / Retiro -->
                   <div class="flex flex-wrap items-center gap-2 shrink-0 sm:self-center">
-                    @if (sesion.estadoAsistencia !== 'NO_DISPONIBLE') {
+                    @if (sesion.estado === 'CANCELADA') {
+                      <app-sesion-estado-badge [estado]="sesion.estado" [cancelacion]="sesion.cancelacion" />
+                    } @else if (sesion.estadoAsistencia !== 'NO_DISPONIBLE') {
                       <app-badge [variant]="getAsistenciaBadgeVariant(sesion.estadoAsistencia)" size="md">
                         {{ sesion.estadoAsistencia }}
                       </app-badge>
@@ -217,7 +223,7 @@ import { MotivosJustificacionComponent } from './motivos-justificacion.component
                         class="text-xs font-bold px-2.5 py-1 rounded-lg border border-warm-200 bg-warm-50 text-warm-700"
                         data-testid="solicitud-existente"
                       >Solicitud de revisión: {{ etiquetaSolicitud(sesion.solicitudRevision) }}</span>
-                    } @else if (sesion.reclamable) {
+                    } @else if (sesion.reclamable && sesion.estado !== 'CANCELADA') {
                       <app-button
                         variant="primary"
                         size="sm"

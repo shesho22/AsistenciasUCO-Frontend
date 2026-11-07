@@ -17,6 +17,7 @@ export const REALTIME_EVENT_TYPE = {
   ASISTENCIAS_SESION_ACTUALIZADAS: 'ASISTENCIAS_SESION_ACTUALIZADAS',
   PARAMETER_UPDATED: 'PARAMETER_UPDATED',
   MESSAGE_UPDATED: 'MESSAGE_UPDATED',
+  SESION_CANCELADA: 'SESION_CANCELADA',
 } as const;
 
 export type RealtimeEventType =
@@ -26,6 +27,14 @@ export interface AttendanceSessionUpdatedRealtimePayload {
   grupo: string;
   sesion: string;
   totalRegistros: number;
+}
+
+/** CULM-001 B.1 (HU047): el payload no lleva el motivo; el docente titular lo conoce por la respuesta HTTP. */
+export interface SesionCanceladaRealtimePayload {
+  grupo: string;
+  sesion: string;
+  tipo: 'DOCENTE' | 'FESTIVO';
+  fechaHoraInicioUtc: string | null;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

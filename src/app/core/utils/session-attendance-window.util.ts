@@ -7,14 +7,15 @@ import { ClassSession } from '../models/attendance.model';
  * instante (independiente de la zona del navegador). El reloj del navegador solo decide qué se
  * muestra: el backend y la DB vuelven a validar con su propio reloj y rechazan con 409.
  */
-export type AttendanceWindowState = 'ABIERTA' | 'NO_INICIADA' | 'CERRADA' | 'INDETERMINADA';
+export type AttendanceWindowState = 'ABIERTA' | 'NO_INICIADA' | 'CERRADA' | 'INDETERMINADA' | 'CANCELADA';
 
-type SessionWindow = Pick<ClassSession, 'estadoTemporal' | 'fechaHoraInicio' | 'fechaHoraFin'>;
+type SessionWindow = Pick<ClassSession, 'estadoTemporal' | 'fechaHoraInicio' | 'fechaHoraFin'> & Pick<Partial<ClassSession>, 'estado'>;
 
 export const ATTENDANCE_WINDOW_MESSAGES: Record<Exclude<AttendanceWindowState, 'ABIERTA'>, string> = {
   NO_INICIADA: 'La sesión aún no ha iniciado; la asistencia solo se registra durante la sesión.',
   CERRADA: 'La sesión ya finalizó; la asistencia solo puede modificarse mediante un reclamo.',
   INDETERMINADA: 'El horario de la sesión no está confirmado; no es posible registrar asistencia.',
+  CANCELADA: 'La sesión está cancelada; no es posible registrar asistencia.',
 };
 
 const ATTENDANCE_WINDOW_ERROR_CODES = new Set([
@@ -24,6 +25,7 @@ const ATTENDANCE_WINDOW_ERROR_CODES = new Set([
 ]);
 
 function windowInstants(session: SessionWindow | null | undefined): { startMs: number; endMs: number } | null {
+  if (session?.estado === 'CANCELADA') return null;
   if (session?.estadoTemporal !== 'CONFIRMADA' || !session?.fechaHoraInicio || !session?.fechaHoraFin) {
     return null;
   }
@@ -36,6 +38,7 @@ export function getAttendanceWindowState(
   session: SessionWindow | null | undefined,
   nowMs: number
 ): AttendanceWindowState {
+  if (session?.estado === 'CANCELADA') return 'CANCELADA';
   const instants = windowInstants(session);
   if (!instants) return 'INDETERMINADA';
   if (nowMs < instants.startMs) return 'NO_INICIADA';

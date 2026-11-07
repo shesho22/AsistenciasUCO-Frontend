@@ -1,3 +1,5 @@
+import { CancelacionSesion, EstadoSesion } from './sesion-estado.model';
+
 /** HU064/HU060/HU061: consultas de solo lectura del coordinador sobre su programa. */
 export interface GrupoProgramaItem {
   id: string;
@@ -30,6 +32,9 @@ export interface SesionGrupoItem {
   fechaHoraInicioUtc?: string | null;
   fechaHoraFinUtc?: string | null;
   estadoTemporal?: 'CONFIRMADA' | 'INDETERMINADA' | null;
+  /** CULM-001 B.1 (aditivo): estado de la sesion y detalle de la cancelacion. */
+  estado?: EstadoSesion;
+  cancelacion?: CancelacionSesion | null;
 }
 
 export interface AsistenciaSesionItem {

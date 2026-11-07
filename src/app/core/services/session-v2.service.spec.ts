@@ -90,5 +90,26 @@ describe('SessionV2Service', () => {
     });
     request.flush({ exitoso: true, datos: null });
   });
-});
 
+  it('B1-F-23 mapea estado y cancelación de la sesión v2; sin ellos asume PROGRAMADA sin cancelación', () => {
+    let result: any;
+    service.getSessionsByGroup('grupo-1').subscribe((response) => (result = response));
+    const base = {
+      grupo: 'grupo-1', numero: 1, codigo: 'S', numeroSemana: 1, codigoGrupo: 'G1', nombreGrupo: 'Grupo',
+      fechaHoraInicio: '2026-07-16T01:00:00Z', fechaHoraFin: '2026-07-16T03:00:00Z',
+      estadoTemporal: 'CONFIRMADA', procedenciaTemporal: 'UTC_V2',
+    };
+    http.expectOne(`${environment.apiV2Url}/sesiones/grupo/grupo-1`).flush({ exitoso: true, total: 3, datos: [
+      { ...base, sesion: 'a', nombre: 'A', estado: 'PROGRAMADA', cancelacion: null },
+      { ...base, sesion: 'b', nombre: 'B', estado: 'CANCELADA', cancelacion: {
+        tipo: 'FESTIVO', motivo: null, nombreFestivo: 'San José', fechaCancelacionUtc: '2026-03-19T05:00:00Z' } },
+      { ...base, sesion: 'c', nombre: 'C' },
+    ]});
+
+    expect(result.datos[0]).toEqual(jasmine.objectContaining({ estado: 'PROGRAMADA', cancelacion: null }));
+    expect(result.datos[1].estado).toBe('CANCELADA');
+    expect(result.datos[1].cancelacion).toEqual({
+      tipo: 'FESTIVO', motivo: null, nombreFestivo: 'San José', fechaCancelacionUtc: '2026-03-19T05:00:00Z' });
+    expect(result.datos[2]).toEqual(jasmine.objectContaining({ estado: 'PROGRAMADA', cancelacion: null }));
+  });
+});

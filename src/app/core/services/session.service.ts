@@ -4,7 +4,8 @@ import { Observable, of, delay, map, catchError, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiResponse } from '../models/api-response.model';
 import { ApiMessageResponse } from '../api/models/api-message-response.model';
-import { ApiVoidDataResponse } from '../api/models/api-data-response.model';
+import { ApiDataResponse, ApiVoidDataResponse } from '../api/models/api-data-response.model';
+import { SesionCancelada } from '../models/sesion-estado.model';
 import { getApiErrorMessage } from '../api/errors/api-error.util';
 import { ClassSession } from '../models/attendance.model';
 import { getSessionNameError } from '../validation/session-name.util';
@@ -222,7 +223,7 @@ export class SessionService {
     return this.sessionV2.updateSession(sesionId, cambios as UpdateSessionV2Input);
   }
 
-  // OUT_OF_GOLDEN_PATH (LB-001B.5A): closeSession, cancelarSesion, getQrToken y
+  // OUT_OF_GOLDEN_PATH (LB-001B.5A): closeSession, getQrToken y
   // registrarAutoAsistencia no pertenecen a BACKEND_GOLDEN_PATH_CONTRACT. Permanecen como
   // legado interno; ningún flujo del Golden Path los invoca (las acciones de UI están
   // deshabilitadas por `environment.features`) hasta que exista un contrato propio.
@@ -243,35 +244,15 @@ export class SessionService {
       );
   }
 
-  /** @deprecated OUT_OF_GOLDEN_PATH — sin contrato congelado. Acción de UI deshabilitada (`features.sessionCancelEnabled`). */
-  cancelarSesion(sesionId: string, motivo: string): Observable<ApiResponse<any>> {
-    if (environment.useMocks) {
-      return of({
-        idTransaccion: `mock-tx-cancelar-${sesionId}`,
-        exitoso: true,
-        mensajeUsuario: 'Sesión cancelada formalmente y notificada a los estudiantes.',
-        datos: { sesionId, estado: 'CANCELADA', motivoCancelacion: motivo },
-      }).pipe(delay(250));
-    }
-
-    return this.http
-      .patch<any>(`${environment.apiUrl}/docente/sesiones/${sesionId}/cancelar`, { motivo })
-      .pipe(
-        map((res) => ({
-          idTransaccion: res.idTransaccion || 'tx-cancelar-ses',
-          exitoso: true,
-          mensajeUsuario: res.mensajeUsuario || 'Sesión cancelada formalmente.',
-          datos: res.datos,
-        })),
-        catchError(() =>
-          of({
-            idTransaccion: 'tx-cancelar-error',
-            exitoso: false,
-            mensajeUsuario: 'No fue posible cancelar la sesión.',
-            datos: undefined,
-          })
-        )
-      );
+  /**
+   * HU047 (CULM-001 B.1): el docente titular cancela una sesión con un motivo (10..500). Los errores 400/409
+   * (`SES_011`, `SES_012`, `SES_013`, `SES_016`) se propagan tal cual: el mensaje lo entrega el backend.
+   */
+  cancelarSesion(sesionId: string, motivo: string): Observable<ApiDataResponse<SesionCancelada>> {
+    return this.http.patch<ApiDataResponse<SesionCancelada>>(
+      `${environment.apiUrl}/docente/sesiones/${sesionId}/cancelar`,
+      { motivo }
+    );
   }
 
   /** @deprecated OUT_OF_GOLDEN_PATH — sin contrato congelado. Acción de UI deshabilitada (`features.sessionQrEnabled`). */

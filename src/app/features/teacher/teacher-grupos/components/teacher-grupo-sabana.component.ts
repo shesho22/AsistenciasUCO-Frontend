@@ -1,6 +1,7 @@
-import { Component, ChangeDetectionStrategy, input, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ClassSession } from '../../../../core/models/attendance.model';
+import { estaCancelada } from '../../../../core/models/sesion-estado.model';
 import { SessionTimeZoneService } from '../../../../core/services/session-timezone.service';
 
 @Component({
@@ -70,12 +71,20 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
                   Estudiante (Documento)
                 </th>
                 @for (ses of sessions(); track ses.id) {
-                  <th class="p-2.5 text-center min-w-[70px] border-r border-warm-200" [title]="ses.title + ' - ' + displayDate(ses)">
+                  <th
+                    class="p-2.5 text-center min-w-[70px] border-r border-warm-200"
+                    [class.opacity-60]="esCancelada(ses)"
+                    [attr.data-testid]="'sabana-col-' + ses.id"
+                    [title]="ses.title + ' - ' + displayDate(ses)"
+                  >
                     <div class="font-mono font-bold text-primary-900">#{{ ses.sessionNumber }}</div>
                     @if (ses.estadoTemporal === 'INDETERMINADA') {
                       <div class="text-[10px] text-warning-700 font-semibold truncate">Sin fecha</div>
                     } @else {
                       <div class="text-[10px] text-warm-500 font-normal truncate">{{ displayDate(ses) | slice:5 }}</div>
+                    }
+                    @if (esCancelada(ses)) {
+                      <div class="text-[10px] font-semibold text-warning-800">Cancelada</div>
                     }
                     <span
                       class="inline-block w-1.5 h-1.5 rounded-full mt-0.5 bg-success-500"
@@ -105,8 +114,12 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
 
                   <!-- Columnas de Cada Sesión -->
                   @for (ses of sessions(); track ses.id) {
-                    <td class="p-2 text-center border-r border-warm-100">
-                      @let estado = getAsistenciaEstudianteEnSesion(est.studentId || est.id, ses);
+                    <td
+                      class="p-2 text-center border-r border-warm-100"
+                      [class.opacity-60]="esCancelada(ses)"
+                      [attr.data-testid]="'sabana-celda-' + (est.studentId || est.id) + '-' + ses.id"
+                    >
+                      @let estado = esCancelada(ses) ? '—' : getAsistenciaEstudianteEnSesion(est.studentId || est.id, ses);
                       @if (estado === 'AN') {
                         <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-success-100 text-success-800 font-bold text-[10px]" title="Asistencia Normal (Presente)">
                           AN
@@ -129,7 +142,7 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
 
                   <!-- Inasistencias Acumuladas -->
                   <td class="p-3 text-center font-mono font-bold text-xs text-warm-800 bg-warm-50/40 border-r border-warm-100">
-                    {{ getFaltasSjcEstudiante(est.studentId || est.id) }} / {{ sessions().length }}
+                    {{ getFaltasSjcEstudiante(est.studentId || est.id) }} / {{ sesionesVigentes().length }}
                   </td>
 
                   <!-- Porcentaje UCO -->
@@ -171,6 +184,9 @@ export class TeacherGrupoSabanaComponent {
   estudiantes = input<any[]>([]);
   sessions = input<ClassSession[]>([]);
   cargando = input<boolean>(false);
+  protected esCancelada = estaCancelada;
+  /** Una sesión cancelada no cuenta como clase dictada: el cálculo definitivo lo entrega el backend (B.2). */
+  protected sesionesVigentes = computed(() => this.sessions().filter((s) => !estaCancelada(s)));
 
   displayDate(session: ClassSession): string {
     return session.estadoTemporal === 'INDETERMINADA'
@@ -187,7 +203,7 @@ export class TeacherGrupoSabanaComponent {
   }
 
   getFaltasSjcEstudiante(estudianteId: string): number {
-    const list = this.sessions();
+    const list = this.sesionesVigentes();
     if (!list || list.length === 0) return 0;
     let faltas = 0;
     for (const ses of list) {
@@ -200,7 +216,7 @@ export class TeacherGrupoSabanaComponent {
   }
 
   getPorcentajeFaltasEstudiante(estudianteId: string): number {
-    const total = this.sessions().length;
+    const total = this.sesionesVigentes().length;
     if (total === 0) return 0;
     const faltas = this.getFaltasSjcEstudiante(estudianteId);
     return Math.round((faltas / total) * 100);

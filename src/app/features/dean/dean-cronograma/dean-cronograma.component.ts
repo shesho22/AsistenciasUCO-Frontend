@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DeanFacultadService } from '../../../core/services/dean-facultad.service';
+import { SesionEstadoBadgeComponent } from '../../../shared/components/sesion-estado-badge/sesion-estado-badge.component';
 import { SesionFacultadItem } from '../../../core/models/facultad-decano.model';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
@@ -15,7 +16,7 @@ import { resolveSessionInstant } from '../../../core/time/session-timezone.util'
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full' },
-  imports: [CommonModule, FormsModule, PaginationComponent],
+  imports: [CommonModule, FormsModule, PaginationComponent, SesionEstadoBadgeComponent],
   template: `
     <div class="space-y-6 animate-fade-in">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
@@ -64,9 +65,12 @@ import { resolveSessionInstant } from '../../../core/time/session-timezone.util'
               </thead>
               <tbody>
                 @for (s of sesiones(); track s.id) {
-                  <tr class="border-b border-warm-50">
+                  <tr class="border-b border-warm-50" [attr.data-testid]="'sesion-fila-' + s.id">
                     <td class="py-2 pr-3 text-xs text-warm-600">{{ horario(s) }}</td>
-                    <td class="py-2 pr-3 font-semibold text-warm-900">{{ s.nombre }} <span class="text-warm-400 font-mono">{{ s.codigo }}</span></td>
+                    <td class="py-2 pr-3 font-semibold text-warm-900">
+                      {{ s.nombre }} <span class="text-warm-400 font-mono">{{ s.codigo }}</span>
+                      <app-sesion-estado-badge class="block font-normal" [estado]="s.estado" [cancelacion]="s.cancelacion" />
+                    </td>
                     <td class="py-2 pr-3 text-warm-700">{{ s.nombreAsignatura }} · {{ s.nombreGrupo }}</td>
                     <td class="py-2 text-warm-700">{{ s.nombrePrograma }}</td>
                   </tr>

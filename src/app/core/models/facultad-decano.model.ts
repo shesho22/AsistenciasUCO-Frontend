@@ -1,3 +1,5 @@
+import { CancelacionSesion, EstadoSesion } from './sesion-estado.model';
+
 /** HU104/HU105/HU109/HU119/HU145: consultas de solo lectura del decano sobre su facultad. */
 export interface EstudianteFacultadItem {
   idEstudiante: string;
@@ -71,4 +73,7 @@ export interface SesionFacultadItem {
   fechaHoraInicioUtc?: string | null;
   fechaHoraFinUtc?: string | null;
   estadoTemporal?: 'CONFIRMADA' | 'INDETERMINADA' | null;
+  /** CULM-001 B.1 (aditivo): estado de la sesion y detalle de la cancelacion. */
+  estado?: EstadoSesion;
+  cancelacion?: CancelacionSesion | null;
 }

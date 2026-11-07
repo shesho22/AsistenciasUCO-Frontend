@@ -5,6 +5,7 @@ import { CourseService } from '../../../core/services/course.service';
 import { DeanFacultadService } from '../../../core/services/dean-facultad.service';
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
 import { Course } from '../../../core/models/course.model';
+import { SesionEstadoBadgeComponent } from '../../../shared/components/sesion-estado-badge/sesion-estado-badge.component';
 import { SesionFacultadItem } from '../../../core/models/facultad-decano.model';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
@@ -19,7 +20,7 @@ const MAX_PAGINAS_SESIONES = 50;
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full' },
-  imports: [CommonModule],
+  imports: [CommonModule, SesionEstadoBadgeComponent],
   template: `
     <div class="space-y-6 animate-fade-in">
       <!-- Barra de Retorno -->
@@ -104,7 +105,10 @@ const MAX_PAGINAS_SESIONES = 50;
         } @else {
           <div class="divide-y divide-warm-100">
             @for (s of sessions(); track s.id) {
-              <div class="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-warm-50/50 transition-colors">
+              <div
+                class="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-warm-50/50 transition-colors"
+                [attr.data-testid]="'sesion-fila-' + s.id"
+              >
                 <div class="space-y-1 flex-1 min-w-0">
                   <div class="flex flex-wrap items-center gap-2">
                     @if (s.numeroSemana !== null) {
@@ -121,6 +125,7 @@ const MAX_PAGINAS_SESIONES = 50;
                     }
                   </div>
                   <h3 class="font-bold text-sm text-warm-900">{{ s.nombre }}</h3>
+                  <app-sesion-estado-badge [estado]="s.estado" [cancelacion]="s.cancelacion" />
                 </div>
               </div>
             }

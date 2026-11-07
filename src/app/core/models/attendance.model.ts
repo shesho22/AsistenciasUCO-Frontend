@@ -1,3 +1,5 @@
+import { CancelacionSesion, EstadoSesion } from './sesion-estado.model';
+
 export type AttendanceStatus = 'AN' | 'SJC' | 'EX';
 
 export interface StudentAttendance {
@@ -30,4 +32,7 @@ export interface ClassSession {
   numeroSemana?: number;
   codigoGrupo?: string;
   nombreGrupo?: string;
+  /** CULM-001 B.1: estado de la sesión y detalle de la cancelación (docente o festivo). */
+  estado?: EstadoSesion;
+  cancelacion?: CancelacionSesion | null;
 }

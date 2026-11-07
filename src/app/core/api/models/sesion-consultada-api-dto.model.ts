@@ -1,3 +1,5 @@
+import { CancelacionSesion, EstadoSesion } from '../../models/sesion-estado.model';
+
 export type EstadoTemporalSesion = 'CONFIRMADA' | 'INDETERMINADA';
 export type ProcedenciaTemporalSesion = 'UTC_V2' | 'UTC_GENERADOR' | 'UTC_OWNER';
 
@@ -14,6 +16,9 @@ export interface SesionV2ApiDto {
   fechaHoraFin: string | null;
   estadoTemporal: EstadoTemporalSesion;
   procedenciaTemporal: ProcedenciaTemporalSesion | null;
+  /** CULM-001 B.1 (aditivo): ausente en un backend anterior. */
+  estado?: EstadoSesion;
+  cancelacion?: CancelacionSesion | null;
 }
 
 export interface CrearSesionV2Request {
