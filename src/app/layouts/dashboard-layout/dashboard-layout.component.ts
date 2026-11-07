@@ -352,7 +352,7 @@ export class DashboardLayoutComponent {
     },
     {
       label: 'Áreas de Conocimiento',
-      route: '/app/decano/infraestructura',
+      route: '/app/decano/areas',
       roles: ['DECANO'],
       icon: 'catalogos',
     },

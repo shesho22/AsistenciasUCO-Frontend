@@ -203,17 +203,17 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
           <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm hover:border-primary-300 transition-all flex flex-col justify-between gap-4">
             <div class="space-y-2">
               <div class="flex items-center justify-between">
-                <span class="text-xs font-bold px-2.5 py-1 rounded-lg bg-warm-100 text-warm-800">Infraestructura</span>
+                <span class="text-xs font-bold px-2.5 py-1 rounded-lg bg-warm-100 text-warm-800">Estructura académica</span>
                 <span class="text-xs font-mono font-bold text-warm-600">{{ areasTotal() }} áreas</span>
               </div>
               <h3 class="font-serif font-bold text-base text-warm-900">Áreas de Conocimiento</h3>
               <p class="text-xs text-warm-600">
-                Consulta las áreas temáticas de la facultad y sus coordinadores de área.
+                Consulta las áreas temáticas de la facultad.
               </p>
             </div>
             <button
               type="button"
-              (click)="irARuta('/app/decano/infraestructura')"
+              (click)="irARuta('/app/decano/areas')"
               class="w-full py-2 px-3 bg-primary-50 hover:bg-primary-100 text-primary-900 rounded-xl text-xs font-bold border border-primary-200 transition-colors"
             >
               Ir a Áreas de Conocimiento →
