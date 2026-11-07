@@ -28,7 +28,7 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
       </div>
 
       @if (error()) {
-        <p class="text-sm text-red-700 text-center py-4" role="alert">{{ error() }}</p>
+        <p class="text-sm text-danger-700 text-center py-4" role="alert">{{ error() }}</p>
       } @else {
         <input
           type="text"

@@ -31,7 +31,7 @@ const ETIQUETA_ROL: Record<RolVinculo, string> = {
       @if (cargando()) {
         <div class="h-20 bg-warm-100 rounded-2xl animate-pulse"></div>
       } @else if (error()) {
-        <div role="alert" class="flex items-center justify-between gap-3 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+        <div role="alert" class="flex items-center justify-between gap-3 text-xs font-medium text-danger-700 bg-danger-50 border border-danger-200 rounded-xl px-3 py-2">
           <span>{{ error() }}</span>
           <button type="button" class="font-semibold underline shrink-0" (click)="reintentar()">Reintentar</button>
         </div>
@@ -51,7 +51,7 @@ const ETIQUETA_ROL: Record<RolVinculo, string> = {
             <dd class="font-semibold text-warm-900 break-all">
               {{ p.correo || 'Sin registrar' }}
               @if (!p.correoConfirmado) {
-                <span class="ml-1 text-amber-700">(sin confirmar)</span>
+                <span class="ml-1 text-warning-700">(sin confirmar)</span>
               }
             </dd>
           </div>

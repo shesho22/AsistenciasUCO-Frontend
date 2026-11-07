@@ -64,7 +64,7 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
       }
 
       @if (mensajeError()) {
-        <div class="bg-red-50 border border-red-200 text-red-800 text-sm rounded-2xl p-4">{{ mensajeError() }}</div>
+        <div class="bg-danger-50 border border-danger-200 text-danger-800 text-sm rounded-2xl p-4">{{ mensajeError() }}</div>
       }
 
       <!-- Filtros de Malla -->

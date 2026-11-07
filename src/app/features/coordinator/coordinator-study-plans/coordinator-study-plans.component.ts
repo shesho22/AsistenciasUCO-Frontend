@@ -68,10 +68,10 @@ import { StudyPlansListComponent } from './components/study-plans-list.component
         <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-xs flex items-center justify-between">
           <div>
             <span class="text-xs font-bold uppercase tracking-wider text-warm-500">Planes Vigentes</span>
-            <div class="text-2xl font-bold font-serif text-emerald-700 mt-1">{{ totalVigentes() }}</div>
+            <div class="text-2xl font-bold font-serif text-success-700 mt-1">{{ totalVigentes() }}</div>
             <p class="text-[11px] text-warm-500 mt-0.5">Activos para cohortes actuales</p>
           </div>
-          <div class="p-2.5 rounded-xl bg-emerald-50 text-emerald-700">
+          <div class="p-2.5 rounded-xl bg-success-50 text-success-700">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>

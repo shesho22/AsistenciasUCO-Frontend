@@ -18,16 +18,16 @@ import { ToastService } from '../../../../shared/components/toast/toast.componen
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
       <div class="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
         <div class="mb-4 flex items-start justify-between gap-4">
-          <h2 class="text-xl font-semibold text-gray-900">Ficha de {{ nombre() }}</h2>
-          <button type="button" class="text-gray-500 hover:text-gray-800" aria-label="Cerrar" (click)="cancelar()">✕</button>
+          <h2 class="text-xl font-semibold text-neutral-900">Ficha de {{ nombre() }}</h2>
+          <button type="button" class="text-neutral-500 hover:text-neutral-800" aria-label="Cerrar" (click)="cancelar()">✕</button>
         </div>
 
         @if (error()) {
-          <p class="rounded-lg bg-red-50 p-3 text-sm text-red-700">{{ error() }}</p>
+          <p class="rounded-lg bg-danger-50 p-3 text-sm text-danger-700">{{ error() }}</p>
         }
 
         @if (ficha(); as f) {
-          <section class="mb-6 grid grid-cols-1 gap-2 text-sm text-gray-700 sm:grid-cols-2">
+          <section class="mb-6 grid grid-cols-1 gap-2 text-sm text-neutral-700 sm:grid-cols-2">
             <p><span class="font-medium">Nombre:</span> {{ f.nombreCompleto }}</p>
             <p><span class="font-medium">Identificación:</span> {{ f.tipoIdentificacion }} {{ f.numeroIdentificacion }}</p>
             <p><span class="font-medium">Correo:</span> {{ f.correo }}</p>
@@ -36,7 +36,7 @@ import { ToastService } from '../../../../shared/components/toast/toast.componen
           <!-- HU159: el coordinador corrige los datos de identidad de un estudiante de su programa -->
           <div class="mb-6 -mt-3">
             <button type="button" data-accion="corregir-identidad" (click)="corrigiendo.set(true)"
-              class="text-xs px-3 py-1.5 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-100">Corregir datos</button>
+              class="text-xs px-3 py-1.5 rounded-xl border border-neutral-300 text-neutral-700 hover:bg-neutral-100">Corregir datos</button>
           </div>
           @if (corrigiendo()) {
             <app-correccion-identidad-modal
@@ -49,15 +49,15 @@ import { ToastService } from '../../../../shared/components/toast/toast.componen
             />
           }
 
-          <h3 class="mb-2 text-sm font-semibold text-gray-900">Resumen por asignatura</h3>
+          <h3 class="mb-2 text-sm font-semibold text-neutral-900">Resumen por asignatura</h3>
           <div class="mb-6 overflow-x-auto">
             <table class="w-full text-left text-sm">
-              <thead class="text-xs uppercase text-gray-500">
+              <thead class="text-xs uppercase text-neutral-500">
                 <tr><th class="py-2">Asignatura</th><th>Grupo</th><th>Sesiones</th><th>Asist.</th><th>Faltas</th><th>Excusas</th><th>Inasistencia</th><th>Estado</th></tr>
               </thead>
               <tbody>
                 @for (r of f.resumenPorAsignatura; track r.idGrupo) {
-                  <tr class="border-t border-gray-100">
+                  <tr class="border-t border-neutral-100">
                     <td class="py-2">{{ r.nombreAsignatura }}</td>
                     <td>{{ r.codigoGrupo }}</td>
                     <td>{{ r.sesionesEjecutadas }}</td>
@@ -73,16 +73,16 @@ import { ToastService } from '../../../../shared/components/toast/toast.componen
           </div>
         }
 
-        <h3 class="mb-2 text-sm font-semibold text-gray-900">Bitácora de asistencia</h3>
-        <p class="mb-2 text-xs text-gray-500">Horas en {{ timeZone.zoneLabel() }}.</p>
+        <h3 class="mb-2 text-sm font-semibold text-neutral-900">Bitácora de asistencia</h3>
+        <p class="mb-2 text-xs text-neutral-500">Horas en {{ timeZone.zoneLabel() }}.</p>
         <ol class="mb-3 space-y-2">
           @for (s of bitacora(); track s.idSesion + s.idGrupo) {
-            <li class="rounded-lg border border-gray-100 p-3 text-sm">
+            <li class="rounded-lg border border-neutral-100 p-3 text-sm">
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <span class="font-medium">{{ s.nombreAsignatura }} · {{ s.nombreSesion }}</span>
-                <span class="text-xs text-gray-500">{{ timeZone.formatTemporal(s.fechaHoraInicio) }}</span>
+                <span class="text-xs text-neutral-500">{{ timeZone.formatTemporal(s.fechaHoraInicio) }}</span>
               </div>
-              <p class="text-gray-700">
+              <p class="text-neutral-700">
                 {{ etiquetaAsistencia(s.asistio) }}@if (s.nombreRazonCausa) { · {{ s.nombreRazonCausa }} }
               </p>
             </li>

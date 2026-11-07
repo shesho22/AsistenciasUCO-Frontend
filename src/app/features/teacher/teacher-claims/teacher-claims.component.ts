@@ -60,14 +60,14 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
 
           <!-- Indicador de Pendientes -->
           <div class="flex items-center gap-3">
-            <span class="px-3.5 py-1.5 rounded-xl bg-amber-50 text-amber-900 text-xs font-bold border border-amber-200">
+            <span class="px-3.5 py-1.5 rounded-xl bg-warning-50 text-warning-900 text-xs font-bold border border-warning-200">
               {{ totalPendientes() ?? '—' }} Pendientes por Resolver
             </span>
           </div>
         </div>
 
         @if (listUnavailable()) {
-          <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-900">
+          <div class="bg-warning-50 border border-warning-200 rounded-2xl p-4 text-sm text-warning-900">
             El listado de reclamos docentes está pendiente del contrato backend y responde <strong>501 Not Implemented</strong>.
             La resolución individual permanece disponible cuando se conoce el identificador del reclamo.
           </div>
@@ -112,7 +112,7 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
             }
           </div>
         } @else if (listState() !== 'LOADED') {
-          <div class="bg-red-50 border border-red-200 rounded-2xl p-6 text-center text-sm text-red-900">
+          <div class="bg-danger-50 border border-danger-200 rounded-2xl p-6 text-center text-sm text-danger-900">
             {{ listStateMessage() }}
           </div>
         } @else if (filteredReclamos().length === 0) {
@@ -137,7 +137,7 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
                           REC-#{{ reclamo.id.slice(0, 8).toUpperCase() }}
                         </span>
                         @if (reclamo.categoria) {
-                          <span class="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200">
+                          <span class="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-warning-50 text-warning-900 border border-warning-200">
                             {{ reclamo.categoria }}
                           </span>
                         }
@@ -255,7 +255,7 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
 
             <div class="flex items-center gap-2">
               @if (selectedReclamo()?.categoria) {
-                <span class="px-3 py-1 rounded-xl text-xs font-semibold bg-amber-50 text-amber-900 border border-amber-200">
+                <span class="px-3 py-1 rounded-xl text-xs font-semibold bg-warning-50 text-warning-900 border border-warning-200">
                   {{ selectedReclamo()?.categoria }}
                 </span>
               }
@@ -287,7 +287,7 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
                 Grupo: {{ selectedReclamo()?.grupo }} • Sesión #{{ selectedReclamo()?.sesionNumero }} ({{ selectedReclamo()?.fechaSesion }})
               </p>
               @if (selectedReclamo()?.causalInasistencia; as causal) {
-                <p class="text-xs font-bold text-red-700">
+                <p class="text-xs font-bold text-danger-700">
                   Registro original: {{ causal.nombre }}
                   @if (causal.asistio !== null) {
                     ({{ causal.asistio ? 'Asistió' : 'No asistió' }})

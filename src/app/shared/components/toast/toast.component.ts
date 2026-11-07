@@ -61,28 +61,28 @@ export class ToastService {
         <div class="flex items-center gap-3">
           @switch (type()) {
             @case ('success') {
-              <span class="p-1.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl shrink-0">
+              <span class="p-1.5 bg-success-500/20 text-success-400 border border-success-500/30 rounded-xl shrink-0">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                 </svg>
               </span>
             }
             @case ('info') {
-              <span class="p-1.5 bg-sky-500/20 text-sky-400 border border-sky-500/30 rounded-xl shrink-0">
+              <span class="p-1.5 bg-info-500/20 text-info-400 border border-info-500/30 rounded-xl shrink-0">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </span>
             }
             @case ('warning') {
-              <span class="p-1.5 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-xl shrink-0">
+              <span class="p-1.5 bg-warning-500/20 text-warning-400 border border-warning-500/30 rounded-xl shrink-0">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
               </span>
             }
             @case ('error') {
-              <span class="p-1.5 bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl shrink-0">
+              <span class="p-1.5 bg-danger-500/20 text-danger-400 border border-danger-500/30 rounded-xl shrink-0">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>

@@ -18,7 +18,7 @@ let fieldIdCounter = 0;
           <span>
             {{ label() }}
             @if (required()) {
-              <span class="text-red-500 font-bold ml-0.5" title="Campo requerido">*</span>
+              <span class="text-danger-500 font-bold ml-0.5" title="Campo requerido">*</span>
             }
           </span>
           <ng-content select="[label-extra]"></ng-content>
@@ -30,8 +30,8 @@ let fieldIdCounter = 0;
       </div>
 
       @if (errorMessage() || error()) {
-        <p [id]="fieldId() + '-error'" class="text-xs font-semibold text-red-600 flex items-center gap-1.5 mt-0.5 animate-fade-in" role="alert">
-          <svg class="w-3.5 h-3.5 shrink-0 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <p [id]="fieldId() + '-error'" class="text-xs font-semibold text-danger-600 flex items-center gap-1.5 mt-0.5 animate-fade-in" role="alert">
+          <svg class="w-3.5 h-3.5 shrink-0 text-danger-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <span>{{ errorMessage() || error() }}</span>

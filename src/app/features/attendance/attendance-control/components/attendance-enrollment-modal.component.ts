@@ -80,13 +80,13 @@ import { StudentService } from '../../../../core/services/student.service';
 
         <!-- 1. CASO ESTUDIANTE EXISTENTE: Tarjeta Resumen con datos UCO cargados -->
         @if (isExistingStudent()) {
-          <div class="p-3.5 bg-emerald-50/80 border border-emerald-200 rounded-xl space-y-2">
+          <div class="p-3.5 bg-success-50/80 border border-success-200 rounded-xl space-y-2">
             <div class="flex items-center justify-between">
-              <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-800">
-                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-success-800">
+                <span class="w-2 h-2 rounded-full bg-success-500 animate-pulse"></span>
                 Estudiante Institucional Detectado
               </span>
-              <span class="text-[11px] text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-md font-medium">UCO Activo</span>
+              <span class="text-[11px] text-success-600 bg-success-100 px-2 py-0.5 rounded-md font-medium">UCO Activo</span>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 text-xs text-warm-800">
@@ -102,7 +102,7 @@ import { StudentService } from '../../../../core/services/student.service';
               </div>
             </div>
 
-            <p class="text-[11px] text-emerald-700 border-t border-emerald-200/60 pt-2">
+            <p class="text-[11px] text-success-700 border-t border-success-200/60 pt-2">
               Se vinculará directamente al grupo activo sin modificar sus credenciales existentes.
             </p>
           </div>
@@ -125,9 +125,9 @@ import { StudentService } from '../../../../core/services/student.service';
         <!-- 3. CASO ESTUDIANTE NUEVO: Formulario Desplegado Automáticamente o Manualmente -->
         @if (showRegistrationForm()) {
           <div class="space-y-3 pt-1 border-t border-warm-200">
-            <div class="p-2.5 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-2">
-              <span class="text-blue-600 text-sm">ℹ️</span>
-              <div class="text-[11px] text-blue-800">
+            <div class="p-2.5 bg-info-50 border border-info-200 rounded-xl flex items-start gap-2">
+              <span class="text-info-600 text-sm">ℹ️</span>
+              <div class="text-[11px] text-info-800">
                 <span class="font-semibold block text-xs">Registro de Nuevo Estudiante</span>
                 Diligencie los datos personales para crear la cuenta institucional del estudiante e inscribirlo al grupo.
               </div>

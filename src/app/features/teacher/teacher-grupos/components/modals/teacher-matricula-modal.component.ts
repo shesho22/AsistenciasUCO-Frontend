@@ -29,10 +29,10 @@ import {
     @if (isOpen() && curso()) {
       <div class="fixed inset-0 bg-warm-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
         <div class="bg-white rounded-3xl border border-warm-200 shadow-warm-2xl max-w-lg w-full overflow-hidden animate-scale-up">
-          <div class="p-6 border-b border-warm-100 flex items-center justify-between bg-emerald-900 text-white">
+          <div class="p-6 border-b border-warm-100 flex items-center justify-between bg-primary-900 text-white">
             <div>
               <h3 class="font-serif font-bold text-xl leading-tight">Inscripción y Matrícula al Grupo</h3>
-              <p class="text-xs text-emerald-200">
+              <p class="text-xs text-success-200">
                 {{ curso()?.name }}{{ curso()?.code ? ' • ' + curso()?.code : '' }} ({{ curso()?.section }})
               </p>
             </div>
@@ -41,7 +41,7 @@ import {
               aria-label="Ocultar"
               data-testid="matricula-ocultar"
               (click)="closed.emit()"
-              class="p-2 rounded-xl text-emerald-200 hover:text-white hover:bg-emerald-800 transition-colors"
+              class="p-2 rounded-xl text-primary-200 hover:text-white hover:bg-primary-800 transition-colors"
             >
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -53,7 +53,7 @@ import {
             @if (cargando()) {
               <p class="text-sm text-warm-600" role="status" data-testid="matricula-cargando">Generando el código de matrícula…</p>
             } @else if (error()) {
-              <p class="text-sm text-red-800 bg-red-50 border border-red-200 rounded-xl p-3" role="alert" data-testid="matricula-error">
+              <p class="text-sm text-danger-800 bg-danger-50 border border-danger-200 rounded-xl p-3" role="alert" data-testid="matricula-error">
                 {{ error() }}
               </p>
               <app-button variant="secondary" size="sm" (clicked)="reintentar()">Reintentar</app-button>
@@ -65,12 +65,12 @@ import {
               </p>
 
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 items-center">
-                <div class="p-5 rounded-2xl bg-emerald-50 border-2 border-emerald-300 shadow-warm-sm space-y-2">
-                  <span class="text-xs font-bold uppercase tracking-wider text-emerald-800">PIN de matrícula</span>
-                  <div class="font-mono font-extrabold text-3xl sm:text-4xl text-emerald-950 tracking-wider my-2 select-all" data-testid="matricula-pin">
+                <div class="p-5 rounded-2xl bg-success-50 border-2 border-success-300 shadow-warm-sm space-y-2">
+                  <span class="text-xs font-bold uppercase tracking-wider text-success-800">PIN de matrícula</span>
+                  <div class="font-mono font-extrabold text-3xl sm:text-4xl text-success-950 tracking-wider my-2 select-all" data-testid="matricula-pin">
                     {{ v.pin }}
                   </div>
-                  <button type="button" (click)="copiarPin()" class="w-full py-2 px-3 text-xs font-bold bg-white hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-xl transition-all">
+                  <button type="button" (click)="copiarPin()" class="w-full py-2 px-3 text-xs font-bold bg-white hover:bg-primary-100 text-primary-800 border border-primary-300 rounded-xl transition-all">
                     Copiar PIN
                   </button>
                 </div>

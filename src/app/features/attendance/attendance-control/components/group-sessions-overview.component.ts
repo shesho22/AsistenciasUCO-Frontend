@@ -45,7 +45,7 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
         <div class="bg-white p-5 rounded-2xl border border-warm-200/80 shadow-warm-sm flex flex-col justify-between">
           <div class="flex items-center justify-between">
             <span class="text-xs font-semibold text-warm-500 uppercase tracking-wider">Asistencia Promedio</span>
-            <span class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
+            <span class="w-8 h-8 rounded-xl bg-success-50 text-success-700 flex items-center justify-center shrink-0">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -57,7 +57,7 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
                 {{ promedioAsistencia() === null ? '—' : promedioAsistencia() + '%' }}
               </span>
               @if (promedioAsistencia() !== null) {
-                <span class="text-xs text-emerald-700 font-bold">Institucional</span>
+                <span class="text-xs text-success-700 font-bold">Institucional</span>
               }
             </div>
             <p class="text-[11px] text-warm-500 mt-1">
@@ -70,7 +70,7 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
         <div class="bg-white p-5 rounded-2xl border border-warm-200/80 shadow-warm-sm flex flex-col justify-between">
           <div class="flex items-center justify-between">
             <span class="text-xs font-semibold text-warm-500 uppercase tracking-wider">Alerta Inasistencia</span>
-            <span class="w-8 h-8 rounded-xl bg-amber-50 text-amber-800 flex items-center justify-center shrink-0">
+            <span class="w-8 h-8 rounded-xl bg-warning-50 text-warning-800 flex items-center justify-center shrink-0">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
@@ -78,12 +78,12 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
           </div>
           <div class="mt-4">
             <div class="flex items-baseline gap-2">
-              <span class="text-2xl sm:text-3xl font-serif font-bold text-amber-900 leading-none">
+              <span class="text-2xl sm:text-3xl font-serif font-bold text-warning-900 leading-none">
                 {{ estudiantesEnRiesgo() }}
               </span>
-              <span class="text-xs text-amber-800 font-semibold">Alumnos</span>
+              <span class="text-xs text-warning-800 font-semibold">Alumnos</span>
             </div>
-            <p class="text-[11px] text-amber-700 mt-1">Cercanos o superiores al límite del 20%</p>
+            <p class="text-[11px] text-warning-700 mt-1">Cercanos o superiores al límite del 20%</p>
           </div>
         </div>
 
@@ -95,7 +95,7 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
                 Sesión Seleccionada
               </span>
               @if (sesionActivaHoy()) {
-                <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold border border-emerald-400/30">
+                <span class="px-2 py-0.5 rounded-full bg-success-500/20 text-success-300 text-[10px] font-bold border border-success-400/30">
                   Hoy
                 </span>
               }
@@ -158,10 +158,10 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
             <button
               type="button"
               (click)="openMatriculaQr.emit()"
-              class="text-xs font-semibold text-emerald-800 hover:text-emerald-950 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 px-3 py-1.5 rounded-xl transition-colors inline-flex items-center gap-1.5 shadow-2xs"
+              class="text-xs font-semibold text-primary-800 hover:text-primary-950 bg-primary-50 hover:bg-primary-100 border border-primary-300 px-3 py-1.5 rounded-xl transition-colors inline-flex items-center gap-1.5 shadow-2xs"
               title="Ver código PIN y QR para que los estudiantes se matriculen al grupo"
             >
-              <svg class="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-4 h-4 text-success-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
               </svg>
               <span>QR / PIN Matrícula</span>
@@ -205,15 +205,15 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
             <button
               type="button"
               (click)="verReclamos.emit()"
-              class="text-xs font-semibold text-amber-900 hover:text-amber-950 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-3 py-1.5 rounded-xl transition-colors inline-flex items-center gap-1.5 shadow-2xs"
+              class="text-xs font-semibold text-warning-900 hover:text-warning-950 bg-warning-50 hover:bg-warning-100 border border-warning-200 px-3 py-1.5 rounded-xl transition-colors inline-flex items-center gap-1.5 shadow-2xs"
               title="Ver justificaciones y reclamos de asistencia del grupo"
             >
-              <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-4 h-4 text-warning-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
               <span>Reclamos</span>
               @if (totalReclamosPendientes() > 0) {
-                <span class="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-200 text-amber-900">
+                <span class="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-warning-200 text-warning-900">
                   {{ totalReclamosPendientes() }}
                 </span>
               }
@@ -276,7 +276,7 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
                     </td>
                     <td class="px-5 py-4">
                       @if (s.estadoTemporal === 'INDETERMINADA') {
-                        <div class="font-semibold text-amber-800">Horario no confirmado</div>
+                        <div class="font-semibold text-warning-800">Horario no confirmado</div>
                       } @else {
                         <div class="font-semibold text-warm-900">{{ timeZone.displaySessionDate(s) }}{{ timeZone.displaySessionEndDate(s) !== timeZone.displaySessionDate(s) ? ' – ' + timeZone.displaySessionEndDate(s) : '' }}</div>
                         <div class="text-[11px] text-warm-500 font-mono">{{ timeZone.displaySessionStartTime(s) }} - {{ timeZone.displaySessionEndTime(s) }}</div>
@@ -293,7 +293,7 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
                       </span>
                       <span class="text-warm-500 font-normal"> / {{ s.records ? s.records.length : 0 }}</span>
                       @if (getJustificadasCount(s) > 0) {
-                        <span class="block text-[11px] font-semibold text-amber-700">
+                        <span class="block text-[11px] font-semibold text-warning-700">
                           {{ getJustificadasCount(s) }} {{ getJustificadasCount(s) === 1 ? 'justificada' : 'justificadas' }}
                         </span>
                       }

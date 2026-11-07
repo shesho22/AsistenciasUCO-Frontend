@@ -47,10 +47,10 @@ import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
           <button
             type="button"
             (click)="openAutoAttendance.emit()"
-            class="px-3.5 py-2 text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 rounded-xl transition-all shadow-xs inline-flex items-center gap-1.5"
+            class="px-3.5 py-2 text-xs font-bold text-white bg-primary-700 hover:bg-primary-800 rounded-xl transition-all shadow-xs inline-flex items-center gap-1.5"
             title="HU176: Auto-registrar asistencia con código PIN de 6 dígitos o QR"
           >
-            <svg class="w-4 h-4 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-4 h-4 text-success-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
             </svg>
             Auto-Registro Asistencia
@@ -73,7 +73,7 @@ import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
         </div>
 
         <div class="p-4 rounded-2xl bg-white border border-warm-200 shadow-warm-sm flex items-center gap-4">
-          <div class="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
+          <div class="w-11 h-11 rounded-xl bg-success-50 text-success-700 flex items-center justify-center shrink-0">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -81,7 +81,7 @@ import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
           <div>
             <span class="text-xs text-warm-500 font-medium">Promedio de Asistencia</span>
             @if (promedioAsistencia() !== null) {
-              <p class="text-2xl font-serif font-bold text-emerald-700">{{ promedioAsistencia() }}%</p>
+              <p class="text-2xl font-serif font-bold text-success-700">{{ promedioAsistencia() }}%</p>
             } @else {
               <p class="text-base font-serif font-bold text-warm-500" data-testid="promedio-no-disponible">No disponible</p>
             }
@@ -89,7 +89,7 @@ import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
         </div>
 
         <div class="p-4 rounded-2xl bg-white border border-warm-200 shadow-warm-sm flex items-center gap-4">
-          <div class="w-11 h-11 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center shrink-0">
+          <div class="w-11 h-11 rounded-xl bg-warning-50 text-warning-700 flex items-center justify-center shrink-0">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
@@ -113,8 +113,8 @@ import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
           }
         </div>
       } @else if (error()) {
-        <div class="bg-white p-8 rounded-2xl border border-red-200 text-center space-y-3" role="alert" data-testid="materias-error">
-          <p class="text-sm font-bold text-red-800">{{ error()!.titulo }}</p>
+        <div class="bg-white p-8 rounded-2xl border border-danger-200 text-center space-y-3" role="alert" data-testid="materias-error">
+          <p class="text-sm font-bold text-danger-800">{{ error()!.titulo }}</p>
           <p class="text-xs text-warm-600">{{ error()!.mensaje }}</p>
           <app-button variant="secondary" size="sm" (clicked)="retry.emit()">Reintentar</app-button>
         </div>
@@ -225,8 +225,8 @@ export class StudentCoursesListComponent {
   }
 
   getProgressColor(porcentaje: number): string {
-    if (porcentaje >= 85) return 'bg-emerald-500';
-    if (porcentaje >= 75) return 'bg-amber-500';
-    return 'bg-red-500';
+    if (porcentaje >= 85) return 'bg-success-500';
+    if (porcentaje >= 75) return 'bg-warning-500';
+    return 'bg-danger-500';
   }
 }

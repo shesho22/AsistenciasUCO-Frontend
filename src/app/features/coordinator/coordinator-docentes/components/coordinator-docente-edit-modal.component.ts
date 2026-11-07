@@ -30,7 +30,7 @@ const CLASE_CONTROL =
 
         <form (ngSubmit)="enviar()" class="p-6 space-y-4 overflow-y-auto" autocomplete="off">
           @if (error()) {
-            <p role="alert" class="text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2">{{ error() }}</p>
+            <p role="alert" class="text-xs font-medium text-danger-700 bg-danger-50 border border-danger-200 rounded-xl px-3 py-2">{{ error() }}</p>
           }
           <p class="text-xs text-warm-600 bg-warm-50 border border-warm-100 rounded-xl px-3 py-2">
             El cambio de nombres y de documento aplica a la persona en todos sus programas. El correo no se puede editar aquí.

@@ -46,7 +46,7 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
       </div>
 
       @if (errorAreas()) {
-        <div class="rounded-2xl border border-red-200 bg-red-50 p-4 text-xs text-red-800" role="alert">
+        <div class="rounded-2xl border border-danger-200 bg-danger-50 p-4 text-xs text-danger-800" role="alert">
           <p class="font-semibold">No fue posible cargar las áreas.</p>
           <p class="mt-1">El total muestra «—». No equivale a cero registros.</p>
         </div>
@@ -85,8 +85,8 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
       <div>
         <h2 class="font-serif font-bold text-lg text-warm-900 mb-3">Áreas Temáticas y de Conocimiento</h2>
         @if (errorAreas()) {
-          <div class="bg-white rounded-2xl border border-red-200 p-8 text-center shadow-warm-sm" role="alert">
-            <p class="text-sm text-red-700">No fue posible cargar las áreas de conocimiento.</p>
+          <div class="bg-white rounded-2xl border border-danger-200 p-8 text-center shadow-warm-sm" role="alert">
+            <p class="text-sm text-danger-700">No fue posible cargar las áreas de conocimiento.</p>
           </div>
         } @else if (areasFiltradas().length === 0) {
           <div class="bg-white rounded-2xl border border-warm-200 p-8 text-center shadow-warm-sm">

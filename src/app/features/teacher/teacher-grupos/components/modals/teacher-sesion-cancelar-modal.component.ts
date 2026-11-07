@@ -15,9 +15,9 @@ import { SessionTimeZoneService } from '../../../../../core/services/session-tim
     @if (isOpen() && sesion()) {
       <div class="fixed inset-0 bg-warm-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
         <div class="bg-white rounded-2xl border border-warm-200 shadow-warm-xl max-w-md w-full overflow-hidden animate-scale-up">
-          <div class="p-6 border-b border-warm-100 flex items-start justify-between bg-red-50/40">
+          <div class="p-6 border-b border-warm-100 flex items-start justify-between bg-danger-50/40">
             <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-full bg-red-100 text-red-700 flex items-center justify-center shrink-0">
+              <div class="w-10 h-10 rounded-full bg-danger-100 text-danger-700 flex items-center justify-center shrink-0">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
@@ -25,7 +25,7 @@ import { SessionTimeZoneService } from '../../../../../core/services/session-tim
               <div>
                 <h3 class="font-serif font-bold text-lg text-warm-900">Cancelar Sesión #{{ sesion()?.sessionNumber }}</h3>
                 @if (sesion()?.estadoTemporal === 'INDETERMINADA') {
-                  <p class="text-xs text-amber-800">Horario no confirmado</p>
+                  <p class="text-xs text-warning-800">Horario no confirmado</p>
                 } @else {
                   <p class="text-xs text-warm-600">{{ timeZone.displaySessionDate(sesion()!) }}{{ timeZone.displaySessionEndDate(sesion()!) !== timeZone.displaySessionDate(sesion()!) ? ' – ' + timeZone.displaySessionEndDate(sesion()!) : '' }} • {{ timeZone.displaySessionStartTime(sesion()!) }} - {{ timeZone.displaySessionEndTime(sesion()!) }}</p>
                 }
@@ -66,7 +66,7 @@ import { SessionTimeZoneService } from '../../../../../core/services/session-tim
               type="button"
               [disabled]="!motivo().trim()"
               (click)="confirmar()"
-              class="px-4 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-colors inline-flex items-center gap-1.5 shadow-sm"
+              class="px-4 py-2 text-xs font-bold text-white bg-danger-600 hover:bg-danger-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-colors inline-flex items-center gap-1.5 shadow-sm"
             >
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />

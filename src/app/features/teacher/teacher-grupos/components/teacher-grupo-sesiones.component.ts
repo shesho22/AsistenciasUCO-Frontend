@@ -44,7 +44,7 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
                     #{{ sesion.sessionNumber }}
                   </span>
                   @if (sesion.estadoTemporal === 'INDETERMINADA') {
-                    <span class="text-xs font-semibold text-amber-800 bg-amber-50 px-2 py-0.5 rounded">Horario no confirmado</span>
+                    <span class="text-xs font-semibold text-warning-800 bg-warning-50 px-2 py-0.5 rounded">Horario no confirmado</span>
                   } @else {
                     <span class="text-xs font-medium text-warm-600">
                       {{ timeZone.displaySessionDate(sesion) }}{{ timeZone.displaySessionEndDate(sesion) !== timeZone.displaySessionDate(sesion) ? ' – ' + timeZone.displaySessionEndDate(sesion) : '' }}
@@ -116,7 +116,7 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
                   <button
                     type="button"
                     (click)="cancelar.emit(sesion)"
-                    class="text-xs font-semibold text-red-700 hover:text-red-900 bg-red-50 hover:bg-red-100 border border-red-200 px-3 py-1.5 rounded-lg transition-colors inline-flex items-center gap-1"
+                    class="text-xs font-semibold text-danger-700 hover:text-danger-900 bg-danger-50 hover:bg-danger-100 border border-danger-200 px-3 py-1.5 rounded-lg transition-colors inline-flex items-center gap-1"
                     title="Cancelar una sesión de clase con motivo lectivo"
                   >
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

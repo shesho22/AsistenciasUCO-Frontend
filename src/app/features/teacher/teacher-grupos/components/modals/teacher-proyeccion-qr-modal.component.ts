@@ -66,14 +66,14 @@ import { SessionTimeZoneService } from '../../../../../core/services/session-tim
             <!-- Visualizador Bento: PIN Gigante & QR -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center">
               <!-- Tarjeta PIN Alfanumérico -->
-              <div class="p-6 rounded-2xl bg-amber-50/70 border-2 border-amber-300 shadow-warm-sm space-y-2">
-                <span class="text-xs font-bold uppercase tracking-wider text-amber-800">
+              <div class="p-6 rounded-2xl bg-warning-50/70 border-2 border-warning-300 shadow-warm-sm space-y-2">
+                <span class="text-xs font-bold uppercase tracking-wider text-warning-800">
                   PIN de Registro Rápido (PC)
                 </span>
-                <div class="font-mono font-extrabold text-4xl sm:text-5xl text-amber-950 tracking-widest my-2 select-all">
+                <div class="font-mono font-extrabold text-4xl sm:text-5xl text-warning-950 tracking-widest my-2 select-all">
                   {{ datosQr()?.codigoAcceso || '849201' }}
                 </div>
-                <p class="text-[11px] text-amber-800 leading-tight">
+                <p class="text-[11px] text-warning-800 leading-tight">
                   Digítalo en tu portal estudiantil sin necesidad de cámara.
                 </p>
               </div>
@@ -99,7 +99,7 @@ import { SessionTimeZoneService } from '../../../../../core/services/session-tim
             <!-- Contador de Expiración & Refresco -->
             <div class="p-4 rounded-2xl bg-warm-100/70 border border-warm-200 flex items-center justify-between">
               <div class="flex items-center gap-2 text-xs text-warm-700 text-left">
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span class="w-2.5 h-2.5 rounded-full bg-success-500 animate-pulse"></span>
                 <span>Válido por: <strong class="font-mono font-bold text-warm-900">{{ segundosRestantes() }} segundos</strong></span>
               </div>
 

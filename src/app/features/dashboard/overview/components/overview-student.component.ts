@@ -27,8 +27,8 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
         <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Asistencia Promedio</span>
           @if (averageAttendance() !== null) {
-            <p class="text-2xl font-serif font-bold text-emerald-700 mt-1">{{ averageAttendance() }}%</p>
-            <span class="text-[11px] text-emerald-700 font-medium">Según tus sesiones registradas</span>
+            <p class="text-2xl font-serif font-bold text-success-700 mt-1">{{ averageAttendance() }}%</p>
+            <span class="text-[11px] text-success-700 font-medium">Según tus sesiones registradas</span>
           } @else {
             <p class="text-base font-serif font-bold text-warm-500 mt-1" data-testid="promedio-no-disponible">No disponible</p>
             <span class="text-[11px] text-warm-500 font-medium">Sin datos de asistencia consolidados</span>
@@ -45,12 +45,12 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
           }
         </div>
         <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px]"
-             [ngClass]="{'border-emerald-300 bg-emerald-50/30 ring-1 ring-emerald-400/20': proximaClase()?.enCurso, 'border-primary-200/60': proximaClase() && !proximaClase()?.enCurso}">
+             [ngClass]="{'border-primary-300 bg-primary-50/30 ring-1 ring-primary-400/20': proximaClase()?.enCurso, 'border-primary-200/60': proximaClase() && !proximaClase()?.enCurso}">
           <div class="flex items-center justify-between">
             <span class="text-xs text-warm-500 font-medium">Próxima Clase</span>
             @if (proximaClase()?.enCurso) {
-              <span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full animate-pulse">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+              <span class="inline-flex items-center gap-1 text-[10px] font-bold text-success-700 bg-success-100 px-2 py-0.5 rounded-full animate-pulse">
+                <span class="w-1.5 h-1.5 rounded-full bg-success-600"></span>
                 En curso
               </span>
             } @else if (proximaClase()) {
@@ -80,11 +80,11 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
       @if (proximaClase(); as pc) {
         <div class="rounded-2xl p-5 border transition-all duration-300 shadow-warm-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
              [ngClass]="pc.enCurso 
-               ? 'bg-gradient-to-r from-emerald-50 via-teal-50 to-warm-50 border-emerald-300 ring-1 ring-emerald-400/30' 
+               ? 'bg-gradient-to-r from-primary-50 via-primary-50 to-warm-50 border-primary-300 ring-1 ring-primary-400/30' 
                : 'bg-gradient-to-r from-warm-50 via-white to-primary-50/40 border-primary-200/80'">
           <div class="flex items-center gap-4">
             <div class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
-                 [ngClass]="pc.enCurso ? 'bg-emerald-600 text-white shadow-emerald-sm' : 'bg-primary-900 text-white shadow-warm-sm'">
+                 [ngClass]="pc.enCurso ? 'bg-success-600 text-white shadow-warm-sm' : 'bg-primary-900 text-white shadow-warm-sm'">
               @if (pc.enCurso) {
                 <svg class="w-6 h-6 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
@@ -99,11 +99,11 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
             <div>
               <div class="flex flex-wrap items-center gap-2">
                 <span class="text-xs font-mono font-bold px-2.5 py-0.5 rounded-md"
-                      [ngClass]="pc.enCurso ? 'bg-emerald-100 text-emerald-800' : 'bg-primary-100 text-primary-900'">
+                      [ngClass]="pc.enCurso ? 'bg-success-100 text-success-800' : 'bg-primary-100 text-primary-900'">
                   {{ pc.codigo }}
                 </span>
                 <span class="text-xs font-bold px-2.5 py-0.5 rounded-full"
-                      [ngClass]="pc.enCurso ? 'bg-emerald-600 text-white animate-pulse' : 'bg-warm-200 text-warm-800'">
+                      [ngClass]="pc.enCurso ? 'bg-success-600 text-white animate-pulse' : 'bg-warm-200 text-warm-800'">
                   {{ pc.tiempoRestanteTexto }}
                 </span>
                 <span class="text-xs text-warm-500 font-medium">| {{ pc.dia }} {{ pc.horaInicio }} - {{ pc.horaFin }}</span>
@@ -150,14 +150,14 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
                   <div>
                     <div class="flex items-center justify-between mb-1.5">
                       <span class="font-medium text-warm-600">Cumplimiento de Asistencia:</span>
-                      <span class="font-bold text-sm" [ngClass]="ind.porcentajeAsistencia >= 80 ? 'text-emerald-700' : 'text-rose-700'">
+                      <span class="font-bold text-sm" [ngClass]="ind.porcentajeAsistencia >= 80 ? 'text-success-700' : 'text-danger-700'">
                         {{ ind.porcentajeAsistencia }}%
                       </span>
                     </div>
                     <div class="w-full bg-warm-100 rounded-full h-2.5 overflow-hidden">
                       <div
                         class="h-2.5 rounded-full transition-all duration-500"
-                        [ngClass]="ind.porcentajeAsistencia >= 80 ? 'bg-emerald-600' : 'bg-rose-500'"
+                        [ngClass]="ind.porcentajeAsistencia >= 80 ? 'bg-success-600' : 'bg-danger-500'"
                         [style.width.%]="ind.porcentajeAsistencia"
                       ></div>
                     </div>
@@ -183,9 +183,9 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
                 <div class="flex items-center justify-between pt-2 border-t border-warm-100">
                   @if (mat.indicadores; as ind) {
                     <div class="flex items-center gap-2">
-                      <span class="text-emerald-700 font-semibold">{{ ind.asistencias }} asistencias</span>
+                      <span class="text-success-700 font-semibold">{{ ind.asistencias }} asistencias</span>
                       <span class="text-warm-300">•</span>
-                      <span class="text-rose-700 font-semibold">{{ ind.inasistencias }} fallas</span>
+                      <span class="text-danger-700 font-semibold">{{ ind.inasistencias }} fallas</span>
                     </div>
                   }
                   @if (mat.estado) {

@@ -71,8 +71,8 @@ const MIN_CARACTERES_CANDIDATOS = 3;
             <p class="text-2xl font-bold text-warm-900">{{ r.totalDocentes }}</p>
           </div>
           <div class="bg-white p-4 rounded-2xl border border-warm-200/80 shadow-warm-sm">
-            <p class="text-xs font-semibold text-emerald-700 uppercase">Activos</p>
-            <p class="text-2xl font-bold text-emerald-800">{{ r.totalActivos }}</p>
+            <p class="text-xs font-semibold text-success-700 uppercase">Activos</p>
+            <p class="text-2xl font-bold text-success-800">{{ r.totalActivos }}</p>
           </div>
           <div class="bg-white p-4 rounded-2xl border border-warm-200/80 shadow-warm-sm">
             <p class="text-xs font-semibold text-warm-500 uppercase">Inactivos</p>

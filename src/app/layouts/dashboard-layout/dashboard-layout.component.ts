@@ -160,7 +160,7 @@ interface NavItem {
               <button
                 type="button"
                 (click)="logout()"
-                class="p-2 text-warm-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors shrink-0"
+                class="p-2 text-warm-400 hover:text-danger-600 rounded-lg hover:bg-danger-50 transition-colors shrink-0"
                 title="Cerrar sesión"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

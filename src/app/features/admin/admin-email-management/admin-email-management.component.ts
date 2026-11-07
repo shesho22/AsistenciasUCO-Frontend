@@ -163,8 +163,8 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
                 La arquitectura del sistema mantiene el principio de Clean Architecture y la interfaz unificada <code class="px-1.5 py-0.5 rounded bg-primary-100/80 font-mono text-xs">NotificacionPort</code>.
               </p>
               <div class="mt-4 flex gap-3">
-                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
-                  <span class="w-2 h-2 rounded-full bg-emerald-600"></span>
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-success-100 text-success-800">
+                  <span class="w-2 h-2 rounded-full bg-success-600"></span>
                   Proveedor Externo Operativo
                 </span>
               </div>
@@ -191,7 +191,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
             <span>Cola de Envíos y Reintentos (Outbox)</span>
             @if (resumenCola().fallidasDefinitivas > 0) {
-              <span class="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">
+              <span class="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-danger-100 text-danger-800">
                 {{ resumenCola().fallidasDefinitivas }}
               </span>
             }
@@ -280,7 +280,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
 
                     <div class="flex items-center gap-2 shrink-0">
                       <span class="text-xs text-warm-500">Versión activa:</span>
-                      <span class="text-xs font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-200">
+                      <span class="text-xs font-bold px-2 py-0.5 rounded-md bg-success-100 text-success-800 border border-success-200">
                         v{{ tpl.versionActiva }} Activa
                       </span>
                     </div>
@@ -305,7 +305,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
                             {{ '{' + m.marcador + '}' }}
                           </button>
                           <span
-                            [class]="m.obligatorio ? 'bg-amber-100 text-amber-800' : 'bg-warm-200 text-warm-700'"
+                            [class]="m.obligatorio ? 'bg-warning-100 text-warning-800' : 'bg-warm-200 text-warm-700'"
                             class="text-[9px] font-bold px-1.5 py-0.2 rounded ml-1"
                           >
                             {{ m.obligatorio ? 'Obligatorio' : 'Opcional' }}
@@ -325,16 +325,16 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
                     <!-- Client Validation Warning / Success Indicator -->
                     <div class="mt-3">
                       @if (marcadoresObligatoriosFaltantes().length > 0) {
-                        <div class="flex items-center gap-2 p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs">
-                          <svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        <div class="flex items-center gap-2 p-2.5 rounded-xl bg-warning-50 border border-warning-200 text-warning-900 text-xs">
+                          <svg class="w-4 h-4 text-warning-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                           <span>
                             Faltan marcadores obligatorios en el texto:
                             <strong>{{ formatMissingMarkers() }}</strong>. Deben estar presentes en el asunto o cuerpo.
                           </span>
                         </div>
                       } @else {
-                        <div class="flex items-center gap-2 p-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs">
-                          <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        <div class="flex items-center gap-2 p-2 rounded-xl bg-success-50 border border-success-200 text-success-800 text-xs">
+                          <svg class="w-4 h-4 text-success-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                           <span>Todos los marcadores obligatorios están presentes en la plantilla.</span>
                         </div>
                       }
@@ -475,7 +475,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
                             <td class="py-2.5 px-3 max-w-[260px] truncate font-medium" [title]="v.asunto">{{ v.asunto }}</td>
                             <td class="py-2.5 px-3">
                               @if (v.activa) {
-                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-success-100 text-success-800 border border-success-200">
                                   Activa
                                 </span>
                               } @else {
@@ -513,7 +513,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
             <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
               <!-- Entregadas -->
               <div class="bg-white border border-warm-200 rounded-2xl p-4 shadow-warm-sm flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-100">
+                <div class="w-10 h-10 rounded-xl bg-success-50 text-success-700 flex items-center justify-center shrink-0 border border-success-100">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                 </div>
                 <div>
@@ -524,7 +524,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
 
               <!-- Pendientes -->
               <div class="bg-white border border-warm-200 rounded-2xl p-4 shadow-warm-sm flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center shrink-0 border border-amber-100">
+                <div class="w-10 h-10 rounded-xl bg-warning-50 text-warning-700 flex items-center justify-center shrink-0 border border-warning-100">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 </div>
                 <div>
@@ -535,7 +535,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
 
               <!-- Reservadas (En Proceso) -->
               <div class="bg-white border border-warm-200 rounded-2xl p-4 shadow-warm-sm flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-sky-50 text-sky-700 flex items-center justify-center shrink-0 border border-sky-100">
+                <div class="w-10 h-10 rounded-xl bg-info-50 text-info-700 flex items-center justify-center shrink-0 border border-info-100">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                 </div>
                 <div>
@@ -546,7 +546,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
 
               <!-- Reintentables -->
               <div class="bg-white border border-warm-200 rounded-2xl p-4 shadow-warm-sm flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0 border border-amber-200">
+                <div class="w-10 h-10 rounded-xl bg-warning-100 text-warning-800 flex items-center justify-center shrink-0 border border-warning-200">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 </div>
                 <div>
@@ -557,7 +557,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
 
               <!-- Fallidas Definitivas -->
               <div class="bg-white border border-warm-200 rounded-2xl p-4 shadow-warm-sm flex items-center gap-3 col-span-2 sm:col-span-1">
-                <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-700 flex items-center justify-center shrink-0 border border-rose-100">
+                <div class="w-10 h-10 rounded-xl bg-danger-50 text-danger-700 flex items-center justify-center shrink-0 border border-danger-100">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                 </div>
                 <div>
@@ -656,12 +656,12 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
                         <td class="py-3 px-4 text-warm-500 whitespace-nowrap">
                           <div>{{ formatearFecha(item.creadoEn) }}</div>
                           @if (item.entregadoEn) {
-                            <div class="text-[10px] text-emerald-700">Entregado: {{ formatearFecha(item.entregadoEn) }}</div>
+                            <div class="text-[10px] text-success-700">Entregado: {{ formatearFecha(item.entregadoEn) }}</div>
                           }
                         </td>
                         <td class="py-3 px-4 max-w-[220px]">
                           @if (item.detalleError) {
-                            <div class="text-[11px] text-rose-700 bg-rose-50 border border-rose-100 p-1.5 rounded-lg font-mono truncate" [title]="item.detalleError">
+                            <div class="text-[11px] text-danger-700 bg-danger-50 border border-danger-100 p-1.5 rounded-lg font-mono truncate" [title]="item.detalleError">
                               {{ item.codigoError ? item.codigoError + ': ' : '' }}{{ item.detalleError }}
                             </div>
                           } @else {
@@ -674,7 +674,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
                               type="button"
                               (click)="reintentar(item.id)"
                               [disabled]="reintentandoId() === item.id"
-                              class="px-3 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                              class="px-3 py-1 bg-warning-100 hover:bg-warning-200 text-warning-900 rounded-lg text-xs font-bold transition-colors cursor-pointer"
                             >
                               {{ reintentandoId() === item.id ? 'Reintentando...' : 'Reintentar' }}
                             </button>
@@ -729,7 +729,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
                   <span class="text-xs font-bold uppercase tracking-wider text-primary-700">Clean Architecture & Hexagonal</span>
                   <h3 class="text-lg font-serif font-bold text-warm-900 mt-0.5">Estado del Puerto de Notificaciones y Canal de Transporte</h3>
                 </div>
-                <span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                <span class="px-3 py-1 rounded-full text-xs font-bold bg-success-100 text-success-800 border border-success-200">
                   Desacoplado vía NotificacionPort
                 </span>
               </div>
@@ -751,8 +751,8 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
                 <div class="p-4 rounded-xl bg-warm-50 border border-warm-200">
                   <span class="text-[10px] font-bold text-warm-500 uppercase block mb-1">Despachador en Segundo Plano</span>
                   <div class="flex items-center gap-1.5 mt-1">
-                    <span class="w-2.5 h-2.5 rounded-full" [class]="canalEstado()?.dispatcherEnabled ? 'bg-emerald-500' : 'bg-rose-500'"></span>
-                    <span class="text-xs font-bold" [class]="canalEstado()?.dispatcherEnabled ? 'text-emerald-800' : 'text-rose-800'">
+                    <span class="w-2.5 h-2.5 rounded-full" [class]="canalEstado()?.dispatcherEnabled ? 'bg-success-500' : 'bg-danger-500'"></span>
+                    <span class="text-xs font-bold" [class]="canalEstado()?.dispatcherEnabled ? 'text-success-800' : 'text-danger-800'">
                       {{ canalEstado()?.dispatcherEnabled ? 'Activo (Hilo outbox activo)' : 'Inactivo' }}
                     </span>
                   </div>
@@ -794,7 +794,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
 
                   <div class="p-3 rounded-xl bg-warm-50 border border-warm-100">
                     <span class="text-[10px] text-warm-500 font-bold uppercase block mb-1">Seguridad TLS</span>
-                    <span class="font-bold text-emerald-800">
+                    <span class="font-bold text-success-800">
                       {{ canalEstado()?.starttls ? 'STARTTLS Activo' : (canalEstado()?.ssl ? 'SSL' : 'Plano') }}
                     </span>
                   </div>
@@ -802,7 +802,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
                   <div class="p-3 rounded-xl bg-warm-50 border border-warm-100">
                     <span class="text-[10px] text-warm-500 font-bold uppercase block mb-1">Password Configurada</span>
                     <span
-                      [class]="canalEstado()?.tienePasswordConfigurado ? 'text-emerald-800 bg-emerald-100' : 'text-rose-800 bg-rose-100'"
+                      [class]="canalEstado()?.tienePasswordConfigurado ? 'text-success-800 bg-success-100' : 'text-danger-800 bg-danger-100'"
                       class="text-[10px] font-bold px-2 py-0.5 rounded-full inline-block"
                     >
                       {{ canalEstado()?.tienePasswordConfigurado ? 'Configurada (Protegida)' : 'Sin Configurar' }}
@@ -833,11 +833,11 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
                   <div class="flex items-center justify-between p-2.5 rounded-xl bg-warm-50 border border-warm-100">
                     <span class="text-warm-600">Modo de Pruebas (Redirección):</span>
                     @if (canalEstado()?.testModeEnabled) {
-                      <span class="text-amber-800 font-bold text-[11px] bg-amber-100 px-2 py-0.5 rounded-full">
+                      <span class="text-warning-800 font-bold text-[11px] bg-warning-100 px-2 py-0.5 rounded-full">
                         Activo ({{ canalEstado()?.testModeRedirectCount || 0 }} redirigidos)
                       </span>
                     } @else {
-                      <span class="text-emerald-800 font-bold text-[11px] bg-emerald-100 px-2 py-0.5 rounded-full">
+                      <span class="text-success-800 font-bold text-[11px] bg-success-100 px-2 py-0.5 rounded-full">
                         Producción (Envíos directos)
                       </span>
                     }
@@ -896,7 +896,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
 
                   @if (resultadoPrueba()) {
                     <div
-                      [class]="resultadoPrueba()?.exitoso ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-rose-50 border-rose-200 text-rose-900'"
+                      [class]="resultadoPrueba()?.exitoso ? 'bg-success-50 border-success-200 text-success-900' : 'bg-danger-50 border-danger-200 text-danger-900'"
                       class="p-3 rounded-xl border text-xs"
                     >
                       <p class="font-bold">{{ resultadoPrueba()?.exitoso ? '¡Envío Exitoso!' : 'Error de Envío' }}</p>
@@ -1238,15 +1238,15 @@ export class AdminEmailManagementComponent implements OnInit {
   getEstadoBadgeClass(codigo: string): string {
     switch (codigo) {
       case 'ENTREGADA':
-        return 'bg-emerald-100 text-emerald-800 border border-emerald-200';
+        return 'bg-success-100 text-success-800 border border-success-200';
       case 'PENDIENTE':
-        return 'bg-amber-100 text-amber-800 border border-amber-200';
+        return 'bg-warning-100 text-warning-800 border border-warning-200';
       case 'RESERVADA':
-        return 'bg-sky-100 text-sky-800 border border-sky-200';
+        return 'bg-info-100 text-info-800 border border-info-200';
       case 'FALLIDA_REINTENTABLE':
-        return 'bg-amber-100 text-amber-900 border border-amber-300';
+        return 'bg-warning-100 text-warning-900 border border-warning-300';
       case 'FALLIDA_DEFINITIVA':
-        return 'bg-rose-100 text-rose-800 border border-rose-200';
+        return 'bg-danger-100 text-danger-800 border border-danger-200';
       default:
         return 'bg-warm-100 text-warm-700';
     }
@@ -1255,14 +1255,14 @@ export class AdminEmailManagementComponent implements OnInit {
   getEstadoDotClass(codigo: string): string {
     switch (codigo) {
       case 'ENTREGADA':
-        return 'bg-emerald-500';
+        return 'bg-success-500';
       case 'PENDIENTE':
       case 'FALLIDA_REINTENTABLE':
-        return 'bg-amber-500';
+        return 'bg-warning-500';
       case 'RESERVADA':
-        return 'bg-sky-500';
+        return 'bg-info-500';
       case 'FALLIDA_DEFINITIVA':
-        return 'bg-rose-500';
+        return 'bg-danger-500';
       default:
         return 'bg-warm-400';
     }

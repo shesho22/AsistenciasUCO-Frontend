@@ -13,6 +13,7 @@ import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../core/services/auth.service';
 import { hasAnyRole } from '../../../core/models/user.model';
 import { environment } from '../../../../environments/environment';
+import { readDesignToken } from '../../../shared/utils/design-tokens';
 
 interface SecurityUiOptions {
   applicationId: string;
@@ -85,7 +86,7 @@ type ViewState = 'loading' | 'ready' | 'error' | 'unauthorized' | 'forbidden';
       }
 
       @if (state() === 'unauthorized' || state() === 'forbidden' || state() === 'error') {
-        <div class="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800" role="alert">
+        <div class="rounded-xl border border-danger-200 bg-danger-50 p-4 text-sm text-danger-800" role="alert">
           <p>{{ message() }}</p>
           <div class="mt-3 flex gap-2">
             @if (state() === 'unauthorized') {
@@ -93,7 +94,7 @@ type ViewState = 'loading' | 'ready' | 'error' | 'unauthorized' | 'forbidden';
                 Iniciar sesión Security Baseline
               </button>
             }
-            <button type="button" class="rounded-lg border border-rose-300 px-3 py-2 font-semibold" (click)="load()">
+            <button type="button" class="rounded-lg border border-danger-300 px-3 py-2 font-semibold" (click)="load()">
               Reintentar
             </button>
           </div>
@@ -189,8 +190,8 @@ export class SecurityAdministrationComponent implements AfterViewInit, OnDestroy
         apiBaseUrl: environment.security.baselineUrl,
         allowApplicationLifecycleManagement: false,
         theme: {
-          accent: '#087443',
-          fontFamily: 'Inter, sans-serif',
+          accent: readDesignToken('--color-primary-700'),
+          fontFamily: readDesignToken('--font-sans'),
           radius: '12px',
         },
       });

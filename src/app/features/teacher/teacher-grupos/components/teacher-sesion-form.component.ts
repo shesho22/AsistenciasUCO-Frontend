@@ -29,7 +29,7 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
           Volver a Sesiones de {{ codigoCurso() }}
         </button>
 
-        <span class="text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full">
+        <span class="text-xs font-bold text-warning-800 bg-warning-50 border border-warning-200 px-3 py-1 rounded-full">
           {{ modo() === 'CREAR' ? 'Programar sesión' : 'Modificar sesión' }}
         </span>
       </div>
@@ -58,7 +58,7 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
                 class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
               />
               @if (nombreDemasiadoLargo()) {
-                <p class="mt-1 text-xs text-red-600" role="alert">{{ nombreLengthMessage }}</p>
+                <p class="mt-1 text-xs text-danger-600" role="alert">{{ nombreLengthMessage }}</p>
               }
             </app-form-field>
           </div>

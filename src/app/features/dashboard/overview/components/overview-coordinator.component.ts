@@ -21,7 +21,7 @@ import { DocenteItem, PlanEstudioItem } from '../../../../core/models/role-manag
         <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Planta Docente Activa</span>
           <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ docentes().length }}</p>
-          <span class="text-[11px] text-emerald-700 font-medium">100% con carga asignada</span>
+          <span class="text-[11px] text-success-700 font-medium">100% con carga asignada</span>
         </div>
         <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Grupos en Curso</span>
@@ -36,7 +36,7 @@ import { DocenteItem, PlanEstudioItem } from '../../../../core/models/role-manag
         <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Asistencia Promedio</span>
           <p class="text-2xl font-serif font-bold text-accent-700 mt-1">92%</p>
-          <span class="text-[11px] text-emerald-700 font-medium">Meta institucional cumplida</span>
+          <span class="text-[11px] text-success-700 font-medium">Meta institucional cumplida</span>
         </div>
       </section>
 
@@ -67,7 +67,7 @@ import { DocenteItem, PlanEstudioItem } from '../../../../core/models/role-manag
                   </div>
                   <div class="text-center">
                     <span class="block text-warm-400 text-[10px]">Estado</span>
-                    <span class="font-bold text-xs" [ngClass]="plan.estado === 'VIGENTE' ? 'text-emerald-700' : 'text-amber-700'">
+                    <span class="font-bold text-xs" [ngClass]="plan.estado === 'VIGENTE' ? 'text-success-700' : 'text-warning-700'">
                       {{ plan.estado }}
                     </span>
                   </div>

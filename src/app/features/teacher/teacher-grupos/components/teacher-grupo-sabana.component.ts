@@ -27,20 +27,20 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
 
         <!-- Leyenda Aurora & Semáforo UCO -->
         <div class="flex flex-wrap items-center gap-3 text-xs bg-warm-50 p-2.5 rounded-xl border border-warm-200">
-          <span class="flex items-center gap-1.5 font-semibold text-emerald-800">
-            <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span>
+          <span class="flex items-center gap-1.5 font-semibold text-success-800">
+            <span class="w-3 h-3 rounded-full bg-success-500 inline-block"></span>
             Presente (AN)
           </span>
-          <span class="flex items-center gap-1.5 font-semibold text-amber-800">
-            <span class="w-3 h-3 rounded-full bg-amber-400 inline-block"></span>
+          <span class="flex items-center gap-1.5 font-semibold text-warning-800">
+            <span class="w-3 h-3 rounded-full bg-warning-400 inline-block"></span>
             Excusa (EX)
           </span>
-          <span class="flex items-center gap-1.5 font-semibold text-red-800">
-            <span class="w-3 h-3 rounded-full bg-red-500 inline-block"></span>
+          <span class="flex items-center gap-1.5 font-semibold text-danger-800">
+            <span class="w-3 h-3 rounded-full bg-danger-500 inline-block"></span>
             Falta Injustificada (SJC)
           </span>
           <span class="text-warm-300">|</span>
-          <span class="text-[11px] font-bold text-red-700 bg-red-100 px-2 py-0.5 rounded-md">
+          <span class="text-[11px] font-bold text-danger-700 bg-danger-100 px-2 py-0.5 rounded-md">
             ≥20% = Pérdida de Asignatura
           </span>
         </div>
@@ -73,12 +73,12 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
                   <th class="p-2.5 text-center min-w-[70px] border-r border-warm-200" [title]="ses.title + ' - ' + displayDate(ses)">
                     <div class="font-mono font-bold text-primary-900">#{{ ses.sessionNumber }}</div>
                     @if (ses.estadoTemporal === 'INDETERMINADA') {
-                      <div class="text-[10px] text-amber-700 font-semibold truncate">Sin fecha</div>
+                      <div class="text-[10px] text-warning-700 font-semibold truncate">Sin fecha</div>
                     } @else {
                       <div class="text-[10px] text-warm-500 font-normal truncate">{{ displayDate(ses) | slice:5 }}</div>
                     }
                     <span
-                      class="inline-block w-1.5 h-1.5 rounded-full mt-0.5 bg-emerald-500"
+                      class="inline-block w-1.5 h-1.5 rounded-full mt-0.5 bg-success-500"
                       [title]="ses.estadoTemporal === 'INDETERMINADA' ? 'Horario no confirmado' : displayDate(ses)"
                     ></span>
                   </th>
@@ -108,15 +108,15 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
                     <td class="p-2 text-center border-r border-warm-100">
                       @let estado = getAsistenciaEstudianteEnSesion(est.studentId || est.id, ses);
                       @if (estado === 'AN') {
-                        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]" title="Asistencia Normal (Presente)">
+                        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-success-100 text-success-800 font-bold text-[10px]" title="Asistencia Normal (Presente)">
                           AN
                         </span>
                       } @else if (estado === 'EX') {
-                        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-100 text-amber-900 font-bold text-[10px]" title="Excusa Justificada">
+                        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-warning-100 text-warning-900 font-bold text-[10px]" title="Excusa Justificada">
                           EX
                         </span>
                       } @else if (estado === 'SJC') {
-                        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-100 text-red-800 font-bold text-[10px]" title="Falta Injustificada">
+                        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-danger-100 text-danger-800 font-bold text-[10px]" title="Falta Injustificada">
                           SJC
                         </span>
                       } @else {
@@ -134,25 +134,25 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
 
                   <!-- Porcentaje UCO -->
                   <td class="p-3 text-center font-mono font-bold text-xs border-r border-warm-100 bg-warm-50/40"
-                    [class]="getPorcentajeFaltasEstudiante(est.studentId || est.id) >= 20 ? 'text-red-700' : (getPorcentajeFaltasEstudiante(est.studentId || est.id) >= 10 ? 'text-amber-700' : 'text-emerald-700')">
+                    [class]="getPorcentajeFaltasEstudiante(est.studentId || est.id) >= 20 ? 'text-danger-700' : (getPorcentajeFaltasEstudiante(est.studentId || est.id) >= 10 ? 'text-warning-700' : 'text-success-700')">
                     {{ getPorcentajeFaltasEstudiante(est.studentId || est.id) }}%
                   </td>
 
                   <!-- Estado Académico UCO -->
                   <td class="p-3 text-center bg-warm-50/40">
                     @if (getPorcentajeFaltasEstudiante(est.studentId || est.id) >= 20) {
-                      <span class="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold rounded-full bg-red-100 text-red-800 border border-red-200">
-                        <svg class="w-3 h-3 text-red-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <span class="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold rounded-full bg-danger-100 text-danger-800 border border-danger-200">
+                        <svg class="w-3 h-3 text-danger-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                         </svg>
                         Reprobado (20%)
                       </span>
                     } @else if (getPorcentajeFaltasEstudiante(est.studentId || est.id) >= 10) {
-                      <span class="px-2.5 py-1 text-[10px] font-bold rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+                      <span class="px-2.5 py-1 text-[10px] font-bold rounded-full bg-warning-100 text-warning-800 border border-warning-200">
                         Alerta de Riesgo
                       </span>
                     } @else {
-                      <span class="px-2.5 py-1 text-[10px] font-bold rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                      <span class="px-2.5 py-1 text-[10px] font-bold rounded-full bg-success-100 text-success-800 border border-success-200">
                         Regular Normal
                       </span>
                     }

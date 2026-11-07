@@ -124,9 +124,9 @@ describe('StudentScheduleComponent', () => {
   });
 
   it('debe retornar estilos de clases para cada categoría de color', () => {
-    expect(component.getClaseClasses('emerald')).toContain('bg-emerald-50');
-    expect(component.getClaseClasses('amber')).toContain('bg-amber-50');
-    expect(component.getClaseClasses('blue')).toContain('bg-sky-50');
-    expect(component.getClaseClasses('purple')).toContain('bg-purple-50');
+    expect(component.getClaseClasses('emerald')).toContain('bg-success-50');
+    expect(component.getClaseClasses('amber')).toContain('bg-warning-50');
+    expect(component.getClaseClasses('blue')).toContain('bg-info-50');
+    expect(component.getClaseClasses('purple')).toContain('bg-category-50');
   });
 });

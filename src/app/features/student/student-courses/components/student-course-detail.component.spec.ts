@@ -78,9 +78,9 @@ describe('StudentCourseDetailComponent', () => {
   });
 
   it('debe retornar clases correctas en getReclamoStatusClasses', () => {
-    expect(component.getReclamoStatusClasses('APROBADA')).toContain('text-emerald-800');
-    expect(component.getReclamoStatusClasses('RECHAZADA')).toContain('text-red-800');
-    expect(component.getReclamoStatusClasses('PENDIENTE')).toContain('text-amber-800');
+    expect(component.getReclamoStatusClasses('APROBADA')).toContain('text-success-800');
+    expect(component.getReclamoStatusClasses('RECHAZADA')).toContain('text-danger-800');
+    expect(component.getReclamoStatusClasses('PENDIENTE')).toContain('text-warning-800');
   });
 
   it('debe renderizar sesiones e interactuar con startClaim y withdrawClaim', () => {

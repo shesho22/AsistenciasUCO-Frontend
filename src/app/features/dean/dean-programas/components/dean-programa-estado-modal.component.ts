@@ -16,7 +16,7 @@ import { ProgramaAcademico } from '../../../../core/models/programa-academico.mo
           <strong class="text-warm-900">{{ programa().nombre }}</strong>?
         </p>
         @if (error()) {
-          <p class="text-xs font-semibold text-red-600" role="alert">{{ error() }}</p>
+          <p class="text-xs font-semibold text-danger-600" role="alert">{{ error() }}</p>
         }
         <div class="flex justify-end gap-2">
           <button type="button" (click)="cancelar()" class="px-3.5 py-2 rounded-xl bg-warm-50 hover:bg-warm-100 text-xs font-semibold text-warm-700 border border-warm-200">

@@ -199,14 +199,14 @@ type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
                       <td class="px-5 py-4 text-xs text-warm-600">{{ rep.fechaEjecucion }}</td>
                       <td class="px-5 py-4 text-center font-bold text-warm-900">{{ rep.totalEstudiantesProcesados }}</td>
                       <td class="px-5 py-4 text-center text-warm-700">{{ rep.totalMateriasAfectadas }}</td>
-                      <td class="px-5 py-4 text-center font-bold text-emerald-700">
+                      <td class="px-5 py-4 text-center font-bold text-success-700">
                         {{ rep.totalAprobadosAsistencia }} ({{ ((rep.totalAprobadosAsistencia / rep.totalEstudiantesProcesados) * 100).toFixed(1) }}%)
                       </td>
-                      <td class="px-5 py-4 text-center font-bold text-red-600">
+                      <td class="px-5 py-4 text-center font-bold text-danger-600">
                         {{ rep.totalReprobadosFallas }} ({{ ((rep.totalReprobadosFallas / rep.totalEstudiantesProcesados) * 100).toFixed(1) }}%)
                       </td>
                       <td class="px-5 py-4 text-center">
-                        <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                        <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-success-100 text-success-800">
                           {{ rep.estado }}
                         </span>
                       </td>

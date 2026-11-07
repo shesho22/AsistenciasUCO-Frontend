@@ -53,7 +53,7 @@ export interface FilaCatalogo {
                 <td class="px-4 py-3">
                   <span
                     class="px-2 py-0.5 rounded-full text-xs font-bold"
-                    [class]="fila.activo ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'"
+                    [class]="fila.activo ? 'bg-success-100 text-success-800' : 'bg-danger-100 text-danger-800'"
                   >
                     {{ fila.activo ? 'Activo' : 'Inactivo' }}
                   </span>

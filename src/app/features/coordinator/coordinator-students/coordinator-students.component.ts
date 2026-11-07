@@ -37,7 +37,7 @@ type PestanaModulo = 'DIRECTORIO' | 'MATRICULA_GRUPO' | 'SOLICITUDES';
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
         <div>
           <div class="flex items-center gap-2 mb-1">
-            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-sky-50 text-sky-800 border border-sky-200">
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-info-50 text-info-800 border border-info-200">
               Coordinación de Programa
             </span>
             <span class="text-xs text-warm-400">•</span>
@@ -70,8 +70,8 @@ type PestanaModulo = 'DIRECTORIO' | 'MATRICULA_GRUPO' | 'SOLICITUDES';
         </div>
         <div class="bg-white p-4 rounded-2xl border border-warm-200 shadow-warm-sm">
           <span class="text-xs text-warm-500 font-medium">Activos en Página Actual</span>
-          <p class="text-2xl font-serif font-bold text-emerald-700 mt-1">{{ totalActivosPagina() }}</p>
-          <span class="text-[11px] text-emerald-700">Matrícula académica vigente</span>
+          <p class="text-2xl font-serif font-bold text-success-700 mt-1">{{ totalActivosPagina() }}</p>
+          <span class="text-[11px] text-success-700">Matrícula académica vigente</span>
         </div>
         <div class="bg-white p-4 rounded-2xl border border-warm-200 shadow-warm-sm">
           <span class="text-xs text-warm-500 font-medium">Inactivos en Página Actual</span>
@@ -152,7 +152,7 @@ type PestanaModulo = 'DIRECTORIO' | 'MATRICULA_GRUPO' | 'SOLICITUDES';
                 <div class="space-y-1 text-xs pt-1">
                   <div class="flex items-center justify-between">
                     <span class="text-warm-500">Estado Financiero</span>
-                    <span class="font-semibold text-emerald-700">Al Día</span>
+                    <span class="font-semibold text-success-700">Al Día</span>
                   </div>
                   <div class="flex items-center justify-between">
                     <span class="text-warm-500">Promedio Ponderado</span>

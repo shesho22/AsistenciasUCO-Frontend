@@ -60,7 +60,7 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
           <button
             type="button"
             (click)="removeSemester.emit()"
-            class="px-3 py-1.5 text-xs font-semibold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition-colors inline-flex items-center gap-1"
+            class="px-3 py-1.5 text-xs font-semibold text-danger-700 bg-danger-50 hover:bg-danger-100 border border-danger-200 rounded-xl transition-colors inline-flex items-center gap-1"
             title="Eliminar último semestre si no contiene asignaturas"
           >
             - Semestre Vacío
@@ -148,7 +148,7 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
                   <button
                     type="button"
                     (click)="deleteSubject.emit(asig)"
-                    class="p-1 text-warm-400 hover:text-red-700 rounded hover:bg-red-50"
+                    class="p-1 text-warm-400 hover:text-danger-700 rounded hover:bg-danger-50"
                     title="Desvincular del plan"
                   >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

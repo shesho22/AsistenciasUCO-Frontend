@@ -47,7 +47,7 @@ const ESTADOS: Record<EstadoPeriodoHistorial, { etiqueta: string; variante: Badg
 
         <div class="p-6 space-y-5 overflow-y-auto">
           @if (error()) {
-            <p role="alert" class="text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2">{{ error() }}</p>
+            <p role="alert" class="text-xs font-medium text-danger-700 bg-danger-50 border border-danger-200 rounded-xl px-3 py-2">{{ error() }}</p>
           }
 
           @if (resumen(); as r) {

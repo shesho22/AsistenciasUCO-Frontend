@@ -38,10 +38,10 @@ const CLASE_CONTROL =
           </label>
         </div>
         @if (numeroInvalido()) {
-          <p class="text-xs text-red-600" role="alert">El número de documento debe tener solo dígitos.</p>
+          <p class="text-xs text-danger-600" role="alert">El número de documento debe tener solo dígitos.</p>
         }
         @if (cambiaDocumento()) {
-          <p class="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2" data-testid="aviso-usuario">
+          <p class="text-xs text-warning-800 bg-warning-50 border border-warning-200 rounded-xl px-3 py-2" data-testid="aviso-usuario">
             El documento es el usuario con el que la persona inicia sesión: después de guardar entrará con el nuevo
             documento (o con su correo). La contraseña no cambia.
           </p>
@@ -55,7 +55,7 @@ const CLASE_CONTROL =
 
       @if (requiereMotivo()) {
         <label class="block text-xs font-semibold text-warm-700">
-          Motivo de la corrección <span class="text-red-600">*</span>
+          Motivo de la corrección <span class="text-danger-600">*</span>
           <textarea name="motivo" rows="2" maxlength="500" [ngModel]="motivo()" (ngModelChange)="motivo.set($event)"
             [class]="claseControl" data-testid="motivo-correccion"
             placeholder="Ej.: error de digitación al registrar el documento"></textarea>

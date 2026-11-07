@@ -44,7 +44,7 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
       </div>
 
       @if (seccionesConError().length > 0) {
-        <div class="rounded-2xl border border-red-200 bg-red-50 p-4 text-xs text-red-800" role="alert">
+        <div class="rounded-2xl border border-danger-200 bg-danger-50 p-4 text-xs text-danger-800" role="alert">
           <p class="font-semibold">No fue posible cargar: {{ seccionesConError().join(', ') }}.</p>
           <p class="mt-1">Las tarjetas afectadas muestran «—» en lugar de cero. Recargue la página o consulte con el administrador si persiste.</p>
         </div>
@@ -84,7 +84,7 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
             <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ areasTotal() }}</p>
             <span class="text-[11px] text-warm-500">Departamentos y núcleos</span>
           </div>
-          <div class="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
+          <div class="w-11 h-11 rounded-xl bg-success-50 text-success-700 flex items-center justify-center shrink-0">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
@@ -123,7 +123,7 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
           </div>
           <div class="flex justify-between">
             <span class="text-warm-500">Estado de Facultad:</span>
-            <span class="text-xs font-bold text-emerald-700">{{ estadoFacultad() }}</span>
+            <span class="text-xs font-bold text-success-700">{{ estadoFacultad() }}</span>
           </div>
         </div>
       </div>
@@ -182,7 +182,7 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
           <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm hover:border-primary-300 transition-all flex flex-col justify-between gap-4">
             <div class="space-y-2">
               <div class="flex items-center justify-between">
-                <span class="text-xs font-bold px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800">Calendario</span>
+                <span class="text-xs font-bold px-2.5 py-1 rounded-lg bg-success-50 text-success-800">Calendario</span>
                 <span class="text-xs font-mono font-bold text-warm-600">{{ periodosTotal() }} períodos</span>
               </div>
               <h3 class="font-serif font-bold text-base text-warm-900">Períodos Académicos</h3>

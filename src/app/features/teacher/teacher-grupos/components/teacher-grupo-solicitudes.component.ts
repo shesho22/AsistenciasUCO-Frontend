@@ -40,7 +40,7 @@ const MOTIVO_MAXIMO = 500;
         </div>
         <div class="flex items-center gap-3">
           @if (cupos(); as c) {
-            <span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+            <span class="px-3 py-1 rounded-full text-xs font-bold bg-success-100 text-success-800 border border-success-200">
               Cupos disponibles: {{ c.disponibles }} de {{ c.capacidad }}
             </span>
           }
@@ -71,7 +71,7 @@ const MOTIVO_MAXIMO = 500;
                 <p class="font-bold text-xs text-warm-900">{{ s.estudianteNombre }}</p>
                 <p class="text-[11px] font-mono text-warm-500">Doc / ID: {{ s.numeroIdentificacion ?? 'N/A' }}</p>
                 @if (s.motivoRechazo) {
-                  <p class="text-[11px] text-red-700">Motivo: {{ s.motivoRechazo }}</p>
+                  <p class="text-[11px] text-danger-700">Motivo: {{ s.motivoRechazo }}</p>
                 }
               </div>
               <div class="flex items-center gap-2">
@@ -84,7 +84,7 @@ const MOTIVO_MAXIMO = 500;
                     data-accion="aceptar"
                     [disabled]="procesando()"
                     (click)="aceptar(s)"
-                    class="px-2 py-1 text-[11px] font-semibold rounded-lg text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200"
+                    class="px-2 py-1 text-[11px] font-semibold rounded-lg text-primary-800 bg-primary-50 hover:bg-primary-100 border border-primary-200"
                   >
                     Aceptar
                   </button>
@@ -93,7 +93,7 @@ const MOTIVO_MAXIMO = 500;
                     data-accion="rechazar"
                     [disabled]="procesando()"
                     (click)="iniciarRechazo(s)"
-                    class="px-2 py-1 text-[11px] font-semibold rounded-lg text-red-700 bg-red-50 hover:bg-red-100 border border-red-200"
+                    class="px-2 py-1 text-[11px] font-semibold rounded-lg text-danger-700 bg-danger-50 hover:bg-danger-100 border border-danger-200"
                   >
                     Rechazar
                   </button>
@@ -101,7 +101,7 @@ const MOTIVO_MAXIMO = 500;
               </div>
             </div>
             @if (solicitudEnRechazo()?.id === s.id) {
-              <div class="p-3 rounded-xl border border-red-200 bg-red-50/40 space-y-2">
+              <div class="p-3 rounded-xl border border-danger-200 bg-danger-50/40 space-y-2">
                 <label class="flex flex-col gap-1 text-xs font-semibold text-warm-700">
                   Motivo del rechazo
                   <textarea
@@ -113,7 +113,7 @@ const MOTIVO_MAXIMO = 500;
                   ></textarea>
                 </label>
                 @if (errorRechazo()) {
-                  <p class="text-xs text-red-700">{{ errorRechazo() }}</p>
+                  <p class="text-xs text-danger-700">{{ errorRechazo() }}</p>
                 }
                 <div class="flex justify-end gap-2">
                   <button type="button" (click)="cancelarRechazo()" class="px-3 py-1 text-xs rounded-lg border border-warm-200">
@@ -124,7 +124,7 @@ const MOTIVO_MAXIMO = 500;
                     data-accion="confirmar-rechazo"
                     [disabled]="procesando()"
                     (click)="confirmarRechazo()"
-                    class="px-3 py-1 text-xs font-semibold rounded-lg text-white bg-red-700 hover:bg-red-800"
+                    class="px-3 py-1 text-xs font-semibold rounded-lg text-white bg-danger-700 hover:bg-danger-800"
                   >
                     Rechazar solicitud
                   </button>

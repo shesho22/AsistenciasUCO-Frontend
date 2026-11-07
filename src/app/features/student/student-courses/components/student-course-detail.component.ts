@@ -79,7 +79,7 @@ import { MotivosJustificacionComponent } from './motivos-justificacion.component
               </div>
               <div class="text-[11px] text-warm-500 space-y-0.5 border-t border-warm-200/80 pt-2">
                 <p>{{ ind.asistencias }} asistencias de {{ ind.totalClases }} clases</p>
-                <p class="text-red-700 font-semibold">{{ ind.inasistencias }} fallas registradas</p>
+                <p class="text-danger-700 font-semibold">{{ ind.inasistencias }} fallas registradas</p>
               </div>
             } @else {
               <div data-testid="detalle-asistencia-no-disponible">
@@ -116,7 +116,7 @@ import { MotivosJustificacionComponent } from './motivos-justificacion.component
             </div>
           } @else if (error()) {
             <div class="p-10 text-center space-y-3" role="alert" data-testid="sesiones-error">
-              <p class="text-sm font-bold text-red-800">{{ error()!.titulo }}</p>
+              <p class="text-sm font-bold text-danger-800">{{ error()!.titulo }}</p>
               <p class="text-xs text-warm-600">{{ error()!.mensaje }}</p>
               @if (error()!.kind !== 'IDENTIFICADOR') {
                 <app-button variant="secondary" size="sm" (clicked)="retry.emit()">Reintentar</app-button>
@@ -151,7 +151,7 @@ import { MotivosJustificacionComponent } from './motivos-justificacion.component
                       <div class="p-3 rounded-xl bg-warm-50 border border-warm-200 text-xs text-warm-700 mt-1 space-y-1">
                         <div class="flex items-center gap-2">
                           @if (sesion.categoriaReclamo) {
-                            <span class="px-2 py-0.5 rounded-md bg-amber-100/80 text-amber-900 font-semibold text-[11px]">
+                            <span class="px-2 py-0.5 rounded-md bg-warning-100/80 text-warning-900 font-semibold text-[11px]">
                               {{ sesion.categoriaReclamo }}
                             </span>
                           }
@@ -203,7 +203,7 @@ import { MotivosJustificacionComponent } from './motivos-justificacion.component
                         <button
                           type="button"
                           (click)="withdrawClaim.emit(sesion)"
-                          class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
+                          class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-danger-700 bg-danger-50 hover:bg-danger-100 border border-danger-200 rounded-lg transition-colors"
                           title="Retirar solicitud de revisión pendiente"
                         >
                           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -296,11 +296,11 @@ export class StudentCourseDetailComponent {
   getReclamoStatusClasses(estado: string): string {
     switch (estado) {
       case 'APROBADA':
-        return 'bg-emerald-50 text-emerald-800 border-emerald-200';
+        return 'bg-success-50 text-success-800 border-success-200';
       case 'RECHAZADA':
-        return 'bg-red-50 text-red-800 border-red-200';
+        return 'bg-danger-50 text-danger-800 border-danger-200';
       default:
-        return 'bg-amber-50 text-amber-800 border-amber-200';
+        return 'bg-warning-50 text-warning-800 border-warning-200';
     }
   }
 }

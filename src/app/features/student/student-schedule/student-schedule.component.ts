@@ -45,8 +45,8 @@ import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load
           }
         </div>
       } @else if (error()) {
-        <div class="bg-white p-8 rounded-2xl border border-red-200 text-center space-y-3" role="alert" data-testid="horarios-error">
-          <p class="text-sm font-bold text-red-800">{{ error()!.titulo }}</p>
+        <div class="bg-white p-8 rounded-2xl border border-danger-200 text-center space-y-3" role="alert" data-testid="horarios-error">
+          <p class="text-sm font-bold text-danger-800">{{ error()!.titulo }}</p>
           <p class="text-xs text-warm-600">{{ error()!.mensaje }}</p>
           <app-button variant="secondary" size="sm" (clicked)="cargarHorario()">Reintentar</app-button>
         </div>
@@ -152,10 +152,10 @@ export class StudentScheduleComponent implements OnInit {
   getClaseClasses(color: 'emerald' | 'amber' | 'blue' | 'purple'): string {
     const base = 'p-3 rounded-xl border text-warm-800 transition-all shadow-xs';
     const colorStyles = {
-      emerald: 'bg-emerald-50/80 border-emerald-200/90 hover:bg-emerald-100/70',
-      amber: 'bg-amber-50/80 border-amber-200/90 hover:bg-amber-100/70',
-      blue: 'bg-sky-50/80 border-sky-200/90 hover:bg-sky-100/70',
-      purple: 'bg-purple-50/80 border-purple-200/90 hover:bg-purple-100/70',
+      emerald: 'bg-success-50/80 border-success-200/90 hover:bg-success-100/70',
+      amber: 'bg-warning-50/80 border-warning-200/90 hover:bg-warning-100/70',
+      blue: 'bg-info-50/80 border-info-200/90 hover:bg-info-100/70',
+      purple: 'bg-category-50/80 border-category-200/90 hover:bg-category-100/70',
     }[color];
 
     return `${base} ${colorStyles}`;

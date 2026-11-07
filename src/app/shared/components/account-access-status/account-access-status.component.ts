@@ -58,7 +58,7 @@ const VARIANTS: Record<AccountAccessState, BadgeVariant> = {
           }
         }
         @if (error(); as mensaje) {
-          <p class="text-xs text-red-700" role="alert">{{ mensaje }}</p>
+          <p class="text-xs text-danger-700" role="alert">{{ mensaje }}</p>
         }
         @if (!loading() && (needsReconciliation() || error())) {
           <div>

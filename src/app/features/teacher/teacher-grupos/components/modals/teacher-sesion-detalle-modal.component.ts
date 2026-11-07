@@ -28,7 +28,7 @@ import { SessionTimeZoneService } from '../../../../../core/services/session-tim
             <h4 class="font-bold text-base text-warm-900">{{ sesion()?.title }}</h4>
             <div class="grid grid-cols-2 gap-2 pt-2 border-t border-warm-200/60 text-xs text-warm-700">
               @if (sesion()?.estadoTemporal === 'INDETERMINADA') {
-                <div class="col-span-2 text-amber-800"><strong>Horario:</strong> no confirmado</div>
+                <div class="col-span-2 text-warning-800"><strong>Horario:</strong> no confirmado</div>
               } @else {
                 <div><strong>Fecha:</strong> {{ timeZone.displaySessionDate(sesion()!) }}{{ timeZone.displaySessionEndDate(sesion()!) !== timeZone.displaySessionDate(sesion()!) ? ' – ' + timeZone.displaySessionEndDate(sesion()!) : '' }}</div>
                 <div><strong>Horario:</strong> {{ timeZone.displaySessionStartTime(sesion()!) }} - {{ timeZone.displaySessionEndTime(sesion()!) }}</div>
@@ -100,11 +100,11 @@ export class TeacherSesionDetalleModalComponent {
   statusBadgeClasses(status: ClassSession['records'][number]['status']): string {
     switch (status) {
       case 'AN':
-        return 'bg-emerald-100 text-emerald-800';
+        return 'bg-success-100 text-success-800';
       case 'SJC':
-        return 'bg-red-100 text-red-800';
+        return 'bg-danger-100 text-danger-800';
       case 'EX':
-        return 'bg-amber-100 text-amber-800';
+        return 'bg-warning-100 text-warning-800';
       default:
         return 'bg-warm-100 text-warm-700';
     }

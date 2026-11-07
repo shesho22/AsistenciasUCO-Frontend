@@ -90,10 +90,10 @@ const MAX_PAGINAS_SESIONES = 50;
         @if (cargandoSesiones()) {
           <div class="p-10 text-center text-sm text-warm-500" role="status">Cargando sesiones…</div>
         } @else if (errorSesiones() !== null) {
-          <div class="p-10 text-center text-sm text-red-700" role="alert">
+          <div class="p-10 text-center text-sm text-danger-700" role="alert">
             <p class="font-semibold">No fue posible cargar las sesiones del grupo.</p>
             <p class="text-xs mt-1">{{ errorSesiones() }}</p>
-            <button type="button" (click)="cargarSesiones()" class="mt-3 text-xs font-semibold px-3 py-1.5 rounded-lg border border-red-200 hover:bg-red-50">
+            <button type="button" (click)="cargarSesiones()" class="mt-3 text-xs font-semibold px-3 py-1.5 rounded-lg border border-danger-200 hover:bg-danger-50">
               Reintentar
             </button>
           </div>
@@ -117,7 +117,7 @@ const MAX_PAGINAS_SESIONES = 50;
                         {{ fecha(s.fechaHoraInicio).time }} - {{ fecha(s.fechaHoraFin).time }}
                       </span>
                     } @else {
-                      <span class="text-xs font-semibold text-amber-800">Horario no confirmado</span>
+                      <span class="text-xs font-semibold text-warning-800">Horario no confirmado</span>
                     }
                   </div>
                   <h3 class="font-bold text-sm text-warm-900">{{ s.nombre }}</h3>

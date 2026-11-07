@@ -21,10 +21,10 @@ const MAX_SEMESTRES = 10;
       @if (aviso(); as mensaje) {
         <div
           role="alert"
-          class="flex items-start justify-between gap-3 p-4 rounded-2xl border border-red-200 bg-red-50 text-sm text-red-800"
+          class="flex items-start justify-between gap-3 p-4 rounded-2xl border border-danger-200 bg-danger-50 text-sm text-danger-800"
         >
           <span>{{ mensaje }}</span>
-          <button type="button" (click)="aviso.set(null)" class="text-xs font-bold text-red-700 hover:text-red-900">✕</button>
+          <button type="button" (click)="aviso.set(null)" class="text-xs font-bold text-danger-700 hover:text-danger-900">✕</button>
         </div>
       }
       @if (selectedPlan(); as plan) {

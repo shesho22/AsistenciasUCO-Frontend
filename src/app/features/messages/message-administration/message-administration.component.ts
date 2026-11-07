@@ -13,6 +13,7 @@ import { mount, MessageAdminHandle, MessageAdminOptions } from 'minifront-mensaj
 import { AuthService } from '../../../core/services/auth.service';
 import { hasAnyRole } from '../../../core/models/user.model';
 import { environment } from '../../../../environments/environment';
+import { readDesignToken } from '../../../shared/utils/design-tokens';
 
 export type MessageAdminMount = (element: Element, options?: MessageAdminOptions) => MessageAdminHandle;
 
@@ -46,7 +47,7 @@ const ROUTE = '/app/admin/mensajes';
       }
 
       @if (state() === 'unauthorized' || state() === 'forbidden' || state() === 'error') {
-        <div class="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800" role="alert">
+        <div class="rounded-xl border border-danger-200 bg-danger-50 p-4 text-sm text-danger-800" role="alert">
           <p>{{ message() }}</p>
           <div class="mt-3 flex gap-2">
             @if (state() === 'unauthorized') {
@@ -55,7 +56,7 @@ const ROUTE = '/app/admin/mensajes';
               </button>
             }
             @if (state() !== 'forbidden') {
-              <button type="button" class="rounded-lg border border-rose-300 px-3 py-2 font-semibold" (click)="load()">
+              <button type="button" class="rounded-lg border border-danger-300 px-3 py-2 font-semibold" (click)="load()">
                 Reintentar
               </button>
             }
@@ -108,7 +109,7 @@ export class MessageAdministrationComponent implements AfterViewInit, OnDestroy 
         loginUrl: `${window.location.origin}/login`,
         lockContext: true,
         allowApplicationCreation: false,
-        theme: { accent: '#087443', radius: '12px' },
+        theme: { accent: readDesignToken('--color-primary-700'), radius: '12px' },
         onUnauthorized: () => this.fail('unauthorized', 'La sesión institucional no está activa o venció. Inicia sesión para continuar.'),
       });
       this.state.set('ready');

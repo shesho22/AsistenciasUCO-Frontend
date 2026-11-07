@@ -98,7 +98,7 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
                     <button
                       type="button"
                       (click)="toggleEstado.emit(plan)"
-                      [class]="plan.estado === 'VIGENTE' ? 'text-amber-700 hover:bg-amber-50' : 'text-emerald-700 hover:bg-emerald-50'"
+                      [class]="plan.estado === 'VIGENTE' ? 'text-warning-700 hover:bg-warning-50' : 'text-primary-700 hover:bg-primary-50'"
                       class="text-xs font-semibold px-2 py-1.5 rounded-lg transition-colors inline-flex items-center gap-1"
                       title="Cambiar estado activo/inactivo"
                     >

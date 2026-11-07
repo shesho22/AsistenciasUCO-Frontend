@@ -137,7 +137,7 @@ import { PerfilInstitucionalStore, TEXTO_SIN_REGISTRAR } from './perfil-instituc
 
                 <div class="flex items-center gap-2">
                   @if (isEditing()) {
-                    <span class="text-[11px] font-semibold text-amber-800 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
+                    <span class="text-[11px] font-semibold text-warning-800 bg-warning-50 px-2.5 py-1 rounded-full border border-warning-200">
                       Modo Edición
                     </span>
                     <app-button variant="ghost" size="sm" type="button" (click)="cancelEditing()">

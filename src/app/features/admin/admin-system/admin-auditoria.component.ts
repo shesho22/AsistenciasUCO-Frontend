@@ -86,7 +86,7 @@ export function rangoUtc(desde: string, hasta: string): { desde: string; hasta: 
       </div>
 
       @if (errorRango()) {
-        <p role="alert" class="text-sm text-red-700">{{ errorRango() }}</p>
+        <p role="alert" class="text-sm text-danger-700">{{ errorRango() }}</p>
       }
 
       <section class="bg-white border border-warm-200 rounded-2xl overflow-hidden shadow-warm-sm">
@@ -121,7 +121,7 @@ export function rangoUtc(desde: string, hasta: string): { desde: string; hasta: 
                         {{ e.resultado === 'SUCCESS' ? 'Exitoso' : 'Fallido' }}
                       </app-badge>
                       @if (e.codigoError) {
-                        <span class="block text-[10px] text-red-700 font-mono mt-0.5">{{ e.codigoError }}</span>
+                        <span class="block text-[10px] text-danger-700 font-mono mt-0.5">{{ e.codigoError }}</span>
                       }
                     </td>
                   </tr>

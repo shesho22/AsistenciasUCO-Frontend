@@ -44,7 +44,7 @@ const PIN_SEIS_DIGITOS = /^[0-9]{6}$/;
               class="w-full text-center font-mono font-bold text-2xl tracking-widest py-3 bg-warm-50 border-2 border-warm-300 rounded-2xl focus:outline-none focus:border-primary-600"
             />
             @if (mensaje()) {
-              <p class="text-sm text-red-800 bg-red-50 border border-red-200 rounded-xl p-3" role="alert" data-testid="matricula-mensaje">{{ mensaje() }}</p>
+              <p class="text-sm text-danger-800 bg-danger-50 border border-danger-200 rounded-xl p-3" role="alert" data-testid="matricula-mensaje">{{ mensaje() }}</p>
             }
             <button type="submit" [disabled]="!pinValido()" class="w-full py-2.5 text-sm font-bold text-white bg-primary-700 hover:bg-primary-800 disabled:opacity-50 rounded-xl">
               Continuar
@@ -57,7 +57,7 @@ const PIN_SEIS_DIGITOS = /^[0-9]{6}$/;
         @case ('CURSO') {
           @if (curso(); as c) {
             <div class="space-y-4" data-testid="matricula-curso">
-              <div class="rounded-xl bg-emerald-50 border border-emerald-200 p-4 text-sm text-emerald-900 space-y-1">
+              <div class="rounded-xl bg-success-50 border border-success-200 p-4 text-sm text-success-900 space-y-1">
                 <p class="font-bold">{{ c.nombreAsignatura }} — {{ c.nombreGrupo }}</p>
                 <p>Docente: {{ c.nombreDocente }}</p>
                 <p>Cupos disponibles: {{ c.cupoDisponible }}</p>
@@ -89,14 +89,14 @@ const PIN_SEIS_DIGITOS = /^[0-9]{6}$/;
             <input name="correo" type="email" placeholder="Correo institucional" autocomplete="email" [ngModel]="correo()" (ngModelChange)="correo.set($event)" class="w-full px-3 py-2 border border-warm-300 rounded-xl text-sm" />
             <input name="password" type="password" placeholder="Contraseña (mínimo 8 caracteres)" autocomplete="new-password" [ngModel]="password()" (ngModelChange)="password.set($event)" class="w-full px-3 py-2 border border-warm-300 rounded-xl text-sm" />
             @if (password() !== '' && !passwordLongitudValida()) {
-              <p class="text-xs text-red-700" role="alert" data-testid="matricula-password-corta">La contraseña debe tener al menos 8 caracteres.</p>
+              <p class="text-xs text-danger-700" role="alert" data-testid="matricula-password-corta">La contraseña debe tener al menos 8 caracteres.</p>
             }
             <input name="confirmarPassword" type="password" placeholder="Confirmar contraseña" autocomplete="new-password" aria-label="Confirmar contraseña" [ngModel]="confirmarPassword()" (ngModelChange)="confirmarPassword.set($event)" class="w-full px-3 py-2 border border-warm-300 rounded-xl text-sm" />
             @if (confirmarPassword() !== '' && !passwordsCoinciden()) {
-              <p class="text-xs text-red-700" role="alert" data-testid="matricula-password-no-coincide">Las contraseñas no coinciden.</p>
+              <p class="text-xs text-danger-700" role="alert" data-testid="matricula-password-no-coincide">Las contraseñas no coinciden.</p>
             }
             @if (mensaje()) {
-              <p class="text-sm text-red-800 bg-red-50 border border-red-200 rounded-xl p-3" role="alert" data-testid="matricula-mensaje">{{ mensaje() }}</p>
+              <p class="text-sm text-danger-800 bg-danger-50 border border-danger-200 rounded-xl p-3" role="alert" data-testid="matricula-mensaje">{{ mensaje() }}</p>
               <button type="button" (click)="yaTengoCuenta()" class="text-xs font-semibold text-primary-700 hover:underline">Ya tengo cuenta</button>
             }
             <button type="submit" [disabled]="!formularioCompleto()" data-testid="matricula-enviar" class="w-full py-2.5 text-sm font-bold text-white bg-primary-700 hover:bg-primary-800 disabled:opacity-50 rounded-xl">
@@ -109,10 +109,10 @@ const PIN_SEIS_DIGITOS = /^[0-9]{6}$/;
         }
         @case ('EXITO') {
           <div class="space-y-3 text-center" data-testid="matricula-exito">
-            <p class="text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-xl p-3">
+            <p class="text-sm text-success-800 bg-success-50 border border-success-200 rounded-xl p-3">
               Quedaste matriculado en el grupo. Inicia sesión con tu número de documento <strong>{{ usuario() }}</strong>.
             </p>
-            <div role="status" data-testid="matricula-verificar-correo" class="text-left text-sm text-amber-900 bg-amber-50 border border-amber-300 rounded-xl p-3 space-y-1">
+            <div role="status" data-testid="matricula-verificar-correo" class="text-left text-sm text-warning-900 bg-warning-50 border border-warning-300 rounded-xl p-3 space-y-1">
               <p class="font-bold">Verifica tu correo para activar tu cuenta</p>
               <p>
                 Te enviamos un enlace de verificación a <strong>{{ correoRegistrado() }}</strong>. Debes abrirlo antes de iniciar sesión: mientras no verifiques tu correo no podrás ingresar.
@@ -124,7 +124,7 @@ const PIN_SEIS_DIGITOS = /^[0-9]{6}$/;
         }
         @case ('ERROR') {
           <div class="space-y-3 text-center" role="alert" data-testid="matricula-error">
-            <p class="text-sm text-red-800 bg-red-50 border border-red-200 rounded-xl p-3">{{ mensaje() }}</p>
+            <p class="text-sm text-danger-800 bg-danger-50 border border-danger-200 rounded-xl p-3">{{ mensaje() }}</p>
             <a routerLink="/matricula/pin" (click)="reiniciar()" class="inline-block text-sm font-semibold text-primary-600 hover:underline">Escribir el PIN</a>
           </div>
         }
