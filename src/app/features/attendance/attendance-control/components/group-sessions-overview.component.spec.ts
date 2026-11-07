@@ -60,18 +60,6 @@ describe('GroupSessionsOverviewComponent', () => {
     expect(text).not.toContain('0% Institucional');
   });
 
-  it('con registros calcula el promedio real', () => {
-    const component = render([
-      session(1, [
-        { studentId: 'e1', status: 'AN' },
-        { studentId: 'e2', status: 'SJC' },
-      ] as ClassSession['records']),
-    ]);
-
-    expect(component.promedioAsistencia()).toBe(50);
-    expect((fixture.nativeElement as HTMLElement).textContent).toContain('50%');
-  });
-
   describe('SES-05: EX es una ausencia justificada, no una asistencia presencial', () => {
     const conJustificada = () =>
       session(1, [
@@ -120,14 +108,6 @@ describe('GroupSessionsOverviewComponent', () => {
       const celda = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="asistentes-sesion-1"]');
       expect(celda?.textContent).not.toContain('justificada');
     });
-
-    // Fórmula oficial PENDIENTE DE DECISIÓN FUNCIONAL: hoy el promedio suma EX con AN. Esta prueba fija el
-    // comportamiento vigente para que el cambio de política sea explícito (debe cambiarse junto con la decisión).
-    it('el promedio conserva la fórmula vigente (AN + EX) hasta que exista la decisión académica', () => {
-      const component = render([conJustificada()]);
-
-      expect(component.promedioAsistencia()).toBe(67);
-    });
   });
 
   it('muestra las dos sesiones y el grupo sin código ni separador huérfano', () => {
@@ -148,7 +128,7 @@ describe('GroupSessionsOverviewComponent', () => {
     expect(emitido).toBeTrue();
   });
 
-  it('B1-F-14 las sesiones canceladas no cuentan en el total ni en el denominador de riesgo', () => {
+  it('B1-F-14 las sesiones canceladas no cuentan en el total', () => {
     const cancelada: ClassSession = { ...session(3), estado: 'CANCELADA' };
     const component = render([
       session(1, [{ studentId: 'e1', status: 'SJC' }] as ClassSession['records']),
@@ -157,8 +137,6 @@ describe('GroupSessionsOverviewComponent', () => {
     ]);
 
     expect(component.totalSesiones()).toBe(2);
-    // 1 falta de 2 sesiones vigentes = 50 % >= 20 %; con la cancelada seria 33 % (también en riesgo), por eso se afirma el total.
-    expect(component.estudiantesEnRiesgo()).toBe(1);
   });
 
   it('B1-F-14 una sesión cancelada se muestra con la etiqueta Cancelada en el listado', () => {

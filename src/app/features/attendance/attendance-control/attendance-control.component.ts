@@ -43,6 +43,8 @@ import { TomaModoSelectorComponent } from './components/toma-modo-selector.compo
 import { TomaCierreDialogComponent } from './components/toma-cierre-dialog.component';
 import { TomaFaltantesComponent } from './components/toma-faltantes.component';
 import { TomaQrProyeccionComponent } from './components/toma-qr-proyeccion.component';
+import { TeacherAttendanceSummaryService } from '../../../core/services/teacher-attendance-summary.service';
+import { ResumenAsistenciaEstudiante } from '../../../core/models/indicadores-asistencia.model';
 import { TomaAsistenciaService } from '../../../core/services/toma-asistencia.service';
 import { AsistenciaQrService } from '../../../core/services/asistencia-qr.service';
 import { ModoToma, TomaAsistencia, TomasSesion } from '../../../core/models/toma-asistencia.model';
@@ -138,6 +140,7 @@ type StudentEnrollmentField =
         <app-group-sessions-overview
           [course]="currentCourse()"
           [sessions]="sessions()"
+          [resumen]="resumenGrupo()"
           [totalReclamosPendientes]="pendingClaimsCount()"
           (selectSession)="irASesionDetalle($event)"
           (openNewSession)="openNewSessionModal()"
@@ -286,6 +289,7 @@ export class AttendanceControlComponent {
   private studentRegistrationConfig = inject(StudentRegistrationConfigService);
   private emailVerification = inject(EmailVerificationService);
   private tomaService = inject(TomaAsistenciaService);
+  private resumenService = inject(TeacherAttendanceSummaryService);
   private qrService = inject(AsistenciaQrService);
   emailDomain = signal<string>('');
   resendingStudentId = signal<string>('');
@@ -321,6 +325,8 @@ export class AttendanceControlComponent {
 
   // CULM-001 B.2: tomas de la sesión, proyección del QR y faltantes.
   tomasSesion = signal<TomasSesion | null>(null);
+  /** Resumen por horas del grupo (backend): alimenta los KPIs de la panorámica. */
+  resumenGrupo = signal<ResumenAsistenciaEstudiante[]>([]);
   abriendoToma = signal<boolean>(false);
   modoSelectorAbierto = signal<boolean>(false);
   cierrePendiente = signal<boolean>(false);
@@ -458,6 +464,15 @@ export class AttendanceControlComponent {
     const courseId = this.selectedCourseId();
     const sessionId = this.selectedSessionId();
     if (courseId && sessionId) this.cargarEstudiantesYSesion(courseId, sessionId);
+  }
+
+  private cargarResumenGrupo(courseId: string): void {
+    this.resumenService.consultarResumen(courseId, 1, 200).subscribe({
+      next: (res) => {
+        if (this.selectedCourseId() === courseId) this.resumenGrupo.set(res.elementos);
+      },
+      error: () => this.resumenGrupo.set([]),
+    });
   }
 
   private cargarTomas(sesionId: string): void {
@@ -1126,6 +1141,8 @@ export class AttendanceControlComponent {
     this.vistaActual.set(initialSessionId ? 'DETALLE' : 'OVERVIEW');
     if (courseId) {
       this.attendanceRealtimeSync.connectGroup(courseId);
+      this.resumenGrupo.set([]);
+      this.cargarResumenGrupo(courseId);
       this.cargarReclamosDocente(courseId);
     }
 

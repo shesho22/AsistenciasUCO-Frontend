@@ -1,14 +1,20 @@
-import { Component, ChangeDetectionStrategy, input, inject, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, DestroyRef, input, inject, computed, effect, signal, untracked } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ClassSession } from '../../../../core/models/attendance.model';
 import { estaCancelada } from '../../../../core/models/sesion-estado.model';
 import { SessionTimeZoneService } from '../../../../core/services/session-timezone.service';
+import { TeacherAttendanceSummaryService } from '../../../../core/services/teacher-attendance-summary.service';
+import { ResumenAsistenciaEstudiante } from '../../../../core/models/indicadores-asistencia.model';
+import { AttendanceStatusBadgeComponent } from '../../../../shared/components/attendance-status-badge/attendance-status-badge.component';
+import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
+import { getApiErrorMessage } from '../../../../core/api/errors/api-error.util';
 
 @Component({
   selector: 'app-teacher-grupo-sabana',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule],
+  imports: [CommonModule, AttendanceStatusBadgeComponent, PaginationComponent],
   template: `
     <div class="bg-white rounded-b-2xl border-x border-b border-warm-200 shadow-warm-sm p-6 space-y-6">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-warm-100">
@@ -18,7 +24,7 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
               Sábana Académica Institucional
             </span>
             <span class="text-xs text-warm-400">•</span>
-            <span class="text-xs font-semibold text-warm-600">Regla Oficial UCO 20% Inasistencias</span>
+            <span class="text-xs font-semibold text-warm-600">Inasistencia calculada por horas</span>
           </div>
           <h3 class="font-serif font-bold text-xl text-warm-900">Matriz General de Asistencia Semestral</h3>
           <p class="text-xs text-warm-500">
@@ -40,10 +46,6 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
             <span class="w-3 h-3 rounded-full bg-danger-500 inline-block"></span>
             Falta Injustificada (SJC)
           </span>
-          <span class="text-warm-300">|</span>
-          <span class="text-[11px] font-bold text-danger-700 bg-danger-100 px-2 py-0.5 rounded-md">
-            ≥20% = Pérdida de Asignatura
-          </span>
         </div>
       </div>
 
@@ -62,6 +64,11 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
           <p class="text-sm font-medium">No se han programado sesiones lectivas para este grupo todavía.</p>
         </div>
       } @else {
+        @if (errorResumen()) {
+          <p class="rounded-xl bg-danger-100 text-danger-900 px-4 py-2 text-sm font-medium" role="alert" data-testid="sabana-resumen-error">
+            {{ errorResumen() }}
+          </p>
+        }
         <!-- Tabla Matriz con Scroll Horizontal Fluido -->
         <div class="overflow-x-auto border border-warm-200 rounded-2xl shadow-xs">
           <table class="w-full text-left border-collapse text-xs">
@@ -92,8 +99,8 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
                     ></span>
                   </th>
                 }
-                <th class="p-3 text-center bg-warm-200/60 font-bold min-w-[80px] border-r border-warm-200">
-                  Inasistencias (SJC)
+                <th class="p-3 text-center bg-warm-200/60 font-bold min-w-[110px] border-r border-warm-200">
+                  Horas de falta
                 </th>
                 <th class="p-3 text-center bg-warm-200/60 font-bold min-w-[90px] border-r border-warm-200">
                   % Inasistencia
@@ -105,7 +112,7 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
             </thead>
             <tbody class="divide-y divide-warm-100 bg-white">
               @for (est of estudiantes(); track est.studentId || est.id) {
-                <tr class="hover:bg-warm-50/60 transition-colors">
+                <tr class="hover:bg-warm-50/60 transition-colors" [attr.data-testid]="'sabana-resumen-' + (est.studentId || est.id)">
                   <!-- Nombre Estudiante Sticky -->
                   <td class="p-3.5 sticky left-0 z-10 bg-white group-hover:bg-warm-50/60 border-r border-warm-200 font-medium text-warm-900 shadow-xs">
                     <div class="font-bold text-xs">{{ est.studentName || est.nombres + ' ' + est.apellidos }}</div>
@@ -140,34 +147,19 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
                     </td>
                   }
 
-                  <!-- Inasistencias Acumuladas -->
+                  <!-- Resumen por horas: lo calcula el backend; aquí solo se pinta -->
+                  @let r = resumenDe(est.studentId || est.id);
                   <td class="p-3 text-center font-mono font-bold text-xs text-warm-800 bg-warm-50/40 border-r border-warm-100">
-                    {{ getFaltasSjcEstudiante(est.studentId || est.id) }} / {{ sesionesVigentes().length }}
+                    {{ r ? r.horasFalta + ' / ' + r.horasDictadas + ' h' : '—' }}
                   </td>
-
-                  <!-- Porcentaje UCO -->
-                  <td class="p-3 text-center font-mono font-bold text-xs border-r border-warm-100 bg-warm-50/40"
-                    [class]="getPorcentajeFaltasEstudiante(est.studentId || est.id) >= 20 ? 'text-danger-700' : (getPorcentajeFaltasEstudiante(est.studentId || est.id) >= 10 ? 'text-warning-700' : 'text-success-700')">
-                    {{ getPorcentajeFaltasEstudiante(est.studentId || est.id) }}%
+                  <td class="p-3 text-center font-mono font-bold text-xs border-r border-warm-100 bg-warm-50/40">
+                    {{ r ? r.porcentajeInasistencia + '%' : '—' }}
                   </td>
-
-                  <!-- Estado Académico UCO -->
                   <td class="p-3 text-center bg-warm-50/40">
-                    @if (getPorcentajeFaltasEstudiante(est.studentId || est.id) >= 20) {
-                      <span class="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold rounded-full bg-danger-100 text-danger-800 border border-danger-200">
-                        <svg class="w-3 h-3 text-danger-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
-                        Reprobado (20%)
-                      </span>
-                    } @else if (getPorcentajeFaltasEstudiante(est.studentId || est.id) >= 10) {
-                      <span class="px-2.5 py-1 text-[10px] font-bold rounded-full bg-warning-100 text-warning-800 border border-warning-200">
-                        Alerta de Riesgo
-                      </span>
+                    @if (r) {
+                      <app-attendance-status-badge [codigoPermanencia]="r.codigoPermanencia" />
                     } @else {
-                      <span class="px-2.5 py-1 text-[10px] font-bold rounded-full bg-success-100 text-success-800 border border-success-200">
-                        Regular Normal
-                      </span>
+                      <span class="text-warm-300 font-mono text-xs">—</span>
                     }
                   </td>
                 </tr>
@@ -175,18 +167,68 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
             </tbody>
           </table>
         </div>
+        <app-pagination
+          [totalItems]="totalResumen()"
+          [pageSize]="tamano"
+          [currentPage]="pagina()"
+          [showPageSizeSelector]="false"
+          (pageChange)="cambiarPagina($event)"
+        />
       }
     </div>
   `,
 })
 export class TeacherGrupoSabanaComponent {
   readonly timeZone = inject(SessionTimeZoneService);
+  private readonly resumenService = inject(TeacherAttendanceSummaryService);
+  private readonly destroyRef = inject(DestroyRef);
+
+  grupoId = input<string>('');
   estudiantes = input<any[]>([]);
   sessions = input<ClassSession[]>([]);
   cargando = input<boolean>(false);
   protected esCancelada = estaCancelada;
-  /** Una sesión cancelada no cuenta como clase dictada: el cálculo definitivo lo entrega el backend (B.2). */
-  protected sesionesVigentes = computed(() => this.sessions().filter((s) => !estaCancelada(s)));
+
+  protected readonly tamano = 50;
+  protected readonly pagina = signal(1);
+  protected readonly totalResumen = signal(0);
+  protected readonly errorResumen = signal<string | null>(null);
+  private readonly resumenes = signal<ReadonlyMap<string, ResumenAsistenciaEstudiante>>(new Map());
+  protected readonly hayResumen = computed(() => this.resumenes().size > 0);
+
+  constructor() {
+    effect(() => {
+      const grupo = this.grupoId();
+      untracked(() => {
+        this.pagina.set(1);
+        if (grupo) this.cargarResumen(grupo);
+      });
+    });
+  }
+
+  /** El resumen (horas, % de inasistencia y semaforo) lo calcula el backend; el cliente no recalcula nada. */
+  protected resumenDe(estudianteId: string): ResumenAsistenciaEstudiante | undefined {
+    return this.resumenes().get(estudianteId);
+  }
+
+  protected cambiarPagina(pagina: number): void {
+    this.pagina.set(pagina);
+    this.cargarResumen(this.grupoId());
+  }
+
+  private cargarResumen(grupo: string): void {
+    this.errorResumen.set(null);
+    this.resumenService
+      .consultarResumen(grupo, this.pagina(), this.tamano)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (respuesta) => {
+          this.resumenes.set(new Map(respuesta.elementos.map((r) => [r.estudianteId, r])));
+          this.totalResumen.set(respuesta.totalElementos);
+        },
+        error: (err: unknown) => this.errorResumen.set(getApiErrorMessage(err)),
+      });
+  }
 
   displayDate(session: ClassSession): string {
     return session.estadoTemporal === 'INDETERMINADA'
@@ -200,25 +242,5 @@ export class TeacherGrupoSabanaComponent {
     }
     const rec = sesion.records.find((r) => r.studentId === estudianteId);
     return rec?.status ?? '—';
-  }
-
-  getFaltasSjcEstudiante(estudianteId: string): number {
-    const list = this.sesionesVigentes();
-    if (!list || list.length === 0) return 0;
-    let faltas = 0;
-    for (const ses of list) {
-      const estado = this.getAsistenciaEstudianteEnSesion(estudianteId, ses);
-      if (estado === 'SJC') {
-        faltas++;
-      }
-    }
-    return faltas;
-  }
-
-  getPorcentajeFaltasEstudiante(estudianteId: string): number {
-    const total = this.sesionesVigentes().length;
-    if (total === 0) return 0;
-    const faltas = this.getFaltasSjcEstudiante(estudianteId);
-    return Math.round((faltas / total) * 100);
   }
 }

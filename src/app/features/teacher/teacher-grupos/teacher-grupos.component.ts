@@ -235,7 +235,6 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.cancelarCargaReclamosGrupo();
-    this.detenerTimerQr();
     this.detenerEscuchaCancelaciones();
   }
 
@@ -319,7 +318,6 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
     this.detenerEscuchaCancelaciones();
     this.vistaActual.set('LISTA');
     this.selectedCourse.set(null);
-    this.detenerTimerQr();
   }
 
   cargarSesiones(courseId: string): void {

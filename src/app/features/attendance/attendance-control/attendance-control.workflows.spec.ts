@@ -1,4 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { TeacherAttendanceSummaryService } from '../../../core/services/teacher-attendance-summary.service';
 import { TomaAsistenciaService } from '../../../core/services/toma-asistencia.service';
 import { AsistenciaQrService } from '../../../core/services/asistencia-qr.service';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
@@ -133,6 +134,7 @@ describe('AttendanceControlComponent public workflows', () => {
         { provide: StudentService, useValue: studentService },
         { provide: AttendanceService, useValue: attendanceService },
         { provide: TomaAsistenciaService, useValue: { consultarTomas: () => NEVER, abrirToma: () => NEVER, cerrarToma: () => NEVER, registrarAsistencias: () => NEVER, consultarFaltantes: () => NEVER } },
+        { provide: TeacherAttendanceSummaryService, useValue: { consultarResumen: () => NEVER } },
         { provide: AsistenciaQrService, useValue: { abrirQr: () => NEVER, rotarQr: () => NEVER, cerrarQr: () => NEVER } },
         { provide: AttendanceClaimService, useValue: attendanceClaimService },
         {

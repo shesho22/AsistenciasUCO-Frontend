@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { TeacherAttendanceSummaryService } from '../../../core/services/teacher-attendance-summary.service';
 import { NEVER, Subject, of, throwError } from 'rxjs';
 import { AttendanceService } from '../../../core/services/attendance.service';
 import { CatalogService } from '../../../core/services/catalog.service';
@@ -111,6 +112,7 @@ describe('AttendanceControlComponent tomas (CULM-001 B.2)', () => {
         { provide: StudentRegistrationConfigService, useValue: { getEmailDomain: () => of('') } },
         { provide: EmailVerificationService, useValue: { resendVerification: () => NEVER } },
         { provide: TomaAsistenciaService, useValue: tomaService },
+        { provide: TeacherAttendanceSummaryService, useValue: { consultarResumen: () => NEVER } },
         { provide: AsistenciaQrService, useValue: qrService },
         { provide: RealtimeService, useValue: { startForGroup: () => undefined, listenType: () => NEVER, connectionState$: NEVER } },
         { provide: ATTENDANCE_NOW, useValue: () => nowMs },

@@ -1,6 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { TeacherGrupoSabanaComponent } from './teacher-grupo-sabana.component';
+import { NEVER } from 'rxjs';
+import { TeacherAttendanceSummaryService } from '../../../../core/services/teacher-attendance-summary.service';
 import { ClassSession } from '../../../../core/models/attendance.model';
 
 // LB-001B.1B (DB source of truth cleanup, PLAN.md AS-IS #25): el indicador visual por
@@ -25,6 +27,7 @@ describe('TeacherGrupoSabanaComponent', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [TeacherGrupoSabanaComponent],
+      providers: [{ provide: TeacherAttendanceSummaryService, useValue: { consultarResumen: () => NEVER } }],
     });
     fixture = TestBed.createComponent(TeacherGrupoSabanaComponent);
     fixture.componentRef.setInput('estudiantes', [
@@ -70,17 +73,6 @@ describe('TeacherGrupoSabanaComponent', () => {
       ) as HTMLElement;
       expect(celda.className).toContain('opacity-');
       expect(celda.textContent?.trim()).toBe('—');
-    });
-
-    it('B1-F-13 la sesión cancelada no diluye el porcentaje local (no cuenta en el denominador)', () => {
-      const component = fixture.componentInstance;
-      fixture.componentRef.setInput('sessions', [
-        { ...session, records: [{ studentId: 'st-1', studentName: 'Ada', studentCode: '1', status: 'SJC' }] },
-        cancelada,
-      ]);
-      fixture.detectChanges();
-
-      expect(component.getPorcentajeFaltasEstudiante('st-1')).toBe(100);
     });
   });
 });

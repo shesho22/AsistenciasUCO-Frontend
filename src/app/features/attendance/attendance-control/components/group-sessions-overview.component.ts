@@ -1,3 +1,4 @@
+import { ResumenAsistenciaEstudiante } from '../../../../core/models/indicadores-asistencia.model';
 import { Component, ChangeDetectionStrategy, input, output, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
@@ -63,7 +64,7 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
               }
             </div>
             <p class="text-[11px] text-warm-500 mt-1">
-              {{ promedioAsistencia() === null ? 'Sin registros de asistencia para calcular' : 'Promedio de registros en actas' }}
+              {{ promedioAsistencia() === null ? 'Sin registros de asistencia para calcular' : 'Promedio por horas del grupo' }}
             </p>
           </div>
         </div>
@@ -85,7 +86,7 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
               </span>
               <span class="text-xs text-warning-800 font-semibold">Alumnos</span>
             </div>
-            <p class="text-[11px] text-warning-700 mt-1">Cercanos o superiores al límite del 20%</p>
+            <p class="text-[11px] text-warning-700 mt-1">En riesgo o con pérdida por inasistencia (horas)</p>
           </div>
         </div>
 
@@ -341,39 +342,20 @@ export class GroupSessionsOverviewComponent {
 
   totalSesiones = computed(() => this.vigentes().length);
 
+  /** CULM-001 B.2 (F-DOC-004): resumen por horas del grupo, entregado por el backend. */
+  resumen = input<ResumenAsistenciaEstudiante[]>([]);
+
+  /** Promedio de `porcentajeAsistencia` de filas ya calculadas por el backend; el cliente no aplica reglas de negocio. */
   promedioAsistencia = computed(() => {
-    // Solo cuentan los estudiantes con estado registrado: una fila sin estado no es una inasistencia.
-    const registrados = (s: ClassSession) => (s.records ?? []).filter((r) => r.status !== null);
-    const conRegistros = this.vigentes().filter((s) => registrados(s).length > 0);
-    if (conRegistros.length === 0) return null;
-    let sumPorcentajes = 0;
-    for (const s of conRegistros) {
-      const delSesion = registrados(s);
-      const presentes = delSesion.filter((r) => r.status === 'AN' || r.status === 'EX').length;
-      sumPorcentajes += (presentes / delSesion.length) * 100;
-    }
-    return Math.round(sumPorcentajes / conRegistros.length);
+    const filas = this.resumen();
+    if (filas.length === 0) return null;
+    return Math.round(filas.reduce((suma, r) => suma + r.porcentajeAsistencia, 0) / filas.length);
   });
 
-  estudiantesEnRiesgo = computed(() => {
-    const total = this.totalSesiones();
-    if (total === 0) return 0;
-    const faltasPorEstudiante = new Map<string, number>();
-    for (const s of this.vigentes()) {
-      if (s.records) {
-        for (const r of s.records) {
-          if (r.status === 'SJC') {
-            faltasPorEstudiante.set(r.studentId, (faltasPorEstudiante.get(r.studentId) || 0) + 1);
-          }
-        }
-      }
-    }
-    let enRiesgo = 0;
-    faltasPorEstudiante.forEach((faltas) => {
-      if ((faltas / total) >= 0.2) enRiesgo++;
-    });
-    return enRiesgo;
-  });
+  /** Cantidad de estudiantes con `codigoPermanencia` RIESGO o PERDIDA en el resumen. */
+  estudiantesEnRiesgo = computed(
+    () => this.resumen().filter((r) => r.codigoPermanencia === 'RIESGO' || r.codigoPermanencia === 'PERDIDA').length
+  );
 
   sesionRecomendada = computed(() => {
     return findActiveOrUpcomingSession(this.sessions());
