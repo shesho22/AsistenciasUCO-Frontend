@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
@@ -498,6 +498,35 @@ describe('AdminEmailManagementComponent', () => {
       expect(component.safeHtmlPreview()).toBe('');
       component.vistaPrevia.set({ asunto: 'a', textoPlano: 'b', html: '<p>hola</p>', origen: 'preview' });
       expect(component.safeHtmlPreview()).toBe('<p>hola</p>');
+    });
+  });
+
+  describe('F-ADM-010 / F-ADM-018 / F-ADM-S17', () => {
+    it('un error HTTP con message del backend se muestra tal cual, no el texto fijo', () => {
+      notificationServiceSpy.consultarCola.and.returnValue(
+        throwError(() => new HttpErrorResponse({ status: 500, error: { code: 'INTERNAL_ERROR', message: 'La cola está en mantenimiento.' } })),
+      );
+      component.cargarCola();
+      expect(toastServiceSpy.error).toHaveBeenCalledWith('La cola está en mantenimiento.');
+    });
+
+    it('no expone jerga interna (ids de deuda tecnica, puertos ni variables de entorno)', () => {
+      for (const tab of ['PLANTILLAS', 'COLA_OUTBOX', 'CANAL_SMTP'] as const) {
+        component.tabActiva.set(tab);
+        fixture.detectChanges();
+        const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
+        for (const jerga of ['NOTIF-', 'TD-0', 'ADR-', 'NotificacionPort', 'OUTBOX_NOTIFICATION_SENDER', 'SmtpNotificacionChannelSender', 'Clean Architecture']) {
+          expect(texto).not.toContain(jerga);
+        }
+      }
+    });
+
+    it('la cola usa el paginador compartido', () => {
+      component.tabActiva.set('COLA_OUTBOX');
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('app-pagination')).toBeTruthy();
+      expect(el.textContent).not.toContain('Pág.');
     });
   });
 });

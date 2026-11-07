@@ -551,12 +551,12 @@ export class AdminDecanosComponent implements OnInit {
         this.isLoading.set(false);
         advertirRegistroNoListado(datos, identidadEsperada, (aviso) => this.toast.warning(aviso));
       },
-      error: () => {
+      error: (err) => {
         if (!this.ultimaPeticionDecanos.esVigente(peticion)) {
           return;
         }
         this.isLoading.set(false);
-        this.toast.error('Error al cargar la lista de decanos.');
+        this.toast.error(getApiErrorMessage(err));
       },
     });
   }
