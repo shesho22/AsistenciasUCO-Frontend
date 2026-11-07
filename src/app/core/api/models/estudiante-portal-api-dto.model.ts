@@ -1,3 +1,4 @@
+import { CancelacionSesion, EstadoSesion } from '../../models/sesion-estado.model';
 /**
  * DTO HTTP reales del portal estudiantil (`/api/v1/estudiante/**`).
  * Espejo de los records Java vigentes en el backend; no se agregan campos que el backend no entrega.
@@ -44,13 +45,17 @@ export interface SesionMateriaEstudianteApiDto {
   id: string;
   nombre: string;
   numero: number;
-  codigo: string;
+  /** CULM-001 B.1 (SUPUESTO-B-18): el backend ya no entrega el codigo de la sesion al estudiante (no es credencial). */
+  codigo?: string | null;
   numeroSemana: number;
   idGrupo: string;
   codigoGrupo: string;
   nombreGrupo: string;
   fechaHoraInicio: string;
   fechaHoraFin: string;
+  /** CULM-001 B.1 (aditivo): estado de la sesion y detalle de la cancelacion. */
+  estado?: EstadoSesion | null;
+  cancelacion?: CancelacionSesion | null;
   /** APP-04 (aditivo): instante UTC con sufijo Z solo si estadoTemporal = CONFIRMADA; null en otro caso. */
   fechaHoraInicioUtc?: string | null;
   fechaHoraFinUtc?: string | null;

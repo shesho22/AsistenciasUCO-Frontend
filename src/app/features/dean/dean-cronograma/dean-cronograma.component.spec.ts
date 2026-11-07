@@ -130,6 +130,29 @@ describe('DeanCronogramaComponent (HU145)', () => {
     expect(component.sesiones()).toEqual([]);
     expect(toastSpy.error).toHaveBeenCalled();
   });
+
+  it('B1-F-27 HU145: una sesión cancelada por festivo muestra la etiqueta y el nombre del festivo', () => {
+    component.onPagina(1);
+    http.expectOne((r) => r.url === URL).flush({
+      exitoso: true,
+      total: 1,
+      datos: [
+        {
+          id: 's-9', nombre: 'Sesión 9', codigo: 'S-09', numeroSemana: 3,
+          fechaHoraInicio: '2026-03-23T07:00:00', fechaHoraFin: '2026-03-23T09:00:00',
+          idGrupo: 'g-1', codigoGrupo: 1, nombreGrupo: 'Grupo 1', idAsignatura: 'a-1',
+          nombreAsignatura: 'Cálculo', idPrograma: 'p-1', nombrePrograma: 'Ingeniería de Sistemas',
+          estado: 'CANCELADA',
+          cancelacion: { tipo: 'FESTIVO', motivo: null, nombreFestivo: 'San José', fechaCancelacionUtc: null },
+        },
+      ],
+    });
+    fixture.detectChanges();
+
+    const fila = fixture.nativeElement.querySelector('[data-testid="sesion-fila-s-9"]') as HTMLElement;
+    expect(fila.textContent).toContain('Cancelada');
+    expect(fila.textContent).toContain('Día festivo: San José');
+  });
 });
 
 describe('Mock backend de consultas del decano (HU104/HU105/HU109/HU119/HU145)', () => {
@@ -164,28 +187,5 @@ describe('Mock backend de consultas del decano (HU104/HU105/HU109/HU119/HU145)',
         });
       });
     });
-  });
-
-  it('B1-F-27 HU145: una sesión cancelada por festivo muestra la etiqueta y el nombre del festivo', () => {
-    component.onPagina(1);
-    http.expectOne((r) => r.url === URL).flush({
-      exitoso: true,
-      total: 1,
-      datos: [
-        {
-          id: 's-9', nombre: 'Sesión 9', codigo: 'S-09', numeroSemana: 3,
-          fechaHoraInicio: '2026-03-23T07:00:00', fechaHoraFin: '2026-03-23T09:00:00',
-          idGrupo: 'g-1', codigoGrupo: 1, nombreGrupo: 'Grupo 1', idAsignatura: 'a-1',
-          nombreAsignatura: 'Cálculo', idPrograma: 'p-1', nombrePrograma: 'Ingeniería de Sistemas',
-          estado: 'CANCELADA',
-          cancelacion: { tipo: 'FESTIVO', motivo: null, nombreFestivo: 'San José', fechaCancelacionUtc: null },
-        },
-      ],
-    });
-    fixture.detectChanges();
-
-    const fila = fixture.nativeElement.querySelector('[data-testid="sesion-fila-s-9"]') as HTMLElement;
-    expect(fila.textContent).toContain('Cancelada');
-    expect(fila.textContent).toContain('Día festivo: San José');
   });
 });

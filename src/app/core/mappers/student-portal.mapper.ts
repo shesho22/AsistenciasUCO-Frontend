@@ -201,6 +201,7 @@ export class StudentPortalMapper {
     if (inicio) horario = fin ? `${inicio.time} - ${fin.time}` : inicio.time;
     const estado = ESTADOS_ASISTENCIA.find((valor) => valor === dto.estadoAsistencia) ?? 'NO_DISPONIBLE';
     const solicitudRevision = estadoSolicitud(dto.estadoSolicitudRevision);
+    const cancelada = dto.estado === 'CANCELADA';
 
     return {
       id: dto.id,
@@ -214,7 +215,9 @@ export class StudentPortalMapper {
       tema: texto(dto.nombre) ?? texto(dto.codigo) ?? `Sesión ${dto.numero}`,
       estadoAsistencia: estado,
       solicitudRevision,
-      reclamable: dto.reclamable === true && ESTADOS_RECLAMABLES.has(estado) && solicitudRevision === null,
+      estado: cancelada ? 'CANCELADA' : 'PROGRAMADA',
+      cancelacion: dto.cancelacion ?? null,
+      reclamable: !cancelada && dto.reclamable === true && ESTADOS_RECLAMABLES.has(estado) && solicitudRevision === null,
     };
   }
 

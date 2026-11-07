@@ -1,3 +1,4 @@
+import { CancelacionSesion, EstadoSesion } from './sesion-estado.model';
 export interface DecanoItem {
   id: string;
   idUsuario?: string;
@@ -203,6 +204,9 @@ export interface SesionMateriaDetalle {
   /** El backend ya tiene una solicitud de revision para la asistencia de esta sesion (estado informado). */
   solicitudRevision: EstadoSolicitudRevision | 'DESCONOCIDA' | null;
   reclamable: boolean;
+  /** CULM-001 B.1: una sesion cancelada no cuenta, no es reclamable y se muestra rotulada. */
+  estado?: EstadoSesion;
+  cancelacion?: CancelacionSesion | null;
   reclamoId?: string;
   estadoReclamo?: EstadoSolicitudRevision;
   categoriaReclamo?: CategoriaJustificacion;

@@ -288,6 +288,31 @@ describe('CoordinatorAttendanceComponent (HU064/HU060/HU061)', () => {
     component.onPaginaAsistencias(2);
     http.expectNone((r) => r.url.endsWith('/sesiones') || r.url.endsWith('/asistencias'));
   });
+
+  it('B1-F-26 HU060: la sesión cancelada se rotula como tal con su motivo', () => {
+    component.seleccionarGrupo(grupo);
+    http.expectOne((r) => r.url === `${API}/coordinador/grupos/grp-1/sesiones`).flush({
+      exitoso: true,
+      total: 2,
+      datos: [
+        sesion,
+        {
+          ...sesion,
+          id: 'ses-2',
+          codigo: 'S-02',
+          estado: 'CANCELADA',
+          cancelacion: { tipo: 'DOCENTE', motivo: 'Paro de transporte', nombreFestivo: null, fechaCancelacionUtc: null },
+        },
+      ],
+    });
+    fixture.detectChanges();
+
+    const filas = fixture.nativeElement.querySelectorAll('[data-testid^="sesion-fila-"]') as NodeListOf<HTMLElement>;
+    expect(filas.length).toBe(2);
+    expect(filas[0].textContent).not.toContain('Cancelada');
+    expect(filas[1].textContent).toContain('Cancelada');
+    expect(filas[1].textContent).toContain('Paro de transporte');
+  });
 });
 
 describe('Mock backend de consultas del coordinador (HU064/HU060/HU061)', () => {
@@ -314,30 +339,5 @@ describe('Mock backend de consultas del coordinador (HU064/HU060/HU061)', () => 
         });
       });
     });
-  });
-
-  it('B1-F-26 HU060: la sesión cancelada se rotula como tal con su motivo', () => {
-    component.seleccionarGrupo(grupo);
-    http.expectOne((r) => r.url === `${API}/coordinador/grupos/grp-1/sesiones`).flush({
-      exitoso: true,
-      total: 2,
-      datos: [
-        sesion,
-        {
-          ...sesion,
-          id: 'ses-2',
-          codigo: 'S-02',
-          estado: 'CANCELADA',
-          cancelacion: { tipo: 'DOCENTE', motivo: 'Paro de transporte', nombreFestivo: null, fechaCancelacionUtc: null },
-        },
-      ],
-    });
-    fixture.detectChanges();
-
-    const filas = fixture.nativeElement.querySelectorAll('[data-testid^="sesion-fila-"]') as NodeListOf<HTMLElement>;
-    expect(filas.length).toBe(2);
-    expect(filas[0].textContent).not.toContain('Cancelada');
-    expect(filas[1].textContent).toContain('Cancelada');
-    expect(filas[1].textContent).toContain('Paro de transporte');
   });
 });
