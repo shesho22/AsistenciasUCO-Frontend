@@ -169,40 +169,65 @@ describe('SessionService contract operations', () => {
     expect(response.datos).toBeUndefined();
   });
 
-  it('cancela la sesión y conserva la respuesta de negocio', () => {
+  it('B1-F-01 cancela la sesión con PATCH {motivo} y devuelve la respuesta del backend sin transformarla', () => {
     let response: any;
-    service.cancelarSesion('ses-1', 'Fuerza mayor')
+    service.cancelarSesion('ses-1', 'Fuerza mayor del docente')
       .subscribe((value) => (response = value));
 
     const request = http.expectOne(
       `${environment.apiUrl}/docente/sesiones/ses-1/cancelar`
     );
     expect(request.request.method).toBe('PATCH');
-    expect(request.request.body).toEqual({ motivo: 'Fuerza mayor' });
-    request.flush({
-      idTransaccion: 'tx-1',
-      mensajeUsuario: 'Cancelada',
-      datos: { estado: 'CANCELADA' },
-    });
-
-    expect(response).toEqual(jasmine.objectContaining({
-      idTransaccion: 'tx-1',
+    expect(request.request.body).toEqual({ motivo: 'Fuerza mayor del docente' });
+    const body = {
       exitoso: true,
-      mensajeUsuario: 'Cancelada',
-    }));
+      datos: {
+        idSesion: 'ses-1',
+        idGrupo: 'grp-1',
+        estado: 'CANCELADA',
+        cancelacion: {
+          tipo: 'DOCENTE',
+          motivo: 'Fuerza mayor del docente',
+          nombreFestivo: null,
+          fechaCancelacionUtc: '2026-11-10T14:00:00Z',
+        },
+        estudiantesNotificados: 38,
+      },
+    };
+    request.flush(body);
+
+    expect(response).toEqual(body);
   });
 
-  it('convierte un fallo de cancelación en respuesta controlada', () => {
-    let response: any;
-    service.cancelarSesion('ses-1', 'Motivo')
-      .subscribe((value) => (response = value));
-
-    http.expectOne(`${environment.apiUrl}/docente/sesiones/ses-1/cancelar`)
-      .flush('fallo', { status: 500, statusText: 'Server Error' });
-
-    expect(response.exitoso).toBeFalse();
-    expect(response.datos).toBeUndefined();
+  it('B1-F-02 cancelarSesion usa HTTP aunque estén activos los mocks (ya no existe respuesta simulada)', () => {
+    localStorage.setItem('USE_MOCKS', 'true');
+    try {
+      service.cancelarSesion('ses-9', 'Motivo suficientemente largo').subscribe();
+      http.expectOne(`${environment.apiUrl}/docente/sesiones/ses-9/cancelar`).flush({ exitoso: true, datos: {} });
+    } finally {
+      localStorage.removeItem('USE_MOCKS');
+    }
   });
+
+  for (const [status, code, message] of [
+    [400, 'SES_013', 'El motivo de cancelación debe tener entre 10 y 500 caracteres.'],
+    [409, 'SES_011', 'La sesión ya estaba cancelada.'],
+    [409, 'SES_012', 'No es posible cancelar una sesión que ya tiene asistencia registrada.'],
+    [409, 'SES_016', 'La sesión ya terminó y tiene asistencia registrada; no se puede cancelar.'],
+  ] as const) {
+    it(`B1-F-03 propaga el error ${status} ${code} con el mensaje del backend (sin traducirlo)`, () => {
+      let error: any;
+      service.cancelarSesion('ses-1', 'Motivo de prueba largo').subscribe({ error: (e) => (error = e) });
+
+      http.expectOne(`${environment.apiUrl}/docente/sesiones/ses-1/cancelar`).flush(
+        { timestamp: 't', status, error: 'x', code, message, path: '/p', correlationId: null },
+        { status, statusText: 'x' }
+      );
+
+      expect(error.status).toBe(status);
+      expect(error.error.message).toBe(message);
+    });
+  }
 
   it('obtiene el token QR y completa el mensaje', () => {
     let response: any;

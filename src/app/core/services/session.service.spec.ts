@@ -173,28 +173,6 @@ describe('SessionService', () => {
     }
   }));
 
-  it('cancelarSesion (mock) no muta status ni prefija topic con [CANCELADA]', fakeAsync(() => {
-    localStorage.setItem('USE_MOCKS', 'true');
-    let sessionsAfterCancel: any[] = [];
-
-    service.getSessionsByGroup('crs-1').subscribe((res) => {
-      const sesionId = res.datos[0].id;
-      service.cancelarSesion(sesionId, 'Fuerza mayor').subscribe(() => {
-        service
-          .getSessionsByGroup('crs-1')
-          .subscribe((updated) => (sessionsAfterCancel = updated.datos));
-      });
-    });
-
-    tick(200 + 250 + 200);
-
-    expect(sessionsAfterCancel.length).toBeGreaterThan(0);
-    for (const session of sessionsAfterCancel) {
-      expect(session.status).toBeUndefined();
-      expect(String(session.topic ?? '')).not.toContain('[CANCELADA]');
-    }
-  }));
-
   it('closeSession, cancelarSesion, getQrToken y registrarAutoAsistencia funcionan en modo HTTP', () => {
     service.closeSession('ses-1').subscribe((res) => {
       expect(res.exitoso).toBeTrue();
