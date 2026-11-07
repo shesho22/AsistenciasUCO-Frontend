@@ -210,4 +210,40 @@ describe('StudentCourseDetailComponent', () => {
       expect(texto()).toContain('(sin zona)');
     });
   });
+
+  describe('sesión cancelada (HU047, CULM-001 B.1)', () => {
+    const cancelada: SesionMateriaDetalle = crearSesion({
+      id: 'ses-c',
+      numeroSesion: 3,
+      estadoAsistencia: 'NO_DISPONIBLE',
+      estado: 'CANCELADA',
+      cancelacion: { tipo: 'FESTIVO', motivo: null, nombreFestivo: 'San José', fechaCancelacionUtc: null },
+    });
+
+    beforeEach(() => {
+      fixture.componentRef.setInput('materia', mockMateria);
+      fixture.componentRef.setInput('sesiones', [...mockSesiones, cancelada]);
+      fixture.detectChanges();
+    });
+
+    it('B1-F-25 muestra la etiqueta Cancelada con el festivo y sin "Estado no disponible"', () => {
+      const texto = fixture.nativeElement.textContent as string;
+      expect(texto).toContain('Cancelada');
+      expect(texto).toContain('Día festivo: San José');
+      expect(fixture.nativeElement.querySelector('[data-testid="estado-no-disponible"]')).toBeNull();
+    });
+
+    it('B1-F-25 la sesión cancelada no ofrece acciones de reclamo aunque llegue marcada reclamable', () => {
+      fixture.componentRef.setInput('sesiones', [{ ...cancelada, reclamable: true }]);
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.textContent).not.toContain('Radicar Reclamo');
+    });
+
+    it('B1-F-25 móvil: la fila apila el contenido en pantallas estrechas (flex-col) y envuelve las etiquetas', () => {
+      const fila = fixture.nativeElement.querySelector('[data-testid="sesion-ses-c"]') as HTMLElement;
+      expect(fila.className).toContain('flex-col');
+      expect(fila.className).toContain('sm:flex-row');
+    });
+  });
 });
