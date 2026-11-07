@@ -128,7 +128,7 @@ describe('StudentClaimFormComponent', () => {
     horario: 'Lunes 08:00 - 10:00',
     aula: 'Lab 2',
     creditos: 3,
-    indicadores: { porcentajeAsistencia: 85, asistencias: 8, inasistencias: 2, totalClases: 10 },
+    indicadores: { sesionesEjecutadas: 10, horasDictadas: 20, horasAsistidas: 18, horasFalta: 2, horasExcusa: 0, horasSinRegistro: 0, porcentajeInasistencia: 10, porcentajeAsistencia: 90, codigoPermanencia: 'REGULAR', umbralAdvertencia: 15, umbralPerdida: 20 },
     estado: 'Al día',
   });
 

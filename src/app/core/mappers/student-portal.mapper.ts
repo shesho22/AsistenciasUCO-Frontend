@@ -36,6 +36,7 @@ const ESTADOS_ASISTENCIA: readonly EstadoAsistenciaSesionEstudiante[] = [
   'AUSENTE',
   'RETARDO',
   'JUSTIFICADA',
+  'PARCIAL',
   'NO_DISPONIBLE',
 ];
 
@@ -136,7 +137,7 @@ export class StudentPortalMapper {
       aula: null,
       horario: null,
       creditos: null,
-      indicadores: null,
+      indicadores: dto.indicadores ?? null,
       estado: null,
     };
   }
@@ -218,6 +219,7 @@ export class StudentPortalMapper {
       solicitudRevision,
       estado: cancelada ? 'CANCELADA' : 'PROGRAMADA',
       cancelacion: dto.cancelacion ?? null,
+      horasSesion: typeof dto.horasSesion === 'number' ? dto.horasSesion : undefined,
       reclamable: !cancelada && dto.reclamable === true && ESTADOS_RECLAMABLES.has(estado) && solicitudRevision === null,
     };
   }

@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ActivatedRoute, convertToParamMap } from '@angular/router';
+import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Subject, of, throwError } from 'rxjs';
 import { StudentCoursesComponent } from './student-courses.component';
@@ -258,7 +258,7 @@ describe('StudentCoursesComponent', () => {
   let studentServiceSpy: jasmine.SpyObj<StudentManagementService>;
   let claimServiceSpy: jasmine.SpyObj<AttendanceClaimService>;
   let authServiceSpy: jasmine.SpyObj<AuthService>;
-  let sessionServiceSpy: jasmine.SpyObj<SessionService>;
+  let routerSpy: jasmine.SpyObj<Router>;
   let toastSpy: jasmine.SpyObj<ToastService>;
   let matriculaQrSpy: jasmine.SpyObj<MatriculaQrService>;
 
@@ -272,7 +272,8 @@ describe('StudentCoursesComponent', () => {
     studentServiceSpy = jasmine.createSpyObj('StudentManagementService', ['getMaterias']);
     claimServiceSpy = jasmine.createSpyObj('AttendanceClaimService', ['getSesionesPorMateria', 'crearReclamo', 'eliminarReclamo', 'subirSoporte']);
     authServiceSpy = jasmine.createSpyObj('AuthService', ['currentUser']);
-    sessionServiceSpy = jasmine.createSpyObj('SessionService', ['registrarAutoAsistencia']);
+    routerSpy = jasmine.createSpyObj('Router', ['navigate']);
+    routerSpy.navigate.and.resolveTo(true);
     toastSpy = jasmine.createSpyObj('ToastService', ['success', 'error', 'info', 'warning']);
     matriculaQrSpy = jasmine.createSpyObj('MatriculaQrService', ['matricularAutenticado']);
     studentServiceSpy.getMaterias.and.returnValue(of({ exitoso: true, datos: mockMaterias }));
@@ -284,7 +285,7 @@ describe('StudentCoursesComponent', () => {
         { provide: StudentManagementService, useValue: studentServiceSpy },
         { provide: AttendanceClaimService, useValue: claimServiceSpy },
         { provide: AuthService, useValue: authServiceSpy },
-        { provide: SessionService, useValue: sessionServiceSpy },
+        { provide: Router, useValue: routerSpy },
         { provide: ToastService, useValue: toastSpy },
         { provide: MatriculaQrService, useValue: matriculaQrSpy },
         { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: { get: () => null } } } },
@@ -302,8 +303,8 @@ describe('StudentCoursesComponent', () => {
     expect(component.materias().length).toBe(1);
     expect(component.totalCreditos()).toBe(0);
     // Sin indicadores autoritativos: no hay promedio ni fallas (nunca 0 ni NaN).
-    expect(component.promedioAsistencia()).toBeNull();
-    expect(component.totalFallas()).toBeNull();
+    expect(component.materiasEnRiesgo()).toBeNull();
+    expect(component.totalHorasFalta()).toBeNull();
   });
 
   it('HU005/HU016: carga los motivos de justificación del catálogo y los muestra en el detalle', () => {
@@ -365,14 +366,9 @@ describe('StudentCoursesComponent', () => {
     expect(toastSpy.error).toHaveBeenCalledWith('Solo se puede retirar una solicitud de revisión pendiente.');
   });
 
-  it('registra autoasistencia por PIN o Token exitosamente', () => {
-    sessionServiceSpy.registrarAutoAsistencia.and.returnValue(of({ exitoso: true, mensajeUsuario: 'Asistencia registrada' } as any));
-    component.abrirModalAutoAsistencia();
-    expect(component.modalAutoAsistenciaVisible()).toBeTrue();
-    component.enviarAutoAsistencia({ pin: '123456', token: '' });
-    expect(sessionServiceSpy.registrarAutoAsistencia).toHaveBeenCalledWith({ codigoAcceso: '123456', token: undefined });
-    expect(toastSpy.success).toHaveBeenCalledWith('Asistencia registrada');
-    expect(component.modalAutoAsistenciaVisible()).toBeFalse();
+  it('B2-F-17 "Registrar asistencia con PIN" lleva a /app/asistencia/pin (F-EST-005, F-EST-017)', () => {
+    component.irARegistroConPin();
+    expect(routerSpy.navigate).toHaveBeenCalledOnceWith(['/app/asistencia/pin']);
   });
 
   it('HU176B: registra la matrícula con el PIN de 6 dígitos usando el servicio de matrícula por QR', () => {
@@ -478,8 +474,8 @@ describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', 
     expect(texto()).not.toContain('undefined');
     expect(texto()).not.toContain('null');
     expect(fixture.nativeElement.querySelector('[data-testid="asistencia-no-disponible"]')).not.toBeNull();
-    expect(fixture.nativeElement.querySelector('[data-testid="promedio-no-disponible"]')).not.toBeNull();
-    expect(fixture.nativeElement.querySelector('[data-testid="fallas-no-disponible"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="riesgo-no-disponible"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="horas-falta-no-disponible"]')).not.toBeNull();
     expect(texto()).toContain('No informado');
   });
 

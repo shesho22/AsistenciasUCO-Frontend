@@ -1,3 +1,4 @@
+import { IndicadoresAsistenciaResponse } from './indicadores-asistencia.model';
 import { CancelacionSesion, EstadoSesion } from './sesion-estado.model';
 export interface DecanoItem {
   id: string;
@@ -120,13 +121,8 @@ export interface HorarioDocenteItem {
   colorCategory: 'emerald' | 'amber' | 'blue' | 'purple';
 }
 
-/** Indicadores de asistencia calculados por una fuente autoritativa. Hoy el backend no los entrega. */
-export interface IndicadoresAsistenciaMateria {
-  totalClases: number;
-  asistencias: number;
-  inasistencias: number;
-  porcentajeAsistencia: number;
-}
+/** Indicadores por horas calculados por el backend (CULM-001 B.2, CONTRACT 3.2.8); el cliente solo los pinta. */
+export type IndicadoresAsistenciaMateria = IndicadoresAsistenciaResponse;
 
 /**
  * Materia del estudiante tal como la entrega `GET /estudiante/materias` (una fila por asignatura + grupo).
@@ -178,7 +174,7 @@ export interface SoporteAdjuntoItem {
 }
 
 /** Estado de asistencia de una sesion vista por el estudiante; `NO_DISPONIBLE` jamas equivale a `AUSENTE`. */
-export type EstadoAsistenciaSesionEstudiante = EstadoAsistenciaSesion | 'NO_DISPONIBLE';
+export type EstadoAsistenciaSesionEstudiante = EstadoAsistenciaSesion | 'PARCIAL' | 'NO_DISPONIBLE';
 
 /**
  * Sesion de una materia del estudiante. `estadoAsistencia` proviene del backend para el estudiante autenticado y es
@@ -208,6 +204,8 @@ export interface SesionMateriaDetalle {
   /** CULM-001 B.1: una sesion cancelada no cuenta, no es reclamable y se muestra rotulada. */
   estado?: EstadoSesion;
   cancelacion?: CancelacionSesion | null;
+  /** CULM-001 B.2: horas de la sesion entregadas por el backend. */
+  horasSesion?: number;
   reclamoId?: string;
   estadoReclamo?: EstadoSolicitudRevision;
   categoriaReclamo?: CategoriaJustificacion;

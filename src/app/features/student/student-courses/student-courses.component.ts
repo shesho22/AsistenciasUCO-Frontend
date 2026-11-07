@@ -1,12 +1,11 @@
 import { Component, OnDestroy, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { Subscription, finalize } from 'rxjs';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { StudentManagementService } from '../../../core/services/student-management.service';
 import { MatriculaQrService } from '../../../core/services/matricula-qr.service';
 import { AttendanceClaimService, IdentificadorInvalidoError } from '../../../core/services/attendance-claim.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { SessionService } from '../../../core/services/session.service';
 import { ConsultasTransversalesService } from '../../../core/services/consultas-transversales.service';
 import { CategoriaJustificacionItem } from '../../../core/models/consultas-transversales.model';
 import { ToastService } from '../../../shared/components/toast/toast.component';
@@ -27,7 +26,6 @@ import {
 import { StudentCoursesListComponent } from './components/student-courses-list.component';
 import { StudentCourseDetailComponent } from './components/student-course-detail.component';
 import { StudentClaimFormComponent } from './components/student-claim-form.component';
-import { StudentAutoAsistenciaModalComponent } from './components/modals/student-auto-asistencia-modal.component';
 import { StudentMatriculaCodigoModalComponent } from './components/modals/student-matricula-codigo-modal.component';
 
 type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO';
@@ -41,7 +39,6 @@ type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO';
     StudentCoursesListComponent,
     StudentCourseDetailComponent,
     StudentClaimFormComponent,
-    StudentAutoAsistenciaModalComponent,
     StudentMatriculaCodigoModalComponent,
   ],
   template: `
@@ -52,11 +49,11 @@ type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO';
           [materias]="materias()"
           [isLoading]="isLoading()"
           [error]="materiasError()"
-          [promedioAsistencia]="promedioAsistencia()"
-          [totalFallas]="totalFallas()"
+          [materiasEnRiesgo]="materiasEnRiesgo()"
+          [totalHorasFalta]="totalHorasFalta()"
           (retry)="cargarMaterias()"
           (openCodeEnrollment)="abrirModalMatriculaGrupo()"
-          (openAutoAttendance)="abrirModalAutoAsistencia()"
+          (registrarConPin)="irARegistroConPin()"
           (viewDetail)="verDetalleCompleto($event)"
         />
       }
@@ -93,14 +90,6 @@ type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO';
         />
       }
 
-      <!-- 6. Modal: Auto-Registro de Asistencia (HU176 - PIN / QR) -->
-      <app-student-auto-asistencia-modal
-        [isOpen]="modalAutoAsistenciaVisible()"
-        [processing]="procesandoAutoAsistencia()"
-        (submitted)="enviarAutoAsistencia($event)"
-        (closed)="cerrarModalAutoAsistencia()"
-      />
-
       <!-- 7. Modal: Matrícula a Grupo por Código o PIN -->
       <app-student-matricula-codigo-modal
         [isOpen]="modalMatriculaGrupoVisible()"
@@ -118,7 +107,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
   private readonly matriculaQrService = inject(MatriculaQrService);
   private readonly claimService = inject(AttendanceClaimService);
   private readonly authService = inject(AuthService);
-  private readonly sessionService = inject(SessionService);
+  private readonly router = inject(Router);
   private readonly consultasService = inject(ConsultasTransversalesService);
   private readonly toast = inject(ToastService);
   private readonly sessionTimeZone = inject(SessionTimeZoneService);
@@ -129,8 +118,6 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
   materiasError = signal<LoadErrorState | null>(null);
 
   // Auto-Registro de Asistencia (HU176)
-  modalAutoAsistenciaVisible = signal<boolean>(false);
-  procesandoAutoAsistencia = signal<boolean>(false);
 
   // Matrícula por Código o PIN de Grupo
   modalMatriculaGrupoVisible = signal<boolean>(false);
@@ -160,19 +147,23 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
     return this.materias().reduce((sum, m) => sum + (m.creditos ?? 0), 0);
   }
 
-  /** Promedio solo sobre las materias con indicadores autoritativos; `null` = no disponible (nunca 0 ni NaN). */
-  promedioAsistencia(): string | null {
+  /** Cuenta de materias con `codigoPermanencia` RIESGO o PERDIDA (valor del backend); `null` = sin indicadores. */
+  materiasEnRiesgo(): number | null {
     const conIndicadores = this.materias().filter((m) => m.indicadores !== null);
     if (conIndicadores.length === 0) return null;
-    const total = conIndicadores.reduce((sum, m) => sum + m.indicadores!.porcentajeAsistencia, 0);
-    return (total / conIndicadores.length).toFixed(1);
+    return conIndicadores.filter((m) => m.indicadores!.codigoPermanencia === 'RIESGO' || m.indicadores!.codigoPermanencia === 'PERDIDA').length;
   }
 
-  /** Suma de inasistencias solo si alguna materia tiene fuente autoritativa; `null` = no disponible. */
-  totalFallas(): number | null {
+  /** Suma de `horasFalta` entregadas por el backend; `null` = no disponible (nunca 0 ni NaN). */
+  totalHorasFalta(): number | null {
     const conIndicadores = this.materias().filter((m) => m.indicadores !== null);
     if (conIndicadores.length === 0) return null;
-    return conIndicadores.reduce((sum, m) => sum + m.indicadores!.inasistencias, 0);
+    return conIndicadores.reduce((sum, m) => sum + m.indicadores!.horasFalta, 0);
+  }
+
+  /** HU176: el registro por PIN vive en su propia pantalla (`/app/asistencia/pin`). */
+  irARegistroConPin(): void {
+    void this.router.navigate(['/app/asistencia/pin']);
   }
 
   ngOnInit(): void {
@@ -382,7 +373,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
 
     if (!sesion || !materia || !event.justificacion.trim()) return;
     const estadoOriginal = sesion.estadoAsistencia;
-    if (!sesion.reclamable || estadoOriginal === 'NO_DISPONIBLE') return;
+    if (!sesion.reclamable || estadoOriginal === 'NO_DISPONIBLE' || estadoOriginal === 'PARCIAL') return;
     // Sin doble envio: ni mientras sube el soporte (aun no hay fileId) ni mientras otra radicacion esta en curso.
     if (this.enviandoReclamo() || this.subiendoSoporte()) return;
 
@@ -449,53 +440,6 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
   private resultadoIncierto(err: unknown): boolean {
     const status = (err as { status?: number })?.status;
     return status === 0 || status === 408 || (typeof status === 'number' && status >= 500);
-  }
-
-  abrirModalAutoAsistencia(): void {
-    this.modalAutoAsistenciaVisible.set(true);
-  }
-
-  cerrarModalAutoAsistencia(): void {
-    this.modalAutoAsistenciaVisible.set(false);
-  }
-
-  enviarAutoAsistencia(event: { pin: string; token: string }): void {
-    if (!event.pin && !event.token) {
-      this.toast.error('Por favor ingresa el PIN de 6 caracteres o el token QR.');
-      return;
-    }
-
-    this.procesandoAutoAsistencia.set(true);
-    this.sessionService
-      .registrarAutoAsistencia({
-        codigoAcceso: event.pin || undefined,
-        token: event.token || undefined,
-      })
-      .subscribe({
-        next: (res: any) => {
-          this.procesandoAutoAsistencia.set(false);
-          const yaRegistrado = res?.datos?.yaRegistrado;
-          if (yaRegistrado) {
-            this.toast.info(
-              res?.datos?.mensaje || 'Ya tenías tu asistencia registrada previamente para esta sesión.'
-            );
-          } else {
-            this.toast.success(
-              res?.mensajeUsuario || res?.datos?.mensaje || '¡Asistencia registrada con éxito!'
-            );
-          }
-          this.cerrarModalAutoAsistencia();
-          this.cargarMaterias();
-          const actual = this.selectedMateria();
-          if (actual) {
-            this.cargarSesiones(actual);
-          }
-        },
-        error: (err) => {
-          this.procesandoAutoAsistencia.set(false);
-          this.toast.error(getApiErrorMessage(err));
-        },
-      });
   }
 
   abrirModalMatriculaGrupo(): void {

@@ -1,3 +1,4 @@
+import { IndicadoresAsistenciaResponse } from '../../models/indicadores-asistencia.model';
 import { CancelacionSesion, EstadoSesion } from '../../models/sesion-estado.model';
 /**
  * DTO HTTP reales del portal estudiantil (`/api/v1/estudiante/**`).
@@ -10,6 +11,8 @@ export interface MateriaEstudianteApiDto {
   nombreAsignatura: string;
   idGrupo: string;
   nombreGrupo: string;
+  /** CULM-001 B.2: indicadores por horas calculados por el backend (nunca `null` en B.2; opcional por compatibilidad). */
+  indicadores?: IndicadoresAsistenciaResponse | null;
 }
 
 /** `HorarioEstudianteDTO`. `dia` y las horas llegan como texto (`LocalTime`: `HH:mm` o `HH:mm:ss`). */
@@ -63,4 +66,7 @@ export interface SesionMateriaEstudianteApiDto {
   estadoAsistencia?: string | null;
   estadoSolicitudRevision?: string | null;
   reclamable?: boolean | null;
+  /** CULM-001 B.2: horas de la sesion (y de sus tomas) calculadas por el backend. */
+  horasSesion?: number | null;
+  totalTomas?: number | null;
 }

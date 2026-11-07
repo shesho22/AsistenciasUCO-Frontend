@@ -1,5 +1,6 @@
 import { Component, ChangeDetectionStrategy, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { AttendanceStatusBadgeComponent } from '../../../../shared/components/attendance-status-badge/attendance-status-badge.component';
 import { CardComponent } from '../../../../shared/components/card/card.component';
 import { BadgeComponent, BadgeVariant } from '../../../../shared/components/badge/badge.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
@@ -10,7 +11,7 @@ import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
   selector: 'app-student-courses-list',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, CardComponent, BadgeComponent, ButtonComponent],
+  imports: [CommonModule, CardComponent, BadgeComponent, ButtonComponent, AttendanceStatusBadgeComponent],
   template: `
     <div class="space-y-6">
       <!-- Header Bento -->
@@ -46,14 +47,15 @@ import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
 
           <button
             type="button"
-            (click)="openAutoAttendance.emit()"
-            class="px-3.5 py-2 text-xs font-bold text-white bg-primary-700 hover:bg-primary-800 rounded-xl transition-all shadow-xs inline-flex items-center gap-1.5"
-            title="HU176: Auto-registrar asistencia con código PIN de 6 dígitos o QR"
+            (click)="registrarConPin.emit()"
+            data-testid="registrar-con-pin"
+            class="min-h-[44px] px-4 py-2 text-xs font-bold text-white bg-primary-700 hover:bg-primary-800 rounded-xl transition-all shadow-xs inline-flex items-center gap-1.5"
+            title="HU176: registrar tu asistencia con el PIN de 6 dígitos que proyecta el docente"
           >
             <svg class="w-4 h-4 text-success-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
             </svg>
-            Auto-Registro Asistencia
+            Registrar asistencia con PIN
           </button>
         </div>
       </div>
@@ -79,11 +81,11 @@ import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
             </svg>
           </div>
           <div>
-            <span class="text-xs text-warm-500 font-medium">Promedio de Asistencia</span>
-            @if (promedioAsistencia() !== null) {
-              <p class="text-2xl font-serif font-bold text-success-700">{{ promedioAsistencia() }}%</p>
+            <span class="text-xs text-warm-500 font-medium">Materias en riesgo</span>
+            @if (materiasEnRiesgo() !== null) {
+              <p class="text-2xl font-serif font-bold text-warm-900">{{ materiasEnRiesgo() }}</p>
             } @else {
-              <p class="text-base font-serif font-bold text-warm-500" data-testid="promedio-no-disponible">No disponible</p>
+              <p class="text-base font-serif font-bold text-warm-500" data-testid="riesgo-no-disponible">No disponible</p>
             }
           </div>
         </div>
@@ -95,11 +97,11 @@ import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
             </svg>
           </div>
           <div>
-            <span class="text-xs text-warm-500 font-medium">Fallas Registradas</span>
-            @if (totalFallas() !== null) {
-              <p class="text-2xl font-serif font-bold text-warm-900">{{ totalFallas() }}</p>
+            <span class="text-xs text-warm-500 font-medium">Horas de falta</span>
+            @if (totalHorasFalta() !== null) {
+              <p class="text-2xl font-serif font-bold text-warm-900">{{ totalHorasFalta() }} h</p>
             } @else {
-              <p class="text-base font-serif font-bold text-warm-500" data-testid="fallas-no-disponible">No disponible</p>
+              <p class="text-base font-serif font-bold text-warm-500" data-testid="horas-falta-no-disponible">No disponible</p>
             }
           </div>
         </div>
@@ -147,24 +149,15 @@ import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
                   <p class="text-xs text-warm-500 mt-1">Docente: {{ materia.docente ?? 'No informado' }}</p>
                 </div>
 
-                <!-- Indicadores de Asistencia (solo con fuente autoritativa) -->
+                <!-- Indicadores por horas (solo con fuente autoritativa: los entrega el backend) -->
                 @if (materia.indicadores; as ind) {
                   <div class="space-y-1.5 p-3 rounded-xl bg-warm-50 border border-warm-100">
-                    <div class="flex items-center justify-between text-xs">
-                      <span class="font-medium text-warm-600">Asistencia Registrada</span>
-                      <span class="font-bold text-warm-900">{{ ind.porcentajeAsistencia }}%</span>
+                    <div class="flex items-center justify-between gap-2 text-xs">
+                      <span class="font-bold text-warm-900" data-testid="porcentaje-inasistencia">{{ ind.porcentajeInasistencia }}% de inasistencia</span>
+                      <app-attendance-status-badge [codigoPermanencia]="ind.codigoPermanencia" />
                     </div>
-                    <div class="w-full h-2 bg-warm-200 rounded-full overflow-hidden">
-                      <div
-                        [class]="getProgressColor(ind.porcentajeAsistencia)"
-                        [style.width.%]="ind.porcentajeAsistencia"
-                        class="h-full rounded-full transition-all duration-500"
-                      ></div>
-                    </div>
-                    <div class="flex items-center justify-between text-[11px] text-warm-500 pt-0.5">
-                      <span>{{ ind.asistencias }} asistencias</span>
-                      <span>{{ ind.inasistencias }} fallas de {{ ind.totalClases }} clases</span>
-                    </div>
+                    <p class="text-[11px] text-warm-600">{{ ind.horasFalta }} h de falta de {{ ind.horasDictadas }} h dictadas</p>
+                    <p class="text-[11px] text-warm-500">Advertencia desde {{ ind.umbralAdvertencia }}% · pérdida desde {{ ind.umbralPerdida }}%</p>
                   </div>
                 } @else {
                   <div class="p-3 rounded-xl bg-warm-50 border border-warm-100 text-xs text-warm-500" data-testid="asistencia-no-disponible">
@@ -202,12 +195,12 @@ export class StudentCoursesListComponent {
   error = input<LoadErrorState | null>(null);
   totalCreditos = input<number>(0);
   /** `null` = sin fuente autoritativa de asistencia. */
-  promedioAsistencia = input<string | null>(null);
-  totalFallas = input<number | null>(null);
+  materiasEnRiesgo = input<number | null>(null);
+  totalHorasFalta = input<number | null>(null);
 
   retry = output<void>();
   openCodeEnrollment = output<void>();
-  openAutoAttendance = output<void>();
+  registrarConPin = output<void>();
   viewDetail = output<MateriaEstudianteItem>();
 
   getBadgeVariant(estado: MateriaEstudianteItem['estado'] | null): BadgeVariant {
@@ -221,11 +214,5 @@ export class StudentCoursesListComponent {
       default:
         return 'neutral';
     }
-  }
-
-  getProgressColor(porcentaje: number): string {
-    if (porcentaje >= 85) return 'bg-success-500';
-    if (porcentaje >= 75) return 'bg-warning-500';
-    return 'bg-danger-500';
   }
 }
