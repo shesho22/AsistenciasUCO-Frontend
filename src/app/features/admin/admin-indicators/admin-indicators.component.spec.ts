@@ -139,4 +139,23 @@ describe('AdminIndicatorsComponent', () => {
     fixture.detectChanges();
     expect(texto()).toContain('No hay facultades');
   });
+
+  it('F-ADM-015: la grafica tiene ejes, valores por punto y el titulo usa la tipografia del sistema', () => {
+    const el = fixture.nativeElement as HTMLElement;
+    expect(Array.from(el.querySelectorAll('[data-testid="marca-eje-y"]')).map((t) => t.textContent?.trim())).toEqual(['0%', '50%', '100%']);
+    expect(Array.from(el.querySelectorAll('[data-testid="valor-punto"]')).map((t) => t.textContent?.trim())).toEqual(['15%', '50%']);
+    expect(Array.from(el.querySelectorAll('[data-testid="marca-eje-x"]')).map((t) => t.textContent?.trim())).toEqual(['2026-03-02', '2026-03-16']);
+    expect(el.querySelector('h1')?.className).toContain('font-serif');
+    expect(el.innerHTML).not.toContain('gray-');
+  });
+
+  it('F-ADM-015: muestra un indicador de carga hasta que responden las consultas', () => {
+    component.actualizar();
+    fixture.detectChanges();
+    expect(component.cargando()).toBeTrue();
+    expect(texto()).toContain('Cargando indicadores');
+    cargarTodo();
+    expect(component.cargando()).toBeFalse();
+    expect(texto()).not.toContain('Cargando indicadores');
+  });
 });
