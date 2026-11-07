@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
 import { HorarioDocenteItem, DiaSemana } from '../../../core/models/role-management.model';
 import { CardComponent } from '../../../shared/components/card/card.component';
+import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 
 @Component({
@@ -123,9 +124,9 @@ export class TeacherScheduleComponent implements OnInit {
         this.horarios.set(res.datos || []);
         this.isLoading.set(false);
       },
-      error: () => {
+      error: (err: unknown) => {
         this.isLoading.set(false);
-        this.toast.error('Error al cargar horario del docente.');
+        this.toast.error(getApiErrorMessage(err));
       },
     });
   }

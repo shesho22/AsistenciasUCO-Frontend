@@ -1,3 +1,4 @@
+import { EstudianteGrupoItem } from '../../../../core/models/estudiante-grupo-item.model';
 import { Component, ChangeDetectionStrategy, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
@@ -126,7 +127,7 @@ import { Course } from '../../../../core/models/course.model';
 export class GroupInfoModalComponent {
   isOpen = input<boolean>(false);
   course = input<Course | null | undefined>(null);
-  students = input<any[]>([]);
+  students = input<EstudianteGrupoItem[]>([]);
   isLoading = input<boolean>(false);
   /** Id del estudiante cuyo enlace de verificacion se esta reenviando (IDENT-001); vacio si ninguno. */
   resendingStudentId = input<string>('');

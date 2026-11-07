@@ -1,3 +1,5 @@
+import type { NuevaSesionSolicitud } from './components/attendance-new-session-modal.component';
+import type { MatriculaEstudianteSolicitud } from './components/attendance-enrollment-modal.component';
 import { Component, DestroyRef, signal, computed, effect, inject, ChangeDetectionStrategy } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
@@ -534,8 +536,9 @@ export class AttendanceControlComponent {
         next: (res) => {
           this.groupStudents.set(res.datos || []);
         },
-        error: () => {
+        error: (err: unknown) => {
           this.groupStudents.set([]);
+          this.mostrarError(err, 'No fue posible cargar el padrón del grupo.');
         },
       });
   }
@@ -873,7 +876,7 @@ export class AttendanceControlComponent {
     this.isNewSessionModalOpen.set(true);
   }
 
-  onCreateSessionSubmit(data: any): void {
+  onCreateSessionSubmit(data: NuevaSesionSolicitud): void {
     const course = this.currentCourse();
     if (!course) {
       this.toastType.set('error');
@@ -991,7 +994,7 @@ export class AttendanceControlComponent {
     });
   }
 
-  onRegisterStudentSubmit(data: any): void {
+  onRegisterStudentSubmit(data: Omit<MatriculaEstudianteSolicitud, 'password'> & { password?: string }): void {
     this.studentFieldErrors.set({});
     const identificationResult = parseIdentificationNumber(data.numeroIdentificacion);
     const effectivePassword = data.password?.trim() ?? '';
@@ -1180,11 +1183,9 @@ export class AttendanceControlComponent {
           this.cargarEstudiantesYSesion(courseId, defaultSession.id);
         }
       },
-      error: () => {
+      error: (err: unknown) => {
         this.sessions.set([]);
-        this.toastType.set('error');
-        this.toastMessage.set('No fue posible cargar las sesiones y asistencias del grupo.');
-        this.showToast.set(true);
+        this.mostrarError(err, 'No fue posible cargar las sesiones y asistencias del grupo.');
       },
     });
   }

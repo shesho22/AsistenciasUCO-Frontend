@@ -115,4 +115,24 @@ describe('TeacherGruposListComponent', () => {
     fixture.detectChanges();
     expect((fixture.nativeElement as HTMLElement).querySelector('select[aria-label="Nivel formativo"]')).toBeNull();
   });
+
+  it('F-DOC-S01: una busqueda sin resultados muestra el mensaje de estado vacio, no una lista en blanco', () => {
+    fixture.componentRef.setInput('courses', [course]);
+    fixture.componentRef.setInput('isLoading', false);
+    fixture.detectChanges();
+    fixture.componentInstance.searchQuery.set('zzqinexistente');
+    fixture.detectChanges();
+
+    const vacio = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="grupos-vacio"]');
+    expect(vacio?.textContent).toContain('Ningún grupo coincide');
+    expect((fixture.nativeElement as HTMLElement).querySelectorAll('app-card').length).toBe(0);
+  });
+
+  it('F-DOC-S01: sin grupos asignados indica que aun no hay grupos', () => {
+    fixture.componentRef.setInput('courses', []);
+    fixture.componentRef.setInput('isLoading', false);
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="grupos-vacio"]')?.textContent).toContain('Aún no tienes grupos');
+  });
 });

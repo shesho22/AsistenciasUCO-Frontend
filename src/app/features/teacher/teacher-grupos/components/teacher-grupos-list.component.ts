@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CardComponent } from '../../../../shared/components/card/card.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
+import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
 import { Course } from '../../../../core/models/course.model';
 import { CatalogoPrograma } from '../../../../core/models/programa-academico.model';
@@ -11,7 +12,7 @@ import { CatalogoPrograma } from '../../../../core/models/programa-academico.mod
   selector: 'app-teacher-grupos-list',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, CardComponent, ButtonComponent, BadgeComponent],
+  imports: [CommonModule, FormsModule, CardComponent, ButtonComponent, BadgeComponent, EmptyStateComponent],
   template: `
     <div class="space-y-6 animate-fade-in">
       <!-- Header Bento -->
@@ -77,6 +78,7 @@ import { CatalogoPrograma } from '../../../../core/models/programa-academico.mod
       <div class="relative flex-1">
         <input
           type="text"
+          aria-label="Buscar grupo por nombre o código de asignatura"
           [ngModel]="searchQuery()"
           (ngModelChange)="searchQuery.set($event)"
           placeholder="Buscar grupo por nombre o código de asignatura..."
@@ -108,6 +110,18 @@ import { CatalogoPrograma } from '../../../../core/models/programa-academico.mod
             <div class="h-60 bg-warm-100 rounded-2xl animate-pulse"></div>
           }
         </div>
+      } @else if (filteredCourses().length === 0) {
+        <div data-testid="grupos-vacio">
+          @if (courses().length === 0) {
+            <app-empty-state title="Aún no tienes grupos asignados" description="Cuando tengas grupos a tu cargo aparecerán aquí." />
+          } @else {
+            <app-empty-state
+              variant="search"
+              title="Ningún grupo coincide con tu búsqueda"
+              description="Revisa el texto buscado o cambia el nivel formativo seleccionado."
+            />
+          }
+        </div>
       } @else {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
           @for (course of filteredCourses(); track course.id) {
@@ -128,7 +142,7 @@ import { CatalogoPrograma } from '../../../../core/models/programa-academico.mod
                       }
                       <app-badge variant="neutral">{{ course.section }}</app-badge>
                       @if (course.nombreTipoPrograma) {
-                        <span class="text-[10px] font-semibold uppercase text-warm-500">{{ course.nombreTipoPrograma }}</span>
+                        <span class="text-xs font-semibold uppercase text-warm-500">{{ course.nombreTipoPrograma }}</span>
                       }
                     </div>
 
@@ -158,7 +172,7 @@ import { CatalogoPrograma } from '../../../../core/models/programa-academico.mod
                     </svg>
                     <span class="font-medium">{{ course.schedule || 'Sin horario asignado' }}</span>
                   </div>
-                  <span class="text-[11px] font-semibold text-primary-700 group-hover:underline">
+                  <span class="text-xs font-semibold text-primary-700 group-hover:underline">
                     Ver Grupo →
                   </span>
                 </div>

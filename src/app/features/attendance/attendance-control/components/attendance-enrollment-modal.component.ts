@@ -9,6 +9,22 @@ import { FormSelectComponent, SelectOption } from '../../../../shared/components
 import { StudentService } from '../../../../core/services/student.service';
 import { getApiErrorMessage } from '../../../../core/api/errors/api-error.util';
 
+/** Datos del formulario de matricula/registro de estudiante que emite el modal. */
+export interface MatriculaEstudianteSolicitud {
+  tipoIdentificacionId: string;
+  numeroIdentificacion: string;
+  primerNombre: string;
+  segundoNombre?: string;
+  primerApellido: string;
+  segundoApellido?: string;
+  correo: string;
+  password: string;
+  confirmPassword?: string;
+  hasLocalConfirmError?: boolean;
+  esNuevoEstudiante?: boolean;
+  estudianteExistente?: boolean;
+}
+
 @Component({
   selector: 'app-attendance-enrollment-modal',
   standalone: true,
@@ -344,20 +360,7 @@ export class AttendanceEnrollmentModalComponent {
   yaMatriculado = computed(() => this.isExistingStudent() && this.estadoMatricula() === 'A');
   seReactivara = computed(() => this.isExistingStudent() && this.estadoMatricula() === 'I');
 
-  submitted = output<{
-    tipoIdentificacionId: string;
-    numeroIdentificacion: string;
-    primerNombre: string;
-    segundoNombre?: string;
-    primerApellido: string;
-    segundoApellido?: string;
-    correo: string;
-    password: string;
-    confirmPassword?: string;
-    hasLocalConfirmError?: boolean;
-    esNuevoEstudiante?: boolean;
-    estudianteExistente?: boolean;
-  }>();
+  submitted = output<MatriculaEstudianteSolicitud>();
   closed = output<void>();
   clearFieldError = output<string>();
 

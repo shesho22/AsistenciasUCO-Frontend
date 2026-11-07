@@ -1,3 +1,4 @@
+import { apiHttpError } from '../../../core/testing/api-error.fixture';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { TeacherScheduleComponent } from './teacher-schedule.component';
@@ -79,10 +80,11 @@ describe('TeacherScheduleComponent', () => {
   });
 
   it('debe manejar error al cargar el horario', () => {
-    claimServiceSpy.getHorarioDocente.and.returnValue(throwError(() => new Error('Error')));
+    claimServiceSpy.getHorarioDocente.and.returnValue(throwError(() => apiHttpError(409, 'Horario no disponible para el periodo.', 'CONFLICT')));
     component.cargarHorario();
     expect(component.isLoading()).toBeFalse();
-    expect(toastSpy.error).toHaveBeenCalledWith('Error al cargar horario del docente.');
+    // F-DOC-005: el texto es el del backend, no uno fijo del cliente.
+    expect(toastSpy.error).toHaveBeenCalledWith('Horario no disponible para el periodo.');
   });
 
   it('debe retornar estilos de clases para cada categoría de color', () => {

@@ -12,6 +12,14 @@ import {
 } from '../../../../core/validation/session-name.util';
 import { SessionTimeZoneService } from '../../../../core/services/session-timezone.service';
 
+/** Datos del formulario de programacion de sesion que emite el modal. */
+export interface NuevaSesionSolicitud {
+  date: string;
+  startTime: string;
+  endTime: string;
+  title: string;
+}
+
 @Component({
   selector: 'app-attendance-new-session-modal',
   standalone: true,
@@ -132,12 +140,7 @@ export class AttendanceNewSessionModalComponent {
     return this.title().trim().length > SESSION_NAME_MAX_LENGTH;
   }
 
-  submitted = output<{
-    date: string;
-    startTime: string;
-    endTime: string;
-    title: string;
-  }>();
+  submitted = output<NuevaSesionSolicitud>();
   closed = output<void>();
 
   readonly timeZone = inject(SessionTimeZoneService);

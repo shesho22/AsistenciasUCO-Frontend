@@ -80,6 +80,7 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
             <div class="relative">
               <input
                 type="text"
+                aria-label="Buscar reclamos por estudiante, materia o motivo"
                 [value]="searchQuery()"
                 (input)="onBuscar($event)"
                 placeholder="Buscar por estudiante, materia o motivo..."
@@ -93,6 +94,7 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
 
           <div>
             <select
+              aria-label="Filtrar reclamos por estado"
               [value]="estadoFiltro()"
               (change)="onEstadoChange($event)"
               class="w-full px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 shadow-warm-sm"

@@ -374,14 +374,15 @@ describe('AttendanceControlComponent contract corrections', () => {
 
   it('muestra feedback cuando falla la carga de sesiones', () => {
     sessionService.getSessionsByGroup.and.returnValue(
-      throwError(() => new Error('session load failed'))
+      throwError(() => apiHttpError(409, 'Las sesiones del grupo no están disponibles.', 'CONFLICT'))
     );
     const component = createComponent();
 
     expect(component.sessions()).toEqual([]);
     expect(component.showToast()).toBeTrue();
     expect(component.toastType()).toBe('error');
-    expect(component.toastMessage()).toContain('sesiones');
+    // F-DOC-005: el texto es el del backend, no uno fijo del cliente.
+    expect(component.toastMessage()).toBe('Las sesiones del grupo no están disponibles.');
   });
 
   it('mantiene una lista vacía válida sin mostrar error', () => {

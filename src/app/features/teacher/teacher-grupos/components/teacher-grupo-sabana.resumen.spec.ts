@@ -73,4 +73,14 @@ describe('TeacherGrupoSabanaComponent — resumen del backend (CULM-001 B.2, F-D
     expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="sabana-resumen-error"]')!.textContent!.trim())
       .toBe('No eres el titular de este grupo.');
   });
+
+  it('F-DOC-007: la matriz pinta solo la pagina vigente de estudiantes (50) y no la lista completa', () => {
+    crear();
+    const muchos = Array.from({ length: 120 }, (_, i) => ({ studentId: `st-${i}`, studentName: `E${i}`, studentCode: `${i}` }));
+    fixture.componentRef.setInput('estudiantes', muchos);
+    fixture.detectChanges();
+
+    const filas = (fixture.nativeElement as HTMLElement).querySelectorAll('[data-testid^="sabana-resumen-"]');
+    expect(filas.length).toBe(50);
+  });
 });
