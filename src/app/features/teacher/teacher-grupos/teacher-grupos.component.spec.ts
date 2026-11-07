@@ -54,7 +54,6 @@ describe('TeacherGruposComponent', () => {
     ]);
     sessionService = jasmine.createSpyObj<SessionService>('SessionService', [
       'getSessionsByGroup',
-      'getQrToken',
       'cancelarSesion',
       'createSession',
       'updateSession',
@@ -146,57 +145,30 @@ describe('TeacherGruposComponent', () => {
 
 
 
-  it('abrirModalProyeccionParaGrupo() ya no selecciona la sesión activa por status sintético', () => {
-    // TARGET (PLAN.md riesgo #2/TARGET): sin sustituto sintético, se asume el criterio más
-    // simple consistente con "no inventar una regla de reemplazo": tomar la primera sesión
-    // de la lista tal como la entrega el backend, sin heurística por status.
-    const primera: ClassSession = {
-      id: 'ses-1',
-      courseId: 'crs-1',
-      sessionNumber: 1,
-      title: 'Primera',
-      date: '2026-09-10',
-      startTime: '08:00',
-      endTime: '10:00',
-      records: [],
-    };
-    const segunda: ClassSession = {
-      ...primera,
-      id: 'ses-2',
-      sessionNumber: 2,
-      title: 'Segunda',
-    };
-    sessionService.getSessionsByGroup.and.returnValue(
-      of({ exitoso: true, datos: [primera, segunda], total: 2 } as any)
-    );
-    sessionService.getQrToken.and.returnValue(
-      of({ exitoso: true, datos: { sesionId: '', grupoId: '', token: '', codigoAcceso: '', expiraEnSegundos: 30, expiraEn: '' } } as any)
-    );
-    // La proyección QR está OUT_OF_GOLDEN_PATH (feature deshabilitada): se habilita solo para este criterio legacy.
-    Object.assign(component, { sessionQrEnabled: true });
-
-    component.abrirModalProyeccionParaGrupo(course);
-
-    expect(component.sesionActivaId()).toBe('ses-1');
-    component.cerrarModalProyeccion();
-  });
-
   // --- LB-001B.5A: acciones de sesión fuera de BACKEND_GOLDEN_PATH_CONTRACT ---
 
-  it('QR/PIN está deshabilitado por feature (hasta B.2) y la cancelación está habilitada (B.1)', () => {
-    expect(component.sessionQrEnabled).toBeFalse();
+  it('B2-F-15 el QR (HU175) esta habilitado y el bloque de proyeccion con temporizador fue retirado', () => {
+    expect(component.sessionQrEnabled).toBeTrue();
     expect(component.sessionCancelEnabled).toBeTrue();
+    const interno = component as unknown as Record<string, unknown>;
+    for (const retirado of ['datosQr', 'segundosRestantes', 'modalProyeccionVisible', 'refrescarQrManual', 'iniciarTimerQr']) {
+      expect(interno[retirado]).toBeUndefined();
+    }
+  });
+
+  it('B2-F-15 proyectar el QR de un grupo o de una sesion lleva a la pantalla de asistencia sin llamar al backend', () => {
+    const navigate = router.navigate.and.resolveTo(true);
     const sesion: ClassSession = {
       id: 'ses-1', courseId: 'crs-1', sessionNumber: 1, title: 'S',
       date: '2026-09-10', startTime: '08:00', endTime: '10:00', records: [],
     };
+    component.verHubGrupo(course);
 
-    component.abrirModalProyeccionParaGrupo(course);
+    component.proyectarQrGrupo(course);
+    expect(navigate).toHaveBeenCalledWith(['/app/asistencia'], { queryParams: { courseId: course.id } });
+
     component.proyectarSesionEspecifica(sesion);
-    component.cambiarSesionActiva('ses-1');
-
-    expect(component.modalProyeccionVisible()).toBeFalse();
-    expect(sessionService.getQrToken).not.toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledWith(['/app/asistencia'], { queryParams: { courseId: course.id, sessionId: 'ses-1' } });
   });
 
   it('actualizar sesión consume ApiDataResponse<Void>: éxito con solo `exitoso` recarga por HTTP', () => {

@@ -88,6 +88,16 @@ export const routes: Routes = [
             './features/attendance/attendance-control/attendance-control.component'
           ).then((m) => m.AttendanceControlComponent),
       },
+      // CULM-001 B.2 (HU176): el estudiante registra su asistencia con el QR (camara nativa) o con el PIN.
+      ...['asistencia/qr', 'asistencia/pin'].map((path) => ({
+        path,
+        canActivate: [roleGuard],
+        data: { roles: ['ESTUDIANTE'] },
+        loadComponent: () =>
+          import('./features/student/student-attendance-qr/student-attendance-qr.component').then(
+            (m) => m.StudentAttendanceQrComponent
+          ),
+      })),
       // Rutas Administrador
       {
         path: 'admin/facultades',

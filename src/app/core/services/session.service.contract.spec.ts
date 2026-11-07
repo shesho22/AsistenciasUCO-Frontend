@@ -231,49 +231,8 @@ describe('SessionService contract operations', () => {
     });
   }
 
-  it('obtiene el token QR y completa el mensaje', () => {
-    let response: any;
-    service.getQrToken('ses-1').subscribe((value) => (response = value));
-
-    const request = http.expectOne(`${environment.apiUrl}/sesiones/ses-1/qr-token`);
-    request.flush({
-      exitoso: true,
-      datos: {
-        sesionId: 'ses-1',
-        grupoId: 'grupo-1',
-        token: 'token',
-        codigoAcceso: '123456',
-        expiraEnSegundos: 60,
-        expiraEn: '2026-09-22T10:01:00',
-      },
-    });
-
-    expect(response.idTransaccion).toBe('tx-qr-token');
-    expect(response.mensajeUsuario).toBe('Token generado con éxito.');
-  });
-
-  it('registra autoasistencia y normaliza una respuesta exitosa', () => {
-    let response: any;
-    service.registrarAutoAsistencia({ codigoAcceso: '123456' })
-      .subscribe((value) => (response = value));
-
-    const request = http.expectOne(`${environment.apiUrl}/estudiante/asistencia-qr`);
-    expect(request.request.body).toEqual({ codigoAcceso: '123456' });
-    request.flush({ exitoso: true, datos: { registrada: true } });
-
-    expect(response.idTransaccion).toBe('tx-auto-asistencia');
-    expect(response.mensajeUsuario).toContain('registrada');
-  });
-
-  it('propaga el mensaje útil de un fallo de autoasistencia', () => {
-    let receivedError: Error | undefined;
-    service.registrarAutoAsistencia({ token: 'vencido' }).subscribe({
-      error: (error) => (receivedError = error),
-    });
-
-    http.expectOne(`${environment.apiUrl}/estudiante/asistencia-qr`)
-      .flush({ message: 'El token expiró' }, { status: 400, statusText: 'Bad Request' });
-
-    expect(receivedError?.message).toBe('El token expiró');
+  it('B2-F-15 ya no expone getQrToken ni el auto-registro legado (el QR vive en tomas y asistencia-qr)', () => {
+    expect((service as unknown as Record<string, unknown>)['getQrToken']).toBeUndefined();
+    expect((service as unknown as Record<string, unknown>)['registrarAutoAsistencia']).toBeUndefined();
   });
 });

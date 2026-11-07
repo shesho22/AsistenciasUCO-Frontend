@@ -1,4 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { TeacherAttendanceSummaryService } from '../../../core/services/teacher-attendance-summary.service';
+import { TomaAsistenciaService } from '../../../core/services/toma-asistencia.service';
+import { AsistenciaQrService } from '../../../core/services/asistencia-qr.service';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NEVER, of, throwError } from 'rxjs';
 import { AttendanceService } from '../../../core/services/attendance.service';
@@ -55,7 +58,7 @@ describe('AttendanceControlComponent SES-01 ventana estricta', () => {
     groupService = jasmine.createSpyObj('GroupService', ['getStudentsByGroup']);
     attendanceService = jasmine.createSpyObj('AttendanceService', ['getAttendancesByGroup', 'saveBatchAttendance']);
     const realtime = jasmine.createSpyObj<AttendanceRealtimeSyncService>('AttendanceRealtimeSyncService', [
-      'watch', 'watchCancelaciones', 'connectionAlerts', 'connectGroup', 'disconnect',
+      'watch', 'watchCancelaciones', 'watchTomas', 'connectionAlerts', 'connectGroup', 'disconnect',
     ]);
     const claims = jasmine.createSpyObj<AttendanceClaimService>('AttendanceClaimService', [
       'getReclamosDocente', 'getReclamosDocentePorGrupo', 'resolverReclamo',
@@ -80,6 +83,7 @@ describe('AttendanceControlComponent SES-01 ventana estricta', () => {
     attendanceService.saveBatchAttendance.and.returnValue(of({ exitoso: true, mensaje: 'Guardada' }));
     realtime.watch.and.returnValue(NEVER);
     (realtime as any).watchCancelaciones.and.returnValue(NEVER);
+    (realtime as any).watchTomas.and.returnValue(NEVER);
     realtime.connectionAlerts.and.returnValue(NEVER);
     claims.getReclamosDocente.and.returnValue(of({ exitoso: true, datos: [] }) as any);
     claims.getReclamosDocentePorGrupo.and.returnValue(of([]));
@@ -94,6 +98,9 @@ describe('AttendanceControlComponent SES-01 ventana estricta', () => {
         { provide: GroupService, useValue: groupService },
         { provide: StudentService, useValue: jasmine.createSpyObj('StudentService', ['enrollStudentInGroup']) },
         { provide: AttendanceService, useValue: attendanceService },
+        { provide: TomaAsistenciaService, useValue: { consultarTomas: () => NEVER, abrirToma: () => NEVER, cerrarToma: () => NEVER, registrarAsistencias: () => NEVER, consultarFaltantes: () => NEVER } },
+        { provide: TeacherAttendanceSummaryService, useValue: { consultarResumen: () => NEVER } },
+        { provide: AsistenciaQrService, useValue: { abrirQr: () => NEVER, rotarQr: () => NEVER, cerrarQr: () => NEVER } },
         { provide: AttendanceClaimService, useValue: claims },
         { provide: CatalogService, useValue: { getIdentityDocumentTypes: () => of([]) } },
         { provide: AttendanceRealtimeSyncService, useValue: realtime },

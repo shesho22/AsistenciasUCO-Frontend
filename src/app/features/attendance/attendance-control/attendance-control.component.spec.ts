@@ -1,4 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { TeacherAttendanceSummaryService } from '../../../core/services/teacher-attendance-summary.service';
+import { TomaAsistenciaService } from '../../../core/services/toma-asistencia.service';
+import { AsistenciaQrService } from '../../../core/services/asistencia-qr.service';
 import { NEVER, Observable, Subject, of, throwError } from 'rxjs';
 import { apiHttpError } from '../../../core/testing/api-error.fixture';
 import { AttendanceControlComponent, MENSAJE_MATRICULA_DUPLICADA_DOCENTE } from './attendance-control.component';
@@ -112,10 +115,11 @@ describe('AttendanceControlComponent contract corrections', () => {
     realtimeAlerts$ = new Subject<RealtimeConnectionState>();
     realtimeSync = jasmine.createSpyObj<AttendanceRealtimeSyncService>(
       'AttendanceRealtimeSyncService',
-      ['watch', 'watchCancelaciones', 'connectGroup', 'disconnect', 'connectionAlerts'] as any
+      ['watch', 'watchCancelaciones', 'watchTomas', 'connectGroup', 'disconnect', 'connectionAlerts'] as any
     ) as typeof realtimeSync;
     realtimeSync.watch.and.returnValue(NEVER);
     (realtimeSync as any).watchCancelaciones.and.returnValue(NEVER);
+    (realtimeSync as any).watchTomas.and.returnValue(NEVER);
     realtimeSync.connectionAlerts.and.returnValue(realtimeAlerts$.asObservable());
 
     catalogService.getIdentityDocumentTypes.and.returnValue(of([]));
@@ -170,6 +174,9 @@ describe('AttendanceControlComponent contract corrections', () => {
         { provide: GroupService, useValue: groupService },
         { provide: StudentService, useValue: studentService },
         { provide: AttendanceService, useValue: attendanceService },
+        { provide: TomaAsistenciaService, useValue: { consultarTomas: () => NEVER, abrirToma: () => NEVER, cerrarToma: () => NEVER, registrarAsistencias: () => NEVER, consultarFaltantes: () => NEVER } },
+        { provide: TeacherAttendanceSummaryService, useValue: { consultarResumen: () => NEVER } },
+        { provide: AsistenciaQrService, useValue: { abrirQr: () => NEVER, rotarQr: () => NEVER, cerrarQr: () => NEVER } },
         { provide: CatalogService, useValue: catalogService },
         { provide: AttendanceClaimService, useValue: attendanceClaimService },
         { provide: AttendanceRealtimeSyncService, useValue: realtimeSync },
@@ -557,12 +564,13 @@ describe('AttendanceControlComponent contract corrections', () => {
     expect(navigate).toHaveBeenCalledWith(['/app/docente/grupos'], { queryParams: { grupo: 'course-1' } });
   });
 
-  it('abre modales de información del grupo, reclamos y proyección de sesión', () => {
+  it('abre modales de información del grupo, reclamos y el selector de modo de toma', () => {
     const component = createComponent([activeStudent], []);
 
-    component.abrirProyeccionDeSesion('session-1');
+    component.selectedSessionId.set('session-1');
+    component.abrirSelectorModo();
     expect(component.selectedSessionId()).toBe('session-1');
-    expect(component.isProjectionModalOpen()).toBeTrue();
+    expect(component.modoSelectorAbierto()).toBeTrue();
 
     component.abrirInfoGrupo();
     expect(component.isGroupInfoModalOpen()).toBeTrue();

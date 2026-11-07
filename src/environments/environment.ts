@@ -57,9 +57,9 @@ export const environment = {
     attendanceEnabled: true,
     sessionsV2Enabled: true,
     // CULM-001 B.1 (HU047): la cancelación de sesión tiene contrato (CONTRACT B 3.2.1). La bandera queda como
-    // interruptor de retirada. El QR de asistencia sigue apagado hasta el subpaquete B.2.
+    // interruptor de retirada. CULM-001 B.2 (HU175): el QR de asistencia tiene contrato (CONTRACT B 3.2.6).
     sessionCancelEnabled: true,
-    sessionQrEnabled: false,
+    sessionQrEnabled: true,
     // GET /usuarios/perfil para hidratar el nombre al iniciar sesión: apagado por defecto; habilitar con USER_PROFILE_ENDPOINT_ENABLED=true (el PUT fue retirado en CULM-001 A.2-14)
     userProfileEndpointEnabled: runtimeFlag('USER_PROFILE_ENDPOINT_ENABLED'),
   },

@@ -38,7 +38,17 @@ import { AttendanceControlHeaderComponent } from './components/attendance-contro
 import { AttendanceControlTableComponent } from './components/attendance-control-table.component';
 import { AttendanceEnrollmentModalComponent } from './components/attendance-enrollment-modal.component';
 import { AttendanceNewSessionModalComponent } from './components/attendance-new-session-modal.component';
-import { AttendanceProjectionModalComponent } from './components/attendance-projection-modal.component';
+import { SessionTomasPanelComponent } from './components/session-tomas-panel.component';
+import { TomaModoSelectorComponent } from './components/toma-modo-selector.component';
+import { TomaCierreDialogComponent } from './components/toma-cierre-dialog.component';
+import { TomaFaltantesComponent } from './components/toma-faltantes.component';
+import { TomaQrProyeccionComponent } from './components/toma-qr-proyeccion.component';
+import { TeacherAttendanceSummaryService } from '../../../core/services/teacher-attendance-summary.service';
+import { ResumenAsistenciaEstudiante } from '../../../core/models/indicadores-asistencia.model';
+import { TomaAsistenciaService } from '../../../core/services/toma-asistencia.service';
+import { AsistenciaQrService } from '../../../core/services/asistencia-qr.service';
+import { ModoToma, TomaAsistencia, TomasSesion } from '../../../core/models/toma-asistencia.model';
+import { QrToma } from '../../../core/models/asistencia-qr.model';
 import { GroupSessionsOverviewComponent } from './components/group-sessions-overview.component';
 import { GroupInfoModalComponent } from './components/group-info-modal.component';
 import { GroupClaimsModalComponent } from './components/group-claims-modal.component';
@@ -85,7 +95,11 @@ type StudentEnrollmentField =
     AttendanceControlTableComponent,
     AttendanceEnrollmentModalComponent,
     AttendanceNewSessionModalComponent,
-    AttendanceProjectionModalComponent,
+    SessionTomasPanelComponent,
+    TomaModoSelectorComponent,
+    TomaCierreDialogComponent,
+    TomaFaltantesComponent,
+    TomaQrProyeccionComponent,
     GroupSessionsOverviewComponent,
     GroupInfoModalComponent,
     GroupClaimsModalComponent,
@@ -113,7 +127,7 @@ type StudentEnrollmentField =
         (markAllAbsent)="markAllAbsent()"
         (openEnrollment)="openStudentRegistration()"
         (openNewSession)="openNewSessionModal()"
-        (openProjection)="isProjectionModalOpen.set(true)"
+        (openProjection)="abrirSelectorModo()"
         (exportExcel)="descargarPlanillaExcel()"
         (courseChange)="seleccionarCurso($event)"
         (sessionChange)="onSessionSelect($event)"
@@ -126,9 +140,9 @@ type StudentEnrollmentField =
         <app-group-sessions-overview
           [course]="currentCourse()"
           [sessions]="sessions()"
+          [resumen]="resumenGrupo()"
           [totalReclamosPendientes]="pendingClaimsCount()"
           (selectSession)="irASesionDetalle($event)"
-          (openProjectionSesion)="abrirProyeccionDeSesion($event)"
           (openNewSession)="openNewSessionModal()"
           (openEnrollment)="openStudentRegistration()"
           (openMatriculaQr)="isMatriculaQrModalOpen.set(true)"
@@ -141,6 +155,22 @@ type StudentEnrollmentField =
 
       <!-- 3. VISTA DETALLE: Tabla Interactiva de Estudiantes para Toma de Asistencia -->
       @if (vistaActual() === 'DETALLE') {
+        <app-session-tomas-panel
+          [tomasSesion]="tomasSesionActual()"
+          [abriendo]="abriendoToma()"
+          (nuevaToma)="abrirSelectorModo()"
+          (seleccionarToma)="onSeleccionarToma($event)"
+          (verFaltantes)="tomaFaltantes.set($event)"
+        />
+
+        @if (tomaFaltantes(); as tf) {
+          <app-toma-faltantes
+            [tomaId]="tf.idToma"
+            [ventanaAbierta]="tomasSesionActual()?.ventana?.abierta ?? false"
+            (actualizado)="recargarSesionActual()"
+          />
+        }
+
         <app-attendance-control-table
           [students]="students()"
           [isLoading]="isLoadingSession()"
@@ -185,13 +215,33 @@ type StudentEnrollmentField =
         (closed)="isNewSessionModalOpen.set(false)"
       />
 
-      <!-- 6. Modal de Proyección QR Dinámico en Aula -->
-      <app-attendance-projection-modal
-        [isOpen]="isProjectionModalOpen()"
-        [courseCode]="currentCourse()?.code || 'CURSO'"
-        [sessionTitle]="currentSession()?.title || 'Sesión de Clase'"
-        (closed)="isProjectionModalOpen.set(false)"
-      />
+      <!-- 6. Modo de la toma, proyección del QR y cierre (CULM-001 B.2) -->
+      @if (modoSelectorAbierto()) {
+        <app-toma-modo-selector
+          [qrHabilitado]="sessionQrEnabled"
+          (modoElegido)="onModoElegido($event)"
+          (cancelar)="modoSelectorAbierto.set(false)"
+        />
+      }
+      @if (tomaProyectada(); as proyectada) {
+        @if (qrActual(); as q) {
+          <app-toma-qr-proyeccion
+            [toma]="proyectada"
+            [qr]="q"
+            [grupoId]="selectedCourseId()"
+            [titulo]="tituloProyeccion()"
+            (dejarDeProyectar)="dejarDeProyectar()"
+            (cerrarToma)="solicitarCierreToma()"
+          />
+        }
+      }
+      @if (cierrePendiente() && tomaAbierta(); as abierta) {
+        <app-toma-cierre-dialog
+          [numeroToma]="abierta.numero"
+          (confirmar)="confirmarCierreToma($event)"
+          (cancelar)="cierrePendiente.set(false)"
+        />
+      }
 
       <!-- 7. Modal de Información del Grupo & Alumnos Matriculados -->
       <app-group-info-modal
@@ -238,11 +288,15 @@ export class AttendanceControlComponent {
   private timeZone = inject(SessionTimeZoneService);
   private studentRegistrationConfig = inject(StudentRegistrationConfigService);
   private emailVerification = inject(EmailVerificationService);
+  private tomaService = inject(TomaAsistenciaService);
+  private resumenService = inject(TeacherAttendanceSummaryService);
+  private qrService = inject(AsistenciaQrService);
   emailDomain = signal<string>('');
   resendingStudentId = signal<string>('');
 
   readonly sessionsEnabled = environment.features.sessionsEnabled;
   readonly attendanceEnabled = environment.features.attendanceEnabled;
+  readonly sessionQrEnabled = environment.features.sessionQrEnabled;
 
   courses = signal<Course[]>([]);
   sessions = signal<ClassSession[]>([]);
@@ -269,7 +323,27 @@ export class AttendanceControlComponent {
   studentFieldErrors = signal<Partial<Record<StudentEnrollmentField, string>>>({});
   docTypes = signal<TipoIdentificacionApiDto[]>([]);
 
-  isProjectionModalOpen = signal<boolean>(false);
+  // CULM-001 B.2: tomas de la sesión, proyección del QR y faltantes.
+  tomasSesion = signal<TomasSesion | null>(null);
+  /** Resumen por horas del grupo (backend): alimenta los KPIs de la panorámica. */
+  resumenGrupo = signal<ResumenAsistenciaEstudiante[]>([]);
+  abriendoToma = signal<boolean>(false);
+  modoSelectorAbierto = signal<boolean>(false);
+  cierrePendiente = signal<boolean>(false);
+  tomaProyectada = signal<TomaAsistencia | null>(null);
+  qrActual = signal<QrToma | null>(null);
+  tomaFaltantes = signal<TomaAsistencia | null>(null);
+
+  /** Tomas de la sesión mostrada (nunca las de otra sesión). */
+  tomasSesionActual = computed(() => {
+    const datos = this.tomasSesion();
+    return datos && datos.idSesion === this.selectedSessionId() ? datos : null;
+  });
+  tomaAbierta = computed(() => this.tomasSesionActual()?.tomas.find((t) => t.estado === 'ABIERTA') ?? null);
+  tituloProyeccion = computed(() => {
+    const c = this.currentCourse();
+    return c ? `${c.name} · Grupo ${c.section}` : 'Asistencia';
+  });
 
   // Estado para Info del Grupo & Alumnos
   isGroupInfoModalOpen = signal<boolean>(false);
@@ -326,9 +400,109 @@ export class AttendanceControlComponent {
     void this.router?.navigate(['/app/docente/reclamos']);
   }
 
-  abrirProyeccionDeSesion(sessionId: string): void {
-    this.selectedSessionId.set(sessionId);
-    this.isProjectionModalOpen.set(true);
+  abrirSelectorModo(): void {
+    if (!this.selectedSessionId()) return;
+    this.modoSelectorAbierto.set(true);
+  }
+
+  onModoElegido(modo: ModoToma): void {
+    const sesionId = this.selectedSessionId();
+    this.modoSelectorAbierto.set(false);
+    if (!sesionId) return;
+    this.abriendoToma.set(true);
+    this.tomaService
+      .abrirToma(sesionId, modo)
+      .pipe(finalize(() => this.abriendoToma.set(false)))
+      .subscribe({
+        next: (res) => {
+          this.cargarTomas(sesionId);
+          if (modo === 'QR') this.proyectarQr(res.datos);
+        },
+        error: (err: unknown) => this.mostrarError(err, 'No fue posible abrir la toma.'),
+      });
+  }
+
+  onSeleccionarToma(toma: TomaAsistencia): void {
+    if (toma.modo === 'QR') this.proyectarQr(toma);
+  }
+
+  private proyectarQr(toma: TomaAsistencia): void {
+    this.qrService.abrirQr(toma.idToma).subscribe({
+      next: (res) => {
+        this.qrActual.set(res.datos);
+        this.tomaProyectada.set(toma);
+      },
+      error: (err: unknown) => this.mostrarError(err, 'No fue posible generar el código QR.'),
+    });
+  }
+
+  dejarDeProyectar(): void {
+    this.tomaProyectada.set(null);
+    this.qrActual.set(null);
+  }
+
+  solicitarCierreToma(): void {
+    if (this.tomaAbierta()) this.cierrePendiente.set(true);
+  }
+
+  confirmarCierreToma(marcarAusentes: boolean): void {
+    const toma = this.tomaAbierta();
+    this.cierrePendiente.set(false);
+    if (!toma) return;
+    this.tomaService.cerrarToma(toma.idToma, marcarAusentes).subscribe({
+      next: (res) => {
+        this.dejarDeProyectar();
+        this.tomaFaltantes.set(res.datos.toma);
+        this.cargarTomas(toma.idSesion);
+        this.recargarSesionActual();
+      },
+      error: (err: unknown) => this.mostrarError(err, 'No fue posible cerrar la toma.'),
+    });
+  }
+
+  recargarSesionActual(): void {
+    const courseId = this.selectedCourseId();
+    const sessionId = this.selectedSessionId();
+    if (courseId && sessionId) this.cargarEstudiantesYSesion(courseId, sessionId);
+  }
+
+  /** El backend limita la pagina a 100 (PAGINACION/TAMANO_MAXIMO): se recorren las paginas y se acumulan. */
+  private cargarResumenGrupo(courseId: string, pagina = 1, acumulado: ResumenAsistenciaEstudiante[] = []): void {
+    this.resumenService.consultarResumen(courseId, pagina, 100).subscribe({
+      next: (res) => {
+        if (this.selectedCourseId() !== courseId) return;
+        const todo = [...acumulado, ...res.elementos];
+        this.resumenGrupo.set(todo);
+        if (pagina < res.totalPaginas) this.cargarResumenGrupo(courseId, pagina + 1, todo);
+      },
+      error: () => this.resumenGrupo.set([]),
+    });
+  }
+
+  private cargarTomas(sesionId: string): void {
+    this.tomaService.consultarTomas(sesionId).subscribe({
+      next: (res) => {
+        if (this.selectedSessionId() !== sesionId) return;
+        this.tomasSesion.set(res.datos);
+        const proyectada = this.tomaProyectada();
+        if (!proyectada) return;
+        const actual = res.datos.tomas.find((t) => t.idToma === proyectada.idToma);
+        if (actual?.estado === 'CERRADA') {
+          // Cierre automático del job: la proyección termina y se muestran los faltantes.
+          this.dejarDeProyectar();
+          this.tomaFaltantes.set(actual);
+        } else if (actual) {
+          this.tomaProyectada.set(actual);
+        }
+      },
+      error: () => this.tomasSesion.set(null),
+    });
+  }
+
+  private mostrarError(err: unknown, respaldo: string): void {
+    this.toastType.set('error');
+    this.toastMessage.set(getApiErrorMessage(err) || respaldo);
+    this.showToast.set(true);
   }
 
   abrirInfoGrupo(): void {
@@ -569,6 +743,14 @@ export class AttendanceControlComponent {
       });
 
     this.attendanceRealtimeSync
+      .watchTomas(() => this.selectedCourseId())
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        const sessionId = this.selectedSessionId();
+        if (sessionId) this.cargarTomas(sessionId);
+      });
+
+    this.attendanceRealtimeSync
       .connectionAlerts()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((state) => {
@@ -629,7 +811,17 @@ export class AttendanceControlComponent {
   private readonly now = inject(ATTENDANCE_NOW);
   private readonly nowMs = signal<number>(this.now());
 
-  attendanceWindowState = computed(() => getAttendanceWindowState(this.currentSession(), this.nowMs()));
+  /**
+   * CULM-001 B.2: con las tomas cargadas, la ventana la decide el backend (`ventana.abierta`, calculada por la BD con
+   * tolerancia y margen). Sin ellas, se conserva la guarda SES-01 por instantes v2.
+   */
+  attendanceWindowState = computed(() => {
+    const local = getAttendanceWindowState(this.currentSession(), this.nowMs());
+    const tomas = this.tomasSesionActual();
+    if (!tomas || local === 'CANCELADA' || local === 'INDETERMINADA') return local;
+    if (tomas.ventana.abierta) return 'ABIERTA';
+    return local === 'NO_INICIADA' ? 'NO_INICIADA' : 'CERRADA';
+  });
 
   attendanceWindowOpen = computed(() => this.attendanceWindowState() === 'ABIERTA');
 
@@ -953,6 +1145,8 @@ export class AttendanceControlComponent {
     this.vistaActual.set(initialSessionId ? 'DETALLE' : 'OVERVIEW');
     if (courseId) {
       this.attendanceRealtimeSync.connectGroup(courseId);
+      this.resumenGrupo.set([]);
+      this.cargarResumenGrupo(courseId);
       this.cargarReclamosDocente(courseId);
     }
 
@@ -1048,6 +1242,7 @@ export class AttendanceControlComponent {
 
   private cargarEstudiantesYSesion(courseId: string, sessionId: string): void {
     this.isLoadingSession.set(true);
+    this.cargarTomas(sessionId);
     const pendingLocalStatus = new Map<string, AttendanceStatus>();
     for (const record of this.currentSession()?.records ?? []) {
       if (this.pendingStudentIds.has(record.studentId) && record.status !== null) {
@@ -1161,8 +1356,14 @@ export class AttendanceControlComponent {
       })),
     };
 
-    this.attendanceService
-      .saveBatchAttendance(request)
+    const toma = this.tomaAbierta();
+    const guardado$ = toma
+      ? this.tomaService
+          .registrarAsistencias(toma.idToma, request.registros)
+          .pipe(map(() => ({ exitoso: true, mensaje: '' })))
+      : this.attendanceService.saveBatchAttendance(request);
+
+    guardado$
       .pipe(finalize(() => this.isSaving.set(false)))
       .subscribe({
         next: (response) => {

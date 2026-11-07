@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { CardComponent } from '../../../../shared/components/card/card.component';
 import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
+import { AttendanceStatusBadgeComponent } from '../../../../shared/components/attendance-status-badge/attendance-status-badge.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { MateriaEstudianteItem } from '../../../../core/models/role-management.model';
 import { ProximaClaseInfo } from '../utils/proxima-clase.util';
@@ -11,7 +12,7 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
   selector: 'app-overview-student',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, RouterLink, CardComponent, BadgeComponent, ButtonComponent],
+  imports: [CommonModule, RouterLink, CardComponent, BadgeComponent, ButtonComponent, AttendanceStatusBadgeComponent],
   host: {
     class: 'block w-full',
   },
@@ -25,22 +26,22 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
           <span class="text-[11px] text-primary-700 font-medium">Semestre 2026-II</span>
         </div>
         <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px]">
-          <span class="text-xs text-warm-500 font-medium">Asistencia Promedio</span>
-          @if (averageAttendance() !== null) {
-            <p class="text-2xl font-serif font-bold text-success-700 mt-1">{{ averageAttendance() }}%</p>
-            <span class="text-[11px] text-success-700 font-medium">Según tus sesiones registradas</span>
+          <span class="text-xs text-warm-500 font-medium">Materias en riesgo</span>
+          @if (materiasEnRiesgo() !== null) {
+            <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ materiasEnRiesgo() }}</p>
+            <span class="text-[11px] text-warm-500 font-medium">Según la inasistencia por horas</span>
           } @else {
-            <p class="text-base font-serif font-bold text-warm-500 mt-1" data-testid="promedio-no-disponible">No disponible</p>
+            <p class="text-base font-serif font-bold text-warm-500 mt-1" data-testid="riesgo-no-disponible">No disponible</p>
             <span class="text-[11px] text-warm-500 font-medium">Sin datos de asistencia consolidados</span>
           }
         </div>
         <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px]">
-          <span class="text-xs text-warm-500 font-medium">Inasistencias Registradas</span>
-          @if (totalAbsences() !== null) {
-            <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ totalAbsences() }}</p>
+          <span class="text-xs text-warm-500 font-medium">Horas de falta</span>
+          @if (horasFalta() !== null) {
+            <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ horasFalta() }} h</p>
             <span class="text-[11px] text-warm-500 font-medium">En todo el periodo</span>
           } @else {
-            <p class="text-base font-serif font-bold text-warm-500 mt-1" data-testid="fallas-no-disponible">No disponible</p>
+            <p class="text-base font-serif font-bold text-warm-500 mt-1" data-testid="horas-falta-no-disponible">No disponible</p>
             <span class="text-[11px] text-warm-500 font-medium">Sin datos de asistencia consolidados</span>
           }
         </div>
@@ -145,26 +146,15 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
           @for (mat of materias(); track mat.claveGrupo) {
             <app-card [hoverable]="true" [title]="mat.nombre" [subtitle]="mat.codigo ? mat.codigo + ' • ' + mat.grupo : mat.grupo">
               <div class="space-y-4 my-2 text-xs text-warm-700">
-                <!-- Barra de Progreso de Asistencia (solo con fuente autoritativa) -->
+                <!-- Inasistencia por horas (solo con fuente autoritativa) -->
                 @if (mat.indicadores; as ind) {
-                  <div>
-                    <div class="flex items-center justify-between mb-1.5">
-                      <span class="font-medium text-warm-600">Cumplimiento de Asistencia:</span>
-                      <span class="font-bold text-sm" [ngClass]="ind.porcentajeAsistencia >= 80 ? 'text-success-700' : 'text-danger-700'">
-                        {{ ind.porcentajeAsistencia }}%
-                      </span>
-                    </div>
-                    <div class="w-full bg-warm-100 rounded-full h-2.5 overflow-hidden">
-                      <div
-                        class="h-2.5 rounded-full transition-all duration-500"
-                        [ngClass]="ind.porcentajeAsistencia >= 80 ? 'bg-success-600' : 'bg-danger-500'"
-                        [style.width.%]="ind.porcentajeAsistencia"
-                      ></div>
-                    </div>
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="font-bold text-sm text-warm-900">{{ ind.porcentajeInasistencia }}% de inasistencia</span>
+                    <app-attendance-status-badge [codigoPermanencia]="ind.codigoPermanencia" />
                   </div>
                 } @else {
                   <div class="text-warm-500" data-testid="asistencia-no-disponible">
-                    <span class="font-medium text-warm-600">Cumplimiento de Asistencia:</span> No disponible
+                    <span class="font-medium text-warm-600">Inasistencia:</span> No disponible
                   </div>
                 }
 
@@ -182,11 +172,7 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
 
                 <div class="flex items-center justify-between pt-2 border-t border-warm-100">
                   @if (mat.indicadores; as ind) {
-                    <div class="flex items-center gap-2">
-                      <span class="text-success-700 font-semibold">{{ ind.asistencias }} asistencias</span>
-                      <span class="text-warm-300">•</span>
-                      <span class="text-danger-700 font-semibold">{{ ind.inasistencias }} fallas</span>
-                    </div>
+                    <span class="text-warm-700 font-semibold">{{ ind.horasFalta }} h de falta de {{ ind.horasDictadas }} h</span>
                   }
                   @if (mat.estado) {
                     <app-badge [variant]="mat.estado === 'Al día' ? 'success' : 'danger'">
@@ -236,7 +222,7 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
 })
 export class OverviewStudentComponent {
   materias = input<MateriaEstudianteItem[]>([]);
-  averageAttendance = input<number | null>(null);
-  totalAbsences = input<number | null>(null);
+  materiasEnRiesgo = input<number | null>(null);
+  horasFalta = input<number | null>(null);
   proximaClase = input<ProximaClaseInfo | null>(null);
 }

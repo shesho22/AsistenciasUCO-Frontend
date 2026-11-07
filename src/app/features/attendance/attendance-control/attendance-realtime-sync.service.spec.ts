@@ -286,4 +286,44 @@ describe('AttendanceRealtimeSyncService', () => {
       expect(spy).not.toHaveBeenCalled();
     });
   });
+
+  describe('watchTomas (CULM-001 B.2)', () => {
+    let porTipo: Record<string, Subject<RealtimeEvent<unknown>>>;
+
+    beforeEach(() => {
+      porTipo = {
+        TOMA_ABIERTA: new Subject(),
+        TOMA_CERRADA: new Subject(),
+        ASISTENCIAS_TOMA_ACTUALIZADAS: new Subject(),
+      };
+      realtimeServiceSpy.listenType.and.callFake(((tipo: string) => porTipo[tipo].asObservable()) as never);
+    });
+
+    const emitir = (tipo: string, grupo: string, extra: Record<string, unknown> = {}) =>
+      porTipo[tipo].next({
+        eventId: 'e', type: tipo, occurredAt: '2026-11-10T14:00:00Z', correlationId: null,
+        payload: { grupo, sesion: 's1', toma: 't1', ...extra },
+      });
+
+    it('B2-F-12 escucha TOMA_ABIERTA, TOMA_CERRADA y ASISTENCIAS_TOMA_ACTUALIZADAS del grupo actual', () => {
+      const tipos: string[] = [];
+      service.watchTomas(() => 'g1').subscribe((e) => tipos.push(e.type));
+
+      emitir('TOMA_ABIERTA', 'g1');
+      emitir('TOMA_CERRADA', 'g1', { automatico: true, totalAusentesMarcados: 2 });
+      emitir('ASISTENCIAS_TOMA_ACTUALIZADAS', 'g1', { totalRegistros: 3 });
+      emitir('TOMA_ABIERTA', 'g2');
+
+      expect(tipos).toEqual(['TOMA_ABIERTA', 'TOMA_CERRADA', 'ASISTENCIAS_TOMA_ACTUALIZADAS']);
+    });
+
+    it('B2-F-12 sin grupo seleccionado no entrega nada y no usa timers', () => {
+      const intervalo = spyOn(window, 'setInterval').and.callThrough();
+      const recibidos: unknown[] = [];
+      service.watchTomas(() => '').subscribe((e) => recibidos.push(e));
+      emitir('TOMA_CERRADA', 'g1');
+      expect(recibidos).toEqual([]);
+      expect(intervalo).not.toHaveBeenCalled();
+    });
+  });
 });

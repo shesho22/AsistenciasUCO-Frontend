@@ -115,8 +115,8 @@ import { OverviewStudentComponent } from './components/overview-student.componen
         @case ('ESTUDIANTE') {
           <app-overview-student
             [materias]="materias()"
-            [averageAttendance]="averageStudentAttendance()"
-            [totalAbsences]="totalStudentAbsences()"
+            [materiasEnRiesgo]="studentMateriasEnRiesgo()"
+            [horasFalta]="studentHorasFalta()"
             [proximaClase]="proximaClase()"
           />
         }
@@ -184,8 +184,8 @@ export class OverviewComponent implements OnInit {
   // Datos Estudiante
   materias = signal<MateriaEstudianteItem[]>([]);
   /** `null` = sin fuente autoritativa de asistencia (no se muestran ceros inventados). */
-  averageStudentAttendance = signal<number | null>(null);
-  totalStudentAbsences = signal<number | null>(null);
+  studentMateriasEnRiesgo = signal<number | null>(null);
+  studentHorasFalta = signal<number | null>(null);
 
   isLoading = signal<boolean>(true);
 
@@ -309,18 +309,16 @@ export class OverviewComponent implements OnInit {
           next: (res) => {
             if (res.exitoso && res.datos) {
               this.materias.set(res.datos);
+              // CULM-001 B.2: solo se cuentan y suman valores que ya entrega el backend (por horas).
               const conIndicadores = res.datos.filter((m) => m.indicadores !== null);
               if (conIndicadores.length > 0) {
-                const avg = Math.round(
-                  conIndicadores.reduce((acc, m) => acc + m.indicadores!.porcentajeAsistencia, 0) /
-                    conIndicadores.length
+                this.studentMateriasEnRiesgo.set(
+                  conIndicadores.filter((m) => m.indicadores!.codigoPermanencia === 'RIESGO' || m.indicadores!.codigoPermanencia === 'PERDIDA').length
                 );
-                const absences = conIndicadores.reduce((acc, m) => acc + m.indicadores!.inasistencias, 0);
-                this.averageStudentAttendance.set(avg);
-                this.totalStudentAbsences.set(absences);
+                this.studentHorasFalta.set(conIndicadores.reduce((acc, m) => acc + m.indicadores!.horasFalta, 0));
               } else {
-                this.averageStudentAttendance.set(null);
-                this.totalStudentAbsences.set(null);
+                this.studentMateriasEnRiesgo.set(null);
+                this.studentHorasFalta.set(null);
               }
               this.recalcularProximaClase();
             }

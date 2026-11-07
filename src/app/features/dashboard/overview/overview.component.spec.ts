@@ -146,7 +146,7 @@ describe('OverviewComponent', () => {
       horario: 'Martes 10:00 - 12:00',
       aula: 'Aula 102',
       creditos: 4,
-      indicadores: { porcentajeAsistencia: 90, asistencias: 9, inasistencias: 1, totalClases: 10 },
+      indicadores: { sesionesEjecutadas: 10, horasDictadas: 20, horasAsistidas: 18, horasFalta: 2, horasExcusa: 0, horasSinRegistro: 0, porcentajeInasistencia: 10, porcentajeAsistencia: 90, codigoPermanencia: 'REGULAR', umbralAdvertencia: 15, umbralPerdida: 20 },
       estado: 'Al día',
     }),
   ];
@@ -284,30 +284,54 @@ describe('OverviewComponent', () => {
     expect(component.isLoading()).toBeFalse();
   });
 
-  it('ADMIN: la tarjeta de programas refleja el total que entrega el backend y no una expresión sobre decanos', () => {
-    createComponentWithRole('ADMINISTRADOR');
-    expect(adminIndicatorsSpy.consultarKpis).toHaveBeenCalled();
-    expect(component.totalProgramasAdmin()).toBe(4);
-    const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
-    expect(texto).toContain('Programas Académicos');
-    expect(texto).toMatch(/Programas Académicos\s*4/);
-  });
-
-  it('ADMIN: sin total (null) la tarjeta de programas muestra Sin datos, no 0 ni 1', () => {
-    adminIndicatorsSpy.consultarKpis.and.returnValue(of({ exitoso: true, datos: { totalProgramas: null } as any }));
-    createComponentWithRole('ADMINISTRADOR');
-    expect(component.totalProgramasAdmin()).toBeNull();
-    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Sin datos');
-  });
-
-  it('ADMIN: si la consulta de indicadores falla la tarjeta queda en Sin datos y los decanos cargan', () => {
-    adminIndicatorsSpy.consultarKpis.and.returnValue(throwError(() => ({ status: 403 })));
-    createComponentWithRole('ADMINISTRADOR');
-    expect(component.totalProgramasAdmin()).toBeNull();
-    expect(component.decanos().length).toBe(1);
-    expect(component.isLoading()).toBeFalse();
-  });
-
+  it('ADMIN: la tarjeta de programas refleja el total que entrega el backend y no una expresión sobre decanos', () => {
+
+    createComponentWithRole('ADMINISTRADOR');
+
+    expect(adminIndicatorsSpy.consultarKpis).toHaveBeenCalled();
+
+    expect(component.totalProgramasAdmin()).toBe(4);
+
+    const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
+
+    expect(texto).toContain('Programas Académicos');
+
+    expect(texto).toMatch(/Programas Académicos\s*4/);
+
+  });
+
+
+
+  it('ADMIN: sin total (null) la tarjeta de programas muestra Sin datos, no 0 ni 1', () => {
+
+    adminIndicatorsSpy.consultarKpis.and.returnValue(of({ exitoso: true, datos: { totalProgramas: null } as any }));
+
+    createComponentWithRole('ADMINISTRADOR');
+
+    expect(component.totalProgramasAdmin()).toBeNull();
+
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Sin datos');
+
+  });
+
+
+
+  it('ADMIN: si la consulta de indicadores falla la tarjeta queda en Sin datos y los decanos cargan', () => {
+
+    adminIndicatorsSpy.consultarKpis.and.returnValue(throwError(() => ({ status: 403 })));
+
+    createComponentWithRole('ADMINISTRADOR');
+
+    expect(component.totalProgramasAdmin()).toBeNull();
+
+    expect(component.decanos().length).toBe(1);
+
+    expect(component.isLoading()).toBeFalse();
+
+  });
+
+
+
   it('debe manejar error al cargar decanos para rol ADMIN', () => {
     adminServiceSpy.getDecanos.and.returnValue(throwError(() => new Error('Error')));
     createComponentWithRole('ADMIN');
@@ -382,17 +406,17 @@ describe('OverviewComponent', () => {
     expect(studentServiceSpy.getHorarios).toHaveBeenCalled();
     expect(studentServiceSpy.getMaterias).toHaveBeenCalled();
     expect(component.materias().length).toBe(1);
-    expect(component.averageStudentAttendance()).toBe(90);
-    expect(component.totalStudentAbsences()).toBe(1);
+    expect(component.studentMateriasEnRiesgo()).toBe(0);
+    expect(component.studentHorasFalta()).toBe(2);
     expect(component.isLoading()).toBeFalse();
   });
 
-  it('sin indicadores autoritativos no calcula promedio ni fallas (null, nunca 0 ni NaN)', () => {
+  it('sin indicadores autoritativos no cuenta riesgo ni horas de falta (null, nunca 0 ni NaN)', () => {
     studentServiceSpy.getMaterias.and.returnValue(of({ exitoso: true, datos: [crearMateria()] }));
     createComponentWithRole('ESTUDIANTE');
     expect(component.materias().length).toBe(1);
-    expect(component.averageStudentAttendance()).toBeNull();
-    expect(component.totalStudentAbsences()).toBeNull();
+    expect(component.studentMateriasEnRiesgo()).toBeNull();
+    expect(component.studentHorasFalta()).toBeNull();
   });
 
   it('debe manejar error al cargar materias para rol ESTUDIANTE', () => {

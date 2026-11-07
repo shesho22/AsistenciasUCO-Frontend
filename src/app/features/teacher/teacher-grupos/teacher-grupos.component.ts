@@ -25,7 +25,6 @@ import { TeacherGruposListComponent } from './components/teacher-grupos-list.com
 import { TeacherGrupoHubComponent } from './components/teacher-grupo-hub.component';
 import { TeacherSesionFormComponent } from './components/teacher-sesion-form.component';
 import { TeacherGrupoFormComponent } from './components/teacher-grupo-form.component';
-import { TeacherProyeccionQrModalComponent } from './components/modals/teacher-proyeccion-qr-modal.component';
 import { TeacherMatriculaModalComponent } from './components/modals/teacher-matricula-modal.component';
 import { TeacherSesionCancelarModalComponent } from './components/modals/teacher-sesion-cancelar-modal.component';
 import { TeacherSesionDetalleModalComponent } from './components/modals/teacher-sesion-detalle-modal.component';
@@ -46,7 +45,6 @@ type VistaGrupos = 'LISTA' | 'HUB_GRUPO' | 'FORM_SESION' | 'FORM_GRUPO';
     TeacherGrupoHubComponent,
     TeacherSesionFormComponent,
     TeacherGrupoFormComponent,
-    TeacherProyeccionQrModalComponent,
     TeacherMatriculaModalComponent,
     TeacherSesionCancelarModalComponent,
     TeacherSesionDetalleModalComponent,
@@ -96,7 +94,7 @@ type VistaGrupos = 'LISTA' | 'HUB_GRUPO' | 'FORM_SESION' | 'FORM_GRUPO';
           (volver)="volverALista()"
           (irAsistencia)="tomarAsistenciaGrupo($event)"
           (tomarAsistenciaSesion)="tomarAsistenciaSesionEspecifica($event)"
-          (proyectarQr)="abrirModalProyeccionParaGrupo($event)"
+          (proyectarQr)="proyectarQrGrupo($event)"
           (matricular)="abrirModalMatriculaGrupo($event)"
           (programarExtraordinaria)="abrirCrearSesionExtraordinaria()"
           (proyectarSesion)="proyectarSesionEspecifica($event)"
@@ -121,18 +119,6 @@ type VistaGrupos = 'LISTA' | 'HUB_GRUPO' | 'FORM_SESION' | 'FORM_GRUPO';
       }
 
       <!-- 5. MODALES DESACOPLADOS -->
-      <app-teacher-proyeccion-qr-modal
-        [isOpen]="modalProyeccionVisible()"
-        [curso]="selectedCourse()"
-        [sessions]="sessions()"
-        [sesionActivaId]="sesionActivaId()"
-        [datosQr]="datosQr()"
-        [segundosRestantes]="segundosRestantes()"
-        (cambiarSesion)="cambiarSesionActiva($event)"
-        (refrescarQr)="refrescarQrManual()"
-        (closed)="cerrarModalProyeccion()"
-      />
-
       <app-teacher-matricula-modal
         [isOpen]="modalMatriculaGrupoVisible()"
         [curso]="grupoMatricula()"
@@ -179,7 +165,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   private realtime = inject(RealtimeService);
   private cancelacionesSub: Subscription | null = null;
 
-  // QR/PIN sigue OUT_OF_GOLDEN_PATH hasta B.2; la cancelación (HU047) ya tiene contrato (CULM-001 B.1).
+  // QR (HU175, CULM-001 B.2) y cancelación (HU047, B.1) tienen contrato.
   readonly sessionQrEnabled = environment.features.sessionQrEnabled;
   readonly sessionCancelEnabled = environment.features.sessionCancelEnabled;
 
@@ -207,13 +193,6 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   // Modal Detalle Sesión (Historial)
   modalDetalleSesionVisible = signal<boolean>(false);
   sesionDetalle = signal<ClassSession | null>(null);
-
-  // Proyección QR / PIN
-  modalProyeccionVisible = signal<boolean>(false);
-  sesionActivaId = signal<string>('');
-  datosQr = signal<any>(null);
-  segundosRestantes = signal<number>(30);
-  private timerRef: any = null;
 
   // Matrícula por Grupo
   modalMatriculaGrupoVisible = signal<boolean>(false);
@@ -256,7 +235,6 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.cancelarCargaReclamosGrupo();
-    this.detenerTimerQr();
     this.detenerEscuchaCancelaciones();
   }
 
@@ -340,7 +318,6 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
     this.detenerEscuchaCancelaciones();
     this.vistaActual.set('LISTA');
     this.selectedCourse.set(null);
-    this.detenerTimerQr();
   }
 
   cargarSesiones(courseId: string): void {
@@ -653,78 +630,18 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
     this.grupoMatricula.set(null);
   }
 
-  abrirModalProyeccionParaGrupo(course: Course): void {
+  /** HU175: la proyección del QR vive en la pantalla de asistencia (toma en modo QR). */
+  proyectarQrGrupo(course: Course): void {
     if (!this.sessionQrEnabled) return;
-    this.selectedCourse.set(course);
-    this.modalProyeccionVisible.set(true);
-
-    this.sessionService.getSessionsByGroup(course.id).subscribe({
-      next: (res) => {
-        const sesiones = res.datos || [];
-        this.sessions.set(sesiones);
-        const activa = sesiones[0];
-        if (activa) {
-          this.cambiarSesionActiva(activa.id);
-        }
-      },
-    });
+    void this.router.navigate(['/app/asistencia'], { queryParams: { courseId: course.id } });
   }
 
   proyectarSesionEspecifica(sesion: ClassSession): void {
-    if (!this.sessionQrEnabled) return;
-    this.modalProyeccionVisible.set(true);
-    this.cambiarSesionActiva(sesion.id);
-  }
-
-  cerrarModalProyeccion(): void {
-    this.modalProyeccionVisible.set(false);
-    this.detenerTimerQr();
-  }
-
-  cambiarSesionActiva(sesionId: string): void {
-    this.sesionActivaId.set(sesionId);
-    this.refrescarQrManual();
-  }
-
-  refrescarQrManual(): void {
-    const sesionId = this.sesionActivaId();
-    if (!this.sessionQrEnabled || !sesionId) return;
-
-    this.sessionService.getQrToken(sesionId).subscribe({
-      next: (res) => {
-        if (res.exitoso && res.datos) {
-          this.datosQr.set(res.datos);
-          this.iniciarTimerQr(res.datos.expiraEnSegundos || 30);
-        }
-      },
-      error: (err) => {
-        this.detenerTimerQr();
-        this.datosQr.set(null);
-        const mensaje = getApiErrorMessage(err);
-        this.toast.error(mensaje);
-      },
+    const course = this.selectedCourse();
+    if (!this.sessionQrEnabled || !course) return;
+    void this.router.navigate(['/app/asistencia'], {
+      queryParams: { courseId: course.id, sessionId: sesion.id },
     });
-  }
-
-  private iniciarTimerQr(segundos: number): void {
-    this.detenerTimerQr();
-    this.segundosRestantes.set(segundos);
-    this.timerRef = setInterval(() => {
-      const rest = this.segundosRestantes() - 1;
-      if (rest <= 0) {
-        this.detenerTimerQr();
-        this.refrescarQrManual();
-      } else {
-        this.segundosRestantes.set(rest);
-      }
-    }, 1000);
-  }
-
-  private detenerTimerQr(): void {
-    if (this.timerRef) {
-      clearInterval(this.timerRef);
-      this.timerRef = null;
-    }
   }
 
   tomarAsistenciaGrupo(course: Course): void {

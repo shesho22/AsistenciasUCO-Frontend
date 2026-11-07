@@ -1,5 +1,6 @@
 import { Component, ChangeDetectionStrategy, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { AttendanceStatusBadgeComponent } from '../../../../shared/components/attendance-status-badge/attendance-status-badge.component';
 import { SesionEstadoBadgeComponent } from '../../../../shared/components/sesion-estado-badge/sesion-estado-badge.component';
 import { BadgeComponent, BadgeVariant } from '../../../../shared/components/badge/badge.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
@@ -16,7 +17,7 @@ import { MotivosJustificacionComponent } from './motivos-justificacion.component
   selector: 'app-student-course-detail',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, BadgeComponent, ButtonComponent, MotivosJustificacionComponent, SesionEstadoBadgeComponent],
+  imports: [CommonModule, BadgeComponent, ButtonComponent, MotivosJustificacionComponent, SesionEstadoBadgeComponent, AttendanceStatusBadgeComponent],
   template: `
     @if (materia()) {
       <div class="space-y-6">
@@ -75,12 +76,14 @@ import { MotivosJustificacionComponent } from './motivos-justificacion.component
           <div class="p-4 rounded-xl bg-warm-50 border border-warm-100 flex flex-col justify-between text-center">
             @if (materia()?.indicadores; as ind) {
               <div>
-                <span class="text-xs text-warm-500 font-medium">Asistencia Acumulada</span>
-                <p class="text-3xl font-serif font-bold text-primary-800 my-1">{{ ind.porcentajeAsistencia }}%</p>
+                <span class="text-xs text-warm-500 font-medium">Inasistencia (por horas)</span>
+                <p class="text-3xl font-serif font-bold text-primary-800 my-1" data-testid="detalle-porcentaje-inasistencia">{{ ind.porcentajeInasistencia }}%</p>
+                <app-attendance-status-badge [codigoPermanencia]="ind.codigoPermanencia" />
               </div>
               <div class="text-[11px] text-warm-500 space-y-0.5 border-t border-warm-200/80 pt-2">
-                <p>{{ ind.asistencias }} asistencias de {{ ind.totalClases }} clases</p>
-                <p class="text-danger-700 font-semibold">{{ ind.inasistencias }} fallas registradas</p>
+                <p data-testid="detalle-horas">{{ ind.horasFalta }} h de falta de {{ ind.horasDictadas }} h dictadas</p>
+                <p>{{ ind.horasExcusa }} h con excusa</p>
+                <p>Advertencia desde {{ ind.umbralAdvertencia }}% · pérdida desde {{ ind.umbralPerdida }}%</p>
               </div>
             } @else {
               <div data-testid="detalle-asistencia-no-disponible">
@@ -140,6 +143,9 @@ import { MotivosJustificacionComponent } from './motivos-justificacion.component
                         Sesión #{{ sesion.numeroSesion }}
                       </span>
                       <span class="text-xs font-medium text-warm-500">{{ sesion.fecha }}</span>
+                      @if (sesion.horasSesion !== undefined) {
+                        <span class="text-xs text-warm-500" data-testid="sesion-horas">{{ sesion.horasSesion }} h</span>
+                      }
                       <span class="text-warm-300">•</span>
                       <span
                         class="text-xs text-warm-600"
@@ -296,6 +302,8 @@ export class StudentCourseDetailComponent {
         return 'danger';
       case 'JUSTIFICADA':
         return 'info';
+      case 'PARCIAL':
+        return 'warning';
       default:
         return 'neutral';
     }

@@ -220,6 +220,7 @@ import { TeacherGrupoSabanaComponent } from './teacher-grupo-sabana.component';
 
         @if (subPestanaHub() === 'SABANA') {
           <app-teacher-grupo-sabana
+            [grupoId]="selectedCourse()?.id ?? ''"
             [estudiantes]="estudiantes()"
             [sessions]="sessions()"
             [cargando]="cargandoEstudiantes() || loadingSessions()"
