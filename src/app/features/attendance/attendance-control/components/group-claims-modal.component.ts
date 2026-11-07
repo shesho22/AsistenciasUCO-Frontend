@@ -6,6 +6,7 @@ import { ButtonComponent } from '../../../../shared/components/button/button.com
 import { BadgeComponent, BadgeVariant } from '../../../../shared/components/badge/badge.component';
 import { type EstadoCargaReclamos, SolicitudRevisionItem } from '../../../../core/models/role-management.model';
 import { Course } from '../../../../core/models/course.model';
+import { etiquetaEstadoReclamo } from '../../../../core/utils/reclamo-estado.util';
 
 @Component({
   selector: 'app-group-claims-modal',
@@ -67,7 +68,7 @@ import { Course } from '../../../../core/models/course.model';
                     <h6 class="font-bold text-xs text-warm-900 truncate">{{ rec.estudianteNombre }}</h6>
                   </div>
                   <app-badge [variant]="getBadgeVariant(rec.estadoSolicitud)">
-                    {{ rec.estadoSolicitud }}
+                    {{ etiquetaEstado(rec.estadoSolicitud) }}
                   </app-badge>
                 </div>
 
@@ -153,9 +154,12 @@ export class GroupClaimsModalComponent {
   irABandejaGeneral = output<void>();
   reintentar = output<void>();
 
+  readonly etiquetaEstado = etiquetaEstadoReclamo;
+
   getBadgeVariant(estado?: string): BadgeVariant {
     if (estado === 'APROBADA') return 'success';
     if (estado === 'RECHAZADA') return 'danger';
+    if (estado === 'RETIRADA') return 'neutral';
     return 'warning';
   }
 }

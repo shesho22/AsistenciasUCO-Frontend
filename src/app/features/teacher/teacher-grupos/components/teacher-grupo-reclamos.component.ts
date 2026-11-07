@@ -2,6 +2,7 @@ import { Component, ChangeDetectionStrategy, input, output } from '@angular/core
 import { CommonModule } from '@angular/common';
 import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
 import { type EstadoCargaReclamos, SolicitudRevisionItem } from '../../../../core/models/role-management.model';
+import { etiquetaEstadoReclamo, varianteEstadoReclamo } from '../../../../core/utils/reclamo-estado.util';
 
 @Component({
   selector: 'app-teacher-grupo-reclamos',
@@ -46,8 +47,8 @@ import { type EstadoCargaReclamos, SolicitudRevisionItem } from '../../../../cor
                   </span>
                   <span class="text-xs font-bold text-warm-900">{{ rec.estudianteNombre }}</span>
                 </div>
-                <app-badge [variant]="rec.estadoSolicitud === 'PENDIENTE' ? 'warning' : (rec.estadoSolicitud === 'APROBADA' ? 'success' : 'danger')">
-                  {{ rec.estadoSolicitud }}
+                <app-badge [variant]="varianteEstado(rec.estadoSolicitud)">
+                  {{ etiquetaEstado(rec.estadoSolicitud) }}
                 </app-badge>
               </div>
               <p class="text-xs text-warm-700 italic">"{{ rec.justificacionSolicitud }}"</p>
@@ -88,4 +89,8 @@ export class TeacherGrupoReclamosComponent {
   estadoCarga = input<EstadoCargaReclamos>('LOADED');
   irAReclamos = output<void>();
   reintentar = output<void>();
+
+  /** Una solicitud retirada por el estudiante se ve neutra: no es pendiente, rechazada ni resuelta. */
+  readonly varianteEstado = varianteEstadoReclamo;
+  readonly etiquetaEstado = etiquetaEstadoReclamo;
 }

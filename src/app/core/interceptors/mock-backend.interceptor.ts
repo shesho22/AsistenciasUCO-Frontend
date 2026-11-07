@@ -486,7 +486,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
       delay(250)
     );
   }
-  if ((url.endsWith('/asistencias/revisiones') || url.endsWith('/estudiante/reclamos')) && method === 'POST') {
+  if (url.endsWith('/asistencias/revisiones') && method === 'POST') {
     const body = req.body as any;
     const nuevoReclamo = {
       ...body,
@@ -499,9 +499,21 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     return of(okResponse(nuevoReclamo, 'Solicitud de revisión registrada correctamente.')).pipe(delay(300));
   }
   if (url.includes('/estudiante/reclamos/') && method === 'DELETE') {
+    // A.2-7: misma forma que el backend (ApiMessageResponse); solo se retira un reclamo pendiente (409 en otro caso).
     const id = url.split('/').pop()!;
-    mockStore.solicitudesRevision = mockStore.solicitudesRevision.filter((r) => r.id !== id);
-    return of(okResponse(true, 'Solicitud de revisión eliminada.')).pipe(delay(200));
+    const reclamo = mockStore.solicitudesRevision.find((r) => r.id === id);
+    if (!reclamo) {
+      return throwError(() => new HttpErrorResponse({ status: 404, error: { message: 'La solicitud de revisión no existe.' } }));
+    }
+    if (reclamo.estadoSolicitud !== 'PENDIENTE') {
+      return throwError(
+        () => new HttpErrorResponse({ status: 409, error: { message: 'Solo se puede retirar una solicitud de revisión pendiente.' } })
+      ).pipe(delay(200));
+    }
+    mockStore.solicitudesRevision = mockStore.solicitudesRevision.map((r) =>
+      r.id === id ? { ...r, estadoSolicitud: 'RETIRADA' as const } : r
+    );
+    return of(new HttpResponse({ status: 200, body: { exitoso: true, mensaje: 'La solicitud de revisión fue retirada.' } })).pipe(delay(200));
   }
   // HU006: perfil propio con vinculos institucionales (misma forma que el backend).
   if (url.endsWith('/usuarios/perfil') && method === 'GET') {

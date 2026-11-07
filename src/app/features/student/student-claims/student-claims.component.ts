@@ -8,6 +8,7 @@ import { BadgeComponent, BadgeVariant } from '../../../shared/components/badge/b
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
+import { etiquetaEstadoReclamo, varianteEstadoReclamo } from '../../../core/utils/reclamo-estado.util';
 
 type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
 
@@ -64,7 +65,21 @@ type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
                       }
                     </p>
                   </div>
-                  <app-badge [variant]="badgeVariant(reclamo.estadoSolicitud)">{{ reclamo.estadoSolicitud }}</app-badge>
+                  <div class="flex items-center gap-2">
+                    <app-badge [variant]="badgeVariant(reclamo.estadoSolicitud)">{{ etiqueta(reclamo.estadoSolicitud) }}</app-badge>
+                    @if (reclamo.estadoSolicitud === 'PENDIENTE') {
+                      <button
+                        type="button"
+                        data-accion="retirar-reclamo"
+                        [disabled]="retirando() === reclamo.id"
+                        (click)="retirar(reclamo)"
+                        class="px-2.5 py-1 text-xs font-medium text-danger-700 bg-danger-50 hover:bg-danger-100 border border-danger-200 rounded-lg disabled:opacity-60"
+                        title="Retirar solicitud de revisión pendiente"
+                      >
+                        Retirar
+                      </button>
+                    }
+                  </div>
                 </div>
                 <p class="text-xs text-warm-500">Radicada el {{ reclamo.fechaSolicitud }}</p>
                 <div>
@@ -115,6 +130,8 @@ export class StudentClaimsComponent implements OnInit, OnDestroy {
   readonly estadoFiltro = signal<EstadoFiltro>('TODOS');
   readonly isLoading = signal(false);
   readonly descargando = signal(false);
+  /** id del reclamo que se está retirando (evita el doble envío). */
+  readonly retirando = signal<string | null>(null);
 
   ngOnInit(): void {
     this.cargar();
@@ -192,16 +209,27 @@ export class StudentClaimsComponent implements OnInit, OnDestroy {
   }
 
   badgeVariant(estado: EstadoSolicitudRevision): BadgeVariant {
-    switch (estado) {
-      case 'APROBADA':
-        return 'success';
-      case 'RECHAZADA':
-        return 'danger';
-      case 'PENDIENTE':
-        return 'warning';
-      default:
-        return 'neutral';
-    }
+    return varianteEstadoReclamo(estado);
+  }
+
+  etiqueta(estado: EstadoSolicitudRevision): string {
+    return etiquetaEstadoReclamo(estado);
+  }
+
+  /** A.2-7: retira una solicitud pendiente; el mensaje y los errores son los del backend. */
+  retirar(reclamo: SolicitudRevisionItem): void {
+    if (this.retirando()) return;
+    this.retirando.set(reclamo.id);
+    this.claimService
+      .eliminarReclamo(reclamo.id)
+      .pipe(finalize(() => this.retirando.set(null)))
+      .subscribe({
+        next: (res) => {
+          this.toast.success(res.mensaje);
+          this.cargar();
+        },
+        error: (error: unknown) => this.toast.error(getApiErrorMessage(error)),
+      });
   }
 
   private mensajeErrorDescarga(error: unknown): string {

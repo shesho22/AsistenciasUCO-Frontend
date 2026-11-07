@@ -324,7 +324,7 @@ describe('mockBackendInterceptor', () => {
     httpClient.delete(`${environment.apiUrl}/estudiante/reclamos/${pendiente.id}`).subscribe((r) => (res = r));
     tick(300);
     expect(res?.exitoso).toBeTrue();
-    expect(res?.mensajeUsuario).toBe('La solicitud de revisión fue retirada.');
+    expect(res?.mensaje).toBe('La solicitud de revisión fue retirada.');
     expect(mockStore.solicitudesRevision.find((r) => r.id === pendiente.id)?.estadoSolicitud as string).toBe('RETIRADA');
 
     let error: any;

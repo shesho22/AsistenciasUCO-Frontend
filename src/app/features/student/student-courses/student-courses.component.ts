@@ -331,10 +331,10 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
     const materia = this.selectedMateria();
     if (!materia) return;
 
-    this.claimService.eliminarReclamo(sesion.reclamoId, materia.id, sesion.id).subscribe({
+    this.claimService.eliminarReclamo(sesion.reclamoId).subscribe({
       next: (res) => {
         if (res.exitoso) {
-          this.toast.success(res.mensajeUsuario || 'Solicitud de revisión retirada.');
+          this.toast.success(res.mensaje);
           this.cargarSesiones(materia);
         }
       },

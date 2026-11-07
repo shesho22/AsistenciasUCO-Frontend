@@ -97,7 +97,7 @@ describe('StudentClaimsComponent (HU010/HU011: consulta del estudiante)', () => 
     botones[0].click();
     const del = http.expectOne(`${ENDPOINT}/sol-1`);
     expect(del.request.method).toBe('DELETE');
-    del.flush({ exitoso: true, mensajeUsuario: 'La solicitud de revisión fue retirada.' });
+    del.flush({ exitoso: true, mensaje: 'La solicitud de revisión fue retirada.' });
     expect(toastSpy.success).toHaveBeenCalledWith('La solicitud de revisión fue retirada.');
     http.expectOne((r) => r.url === ENDPOINT && r.method === 'GET').flush({ exitoso: true, total: 0, datos: [] });
   });

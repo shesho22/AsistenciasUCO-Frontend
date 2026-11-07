@@ -4,6 +4,7 @@ import { Observable, defer, map, of, switchMap, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiResponse } from '../models/api-response.model';
 import { ApiDataResponse } from '../api/models/api-data-response.model';
+import { ApiMessageResponse } from '../api/models/api-message-response.model';
 import { ClaimMapper, DetalleReclamoDocenteApi, ReclamoDocenteApi, ReclamoEstudianteApi } from '../mappers/claim.mapper';
 import { StudentPortalMapper } from '../mappers/student-portal.mapper';
 import { ApiListResponse } from '../api/models/api-list-response.model';
@@ -273,12 +274,9 @@ export class AttendanceClaimService {
     );
   }
 
-  eliminarReclamo(
-    id: string,
-    materiaId: string,
-    sesionId: string
-  ): Observable<ApiResponse<boolean>> {
-    return this.http.delete<ApiResponse<boolean>>(`${environment.apiUrl}/estudiante/reclamos/${id}`);
+  /** A.2-7: el estudiante retira su solicitud de revisión pendiente (404 si no es suya, 409 si ya no está pendiente). */
+  eliminarReclamo(id: string): Observable<ApiMessageResponse> {
+    return this.http.delete<ApiMessageResponse>(`${environment.apiUrl}/estudiante/reclamos/${id}`);
   }
 
   resolverReclamo(

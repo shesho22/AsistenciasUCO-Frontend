@@ -348,7 +348,7 @@ describe('StudentCoursesComponent', () => {
 
   it('A2-F-01 retirar un reclamo llama a eliminarReclamo(id), muestra el mensaje del backend y recarga las sesiones', () => {
     component.selectedMateria.set(mockMaterias[0]);
-    claimServiceSpy.eliminarReclamo.and.returnValue(of({ exitoso: true, mensajeUsuario: 'La solicitud de revisión fue retirada.' } as any));
+    claimServiceSpy.eliminarReclamo.and.returnValue(of({ exitoso: true, mensaje: 'La solicitud de revisión fue retirada.' }));
     claimServiceSpy.getSesionesPorMateria.calls.reset();
     component.retirarReclamo(mockSesiones[0]);
     expect(claimServiceSpy.eliminarReclamo).toHaveBeenCalledOnceWith('rec-1');

@@ -17,6 +17,7 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
 import { AvatarComponent } from '../../../shared/components/avatar/avatar.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { getApiErrorCode, getApiErrorMessage, getApiErrorResponse } from '../../../core/api/errors/api-error.util';
+import { etiquetaEstadoReclamo, varianteEstadoReclamo } from '../../../core/utils/reclamo-estado.util';
 
 type VistaDocenteReclamos = 'BANDEJA' | 'RESOLUCION';
 type EstadoFiltroReclamos = 'TODOS' | 'P' | 'A' | 'R';
@@ -150,7 +151,7 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
                           </span>
                         }
                         <app-badge [variant]="getReclamoBadgeVariant(reclamo.estadoSolicitud)">
-                          {{ reclamo.estadoSolicitud }}
+                          {{ etiquetaEstado(reclamo.estadoSolicitud) }}
                         </app-badge>
                       </div>
 
@@ -189,7 +190,7 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
 
                   <div class="flex items-center justify-between pt-3 border-t border-warm-100">
                     <span class="text-xs text-warm-400">
-                      {{ reclamo.estadoSolicitud === 'PENDIENTE' ? 'Pendiente de evaluación' : 'Evaluado' }}
+                      {{ reclamo.estadoSolicitud === 'PENDIENTE' ? 'Pendiente de evaluación' : (reclamo.estadoSolicitud === 'RETIRADA' ? 'Retirada por el estudiante' : 'Evaluado') }}
                     </span>
                     <app-button
                       variant="secondary"
@@ -260,7 +261,7 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
                 </span>
               }
               <app-badge [variant]="getReclamoBadgeVariant(selectedReclamo()!.estadoSolicitud)" size="md">
-                Estado: {{ selectedReclamo()?.estadoSolicitud }}
+                Estado: {{ etiquetaEstado(selectedReclamo()?.estadoSolicitud) }}
               </app-badge>
             </div>
           </div>
@@ -639,16 +640,9 @@ export class TeacherClaimsComponent implements OnInit, OnDestroy {
     }
   }
 
+  readonly etiquetaEstado = etiquetaEstadoReclamo;
+
   getReclamoBadgeVariant(estado: EstadoSolicitudRevision): BadgeVariant {
-    switch (estado) {
-      case 'APROBADA':
-        return 'success';
-      case 'RECHAZADA':
-        return 'danger';
-      case 'PENDIENTE':
-        return 'warning';
-      default:
-        return 'neutral';
-    }
+    return varianteEstadoReclamo(estado);
   }
 }

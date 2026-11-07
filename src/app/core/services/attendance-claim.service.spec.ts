@@ -263,12 +263,12 @@ describe('AttendanceClaimService', () => {
 
   it('A2-F-02 eliminarReclamo hace DELETE a /estudiante/reclamos/{id} con un solo argumento', () => {
     expect(service.eliminarReclamo.length).toBe(1);
-    let respuesta: { exitoso: boolean; mensajeUsuario?: string } | undefined;
+    let respuesta: { exitoso: boolean; mensaje: string } | undefined;
     service.eliminarReclamo('rec-99').subscribe((r) => (respuesta = r));
     const deleteRequest = http.expectOne(`${environment.apiUrl}/estudiante/reclamos/rec-99`);
     expect(deleteRequest.request.method).toBe('DELETE');
-    deleteRequest.flush({ exitoso: true, mensajeUsuario: 'La solicitud de revisión fue retirada.' });
-    expect(respuesta?.mensajeUsuario).toBe('La solicitud de revisión fue retirada.');
+    deleteRequest.flush({ exitoso: true, mensaje: 'La solicitud de revisión fue retirada.' });
+    expect(respuesta?.mensaje).toBe('La solicitud de revisión fue retirada.');
   });
 
   it('crearReclamo sin soporte no envía ningún campo de soporte', () => {

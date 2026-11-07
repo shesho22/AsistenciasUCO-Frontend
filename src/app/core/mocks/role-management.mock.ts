@@ -200,7 +200,7 @@ export interface MockSesionMateria {
   tema: string;
   estadoAsistencia: 'PRESENTE' | 'AUSENTE' | 'RETARDO' | 'JUSTIFICADA';
   reclamoId?: string;
-  estadoReclamo?: 'PENDIENTE' | 'APROBADA' | 'RECHAZADA';
+  estadoReclamo?: 'PENDIENTE' | 'APROBADA' | 'RECHAZADA' | 'RETIRADA';
   categoriaReclamo?: string;
   justificacionEstudiante?: string;
   soporteAdjuntoNombre?: string;
