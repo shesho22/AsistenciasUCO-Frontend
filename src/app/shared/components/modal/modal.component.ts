@@ -1,4 +1,16 @@
-import { Component, ChangeDetectionStrategy, input, output, HostListener } from '@angular/core';
+import {
+  Component,
+  ChangeDetectionStrategy,
+  ElementRef,
+  HostListener,
+  Injector,
+  afterNextRender,
+  effect,
+  inject,
+  input,
+  output,
+  viewChild,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 let modalIdCounter = 0;
@@ -28,6 +40,7 @@ let modalIdCounter = 0;
           aria-modal="true"
           [attr.aria-labelledby]="titleId"
           tabindex="-1"
+          #dialog
         >
           <!-- Header -->
           <div class="flex items-center justify-between pb-4 border-b border-warm-100">
@@ -65,6 +78,73 @@ export class ModalComponent {
   closed = output<void>();
 
   titleId = `modal-title-${++modalIdCounter}`;
+
+  private readonly injector = inject(Injector);
+  private readonly dialog = viewChild<ElementRef<HTMLElement>>('dialog');
+  private elementoPrevio: HTMLElement | null = null;
+  private estabaAbierto = false;
+
+  constructor() {
+    effect(() => {
+      const abierto = this.isOpen();
+      if (abierto && !this.estabaAbierto) {
+        this.estabaAbierto = true;
+        this.elementoPrevio = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        afterNextRender(() => this.enfocarPrimerElemento(), { injector: this.injector });
+      } else if (!abierto && this.estabaAbierto) {
+        this.estabaAbierto = false;
+        const previo = this.elementoPrevio;
+        this.elementoPrevio = null;
+        if (previo && document.contains(previo)) {
+          previo.focus();
+        }
+      }
+    });
+  }
+
+  private enfocables(): HTMLElement[] {
+    const raiz = this.dialog()?.nativeElement;
+    if (!raiz) return [];
+    return Array.from(
+      raiz.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ),
+    );
+  }
+
+  private enfocarPrimerElemento(): void {
+    const raiz = this.dialog()?.nativeElement;
+    if (!raiz) return;
+    // El primer elemento del cuerpo antes que el boton de cerrar; si no hay, el propio dialogo.
+    const destino = this.enfocables().find((el) => el.getAttribute('aria-label') !== 'Cerrar modal') ?? raiz;
+    destino.focus();
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  onTab(event: Event): void {
+    const teclado = event as KeyboardEvent;
+    if (!this.isOpen() || teclado.key !== 'Tab') return;
+    const items = this.enfocables();
+    const raiz = this.dialog()?.nativeElement;
+    if (!raiz || items.length === 0) {
+      teclado.preventDefault();
+      raiz?.focus();
+      return;
+    }
+    const primero = items[0];
+    const ultimo = items[items.length - 1];
+    const activo = document.activeElement;
+    if (teclado.shiftKey && (activo === primero || activo === raiz)) {
+      teclado.preventDefault();
+      ultimo.focus();
+    } else if (!teclado.shiftKey && activo === ultimo) {
+      teclado.preventDefault();
+      primero.focus();
+    } else if (activo instanceof HTMLElement && !raiz.contains(activo)) {
+      teclado.preventDefault();
+      primero.focus();
+    }
+  }
 
   @HostListener('document:keydown.escape')
   onEscape() {
