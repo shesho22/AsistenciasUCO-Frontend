@@ -212,6 +212,44 @@ describe('StudentCoursesComponent — soporte y radicación (LB-004D FE-01..FE-0
       expect(intentoDe(1)).toBe(intentoDe(0));
     });
 
+    const envelope = (status: number, code: string) => ({
+      timestamp: '2026-11-07T00:00:00Z', status, error: 'Error', code, message: '', path: '/api/v1/asistencias/revisiones', correlationId: null,
+    });
+    const plazoVencido = () =>
+      new HttpErrorResponse({
+        status: 409,
+        error: { ...envelope(409, 'ERR_PLAZO_JUSTIFICACION_VENCIDO'), message: 'El plazo para justificar esta inasistencia venció el 9 de noviembre.' },
+      });
+
+    it('409 de plazo vencido: expone el message del backend junto al boton y reactiva el envio', () => {
+      claims.crearReclamo.and.returnValue(throwError(() => plazoVencido()));
+      component.enviarReclamo({ categoria: 'Otro', justificacion: 'motivo' });
+
+      expect(component.errorEnvio()).toBe('El plazo para justificar esta inasistencia venció el 9 de noviembre.');
+      expect(component.enviandoReclamo()).toBeFalse();
+      expect(toast.error).not.toHaveBeenCalled();
+      expect(claims.getSesionesPorMateria).not.toHaveBeenCalled();
+    });
+
+    it('el error de plazo se limpia al reintentar', () => {
+      claims.crearReclamo.and.returnValue(throwError(() => plazoVencido()));
+      component.enviarReclamo({ categoria: 'Otro', justificacion: 'motivo' });
+      claims.crearReclamo.and.returnValue(new Subject<never>().asObservable() as never);
+      component.enviarReclamo({ categoria: 'Otro', justificacion: 'motivo' });
+      expect(component.errorEnvio()).toBeNull();
+    });
+
+    it('500 ERR_CONFIGURACION_PLAZO_JUSTIFICACION: error generico del backend por toast, sin error de plazo', () => {
+      claims.crearReclamo.and.returnValue(throwError(() => new HttpErrorResponse({
+        status: 500,
+        error: { ...envelope(500, 'ERR_CONFIGURACION_PLAZO_JUSTIFICACION'), message: 'No fue posible verificar el plazo de justificación.' },
+      })));
+      component.enviarReclamo({ categoria: 'Otro', justificacion: 'motivo' });
+
+      expect(component.errorEnvio()).toBeNull();
+      expect(toast.error).toHaveBeenCalledTimes(1);
+    });
+
     it('un contenido distinto es una solicitud nueva y usa otra correlación', () => {
       claims.crearReclamo.and.returnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
       component.enviarReclamo({ categoria: 'Otro', justificacion: 'motivo A' });
