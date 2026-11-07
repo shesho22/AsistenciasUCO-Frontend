@@ -14,7 +14,18 @@ export function varianteEstadoReclamo(estado: EstadoSolicitudRevision | string |
   }
 }
 
-/** Texto de la insignia: el estado tal como llega, salvo `RETIRADA`, que se presenta como "Retirada". */
+/** Texto legible de la insignia (nunca el codigo crudo del backend); un estado desconocido se muestra tal cual. */
 export function etiquetaEstadoReclamo(estado: EstadoSolicitudRevision | string | undefined): string {
-  return estado === 'RETIRADA' ? 'Retirada' : (estado ?? '');
+  switch (estado) {
+    case 'PENDIENTE':
+      return 'Pendiente';
+    case 'APROBADA':
+      return 'Aprobada';
+    case 'RECHAZADA':
+      return 'Rechazada';
+    case 'RETIRADA':
+      return 'Retirada';
+    default:
+      return estado ?? '';
+  }
 }
