@@ -4,6 +4,7 @@ import { AuthService } from './auth.service';
 import { environment } from '../../../environments/environment';
 import { BrowserNavigator } from '../security/browser-navigator';
 import { BASELINE_HTTP_TIMEOUT_MS, loadPending, savePending } from '../security/baseline-oidc';
+import { guardarRetornoQr, QR_RETORNO_STORAGE_KEY } from '../utils/qr-return-url.util';
 
 function base64UrlEncode(json: object): string {
   // UTF-8 safe base64 (parseJwt reverses this exact encoding via atob + decodeURIComponent).
@@ -624,6 +625,31 @@ describe('AuthService', () => {
       expect(pending?.returnUrl).toBe('/app/docente/grupos');
       expect(pending?.state).toBe(target.searchParams.get('state') ?? undefined);
 
+    });
+
+    it('B2-F-22 NB-8: el login interactivo no envia al IdP la URL de retorno del QR ni su token', () => {
+      guardarRetornoQr('/app/asistencia/qr?t=TOKEN-SECRETO');
+      window.history.replaceState({}, '', '/login');
+
+      service.startBaselineLogin();
+
+      const enviado = navigatorSpy.assign.calls.mostRecent().args[0] as string;
+      expect(enviado).not.toContain('TOKEN-SECRETO');
+      expect(decodeURIComponent(enviado)).not.toContain('asistencia/qr');
+      sessionStorage.removeItem(QR_RETORNO_STORAGE_KEY);
+    });
+
+    it('B2-F-22 NB-8: tras el login vuelve a la URL del QR con ?t= y borra la clave', async () => {
+      guardarRetornoQr('/app/asistencia/qr?t=TOKEN-SECRETO');
+      const state = 'state-nb8';
+      savePending({ state, verifier: 'verifier-abc', returnUrl: '/', silent: false, createdAt: Date.now() });
+      window.history.replaceState({}, '', `/login?code=code-1&state=${state}`);
+      tokenEndpointResponse(basePayload());
+
+      expect(await service.initKeycloak()).toBeTrue();
+
+      expect(window.location.pathname + window.location.search).toBe('/app/asistencia/qr?t=TOKEN-SECRETO');
+      expect(sessionStorage.getItem(QR_RETORNO_STORAGE_KEY)).toBeNull();
     });
 
     it('HU176B: en una ruta publica (QR de matrícula, verificación de correo) no redirige al IdP y deja ver la página', async () => {

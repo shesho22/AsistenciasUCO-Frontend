@@ -223,10 +223,8 @@ export class SessionService {
     return this.sessionV2.updateSession(sesionId, cambios as UpdateSessionV2Input);
   }
 
-  // OUT_OF_GOLDEN_PATH (LB-001B.5A): closeSession, getQrToken y
-  // registrarAutoAsistencia no pertenecen a BACKEND_GOLDEN_PATH_CONTRACT. Permanecen como
-  // legado interno; ningún flujo del Golden Path los invoca (las acciones de UI están
-  // deshabilitadas por `environment.features`) hasta que exista un contrato propio.
+  // OUT_OF_GOLDEN_PATH (LB-001B.5A): closeSession no pertenece a BACKEND_GOLDEN_PATH_CONTRACT. Permanece como
+  // legado interno sin consumidores. El QR vive ahora en TomaAsistenciaService / AsistenciaQrService (CULM-001 B.2).
 
   /** @deprecated OUT_OF_GOLDEN_PATH — sin contrato congelado (cierre legacy, DB SES_003 → 501). Sin consumidores en UI. */
   closeSession(sesionId: string): Observable<ApiResponse<void>> {
@@ -252,48 +250,6 @@ export class SessionService {
     return this.http.patch<ApiDataResponse<SesionCancelada>>(
       `${environment.apiUrl}/docente/sesiones/${sesionId}/cancelar`,
       { motivo }
-    );
-  }
-
-  /** @deprecated OUT_OF_GOLDEN_PATH — sin contrato congelado. Acción de UI deshabilitada (`features.sessionQrEnabled`). */
-  getQrToken(sesionId: string): Observable<ApiResponse<{
-    sesionId: string;
-    grupoId: string;
-    token: string;
-    codigoAcceso: string;
-    expiraEnSegundos: number;
-    expiraEn: string;
-  }>> {
-    return this.http.get<ApiResponse<{
-      sesionId: string;
-      grupoId: string;
-      token: string;
-      codigoAcceso: string;
-      expiraEnSegundos: number;
-      expiraEn: string;
-    }>>(`${environment.apiUrl}/sesiones/${sesionId}/qr-token`).pipe(
-      map((res) => ({
-        idTransaccion: res.idTransaccion || 'tx-qr-token',
-        exitoso: res.exitoso,
-        mensajeUsuario: res.mensajeUsuario || 'Token generado con éxito.',
-        datos: res.datos,
-      }))
-    );
-  }
-
-  /** @deprecated OUT_OF_GOLDEN_PATH — vertical estudiante (auto-registro QR); sin contrato congelado. */
-  registrarAutoAsistencia(payload: { token?: string; codigoAcceso?: string }): Observable<ApiResponse<unknown>> {
-    return this.http.post<ApiResponse<unknown>>(`${environment.apiUrl}/estudiante/asistencia-qr`, payload).pipe(
-      map((res) => ({
-        idTransaccion: res.idTransaccion || 'tx-auto-asistencia',
-        exitoso: res.exitoso,
-        mensajeUsuario: res.mensajeUsuario || '¡Asistencia registrada con éxito!',
-        datos: res.datos,
-      })),
-      catchError((err: unknown) => {
-        const errorMsg = getApiErrorMessage(err);
-        return throwError(() => new Error(errorMsg));
-      })
     );
   }
 }

@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { Router, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
 import { authGuard } from './auth.guard';
 import { AuthService } from '../services/auth.service';
+import { QR_RETORNO_STORAGE_KEY } from '../utils/qr-return-url.util';
 
 describe('authGuard', () => {
   let router: jasmine.SpyObj<Router>;
@@ -38,6 +39,40 @@ describe('authGuard', () => {
     TestBed.runInInjectionContext(() => authGuard(route, state));
     expect(router.createUrlTree).toHaveBeenCalledWith(['/login'], {
       queryParams: { returnUrl: '/app/estudiante/horarios' },
+    });
+  });
+
+  describe('NB-8: asistencia por QR (CULM-001 B.2)', () => {
+    beforeEach(() => sessionStorage.removeItem(QR_RETORNO_STORAGE_KEY));
+    afterEach(() => sessionStorage.removeItem(QR_RETORNO_STORAGE_KEY));
+
+    it('B2-F-22 sin sesion en /app/asistencia/qr?t=... guarda la URL en sessionStorage y va a /login sin returnUrl', () => {
+      authServiceSpy.isAuthenticated.and.returnValue(false);
+      const state = { url: '/app/asistencia/qr?t=SECRETO' } as RouterStateSnapshot;
+
+      TestBed.runInInjectionContext(() => authGuard({} as ActivatedRouteSnapshot, state));
+
+      expect(router.createUrlTree).toHaveBeenCalledOnceWith(['/login']);
+      expect(JSON.stringify(router.createUrlTree.calls.allArgs())).not.toContain('SECRETO');
+      expect(sessionStorage.getItem(QR_RETORNO_STORAGE_KEY)).toContain('/app/asistencia/qr?t=SECRETO');
+    });
+
+    it('B2-F-22 con sesion deja pasar sin tocar el almacenamiento', () => {
+      authServiceSpy.isAuthenticated.and.returnValue(true);
+      const result = TestBed.runInInjectionContext(() =>
+        authGuard({} as ActivatedRouteSnapshot, { url: '/app/asistencia/qr?t=X' } as RouterStateSnapshot)
+      );
+      expect(result).toBeTrue();
+      expect(sessionStorage.getItem(QR_RETORNO_STORAGE_KEY)).toBeNull();
+    });
+
+    it('B2-F-22 las demas rutas conservan el returnUrl de siempre', () => {
+      authServiceSpy.isAuthenticated.and.returnValue(false);
+      TestBed.runInInjectionContext(() =>
+        authGuard({} as ActivatedRouteSnapshot, { url: '/app/asistencia' } as RouterStateSnapshot)
+      );
+      expect(router.createUrlTree).toHaveBeenCalledWith(['/login'], { queryParams: { returnUrl: '/app/asistencia' } });
+      expect(sessionStorage.getItem(QR_RETORNO_STORAGE_KEY)).toBeNull();
     });
   });
 });
