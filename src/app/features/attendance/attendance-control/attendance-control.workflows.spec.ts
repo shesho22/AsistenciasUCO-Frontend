@@ -69,6 +69,7 @@ describe('AttendanceControlComponent public workflows', () => {
     ]);
     realtime = jasmine.createSpyObj('AttendanceRealtimeSyncService', [
       'watch',
+      'watchCancelaciones',
       'connectionAlerts',
       'connectGroup',
       'disconnect',
@@ -103,6 +104,7 @@ describe('AttendanceControlComponent public workflows', () => {
       of({ exitoso: true, mensajeUsuario: 'Matriculada' })
     );
     realtime.watch.and.returnValue(NEVER);
+    (realtime as any).watchCancelaciones.and.returnValue(NEVER);
     realtime.connectionAlerts.and.returnValue(NEVER);
     registrationConfig = jasmine.createSpyObj('StudentRegistrationConfigService', ['getEmailDomain']);
     registrationConfig.getEmailDomain.and.returnValue(of('@uco.edu.co'));

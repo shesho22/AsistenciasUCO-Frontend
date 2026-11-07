@@ -147,4 +147,24 @@ describe('GroupSessionsOverviewComponent', () => {
     (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('[data-testid="padron-solicitudes"]')!.click();
     expect(emitido).toBeTrue();
   });
+
+  it('B1-F-14 las sesiones canceladas no cuentan en el total ni en el denominador de riesgo', () => {
+    const cancelada: ClassSession = { ...session(3), estado: 'CANCELADA' };
+    const component = render([
+      session(1, [{ studentId: 'e1', status: 'SJC' }] as ClassSession['records']),
+      session(2),
+      cancelada,
+    ]);
+
+    expect(component.totalSesiones()).toBe(2);
+    // 1 falta de 2 sesiones vigentes = 50 % >= 20 %; con la cancelada seria 33 % (también en riesgo), por eso se afirma el total.
+    expect(component.estudiantesEnRiesgo()).toBe(1);
+  });
+
+  it('B1-F-14 una sesión cancelada se muestra con la etiqueta Cancelada en el listado', () => {
+    render([{ ...session(1), estado: 'CANCELADA', cancelacion: { tipo: 'DOCENTE', motivo: 'Paro', nombreFestivo: null, fechaCancelacionUtc: null } }]);
+
+    const text = (fixture.nativeElement as HTMLElement).textContent || '';
+    expect(text).toContain('Cancelada');
+  });
 });

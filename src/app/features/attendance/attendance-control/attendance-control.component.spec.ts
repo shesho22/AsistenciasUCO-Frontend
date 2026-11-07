@@ -111,9 +111,10 @@ describe('AttendanceControlComponent contract corrections', () => {
     realtimeAlerts$ = new Subject<RealtimeConnectionState>();
     realtimeSync = jasmine.createSpyObj<AttendanceRealtimeSyncService>(
       'AttendanceRealtimeSyncService',
-      ['watch', 'connectGroup', 'disconnect', 'connectionAlerts'] as any
+      ['watch', 'watchCancelaciones', 'connectGroup', 'disconnect', 'connectionAlerts'] as any
     ) as typeof realtimeSync;
     realtimeSync.watch.and.returnValue(NEVER);
+    (realtimeSync as any).watchCancelaciones.and.returnValue(NEVER);
     realtimeSync.connectionAlerts.and.returnValue(realtimeAlerts$.asObservable());
 
     catalogService.getIdentityDocumentTypes.and.returnValue(of([]));

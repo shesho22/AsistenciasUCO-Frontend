@@ -10,6 +10,9 @@ import { AttendanceClaimService } from '../../../core/services/attendance-claim.
 import { CatalogService } from '../../../core/services/catalog.service';
 import { Course } from '../../../core/models/course.model';
 import { ClassSession } from '../../../core/models/attendance.model';
+import { HttpErrorResponse } from '@angular/common/http';
+import { RealtimeService } from '../../../core/realtime/realtime.service';
+import { RealtimeEvent, SesionCanceladaRealtimePayload } from '../../../core/realtime/model/realtime-event.model';
 
 // LB-001B.1B (DB source of truth cleanup): AS-IS #20 (docenteName hardcodeado y enviado en
 // el payload de crearGrupo/actualizarGrupo), #21 (selección de sesión activa por status) y
@@ -23,6 +26,8 @@ describe('TeacherGruposComponent', () => {
   let studentService: jasmine.SpyObj<StudentService>;
   let claimService: jasmine.SpyObj<AttendanceClaimService>;
   let router: jasmine.SpyObj<Router>;
+  let realtimeEvents$: Subject<RealtimeEvent<SesionCanceladaRealtimePayload>>;
+  let realtime: jasmine.SpyObj<RealtimeService>;
 
   const course: Course = {
     id: 'crs-1',
@@ -82,9 +87,14 @@ describe('TeacherGruposComponent', () => {
       of({ exitoso: true, total: 1, datos: [{ id: 'crs-1', capacidadMaximaPermitida: 35 }] } as any)
     );
 
+    realtimeEvents$ = new Subject();
+    realtime = jasmine.createSpyObj<RealtimeService>('RealtimeService', ['listenType', 'startForGroup', 'stop']);
+    realtime.listenType.and.returnValue(realtimeEvents$.asObservable() as never);
+
     TestBed.configureTestingModule({
       imports: [TeacherGruposComponent],
       providers: [
+        { provide: RealtimeService, useValue: realtime },
         { provide: CourseService, useValue: courseService },
         { provide: SessionService, useValue: sessionService },
         { provide: GroupService, useValue: groupService },
@@ -481,5 +491,119 @@ describe('TeacherGruposComponent', () => {
     expect(component.vistaActual()).toBe('HUB_GRUPO');
     expect(component.selectedCourse()?.id).toBe('crs-1');
     expect(sessionService.getSessionsByGroup).toHaveBeenCalled();
+  });
+
+  describe('cancelar sesión y SSE (HU047, CULM-001 B.1)', () => {
+    const sesion: ClassSession = {
+      id: 'ses-1', courseId: 'crs-1', sessionNumber: 1, title: 'S1', date: '2026-11-10',
+      startTime: '08:00', endTime: '10:00', records: [], estado: 'PROGRAMADA', cancelacion: null,
+    };
+    const respuesta = {
+      exitoso: true,
+      datos: {
+        idSesion: 'ses-1', idGrupo: 'crs-1', estado: 'CANCELADA',
+        cancelacion: { tipo: 'DOCENTE', motivo: 'Incapacidad médica del docente', nombreFestivo: null, fechaCancelacionUtc: '2026-11-10T14:00:00Z' },
+        estudiantesNotificados: 12,
+      },
+    };
+
+    function abrirHub(): void {
+      sessionService.getSessionsByGroup.and.returnValue(of({ exitoso: true, datos: [sesion], total: 1 } as any));
+      component.verHubGrupo(course);
+      sessionService.getSessionsByGroup.calls.reset();
+    }
+
+    function eventoCancelada(grupo: string, id: string): RealtimeEvent<SesionCanceladaRealtimePayload> {
+      return {
+        eventId: 'e', type: 'SESION_CANCELADA', occurredAt: '2026-11-10T14:00:00Z', correlationId: null,
+        payload: { grupo, sesion: id, tipo: 'DOCENTE', fechaHoraInicioUtc: null },
+      };
+    }
+
+    it('B1-F-20 al cancelar con éxito actualiza la sesión con la respuesta, cierra el modal y no recarga por HTTP', () => {
+      sessionService.cancelarSesion.and.returnValue(of(respuesta as any));
+      abrirHub();
+      component.abrirModalCancelarSesion(sesion);
+
+      component.confirmarCancelarSesionConMotivo('  Incapacidad médica del docente  ');
+
+      expect(sessionService.cancelarSesion).toHaveBeenCalledWith('ses-1', 'Incapacidad médica del docente');
+      expect(component.sessions()[0].estado).toBe('CANCELADA');
+      expect(component.sessions()[0].cancelacion?.motivo).toBe('Incapacidad médica del docente');
+      expect(component.modalCancelarVisible()).toBeFalse();
+      expect(component.errorCancelar()).toBeNull();
+      expect(sessionService.getSessionsByGroup).not.toHaveBeenCalled();
+    });
+
+    for (const codigo of ['SES_011', 'SES_012', 'SES_013', 'SES_016']) {
+      it(`B1-F-21 ${codigo}: muestra el mensaje del backend en el modal y lo mantiene abierto`, () => {
+        const mensaje = `Mensaje del backend para ${codigo}`;
+        sessionService.cancelarSesion.and.returnValue(throwError(() => new HttpErrorResponse({
+          status: 409,
+          error: { timestamp: 't', status: 409, error: 'Conflict', code: codigo, message: mensaje, path: '/p', correlationId: null },
+        })));
+        abrirHub();
+        component.abrirModalCancelarSesion(sesion);
+
+        component.confirmarCancelarSesionConMotivo('Motivo suficientemente largo');
+
+        expect(component.errorCancelar()).toBe(mensaje);
+        expect(component.modalCancelarVisible()).toBeTrue();
+        expect(component.enviandoCancelacion()).toBeFalse();
+        expect(component.sessions()[0].estado).toBe('PROGRAMADA');
+      });
+    }
+
+    it('B1-F-21 abrir de nuevo el modal limpia el error anterior', () => {
+      component.errorCancelar.set('viejo');
+      component.abrirModalCancelarSesion(sesion);
+      expect(component.errorCancelar()).toBeNull();
+    });
+
+    it('B1-F-22 al abrir el hub se conecta al stream del grupo y escucha SESION_CANCELADA', () => {
+      abrirHub();
+
+      expect(realtime.startForGroup).toHaveBeenCalledWith('crs-1');
+      expect(realtime.listenType).toHaveBeenCalledWith('SESION_CANCELADA');
+    });
+
+    it('B1-F-22 SESION_CANCELADA del grupo marca la sesión sin recargar por HTTP', () => {
+      abrirHub();
+
+      realtimeEvents$.next(eventoCancelada('crs-1', 'ses-1'));
+
+      expect(component.sessions()[0].estado).toBe('CANCELADA');
+      expect(component.sessions()[0].cancelacion?.tipo).toBe('DOCENTE');
+      expect(sessionService.getSessionsByGroup).not.toHaveBeenCalled();
+    });
+
+    it('B1-F-22 ignora eventos de otro grupo', () => {
+      abrirHub();
+
+      realtimeEvents$.next(eventoCancelada('otro-grupo', 'ses-1'));
+
+      expect(component.sessions()[0].estado).toBe('PROGRAMADA');
+    });
+
+    it('B1-F-22 al volver a la lista deja de escuchar el stream', () => {
+      abrirHub();
+
+      component.volverALista();
+      realtimeEvents$.next(eventoCancelada('crs-1', 'ses-1'));
+
+      expect(component.sessions()[0].estado).toBe('PROGRAMADA');
+      expect(realtime.stop).toHaveBeenCalled();
+    });
+
+    it('B1-F-22 no usa polling para refrescar la lista', () => {
+      const spy = spyOn(window, 'setInterval').and.callThrough();
+      sessionService.cancelarSesion.and.returnValue(of(respuesta as any));
+      abrirHub();
+      realtimeEvents$.next(eventoCancelada('crs-1', 'ses-1'));
+      component.abrirModalCancelarSesion(sesion);
+      component.confirmarCancelarSesionConMotivo('Motivo suficientemente largo');
+
+      expect(spy).not.toHaveBeenCalled();
+    });
   });
 });

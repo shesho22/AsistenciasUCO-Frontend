@@ -249,4 +249,41 @@ describe('AttendanceRealtimeSyncService', () => {
 
     expect(received).toEqual([]);
   });
+
+  describe('watchCancelaciones (HU047, CULM-001 B.1)', () => {
+    function emitCancelada(grupo: string, sesion: string): void {
+      (events$ as unknown as Subject<RealtimeEvent<unknown>>).next({
+        eventId: 'evt-c', type: 'SESION_CANCELADA', occurredAt: '2026-11-10T14:00:00Z', correlationId: null,
+        payload: { grupo, sesion, tipo: 'DOCENTE', fechaHoraInicioUtc: '2026-11-10T13:00:00Z' },
+      });
+    }
+
+    it('B1-F-19 escucha SESION_CANCELADA y entrega solo los eventos del grupo actual', () => {
+      const recibidos: unknown[] = [];
+      service.watchCancelaciones(() => 'g1').subscribe((e) => recibidos.push(e.payload.sesion));
+
+      expect(realtimeServiceSpy.listenType).toHaveBeenCalledWith('SESION_CANCELADA');
+      emitCancelada('g1', 's1');
+      emitCancelada('g2', 's2');
+
+      expect(recibidos).toEqual(['s1']);
+    });
+
+    it('B1-F-19 sin grupo seleccionado no entrega nada', () => {
+      const recibidos: unknown[] = [];
+      service.watchCancelaciones(() => '').subscribe((e) => recibidos.push(e));
+
+      emitCancelada('g1', 's1');
+
+      expect(recibidos).toEqual([]);
+    });
+
+    it('B1-F-19 no usa timers: setInterval no se invoca', () => {
+      const spy = spyOn(window, 'setInterval').and.callThrough();
+      service.watchCancelaciones(() => 'g1').subscribe();
+      emitCancelada('g1', 's1');
+
+      expect(spy).not.toHaveBeenCalled();
+    });
+  });
 });

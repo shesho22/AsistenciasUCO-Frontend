@@ -55,7 +55,7 @@ describe('AttendanceControlComponent SES-01 ventana estricta', () => {
     groupService = jasmine.createSpyObj('GroupService', ['getStudentsByGroup']);
     attendanceService = jasmine.createSpyObj('AttendanceService', ['getAttendancesByGroup', 'saveBatchAttendance']);
     const realtime = jasmine.createSpyObj<AttendanceRealtimeSyncService>('AttendanceRealtimeSyncService', [
-      'watch', 'connectionAlerts', 'connectGroup', 'disconnect',
+      'watch', 'watchCancelaciones', 'connectionAlerts', 'connectGroup', 'disconnect',
     ]);
     const claims = jasmine.createSpyObj<AttendanceClaimService>('AttendanceClaimService', [
       'getReclamosDocente', 'getReclamosDocentePorGrupo', 'resolverReclamo',
@@ -79,6 +79,7 @@ describe('AttendanceControlComponent SES-01 ventana estricta', () => {
     attendanceService.getAttendancesByGroup.and.returnValue(of({ exitoso: true, datos: [], total: 0 }));
     attendanceService.saveBatchAttendance.and.returnValue(of({ exitoso: true, mensaje: 'Guardada' }));
     realtime.watch.and.returnValue(NEVER);
+    (realtime as any).watchCancelaciones.and.returnValue(NEVER);
     realtime.connectionAlerts.and.returnValue(NEVER);
     claims.getReclamosDocente.and.returnValue(of({ exitoso: true, datos: [] }) as any);
     claims.getReclamosDocentePorGrupo.and.returnValue(of([]));
