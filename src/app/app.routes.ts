@@ -522,15 +522,6 @@ export const routes: Routes = [
           ),
       },
       {
-        path: 'estudiante/solicitudes',
-        canActivate: [roleGuard],
-        data: { roles: ['ESTUDIANTE'] },
-        loadComponent: () =>
-          import('./features/student/student-enrollment-requests/student-enrollment-requests.component').then(
-            (m) => m.StudentEnrollmentRequestsComponent
-          ),
-      },
-      {
         path: 'estudiante/oferta',
         canActivate: [roleGuard],
         data: { roles: ['ESTUDIANTE'] },

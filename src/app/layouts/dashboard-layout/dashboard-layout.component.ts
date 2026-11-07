@@ -475,12 +475,6 @@ export class DashboardLayoutComponent {
       roles: ['ESTUDIANTE'],
       icon: 'grupos',
     },
-    {
-      label: 'Solicitudes de Ingreso',
-      route: '/app/estudiante/solicitudes',
-      roles: ['ESTUDIANTE'],
-      icon: 'grupos',
-    },
   ];
 
   filteredNavItems = computed<NavItem[]>(() => {
