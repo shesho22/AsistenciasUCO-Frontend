@@ -254,6 +254,12 @@ export class DashboardLayoutComponent {
       icon: 'catalogos',
     },
     {
+      label: 'Festivos',
+      route: '/app/admin/festivos',
+      roles: ['ADMINISTRADOR', 'ADMIN'],
+      icon: 'horarios',
+    },
+    {
       label: 'Áreas de Conocimiento',
       route: '/app/admin/areas',
       roles: ['ADMINISTRADOR', 'ADMIN'],
