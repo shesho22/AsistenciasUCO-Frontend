@@ -1,9 +1,16 @@
 import {
   CancelacionSesion,
+  EstadoSesion,
   detalleCancelacion,
   estaCancelada,
   marcarSesionCancelada,
 } from './sesion-estado.model';
+
+interface Fila {
+  id: string;
+  estado?: EstadoSesion;
+  cancelacion?: CancelacionSesion | null;
+}
 
 describe('sesion-estado.model (CULM-001 B.1)', () => {
   const docente: CancelacionSesion = {
@@ -37,9 +44,9 @@ describe('sesion-estado.model (CULM-001 B.1)', () => {
   });
 
   it('B1-F-07 marcarSesionCancelada actualiza solo la sesión indicada y no muta la lista original', () => {
-    const lista = [
-      { id: 'a', estado: 'PROGRAMADA' as const, cancelacion: null },
-      { id: 'b', estado: 'PROGRAMADA' as const, cancelacion: null },
+    const lista: Fila[] = [
+      { id: 'a', estado: 'PROGRAMADA', cancelacion: null },
+      { id: 'b', estado: 'PROGRAMADA', cancelacion: null },
     ];
 
     const resultado = marcarSesionCancelada(lista, 'b', docente);
@@ -50,7 +57,7 @@ describe('sesion-estado.model (CULM-001 B.1)', () => {
   });
 
   it('B1-F-07 una sesión ya cancelada conserva su cancelación (el SSE no trae el motivo)', () => {
-    const lista = [{ id: 'b', estado: 'CANCELADA' as const, cancelacion: docente }];
+    const lista: Fila[] = [{ id: 'b', estado: 'CANCELADA', cancelacion: docente }];
 
     const resultado = marcarSesionCancelada(lista, 'b', { ...docente, motivo: null });
 
@@ -58,7 +65,7 @@ describe('sesion-estado.model (CULM-001 B.1)', () => {
   });
 
   it('B1-F-07 un identificador desconocido deja la lista intacta', () => {
-    const lista = [{ id: 'a', estado: 'PROGRAMADA' as const, cancelacion: null }];
+    const lista: Fila[] = [{ id: 'a', estado: 'PROGRAMADA', cancelacion: null }];
 
     expect(marcarSesionCancelada(lista, 'zzz', docente)).toBe(lista);
   });

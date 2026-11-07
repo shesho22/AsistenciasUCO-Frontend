@@ -2,6 +2,9 @@ import { Component, OnInit, OnDestroy, inject, signal, ChangeDetectionStrategy }
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription, forkJoin, of } from 'rxjs';
+import { RealtimeService } from '../../../core/realtime/realtime.service';
+import { REALTIME_EVENT_TYPE, SesionCanceladaRealtimePayload } from '../../../core/realtime/model/realtime-event.model';
+import { marcarSesionCancelada } from '../../../core/models/sesion-estado.model';
 import { CourseService, GrupoCoordinadorPayload } from '../../../core/services/course.service';
 import { CatalogService } from '../../../core/services/catalog.service';
 import { CatalogoPrograma } from '../../../core/models/programa-academico.model';
@@ -141,6 +144,8 @@ type VistaGrupos = 'LISTA' | 'HUB_GRUPO' | 'FORM_SESION' | 'FORM_GRUPO';
       <app-teacher-sesion-cancelar-modal
         [isOpen]="modalCancelarVisible()"
         [sesion]="sesionACancelar()"
+        [errorMensaje]="errorCancelar()"
+        [enviando]="enviandoCancelacion()"
         (cancelar)="confirmarCancelarSesionConMotivo($event)"
         (closed)="cerrarModalCancelar()"
       />
@@ -172,6 +177,8 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute, { optional: true });
   private toast = inject(ToastService);
   private timeZone = inject(SessionTimeZoneService);
+  private realtime = inject(RealtimeService);
+  private cancelacionesSub: Subscription | null = null;
 
   // QR/PIN sigue OUT_OF_GOLDEN_PATH hasta B.2; la cancelación (HU047) ya tiene contrato (CULM-001 B.1).
   readonly sessionQrEnabled = environment.features.sessionQrEnabled;
@@ -216,6 +223,9 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   // Cancelar Sesión
   modalCancelarVisible = signal<boolean>(false);
   sesionACancelar = signal<ClassSession | null>(null);
+  /** Mensaje del backend (SES_011/012/013/016) mostrado dentro del modal; el modal sigue abierto. */
+  errorCancelar = signal<string | null>(null);
+  enviandoCancelacion = signal<boolean>(false);
   /** HU051: estudiante cuyo retiro se está confirmando (null = modal cerrado). */
   estudianteARetirar = signal<{ idEstudiante: string; nombreCompleto?: string } | null>(null);
 
@@ -248,6 +258,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.cancelarCargaReclamosGrupo();
     this.detenerTimerQr();
+    this.detenerEscuchaCancelaciones();
   }
 
   cargarGrupos(): void {
@@ -322,10 +333,12 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
     this.cargarSesiones(course.id);
     this.cargarEstudiantesGrupo(course.id);
     this.cargarReclamosGrupo(course.id);
+    this.escucharCancelaciones(course.id);
   }
 
   volverALista(): void {
     this.cancelarCargaReclamosGrupo();
+    this.detenerEscuchaCancelaciones();
     this.vistaActual.set('LISTA');
     this.selectedCourse.set(null);
     this.detenerTimerQr();
@@ -568,8 +581,31 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
     }
   }
 
+  /** HU047: el canal SSE del grupo marca la sesión cancelada sin recargar por HTTP (sin polling). */
+  private escucharCancelaciones(grupoId: string): void {
+    this.detenerEscuchaCancelaciones();
+    this.realtime.startForGroup(grupoId);
+    this.cancelacionesSub = this.realtime
+      .listenType<SesionCanceladaRealtimePayload>(REALTIME_EVENT_TYPE.SESION_CANCELADA)
+      .subscribe((evento) => {
+        const { grupo, sesion, tipo } = evento.payload;
+        if (grupo !== grupoId) return;
+        this.sessions.update((prev) =>
+          marcarSesionCancelada(prev, sesion, { tipo, motivo: null, nombreFestivo: null, fechaCancelacionUtc: null })
+        );
+      });
+  }
+
+  private detenerEscuchaCancelaciones(): void {
+    if (!this.cancelacionesSub) return;
+    this.cancelacionesSub.unsubscribe();
+    this.cancelacionesSub = null;
+    this.realtime.stop();
+  }
+
   abrirModalCancelarSesion(sesion: ClassSession): void {
     if (!this.sessionCancelEnabled) return;
+    this.errorCancelar.set(null);
     this.sesionACancelar.set(sesion);
     this.modalCancelarVisible.set(true);
   }
@@ -577,24 +613,34 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   cerrarModalCancelar(): void {
     this.modalCancelarVisible.set(false);
     this.sesionACancelar.set(null);
+    this.errorCancelar.set(null);
+    this.enviandoCancelacion.set(false);
   }
 
   confirmarCancelarSesionConMotivo(motivo: string): void {
     const sesion = this.sesionACancelar();
-    const course = this.selectedCourse();
     if (!this.sessionCancelEnabled || !sesion || !motivo.trim()) return;
 
+    this.errorCancelar.set(null);
+    this.enviandoCancelacion.set(true);
     this.sessionService.cancelarSesion(sesion.id, motivo.trim()).subscribe({
       next: (res) => {
-        if (res.exitoso) {
-          this.toast.success('Sesión cancelada.');
-          this.cerrarModalCancelar();
-          if (course) {
-            this.cargarSesiones(course.id);
-          }
+        this.enviandoCancelacion.set(false);
+        if (!res.exitoso) return;
+        const cancelacion = res.datos?.cancelacion;
+        if (cancelacion) {
+          this.sessions.update((prev) => marcarSesionCancelada(prev, sesion.id, cancelacion));
         }
+        const notificados = res.datos?.estudiantesNotificados;
+        this.toast.success(
+          notificados ? `Sesión cancelada. Estudiantes notificados: ${notificados}.` : 'Sesión cancelada.'
+        );
+        this.cerrarModalCancelar();
       },
-      error: (err: unknown) => this.toast.error(getApiErrorMessage(err)),
+      error: (err: unknown) => {
+        this.enviandoCancelacion.set(false);
+        this.errorCancelar.set(getApiErrorMessage(err));
+      },
     });
   }
 

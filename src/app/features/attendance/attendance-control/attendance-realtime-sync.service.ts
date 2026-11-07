@@ -16,6 +16,7 @@ import {
   AttendanceSessionUpdatedRealtimePayload,
   REALTIME_EVENT_TYPE,
   RealtimeEvent,
+  SesionCanceladaRealtimePayload,
 } from '../../../core/realtime/model/realtime-event.model';
 
 /** Ventana de coalescencia para no disparar una recarga por cada evento de
@@ -79,6 +80,21 @@ export class AttendanceRealtimeSyncService {
       ),
       distinctUntilChanged()
     );
+  }
+
+  /**
+   * HU047: `SESION_CANCELADA` del grupo visible. Sin coalescencia ni temporizadores: cada evento actualiza la lista
+   * y el estado de una sesión cancelada es idempotente.
+   */
+  watchCancelaciones(getGroupId: () => string): Observable<RealtimeEvent<SesionCanceladaRealtimePayload>> {
+    return this.realtimeService
+      .listenType<SesionCanceladaRealtimePayload>(REALTIME_EVENT_TYPE.SESION_CANCELADA)
+      .pipe(
+        filter((evt) => {
+          const groupId = getGroupId();
+          return !!groupId && evt.payload?.grupo === groupId;
+        })
+      );
   }
 
   watch(

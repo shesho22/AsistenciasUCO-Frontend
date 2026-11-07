@@ -173,13 +173,17 @@ describe('AttendanceControlComponent sesión cancelada (B.1)', () => {
     expect(getGroup()).toBe('group-1');
   });
 
-  it('B1-F-18 no usa polling: setInterval nunca se invoca', () => {
+  it('B1-F-18 la actualización por SSE y el bloqueo de la toma no usan polling: setInterval no se invoca', () => {
+    // El modal de proyección heredado arma su propio temporizador al instanciarse (lo retira B.2); este spec
+    // acota la afirmación al flujo de cancelación: se espía después de crear la pantalla.
+    crear();
     const spy = spyOn(window, 'setInterval').and.callThrough();
 
-    crear('session-1');
     cancelaciones$.next(evento('session-1'));
+    fixture.componentInstance.onSessionSelect('session-1');
     fixture.detectChanges();
 
+    expect(fixture.componentInstance.attendanceWindowState()).toBe('CANCELADA');
     expect(spy).not.toHaveBeenCalled();
   });
 });

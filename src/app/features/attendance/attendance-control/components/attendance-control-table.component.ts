@@ -1,3 +1,4 @@
+import { CancelacionSesion, detalleCancelacion } from '../../../../core/models/sesion-estado.model';
 import { Component, ChangeDetectionStrategy, input, output, signal, computed, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -28,7 +29,7 @@ import {
           <svg class="w-4 h-4 shrink-0 mt-px" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <span>{{ windowMessage() }} La consulta del registro sigue disponible.</span>
+          <span>{{ windowMessage() }}@if (detalleCancelacion()) { <strong class="font-semibold"> {{ detalleCancelacion() }}.</strong> } La consulta del registro sigue disponible.</span>
         </div>
       }
       <!-- Barra Unificada Compacta: Buscador + Filtros -->
@@ -271,6 +272,11 @@ export class AttendanceControlTableComponent {
   attendanceEnabled = input<boolean>(true);
   /** SES-01: estado derivado de los instantes v2; no es un estado persistido de la sesión. */
   attendanceWindowState = input<AttendanceWindowState>('ABIERTA');
+  /** HU047: detalle de la cancelación de la sesión mostrada (motivo o festivo), tal como lo entrega el backend. */
+  cancelacion = input<CancelacionSesion | null | undefined>(null);
+  detalleCancelacion = computed(() =>
+    this.attendanceWindowState() === 'CANCELADA' ? detalleCancelacion(this.cancelacion()) : ''
+  );
 
   // Gate de los controles: features + guardado en curso + ventana de registro (SES-01). La ventana
   // se deriva en el frontend solo para presentar; backend/DB la validan con su reloj y rechazan con 409.

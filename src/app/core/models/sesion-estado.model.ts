@@ -39,3 +39,18 @@ export function detalleCancelacion(cancelacion: CancelacionSesion | null | undef
   }
   return cancelacion.motivo ?? '';
 }
+
+/**
+ * Marca una sesión como cancelada sin mutar la lista. Una sesión ya cancelada conserva su cancelación: el evento
+ * SSE no trae el motivo y no debe pisar el que ya conoce el docente por la respuesta HTTP.
+ */
+export function marcarSesionCancelada<T extends { id: string; estado?: EstadoSesion | null; cancelacion?: CancelacionSesion | null }>(
+  sesiones: readonly T[],
+  sesionId: string,
+  cancelacion: CancelacionSesion
+): T[] {
+  const lista = sesiones as T[];
+  const indice = lista.findIndex((s) => s.id === sesionId);
+  if (indice < 0 || estaCancelada(lista[indice])) return lista;
+  return lista.map((s, i) => (i === indice ? { ...s, estado: 'CANCELADA' as const, cancelacion } : s));
+}

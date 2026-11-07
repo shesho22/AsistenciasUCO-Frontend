@@ -47,6 +47,7 @@ import { AttendanceClaimService } from '../../../core/services/attendance-claim.
 import { type EstadoCargaReclamos, SolicitudRevisionItem } from '../../../core/models/role-management.model';
 import { isUuid } from '../../../core/utils/uuid.util';
 import { EstudianteGrupoApiDto } from '../../../core/api/models/estudiante-grupo-api-dto.model';
+import { detalleCancelacion, estaCancelada, marcarSesionCancelada } from '../../../core/models/sesion-estado.model';
 import { findActiveOrUpcomingSession } from '../../../core/utils/session-selection.util';
 import {
   ATTENDANCE_WINDOW_MESSAGES,
@@ -148,6 +149,7 @@ type StudentEnrollmentField =
           [sessionsEnabled]="sessionsEnabled"
           [attendanceEnabled]="attendanceEnabled"
           [attendanceWindowState]="attendanceWindowState()"
+          [cancelacion]="currentSession()?.cancelacion"
           (statusChange)="onStudentStatusChange($event)"
           (openExcuseModal)="openExcuseModal($event)"
           (saveAttendance)="saveAttendance()"
@@ -550,6 +552,22 @@ export class AttendanceControlComponent {
         }
       });
 
+    // HU047: la cancelación publicada por SSE actualiza la lista sin recargar por HTTP.
+    this.attendanceRealtimeSync
+      .watchCancelaciones(() => this.selectedCourseId())
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((evento) => {
+        const { sesion, tipo } = evento.payload;
+        this.sessions.update((prev) =>
+          marcarSesionCancelada(prev, sesion, {
+            tipo,
+            motivo: null,
+            nombreFestivo: null,
+            fechaCancelacionUtc: null,
+          })
+        );
+      });
+
     this.attendanceRealtimeSync
       .connectionAlerts()
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -579,12 +597,18 @@ export class AttendanceControlComponent {
 
   sessionOptions = computed<SelectOption[]>(() => {
     return this.sessions()
-      .map((s) => ({
-        value: s.id,
-        label: s.estadoTemporal === 'INDETERMINADA'
+      .map((s) => {
+        const base = s.estadoTemporal === 'INDETERMINADA'
           ? `Sesión #${s.sessionNumber} (horario no confirmado): ${s.title}`
-          : `Sesión #${s.sessionNumber} (${this.timeZone.displaySessionDate(s)}${this.timeZone.displaySessionEndDate(s) !== this.timeZone.displaySessionDate(s) ? ` – ${this.timeZone.displaySessionEndDate(s)}` : ''}): ${s.title}`,
-      }));
+          : `Sesión #${s.sessionNumber} (${this.timeZone.displaySessionDate(s)}${this.timeZone.displaySessionEndDate(s) !== this.timeZone.displaySessionDate(s) ? ` – ${this.timeZone.displaySessionEndDate(s)}` : ''}): ${s.title}`;
+        if (!estaCancelada(s)) return { value: s.id, label: base };
+        const detalle = detalleCancelacion(s.cancelacion);
+        return {
+          value: s.id,
+          label: `${base} · Cancelada${detalle ? ` (${detalle})` : ''}`,
+          disabled: true,
+        };
+      });
   });
 
   currentCourse = computed(() =>
