@@ -60,6 +60,9 @@ import { CategoriaJustificacionItem } from '../../../../core/models/consultas-tr
             </div>
             <p class="text-warning-950 font-medium">Tema: {{ sesion()?.tema }}</p>
             <p class="text-warning-800">Docente a cargo: {{ materia()?.docente ?? 'No informado' }}</p>
+            @if (sesion()?.fechaLimiteJustificacionLocal; as limite) {
+              <p class="text-warning-900 font-semibold" data-testid="claim-plazo">Puedes justificar hasta {{ limite }}</p>
+            }
           </div>
 
           <!-- Formulario de Justificación -->
@@ -174,6 +177,10 @@ import { CategoriaJustificacionItem } from '../../../../core/models/consultas-tr
             </div>
           </div>
 
+          @if (errorEnvio()) {
+            <p class="text-xs font-medium text-danger-700 text-right" role="alert" data-testid="error-envio">{{ errorEnvio() }}</p>
+          }
+
           <div class="flex items-center justify-end gap-3 pt-4 border-t border-warm-100">
             <app-button variant="secondary" size="md" (clicked)="back.emit()">
               Cancelar
@@ -204,6 +211,8 @@ export class StudentClaimFormComponent {
   /** Hay una subida del soporte en curso: no se puede radicar hasta conocer el `fileId`. */
   subiendo = input<boolean>(false);
   errorSoporte = input<string | null>(null);
+  /** CULM-001 D.1: mensaje del backend cuando la radicacion fue rechazada (p. ej. plazo vencido). */
+  errorEnvio = input<string | null>(null);
 
   readonly accept = SOPORTE_ACCEPT;
 

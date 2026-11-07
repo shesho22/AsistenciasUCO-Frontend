@@ -98,6 +98,59 @@ describe('StudentCourseDetailComponent', () => {
     expect(component.withdrawClaim.emit).toHaveBeenCalledWith(mockSesiones[1]);
   });
 
+  describe('CULM-001 D.1 plazo de justificacion por sesion', () => {
+    const render = (overrides: Partial<SesionMateriaDetalle>) => {
+      fixture.componentRef.setInput('materia', crearMateria());
+      fixture.componentRef.setInput('sesiones', [
+        crearSesion({ id: 'ses-p', estadoAsistencia: 'AUSENTE', reclamable: true, ...overrides }),
+      ]);
+      fixture.detectChanges();
+    };
+    const el = (id: string) => fixture.nativeElement.querySelector(`[data-testid="${id}"]`) as HTMLElement | null;
+
+    it('vigente: muestra "Justificable hasta" y el boton esta habilitado', () => {
+      spyOn(component.startClaim, 'emit');
+      render({ plazoJustificacionVigente: true, fechaLimiteJustificacionLocal: '2026-11-09 23:59' });
+      expect(el('sesion-plazo')!.textContent).toContain('Justificable hasta 2026-11-09 23:59');
+      const boton = fixture.nativeElement.querySelector('[data-testid="sesion-ses-p"] app-button button') as HTMLButtonElement;
+      expect(boton.disabled).toBeFalse();
+      boton.click();
+      expect(component.startClaim.emit).toHaveBeenCalled();
+    });
+
+    it('vencido: muestra "Plazo vencido" y bloquea con aria-disabled y tooltip sin emitir', () => {
+      spyOn(component.startClaim, 'emit');
+      render({ plazoJustificacionVigente: false, fechaLimiteJustificacionLocal: '2026-11-09 23:59' });
+      expect(el('sesion-plazo')!.textContent).toContain('Plazo vencido');
+      expect(el('sesion-plazo')!.textContent).toContain('2026-11-09 23:59');
+      const boton = el('radicar-bloqueado') as HTMLButtonElement;
+      expect(boton.getAttribute('aria-disabled')).toBe('true');
+      expect(boton.getAttribute('title')).toContain('plazo');
+      expect(boton.getAttribute('aria-describedby')).toBe(el('sesion-plazo')!.id);
+      boton.click();
+      expect(component.startClaim.emit).not.toHaveBeenCalled();
+    });
+
+    it('fecha null y no vigente: muestra "Sin plazo" y bloquea', () => {
+      render({ plazoJustificacionVigente: false });
+      expect(el('sesion-plazo')!.textContent).toContain('Sin plazo');
+      expect(el('radicar-bloqueado')).not.toBeNull();
+    });
+
+    it('sesion cancelada: no muestra plazo ni boton', () => {
+      render({ estado: 'CANCELADA', plazoJustificacionVigente: false, fechaLimiteJustificacionLocal: '2026-11-09 23:59' });
+      expect(el('sesion-plazo')).toBeNull();
+      expect(el('radicar-bloqueado')).toBeNull();
+    });
+
+    it('despliegue anterior sin el indicador: no muestra plazo y conserva el boton habilitado', () => {
+      render({});
+      expect(el('sesion-plazo')).toBeNull();
+      expect(el('radicar-bloqueado')).toBeNull();
+      expect(fixture.nativeElement.querySelector('[data-testid="sesion-ses-p"] app-button button')).not.toBeNull();
+    });
+  });
+
   describe('estados de la tabla de sesiones', () => {
     const texto = () => fixture.nativeElement.textContent as string;
 

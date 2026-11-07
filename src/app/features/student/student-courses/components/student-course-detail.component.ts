@@ -159,6 +159,16 @@ import { MotivosJustificacionComponent } from './motivos-justificacion.component
                       {{ sesion.tema }}
                     </h4>
 
+                    @if (sesion.estado !== 'CANCELADA' && textoPlazo(sesion); as plazo) {
+                      <p
+                        class="text-xs font-medium"
+                        [class.text-warm-600]="sesion.plazoJustificacionVigente !== false"
+                        [class.text-danger-700]="sesion.plazoJustificacionVigente === false"
+                        [id]="'plazo-' + sesion.id"
+                        data-testid="sesion-plazo"
+                      >{{ plazo }}</p>
+                    }
+
                     @if (sesion.justificacionEstudiante) {
                       <div class="p-3 rounded-xl bg-warm-50 border border-warm-200 text-xs text-warm-700 mt-1 space-y-1">
                         <div class="flex items-center gap-2">
@@ -231,6 +241,15 @@ import { MotivosJustificacionComponent } from './motivos-justificacion.component
                         class="text-xs font-bold px-2.5 py-1 rounded-lg border border-warm-200 bg-warm-50 text-warm-700"
                         data-testid="solicitud-existente"
                       >Solicitud de revisión: {{ etiquetaSolicitud(sesion.solicitudRevision) }}</span>
+                    } @else if (sesion.reclamable && sesion.estado !== 'CANCELADA' && sesion.plazoJustificacionVigente === false) {
+                      <button
+                        type="button"
+                        aria-disabled="true"
+                        title="El plazo para justificar esta inasistencia ya no está vigente."
+                        [attr.aria-describedby]="'plazo-' + sesion.id"
+                        class="inline-flex items-center justify-center min-h-[36px] px-3 py-1.5 text-xs font-medium rounded-xl border border-warm-200 bg-warm-100 text-warm-500 cursor-not-allowed"
+                        data-testid="radicar-bloqueado"
+                      >Radicar Reclamo</button>
                     } @else if (sesion.reclamable && sesion.estado !== 'CANCELADA') {
                       <app-button
                         variant="primary"
@@ -303,6 +322,15 @@ export class StudentCourseDetailComponent {
       default:
         return 'neutral';
     }
+  }
+
+  /** CULM-001 D.1: texto del plazo de justificacion; `null` si el backend no lo informo (despliegue anterior). */
+  textoPlazo(sesion: SesionMateriaDetalle): string | null {
+    const fecha = sesion.fechaLimiteJustificacionLocal;
+    if (sesion.plazoJustificacionVigente === false) {
+      return fecha ? `Plazo vencido · venció el ${fecha}` : 'Sin plazo';
+    }
+    return fecha ? `Justificable hasta ${fecha}` : null;
   }
 
   etiquetaSolicitud(estado: NonNullable<SesionMateriaDetalle['solicitudRevision']>): string {

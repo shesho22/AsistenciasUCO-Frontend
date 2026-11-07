@@ -206,6 +206,11 @@ export interface SesionMateriaDetalle {
   cancelacion?: CancelacionSesion | null;
   /** CULM-001 B.2: horas de la sesion entregadas por el backend. */
   horasSesion?: number;
+  /** CULM-001 D.1: limite UTC de justificacion y su presentacion en la zona del usuario (`AAAA-MM-DD HH:mm`). */
+  fechaLimiteJustificacionUtc?: string;
+  fechaLimiteJustificacionLocal?: string;
+  /** `false` = plazo vencido o sin plazo; `undefined` = el backend no lo informo (no bloquea). */
+  plazoJustificacionVigente?: boolean;
   reclamoId?: string;
   estadoReclamo?: EstadoSolicitudRevision;
   categoriaReclamo?: CategoriaJustificacion;

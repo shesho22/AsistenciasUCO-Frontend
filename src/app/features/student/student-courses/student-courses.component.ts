@@ -9,7 +9,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { ConsultasTransversalesService } from '../../../core/services/consultas-transversales.service';
 import { CategoriaJustificacionItem } from '../../../core/models/consultas-transversales.model';
 import { ToastService } from '../../../shared/components/toast/toast.component';
-import { getApiErrorMessage, getApiSuccessMessage } from '../../../core/api/errors/api-error.util';
+import { getApiErrorCode, getApiErrorMessage, getApiSuccessMessage } from '../../../core/api/errors/api-error.util';
 import { LoadErrorState, classifyLoadError, loadErrorState } from '../../../core/api/errors/load-error.util';
 import { isUuid } from '../../../core/utils/uuid.util';
 import { RadicacionIntento, huellaRadicacion } from '../../../core/utils/radicacion-intento.util';
@@ -83,6 +83,7 @@ type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO';
           [subiendo]="subiendoSoporte()"
           [submitting]="enviandoReclamo()"
           [errorSoporte]="errorSoporte()"
+          [errorEnvio]="errorEnvio()"
           (back)="volverADetalle()"
           (fileSelected)="onFileSelected($event)"
           (removeFile)="removerAdjunto()"
@@ -139,6 +140,8 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
   subiendoSoporte = signal<boolean>(false);
   enviandoReclamo = signal<boolean>(false);
   errorSoporte = signal<string | null>(null);
+  /** CULM-001 D.1: rechazo de la radicacion por plazo vencido, mostrado junto al boton. */
+  errorEnvio = signal<string | null>(null);
   private subidaEnCurso: Subscription | null = null;
   /** Un reintento tecnico del mismo contenido reutiliza la correlacion; solo un exito la renueva. */
   private readonly intentoRadicacion = new RadicacionIntento();
@@ -220,6 +223,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
   iniciarReclamo(sesion: SesionMateriaDetalle): void {
     // Sin ausencia/retardo confirmado, o con una solicitud ya existente, no se abre la radicacion.
     if (!sesion.reclamable || sesion.estadoAsistencia === 'NO_DISPONIBLE') return;
+    this.errorEnvio.set(null);
     this.sesionReclamar.set(sesion);
     this.limpiarSoporte();
     this.vistaActual.set('RECLAMO');
@@ -377,6 +381,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
     );
 
     this.enviandoReclamo.set(true);
+    this.errorEnvio.set(null);
     this.claimService
       .crearReclamo(
         {
@@ -417,6 +422,11 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
             this.archivoAdjunto.set(null);
             this.errorSoporte.set('El soporte adjunto ya no está disponible. Adjúntalo nuevamente para radicar.');
             this.toast.error('El soporte adjunto ya no está disponible. Adjúntalo nuevamente.');
+            return;
+          }
+          if (getApiErrorCode(err) === 'ERR_PLAZO_JUSTIFICACION_VENCIDO') {
+            // El backend entrega el texto institucional (con la fecha limite): se muestra junto al boton, que sigue activo.
+            this.errorEnvio.set(getApiErrorMessage(err));
             return;
           }
           this.toast.error(getApiErrorMessage(err));

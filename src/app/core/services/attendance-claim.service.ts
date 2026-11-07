@@ -224,14 +224,21 @@ export class AttendanceClaimService {
    * devuelve las sesiones de todos los grupos del estudiante en esa asignatura: el consumidor filtra por `grupoId`.
    * El error HTTP se propaga sin toast global; la vista lo presenta localmente.
    */
-  getSesionesPorMateria(materiaId: string): Observable<ApiResponse<SesionMateriaDetalle[]>> {
+  getSesionesPorMateria(
+    materiaId: string,
+    paginacion?: { pagina?: number; tamano?: number }
+  ): Observable<ApiResponse<SesionMateriaDetalle[]>> {
     if (!isUuid(materiaId)) {
       return throwError(() => new IdentificadorInvalidoError(materiaId));
     }
+    // CULM-001 D.1: `pagina` (1) y `tamano` son opcionales; sin ellos el backend usa su maximo configurado.
+    let params = new HttpParams();
+    if (paginacion?.pagina !== undefined) params = params.set('pagina', paginacion.pagina);
+    if (paginacion?.tamano !== undefined) params = params.set('tamano', paginacion.tamano);
     return this.http
       .get<ApiListResponse<SesionMateriaEstudianteApiDto>>(
         `${environment.apiUrl}/estudiante/materias/${materiaId}/sesiones`,
-        { context: new HttpContext().set(BYPASS_GLOBAL_ERROR_TOAST, true) }
+        { params, context: new HttpContext().set(BYPASS_GLOBAL_ERROR_TOAST, true) }
       )
       .pipe(
         map((res) => {
