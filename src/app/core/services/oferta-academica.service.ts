@@ -24,8 +24,6 @@ export interface GrupoOferta {
   estudiantesActivos: number;
   cuposDisponibles: number;
   matriculado: boolean;
-  idSolicitudAbierta: string | null;
-  estadoSolicitud: 'PENDIENTE' | 'EN_ESPERA' | null;
   /** ESPECIFICA (propia del programa), BASICA o INSTITUCIONAL (transversales). */
   tipoAsignatura: 'ESPECIFICA' | 'BASICA' | 'INSTITUCIONAL' | null;
   transversal: boolean;
