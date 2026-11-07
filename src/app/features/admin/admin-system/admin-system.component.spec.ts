@@ -95,7 +95,7 @@ describe('AdminSystemComponent', () => {
     fixture.detectChanges();
 
     const req = http.expectOne((r) => r.url === `${environment.apiUrl}/admin/auditoria`);
-    expect(req.request.params.get('soloAsistencia')).toBe('true');
+    expect(req.request.params.get('soloAsistencia')).toBe('false');
     expect(req.request.params.get('desde')).toBeTruthy();
     req.flush({ exitoso: true, datos: [], total: 0 });
     fixture.detectChanges();
