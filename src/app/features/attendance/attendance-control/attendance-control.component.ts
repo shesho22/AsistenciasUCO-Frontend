@@ -61,8 +61,7 @@ const MAX_ATTENDANCE_WINDOW_TICK_MS = 30_000;
 
 /** Certificación F3: 409 ERR_MATRICULA_DUPLICADA visto por el docente. */
 export const MENSAJE_MATRICULA_DUPLICADA_DOCENTE =
-  'El estudiante ya tiene una matrícula en este grupo. Si fue retirado, su reingreso se hace por solicitud de ingreso: ' +
-  'el estudiante la pide desde "Oferta de Grupos" y usted la acepta en "Padrón y solicitudes".';
+  'El estudiante ya tiene una matrícula activa en este grupo.';
 
 type StudentEnrollmentField =
   | 'tipoIdentificacionId'
@@ -134,7 +133,7 @@ type StudentEnrollmentField =
           (openMatriculaQr)="isMatriculaQrModalOpen.set(true)"
           (exportExcel)="descargarPlanillaExcel()"
           (verAlumnos)="abrirInfoGrupo()"
-          (gestionarPadron)="irAPadronYSolicitudes()"
+          (gestionarPadron)="irAPadron()"
           (verReclamos)="abrirReclamosGrupo()"
         />
       }
@@ -312,8 +311,8 @@ export class AttendanceControlComponent {
     void this.router?.navigate(['/app/docente/grupos']);
   }
 
-  /** HU051/HU053-HU055: el hub del grupo vive en la pantalla de grupos del docente. */
-  irAPadronYSolicitudes(): void {
+  /** HU051: el hub del grupo vive en la pantalla de grupos del docente. */
+  irAPadron(): void {
     const courseId = this.selectedCourseId();
     if (!courseId) return;
     void this.router?.navigate(["/app/docente/grupos"], { queryParams: { grupo: courseId } });
@@ -884,7 +883,7 @@ export class AttendanceControlComponent {
           this.toastType.set('error');
           this.setStudentApiFieldErrors(error);
           // Certificación F3: el mensaje del catálogo habla al estudiante ("Usted ya se encuentra registrado…"). Para
-          // el docente se explica que el reingreso de un retirado va por solicitud (decisión de John 2026-10-28).
+          // el docente se informa la matrícula activa; el retirado se vuelve a matricular por esta misma vía (DEC-009).
           this.toastMessage.set(
             getApiErrorCode(error) === 'ERR_MATRICULA_DUPLICADA'
               ? MENSAJE_MATRICULA_DUPLICADA_DOCENTE

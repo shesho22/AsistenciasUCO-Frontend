@@ -101,7 +101,6 @@ type VistaGrupos = 'LISTA' | 'HUB_GRUPO' | 'FORM_SESION' | 'FORM_GRUPO';
           (ajustarHorarioSesion)="abrirEditarSesion($event)"
           (cancelarSesion)="abrirModalCancelarSesion($event)"
           (retirarEstudiante)="abrirModalRetiro($event)"
-          (padronCambiado)="cargarEstudiantesGrupo(selectedCourse()!.id)"
           (irReclamos)="irAGestionReclamos()"
           (reintentarReclamos)="reintentarCargaReclamosGrupo()"
         />
@@ -189,7 +188,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   guardandoGrupo = signal<boolean>(false);
 
   // Hub del Grupo
-  subPestanaHub = signal<'SESIONES' | 'HORARIOS' | 'ESTUDIANTES' | 'SOLICITUDES' | 'RECLAMOS' | 'SABANA'>('SESIONES');
+  subPestanaHub = signal<'SESIONES' | 'HORARIOS' | 'ESTUDIANTES' | 'RECLAMOS' | 'SABANA'>('SESIONES');
   estudiantesGrupo = signal<any[]>([]);
   cargandoEstudiantes = signal<boolean>(false);
   reclamosGrupo = signal<SolicitudRevisionItem[]>([]);
@@ -267,8 +266,8 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * HU051/HU053-HU055: `?grupo=<id>` (botón "Padrón y solicitudes" de la vista del grupo) abre el hub de ese grupo,
-   * donde están el retiro con motivo y las solicitudes de ingreso. Un id ajeno se ignora y queda la lista.
+   * HU051: `?grupo=<id>` (botón "Padrón" de la vista del grupo) abre el hub de ese grupo,
+   * donde está el retiro con motivo. Un id ajeno se ignora y queda la lista.
    */
   private abrirHubSolicitado(cursos: Course[]): void {
     const id = this.route?.snapshot.queryParamMap.get('grupo');
