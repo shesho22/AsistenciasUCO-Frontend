@@ -18,6 +18,11 @@ export const REALTIME_EVENT_TYPE = {
   PARAMETER_UPDATED: 'PARAMETER_UPDATED',
   MESSAGE_UPDATED: 'MESSAGE_UPDATED',
   SESION_CANCELADA: 'SESION_CANCELADA',
+  TOMA_ABIERTA: 'TOMA_ABIERTA',
+  TOMA_CERRADA: 'TOMA_CERRADA',
+  ASISTENCIA_QR_ROTADO: 'ASISTENCIA_QR_ROTADO',
+  ASISTENCIA_QR_REGISTRADA: 'ASISTENCIA_QR_REGISTRADA',
+  ASISTENCIAS_TOMA_ACTUALIZADAS: 'ASISTENCIAS_TOMA_ACTUALIZADAS',
 } as const;
 
 export type RealtimeEventType =
@@ -35,6 +40,38 @@ export interface SesionCanceladaRealtimePayload {
   sesion: string;
   tipo: 'DOCENTE' | 'FESTIVO';
   fechaHoraInicioUtc: string | null;
+}
+
+export type {
+  AsistenciaQrRegistradaPayload,
+  AsistenciaQrRotadoPayload,
+} from '../../models/asistencia-qr.model';
+
+/** CULM-001 B.2: payloads de tomas (audiencia: docente titular). */
+export interface TomaAbiertaRealtimePayload {
+  grupo: string;
+  sesion: string;
+  toma: string;
+  numero: number;
+  modo: 'MANUAL' | 'QR';
+  fechaAperturaUtc: string;
+}
+
+export interface TomaCerradaRealtimePayload {
+  grupo: string;
+  sesion: string;
+  toma: string;
+  numero: number;
+  totalAusentesMarcados: number;
+  totalFaltantes: number;
+  automatico: boolean;
+}
+
+export interface AsistenciasTomaActualizadasRealtimePayload {
+  grupo: string;
+  sesion: string;
+  toma: string;
+  totalRegistros: number;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
