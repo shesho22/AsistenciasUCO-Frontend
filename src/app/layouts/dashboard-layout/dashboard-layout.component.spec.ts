@@ -75,6 +75,14 @@ describe('DashboardLayoutComponent', () => {
     // Para un docente, debe incluir grupos y reclamos
     expect(items.some((item) => item.label.includes('Grupos'))).toBeTrue();
   });
+
+  it('F-DOC-008: el menu del docente ofrece Tomar Asistencia y Reclamos ademas de Mis Grupos y Mis Horarios', () => {
+    const rutas = component.filteredNavItems().map((i) => i.route);
+    expect(rutas).toContain('/app/asistencia');
+    expect(rutas).toContain('/app/docente/reclamos');
+    expect(rutas).toContain('/app/docente/grupos');
+    expect(rutas).toContain('/app/docente/horarios');
+  });
 });
 
 describe('DashboardLayoutComponent (ESTUDIANTE, CULM-001 A.1)', () => {
