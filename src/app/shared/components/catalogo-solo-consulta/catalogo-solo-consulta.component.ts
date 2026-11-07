@@ -37,10 +37,10 @@ export interface FilaCatalogo {
         <table class="w-full text-sm">
           <thead class="bg-warm-50 text-xs uppercase text-warm-600">
             <tr>
-              <th class="text-left px-4 py-3">Código</th>
-              <th class="text-left px-4 py-3">Nombre</th>
+              <th scope="col" class="text-left px-4 py-3">Código</th>
+              <th scope="col" class="text-left px-4 py-3">Nombre</th>
               @if (conEstado()) {
-                <th class="text-left px-4 py-3">Estado</th>
+                <th scope="col" class="text-left px-4 py-3">Estado</th>
               }
             </tr>
           </thead>
