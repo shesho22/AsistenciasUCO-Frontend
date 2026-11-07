@@ -69,7 +69,7 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
 
       <!-- Buscador -->
       <div class="relative">
-        <input
+        <input aria-label="Buscar área de conocimiento"
           type="text"
           [ngModel]="filtroTexto()"
           (ngModelChange)="filtroTexto.set($event)"

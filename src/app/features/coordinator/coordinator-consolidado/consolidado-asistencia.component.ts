@@ -89,15 +89,15 @@ export function acumularOpciones(opciones: Opcion[], filas: ConsolidadoGrupoItem
             <table class="w-full text-sm">
               <thead>
                 <tr class="text-left text-xs uppercase tracking-wider text-warm-500 border-b border-warm-100">
-                  <th class="py-2 pr-3">Cohorte</th>
-                  <th class="py-2 pr-3">Materia / Grupo</th>
-                  <th class="py-2 pr-3">Docente</th>
-                  <th class="py-2 pr-3 text-right">Activos</th>
-                  <th class="py-2 pr-3 text-right" title="Sesiones ya vencidas con asistencia registrada; las programadas a futuro no cuentan.">Sesiones ejecutadas</th>
-                  <th class="py-2 pr-3 text-right">% Asistencia</th>
-                  <th class="py-2 pr-3 text-right">% Inasistencia</th>
-                  <th class="py-2 pr-3 text-right">En riesgo</th>
-                  <th class="py-2 text-right">Pérdida</th>
+                  <th scope="col" class="py-2 pr-3">Cohorte</th>
+                  <th scope="col" class="py-2 pr-3">Materia / Grupo</th>
+                  <th scope="col" class="py-2 pr-3">Docente</th>
+                  <th scope="col" class="py-2 pr-3 text-right">Activos</th>
+                  <th scope="col" class="py-2 pr-3 text-right" title="Sesiones ya vencidas con asistencia registrada; las programadas a futuro no cuentan.">Sesiones ejecutadas</th>
+                  <th scope="col" class="py-2 pr-3 text-right">% Asistencia</th>
+                  <th scope="col" class="py-2 pr-3 text-right">% Inasistencia</th>
+                  <th scope="col" class="py-2 pr-3 text-right">En riesgo</th>
+                  <th scope="col" class="py-2 text-right">Pérdida</th>
                 </tr>
               </thead>
               <tbody>

@@ -53,7 +53,7 @@ import { ToastService } from '../../../../shared/components/toast/toast.componen
           <div class="mb-6 overflow-x-auto">
             <table class="w-full text-left text-sm">
               <thead class="text-xs uppercase text-neutral-500">
-                <tr><th class="py-2">Asignatura</th><th>Grupo</th><th>Sesiones</th><th>Asist.</th><th>Faltas</th><th>Excusas</th><th>Inasistencia</th><th>Estado</th></tr>
+                <tr><th scope="col" class="py-2">Asignatura</th><th scope="col">Grupo</th><th scope="col">Sesiones</th><th scope="col">Asist.</th><th scope="col">Faltas</th><th scope="col">Excusas</th><th scope="col">Inasistencia</th><th scope="col">Estado</th></tr>
               </thead>
               <tbody>
                 @for (r of f.resumenPorAsignatura; track r.idGrupo) {

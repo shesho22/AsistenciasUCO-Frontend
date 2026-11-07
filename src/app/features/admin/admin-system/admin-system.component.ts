@@ -147,8 +147,9 @@ type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
             </div>
 
             <div class="bg-white/10 backdrop-blur-sm border border-white/20 p-4 rounded-xl flex flex-col items-center gap-3 shrink-0">
-              <label class="text-xs font-bold text-white uppercase">Período para Cierre</label>
+              <label for="cierre-periodo" class="text-xs font-bold text-white uppercase">Período para Cierre</label>
               <select
+                id="cierre-periodo"
                 [(ngModel)]="periodoSeleccionadoCierre"
                 class="px-4 py-2 rounded-lg bg-white text-warm-900 text-xs font-bold focus:outline-none"
               >
@@ -181,14 +182,14 @@ type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
               <table class="w-full text-left text-sm">
                 <thead class="bg-warm-50 border-b border-warm-200 text-xs font-bold text-warm-600 uppercase tracking-wider">
                   <tr>
-                    <th class="px-5 py-3.5">ID Reporte</th>
-                    <th class="px-5 py-3.5">Período</th>
-                    <th class="px-5 py-3.5">Fecha y Hora Ejecución</th>
-                    <th class="px-5 py-3.5 text-center">Estudiantes Procesados</th>
-                    <th class="px-5 py-3.5 text-center">Materias Consolidadas</th>
-                    <th class="px-5 py-3.5 text-center">Aprobados Asistencia</th>
-                    <th class="px-5 py-3.5 text-center">Reprobados por Fallas</th>
-                    <th class="px-5 py-3.5 text-center">Estado</th>
+                    <th scope="col" class="px-5 py-3.5">ID Reporte</th>
+                    <th scope="col" class="px-5 py-3.5">Período</th>
+                    <th scope="col" class="px-5 py-3.5">Fecha y Hora Ejecución</th>
+                    <th scope="col" class="px-5 py-3.5 text-center">Estudiantes Procesados</th>
+                    <th scope="col" class="px-5 py-3.5 text-center">Materias Consolidadas</th>
+                    <th scope="col" class="px-5 py-3.5 text-center">Aprobados Asistencia</th>
+                    <th scope="col" class="px-5 py-3.5 text-center">Reprobados por Fallas</th>
+                    <th scope="col" class="px-5 py-3.5 text-center">Estado</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-warm-100">

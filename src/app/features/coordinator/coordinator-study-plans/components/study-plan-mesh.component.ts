@@ -78,7 +78,7 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
       <!-- Filtros de Asignaturas -->
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div class="sm:col-span-2 relative">
-          <input
+          <input aria-label="Buscar asignatura en la malla"
             type="text"
             [ngModel]="searchAsignatura()"
             (ngModelChange)="searchAsignatura.set($event)"
@@ -91,7 +91,7 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
         </div>
 
         <div>
-          <select
+          <select aria-label="Filtrar la malla por semestre"
             [ngModel]="selectedSemestre()"
             (ngModelChange)="selectedSemestre.set($event)"
             class="w-full px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20 shadow-warm-sm"

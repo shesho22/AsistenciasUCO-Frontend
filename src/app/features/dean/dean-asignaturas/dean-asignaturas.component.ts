@@ -89,11 +89,11 @@ interface OpcionFacultad {
             <table class="w-full text-sm">
               <thead>
                 <tr class="text-left text-xs uppercase tracking-wider text-warm-500 border-b border-warm-100">
-                  <th class="py-2 pr-3">Asignatura</th>
-                  <th class="py-2 pr-3">Créditos</th>
-                  <th class="py-2 pr-3">Programa y plan</th>
-                  <th class="py-2 pr-3">Área y componente</th>
-                  <th class="py-2">Estado</th>
+                  <th scope="col" class="py-2 pr-3">Asignatura</th>
+                  <th scope="col" class="py-2 pr-3">Créditos</th>
+                  <th scope="col" class="py-2 pr-3">Programa y plan</th>
+                  <th scope="col" class="py-2 pr-3">Área y componente</th>
+                  <th scope="col" class="py-2">Estado</th>
                 </tr>
               </thead>
               <tbody>

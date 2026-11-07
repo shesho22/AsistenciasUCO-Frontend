@@ -204,7 +204,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
 
               <!-- Search Input -->
               <div class="relative">
-                <input
+                <input aria-label="Buscar plantilla de correo"
                   type="text"
                   [ngModel]="busquedaPlantilla()"
                   (ngModelChange)="busquedaPlantilla.set($event)"
@@ -330,10 +330,11 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
                   <div class="mt-5 space-y-4">
                     <div>
                       <div class="flex items-center justify-between mb-1">
-                        <label class="text-xs font-bold text-warm-700">Asunto del Correo Electrónico</label>
+                        <label for="correo-asunto" class="text-xs font-bold text-warm-700">Asunto del Correo Electrónico</label>
                         <span class="text-[11px] text-warm-400 font-mono">{{ asuntoEditado().length }} / 200</span>
                       </div>
                       <input
+                        id="correo-asunto"
                         type="text"
                         [ngModel]="asuntoEditado()"
                         (ngModelChange)="asuntoEditado.set($event)"
@@ -345,10 +346,11 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
 
                     <div>
                       <div class="flex items-center justify-between mb-1">
-                        <label class="text-xs font-bold text-warm-700">Cuerpo del Mensaje (Texto con Marcadores)</label>
+                        <label for="correo-cuerpo" class="text-xs font-bold text-warm-700">Cuerpo del Mensaje (Texto con Marcadores)</label>
                         <span class="text-[11px] text-warm-400 font-mono">{{ cuerpoEditado().length }} / 4000</span>
                       </div>
                       <textarea
+                        id="correo-cuerpo"
                         rows="7"
                         [ngModel]="cuerpoEditado()"
                         (ngModelChange)="cuerpoEditado.set($event)"
@@ -445,11 +447,11 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
                     <table class="w-full text-left text-xs">
                       <thead class="bg-warm-50 text-warm-600 uppercase text-[10px] font-bold">
                         <tr>
-                          <th class="py-2.5 px-3">Versión</th>
-                          <th class="py-2.5 px-3">Fecha</th>
-                          <th class="py-2.5 px-3">Asunto</th>
-                          <th class="py-2.5 px-3">Estado</th>
-                          <th class="py-2.5 px-3 text-right">Acción</th>
+                          <th scope="col" class="py-2.5 px-3">Versión</th>
+                          <th scope="col" class="py-2.5 px-3">Fecha</th>
+                          <th scope="col" class="py-2.5 px-3">Asunto</th>
+                          <th scope="col" class="py-2.5 px-3">Estado</th>
+                          <th scope="col" class="py-2.5 px-3 text-right">Acción</th>
                         </tr>
                       </thead>
                       <tbody class="divide-y divide-warm-100 text-warm-800">
@@ -557,7 +559,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
               <div class="flex flex-wrap items-center gap-3">
                 <div>
                   <label class="text-[10px] font-bold text-warm-500 uppercase block mb-1">Estado</label>
-                  <select
+                  <select aria-label="Filtrar la cola de correos por estado"
                     [ngModel]="filtroEstado()"
                     (ngModelChange)="cambiarFiltroEstado($event)"
                     class="text-xs font-semibold py-1.5 px-3 bg-warm-50 border border-warm-300 rounded-lg text-warm-800 focus:outline-none focus:ring-1 focus:ring-primary-500"
@@ -573,7 +575,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
 
                 <div>
                   <label class="text-[10px] font-bold text-warm-500 uppercase block mb-1">Tipo de Evento</label>
-                  <select
+                  <select aria-label="Filtrar la cola de correos por tipo"
                     [ngModel]="filtroTipo()"
                     (ngModelChange)="cambiarFiltroTipo($event)"
                     class="text-xs font-semibold py-1.5 px-3 bg-warm-50 border border-warm-300 rounded-lg text-warm-800 focus:outline-none focus:ring-1 focus:ring-primary-500"
@@ -604,14 +606,14 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
                 <table class="w-full text-left text-xs">
                   <thead class="bg-warm-50 text-warm-600 uppercase text-[10px] font-bold border-b border-warm-200">
                     <tr>
-                      <th class="py-3 px-4">Tipo / Evento</th>
-                      <th class="py-3 px-4">Asunto</th>
-                      <th class="py-3 px-4">Destinatarios</th>
-                      <th class="py-3 px-4">Estado</th>
-                      <th class="py-3 px-4">Intentos</th>
-                      <th class="py-3 px-4">Fecha Creación</th>
-                      <th class="py-3 px-4">Error / Detalle</th>
-                      <th class="py-3 px-4 text-right">Acción</th>
+                      <th scope="col" class="py-3 px-4">Tipo / Evento</th>
+                      <th scope="col" class="py-3 px-4">Asunto</th>
+                      <th scope="col" class="py-3 px-4">Destinatarios</th>
+                      <th scope="col" class="py-3 px-4">Estado</th>
+                      <th scope="col" class="py-3 px-4">Intentos</th>
+                      <th scope="col" class="py-3 px-4">Fecha Creación</th>
+                      <th scope="col" class="py-3 px-4">Error / Detalle</th>
+                      <th scope="col" class="py-3 px-4 text-right">Acción</th>
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-warm-100 text-warm-800">
@@ -841,8 +843,9 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
 
                 <div class="space-y-3">
                   <div>
-                    <label class="text-xs font-bold text-warm-700 block mb-1">Tipo de Plantilla de Prueba</label>
+                    <label for="correo-prueba-tipo" class="text-xs font-bold text-warm-700 block mb-1">Tipo de Plantilla de Prueba</label>
                     <select
+                      id="correo-prueba-tipo"
                       [ngModel]="pruebaTipo()"
                       (ngModelChange)="pruebaTipo.set($event)"
                       class="w-full text-xs font-semibold py-2 px-3 bg-white border border-warm-300 rounded-xl text-warm-900 focus:outline-none focus:ring-1 focus:ring-primary-500"
@@ -854,8 +857,9 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
                   </div>
 
                   <div>
-                    <label class="text-xs font-bold text-warm-700 block mb-1">Correo Electrónico de Destino</label>
+                    <label for="correo-prueba-destino" class="text-xs font-bold text-warm-700 block mb-1">Correo Electrónico de Destino</label>
                     <input
+                      id="correo-prueba-destino"
                       type="email"
                       [ngModel]="pruebaCorreoDestino()"
                       (ngModelChange)="pruebaCorreoDestino.set($event)"

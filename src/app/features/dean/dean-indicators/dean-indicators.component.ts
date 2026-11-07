@@ -73,7 +73,7 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
         } @else {
           <table class="w-full text-left text-sm">
             <thead class="text-xs uppercase text-neutral-500">
-              <tr><th class="py-2">Grupo</th><th>Asignatura</th><th>Programa</th><th>Cupo</th><th>Matriculados</th><th>Disponibles</th><th>Aforo</th></tr>
+              <tr><th scope="col" class="py-2">Grupo</th><th scope="col">Asignatura</th><th scope="col">Programa</th><th scope="col">Cupo</th><th scope="col">Matriculados</th><th scope="col">Disponibles</th><th scope="col">Aforo</th></tr>
             </thead>
             <tbody>
               @for (g of service.aforo(); track g.idGrupo) {

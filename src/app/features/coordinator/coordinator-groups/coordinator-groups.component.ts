@@ -64,12 +64,12 @@ interface GrupoForm {
             <table class="w-full text-sm">
               <thead class="bg-warm-50 text-xs text-warm-600 text-left">
                 <tr>
-                  <th class="px-4 py-3">Asignatura</th>
-                  <th class="px-4 py-3">Grupo</th>
-                  <th class="px-4 py-3">Docente</th>
-                  <th class="px-4 py-3">Horario semanal</th>
-                  <th class="px-4 py-3">Cupo</th>
-                  <th class="px-4 py-3"></th>
+                  <th scope="col" class="px-4 py-3">Asignatura</th>
+                  <th scope="col" class="px-4 py-3">Grupo</th>
+                  <th scope="col" class="px-4 py-3">Docente</th>
+                  <th scope="col" class="px-4 py-3">Horario semanal</th>
+                  <th scope="col" class="px-4 py-3">Cupo</th>
+                  <th scope="col" class="px-4 py-3"></th>
                 </tr>
               </thead>
               <tbody>

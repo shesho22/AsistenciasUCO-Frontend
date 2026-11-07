@@ -83,7 +83,7 @@ type PestanaModulo = 'DIRECTORIO';
       <!-- Filtros de Directorio -->
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div class="sm:col-span-2 relative">
-          <input
+          <input aria-label="Buscar estudiante por nombre, documento o correo"
             type="text"
             [ngModel]="searchDirectorio()"
             (ngModelChange)="onDirectorioSearchChange($event)"
@@ -96,7 +96,7 @@ type PestanaModulo = 'DIRECTORIO';
         </div>
 
         <div>
-          <select
+          <select aria-label="Filtrar estudiantes por estado"
             [ngModel]="filtroEstadoDirectorio()"
             (ngModelChange)="onDirectorioStatusChange($event)"
             class="w-full px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20 shadow-warm-sm"

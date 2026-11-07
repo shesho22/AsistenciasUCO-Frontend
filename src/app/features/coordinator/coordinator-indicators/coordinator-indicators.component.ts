@@ -51,7 +51,7 @@ import { CoordinatorFichaModalComponent } from './components/coordinator-ficha-m
         } @else {
           <table class="w-full text-left text-sm">
             <thead class="text-xs uppercase text-neutral-500">
-              <tr><th class="py-2">Estudiante</th><th>Inasistencia</th><th>Faltas</th><th>Estado</th><th>Semáforo</th><th></th></tr>
+              <tr><th scope="col" class="py-2">Estudiante</th><th scope="col">Inasistencia</th><th scope="col">Faltas</th><th scope="col">Estado</th><th scope="col">Semáforo</th><th scope="col"></th></tr>
             </thead>
             <tbody>
               @for (a of service.alertas(); track a.idEstudiante) {

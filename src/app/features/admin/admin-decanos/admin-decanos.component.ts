@@ -82,7 +82,7 @@ type VistaAdmin = 'LISTA' | 'REGISTRO';
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div class="sm:col-span-2">
             <div class="relative">
-              <input
+              <input aria-label="Buscar decano por nombre, cédula o facultad"
                 type="text"
                 [(ngModel)]="searchQuery"
                 placeholder="Buscar por nombre, cédula o facultad..."
@@ -95,7 +95,7 @@ type VistaAdmin = 'LISTA' | 'REGISTRO';
           </div>
 
           <div>
-            <select
+            <select aria-label="Filtrar decanos por estado"
               [(ngModel)]="selectedEstado"
               class="w-full px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 shadow-warm-sm"
             >

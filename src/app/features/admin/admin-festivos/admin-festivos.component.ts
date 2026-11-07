@@ -187,10 +187,10 @@ const ANIO_VALIDO = /^\d{4}$/;
               <table class="w-full text-left text-sm">
                 <thead class="bg-warm-50 text-warm-600 text-xs uppercase tracking-wider">
                   <tr>
-                    <th class="px-4 py-3">Fecha</th>
-                    <th class="px-4 py-3">Día</th>
-                    <th class="px-4 py-3">Nombre</th>
-                    <th class="px-4 py-3">Fuente</th>
+                    <th scope="col" class="px-4 py-3">Fecha</th>
+                    <th scope="col" class="px-4 py-3">Día</th>
+                    <th scope="col" class="px-4 py-3">Nombre</th>
+                    <th scope="col" class="px-4 py-3">Fuente</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-warm-100">
@@ -261,12 +261,12 @@ const ANIO_VALIDO = /^\d{4}$/;
               <table class="w-full text-left text-sm">
                 <thead class="bg-warm-50 text-warm-600 text-xs uppercase tracking-wider">
                   <tr>
-                    <th class="px-4 py-3">Fecha</th>
-                    <th class="px-4 py-3">Festivo</th>
-                    <th class="px-4 py-3">Asignatura · Grupo</th>
-                    <th class="px-4 py-3">Docente</th>
-                    <th class="px-4 py-3 text-right">Tomas</th>
-                    <th class="px-4 py-3 text-right">Registros</th>
+                    <th scope="col" class="px-4 py-3">Fecha</th>
+                    <th scope="col" class="px-4 py-3">Festivo</th>
+                    <th scope="col" class="px-4 py-3">Asignatura · Grupo</th>
+                    <th scope="col" class="px-4 py-3">Docente</th>
+                    <th scope="col" class="px-4 py-3 text-right">Tomas</th>
+                    <th scope="col" class="px-4 py-3 text-right">Registros</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-warm-100">

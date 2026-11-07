@@ -505,10 +505,10 @@ describe('AdminFacultadesComponent', () => {
       component.formFacultad.nombre = 'ab';
       fixture.detectChanges();
       const el = fixture.nativeElement as HTMLElement;
-      const campo = el.querySelector('#fac-nombre') as HTMLInputElement;
+      const campo = el.querySelector("[id=\"fac-nombre\"]") as HTMLInputElement;
       expect(campo.getAttribute('aria-invalid')).toBe('true');
       expect(campo.getAttribute('aria-describedby')).toBe('fac-nombre-error');
-      expect(el.querySelector('#fac-nombre-error')?.textContent).toContain('entre 3 y 50');
+      expect(el.querySelector("[id=\"fac-nombre-error\"]")?.textContent).toContain('entre 3 y 50');
       const guardar = Array.from(el.querySelectorAll('button')).find((b) => b.textContent?.includes('Guardar Facultad')) as HTMLButtonElement;
       expect(guardar.disabled).toBeFalse();
       expect(el.querySelector('label[for="fac-nombre"]')).toBeTruthy();

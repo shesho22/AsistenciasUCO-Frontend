@@ -97,12 +97,12 @@ export function rangoUtc(desde: string, hasta: string): { desde: string; hasta: 
             <table class="w-full text-left text-sm">
               <thead class="bg-warm-50 border-b border-warm-200 text-xs font-bold text-warm-600 uppercase tracking-wider">
                 <tr>
-                  <th class="px-4 py-3">Fecha</th>
-                  <th class="px-4 py-3">Usuario</th>
-                  <th class="px-4 py-3">Acción</th>
-                  <th class="px-4 py-3">Recurso</th>
-                  <th class="px-4 py-3">Petición</th>
-                  <th class="px-4 py-3 text-center">Resultado</th>
+                  <th scope="col" class="px-4 py-3">Fecha</th>
+                  <th scope="col" class="px-4 py-3">Usuario</th>
+                  <th scope="col" class="px-4 py-3">Acción</th>
+                  <th scope="col" class="px-4 py-3">Recurso</th>
+                  <th scope="col" class="px-4 py-3">Petición</th>
+                  <th scope="col" class="px-4 py-3 text-center">Resultado</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-warm-100">
