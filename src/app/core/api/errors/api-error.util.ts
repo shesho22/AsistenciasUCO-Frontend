@@ -197,3 +197,22 @@ export function getApiFieldError(
 export function getApiCorrelationId(error: unknown): string | undefined {
   return getApiErrorResponse(error)?.correlationId ?? undefined;
 }
+
+/**
+ * Texto del backend para mostrar al usuario ante un error de operación. Acepta el HttpErrorResponse real y, por
+ * compatibilidad, objetos con la forma `{ error: { message | mensajeUsuario } }`. Nunca usa `mensajeTecnico` ni
+ * `err.message` (texto de infraestructura): sin texto del backend cae al mensaje semántico por código.
+ */
+export function getBackendUserMessage(error: unknown, respaldo?: string): string {
+  if (!(error instanceof HttpErrorResponse) && isRecord(error) && isRecord(error['error'])) {
+    const cuerpo = error['error'];
+    const texto = cuerpo['message'] ?? cuerpo['mensajeUsuario'];
+    if (typeof texto === 'string' && texto.trim()) {
+      return texto.trim();
+    }
+  }
+  if (respaldo && !(error instanceof HttpErrorResponse)) {
+    return respaldo;
+  }
+  return getApiErrorMessage(error);
+}
