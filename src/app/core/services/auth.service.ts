@@ -1,3 +1,4 @@
+import { consumirRetornoQr, esRutaAsistenciaQr, guardarRetornoQr } from '../utils/qr-return-url.util';
 import { Injectable, OnDestroy, inject, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, of } from 'rxjs';
@@ -395,9 +396,12 @@ export class AuthService implements OnDestroy {
       // El JWT de baseline no trae claims de nombre: el nombre visible se hidrata desde el perfil de la DB (HU006) sin
       // retrasar la navegacion. Si el perfil esta apagado o falla, la sesion sigue con los datos del token.
       void this.fetchProfileFromBackend(accessToken);
-      const target = pending.returnUrl === '/' || pending.returnUrl.startsWith('/login')
-        ? this.homePathForRole(user.role)
-        : pending.returnUrl;
+      // CULM-001 B.2 (NB-8): el estudiante que abrio el QR sin sesion vuelve a esa URL (clave de un solo uso).
+      const retornoQr = consumirRetornoQr();
+      const target = retornoQr
+        ?? (pending.returnUrl === '/' || pending.returnUrl.startsWith('/login')
+          ? this.homePathForRole(user.role)
+          : pending.returnUrl);
       this.replaceBaselineUrl(target);
       return true;
     } catch {
@@ -437,6 +441,8 @@ export class AuthService implements OnDestroy {
     const state = randomUrlSafe(16);
     const verifier = randomUrlSafe(48);
     const challenge = await pkceChallenge(verifier);
+    // La URL del QR (con su token) solo se conserva en sessionStorage; nunca viaja al IdP.
+    if (esRutaAsistenciaQr(returnUrl)) guardarRetornoQr(returnUrl);
     savePending({ state, verifier, returnUrl: safeInternalPath(returnUrl), silent, createdAt: Date.now() });
     this.navigator.assign(buildAuthorizeUrl(this.baselineConfig(), { state, challenge, silent }));
   }
