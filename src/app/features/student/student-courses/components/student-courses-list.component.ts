@@ -156,8 +156,8 @@ import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
                       <span class="font-bold text-warm-900" data-testid="porcentaje-inasistencia">{{ ind.porcentajeInasistencia }}% de inasistencia</span>
                       <app-attendance-status-badge [codigoPermanencia]="ind.codigoPermanencia" />
                     </div>
-                    <p class="text-[11px] text-warm-600">{{ ind.horasFalta }} h de falta de {{ ind.horasDictadas }} h dictadas</p>
-                    <p class="text-[11px] text-warm-500">Advertencia desde {{ ind.umbralAdvertencia }}% · pérdida desde {{ ind.umbralPerdida }}%</p>
+                    <p class="text-xs text-warm-600">{{ ind.horasFalta }} h de falta de {{ ind.horasDictadas }} h dictadas</p>
+                    <p class="text-xs text-warm-500">Advertencia desde {{ ind.umbralAdvertencia }}% · pérdida desde {{ ind.umbralPerdida }}%</p>
                   </div>
                 } @else {
                   <div class="p-3 rounded-xl bg-warm-50 border border-warm-100 text-xs text-warm-500" data-testid="asistencia-no-disponible">

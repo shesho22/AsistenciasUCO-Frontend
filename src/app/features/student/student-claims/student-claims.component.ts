@@ -7,7 +7,7 @@ import { CardComponent } from '../../../shared/components/card/card.component';
 import { BadgeComponent, BadgeVariant } from '../../../shared/components/badge/badge.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
-import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
+import { getApiErrorMessage, getApiSuccessMessage } from '../../../core/api/errors/api-error.util';
 import { etiquetaEstadoReclamo, varianteEstadoReclamo } from '../../../core/utils/reclamo-estado.util';
 
 type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
@@ -204,7 +204,7 @@ export class StudentClaimsComponent implements OnInit, OnDestroy {
           URL.revokeObjectURL(url);
           this.toast.success(`Soporte "${soporte.nombre}" descargado.`);
         },
-        error: (error: unknown) => this.toast.error(this.mensajeErrorDescarga(error)),
+        error: (error: unknown) => this.toast.error(getApiErrorMessage(error)),
       });
   }
 
@@ -225,23 +225,10 @@ export class StudentClaimsComponent implements OnInit, OnDestroy {
       .pipe(finalize(() => this.retirando.set(null)))
       .subscribe({
         next: (res) => {
-          this.toast.success(res.mensaje);
+          this.toast.success(getApiSuccessMessage(res, 'Solicitud retirada.'));
           this.cargar();
         },
         error: (error: unknown) => this.toast.error(getApiErrorMessage(error)),
       });
-  }
-
-  private mensajeErrorDescarga(error: unknown): string {
-    switch ((error as { status?: number })?.status) {
-      case 401:
-        return 'Tu sesión expiró. Inicia sesión nuevamente para descargar el soporte.';
-      case 404:
-        return 'El soporte ya no está disponible o no tienes autorización para descargarlo.';
-      case 0:
-        return 'No se pudo conectar con el servidor. Inténtalo de nuevo.';
-      default:
-        return getApiErrorMessage(error);
-    }
   }
 }

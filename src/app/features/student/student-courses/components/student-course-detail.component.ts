@@ -62,11 +62,11 @@ import { MotivosJustificacionComponent } from './motivos-justificacion.component
             </h2>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-warm-600 pt-2 border-t border-warm-100">
               <div>
-                <span class="text-warm-400 block text-[11px]">Docente</span>
+                <span class="text-warm-400 block text-xs">Docente</span>
                 <strong class="text-warm-800">{{ materia()?.docente ?? 'No informado' }}</strong>
               </div>
               <div>
-                <span class="text-warm-400 block text-[11px]">Horario Asignado</span>
+                <span class="text-warm-400 block text-xs">Horario Asignado</span>
                 <strong class="text-warm-800">{{ materia()?.horario ?? 'No informado' }}</strong>
               </div>
             </div>
@@ -80,7 +80,7 @@ import { MotivosJustificacionComponent } from './motivos-justificacion.component
                 <p class="text-3xl font-serif font-bold text-primary-800 my-1" data-testid="detalle-porcentaje-inasistencia">{{ ind.porcentajeInasistencia }}%</p>
                 <app-attendance-status-badge [codigoPermanencia]="ind.codigoPermanencia" />
               </div>
-              <div class="text-[11px] text-warm-500 space-y-0.5 border-t border-warm-200/80 pt-2">
+              <div class="text-xs text-warm-500 space-y-0.5 border-t border-warm-200/80 pt-2">
                 <p data-testid="detalle-horas">{{ ind.horasFalta }} h de falta de {{ ind.horasDictadas }} h dictadas</p>
                 <p>{{ ind.horasExcusa }} h con excusa</p>
                 <p>Advertencia desde {{ ind.umbralAdvertencia }}% · pérdida desde {{ ind.umbralPerdida }}%</p>
@@ -89,7 +89,7 @@ import { MotivosJustificacionComponent } from './motivos-justificacion.component
               <div data-testid="detalle-asistencia-no-disponible">
                 <span class="text-xs text-warm-500 font-medium">Asistencia Acumulada</span>
                 <p class="text-base font-serif font-bold text-warm-500 my-2">No disponible</p>
-                <p class="text-[11px] text-warm-400">El sistema aún no expone tu asistencia consolidada.</p>
+                <p class="text-xs text-warm-400">El sistema aún no expone tu asistencia consolidada.</p>
               </div>
             }
           </div>
@@ -161,12 +161,12 @@ import { MotivosJustificacionComponent } from './motivos-justificacion.component
                       <div class="p-3 rounded-xl bg-warm-50 border border-warm-200 text-xs text-warm-700 mt-1 space-y-1">
                         <div class="flex items-center gap-2">
                           @if (sesion.categoriaReclamo) {
-                            <span class="px-2 py-0.5 rounded-md bg-warning-100/80 text-warning-900 font-semibold text-[11px]">
+                            <span class="px-2 py-0.5 rounded-md bg-warning-100/80 text-warning-900 font-semibold text-xs">
                               {{ sesion.categoriaReclamo }}
                             </span>
                           }
                           @if (sesion.soporteAdjuntoNombre) {
-                            <span class="inline-flex items-center gap-1 text-primary-700 font-medium text-[11px] bg-primary-50 px-2 py-0.5 rounded-md border border-primary-200/60">
+                            <span class="inline-flex items-center gap-1 text-primary-700 font-medium text-xs bg-primary-50 px-2 py-0.5 rounded-md border border-primary-200/60">
                               <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                               </svg>
