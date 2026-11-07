@@ -9,7 +9,7 @@ import {
 } from '../../../../core/realtime/model/realtime-event.model';
 import { TomaAsistenciaService } from '../../../../core/services/toma-asistencia.service';
 import { FaltanteToma } from '../../../../core/models/toma-asistencia.model';
-import { getApiErrorMessage } from '../../../../core/api/errors/api-error.util';
+import { getApiErrorCode, getApiErrorMessage } from '../../../../core/api/errors/api-error.util';
 
 export const TAMANO_PAGINA_FALTANTES = 50;
 
@@ -120,7 +120,9 @@ export class TomaFaltantesComponent {
   protected readonly error = signal<string | null>(null);
   protected readonly seleccionados = signal<ReadonlySet<string>>(new Set());
 
-  protected readonly puedeMarcar = computed(() => this.ventanaAbierta() && !this.enviando());
+  /** SES_008: el backend cerró la ventana (ERR_SESION_CERRADA) aunque la pantalla aún la viera abierta. */
+  private readonly cerradaPorBackend = signal(false);
+  protected readonly puedeMarcar = computed(() => this.ventanaAbierta() && !this.cerradaPorBackend() && !this.enviando());
 
   constructor() {
     effect((onCleanup) => {
@@ -174,7 +176,10 @@ export class TomaFaltantesComponent {
           this.actualizado.emit();
           this.cargar();
         },
-        error: (err: unknown) => this.error.set(getApiErrorMessage(err)),
+        error: (err: unknown) => {
+          if (getApiErrorCode(err) === 'ERR_SESION_CERRADA') this.cerradaPorBackend.set(true);
+          this.error.set(getApiErrorMessage(err));
+        },
       });
   }
 

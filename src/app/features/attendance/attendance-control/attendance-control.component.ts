@@ -466,10 +466,14 @@ export class AttendanceControlComponent {
     if (courseId && sessionId) this.cargarEstudiantesYSesion(courseId, sessionId);
   }
 
-  private cargarResumenGrupo(courseId: string): void {
-    this.resumenService.consultarResumen(courseId, 1, 200).subscribe({
+  /** El backend limita la pagina a 100 (PAGINACION/TAMANO_MAXIMO): se recorren las paginas y se acumulan. */
+  private cargarResumenGrupo(courseId: string, pagina = 1, acumulado: ResumenAsistenciaEstudiante[] = []): void {
+    this.resumenService.consultarResumen(courseId, pagina, 100).subscribe({
       next: (res) => {
-        if (this.selectedCourseId() === courseId) this.resumenGrupo.set(res.elementos);
+        if (this.selectedCourseId() !== courseId) return;
+        const todo = [...acumulado, ...res.elementos];
+        this.resumenGrupo.set(todo);
+        if (pagina < res.totalPaginas) this.cargarResumenGrupo(courseId, pagina + 1, todo);
       },
       error: () => this.resumenGrupo.set([]),
     });

@@ -63,7 +63,8 @@ export interface TomaCerradaRealtimePayload {
   toma: string;
   numero: number;
   totalAusentesMarcados: number;
-  totalFaltantes: number;
+  /** El cierre automático del job no lo informa. */
+  totalFaltantes?: number;
   automatico: boolean;
 }
 
