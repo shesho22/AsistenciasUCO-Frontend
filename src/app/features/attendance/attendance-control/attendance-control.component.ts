@@ -156,6 +156,7 @@ type StudentEnrollmentField =
       <!-- 4. Modal de Matrícula de Estudiante -->
       <app-attendance-enrollment-modal
         [isOpen]="isRegisterModalOpen()"
+        [grupoId]="selectedCourseId()"
         [isEnrolling]="isEnrolling()"
         [docTypeOptions]="docTypeOptions()"
         [fieldErrors]="studentFieldErrors()"
@@ -790,7 +791,11 @@ export class AttendanceControlComponent {
     if (!data.primerApellido?.trim()) {
       fieldErrors.primerApellido = 'El campo Primer Apellido es obligatorio.';
     }
-    if (!data.correo?.trim()) {
+    // A.2-15: un estudiante existente se matricula por documento; su correo y contraseña no se piden ni se envían.
+    const esExistente = data.estudianteExistente === true;
+    if (esExistente) {
+      // Sin validaciones de cuenta: ya existe.
+    } else if (!data.correo?.trim()) {
       fieldErrors.correo = 'El campo Correo Institucional es obligatorio.';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.correo.trim())) {
       fieldErrors.correo = 'El campo Correo Institucional debe tener un formato válido (ej. estudiante@uco.edu.co).';
@@ -798,7 +803,7 @@ export class AttendanceControlComponent {
       // IDENT-001: pre-validacion de comodidad; la autoridad es el backend (si el dominio no se pudo cargar se omite).
       fieldErrors.correo = `El correo del estudiante debe ser institucional y terminar en ${this.emailDomain()}.`;
     }
-    if (passwordError) {
+    if (passwordError && !esExistente) {
       fieldErrors.password = passwordError;
     }
 
@@ -842,8 +847,8 @@ export class AttendanceControlComponent {
         segundoNombre: data.segundoNombre?.trim(),
         primerApellido: data.primerApellido.trim(),
         segundoApellido: data.segundoApellido?.trim(),
-        correoElectronico: data.correo.trim(),
-        password: effectivePassword,
+        correoElectronico: esExistente ? undefined : data.correo.trim(),
+        password: esExistente ? undefined : effectivePassword,
       })
       .pipe(finalize(() => this.isEnrolling.set(false)))
       .subscribe({
