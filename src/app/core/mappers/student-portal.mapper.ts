@@ -204,6 +204,7 @@ export class StudentPortalMapper {
     const estado = ESTADOS_ASISTENCIA.find((valor) => valor === dto.estadoAsistencia) ?? 'NO_DISPONIBLE';
     const solicitudRevision = estadoSolicitud(dto.estadoSolicitudRevision);
     const cancelada = dto.estado === 'CANCELADA';
+    const limite = StudentPortalMapper.presentarInstante(dto.fechaLimiteJustificacionUtc, format);
 
     return {
       id: dto.id,
@@ -220,6 +221,9 @@ export class StudentPortalMapper {
       estado: cancelada ? 'CANCELADA' : 'PROGRAMADA',
       cancelacion: dto.cancelacion ?? null,
       horasSesion: typeof dto.horasSesion === 'number' ? dto.horasSesion : undefined,
+      fechaLimiteJustificacionUtc: limite?.utc,
+      fechaLimiteJustificacionLocal: limite ? `${limite.date} ${limite.time}` : undefined,
+      plazoJustificacionVigente: typeof dto.plazoJustificacionVigente === 'boolean' ? dto.plazoJustificacionVigente : undefined,
       reclamable: !cancelada && dto.reclamable === true && ESTADOS_RECLAMABLES.has(estado) && solicitudRevision === null,
     };
   }

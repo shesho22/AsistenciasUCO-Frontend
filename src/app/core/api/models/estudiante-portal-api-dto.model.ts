@@ -69,4 +69,7 @@ export interface SesionMateriaEstudianteApiDto {
   /** CULM-001 B.2: horas de la sesion (y de sus tomas) calculadas por el backend. */
   horasSesion?: number | null;
   totalTomas?: number | null;
+  /** CULM-001 D.1 (HU026B): limite UTC para justificar (`null` si no hay plazo calculable) e indicador del backend. */
+  fechaLimiteJustificacionUtc?: string | null;
+  plazoJustificacionVigente?: boolean | null;
 }
