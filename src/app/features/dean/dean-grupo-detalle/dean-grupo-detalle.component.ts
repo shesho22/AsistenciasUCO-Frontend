@@ -43,7 +43,14 @@ const MAX_PAGINAS_SESIONES = 50;
         }
       </div>
 
-      @if (selectedCourse(); as curso) {
+      @if (errorGrupo() !== null) {
+        <div class="bg-white p-6 rounded-2xl border border-danger-200 text-center" role="alert">
+          <p class="text-sm font-semibold text-danger-700">No fue posible cargar los datos del grupo.</p>
+          <p class="text-xs text-danger-700 mt-1">{{ errorGrupo() }}</p>
+        </div>
+      }
+
+      @if (errorGrupo() === null ? selectedCourse() : null; as curso) {
         <!-- Ficha Resumen del Grupo -->
         <div class="bg-white p-6 rounded-2xl border border-warm-200 shadow-warm-sm grid grid-cols-1 md:grid-cols-4 gap-6">
           <div class="md:col-span-3 space-y-2">
@@ -66,11 +73,11 @@ const MAX_PAGINAS_SESIONES = 50;
             <div>
               <span class="text-xs text-warm-500 font-medium">Aforo Ocupado</span>
               <p class="text-3xl font-serif font-bold text-primary-800 my-1">
-                {{ curso.enrolledStudentsCount }} / {{ curso.cupoMaximo ?? '—' }}
+                @if (curso.cupoMaximo) { {{ curso.enrolledStudentsCount }} / {{ curso.cupoMaximo }} } @else { {{ curso.enrolledStudentsCount ?? 0 }} }
               </p>
             </div>
             <div class="text-[11px] text-warm-500 pt-2 border-t border-warm-200/80">
-              <span>Cupo Ofertado Facultad</span>
+              <span>{{ curso.cupoMaximo ? 'Cupo Ofertado Facultad' : 'Sin cupo definido' }}</span>
             </div>
           </div>
         </div>
@@ -150,6 +157,8 @@ export class DeanGrupoDetalleComponent implements OnInit {
   cargandoSesiones = signal(false);
   /** Mensaje del último error al cargar sesiones; `null` si la última carga terminó bien (aunque sea vacía). */
   errorSesiones = signal<string | null>(null);
+  /** Mensaje del backend si falla la carga de la ficha del grupo (403/500). */
+  errorGrupo = signal<string | null>(null);
 
   effectiveGrupoId = computed(() => {
     return this.grupoId() || this.route.snapshot.paramMap.get('grupoId') || '';
@@ -164,6 +173,7 @@ export class DeanGrupoDetalleComponent implements OnInit {
   ngOnInit(): void {
     this.courseService.getDeanCourses().subscribe({
       next: (res) => this.courses.set(res.datos || []),
+      error: (error: unknown) => this.errorGrupo.set(getApiErrorMessage(error)),
     });
     this.cargarSesiones();
   }
