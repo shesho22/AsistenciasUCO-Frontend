@@ -152,7 +152,8 @@ export interface MateriaEstudianteItem {
 }
 
 export type EstadoAsistenciaSesion = 'PRESENTE' | 'AUSENTE' | 'RETARDO' | 'JUSTIFICADA';
-export type EstadoSolicitudRevision = 'PENDIENTE' | 'APROBADA' | 'RECHAZADA';
+/** `RETIRADA`: el estudiante retiró su solicitud mientras estaba pendiente (CULM-001 A.2-7). */
+export type EstadoSolicitudRevision = 'PENDIENTE' | 'APROBADA' | 'RECHAZADA' | 'RETIRADA';
 
 /**
  * Nombre de la categoría de justificación del reclamo. HU005/HU016: los valores salen del catálogo de solo consulta
@@ -293,23 +294,6 @@ export interface EstudianteDirectorioItem {
   estadoMatricula: 'ACTIVO' | 'INACTIVO' | 'BLOQUEADO';
   promedioAcumulado?: number;
   gruposInscritos?: string[];
-}
-
-export interface SolicitudMatriculaItem {
-  id: string;
-  estudianteId: string;
-  estudianteNombre: string;
-  estudianteCodigo: string;
-  estudianteCorreo: string;
-  cursoId: string;
-  cursoCodigo: string;
-  cursoNombre: string;
-  grupo: string;
-  fechaSolicitud: string;
-  motivo: string;
-  estado: 'PENDIENTE' | 'APROBADA' | 'RECHAZADA';
-  respuestaCoordinador?: string;
-  fechaRespuesta?: string;
 }
 
 export interface PeriodoAcademicoItem {

@@ -196,7 +196,7 @@ import { MotivosJustificacionComponent } from './motivos-justificacion.component
                         [class]="getReclamoStatusClasses(sesion.estadoReclamo)"
                         class="text-xs font-bold px-2.5 py-1 rounded-lg border"
                       >
-                        Reclamo {{ sesion.estadoReclamo }}
+                        {{ sesion.estadoReclamo === 'RETIRADA' ? 'Retirada' : 'Reclamo ' + sesion.estadoReclamo }}
                       </span>
 
                       @if (sesion.estadoReclamo === 'PENDIENTE') {
@@ -273,6 +273,8 @@ export class StudentCourseDetailComponent {
         return 'aprobada';
       case 'RECHAZADA':
         return 'rechazada';
+      case 'RETIRADA':
+        return 'retirada';
       default:
         return 'en trámite';
     }
@@ -299,6 +301,8 @@ export class StudentCourseDetailComponent {
         return 'bg-success-50 text-success-800 border-success-200';
       case 'RECHAZADA':
         return 'bg-danger-50 text-danger-800 border-danger-200';
+      case 'RETIRADA':
+        return 'bg-warm-100 text-warm-700 border-warm-200';
       default:
         return 'bg-warning-50 text-warning-800 border-warning-200';
     }

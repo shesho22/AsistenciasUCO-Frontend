@@ -10,6 +10,8 @@ import { AttendanceClaimService } from '../../../core/services/attendance-claim.
 import { CatalogService } from '../../../core/services/catalog.service';
 import { Course } from '../../../core/models/course.model';
 import { ClassSession } from '../../../core/models/attendance.model';
+import { ToastService } from '../../../shared/components/toast/toast.component';
+import { apiHttpError } from '../../../core/testing/api-error.fixture';
 
 // LB-001B.1B (DB source of truth cleanup): AS-IS #20 (docenteName hardcodeado y enviado en
 // el payload de crearGrupo/actualizarGrupo), #21 (selección de sesión activa por status) y
@@ -262,6 +264,32 @@ describe('TeacherGruposComponent', () => {
     component.guardarSesion();
 
     expect(sessionService.createSession).toHaveBeenCalled();
+  });
+
+  it('A2-F-09 un 400 SES_017 al crear una sesión muestra el message del backend, sin texto local', () => {
+    const toastError = spyOn(TestBed.inject(ToastService), 'error');
+    sessionService.createSession.and.returnValue(throwError(() => apiHttpError(400, 'La sesión se cruza con otra sesión del grupo o del docente en ese horario.', 'VALIDATION_ERROR')));
+    component.verHubGrupo(course);
+    component.abrirCrearSesionExtraordinaria();
+    component.sesionForm = { title: 'Repaso', date: '2026-09-15', startTime: '08:00', endTime: '10:00', sessionNumber: 1 };
+
+    component.guardarSesion();
+
+    expect(toastError).toHaveBeenCalledOnceWith('La sesión se cruza con otra sesión del grupo o del docente en ese horario.');
+  });
+
+  it('A2-F-09 un 400 SES_017 al editar una sesión muestra el message del backend', () => {
+    const toastError = spyOn(TestBed.inject(ToastService), 'error');
+    sessionService.updateSession.and.returnValue(throwError(() => apiHttpError(400, 'La sesión se cruza con otra sesión del grupo o del docente en ese horario.', 'VALIDATION_ERROR')));
+    component.verHubGrupo(course);
+    component.abrirEditarSesion({
+      id: 'ses-1', courseId: 'crs-1', sessionNumber: 1, title: 'Editada',
+      date: '2026-09-10', startTime: '08:00', endTime: '10:00', records: [],
+    });
+
+    component.guardarSesion();
+
+    expect(toastError).toHaveBeenCalledOnceWith('La sesión se cruza con otra sesión del grupo o del docente en ese horario.');
   });
 
   it('guardarSesion valida campos obligatorios antes de enviar', () => {

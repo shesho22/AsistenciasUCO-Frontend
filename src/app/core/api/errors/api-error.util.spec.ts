@@ -57,30 +57,40 @@ describe('api error utilities', () => {
       .toBeUndefined();
   });
 
-  it('decide el mensaje por ApiErrorResponse.code, nunca por el texto de message', () => {
+  it('decide el mensaje por ApiErrorResponse.code: los de infraestructura ignoran el texto de message', () => {
     const envelope = (code: string, message: string, status = 400) =>
       httpError(status, { ...validBody, status, code, message, details: undefined });
 
-    const forbidden = getApiErrorMessage(envelope('FORBIDDEN', 'texto arbitrario A', 403));
-    const forbiddenOtherText = getApiErrorMessage(envelope('FORBIDDEN', 'otro texto B', 403));
-    expect(forbidden).toBe(forbiddenOtherText);
-    expect(forbidden).toContain('permisos');
-
     const expected: Record<string, string> = {
       UNAUTHORIZED: 'sesión',
-      FORBIDDEN: 'permisos',
-      VALIDATION_ERROR: 'no son válidos',
-      INVALID_REQUEST: 'no pudo ser interpretada',
-      RESOURCE_NOT_FOUND: 'no fue encontrado',
-      CONFLICT: 'conflicto',
       FEATURE_UNAVAILABLE: 'no está disponible',
       INTERNAL_ERROR: 'servidor',
     };
     for (const [code, fragment] of Object.entries(expected)) {
-      // El texto humano del backend es engañoso a propósito: no debe influir.
+      // El texto humano del backend es engañoso a propósito: en estos códigos no debe influir.
       const message = getApiErrorMessage(envelope(code, 'Recurso no encontrado / permisos / conflicto'));
       expect(message).withContext(code).toContain(fragment);
     }
+  });
+
+  it('CULM-001 A.2: los códigos de negocio muestran el message del catálogo que entrega el backend', () => {
+    const envelope = (code: string, message: string, status: number) =>
+      httpError(status, { ...validBody, status, code, message, details: undefined });
+    const casos: [string, number, string][] = [
+      ['VALIDATION_ERROR', 400, 'La sesión se cruza con otra sesión del grupo o del docente en ese horario.'],
+      ['INVALID_REQUEST', 400, 'La solicitud tiene un campo no interpretable.'],
+      ['FORBIDDEN', 403, 'No es el docente titular de este grupo.'],
+      ['RESOURCE_NOT_FOUND', 404, 'La solicitud de revisión no existe.'],
+      ['CONFLICT', 409, 'Solo se puede retirar una solicitud de revisión pendiente.'],
+    ];
+    for (const [code, status, message] of casos) {
+      expect(getApiErrorMessage(envelope(code, message, status))).withContext(code).toBe(message);
+    }
+  });
+
+  it('un código de negocio sin message en el envelope cae al texto general del código', () => {
+    const error = httpError(409, { ...validBody, status: 409, code: 'CONFLICT', message: '   ', details: undefined });
+    expect(getApiErrorMessage(error)).toContain('conflicto');
   });
 
   it('el código manda aunque el status HTTP no coincida', () => {

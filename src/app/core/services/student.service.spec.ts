@@ -90,17 +90,51 @@ describe('StudentService', () => {
     req.flush({ id: 'est-999', primerNombre: 'Test' });
   });
 
-  it('busca estudiante por identificación mediante searchStudentByIdentification', () => {
-    service.searchStudentByIdentification('tipo-cc', 1017000111).subscribe();
+  it('A2-F-06 busca por documento exacto en el endpoint del grupo y no en /estudiantes', () => {
+    let respuesta: unknown;
+    service.searchStudentByIdentification('grupo-9', 'tipo-cc', 1017000111).subscribe((r) => (respuesta = r));
 
     const req = http.expectOne(
       (r) =>
-        r.url === `${environment.apiUrl}/estudiantes` &&
+        r.url === `${environment.apiUrl}/grupos/grupo-9/estudiantes/busqueda` &&
         r.params.get('tipoIdentificacionId') === 'tipo-cc' &&
-        r.params.get('numeroIdentificacion') === '1017000111'
+        r.params.get('documento') === '1017000111'
     );
     expect(req.request.method).toBe('GET');
-    req.flush({ items: [], totalItems: 0, totalPages: 0, page: 0, size: 1 });
+    http.expectNone((r) => r.url === `${environment.apiUrl}/estudiantes`);
+    req.flush({
+      exitoso: true,
+      datos: {
+        idEstudiante: 'est-1',
+        primerNombre: 'Ana',
+        segundoNombre: null,
+        primerApellido: 'Gómez',
+        segundoApellido: null,
+        nombreCompleto: 'Ana Gómez',
+        numeroIdentificacion: 1017000111,
+        correoEnmascarado: 'a***@uco.edu.co',
+        codigoEstadoMatriculaGrupo: 'I',
+      },
+    });
+    expect((respuesta as { datos: { correoEnmascarado: string } }).datos.correoEnmascarado).toBe('a***@uco.edu.co');
+  });
+
+  it('A2-F-06 matricular a un estudiante existente no envía correo ni password', () => {
+    service
+      .enrollStudentInGroup({
+        grupo: 'grupo-1',
+        tipoDocumento: 'tipo-cc',
+        numeroIdentificacion: 1017123456,
+        primerNombre: 'Ana',
+        primerApellido: 'Gómez',
+      })
+      .subscribe();
+
+    const req = http.expectOne(`${environment.apiUrl}/grupos/grupo-1/estudiantes`);
+    expect(req.request.method).toBe('POST');
+    expect('correo' in req.request.body).toBeFalse();
+    expect('password' in req.request.body).toBeFalse();
+    expect(req.request.body.numeroIdentificacion).toBe(1017123456);
+    req.flush({ exitoso: true, mensajeUsuario: 'ok' });
   });
 });
-

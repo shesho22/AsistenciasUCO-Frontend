@@ -31,14 +31,11 @@ describe('ProfileComponent', () => {
   };
 
   beforeEach(async () => {
-    authServiceSpy = jasmine.createSpyObj('AuthService', ['fetchProfileFromBackend', 'updateUserProfile'], {
+    authServiceSpy = jasmine.createSpyObj('AuthService', ['fetchProfileFromBackend'], {
       currentUser: signal(mockUser).asReadonly(),
       isMockMode: signal(true).asReadonly(),
     });
     authServiceSpy.fetchProfileFromBackend.and.returnValue(Promise.resolve(mockUser));
-    authServiceSpy.updateUserProfile.and.returnValue(
-      of({ exitoso: true, mensajeUsuario: 'Ok', datos: mockUser })
-    );
 
     toastServiceSpy = jasmine.createSpyObj('ToastService', ['show', 'success', 'error', 'info', 'warning']);
     routerSpy = jasmine.createSpyObj('Router', ['navigate']);
@@ -70,67 +67,14 @@ describe('ProfileComponent', () => {
     expect(component.computedFullName()).toBe('Roberto Gómez');
   });
 
-  it('enableEditing activa el modo edición cuando canEditProfile es true', () => {
-    component.enableEditing();
-    expect(component.isEditing()).toBeTrue();
-  });
-
-  it('cancelEditing restablece formulario y apaga modo edición', () => {
-    component.enableEditing();
-    component.formModel.primerNombre = 'Modificado';
-    component.cancelEditing();
-
-    expect(component.isEditing()).toBeFalse();
-    expect(component.formModel.primerNombre).toBe('Roberto');
-  });
-
-  it('saveProfile valida campos obligatorios y envía actualización', () => {
-    component.enableEditing();
-    component.formModel.primerNombre = 'Roberto';
-    component.formModel.primerApellido = 'Gómez';
-
-    component.saveProfile();
-
-    expect(authServiceSpy.updateUserProfile).toHaveBeenCalled();
-    expect(toastServiceSpy.show).toHaveBeenCalledWith('¡Perfil actualizado con éxito!', 'success');
-    expect(component.isEditing()).toBeFalse();
-  });
-
-  it('saveProfile advierte si falta primerNombre o primerApellido', () => {
-    component.enableEditing();
-    component.formModel.primerNombre = '   ';
-    component.saveProfile();
-    expect(toastServiceSpy.show).toHaveBeenCalledWith('El campo Primer Nombre es obligatorio.', 'warning');
-
-    component.formModel.primerNombre = 'Roberto';
-    component.formModel.primerApellido = '   ';
-    component.saveProfile();
-    expect(toastServiceSpy.show).toHaveBeenCalledWith('El campo Primer Apellido es obligatorio.', 'warning');
-  });
-
-  it('saveProfile muestra error cuando el backend responde no exitoso', () => {
-    authServiceSpy.updateUserProfile.and.returnValue(
-      of({ exitoso: false, mensajeUsuario: 'Error de validación en backend' } as any)
-    );
-    component.enableEditing();
-    component.formModel.primerNombre = 'Roberto';
-    component.formModel.primerApellido = 'Gómez';
-    component.saveProfile();
-
-    expect(toastServiceSpy.show).toHaveBeenCalledWith('Error de validación en backend', 'error');
-  });
-
-  it('saveProfile muestra error cuando el observable falla', () => {
-    authServiceSpy.updateUserProfile.and.returnValue(throwError(() => new Error('Network error')));
-    component.enableEditing();
-    component.formModel.primerNombre = 'Roberto';
-    component.formModel.primerApellido = 'Gómez';
-    component.saveProfile();
-
-    expect(toastServiceSpy.show).toHaveBeenCalledWith(
-      'Ocurrió un error al intentar guardar los cambios.',
-      'error'
-    );
+  it('A2-F-05 el perfil es solo consulta: no hay botones "Editar" ni formulario de edición', () => {
+    const botones = Array.from(fixture.nativeElement.querySelectorAll('button')) as HTMLButtonElement[];
+    expect(botones.some((b) => /Editar/.test(b.textContent ?? ''))).toBeFalse();
+    expect(fixture.nativeElement.querySelector('input[name="primerNombre"]')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Modo Consulta');
+    for (const miembro of ['enableEditing', 'cancelEditing', 'saveProfile', 'isEditing', 'canEditProfile']) {
+      expect(miembro in component).withContext(miembro).toBeFalse();
+    }
   });
 
   it('goBack invoca location.back cuando window.history.length > 1', () => {

@@ -6,8 +6,6 @@ import { StudentManagementService } from '../../../core/services/student-managem
 import { MatriculaQrService } from '../../../core/services/matricula-qr.service';
 import { AttendanceClaimService, IdentificadorInvalidoError } from '../../../core/services/attendance-claim.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
-import { CourseService } from '../../../core/services/course.service';
 import { SessionService } from '../../../core/services/session.service';
 import { ConsultasTransversalesService } from '../../../core/services/consultas-transversales.service';
 import { CategoriaJustificacionItem } from '../../../core/models/consultas-transversales.model';
@@ -24,7 +22,6 @@ import {
   CategoriaJustificacion,
   SoporteAdjuntoItem,
 } from '../../../core/models/role-management.model';
-import { Course } from '../../../core/models/course.model';
 
 // Subcomponentes Desacoplados
 import { StudentCoursesListComponent } from './components/student-courses-list.component';
@@ -33,7 +30,7 @@ import { StudentClaimFormComponent } from './components/student-claim-form.compo
 import { StudentAutoAsistenciaModalComponent } from './components/modals/student-auto-asistencia-modal.component';
 import { StudentMatriculaCodigoModalComponent } from './components/modals/student-matricula-codigo-modal.component';
 
-type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO' | 'SOLICITAR_MATRICULA';
+type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO';
 
 @Component({
   selector: 'app-student-courses',
@@ -121,8 +118,6 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
   private readonly matriculaQrService = inject(MatriculaQrService);
   private readonly claimService = inject(AttendanceClaimService);
   private readonly authService = inject(AuthService);
-  private readonly coordinatorService = inject(CoordinatorManagementService);
-  private readonly courseService = inject(CourseService);
   private readonly sessionService = inject(SessionService);
   private readonly consultasService = inject(ConsultasTransversalesService);
   private readonly toast = inject(ToastService);
@@ -142,9 +137,6 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
   procesandoMatriculaGrupo = signal<boolean>(false);
   /** PIN que trae el login (`?matricula=<PIN>`); el modal lo muestra precargado. */
   pinPrecargado = signal<string>('');
-
-  // Solicitud de Matrícula
-  cursosDisponibles = signal<Course[]>([]);
 
   // Drill-down sesiones
   selectedMateria = signal<MateriaEstudianteItem | null>(null);
@@ -232,46 +224,6 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
     this.selectedMateria.set(null);
     this.sesiones.set([]);
     this.sesionesError.set(null);
-  }
-
-  abrirSolicitudMatricula(): void {
-    this.courseService.getTeacherCourses().subscribe({
-      next: (res) => {
-        this.cursosDisponibles.set(res.datos || []);
-        this.vistaActual.set('SOLICITAR_MATRICULA');
-      },
-      error: () => {
-        this.toast.error('Error al cargar la oferta de asignaturas.');
-      },
-    });
-  }
-
-  enviarSolicitudMatricula(event: { cursoId: string; motivo: string }): void {
-    const curso = this.cursosDisponibles().find((c) => c.id === event.cursoId);
-    const currentUser = this.authService.currentUser();
-    if (!curso || !event.motivo.trim()) return;
-
-    this.coordinatorService
-      .crearSolicitudMatricula({
-        estudianteId: currentUser?.id || 'EST-101',
-        estudianteNombre: currentUser?.name || 'Estudiante UCO',
-        estudianteCodigo: '202210101',
-        estudianteCorreo: currentUser?.email || 'estudiante@uco.edu.co',
-        cursoId: curso.id,
-        cursoCodigo: curso.code ?? '',
-        cursoNombre: curso.name,
-        grupo: curso.section,
-        motivo: event.motivo.trim(),
-      })
-      .subscribe({
-        next: (res) => {
-          if (res.exitoso) {
-            this.toast.success(res.mensajeUsuario || 'Solicitud radicada ante Coordinación.');
-            this.volverALista();
-          }
-        },
-        error: (err) => this.toast.error(getApiErrorMessage(err)),
-      });
   }
 
   iniciarReclamo(sesion: SesionMateriaDetalle): void {
@@ -379,10 +331,10 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
     const materia = this.selectedMateria();
     if (!materia) return;
 
-    this.claimService.eliminarReclamo(sesion.reclamoId, materia.id, sesion.id).subscribe({
+    this.claimService.eliminarReclamo(sesion.reclamoId).subscribe({
       next: (res) => {
         if (res.exitoso) {
-          this.toast.success(res.mensajeUsuario || 'Solicitud de revisión retirada.');
+          this.toast.success(res.mensaje);
           this.cargarSesiones(materia);
         }
       },

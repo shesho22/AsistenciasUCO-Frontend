@@ -36,7 +36,6 @@ const MAX_SEMESTRES = 10;
           (removeSemester)="eliminarSemestreVacio()"
           (createSubject)="abrirCrearAsignatura()"
           (editSubject)="abrirEditarAsignatura($event)"
-          (deleteSubject)="eliminarAsignatura($event)"
         />
       } @else {
         <div class="bg-white rounded-2xl border border-warm-200 p-12 text-center shadow-warm-sm space-y-3">
@@ -182,24 +181,6 @@ export class CoordinatorStudyPlanMeshPageComponent implements OnInit {
     const id = this.effectivePlanId();
     if (!id) return;
     void this.router.navigate(['/app/coordinador/planes-estudio', id, 'asignaturas', asig.id, 'editar']);
-  }
-
-  eliminarAsignatura(asig: AsignaturaPlanItem): void {
-    const id = this.effectivePlanId();
-    if (!id) return;
-
-    if (confirm(`¿Estás seguro de que deseas desvincular la asignatura ${asig.nombre} (${asig.codigo})?`)) {
-      this.coordService.eliminarAsignaturaPlan(id, asig.id).subscribe({
-        next: (res) => {
-          if (res.exitoso) {
-            this.toast.success(res.mensajeUsuario || 'Asignatura eliminada.');
-            this.cargarAsignaturas(id);
-            this.planes.set(this.coordService.planes());
-          }
-        },
-        error: (err) => this.toast.error(getApiErrorMessage(err)),
-      });
-    }
   }
 
   volver(): void {

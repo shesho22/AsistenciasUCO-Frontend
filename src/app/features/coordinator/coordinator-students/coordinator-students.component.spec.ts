@@ -33,7 +33,7 @@ describe('CoordinatorStudentsComponent', () => {
   beforeEach(() => {
     coordinatorService = jasmine.createSpyObj<CoordinatorManagementService>(
       'CoordinatorManagementService',
-      ['getEstudiantesDirectorio', 'getEstudiantesDirectorioPagina', 'getSolicitudesMatricula', 'getEstudiantesPorGrupo']
+      ['getEstudiantesDirectorio', 'getEstudiantesDirectorioPagina', 'getEstudiantesPorGrupo']
     );
     courseService = jasmine.createSpyObj<CourseService>('CourseService', ['getTeacherCourses']);
 
@@ -42,9 +42,6 @@ describe('CoordinatorStudentsComponent', () => {
     );
     coordinatorService.getEstudiantesDirectorioPagina.and.returnValue(
       of({ items: [], totalItems: 0, totalPages: 0, page: 0, size: 6 })
-    );
-    coordinatorService.getSolicitudesMatricula.and.returnValue(
-      of({ exitoso: true, datos: [] } as any)
     );
     coordinatorService.getEstudiantesPorGrupo.and.returnValue(
       of({ exitoso: true, datos: [] } as any)
@@ -70,8 +67,8 @@ describe('CoordinatorStudentsComponent', () => {
     fixture.detectChanges();
   });
 
-  it('no renderiza docenteName en la ficha del curso seleccionado (pestaña Matrícula por Grupo)', () => {
-    component.pestanaActiva.set('MATRICULA_GRUPO');
+  it('no renderiza docenteName en la ficha del curso seleccionado (pestaña Directorio)', () => {
+    component.pestanaActiva.set('DIRECTORIO');
     component.onSelectCourse('crs-1');
     fixture.detectChanges();
 

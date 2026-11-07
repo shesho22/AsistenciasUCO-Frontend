@@ -6,6 +6,7 @@ import { CoordinatorStudyPlanMeshPageComponent } from './study-plan-mesh-page.co
 import { ToastService } from '../../../../shared/components/toast/toast.component';
 import { environment } from '../../../../../environments/environment';
 import { PlanEstudioItem } from '../../../../core/models/role-management.model';
+import { CoordinatorManagementService } from '../../../../core/services/coordinator-management.service';
 
 describe('CoordinatorStudyPlanMeshPageComponent', () => {
   let fixture: ComponentFixture<CoordinatorStudyPlanMeshPageComponent>;
@@ -86,6 +87,14 @@ describe('CoordinatorStudyPlanMeshPageComponent', () => {
   it('resuelve el plan por planId y carga sus asignaturas', () => {
     expect(component.selectedPlan()?.codigo).toBe('PLAN-SIS-2024');
     expect(component.asignaturas().length).toBe(1);
+  });
+
+  it('A2-F-04 no se renderiza el control de desvincular asignatura y el servicio no expone eliminarAsignaturaPlan', () => {
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.textContent).toContain('Algoritmos I');
+    expect(el.querySelector('[title="Desvincular del plan"]')).toBeNull();
+    expect('eliminarAsignaturaPlan' in TestBed.inject(CoordinatorManagementService)).toBeFalse();
+    expect('eliminarAsignatura' in component).toBeFalse();
   });
 
   it('navega a crear y editar asignatura usando rutas con planId', () => {

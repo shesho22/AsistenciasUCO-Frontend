@@ -11,31 +11,9 @@ import {
   mockUuid,
 } from '../mocks/student-portal-mock.adapter';
 import { ApiResponse } from '../models/api-response.model';
-import { SolicitudMatriculaItem, PlanEstudioItem } from '../models/role-management.model';
+import { PlanEstudioItem } from '../models/role-management.model';
 import { AuthService } from '../services/auth.service';
 import { environment } from '../../../environments/environment';
-
-/** HU053-HU055: solicitudes de ingreso a grupo creadas durante la sesion mock (forma del backend). */
-interface SolicitudIngresoMock {
-  id: string;
-  grupoId: string;
-  grupoCodigo: number;
-  grupoNombre: string;
-  asignaturaId: string;
-  asignaturaNombre: string;
-  docenteNombre: string;
-  estudianteId: string;
-  estudianteNombre: string;
-  numeroIdentificacion: number;
-  estado: string;
-  fechaSolicitudUtc: string;
-  fechaResolucionUtc: string | null;
-  motivoRechazo: string | null;
-  posicionEspera: number | null;
-  capacidadGrupo: number;
-  cuposDisponibles: number;
-}
-const solicitudesIngresoMock: SolicitudIngresoMock[] = [];
 
 function okResponse<T>(datos: T, mensajeUsuario?: string, total?: number): HttpResponse<ApiResponse<T>> {
   return new HttpResponse<ApiResponse<T>>({
@@ -229,26 +207,6 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     const body = req.body as any;
     return of(okResponse({ grupoId: body?.codigo }, '¡Te has matriculado exitosamente en el grupo!')).pipe(delay(250));
   }
-  if (url.endsWith('/estudiante/cupos/solicitar') && method === 'POST') {
-    const body = req.body as any;
-    const nuevaSol: SolicitudMatriculaItem = {
-      id: `SOL-MAT-${mockStore.solicitudesMatricula.length + 1}`,
-      estudianteId: 'EST-2024-001',
-      estudianteNombre: 'Estudiante Actual',
-      estudianteCodigo: 'EST2024001',
-      estudianteCorreo: 'estudiante.actual@uco.net.co',
-      cursoId: body.cursoId,
-      cursoCodigo: body.cursoCodigo || 'CUR-101',
-      cursoNombre: body.cursoNombre,
-      grupo: body.grupoCodigo || 'G1',
-      fechaSolicitud: new Date().toISOString().slice(0, 10),
-      motivo: body.motivo,
-      estado: 'PENDIENTE',
-    };
-    mockStore.solicitudesMatricula = [nuevaSol, ...mockStore.solicitudesMatricula];
-    return of(okResponse(nuevaSol, `Tu solicitud de inscripción a ${body.cursoNombre} ha sido enviada a Coordinación.`)).pipe(delay(300));
-  }
-
   // ================= COORDINADOR: DOCENTES =================
   if (url.endsWith('/coordinador/docentes') && method === 'GET') {
     return of(okResponse(mockStore.docentes)).pipe(delay(250));
@@ -528,7 +486,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
       delay(250)
     );
   }
-  if ((url.endsWith('/asistencias/revisiones') || url.endsWith('/estudiante/reclamos')) && method === 'POST') {
+  if (url.endsWith('/asistencias/revisiones') && method === 'POST') {
     const body = req.body as any;
     const nuevoReclamo = {
       ...body,
@@ -541,9 +499,21 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     return of(okResponse(nuevoReclamo, 'Solicitud de revisión registrada correctamente.')).pipe(delay(300));
   }
   if (url.includes('/estudiante/reclamos/') && method === 'DELETE') {
+    // A.2-7: misma forma que el backend (ApiMessageResponse); solo se retira un reclamo pendiente (409 en otro caso).
     const id = url.split('/').pop()!;
-    mockStore.solicitudesRevision = mockStore.solicitudesRevision.filter((r) => r.id !== id);
-    return of(okResponse(true, 'Solicitud de revisión eliminada.')).pipe(delay(200));
+    const reclamo = mockStore.solicitudesRevision.find((r) => r.id === id);
+    if (!reclamo) {
+      return throwError(() => new HttpErrorResponse({ status: 404, error: { message: 'La solicitud de revisión no existe.' } }));
+    }
+    if (reclamo.estadoSolicitud !== 'PENDIENTE') {
+      return throwError(
+        () => new HttpErrorResponse({ status: 409, error: { message: 'Solo se puede retirar una solicitud de revisión pendiente.' } })
+      ).pipe(delay(200));
+    }
+    mockStore.solicitudesRevision = mockStore.solicitudesRevision.map((r) =>
+      r.id === id ? { ...r, estadoSolicitud: 'RETIRADA' as const } : r
+    );
+    return of(new HttpResponse({ status: 200, body: { exitoso: true, mensaje: 'La solicitud de revisión fue retirada.' } })).pipe(delay(200));
   }
   // HU006: perfil propio con vinculos institucionales (misma forma que el backend).
   if (url.endsWith('/usuarios/perfil') && method === 'GET') {
@@ -556,10 +526,8 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
       ],
     })).pipe(delay(200));
   }
-  // HU008: oferta de grupos del estudiante (misma forma que el backend); refleja las solicitudes abiertas del mock.
+  // HU008: oferta de grupos del estudiante (misma forma que el backend): solo consulta de oferta y cupos.
   if (url.endsWith('/estudiante/oferta-academica') && method === 'GET') {
-    const abierta = (grupoId: string) =>
-      solicitudesIngresoMock.find((s) => s.grupoId === grupoId && (s.estado === 'PENDIENTE' || s.estado === 'EN_ESPERA'));
     const oferta = [
       { idGrupo: 'grp-oferta-1', codigoGrupo: 1, nombreGrupo: 'Grupo 1', idAsignatura: 'asg-of-1', codigoAsignatura: 'MAT301',
         nombreAsignatura: 'Matemática Avanzada III', nombreDocente: 'Docente Mock', idPeriodoAcademico: 'PER-2026-2',
@@ -571,58 +539,8 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
         nombrePeriodoAcademico: '2027-1', fechaInicioPeriodo: '2027-01-20', fechaFinPeriodo: '2027-06-10', estadoPeriodo: 'PROXIMO',
         horario: null, capacidadMaxima: 30, estudiantesActivos: 30, cuposDisponibles: 0, matriculado: false,
         tipoAsignatura: 'INSTITUCIONAL', transversal: true },
-    ].map((g) => {
-      const solicitud = abierta(g.idGrupo);
-      return { ...g, idSolicitudAbierta: solicitud?.id ?? null, estadoSolicitud: solicitud?.estado ?? null };
-    });
+    ];
     return of(okResponse(oferta, undefined, oferta.length)).pipe(delay(250));
-  }
-  // HU053-HU055: solicitudes de ingreso a grupo (misma forma que el backend; estado en memoria de la sesión mock).
-  if (url.endsWith('/estudiante/solicitudes-matricula') && method === 'POST') {
-    const grupoId = (req.body as { grupoId?: string } | null)?.grupoId ?? '';
-    const solicitud = {
-      id: `00000000-0000-4000-9000-${String(Date.now()).slice(-12).padStart(12, '0')}`,
-      grupoId,
-      grupoCodigo: 1,
-      grupoNombre: 'Grupo Mock',
-      asignaturaId: 'asg-mock',
-      asignaturaNombre: 'Asignatura Mock',
-      docenteNombre: 'Docente Mock',
-      estudianteId: 'est-mock',
-      estudianteNombre: 'Estudiante Mock',
-      numeroIdentificacion: 1000000,
-      estado: 'PENDIENTE',
-      fechaSolicitudUtc: new Date().toISOString(),
-      fechaResolucionUtc: null as string | null,
-      motivoRechazo: null as string | null,
-      posicionEspera: null as number | null,
-      capacidadGrupo: 30,
-      cuposDisponibles: 1,
-    };
-    solicitudesIngresoMock.unshift(solicitud);
-    return of(okResponse({ id: solicitud.id }, 'La solicitud de ingreso al grupo fue registrada.')).pipe(delay(250));
-  }
-  if (url.endsWith('/estudiante/solicitudes-matricula') && method === 'GET') {
-    return of(okResponse(solicitudesIngresoMock, undefined, solicitudesIngresoMock.length)).pipe(delay(250));
-  }
-  if (url.includes('/estudiante/solicitudes-matricula/') && url.endsWith('/retiro') && method === 'POST') {
-    const id = url.split('/').slice(-2)[0];
-    solicitudesIngresoMock.filter((s) => s.id === id).forEach((s) => (s.estado = 'RETIRADA'));
-    return of(okResponse(null, 'La solicitud fue retirada.')).pipe(delay(200));
-  }
-  if (url.includes('/docente/grupos/') && url.endsWith('/solicitudes-ingreso') && method === 'GET') {
-    return of(okResponse(solicitudesIngresoMock, undefined, solicitudesIngresoMock.length)).pipe(delay(250));
-  }
-  if (url.includes('/docente/solicitudes-ingreso/') && method === 'PATCH') {
-    const id = url.split('/').pop()!;
-    const body = (req.body ?? {}) as { accion?: string; motivo?: string };
-    const estadoResultante = body.accion === 'RECHAZAR' ? 'RECHAZADA' : 'ACEPTADA';
-    solicitudesIngresoMock.filter((s) => s.id === id).forEach((s) => {
-      s.estado = estadoResultante;
-      s.motivoRechazo = body.accion === 'RECHAZAR' ? body.motivo ?? null : null;
-      s.fechaResolucionUtc = new Date().toISOString();
-    });
-    return of(okResponse({ id, estadoResultante })).pipe(delay(250));
   }
   if (url.includes('/docente/grupos/') && url.endsWith('/retiro') && method === 'POST') {
     // HU051: el retiro devuelve ApiDataResponse<Void>; el padrón se recarga desde su propio endpoint.
@@ -750,18 +668,6 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
         creadoEn: '2026-11-05T15:20:00Z',
         entregadoEn: '2026-11-05T15:20:04Z',
         idCorrelacion: 'corr-notif-002',
-      },
-      {
-        id: 'notif-sal-003',
-        tipo: 'SOLICITUD_INGRESO_REGISTRADA',
-        asunto: 'Nueva solicitud de ingreso al grupo G02 de Bases de Datos',
-        codigoEstado: 'PENDIENTE',
-        nombreEstado: 'PENDIENTE',
-        esTerminal: false,
-        cantidadDestinatarios: 1,
-        intentos: 0,
-        creadoEn: '2026-11-06T07:15:00Z',
-        idCorrelacion: 'corr-notif-003',
       },
       {
         id: 'notif-sal-004',

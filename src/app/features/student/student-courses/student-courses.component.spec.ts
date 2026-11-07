@@ -9,7 +9,6 @@ import { StudentManagementService } from '../../../core/services/student-managem
 import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
-import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { CourseService } from '../../../core/services/course.service';
 import { SessionService } from '../../../core/services/session.service';
 import { ToastService } from '../../../shared/components/toast/toast.component';
@@ -66,7 +65,6 @@ describe('StudentCoursesComponent — soporte y radicación (LB-004D FE-01..FE-0
         { provide: ToastService, useValue: toast },
         { provide: StudentManagementService, useValue: { getMaterias: () => of({ exitoso: true, datos: [] }) } },
         { provide: AuthService, useValue: { currentUser: () => ({ id: 'u-1', name: 'Ana', email: 'ana@uco.edu.co' }) } },
-        { provide: CoordinatorManagementService, useValue: {} },
         { provide: CourseService, useValue: {} },
         { provide: SessionService, useValue: {} },
         { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap({}) } } },
@@ -260,8 +258,6 @@ describe('StudentCoursesComponent', () => {
   let studentServiceSpy: jasmine.SpyObj<StudentManagementService>;
   let claimServiceSpy: jasmine.SpyObj<AttendanceClaimService>;
   let authServiceSpy: jasmine.SpyObj<AuthService>;
-  let coordinatorServiceSpy: jasmine.SpyObj<CoordinatorManagementService>;
-  let courseServiceSpy: jasmine.SpyObj<CourseService>;
   let sessionServiceSpy: jasmine.SpyObj<SessionService>;
   let toastSpy: jasmine.SpyObj<ToastService>;
   let matriculaQrSpy: jasmine.SpyObj<MatriculaQrService>;
@@ -276,8 +272,6 @@ describe('StudentCoursesComponent', () => {
     studentServiceSpy = jasmine.createSpyObj('StudentManagementService', ['getMaterias']);
     claimServiceSpy = jasmine.createSpyObj('AttendanceClaimService', ['getSesionesPorMateria', 'crearReclamo', 'eliminarReclamo', 'subirSoporte']);
     authServiceSpy = jasmine.createSpyObj('AuthService', ['currentUser']);
-    coordinatorServiceSpy = jasmine.createSpyObj('CoordinatorManagementService', ['crearSolicitudMatricula']);
-    courseServiceSpy = jasmine.createSpyObj('CourseService', ['getTeacherCourses']);
     sessionServiceSpy = jasmine.createSpyObj('SessionService', ['registrarAutoAsistencia']);
     toastSpy = jasmine.createSpyObj('ToastService', ['success', 'error', 'info', 'warning']);
     matriculaQrSpy = jasmine.createSpyObj('MatriculaQrService', ['matricularAutenticado']);
@@ -290,8 +284,6 @@ describe('StudentCoursesComponent', () => {
         { provide: StudentManagementService, useValue: studentServiceSpy },
         { provide: AttendanceClaimService, useValue: claimServiceSpy },
         { provide: AuthService, useValue: authServiceSpy },
-        { provide: CoordinatorManagementService, useValue: coordinatorServiceSpy },
-        { provide: CourseService, useValue: courseServiceSpy },
         { provide: SessionService, useValue: sessionServiceSpy },
         { provide: ToastService, useValue: toastSpy },
         { provide: MatriculaQrService, useValue: matriculaQrSpy },
@@ -354,12 +346,23 @@ describe('StudentCoursesComponent', () => {
     expect(component.vistaActual()).toBe('DETALLE');
   });
 
-  it('permite retirar un reclamo existente', () => {
+  it('A2-F-01 retirar un reclamo llama a eliminarReclamo(id), muestra el mensaje del backend y recarga las sesiones', () => {
     component.selectedMateria.set(mockMaterias[0]);
-    claimServiceSpy.eliminarReclamo.and.returnValue(of({ exitoso: true, mensajeUsuario: 'Reclamo retirado.' } as any));
+    claimServiceSpy.eliminarReclamo.and.returnValue(of({ exitoso: true, mensaje: 'La solicitud de revisión fue retirada.' }));
+    claimServiceSpy.getSesionesPorMateria.calls.reset();
     component.retirarReclamo(mockSesiones[0]);
-    expect(claimServiceSpy.eliminarReclamo).toHaveBeenCalledWith('rec-1', ASIGNATURA_ID, 'ses-1');
-    expect(toastSpy.success).toHaveBeenCalledWith('Reclamo retirado.');
+    expect(claimServiceSpy.eliminarReclamo).toHaveBeenCalledOnceWith('rec-1');
+    expect(toastSpy.success).toHaveBeenCalledWith('La solicitud de revisión fue retirada.');
+    expect(claimServiceSpy.getSesionesPorMateria).toHaveBeenCalled();
+  });
+
+  it('A2-F-01 un error al retirar muestra el message del backend', () => {
+    component.selectedMateria.set(mockMaterias[0]);
+    claimServiceSpy.eliminarReclamo.and.returnValue(
+      throwError(() => new HttpErrorResponse({ status: 409, error: { message: 'Solo se puede retirar una solicitud de revisión pendiente.' } }))
+    );
+    component.retirarReclamo(mockSesiones[0]);
+    expect(toastSpy.error).toHaveBeenCalledWith('Solo se puede retirar una solicitud de revisión pendiente.');
   });
 
   it('registra autoasistencia por PIN o Token exitosamente', () => {

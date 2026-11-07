@@ -4,11 +4,9 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subject, debounceTime, finalize } from 'rxjs';
 import { GrupoOferta, OfertaAcademicaService } from '../../../core/services/oferta-academica.service';
-import { SolicitudIngresoService } from '../../../core/services/solicitud-ingreso.service';
 import { CardComponent } from '../../../shared/components/card/card.component';
 import { BadgeComponent } from '../../../shared/components/badge/badge.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
-import { ToastService } from '../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 
 const DEBOUNCE_MS = 300;
@@ -16,8 +14,7 @@ const DEBOUNCE_MS = 300;
 /**
  * HU008 (estudiante): oferta de grupos en periodos vigentes o proximos (especificas de sus programas y transversales de
  * su institucion, marcadas "Transversal"), con docente, horario y cupos.
- * Desde aqui solicita el ingreso a un grupo (flujo HU053); si ya esta matriculado o tiene una solicitud abierta, lo ve
- * indicado en lugar del boton.
+ * Es solo consulta de oferta y cupos: la matricula se hace con el QR o PIN del docente o por matricula manual del docente.
  */
 @Component({
   selector: 'app-student-group-offer',
@@ -88,18 +85,10 @@ const DEBOUNCE_MS = 300;
                 </div>
                 @if (g.matriculado) {
                   <app-badge variant="success">Ya estás matriculado</app-badge>
-                } @else if (g.estadoSolicitud) {
-                  <app-badge variant="warning">Solicitud {{ g.estadoSolicitud === 'EN_ESPERA' ? 'en espera' : 'pendiente' }}</app-badge>
                 } @else {
-                  <button
-                    type="button"
-                    data-accion="solicitar-ingreso"
-                    [disabled]="enviando() === g.idGrupo"
-                    (click)="solicitar(g)"
-                    class="w-full px-4 py-2 text-sm font-semibold rounded-xl text-white bg-primary-700 hover:bg-primary-800 disabled:opacity-60"
-                  >
-                    {{ enviando() === g.idGrupo ? 'Enviando...' : g.cuposDisponibles > 0 ? 'Solicitar ingreso' : 'Solicitar ingreso (lista de espera)' }}
-                  </button>
+                  <p data-testid="oferta-como-matricularse" class="text-xs text-warm-600">
+                    Para matricularte, usa el QR o PIN que proyecta el docente en clase o pídele la matrícula manual.
+                  </p>
                 }
               </div>
             </app-card>
@@ -119,8 +108,6 @@ const DEBOUNCE_MS = 300;
 })
 export class StudentGroupOfferComponent implements OnInit {
   private readonly ofertaService = inject(OfertaAcademicaService);
-  private readonly solicitudService = inject(SolicitudIngresoService);
-  private readonly toast = inject(ToastService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly busquedas = new Subject<void>();
 
@@ -131,8 +118,6 @@ export class StudentGroupOfferComponent implements OnInit {
   readonly busqueda = signal('');
   readonly cargando = signal(false);
   readonly error = signal('');
-  /** id del grupo cuya solicitud se esta enviando (evita doble envio). */
-  readonly enviando = signal<string | null>(null);
 
   constructor() {
     this.busquedas.pipe(debounceTime(DEBOUNCE_MS), takeUntilDestroyed(this.destroyRef)).subscribe(() => this.cargar());
@@ -175,21 +160,6 @@ export class StudentGroupOfferComponent implements OnInit {
           this.total.set(0);
           this.error.set(getApiErrorMessage(error));
         },
-      });
-  }
-
-  solicitar(grupo: GrupoOferta): void {
-    if (this.enviando()) return;
-    this.enviando.set(grupo.idGrupo);
-    this.solicitudService
-      .solicitar(grupo.idGrupo)
-      .pipe(finalize(() => this.enviando.set(null)))
-      .subscribe({
-        next: () => {
-          this.toast.success(`Solicitud enviada para ${grupo.nombreAsignatura}. El docente del grupo la revisará.`);
-          this.cargar();
-        },
-        error: (error: unknown) => this.toast.error(getApiErrorMessage(error)),
       });
   }
 }

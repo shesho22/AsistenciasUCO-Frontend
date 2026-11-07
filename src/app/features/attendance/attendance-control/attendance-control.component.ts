@@ -61,8 +61,7 @@ const MAX_ATTENDANCE_WINDOW_TICK_MS = 30_000;
 
 /** Certificación F3: 409 ERR_MATRICULA_DUPLICADA visto por el docente. */
 export const MENSAJE_MATRICULA_DUPLICADA_DOCENTE =
-  'El estudiante ya tiene una matrícula en este grupo. Si fue retirado, su reingreso se hace por solicitud de ingreso: ' +
-  'el estudiante la pide desde "Oferta de Grupos" y usted la acepta en "Padrón y solicitudes".';
+  'El estudiante ya tiene una matrícula activa en este grupo.';
 
 type StudentEnrollmentField =
   | 'tipoIdentificacionId'
@@ -134,7 +133,7 @@ type StudentEnrollmentField =
           (openMatriculaQr)="isMatriculaQrModalOpen.set(true)"
           (exportExcel)="descargarPlanillaExcel()"
           (verAlumnos)="abrirInfoGrupo()"
-          (gestionarPadron)="irAPadronYSolicitudes()"
+          (gestionarPadron)="irAPadron()"
           (verReclamos)="abrirReclamosGrupo()"
         />
       }
@@ -157,6 +156,7 @@ type StudentEnrollmentField =
       <!-- 4. Modal de Matrícula de Estudiante -->
       <app-attendance-enrollment-modal
         [isOpen]="isRegisterModalOpen()"
+        [grupoId]="selectedCourseId()"
         [isEnrolling]="isEnrolling()"
         [docTypeOptions]="docTypeOptions()"
         [fieldErrors]="studentFieldErrors()"
@@ -312,8 +312,8 @@ export class AttendanceControlComponent {
     void this.router?.navigate(['/app/docente/grupos']);
   }
 
-  /** HU051/HU053-HU055: el hub del grupo vive en la pantalla de grupos del docente. */
-  irAPadronYSolicitudes(): void {
+  /** HU051: el hub del grupo vive en la pantalla de grupos del docente. */
+  irAPadron(): void {
     const courseId = this.selectedCourseId();
     if (!courseId) return;
     void this.router?.navigate(["/app/docente/grupos"], { queryParams: { grupo: courseId } });
@@ -791,7 +791,11 @@ export class AttendanceControlComponent {
     if (!data.primerApellido?.trim()) {
       fieldErrors.primerApellido = 'El campo Primer Apellido es obligatorio.';
     }
-    if (!data.correo?.trim()) {
+    // A.2-15: un estudiante existente se matricula por documento; su correo y contraseña no se piden ni se envían.
+    const esExistente = data.estudianteExistente === true;
+    if (esExistente) {
+      // Sin validaciones de cuenta: ya existe.
+    } else if (!data.correo?.trim()) {
       fieldErrors.correo = 'El campo Correo Institucional es obligatorio.';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.correo.trim())) {
       fieldErrors.correo = 'El campo Correo Institucional debe tener un formato válido (ej. estudiante@uco.edu.co).';
@@ -799,7 +803,7 @@ export class AttendanceControlComponent {
       // IDENT-001: pre-validacion de comodidad; la autoridad es el backend (si el dominio no se pudo cargar se omite).
       fieldErrors.correo = `El correo del estudiante debe ser institucional y terminar en ${this.emailDomain()}.`;
     }
-    if (passwordError) {
+    if (passwordError && !esExistente) {
       fieldErrors.password = passwordError;
     }
 
@@ -843,8 +847,8 @@ export class AttendanceControlComponent {
         segundoNombre: data.segundoNombre?.trim(),
         primerApellido: data.primerApellido.trim(),
         segundoApellido: data.segundoApellido?.trim(),
-        correoElectronico: data.correo.trim(),
-        password: effectivePassword,
+        correoElectronico: esExistente ? undefined : data.correo.trim(),
+        password: esExistente ? undefined : effectivePassword,
       })
       .pipe(finalize(() => this.isEnrolling.set(false)))
       .subscribe({
@@ -884,7 +888,7 @@ export class AttendanceControlComponent {
           this.toastType.set('error');
           this.setStudentApiFieldErrors(error);
           // Certificación F3: el mensaje del catálogo habla al estudiante ("Usted ya se encuentra registrado…"). Para
-          // el docente se explica que el reingreso de un retirado va por solicitud (decisión de John 2026-10-28).
+          // el docente se informa la matrícula activa; el retirado se vuelve a matricular por esta misma vía (DEC-009).
           this.toastMessage.set(
             getApiErrorCode(error) === 'ERR_MATRICULA_DUPLICADA'
               ? MENSAJE_MATRICULA_DUPLICADA_DOCENTE

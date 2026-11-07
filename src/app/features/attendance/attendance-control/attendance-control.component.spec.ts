@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NEVER, Observable, Subject, of, throwError } from 'rxjs';
+import { apiHttpError } from '../../../core/testing/api-error.fixture';
 import { AttendanceControlComponent, MENSAJE_MATRICULA_DUPLICADA_DOCENTE } from './attendance-control.component';
 import { HttpErrorResponse } from '@angular/common/http';
 import { CourseService } from '../../../core/services/course.service';
@@ -328,7 +329,7 @@ describe('AttendanceControlComponent contract corrections', () => {
     expect(component.studentFieldErrors()['password']).toBeTruthy();
   });
 
-  it('Certificación F3: el 409 ERR_MATRICULA_DUPLICADA orienta al docente al reingreso por solicitud', () => {
+  it('el 409 ERR_MATRICULA_DUPLICADA indica matrícula activa', () => {
     const component = createComponent();
     component.selectedCourseId.set('grupo-1');
     studentService.enrollStudentInGroup.and.returnValue(
@@ -360,7 +361,7 @@ describe('AttendanceControlComponent contract corrections', () => {
 
     expect(studentService.enrollStudentInGroup).toHaveBeenCalled();
     expect(component.toastMessage()).toBe(MENSAJE_MATRICULA_DUPLICADA_DOCENTE);
-    expect(component.toastMessage()).toContain('solicitud de ingreso');
+    expect(component.toastMessage()).not.toContain('solicitud');
   });
 
   it('muestra feedback cuando falla la carga de sesiones', () => {
@@ -544,13 +545,13 @@ describe('AttendanceControlComponent contract corrections', () => {
     expect(component.isGroupClaimsModalOpen()).toBeFalse();
   });
 
-  it('HU051/HU053: "Padrón y solicitudes" abre el hub del grupo del docente', () => {
+  it('HU051: "Padrón" abre el hub del grupo del docente', () => {
     const component = createComponent([activeStudent], []);
     const navigate = jasmine.createSpy('navigate').and.resolveTo(true);
     (component as unknown as { router: unknown }).router = { navigate };
     component.selectedCourseId.set('course-1');
 
-    component.irAPadronYSolicitudes();
+    component.irAPadron();
 
     expect(navigate).toHaveBeenCalledWith(['/app/docente/grupos'], { queryParams: { grupo: 'course-1' } });
   });
@@ -687,6 +688,17 @@ describe('AttendanceControlComponent contract corrections', () => {
     expect(component.showToast()).toBeTrue();
     expect(component.toastType()).toBe('success');
     expect(component.isNewSessionModalOpen()).toBeFalse();
+  });
+
+  it('A2-F-09 un 400 SES_017 al crear la sesión muestra el message del backend, sin texto local', () => {
+    sessionService.createSession.and.returnValue(throwError(() => apiHttpError(400, 'La sesión se cruza con otra sesión del grupo o del docente en ese horario.', 'VALIDATION_ERROR')));
+    const component = createComponent([activeStudent], []);
+
+    component.onCreateSessionSubmit({ title: 'Sesión solapada', date: '2026-09-20', startTime: '08:00', endTime: '10:00' });
+
+    expect(component.toastType()).toBe('error');
+    expect(component.toastMessage()).toBe('La sesión se cruza con otra sesión del grupo o del docente en ese horario.');
+    expect(component.showToast()).toBeTrue();
   });
 
   it('onStudentStatusChange actualiza el estado del estudiante', () => {

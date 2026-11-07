@@ -15,7 +15,7 @@ export function filasDe(estados: EstadoSistemaItem[], catalogo: EstadoSistemaIte
 
 /**
  * HU155 / HU167: consulta de los estados que usa el sistema. Regla de John (2026-11-04): catálogos base de solo
- * consulta; se muestran los estados de las solicitudes y los del estudiante en el grupo (no los técnicos de envío).
+ * consulta; se muestran los estados de los reclamos de asistencia y los del estudiante en el grupo (no los técnicos de envío).
  */
 @Component({
   selector: 'app-admin-estados',
@@ -32,8 +32,8 @@ export function filasDe(estados: EstadoSistemaItem[], catalogo: EstadoSistemaIte
       <app-catalogo-solo-consulta
         [seccion]="true"
         [conEstado]="false"
-        titulo="Estados de solicitudes"
-        descripcion="Reclamos de asistencia y solicitudes de ingreso a grupo."
+        titulo="Estados de reclamos de asistencia (P, A, R)"
+        descripcion="Estados de las solicitudes de revisión (reclamos) de asistencia."
         vacio="No hay estados de solicitud registrados."
         [filas]="solicitudes()"
       />

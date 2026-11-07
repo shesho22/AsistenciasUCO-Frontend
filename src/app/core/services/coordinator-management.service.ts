@@ -19,7 +19,6 @@ import {
   PlanEstudioItem,
   AsignaturaPlanItem,
   EstudianteDirectorioItem,
-  SolicitudMatriculaItem,
   PeriodoAcademicoItem,
   AreaConocimientoItem,
 } from '../models/role-management.model';
@@ -132,9 +131,6 @@ export class CoordinatorManagementService {
 
   private estudiantesSignal = signal<EstudianteDirectorioItem[]>([]);
   public estudiantes = this.estudiantesSignal.asReadonly();
-
-  private solicitudesMatriculaSignal = signal<SolicitudMatriculaItem[]>([]);
-  public solicitudesMatricula = this.solicitudesMatriculaSignal.asReadonly();
 
   constructor(private http: HttpClient) {}
 
@@ -348,31 +344,6 @@ export class CoordinatorManagementService {
     );
   }
 
-  eliminarAsignaturaPlan(planId: string, asigId: string): Observable<ApiResponse<boolean>> {
-    return this.http.delete<ApiResponse<boolean>>(`${environment.apiUrl}/coordinador/planes-estudio/${planId}/asignaturas/${asigId}`).pipe(
-      tap((res) => {
-        if (res.exitoso) {
-          const eliminada = (this.asignaturasSignal()[planId] || []).find((a) => a.id === asigId);
-          this.asignaturasSignal.update((map) => ({
-            ...map,
-            [planId]: (map[planId] || []).filter((a) => a.id !== asigId),
-          }));
-          this.planesSignal.update((prev) =>
-            prev.map((p) =>
-              p.id === planId
-                ? {
-                    ...p,
-                    totalAsignaturas: Math.max(0, (p.totalAsignaturas ?? 0) - 1),
-                    totalCreditos: Math.max(0, (p.totalCreditos ?? 0) - (Number(eliminada?.creditos) || 0)),
-                  }
-                : p
-            )
-          );
-        }
-      })
-    );
-  }
-
   /** P5: áreas de conocimiento reales para el formulario de asignaturas (GET /admin/areas, lectura compartida). */
   getAreasConocimiento(): Observable<ApiResponse<AreaConocimientoItem[]>> {
     return this.http.get<ApiResponse<AreaConocimientoItem[]>>(`${environment.apiUrl}/admin/areas`);
@@ -491,85 +462,6 @@ export class CoordinatorManagementService {
 
   getEstudiantesPorGrupo(grupoId: string): Observable<ApiResponse<EstudianteDirectorioItem[]>> {
     return this.http.get<ApiResponse<EstudianteDirectorioItem[]>>(`${environment.apiUrl}/grupos/${grupoId}/estudiantes`);
-  }
-
-  matricularEstudianteGrupo(grupoId: string, estudianteId: string): Observable<ApiResponse<boolean>> {
-    return this.http.post<ApiResponse<boolean>>(`${environment.apiUrl}/grupos/${grupoId}/estudiantes`, { estudianteId }).pipe(
-      tap((res) => {
-        if (res.exitoso) {
-          this.estudiantesSignal.update((prev) =>
-            prev.map((e) => {
-              if (e.id === estudianteId) {
-                const grupos = new Set(e.gruposInscritos || []);
-                grupos.add(grupoId);
-                return { ...e, gruposInscritos: Array.from(grupos) };
-              }
-              return e;
-            })
-          );
-        }
-      })
-    );
-  }
-
-  retirarEstudianteGrupo(grupoId: string, estudianteId: string): Observable<ApiResponse<boolean>> {
-    return this.http.delete<ApiResponse<boolean>>(`${environment.apiUrl}/grupos/${grupoId}/estudiantes/${estudianteId}`).pipe(
-      tap((res) => {
-        if (res.exitoso) {
-          this.estudiantesSignal.update((prev) =>
-            prev.map((e) => {
-              if (e.id === estudianteId) {
-                return {
-                  ...e,
-                  gruposInscritos: (e.gruposInscritos || []).filter((g) => g !== grupoId),
-                };
-              }
-              return e;
-            })
-          );
-        }
-      })
-    );
-  }
-
-  // --- SOLICITUDES DE INSCRIPCIÓN Y CUPO ---
-  getSolicitudesMatricula(): Observable<ApiResponse<SolicitudMatriculaItem[]>> {
-    return this.http.get<ApiResponse<SolicitudMatriculaItem[]>>(`${environment.apiUrl}/coordinador/solicitudes-matricula`).pipe(
-      tap((res) => {
-        if (res.exitoso && res.datos) {
-          this.solicitudesMatriculaSignal.set(res.datos);
-        }
-      })
-    );
-  }
-
-  crearSolicitudMatricula(
-    solicitud: Omit<SolicitudMatriculaItem, 'id' | 'fechaSolicitud' | 'estado'>
-  ): Observable<ApiResponse<SolicitudMatriculaItem>> {
-    return this.http.post<ApiResponse<SolicitudMatriculaItem>>(`${environment.apiUrl}/estudiante/solicitudes-matricula`, solicitud).pipe(
-      tap((res) => {
-        if (res.exitoso && res.datos) {
-          this.solicitudesMatriculaSignal.update((prev) => [res.datos, ...prev]);
-        }
-      })
-    );
-  }
-
-  resolverSolicitudMatricula(
-    id: string,
-    accion: 'APROBADA' | 'RECHAZADA',
-    respuesta?: string
-  ): Observable<ApiResponse<SolicitudMatriculaItem>> {
-    return this.http.patch<ApiResponse<SolicitudMatriculaItem>>(`${environment.apiUrl}/coordinador/solicitudes-matricula/${id}`, {
-      accion,
-      respuesta,
-    }).pipe(
-      tap((res) => {
-        if (res.exitoso && res.datos) {
-          this.solicitudesMatriculaSignal.update((prev) => prev.map((s) => (s.id === id ? res.datos : s)));
-        }
-      })
-    );
   }
 
   // --- HU064/HU060/HU061: GRUPOS, SESIONES Y ASISTENCIAS DEL PROGRAMA (SOLO LECTURA) ---

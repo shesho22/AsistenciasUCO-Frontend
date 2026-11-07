@@ -59,6 +59,16 @@ describe('TeacherGrupoHubComponent', () => {
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('Proyectar Auto-Registro');
   });
 
+  it('F-RED-06 el hub no renderiza la pestaña ni la bandeja de solicitudes de ingreso', () => {
+    fixture.componentRef.setInput('selectedCourse', course);
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[data-tab="solicitudes"]')).toBeNull();
+    expect(el.querySelector('app-teacher-grupo-solicitudes')).toBeNull();
+    expect(el.textContent).not.toContain('Solicitudes');
+  });
+
   it('HU051 RT-10 propaga Retirar del padrón al padre', () => {
     const retirar = jasmine.createSpy('retirarEstudiante');
     fixture.componentInstance.retirarEstudiante.subscribe(retirar);

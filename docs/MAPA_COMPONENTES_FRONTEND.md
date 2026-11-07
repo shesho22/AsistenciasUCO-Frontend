@@ -54,7 +54,7 @@ Control centralizado de sesiones y registro de asistencia en aula.
   - **Función:** Lista todos los cursos del docente; al hacer clic en un grupo navega de inmediato a `/app/asistencia?courseId=<id>` (Vista Bento Grid).
   - **Padrón del grupo (HU051):** en el hub del grupo, `TeacherGrupoEstudiantesComponent` muestra el estado de cada matrícula y el botón "Retirar" (solo activas), que abre `TeacherRetiroEstudianteModalComponent` (motivo obligatorio; `POST /api/v1/docente/grupos/{grupoId}/estudiantes/{estudianteId}/retiro`).
   - **Grupos (F3, 2026-11-02):** el docente crea sus propios grupos con el botón "Nuevo grupo" de la lista, que abre `TeacherGrupoFormComponent`: asignatura (de los programas con los que tiene vínculo activo), código, nombre y horario inicial con el editor compartido `FranjasEditorComponent`. El grupo queda a su nombre y el período lo toma la DB (el más reciente). Los datos del formulario (su `idDocente` y las asignaturas) salen de `GET /api/v1/docente/oferta-creacion-grupos` (`CourseService.getOfertaCreacionGrupos`); `POST /grupos` lo admite DOCENTE solo para crear. Los cambios posteriores de datos u horario los hace el coordinador en `/app/coordinador/grupos` o los solicita el docente (F6). El horario semanal se consulta en la lista y en la pestaña Horarios del hub. **Sesiones (F2, 2026-11-02):** al guardar un grupo con horario, el backend precarga sus sesiones futuras; no hay pantalla nueva y el aviso está en el editor de franjas.
-  - **Solicitudes de ingreso (HU053-HU055):** pestaña del hub con `TeacherGrupoSolicitudesComponent` (cupo disponible, orden de llegada, lista de espera, Aceptar / Rechazar con motivo). El enlace de auto-matrícula de `TeacherMatriculaModalComponent` apunta a `/app/estudiante/solicitudes?grupo={id}`.
+  - **Solicitudes de ingreso (retiradas en CULM-001 A.1):** la pestaña del hub y la bandeja ya no existen. El docente matricula con el QR o PIN de matrícula o por matrícula manual; un retirado se vuelve a matricular por la misma vía (DEC-009).
 - **Horarios del Docente:**
   - **Ruta:** `/app/docente/horarios`
   - **Componente:** `TeacherScheduleComponent`
@@ -84,10 +84,7 @@ Control centralizado de sesiones y registro de asistencia en aula.
   - **Componente:** `StudentClaimsComponent` (`features/student/student-claims`): solicitudes propias con estado, respuesta del docente y soporte; filtro por estado y paginación del servidor; descarga del soporte por `GET /archivos/{fileId}`.
 - **Oferta de Grupos (HU008):**
   - **Ruta:** `/app/estudiante/oferta` (menú ESTUDIANTE "Oferta de Grupos")
-  - **Componente:** `StudentGroupOfferComponent` (`features/student/student-group-offer`): grupos de su programa y transversales con cupos, horario y "Solicitar ingreso".
-- **Solicitudes de Ingreso (HU053/HU055):**
-  - **Ruta:** `/app/estudiante/solicitudes` (menú ESTUDIANTE "Solicitudes de Ingreso"; acepta `?grupo={id}`)
-  - **Componente:** `StudentEnrollmentRequestsComponent` (`features/student/student-enrollment-requests`): solicitar el ingreso, ver estado y motivo de rechazo, retirar solicitudes abiertas.
+  - **Componente:** `StudentGroupOfferComponent` (`features/student/student-group-offer`): grupos de su programa y transversales con cupos y horario. Solo consulta (HU008): para matricularse se usa el QR o PIN del docente o la matrícula manual.
 
 ---
 
@@ -147,7 +144,7 @@ Control centralizado de sesiones y registro de asistencia en aula.
 | `/app/admin/sistema` | Sistema & Auditoría | [`AdminSystemComponent`](file:///c:/Proyectos/GestioAsistencia/GestioAsistenciaFrontend/src/app/features/admin/admin-system/admin-system.component.ts) | — |
 | ↳ pestaña "Trazabilidad y Auditoría" | — | [`AdminAuditoriaComponent`](../src/app/features/admin/admin-system/admin-auditoria.component.ts) (HU172: rastro real paginado; 7 días por defecto, máximo 90, solo asistencia por defecto) | [spec](../src/app/features/admin/admin-system/admin-auditoria.component.spec.ts) |
 | `/app/admin/catalogos` | Tipos de Programa | [`AdminCatalogsComponent`](../src/app/features/admin/admin-catalogs/admin-catalogs.component.ts) (HU154: solo consulta sobre [`CatalogoSoloConsultaComponent`](../src/app/shared/components/catalogo-solo-consulta/catalogo-solo-consulta.component.ts); regla de John 2026-11-04, catálogos base sin CRUD; desde 2026-11-06 muestra "Cargando…" hasta la primera respuesta) | [spec](../src/app/features/admin/admin-catalogs/admin-catalogs.component.spec.ts) |
-| `/app/admin/estados` | Estados del Sistema | [`AdminEstadosComponent`](../src/app/features/admin/admin-estados/admin-estados.component.ts) (HU155/HU167: estados de solicitudes y del estudiante en el grupo, solo consulta) | [spec](../src/app/features/admin/admin-estados/admin-estados.component.spec.ts) |
+| `/app/admin/estados` | Estados del Sistema | [`AdminEstadosComponent`](../src/app/features/admin/admin-estados/admin-estados.component.ts) (HU155/HU167: estados de reclamos de asistencia y del estudiante en el grupo, solo consulta) | [spec](../src/app/features/admin/admin-estados/admin-estados.component.spec.ts) |
 
 
 ---

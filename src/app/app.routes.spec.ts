@@ -1,3 +1,5 @@
+import { TestBed } from '@angular/core/testing';
+import { Router, provideRouter } from '@angular/router';
 import { routes } from './app.routes';
 
 describe('application routes', () => {
@@ -35,5 +37,14 @@ describe('application routes', () => {
 
     await resolverRutas(routes);
   });
-});
 
+  it('las rutas de solicitudes de ingreso fueron retiradas', async () => {
+    const appRoute = routes.find((route) => route.path === 'app');
+    expect(appRoute?.children?.some((r) => r.path === 'estudiante/solicitudes')).toBeFalse();
+
+    TestBed.configureTestingModule({ providers: [provideRouter(routes)] });
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/app/estudiante/solicitudes');
+    expect(router.url).toContain('/login');
+  });
+});

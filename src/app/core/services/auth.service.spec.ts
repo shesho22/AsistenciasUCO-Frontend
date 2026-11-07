@@ -1336,63 +1336,9 @@ describe('AuthService', () => {
     });
   });
 
-  describe('updateUserProfile', () => {
-    it('sin usuario autenticado devuelve un ApiResponse fallido', (done) => {
-      service.updateUserProfile({ primerNombre: 'X' }).subscribe((res) => {
-        expect(res.exitoso).toBeFalse();
-        done();
-      });
-    });
-
-    it('en modo mock actualiza el usuario localmente', (done) => {
-      service.setMockMode(true);
-      service.loginAsMockUser('DOCENTE', false);
-
-      service.updateUserProfile({ primerNombre: 'Nuevo' }).subscribe((res) => {
-        expect(res.exitoso).toBeTrue();
-        expect(res.datos.primerNombre).toBe('Nuevo');
-        expect(service.currentUser()?.primerNombre).toBe('Nuevo');
-        done();
-      });
-    });
-
-    it('en modo real hace PUT al backend y sincroniza la respuesta', (done) => {
-      mockTokenResponse(basePayload());
-      service.loginWithCredentials('docente@uco.edu.co', 'pass').then(() => {
-        fetchSpy.and.resolveTo({
-          ok: true,
-          json: () =>
-            Promise.resolve({
-              idTransaccion: 'tx-1',
-              datos: { primerNombre: 'Actualizado' },
-            }),
-        } as Response);
-
-        service.updateUserProfile({ primerNombre: 'Nuevo' }).subscribe((res) => {
-          expect(res.exitoso).toBeTrue();
-          expect(res.datos.primerNombre).toBe('Actualizado');
-          const [url, init] = fetchSpy.calls.mostRecent().args as [string, RequestInit];
-          expect(url).toContain('/usuarios/perfil');
-          expect(init.method).toBe('PUT');
-          expect(init.credentials).toBe('omit');
-          expect((init.headers as Record<string, string>)['Authorization']).toMatch(/^Bearer /);
-          done();
-        });
-      });
-    });
-
-    it('en modo real propaga el error si el backend responde con fallo', (done) => {
-      mockTokenResponse(basePayload());
-      service.loginWithCredentials('docente@uco.edu.co', 'pass').then(() => {
-        fetchSpy.and.resolveTo({ ok: false } as Response);
-
-        service.updateUserProfile({ primerNombre: 'Nuevo' }).subscribe({
-          error: (err) => {
-            expect(err).toBeTruthy();
-            done();
-          },
-        });
-      });
+  describe('perfil de solo consulta (A2-F-05)', () => {
+    it('AuthService no expone updateUserProfile ni hace PUT a /usuarios/perfil', () => {
+      expect('updateUserProfile' in service).toBeFalse();
     });
   });
 
@@ -1580,34 +1526,6 @@ describe('AuthService', () => {
       const user = await service.loginWithCredentials('docente@uco.edu.co', 'pass');
 
       expect(user.name).toBe('Usuario Institucional');
-    });
-  });
-
-  describe('updateUserProfile: fallbacks de campos', () => {
-    it('sin overrides conserva los campos individuales actuales', (done) => {
-      service.setMockMode(true);
-      service.loginAsMockUser('DOCENTE', false);
-      const before = service.currentUser()!;
-
-      service.updateUserProfile({}).subscribe((res) => {
-        expect(res.datos.primerNombre).toBe(before.primerNombre || '');
-        expect(res.datos.primerApellido).toBe(before.primerApellido || '');
-        done();
-      });
-    });
-
-    it('con segundoNombre y segundoApellido provistos, los usa en el nombre completo', (done) => {
-      service.setMockMode(true);
-      service.loginAsMockUser('DOCENTE', false);
-
-      service
-        .updateUserProfile({ segundoNombre: 'Del Carmen', segundoApellido: 'Restrepo' })
-        .subscribe((res) => {
-          expect(res.datos.segundoNombre).toBe('Del Carmen');
-          expect(res.datos.segundoApellido).toBe('Restrepo');
-          expect(res.datos.name).toContain('Del Carmen');
-          done();
-        });
     });
   });
 

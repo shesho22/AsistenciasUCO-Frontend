@@ -208,7 +208,6 @@ export class StudentCoursesListComponent {
   retry = output<void>();
   openCodeEnrollment = output<void>();
   openAutoAttendance = output<void>();
-  openEnrollmentRequest = output<void>();
   viewDetail = output<MateriaEstudianteItem>();
 
   getBadgeVariant(estado: MateriaEstudianteItem['estado'] | null): BadgeVariant {

@@ -4,7 +4,8 @@ import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { of, throwError } from 'rxjs';
 import { AttendanceEnrollmentModalComponent } from './attendance-enrollment-modal.component';
 import { StudentService } from '../../../../core/services/student.service';
-import { EstudiantePaginaApiDto } from '../../../../core/api/models/estudiante-api-dto.model';
+import { EstudianteBusquedaApiDto } from '../../../../core/api/models/estudiante-busqueda-api-dto.model';
+import { apiHttpError } from '../../../../core/testing/api-error.fixture';
 
 describe('AttendanceEnrollmentModalComponent', () => {
   let fixture: ComponentFixture<AttendanceEnrollmentModalComponent>;
@@ -26,6 +27,7 @@ describe('AttendanceEnrollmentModalComponent', () => {
     fixture = TestBed.createComponent(AttendanceEnrollmentModalComponent);
     component = fixture.componentInstance;
     fixture.componentRef.setInput('isOpen', true);
+    fixture.componentRef.setInput('grupoId', 'grupo-7');
     fixture.detectChanges();
   });
 
@@ -51,94 +53,137 @@ describe('AttendanceEnrollmentModalComponent', () => {
     expect(clearedField).toBe('numeroIdentificacion');
   });
 
-  it('buscarEstudiante carga los datos cuando el estudiante ya existe en la base de datos', () => {
-    const mockRespuesta: EstudiantePaginaApiDto = {
-      items: [
-        {
-          id: 'est-1',
-          idUsuario: 'usr-1',
-          tipoIdentificacionId: 'tipo-cc',
-          numeroIdentificacion: 1017123456,
-          primerNombre: 'Ana',
-          segundoNombre: 'María',
-          primerApellido: 'Gómez',
-          segundoApellido: 'Restrepo',
-          nombreCompleto: 'Ana María Gómez Restrepo',
-          correo: 'ana.gomez@uco.edu.co',
-          estaActivoUsuario: true,
-        },
-      ],
-      totalItems: 1,
-      totalPages: 1,
-      page: 0,
-      size: 1,
-    };
+  const encontrado = (extra: Partial<EstudianteBusquedaApiDto> = {}): EstudianteBusquedaApiDto => ({
+    idEstudiante: 'est-1',
+    primerNombre: 'Ana',
+    segundoNombre: 'María',
+    primerApellido: 'Gómez',
+    segundoApellido: 'Restrepo',
+    nombreCompleto: 'Ana María Gómez Restrepo',
+    numeroIdentificacion: 1017123456,
+    correoEnmascarado: 'a***@uco.edu.co',
+    codigoEstadoMatriculaGrupo: null,
+    ...extra,
+  });
 
-    studentServiceSpy.searchStudentByIdentification.and.returnValue(of(mockRespuesta));
-
+  function buscar(datos: EstudianteBusquedaApiDto | null): void {
+    studentServiceSpy.searchStudentByIdentification.and.returnValue(of({ exitoso: true, datos }));
     component.docType.set('tipo-cc');
     component.code.set('1017123456');
     component.buscarEstudiante();
+    fixture.detectChanges();
+  }
 
-    expect(studentServiceSpy.searchStudentByIdentification).toHaveBeenCalledWith('tipo-cc', 1017123456);
+  it('A2-F-06 la búsqueda usa el grupo, el tipo y el documento exactos', () => {
+    buscar(encontrado());
+    expect(studentServiceSpy.searchStudentByIdentification).toHaveBeenCalledOnceWith('grupo-7', 'tipo-cc', 1017123456);
+  });
+
+  it('A2-F-06 con resultado rellena los nombres y muestra el correo enmascarado de solo lectura', () => {
+    buscar(encontrado());
+
     expect(component.isExistingStudent()).toBeTrue();
     expect(component.firstName()).toBe('Ana');
+    expect(component.secondName()).toBe('María');
     expect(component.lastName()).toBe('Gómez');
-    expect(component.email()).toBe('ana.gomez@uco.edu.co');
+    expect(component.secondLastName()).toBe('Restrepo');
     expect(component.searchStatus()).toBe('FOUND');
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.textContent).toContain('a***@uco.edu.co');
+    expect(host.querySelector('input[name="studentEmail"]')).toBeNull();
+    expect(host.querySelector('input[type="password"]')).toBeNull();
   });
 
-  it('buscarEstudiante despliega formulario de registro si el estudiante no existe', () => {
-    const mockVacio: EstudiantePaginaApiDto = {
-      items: [],
-      totalItems: 0,
-      totalPages: 0,
-      page: 0,
-      size: 1,
-    };
+  it('A2-F-06 matricular a un existente no envía correo ni password', () => {
+    buscar(encontrado());
+    let payload: { correo: string; password: string; esNuevoEstudiante?: boolean } | undefined;
+    component.submitted.subscribe((p) => (payload = p));
 
-    studentServiceSpy.searchStudentByIdentification.and.returnValue(of(mockVacio));
+    component.onSubmit(new Event('submit'));
 
-    component.docType.set('tipo-cc');
-    component.code.set('1017999999');
-    component.buscarEstudiante();
+    expect(payload?.correo).toBe('');
+    expect(payload?.password).toBe('');
+    expect(payload?.esNuevoEstudiante).toBeFalse();
+  });
+
+  it('A2-F-06 con matrícula activa (A) avisa "Ya está matriculado" y bloquea el envío', () => {
+    buscar(encontrado({ codigoEstadoMatriculaGrupo: 'A' }));
+    let emitido = false;
+    component.submitted.subscribe(() => (emitido = true));
+
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Ya está matriculado en este grupo');
+    component.onSubmit(new Event('submit'));
+
+    expect(emitido).toBeFalse();
+  });
+
+  it('A2-F-06 con matrícula retirada (I) avisa que se reactivará y permite enviar', () => {
+    buscar(encontrado({ codigoEstadoMatriculaGrupo: 'I' }));
+    let emitido = false;
+    component.submitted.subscribe(() => (emitido = true));
+
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('se reactivará');
+    component.onSubmit(new Event('submit'));
+
+    expect(emitido).toBeTrue();
+  });
+
+  it('A2-F-06 sin resultado abre el alta de estudiante nuevo con el formulario limpio', () => {
+    buscar(null);
 
     expect(component.isExistingStudent()).toBeFalse();
     expect(component.showRegistrationForm()).toBeTrue();
     expect(component.searchStatus()).toBe('NOT_FOUND');
+    expect(component.firstName()).toBe('');
+    expect(component.email()).toBe('');
   });
 
-  it('buscarEstudiante despliega formulario limpio si el servicio responde con error', () => {
-    studentServiceSpy.searchStudentByIdentification.and.returnValue(throwError(() => new Error('Not found')));
+  it('A2-F-06 un 403 muestra el message del backend y no abre el alta', () => {
+    studentServiceSpy.searchStudentByIdentification.and.returnValue(
+      throwError(() => apiHttpError(403, 'No tiene permiso sobre este grupo.', 'ACCESS_DENIED'))
+    );
+    component.docType.set('tipo-cc');
+    component.code.set('1017999999');
+    component.buscarEstudiante();
+    fixture.detectChanges();
 
+    expect(component.showRegistrationForm()).toBeFalse();
+    expect(component.isExistingStudent()).toBeFalse();
+    expect(component.searchError()).toBe('No tiene permiso sobre este grupo.');
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('No tiene permiso sobre este grupo.');
+  });
+
+  it('A2-F-06 un 400 muestra el message del backend y no abre el alta', () => {
+    studentServiceSpy.searchStudentByIdentification.and.returnValue(
+      throwError(() => apiHttpError(400, 'El número de documento no es válido.', 'FIELD_INVALID_DOCUMENTO'))
+    );
     component.docType.set('tipo-cc');
     component.code.set('1017999999');
     component.buscarEstudiante();
 
-    expect(component.isExistingStudent()).toBeFalse();
-    expect(component.showRegistrationForm()).toBeTrue();
-    expect(component.searchStatus()).toBe('NOT_FOUND');
+    expect(component.showRegistrationForm()).toBeFalse();
+    expect(component.searchError()).toBe('El número de documento no es válido.');
   });
 
-  it('onSubmit emite submitted con datos válidos', () => {
+  it('onSubmit emite submitted con los datos del alta de un estudiante nuevo', () => {
     let payloadEmitido: any = null;
     component.submitted.subscribe((p) => (payloadEmitido = p));
 
     component.docType.set('tipo-cc');
     component.code.set('1017123456');
+    component.showRegistrationForm.set(true);
     component.firstName.set('Carlos');
     component.lastName.set('Ramírez');
     component.email.set('carlos.ramirez@uco.edu.co');
     component.password.set('Temporal2026*');
     component.confirmPassword.set('Temporal2026*');
-    component.isExistingStudent.set(true);
 
-    const event = new Event('submit');
-    component.onSubmit(event);
+    component.onSubmit(new Event('submit'));
 
     expect(payloadEmitido).toBeTruthy();
     expect(payloadEmitido.primerNombre).toBe('Carlos');
     expect(payloadEmitido.correo).toBe('carlos.ramirez@uco.edu.co');
+    expect(payloadEmitido.esNuevoEstudiante).toBeTrue();
   });
 
   it('onFieldInput actualiza el valor y limpia los errores de confirmPassword', () => {
