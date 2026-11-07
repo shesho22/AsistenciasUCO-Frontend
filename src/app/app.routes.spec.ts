@@ -20,6 +20,19 @@ describe('application routes', () => {
     }
   });
 
+  it('B1-F-39 /app/admin/festivos existe y autoriza exclusivamente al administrador', () => {
+    const appRoute = routes.find((route) => route.path === 'app');
+    const festivos = appRoute?.children?.find((route) => route.path === 'admin/festivos');
+
+    expect(festivos).toBeDefined();
+    expect(festivos?.canActivate?.length).toBeGreaterThan(0);
+    const roles = festivos?.data?.['roles'] as string[];
+    expect(roles).toContain('ADMINISTRADOR');
+    for (const role of ['DOCENTE', 'ESTUDIANTE', 'COORDINADOR', 'DECANO']) {
+      expect(roles).not.toContain(role);
+    }
+  });
+
   it('resuelve adecuadamente los componentes cargados de forma perezosa en todas las rutas', async () => {
     const resolverRutas = async (listaRutas: typeof routes) => {
       for (const ruta of listaRutas) {
