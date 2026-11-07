@@ -74,14 +74,14 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
         </div>
 
         <div class="p-4 rounded-2xl bg-white border border-warm-200 shadow-warm-sm flex items-center gap-4">
-          <div class="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
+          <div class="w-11 h-11 rounded-xl bg-success-50 text-success-700 flex items-center justify-center shrink-0">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
           <div>
             <span class="text-xs text-warm-500 font-medium">Cupo Total Ofertado</span>
-            <p class="text-2xl font-serif font-bold text-emerald-700">{{ totalCupos() }} cupos</p>
+            <p class="text-2xl font-serif font-bold text-success-700">{{ totalCupos() }} cupos</p>
           </div>
         </div>
       </div>

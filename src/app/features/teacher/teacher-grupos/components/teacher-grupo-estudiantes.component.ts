@@ -14,7 +14,7 @@ import { Course } from '../../../../core/models/course.model';
           <h3 class="font-serif font-bold text-lg text-warm-900">Padrón de Estudiantes Matriculados</h3>
           <p class="text-xs text-warm-500">Listado oficial de estudiantes con asistencia habilitada para este grupo.</p>
         </div>
-        <span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+        <span class="px-3 py-1 rounded-full text-xs font-bold bg-success-100 text-success-800 border border-success-200">
           {{ estudiantes().length }} de {{ curso()?.cupoMaximo ?? '—' }} Cupos
         </span>
       </div>
@@ -43,12 +43,12 @@ import { Course } from '../../../../core/models/course.model';
               </div>
               <div class="flex flex-col items-end gap-1.5 shrink-0">
                 @if (esActivo(est)) {
-                  <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-100 text-emerald-800">Activo</span>
+                  <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-success-100 text-success-800">Activo</span>
                   <button
                     type="button"
                     data-accion="retirar"
                     (click)="retirar.emit(est)"
-                    class="px-2 py-0.5 text-[10px] font-semibold rounded-lg text-red-700 bg-red-50 hover:bg-red-100 border border-red-200"
+                    class="px-2 py-0.5 text-[10px] font-semibold rounded-lg text-danger-700 bg-danger-50 hover:bg-danger-100 border border-danger-200"
                   >
                     Retirar
                   </button>

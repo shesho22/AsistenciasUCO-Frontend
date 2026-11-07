@@ -708,9 +708,9 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     const asuntoR = (body.asunto || '').replace(/\{(\w+)\}/g, '[$1_VALOR]');
     const cuerpoR = (body.cuerpo || '').replace(/\{(\w+)\}/g, '[$1_VALOR]');
     const htmlR = `
-      <div style="font-family: sans-serif; color: #1f2937; line-height: 1.6;">
-        <h2 style="color: #1e3a8a; margin-top: 0;">${asuntoR}</h2>
-        <div style="white-space: pre-line; background: #f9fafb; padding: 16px; border-radius: 8px; border: 1px solid #e5e7eb;">
+      <div style="font-family: sans-serif; color: var(--color-neutral-800); line-height: 1.6;">
+        <h2 style="color: var(--color-info-900); margin-top: 0;">${asuntoR}</h2>
+        <div style="white-space: pre-line; background: var(--color-neutral-50); padding: 16px; border-radius: 8px; border: 1px solid var(--color-neutral-200);">
           ${cuerpoR}
         </div>
       </div>

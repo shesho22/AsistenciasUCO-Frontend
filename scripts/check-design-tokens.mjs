@@ -8,7 +8,8 @@ const root = resolve(process.cwd(), 'src');
 const excluded = new Set(['styles.css', 'index.html'].map((f) => resolve(root, f)));
 const exts = ['.ts', '.html', '.css'];
 
-const PALETTE = 'slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose';
+// 'neutral' no se incluye: es un token semantico propio definido en @theme (la paleta por defecto fue anulada).
+const PALETTE = 'slate|gray|zinc|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose';
 const UTIL = 'bg|text|border|ring|fill|stroke|from|to|via|outline|decoration|divide|placeholder|shadow|accent|caret';
 const rules = [
   { name: 'paleta-tailwind', re: new RegExp(String.raw`(?<![\w-])(?:${UTIL})-(?:${PALETTE})-\d{2,3}(?![\w-])`, 'g') },

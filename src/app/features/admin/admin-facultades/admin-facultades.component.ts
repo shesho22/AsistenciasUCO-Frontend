@@ -74,13 +74,13 @@ type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
           <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-xs">
             <div class="flex items-center justify-between mb-2">
               <span class="text-xs font-bold uppercase tracking-wider text-warm-500">Activas</span>
-              <div class="p-2 rounded-xl bg-emerald-50 text-emerald-700">
+              <div class="p-2 rounded-xl bg-success-50 text-success-700">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
             </div>
-            <div class="text-2xl font-bold font-serif text-emerald-800">{{ totalActivas() }}</div>
+            <div class="text-2xl font-bold font-serif text-success-800">{{ totalActivas() }}</div>
             <p class="text-[11px] text-warm-500 mt-1">En operación académica</p>
           </div>
 
@@ -88,13 +88,13 @@ type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
           <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-xs">
             <div class="flex items-center justify-between mb-2">
               <span class="text-xs font-bold uppercase tracking-wider text-warm-500">Inactivas</span>
-              <div class="p-2 rounded-xl bg-amber-50 text-amber-700">
+              <div class="p-2 rounded-xl bg-warning-50 text-warning-700">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
                 </svg>
               </div>
             </div>
-            <div class="text-2xl font-bold font-serif text-amber-800">{{ totalInactivas() }}</div>
+            <div class="text-2xl font-bold font-serif text-warning-800">{{ totalInactivas() }}</div>
             <p class="text-[11px] text-warm-500 mt-1">Fuera de oferta académica</p>
           </div>
 
@@ -102,13 +102,13 @@ type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
           <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-xs">
             <div class="flex items-center justify-between mb-2">
               <span class="text-xs font-bold uppercase tracking-wider text-warm-500">Decanaturas</span>
-              <div class="p-2 rounded-xl bg-blue-50 text-blue-700">
+              <div class="p-2 rounded-xl bg-info-50 text-info-700">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
               </div>
             </div>
-            <div class="text-2xl font-bold font-serif text-blue-900">{{ totalConDecano() }}</div>
+            <div class="text-2xl font-bold font-serif text-info-900">{{ totalConDecano() }}</div>
             <p class="text-[11px] text-warm-500 mt-1">Titulares designados</p>
           </div>
         </div>
@@ -164,7 +164,7 @@ type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
                     <h3 class="font-serif font-bold text-warm-900 text-base leading-snug">{{ fac.nombre }}</h3>
                     <span
                       class="text-xs font-semibold px-2.5 py-0.5 rounded-full shrink-0"
-                      [class]="fac.estado === 'ACTIVO' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'"
+                      [class]="fac.estado === 'ACTIVO' ? 'bg-success-100 text-success-800' : 'bg-danger-100 text-danger-800'"
                     >
                       {{ fac.estado }}
                     </span>
@@ -176,7 +176,7 @@ type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
                       <span class="text-[10px] font-bold uppercase tracking-wider text-warm-500">
                         Decanatura
                       </span>
-                      <span class="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                      <span class="text-[10px] font-semibold text-success-700 bg-success-50 px-2 py-0.5 rounded-full border border-success-200">
                         Titular Asignado
                       </span>
                     </div>
@@ -314,11 +314,11 @@ type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
                 placeholder="Ej: Facultad de Ciencias de la Salud"
                 maxlength="50"
                 class="w-full px-3.5 py-2.5 rounded-xl border text-sm focus:ring-2 focus:ring-primary-700/20 focus:border-primary-700"
-                [class.border-red-300]="nombreDuplicado()"
+                [class.border-danger-300]="nombreDuplicado()"
                 [class.border-warm-200]="!nombreDuplicado()"
               />
               @if (nombreDuplicado()) {
-                <p class="text-xs text-red-600 font-semibold mt-1 flex items-center gap-1">
+                <p class="text-xs text-danger-600 font-semibold mt-1 flex items-center gap-1">
                   <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                   </svg>
@@ -344,7 +344,7 @@ type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
                 }
               </select>
               @if (decanos().length === 0) {
-                <p class="text-[11px] text-amber-600 mt-1">
+                <p class="text-[11px] text-warning-600 mt-1">
                   No hay decanos registrados en el directorio central.
                 </p>
               } @else {
@@ -427,7 +427,7 @@ type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
                   }
                 </select>
                 @if (decanos().length === 0) {
-                  <p class="text-[11px] text-amber-600 mt-1.5">
+                  <p class="text-[11px] text-warning-600 mt-1.5">
                     No hay decanos registrados en el directorio central. Puedes registrar nuevos en la vista de Decanos.
                   </p>
                 }

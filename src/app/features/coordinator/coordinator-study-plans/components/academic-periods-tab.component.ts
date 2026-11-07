@@ -80,7 +80,7 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
                   <button
                     type="button"
                     (click)="deletePeriodo.emit(periodo)"
-                    class="font-semibold text-rose-700 hover:text-rose-900"
+                    class="font-semibold text-danger-700 hover:text-danger-900"
                     title="Eliminar el período (solo si no tiene grupos ni sesiones)"
                   >
                     Eliminar

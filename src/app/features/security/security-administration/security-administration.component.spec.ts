@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { AuthService } from '../../../core/services/auth.service';
 import { User } from '../../../core/models/user.model';
+import { readDesignToken } from '../../../shared/utils/design-tokens';
 import {
   SECURITY_UI_LOADER,
   SecurityAdministrationComponent,
@@ -140,7 +141,7 @@ describe('SecurityAdministrationComponent', () => {
       applicationName: 'AsistenciasUCO',
       apiBaseUrl: 'http://pdp.test',
       allowApplicationLifecycleManagement: false,
-      theme: { accent: '#087443', fontFamily: 'Inter, sans-serif', radius: '12px' },
+      theme: { accent: readDesignToken('--color-primary-700'), fontFamily: readDesignToken('--font-sans'), radius: '12px' },
     });
   });
 

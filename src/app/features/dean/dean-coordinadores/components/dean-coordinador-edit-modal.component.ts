@@ -83,7 +83,7 @@ const MAX_CORREO = 100;
             class="w-full bg-white text-warm-900 border border-warm-300 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
           @if (correoInvalido()) {
-            <p class="mt-1 text-xs text-red-600" role="alert">Ingresa un correo electrónico válido.</p>
+            <p class="mt-1 text-xs text-danger-600" role="alert">Ingresa un correo electrónico válido.</p>
           }
         </app-form-field>
       </div>

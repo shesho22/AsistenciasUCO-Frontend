@@ -69,7 +69,7 @@ const NOMBRE_MAXIMO = 50;
         </div>
 
         @if (error()) {
-          <p class="text-xs font-semibold text-red-600" role="alert">{{ error() }}</p>
+          <p class="text-xs font-semibold text-danger-600" role="alert">{{ error() }}</p>
         }
 
         <div class="flex justify-end gap-2">

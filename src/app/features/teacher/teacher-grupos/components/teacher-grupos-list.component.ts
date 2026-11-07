@@ -18,7 +18,7 @@ import { CatalogoPrograma } from '../../../../core/models/programa-academico.mod
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
         <div>
           <div class="flex items-center gap-2 mb-1">
-            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-success-50 text-success-800 border border-success-200">
               Portal Docente & Oferta Horaria
             </span>
             <span class="text-xs text-warm-400">•</span>
@@ -135,7 +135,7 @@ import { CatalogoPrograma } from '../../../../core/models/programa-academico.mod
                     @if (course.enrolledStudentsCount === undefined) {
                       <!-- Total de estudiantes desconocido: no se muestra un conteo inventado -->
                     } @else if (course.cupoMaximo) {
-                      <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-success-50 text-success-700 border border-success-200">
                         {{ course.enrolledStudentsCount }} / {{ course.cupoMaximo }} cupos
                       </span>
                     } @else {

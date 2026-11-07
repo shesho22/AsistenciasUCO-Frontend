@@ -42,7 +42,7 @@ const DEBOUNCE_MS = 300;
       />
 
       @if (error()) {
-        <p role="alert" class="text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2">{{ error() }}</p>
+        <p role="alert" class="text-xs font-medium text-danger-700 bg-danger-50 border border-danger-200 rounded-xl px-3 py-2">{{ error() }}</p>
       }
 
       @if (cargando()) {
@@ -81,7 +81,7 @@ const DEBOUNCE_MS = 300;
                   <span class="text-xs text-warm-600 font-medium">Cupos disponibles</span>
                   <span
                     class="px-2.5 py-0.5 rounded-full text-xs font-bold border"
-                    [class]="g.cuposDisponibles > 0 ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-red-50 text-red-800 border-red-200'"
+                    [class]="g.cuposDisponibles > 0 ? 'bg-success-50 text-success-800 border-success-200' : 'bg-danger-50 text-danger-800 border-danger-200'"
                   >
                     {{ g.cuposDisponibles }} de {{ g.capacidadMaxima }}
                   </span>

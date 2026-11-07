@@ -13,9 +13,9 @@ import { ButtonComponent } from '../../../../../shared/components/button/button.
       <div class="fixed inset-0 bg-warm-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
         <div class="bg-white rounded-3xl border border-warm-200 shadow-warm-2xl max-w-md w-full overflow-hidden animate-scale-up">
           <!-- Header Modal -->
-          <div class="p-6 border-b border-warm-100 flex items-center justify-between bg-emerald-900 text-white">
+          <div class="p-6 border-b border-warm-100 flex items-center justify-between bg-primary-900 text-white">
             <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-2xl bg-emerald-700 text-white flex items-center justify-center font-bold">
+              <div class="w-10 h-10 rounded-2xl bg-success-700 text-white flex items-center justify-center font-bold">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -24,7 +24,7 @@ import { ButtonComponent } from '../../../../../shared/components/button/button.
                 <h3 class="font-serif font-bold text-lg leading-tight">
                   Auto-Registro de Asistencia
                 </h3>
-                <p class="text-xs text-emerald-200">
+                <p class="text-xs text-success-200">
                   Ingresa el PIN proyectado por tu docente en clase
                 </p>
               </div>
@@ -33,7 +33,7 @@ import { ButtonComponent } from '../../../../../shared/components/button/button.
             <button
               type="button"
               (click)="closed.emit()"
-              class="p-2 rounded-xl text-emerald-200 hover:text-white hover:bg-emerald-800 transition-colors"
+              class="p-2 rounded-xl text-primary-200 hover:text-white hover:bg-primary-800 transition-colors"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -60,7 +60,7 @@ import { ButtonComponent } from '../../../../../shared/components/button/button.
                 [ngModel]="pin()"
                 (ngModelChange)="pin.set($event)"
                 placeholder="000000"
-                class="w-56 text-center font-mono font-extrabold text-3xl tracking-widest py-3 px-4 bg-warm-50 border-2 border-warm-300 rounded-2xl text-warm-900 focus:outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-500/20 uppercase"
+                class="w-56 text-center font-mono font-extrabold text-3xl tracking-widest py-3 px-4 bg-warm-50 border-2 border-warm-300 rounded-2xl text-warm-900 focus:outline-none focus:border-primary-600 focus:ring-4 focus:ring-primary-500/20 uppercase"
               />
             </div>
 
@@ -76,7 +76,7 @@ import { ButtonComponent } from '../../../../../shared/components/button/button.
                     [ngModel]="tokenQr()"
                     (ngModelChange)="tokenQr.set($event)"
                     placeholder="UCO-QR-..."
-                    class="w-full px-3 py-2 bg-warm-50 border border-warm-200 rounded-xl text-xs font-mono text-warm-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    class="w-full px-3 py-2 bg-warm-50 border border-warm-200 rounded-xl text-xs font-mono text-warm-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                   />
                 </div>
               </details>
@@ -85,7 +85,7 @@ import { ButtonComponent } from '../../../../../shared/components/button/button.
             <!-- Indicación de Regla de Negocio -->
             <div class="p-3.5 rounded-xl bg-warm-50 border border-warm-200 text-xs text-warm-600 space-y-1">
               <p class="font-semibold text-warm-800 flex items-center gap-1.5">
-                <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-4 h-4 text-success-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 Validación Automática de Matrícula
@@ -105,7 +105,7 @@ import { ButtonComponent } from '../../../../../shared/components/button/button.
               type="button"
               [disabled]="(!pin().trim() && !tokenQr().trim()) || processing()"
               (click)="onSubmit()"
-              class="px-5 py-2 text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-all shadow-sm inline-flex items-center gap-2"
+              class="px-5 py-2 text-xs font-bold text-white bg-primary-700 hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-all shadow-sm inline-flex items-center gap-2"
             >
               @if (processing()) {
                 <span class="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin"></span>

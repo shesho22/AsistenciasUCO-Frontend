@@ -29,7 +29,7 @@ const CLASE_CONTROL =
           Corrige errores de digitación. El correo, la contraseña y el estado no se modifican aquí.
         </p>
         @if (error()) {
-          <p role="alert" class="text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2">{{ error() }}</p>
+          <p role="alert" class="text-xs font-medium text-danger-700 bg-danger-50 border border-danger-200 rounded-xl px-3 py-2">{{ error() }}</p>
         }
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <label class="block text-xs font-semibold text-warm-700">Primer nombre *

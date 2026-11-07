@@ -31,7 +31,7 @@ const MOTIVO_MAXIMO = 500;
     @if (isOpen() && estudiante()) {
       <div class="fixed inset-0 bg-warm-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
         <div class="bg-white rounded-2xl border border-warm-200 shadow-warm-xl max-w-md w-full overflow-hidden animate-scale-up">
-          <div class="p-6 border-b border-warm-100 flex items-start justify-between bg-red-50/40">
+          <div class="p-6 border-b border-warm-100 flex items-start justify-between bg-danger-50/40">
             <div>
               <h3 class="font-serif font-bold text-lg text-warm-900">Retirar estudiante del grupo</h3>
               <p class="text-xs text-warm-600">{{ estudiante()?.nombreCompleto || 'Estudiante' }}</p>
@@ -67,7 +67,7 @@ const MOTIVO_MAXIMO = 500;
             <p class="text-[11px] text-warm-500 text-right">{{ motivo().length }}/500</p>
 
             @if (error()) {
-              <p class="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg p-2">{{ error() }}</p>
+              <p class="text-xs text-danger-700 bg-danger-50 border border-danger-200 rounded-lg p-2">{{ error() }}</p>
             }
 
             <div class="flex justify-end gap-3 pt-2">

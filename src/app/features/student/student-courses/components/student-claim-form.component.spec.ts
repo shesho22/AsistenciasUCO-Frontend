@@ -87,7 +87,7 @@ describe('StudentClaimFormComponent — soporte (LB-004D FE-01..FE-03)', () => {
 
     expect(host().textContent).toContain('Subiendo y analizando');
     expect(host().querySelector('input[type="file"]')).toBeNull();
-    (Array.from(host().querySelectorAll('button')).find((b) => b.textContent?.includes('Cancelar') && b.className.includes('red')) as HTMLButtonElement).click();
+    (Array.from(host().querySelectorAll('button')).find((b) => b.textContent?.includes('Cancelar') && b.className.includes('danger')) as HTMLButtonElement).click();
     expect(removed).toBe(1);
   });
 

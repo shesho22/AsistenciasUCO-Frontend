@@ -61,13 +61,13 @@ import { type EstadoCargaReclamos, SolicitudRevisionItem } from '../../../../cor
       } @else if (estadoCarga() === 'FORBIDDEN' || estadoCarga() === 'UNAVAILABLE' || estadoCarga() === 'NETWORK_ERROR' || estadoCarga() === 'SERVER_ERROR') {
         <div role="alert" class="p-8 text-center space-y-3">
           @if (estadoCarga() === 'FORBIDDEN') {
-            <p class="text-sm text-rose-700">No tienes autorización para consultar reclamos de este grupo.</p>
+            <p class="text-sm text-danger-700">No tienes autorización para consultar reclamos de este grupo.</p>
           } @else if (estadoCarga() === 'UNAVAILABLE') {
-            <p class="text-sm text-amber-800">El servicio de reclamos no está disponible (HTTP 501).</p>
+            <p class="text-sm text-warning-800">El servicio de reclamos no está disponible (HTTP 501).</p>
           } @else if (estadoCarga() === 'NETWORK_ERROR') {
-            <p class="text-sm text-rose-700">No fue posible conectar con el servicio de reclamos.</p>
+            <p class="text-sm text-danger-700">No fue posible conectar con el servicio de reclamos.</p>
           } @else {
-            <p class="text-sm text-rose-700">No fue posible cargar los reclamos del grupo. Intenta nuevamente.</p>
+            <p class="text-sm text-danger-700">No fue posible cargar los reclamos del grupo. Intenta nuevamente.</p>
           }
           <button
             type="button"

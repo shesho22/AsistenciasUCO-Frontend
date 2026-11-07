@@ -79,9 +79,9 @@ const TAMANO_CREDITOS = 100;
         <div class="p-4 rounded-2xl bg-white border border-warm-200 shadow-warm-sm flex items-center justify-between">
           <div>
             <span class="text-xs text-warm-500 font-medium">Planes Vigentes</span>
-            <p class="text-2xl font-serif font-bold text-emerald-700">{{ planesVigentes() }}</p>
+            <p class="text-2xl font-serif font-bold text-success-700">{{ planesVigentes() }}</p>
           </div>
-          <div class="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
+          <div class="w-11 h-11 rounded-xl bg-success-50 text-success-700 flex items-center justify-center shrink-0">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -117,9 +117,9 @@ const TAMANO_CREDITOS = 100;
 
       <!-- Grid de Programas y Planes -->
       @if (errorEstructura()) {
-        <div class="bg-white rounded-2xl border border-red-200 p-12 text-center shadow-warm-sm" role="alert">
-          <p class="text-sm font-semibold text-red-700">No fue posible cargar los planes de estudio de la facultad.</p>
-          <p class="text-xs text-red-700 mt-1">{{ errorEstructura() }}</p>
+        <div class="bg-white rounded-2xl border border-danger-200 p-12 text-center shadow-warm-sm" role="alert">
+          <p class="text-sm font-semibold text-danger-700">No fue posible cargar los planes de estudio de la facultad.</p>
+          <p class="text-xs text-danger-700 mt-1">{{ errorEstructura() }}</p>
         </div>
       } @else if (pagedPlanes().length === 0) {
         <div class="bg-white rounded-2xl border border-warm-200 p-12 text-center shadow-warm-sm">

@@ -54,7 +54,7 @@ export class EmptyStateComponent {
       case 'info':
         return `${base} bg-accent-100 text-accent-900`;
       case 'error':
-        return `${base} bg-red-50 text-red-700`;
+        return `${base} bg-danger-50 text-danger-700`;
       default:
         return `${base} bg-warm-100 text-warm-600`;
     }

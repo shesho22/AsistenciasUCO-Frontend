@@ -17,54 +17,54 @@ const MARGEN = 20;
     <section class="space-y-6">
       <header class="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 class="text-2xl font-semibold text-gray-900">Indicadores de la institución</h1>
+          <h1 class="text-2xl font-semibold text-neutral-900">Indicadores de la institución</h1>
           @if (service.kpis(); as k) {
-            <p class="text-sm text-gray-600">{{ k.nombreInstitucion }} · {{ k.nombrePeriodoAcademico ?? 'Sin período' }}</p>
+            <p class="text-sm text-neutral-600">{{ k.nombreInstitucion }} · {{ k.nombrePeriodoAcademico ?? 'Sin período' }}</p>
           }
         </div>
-        <button type="button" class="rounded-lg border border-gray-200 px-3 py-2 text-sm hover:bg-gray-50" (click)="actualizar()">Actualizar</button>
+        <button type="button" class="rounded-lg border border-neutral-200 px-3 py-2 text-sm hover:bg-neutral-50" (click)="actualizar()">Actualizar</button>
       </header>
 
       @if (service.kpis(); as k) {
         <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <article class="rounded-xl border border-gray-100 bg-white p-4"><p class="text-xs text-gray-500">Asistencia global</p><p class="text-2xl font-semibold">{{ formatoPorcentaje(k.porcentajeAsistencia) }}</p></article>
-          <article class="rounded-xl border border-gray-100 bg-white p-4"><p class="text-xs text-gray-500">Ausentismo global</p><p class="text-2xl font-semibold">{{ formatoPorcentaje(k.porcentajeAusentismo) }}</p></article>
-          <article class="rounded-xl border border-gray-100 bg-white p-4"><p class="text-xs text-gray-500">Cumplimiento de sesiones con asistencia registrada ({{ k.sesionesConRegistro }} / {{ k.sesionesVencidas }})</p><p class="text-2xl font-semibold">{{ formatoPorcentaje(k.porcentajeCumplimiento) }}</p></article>
-          <article class="rounded-xl border border-gray-100 bg-white p-4"><p class="text-xs text-gray-500">Retención por asistencia (período vigente)</p><p class="text-2xl font-semibold">{{ formatoPorcentaje(k.tasaRetencion) }}</p></article>
-          <article class="rounded-xl border border-gray-100 bg-white p-4"><p class="text-xs text-gray-500">Estudiantes con matrícula activa</p><p class="text-2xl font-semibold">{{ k.estudiantesConMatriculaActiva }}</p><p class="text-xs text-gray-500">{{ k.estudiantesRegistrados }} registrados</p></article>
-          <article class="rounded-xl border border-gray-100 bg-white p-4"><p class="text-xs text-gray-500">Docentes con grupo activo</p><p class="text-2xl font-semibold">{{ k.docentesConGrupoActivo }}</p><p class="text-xs text-gray-500">{{ k.docentesRegistrados }} registrados</p></article>
-          <article class="rounded-xl border border-gray-100 bg-white p-4"><p class="text-xs text-gray-500">Facultades</p><p class="text-2xl font-semibold">{{ k.totalFacultades }}</p></article>
-          <article class="rounded-xl border border-gray-100 bg-white p-4"><p class="text-xs text-gray-500">Programas</p><p class="text-2xl font-semibold">{{ k.totalProgramas }}</p></article>
+          <article class="rounded-xl border border-neutral-100 bg-white p-4"><p class="text-xs text-neutral-500">Asistencia global</p><p class="text-2xl font-semibold">{{ formatoPorcentaje(k.porcentajeAsistencia) }}</p></article>
+          <article class="rounded-xl border border-neutral-100 bg-white p-4"><p class="text-xs text-neutral-500">Ausentismo global</p><p class="text-2xl font-semibold">{{ formatoPorcentaje(k.porcentajeAusentismo) }}</p></article>
+          <article class="rounded-xl border border-neutral-100 bg-white p-4"><p class="text-xs text-neutral-500">Cumplimiento de sesiones con asistencia registrada ({{ k.sesionesConRegistro }} / {{ k.sesionesVencidas }})</p><p class="text-2xl font-semibold">{{ formatoPorcentaje(k.porcentajeCumplimiento) }}</p></article>
+          <article class="rounded-xl border border-neutral-100 bg-white p-4"><p class="text-xs text-neutral-500">Retención por asistencia (período vigente)</p><p class="text-2xl font-semibold">{{ formatoPorcentaje(k.tasaRetencion) }}</p></article>
+          <article class="rounded-xl border border-neutral-100 bg-white p-4"><p class="text-xs text-neutral-500">Estudiantes con matrícula activa</p><p class="text-2xl font-semibold">{{ k.estudiantesConMatriculaActiva }}</p><p class="text-xs text-neutral-500">{{ k.estudiantesRegistrados }} registrados</p></article>
+          <article class="rounded-xl border border-neutral-100 bg-white p-4"><p class="text-xs text-neutral-500">Docentes con grupo activo</p><p class="text-2xl font-semibold">{{ k.docentesConGrupoActivo }}</p><p class="text-xs text-neutral-500">{{ k.docentesRegistrados }} registrados</p></article>
+          <article class="rounded-xl border border-neutral-100 bg-white p-4"><p class="text-xs text-neutral-500">Facultades</p><p class="text-2xl font-semibold">{{ k.totalFacultades }}</p></article>
+          <article class="rounded-xl border border-neutral-100 bg-white p-4"><p class="text-xs text-neutral-500">Programas</p><p class="text-2xl font-semibold">{{ k.totalProgramas }}</p></article>
         </div>
       }
 
-      <div class="rounded-xl border border-gray-100 bg-white p-4">
+      <div class="rounded-xl border border-neutral-100 bg-white p-4">
         <h2 class="mb-3 text-lg font-semibold">Ausentismo por facultad</h2>
         @if (service.comparativa().length === 0) {
-          <p class="py-6 text-center text-sm text-gray-500">No hay facultades en esta institución.</p>
+          <p class="py-6 text-center text-sm text-neutral-500">No hay facultades en esta institución.</p>
         } @else {
           <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
             @for (f of service.comparativa(); track f.idFacultad) {
-              <article class="rounded-lg border border-gray-100 p-4" data-testid="tarjeta-facultad">
-                <p class="font-medium">{{ f.nombreFacultad }}@if (!f.estaActivaFacultad) { <span class="ml-2 text-xs text-gray-500">Inactiva</span> }</p>
+              <article class="rounded-lg border border-neutral-100 p-4" data-testid="tarjeta-facultad">
+                <p class="font-medium">{{ f.nombreFacultad }}@if (!f.estaActivaFacultad) { <span class="ml-2 text-xs text-neutral-500">Inactiva</span> }</p>
                 <p class="text-2xl font-semibold">{{ formatoPorcentaje(f.porcentajeAusentismo) }}</p>
-                <p class="text-xs text-gray-500">{{ f.totalEstudiantes }} estudiantes · {{ f.totalProgramas }} programas · retención {{ formatoPorcentaje(f.tasaRetencion) }}</p>
+                <p class="text-xs text-neutral-500">{{ f.totalEstudiantes }} estudiantes · {{ f.totalProgramas }} programas · retención {{ formatoPorcentaje(f.tasaRetencion) }}</p>
               </article>
             }
           </div>
         }
       </div>
 
-      <div class="rounded-xl border border-gray-100 bg-white p-4">
+      <div class="rounded-xl border border-neutral-100 bg-white p-4">
         <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
           <h2 class="text-lg font-semibold">Tendencia de ausentismo</h2>
           <div class="flex gap-2" role="group" aria-label="Granularidad">
-            <button type="button" class="rounded-lg border px-3 py-1 text-sm" [class.bg-gray-100]="granularidad() === 'SEMANA'" (click)="cambiarGranularidad('SEMANA')">Semana</button>
-            <button type="button" class="rounded-lg border px-3 py-1 text-sm" [class.bg-gray-100]="granularidad() === 'MES'" (click)="cambiarGranularidad('MES')">Mes</button>
+            <button type="button" class="rounded-lg border px-3 py-1 text-sm" [class.bg-neutral-100]="granularidad() === 'SEMANA'" (click)="cambiarGranularidad('SEMANA')">Semana</button>
+            <button type="button" class="rounded-lg border px-3 py-1 text-sm" [class.bg-neutral-100]="granularidad() === 'MES'" (click)="cambiarGranularidad('MES')">Mes</button>
           </div>
         </div>
         @if (service.tendencia().length === 0) {
-          <p class="py-6 text-center text-sm text-gray-500">No hay sesiones ejecutadas en el período para graficar.</p>
+          <p class="py-6 text-center text-sm text-neutral-500">No hay sesiones ejecutadas en el período para graficar.</p>
         } @else {
           <svg [attr.viewBox]="'0 0 ' + ancho + ' ' + alto" class="h-56 w-full" role="img" aria-label="Tendencia de ausentismo">
             <polyline fill="none" stroke="currentColor" stroke-width="2" [attr.points]="linea()" />

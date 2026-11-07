@@ -54,7 +54,7 @@ const ETIQUETA_ESTADO: Record<EstadoSolicitudIngreso, string> = {
             />
           </label>
           @if (error()) {
-            <p class="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg p-2">{{ error() }}</p>
+            <p class="text-xs text-danger-700 bg-danger-50 border border-danger-200 rounded-lg p-2">{{ error() }}</p>
           }
           <button
             type="button"
@@ -101,7 +101,7 @@ const ETIQUETA_ESTADO: Record<EstadoSolicitudIngreso, string> = {
                   <p class="font-semibold text-warm-900">{{ s.asignaturaNombre }}</p>
                   <p class="text-xs text-warm-600">{{ s.grupoNombre }} · Docente: {{ s.docenteNombre }}</p>
                   @if (s.motivoRechazo) {
-                    <p class="text-xs text-red-700 mt-1">Motivo del rechazo: {{ s.motivoRechazo }}</p>
+                    <p class="text-xs text-danger-700 mt-1">Motivo del rechazo: {{ s.motivoRechazo }}</p>
                   }
                 </div>
                 <div class="flex flex-col items-end gap-2">
@@ -111,7 +111,7 @@ const ETIQUETA_ESTADO: Record<EstadoSolicitudIngreso, string> = {
                       type="button"
                       data-accion="retirar-solicitud"
                       (click)="retirar(s)"
-                      class="px-2 py-1 text-xs font-semibold rounded-lg text-red-700 bg-red-50 hover:bg-red-100 border border-red-200"
+                      class="px-2 py-1 text-xs font-semibold rounded-lg text-danger-700 bg-danger-50 hover:bg-danger-100 border border-danger-200"
                     >
                       Retirar solicitud
                     </button>
