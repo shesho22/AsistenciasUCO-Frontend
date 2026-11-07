@@ -533,16 +533,8 @@ export class CoordinatorManagementService {
   }
 
   // --- SOLICITUDES DE INSCRIPCIÓN Y CUPO ---
-  getSolicitudesMatricula(): Observable<ApiResponse<SolicitudMatriculaItem[]>> {
-    return this.http.get<ApiResponse<SolicitudMatriculaItem[]>>(`${environment.apiUrl}/coordinador/solicitudes-matricula`).pipe(
-      tap((res) => {
-        if (res.exitoso && res.datos) {
-          this.solicitudesMatriculaSignal.set(res.datos);
-        }
-      })
-    );
-  }
-
+  // HU156 cubierta (2026-11-07): las solicitudes de ingreso las resuelve el docente (HU053-HU055); se retiraron las
+  // llamadas a GET/PATCH /coordinador/solicitudes-matricula, que respondían 501 y no tenían pantalla.
   crearSolicitudMatricula(
     solicitud: Omit<SolicitudMatriculaItem, 'id' | 'fechaSolicitud' | 'estado'>
   ): Observable<ApiResponse<SolicitudMatriculaItem>> {
@@ -550,23 +542,6 @@ export class CoordinatorManagementService {
       tap((res) => {
         if (res.exitoso && res.datos) {
           this.solicitudesMatriculaSignal.update((prev) => [res.datos, ...prev]);
-        }
-      })
-    );
-  }
-
-  resolverSolicitudMatricula(
-    id: string,
-    accion: 'APROBADA' | 'RECHAZADA',
-    respuesta?: string
-  ): Observable<ApiResponse<SolicitudMatriculaItem>> {
-    return this.http.patch<ApiResponse<SolicitudMatriculaItem>>(`${environment.apiUrl}/coordinador/solicitudes-matricula/${id}`, {
-      accion,
-      respuesta,
-    }).pipe(
-      tap((res) => {
-        if (res.exitoso && res.datos) {
-          this.solicitudesMatriculaSignal.update((prev) => prev.map((s) => (s.id === id ? res.datos : s)));
         }
       })
     );

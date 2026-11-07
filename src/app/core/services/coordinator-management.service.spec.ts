@@ -18,7 +18,6 @@ import {
   PlanEstudioItem,
   AsignaturaPlanItem,
   EstudianteDirectorioItem,
-  SolicitudMatriculaItem,
   PeriodoAcademicoItem,
 } from '../models/role-management.model';
 
@@ -558,62 +557,6 @@ describe('CoordinatorManagementService', () => {
   });
 
   describe('Solicitudes de Matrícula', () => {
-    it('getSolicitudesMatricula obtiene las solicitudes pendientes', () => {
-      const mockSolicitudes: SolicitudMatriculaItem[] = [
-        {
-          id: 'sol-1',
-          estudianteId: 'est-1',
-          estudianteNombre: 'Laura Restrepo',
-          estudianteCodigo: '1017009',
-          estudianteCorreo: 'lrestrepo@uco.edu.co',
-          cursoId: 'cur-1',
-          cursoCodigo: 'CUR1',
-          cursoNombre: 'Cálculo',
-          grupo: 'G01',
-          fechaSolicitud: '2026-02-05',
-          estado: 'PENDIENTE',
-          motivo: 'Cruce de horario',
-        },
-      ];
-
-      service.getSolicitudesMatricula().subscribe((res) => {
-        expect(res.exitoso).toBeTrue();
-      });
-
-      const req = http.expectOne(`${environment.apiUrl}/coordinador/solicitudes-matricula`);
-      expect(req.request.method).toBe('GET');
-      req.flush({ exitoso: true, datos: mockSolicitudes });
-
-      expect(service.solicitudesMatricula().length).toBe(1);
-    });
-
-    it('resolverSolicitudMatricula actualiza la solicitud en la señal', () => {
-      service.resolverSolicitudMatricula('sol-1', 'APROBADA', 'Aprobado sin conflicto').subscribe((res) => {
-        expect(res.exitoso).toBeTrue();
-      });
-
-      const req = http.expectOne(`${environment.apiUrl}/coordinador/solicitudes-matricula/sol-1`);
-      expect(req.request.method).toBe('PATCH');
-      req.flush({
-        exitoso: true,
-        datos: {
-          id: 'sol-1',
-          estudianteId: 'est-1',
-          estudianteNombre: 'Laura Restrepo',
-          estudianteCodigo: '1017009',
-          estudianteCorreo: 'lrestrepo@uco.edu.co',
-          cursoId: 'cur-1',
-          cursoCodigo: 'CUR1',
-          cursoNombre: 'Cálculo',
-          grupo: 'G01',
-          fechaSolicitud: '2026-02-05',
-          estado: 'APROBADA',
-          motivo: 'Cruce de horario',
-          respuestaCoordinador: 'Aprobado sin conflicto',
-        },
-      });
-    });
-
     it('agregarSemestrePlan y eliminarSemestrePlan ejecutan endpoints correspondientes', () => {
       service.agregarSemestrePlan('plan-1').subscribe((res) => {
         expect(res.exitoso).toBeTrue();
