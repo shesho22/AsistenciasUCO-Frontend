@@ -462,28 +462,12 @@ describe('TeacherClaimsComponent — bandeja paginada y detalle (HU035/HU036)', 
 
   describe('CULM-001 D.2 — visualización de categoría y múltiples soportes del docente (HU015, HU014)', () => {
     it('muestra la categoría con su nombre y código tanto si viene como objeto o como string', () => {
-      component.reclamos.set([
-        {
-          id: 'rec-cat-1',
-          estudianteId: 'est-1',
-          estudianteNombre: 'Estudiante Prueba',
-          estudianteCorreo: 'est@uco.edu.co',
-          materiaId: 'mat-1',
-          materiaCodigo: 'IS-101',
-          materiaNombre: 'Arquitectura',
-          grupo: 'G1',
-          sesionId: 'ses-1',
-          sesionNumero: 1,
-          fechaSesion: '2026-09-10',
-          estadoOriginal: 'AUSENTE',
-          fechaSolicitud: '2026-09-11',
-          estadoSolicitud: 'PENDIENTE',
+      cargarInicial([
+        fila('rec-cat-1', {
           categoria: { codigo: 'MED', nombre: 'Médico / Salud' },
           justificacionSolicitud: 'Cita médica urgente',
-        },
-      ]);
-      component.listState.set('LOADED');
-      fixture.detectChanges();
+        }),
+      ], 1, 1);
 
       expect(fixture.nativeElement.textContent).toContain('Médico / Salud');
     });
@@ -493,23 +477,9 @@ describe('TeacherClaimsComponent — bandeja paginada y detalle (HU035/HU036)', 
         { fileId: 'file-001', nombre: 'constancia.pdf', tipo: 'application/pdf', tamanioKb: 100, fechaSubida: '2026-10-10' },
         { fileId: 'file-002', nombre: 'receta.png', tipo: 'image/png', tamanioKb: 50, fechaSubida: '2026-10-10' },
       ];
+      cargarInicial([fila('rec-sop-1')], 1, 1);
       component.selectedReclamo.set({
-        id: 'rec-sop-1',
-        estudianteId: 'est-1',
-        estudianteNombre: 'Estudiante Prueba',
-        estudianteCorreo: 'est@uco.edu.co',
-        materiaId: 'mat-1',
-        materiaCodigo: 'IS-101',
-        materiaNombre: 'Arquitectura',
-        grupo: 'G1',
-        sesionId: 'ses-1',
-        sesionNumero: 1,
-        fechaSesion: '2026-09-10',
-        estadoOriginal: 'AUSENTE',
-        fechaSolicitud: '2026-09-11',
-        estadoSolicitud: 'PENDIENTE',
-        categoria: 'Médico / Salud',
-        justificacionSolicitud: 'Incapacidad médica',
+        ...component.reclamos()[0],
         soportes,
         causalInasistencia: null,
         nombreEstado: 'Pendiente',
