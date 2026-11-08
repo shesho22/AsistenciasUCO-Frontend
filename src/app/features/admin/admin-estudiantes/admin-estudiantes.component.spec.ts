@@ -124,6 +124,9 @@ describe('AdminEstudiantesComponent (HU157)', () => {
 
     btnAdmitir?.click();
     fixture.detectChanges();
+    http.expectOne(`${environment.apiUrl}/tipos-identificacion`).flush({ exitoso: true, datos: [] });
+    http.expectOne((r) => r.url === `${environment.apiUrl}/admin/programas`).flush({ exitoso: true, elementos: [] });
+
     expect(component.modalAdmisionAbierto()).toBeTrue();
     expect((fixture.nativeElement as HTMLElement).querySelector('app-admision-estudiante-modal')).toBeTruthy();
 
@@ -151,6 +154,8 @@ describe('AdminEstudiantesComponent (HU157)', () => {
 
     btnCorregir?.click();
     fixture.detectChanges();
+    http.expectOne(`${environment.apiUrl}/configuracion/identidad`).flush({ exitoso: true, datos: { permitirCorregirDocumento: true } });
+    http.expectOne(`${environment.apiUrl}/tipos-identificacion`).flush({ exitoso: true, datos: [] });
 
     expect(component.estudianteACorregir()).toEqual(estudiante);
     expect((fixture.nativeElement as HTMLElement).querySelector('app-correccion-identidad-modal')).toBeTruthy();

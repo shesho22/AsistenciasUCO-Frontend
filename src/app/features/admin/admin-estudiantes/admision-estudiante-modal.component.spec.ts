@@ -116,7 +116,7 @@ describe('AdmisionEstudianteModalComponent (HU156)', () => {
       password: '',
       idPrograma: 'prog-1',
     });
-    expect(resultado).toEqual(admitidoDto);
+    expect(resultado as unknown).toEqual(admitidoDto);
     expect(toastService.success).toHaveBeenCalledWith('Estudiante admitido exitosamente.');
   });
 
@@ -141,7 +141,7 @@ describe('AdmisionEstudianteModalComponent (HU156)', () => {
 
     component.onGuardar();
 
-    expect(resultado).toEqual(admitidoDto);
+    expect(resultado as unknown).toEqual(admitidoDto);
     expect(toastService.warning).toHaveBeenCalled();
   });
 
