@@ -403,3 +403,36 @@ export interface CierrePeriodoReporte {
   ejecutadoPor: string;
 }
 
+// ================= D.4 (HU156): ADMISIÓN DE ESTUDIANTES =================
+
+export interface ProgramaInstitucionDto {
+  id: string;
+  codigo: string;
+  nombre: string;
+  idFacultad: string;
+  nombreFacultad: string;
+}
+
+export type EstadoCuentaAdmision = 'ACTIVA' | 'PENDIENTE_VERIFICACION' | 'PENDIENTE_SINCRONIZACION';
+
+export interface AdmisionEstudianteDto {
+  idEstudiante: string;
+  idUsuario: string;
+  esUsuarioNuevo: boolean;
+  estadoCuenta: EstadoCuentaAdmision;
+  cuentaReparada?: boolean;
+}
+
+export interface AdmisionEstudianteRequest {
+  tipoIdentificacionId: string;
+  numeroIdentificacion: number | string;
+  primerNombre: string;
+  segundoNombre?: string;
+  primerApellido: string;
+  segundoApellido?: string;
+  correo: string;
+  password?: string;
+  idPrograma: string;
+}
+
+
