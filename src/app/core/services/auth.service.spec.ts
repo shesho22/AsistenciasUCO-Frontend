@@ -1397,6 +1397,13 @@ describe('AuthService', () => {
       expect(profileFlag).toBeFalse();
     });
 
+    it('F-ADM-016: loginAsMockUser no persiste el rol mock en localStorage', () => {
+      localStorage.removeItem('gestio_asistencia_mock_role');
+      service.setMockMode(true);
+      service.loginAsMockUser('DOCENTE', false);
+      expect(localStorage.getItem('gestio_asistencia_mock_role')).toBeNull();
+    });
+
     it('en modo mock devuelve el usuario actual sin llamar a fetch', async () => {
       service.setMockMode(true);
       service.loginAsMockUser('DOCENTE', false);

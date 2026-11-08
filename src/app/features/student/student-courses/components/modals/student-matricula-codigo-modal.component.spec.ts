@@ -55,6 +55,19 @@ describe('StudentMatriculaCodigoModalComponent (HU176B)', () => {
     expect(component.pinValido()).toBeTrue();
   });
 
+  it('F-EST-012: con tokenInicial el botón confirmar está habilitado y emite el token', () => {
+    let emitido: any;
+    component.submitted.subscribe((v) => (emitido = v));
+    fixture.componentRef.setInput('tokenInicial', 'TOKEN_ABC_123');
+    fixture.detectChanges();
+
+    expect(component.pinValido()).toBeTrue();
+    expect(confirmar().disabled).toBeFalse();
+    confirmar().click();
+
+    expect(emitido).toEqual({ token: 'TOKEN_ABC_123' });
+  });
+
   it('Cancelar emite closed', () => {
     let cerrado = false;
     component.closed.subscribe(() => (cerrado = true));

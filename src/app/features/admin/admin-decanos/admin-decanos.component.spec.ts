@@ -326,7 +326,7 @@ describe('AdminDecanosComponent', () => {
       expect(toastService.warning).toHaveBeenCalledWith('La contraseña inicial de acceso es obligatoria.');
     });
 
-    it('valida longitud mínima de 12 caracteres', () => {
+    it('no valida longitud mínima de 12 caracteres en cliente (política delegada al backend, F-ADM-011)', () => {
       component.formData.tipoIdentificacionId = 'tipo-1';
       component.formData.numeroIdentificacion = '1020304050';
       component.formData.primerNombre = 'Ana';
@@ -334,29 +334,28 @@ describe('AdminDecanosComponent', () => {
       component.formData.correo = 'ana.mora@uco.edu.co';
       component.formData.password = 'Pass123!';
       component.guardarDecano();
-      expect(toastService.warning).toHaveBeenCalledWith('La contraseña inicial debe tener mínimo 12 caracteres según las políticas de Keycloak.');
+      // No debe advertir por longitud de 12 caracteres en cliente:
+      expect(toastService.warning).not.toHaveBeenCalledWith('La contraseña inicial debe tener mínimo 12 caracteres según las políticas de Keycloak.');
+      const req = http.expectOne(`${environment.apiUrl}/admin/decanos`);
+      expect(req.request.method).toBe('POST');
+      req.flush({ exitoso: true, datos: { ...mockDecanos[0], id: 'dec-nuevo' } });
     });
 
-    it('valida políticas de complejidad de contraseña (mayúscula, minúscula, dígito, símbolo)', () => {
-      component.formData.tipoIdentificacionId = 'tipo-1';
-      component.formData.numeroIdentificacion = '1020304050';
-      component.formData.primerNombre = 'Ana';
-      component.formData.primerApellido = 'Mora';
-      component.formData.correo = 'ana.mora@uco.edu.co';
-      component.formData.password = 'contraseniasinmayusculas123!';
-      component.guardarDecano();
-      expect(toastService.warning).toHaveBeenCalledWith('La contraseña debe incluir al menos una mayúscula, una minúscula, un número y un símbolo (!@#$%^&*()_+-=%).');
+    it('no utiliza GUID quemado ni CC como fallback cuando el catálogo está vacío (F-ADM-011)', () => {
+      component.tiposIdentificacion.set([]);
+      component.abrirFormularioRegistro();
+      expect(component.formData.tipoIdentificacionId).not.toContain('A1B2C3D4-0000-0000-0000-000000000001');
+      expect(component.formData.tipoIdentificacion).not.toBe('CC');
     });
 
-    it('valida que la contraseña no coincida con el documento ni correo', () => {
-      component.formData.tipoIdentificacionId = 'tipo-1';
-      component.formData.numeroIdentificacion = '1020304050';
-      component.formData.primerNombre = 'Ana';
-      component.formData.primerApellido = 'Mora';
-      component.formData.correo = 'Ana12345!@uco.edu.co';
-      component.formData.password = 'Ana12345!@uco.edu.co';
-      component.guardarDecano();
-      expect(toastService.warning).toHaveBeenCalledWith('La contraseña no puede coincidir con el documento de identidad ni con el correo.');
+    it('la tarjeta muestra el id del decano y no calcula DEC-{{numeroIdentificacion}} (F-ADM-011)', () => {
+      fixture.detectChanges();
+      satisfyInitRequests();
+      fixture.detectChanges();
+
+      const html = fixture.nativeElement.innerHTML as string;
+      expect(html).not.toContain('DEC-1017000001');
+      expect(html).toContain('dec-1');
     });
 
     it('guarda exitosamente el decano y actualiza la lista', () => {
