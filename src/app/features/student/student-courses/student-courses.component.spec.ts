@@ -301,6 +301,7 @@ describe('StudentCoursesComponent — soporte y radicación (LB-004D FE-01..FE-0
 
   describe('CULM-001 D.2 — soporte múltiple y estado individual por archivo (HU015, HU014)', () => {
     it('carga la configuración de reclamos al iniciar', () => {
+      component.ngOnInit();
       expect(claims.getConfiguracionReclamos).toHaveBeenCalled();
       expect(component.configuracionReclamos()?.maximoSoportes).toBe(3);
     });
@@ -569,6 +570,18 @@ describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', 
     component = fixture.componentInstance;
     fixture.detectChanges();
     http.expectOne(MATERIAS_URL).flush({ exitoso: true, datos: materias, total: materias.length });
+    http.match((r) => r.url.includes('/configuracion/reclamos')).forEach((req) =>
+      req.flush({
+        exitoso: true,
+        datos: {
+          maximoSoportes: 3,
+          tamanioMaximoBytes: 5242880,
+          tiposPermitidos: ['application/pdf'],
+          limiteSubidasPorMinuto: 10,
+          diasLimiteJustificacion: 5,
+        },
+      })
+    );
     fixture.detectChanges();
   }
 
@@ -714,6 +727,18 @@ describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', 
     component = fixture.componentInstance;
     fixture.detectChanges();
     http.expectOne(MATERIAS_URL).flush(null, { status: 500, statusText: 'err' });
+    http.match((r) => r.url.includes('/configuracion/reclamos')).forEach((req) =>
+      req.flush({
+        exitoso: true,
+        datos: {
+          maximoSoportes: 3,
+          tamanioMaximoBytes: 5242880,
+          tiposPermitidos: ['application/pdf'],
+          limiteSubidasPorMinuto: 10,
+          diasLimiteJustificacion: 5,
+        },
+      })
+    );
     fixture.detectChanges();
 
     expect(component.materiasError()?.kind).toBe('SERVIDOR');

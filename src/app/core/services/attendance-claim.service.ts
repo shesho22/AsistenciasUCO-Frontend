@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpContext, HttpParams } from '@angular/common/http';
-import { Observable, defer, map, of, switchMap, throwError } from 'rxjs';
+import { Observable, catchError, defer, map, of, switchMap, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiResponse } from '../models/api-response.model';
 import { ApiDataResponse } from '../api/models/api-data-response.model';
@@ -77,7 +77,18 @@ export class AttendanceClaimService {
   constructor(private http: HttpClient) {}
 
   getConfiguracionReclamos(): Observable<ApiDataResponse<ConfiguracionReclamosDTO>> {
-    return throwError(() => new Error('Not implemented'));
+    return this.http
+      .get<ApiDataResponse<ConfiguracionReclamosDTO>>(`${environment.apiUrl}/configuracion/reclamos`, {
+        context: new HttpContext().set(BYPASS_GLOBAL_ERROR_TOAST, true),
+      })
+      .pipe(
+        catchError(() =>
+          of({
+            exitoso: true,
+            datos: DEFAULT_CONFIGURACION_RECLAMOS,
+          })
+        )
+      );
   }
 
   subirSoporte(file: File): Observable<ApiDataResponse<{ fileId: string; nombre: string; url: string; tamanio: number }>> {
@@ -278,13 +289,16 @@ export class AttendanceClaimService {
       sesionId: string;
       categoria?: string;
       justificacion: string;
+      soporteArchivoIds?: string[];
       soporteArchivoId?: string;
     } = {
       sesionId: solicitud.sesionId,
       categoria: typeof solicitud.categoria === 'object' ? (solicitud.categoria?.nombre || solicitud.categoria?.codigo) : solicitud.categoria,
       justificacion: solicitud.justificacionSolicitud,
     };
-    if (solicitud.soporteAdjunto?.fileId) {
+    if (solicitud.soporteArchivoIds && solicitud.soporteArchivoIds.length > 0) {
+      payload.soporteArchivoIds = solicitud.soporteArchivoIds;
+    } else if (solicitud.soporteAdjunto?.fileId) {
       payload.soporteArchivoId = solicitud.soporteAdjunto.fileId;
     }
     return this.http.post<ApiResponse<SolicitudRevisionItem>>(
