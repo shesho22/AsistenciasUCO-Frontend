@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { CoordinatorProgramService } from '../../../core/services/coordinator-program.service';
+import { CoordinatorProgramSelectorComponent } from '../shared/coordinator-program-selector.component';
 import { CoordinatorIndicatorsService } from '../../../core/services/coordinator-indicators.service';
 import { AlertaTemprana, SemaforoAlerta } from '../../../core/models/coordinator-indicators.model';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
@@ -9,11 +11,12 @@ import { CoordinatorFichaModalComponent } from './components/coordinator-ficha-m
 @Component({
   selector: 'app-coordinator-indicators',
   standalone: true,
-  imports: [PaginationComponent, CoordinatorFichaModalComponent],
+  imports: [PaginationComponent, CoordinatorFichaModalComponent, CoordinatorProgramSelectorComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="space-y-6">
-      <header>
+      <header class="space-y-3">
+        <app-coordinator-program-selector (programaCambiado)="cambiarPrograma()" />
         <h1 class="text-2xl font-semibold text-neutral-900">Indicadores del programa</h1>
         @if (service.kpis(); as k) {
           <p class="text-sm text-neutral-600">{{ k.nombrePrograma }} · {{ k.nombrePeriodoAcademico ?? 'Sin período' }}</p>
@@ -85,6 +88,7 @@ import { CoordinatorFichaModalComponent } from './components/coordinator-ficha-m
 export class CoordinatorIndicatorsComponent implements OnInit {
   readonly service = inject(CoordinatorIndicatorsService);
   private readonly toast = inject(ToastService);
+  private readonly programa = inject(CoordinatorProgramService);
 
   readonly tamano = 10;
   readonly pagina = signal(1);
@@ -93,6 +97,15 @@ export class CoordinatorIndicatorsComponent implements OnInit {
   readonly estudianteFicha = signal<AlertaTemprana | null>(null);
 
   ngOnInit(): void {
+    // S4: se conocen los programas del coordinador antes de pedir cifras, para enviar siempre programaId.
+    this.programa.cargar().subscribe({
+      next: () => this.cargar(),
+      error: (e) => this.toast.error(getApiErrorMessage(e)),
+    });
+  }
+
+  cambiarPrograma(): void {
+    this.pagina.set(1);
     this.cargar();
   }
 

@@ -5,8 +5,8 @@ import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { CoordinatorStudyPlanMeshPageComponent } from './study-plan-mesh-page.component';
 import { ToastService } from '../../../../shared/components/toast/toast.component';
 import { environment } from '../../../../../environments/environment';
+import { paginaApi, porUrl } from '../../../../core/testing/pagina-api';
 import { PlanEstudioItem } from '../../../../core/models/role-management.model';
-import { CoordinatorManagementService } from '../../../../core/services/coordinator-management.service';
 
 describe('CoordinatorStudyPlanMeshPageComponent', () => {
   let fixture: ComponentFixture<CoordinatorStudyPlanMeshPageComponent>;
@@ -27,6 +27,22 @@ describe('CoordinatorStudyPlanMeshPageComponent', () => {
     totalAsignaturas: 1,
     estado: 'VIGENTE',
     descripcion: 'Malla curricular',
+  };
+
+  /** Fila de la malla tal como la entrega el backend (vínculo asignatura-plan). */
+  const vinculo = {
+    idAsignatura: 'asig-1',
+    codigo: 'SIS-101',
+    nombre: 'Algoritmos I',
+    credito: 4,
+    nombreArea: 'Software',
+    nombreComponente: 'Obligatoria',
+    idPlanEstudio: 'PLAN-SIS-2024',
+    idSemestrePlanEstudio: 'sem-1',
+    codigoSemestre: 'S1',
+    codigoCaracter: 'OBL',
+    nombreCaracter: 'Obligatoria',
+    compartida: true,
   };
 
   beforeEach(() => {
@@ -52,33 +68,20 @@ describe('CoordinatorStudyPlanMeshPageComponent', () => {
     component = fixture.componentInstance;
     fixture.detectChanges();
 
-    http.match(`${environment.apiUrl}/coordinador/planes-estudio`).forEach((req) =>
-      req.flush({ exitoso: true, datos: [mockPlan] })
+    http.match(porUrl(`${environment.apiUrl}/coordinador/planes-estudio`)).forEach((req) =>
+      req.flush(paginaApi([mockPlan]))
     );
     http.match(`${environment.apiUrl}/coordinador/periodos-academicos`).forEach((req) =>
       req.flush({ exitoso: true, datos: [] })
     );
     http
-      .match(`${environment.apiUrl}/coordinador/planes-estudio/PLAN-SIS-2024/asignaturas`)
-      .forEach((req) =>
-        req.flush({
-          exitoso: true,
-          datos: [
-            {
-              id: 'asig-1',
-              codigo: 'SIS-101',
-              nombre: 'Algoritmos I',
-              creditos: 4,
-              semestre: 1,
-              area: 'Software',
-              componente: 'Obligatoria',
-              horasSemanales: 4,
-            },
-          ],
-        })
-      );
+      .match(porUrl(`${environment.apiUrl}/coordinador/planes-estudio/PLAN-SIS-2024/asignaturas`))
+      .forEach((req) => req.flush(paginaApi([vinculo])));
     fixture.detectChanges();
   });
+
+  const urlMalla = `${environment.apiUrl}/coordinador/planes-estudio/PLAN-SIS-2024/asignaturas`;
+  const urlPlanes = `${environment.apiUrl}/coordinador/planes-estudio`;
 
   afterEach(() => {
     http.verify();
@@ -89,12 +92,62 @@ describe('CoordinatorStudyPlanMeshPageComponent', () => {
     expect(component.asignaturas().length).toBe(1);
   });
 
-  it('A2-F-04 no se renderiza el control de desvincular asignatura y el servicio no expone eliminarAsignaturaPlan', () => {
+  // CULM-001 B2NM (F-COO-005): reemplaza a A2-F-04, que ocultaba el control "hasta B2". Con B2 el control existe y llama al DELETE.
+  it('F-COO-005 la malla muestra la insignia de carácter y el control Desvincular del plan', () => {
     const el = fixture.nativeElement as HTMLElement;
     expect(el.textContent).toContain('Algoritmos I');
-    expect(el.querySelector('[title="Desvincular del plan"]')).toBeNull();
-    expect('eliminarAsignaturaPlan' in TestBed.inject(CoordinatorManagementService)).toBeFalse();
-    expect('eliminarAsignatura' in component).toBeFalse();
+    expect(el.textContent).toContain('Obligatoria');
+    expect(el.textContent).toContain('Compartida');
+    expect(el.querySelector('[title="Desvincular del plan"]')).not.toBeNull();
+    expect(el.textContent).toContain('Asociar asignatura existente');
+    expect(el.textContent).toContain('Nueva asignatura');
+  });
+
+  it('F-COO-005 quitar del plan pide confirmación, llama al DELETE y recarga la malla y los planes', () => {
+    spyOn(window, 'confirm').and.returnValue(true);
+    (fixture.nativeElement.querySelector('[title="Desvincular del plan"]') as HTMLButtonElement).click();
+
+    const del = http.expectOne(`${urlMalla}/asig-1`);
+    expect(del.request.method).toBe('DELETE');
+    del.flush({ exitoso: true, datos: null, mensajeUsuario: 'Asignatura quitada del plan.' });
+
+    expect(toastSpy.success).toHaveBeenCalledWith('Asignatura quitada del plan.');
+    http.expectOne(porUrl(urlMalla)).flush(paginaApi([]));
+    http.expectOne(porUrl(urlPlanes)).flush(paginaApi([mockPlan]));
+    expect(component.asignaturas()).toEqual([]);
+  });
+
+  it('F-COO-005 si se cancela la confirmación no se llama al backend', () => {
+    spyOn(window, 'confirm').and.returnValue(false);
+    component.quitarDelPlan(component.asignaturas()[0]);
+    http.expectNone(`${urlMalla}/asig-1`);
+    expect(component.asignaturas().length).toBe(1);
+  });
+
+  it('F-COO-005 ASI_005 explica el bloqueo con el mensaje del backend y conserva la malla', () => {
+    spyOn(window, 'confirm').and.returnValue(true);
+    component.quitarDelPlan(component.asignaturas()[0]);
+    http
+      .expectOne(`${urlMalla}/asig-1`)
+      .flush({ code: 'ASI_005', message: 'La asignatura tiene grupos con asistencia en este plan.' }, { status: 409, statusText: 'Conflict' });
+
+    expect(component.aviso()).toContain('tiene grupos con asistencia');
+    expect(toastSpy.error).toHaveBeenCalled();
+    expect(component.asignaturas().length).toBe(1);
+  });
+
+  it('F-COO-005 asociar una asignatura existente abre el diálogo y, al asociar, recarga la malla', () => {
+    component.abrirAsociar();
+    fixture.detectChanges();
+    expect(component.dialogoAsociarAbierto()).toBeTrue();
+    http.expectOne(`${environment.apiUrl}/coordinador/caracteres-asignatura`).flush({ exitoso: true, datos: [] });
+    http.expectOne(porUrl(`${urlPlanes}/PLAN-SIS-2024/asignaturas-asociables`)).flush(paginaApi([]));
+
+    component.alAsociar();
+    expect(component.dialogoAsociarAbierto()).toBeFalse();
+    expect(toastSpy.success).toHaveBeenCalledWith('Asignatura asociada al plan.');
+    http.expectOne(porUrl(urlMalla)).flush(paginaApi([vinculo]));
+    http.expectOne(porUrl(urlPlanes)).flush(paginaApi([mockPlan]));
   });
 
   it('navega a crear y editar asignatura usando rutas con planId', () => {
@@ -149,7 +202,7 @@ describe('CoordinatorStudyPlanMeshPageComponent', () => {
     http
       .expectOne(`${environment.apiUrl}/coordinador/planes-estudio/PLAN-SIS-2024/semestres`)
       .flush({ exitoso: false }, { status: 409, statusText: 'Conflict' });
-    http.expectOne(`${environment.apiUrl}/coordinador/planes-estudio`).flush({ exitoso: true, datos: [mockPlan] });
+    http.expectOne(porUrl(`${environment.apiUrl}/coordinador/planes-estudio`)).flush(paginaApi([mockPlan]));
 
     expect(component.aviso()).toBeTruthy();
     expect(component.selectedPlan()?.totalSemestres).toBe(10);
@@ -188,7 +241,7 @@ describe('CoordinatorStudyPlanMeshPageComponent', () => {
       { exitoso: false, mensajeUsuario: 'El semestre tiene asignaturas asociadas. Reubíquelas o elimínelas primero.' },
       { status: 409, statusText: 'Conflict' }
     );
-    http.expectOne(`${environment.apiUrl}/coordinador/planes-estudio`).flush({ exitoso: true, datos: [mockPlan] });
+    http.expectOne(porUrl(`${environment.apiUrl}/coordinador/planes-estudio`)).flush(paginaApi([mockPlan]));
 
     expect(toastSpy.error).toHaveBeenCalled();
     expect(component.aviso()).toBeTruthy();

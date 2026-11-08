@@ -2,7 +2,7 @@ import { Component, OnInit, inject, input, signal, computed, ChangeDetectionStra
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CoordinatorManagementService } from '../../../../core/services/coordinator-management.service';
-import { PlanEstudioItem, AsignaturaPlanItem, AreaConocimientoItem } from '../../../../core/models/role-management.model';
+import { PlanEstudioItem, AsignaturaPlanItem, AreaConocimientoItem, CaracterAsignatura } from '../../../../core/models/role-management.model';
 import { ComponenteFormacionItem } from '../../../../core/models/consultas-transversales.model';
 import { ConsultasTransversalesService } from '../../../../core/services/consultas-transversales.service';
 import { ToastService } from '../../../../shared/components/toast/toast.component';
@@ -25,6 +25,7 @@ import { SubjectFormComponent } from '../components/subject-form.component';
             [asignatura]="selectedAsignatura()"
             [componentes]="componentes()"
             [areas]="areas()"
+            [caracteres]="caracteres()"
             (save)="guardarAsignatura($event)"
             (cancel)="volverAMalla()"
           />
@@ -55,6 +56,7 @@ export class CoordinatorSubjectFormPageComponent implements OnInit {
   asignaturas = signal<AsignaturaPlanItem[]>([]);
   componentes = signal<ComponenteFormacionItem[]>([]);
   areas = signal<AreaConocimientoItem[]>([]);
+  caracteres = signal<CaracterAsignatura[]>([]);
 
   effectivePlanId = computed(() => {
     return this.planId() || this.route.snapshot.paramMap.get('planId') || '';
@@ -83,6 +85,10 @@ export class CoordinatorSubjectFormPageComponent implements OnInit {
     // HU147 / P5: el formulario solo ofrece componentes y áreas que existen en sus tablas.
     this.consultas.getComponentesFormacion().subscribe({
       next: (res) => this.componentes.set(res.datos || []),
+      error: (err) => this.toast.error(getApiErrorMessage(err)),
+    });
+    this.coordService.getCaracteresAsignatura().subscribe({
+      next: (res) => this.caracteres.set(res.datos || []),
       error: (err) => this.toast.error(getApiErrorMessage(err)),
     });
     this.coordService.getAreasConocimiento().subscribe({

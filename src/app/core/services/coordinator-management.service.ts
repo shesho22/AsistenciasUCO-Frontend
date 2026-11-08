@@ -1,8 +1,10 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { ApiResponse } from '../models/api-response.model';
+import { ApiPageResponse, ApiResponse } from '../models/api-response.model';
+import { obtenerTodasLasPaginas } from '../api/pagination.util';
+import { CoordinatorProgramService } from './coordinator-program.service';
 import {
   ActualizarDocentePayload,
   DocenteCandidato,
@@ -21,6 +23,8 @@ import {
   EstudianteDirectorioItem,
   PeriodoAcademicoItem,
   AreaConocimientoItem,
+  AsignaturaAsociable,
+  CaracterAsignatura,
 } from '../models/role-management.model';
 import { EstudiantePaginaApiDto } from '../api/models/estudiante-api-dto.model';
 import { AsistenciaSesionItem, GrupoProgramaItem, SesionGrupoItem } from '../models/asistencia-programa.model';
@@ -44,6 +48,21 @@ export function normalizarPlanEstudio(raw: any): PlanEstudioItem {
     totalAsignaturas: raw?.totalAsignaturas ?? null,
     estado: raw?.estado ?? (raw?.estaActivoPlanEstudio === false ? 'INACTIVO' : 'VIGENTE'),
     descripcion: raw?.descripcion ?? raw?.justificacionEstado ?? '',
+    ...(raw?.idPrograma ? { idPrograma: raw.idPrograma as string } : {}),
+  };
+}
+
+/** Estudiante del directorio del coordinador (`GET /coordinador/estudiantes`, elementos paginados, O2-B2). */
+export function normalizarEstudianteDirectorio(raw: any): EstudianteDirectorioItem {
+  return {
+    id: raw?.id,
+    documento: raw?.numeroIdentificacion != null ? String(raw.numeroIdentificacion) : (raw?.documento ?? ''),
+    codigo: raw?.codigo ?? '',
+    nombreCompleto: raw?.nombreCompleto ?? '',
+    correo: raw?.correo ?? '',
+    programa: raw?.nombrePrograma ?? raw?.programa ?? '',
+    idPrograma: raw?.idPrograma,
+    estadoMatricula: raw?.estadoMatricula ?? 'ACTIVO',
   };
 }
 
@@ -78,6 +97,8 @@ export function normalizarAsignaturaPlan(raw: any): AsignaturaPlanItem {
   const semestre = raw?.semestre ?? Number(String(raw?.codigoSemestre ?? '').replace(/\D/g, '') || 0);
   return {
     ...raw,
+    // CULM-001 B2NM: la malla trae `idAsignatura` (la fila es el vínculo asignatura-plan).
+    id: raw?.id ?? raw?.idAsignatura,
     planEstudioId: raw?.planEstudioId ?? raw?.idPlanEstudio,
     creditos: raw?.creditos ?? raw?.credito ?? 0,
     semestre,
@@ -100,6 +121,7 @@ export function aSolicitudAsignatura(datos: Partial<AsignaturaPlanItem>): Record
     semestreNumero: datos.semestre,
     nombreArea: datos.area,
     nombreComponente: datos.componente,
+    codigoCaracter: datos.codigoCaracter,
   };
 }
 
@@ -132,7 +154,14 @@ export class CoordinatorManagementService {
   private estudiantesSignal = signal<EstudianteDirectorioItem[]>([]);
   public estudiantes = this.estudiantesSignal.asReadonly();
 
+  private readonly programaService = inject(CoordinatorProgramService);
+
   constructor(private http: HttpClient) {}
+
+  /** S4: el programa seleccionado por el coordinador (nulo mientras no se conozcan sus programas). */
+  private programaIdActual(): string | null {
+    return this.programaService.programaId();
+  }
 
   /**
    * Carga planes de estudio y periodos academicos (endpoints /coordinador/**) bajo demanda.
@@ -251,9 +280,14 @@ export class CoordinatorManagementService {
     return this.asignaturasSignal()[planId] || [];
   }
 
-  getPlanesEstudio(): Observable<ApiResponse<PlanEstudioItem[]>> {
-    return this.http.get<ApiResponse<PlanEstudioItem[]>>(`${environment.apiUrl}/coordinador/planes-estudio`).pipe(
-      map((res) => (res.datos ? { ...res, datos: res.datos.map(normalizarPlanEstudio) } : res)),
+  /** Lista los planes (páginas de 100 hasta agotarlas; la UI aún no pagina esta lista, contrato §4.1). */
+  getPlanesEstudio(programaId?: string | null): Observable<ApiResponse<PlanEstudioItem[]>> {
+    return obtenerTodasLasPaginas<PlanEstudioItem>(
+      this.http,
+      `${environment.apiUrl}/coordinador/planes-estudio`,
+      paramsPrograma(programaId)
+    ).pipe(
+      map(({ elementos, total }) => ({ exitoso: true, datos: elementos.map(normalizarPlanEstudio), total })),
       tap((res) => {
         if (res.exitoso && res.datos) {
           this.planesSignal.set(res.datos);
@@ -293,9 +327,13 @@ export class CoordinatorManagementService {
     );
   }
 
+  /** Malla vigente del plan (vínculos activos). Lee todas las páginas; la UI filtra y pagina sobre la lista. */
   getAsignaturasPorPlan(planId: string): Observable<ApiResponse<AsignaturaPlanItem[]>> {
-    return this.http.get<ApiResponse<AsignaturaPlanItem[]>>(`${environment.apiUrl}/coordinador/planes-estudio/${planId}/asignaturas`).pipe(
-      map((res) => (res.datos ? { ...res, datos: res.datos.map(normalizarAsignaturaPlan) } : res)),
+    return obtenerTodasLasPaginas<AsignaturaPlanItem>(
+      this.http,
+      `${environment.apiUrl}/coordinador/planes-estudio/${planId}/asignaturas`
+    ).pipe(
+      map(({ elementos, total }) => ({ exitoso: true, datos: elementos.map(normalizarAsignaturaPlan), total })),
       tap((res) => {
         if (res.exitoso && res.datos) {
           this.asignaturasSignal.update((map) => ({ ...map, [planId]: res.datos }));
@@ -342,6 +380,65 @@ export class CoordinatorManagementService {
         }
       })
     );
+  }
+
+  /** F-COO-005: asocia una asignatura existente al plan (201). Errores ASI_003, PLA_004 y PLA_006 con el mensaje del backend. */
+  asociarAsignaturaPlan(
+    planId: string,
+    cuerpo: { idAsignatura: string; semestreNumero: number; codigoCaracter: string }
+  ): Observable<ApiResponse<AsignaturaPlanItem>> {
+    return this.http.post<ApiResponse<AsignaturaPlanItem>>(
+      `${environment.apiUrl}/coordinador/planes-estudio/${planId}/asignaturas-asociadas`,
+      cuerpo
+    );
+  }
+
+  /** F-COO-005: quita la asignatura del plan (200). ASI_005 explica el bloqueo por grupos o asistencia. */
+  desvincularAsignaturaPlan(planId: string, asigId: string): Observable<ApiResponse<null>> {
+    return this.http
+      .delete<ApiResponse<null>>(`${environment.apiUrl}/coordinador/planes-estudio/${planId}/asignaturas/${asigId}`)
+      .pipe(
+        tap((res) => {
+          if (res.exitoso) {
+            this.asignaturasSignal.update((mapa) => ({
+              ...mapa,
+              [planId]: (mapa[planId] || []).filter((a) => a.id !== asigId),
+            }));
+          }
+        })
+      );
+  }
+
+  /** Asignaturas que todavía no están en el plan, paginadas y con búsqueda por código o nombre. */
+  buscarAsignaturasAsociables(
+    planId: string,
+    filtro: { busqueda?: string | null; pagina: number; tamano: number }
+  ): Observable<ApiPageResponse<AsignaturaAsociable>> {
+    return this.http.get<ApiPageResponse<AsignaturaAsociable>>(
+      `${environment.apiUrl}/coordinador/planes-estudio/${planId}/asignaturas-asociables`,
+      { params: parametrosConsulta({ busqueda: filtro.busqueda, pagina: filtro.pagina, tamano: filtro.tamano }) }
+    );
+  }
+
+  /** Catálogo de carácter de la asignatura (obligatoria u optativa). */
+  getCaracteresAsignatura(): Observable<{ exitoso: boolean; datos: CaracterAsignatura[] }> {
+    return this.http.get<{ exitoso: boolean; datos: CaracterAsignatura[] }>(
+      `${environment.apiUrl}/coordinador/caracteres-asignatura`
+    );
+  }
+
+  /** Una fila por (asignatura, plan) del programa; programaId es obligatorio con varios programas. */
+  getAsignaturasPrograma(filtro: {
+    busqueda?: string | null;
+    estaActiva?: boolean | null;
+    pagina: number;
+    tamano: number;
+  }): Observable<ApiPageResponse<AsignaturaPlanItem>> {
+    return this.http
+      .get<ApiPageResponse<AsignaturaPlanItem>>(`${environment.apiUrl}/coordinador/asignaturas`, {
+        params: parametrosConsulta({ ...filtro, programaId: this.programaIdActual() }),
+      })
+      .pipe(map((p) => ({ ...p, elementos: p.elementos.map(normalizarAsignaturaPlan) })));
   }
 
   /** P5: áreas de conocimiento reales para el formulario de asignaturas (GET /admin/areas, lectura compartida). */
@@ -402,7 +499,12 @@ export class CoordinatorManagementService {
 
   // --- DIRECTORIO INSTITUCIONAL DE ESTUDIANTES ---
   getEstudiantesDirectorio(): Observable<ApiResponse<EstudianteDirectorioItem[]>> {
-    return this.http.get<ApiResponse<EstudianteDirectorioItem[]>>(`${environment.apiUrl}/coordinador/estudiantes`).pipe(
+    return obtenerTodasLasPaginas<EstudianteDirectorioItem>(
+      this.http,
+      `${environment.apiUrl}/coordinador/estudiantes`,
+      paramsPrograma(this.programaIdActual())
+    ).pipe(
+      map(({ elementos, total }) => ({ exitoso: true, datos: elementos.map(normalizarEstudianteDirectorio), total })),
       tap((res) => {
         if (res.exitoso && res.datos) {
           this.estudiantesSignal.set(res.datos);
@@ -416,11 +518,12 @@ export class CoordinatorManagementService {
   ): Observable<EstudiantePaginaApiDto> {
     if (environment.useFrontendMocks) {
       return this.http
-        .get<ApiResponse<EstudianteDirectorioItem[]>>(`${environment.apiUrl}/coordinador/estudiantes`)
+        .get<ApiPageResponse<EstudianteDirectorioItem>>(`${environment.apiUrl}/coordinador/estudiantes`)
         .pipe(
           map((response) => {
             const start = query.page * query.size;
-            const filtered = (response.datos || [])
+            const filtered = (response.elementos || [])
+              .map(normalizarEstudianteDirectorio)
               .filter((item) => !query.nombre || item.nombreCompleto.toLowerCase().includes(query.nombre.toLowerCase()))
               .filter((item) => query.activo === undefined || (item.estadoMatricula === 'ACTIVO') === query.activo);
             const items = filtered
@@ -457,6 +560,8 @@ export class CoordinatorManagementService {
     if (query.nombre) params['nombre'] = query.nombre;
     if (query.numeroIdentificacion) params['numeroIdentificacion'] = query.numeroIdentificacion;
     if (query.activo !== undefined) params['activo'] = String(query.activo);
+    const programaId = this.programaIdActual();
+    if (programaId) params['programaId'] = programaId;
     return this.http.get<EstudiantePaginaApiDto>(`${environment.apiUrl}/estudiantes`, { params });
   }
 
@@ -494,6 +599,10 @@ export class CoordinatorManagementService {
       { params: parametrosConsulta(filtro) }
     );
   }
+}
+
+function paramsPrograma(programaId: string | null | undefined): HttpParams {
+  return programaId ? new HttpParams().set('programaId', programaId) : new HttpParams();
 }
 
 /** Omite los filtros vacios para que el backend aplique sus valores por defecto. */
