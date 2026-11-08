@@ -5,6 +5,7 @@ import { environment } from '../../../environments/environment';
 import { ApiListResponse } from '../api/models/api-list-response.model';
 import { EstudianteGrupoApiDto } from '../api/models/estudiante-grupo-api-dto.model';
 import { GrupoApiDto } from '../api/models/grupo-api-dto.model';
+import { ProgramaResumen } from '../models/role-management.model';
 import { MOCK_ESTUDIANTES_DIRECTORIO } from '../mocks/role-management.mock';
 import { BYPASS_GLOBAL_ERROR_TOAST } from '../interceptors/error.interceptor';
 
@@ -23,6 +24,16 @@ export class GroupService {
       `${environment.apiUrl}/docente/grupos/${encodeURIComponent(grupoId)}/estudiantes/${encodeURIComponent(estudianteId)}/retiro`,
       { motivo },
       { context: new HttpContext().set(BYPASS_GLOBAL_ERROR_TOAST, true) }
+    );
+  }
+
+  /**
+   * CULM-001 B2NM: programas del grupo (el docente titular, el coordinador o el decano con ámbito). Con más de uno, la
+   * matrícula manual y la ventana QR piden el programa del estudiante.
+   */
+  getProgramasGrupo(grupoId: string): Observable<ApiListResponse<ProgramaResumen>> {
+    return this.http.get<ApiListResponse<ProgramaResumen>>(
+      `${environment.apiUrl}/grupos/${encodeURIComponent(grupoId)}/programas`
     );
   }
 

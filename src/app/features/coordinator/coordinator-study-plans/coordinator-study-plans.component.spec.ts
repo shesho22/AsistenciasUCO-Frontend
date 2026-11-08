@@ -6,6 +6,7 @@ import { CoordinatorStudyPlansComponent } from './coordinator-study-plans.compon
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { environment } from '../../../../environments/environment';
 import { PlanEstudioItem } from '../../../core/models/role-management.model';
+import { paginaApi, porUrl } from '../../../core/testing/pagina-api';
 
 describe('CoordinatorStudyPlansComponent', () => {
   let fixture: ComponentFixture<CoordinatorStudyPlansComponent>;
@@ -49,8 +50,8 @@ describe('CoordinatorStudyPlansComponent', () => {
     component = fixture.componentInstance;
     fixture.detectChanges();
 
-    http.match(`${environment.apiUrl}/coordinador/planes-estudio`).forEach((req) =>
-      req.flush({ exitoso: true, datos: mockPlanes })
+    http.match(porUrl(`${environment.apiUrl}/coordinador/planes-estudio`)).forEach((req) =>
+      req.flush(paginaApi(mockPlanes))
     );
     http.match(`${environment.apiUrl}/coordinador/periodos-academicos`).forEach((req) =>
       req.flush({ exitoso: true, datos: [] })
@@ -105,10 +106,9 @@ describe('CoordinatorStudyPlansComponent', () => {
       mensajeUsuario: 'Estado actualizado correctamente.',
     });
 
-    http.expectOne(`${environment.apiUrl}/coordinador/planes-estudio`).flush({
-      exitoso: true,
-      datos: [{ ...mockPlanes[0], estado: 'INACTIVO' }],
-    });
+    http
+      .expectOne(porUrl(`${environment.apiUrl}/coordinador/planes-estudio`))
+      .flush(paginaApi([{ ...mockPlanes[0], estado: 'INACTIVO' }]));
 
     expect(toastSpy.success).toHaveBeenCalledWith('Estado actualizado correctamente.');
   });
@@ -124,7 +124,7 @@ describe('CoordinatorStudyPlansComponent', () => {
 
   it('muestra error toast si cargarPlanes falla', () => {
     component.cargarPlanes();
-    const req = http.expectOne(`${environment.apiUrl}/coordinador/planes-estudio`);
+    const req = http.expectOne(porUrl(`${environment.apiUrl}/coordinador/planes-estudio`));
     req.flush({ error: 'Fallo al cargar' }, { status: 500, statusText: 'Server Error' });
 
     expect(toastSpy.error).toHaveBeenCalled();

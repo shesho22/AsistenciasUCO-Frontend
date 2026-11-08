@@ -7,6 +7,7 @@ import {
 import { CourseService } from './course.service';
 import { environment } from '../../../environments/environment';
 import { Course } from '../models/course.model';
+import { grupoFacultadApi, paginaApi, porUrl } from '../testing/pagina-api';
 import { AsignaturaDocenteApiDto } from '../api/models/asignatura-docente-api-dto.model';
 
 const GRUPO_ARQ = 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d';
@@ -365,11 +366,13 @@ describe('CourseService', () => {
     let courses: Course[] = [];
     service.getDeanCourses().subscribe((res) => (courses = res.datos));
 
-    const req = http.expectOne(`${environment.apiUrl}/decano/grupos`);
+    const req = http.expectOne(porUrl(`${environment.apiUrl}/decano/grupos`));
     expect(req.request.method).toBe('GET');
-    req.flush({ exitoso: true, total: 2, datos: [grupoApi(), grupoApi({ id: 'g2', codigo: 'SIS-102' })] });
+    expect(req.request.params.get('tamano')).toBe('100');
+    req.flush(paginaApi([grupoFacultadApi(), grupoFacultadApi({ idGrupo: 'g2', codigo: 'SIS-102', programas: ['Sistemas', 'Software'] })]));
 
     expect(courses.length).toBe(2);
+    expect(courses[1].programas).toEqual(['Sistemas', 'Software']);
     http.expectNone(`${environment.apiUrl}/docente/asignaturas`);
     http.expectNone(`${environment.apiUrl}/docente/horarios`);
   });
@@ -390,7 +393,7 @@ describe('CourseService', () => {
   it('el mapeo del grupo conserva solo lo que entrega el contrato', () => {
     let courses: Course[] = [];
     service.getDeanCourses().subscribe((res) => (courses = res.datos));
-    http.expectOne(`${environment.apiUrl}/decano/grupos`).flush({ exitoso: true, total: 1, datos: [grupoApi()] });
+    http.expectOne(porUrl(`${environment.apiUrl}/decano/grupos`)).flush(paginaApi([grupoFacultadApi()]));
 
     expect(courses[0]).toEqual(jasmine.objectContaining({
       id: 'g1',
@@ -422,7 +425,7 @@ describe('CourseService', () => {
   it('una respuesta sin datos produce una lista vacía exitosa', () => {
     let resultado: { exitoso: boolean; total?: number; datos: Course[] } | null = null;
     service.getDeanCourses().subscribe((res) => (resultado = res));
-    http.expectOne(`${environment.apiUrl}/decano/grupos`).flush({ exitoso: true });
+    http.expectOne(porUrl(`${environment.apiUrl}/decano/grupos`)).flush(paginaApi([]));
 
     expect(resultado!.exitoso).toBeTrue();
     expect(resultado!.datos).toEqual([]);
@@ -432,7 +435,7 @@ describe('CourseService', () => {
   it('un 403 del backend se propaga sin reintentar con otro endpoint', () => {
     let status = 0;
     service.getDeanCourses().subscribe({ error: (err) => (status = err.status) });
-    http.expectOne(`${environment.apiUrl}/decano/grupos`).flush({ message: 'No autorizado' }, { status: 403, statusText: 'Forbidden' });
+    http.expectOne(porUrl(`${environment.apiUrl}/decano/grupos`)).flush({ message: 'No autorizado' }, { status: 403, statusText: 'Forbidden' });
 
     expect(status).toBe(403);
     http.expectNone(`${environment.apiUrl}/docente/asignaturas`);

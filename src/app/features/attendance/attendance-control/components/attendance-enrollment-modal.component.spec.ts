@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { environment } from '../../../../../environments/environment';
 import { of, throwError } from 'rxjs';
 import { AttendanceEnrollmentModalComponent } from './attendance-enrollment-modal.component';
 import { StudentService } from '../../../../core/services/student.service';
@@ -312,5 +313,69 @@ describe('AttendanceEnrollmentModalComponent', () => {
     expect(component.firstName()).toBe('');
     expect(cerrado).toBeTrue();
   });
-});
 
+  // CULM-001 B2NM: el docente elige el programa del estudiante solo cuando el grupo tiene más de uno.
+  describe('programa del estudiante en grupos mixtos', () => {
+    let http: HttpTestingController;
+    const url = `${environment.apiUrl}/grupos/grupo-7/programas`;
+
+    beforeEach(() => {
+      http = TestBed.inject(HttpTestingController);
+    });
+
+    it('consulta los programas del grupo al abrir y, con uno solo, no muestra el selector ni envía idPrograma', () => {
+      http.expectOne(url).flush({ exitoso: true, total: 1, datos: [{ idPrograma: 'prg-a', nombrePrograma: 'Sistemas' }] });
+      fixture.detectChanges();
+      let emitido: { idPrograma?: string } | null = null;
+      component.submitted.subscribe((p) => (emitido = p));
+
+      expect(component.programas().length).toBe(1);
+      expect(component.idPrograma()).toBe('prg-a');
+      expect(fixture.nativeElement.textContent).not.toContain('Programa del estudiante');
+      component.docType.set('tipo-cc');
+      component.code.set('1017123456');
+      component.onSubmit(new Event('submit'));
+      expect(emitido!.idPrograma).toBeUndefined();
+    });
+
+    it('con varios programas muestra el selector, exige elegir uno y envía idPrograma', () => {
+      http.expectOne(url).flush({
+        exitoso: true, total: 2,
+        datos: [{ idPrograma: 'prg-a', nombrePrograma: 'Sistemas' }, { idPrograma: 'prg-b', nombrePrograma: 'Software' }],
+      });
+      fixture.detectChanges();
+      const emitidos: { idPrograma?: string }[] = [];
+      component.submitted.subscribe((p) => emitidos.push(p));
+
+      const host = fixture.nativeElement as HTMLElement;
+      expect(host.textContent).toContain('Programa del estudiante');
+      expect(component.opcionesPrograma().map((o) => o.label)).toEqual(['Sistemas', 'Software']);
+      expect(component.faltaPrograma()).toBeTrue();
+
+      component.docType.set('tipo-cc');
+      component.code.set('1017123456');
+      component.onSubmit(new Event('submit'));
+      expect(emitidos.length).toBe(0);
+
+      component.idPrograma.set('prg-b');
+      expect(component.faltaPrograma()).toBeFalse();
+      component.onSubmit(new Event('submit'));
+      expect(emitidos[0].idPrograma).toBe('prg-b');
+    });
+
+    it('si la consulta de programas falla no muestra selector (el backend responde EST_005 si hace falta)', () => {
+      http.expectOne(url).flush({ message: 'Error' }, { status: 500, statusText: 'Error' });
+      expect(component.programas()).toEqual([]);
+      expect(component.faltaPrograma()).toBeFalse();
+    });
+
+    it('cerrado no consulta y al cambiar de grupo reinicia la selección', () => {
+      http.expectOne(url).flush({ exitoso: true, total: 0, datos: [] });
+      fixture.componentRef.setInput('isOpen', false);
+      fixture.detectChanges();
+      http.expectNone(`${environment.apiUrl}/grupos/grupo-7/programas`);
+      expect(component.programas()).toEqual([]);
+      expect(component.idPrograma()).toBe('');
+    });
+  });
+});

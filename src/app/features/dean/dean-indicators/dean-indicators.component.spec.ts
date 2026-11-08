@@ -28,7 +28,7 @@ describe('DeanIndicatorsComponent', () => {
     tasaRetencion: null, sesionesEjecutadas: 0, faltasSinJustaCausa: 0, porcentajeAusentismo: null,
   };
   const g1: AforoGrupo = {
-    idGrupo: 'g-1', codigoGrupo: 931001, idAsignatura: 'a-1', nombreAsignatura: 'Estructuras de Datos', idPrograma: 'p-1', nombrePrograma: 'Sistemas',
+    idGrupo: 'g-1', codigoGrupo: 931001, idAsignatura: 'a-1', nombreAsignatura: 'Estructuras de Datos', programas: ['Sistemas'],
     cupoMaximo: 10, matriculadosActivos: 5, cuposDisponibles: 5, tasaAforo: 50, grupoEstaHabilitado: true,
   };
 

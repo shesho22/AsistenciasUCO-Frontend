@@ -144,6 +144,9 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
                     <td class="px-5 py-4">
                       <div class="font-bold text-warm-900">{{ c.name }}</div>
                       <div class="text-xs text-warm-500 font-mono">{{ c.code }} • {{ c.section }}</div>
+                      @if (c.programas?.length) {
+                        <div class="text-xs text-warm-600 mt-0.5">{{ c.programas?.join(', ') }}</div>
+                      }
                     </td>
                     <td class="px-5 py-4">
                       <div class="text-xs text-warm-600">Cátedra Institucional</div>

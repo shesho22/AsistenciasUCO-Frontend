@@ -27,6 +27,9 @@ export interface GrupoOferta {
   /** ESPECIFICA (propia del programa), BASICA o INSTITUCIONAL (transversales). */
   tipoAsignatura: 'ESPECIFICA' | 'BASICA' | 'INSTITUCIONAL' | null;
   transversal: boolean;
+  /** CULM-001 B2NM: carácter de la asignatura en el plan del estudiante (OBL/OPT); nulo en las transversales. */
+  codigoCaracter?: string | null;
+  nombreCaracter?: string | null;
 }
 
 export interface FiltroOfertaAcademica {

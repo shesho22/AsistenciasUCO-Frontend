@@ -6,6 +6,8 @@ import { ApiResponse } from '../models/api-response.model';
 import { ApiListResponse } from '../api/models/api-list-response.model';
 import { AsignaturaDocenteApiDto } from '../api/models/asignatura-docente-api-dto.model';
 import { GrupoApiDto } from '../api/models/grupo-api-dto.model';
+import { GrupoFacultadApiDto } from '../api/models/grupo-facultad-api-dto.model';
+import { obtenerTodasLasPaginas } from '../api/pagination.util';
 import { HorarioDocenteApiDto } from '../api/models/horario-docente-api-dto.model';
 import { OfertaCreacionGruposDocenteApiDto } from '../api/models/oferta-creacion-grupos-docente-api-dto.model';
 import { Course, FranjaHorario } from '../models/course.model';
@@ -66,7 +68,36 @@ export class CourseService {
    * autenticado y responden 403 a cualquier otro rol.
    */
   getDeanCourses(): Observable<ApiResponse<Course[]>> {
-    return this.getGroupsAsCourses('decano/grupos');
+    if (environment.useMocks) {
+      return this.getGroupsAsCourses('decano/grupos');
+    }
+    // B2NM: `GET /decano/grupos` es una página; la UI aún no pagina, así que se leen las páginas de 100 (contrato §4.1).
+    return obtenerTodasLasPaginas<GrupoFacultadApiDto>(this.http, `${environment.apiUrl}/decano/grupos`).pipe(
+      map(({ elementos }) => ({
+        exitoso: true,
+        total: elementos.length,
+        datos: this.buildCoursesFromGruposFacultad(elementos),
+      }))
+    );
+  }
+
+  private buildCoursesFromGruposFacultad(grupos: GrupoFacultadApiDto[]): Course[] {
+    const colors: Course['colorCategory'][] = ['emerald', 'amber', 'blue', 'purple'];
+    return grupos.map(
+      (grupo, index): Course => ({
+        id: grupo.idGrupo,
+        code: grupo.codigo,
+        name: grupo.nombreAsignatura,
+        section: grupo.nombre,
+        schedule: '',
+        asignaturaId: grupo.idAsignatura,
+        docenteId: grupo.idDocente,
+        enrolledStudentsCount: grupo.estudiantesActivos,
+        cupoMaximo: grupo.capacidadMaximaPermitida,
+        programas: grupo.programas ?? [],
+        colorCategory: colors[index % colors.length],
+      })
+    );
   }
 
   /** Grupos para el coordinador (GET /grupos). Nunca usa los endpoints del docente (403 para su rol). */
@@ -256,8 +287,7 @@ export class CourseService {
               idAsignatura: 'E2F3A4B5-0000-0000-0000-000000000001',
               codigoAsignatura: 'SIS401',
               nombreAsignatura: 'Arquitectura de Software',
-              idPrograma: 'AAAAAAAA-0000-0000-0000-000000000001',
-              nombrePrograma: 'Ingeniería de Sistemas',
+              programas: ['Ingeniería de Sistemas'],
             },
           ],
         },
