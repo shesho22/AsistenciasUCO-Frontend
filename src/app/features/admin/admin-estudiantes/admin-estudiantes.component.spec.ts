@@ -115,4 +115,117 @@ describe('AdminEstudiantesComponent (HU157)', () => {
     buscar.click();
     http.expectOne((r) => r.url === BASE).flush({ exitoso: true, datos: [], total: 0 });
   });
+
+  it('HU156: botón "Admitir estudiante" abre y cierra el modal de admisión', () => {
+    expect(component.modalAdmisionAbierto()).toBeFalse();
+    const btnAdmitir = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('button'))
+      .find((b) => b.textContent?.trim().includes('Admitir estudiante'));
+    expect(btnAdmitir).toBeTruthy();
+
+    btnAdmitir?.click();
+    fixture.detectChanges();
+    expect(component.modalAdmisionAbierto()).toBeTrue();
+    expect((fixture.nativeElement as HTMLElement).querySelector('app-admision-estudiante-modal')).toBeTruthy();
+
+    component.cerrarAdmision();
+    fixture.detectChanges();
+    expect(component.modalAdmisionAbierto()).toBeFalse();
+  });
+
+  it('HU156: cuando el modal emite admitido, recarga el listado de estudiantes', () => {
+    component.modalAdmisionAbierto.set(true);
+    component.onEstudianteAdmitido({
+      idEstudiante: 'e-nuevo',
+      idUsuario: 'u-nuevo',
+      esUsuarioNuevo: true,
+      estadoCuenta: 'ACTIVA',
+    });
+    expect(component.modalAdmisionAbierto()).toBeFalse();
+    http.expectOne((r) => r.url === BASE).flush({ exitoso: true, datos: [estudiante], total: 1 });
+  });
+
+  it('HU156: botón "Corregir identidad" en la fila abre el modal con datos del estudiante y envía PUT al guardar', () => {
+    const btnCorregir = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('button'))
+      .find((b) => b.textContent?.trim().includes('Corregir identidad'));
+    expect(btnCorregir).toBeTruthy();
+
+    btnCorregir?.click();
+    fixture.detectChanges();
+
+    expect(component.estudianteACorregir()).toEqual(estudiante);
+    expect((fixture.nativeElement as HTMLElement).querySelector('app-correccion-identidad-modal')).toBeTruthy();
+
+    component.corregirEstudiante(estudiante, {
+      primerNombre: 'Ana',
+      segundoNombre: '',
+      primerApellido: 'Ruiz',
+      segundoApellido: 'Gómez',
+      motivo: 'Corrección de segundo apellido',
+    });
+
+    const putReq = http.expectOne(`${BASE}/e-1/identidad`);
+    expect(putReq.request.method).toBe('PUT');
+    expect(putReq.request.body.motivo).toBe('Corrección de segundo apellido');
+
+    putReq.flush({
+      exitoso: true,
+      datos: {
+        idRegistro: 'e-1',
+        sincronizacionIdentidad: 'OK',
+        mensajeUsuario: 'Identidad corregida',
+      },
+    });
+
+    expect(toastSpy.success).toHaveBeenCalledWith('Los datos del estudiante fueron corregidos.');
+    expect(component.estudianteACorregir()).toBeNull();
+    http.expectOne((r) => r.url === BASE).flush({ exitoso: true, datos: [estudiante], total: 1 });
+  });
+
+  it('HU156: si la sincronización queda PENDIENTE muestra toast warning', () => {
+    component.estudianteACorregir.set(estudiante);
+    component.corregirEstudiante(estudiante, {
+      primerNombre: 'Ana',
+      segundoNombre: '',
+      primerApellido: 'Ruiz',
+      segundoApellido: '',
+      motivo: 'Ajuste',
+    });
+
+    const putReq = http.expectOne(`${BASE}/e-1/identidad`);
+    putReq.flush({
+      exitoso: true,
+      datos: {
+        idRegistro: 'e-1',
+        sincronizacionIdentidad: 'PENDIENTE',
+        mensajeUsuario: 'Pendiente de sincronizar',
+      },
+    });
+
+    expect(toastSpy.warning).toHaveBeenCalled();
+    expect(component.estudianteACorregir()).toBeNull();
+    http.expectOne((r) => r.url === BASE).flush({ exitoso: true, datos: [estudiante], total: 1 });
+  });
+
+  it('HU156: si la corrección falla por 409 o 400 deja el error y no cierra el modal', () => {
+    component.estudianteACorregir.set(estudiante);
+    component.corregirEstudiante(estudiante, {
+      primerNombre: 'Ana',
+      segundoNombre: '',
+      primerApellido: 'Ruiz',
+      segundoApellido: '',
+      motivo: 'Duplicado',
+    });
+
+    http.expectOne(`${BASE}/e-1/identidad`).flush(
+      { exitoso: false, mensajeUsuario: 'Conflicto de documento' },
+      { status: 409, statusText: 'Conflict' }
+    );
+
+    expect(component.errorCorreccion()).toBeTruthy();
+    expect(component.estudianteACorregir()).toEqual(estudiante);
+
+    component.cerrarCorreccion();
+    expect(component.estudianteACorregir()).toBeNull();
+    expect(component.errorCorreccion()).toBeNull();
+  });
 });
