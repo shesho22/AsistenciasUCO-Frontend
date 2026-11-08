@@ -4,7 +4,8 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { BehaviorSubject, Subject } from 'rxjs';
 import { CoordinatorAttendanceComponent } from './coordinator-attendance.component';
 import { RealtimeService } from '../../../core/realtime/realtime.service';
-import { ConnectionState, RealtimeEvent } from '../../../core/realtime/model/realtime-event.model';
+import { RealtimeConnectionState } from '../../../core/realtime/model/realtime-connection-state.model';
+import { RealtimeEvent } from '../../../core/realtime/model/realtime-event.model';
 import { GrupoProgramaItem } from '../../../core/models/asistencia-programa.model';
 import { environment } from '../../../../environments/environment';
 
@@ -29,18 +30,18 @@ describe('CoordinatorAttendanceComponent - Realtime SSE (C-F-51..C-F-53)', () =>
   let fixture: ComponentFixture<CoordinatorAttendanceComponent>;
   let component: CoordinatorAttendanceComponent;
   let http: HttpTestingController;
-  let connectionState$: BehaviorSubject<ConnectionState>;
+  let connectionState$: BehaviorSubject<RealtimeConnectionState>;
   let events$: Subject<RealtimeEvent>;
   let realtimeSpy: jasmine.SpyObj<RealtimeService>;
 
   beforeEach(async () => {
-    connectionState$ = new BehaviorSubject<ConnectionState>('DISCONNECTED');
+    connectionState$ = new BehaviorSubject<RealtimeConnectionState>('DISCONNECTED');
     events$ = new Subject<RealtimeEvent>();
 
-    realtimeSpy = jasmine.createSpyObj<RealtimeService>('RealtimeService', ['startForGroup', 'stop'], {
+    realtimeSpy = jasmine.createSpyObj<RealtimeService>('RealtimeService', ['startForGroup', 'stop', 'events'], {
       connectionState$: connectionState$.asObservable(),
-      events$: events$.asObservable(),
     });
+    realtimeSpy.events.and.returnValue(events$.asObservable());
 
     await TestBed.configureTestingModule({
       imports: [CoordinatorAttendanceComponent],
@@ -97,8 +98,10 @@ describe('CoordinatorAttendanceComponent - Realtime SSE (C-F-51..C-F-53)', () =>
 
     // Evento SSE relevante: dispara Carga 3
     events$.next({
-      tipo: 'REVISION_CANCELACION_PROPUESTA',
-      timestamp: '2026-11-08T10:00:00Z',
+      eventId: 'evt-1',
+      type: 'REVISION_CANCELACION_PROPUESTA',
+      occurredAt: '2026-11-08T10:00:00Z',
+      correlationId: null,
       payload: {
         idRevision: 'rev-1',
         idMatricula: 'mat-1',
@@ -111,6 +114,9 @@ describe('CoordinatorAttendanceComponent - Realtime SSE (C-F-51..C-F-53)', () =>
     req3.flush({ idResultado: 1, exitoso: true, mensajeUsuario: '', datos: [] });
 
     // En total exactamente 3 cargas
+    expect(req1).toBeTruthy();
+    expect(req2).toBeTruthy();
+    expect(req3).toBeTruthy();
     http.verify();
   });
 

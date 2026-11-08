@@ -146,6 +146,7 @@ export interface MateriaEstudianteItem {
   /** `null` = sin fuente confiable de asistencia (nunca se sustituye por ceros). */
   indicadores: IndicadoresAsistenciaMateria | null;
   estado: 'Al día' | 'Riesgo' | 'Crítico' | null;
+  estadoMatricula?: string | null;
 }
 
 export type EstadoAsistenciaSesion = 'PRESENTE' | 'AUSENTE' | 'RETARDO' | 'JUSTIFICADA';

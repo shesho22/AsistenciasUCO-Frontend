@@ -11,7 +11,7 @@ describe('onRealtimeReconnect (CULM-001 C.1 §4.1, §4.8, N-2)', () => {
 
   it('C-F-12 ignora la transición inicial CONNECTING -> CONNECTED (no es reconexión)', () => {
     const emitted: void[] = [];
-    onRealtimeReconnect(states$).subscribe(() => emitted.push());
+    onRealtimeReconnect(states$).subscribe((v) => emitted.push(v));
 
     states$.next('CONNECTING');
     states$.next('CONNECTED');
@@ -21,7 +21,7 @@ describe('onRealtimeReconnect (CULM-001 C.1 §4.1, §4.8, N-2)', () => {
 
   it('C-F-13 emite cuando CONNECTED sigue a RECONNECTING', () => {
     const emitted: void[] = [];
-    onRealtimeReconnect(states$).subscribe(() => emitted.push());
+    onRealtimeReconnect(states$).subscribe((v) => emitted.push(v));
 
     states$.next('CONNECTING');
     states$.next('CONNECTED');
@@ -33,7 +33,7 @@ describe('onRealtimeReconnect (CULM-001 C.1 §4.1, §4.8, N-2)', () => {
 
   it('C-F-14 emite cuando CONNECTED sigue a ERROR', () => {
     const emitted: void[] = [];
-    onRealtimeReconnect(states$).subscribe(() => emitted.push());
+    onRealtimeReconnect(states$).subscribe((v) => emitted.push(v));
 
     states$.next('CONNECTING');
     states$.next('ERROR');
@@ -44,7 +44,7 @@ describe('onRealtimeReconnect (CULM-001 C.1 §4.1, §4.8, N-2)', () => {
 
   it('C-F-15 no emite durante transiciones a desconectado o reconectando', () => {
     const emitted: void[] = [];
-    onRealtimeReconnect(states$).subscribe(() => emitted.push());
+    onRealtimeReconnect(states$).subscribe((v) => emitted.push(v));
 
     states$.next('CONNECTED');
     states$.next('RECONNECTING');

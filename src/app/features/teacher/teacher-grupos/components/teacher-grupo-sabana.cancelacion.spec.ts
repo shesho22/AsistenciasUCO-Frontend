@@ -95,6 +95,7 @@ describe('TeacherGrupoSabanaComponent — Cancelación por inasistencia y recarg
     fixture.componentRef.setInput('sessions', [sesion]);
     fixture.componentRef.setInput('cargando', false);
     fixture.detectChanges();
+    fixture.detectChanges();
   });
 
   it('C-F-31 renderiza la columna Seguimiento con InasistenciaMarcaBadgeComponent', () => {

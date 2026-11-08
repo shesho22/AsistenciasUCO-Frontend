@@ -28,7 +28,17 @@ describe('AdminSystemComponent - Cierre Masivo RCN_012 (C-F-57)', () => {
         reportesCierre: signal([]).asReadonly(),
       }
     );
-    adminServiceSpy.cargarParametros.and.returnValue(of({ exitoso: true, datos: [] }));
+    adminServiceSpy.cargarParametros.and.returnValue(
+      of({
+        exitoso: true,
+        datos: [],
+        elementos: [],
+        numeroPagina: 1,
+        tamanoPagina: 10,
+        totalElementos: 0,
+        totalPaginas: 0,
+      } as any)
+    );
 
     coordServiceSpy = jasmine.createSpyObj<CoordinatorManagementService>(
       'CoordinatorManagementService',

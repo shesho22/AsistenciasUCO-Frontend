@@ -5,7 +5,8 @@ import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { DeanGrupoDetalleComponent } from './dean-grupo-detalle.component';
 import { RealtimeService } from '../../../core/realtime/realtime.service';
-import { ConnectionState, RealtimeEvent } from '../../../core/realtime/model/realtime-event.model';
+import { RealtimeConnectionState } from '../../../core/realtime/model/realtime-connection-state.model';
+import { RealtimeEvent } from '../../../core/realtime/model/realtime-event.model';
 import { environment } from '../../../../environments/environment';
 
 const API = environment.apiUrl;
@@ -14,20 +15,20 @@ describe('DeanGrupoDetalleComponent - Realtime SSE (C-F-54..C-F-56)', () => {
   let fixture: ComponentFixture<DeanGrupoDetalleComponent>;
   let component: DeanGrupoDetalleComponent;
   let http: HttpTestingController;
-  let connectionState$: BehaviorSubject<ConnectionState>;
+  let connectionState$: BehaviorSubject<RealtimeConnectionState>;
   let events$: Subject<RealtimeEvent>;
   let realtimeSpy: jasmine.SpyObj<RealtimeService>;
 
   const grupoId = 'grp-dean-123';
 
   beforeEach(async () => {
-    connectionState$ = new BehaviorSubject<ConnectionState>('DISCONNECTED');
+    connectionState$ = new BehaviorSubject<RealtimeConnectionState>('DISCONNECTED');
     events$ = new Subject<RealtimeEvent>();
 
-    realtimeSpy = jasmine.createSpyObj<RealtimeService>('RealtimeService', ['startForGroup', 'stop'], {
+    realtimeSpy = jasmine.createSpyObj<RealtimeService>('RealtimeService', ['startForGroup', 'stop', 'events'], {
       connectionState$: connectionState$.asObservable(),
-      events$: events$.asObservable(),
     });
+    realtimeSpy.events.and.returnValue(events$.asObservable());
 
     await TestBed.configureTestingModule({
       imports: [DeanGrupoDetalleComponent],
@@ -90,8 +91,10 @@ describe('DeanGrupoDetalleComponent - Realtime SSE (C-F-54..C-F-56)', () => {
 
     // Evento SSE relevante: dispara Carga 3
     events$.next({
-      tipo: 'REVISION_CANCELACION_RESOLUCION',
-      timestamp: '2026-11-08T10:00:00Z',
+      eventId: 'evt-2',
+      type: 'REVISION_CANCELACION_RESOLUCION',
+      occurredAt: '2026-11-08T10:00:00Z',
+      correlationId: null,
       payload: {
         idRevision: 'rev-2',
         idMatricula: 'mat-2',
@@ -103,6 +106,9 @@ describe('DeanGrupoDetalleComponent - Realtime SSE (C-F-54..C-F-56)', () => {
     const req3 = http.expectOne((r) => r.url.includes(`${API}/decano/sesiones`));
     req3.flush({ exitoso: true, datos: [], total: 0 });
 
+    expect(req1).toBeTruthy();
+    expect(req2).toBeTruthy();
+    expect(req3).toBeTruthy();
     http.verify();
   });
 

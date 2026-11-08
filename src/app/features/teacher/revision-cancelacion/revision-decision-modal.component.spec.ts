@@ -1,9 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { RevisionDecisionModalComponent } from './revision-decision-modal.component';
-import { RevisionCancelacionService } from '../../../../core/services/revision-cancelacion.service';
-import { MarcaRevisionDocente } from '../../../../core/models/revision-cancelacion.model';
-import { apiHttpError } from '../../../../core/testing/api-error.fixture';
+import { RevisionCancelacionService } from '../../../core/services/revision-cancelacion.service';
+import { MarcaRevisionDocente } from '../../../core/models/revision-cancelacion.model';
+import { apiHttpError } from '../../../core/testing/api-error.fixture';
 
 describe('RevisionDecisionModalComponent (CULM-001 C.1 §4.4, §4.8)', () => {
   let fixture: ComponentFixture<RevisionDecisionModalComponent>;
