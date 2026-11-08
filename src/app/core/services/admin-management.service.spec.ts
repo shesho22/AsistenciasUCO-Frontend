@@ -586,4 +586,84 @@ describe('AdminManagementService', () => {
       datos: [{ id: 'dec-2p', nombreCompleto: 'Ana Mora', estaActivoDecano: true }],
     });
   });
+
+  it('HU156: getProgramasInstitucion envía GET /admin/programas con parámetros de búsqueda', () => {
+    service.getProgramasInstitucion({ texto: 'Sistemas', pagina: 1, tamano: 20 }).subscribe((res) => {
+      expect(res.elementos.length).toBe(1);
+      expect(res.elementos[0].codigo).toBe('SIS');
+    });
+
+    const req = http.expectOne(
+      (r) => r.url === `${environment.apiUrl}/admin/programas` &&
+        r.params.get('texto') === 'Sistemas' &&
+        r.params.get('pagina') === '1' &&
+        r.params.get('tamano') === '20'
+    );
+    expect(req.request.method).toBe('GET');
+    req.flush({
+      exitoso: true,
+      elementos: [{ id: 'p-1', codigo: 'SIS', nombre: 'Sistemas', idFacultad: 'f-1', nombreFacultad: 'Ingeniería' }],
+      numeroPagina: 1,
+      tamanoPagina: 20,
+      totalElementos: 1,
+      totalPaginas: 1,
+    });
+  });
+
+  it('HU156: admitirEstudiante envía POST /admin/estudiantes/admision con el payload', () => {
+    const payload = {
+      tipoIdentificacionId: 't-cc',
+      numeroIdentificacion: '1017000111',
+      primerNombre: 'Carlos',
+      primerApellido: 'Pérez',
+      correo: 'carlos@uco.edu.co',
+      idPrograma: 'p-1',
+    };
+
+    service.admitirEstudiante(payload).subscribe((res) => {
+      expect(res.exitoso).toBeTrue();
+      expect(res.datos.idEstudiante).toBe('est-1');
+      expect(res.datos.estadoCuenta).toBe('ACTIVA');
+    });
+
+    const req = http.expectOne(`${environment.apiUrl}/admin/estudiantes/admision`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual(payload);
+    req.flush({
+      exitoso: true,
+      datos: {
+        idEstudiante: 'est-1',
+        idUsuario: 'u-1',
+        esUsuarioNuevo: true,
+        estadoCuenta: 'ACTIVA',
+      },
+    });
+  });
+
+  it('HU156: corregirIdentidadEstudiante envía PUT /admin/estudiantes/{id}/identidad con el payload', () => {
+    const payload = {
+      primerNombre: 'Carlos',
+      segundoNombre: 'Andrés',
+      primerApellido: 'Pérez',
+      segundoApellido: 'Gómez',
+      motivo: 'Corrección de tilde',
+    };
+
+    service.corregirIdentidadEstudiante('est-1', payload).subscribe((res) => {
+      expect(res.exitoso).toBeTrue();
+      expect(res.datos.sincronizacionIdentidad).toBe('OK');
+    });
+
+    const req = http.expectOne(`${environment.apiUrl}/admin/estudiantes/est-1/identidad`);
+    expect(req.request.method).toBe('PUT');
+    expect(req.request.body).toEqual(payload);
+    req.flush({
+      exitoso: true,
+      datos: {
+        idRegistro: 'est-1',
+        sincronizacionIdentidad: 'OK',
+        mensajeUsuario: 'Identidad corregida',
+      },
+    });
+  });
 });

@@ -2,8 +2,7 @@ import { Injectable, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { ApiResponse } from '../models/api-response.model';
-import { ApiPageResponse } from '../api/models/api-page-response.model';
+import { ApiPageResponse, ApiResponse } from '../models/api-response.model';
 import {
   DecanoItem,
   FacultadItem,
@@ -14,7 +13,11 @@ import {
   ActualizarParametroRequest,
   CierrePeriodoReporte,
   InstitucionItem,
+  ProgramaInstitucionDto,
+  AdmisionEstudianteDto,
+  AdmisionEstudianteRequest,
 } from '../models/role-management.model';
+import { CorregirIdentidadPayload, ResultadoCorreccionIdentidad } from '../models/correccion-identidad.model';
 
 @Injectable({
   providedIn: 'root',
@@ -290,6 +293,40 @@ export class AdminManagementService {
           this._instituciones.set(res.datos);
         }
       })
+    );
+  }
+
+  // ================= D.4 (HU156): ADMISIÓN Y CORRECCIÓN DE ESTUDIANTES =================
+
+  /** HU156: busca programas de la institución del administrador (GET /admin/programas). */
+  getProgramasInstitucion(filtro?: {
+    texto?: string | null;
+    idFacultad?: string | null;
+    pagina?: number;
+    tamano?: number;
+  }): Observable<ApiPageResponse<ProgramaInstitucionDto>> {
+    let params = new HttpParams();
+    if (filtro?.texto) params = params.set('texto', filtro.texto);
+    if (filtro?.idFacultad) params = params.set('idFacultad', filtro.idFacultad);
+    if (filtro?.pagina !== undefined && filtro?.pagina !== null) params = params.set('pagina', filtro.pagina.toString());
+    if (filtro?.tamano !== undefined && filtro?.tamano !== null) params = params.set('tamano', filtro.tamano.toString());
+
+    return this.http.get<ApiPageResponse<ProgramaInstitucionDto>>(`${environment.apiUrl}/admin/programas`, { params });
+  }
+
+  /** HU156: admite un estudiante en un programa institucional (POST /admin/estudiantes/admision). */
+  admitirEstudiante(payload: AdmisionEstudianteRequest): Observable<ApiResponse<AdmisionEstudianteDto>> {
+    return this.http.post<ApiResponse<AdmisionEstudianteDto>>(`${environment.apiUrl}/admin/estudiantes/admision`, payload);
+  }
+
+  /** HU156: corrección de datos de identidad de un estudiante por el administrador (PUT /admin/estudiantes/{idEstudiante}/identidad). */
+  corregirIdentidadEstudiante(
+    idEstudiante: string,
+    payload: CorregirIdentidadPayload
+  ): Observable<ApiResponse<ResultadoCorreccionIdentidad>> {
+    return this.http.put<ApiResponse<ResultadoCorreccionIdentidad>>(
+      `${environment.apiUrl}/admin/estudiantes/${encodeURIComponent(idEstudiante)}/identidad`,
+      payload
     );
   }
 
