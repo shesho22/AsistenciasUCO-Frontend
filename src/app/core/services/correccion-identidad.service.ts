@@ -39,6 +39,14 @@ export class CorreccionIdentidadService {
     );
   }
 
+  /** HU156: corrección de identidad de un estudiante por el administrador institucional (PUT /admin/estudiantes/{id}/identidad). */
+  corregirEstudiantePorAdmin(idEstudiante: string, payload: CorregirIdentidadPayload): Observable<ApiResponse<ResultadoCorreccionIdentidad>> {
+    return this.http.put<ApiResponse<ResultadoCorreccionIdentidad>>(
+      `${this.api}/admin/estudiantes/${encodeURIComponent(idEstudiante)}/identidad`,
+      payload,
+    );
+  }
+
   corregirDecano(idDecano: string, payload: CorregirIdentidadPayload): Observable<ApiResponse<ResultadoCorreccionIdentidad>> {
     return this.http.put<ApiResponse<ResultadoCorreccionIdentidad>>(
       `${this.api}/admin/decanos/${encodeURIComponent(idDecano)}/identidad`,

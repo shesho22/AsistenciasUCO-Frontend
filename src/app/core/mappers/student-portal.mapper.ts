@@ -139,6 +139,7 @@ export class StudentPortalMapper {
       creditos: null,
       indicadores: dto.indicadores ?? null,
       estado: null,
+      estadoMatricula: dto.estadoMatricula ?? null,
     };
   }
 

@@ -78,6 +78,56 @@ describe('ConsultasTransversalesService (HU112/HU128/HU143/HU157)', () => {
     req.flush({ exitoso: true, datos: [] });
   });
 
+  it('HU172: la auditoría soporta idCorrelacion y soloAdministracion con sobre ApiPageResponse', () => {
+    service
+      .getAuditoria({
+        idCorrelacion: 'corr-1234',
+        soloAdministracion: true,
+        soloAsistencia: false,
+        pagina: 1,
+        tamano: 20,
+      })
+      .subscribe((res: any) => {
+        expect(res.elementos.length).toBe(1);
+        expect(res.elementos[0].idCorrelacion).toBe('corr-1234');
+      });
+
+    const req = http.expectOne((r) => r.url === `${api}/admin/auditoria`);
+    expect(req.request.params.get('idCorrelacion')).toBe('corr-1234');
+    expect(req.request.params.get('soloAdministracion')).toBe('true');
+    expect(req.request.params.get('soloAsistencia')).toBe('false');
+    req.flush({
+      exitoso: true,
+      elementos: [
+        {
+          id: 'aud-1',
+          ocurridoEn: '2026-11-07T12:00:00Z',
+          idActor: 'user-1',
+          tipoActor: 'ADMINISTRADOR',
+          nombreActor: 'Admin Sistema',
+          accion: 'ACTUALIZAR_PARAMETRO',
+          tipoRecurso: 'PARAMETRO',
+          idRecurso: 'p-1',
+          resultado: 'SUCCESS',
+          idTraza: 'trace-1',
+          idCorrelacion: 'corr-1234',
+          metodoHttp: 'PUT',
+          ruta: '/api/v1/admin/parametros/p-1',
+          estadoHttp: 200,
+          ipCliente: '127.0.0.1',
+          codigoError: null,
+          metadatos: '{"motivo":"Ajuste"}',
+          metadata: '{"motivo":"Ajuste"}',
+          accionAsistencia: false,
+        },
+      ],
+      numeroPagina: 1,
+      tamanoPagina: 20,
+      totalElementos: 1,
+      totalPaginas: 1,
+    });
+  });
+
   it('HU147: consulta los componentes de formación', () => {
     service.getComponentesFormacion().subscribe((res) => expect(res.datos.length).toBe(1));
     http

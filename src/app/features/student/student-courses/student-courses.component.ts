@@ -16,6 +16,7 @@ import { RadicacionIntento, huellaRadicacion } from '../../../core/utils/radicac
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
 import { validateSoporteFile } from '../../../core/files/soporte-file.validator';
 import {
+  ConfiguracionReclamosDTO,
   MateriaEstudianteItem,
   SesionMateriaDetalle,
   CategoriaJustificacion,
@@ -79,14 +80,18 @@ type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO';
           [materia]="selectedMateria()"
           [sesion]="sesionReclamar()"
           [categorias]="categoriasJustificacion()"
+          [configuracion]="configuracionReclamos()"
           [archivo]="archivoAdjunto()"
+          [archivos]="archivosAdjuntos()"
           [subiendo]="subiendoSoporte()"
           [submitting]="enviandoReclamo()"
           [errorSoporte]="errorSoporte()"
           [errorEnvio]="errorEnvio()"
           (back)="volverADetalle()"
           (fileSelected)="onFileSelected($event)"
+          (adjuntar)="adjuntarArchivo($event)"
           (removeFile)="removerAdjunto()"
+          (quitar)="removerAdjunto($event)"
           (submitted)="enviarReclamo($event)"
         />
       }
@@ -136,6 +141,10 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
   sesionReclamar = signal<SesionMateriaDetalle | null>(null);
   /** HU005/HU016: motivos de justificación del catálogo de solo consulta. */
   categoriasJustificacion = signal<CategoriaJustificacionItem[]>([]);
+  /** CULM-001 D.2: Configuración del backend para límites y tipos permitidos de reclamos. */
+  configuracionReclamos = signal<ConfiguracionReclamosDTO | null>(null);
+  /** CULM-001 D.2: Múltiples soportes con seguimiento individual de estado. */
+  archivosAdjuntos = signal<SoporteAdjuntoItem[]>([]);
   archivoAdjunto = signal<SoporteAdjuntoItem | null>(null);
   subiendoSoporte = signal<boolean>(false);
   enviandoReclamo = signal<boolean>(false);
@@ -172,6 +181,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.cargarMaterias();
     this.cargarCategoriasJustificacion();
+    this.cargarConfiguracionReclamos();
 
     // HU176B: el login devuelve aqui con `?matricula=<PIN>` (o `1` si solo se conoce el QR): se abre el modal del codigo.
     const paramMatricula = this.route.snapshot.queryParamMap.get('matricula');
@@ -181,6 +191,17 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
       }
       this.abrirModalMatriculaGrupo();
     }
+  }
+
+  cargarConfiguracionReclamos(): void {
+    this.claimService.getConfiguracionReclamos().subscribe({
+      next: (res) => {
+        if (res.exitoso && res.datos) {
+          this.configuracionReclamos.set(res.datos);
+        }
+      },
+      error: () => {},
+    });
   }
 
   /** Sin catálogo el formulario no deja radicar y lo informa; no se usa una lista fija de respaldo. */
@@ -246,6 +267,20 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
     input.value = '';
     if (!file || this.subiendoSoporte()) return;
 
+    this.adjuntarArchivo(file);
+  }
+
+  adjuntarArchivo(file: File): void {
+    if (this.subiendoSoporte()) return;
+
+    const maximo = this.configuracionReclamos()?.maximoSoportes ?? 3;
+    if (this.archivosAdjuntos().length >= maximo) {
+      const msg = `No puedes adjuntar más de ${maximo} archivos.`;
+      this.errorSoporte.set(msg);
+      this.toast.error(msg);
+      return;
+    }
+
     const validacion = validateSoporteFile(file);
     if (!validacion.valid) {
       this.errorSoporte.set(validacion.message ?? 'El archivo no es válido.');
@@ -254,50 +289,96 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
     }
 
     this.errorSoporte.set(null);
+    const nuevoAdjunto: SoporteAdjuntoItem = {
+      nombre: file.name,
+      tipo: file.type,
+      tamanioKb: Math.max(1, Math.round(file.size / 1024)),
+      tamanioBytes: file.size,
+      fechaSubida: this.sessionTimeZone.currentDate(),
+      estado: 'SUBIENDO',
+    };
+
+    this.archivosAdjuntos.update((actuales) => [...actuales, nuevoAdjunto]);
     this.subiendoSoporte.set(true);
+
     this.subidaEnCurso = this.claimService
       .subirSoporte(file)
       .pipe(
         finalize(() => {
-          this.subiendoSoporte.set(false);
           this.subidaEnCurso = null;
+          this.actualizarEstadoSubiendo();
         })
       )
       .subscribe({
         next: (res) => {
           if (res.exitoso && res.datos?.fileId) {
-            this.archivoAdjunto.set({
-              fileId: res.datos.fileId,
-              nombre: res.datos.nombre,
-              tipo: file.type,
-              tamanioKb: Math.max(1, Math.round(file.size / 1024)),
-              tamanioBytes: res.datos.tamanio,
-              // Fecha civil en la zona de presentacion (no el dia UTC); el instante autoritativo (UTC) lo conserva el backend.
-              fechaSubida: this.sessionTimeZone.currentDate(),
-              urlSimulada: res.datos.url,
-            });
+            this.archivosAdjuntos.update((actuales) =>
+              actuales.map((item) =>
+                item === nuevoAdjunto || (item.nombre === file.name && item.estado === 'SUBIENDO')
+                  ? {
+                      ...item,
+                      fileId: res.datos.fileId,
+                      tamanioBytes: res.datos.tamanio,
+                      urlSimulada: res.datos.url,
+                      estado: 'LISTO',
+                    }
+                  : item
+              )
+            );
+            const primerListo = this.archivosAdjuntos().find((a) => a.estado === 'LISTO');
+            this.archivoAdjunto.set(primerListo ?? null);
             this.toast.success(getApiSuccessMessage(res, `Archivo "${file.name}" cargado y analizado correctamente.`));
           } else {
-            this.errorSoporte.set('No fue posible almacenar el archivo adjunto.');
+            this.archivosAdjuntos.update((actuales) =>
+              actuales.map((item) =>
+                item === nuevoAdjunto || (item.nombre === file.name && item.estado === 'SUBIENDO')
+                  ? { ...item, estado: 'RECHAZADO', error: 'No fue posible almacenar el archivo adjunto.' }
+                  : item
+              )
+            );
           }
         },
         error: (err) => {
           const mensaje = getApiErrorMessage(err);
           this.errorSoporte.set(mensaje);
+          this.archivosAdjuntos.update((actuales) =>
+            actuales.map((item) =>
+              item === nuevoAdjunto || (item.nombre === file.name && item.estado === 'SUBIENDO')
+                ? { ...item, estado: 'RECHAZADO', error: mensaje }
+                : item
+            )
+          );
           this.toast.error(mensaje);
         },
       });
   }
 
-  removerAdjunto(): void {
+  private actualizarEstadoSubiendo(): void {
+    const quedanSubiendo = this.archivosAdjuntos().some((a) => a.estado === 'SUBIENDO');
+    this.subiendoSoporte.set(quedanSubiendo);
+  }
+
+  removerAdjunto(index?: number): void {
+    if (index !== undefined && index >= 0) {
+      this.archivosAdjuntos.update((actuales) => actuales.filter((_, i) => i !== index));
+      const primerListo = this.archivosAdjuntos().find((a) => a.estado === 'LISTO');
+      this.archivoAdjunto.set(primerListo ?? null);
+      if (this.archivosAdjuntos().length === 0) {
+        this.limpiarSoporte();
+      }
+      this.actualizarEstadoSubiendo();
+      return;
+    }
     this.cancelarSubida();
     this.archivoAdjunto.set(null);
+    this.archivosAdjuntos.set([]);
     this.errorSoporte.set(null);
   }
 
   private limpiarSoporte(): void {
     this.cancelarSubida();
     this.archivoAdjunto.set(null);
+    this.archivosAdjuntos.set([]);
     this.errorSoporte.set(null);
     this.enviandoReclamo.set(false);
   }
@@ -370,7 +451,12 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
     if (this.enviandoReclamo() || this.subiendoSoporte()) return;
 
     const justificacion = event.justificacion.trim();
-    const soporte = this.archivoAdjunto() || undefined;
+    const soportesListos = this.archivosAdjuntos().filter((a) => (!a.estado || a.estado === 'LISTO') && !!a.fileId);
+    const soporteArchivoIds = soportesListos.map((s) => s.fileId!);
+    const soporte = soportesListos[0] || this.archivoAdjunto() || undefined;
+    if (soporte?.fileId && !soporteArchivoIds.includes(soporte.fileId)) {
+      soporteArchivoIds.push(soporte.fileId);
+    }
     const intentoId = this.intentoRadicacion.idPara(
       huellaRadicacion({
         sesionId: sesion.id,
@@ -398,6 +484,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
           estadoOriginal,
           categoria: event.categoria,
           soporteAdjunto: soporte,
+          soporteArchivoIds: soporteArchivoIds.length > 0 ? soporteArchivoIds : undefined,
           justificacionSolicitud: justificacion,
         },
         intentoId

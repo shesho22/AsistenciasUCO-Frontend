@@ -1,7 +1,7 @@
 import { Component, ChangeDetectionStrategy, computed, input, output, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { PlanEstudioItem, AsignaturaPlanItem, AreaConocimientoItem } from '../../../../core/models/role-management.model';
+import { PlanEstudioItem, AsignaturaPlanItem, AreaConocimientoItem, CaracterAsignatura } from '../../../../core/models/role-management.model';
 import { ComponenteFormacionItem } from '../../../../core/models/consultas-transversales.model';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { FormFieldComponent } from '../../../../shared/components/form-field/form-field.component';
@@ -121,6 +121,19 @@ import { FormFieldComponent } from '../../../../shared/components/form-field/for
             </select>
           </app-form-field>
 
+          <app-form-field label="Carácter en el plan" [required]="true">
+            <select
+              aria-label="Carácter en el plan"
+              [(ngModel)]="asigForm.codigoCaracter"
+              class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+            >
+              <option value="">Selecciona el carácter</option>
+              @for (c of caracteres(); track c.codigo) {
+                <option [value]="c.codigo">{{ c.nombre }}</option>
+              }
+            </select>
+          </app-form-field>
+
         </div>
 
         <div class="flex items-center justify-end gap-3 pt-4 border-t border-warm-100">
@@ -150,6 +163,8 @@ export class SubjectFormComponent implements OnInit {
   /** HU147 / P5: componentes y áreas reales; no se asigna uno "cualquiera" (decisión de John, 2026-11-04). */
   componentes = input<ComponenteFormacionItem[]>([]);
   areas = input<AreaConocimientoItem[]>([]);
+  /** CULM-001 B2NM: carácter (obligatoria u optativa) desde `GET /coordinador/caracteres-asignatura`. */
+  caracteres = input<CaracterAsignatura[]>([]);
 
   save = output<{ datos: Partial<AsignaturaPlanItem>; id?: string }>();
   cancel = output<void>();
@@ -167,6 +182,7 @@ export class SubjectFormComponent implements OnInit {
     area: string;
     componente: string;
     horasSemanales: number;
+    codigoCaracter: string;
   } = {
     codigo: '',
     nombre: '',
@@ -176,6 +192,7 @@ export class SubjectFormComponent implements OnInit {
     area: '',
     componente: '',
     horasSemanales: 4,
+    codigoCaracter: '',
   };
 
 
@@ -190,6 +207,7 @@ export class SubjectFormComponent implements OnInit {
         area: asig.area,
         componente: asig.componente,
         horasSemanales: asig.horasSemanales,
+        codigoCaracter: asig.codigoCaracter ?? '',
       };
     }
   }
@@ -204,6 +222,7 @@ export class SubjectFormComponent implements OnInit {
       !!f.nombre.trim() &&
       !!f.area &&
       !!f.componente &&
+      !!f.codigoCaracter &&
       f.creditos !== null &&
       Number.isInteger(creditos) &&
       creditos > 0 &&

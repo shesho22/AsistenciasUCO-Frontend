@@ -22,13 +22,15 @@ describe('DeanIndicatorsComponent', () => {
   const p1: ComparativaPrograma = {
     idPrograma: 'p-1', nombrePrograma: 'Sistemas', estaActivoPrograma: true, totalEstudiantes: 5, estudiantesRiesgo: 1, estudiantesPerdida: 2,
     tasaRetencion: 60, sesionesEjecutadas: 33, faltasSinJustaCausa: 5, porcentajeAusentismo: 15.15,
+    horasDictadas: 120, horasFalta: 18,
   };
   const p4: ComparativaPrograma = {
     idPrograma: 'p-4', nombrePrograma: 'Programa Cerrado', estaActivoPrograma: false, totalEstudiantes: 0, estudiantesRiesgo: 0, estudiantesPerdida: 0,
     tasaRetencion: null, sesionesEjecutadas: 0, faltasSinJustaCausa: 0, porcentajeAusentismo: null,
+    horasDictadas: 0, horasFalta: 0,
   };
   const g1: AforoGrupo = {
-    idGrupo: 'g-1', codigoGrupo: 931001, idAsignatura: 'a-1', nombreAsignatura: 'Estructuras de Datos', idPrograma: 'p-1', nombrePrograma: 'Sistemas',
+    idGrupo: 'g-1', codigoGrupo: 931001, idAsignatura: 'a-1', nombreAsignatura: 'Estructuras de Datos', programas: ['Sistemas'],
     cupoMaximo: 10, matriculadosActivos: 5, cuposDisponibles: 5, tasaAforo: 50, grupoEstaHabilitado: true,
   };
 
@@ -49,6 +51,12 @@ describe('DeanIndicatorsComponent', () => {
   });
 
   afterEach(() => http.verify());
+
+  it('D.8 rotula el ausentismo por programa como calculado por horas y muestra las horas del backend', () => {
+    const t = texto();
+    expect(t).toContain('Calculado por horas');
+    expect(t).toContain('18 h de falta sobre 120 h dictadas');
+  });
 
   it('T-FE-02 muestra exactamente las cifras recibidas (sin calcular nada en el cliente)', () => {
     const t = texto();

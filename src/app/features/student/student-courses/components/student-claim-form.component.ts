@@ -5,6 +5,7 @@ import { SOPORTE_ACCEPT } from '../../../../core/files/soporte-file.validator';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { FormFieldComponent } from '../../../../shared/components/form-field/form-field.component';
 import {
+  ConfiguracionReclamosDTO,
   MateriaEstudianteItem,
   SesionMateriaDetalle,
   CategoriaJustificacion,
@@ -69,6 +70,11 @@ import { CategoriaJustificacionItem } from '../../../../core/models/consultas-tr
           <div class="space-y-4">
             <!-- Categoría de Inasistencia -->
             <app-form-field label="Categoría de Justificación" [required]="true">
+              @if (requiereSoporte()) {
+                <span class="inline-block mb-1.5 px-2 py-0.5 rounded-full text-xs font-bold bg-danger-50 text-danger-800 border border-danger-200" data-testid="soporte-obligatorio-badge">
+                  Soporte obligatorio
+                </span>
+              }
               <select
                 [ngModel]="categoria()"
                 (ngModelChange)="categoria.set($event)"
@@ -100,13 +106,79 @@ import { CategoriaJustificacionItem } from '../../../../core/models/consultas-tr
               ></textarea>
             </app-form-field>
 
-            <!-- Carga de Archivo Adjunto / Soporte Documental -->
+            <!-- Carga de Archivos Adjuntos / Soportes Documentales -->
             <div class="space-y-2">
               <label class="block text-xs font-semibold uppercase tracking-wider text-warm-700">
-                Soporte Documental Adjunto (opcional · PDF, JPG, PNG · Máx. 5 MB)
+                Soportes Documentales (máx. <span data-testid="limite-maximo-soportes">{{ maximoSoportes() }}</span> archivos · {{ tiposPermitidosTexto() }} · Máx. {{ tamanioMaximoMb() }} MB · límite <span data-testid="limite-por-minuto">{{ limiteSubidasPorMinuto() }}</span>/min)
               </label>
 
-              @if (subiendo()) {
+              @if (errorSoporte()) {
+                <p class="text-xs font-medium text-danger-700" role="alert">{{ errorSoporte() }}</p>
+              }
+
+              <!-- Lista de archivos adjuntos -->
+              @for (item of listaArchivos(); track (item.fileId || item.nombre); let idx = $index) {
+                @if (item.estado === 'SUBIENDO') {
+                  <div class="flex items-center gap-3 p-3.5 bg-warm-50 border border-warm-200 rounded-xl text-xs text-warm-700" role="status">
+                    <span class="inline-block w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></span>
+                    <span>Subiendo y analizando el archivo {{ item.nombre }}…</span>
+                    <button type="button" (click)="onRemover(idx)" class="ml-auto font-semibold text-danger-700 hover:underline">
+                      Cancelar
+                    </button>
+                  </div>
+                } @else if (item.estado === 'RECHAZADO') {
+                  <div class="p-3.5 bg-danger-50/50 border border-danger-200 rounded-xl space-y-1">
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center gap-2 text-danger-800 text-xs font-bold">
+                        <svg class="w-4 h-4 text-danger-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <span>{{ item.nombre }}</span>
+                      </div>
+                      <button
+                        type="button"
+                        (click)="onRemover(idx)"
+                        class="p-1.5 text-warm-400 hover:text-danger-600 rounded-lg hover:bg-danger-50 transition-colors"
+                        title="Remover adjunto"
+                      >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                    @if (item.error) {
+                      <p class="text-xs font-medium text-danger-700" role="alert">{{ item.error }}</p>
+                    }
+                  </div>
+                } @else {
+                  <div class="flex items-center justify-between p-3.5 bg-warm-50 border border-warm-200 rounded-xl">
+                    <div class="flex items-center gap-3">
+                      <div class="w-9 h-9 rounded-lg bg-primary-100 text-primary-700 flex items-center justify-center">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p class="text-xs font-bold text-warm-900">{{ item.nombre }}</p>
+                        <p class="text-xs text-warm-500">{{ item.tamanioKb }} KB • {{ item.tipo }}</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      (click)="onRemover(idx)"
+                      class="p-1.5 text-warm-400 hover:text-danger-600 rounded-lg hover:bg-danger-50 transition-colors"
+                      title="Remover adjunto"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                }
+              }
+
+              <!-- Subida en curso global (fallback legacy) -->
+              @if (subiendo() && listaArchivos().length === 0) {
                 <div class="flex items-center gap-3 p-3.5 bg-warm-50 border border-warm-200 rounded-xl text-xs text-warm-700" role="status">
                   <span class="inline-block w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></span>
                   Subiendo y analizando el archivo…
@@ -116,35 +188,8 @@ import { CategoriaJustificacionItem } from '../../../../core/models/consultas-tr
                 </div>
               }
 
-              @if (errorSoporte()) {
-                <p class="text-xs font-medium text-danger-700" role="alert">{{ errorSoporte() }}</p>
-              }
-
-              @if (archivo()) {
-                <div class="flex items-center justify-between p-3.5 bg-warm-50 border border-warm-200 rounded-xl">
-                  <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-lg bg-primary-100 text-primary-700 flex items-center justify-center">
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <p class="text-xs font-bold text-warm-900">{{ archivo()?.nombre }}</p>
-                      <p class="text-xs text-warm-500">{{ archivo()?.tamanioKb }} KB • {{ archivo()?.tipo }}</p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    (click)="removeFile.emit()"
-                    class="p-1.5 text-warm-400 hover:text-danger-600 rounded-lg hover:bg-danger-50 transition-colors"
-                    title="Remover adjunto"
-                  >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-              } @else if (!subiendo()) {
+              <!-- Zona para adjuntar nuevo soporte -->
+              @if (listaArchivos().length < maximoSoportes() && !haySubidaEnCurso()) {
                 <label
                   class="border-2 border-dashed border-warm-200 hover:border-primary-400 rounded-2xl p-5 flex flex-col items-center justify-center gap-2 cursor-pointer bg-warm-50/50 hover:bg-primary-50/20 transition-all text-center"
                 >
@@ -152,7 +197,7 @@ import { CategoriaJustificacionItem } from '../../../../core/models/consultas-tr
                     type="file"
                     class="hidden"
                     [attr.accept]="accept"
-                    (change)="fileSelected.emit($event)"
+                    (change)="onFileChange($event)"
                   />
                   <div class="w-10 h-10 rounded-full bg-primary-50 text-primary-600 flex items-center justify-center">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -188,7 +233,7 @@ import { CategoriaJustificacionItem } from '../../../../core/models/consultas-tr
             <app-button
               variant="primary"
               size="md"
-              [disabled]="!categoria() || !justificacion().trim() || submitting() || subiendo()"
+              [disabled]="botonDesactivado()"
               [loading]="submitting()"
               (clicked)="onSubmit()"
             >
@@ -207,6 +252,8 @@ export class StudentClaimFormComponent {
   materia = input<MateriaEstudianteItem | null>(null);
   sesion = input<SesionMateriaDetalle | null>(null);
   archivo = input<SoporteAdjuntoItem | null>(null);
+  archivos = input<SoporteAdjuntoItem[]>([]);
+  configuracion = input<ConfiguracionReclamosDTO | null>(null);
   submitting = input<boolean>(false);
   /** Hay una subida del soporte en curso: no se puede radicar hasta conocer el `fileId`. */
   subiendo = input<boolean>(false);
@@ -222,7 +269,45 @@ export class StudentClaimFormComponent {
   categoria = signal<CategoriaJustificacion>('');
   justificacion = signal<string>('');
 
-  readonly categoriaSeleccionada = computed(() => this.categorias().find((c) => c.nombre === this.categoria()) ?? null);
+  readonly maximoSoportes = computed(() => this.configuracion()?.maximoSoportes ?? 3);
+  readonly tamanioMaximoMb = computed(() => Math.round((this.configuracion()?.tamanioMaximoBytes ?? 5242880) / (1024 * 1024)));
+  readonly limiteSubidasPorMinuto = computed(() => this.configuracion()?.limiteSubidasPorMinuto ?? 10);
+  readonly tiposPermitidos = computed(() => this.configuracion()?.tiposPermitidos ?? ['application/pdf', 'image/jpeg', 'image/png']);
+  readonly tiposPermitidosTexto = computed(() => {
+    const tipos = this.tiposPermitidos();
+    return tipos.map((ext) => (ext.includes('/') ? ext.split('/')[1].toUpperCase() : ext.toUpperCase())).join(', ');
+  });
+
+  readonly listaArchivos = computed<SoporteAdjuntoItem[]>(() => {
+    const arr = this.archivos();
+    if (arr && arr.length > 0) return arr;
+    const a = this.archivo();
+    return a ? [a] : [];
+  });
+
+  readonly categoriaSeleccionada = computed(() => {
+    const actual = this.categoria();
+    const texto = typeof actual === 'object' && actual ? (actual.nombre || actual.codigo) : actual;
+    return this.categorias().find((c) => c.nombre === texto || c.codigo === texto) ?? null;
+  });
+
+  readonly requiereSoporte = computed(() => this.categoriaSeleccionada()?.requiereSoporte === true);
+
+  readonly haySubidaEnCurso = computed(() => this.subiendo() || this.listaArchivos().some((a) => a.estado === 'SUBIENDO'));
+
+  readonly soportesListos = computed(() => this.listaArchivos().filter((a) => !a.estado || a.estado === 'LISTO'));
+
+  readonly superaMaximoSoportes = computed(() => this.listaArchivos().length > this.maximoSoportes());
+
+  readonly faltaSoporteObligatorio = computed(() => this.requiereSoporte() && this.soportesListos().length === 0);
+
+  readonly botonDesactivado = computed(() => {
+    if (!this.categoria() || !this.justificacion().trim()) return true;
+    if (this.submitting() || this.haySubidaEnCurso()) return true;
+    if (this.superaMaximoSoportes()) return true;
+    if (this.faltaSoporteObligatorio()) return true;
+    return false;
+  });
 
   constructor() {
     // Primera categoría por defecto cuando llega el catálogo (o si la elegida ya no está en él).
@@ -236,14 +321,30 @@ export class StudentClaimFormComponent {
 
   back = output<void>();
   fileSelected = output<Event>();
+  adjuntar = output<File>();
   removeFile = output<void>();
+  quitar = output<number>();
   submitted = output<{
     categoria: CategoriaJustificacion;
     justificacion: string;
   }>();
 
+  onRemover(idx: number): void {
+    this.quitar.emit(idx);
+    this.removeFile.emit();
+  }
+
+  onFileChange(event: Event): void {
+    this.fileSelected.emit(event);
+    const inputEl = event.target as HTMLInputElement | null;
+    const files = inputEl?.files;
+    if (files && files.length > 0) {
+      this.adjuntar.emit(files[0]);
+    }
+  }
+
   onSubmit(): void {
-    if (!this.categoria() || !this.justificacion().trim()) return;
+    if (this.botonDesactivado()) return;
     this.submitted.emit({
       categoria: this.categoria(),
       justificacion: this.justificacion().trim(),

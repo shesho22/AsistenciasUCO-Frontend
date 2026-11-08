@@ -28,6 +28,36 @@ function okResponse<T>(datos: T, mensajeUsuario?: string, total?: number): HttpR
   });
 }
 
+/** CULM-001 B2NM: respuesta paginada con la forma real de ApiPageResponse (los filtros del mock son mínimos). */
+function okPagina<T>(elementos: T[], req: { params: { get(nombre: string): string | null } }): HttpResponse<unknown> {
+  const tamano = Math.max(Number(req.params.get('tamano')) || 20, 1);
+  const pagina = Math.max(Number(req.params.get('pagina')) || 1, 1);
+  const inicio = (pagina - 1) * tamano;
+  return new HttpResponse<unknown>({
+    status: 200,
+    body: {
+      exitoso: true,
+      elementos: elementos.slice(inicio, inicio + tamano),
+      numeroPagina: pagina,
+      tamanoPagina: tamano,
+      totalElementos: elementos.length,
+      totalPaginas: Math.max(Math.ceil(elementos.length / tamano), 1),
+    },
+  });
+}
+
+/** Vínculo asignatura-plan del mock con carácter y semestre como los entrega el backend. */
+function vinculoMock(a: { id: string; codigo: string; nombre: string; creditos: number; semestre: number; area?: string; componente?: string }, planId: string) {
+  const compartida = a.codigo === 'SIS-101';
+  return {
+    idAsignatura: a.id, codigo: a.codigo, nombre: a.nombre, credito: a.creditos, nombreArea: a.area ?? '', nombreComponente: a.componente ?? '',
+    idPlanEstudio: planId, inpPlanEstudio: '2024', idPrograma: 'PRG-MOCK-1', nombrePrograma: 'Ingeniería de Sistemas',
+    idSemestrePlanEstudio: `SEM-${planId}-${a.semestre}`, numeroSemestre: a.semestre, codigoSemestre: `S${a.semestre}`,
+    codigoCaracter: a.semestre % 2 === 0 ? 'OPT' : 'OBL', nombreCaracter: a.semestre % 2 === 0 ? 'Optativa' : 'Obligatoria',
+    estaActivoVinculo: true, estaActivaAsignatura: true, compartida,
+  };
+}
+
 export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   // AuthService es la fuente reactiva de verdad y se consulta por petición,
   // incluyendo cambios de modo sin recargar la aplicación.
@@ -265,7 +295,41 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
 
   // ================= COORDINADOR: PLANES DE ESTUDIO =================
   if (url.endsWith('/coordinador/planes-estudio') && method === 'GET') {
-    return of(okResponse(mockStore.planesEstudio)).pipe(delay(250));
+    const planes = mockStore.planesEstudio.map((p) => ({
+      ...p, idPrograma: 'PRG-MOCK-1', nombrePrograma: p.programa, inp: String(p.anioVigencia),
+      estaActivoPlanEstudio: p.estado !== 'INACTIVO',
+    }));
+    return of(okPagina(planes, req)).pipe(delay(250));
+  }
+  if (url.endsWith('/coordinador/caracteres-asignatura') && method === 'GET') {
+    return of(okResponse([{ codigo: 'OBL', nombre: 'Obligatoria', orden: 1 }, { codigo: 'OPT', nombre: 'Optativa', orden: 2 }])).pipe(delay(150));
+  }
+  if (url.includes('/coordinador/planes-estudio/') && url.endsWith('/asignaturas-asociables') && method === 'GET') {
+    const busqueda = (req.params.get('busqueda') ?? '').toLowerCase();
+    const asociables = [
+      { idAsignatura: 'ASG-EXT-1', codigo: 'SOF-310', nombre: 'Pruebas de Software', credito: 3, nombreArea: 'Software', nombreComponente: 'Específica', planes: 'Ingeniería de Software (Plan 2024)' },
+    ].filter((a) => !busqueda || a.codigo.toLowerCase().includes(busqueda) || a.nombre.toLowerCase().includes(busqueda));
+    return of(okPagina(asociables, req)).pipe(delay(200));
+  }
+  if (url.includes('/coordinador/planes-estudio/') && url.endsWith('/asignaturas-asociadas') && method === 'POST') {
+    return of(new HttpResponse({ status: 201, body: { exitoso: true, datos: null, mensajeUsuario: 'Asignatura asociada al plan.' } })).pipe(delay(200));
+  }
+  if (url.includes('/coordinador/planes-estudio/') && url.includes('/asignaturas/') && method === 'DELETE') {
+    const segments = url.split('/');
+    const planId = segments[segments.length - 3];
+    const asigId = segments[segments.length - 1];
+    mockStore.asignaturasPlan[planId] = (mockStore.asignaturasPlan[planId] || []).filter((a) => a.id !== asigId);
+    return of(okResponse(null, 'Asignatura quitada del plan.')).pipe(delay(200));
+  }
+  if (/\/grupos\/[^/]+\/programas$/.test(url) && method === 'GET') {
+    return of(okResponse([{ idPrograma: 'PRG-MOCK-1', nombrePrograma: 'Ingeniería de Sistemas', idPlanEstudio: 'PLAN-1', inpPlanEstudio: '2024' }])).pipe(delay(150));
+  }
+  if (url.endsWith('/coordinador/estudiantes') && method === 'GET') {
+    const estudiantes = mockStore.estudiantesDirectorio.map((e) => ({
+      id: e.id, idUsuario: e.id, numeroIdentificacion: Number(e.documento) || 0, nombreCompleto: e.nombreCompleto, correo: e.correo,
+      idPrograma: 'PRG-MOCK-1', nombrePrograma: e.programa,
+    }));
+    return of(okPagina(estudiantes, req)).pipe(delay(200));
   }
   if (url.endsWith('/coordinador/planes-estudio') && method === 'POST') {
     const body = req.body as any;
@@ -317,8 +381,8 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   if (url.includes('/coordinador/planes-estudio/') && url.endsWith('/asignaturas') && method === 'GET') {
     const segments = url.split('/');
     const planId = segments[segments.length - 2];
-    const asignaturas = mockStore.asignaturasPlan[planId] || [];
-    return of(okResponse(asignaturas)).pipe(delay(200));
+    const asignaturas = (mockStore.asignaturasPlan[planId] || []).map((a) => vinculoMock(a, planId));
+    return of(okPagina(asignaturas, req)).pipe(delay(200));
   }
 
   // ================= DECANO Y ADMINISTRADOR: CONSULTAS TRANSVERSALES (HU112/HU128/HU143/HU157) =================
@@ -374,17 +438,20 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     return of(okResponse(estructura, undefined, estructura.length)).pipe(delay(200));
   }
   if (url.includes('/decano/planes-estudio/') && url.endsWith('/asignaturas') && method === 'GET') {
+    const planId = url.split('/').slice(-2)[0];
+    const semestre = Number(req.params.get('semestre')) || 0;
+    const caracter = req.params.get('caracter');
+    const busqueda = (req.params.get('busqueda') ?? '').toLowerCase();
     const asignaturas = [
-      {
-        id: 'ASG-1', codigo: 'SIS-101', nombre: 'Cálculo Diferencial', credito: 4, codigoSemestre: 'S1',
-        nombreArea: 'Ciencias Básicas', nombreComponente: 'Obligatorio',
-      },
-      {
-        id: 'ASG-2', codigo: 'SIS-201', nombre: 'Estructuras de Datos', credito: 3, codigoSemestre: 'S2',
-        nombreArea: 'Software', nombreComponente: 'Obligatorio',
-      },
-    ];
-    return of(okResponse(asignaturas, undefined, asignaturas.length)).pipe(delay(200));
+      vinculoMock({ id: 'ASG-1', codigo: 'SIS-101', nombre: 'Cálculo Diferencial', creditos: 4, semestre: 1, area: 'Ciencias Básicas', componente: 'Obligatorio' }, planId),
+      vinculoMock({ id: 'ASG-2', codigo: 'SIS-201', nombre: 'Estructuras de Datos', creditos: 3, semestre: 2, area: 'Software', componente: 'Obligatorio' }, planId),
+    ].filter(
+      (a) =>
+        (!semestre || a.numeroSemestre === semestre) &&
+        (!caracter || a.codigoCaracter === caracter) &&
+        (!busqueda || a.codigo.toLowerCase().includes(busqueda) || a.nombre.toLowerCase().includes(busqueda))
+    );
+    return of(okPagina(asignaturas, req)).pipe(delay(200));
   }
   if (url.endsWith('/decano/sesiones') && method === 'GET') {
     const sesiones = [
@@ -533,12 +600,12 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
         nombreAsignatura: 'Matemática Avanzada III', nombreDocente: 'Docente Mock', idPeriodoAcademico: 'PER-2026-2',
         nombrePeriodoAcademico: '2026-2', fechaInicioPeriodo: '2026-07-20', fechaFinPeriodo: '2026-12-10', estadoPeriodo: 'VIGENTE',
         horario: 'Lunes 08:00-10:00; Miercoles 08:00-10:00', capacidadMaxima: 35, estudiantesActivos: 30, cuposDisponibles: 5,
-        matriculado: false, tipoAsignatura: 'ESPECIFICA', transversal: false },
+        matriculado: false, tipoAsignatura: 'ESPECIFICA', transversal: false, codigoCaracter: 'OBL', nombreCaracter: 'Obligatoria' },
       { idGrupo: 'grp-oferta-2', codigoGrupo: 2, nombreGrupo: 'Grupo 2', idAsignatura: 'asg-of-2', codigoAsignatura: 'FIS201',
         nombreAsignatura: 'Física II', nombreDocente: 'Docente Mock', idPeriodoAcademico: 'PER-2027-1',
         nombrePeriodoAcademico: '2027-1', fechaInicioPeriodo: '2027-01-20', fechaFinPeriodo: '2027-06-10', estadoPeriodo: 'PROXIMO',
         horario: null, capacidadMaxima: 30, estudiantesActivos: 30, cuposDisponibles: 0, matriculado: false,
-        tipoAsignatura: 'INSTITUCIONAL', transversal: true },
+        tipoAsignatura: 'INSTITUCIONAL', transversal: true, codigoCaracter: null, nombreCaracter: null },
     ];
     return of(okResponse(oferta, undefined, oferta.length)).pipe(delay(250));
   }

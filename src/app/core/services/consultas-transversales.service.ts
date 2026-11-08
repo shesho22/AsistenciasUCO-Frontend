@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiResponse } from '../models/api-response.model';
 import {
@@ -70,7 +70,7 @@ export class ConsultasTransversalesService {
   }
 
   /** HU172: rastro de auditoría del administrador, paginado y con rango de fechas. */
-  getAuditoria(filtro: FiltroAuditoria): Observable<ApiResponse<EventoAuditoriaItem[]>> {
+  getAuditoria(filtro: FiltroAuditoria): Observable<any> {
     return this.listar(`${this.admin}/auditoria`, filtro);
   }
 
@@ -89,7 +89,22 @@ export class ConsultasTransversalesService {
     return this.http.get<ApiResponse<ComponenteFormacionItem[]>>(`${this.coordinador}/componentes-formacion`);
   }
 
-  private listar<T>(url: string, filtro: FiltroListado | FiltroConsolidado | FiltroAuditoria): Observable<ApiResponse<T[]>> {
-    return this.http.get<ApiResponse<T[]>>(url, { params: parametros({ ...filtro }) });
+  private listar<T>(url: string, filtro: FiltroListado | FiltroConsolidado | FiltroAuditoria): Observable<any> {
+    return this.http.get<any>(url, { params: parametros({ ...filtro }) }).pipe(
+      map((res: any) => {
+        const items: T[] = res?.elementos ?? res?.datos ?? [];
+        const total = res?.totalElementos ?? res?.total ?? items.length;
+        return {
+          ...res,
+          datos: items,
+          elementos: items,
+          total,
+          totalElementos: total,
+          numeroPagina: res?.numeroPagina ?? (filtro as any)?.pagina ?? 1,
+          tamanoPagina: res?.tamanoPagina ?? (filtro as any)?.tamano ?? items.length,
+          totalPaginas: res?.totalPaginas ?? (Math.ceil(total / ((filtro as any)?.tamano || 10)) || 1),
+        };
+      })
+    );
   }
 }

@@ -62,6 +62,8 @@ export const environment = {
     sessionQrEnabled: true,
     // GET /usuarios/perfil para hidratar el nombre al iniciar sesión: apagado por defecto; habilitar con USER_PROFILE_ENDPOINT_ENABLED=true (el PUT fue retirado en CULM-001 A.2-14)
     userProfileEndpointEnabled: runtimeFlag('USER_PROFILE_ENDPOINT_ENABLED'),
+    // CULM-001 C.1: cancelación por inasistencia y flujo de revisión
+    cancelacionInasistenciaEnabled: true,
   },
   keycloak: {
     get url(): string {

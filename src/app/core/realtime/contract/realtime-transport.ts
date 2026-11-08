@@ -1,5 +1,5 @@
 import { InjectionToken } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, EMPTY, of } from 'rxjs';
 import { RealtimeEvent } from '../model/realtime-event.model';
 import { RealtimeConnectionState } from '../model/realtime-connection-state.model';
 
@@ -25,5 +25,15 @@ export interface RealtimeSubscriptionScope {
 }
 
 export const REALTIME_TRANSPORT = new InjectionToken<RealtimeTransport>(
-  'REALTIME_TRANSPORT'
+  'REALTIME_TRANSPORT',
+  {
+    providedIn: 'root',
+    factory: () => ({
+      events$: EMPTY,
+      connectionState: undefined as any,
+      connectionState$: of('DISCONNECTED' as RealtimeConnectionState),
+      start: () => {},
+      stop: () => {},
+    }),
+  }
 );
