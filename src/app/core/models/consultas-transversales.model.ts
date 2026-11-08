@@ -197,6 +197,8 @@ export interface CategoriaJustificacionItem {
   /** Texto que el formulario de reclamo envía como `categoria` (contrato vigente del radicado). */
   nombre: string;
   descripcion: string | null;
+  /** CULM-001 D.2 (HU014): indica si la categoría exige adjuntar al menos un soporte documental. */
+  requiereSoporte?: boolean;
 }
 
 export interface EstadoSistemaItem {

@@ -5,6 +5,7 @@ import { SOPORTE_ACCEPT } from '../../../../core/files/soporte-file.validator';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { FormFieldComponent } from '../../../../shared/components/form-field/form-field.component';
 import {
+  ConfiguracionReclamosDTO,
   MateriaEstudianteItem,
   SesionMateriaDetalle,
   CategoriaJustificacion,
@@ -207,6 +208,8 @@ export class StudentClaimFormComponent {
   materia = input<MateriaEstudianteItem | null>(null);
   sesion = input<SesionMateriaDetalle | null>(null);
   archivo = input<SoporteAdjuntoItem | null>(null);
+  archivos = input<SoporteAdjuntoItem[]>([]);
+  configuracion = input<ConfiguracionReclamosDTO | null>(null);
   submitting = input<boolean>(false);
   /** Hay una subida del soporte en curso: no se puede radicar hasta conocer el `fileId`. */
   subiendo = input<boolean>(false);
@@ -236,7 +239,9 @@ export class StudentClaimFormComponent {
 
   back = output<void>();
   fileSelected = output<Event>();
+  adjuntar = output<File>();
   removeFile = output<void>();
+  quitar = output<number>();
   submitted = output<{
     categoria: CategoriaJustificacion;
     justificacion: string;

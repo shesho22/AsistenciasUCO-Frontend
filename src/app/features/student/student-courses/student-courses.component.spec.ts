@@ -51,9 +51,19 @@ describe('StudentCoursesComponent — soporte y radicación (LB-004D FE-01..FE-0
 
   beforeEach(() => {
     claims = jasmine.createSpyObj<AttendanceClaimService>('AttendanceClaimService', [
-      'subirSoporte', 'crearReclamo', 'getSesionesPorMateria', 'eliminarReclamo',
+      'subirSoporte', 'crearReclamo', 'getSesionesPorMateria', 'eliminarReclamo', 'getConfiguracionReclamos',
     ]);
     claims.getSesionesPorMateria.and.returnValue(of({ exitoso: true, datos: [] }) as never);
+    claims.getConfiguracionReclamos.and.returnValue(of({
+      exitoso: true,
+      datos: {
+        maximoSoportes: 3,
+        tamanioMaximoBytes: 5242880,
+        tiposPermitidos: ['application/pdf', 'image/jpeg', 'image/png'],
+        limiteSubidasPorMinuto: 10,
+        diasLimiteJustificacion: 5,
+      },
+    }) as never);
     toast = jasmine.createSpyObj<ToastService>('ToastService', ['success', 'error', 'warning', 'info']);
 
     TestBed.configureTestingModule({
@@ -288,6 +298,62 @@ describe('StudentCoursesComponent — soporte y radicación (LB-004D FE-01..FE-0
     expect(component.errorSoporte()).toContain('ya no está disponible');
     expect(component.enviandoReclamo()).toBeFalse();
   });
+
+  describe('CULM-001 D.2 — soporte múltiple y estado individual por archivo (HU015, HU014)', () => {
+    it('carga la configuración de reclamos al iniciar', () => {
+      expect(claims.getConfiguracionReclamos).toHaveBeenCalled();
+      expect(component.configuracionReclamos()?.maximoSoportes).toBe(3);
+    });
+
+    it('mantiene el estado individual de subida: si el segundo archivo es rechazado por antivirus o 429, no afecta al primero', () => {
+      claims.subirSoporte.and.returnValues(
+        of({ exitoso: true, datos: { fileId: 'f-1', nombre: 'a.pdf', url: '/api/v1/archivos/f-1', tamanio: 1024 } }) as never,
+        throwError(() => new HttpErrorResponse({
+          status: 400,
+          error: { message: 'El archivo contiene malware según ClamAV.' },
+        })) as never
+      );
+
+      component.onFileSelected(evento(archivo('a.pdf', 1024, 'application/pdf')).event);
+      component.onFileSelected(evento(archivo('b.pdf', 2048, 'application/pdf')).event);
+
+      const adjuntos = component.archivosAdjuntos();
+      expect(adjuntos.length).toBe(2);
+      expect(adjuntos[0].estado).toBe('LISTO');
+      expect(adjuntos[0].fileId).toBe('f-1');
+      expect(adjuntos[1].estado).toBe('RECHAZADO');
+      expect(adjuntos[1].error).toContain('malware');
+    });
+
+    it('enviarReclamo envía únicamente los fileIds de archivos con estado LISTO', () => {
+      claims.crearReclamo.and.returnValue(of({ exitoso: true, mensajeUsuario: 'Reclamo enviado.' }) as never);
+      component.selectedMateria.set({ id: 'mat-1', nombre: 'Materia 1', docente: 'Docente 1' } as never);
+      component.sesionReclamar.set({ id: 'ses-1', numeroSesion: 1, fecha: '2026-10-10', horario: '10:00', estadoAsistencia: 'AUSENTE', reclamable: true, tema: 'Tema' } as never);
+
+      component.archivosAdjuntos.set([
+        { fileId: 'f-valido-1', nombre: 'valido1.pdf', estado: 'LISTO', tipo: 'application/pdf', tamanioKb: 10, fechaSubida: '2026-10-10' },
+        { fileId: undefined, nombre: 'rechazado.exe', estado: 'RECHAZADO', error: 'Infectado', tipo: 'application/pdf', tamanioKb: 10, fechaSubida: '2026-10-10' },
+      ]);
+
+      component.enviarReclamo({ categoria: 'Médico', justificacion: 'Justificación médica' });
+
+      expect(claims.crearReclamo).toHaveBeenCalledTimes(1);
+      const peticion = claims.crearReclamo.calls.mostRecent().args[0];
+      expect(peticion.soporteArchivoIds).toEqual(['f-valido-1']);
+      expect(peticion.soporteArchivoIds).not.toContain('rechazado.exe');
+    });
+
+    it('removerAdjunto con índice remueve ese archivo específico', () => {
+      component.archivosAdjuntos.set([
+        { fileId: 'f-1', nombre: '1.pdf', estado: 'LISTO', tipo: 'application/pdf', tamanioKb: 10, fechaSubida: '2026-10-10' },
+        { fileId: 'f-2', nombre: '2.pdf', estado: 'LISTO', tipo: 'application/pdf', tamanioKb: 20, fechaSubida: '2026-10-10' },
+      ]);
+
+      component.removerAdjunto(0);
+      expect(component.archivosAdjuntos().length).toBe(1);
+      expect(component.archivosAdjuntos()[0].fileId).toBe('f-2');
+    });
+  });
 });
 
 describe('StudentCoursesComponent', () => {
@@ -308,7 +374,17 @@ describe('StudentCoursesComponent', () => {
 
   beforeEach(async () => {
     studentServiceSpy = jasmine.createSpyObj('StudentManagementService', ['getMaterias']);
-    claimServiceSpy = jasmine.createSpyObj('AttendanceClaimService', ['getSesionesPorMateria', 'crearReclamo', 'eliminarReclamo', 'subirSoporte']);
+    claimServiceSpy = jasmine.createSpyObj('AttendanceClaimService', ['getSesionesPorMateria', 'crearReclamo', 'eliminarReclamo', 'subirSoporte', 'getConfiguracionReclamos']);
+    claimServiceSpy.getConfiguracionReclamos.and.returnValue(of({
+      exitoso: true,
+      datos: {
+        maximoSoportes: 3,
+        tamanioMaximoBytes: 5242880,
+        tiposPermitidos: ['application/pdf'],
+        limiteSubidasPorMinuto: 10,
+        diasLimiteJustificacion: 5,
+      },
+    }) as never);
     authServiceSpy = jasmine.createSpyObj('AuthService', ['currentUser']);
     routerSpy = jasmine.createSpyObj('Router', ['navigate']);
     routerSpy.navigate.and.resolveTo(true);

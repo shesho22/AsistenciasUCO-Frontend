@@ -69,7 +69,21 @@ export interface ReclamoDocenteApi {
   materiaId: string;
   materiaCodigo: string;
   materiaNombre: string;
+  /** CULM-001 D.2: Categoría persistida del reclamo (código y nombre o texto simple). */
+  categoria?: string | { codigo: string; nombre: string } | null;
+  codigoCategoria?: string | null;
+  nombreCategoria?: string | null;
   soporteAdjunto?: ReclamoDocenteSoporteApi | null;
+  /** CULM-001 D.2: Colección completa de soportes documentales adjuntos. */
+  soportes?: Array<{
+    fileId: string;
+    nombre: string;
+    tipo?: string;
+    tipoContenido?: string;
+    tamanioBytes: number;
+    fechaSubidaUtc?: string | null;
+    url?: string | null;
+  }> | null;
 }
 
 /**
@@ -204,7 +218,7 @@ export class ClaimMapper {
       estado_original: model.estadoOriginal ?? '',
       fecha_solicitud: model.fechaSolicitud,
       estado_solicitud: model.estadoSolicitud,
-      categoria: model.categoria ?? null,
+      categoria: typeof model.categoria === 'object' ? (model.categoria?.nombre || model.categoria?.codigo || null) : (model.categoria ?? null),
       soporte_adjunto: model.soporteAdjunto
         ? {
             nombre: model.soporteAdjunto.nombre,

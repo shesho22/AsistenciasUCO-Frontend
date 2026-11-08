@@ -16,6 +16,7 @@ import { RadicacionIntento, huellaRadicacion } from '../../../core/utils/radicac
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
 import { validateSoporteFile } from '../../../core/files/soporte-file.validator';
 import {
+  ConfiguracionReclamosDTO,
   MateriaEstudianteItem,
   SesionMateriaDetalle,
   CategoriaJustificacion,
@@ -136,6 +137,10 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
   sesionReclamar = signal<SesionMateriaDetalle | null>(null);
   /** HU005/HU016: motivos de justificación del catálogo de solo consulta. */
   categoriasJustificacion = signal<CategoriaJustificacionItem[]>([]);
+  /** CULM-001 D.2: Configuración del backend para límites y tipos permitidos de reclamos. */
+  configuracionReclamos = signal<ConfiguracionReclamosDTO | null>(null);
+  /** CULM-001 D.2: Múltiples soportes con seguimiento individual de estado. */
+  archivosAdjuntos = signal<SoporteAdjuntoItem[]>([]);
   archivoAdjunto = signal<SoporteAdjuntoItem | null>(null);
   subiendoSoporte = signal<boolean>(false);
   enviandoReclamo = signal<boolean>(false);
@@ -289,7 +294,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
       });
   }
 
-  removerAdjunto(): void {
+  removerAdjunto(index?: number): void {
     this.cancelarSubida();
     this.archivoAdjunto.set(null);
     this.errorSoporte.set(null);

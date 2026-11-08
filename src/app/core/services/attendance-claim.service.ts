@@ -13,12 +13,21 @@ import { BYPASS_GLOBAL_ERROR_TOAST } from '../interceptors/error.interceptor';
 import { isUuid } from '../utils/uuid.util';
 import { SessionTimeZoneService } from './session-timezone.service';
 import {
+  ConfiguracionReclamosDTO,
   DetalleReclamoDocenteItem,
   EstadoSolicitudRevision,
   SesionMateriaDetalle,
   SolicitudRevisionItem,
   HorarioDocenteItem,
 } from '../models/role-management.model';
+
+export const DEFAULT_CONFIGURACION_RECLAMOS: ConfiguracionReclamosDTO = {
+  maximoSoportes: 3,
+  tamanioMaximoBytes: 5242880,
+  tiposPermitidos: ['application/pdf', 'image/jpeg', 'image/png'],
+  limiteSubidasPorMinuto: 10,
+  diasLimiteJustificacion: 5,
+};
 
 /** Filtro de la bandeja del docente: `estado` P/A/R opcional; `pagina` base 1; `tamano` máximo 100 (límite del backend). */
 export interface FiltroReclamosDocente {
@@ -66,6 +75,10 @@ export class AttendanceClaimService {
   private readonly sessionTimeZone = inject(SessionTimeZoneService);
 
   constructor(private http: HttpClient) {}
+
+  getConfiguracionReclamos(): Observable<ApiDataResponse<ConfiguracionReclamosDTO>> {
+    return throwError(() => new Error('Not implemented'));
+  }
 
   subirSoporte(file: File): Observable<ApiDataResponse<{ fileId: string; nombre: string; url: string; tamanio: number }>> {
     const formData = new FormData();
@@ -268,7 +281,7 @@ export class AttendanceClaimService {
       soporteArchivoId?: string;
     } = {
       sesionId: solicitud.sesionId,
-      categoria: solicitud.categoria,
+      categoria: typeof solicitud.categoria === 'object' ? (solicitud.categoria?.nombre || solicitud.categoria?.codigo) : solicitud.categoria,
       justificacion: solicitud.justificacionSolicitud,
     };
     if (solicitud.soporteAdjunto?.fileId) {
