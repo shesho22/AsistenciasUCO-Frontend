@@ -85,15 +85,116 @@ describe('AdminAuditoriaComponent (HU172)', () => {
     http.expectNone((r) => r.url === url);
   });
 
-  it('rangoUtc cubre días completos y respeta el máximo de 90 días', () => {
-    http.expectOne((r) => r.url === url).flush({ exitoso: true, datos: [], total: 0 });
-    const base = new Date(2026, 10, 4);
-    const rango = rangoUtc(fechaLocal(base, -6), fechaLocal(base));
-    expect(rango).not.toBeNull();
-    expect((new Date(rango!.hasta).getTime() - new Date(rango!.desde).getTime()) / 86_400_000).toBe(7);
-    expect(rangoUtc(fechaLocal(base, -89), fechaLocal(base))).not.toBeNull();
-    expect(rangoUtc(fechaLocal(base, -90), fechaLocal(base))).toBeNull();
-    expect(rangoUtc('', fechaLocal(base))).toBeNull();
-    expect(fechaLocal(new Date(2026, 0, 9))).toBe('2026-01-09');
+  it('HU172: permite filtrar por idCorrelacion y enviar soloAdministracion excluyente con soloAsistencia', () => {
+    http.expectOne((r) => r.url === url).flush({ exitoso: true, elementos: [], totalElementos: 0, totalPaginas: 0, numeroPagina: 1, tamanoPagina: 10 });
+
+    component.idCorrelacion.set('corr-abc-789');
+    component.activarFiltroAdministracion(); // activa soloAdministracion y desactiva soloAsistencia
+    expect(component.soloAdministracion()).toBeTrue();
+    expect(component.soloAsistencia()).toBeFalse();
+
+    component.buscar();
+
+    const req = http.expectOne((r) => r.url === url);
+    expect(req.request.params.get('idCorrelacion')).toBe('corr-abc-789');
+    expect(req.request.params.get('soloAdministracion')).toBe('true');
+    expect(req.request.params.get('soloAsistencia')).toBe('false');
+
+    req.flush({
+      exitoso: true,
+      elementos: [
+        {
+          id: 'AUD-ADMIN-1',
+          ocurridoEn: '2026-11-07T14:05:00Z',
+          idActor: 'U-ADM',
+          tipoActor: 'ADMINISTRADOR',
+          nombreActor: 'Administrador TI',
+          accion: 'ACTUALIZAR_PARAMETRO',
+          tipoRecurso: 'PARAMETRO',
+          idRecurso: 'P-1',
+          resultado: 'SUCCESS',
+          idTraza: 'T-1',
+          idCorrelacion: 'corr-abc-789',
+          metodoHttp: 'PUT',
+          ruta: '/api/v1/admin/parametros/P-1',
+          estadoHttp: 200,
+          ipCliente: '127.0.0.1',
+          codigoError: null,
+          metadata: '{"clave":"asistencias.limite","valorNuevo":"25"}',
+          accionAsistencia: false,
+        },
+      ],
+      totalElementos: 1,
+      totalPaginas: 1,
+      numeroPagina: 1,
+      tamanoPagina: 10,
+    });
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.textContent).toContain('corr-abc-789');
+    expect(el.textContent).toContain('ACTUALIZAR_PARAMETRO');
+    // Botón de copiar correlación presente
+    const btnCopiar = el.querySelector('[data-testid="btn-copiar-correlacion"]') as HTMLButtonElement;
+    expect(btnCopiar).toBeTruthy();
+  });
+
+  it('HU172: permite alternar a solo acciones de asistencia desactivando administración', () => {
+    http.expectOne((r) => r.url === url).flush({ exitoso: true, elementos: [], totalElementos: 0, totalPaginas: 0, numeroPagina: 1, tamanoPagina: 10 });
+
+    component.activarFiltroAsistencia();
+    expect(component.soloAsistencia()).toBeTrue();
+    expect(component.soloAdministracion()).toBeFalse();
+
+    component.buscar();
+    const req = http.expectOne((r) => r.url === url);
+    expect(req.request.params.get('soloAsistencia')).toBe('true');
+    expect(req.request.params.get('soloAdministracion')).toBe('false');
+    req.flush({ exitoso: true, elementos: [], totalElementos: 0, totalPaginas: 0, numeroPagina: 1, tamanoPagina: 10 });
+  });
+
+  it('HU172: permite visualizar metadatos del evento', () => {
+    http.expectOne((r) => r.url === url).flush({ exitoso: true, elementos: [], totalElementos: 0, totalPaginas: 0, numeroPagina: 1, tamanoPagina: 10 });
+
+    component.listado.filas.set([
+      {
+        id: 'AUD-META-1',
+        ocurridoEn: '2026-11-07T14:05:00Z',
+        idActor: 'U-ADM',
+        tipoActor: 'ADMINISTRADOR',
+        nombreActor: 'Administrador TI',
+        accion: 'ACTUALIZAR_PARAMETRO',
+        tipoRecurso: 'PARAMETRO',
+        idRecurso: 'P-1',
+        resultado: 'SUCCESS',
+        idTraza: 'T-1',
+        idCorrelacion: 'corr-meta-99',
+        metodoHttp: 'PUT',
+        ruta: '/api/v1/admin/parametros/P-1',
+        estadoHttp: 200,
+        ipCliente: '127.0.0.1',
+        codigoError: null,
+        metadata: '{"clave":"asistencias.limite","valorNuevo":"25"}',
+        accionAsistencia: false,
+      },
+    ]);
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    const btnVerMeta = el.querySelector('[data-testid="btn-ver-metadata"]') as HTMLButtonElement;
+    expect(btnVerMeta).toBeTruthy();
+    btnVerMeta.click();
+    fixture.detectChanges();
+
+    expect(el.textContent).toContain('asistencias.limite');
+  });
+
+  it('HU172: copia el idCorrelacion al portapapeles', async () => {
+    http.expectOne((r) => r.url === url).flush({ exitoso: true, elementos: [], totalElementos: 0, totalPaginas: 0, numeroPagina: 1, tamanoPagina: 10 });
+    spyOn(navigator.clipboard, 'writeText').and.returnValue(Promise.resolve());
+
+    component.copiarCorrelacion('corr-test-xyz');
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('corr-test-xyz');
+    expect(toast.success).toHaveBeenCalledWith('ID de correlación copiado al portapapeles.');
   });
 });

@@ -275,6 +275,11 @@ export class AdminSystemComponent implements OnInit {
   /** El cierre es real e irreversible: primero se pide confirmación en un diálogo accesible. */
   cierrePendiente = signal<boolean>(false);
 
+  parametroSeleccionadoEdicion = signal<ParametroAdminDto | null>(null);
+  modalEdicionAbierto = signal<boolean>(false);
+
+  toggleMostrarTecnicos(mostrar: boolean): void {}
+
   parametros = this.adminService.parametros;
   reportesCierre = this.adminService.reportesCierre;
   periodos = this.coordService.periodos;

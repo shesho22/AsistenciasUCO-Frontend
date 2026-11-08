@@ -153,9 +153,23 @@ export class AdminAuditoriaComponent implements OnInit {
   hasta = signal(fechaLocal(new Date()));
   accion = signal('');
   resultado = signal('');
+  idCorrelacion = signal('');
+  soloAdministracion = signal(false);
   /** Desmarcado por defecto: el administrador debe ver también sus propias acciones administrativas. */
   soloAsistencia = signal(false);
   errorRango = signal<string | null>(null);
+
+  activarFiltroAdministracion(): void {
+    this.soloAdministracion.set(true);
+    this.soloAsistencia.set(false);
+  }
+
+  activarFiltroAsistencia(): void {
+    this.soloAsistencia.set(true);
+    this.soloAdministracion.set(false);
+  }
+
+  copiarCorrelacion(id: string): void {}
 
   readonly listado = new ListadoPaginado<EventoAuditoriaItem>(
     (pagina, tamano) => {

@@ -373,9 +373,38 @@ export interface ParametroAdminDto {
   grupo: string;
   clave: string;
   valor: string;
+  valorDefecto?: string;
   tipoDato: string;
-  valorDefecto: string;
-  estaActivo: boolean;
+  esEditable?: boolean;
+  valorMinimo?: number | null;
+  valorMaximo?: number | null;
+  valoresPermitidos?: string[] | string | null;
+  etiqueta?: string;
+  descripcion?: string;
+  unidad?: string | null;
+  categoriaVisual?: string;
+  orden?: number;
+  fechaModificacion?: string;
+  fechaUltimoCambioUtc?: string | null;
+  nombreUltimoActor?: string | null;
+  esGrupoProtegido?: boolean;
+  estaActivo?: boolean;
+}
+
+export interface ParametroActualizadoDto {
+  id: string;
+  grupo: string;
+  clave: string;
+  valorAnterior: string;
+  valorNuevo: string;
+  fechaModificacion: string;
+  sinCambios: boolean;
+}
+
+export interface ActualizarParametroRequest {
+  valor: string;
+  fechaModificacionEsperada: string;
+  motivo: string;
 }
 
 export interface RegistroAuditoriaItem {

@@ -228,7 +228,7 @@ export class AdminManagementService {
   }
 
   // ================= PARÁMETROS INSTITUCIONALES =================
-  cargarParametros(): Observable<ApiResponse<ParametroAdminDto[]>> {
+  cargarParametros(filtro?: { grupo?: string; texto?: string; soloEditables?: boolean; pagina?: number; tamano?: number }): Observable<any> {
     return this.http.get<ApiResponse<ParametroAdminDto[]>>(`${environment.apiUrl}/admin/parametros`).pipe(
       tap((res) => {
         if (res.exitoso && res.datos) {
@@ -236,6 +236,10 @@ export class AdminManagementService {
         }
       })
     );
+  }
+
+  actualizarParametro(id: string, payload: { valor: string; fechaModificacionEsperada: string; motivo: string }): Observable<any> {
+    return this.http.put(`${environment.apiUrl}/admin/parametros/${id}`, payload);
   }
 
   // ================= CIERRE MASIVO =================
