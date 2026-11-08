@@ -1,14 +1,17 @@
 import { Injectable, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiResponse } from '../models/api-response.model';
+import { ApiPageResponse } from '../api/models/api-page-response.model';
 import {
   DecanoItem,
   FacultadItem,
   AreaConocimientoItem,
   TipoProgramaItem,
   ParametroAdminDto,
+  ParametroActualizadoDto,
+  ActualizarParametroRequest,
   CierrePeriodoReporte,
   InstitucionItem,
 } from '../models/role-management.model';
@@ -228,18 +231,47 @@ export class AdminManagementService {
   }
 
   // ================= PARÁMETROS INSTITUCIONALES =================
-  cargarParametros(filtro?: { grupo?: string; texto?: string; soloEditables?: boolean; pagina?: number; tamano?: number }): Observable<any> {
-    return this.http.get<ApiResponse<ParametroAdminDto[]>>(`${environment.apiUrl}/admin/parametros`).pipe(
-      tap((res) => {
-        if (res.exitoso && res.datos) {
-          this._parametros.set(res.datos);
-        }
+  cargarParametros(filtro?: {
+    grupo?: string;
+    texto?: string;
+    soloEditables?: boolean;
+    pagina?: number;
+    tamano?: number;
+  }): Observable<ApiPageResponse<ParametroAdminDto> & { datos: ParametroAdminDto[] }> {
+    let params = new HttpParams();
+    if (filtro?.grupo) params = params.set('grupo', filtro.grupo);
+    if (filtro?.texto) params = params.set('texto', filtro.texto);
+    if (filtro?.soloEditables !== undefined && filtro?.soloEditables !== null) {
+      params = params.set('soloEditables', String(filtro.soloEditables));
+    }
+    if (filtro?.pagina) params = params.set('pagina', String(filtro.pagina));
+    if (filtro?.tamano) params = params.set('tamano', String(filtro.tamano));
+
+    return this.http.get<any>(`${environment.apiUrl}/admin/parametros`, { params }).pipe(
+      map((res: any) => {
+        const elementos: ParametroAdminDto[] = res?.elementos ?? res?.datos ?? [];
+        this._parametros.set(elementos);
+        return {
+          exitoso: res?.exitoso ?? true,
+          elementos,
+          datos: elementos,
+          numeroPagina: res?.numeroPagina ?? filtro?.pagina ?? 1,
+          tamanoPagina: res?.tamanoPagina ?? filtro?.tamano ?? elementos.length,
+          totalElementos: res?.totalElementos ?? res?.total ?? elementos.length,
+          totalPaginas: res?.totalPaginas ?? 1,
+        };
       })
     );
   }
 
-  actualizarParametro(id: string, payload: { valor: string; fechaModificacionEsperada: string; motivo: string }): Observable<any> {
-    return this.http.put(`${environment.apiUrl}/admin/parametros/${id}`, payload);
+  actualizarParametro(
+    id: string,
+    payload: ActualizarParametroRequest
+  ): Observable<ApiResponse<ParametroActualizadoDto>> {
+    return this.http.put<ApiResponse<ParametroActualizadoDto>>(
+      `${environment.apiUrl}/admin/parametros/${id}`,
+      payload
+    );
   }
 
   // ================= CIERRE MASIVO =================

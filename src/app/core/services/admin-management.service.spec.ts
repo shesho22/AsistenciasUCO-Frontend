@@ -367,7 +367,7 @@ describe('AdminManagementService', () => {
   it('cargarParametros conserva los datos del DTO de parámetros recibido por GET', () => {
     service.cargarParametros().subscribe((res) => {
       expect(res.exitoso).toBeTrue();
-      expect(res.datos?.length).toBe(1);
+      expect(res.elementos?.length).toBe(1);
     });
 
     const getReq = http.expectOne(`${environment.apiUrl}/admin/parametros`);

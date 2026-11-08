@@ -1,4 +1,12 @@
-import { Component, OnInit, inject, signal, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  inject,
+  signal,
+  computed,
+  ChangeDetectionStrategy,
+  DestroyRef,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -7,12 +15,14 @@ import { AdminManagementService } from '../../../core/services/admin-management.
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import {
   ParametroAdminDto,
   CierrePeriodoReporte,
 } from '../../../core/models/role-management.model';
 import { AdminAuditoriaComponent } from './admin-auditoria.component';
+import { ParametroEdicionModalComponent } from './parametro-edicion-modal.component';
 
 type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
 
@@ -20,7 +30,15 @@ type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
   selector: 'app-admin-system',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, RouterLink, AdminAuditoriaComponent, ConfirmDialogComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    RouterLink,
+    AdminAuditoriaComponent,
+    ConfirmDialogComponent,
+    PaginationComponent,
+    ParametroEdicionModalComponent,
+  ],
   template: `
     <div class="space-y-6">
       <!-- ================= HEADER & BREADCRUMB ================= -->
@@ -108,45 +126,177 @@ type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
         </button>
       </div>
 
-      <!-- ================= TAB 1: PARÁMETROS DEL SISTEMA ================= -->
+      <!-- ================= TAB 1: PARÁMETROS DEL SISTEMA (HU168) ================= -->
       @if (tabActiva() === 'PARAMETROS') {
-        <div role="tabpanel" id="panel-parametros" aria-labelledby="tab-parametros" class="grid grid-cols-1 md:grid-cols-2 gap-5">
-          @for (p of parametros(); track p.id) {
-            <div class="bg-white border border-warm-200 rounded-2xl p-5 shadow-warm-sm flex flex-col justify-between h-full">
-              <div>
-                <div class="flex items-center justify-between gap-3 mb-2">
-                  <span class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-warm-100 text-warm-700">
-                    {{ p.clave }}
-                  </span>
-                  <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-primary-50 text-primary-800 border border-primary-100">
-                    {{ p.grupo }}
-                  </span>
-                </div>
-
-                <h3 class="font-bold text-warm-900 text-sm mb-1.5">{{ p.clave }}</h3>
-                <p class="text-xs text-warm-600 mb-4 leading-relaxed">Parámetro institucional</p>
-
-                <div class="bg-warm-50 p-3.5 rounded-xl border border-warm-100 mb-4">
-                  <label class="block text-[10px] font-bold text-warm-500 uppercase mb-1.5">Valor Configurado Actual</label>
-                  <input
-                    type="text"
-                    [value]="p.valor"
-                    readonly
-                    aria-label="Valor configurado actual"
-                    class="w-full px-3 py-1.5 bg-white border border-warm-200 rounded-lg text-xs font-bold text-warm-900"
-                  />
-                  <p role="status" class="mt-3 text-xs text-warm-600">
-                    Edición de parámetros no disponible. Los valores se muestran en modo consulta.
-                  </p>
-                </div>
+        <div role="tabpanel" id="panel-parametros" aria-labelledby="tab-parametros" class="space-y-6">
+          <!-- Filtros de búsqueda y switch de parámetros técnicos -->
+          <div class="bg-white p-4 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
+              <!-- Buscador por texto -->
+              <div class="relative flex-1">
+                <input
+                  type="search"
+                  aria-label="Buscar parámetros por clave, etiqueta o descripción"
+                  placeholder="Buscar parámetro..."
+                  [ngModel]="textoFiltro()"
+                  (ngModelChange)="onFiltroTextoChange($event)"
+                  class="w-full min-h-[44px] pl-9 pr-3 py-2 bg-white border border-warm-200 rounded-xl text-xs font-semibold text-warm-900 focus:outline-none focus:ring-2 focus:ring-primary-600"
+                />
+                <svg aria-hidden="true" class="w-4 h-4 text-warm-400 absolute left-3 top-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
               </div>
 
-              <div class="text-[10px] text-warm-400 flex items-center justify-between pt-2 border-t border-warm-100">
-                <span>Tipo: {{ p.tipoDato }}</span>
-                <span>Estado: {{ p.estaActivo ? 'Activo' : 'Inactivo' }}</span>
-              </div>
+              <!-- Filtro de Grupo -->
+              <select
+                aria-label="Filtrar por grupo institucional"
+                [ngModel]="grupoFiltro()"
+                (ngModelChange)="onFiltroGrupoChange($event)"
+                class="min-h-[44px] px-3 py-2 bg-white border border-warm-200 rounded-xl text-xs font-semibold text-warm-800 focus:outline-none focus:ring-2 focus:ring-primary-600"
+              >
+                <option value="">Todos los grupos</option>
+                @for (grp of gruposDisponibles(); track grp) {
+                  <option [value]="grp">{{ grp }}</option>
+                }
+              </select>
             </div>
+
+            <!-- Switch: Mostrar parámetros técnicos (solo lectura) -->
+            <label class="inline-flex items-center gap-2.5 cursor-pointer text-xs font-semibold text-warm-700 select-none shrink-0 min-h-[44px]">
+              <input
+                type="checkbox"
+                role="switch"
+                aria-label="Mostrar parámetros técnicos (solo lectura)"
+                [checked]="mostrarTecnicos()"
+                (change)="toggleMostrarTecnicos($any($event.target).checked)"
+                class="w-4 h-4 text-primary-700 rounded border-warm-300 focus:ring-primary-600"
+              />
+              <span>Mostrar parámetros técnicos (solo lectura)</span>
+            </label>
+          </div>
+
+          <!-- Listado Agrupado por Categoría Visual -->
+          @if (cargandoParametros()) {
+            <p role="status" class="text-center py-10 text-sm text-warm-500">Cargando parámetros del sistema…</p>
+          } @else if (parametrosPorCategoria().length === 0) {
+            <div class="bg-white rounded-2xl p-8 border border-warm-200 text-center">
+              <p class="text-sm font-semibold text-warm-700">No se encontraron parámetros con los filtros aplicados.</p>
+              <p class="text-xs text-warm-500 mt-1">Pruebe ajustando el texto de búsqueda o activando la visualización de parámetros técnicos.</p>
+            </div>
+          } @else {
+            <div class="space-y-6">
+              @for (grupoCat of parametrosPorCategoria(); track grupoCat.categoria) {
+                <div class="space-y-3">
+                  <div class="flex items-center gap-2 border-b border-warm-200 pb-2">
+                    <h3 class="text-base font-serif font-bold text-warm-900">{{ grupoCat.categoria }}</h3>
+                    <span class="text-[11px] font-bold text-warm-500 bg-warm-100 px-2 py-0.5 rounded-full">
+                      {{ grupoCat.items.length }}
+                    </span>
+                  </div>
+
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    @for (p of grupoCat.items; track p.id) {
+                      <div class="bg-white border border-warm-200 rounded-2xl p-5 shadow-warm-sm flex flex-col justify-between hover:shadow-warm-md transition-shadow">
+                        <div>
+                          <!-- Header fila -->
+                          <div class="flex items-center justify-between gap-3 mb-2">
+                            <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-warm-100 text-warm-700">
+                              {{ p.clave }}
+                            </span>
+                            <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-primary-50 text-primary-800 border border-primary-100">
+                              {{ p.grupo }}
+                            </span>
+                          </div>
+
+                          <!-- Etiqueta y Descripción -->
+                          <h4 class="font-bold text-warm-900 text-sm mb-1">
+                            {{ p.etiqueta || p.clave }}
+                          </h4>
+                          <p class="text-xs text-warm-600 mb-3 leading-relaxed">
+                            {{ p.descripcion || 'Parámetro de configuración del sistema.' }}
+                          </p>
+
+                          <!-- Valor Configurado -->
+                          <div class="bg-warm-50 p-3 rounded-xl border border-warm-100 mb-3 flex items-center justify-between gap-3">
+                            <div>
+                              <span class="block text-[10px] font-bold text-warm-500 uppercase">Valor Actual</span>
+                              <span class="text-sm font-bold text-warm-900">
+                                {{ p.valor }}
+                                @if (p.unidad) {
+                                  <span class="text-xs font-normal text-warm-600 ml-1">{{ p.unidad }}</span>
+                                }
+                              </span>
+                            </div>
+
+                            @if (p.valorMinimo != null && p.valorMaximo != null) {
+                              <span class="text-[10px] text-warm-500 font-mono">
+                                Rango: [{{ p.valorMinimo }}..{{ p.valorMaximo }}]
+                              </span>
+                            } @else if (p.valoresPermitidos) {
+                              <span class="text-[10px] text-warm-500 font-mono truncate max-w-[140px]" title="{{ p.valoresPermitidos }}">
+                                Permitidos: {{ p.valoresPermitidos }}
+                              </span>
+                            }
+                          </div>
+                        </div>
+
+                        <!-- Footer con Meta y Botón de Edición -->
+                        <div class="pt-3 border-t border-warm-100 flex flex-wrap items-center justify-between gap-2">
+                          <div class="text-[10px] text-warm-500">
+                            @if (p.nombreUltimoActor || p.fechaUltimoCambioUtc) {
+                              <span>Último cambio por <strong>{{ p.nombreUltimoActor || 'Admin TI' }}</strong></span>
+                              @if (p.fechaUltimoCambioUtc) {
+                                <span class="block text-warm-400 font-mono">{{ p.fechaUltimoCambioUtc | date: 'yyyy-MM-dd HH:mm' }}</span>
+                              }
+                            } @else {
+                              <span>Tipo: {{ p.tipoDato }}</span>
+                            }
+                          </div>
+
+                          @if (p.esEditable === true) {
+                            <button
+                              type="button"
+                              [attr.data-testid]="'btn-editar-' + p.id"
+                              (click)="abrirModalEdicion(p)"
+                              class="min-h-[44px] px-3.5 py-1.5 bg-primary-700 hover:bg-primary-800 text-white rounded-xl text-xs font-bold shadow-xs transition-all flex items-center gap-1.5"
+                              [attr.aria-label]="'Editar parámetro ' + (p.etiqueta || p.clave)"
+                            >
+                              <svg aria-hidden="true" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                              </svg>
+                              <span>Editar</span>
+                            </button>
+                          } @else {
+                            <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-warm-100 text-warm-600">
+                              Solo lectura
+                            </span>
+                          }
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+
+            <!-- Paginación -->
+            <app-pagination
+              [totalItems]="totalElementos()"
+              [pageSize]="tamanoPagina()"
+              [currentPage]="paginaActual()"
+              (pageChange)="cambiarPagina($event)"
+              (pageSizeChange)="cambiarTamano($event)"
+            />
           }
+
+          <!-- Modal de Edición de Parámetro (HU168) -->
+          <app-parametro-edicion-modal
+            [isOpen]="modalEdicionAbierto()"
+            [parametro]="parametroSeleccionadoEdicion()"
+            (guardado)="onParametroGuardado()"
+            (recargarRequerido)="cargarParametros()"
+            (cerrar)="modalEdicionAbierto.set(false)"
+          />
         </div>
       }
 
@@ -268,35 +418,128 @@ export class AdminSystemComponent implements OnInit {
   private adminService = inject(AdminManagementService);
   private coordService = inject(CoordinatorManagementService);
   private toast = inject(ToastService);
+  private destroyRef = inject(DestroyRef);
 
   tabActiva = signal<TabAdminSystem>('PARAMETROS');
   periodoSeleccionadoCierre = '2026-2';
   isProcesandoCierre = signal<boolean>(false);
-  /** El cierre es real e irreversible: primero se pide confirmación en un diálogo accesible. */
   cierrePendiente = signal<boolean>(false);
+
+  // Parámetros y Filtros
+  textoFiltro = signal<string>('');
+  grupoFiltro = signal<string>('');
+  mostrarTecnicos = signal<boolean>(false);
+  paginaActual = signal<number>(1);
+  tamanoPagina = signal<number>(20);
+  totalElementos = signal<number>(0);
+  totalPaginas = signal<number>(1);
+  cargandoParametros = signal<boolean>(false);
 
   parametroSeleccionadoEdicion = signal<ParametroAdminDto | null>(null);
   modalEdicionAbierto = signal<boolean>(false);
-
-  toggleMostrarTecnicos(mostrar: boolean): void {}
 
   parametros = this.adminService.parametros;
   reportesCierre = this.adminService.reportesCierre;
   periodos = this.coordService.periodos;
 
+  parametrosPorCategoria = computed(() => {
+    const list = this.parametros();
+    const map = new Map<string, ParametroAdminDto[]>();
+    for (const p of list) {
+      const cat = p.categoriaVisual || 'General';
+      if (!map.has(cat)) {
+        map.set(cat, []);
+      }
+      map.get(cat)!.push(p);
+    }
+    for (const items of map.values()) {
+      items.sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0));
+    }
+    return Array.from(map.entries()).map(([categoria, items]) => ({
+      categoria,
+      items,
+    }));
+  });
+
+  gruposDisponibles = computed(() => {
+    const set = new Set<string>();
+    for (const p of this.parametros()) {
+      if (p.grupo) set.add(p.grupo);
+    }
+    return Array.from(set).sort();
+  });
+
   ngOnInit(): void {
     this.coordService.cargarPeriodosAcademicosBase();
-    this.adminService.cargarParametros().subscribe();
+    this.cargarParametros();
   }
 
-  private destroyRef = inject(DestroyRef);
+  cargarParametros(): void {
+    this.cargandoParametros.set(true);
+    this.adminService
+      .cargarParametros({
+        grupo: this.grupoFiltro() || undefined,
+        texto: this.textoFiltro().trim() || undefined,
+        soloEditables: !this.mostrarTecnicos(),
+        pagina: this.paginaActual(),
+        tamano: this.tamanoPagina(),
+      })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => {
+          this.cargandoParametros.set(false);
+          this.totalElementos.set(res?.totalElementos ?? this.parametros().length);
+          this.totalPaginas.set(res?.totalPaginas ?? 1);
+        },
+        error: (err) => {
+          this.cargandoParametros.set(false);
+          this.toast.error(getApiErrorMessage(err));
+        },
+      });
+  }
 
-  /** Evita NaN% cuando el total es 0. */
+  toggleMostrarTecnicos(mostrar: boolean): void {
+    this.mostrarTecnicos.set(mostrar);
+    this.paginaActual.set(1);
+    this.cargarParametros();
+  }
+
+  onFiltroTextoChange(texto: string): void {
+    this.textoFiltro.set(texto);
+    this.paginaActual.set(1);
+    this.cargarParametros();
+  }
+
+  onFiltroGrupoChange(grupo: string): void {
+    this.grupoFiltro.set(grupo);
+    this.paginaActual.set(1);
+    this.cargarParametros();
+  }
+
+  cambiarPagina(nuevaPagina: number): void {
+    this.paginaActual.set(nuevaPagina);
+    this.cargarParametros();
+  }
+
+  cambiarTamano(nuevoTamano: number): void {
+    this.tamanoPagina.set(nuevoTamano);
+    this.paginaActual.set(1);
+    this.cargarParametros();
+  }
+
+  abrirModalEdicion(p: ParametroAdminDto): void {
+    this.parametroSeleccionadoEdicion.set(p);
+    this.modalEdicionAbierto.set(true);
+  }
+
+  onParametroGuardado(): void {
+    this.cargarParametros();
+  }
+
   porcentaje(parte: number, total: number): string {
     return total > 0 ? `${((parte / total) * 100).toFixed(1)}%` : '—';
   }
 
-  /** Navegación con flechas entre pestañas (patrón WAI-ARIA tabs). */
   onTabKeydown(event: KeyboardEvent): void {
     const orden: TabAdminSystem[] = ['PARAMETROS', 'AUDITORIA', 'CIERRE_MASIVO'];
     const actual = orden.indexOf(this.tabActiva());
@@ -319,7 +562,6 @@ export class AdminSystemComponent implements OnInit {
   confirmarCierre(): void {
     this.cierrePendiente.set(false);
 
-    // Resolver ID de período si existe en la lista de períodos, o usar el código como fallback
     const periodoObj = this.periodos().find((p) => p.codigo === this.periodoSeleccionadoCierre);
     const idPeriodo = periodoObj ? periodoObj.id : this.periodoSeleccionadoCierre;
 
