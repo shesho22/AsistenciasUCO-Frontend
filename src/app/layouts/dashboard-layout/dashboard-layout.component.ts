@@ -1,4 +1,4 @@
-import { Component, signal, inject, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Component, signal, inject, computed, effect, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
@@ -7,6 +7,9 @@ import { AvatarComponent } from '../../shared/components/avatar/avatar.component
 import { BadgeComponent } from '../../shared/components/badge/badge.component';
 import { ToastComponent, ToastService } from '../../shared/components/toast/toast.component';
 import { IconComponent, IconName } from '../../shared/components/icon/icon.component';
+import { AlertaInasistenciaService } from '../../core/services/alerta-inasistencia.service';
+import { RevisionCancelacionService } from '../../core/services/revision-cancelacion.service';
+import { environment } from '../../../environments/environment';
 
 interface NavItem {
   label: string;
@@ -223,6 +226,39 @@ export class DashboardLayoutComponent {
     return (role || 'DOCENTE') as UserRole;
   });
 
+  private readonly alertaService = inject(AlertaInasistenciaService, { optional: true });
+  private readonly revisionService = inject(RevisionCancelacionService, { optional: true });
+  alertasVigentesCount = signal<number>(0);
+  revisionesPendientesCount = signal<number>(0);
+
+  constructor() {
+    effect(() => {
+      const role = this.currentRole();
+      const cancelacionEnabled = Boolean(environment.features?.cancelacionInasistenciaEnabled);
+
+      if (!cancelacionEnabled) {
+        return;
+      }
+
+      if (role === 'ESTUDIANTE') {
+        this.alertaService?.contarVigentes().subscribe({
+          next: (count) => this.alertasVigentesCount.set(count),
+          error: () => this.alertasVigentesCount.set(0),
+        });
+      } else if (role === 'COORDINADOR') {
+        this.revisionService?.contarPendientes('COORDINADOR').subscribe({
+          next: (count) => this.revisionesPendientesCount.set(count),
+          error: () => this.revisionesPendientesCount.set(0),
+        });
+      } else if (role === 'DECANO') {
+        this.revisionService?.contarPendientes('DECANO').subscribe({
+          next: (count) => this.revisionesPendientesCount.set(count),
+          error: () => this.revisionesPendientesCount.set(0),
+        });
+      }
+    });
+  }
+
   private allNavItems: NavItem[] = [
     {
       label: 'Panel Principal',
@@ -399,6 +435,12 @@ export class DashboardLayoutComponent {
       icon: 'asistencia',
     },
     {
+      label: 'Revisiones de Cancelación',
+      route: '/app/decano/revisiones-cancelacion',
+      roles: ['DECANO'],
+      icon: 'asistencia',
+    },
+    {
       label: 'Gestión de Docentes',
       route: '/app/coordinador/docentes',
       roles: ['COORDINADOR'],
@@ -453,6 +495,12 @@ export class DashboardLayoutComponent {
       icon: 'asistencia',
     },
     {
+      label: 'Revisiones de Cancelación',
+      route: '/app/coordinador/revisiones-cancelacion',
+      roles: ['COORDINADOR'],
+      icon: 'asistencia',
+    },
+    {
       label: 'Mis Grupos',
       route: '/app/docente/grupos',
       roles: ['DOCENTE'],
@@ -500,12 +548,33 @@ export class DashboardLayoutComponent {
       roles: ['ESTUDIANTE'],
       icon: 'grupos',
     },
+    {
+      label: 'Mis Alertas',
+      route: '/app/estudiante/alertas',
+      roles: ['ESTUDIANTE'],
+      icon: 'asistencia',
+    },
   ];
 
   filteredNavItems = computed<NavItem[]>(() => {
     const user = this.user();
     const roles = user ? effectiveRoles(user) : [this.currentRole()];
-    return this.allNavItems.filter((item) => item.roles.some((role) => roles.includes(role)));
+    const cancelacionEnabled = Boolean(environment.features?.cancelacionInasistenciaEnabled);
+
+    return this.allNavItems
+      .filter((item) => {
+        if (!cancelacionEnabled) {
+          if (
+            item.route === '/app/estudiante/alertas' ||
+            item.route === '/app/coordinador/revisiones-cancelacion' ||
+            item.route === '/app/decano/revisiones-cancelacion'
+          ) {
+            return false;
+          }
+        }
+        return true;
+      })
+      .filter((item) => item.roles.some((role) => roles.includes(role)));
   });
 
   toggleCollapsed(): void {

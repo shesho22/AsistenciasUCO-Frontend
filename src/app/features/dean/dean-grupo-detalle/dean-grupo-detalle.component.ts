@@ -1,6 +1,7 @@
-import { Component, OnInit, inject, input, signal, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, input, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { CourseService } from '../../../core/services/course.service';
 import { DeanFacultadService } from '../../../core/services/dean-facultad.service';
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
@@ -9,6 +10,9 @@ import { SesionEstadoBadgeComponent } from '../../../shared/components/sesion-es
 import { SesionFacultadItem } from '../../../core/models/facultad-decano.model';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
+import { RealtimeService } from '../../../core/realtime/realtime.service';
+import { onRealtimeReconnect } from '../../../core/realtime/realtime-reconnect-trigger';
+import { REALTIME_EVENT_TYPE } from '../../../core/realtime/model/realtime-event.model';
 
 /** Tamaño máximo de página que acepta GET /decano/sesiones. */
 const TAMANO_PAGINA_SESIONES = 100;
@@ -142,13 +146,15 @@ const MAX_PAGINAS_SESIONES = 50;
     </div>
   `,
 })
-export class DeanGrupoDetalleComponent implements OnInit {
+export class DeanGrupoDetalleComponent implements OnInit, OnDestroy {
   private courseService = inject(CourseService);
   private deanService = inject(DeanFacultadService);
   private toast = inject(ToastService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   readonly timeZone = inject(SessionTimeZoneService);
+  private readonly realtime = inject(RealtimeService, { optional: true });
+  private subRealtime?: Subscription;
 
   grupoId = input<string>();
 
@@ -176,6 +182,55 @@ export class DeanGrupoDetalleComponent implements OnInit {
       error: (error: unknown) => this.errorGrupo.set(getApiErrorMessage(error)),
     });
     this.cargarSesiones();
+    const id = this.effectiveGrupoId();
+    if (id) {
+      this.iniciarRealtime(id);
+    }
+  }
+
+  private iniciarRealtime(grupoId: string): void {
+    if (!this.realtime) return;
+    this.subRealtime?.unsubscribe();
+    this.realtime.startForGroup(grupoId);
+
+    const sub = new Subscription();
+    sub.add(
+      onRealtimeReconnect(this.realtime.connectionState$).subscribe(() => {
+        this.cargarSesiones();
+      })
+    );
+
+    const events$ = this.realtime.events ? this.realtime.events() : (this.realtime as any).events$;
+    if (events$) {
+      sub.add(
+        events$.subscribe((evt: any) => {
+          if (!evt) return;
+          const tipo = evt.type || evt.tipo;
+          if (
+            tipo === REALTIME_EVENT_TYPE.ALERTA_INASISTENCIA ||
+            tipo === REALTIME_EVENT_TYPE.REVISION_CANCELACION_CREADA ||
+            tipo === REALTIME_EVENT_TYPE.REVISION_CANCELACION_PROPUESTA ||
+            tipo === REALTIME_EVENT_TYPE.REVISION_CANCELACION_DECIDIDA ||
+            tipo === REALTIME_EVENT_TYPE.REVISION_CANCELACION_RESOLUCION ||
+            tipo === REALTIME_EVENT_TYPE.REVISION_CANCELACION_RESUELTA ||
+            tipo === REALTIME_EVENT_TYPE.ASISTENCIAS_SESION_ACTUALIZADAS ||
+            tipo === 'REVISION_CANCELACION_PROPUESTA' ||
+            tipo === 'REVISION_CANCELACION_RESOLUCION'
+          ) {
+            this.cargarSesiones();
+          }
+        })
+      );
+    }
+
+    this.subRealtime = sub;
+  }
+
+  ngOnDestroy(): void {
+    this.subRealtime?.unsubscribe();
+    if (this.realtime) {
+      this.realtime.stop();
+    }
   }
 
   fecha(instante: string): { date: string; time: string } {

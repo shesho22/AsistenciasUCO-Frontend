@@ -326,6 +326,16 @@ export const routes: Routes = [
             (m) => m.ConsolidadoAsistenciaComponent
           ),
       },
+      // CULM-001 C.1: revisiones de cancelación de matrícula por pérdida de inasistencia (decano)
+      {
+        path: 'decano/revisiones-cancelacion',
+        canActivate: [roleGuard],
+        data: { roles: ['DECANO'], rol: 'DECANO' },
+        loadComponent: () =>
+          import('./features/shared/revisiones-resolucion/revisiones-resolucion.component').then(
+            (m) => m.RevisionesResolucionComponent
+          ),
+      },
       // HU143 / HU157: búsqueda de asignaturas y ficha unificada de estudiantes del administrador
       {
         path: 'admin/asignaturas',
@@ -485,6 +495,16 @@ export const routes: Routes = [
             (m) => m.ConsolidadoAsistenciaComponent
           ),
       },
+      // CULM-001 C.1: revisiones de cancelación de matrícula por pérdida de inasistencia (coordinador)
+      {
+        path: 'coordinador/revisiones-cancelacion',
+        canActivate: [roleGuard],
+        data: { roles: ['COORDINADOR'], rol: 'COORDINADOR' },
+        loadComponent: () =>
+          import('./features/shared/revisiones-resolucion/revisiones-resolucion.component').then(
+            (m) => m.RevisionesResolucionComponent
+          ),
+      },
       // Rutas Docente
       {
         path: 'docente/grupos',
@@ -514,6 +534,15 @@ export const routes: Routes = [
           ),
       },
       // Rutas Estudiante
+      {
+        path: 'estudiante/alertas',
+        canActivate: [roleGuard],
+        data: { roles: ['ESTUDIANTE'] },
+        loadComponent: () =>
+          import('./features/student/student-alerts/student-alerts.component').then(
+            (m) => m.StudentAlertsComponent
+          ),
+      },
       {
         path: 'estudiante/horarios',
         canActivate: [roleGuard],
