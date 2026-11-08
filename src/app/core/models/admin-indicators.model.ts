@@ -38,7 +38,11 @@ export interface ComparativaFacultad {
   tasaRetencion: number | null;
   sesionesEjecutadas: number;
   faltasSinJustaCausa: number;
+  /** Calculado por horas (D.8): 100 × horasFalta / horasDictadas de las matrículas activas de la facultad. */
   porcentajeAusentismo: number | null;
+  /** Horas dictadas y horas de falta sin justa causa de esas matrículas (horas, 2 decimales). */
+  horasDictadas: number;
+  horasFalta: number;
 }
 
 export interface PuntoTendencia {
@@ -46,5 +50,9 @@ export interface PuntoTendencia {
   finIntervalo: string;
   sesionesEjecutadas: number;
   faltasSinJustaCausa: number;
+  /** Calculado por horas (D.8): 100 × horasFalta / horasDictadasEstudiante del intervalo. */
   porcentajeAusentismo: number | null;
+  /** Horas-estudiante dictadas (horas de la sesión × matrículas activas) y horas de falta sin justa causa del intervalo. */
+  horasDictadasEstudiante: number;
+  horasFalta: number;
 }

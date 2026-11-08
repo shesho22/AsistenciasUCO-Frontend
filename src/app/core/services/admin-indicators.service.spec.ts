@@ -19,9 +19,9 @@ describe('AdminIndicatorsService', () => {
   };
   const facultad: ComparativaFacultad = {
     idFacultad: 'f-1', nombreFacultad: 'Ingenieria', estaActivaFacultad: true, totalProgramas: 3, totalEstudiantes: 6, estudiantesRiesgo: 1, estudiantesPerdida: 3,
-    tasaRetencion: 50, sesionesEjecutadas: 35, faltasSinJustaCausa: 6, porcentajeAusentismo: 17.14,
+    tasaRetencion: 50, sesionesEjecutadas: 35, faltasSinJustaCausa: 6, porcentajeAusentismo: 17.14, horasDictadas: 120, horasFalta: 18,
   };
-  const punto: PuntoTendencia = { inicioIntervalo: '2026-03-02', finIntervalo: '2026-03-08', sesionesEjecutadas: 20, faltasSinJustaCausa: 3, porcentajeAusentismo: 15 };
+  const punto: PuntoTendencia = { inicioIntervalo: '2026-03-02', finIntervalo: '2026-03-08', sesionesEjecutadas: 20, faltasSinJustaCausa: 3, porcentajeAusentismo: 15, horasDictadasEstudiante: 100, horasFalta: 15 };
 
   beforeEach(() => {
     TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });

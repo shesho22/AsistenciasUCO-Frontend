@@ -1,3 +1,4 @@
+import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { DeanIndicatorsService } from '../../../core/services/dean-indicators.service';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
@@ -7,7 +8,7 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
 @Component({
   selector: 'app-dean-indicators',
   standalone: true,
-  imports: [PaginationComponent],
+  imports: [DecimalPipe, PaginationComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="space-y-6">
@@ -32,7 +33,8 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
       }
 
       <div class="rounded-xl border border-neutral-100 bg-white p-4">
-        <h2 class="mb-3 text-lg font-semibold">Ausentismo por programa</h2>
+        <h2 class="text-lg font-semibold">Ausentismo por programa</h2>
+        <p class="mb-3 text-xs text-neutral-500" data-testid="nota-horas">Calculado por horas dictadas.</p>
         @if (service.comparativa().length === 0) {
           <p class="py-6 text-center text-sm text-neutral-500">No hay programas en esta facultad.</p>
         } @else {
@@ -43,6 +45,7 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
                   <span class="font-medium">{{ p.nombrePrograma }}@if (!p.estaActivoPrograma) { <span class="ml-2 text-xs text-neutral-500">Inactivo</span> }</span>
                   <span>{{ formatoPorcentaje(p.porcentajeAusentismo) }} · {{ p.totalEstudiantes }} estudiantes</span>
                 </div>
+                <p class="text-xs text-neutral-500">{{ p.horasFalta | number: '1.0-2' }} h de falta sobre {{ p.horasDictadas | number: '1.0-2' }} h dictadas</p>
                 <div class="h-3 w-full rounded bg-neutral-100">
                   <div class="h-3 rounded bg-danger-500" data-testid="barra-ausentismo" [style.width]="anchoBarra(p.porcentajeAusentismo)"></div>
                 </div>

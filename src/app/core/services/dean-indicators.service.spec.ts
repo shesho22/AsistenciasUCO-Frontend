@@ -19,6 +19,7 @@ describe('DeanIndicatorsService', () => {
   const programa: ComparativaPrograma = {
     idPrograma: 'p-1', nombrePrograma: 'Sistemas', estaActivoPrograma: true, totalEstudiantes: 5, estudiantesRiesgo: 1, estudiantesPerdida: 2,
     tasaRetencion: 60, sesionesEjecutadas: 33, faltasSinJustaCausa: 5, porcentajeAusentismo: 15.15,
+    horasDictadas: 120, horasFalta: 18,
   };
   const grupo: AforoGrupo = {
     idGrupo: 'g-1', codigoGrupo: 931001, idAsignatura: 'a-1', nombreAsignatura: 'Estructuras', programas: ['Sistemas'],

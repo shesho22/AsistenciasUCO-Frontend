@@ -52,6 +52,7 @@ export function acumularOpciones(opciones: Opcion[], filas: ConsolidadoGrupoItem
           <h1 class="font-serif font-bold text-2xl sm:text-3xl text-warm-900 tracking-tight">Consolidado de Asistencia</h1>
           <p class="text-sm text-warm-600 mt-1">
             {{ comoDecano ? 'Grupos de los programas de tu facultad' : 'Grupos de tu programa' }} por cohorte (período), materia y docente.
+            <span data-testid="nota-horas">Calculado por horas dictadas.</span>
           </p>
         </div>
         <span class="px-3.5 py-2 rounded-xl bg-warm-100 text-xs font-bold text-warm-800 border border-warm-200">{{ listado.total() }} Grupos</span>
@@ -96,6 +97,9 @@ export function acumularOpciones(opciones: Opcion[], filas: ConsolidadoGrupoItem
                   <th scope="col" class="py-2 pr-3 text-right" title="Sesiones ya vencidas con asistencia registrada; las programadas a futuro no cuentan.">Sesiones ejecutadas</th>
                   <th scope="col" class="py-2 pr-3 text-right">% Asistencia</th>
                   <th scope="col" class="py-2 pr-3 text-right">% Inasistencia</th>
+                  <th scope="col" class="py-2 pr-3 text-right" title="Horas con excusa aprobada o en trámite sobre las horas dictadas.">% Excusa</th>
+                  <th scope="col" class="py-2 pr-3 text-right" title="Horas dictadas sin ningún registro de asistencia.">% Sin registro</th>
+                  <th scope="col" class="py-2 pr-3">Distribución</th>
                   <th scope="col" class="py-2 pr-3 text-right">En riesgo</th>
                   <th scope="col" class="py-2 text-right">Pérdida</th>
                 </tr>
@@ -115,6 +119,17 @@ export function acumularOpciones(opciones: Opcion[], filas: ConsolidadoGrupoItem
                     <td class="py-2 pr-3 text-right" [class]="g.porcentajeInasistencia >= 15 ? 'text-danger-700 font-semibold' : 'text-warm-700'">
                       {{ g.porcentajeInasistencia | number: '1.0-2' }}%
                     </td>
+                    <td class="py-2 pr-3 text-right text-warm-700">{{ g.porcentajeExcusa | number: '1.0-2' }}%</td>
+                    <td class="py-2 pr-3 text-right text-warm-700">{{ g.porcentajeSinRegistro | number: '1.0-2' }}%</td>
+                    <td class="py-2 pr-3 min-w-[8rem]">
+                      <div class="flex h-3 w-full overflow-hidden rounded bg-warm-100" role="img" data-testid="barra-distribucion"
+                        [attr.aria-label]="'Asistencia ' + g.porcentajeAsistencia + '%, inasistencia ' + g.porcentajeInasistencia + '%, excusa ' + g.porcentajeExcusa + '%, sin registro ' + g.porcentajeSinRegistro + '%'">
+                        <span class="h-3 bg-success-600" data-testid="segmento-asistencia" [style.width.%]="g.porcentajeAsistencia"></span>
+                        <span class="h-3 bg-danger-500" data-testid="segmento-inasistencia" [style.width.%]="g.porcentajeInasistencia"></span>
+                        <span class="h-3 bg-warning-500" data-testid="segmento-excusa" [style.width.%]="g.porcentajeExcusa"></span>
+                        <span class="h-3 bg-warm-300" data-testid="segmento-sin-registro" [style.width.%]="g.porcentajeSinRegistro"></span>
+                      </div>
+                    </td>
                     <td class="py-2 pr-3 text-right" [class]="g.estudiantesRiesgo > 0 ? 'text-warning-700 font-semibold' : 'text-warm-700'">{{ g.estudiantesRiesgo }}</td>
                     <td class="py-2 text-right" [class]="g.estudiantesPerdida > 0 ? 'text-danger-700 font-semibold' : 'text-warm-700'">{{ g.estudiantesPerdida }}</td>
                   </tr>
@@ -122,6 +137,12 @@ export function acumularOpciones(opciones: Opcion[], filas: ConsolidadoGrupoItem
               </tbody>
             </table>
           </div>
+          <ul class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-warm-600" aria-label="Leyenda de la distribución">
+            <li class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-sm bg-success-600"></span>Asistencia</li>
+            <li class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-sm bg-danger-500"></span>Inasistencia</li>
+            <li class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-sm bg-warning-500"></span>Excusa</li>
+            <li class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-sm bg-warm-300"></span>Sin registro</li>
+          </ul>
         }
         <app-pagination
           [totalItems]="listado.total()"
