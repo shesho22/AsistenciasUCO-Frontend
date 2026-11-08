@@ -59,7 +59,7 @@ describe('DeanGrupoDetalleComponent - Realtime SSE (C-F-54..C-F-56)', () => {
   it('C-F-54: al iniciar con effectiveGrupoId, invoca realtimeService.startForGroup con el id del grupo', () => {
     fixture.detectChanges();
 
-    const reqGrupos = http.expectOne(`${API}/decano/grupos`);
+    const reqGrupos = http.expectOne((r) => r.url === `${API}/decano/grupos`);
     reqGrupos.flush({ exitoso: true, datos: [] });
 
     const reqSesiones = http.expectOne((r) => r.url.includes(`${API}/decano/sesiones`));
@@ -71,7 +71,7 @@ describe('DeanGrupoDetalleComponent - Realtime SSE (C-F-54..C-F-56)', () => {
   it('C-F-55: en reconexión o evento SSE relevante recarga sesiones con la secuencia canónica (exactamente 3 cargas)', () => {
     fixture.detectChanges();
 
-    const reqGrupos = http.expectOne(`${API}/decano/grupos`);
+    const reqGrupos = http.expectOne((r) => r.url === `${API}/decano/grupos`);
     reqGrupos.flush({ exitoso: true, datos: [] });
 
     // Carga 1: entrada
@@ -115,7 +115,7 @@ describe('DeanGrupoDetalleComponent - Realtime SSE (C-F-54..C-F-56)', () => {
   it('C-F-56: al destruir el componente invoca realtimeService.stop()', () => {
     fixture.detectChanges();
 
-    const reqGrupos = http.expectOne(`${API}/decano/grupos`);
+    const reqGrupos = http.expectOne((r) => r.url === `${API}/decano/grupos`);
     reqGrupos.flush({ exitoso: true, datos: [] });
 
     const reqSesiones = http.expectOne((r) => r.url.includes(`${API}/decano/sesiones`));
