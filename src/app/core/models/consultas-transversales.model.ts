@@ -161,12 +161,14 @@ export interface EventoAuditoriaItem {
   idRecurso: string | null;
   resultado: 'SUCCESS' | 'FAILURE' | string;
   idTraza: string | null;
+  idCorrelacion?: string | null;
   metodoHttp: string;
   ruta: string;
   estadoHttp: number;
   ipCliente: string | null;
   codigoError: string | null;
-  metadatos: string | null;
+  metadatos?: string | null;
+  metadata?: string | null;
   accionAsistencia: boolean;
 }
 
@@ -176,6 +178,8 @@ export interface FiltroAuditoria {
   hasta?: string | null;
   accion?: string | null;
   resultado?: string | null;
+  idCorrelacion?: string | null;
+  soloAdministracion?: boolean | null;
   soloAsistencia?: boolean | null;
   pagina: number;
   tamano: number;

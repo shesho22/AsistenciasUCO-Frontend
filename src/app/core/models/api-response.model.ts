@@ -8,6 +8,15 @@ export interface ApiResponse<T> {
   token?: string;
 }
 
+export interface ApiPageResponse<T> {
+  exitoso?: boolean;
+  elementos: T[];
+  numeroPagina: number;
+  tamanoPagina: number;
+  totalElementos: number;
+  totalPaginas: number;
+}
+
 export interface UserAuthResponse {
   id: string;
   nombres: string;
@@ -15,3 +24,4 @@ export interface UserAuthResponse {
   correo: string;
   rol: string;
 }
+

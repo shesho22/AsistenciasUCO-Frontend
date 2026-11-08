@@ -1,17 +1,23 @@
 import { Injectable, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { ApiResponse } from '../models/api-response.model';
+import { ApiPageResponse, ApiResponse } from '../models/api-response.model';
 import {
   DecanoItem,
   FacultadItem,
   AreaConocimientoItem,
   TipoProgramaItem,
   ParametroAdminDto,
+  ParametroActualizadoDto,
+  ActualizarParametroRequest,
   CierrePeriodoReporte,
   InstitucionItem,
+  ProgramaInstitucionDto,
+  AdmisionEstudianteDto,
+  AdmisionEstudianteRequest,
 } from '../models/role-management.model';
+import { CorregirIdentidadPayload, ResultadoCorreccionIdentidad } from '../models/correccion-identidad.model';
 
 @Injectable({
   providedIn: 'root',
@@ -228,13 +234,46 @@ export class AdminManagementService {
   }
 
   // ================= PARÁMETROS INSTITUCIONALES =================
-  cargarParametros(): Observable<ApiResponse<ParametroAdminDto[]>> {
-    return this.http.get<ApiResponse<ParametroAdminDto[]>>(`${environment.apiUrl}/admin/parametros`).pipe(
-      tap((res) => {
-        if (res.exitoso && res.datos) {
-          this._parametros.set(res.datos);
-        }
+  cargarParametros(filtro?: {
+    grupo?: string;
+    texto?: string;
+    soloEditables?: boolean;
+    pagina?: number;
+    tamano?: number;
+  }): Observable<ApiPageResponse<ParametroAdminDto> & { datos: ParametroAdminDto[] }> {
+    let params = new HttpParams();
+    if (filtro?.grupo) params = params.set('grupo', filtro.grupo);
+    if (filtro?.texto) params = params.set('texto', filtro.texto);
+    if (filtro?.soloEditables !== undefined && filtro?.soloEditables !== null) {
+      params = params.set('soloEditables', String(filtro.soloEditables));
+    }
+    if (filtro?.pagina) params = params.set('pagina', String(filtro.pagina));
+    if (filtro?.tamano) params = params.set('tamano', String(filtro.tamano));
+
+    return this.http.get<any>(`${environment.apiUrl}/admin/parametros`, { params }).pipe(
+      map((res: any) => {
+        const elementos: ParametroAdminDto[] = res?.elementos ?? res?.datos ?? [];
+        this._parametros.set(elementos);
+        return {
+          exitoso: res?.exitoso ?? true,
+          elementos,
+          datos: elementos,
+          numeroPagina: res?.numeroPagina ?? filtro?.pagina ?? 1,
+          tamanoPagina: res?.tamanoPagina ?? filtro?.tamano ?? elementos.length,
+          totalElementos: res?.totalElementos ?? res?.total ?? elementos.length,
+          totalPaginas: res?.totalPaginas ?? 1,
+        };
       })
+    );
+  }
+
+  actualizarParametro(
+    id: string,
+    payload: ActualizarParametroRequest
+  ): Observable<ApiResponse<ParametroActualizadoDto>> {
+    return this.http.put<ApiResponse<ParametroActualizadoDto>>(
+      `${environment.apiUrl}/admin/parametros/${id}`,
+      payload
     );
   }
 
@@ -254,6 +293,40 @@ export class AdminManagementService {
           this._instituciones.set(res.datos);
         }
       })
+    );
+  }
+
+  // ================= D.4 (HU156): ADMISIÓN Y CORRECCIÓN DE ESTUDIANTES =================
+
+  /** HU156: busca programas de la institución del administrador (GET /admin/programas). */
+  getProgramasInstitucion(filtro?: {
+    texto?: string | null;
+    idFacultad?: string | null;
+    pagina?: number;
+    tamano?: number;
+  }): Observable<ApiPageResponse<ProgramaInstitucionDto>> {
+    let params = new HttpParams();
+    if (filtro?.texto) params = params.set('texto', filtro.texto);
+    if (filtro?.idFacultad) params = params.set('idFacultad', filtro.idFacultad);
+    if (filtro?.pagina !== undefined && filtro?.pagina !== null) params = params.set('pagina', filtro.pagina.toString());
+    if (filtro?.tamano !== undefined && filtro?.tamano !== null) params = params.set('tamano', filtro.tamano.toString());
+
+    return this.http.get<ApiPageResponse<ProgramaInstitucionDto>>(`${environment.apiUrl}/admin/programas`, { params });
+  }
+
+  /** HU156: admite un estudiante en un programa institucional (POST /admin/estudiantes/admision). */
+  admitirEstudiante(payload: AdmisionEstudianteRequest): Observable<ApiResponse<AdmisionEstudianteDto>> {
+    return this.http.post<ApiResponse<AdmisionEstudianteDto>>(`${environment.apiUrl}/admin/estudiantes/admision`, payload);
+  }
+
+  /** HU156: corrección de datos de identidad de un estudiante por el administrador (PUT /admin/estudiantes/{idEstudiante}/identidad). */
+  corregirIdentidadEstudiante(
+    idEstudiante: string,
+    payload: CorregirIdentidadPayload
+  ): Observable<ApiResponse<ResultadoCorreccionIdentidad>> {
+    return this.http.put<ApiResponse<ResultadoCorreccionIdentidad>>(
+      `${environment.apiUrl}/admin/estudiantes/${encodeURIComponent(idEstudiante)}/identidad`,
+      payload
     );
   }
 
