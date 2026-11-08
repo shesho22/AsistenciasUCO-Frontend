@@ -19,6 +19,7 @@ import { IdentidadEsperada, UltimaPeticion, advertirRegistroNoListado } from '..
 import { CorreccionIdentidadService } from '../../../core/services/correccion-identidad.service';
 import { CorregirIdentidadPayload, IdentidadActual } from '../../../core/models/correccion-identidad.model';
 import { CorreccionIdentidadModalComponent } from '../../../shared/components/correccion-identidad-modal/correccion-identidad-modal.component';
+import { CargaMasivaUsuariosComponent } from '../../../shared/components/carga-masiva-usuarios/carga-masiva-usuarios.component';
 
 type VistaAdmin = 'LISTA' | 'REGISTRO';
 
@@ -36,6 +37,7 @@ type VistaAdmin = 'LISTA' | 'REGISTRO';
     UserPickerModalComponent,
     AccountAccessStatusComponent,
     CorreccionIdentidadModalComponent,
+    CargaMasivaUsuariosComponent,
   ],
   template: `
     <div class="space-y-6 animate-fade-in">
@@ -66,6 +68,12 @@ type VistaAdmin = 'LISTA' | 'REGISTRO';
               </svg>
               Nombrar Decano Existente
             </app-button>
+            <app-button variant="secondary" size="md" (clicked)="mostrarCargaMasiva.set(true)">
+              <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              </svg>
+              Carga Masiva CSV
+            </app-button>
             <app-button variant="secondary" size="md" (clicked)="abrirFormularioRegistro()">
               <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -74,6 +82,14 @@ type VistaAdmin = 'LISTA' | 'REGISTRO';
             </app-button>
           </div>
         </div>
+
+        @if (mostrarCargaMasiva()) {
+          <app-carga-masiva-usuarios
+            destino="DECANO"
+            (cargaCompletada)="onCargaMasivaCompletada()"
+            (cancelar)="mostrarCargaMasiva.set(false)"
+          />
+        }
 
         <!-- Estado de acceso de la ultima cuenta registrada (verificado por el backend, nunca por la SPA) -->
         <app-account-access-status [correo]="ultimaCuentaRegistrada()" />
@@ -411,6 +427,7 @@ export class AdminDecanosComponent implements OnInit {
   facultades = signal<FacultadItem[]>([]);
   isLoading = signal<boolean>(true);
   isSubmitting = signal<boolean>(false);
+  readonly mostrarCargaMasiva = signal<boolean>(false);
   searchQuery = '';
   selectedEstado = 'TODOS';
   private readonly ultimaPeticionDecanos = new UltimaPeticion();
@@ -497,6 +514,10 @@ export class AdminDecanosComponent implements OnInit {
   cerrarCorreccion(): void {
     this.decanoACorregir.set(null);
     this.errorCorreccion.set(null);
+  }
+
+  onCargaMasivaCompletada(): void {
+    this.cargarDecanos();
   }
 
   ngOnInit(): void {

@@ -43,15 +43,13 @@ const DOCENTES: DocenteFacultadItem[] = [
 const ASIGNATURAS: AsignaturaInstitucionItem[] = [
   {
     idAsignatura: 'ASG-1', codigo: 'SIS-101', nombre: 'Cálculo Diferencial', creditos: 4, nombreArea: 'Ciencias Básicas',
-    nombreComponente: 'Obligatorio', codigoSemestre: 'S1', idPlanEstudio: 'PLAN-1', inpPlanEstudio: 20241,
-    idPrograma: 'PRG-1', nombrePrograma: 'Ingeniería de Sistemas', idFacultad: 'FAC-1',
-    nombreFacultad: 'Facultad de Ingeniería', activa: true,
+    nombreComponente: 'Obligatorio', planes: 'Ingeniería de Sistemas (Plan 20241); Ingeniería de Software (Plan 20241)',
+    totalPlanes: 2, activa: true,
   },
   {
     idAsignatura: 'ASG-2', codigo: 'SIS-201', nombre: 'Estructuras de Datos', creditos: 3, nombreArea: 'Software',
-    nombreComponente: 'Obligatorio', codigoSemestre: 'S2', idPlanEstudio: 'PLAN-1', inpPlanEstudio: 20241,
-    idPrograma: 'PRG-1', nombrePrograma: 'Ingeniería de Sistemas', idFacultad: 'FAC-1',
-    nombreFacultad: 'Facultad de Ingeniería', activa: true,
+    nombreComponente: 'Obligatorio', planes: 'Ingeniería de Sistemas (Plan 20241)',
+    totalPlanes: 1, activa: true,
   },
 ];
 
@@ -92,6 +90,7 @@ const CONSOLIDADO: ConsolidadoGrupoItem[] = [
     idAsignatura: 'ASG-1', nombreAsignatura: 'Cálculo Diferencial', idDocente: 'DOC-1', nombreDocente: 'Carlos Pérez',
     estudiantesActivos: 20, sesionesEjecutadas: 8, asistencias: 150, faltasSinJustaCausa: 10, excusas: 0,
     porcentajeAsistencia: 93.75, porcentajeInasistencia: 6.25, estudiantesRiesgo: 2, estudiantesPerdida: 1,
+    horasDictadas: 16, porcentajeExcusa: 0, porcentajeSinRegistro: 0,
   },
   {
     idGrupo: 'GRP-2', codigoGrupo: 2, nombreGrupo: 'Grupo 02', idPeriodoAcademico: 'PER-2026-2',
@@ -99,6 +98,7 @@ const CONSOLIDADO: ConsolidadoGrupoItem[] = [
     idAsignatura: 'ASG-2', nombreAsignatura: 'Estructuras de Datos', idDocente: 'DOC-2', nombreDocente: 'Lucía Gómez',
     estudiantesActivos: 15, sesionesEjecutadas: 6, asistencias: 88, faltasSinJustaCausa: 2, excusas: 0,
     porcentajeAsistencia: 97.78, porcentajeInasistencia: 2.22, estudiantesRiesgo: 0, estudiantesPerdida: 0,
+    horasDictadas: 12, porcentajeExcusa: 0, porcentajeSinRegistro: 0,
   },
 ];
 

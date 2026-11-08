@@ -66,17 +66,21 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
             - Semestre Vacío
           </button>
 
+          <app-button variant="secondary" size="sm" (clicked)="associateSubject.emit()">
+            Asociar asignatura existente
+          </app-button>
+
           <app-button variant="primary" size="sm" (clicked)="createSubject.emit()">
             <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
             </svg>
-            + Nueva Asignatura
+            Nueva asignatura
           </app-button>
         </div>
       </div>
 
       <!-- Filtros de Asignaturas -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <div class="sm:col-span-2 relative">
           <input aria-label="Buscar asignatura en la malla"
             type="text"
@@ -102,6 +106,19 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
             }
           </select>
         </div>
+
+        <div>
+          <select aria-label="Filtrar la malla por carácter"
+            [ngModel]="selectedCaracter()"
+            (ngModelChange)="selectedCaracter.set($event); currentPage.set(1)"
+            class="w-full px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20 shadow-warm-sm"
+          >
+            <option value="">Todos los caracteres</option>
+            @for (c of caracteresDisponibles(); track c) {
+              <option [value]="c">{{ c }}</option>
+            }
+          </select>
+        </div>
       </div>
 
       <!-- Malla Curricular en Tarjetas -->
@@ -121,6 +138,15 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
                   <span class="text-xs font-bold text-primary-800 bg-primary-50 px-2 py-0.5 rounded-full border border-primary-200">
                     Semestre {{ asig.semestre }}
                   </span>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-1">
+                  @if (asig.nombreCaracter) {
+                    <app-badge [variant]="asig.codigoCaracter === 'OPT' ? 'success' : 'info'">{{ asig.nombreCaracter }}</app-badge>
+                  }
+                  @if (asig.compartida) {
+                    <app-badge variant="neutral">Compartida</app-badge>
+                  }
                 </div>
 
                 <h4 class="font-serif font-bold text-base text-warm-900 leading-snug">
@@ -143,6 +169,17 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
                   >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    (click)="removeSubject.emit(asig)"
+                    class="p-1 text-danger-600 hover:text-danger-800 rounded hover:bg-danger-50"
+                    title="Desvincular del plan"
+                    aria-label="Quitar del plan"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
                 </div>
@@ -181,10 +218,13 @@ export class StudyPlanMeshComponent {
   addSemester = output<void>();
   removeSemester = output<void>();
   createSubject = output<void>();
+  associateSubject = output<void>();
   editSubject = output<AsignaturaPlanItem>();
+  removeSubject = output<AsignaturaPlanItem>();
 
   searchAsignatura = signal('');
   selectedSemestre = signal<number>(0);
+  selectedCaracter = signal<string>('');
   currentPage = signal(1);
   pageSize = signal(9);
 
@@ -193,9 +233,15 @@ export class StudyPlanMeshComponent {
     return Array.from({ length: total }, (_, i) => i + 1);
   });
 
+  /** Caracteres presentes en la malla cargada (Obligatoria, Optativa). */
+  caracteresDisponibles = computed(() =>
+    [...new Set(this.asignaturas().map((a) => a.nombreCaracter).filter((n): n is string => !!n))].sort()
+  );
+
   filteredAsignaturas = computed(() => {
     const q = this.searchAsignatura().toLowerCase().trim();
     const sem = Number(this.selectedSemestre());
+    const caracter = this.selectedCaracter();
     return this.asignaturas().filter((a) => {
       const matchQ =
         !q ||
@@ -203,7 +249,8 @@ export class StudyPlanMeshComponent {
         a.codigo.toLowerCase().includes(q) ||
         a.area.toLowerCase().includes(q);
       const matchSem = sem === 0 || a.semestre === sem;
-      return matchQ && matchSem;
+      const matchCaracter = !caracter || a.nombreCaracter === caracter;
+      return matchQ && matchSem && matchCaracter;
     });
   });
 

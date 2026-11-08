@@ -67,8 +67,6 @@ export interface SesionFacultadItem {
   nombreGrupo: string;
   idAsignatura: string;
   nombreAsignatura: string;
-  idPrograma: string;
-  nombrePrograma: string;
   /** HU145 / APP-04 (aditivo): instantes UTC con `Z`, presentes solo si `estadoTemporal = CONFIRMADA`. */
   fechaHoraInicioUtc?: string | null;
   fechaHoraFinUtc?: string | null;

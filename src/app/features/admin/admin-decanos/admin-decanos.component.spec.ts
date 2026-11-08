@@ -564,4 +564,26 @@ describe('AdminDecanosComponent', () => {
     component.cerrarCorreccion();
     expect(component.decanoACorregir()).toBeNull();
   });
+
+  it('HU171: permite abrir el módulo de carga masiva de decanos y recarga al completar', () => {
+    fixture.detectChanges();
+    satisfyInitRequests();
+
+    expect(component.mostrarCargaMasiva()).toBeFalse();
+    expect(fixture.nativeElement.querySelector('app-carga-masiva-usuarios')).toBeNull();
+
+    // Abrir modulo
+    component.mostrarCargaMasiva.set(true);
+    fixture.detectChanges();
+
+    const cargaComp = fixture.nativeElement.querySelector('app-carga-masiva-usuarios');
+    expect(cargaComp).not.toBeNull();
+    expect(cargaComp.getAttribute('destino')).toBe('DECANO');
+
+    // Emitir cargaCompletada -> debe recargar lista de decanos
+    component.onCargaMasivaCompletada();
+    const reqDec = http.expectOne(`${environment.apiUrl}/admin/decanos`);
+    expect(reqDec.request.method).toBe('GET');
+    reqDec.flush({ exitoso: true, datos: mockDecanos });
+  });
 });

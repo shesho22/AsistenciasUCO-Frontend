@@ -23,15 +23,17 @@ describe('AdminIndicatorsComponent', () => {
   const f1: ComparativaFacultad = {
     idFacultad: 'f-1', nombreFacultad: 'Ingenieria', estaActivaFacultad: true, totalProgramas: 3, totalEstudiantes: 6, estudiantesRiesgo: 1, estudiantesPerdida: 3,
     tasaRetencion: 50, sesionesEjecutadas: 35, faltasSinJustaCausa: 6, porcentajeAusentismo: 17.14,
+    horasDictadas: 120, horasFalta: 18,
   };
   const f3: ComparativaFacultad = {
     idFacultad: 'f-3', nombreFacultad: 'Facultad Cerrada', estaActivaFacultad: false, totalProgramas: 0, totalEstudiantes: 0, estudiantesRiesgo: 0, estudiantesPerdida: 0,
     tasaRetencion: null, sesionesEjecutadas: 0, faltasSinJustaCausa: 0, porcentajeAusentismo: null,
+    horasDictadas: 0, horasFalta: 0,
   };
   const puntos: PuntoTendencia[] = [
-    { inicioIntervalo: '2026-03-02', finIntervalo: '2026-03-08', sesionesEjecutadas: 20, faltasSinJustaCausa: 3, porcentajeAusentismo: 15 },
-    { inicioIntervalo: '2026-03-09', finIntervalo: '2026-03-15', sesionesEjecutadas: 0, faltasSinJustaCausa: 0, porcentajeAusentismo: null },
-    { inicioIntervalo: '2026-03-16', finIntervalo: '2026-03-22', sesionesEjecutadas: 4, faltasSinJustaCausa: 2, porcentajeAusentismo: 50 },
+    { inicioIntervalo: '2026-03-02', finIntervalo: '2026-03-08', sesionesEjecutadas: 20, faltasSinJustaCausa: 3, porcentajeAusentismo: 15, horasDictadasEstudiante: 100, horasFalta: 15 },
+    { inicioIntervalo: '2026-03-09', finIntervalo: '2026-03-15', sesionesEjecutadas: 0, faltasSinJustaCausa: 0, porcentajeAusentismo: null, horasDictadasEstudiante: 0, horasFalta: 0 },
+    { inicioIntervalo: '2026-03-16', finIntervalo: '2026-03-22', sesionesEjecutadas: 4, faltasSinJustaCausa: 2, porcentajeAusentismo: 50, horasDictadasEstudiante: 8, horasFalta: 4 },
   ];
 
   const texto = () => (fixture.nativeElement as HTMLElement).textContent ?? '';
@@ -55,6 +57,13 @@ describe('AdminIndicatorsComponent', () => {
   });
 
   afterEach(() => http.verify());
+
+  it('D.8 rotula el ausentismo como calculado por horas y muestra las horas que entrega el backend', () => {
+    const t = texto();
+    expect(t).toContain('Calculado por horas');
+    expect(t).toContain('18 h de falta sobre 120 h dictadas');
+    expect(fixture.nativeElement.querySelectorAll('[data-testid="nota-horas"]').length).toBe(2);
+  });
 
   it('T-FE-02 muestra exactamente las cifras recibidas (sin calcular nada en el cliente)', () => {
     const t = texto();

@@ -1,6 +1,7 @@
-import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { PeriodoAcademicoItem } from '../../../core/models/role-management.model';
 import {
@@ -15,6 +16,9 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { SesionEstadoBadgeComponent } from '../../../shared/components/sesion-estado-badge/sesion-estado-badge.component';
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
 import { resolveSessionInstant } from '../../../core/time/session-timezone.util';
+import { RealtimeService } from '../../../core/realtime/realtime.service';
+import { onRealtimeReconnect } from '../../../core/realtime/realtime-reconnect-trigger';
+import { REALTIME_EVENT_TYPE } from '../../../core/realtime/model/realtime-event.model';
 
 type FiltroAsistio = 'TODOS' | 'ASISTIO' | 'NO_ASISTIO';
 
@@ -247,10 +251,12 @@ type FiltroAsistio = 'TODOS' | 'ASISTIO' | 'NO_ASISTIO';
     </div>
   `,
 })
-export class CoordinatorAttendanceComponent implements OnInit {
+export class CoordinatorAttendanceComponent implements OnInit, OnDestroy {
   private readonly service = inject(CoordinatorManagementService);
   private readonly toast = inject(ToastService);
   readonly timeZone = inject(SessionTimeZoneService);
+  private readonly realtime = inject(RealtimeService, { optional: true });
+  private subRealtime?: Subscription;
 
   periodos = signal<PeriodoAcademicoItem[]>([]);
   idPeriodo = signal('');
@@ -329,11 +335,60 @@ export class CoordinatorAttendanceComponent implements OnInit {
   }
 
   seleccionarGrupo(grupo: GrupoProgramaItem): void {
+    if (this.grupoSeleccionado() && this.realtime) {
+      this.realtime.stop();
+    }
     this.grupoSeleccionado.set(grupo);
     this.sesionSeleccionada.set(null);
     this.asistencias.set([]);
     this.paginaSesiones.set(1);
+    this.iniciarRealtime(grupo.id);
     this.cargarSesiones();
+  }
+
+  private iniciarRealtime(grupoId: string): void {
+    if (!this.realtime) return;
+    this.subRealtime?.unsubscribe();
+    this.realtime.startForGroup(grupoId);
+
+    const sub = new Subscription();
+    sub.add(
+      onRealtimeReconnect(this.realtime.connectionState$).subscribe(() => {
+        this.cargarSesiones();
+      })
+    );
+
+    const events$ = this.realtime.events ? this.realtime.events() : (this.realtime as any).events$;
+    if (events$) {
+      sub.add(
+        events$.subscribe((evt: any) => {
+          if (!evt) return;
+          const tipo = evt.type || evt.tipo;
+          if (
+            tipo === REALTIME_EVENT_TYPE.ALERTA_INASISTENCIA ||
+            tipo === REALTIME_EVENT_TYPE.REVISION_CANCELACION_CREADA ||
+            tipo === REALTIME_EVENT_TYPE.REVISION_CANCELACION_PROPUESTA ||
+            tipo === REALTIME_EVENT_TYPE.REVISION_CANCELACION_DECIDIDA ||
+            tipo === REALTIME_EVENT_TYPE.REVISION_CANCELACION_RESOLUCION ||
+            tipo === REALTIME_EVENT_TYPE.REVISION_CANCELACION_RESUELTA ||
+            tipo === REALTIME_EVENT_TYPE.ASISTENCIAS_SESION_ACTUALIZADAS ||
+            tipo === 'REVISION_CANCELACION_PROPUESTA' ||
+            tipo === 'REVISION_CANCELACION_RESOLUCION'
+          ) {
+            this.cargarSesiones();
+          }
+        })
+      );
+    }
+
+    this.subRealtime = sub;
+  }
+
+  ngOnDestroy(): void {
+    this.subRealtime?.unsubscribe();
+    if (this.realtime) {
+      this.realtime.stop();
+    }
   }
 
   filtrarSesiones(): void {

@@ -1,5 +1,6 @@
-import { Component, ChangeDetectionStrategy, computed, input, output, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, computed, input, output, signal, inject, effect, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Subscription } from 'rxjs';
 import { AttendanceStatusBadgeComponent } from '../../../../shared/components/attendance-status-badge/attendance-status-badge.component';
 import { SesionEstadoBadgeComponent } from '../../../../shared/components/sesion-estado-badge/sesion-estado-badge.component';
 import { BadgeComponent, BadgeVariant } from '../../../../shared/components/badge/badge.component';
@@ -14,6 +15,10 @@ import { CategoriaJustificacionItem } from '../../../../core/models/consultas-tr
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 import { ordenarSesionesCronologicamente } from '../../../../core/utils/sesiones-orden.util';
 import { MotivosJustificacionComponent } from './motivos-justificacion.component';
+import { RealtimeService } from '../../../../core/realtime/realtime.service';
+import { onRealtimeReconnect } from '../../../../core/realtime/realtime-reconnect-trigger';
+import { REALTIME_EVENT_TYPE } from '../../../../core/realtime/model/realtime-event.model';
+import { ToastService } from '../../../../shared/components/toast/toast.component';
 
 @Component({
   selector: 'app-student-course-detail',
@@ -53,7 +58,14 @@ import { MotivosJustificacionComponent } from './motivos-justificacion.component
                   {{ materia()?.creditos }} Créditos
                 </span>
               }
-              @if (materia()?.estado) {
+              @if (materia()?.estadoMatricula === 'CI') {
+                <span
+                  data-testid="badge-estado-matricula"
+                  class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-danger-50 text-danger-800 border border-danger-200"
+                >
+                  Cancelado por inasistencia
+                </span>
+              } @else if (materia()?.estado) {
                 <app-badge [variant]="getBadgeVariant(materia()!.estado)">
                   {{ materia()?.estado }}
                 </app-badge>
@@ -250,10 +262,11 @@ import { MotivosJustificacionComponent } from './motivos-justificacion.component
                         class="inline-flex items-center justify-center min-h-[36px] px-3 py-1.5 text-xs font-medium rounded-xl border border-warm-200 bg-warm-100 text-warm-500 cursor-not-allowed"
                         data-testid="radicar-bloqueado"
                       >Radicar Reclamo</button>
-                    } @else if (sesion.reclamable && sesion.estado !== 'CANCELADA') {
+                    } @else if (sesion.reclamable && sesion.estado !== 'CANCELADA' && materia()?.estadoMatricula !== 'CI') {
                       <app-button
                         variant="primary"
                         size="sm"
+                        data-testid="btn-iniciar-reclamo"
                         (clicked)="startClaim.emit(sesion)"
                       >
                         <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -281,13 +294,82 @@ import { MotivosJustificacionComponent } from './motivos-justificacion.component
     }
   `,
 })
-export class StudentCourseDetailComponent {
+export class StudentCourseDetailComponent implements OnDestroy {
+  private readonly realtime = inject(RealtimeService, { optional: true });
+  private readonly toast = inject(ToastService, { optional: true });
+  private subRealtime?: Subscription;
+
   materia = input<MateriaEstudianteItem | null>(null);
   sesiones = input<SesionMateriaDetalle[]>([]);
   /** HU016: catálogo de motivos de justificación (solo consulta). */
   categorias = input<CategoriaJustificacionItem[]>([]);
   loading = input<boolean>(false);
   error = input<LoadErrorState | null>(null);
+
+  constructor() {
+    effect(() => {
+      const mat = this.materia();
+      const grupoId = mat?.idGrupo;
+      const estadoMatricula = mat?.estadoMatricula;
+
+      if (!this.realtime || !grupoId) {
+        return;
+      }
+
+      if (estadoMatricula === 'CI') {
+        return;
+      }
+
+      this.iniciarRealtime(grupoId);
+    });
+  }
+
+  private iniciarRealtime(grupoId: string): void {
+    if (!this.realtime) return;
+    this.subRealtime?.unsubscribe();
+    this.realtime.startForGroup(grupoId);
+
+    const sub = new Subscription();
+
+    sub.add(
+      onRealtimeReconnect(this.realtime.connectionState$).subscribe(() => {
+        this.retry.emit();
+      })
+    );
+
+    const events$ = this.realtime.events ? this.realtime.events() : this.realtime.listenType?.(REALTIME_EVENT_TYPE.ASISTENCIAS_SESION_ACTUALIZADAS);
+    if (events$) {
+      sub.add(
+        events$.subscribe((evt) => {
+          if (!evt) return;
+          if (
+            evt.type === REALTIME_EVENT_TYPE.ASISTENCIAS_SESION_ACTUALIZADAS ||
+            evt.type === REALTIME_EVENT_TYPE.REVISION_CANCELACION_RESOLUCION ||
+            evt.type === REALTIME_EVENT_TYPE.REVISION_CANCELACION_RESUELTA
+          ) {
+            this.retry.emit();
+          } else if (evt.type === REALTIME_EVENT_TYPE.ALERTA_INASISTENCIA) {
+            if (this.toast) {
+              const msg =
+                (evt.payload as any)?.mensaje ||
+                'Se ha generado una alerta sobre tu porcentaje de inasistencia.';
+              this.toast.warning(msg);
+            }
+            this.retry.emit();
+          }
+        })
+      );
+    }
+
+    this.subRealtime = sub;
+  }
+
+  ngOnDestroy(): void {
+    this.subRealtime?.unsubscribe();
+    if (this.realtime) {
+      this.realtime.stop();
+    }
+  }
 
   /** Cronologico (F-EST-S17): el orden de llegada del backend no esta garantizado. */
   readonly sesionesOrdenadas = computed(() => ordenarSesionesCronologicamente(this.sesiones()));

@@ -12,7 +12,7 @@ export interface RealtimeEvent<TPayload = unknown> {
   payload: TPayload;
 }
 
-/** Único evento de negocio actualmente conectado por el backend. */
+/** Eventos de negocio conectados por el backend. */
 export const REALTIME_EVENT_TYPE = {
   ASISTENCIAS_SESION_ACTUALIZADAS: 'ASISTENCIAS_SESION_ACTUALIZADAS',
   PARAMETER_UPDATED: 'PARAMETER_UPDATED',
@@ -23,6 +23,15 @@ export const REALTIME_EVENT_TYPE = {
   ASISTENCIA_QR_ROTADO: 'ASISTENCIA_QR_ROTADO',
   ASISTENCIA_QR_REGISTRADA: 'ASISTENCIA_QR_REGISTRADA',
   ASISTENCIAS_TOMA_ACTUALIZADAS: 'ASISTENCIAS_TOMA_ACTUALIZADAS',
+  // CULM-001 C.1: Alertas y Revisiones de Cancelación
+  ALERTA_INASISTENCIA: 'ALERTA_INASISTENCIA',
+  REVISION_CANCELACION_CREADA: 'REVISION_CANCELACION_CREADA',
+  REVISION_CANCELACION_DECIDIDA: 'REVISION_CANCELACION_DECIDIDA',
+  REVISION_CANCELACION_PROPUESTA: 'REVISION_CANCELACION_PROPUESTA',
+  REVISION_CANCELACION_RESUELTA: 'REVISION_CANCELACION_RESUELTA',
+  REVISION_CANCELACION_RESOLUCION: 'REVISION_CANCELACION_RESOLUCION',
+  REVISION_CANCELACION_REASIGNADA: 'REVISION_CANCELACION_REASIGNADA',
+  REVISION_CANCELACION_ESCALADA: 'REVISION_CANCELACION_ESCALADA',
 } as const;
 
 export type RealtimeEventType =
@@ -73,6 +82,48 @@ export interface AsistenciasTomaActualizadasRealtimePayload {
   sesion: string;
   toma: string;
   totalRegistros: number;
+}
+
+/** CULM-001 C.1: payloads de alertas y revisiones de cancelación. */
+export interface AlertaInasistenciaRealtimePayload {
+  grupo: string;
+  alerta: string;
+  estudianteGrupo: string;
+  tipo: 'ADVERTENCIA' | 'PERDIDA' | string;
+  porcentajeInasistencia: number;
+  umbral: number;
+}
+
+export interface RevisionCancelacionCreadaRealtimePayload {
+  grupo: string;
+  revision: string;
+  estudianteGrupo: string;
+  estado: string;
+}
+
+export interface RevisionCancelacionDecididaRealtimePayload {
+  grupo: string;
+  revision: string;
+  estudianteGrupo: string;
+  decision: string;
+  estado: string;
+  perfilResolutor: 'COORDINADOR' | 'DECANO' | string;
+}
+
+export interface RevisionCancelacionResueltaRealtimePayload {
+  grupo: string;
+  revision: string;
+  estudianteGrupo: string;
+  decision: string;
+  estado: string;
+  cambioMatricula: boolean;
+}
+
+export interface RevisionCancelacionReasignadaRealtimePayload {
+  grupo: string;
+  revision: string;
+  estudianteGrupo: string;
+  perfilResolutor: 'COORDINADOR' | 'DECANO' | string;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

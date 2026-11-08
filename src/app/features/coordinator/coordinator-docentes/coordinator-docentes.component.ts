@@ -25,6 +25,7 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { CoordinatorDocenteFormModalComponent } from './components/coordinator-docente-form-modal.component';
 import { CoordinatorDocenteEditModalComponent } from './components/coordinator-docente-edit-modal.component';
 import { CoordinatorDocenteFichaModalComponent } from './components/coordinator-docente-ficha-modal.component';
+import { CargaMasivaUsuariosComponent } from '../../../shared/components/carga-masiva-usuarios/carga-masiva-usuarios.component';
 
 type FiltroEstado = 'TODOS' | 'ACTIVO' | 'INACTIVO';
 
@@ -46,6 +47,7 @@ const MIN_CARACTERES_CANDIDATOS = 3;
     CoordinatorDocenteFormModalComponent,
     CoordinatorDocenteEditModalComponent,
     CoordinatorDocenteFichaModalComponent,
+    CargaMasivaUsuariosComponent,
   ],
   template: `
     <div class="space-y-6 animate-fade-in">
@@ -57,8 +59,24 @@ const MIN_CARACTERES_CANDIDATOS = 3;
           <h1 class="font-serif font-bold text-2xl sm:text-3xl text-warm-900 tracking-tight mt-2">Gestión de Docentes</h1>
           <p class="text-sm text-warm-600 mt-1">Directorio de docentes vinculados a su programa, con su tipo de vinculación y grupos asignados.</p>
         </div>
-        <app-button variant="primary" size="md" (clicked)="abrirFormulario()">Vincular docente</app-button>
+        <div class="flex flex-wrap items-center gap-3">
+          <app-button variant="secondary" size="md" (clicked)="mostrarCargaMasiva.set(true)">
+            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            Carga masiva CSV
+          </app-button>
+          <app-button variant="primary" size="md" (clicked)="abrirFormulario()">Vincular docente</app-button>
+        </div>
       </div>
+
+      @if (mostrarCargaMasiva()) {
+        <app-carga-masiva-usuarios
+          destino="DOCENTE"
+          (cargaCompletada)="onCargaMasivaCompletada()"
+          (cancelar)="mostrarCargaMasiva.set(false)"
+        />
+      }
 
       <!-- Estado de acceso de la ultima cuenta docente creada (verificado por el backend, nunca por la SPA) -->
       <app-account-access-status [correo]="ultimaCuentaRegistrada()" />
@@ -271,6 +289,7 @@ export class CoordinatorDocentesComponent implements OnInit {
 
   readonly isLoading = signal(true);
   readonly formularioAbierto = signal(false);
+  readonly mostrarCargaMasiva = signal(false);
   readonly tiposIdentificacion = signal<TipoIdentificacionItem[]>([]);
   readonly tiposVinculacion = signal<TipoVinculacionItem[]>([]);
   readonly candidatos = signal<DocenteCandidato[]>([]);
@@ -442,6 +461,10 @@ export class CoordinatorDocentesComponent implements OnInit {
 
   cerrarFichaDocente(): void {
     this.docenteSeleccionado.set(null);
+  }
+
+  onCargaMasivaCompletada(): void {
+    this.recarga.update((n) => n + 1);
   }
 
   /** Sin actualizacion optimista: se espera la respuesta del backend y se recarga la pagina desde el servidor. */

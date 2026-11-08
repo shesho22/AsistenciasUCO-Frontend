@@ -75,6 +75,18 @@ describe('StudentGroupOfferComponent (HU008: oferta de grupos)', () => {
     expect(component.total()).toBe(12);
   });
 
+  it('B2NM muestra la insignia de carácter en las propias y no en las transversales', () => {
+    crear();
+    responderOferta([
+      grupoApi('g1', { codigoCaracter: 'OPT', nombreCaracter: 'Optativa' }),
+      grupoApi('g2', { tipoAsignatura: 'INSTITUCIONAL', transversal: true, codigoCaracter: null, nombreCaracter: null }),
+      grupoApi('g3'),
+    ], 3);
+
+    const insignias = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('[data-testid="etiqueta-caracter"]')).map((e) => e.textContent?.trim());
+    expect(insignias).toEqual(['Optativa']);
+  });
+
   it('OF-02b un grupo no matriculado y con cupo no ofrece solicitar ingreso y explica cómo matricularse', () => {
     crear();
     responderOferta([grupoApi('g2')]);

@@ -1,6 +1,18 @@
-import { Component, ChangeDetectionStrategy, DestroyRef, input, inject, computed, effect, signal, untracked } from '@angular/core';
+import {
+  Component,
+  ChangeDetectionStrategy,
+  DestroyRef,
+  input,
+  inject,
+  computed,
+  effect,
+  signal,
+  untracked,
+  OnDestroy,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
+import { Subscription } from 'rxjs';
 import { EstudianteGrupoItem, idEstudianteDe } from '../../../../core/models/estudiante-grupo-item.model';
 import { ClassSession } from '../../../../core/models/attendance.model';
 import { estaCancelada } from '../../../../core/models/sesion-estado.model';
@@ -10,12 +22,23 @@ import { ResumenAsistenciaEstudiante } from '../../../../core/models/indicadores
 import { AttendanceStatusBadgeComponent } from '../../../../shared/components/attendance-status-badge/attendance-status-badge.component';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 import { getApiErrorMessage } from '../../../../core/api/errors/api-error.util';
+import { InasistenciaMarcaBadgeComponent } from '../../../../shared/components/inasistencia-marca-badge/inasistencia-marca-badge.component';
+import { RevisionDecisionModalComponent } from '../../revision-cancelacion/revision-decision-modal.component';
+import { RealtimeService } from '../../../../core/realtime/realtime.service';
+import { onRealtimeReconnect } from '../../../../core/realtime/realtime-reconnect-trigger';
+import { REALTIME_EVENT_TYPE } from '../../../../core/realtime/model/realtime-event.model';
 
 @Component({
   selector: 'app-teacher-grupo-sabana',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, AttendanceStatusBadgeComponent, PaginationComponent],
+  imports: [
+    CommonModule,
+    AttendanceStatusBadgeComponent,
+    PaginationComponent,
+    InasistenciaMarcaBadgeComponent,
+    RevisionDecisionModalComponent,
+  ],
   template: `
     <div class="bg-white rounded-b-2xl border-x border-b border-warm-200 shadow-warm-sm p-6 space-y-6">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-warm-100">
@@ -107,8 +130,11 @@ import { getApiErrorMessage } from '../../../../core/api/errors/api-error.util';
                 <th scope="col" class="p-3 text-center bg-warm-200/60 font-bold min-w-[90px] border-r border-warm-200">
                   % Inasistencia
                 </th>
-                <th scope="col" class="p-3 text-center bg-warm-200/60 font-bold min-w-[110px]">
+                <th scope="col" class="p-3 text-center bg-warm-200/60 font-bold min-w-[110px] border-r border-warm-200">
                   Estado Académico
+                </th>
+                <th scope="col" data-testid="col-seguimiento" class="p-3 text-center bg-warm-200/60 font-bold min-w-[120px]">
+                  Seguimiento
                 </th>
               </tr>
             </thead>
@@ -157,12 +183,31 @@ import { getApiErrorMessage } from '../../../../core/api/errors/api-error.util';
                   <td class="p-3 text-center font-mono font-bold text-xs border-r border-warm-100 bg-warm-50/40">
                     {{ r ? r.porcentajeInasistencia + '%' : '—' }}
                   </td>
-                  <td class="p-3 text-center bg-warm-50/40">
+                  <td class="p-3 text-center bg-warm-50/40 border-r border-warm-100">
                     @if (r) {
                       <app-attendance-status-badge [codigoPermanencia]="r.codigoPermanencia" />
                     } @else {
                       <span class="text-warm-300 font-mono text-xs">—</span>
                     }
+                  </td>
+                  <td class="p-3 text-center bg-warm-50/40">
+                    <div class="flex flex-col items-center gap-1">
+                      <app-inasistencia-marca-badge
+                        data-testid="marca-inasistencia"
+                        [marca]="r?.marca ?? null"
+                        [estadoMatricula]="est.codigoEstado || est.codigoEstadoEstudiante || null"
+                      />
+                      @if (r?.marca?.revision?.accionesPermitidas && r!.marca!.revision!.accionesPermitidas!.length > 0) {
+                        <button
+                          type="button"
+                          [attr.data-testid]="'btn-decidir-' + idDe(est)"
+                          (click)="abrirModalDecision(est, r?.marca)"
+                          class="min-h-[36px] px-2.5 py-1 bg-primary-700 hover:bg-primary-800 text-white rounded-lg text-xs font-semibold shadow-xs transition-colors"
+                        >
+                          Decidir
+                        </button>
+                      }
+                    </div>
                   </td>
                 </tr>
               }
@@ -177,13 +222,22 @@ import { getApiErrorMessage } from '../../../../core/api/errors/api-error.util';
           (pageChange)="cambiarPagina($event)"
         />
       }
+
+      <app-revision-decision-modal
+        [(isOpen)]="modalDecisionAbierto"
+        [revision]="revisionSeleccionada()"
+        [estudianteNombre]="estudianteNombreModal()"
+        (decisionRegistrada)="onDecisionRegistrada()"
+      />
     </div>
   `,
 })
-export class TeacherGrupoSabanaComponent {
+export class TeacherGrupoSabanaComponent implements OnDestroy {
   readonly timeZone = inject(SessionTimeZoneService);
   private readonly resumenService = inject(TeacherAttendanceSummaryService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly realtime = inject(RealtimeService, { optional: true });
+  private subRealtime?: Subscription;
 
   grupoId = input<string>('');
   estudiantes = input<EstudianteGrupoItem[]>([]);
@@ -207,14 +261,80 @@ export class TeacherGrupoSabanaComponent {
   }
   protected readonly hayResumen = computed(() => this.resumenes().size > 0);
 
+  modalDecisionAbierto = signal<boolean>(false);
+  revisionSeleccionada = signal<any>(null);
+  estudianteNombreModal = signal<string>('');
+
   constructor() {
     effect(() => {
       const grupo = this.grupoId();
       untracked(() => {
         this.pagina.set(1);
-        if (grupo) this.cargarResumen(grupo);
+        if (grupo) {
+          this.cargarResumen(grupo);
+          this.iniciarRealtime(grupo);
+        }
       });
     });
+  }
+
+  private iniciarRealtime(grupo: string): void {
+    if (!this.realtime) return;
+    this.subRealtime?.unsubscribe();
+    this.realtime.startForGroup(grupo);
+
+    const sub = new Subscription();
+
+    sub.add(
+      onRealtimeReconnect(this.realtime.connectionState$).subscribe(() => {
+        this.cargarResumen(this.grupoId());
+      })
+    );
+
+    const events$ = this.realtime.events
+      ? this.realtime.events()
+      : this.realtime.listenType?.(REALTIME_EVENT_TYPE.ASISTENCIAS_SESION_ACTUALIZADAS);
+
+    if (events$) {
+      sub.add(
+        events$.subscribe((evt) => {
+          if (!evt) return;
+          if (
+            evt.type === REALTIME_EVENT_TYPE.ALERTA_INASISTENCIA ||
+            evt.type === REALTIME_EVENT_TYPE.REVISION_CANCELACION_CREADA ||
+            evt.type === REALTIME_EVENT_TYPE.REVISION_CANCELACION_PROPUESTA ||
+            evt.type === REALTIME_EVENT_TYPE.REVISION_CANCELACION_DECIDIDA ||
+            evt.type === REALTIME_EVENT_TYPE.REVISION_CANCELACION_RESOLUCION ||
+            evt.type === REALTIME_EVENT_TYPE.REVISION_CANCELACION_RESUELTA ||
+            evt.type === REALTIME_EVENT_TYPE.ASISTENCIAS_SESION_ACTUALIZADAS
+          ) {
+            this.cargarResumen(this.grupoId());
+          }
+        })
+      );
+    }
+
+    this.subRealtime = sub;
+  }
+
+  abrirModalDecision(est: EstudianteGrupoItem, marca: any): void {
+    this.estudianteNombreModal.set(est.studentName || est.nombreCompleto || 'Estudiante');
+    this.revisionSeleccionada.set(marca?.revision || marca);
+    this.modalDecisionAbierto.set(true);
+  }
+
+  onDecisionRegistrada(): void {
+    const grupo = this.grupoId();
+    if (grupo) {
+      this.cargarResumen(grupo);
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.subRealtime?.unsubscribe();
+    if (this.realtime) {
+      this.realtime.stop();
+    }
   }
 
   /** El resumen (horas, % de inasistencia y semaforo) lo calcula el backend; el cliente no recalcula nada. */

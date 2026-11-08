@@ -7,6 +7,7 @@ import { environment } from '../../../../environments/environment';
 import { HorarioDocenteApiDto } from '../../../core/api/models/horario-docente-api-dto.model';
 import { SesionFacultadItem } from '../../../core/models/facultad-decano.model';
 import { ToastService } from '../../../shared/components/toast/toast.component';
+import { grupoFacultadApi, paginaApi, porUrl } from '../../../core/testing/pagina-api';
 
 describe('DeanGrupoDetalleComponent', () => {
   let fixture: ComponentFixture<DeanGrupoDetalleComponent>;
@@ -40,8 +41,6 @@ describe('DeanGrupoDetalleComponent', () => {
     nombreGrupo: 'Sección A',
     idAsignatura: 'asig-1',
     nombreAsignatura: 'Matemática Avanzada III',
-    idPrograma: 'prog-1',
-    nombrePrograma: 'Ingeniería de Sistemas',
   });
 
   const url = `${environment.apiUrl}/decano/sesiones`;

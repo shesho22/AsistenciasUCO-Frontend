@@ -1067,6 +1067,7 @@ export class AttendanceControlComponent {
         segundoNombre: data.segundoNombre?.trim(),
         primerApellido: data.primerApellido.trim(),
         segundoApellido: data.segundoApellido?.trim(),
+        idPrograma: data.idPrograma,
         correoElectronico: esExistente ? undefined : data.correo.trim(),
         password: esExistente ? undefined : effectivePassword,
       })

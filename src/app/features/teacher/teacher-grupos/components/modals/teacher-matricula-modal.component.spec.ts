@@ -4,6 +4,8 @@ import { TeacherMatriculaModalComponent } from './teacher-matricula-modal.compon
 import { ToastService } from '../../../../../shared/components/toast/toast.component';
 import { Course } from '../../../../../core/models/course.model';
 import { MatriculaQrService } from '../../../../../core/services/matricula-qr.service';
+import { GroupService } from '../../../../../core/services/group.service';
+import { ProgramaResumen } from '../../../../../core/models/role-management.model';
 import { RealtimeService } from '../../../../../core/realtime/realtime.service';
 import { RealtimeEvent } from '../../../../../core/realtime/model/realtime-event.model';
 import { RealtimeConnectionState } from '../../../../../core/realtime/model/realtime-connection-state.model';
@@ -19,6 +21,7 @@ describe('TeacherMatriculaModalComponent (HU176B)', () => {
   let component: TeacherMatriculaModalComponent;
   let toastSpy: jasmine.SpyObj<ToastService>;
   let qrSpy: jasmine.SpyObj<MatriculaQrService>;
+  let grupoSpy: jasmine.SpyObj<GroupService>;
   let rotado$: Subject<RealtimeEvent>;
   let matriculado$: Subject<RealtimeEvent>;
   let estado$: Subject<RealtimeConnectionState>;
@@ -48,10 +51,14 @@ describe('TeacherMatriculaModalComponent (HU176B)', () => {
     return { eventId: 'e-1', type, occurredAt: '2026-11-04T15:00:00Z', correlationId: null, payload };
   }
 
-  async function crear(abierto = true): Promise<void> {
+  const prog = (id: string, nombre: string): ProgramaResumen => ({ idPrograma: id, nombrePrograma: nombre });
+
+  async function crear(abierto = true, programas: ProgramaResumen[] = [prog('prg-a', 'Sistemas')]): Promise<void> {
     toastSpy = jasmine.createSpyObj('ToastService', ['success', 'info', 'warning', 'error']);
     qrSpy = jasmine.createSpyObj('MatriculaQrService', ['abrirVentana', 'rotarVentana', 'cerrarVentana']);
     qrSpy.abrirVentana.and.returnValue(of(ventana));
+    grupoSpy = jasmine.createSpyObj('GroupService', ['getProgramasGrupo']);
+    grupoSpy.getProgramasGrupo.and.returnValue(of({ exitoso: true, datos: programas, total: programas.length }));
     qrSpy.rotarVentana.and.returnValue(of({ ...ventana, pin: '111111' }));
     qrSpy.cerrarVentana.and.returnValue(of({ exitoso: true, datos: null }));
     rotado$ = new Subject<RealtimeEvent>();
@@ -66,6 +73,7 @@ describe('TeacherMatriculaModalComponent (HU176B)', () => {
       providers: [
         { provide: ToastService, useValue: toastSpy },
         { provide: MatriculaQrService, useValue: qrSpy },
+        { provide: GroupService, useValue: grupoSpy },
         { provide: RealtimeService, useValue: realtimeSpy },
       ],
     }).compileComponents();
@@ -230,6 +238,51 @@ describe('TeacherMatriculaModalComponent (HU176B)', () => {
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith('482913');
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith('https://x.test/matricula/qr?t=ABC');
     expect(toastSpy.success).toHaveBeenCalledTimes(2);
+  });
+
+  // CULM-001 B2NM (S3 mínimo): el programa solo se pide, y es obligatorio, cuando el grupo tiene más de uno.
+  it('B2NM con un solo programa abre la ventana de inmediato y no muestra el selector', async () => {
+    await crear(true, [prog('prg-a', 'Sistemas')]);
+    expect(grupoSpy.getProgramasGrupo).toHaveBeenCalledOnceWith('grp-12345');
+    expect(qrSpy.abrirVentana).toHaveBeenCalledOnceWith('grp-12345');
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="matricula-programa"]')).toBeNull();
+  });
+
+  it('B2NM con varios programas muestra el selector y no abre la ventana hasta elegir uno', async () => {
+    await crear(true, [prog('prg-a', 'Sistemas'), prog('prg-b', 'Software')]);
+    const el = fixture.nativeElement as HTMLElement;
+    const select = el.querySelector('[data-testid="matricula-programa"]') as HTMLSelectElement;
+
+    expect(qrSpy.abrirVentana).not.toHaveBeenCalled();
+    expect(Array.from(select.options).map((o) => o.textContent?.trim())).toEqual(['Selecciona el programa', 'Sistemas', 'Software']);
+    const boton = Array.from(el.querySelectorAll('button')).find((b) => b.textContent?.includes('Abrir matrícula')) as HTMLButtonElement;
+    expect(boton.disabled).toBeTrue();
+    component.abrirConPrograma();
+    expect(qrSpy.abrirVentana).not.toHaveBeenCalled();
+  });
+
+  it('B2NM al elegir el programa abre la ventana con programaId y muestra el PIN', async () => {
+    await crear(true, [prog('prg-a', 'Sistemas'), prog('prg-b', 'Software')]);
+    const el = fixture.nativeElement as HTMLElement;
+    const select = el.querySelector('[data-testid="matricula-programa"]') as HTMLSelectElement;
+    select.value = 'prg-b';
+    select.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    (Array.from(el.querySelectorAll('button')).find((b) => b.textContent?.includes('Abrir matrícula')) as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(qrSpy.abrirVentana).toHaveBeenCalledOnceWith('grp-12345', 'prg-b');
+    expect(el.querySelector('[data-testid="matricula-pin"]')?.textContent).toContain('482913');
+    expect(el.querySelector('[data-testid="matricula-programa"]')).toBeNull();
+  });
+
+  it('B2NM si la lista de programas falla se intenta abrir la ventana igual (el backend responde con su mensaje)', async () => {
+    await crear(false);
+    grupoSpy.getProgramasGrupo.and.returnValue(throwError(() => apiHttpError(500, 'Error')));
+    fixture.componentRef.setInput('isOpen', true);
+    fixture.detectChanges();
+    expect(qrSpy.abrirVentana).toHaveBeenCalledOnceWith('grp-12345');
   });
 
   it('al cerrar el modal se limpia el estado y se cancelan las suscripciones', async () => {

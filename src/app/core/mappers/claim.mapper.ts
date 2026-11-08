@@ -69,7 +69,21 @@ export interface ReclamoDocenteApi {
   materiaId: string;
   materiaCodigo: string;
   materiaNombre: string;
+  /** CULM-001 D.2: Categoría persistida del reclamo (código y nombre o texto simple). */
+  categoria?: string | { codigo: string; nombre: string } | null;
+  codigoCategoria?: string | null;
+  nombreCategoria?: string | null;
   soporteAdjunto?: ReclamoDocenteSoporteApi | null;
+  /** CULM-001 D.2: Colección completa de soportes documentales adjuntos. */
+  soportes?: Array<{
+    fileId: string;
+    nombre: string;
+    tipo?: string;
+    tipoContenido?: string;
+    tamanioBytes: number;
+    fechaSubidaUtc?: string | null;
+    url?: string | null;
+  }> | null;
 }
 
 /**
@@ -102,7 +116,44 @@ export class ClaimMapper {
    * offsets manuales: la zona la resuelve el formateador inyectado (IANA, con DST).
    */
   static fromReclamoDocente(dto: ReclamoDocenteApi, formatDate: InstantDateFormatter): SolicitudRevisionItem {
-    const soporte = dto.soporteAdjunto ?? null;
+    const soportesMapeados: SoporteAdjuntoItem[] | undefined = dto.soportes && dto.soportes.length > 0
+      ? dto.soportes.map((s) => ({
+          fileId: s.fileId,
+          nombre: s.nombre,
+          tipo: s.tipoContenido || s.tipo || '',
+          tipoContenido: s.tipoContenido || s.tipo || '',
+          tamanioBytes: s.tamanioBytes,
+          tamanioKb: Math.max(1, Math.round((s.tamanioBytes ?? 0) / 1024)),
+          urlSimulada: s.url ?? undefined,
+          fechaSubida: s.fechaSubidaUtc ? formatDate(s.fechaSubidaUtc) : '',
+          fechaSubidaUtc: s.fechaSubidaUtc ?? undefined,
+          estado: 'LISTO' as const,
+        }))
+      : (dto.soporteAdjunto ? [{
+          fileId: dto.soporteAdjunto.fileId,
+          nombre: dto.soporteAdjunto.nombre,
+          tipo: dto.soporteAdjunto.tipo,
+          tipoContenido: dto.soporteAdjunto.tipo,
+          tamanioBytes: dto.soporteAdjunto.tamanioBytes,
+          tamanioKb: Math.max(1, Math.round((dto.soporteAdjunto.tamanioBytes ?? 0) / 1024)),
+          urlSimulada: dto.soporteAdjunto.url ?? undefined,
+          fechaSubida: dto.soporteAdjunto.fechaSubidaUtc ? formatDate(dto.soporteAdjunto.fechaSubidaUtc) : '',
+          fechaSubidaUtc: dto.soporteAdjunto.fechaSubidaUtc ?? undefined,
+          estado: 'LISTO' as const,
+        }] : undefined);
+
+    const soporte = soportesMapeados && soportesMapeados.length > 0 ? soportesMapeados[0] : undefined;
+
+    let categoria: CategoriaJustificacion | undefined;
+    if (dto.categoria) {
+      categoria = typeof dto.categoria === 'object' ? dto.categoria : dto.categoria;
+    } else if (dto.codigoCategoria || dto.nombreCategoria) {
+      categoria = {
+        codigo: dto.codigoCategoria ?? '',
+        nombre: dto.nombreCategoria ?? '',
+      };
+    }
+
     return {
       id: dto.id,
       grupoId: dto.grupoId,
@@ -120,18 +171,9 @@ export class ClaimMapper {
       fechaSesionUtc: dto.fechaSesionUtc ?? undefined,
       fechaSolicitud: dto.fechaSolicitud,
       estadoSolicitud: dto.estadoSolicitud as EstadoSolicitudRevision,
-      soporteAdjunto: soporte
-        ? {
-            fileId: soporte.fileId,
-            nombre: soporte.nombre,
-            tipo: soporte.tipo,
-            tamanioBytes: soporte.tamanioBytes,
-            tamanioKb: Math.max(1, Math.round(soporte.tamanioBytes / 1024)),
-            urlSimulada: soporte.url ?? undefined,
-            fechaSubida: soporte.fechaSubidaUtc ? formatDate(soporte.fechaSubidaUtc) : '',
-            fechaSubidaUtc: soporte.fechaSubidaUtc ?? undefined,
-          }
-        : undefined,
+      categoria,
+      soporteAdjunto: soporte,
+      soportes: soportesMapeados,
       justificacionSolicitud: dto.justificacionSolicitud,
       justificacionRespuesta: dto.justificacionRespuesta ?? undefined,
     };
@@ -204,7 +246,7 @@ export class ClaimMapper {
       estado_original: model.estadoOriginal ?? '',
       fecha_solicitud: model.fechaSolicitud,
       estado_solicitud: model.estadoSolicitud,
-      categoria: model.categoria ?? null,
+      categoria: typeof model.categoria === 'object' ? (model.categoria?.nombre || model.categoria?.codigo || null) : (model.categoria ?? null),
       soporte_adjunto: model.soporteAdjunto
         ? {
             nombre: model.soporteAdjunto.nombre,

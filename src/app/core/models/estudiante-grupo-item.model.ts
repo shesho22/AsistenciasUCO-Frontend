@@ -16,6 +16,7 @@ export interface EstudianteGrupoItem {
   numeroIdentificacion?: string | number;
   correo?: string;
   codigoEstado?: string;
+  codigoEstadoEstudiante?: string;
   nombreEstado?: string;
 }
 

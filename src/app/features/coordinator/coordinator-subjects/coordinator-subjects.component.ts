@@ -102,10 +102,10 @@ import { AvatarComponent } from '../../../shared/components/avatar/avatar.compon
             (ngModelChange)="filtroTipoAsignatura.set($event)"
             class="w-full px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20 shadow-warm-sm"
           >
-            <option value="TODOS">Todos los componentes</option>
-            <option value="Obligatoria">Obligatorias</option>
-            <option value="Electiva">Electivas</option>
-            <option value="Complementaria">Complementarias</option>
+            <option value="TODOS">Todos los caracteres</option>
+            @for (c of caracteresDisponibles(); track c) {
+              <option [value]="c">{{ c }}</option>
+            }
           </select>
         </div>
       </div>
@@ -250,21 +250,31 @@ import { AvatarComponent } from '../../../shared/components/avatar/avatar.compon
           </div>
         } @else {
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            @for (asig of filteredAsignaturas(); track asig.id) {
+            @for (asig of filteredAsignaturas(); track clavePlan(asig)) {
               <div class="bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm flex flex-col h-full justify-between gap-3">
                 <div>
                   <div class="flex items-start justify-between gap-2 mb-2">
                     <span class="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-warm-100 text-warm-800">
                       {{ asig.codigo }}
                     </span>
-                    <app-badge [variant]="getTipoBadgeVariant(asig.componente)">
-                      {{ asig.componente }}
-                    </app-badge>
+                    <div class="flex flex-wrap items-center justify-end gap-1">
+                      @if (asig.compartida) {
+                        <app-badge variant="info">Compartida</app-badge>
+                      }
+                      <app-badge [variant]="getTipoBadgeVariant(asig.nombreCaracter ?? asig.componente)">
+                        {{ asig.nombreCaracter ?? asig.componente }}
+                      </app-badge>
+                    </div>
                   </div>
 
                   <h3 class="font-serif font-bold text-base text-warm-900 leading-snug">
                     {{ asig.nombre }}
                   </h3>
+                  @if (asig.nombrePrograma) {
+                    <p class="text-xs text-warm-500 mt-1">
+                      {{ asig.nombrePrograma }}@if (asig.inpPlanEstudio) { · Plan {{ asig.inpPlanEstudio }} }
+                    </p>
+                  }
 
                   <div class="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-warm-50 text-xs border border-warm-100 mt-3 text-center">
                     <div>
@@ -338,10 +348,20 @@ export class CoordinatorSubjectsComponent implements OnInit {
         !q ||
         a.codigo.toLowerCase().includes(q) ||
         a.nombre.toLowerCase().includes(q);
-      const matchTipo = tipo === 'TODOS' || a.componente === tipo;
+      const matchTipo = tipo === 'TODOS' || (a.nombreCaracter ?? a.componente) === tipo;
       return matchQuery && matchTipo;
     });
   });
+
+  /** Caracteres presentes en el catálogo cargado (Obligatoria, Optativa). */
+  caracteresDisponibles = computed(() =>
+    [...new Set(this.asignaturasCurriculares().map((a) => a.nombreCaracter ?? a.componente).filter(Boolean))].sort()
+  );
+
+  /** B2NM: la misma asignatura aparece una vez por plan donde está vinculada. */
+  clavePlan(a: AsignaturaPlanItem): string {
+    return `${a.id}|${a.planEstudioId}`;
+  }
 
   totalInscritosGrupos = computed(() =>
     this.courses().reduce((acc, c) => acc + (c.enrolledStudentsCount || 0), 0)
@@ -376,8 +396,8 @@ export class CoordinatorSubjectsComponent implements OnInit {
             next: (asigRes) => {
               const nuevas = asigRes.datos || [];
               this.asignaturasCurriculares.update((prev) => {
-                const ids = new Set(prev.map((item) => item.id));
-                return [...prev, ...nuevas.filter((item) => !ids.has(item.id))];
+                const claves = new Set(prev.map((item) => this.clavePlan(item)));
+                return [...prev, ...nuevas.filter((item) => !claves.has(this.clavePlan(item)))];
               });
             },
           });
@@ -401,6 +421,8 @@ export class CoordinatorSubjectsComponent implements OnInit {
     switch (componente) {
       case 'Obligatoria':
         return 'info';
+      case 'Optativa':
+        return 'success';
       case 'Electiva':
         return 'success';
       case 'Complementaria':

@@ -64,6 +64,10 @@ const DEBOUNCE_MS = 300;
                         <span data-testid="etiqueta-transversal" class="ml-1 px-2 py-0.5 rounded-full text-xs font-semibold font-sans bg-primary-50 text-primary-800 border border-primary-200">
                           Transversal · {{ g.tipoAsignatura === 'BASICA' ? 'Básica' : 'Institucional' }}
                         </span>
+                      } @else if (g.nombreCaracter) {
+                        <span data-testid="etiqueta-caracter" class="ml-1 px-2 py-0.5 rounded-full text-xs font-semibold font-sans bg-info-50 text-info-800 border border-info-200">
+                          {{ g.nombreCaracter }}
+                        </span>
                       }
                     </p>
                     <p class="font-semibold text-warm-900">{{ g.nombreAsignatura }}</p>

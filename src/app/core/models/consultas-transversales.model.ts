@@ -38,13 +38,12 @@ export interface AsignaturaInstitucionItem {
   creditos: number | null;
   nombreArea: string | null;
   nombreComponente: string | null;
-  codigoSemestre: string | null;
-  idPlanEstudio: string;
-  inpPlanEstudio: number | null;
-  idPrograma: string;
-  nombrePrograma: string;
-  idFacultad: string;
-  nombreFacultad: string;
+  /**
+   * CULM-001 B2NM: una asignatura puede estar en varios planes. Texto con los programas y planes donde está vinculada
+   * (el backend retiró nombrePrograma, idPlanEstudio, idFacultad y nombreFacultad).
+   */
+  planes: string | null;
+  totalPlanes: number;
   activa: boolean;
 }
 
@@ -133,11 +132,16 @@ export interface ConsolidadoGrupoItem {
   asistencias: number;
   faltasSinJustaCausa: number;
   excusas: number;
-  /** Sobre sesiones ejecutadas × estudiantes activos. */
+  /** Calculado por horas (D.8), sobre horasDictadas × estudiantes activos del programa en el grupo. */
   porcentajeAsistencia: number;
   porcentajeInasistencia: number;
   estudiantesRiesgo: number;
   estudiantesPerdida: number;
+  /** Horas dictadas del grupo (por estudiante). */
+  horasDictadas: number;
+  /** Los cuatro porcentajes suman 100 (el backend reparte el redondeo). */
+  porcentajeExcusa: number;
+  porcentajeSinRegistro: number;
 }
 
 export interface FiltroConsolidado {
@@ -161,12 +165,14 @@ export interface EventoAuditoriaItem {
   idRecurso: string | null;
   resultado: 'SUCCESS' | 'FAILURE' | string;
   idTraza: string | null;
+  idCorrelacion?: string | null;
   metodoHttp: string;
   ruta: string;
   estadoHttp: number;
   ipCliente: string | null;
   codigoError: string | null;
-  metadatos: string | null;
+  metadatos?: string | null;
+  metadata?: string | null;
   accionAsistencia: boolean;
 }
 
@@ -176,6 +182,8 @@ export interface FiltroAuditoria {
   hasta?: string | null;
   accion?: string | null;
   resultado?: string | null;
+  idCorrelacion?: string | null;
+  soloAdministracion?: boolean | null;
   soloAsistencia?: boolean | null;
   pagina: number;
   tamano: number;
@@ -197,6 +205,8 @@ export interface CategoriaJustificacionItem {
   /** Texto que el formulario de reclamo envía como `categoria` (contrato vigente del radicado). */
   nombre: string;
   descripcion: string | null;
+  /** CULM-001 D.2 (HU014): indica si la categoría exige adjuntar al menos un soporte documental. */
+  requiereSoporte?: boolean;
 }
 
 export interface EstadoSistemaItem {

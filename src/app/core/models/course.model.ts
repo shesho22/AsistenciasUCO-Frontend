@@ -30,6 +30,8 @@ export interface Course {
   nombreTipoPrograma?: string;
   /** F1: horario semanal del grupo (GET /grupos). */
   franjas?: FranjaHorario[];
+  /** CULM-001 B2NM: nombres de los programas del grupo (GET /decano/grupos). */
+  programas?: string[];
 }
 
 /** F1: franja del horario semanal de un grupo. `dia` es el código de dbo.Dia (LU, MA, MI, JU, VI, SA, DO). */
