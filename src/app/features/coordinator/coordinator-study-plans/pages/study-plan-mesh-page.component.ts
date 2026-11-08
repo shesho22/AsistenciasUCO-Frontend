@@ -6,6 +6,7 @@ import { PlanEstudioItem, AsignaturaPlanItem } from '../../../../core/models/rol
 import { ToastService } from '../../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../../core/api/errors/api-error.util';
 import { StudyPlanMeshComponent } from '../components/study-plan-mesh.component';
+import { ConfirmDialogComponent } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { AssociateSubjectDialogComponent } from '../components/associate-subject-dialog.component';
 
 /** Catálogo dbo.Semestre (1 a 10); la DB responde PLA_003 si se intenta superar. */
@@ -16,7 +17,7 @@ const MAX_SEMESTRES = 10;
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full' },
-  imports: [CommonModule, StudyPlanMeshComponent, AssociateSubjectDialogComponent],
+  imports: [CommonModule, StudyPlanMeshComponent, AssociateSubjectDialogComponent, ConfirmDialogComponent],
   template: `
     <div class="space-y-6 animate-fade-in">
       @if (aviso(); as mensaje) {
@@ -45,6 +46,15 @@ const MAX_SEMESTRES = 10;
           [abierto]="dialogoAsociarAbierto()"
           (asociada)="alAsociar()"
           (cerrado)="dialogoAsociarAbierto.set(false)"
+        />
+        <app-confirm-dialog
+          [isOpen]="asignaturaAQuitar() !== null"
+          title="Quitar asignatura del plan"
+          [message]="'¿Quitar «' + (asignaturaAQuitar()?.nombre ?? '') + '» de este plan de estudio?'"
+          confirmLabel="Quitar del plan"
+          [destructive]="true"
+          (confirmed)="confirmarQuitar()"
+          (cancelled)="asignaturaAQuitar.set(null)"
         />
       } @else {
         <div class="bg-white rounded-2xl border border-warm-200 p-12 text-center shadow-warm-sm space-y-3">
@@ -86,6 +96,7 @@ export class CoordinatorStudyPlanMeshPageComponent implements OnInit {
   aviso = signal<string | null>(null);
 
   dialogoAsociarAbierto = signal(false);
+  asignaturaAQuitar = signal<AsignaturaPlanItem | null>(null);
 
   ngOnInit(): void {
     const id = this.effectivePlanId();
@@ -194,11 +205,17 @@ export class CoordinatorStudyPlanMeshPageComponent implements OnInit {
     this.recargarMalla();
   }
 
-  /** F-COO-005: quita el vínculo con el plan (no borra la asignatura). Se conserva el confirm() nativo (contrato §4.2). */
+  /** F-COO-005: pide confirmación con ConfirmDialogComponent (alertdialog; E.2 retiró window.confirm). */
   quitarDelPlan(asig: AsignaturaPlanItem): void {
+    this.asignaturaAQuitar.set(asig);
+  }
+
+  /** Quita el vínculo con el plan (no borra la asignatura). */
+  confirmarQuitar(): void {
+    const asig = this.asignaturaAQuitar();
     const id = this.effectivePlanId();
-    if (!id) return;
-    if (!confirm(`¿Quitar "${asig.nombre}" de este plan de estudio?`)) return;
+    this.asignaturaAQuitar.set(null);
+    if (!asig || !id) return;
     this.aviso.set(null);
     this.coordService.desvincularAsignaturaPlan(id, asig.id).subscribe({
       next: (res) => {

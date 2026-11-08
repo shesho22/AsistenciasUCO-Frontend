@@ -104,8 +104,15 @@ describe('CoordinatorStudyPlanMeshPageComponent', () => {
   });
 
   it('F-COO-005 quitar del plan pide confirmación, llama al DELETE y recarga la malla y los planes', () => {
-    spyOn(window, 'confirm').and.returnValue(true);
+    const confirmNativo = spyOn(window, 'confirm');
     (fixture.nativeElement.querySelector('[title="Desvincular del plan"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    const dialogo = (fixture.nativeElement as HTMLElement).querySelector('[role="alertdialog"]');
+    expect(dialogo?.textContent).toContain('Algoritmos I');
+    http.expectNone(`${urlMalla}/asig-1`);
+    const confirmar = Array.from(dialogo!.querySelectorAll('button')).find((b) => b.textContent?.includes('Quitar del plan')) as HTMLButtonElement;
+    confirmar.click();
+    expect(confirmNativo).not.toHaveBeenCalled();
 
     const del = http.expectOne(`${urlMalla}/asig-1`);
     expect(del.request.method).toBe('DELETE');
@@ -118,15 +125,18 @@ describe('CoordinatorStudyPlanMeshPageComponent', () => {
   });
 
   it('F-COO-005 si se cancela la confirmación no se llama al backend', () => {
-    spyOn(window, 'confirm').and.returnValue(false);
     component.quitarDelPlan(component.asignaturas()[0]);
+    fixture.detectChanges();
+    const cancelar = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('[role="alertdialog"] button')).find((b) => b.textContent?.includes('Cancelar')) as HTMLButtonElement;
+    cancelar.click();
+    expect(component.asignaturaAQuitar()).toBeNull();
     http.expectNone(`${urlMalla}/asig-1`);
     expect(component.asignaturas().length).toBe(1);
   });
 
   it('F-COO-005 ASI_005 explica el bloqueo con el mensaje del backend y conserva la malla', () => {
-    spyOn(window, 'confirm').and.returnValue(true);
     component.quitarDelPlan(component.asignaturas()[0]);
+    component.confirmarQuitar();
     http
       .expectOne(`${urlMalla}/asig-1`)
       .flush({ code: 'ASI_005', message: 'La asignatura tiene grupos con asistencia en este plan.' }, { status: 409, statusText: 'Conflict' });
