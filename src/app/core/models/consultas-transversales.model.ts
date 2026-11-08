@@ -132,11 +132,16 @@ export interface ConsolidadoGrupoItem {
   asistencias: number;
   faltasSinJustaCausa: number;
   excusas: number;
-  /** Sobre sesiones ejecutadas × estudiantes activos. */
+  /** Calculado por horas (D.8), sobre horasDictadas × estudiantes activos del programa en el grupo. */
   porcentajeAsistencia: number;
   porcentajeInasistencia: number;
   estudiantesRiesgo: number;
   estudiantesPerdida: number;
+  /** Horas dictadas del grupo (por estudiante). */
+  horasDictadas: number;
+  /** Los cuatro porcentajes suman 100 (el backend reparte el redondeo). */
+  porcentajeExcusa: number;
+  porcentajeSinRegistro: number;
 }
 
 export interface FiltroConsolidado {

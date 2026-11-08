@@ -31,7 +31,11 @@ export interface ComparativaPrograma {
   tasaRetencion: number | null;
   sesionesEjecutadas: number;
   faltasSinJustaCausa: number;
+  /** Calculado por horas (D.8): 100 × horasFalta / horasDictadas de las matrículas activas del programa. */
   porcentajeAusentismo: number | null;
+  /** Horas dictadas y horas de falta sin justa causa de esas matrículas (horas, 2 decimales). */
+  horasDictadas: number;
+  horasFalta: number;
 }
 
 export interface AforoGrupo {
