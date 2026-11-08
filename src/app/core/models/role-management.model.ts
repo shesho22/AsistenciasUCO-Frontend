@@ -299,6 +299,8 @@ export interface PlanEstudioItem {
   totalAsignaturas: number | null;
   estado: 'VIGENTE' | 'EN_TRANSICION' | 'HISTORICO' | 'INACTIVO';
   descripcion: string;
+  /** Programa del plan (CULM-001 B2NM); permite derivar los programas del ámbito del coordinador. */
+  idPrograma?: string;
 }
 
 export interface AsignaturaPlanItem {
@@ -312,6 +314,44 @@ export interface AsignaturaPlanItem {
   /** Nombre o código de un componente de formación real (BAS, INS, ESP; HU147). */
   componente: string;
   horasSemanales: number;
+  /** CULM-001 B2NM: vínculo asignatura-plan (N:M). */
+  idSemestrePlanEstudio?: string;
+  codigoCaracter?: string;
+  nombreCaracter?: string;
+  /** La asignatura está asociada a más de un plan. */
+  compartida?: boolean;
+  estaActivoVinculo?: boolean;
+  estaActivaAsignatura?: boolean;
+  idPrograma?: string;
+  nombrePrograma?: string;
+  inpPlanEstudio?: string;
+}
+
+/** Asignatura que aún no está en el plan: `GET /coordinador/planes-estudio/{planId}/asignaturas-asociables`. */
+export interface AsignaturaAsociable {
+  idAsignatura: string;
+  codigo: string;
+  nombre: string;
+  credito: number;
+  nombreArea: string;
+  nombreComponente: string;
+  /** Planes donde ya está asociada (texto del backend). */
+  planes: string | null;
+}
+
+/** Carácter de la asignatura en el plan (obligatoria u optativa): `GET /coordinador/caracteres-asignatura`. */
+export interface CaracterAsignatura {
+  codigo: string;
+  nombre: string;
+  orden: number;
+}
+
+/** Programa del ámbito del coordinador o de un grupo mixto. */
+export interface ProgramaResumen {
+  idPrograma: string;
+  nombrePrograma: string;
+  idPlanEstudio?: string;
+  inpPlanEstudio?: string;
 }
 
 export interface EstudianteDirectorioItem {
@@ -321,6 +361,7 @@ export interface EstudianteDirectorioItem {
   nombreCompleto: string;
   correo: string;
   programa: string;
+  idPrograma?: string;
   semestreActual?: number;
   estadoMatricula: 'ACTIVO' | 'INACTIVO' | 'BLOQUEADO';
   promedioAcumulado?: number;

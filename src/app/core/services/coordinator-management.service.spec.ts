@@ -8,6 +8,8 @@ import {
   normalizarPlanEstudio,
 } from './coordinator-management.service';
 import { environment } from '../../../environments/environment';
+import { paginaApi, porUrl } from '../testing/pagina-api';
+import { CoordinatorProgramService } from './coordinator-program.service';
 import {
   ActualizarDocentePayload,
   DocentePrograma,
@@ -62,8 +64,8 @@ describe('CoordinatorManagementService', () => {
     // La carga ya NO ocurre en el constructor: las pantallas de Coordinador la solicitan explicitamente.
     http.expectNone(() => true);
     service.cargarDatosAcademicosBase();
-    const reqPlanes = http.expectOne(`${environment.apiUrl}/coordinador/planes-estudio`);
-    reqPlanes.flush({ exitoso: true, datos: mockPlanes });
+    const reqPlanes = http.expectOne(porUrl(`${environment.apiUrl}/coordinador/planes-estudio`));
+    reqPlanes.flush(paginaApi(mockPlanes));
 
     const reqPeriodos = http.expectOne(`${environment.apiUrl}/coordinador/periodos-academicos`);
     reqPeriodos.flush({ exitoso: true, datos: mockPeriodos });
@@ -100,7 +102,7 @@ describe('CoordinatorManagementService', () => {
     const httpFresco = TestBed.inject(HttpTestingController);
 
     expect(() => fresco.cargarDatosAcademicosBase()).not.toThrow();
-    httpFresco.expectOne(`${environment.apiUrl}/coordinador/planes-estudio`).flush(null, { status: 403, statusText: 'Forbidden' });
+    httpFresco.expectOne(porUrl(`${environment.apiUrl}/coordinador/planes-estudio`)).flush(null, { status: 403, statusText: 'Forbidden' });
     httpFresco.expectOne(`${environment.apiUrl}/coordinador/periodos-academicos`).flush(null, { status: 403, statusText: 'Forbidden' });
     httpFresco.verify();
   });
@@ -365,6 +367,125 @@ describe('CoordinatorManagementService', () => {
       expect(service.planes().find((p) => p.id === 'plan-1')?.estado).toBe('INACTIVO');
     });
 
+    it('B2NM: normalizarAsignaturaPlan toma id de idAsignatura y conserva carácter y compartida', () => {
+      const asig = normalizarAsignaturaPlan({
+        idAsignatura: 'a-9', codigo: 'SIS-101', nombre: 'Algoritmos', credito: 4, nombreArea: 'Software', nombreComponente: 'Básicas',
+        idPlanEstudio: 'p-1', idSemestrePlanEstudio: 'sem-1', codigoSemestre: 'S1', codigoCaracter: 'OPT', nombreCaracter: 'Optativa', compartida: true,
+      });
+      expect(asig.id).toBe('a-9');
+      expect(asig.codigoCaracter).toBe('OPT');
+      expect(asig.nombreCaracter).toBe('Optativa');
+      expect(asig.compartida).toBeTrue();
+      expect(asig.idSemestrePlanEstudio).toBe('sem-1');
+    });
+
+    it('B2NM: aSolicitudAsignatura envía codigoCaracter al crear una asignatura', () => {
+      service.crearAsignaturaPlan('plan-1', { codigo: 'X', nombre: 'Y', creditos: 3, semestre: 2, area: 'A', componente: 'C', codigoCaracter: 'OBL' }).subscribe();
+      const req = http.expectOne(`${environment.apiUrl}/coordinador/planes-estudio/plan-1/asignaturas`);
+      expect(req.request.body.codigoCaracter).toBe('OBL');
+      expect(req.request.body.semestreNumero).toBe(2);
+      req.flush({ exitoso: true, datos: { id: 'a-1' } });
+    });
+
+    it('getPlanesEstudio sigue pidiendo páginas hasta agotar totalPaginas', () => {
+      service.getPlanesEstudio('prg-a').subscribe((res) => expect(res.datos.length).toBe(3));
+      const url = `${environment.apiUrl}/coordinador/planes-estudio`;
+      const primera = http.expectOne(porUrl(url));
+      expect(primera.request.params.get('programaId')).toBe('prg-a');
+      expect(primera.request.params.get('pagina')).toBe('1');
+      primera.flush({ ...paginaApi([{ id: 'a' }, { id: 'b' }], 1, 2, 3), totalPaginas: 2 });
+      const segunda = http.expectOne(porUrl(url));
+      expect(segunda.request.params.get('pagina')).toBe('2');
+      segunda.flush({ ...paginaApi([{ id: 'c' }], 2, 2, 3), totalPaginas: 2 });
+    });
+
+    it('B2NM: asociarAsignaturaPlan envía POST /asignaturas-asociadas con semestre y carácter', () => {
+      service.asociarAsignaturaPlan('plan-1', { idAsignatura: 'a-1', semestreNumero: 3, codigoCaracter: 'OPT' }).subscribe((res) => {
+        expect(res.exitoso).toBeTrue();
+      });
+      const req = http.expectOne(`${environment.apiUrl}/coordinador/planes-estudio/plan-1/asignaturas-asociadas`);
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({ idAsignatura: 'a-1', semestreNumero: 3, codigoCaracter: 'OPT' });
+      req.flush({ exitoso: true, datos: null }, { status: 201, statusText: 'Created' });
+    });
+
+    it('B2NM: asociarAsignaturaPlan propaga el 409 (ASI_003) con el mensaje del backend', () => {
+      let error: { status: number; error: { message: string } } | undefined;
+      service.asociarAsignaturaPlan('plan-1', { idAsignatura: 'a-1', semestreNumero: 3, codigoCaracter: 'OBL' }).subscribe({
+        error: (e) => (error = e),
+      });
+      http
+        .expectOne(`${environment.apiUrl}/coordinador/planes-estudio/plan-1/asignaturas-asociadas`)
+        .flush({ code: 'ASI_003', message: 'La asignatura ya está en el plan.' }, { status: 409, statusText: 'Conflict' });
+      expect(error?.status).toBe(409);
+      expect(error?.error.message).toBe('La asignatura ya está en el plan.');
+    });
+
+    it('B2NM: desvincularAsignaturaPlan usa DELETE y quita la asignatura del caché del plan', () => {
+      service.getAsignaturasPorPlan('plan-1').subscribe();
+      http
+        .expectOne(porUrl(`${environment.apiUrl}/coordinador/planes-estudio/plan-1/asignaturas`))
+        .flush(paginaApi([{ idAsignatura: 'a-1', codigo: 'A', nombre: 'A' }, { idAsignatura: 'a-2', codigo: 'B', nombre: 'B' }]));
+      expect(service.getAsignaturasPlan('plan-1').length).toBe(2);
+
+      service.desvincularAsignaturaPlan('plan-1', 'a-1').subscribe((res) => expect(res.exitoso).toBeTrue());
+      const req = http.expectOne(`${environment.apiUrl}/coordinador/planes-estudio/plan-1/asignaturas/a-1`);
+      expect(req.request.method).toBe('DELETE');
+      req.flush({ exitoso: true, datos: null });
+      expect(service.getAsignaturasPlan('plan-1').map((a) => a.id)).toEqual(['a-2']);
+    });
+
+    it('B2NM: desvincularAsignaturaPlan propaga ASI_005 sin tocar el caché', () => {
+      let status = 0;
+      service.desvincularAsignaturaPlan('plan-1', 'a-1').subscribe({ error: (e) => (status = e.status) });
+      http
+        .expectOne(`${environment.apiUrl}/coordinador/planes-estudio/plan-1/asignaturas/a-1`)
+        .flush({ code: 'ASI_005', message: 'La asignatura tiene grupos en este plan.' }, { status: 409, statusText: 'Conflict' });
+      expect(status).toBe(409);
+    });
+
+    it('B2NM: buscarAsignaturasAsociables y getCaracteresAsignatura consultan los endpoints del contrato', () => {
+      service.buscarAsignaturasAsociables('plan-1', { busqueda: 'soft', pagina: 2, tamano: 5 }).subscribe((p) => {
+        expect(p.elementos[0].planes).toBe('Software (Plan 2024)');
+        expect(p.totalElementos).toBe(7);
+      });
+      const req = http.expectOne(porUrl(`${environment.apiUrl}/coordinador/planes-estudio/plan-1/asignaturas-asociables`));
+      expect(req.request.params.get('busqueda')).toBe('soft');
+      expect(req.request.params.get('pagina')).toBe('2');
+      expect(req.request.params.get('tamano')).toBe('5');
+      req.flush(paginaApi([{ idAsignatura: 'a-1', codigo: 'S', nombre: 'S', credito: 3, nombreArea: 'A', nombreComponente: 'B', planes: 'Software (Plan 2024)' }], 2, 5, 7));
+
+      service.getCaracteresAsignatura().subscribe((res) => expect(res.datos.map((c) => c.codigo)).toEqual(['OBL', 'OPT']));
+      http
+        .expectOne(`${environment.apiUrl}/coordinador/caracteres-asignatura`)
+        .flush({ exitoso: true, datos: [{ codigo: 'OBL', nombre: 'Obligatoria', orden: 1 }, { codigo: 'OPT', nombre: 'Optativa', orden: 2 }] });
+    });
+
+    it('S4: las consultas del coordinador envían el programa seleccionado', () => {
+      TestBed.inject(CoordinatorProgramService).programaId.set('prg-b');
+
+      service.getEstudiantesDirectorio().subscribe();
+      expect(http.expectOne(porUrl(`${environment.apiUrl}/coordinador/estudiantes`)).request.params.get('programaId')).toBe('prg-b');
+
+      service.getEstudiantesDirectorioPagina({ page: 0, size: 6 }).subscribe();
+      const directorio = http.expectOne((r) => r.url === `${environment.apiUrl}/estudiantes`);
+      expect(directorio.request.params.get('programaId')).toBe('prg-b');
+      directorio.flush({ items: [], totalItems: 0, totalPages: 0, page: 0, size: 6 });
+
+      service.getAsignaturasPrograma({ busqueda: 'cal', estaActiva: true, pagina: 1, tamano: 9 }).subscribe((p) => {
+        expect(p.elementos[0].id).toBe('a-1');
+        expect(p.elementos[0].creditos).toBe(3);
+      });
+      const asignaturas = http.expectOne(porUrl(`${environment.apiUrl}/coordinador/asignaturas`));
+      expect(asignaturas.request.params.get('programaId')).toBe('prg-b');
+      expect(asignaturas.request.params.get('estaActiva')).toBe('true');
+      expect(asignaturas.request.params.get('busqueda')).toBe('cal');
+      asignaturas.flush(paginaApi([{ idAsignatura: 'a-1', codigo: 'C', nombre: 'Cálculo', credito: 3 }], 1, 9));
+
+      // Las peticiones del beforeEach no dejaron programa seleccionado.
+      TestBed.inject(CoordinatorProgramService).programaId.set(null);
+    });
+
     it('normalizarAsignaturaPlan adapta codigoSemestre, créditos, área y componente del backend', () => {
       const asig = normalizarAsignaturaPlan({
         id: 'a-1', codigo: 'ARQ-402', nombre: 'Arquitectura', credito: 3, nombreArea: 'Software',
@@ -413,16 +534,20 @@ describe('CoordinatorManagementService', () => {
     it('getPlanesEstudio adapta la respuesta del backend (HU081-HU083) a PlanEstudioItem', () => {
       service.getPlanesEstudio().subscribe();
 
-      const req = http.expectOne(`${environment.apiUrl}/coordinador/planes-estudio`);
-      req.flush({
-        exitoso: true,
-        datos: [
+      const req = http.expectOne(porUrl(`${environment.apiUrl}/coordinador/planes-estudio`));
+      expect(req.request.params.get('tamano')).toBe('100');
+      req.flush(
+        paginaApi([
           { id: 'p-1', idPrograma: 'pr-1', nombrePrograma: 'Ingeniería de Sistemas', inp: '2026', estaActivoPlanEstudio: false,
-            estaActivoTextoPlanEstudio: 'NO', justificacionEstado: 'Plan Estudio inactivado por el coordinador del programa.', totalSemestres: 8 },
-        ],
-      });
+            estaActivoTextoPlanEstudio: 'NO', justificacionEstado: 'Plan Estudio inactivado por el coordinador del programa.', totalSemestres: 8,
+            totalAsignaturas: 5, totalCreditos: 15 },
+        ])
+      );
 
       const plan = service.planes()[0];
+      expect(plan.idPrograma).toBe('pr-1');
+      expect(plan.totalAsignaturas).toBe(5);
+      expect(plan.totalCreditos).toBe(15);
       expect(plan.estado).toBe('INACTIVO');
       expect(plan.totalSemestres).toBe(8);
       expect(plan.programa).toBe('Ingeniería de Sistemas');
@@ -464,9 +589,9 @@ describe('CoordinatorManagementService', () => {
         expect(res.exitoso).toBeTrue();
       });
 
-      const req = http.expectOne(`${environment.apiUrl}/coordinador/planes-estudio/plan-1/asignaturas`);
+      const req = http.expectOne(porUrl(`${environment.apiUrl}/coordinador/planes-estudio/plan-1/asignaturas`));
       expect(req.request.method).toBe('GET');
-      req.flush({ exitoso: true, datos: mockAsigs });
+      req.flush(paginaApi(mockAsigs));
 
       expect(service.getAsignaturasPlan('plan-1').length).toBe(1);
     });
@@ -514,13 +639,23 @@ describe('CoordinatorManagementService', () => {
       service.getEstudiantesDirectorio().subscribe((res) => {
         expect(res.exitoso).toBeTrue();
         expect(res.datos?.length).toBe(1);
+        expect(res.total).toBe(1);
       });
 
-      const req = http.expectOne(`${environment.apiUrl}/coordinador/estudiantes`);
+      const req = http.expectOne(porUrl(`${environment.apiUrl}/coordinador/estudiantes`));
       expect(req.request.method).toBe('GET');
-      req.flush({ exitoso: true, datos: mockEstudiantes });
+      // O2-B2: el backend responde una página con id, idUsuario, numeroIdentificacion, nombreCompleto, correo, idPrograma, nombrePrograma.
+      req.flush(
+        paginaApi([
+          { id: 'est-1', idUsuario: 'usr-1', numeroIdentificacion: 1017009, nombreCompleto: 'Laura Restrepo',
+            correo: 'lrestrepo@uco.edu.co', idPrograma: 'prg-a', nombrePrograma: 'Ingeniería de Sistemas' },
+        ])
+      );
 
       expect(service.estudiantes().length).toBe(1);
+      expect(service.estudiantes()[0].documento).toBe('1017009');
+      expect(service.estudiantes()[0].programa).toBe('Ingeniería de Sistemas');
+      void mockEstudiantes;
     });
 
   });
@@ -549,6 +684,8 @@ describe('CoordinatorManagementService', () => {
       });
 
       const getReq = http.expectOne((req) => req.url.includes('/estudiantes'));
+      // Sin programa seleccionado no se inventa programaId.
+      expect(getReq.request.params.has('programaId')).toBeFalse();
       getReq.flush({
         items: [{ id: '1', nombreCompleto: 'Laura Restrepo', estaActivoUsuario: true }],
         totalItems: 1,

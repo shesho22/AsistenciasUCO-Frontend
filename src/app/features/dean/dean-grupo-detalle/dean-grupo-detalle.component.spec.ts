@@ -7,6 +7,7 @@ import { environment } from '../../../../environments/environment';
 import { HorarioDocenteApiDto } from '../../../core/api/models/horario-docente-api-dto.model';
 import { SesionFacultadItem } from '../../../core/models/facultad-decano.model';
 import { ToastService } from '../../../shared/components/toast/toast.component';
+import { grupoFacultadApi, paginaApi, porUrl } from '../../../core/testing/pagina-api';
 
 describe('DeanGrupoDetalleComponent', () => {
   let fixture: ComponentFixture<DeanGrupoDetalleComponent>;
@@ -40,8 +41,6 @@ describe('DeanGrupoDetalleComponent', () => {
     nombreGrupo: 'Sección A',
     idAsignatura: 'asig-1',
     nombreAsignatura: 'Matemática Avanzada III',
-    idPrograma: 'prog-1',
-    nombrePrograma: 'Ingeniería de Sistemas',
   });
 
   const url = `${environment.apiUrl}/decano/sesiones`;
@@ -52,25 +51,20 @@ describe('DeanGrupoDetalleComponent', () => {
     fixture = TestBed.createComponent(DeanGrupoDetalleComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
-    http.expectOne(`${environment.apiUrl}/decano/grupos`).flush({
-      exitoso: true,
-      datos: [
-        {
-          id: mockCourseApi.idGrupo,
+    http.expectOne(porUrl(`${environment.apiUrl}/decano/grupos`)).flush(
+      paginaApi([
+        grupoFacultadApi({
+          idGrupo: mockCourseApi.idGrupo,
           codigo: mockCourseApi.codigoMateria,
           nombre: mockCourseApi.seccion,
-          idAsignatura: 'asig-1',
           nombreAsignatura: mockCourseApi.nombreMateria,
           idDocente: mockCourseApi.idDocente,
           capacidadMaximaPermitida: 35,
           estudiantesActivos: mockCourseApi.totalEstudiantes,
           cuposDisponibles: 35 - (mockCourseApi.totalEstudiantes ?? 0),
-          grupoHabilitado: true,
-          fechaInicioPeriodoAcademico: '2026-01-15',
-          fechaFinPeriodoAcademico: '2026-06-15',
-        },
-      ],
-    });
+        }),
+      ])
+    );
   }
 
   beforeEach(() => {
@@ -193,7 +187,7 @@ describe('DeanGrupoDetalleComponent', () => {
     fixture = TestBed.createComponent(DeanGrupoDetalleComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
-    http.expectOne(`${environment.apiUrl}/decano/grupos`).flush(
+    http.expectOne(porUrl(`${environment.apiUrl}/decano/grupos`)).flush(
       { code: 'ERR_INTERNAL', message: 'Servicio no disponible por mantenimiento.', correlationId: 'c1' },
       { status: 500, statusText: 'Server Error' },
     );

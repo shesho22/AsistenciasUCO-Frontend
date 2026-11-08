@@ -42,15 +42,13 @@ const DOCENTES: DocenteFacultadItem[] = [
 const ASIGNATURAS: AsignaturaInstitucionItem[] = [
   {
     idAsignatura: 'ASG-1', codigo: 'SIS-101', nombre: 'Cálculo Diferencial', creditos: 4, nombreArea: 'Ciencias Básicas',
-    nombreComponente: 'Obligatorio', codigoSemestre: 'S1', idPlanEstudio: 'PLAN-1', inpPlanEstudio: 20241,
-    idPrograma: 'PRG-1', nombrePrograma: 'Ingeniería de Sistemas', idFacultad: 'FAC-1',
-    nombreFacultad: 'Facultad de Ingeniería', activa: true,
+    nombreComponente: 'Obligatorio', planes: 'Ingeniería de Sistemas (Plan 20241); Ingeniería de Software (Plan 20241)',
+    totalPlanes: 2, activa: true,
   },
   {
     idAsignatura: 'ASG-2', codigo: 'SIS-201', nombre: 'Estructuras de Datos', creditos: 3, nombreArea: 'Software',
-    nombreComponente: 'Obligatorio', codigoSemestre: 'S2', idPlanEstudio: 'PLAN-1', inpPlanEstudio: 20241,
-    idPrograma: 'PRG-1', nombrePrograma: 'Ingeniería de Sistemas', idFacultad: 'FAC-1',
-    nombreFacultad: 'Facultad de Ingeniería', activa: true,
+    nombreComponente: 'Obligatorio', planes: 'Ingeniería de Sistemas (Plan 20241)',
+    totalPlanes: 1, activa: true,
   },
 ];
 

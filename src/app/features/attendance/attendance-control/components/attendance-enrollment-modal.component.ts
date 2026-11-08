@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, computed, input, output, signal, inject, WritableSignal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, computed, effect, input, output, signal, inject, untracked, WritableSignal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
@@ -7,6 +7,8 @@ import { ButtonComponent } from '../../../../shared/components/button/button.com
 import { FormFieldComponent } from '../../../../shared/components/form-field/form-field.component';
 import { FormSelectComponent, SelectOption } from '../../../../shared/components/form-select/form-select.component';
 import { StudentService } from '../../../../core/services/student.service';
+import { GroupService } from '../../../../core/services/group.service';
+import { ProgramaResumen } from '../../../../core/models/role-management.model';
 import { getApiErrorMessage } from '../../../../core/api/errors/api-error.util';
 
 /** Datos del formulario de matricula/registro de estudiante que emite el modal. */
@@ -17,6 +19,8 @@ export interface MatriculaEstudianteSolicitud {
   segundoNombre?: string;
   primerApellido: string;
   segundoApellido?: string;
+  /** Programa del estudiante; solo viaja cuando el grupo tiene más de un programa. */
+  idPrograma?: string;
   correo: string;
   password: string;
   confirmPassword?: string;
@@ -97,6 +101,21 @@ export interface MatriculaEstudianteSolicitud {
             }
           </div>
         </div>
+
+        @if (programas().length > 1) {
+          <app-form-field
+            label="Programa del estudiante"
+            [required]="true"
+            [errorMessage]="fieldErrors()['idPrograma'] ?? ''"
+          >
+            <app-form-select
+              [options]="opcionesPrograma()"
+              [value]="idPrograma()"
+              (valueChange)="idPrograma.set($event)"
+              placeholder="Selecciona el programa..."
+            ></app-form-select>
+          </app-form-field>
+        }
 
         <!-- 1. CASO ESTUDIANTE EXISTENTE: Tarjeta Resumen con datos UCO cargados -->
         @if (isExistingStudent()) {
@@ -299,11 +318,11 @@ export interface MatriculaEstudianteSolicitud {
           </app-button>
 
           @if (isExistingStudent()) {
-            <app-button variant="primary" size="sm" type="submit" [loading]="isEnrolling()" [disabled]="yaMatriculado()">
+            <app-button variant="primary" size="sm" type="submit" [loading]="isEnrolling()" [disabled]="yaMatriculado() || faltaPrograma()">
               Vincular Estudiante al Grupo
             </app-button>
           } @else if (showRegistrationForm()) {
-            <app-button variant="primary" size="sm" type="submit" [loading]="isEnrolling()">
+            <app-button variant="primary" size="sm" type="submit" [loading]="isEnrolling()" [disabled]="faltaPrograma()">
               Registrar y Matricular en Grupo
             </app-button>
           } @else {
@@ -325,6 +344,7 @@ export interface MatriculaEstudianteSolicitud {
 })
 export class AttendanceEnrollmentModalComponent {
   private studentService = inject(StudentService);
+  private groupService = inject(GroupService);
 
   isOpen = input.required<boolean>();
   /** Grupo del docente titular en el que se matricula: la búsqueda por documento es de ese grupo (DEC-027). */
@@ -335,6 +355,15 @@ export class AttendanceEnrollmentModalComponent {
   /** Dominio institucional exigido (IDENT-001); vacio si aun no se conoce. */
   emailDomain = input<string>('');
   emailPlaceholder = computed(() => `juan.perez${this.emailDomain() || '@uco.edu.co'}`);
+
+  /** Programas del grupo (GET /grupos/{id}/programas): el selector solo aparece con más de uno. */
+  programas = signal<ProgramaResumen[]>([]);
+  idPrograma = signal<string>('');
+  opcionesPrograma = computed<SelectOption[]>(() =>
+    this.programas().map((p) => ({ value: p.idPrograma, label: p.nombrePrograma }))
+  );
+  /** Con varios programas el docente debe elegir uno antes de matricular. */
+  faltaPrograma = computed(() => this.programas().length > 1 && !this.idPrograma());
 
   docType = signal<string>('');
   code = signal<string>('');
@@ -363,6 +392,27 @@ export class AttendanceEnrollmentModalComponent {
   submitted = output<MatriculaEstudianteSolicitud>();
   closed = output<void>();
   clearFieldError = output<string>();
+
+  constructor() {
+    effect(() => {
+      const abierto = this.isOpen();
+      const grupo = this.grupoId();
+      untracked(() => {
+        this.programas.set([]);
+        this.idPrograma.set('');
+        if (!abierto || !grupo) return;
+        this.groupService.getProgramasGrupo(grupo).subscribe({
+          next: (res) => {
+            const lista = res.datos ?? [];
+            this.programas.set(lista);
+            if (lista.length === 1) this.idPrograma.set(lista[0].idPrograma);
+          },
+          // Sin la lista no se muestra selector; el backend responde EST_005 si el grupo exige programa.
+          error: () => this.programas.set([]),
+        });
+      });
+    });
+  }
 
   onFieldInput(field: string, value: string, signalRef: WritableSignal<string>): void {
     signalRef.set(value);
@@ -497,7 +547,7 @@ export class AttendanceEnrollmentModalComponent {
     e.preventDefault();
 
     // Con matrícula activa en este grupo no hay nada que enviar.
-    if (this.yaMatriculado()) {
+    if (this.yaMatriculado() || this.faltaPrograma()) {
       return;
     }
     const existente = this.isExistingStudent() && !this.showRegistrationForm();
@@ -527,6 +577,7 @@ export class AttendanceEnrollmentModalComponent {
       segundoNombre: this.secondName().trim() || undefined,
       primerApellido: this.lastName().trim(),
       segundoApellido: this.secondLastName().trim() || undefined,
+      idPrograma: this.programas().length > 1 ? this.idPrograma() : undefined,
       // Un estudiante existente se matricula solo por documento: ni correo ni contraseña salen del modal.
       correo: existente ? '' : this.email().trim(),
       password: existente ? '' : this.password(),

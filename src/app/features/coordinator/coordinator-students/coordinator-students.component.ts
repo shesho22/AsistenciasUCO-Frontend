@@ -14,6 +14,8 @@ import { Subject, EMPTY } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, finalize, switchMap } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { EstudianteResumenApiDto } from '../../../core/api/models/estudiante-api-dto.model';
+import { CoordinatorProgramService } from '../../../core/services/coordinator-program.service';
+import { CoordinatorProgramSelectorComponent } from '../shared/coordinator-program-selector.component';
 import { CoordinatorFichaModalComponent } from '../coordinator-indicators/components/coordinator-ficha-modal.component';
 
 type PestanaModulo = 'DIRECTORIO';
@@ -30,9 +32,11 @@ type PestanaModulo = 'DIRECTORIO';
     AvatarComponent,
     PaginationComponent,
     CoordinatorFichaModalComponent,
+    CoordinatorProgramSelectorComponent,
   ],
   template: `
     <div class="space-y-6">
+      <app-coordinator-program-selector (programaCambiado)="alCambiarPrograma()" />
       <!-- Header Bento -->
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
         <div>
@@ -195,6 +199,7 @@ export class CoordinatorStudentsComponent implements OnInit {
 
   private readonly coordinatorService = inject(CoordinatorManagementService);
   private readonly toast = inject(ToastService);
+  private readonly programa = inject(CoordinatorProgramService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly directorioQuery$ = new Subject<string>();
@@ -230,6 +235,15 @@ export class CoordinatorStudentsComponent implements OnInit {
 
   ngOnInit(): void {
     this.configureDirectorySearch();
+    // S4: primero se conocen los programas del coordinador; las consultas viajan siempre con programaId.
+    this.programa.cargar().subscribe({
+      next: () => this.cargarDatos(),
+      error: (error: unknown) => this.toast.error(getApiErrorMessage(error)),
+    });
+  }
+
+  alCambiarPrograma(): void {
+    this.currentPageDirectorio.set(1);
     this.cargarDatos();
   }
 

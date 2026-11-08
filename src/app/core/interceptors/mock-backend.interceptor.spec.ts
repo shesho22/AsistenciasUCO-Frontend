@@ -354,6 +354,69 @@ describe('mockBackendInterceptor', () => {
     expect('estadoSolicitud' in oferta.datos[0]).toBeFalse();
   }));
 
+  it('B2NM el mock responde páginas, asociables, carácter y programas del grupo con la forma del backend', fakeAsync(() => {
+    auth.setMockMode(true);
+    const api = environment.apiUrl;
+    let planes: any;
+    httpClient.get(`${api}/coordinador/planes-estudio`, { params: { pagina: 1, tamano: 100 } }).subscribe((r) => (planes = r));
+    tick(300);
+    expect(planes.exitoso).toBeTrue();
+    expect(Array.isArray(planes.elementos)).toBeTrue();
+    expect(planes.totalPaginas).toBe(1);
+    expect(planes.elementos[0].idPrograma).toBe('PRG-MOCK-1');
+
+    const planId = planes.elementos[0].id;
+    let malla: any;
+    httpClient.get(`${api}/coordinador/planes-estudio/${planId}/asignaturas`).subscribe((r) => (malla = r));
+    tick(300);
+    if (malla.elementos.length > 0) {
+      expect(malla.elementos[0].idAsignatura).toBeTruthy();
+      expect(['OBL', 'OPT']).toContain(malla.elementos[0].codigoCaracter);
+    }
+
+    let caracteres: any;
+    httpClient.get(`${api}/coordinador/caracteres-asignatura`).subscribe((r) => (caracteres = r));
+    tick(200);
+    expect(caracteres.datos.map((c: any) => c.codigo)).toEqual(['OBL', 'OPT']);
+
+    let asociables: any;
+    httpClient.get(`${api}/coordinador/planes-estudio/${planId}/asignaturas-asociables`, { params: { busqueda: 'prueb' } }).subscribe((r) => (asociables = r));
+    tick(300);
+    expect(asociables.elementos.length).toBe(1);
+
+    let asociada: any;
+    httpClient.post(`${api}/coordinador/planes-estudio/${planId}/asignaturas-asociadas`, { idAsignatura: 'ASG-EXT-1', semestreNumero: 1, codigoCaracter: 'OBL' }).subscribe((r) => (asociada = r));
+    tick(300);
+    expect(asociada.exitoso).toBeTrue();
+
+    let programas: any;
+    httpClient.get(`${api}/grupos/grp-1/programas`).subscribe((r) => (programas = r));
+    tick(200);
+    expect(programas.datos[0].idPrograma).toBe('PRG-MOCK-1');
+
+    let estudiantes: any;
+    httpClient.get(`${api}/coordinador/estudiantes`).subscribe((r) => (estudiantes = r));
+    tick(300);
+    expect(estudiantes.elementos[0].nombrePrograma).toBeTruthy();
+
+    let decano: any;
+    httpClient.get(`${api}/decano/planes-estudio/PLAN-1/asignaturas`, { params: { caracter: 'OPT', pagina: 1, tamano: 9 } }).subscribe((r) => (decano = r));
+    tick(300);
+    expect(decano.elementos.map((a: any) => a.codigoCaracter)).toEqual(['OPT']);
+    expect(decano.totalElementos).toBe(1);
+  }));
+
+  it('B2NM el mock desvincula una asignatura del plan', fakeAsync(() => {
+    auth.setMockMode(true);
+    const planId = Object.keys(mockStore.asignaturasPlan)[0];
+    const asig = mockStore.asignaturasPlan[planId][0];
+    let res: any;
+    httpClient.delete(`${environment.apiUrl}/coordinador/planes-estudio/${planId}/asignaturas/${asig.id}`).subscribe((r) => (res = r));
+    tick(300);
+    expect(res.exitoso).toBeTrue();
+    expect(mockStore.asignaturasPlan[planId].some((a) => a.id === asig.id)).toBeFalse();
+  }));
+
   it('HU051 RT-09 simula el retiro de un estudiante por el docente', fakeAsync(() => {
     auth.setMockMode(true);
     let res: any;

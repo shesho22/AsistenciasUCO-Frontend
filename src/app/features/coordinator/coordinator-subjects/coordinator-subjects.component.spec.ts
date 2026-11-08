@@ -124,4 +124,48 @@ describe('CoordinatorSubjectsComponent', () => {
     component.irAMallaPlan('plan-1');
     expect(navSpy).toHaveBeenCalledWith(['/app/coordinador/planes-estudio', 'plan-1', 'malla']);
   });
+
+  // CULM-001 B2NM: una asignatura compartida aparece una vez por plan donde está vinculada (no se deduplica por id).
+  describe('asignatura compartida entre planes', () => {
+    const fila = (planEstudioId: string, extra: Record<string, unknown> = {}) => ({
+      id: 'asig-1', planEstudioId, codigo: 'IS-401', nombre: 'Arquitectura de Software', semestre: 7, creditos: 4, horasSemanales: 4,
+      area: 'Software', componente: 'Específica', codigoCaracter: 'OBL', nombreCaracter: 'Obligatoria', compartida: true,
+      nombrePrograma: 'Ingeniería de Sistemas', inpPlanEstudio: '2024', ...extra,
+    });
+
+    beforeEach(() => {
+      coordinatorService.getPlanesEstudio.and.returnValue(
+        of({ exitoso: true, datos: [{ id: 'plan-1' }, { id: 'plan-2' }] } as any)
+      );
+      coordinatorService.getAsignaturasPorPlan.and.callFake(((planId: string) =>
+        of({
+          exitoso: true,
+          datos: planId === 'plan-1' ? [fila('plan-1')] : [fila('plan-2', { nombreCaracter: 'Optativa', codigoCaracter: 'OPT', nombrePrograma: 'Ingeniería de Software' })],
+        })) as any);
+      component.cargarDatos();
+      fixture.detectChanges();
+    });
+
+    it('conserva una fila por plan y marca la asignatura como compartida', () => {
+      expect(component.asignaturasCurriculares().map((a) => a.planEstudioId)).toEqual(['plan-1', 'plan-2']);
+      const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
+      expect(texto).toContain('Compartida');
+      expect(texto).toContain('Ingeniería de Software');
+      expect(texto).toContain('Optativa');
+    });
+
+    it('filtra el catálogo por carácter y ofrece solo los caracteres presentes', () => {
+      expect(component.caracteresDisponibles()).toEqual(['Obligatoria', 'Optativa']);
+      component.filtroTipoAsignatura.set('Optativa');
+      expect(component.filteredAsignaturas().map((a) => a.planEstudioId)).toEqual(['plan-2']);
+    });
+
+    it('Ver Malla navega al plan de la fila', () => {
+      const navSpy = spyOn(router, 'navigate').and.returnValue(Promise.resolve(true));
+      const botones = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('button')).filter((b) => b.textContent?.includes('Ver Malla'));
+      expect(botones.length).toBe(2);
+      (botones[1] as HTMLButtonElement).click();
+      expect(navSpy).toHaveBeenCalledWith(['/app/coordinador/planes-estudio', 'plan-2', 'malla']);
+    });
+  });
 });

@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { SubjectFormComponent } from './subject-form.component';
-import { AreaConocimientoItem, AsignaturaPlanItem, PlanEstudioItem } from '../../../../core/models/role-management.model';
+import { AreaConocimientoItem, AsignaturaPlanItem, CaracterAsignatura, PlanEstudioItem } from '../../../../core/models/role-management.model';
 import { ComponenteFormacionItem } from '../../../../core/models/consultas-transversales.model';
 
 describe('SubjectFormComponent (HU147 / P5)', () => {
@@ -20,12 +20,18 @@ describe('SubjectFormComponent (HU147 / P5)', () => {
     { id: 'AR-2', codigo: 'OLD', nombre: 'Área inactiva', activa: false },
   ];
 
+  const caracteres: CaracterAsignatura[] = [
+    { codigo: 'OBL', nombre: 'Obligatoria', orden: 1 },
+    { codigo: 'OPT', nombre: 'Optativa', orden: 2 },
+  ];
+
   function crear(asignatura: AsignaturaPlanItem | null = null): void {
     fixture = TestBed.createComponent(SubjectFormComponent);
     component = fixture.componentInstance;
     fixture.componentRef.setInput('plan', plan);
     fixture.componentRef.setInput('componentes', componentes);
     fixture.componentRef.setInput('areas', areas);
+    fixture.componentRef.setInput('caracteres', caracteres);
     if (asignatura) {
       fixture.componentRef.setInput('modo', 'EDITAR');
       fixture.componentRef.setInput('asignatura', asignatura);
@@ -36,7 +42,7 @@ describe('SubjectFormComponent (HU147 / P5)', () => {
   function completar(): void {
     component.asigForm = {
       codigo: 'SIS-301', nombre: 'Bases de Datos', creditos: 4, semestre: 2,
-      area: 'Ingeniería de Software', componente: 'Específicas', horasSemanales: 4,
+      area: 'Ingeniería de Software', componente: 'Específicas', horasSemanales: 4, codigoCaracter: 'OBL',
     };
   }
 
@@ -55,7 +61,34 @@ describe('SubjectFormComponent (HU147 / P5)', () => {
     ]);
     expect(Array.from(area.options).map((o) => o.value)).toEqual(['', 'Ingeniería de Software']);
     expect(component.semestresPlan()).toEqual([1, 2, 3]);
-    expect(host.textContent).not.toContain('Obligatoria');
+    // B2NM: "Obligatoria" ahora es un carácter del plan, pero no una opción del componente de formación.
+    expect(componente.textContent).not.toContain('Obligatoria');
+  });
+
+  it('B2NM: ofrece el select Carácter con el catálogo y lo exige para guardar', () => {
+    crear();
+    const host = fixture.nativeElement as HTMLElement;
+    const caracter = host.querySelector('select[aria-label="Carácter en el plan"]') as HTMLSelectElement;
+    expect(Array.from(caracter.options).map((o) => o.textContent?.trim())).toEqual([
+      'Selecciona el carácter', 'Obligatoria', 'Optativa',
+    ]);
+    expect(component.asigForm.codigoCaracter).toBe('');
+
+    completar();
+    component.asigForm.codigoCaracter = '';
+    expect(component.formularioValido()).toBeFalse();
+    component.asigForm.codigoCaracter = 'OPT';
+    expect(component.formularioValido()).toBeTrue();
+  });
+
+  it('B2NM: emite el codigoCaracter elegido', () => {
+    crear();
+    const emitidos: { datos: Partial<AsignaturaPlanItem> }[] = [];
+    component.save.subscribe((e) => emitidos.push(e));
+    completar();
+    component.asigForm.codigoCaracter = 'OPT';
+    component.guardar();
+    expect(emitidos[0].datos.codigoCaracter).toBe('OPT');
   });
 
   it('no tiene créditos por defecto y exige créditos enteros mayores que cero', () => {
@@ -102,9 +135,10 @@ describe('SubjectFormComponent (HU147 / P5)', () => {
   it('en edición conserva el área y el componente que llegan del backend', () => {
     crear({
       id: 'A1', planEstudioId: 'PLAN-1', codigo: 'SIS-1', nombre: 'Cálculo', creditos: 3, semestre: 1,
-      area: 'Ingeniería de Software', componente: 'Básicas', horasSemanales: 4,
+      area: 'Ingeniería de Software', componente: 'Básicas', horasSemanales: 4, codigoCaracter: 'OBL',
     });
     expect(component.asigForm.componente).toBe('Básicas');
+    expect(component.asigForm.codigoCaracter).toBe('OBL');
     expect(component.formularioValido()).toBeTrue();
   });
 });

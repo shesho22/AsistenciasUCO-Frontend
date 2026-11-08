@@ -6,6 +6,7 @@ import { DeanGruposComponent } from './dean-grupos.component';
 import { environment } from '../../../../environments/environment';
 import { Course } from '../../../core/models/course.model';
 import { HorarioDocenteApiDto } from '../../../core/api/models/horario-docente-api-dto.model';
+import { grupoFacultadApi, paginaApi, porUrl } from '../../../core/testing/pagina-api';
 
 describe('DeanGruposComponent', () => {
   let fixture: ComponentFixture<DeanGruposComponent>;
@@ -84,23 +85,25 @@ describe('DeanGruposComponent', () => {
 
     // Hallazgo del recorrido de vistas: el decano recibia 403 al pedir /docente/asignaturas y /docente/horarios
     // (endpoints del docente autenticado). Su listado de grupos sale de GET /decano/grupos (ambito de facultad).
-    http.expectOne(`${environment.apiUrl}/decano/grupos`).flush({
-      exitoso: true,
-      datos: mockCoursesApi.map((h) => ({
-        id: h.idGrupo,
-        codigo: h.codigoMateria,
-        nombre: h.seccion,
-        idAsignatura: `asig-${h.idGrupo}`,
-        nombreAsignatura: h.nombreMateria,
-        idDocente: h.idDocente,
-        capacidadMaximaPermitida: 30,
-        estudiantesActivos: h.totalEstudiantes,
-        cuposDisponibles: 30 - (h.totalEstudiantes ?? 0),
-        grupoHabilitado: true,
-        fechaInicioPeriodoAcademico: '2026-01-15',
-        fechaFinPeriodoAcademico: '2026-06-15',
-      })),
-    });
+    // B2NM: GET /decano/grupos es una página (ApiPageResponse) y cada grupo trae los nombres de sus programas.
+    http.expectOne(porUrl(`${environment.apiUrl}/decano/grupos`)).flush(
+      paginaApi(
+        mockCoursesApi.map((h) =>
+          grupoFacultadApi({
+            idGrupo: h.idGrupo,
+            codigo: h.codigoMateria,
+            nombre: h.seccion,
+            idAsignatura: `asig-${h.idGrupo}`,
+            nombreAsignatura: h.nombreMateria,
+            idDocente: h.idDocente,
+            capacidadMaximaPermitida: 30,
+            estudiantesActivos: h.totalEstudiantes,
+            cuposDisponibles: 30 - (h.totalEstudiantes ?? 0),
+            programas: h.idGrupo === 'crs-1' ? ['Ingeniería de Sistemas', 'Ingeniería de Software'] : ['Ingeniería de Sistemas'],
+          })
+        )
+      )
+    );
     fixture.detectChanges();
   });
 
@@ -112,6 +115,12 @@ describe('DeanGruposComponent', () => {
     expect(component.courses().length).toBe(2);
     expect(component.totalEstudiantes()).toBe(50);
     expect(component.totalCupos()).toBe(60);
+  });
+
+  it('B2NM: muestra los programas de cada grupo', () => {
+    const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(component.courses()[0].programas).toEqual(['Ingeniería de Sistemas', 'Ingeniería de Software']);
+    expect(texto).toContain('Ingeniería de Sistemas, Ingeniería de Software');
   });
 
   it('filtra grupos reactivamente mediante filtroTexto signal', () => {

@@ -60,7 +60,6 @@ import { resolveSessionInstant } from '../../../core/time/session-timezone.util'
                   <th scope="col" class="py-2 pr-3">Fecha y hora</th>
                   <th scope="col" class="py-2 pr-3">Sesión</th>
                   <th scope="col" class="py-2 pr-3">Asignatura · Grupo</th>
-                  <th scope="col" class="py-2">Programa</th>
                 </tr>
               </thead>
               <tbody>
@@ -72,7 +71,6 @@ import { resolveSessionInstant } from '../../../core/time/session-timezone.util'
                       <app-sesion-estado-badge class="block font-normal" [estado]="s.estado" [cancelacion]="s.cancelacion" />
                     </td>
                     <td class="py-2 pr-3 text-warm-700">{{ s.nombreAsignatura }} · {{ s.nombreGrupo }}</td>
-                    <td class="py-2 text-warm-700">{{ s.nombrePrograma }}</td>
                   </tr>
                 }
               </tbody>
