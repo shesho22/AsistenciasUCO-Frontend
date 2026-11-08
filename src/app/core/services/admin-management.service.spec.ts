@@ -367,7 +367,7 @@ describe('AdminManagementService', () => {
   it('cargarParametros conserva los datos del DTO de parámetros recibido por GET', () => {
     service.cargarParametros().subscribe((res) => {
       expect(res.exitoso).toBeTrue();
-      expect(res.datos?.length).toBe(1);
+      expect(res.elementos?.length).toBe(1);
     });
 
     const getReq = http.expectOne(`${environment.apiUrl}/admin/parametros`);
@@ -484,11 +484,84 @@ describe('AdminManagementService', () => {
     expect(servicio['toggleEstadoInstitucion']).toBeUndefined();
   });
 
-  it('no expone una operación de escritura de parámetros sin contrato aprobado', () => {
-    const publicService = service as unknown as Record<string, unknown>;
-    expect(publicService['actualizarParametro']).toBeUndefined();
-    http.expectNone((request) => request.url.includes('/admin/parametros/') &&
-      (request.method === 'PATCH' || request.method === 'PUT'));
+  describe('HU168: parámetros editables (D.3)', () => {
+    it('cargarParametros envía filtros y paginación a GET /admin/parametros y actualiza la señal', () => {
+      service.cargarParametros({ grupo: 'ASISTENCIA', texto: 'inasistencia', soloEditables: true, pagina: 1, tamano: 20 }).subscribe((res: any) => {
+        expect(res.elementos.length).toBe(1);
+        expect(res.totalElementos).toBe(1);
+      });
+
+      const req = http.expectOne((r) => r.url === `${environment.apiUrl}/admin/parametros`);
+      expect(req.request.method).toBe('GET');
+      expect(req.request.params.get('grupo')).toBe('ASISTENCIA');
+      expect(req.request.params.get('texto')).toBe('inasistencia');
+      expect(req.request.params.get('soloEditables')).toBe('true');
+      expect(req.request.params.get('pagina')).toBe('1');
+      expect(req.request.params.get('tamano')).toBe('20');
+
+      req.flush({
+        exitoso: true,
+        elementos: [
+          {
+            id: 'param-1',
+            grupo: 'ASISTENCIA',
+            clave: 'asistencias.limite.inasistencia',
+            valor: '20',
+            tipoDato: 'INT',
+            esEditable: true,
+            valorMinimo: 1,
+            valorMaximo: 100,
+            etiqueta: 'Límite de inasistencias',
+            descripcion: 'Porcentaje máximo de fallas',
+            unidad: '%',
+            categoriaVisual: 'Reglas de Asistencia',
+            orden: 1,
+            fechaModificacion: '2026-11-07T15:04:05.007Z',
+            fechaUltimoCambioUtc: '2026-11-07T15:04:05.007Z',
+            nombreUltimoActor: 'Admin TI',
+          },
+        ],
+        numeroPagina: 1,
+        tamanoPagina: 20,
+        totalElementos: 1,
+        totalPaginas: 1,
+      });
+
+      expect(service.parametros().length).toBe(1);
+      expect(service.parametros()[0].clave).toBe('asistencias.limite.inasistencia');
+      expect(service.parametros()[0].esEditable).toBeTrue();
+    });
+
+    it('actualizarParametro envía PUT /admin/parametros/{id} con valor, motivo y fechaModificacionEsperada intacta', () => {
+      const payload = {
+        valor: '25',
+        fechaModificacionEsperada: '2026-11-07T15:04:05.007Z',
+        motivo: 'Ajuste reglamentario aprobado por consejo',
+      };
+
+      service.actualizarParametro('param-1', payload).subscribe((res: any) => {
+        expect(res.exitoso).toBeTrue();
+        expect(res.datos.valorNuevo).toBe('25');
+      });
+
+      const req = http.expectOne(`${environment.apiUrl}/admin/parametros/param-1`);
+      expect(req.request.method).toBe('PUT');
+      expect(req.request.body).toEqual(payload);
+      expect(req.request.body.fechaModificacionEsperada).toBe('2026-11-07T15:04:05.007Z');
+
+      req.flush({
+        exitoso: true,
+        datos: {
+          id: 'param-1',
+          grupo: 'ASISTENCIA',
+          clave: 'asistencias.limite.inasistencia',
+          valorAnterior: '20',
+          valorNuevo: '25',
+          fechaModificacion: '2026-11-07T16:00:00.000Z',
+          sinCambios: false,
+        },
+      });
+    });
   });
 
   it('toggleDecanoStatus invoca PATCH al endpoint correspondiente', () => {

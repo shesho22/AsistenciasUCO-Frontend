@@ -23,11 +23,32 @@ describe('AdminSystemComponent', () => {
     {
       id: 'param-1',
       grupo: 'ASISTENCIA',
-      clave: 'asistencias.limite.inasistencia',
-      valor: '20',
-      tipoDato: 'NUMERO',
-      valorDefecto: '0',
-      estaActivo: true,
+      clave: 'ASISTENCIA/TOLERANCIA_MINUTOS',
+      valor: '15',
+      tipoDato: 'INT',
+      esEditable: true,
+      valorMinimo: 0,
+      valorMaximo: 60,
+      etiqueta: 'Tolerancia de ingreso',
+      descripcion: 'Minutos permitidos antes de marcar retardo',
+      unidad: 'minutos',
+      categoriaVisual: 'Reglas de Asistencia',
+      orden: 1,
+      fechaModificacion: '2026-11-07T15:04:05.007Z',
+      fechaUltimoCambioUtc: '2026-11-07T15:04:05.007Z',
+      nombreUltimoActor: 'Admin TI',
+    },
+    {
+      id: 'param-2',
+      grupo: 'RED',
+      clave: 'RED/CIDRS_CAMPUS',
+      valor: '10.0.0.0/8',
+      tipoDato: 'STRING',
+      esEditable: false,
+      etiqueta: 'Segmentos de red campus',
+      descripcion: 'Redes institucionales autorizadas',
+      categoriaVisual: 'Infraestructura y Red',
+      orden: 2,
     },
   ];
 
@@ -42,7 +63,16 @@ describe('AdminSystemComponent', () => {
         reportesCierre: signal([]).asReadonly(),
       }
     );
-    adminServiceSpy.cargarParametros.and.returnValue(of({ exitoso: true, datos: mockParametros }));
+    adminServiceSpy.cargarParametros.and.returnValue(
+      of({
+        exitoso: true,
+        elementos: mockParametros,
+        numeroPagina: 1,
+        tamanoPagina: 20,
+        totalElementos: 2,
+        totalPaginas: 1,
+      } as any)
+    );
 
     coordServiceSpy = jasmine.createSpyObj('CoordinatorManagementService', ['cargarPeriodosAcademicosBase'], {
       periodos: signal([
@@ -78,7 +108,7 @@ describe('AdminSystemComponent', () => {
     expect(component).toBeTruthy();
     expect(coordServiceSpy.cargarPeriodosAcademicosBase).toHaveBeenCalled();
     expect(adminServiceSpy.cargarParametros).toHaveBeenCalled();
-    expect(component.parametros().length).toBe(1);
+    expect(component.parametros().length).toBe(2);
   });
 
   it('tabActiva alterna correctamente entre pestañas', () => {
@@ -102,18 +132,45 @@ describe('AdminSystemComponent', () => {
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('No hay eventos de auditoría');
   });
 
-  it('muestra el parámetro real en modo consulta y no ofrece una acción de guardado', () => {
+  it('HU168: muestra parámetros agrupados por categoría, unidad, rango y último actor', () => {
     const host = fixture.nativeElement as HTMLElement;
-    const card = host.querySelector('.bg-warm-50') as HTMLElement;
-    const valueInput = card.querySelector('input') as HTMLInputElement;
+    expect(host.textContent).toContain('Reglas de Asistencia');
+    expect(host.textContent).toContain('Tolerancia de ingreso');
+    expect(host.textContent).toContain('15');
+    expect(host.textContent).toContain('minutos');
+    expect(host.textContent).toContain('Admin TI');
+  });
 
-    expect(host.textContent).toContain('Edición de parámetros no disponible');
-    expect(host.textContent).toContain('ASISTENCIA');
-    expect(host.textContent).toContain('NUMERO');
-    expect(valueInput.value).toBe('20');
-    expect(valueInput.readOnly).toBeTrue();
-    expect(card.querySelectorAll('button').length).toBe(0);
-    expect(toastServiceSpy.success).not.toHaveBeenCalled();
+  it('HU168: muestra botón Editar solo si esEditable === true', () => {
+    const host = fixture.nativeElement as HTMLElement;
+    const btnEditar = host.querySelector('[data-testid="btn-editar-param-1"]') as HTMLButtonElement;
+    expect(btnEditar).toBeTruthy();
+
+    const btnEditarTecnico = host.querySelector('[data-testid="btn-editar-param-2"]');
+    expect(btnEditarTecnico).toBeNull();
+  });
+
+  it('HU168: al presionar Editar abre el modal con el parámetro seleccionado', () => {
+    const host = fixture.nativeElement as HTMLElement;
+    const btnEditar = host.querySelector('[data-testid="btn-editar-param-1"]') as HTMLButtonElement;
+    btnEditar.click();
+    fixture.detectChanges();
+
+    expect(component.parametroSeleccionadoEdicion()?.id).toBe('param-1');
+    expect(component.modalEdicionAbierto()).toBeTrue();
+  });
+
+  it('HU168: el switch alterna entre solo editables y técnicos', () => {
+    adminServiceSpy.cargarParametros.calls.reset();
+    component.toggleMostrarTecnicos(true);
+    expect(adminServiceSpy.cargarParametros).toHaveBeenCalledWith(
+      jasmine.objectContaining({ soloEditables: false })
+    );
+
+    component.toggleMostrarTecnicos(false);
+    expect(adminServiceSpy.cargarParametros).toHaveBeenCalledWith(
+      jasmine.objectContaining({ soloEditables: true })
+    );
   });
 
   describe('cierre masivo y accesibilidad (F-ADM-006, F-ADM-007, F-ADM-014, F-ADM-S14)', () => {

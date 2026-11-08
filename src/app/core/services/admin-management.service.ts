@@ -9,6 +9,8 @@ import {
   AreaConocimientoItem,
   TipoProgramaItem,
   ParametroAdminDto,
+  ParametroActualizadoDto,
+  ActualizarParametroRequest,
   CierrePeriodoReporte,
   InstitucionItem,
   ProgramaInstitucionDto,
@@ -232,13 +234,46 @@ export class AdminManagementService {
   }
 
   // ================= PARÁMETROS INSTITUCIONALES =================
-  cargarParametros(): Observable<ApiResponse<ParametroAdminDto[]>> {
-    return this.http.get<ApiResponse<ParametroAdminDto[]>>(`${environment.apiUrl}/admin/parametros`).pipe(
-      tap((res) => {
-        if (res.exitoso && res.datos) {
-          this._parametros.set(res.datos);
-        }
+  cargarParametros(filtro?: {
+    grupo?: string;
+    texto?: string;
+    soloEditables?: boolean;
+    pagina?: number;
+    tamano?: number;
+  }): Observable<ApiPageResponse<ParametroAdminDto> & { datos: ParametroAdminDto[] }> {
+    let params = new HttpParams();
+    if (filtro?.grupo) params = params.set('grupo', filtro.grupo);
+    if (filtro?.texto) params = params.set('texto', filtro.texto);
+    if (filtro?.soloEditables !== undefined && filtro?.soloEditables !== null) {
+      params = params.set('soloEditables', String(filtro.soloEditables));
+    }
+    if (filtro?.pagina) params = params.set('pagina', String(filtro.pagina));
+    if (filtro?.tamano) params = params.set('tamano', String(filtro.tamano));
+
+    return this.http.get<any>(`${environment.apiUrl}/admin/parametros`, { params }).pipe(
+      map((res: any) => {
+        const elementos: ParametroAdminDto[] = res?.elementos ?? res?.datos ?? [];
+        this._parametros.set(elementos);
+        return {
+          exitoso: res?.exitoso ?? true,
+          elementos,
+          datos: elementos,
+          numeroPagina: res?.numeroPagina ?? filtro?.pagina ?? 1,
+          tamanoPagina: res?.tamanoPagina ?? filtro?.tamano ?? elementos.length,
+          totalElementos: res?.totalElementos ?? res?.total ?? elementos.length,
+          totalPaginas: res?.totalPaginas ?? 1,
+        };
       })
+    );
+  }
+
+  actualizarParametro(
+    id: string,
+    payload: ActualizarParametroRequest
+  ): Observable<ApiResponse<ParametroActualizadoDto>> {
+    return this.http.put<ApiResponse<ParametroActualizadoDto>>(
+      `${environment.apiUrl}/admin/parametros/${id}`,
+      payload
     );
   }
 
