@@ -64,6 +64,8 @@ import { ModalComponent } from '../../../../../shared/components/modal/modal.com
 export class StudentMatriculaCodigoModalComponent {
   isOpen = input<boolean>(false);
   processing = input<boolean>(false);
+  /** Token de QR inicial (F-EST-012). */
+  tokenInicial = input<string>('');
   /** PIN que ya conoce el flujo (p. ej. viene del login); se copia al campo al abrir el modal. */
   codigoInicial = input<string>('');
   codigo = signal<string>('');
@@ -79,6 +81,9 @@ export class StudentMatriculaCodigoModalComponent {
   }
 
   pinValido(): boolean {
+    if (this.tokenInicial()) {
+      return true;
+    }
     return /^[0-9]{6}$/.test(this.codigo().trim());
   }
 
@@ -87,10 +92,14 @@ export class StudentMatriculaCodigoModalComponent {
     this.codigo.set((valor ?? '').replace(/\D/g, '').slice(0, 6));
   }
 
-  submitted = output<string>();
+  submitted = output<string | { token: string }>();
   closed = output<void>();
 
   onSubmit(): void {
+    if (this.tokenInicial()) {
+      this.submitted.emit({ token: this.tokenInicial() });
+      return;
+    }
     this.submitted.emit(this.codigo().trim());
   }
 }

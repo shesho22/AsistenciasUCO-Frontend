@@ -525,6 +525,14 @@ describe('StudentCoursesComponent', () => {
     expect(component.modalMatriculaGrupoVisible()).toBeTrue();
     expect(component.procesandoMatriculaGrupo()).toBeFalse();
   });
+
+  it('F-EST-012: enviarMatriculaPorCodigo con objeto token llama a matricularAutenticado({ token })', () => {
+    matriculaQrSpy.matricularAutenticado.and.returnValue(of({ idGrupo: 'g-1' }));
+    component.abrirModalMatriculaGrupo();
+    component.enviarMatriculaPorCodigo({ token: 'tok-123' });
+    expect(matriculaQrSpy.matricularAutenticado).toHaveBeenCalledWith({ token: 'tok-123' });
+    expect(toastSpy.success).toHaveBeenCalled();
+  });
 });
 
 describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', () => {

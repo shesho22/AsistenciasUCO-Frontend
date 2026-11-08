@@ -267,6 +267,12 @@ export class DashboardLayoutComponent {
       icon: 'dashboard',
     },
     {
+      label: 'Instituciones',
+      route: '/app/admin/instituciones',
+      roles: ['ADMINISTRADOR', 'ADMIN'],
+      icon: 'facultad',
+    },
+    {
       label: 'Gestión de Facultades',
       route: '/app/admin/facultades',
       roles: ['ADMINISTRADOR', 'ADMIN'],

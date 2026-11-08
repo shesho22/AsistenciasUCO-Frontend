@@ -9,7 +9,7 @@ import { FormSelectComponent, SelectOption } from '../../../../shared/components
 import { StudentService } from '../../../../core/services/student.service';
 import { GroupService } from '../../../../core/services/group.service';
 import { ProgramaResumen } from '../../../../core/models/role-management.model';
-import { getApiErrorMessage } from '../../../../core/api/errors/api-error.util';
+import { getApiErrorMessage, getApiErrorCode, API_ERROR_CODE } from '../../../../core/api/errors/api-error.util';
 
 /** Datos del formulario de matricula/registro de estudiante que emite el modal. */
 export interface MatriculaEstudianteSolicitud {
@@ -506,12 +506,23 @@ export class AttendanceEnrollmentModalComponent {
           }
         },
         error: (error: unknown) => {
-          // 403/400…: el backend explica por qué; no se abre el alta para no duplicar una cuenta por un fallo de consulta.
-          this.isExistingStudent.set(false);
-          this.showRegistrationForm.set(false);
-          this.limpiarDatosFormulario();
-          this.searchStatus.set('IDLE');
-          this.searchError.set(getApiErrorMessage(error));
+          const status = (error as any)?.status;
+          const code = getApiErrorCode(error);
+          if (status === 404 || code === API_ERROR_CODE.RESOURCE_NOT_FOUND) {
+            // Estudiante no encontrado (404): abrir formulario de nuevo registro
+            this.isExistingStudent.set(false);
+            this.limpiarDatosFormulario();
+            this.showRegistrationForm.set(true);
+            this.searchStatus.set('NOT_FOUND');
+            this.searchError.set('');
+          } else {
+            // 403/500/fallo de red: el backend explica por qué; no se abre el alta para no duplicar una cuenta por un fallo de consulta.
+            this.isExistingStudent.set(false);
+            this.showRegistrationForm.set(false);
+            this.limpiarDatosFormulario();
+            this.searchStatus.set('IDLE');
+            this.searchError.set(getApiErrorMessage(error));
+          }
         },
       });
   }

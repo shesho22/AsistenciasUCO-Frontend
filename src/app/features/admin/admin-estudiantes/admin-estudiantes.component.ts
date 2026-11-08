@@ -162,6 +162,7 @@ interface OpcionFacultad {
         }
         <app-pagination
           [totalItems]="listado.total()"
+          [totalPages]="listado.totalPaginas()"
           [pageSize]="listado.tamano()"
           [currentPage]="listado.pagina()"
           (pageChange)="listado.irAPagina($event)"

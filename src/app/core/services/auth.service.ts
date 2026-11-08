@@ -26,9 +26,6 @@ import {
 } from '../security/baseline-oidc';
 import { BrowserNavigator } from '../security/browser-navigator';
 
-// MOCK_STORAGE_KEY: preferencia de rol mock (dato no sensible, se mantiene en localStorage).
-// Los tokens JWT NUNCA se persisten en localStorage (AGENTS.md §3.3).
-const MOCK_STORAGE_KEY = 'gestio_asistencia_mock_role';
 
 /** Compatibilidad del modo legacy: el refresh token solo existe en memoria y sessionStorage.
  * El modo baseline no entra por este canal: no existe refresh token accesible desde JavaScript. */
@@ -39,6 +36,7 @@ const LEGACY_STORAGE_KEYS = [
   'gestio_access_token',
   'gestio_refresh_token',
   'gestio_current_user',
+  'gestio_asistencia_mock_role',
 ] as const;
 
 /** Canal BroadcastChannel para sincronización de sesión entre pestañas sin transmitir datos sensibles. */
@@ -260,12 +258,11 @@ export class AuthService implements OnDestroy {
    * con el refresh token de memoria o, si no hay, el de sessionStorage. Si el
    * refresh falla limpia toda credencial residual y retorna false; no navega:
    * el guard resuelve la ruta si realmente no hay sesión.
-   * En modo mock: restaura el rol guardado en localStorage.
+   * En modo mock: usa rol inicial DOCENTE sin leer de localStorage.
    */
   async initKeycloak(): Promise<boolean> {
     if (this.mockModeSignal()) {
-      const savedRole = localStorage.getItem(MOCK_STORAGE_KEY) as UserRole | null;
-      const initialRole: UserRole = savedRole && MOCK_USERS_BY_ROLE[savedRole] ? savedRole : 'DOCENTE';
+      const initialRole: UserRole = 'DOCENTE';
       this.loginAsMockUser(initialRole, false);
       return true;
     }
@@ -681,8 +678,6 @@ export class AuthService implements OnDestroy {
     this.currentUser.set(selectedUser);
     const mockToken = `mock-jwt-token-${role.toLowerCase()}-${selectedUser.id}`;
     this.token.set(mockToken);
-    // En modo mock solo persistimos el rol (no sensible).
-    localStorage.setItem(MOCK_STORAGE_KEY, role);
 
     if (navigateToApp) {
       this.navigateForRole(role);
@@ -738,8 +733,6 @@ export class AuthService implements OnDestroy {
     this.token.set(null);
     this.currentUser.set(null);
     this.storeRefreshToken(null);
-    // Limpiar preferencia de rol mock (único dato no sensible en localStorage).
-    localStorage.removeItem(MOCK_STORAGE_KEY);
     // Limpieza defensiva de claves que pudieran haber quedado de versiones anteriores.
     this.purgeLegacyStorage();
 

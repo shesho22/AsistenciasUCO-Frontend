@@ -11,6 +11,7 @@ import {
   mockUuid,
 } from '../mocks/student-portal-mock.adapter';
 import { ApiResponse } from '../models/api-response.model';
+import { ApiPageResponse } from '../api/models/api-page-response.model';
 import { PlanEstudioItem } from '../models/role-management.model';
 import { AuthService } from '../services/auth.service';
 import { environment } from '../../../environments/environment';
@@ -25,6 +26,28 @@ function okResponse<T>(datos: T, mensajeUsuario?: string, total?: number): HttpR
       datos,
       total: total ?? (Array.isArray(datos) ? datos.length : undefined),
     },
+  });
+}
+
+function okPageResponse<T>(
+  elementos: T[],
+  pagina = 1,
+  tamano = 10,
+  totalElementos?: number
+): HttpResponse<ApiPageResponse<T>> {
+  const total = totalElementos ?? elementos.length;
+  return new HttpResponse<ApiPageResponse<T>>({
+    status: 200,
+    body: {
+      exitoso: true,
+      elementos,
+      datos: elementos,
+      total,
+      numeroPagina: pagina,
+      tamanoPagina: tamano,
+      totalElementos: total,
+      totalPaginas: Math.max(1, Math.ceil(total / tamano)),
+    } as any,
   });
 }
 
@@ -388,6 +411,11 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   // ================= DECANO Y ADMINISTRADOR: CONSULTAS TRANSVERSALES (HU112/HU128/HU143/HU157) =================
   const transversal = respuestaConsultasTransversales(req, url);
   if (transversal) {
+    if (transversal.esPaginada && Array.isArray(transversal.datos)) {
+      const pagina = Number(req.params.get('pagina') ?? 1);
+      const tamano = Number(req.params.get('tamano') ?? 10);
+      return of(okPageResponse(transversal.datos, pagina, tamano, transversal.total)).pipe(delay(200));
+    }
     return of(okResponse(transversal.datos, undefined, transversal.total)).pipe(delay(200));
   }
 
@@ -407,7 +435,9 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     const filtrados = estudiantes.filter(
       (e) => !busqueda || e.nombreCompleto.toLowerCase().includes(busqueda) || e.numeroIdentificacion.includes(busqueda)
     );
-    return of(okResponse(filtrados, undefined, filtrados.length)).pipe(delay(200));
+    const pagina = Number(req.params.get('pagina') ?? 1);
+    const tamano = Number(req.params.get('tamano') ?? 10);
+    return of(okPageResponse(filtrados, pagina, tamano, filtrados.length)).pipe(delay(200));
   }
   if (url.includes('/decano/estudiantes/') && method === 'GET') {
     const idEstudiante = url.split('/').pop()!;
@@ -453,8 +483,9 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     );
     return of(okPagina(asignaturas, req)).pipe(delay(200));
   }
-  if (url.endsWith('/decano/sesiones') && method === 'GET') {
-    const sesiones = [
+  if (url.includes('/decano/sesiones') && method === 'GET') {
+    const idGrupo = req.params.get('idGrupo') || (url.includes('?') ? new URL(url, 'http://localhost').searchParams.get('idGrupo') : null);
+    const todasSesiones = [
       {
         id: 'SES-MOCK-1', nombre: 'Sesión 1', codigo: 'S-01', numeroSemana: 1, fechaHoraInicio: '2026-01-27T07:00:00',
         fechaHoraFin: '2026-01-27T09:00:00', idGrupo: 'GRP-MOCK-1', codigoGrupo: 1, nombreGrupo: 'Grupo 1',
@@ -462,7 +493,34 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
         nombrePrograma: 'Ingeniería de Sistemas',
       },
     ];
-    return of(okResponse(sesiones, undefined, sesiones.length)).pipe(delay(200));
+    const sesiones = idGrupo ? todasSesiones.filter((s) => s.idGrupo === idGrupo) : todasSesiones;
+    const pagina = Number(req.params.get('pagina') ?? 1);
+    const tamano = Number(req.params.get('tamano') ?? 10);
+    return of(okPageResponse(sesiones, pagina, tamano, sesiones.length)).pipe(delay(200));
+  }
+  if (url.includes('/decano/grupos/') && method === 'GET') {
+    const id = url.split('?')[0].split('/').pop()!;
+    const grupo = {
+      id,
+      codigoGrupo: 1,
+      codigo: 'MAT-301',
+      nombre: 'Grupo 1',
+      idAsignatura: 'ASG-1',
+      codigoAsignatura: 'SIS-101',
+      nombreAsignatura: 'Cálculo Diferencial',
+      creditos: 4,
+      idDocente: 'DOC-1',
+      nombreDocente: 'María Rostagno',
+      correoDocente: 'maria.rostagno@uco.edu.co',
+      idPeriodoAcademico: 'PER-1',
+      codigoPeriodoAcademico: '2026-1',
+      capacidadMaximaPermitida: 30,
+      totalEstudiantes: 25,
+      sesionesRegistradas: 8,
+      asistenciaPromedio: 92,
+      estado: 'ACTIVO',
+    };
+    return of(okResponse(grupo)).pipe(delay(200));
   }
 
   // ================= COORDINADOR: GRUPOS, SESIONES Y ASISTENCIAS (HU064/HU060/HU061) =================

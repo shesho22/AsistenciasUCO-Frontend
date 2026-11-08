@@ -74,18 +74,23 @@ describe('AdminSystemComponent', () => {
       } as any)
     );
 
-    coordServiceSpy = jasmine.createSpyObj('CoordinatorManagementService', ['cargarPeriodosAcademicosBase'], {
-      periodos: signal([
-        {
-          id: 'per-1',
-          codigo: '2026-2',
-          nombre: 'Segundo Semestre 2026',
-          fechaInicio: '2026-08-01',
-          fechaFin: '2026-12-15',
-          estado: 'ACTIVO' as const,
-        },
-      ]).asReadonly(),
-    });
+    const periodosSignal = signal([
+      {
+        id: 'per-1',
+        codigo: '2026-2',
+        nombre: 'Segundo Semestre 2026',
+        fechaInicio: '2026-08-01',
+        fechaFin: '2026-12-15',
+        estado: 'ACTIVO' as const,
+        esVigente: true,
+      },
+    ]);
+
+    coordServiceSpy = {
+      cargarPeriodosAcademicosBase: jasmine.createSpy('cargarPeriodosAcademicosBase'),
+      periodos: periodosSignal.asReadonly(),
+      _periodosSignal: periodosSignal,
+    } as unknown as jasmine.SpyObj<CoordinatorManagementService>;
 
     await TestBed.configureTestingModule({
       imports: [AdminSystemComponent],
@@ -196,6 +201,31 @@ describe('AdminSystemComponent', () => {
       component.confirmarCierre();
       expect(adminServiceSpy.ejecutarCierreMasivo).toHaveBeenCalledWith('per-1', '2026-2');
       expect(component.cierrePendiente()).toBeFalse();
+    });
+
+    it('F-ADM-005: selecciona por defecto el período con esVigente === true', () => {
+      const periodosConVigente = [
+        { id: '3f0c1d2e-0000-4000-8000-000000000001', codigo: '2026-1', nombre: 'P1', fechaInicio: '2026-01-01', fechaFin: '2026-06-01', estado: 'FINALIZADO' as const, esVigente: false },
+        { id: '3f0c1d2e-0000-4000-8000-000000000002', codigo: '2026-2', nombre: 'P2', fechaInicio: '2026-08-01', fechaFin: '2026-12-01', estado: 'ACTIVO' as const, esVigente: true },
+      ];
+      (coordServiceSpy as any)._periodosSignal.set(periodosConVigente);
+      fixture = TestBed.createComponent(AdminSystemComponent);
+      component = fixture.componentInstance;
+      fixture.detectChanges();
+
+      expect(component.periodoSeleccionadoCierre).toBe('3f0c1d2e-0000-4000-8000-000000000002');
+    });
+
+    it('F-ADM-005: si la lista de períodos está vacía muestra mensaje claro y no deja ejecutar cierre', () => {
+      (coordServiceSpy as any)._periodosSignal.set([]);
+      fixture = TestBed.createComponent(AdminSystemComponent);
+      component = fixture.componentInstance;
+      component.tabActiva.set('CIERRE_MASIVO');
+      fixture.detectChanges();
+
+      expect(el().textContent).toContain('No hay períodos académicos registrados');
+      const boton = el().querySelector('button[type="button"][disabled]') as HTMLButtonElement;
+      expect(boton).toBeTruthy();
     });
 
     it('el porcentaje no produce NaN con total 0 y el historial vacio lo explica con overflow horizontal', () => {

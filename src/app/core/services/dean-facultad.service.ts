@@ -29,14 +29,18 @@ export class DeanFacultadService {
     estaActivo?: boolean | null;
     pagina: number;
     tamano: number;
-  }): Observable<ApiResponse<EstudianteFacultadItem[]>> {
-    return this.http.get<ApiResponse<EstudianteFacultadItem[]>>(`${this.base}/estudiantes`, {
+  }): Observable<ApiPageResponse<EstudianteFacultadItem>> {
+    return this.http.get<ApiPageResponse<EstudianteFacultadItem>>(`${this.base}/estudiantes`, {
       params: parametros(filtro),
     });
   }
 
   getFichaEstudiante(idEstudiante: string): Observable<ApiResponse<FichaEstudianteFacultad>> {
     return this.http.get<ApiResponse<FichaEstudianteFacultad>>(`${this.base}/estudiantes/${idEstudiante}`);
+  }
+
+  getGrupoDetalle(grupoId: string): Observable<ApiResponse<any>> {
+    return this.http.get<ApiResponse<any>>(`${this.base}/grupos/${grupoId}`);
   }
 
   getEstructura(): Observable<ApiResponse<FacultadNodo[]>> {
@@ -62,10 +66,11 @@ export class DeanFacultadService {
     desde?: string | null;
     hasta?: string | null;
     idPrograma?: string | null;
+    idGrupo?: string | null;
     pagina: number;
     tamano: number;
-  }): Observable<ApiResponse<SesionFacultadItem[]>> {
-    return this.http.get<ApiResponse<SesionFacultadItem[]>>(`${this.base}/sesiones`, { params: parametros(filtro) });
+  }): Observable<ApiPageResponse<SesionFacultadItem>> {
+    return this.http.get<ApiPageResponse<SesionFacultadItem>>(`${this.base}/sesiones`, { params: parametros(filtro) });
   }
 }
 

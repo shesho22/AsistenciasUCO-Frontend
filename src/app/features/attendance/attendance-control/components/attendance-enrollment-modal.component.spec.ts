@@ -298,6 +298,50 @@ describe('AttendanceEnrollmentModalComponent', () => {
     expect(host.querySelector<HTMLInputElement>('input[name="studentEmail"]')?.placeholder).toBe('juan.perez@uco.edu.co');
   });
 
+  describe('F-DOC-006: discriminación de errores en buscarEstudiante', () => {
+    it('un error 404 abre el formulario de nuevo registro', () => {
+      studentServiceSpy.searchStudentByIdentification.and.returnValue(
+        throwError(() => apiHttpError(404, 'Estudiante no encontrado.', 'RESOURCE_NOT_FOUND'))
+      );
+      component.docType.set('tipo-cc');
+      component.code.set('1017123456');
+      component.buscarEstudiante();
+      fixture.detectChanges();
+
+      expect(component.showRegistrationForm()).toBeTrue();
+      expect(component.searchStatus()).toBe('NOT_FOUND');
+      expect(component.isExistingStudent()).toBeFalse();
+    });
+
+    it('un error 403 no abre el formulario de registro y muestra el mensaje', () => {
+      studentServiceSpy.searchStudentByIdentification.and.returnValue(
+        throwError(() => apiHttpError(403, 'No tiene permisos para buscar estudiantes.', 'FORBIDDEN'))
+      );
+      component.docType.set('tipo-cc');
+      component.code.set('1017123456');
+      component.buscarEstudiante();
+      fixture.detectChanges();
+
+      expect(component.showRegistrationForm()).toBeFalse();
+      expect(component.searchStatus()).toBe('IDLE');
+      expect(component.searchError()).toContain('No tiene permisos');
+    });
+
+    it('un error 500 o fallo de red no abre el formulario de registro', () => {
+      studentServiceSpy.searchStudentByIdentification.and.returnValue(
+        throwError(() => apiHttpError(500, 'Error interno del servidor.', 'INTERNAL_ERROR'))
+      );
+      component.docType.set('tipo-cc');
+      component.code.set('1017123456');
+      component.buscarEstudiante();
+      fixture.detectChanges();
+
+      expect(component.showRegistrationForm()).toBeFalse();
+      expect(component.searchStatus()).toBe('IDLE');
+      expect(component.searchError()).toBeTruthy();
+    });
+  });
+
   it('onClose resetea el formulario y emite evento closed', () => {
     let cerrado = false;
     component.closed.subscribe(() => (cerrado = true));

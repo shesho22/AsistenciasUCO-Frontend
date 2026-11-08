@@ -16,6 +16,7 @@ import {
 export interface RespuestaSimulada {
   datos: unknown;
   total?: number;
+  esPaginada?: boolean;
 }
 
 const PROGRAMAS_CREDITOS: ProgramaCreditosItem[] = [
@@ -145,7 +146,7 @@ const COMPONENTES: ComponenteFormacionItem[] = [
 function filtrar<T>(req: HttpRequest<unknown>, filas: T[], campos: (keyof T)[]): RespuestaSimulada {
   const busqueda = (req.params.get('busqueda') ?? '').toLowerCase();
   const datos = filas.filter((f) => !busqueda || campos.some((c) => String(f[c] ?? '').toLowerCase().includes(busqueda)));
-  return { datos, total: datos.length };
+  return { datos, total: datos.length, esPaginada: true };
 }
 
 /**
@@ -166,11 +167,11 @@ export function respuestaConsultasTransversales(req: HttpRequest<unknown>, url: 
   if (url.endsWith('/consolidado-asistencia')) {
     const asignatura = req.params.get('idAsignatura');
     const datos = CONSOLIDADO.filter((g) => !asignatura || g.idAsignatura === asignatura);
-    return { datos, total: datos.length };
+    return { datos, total: datos.length, esPaginada: true };
   }
   if (url.endsWith('/admin/auditoria')) {
     const datos = AUDITORIA.filter((e) => req.params.get('soloAsistencia') === 'false' || e.accionAsistencia);
-    return { datos, total: datos.length };
+    return { datos, total: datos.length, esPaginada: true };
   }
   if (url.endsWith('/categorias-justificacion')) {
     return { datos: CATEGORIAS_JUSTIFICACION, total: CATEGORIAS_JUSTIFICACION.length };

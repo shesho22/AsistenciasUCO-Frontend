@@ -2,7 +2,6 @@ import { Component, OnInit, OnDestroy, inject, input, signal, computed, ChangeDe
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { CourseService } from '../../../core/services/course.service';
 import { DeanFacultadService } from '../../../core/services/dean-facultad.service';
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
 import { Course } from '../../../core/models/course.model';
@@ -14,10 +13,19 @@ import { RealtimeService } from '../../../core/realtime/realtime.service';
 import { onRealtimeReconnect } from '../../../core/realtime/realtime-reconnect-trigger';
 import { REALTIME_EVENT_TYPE } from '../../../core/realtime/model/realtime-event.model';
 
-/** Tamaño máximo de página que acepta GET /decano/sesiones. */
-const TAMANO_PAGINA_SESIONES = 100;
-/** Tope defensivo de páginas a recorrer para filtrar las sesiones de un grupo. */
-const MAX_PAGINAS_SESIONES = 50;
+function adaptarGrupoACurso(dto: any): Course {
+  return {
+    id: dto.id ?? '',
+    code: dto.codigo ?? dto.code ?? '',
+    name: dto.nombreAsignatura ?? dto.nombreMateria ?? dto.name ?? dto.nombre ?? '',
+    section: dto.nombre ?? dto.seccion ?? dto.section ?? '',
+    schedule: dto.horario ?? dto.schedule ?? '',
+    room: dto.aula ?? dto.room ?? '',
+    enrolledStudentsCount: dto.estudiantesActivos ?? dto.totalEstudiantes ?? dto.enrolledStudentsCount ?? 0,
+    cupoMaximo: dto.capacidadMaximaPermitida ?? dto.cupoMaximo,
+    colorCategory: 'blue',
+  };
+}
 
 @Component({
   selector: 'app-dean-grupo-detalle',
@@ -147,7 +155,6 @@ const MAX_PAGINAS_SESIONES = 50;
   `,
 })
 export class DeanGrupoDetalleComponent implements OnInit, OnDestroy {
-  private courseService = inject(CourseService);
   private deanService = inject(DeanFacultadService);
   private toast = inject(ToastService);
   private router = inject(Router);
@@ -158,7 +165,7 @@ export class DeanGrupoDetalleComponent implements OnInit, OnDestroy {
 
   grupoId = input<string>();
 
-  courses = signal<Course[]>([]);
+  selectedCourse = signal<Course | null>(null);
   sessions = signal<SesionFacultadItem[]>([]);
   cargandoSesiones = signal(false);
   /** Mensaje del último error al cargar sesiones; `null` si la última carga terminó bien (aunque sea vacía). */
@@ -170,20 +177,14 @@ export class DeanGrupoDetalleComponent implements OnInit, OnDestroy {
     return this.grupoId() || this.route.snapshot.paramMap.get('grupoId') || '';
   });
 
-  selectedCourse = computed<Course | null>(() => {
-    const id = this.effectiveGrupoId();
-    if (!id) return null;
-    return this.courses().find((c) => c.id === id) || null;
-  });
-
   ngOnInit(): void {
-    this.courseService.getDeanCourses().subscribe({
-      next: (res) => this.courses.set(res.datos || []),
-      error: (error: unknown) => this.errorGrupo.set(getApiErrorMessage(error)),
-    });
-    this.cargarSesiones();
     const id = this.effectiveGrupoId();
     if (id) {
+      this.deanService.getGrupoDetalle(id).subscribe({
+        next: (res) => this.selectedCourse.set(res.datos ? adaptarGrupoACurso(res.datos) : null),
+        error: (error: unknown) => this.errorGrupo.set(getApiErrorMessage(error)),
+      });
+      this.cargarSesiones(id);
       this.iniciarRealtime(id);
     }
   }
@@ -238,30 +239,19 @@ export class DeanGrupoDetalleComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Las sesiones del grupo salen del cronograma de la facultad (GET /decano/sesiones, ámbito forzado en backend):
+   * Las sesiones del grupo salen del cronograma de la facultad (GET /decano/sesiones?idGrupo={id}, ámbito forzado en backend):
    * GET /sesiones/grupo/{id} es del docente titular y le responde 403 al decano.
    */
-  cargarSesiones(): void {
-    const id = this.effectiveGrupoId();
+  cargarSesiones(idGrupo?: string): void {
+    const id = idGrupo || this.effectiveGrupoId();
     if (!id) {
       return;
     }
     this.cargandoSesiones.set(true);
     this.errorSesiones.set(null);
-    this.cargarPagina(id, 1, []);
-  }
-
-  private cargarPagina(idGrupo: string, pagina: number, acumuladas: SesionFacultadItem[]): void {
-    this.deanService.getSesiones({ pagina, tamano: TAMANO_PAGINA_SESIONES }).subscribe({
+    this.deanService.getSesiones({ idGrupo: id, pagina: 1, tamano: 50 }).subscribe({
       next: (res) => {
-        const datos = res.datos ?? [];
-        const delGrupo = [...acumuladas, ...datos.filter((s) => s.idGrupo === idGrupo)];
-        const total = Number(res.total ?? datos.length);
-        if (datos.length > 0 && pagina * TAMANO_PAGINA_SESIONES < total && pagina < MAX_PAGINAS_SESIONES) {
-          this.cargarPagina(idGrupo, pagina + 1, delGrupo);
-          return;
-        }
-        this.sessions.set(delGrupo);
+        this.sessions.set(res.elementos ?? []);
         this.cargandoSesiones.set(false);
       },
       error: (error: unknown) => {

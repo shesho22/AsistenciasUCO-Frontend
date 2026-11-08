@@ -426,5 +426,26 @@ describe('mockBackendInterceptor', () => {
     tick(300);
     expect(res?.exitoso).toBeTrue();
   }));
+
+  it('F-DEC-003 & §11.3: /decano/sesiones devuelve ApiPageResponse y filtra por idGrupo', fakeAsync(() => {
+    auth.setMockMode(true);
+    let res: any;
+    httpClient.get(`${environment.apiUrl}/decano/sesiones?idGrupo=GRP-MOCK-1`).subscribe((r) => (res = r));
+    tick(250);
+    expect(res.elementos).toBeDefined();
+    expect(res.numeroPagina).toBe(1);
+    expect(res.totalElementos).toBeDefined();
+    expect(res.elementos.length).toBeGreaterThan(0);
+    expect(res.elementos[0].idGrupo).toBe('GRP-MOCK-1');
+  }));
+
+  it('F-DEC-003: GET /decano/grupos/{id} devuelve el detalle del grupo', fakeAsync(() => {
+    auth.setMockMode(true);
+    let res: any;
+    httpClient.get(`${environment.apiUrl}/decano/grupos/GRP-MOCK-1`).subscribe((r) => (res = r));
+    tick(250);
+    expect(res.exitoso).toBeTrue();
+    expect(res.datos.id).toBe('GRP-MOCK-1');
+  }));
 });
 

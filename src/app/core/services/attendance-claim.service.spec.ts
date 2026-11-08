@@ -589,6 +589,40 @@ describe('AttendanceClaimService', () => {
     });
   });
 
+  describe('PAG_001 propagación de mensaje en 400', () => {
+    it('getReclamosDocente propaga el mensaje del backend en 400 PAG_001', () => {
+      let error: any;
+      service.getReclamosDocente({ pagina: 99, tamano: 10 }).subscribe({
+        error: (e) => (error = e),
+      });
+
+      http.expectOne((r) => r.url === `${environment.apiUrl}/docente/reclamos`).flush(
+        { code: 'PAG_001', message: 'La página solicitada supera el total de registros disponibles.' },
+        { status: 400, statusText: 'Bad Request' }
+      );
+
+      expect(error.status).toBe(400);
+      expect(error.error?.message).toBe('La página solicitada supera el total de registros disponibles.');
+      expect(error.error?.code).toBe('PAG_001');
+    });
+
+    it('getReclamosEstudiante propaga el mensaje del backend en 400 PAG_001', () => {
+      let error: any;
+      service.getReclamosEstudiante({ pagina: 99, tamano: 10 }).subscribe({
+        error: (e) => (error = e),
+      });
+
+      http.expectOne((r) => r.url === `${environment.apiUrl}/estudiante/reclamos`).flush(
+        { code: 'PAG_001', message: 'La página solicitada supera el total de registros disponibles.' },
+        { status: 400, statusText: 'Bad Request' }
+      );
+
+      expect(error.status).toBe(400);
+      expect(error.error?.message).toBe('La página solicitada supera el total de registros disponibles.');
+      expect(error.error?.code).toBe('PAG_001');
+    });
+  });
+
   describe('CULM-001 D.2 — soporte múltiple y configuración de reclamos (HU015, HU014)', () => {
     it('getConfiguracionReclamos consulta /configuracion/reclamos y devuelve la configuración', () => {
       let config: ConfiguracionReclamosDTO | undefined;

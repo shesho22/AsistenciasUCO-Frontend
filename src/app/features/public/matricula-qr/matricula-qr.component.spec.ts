@@ -215,15 +215,14 @@ describe('MatriculaQrComponent (HU176B, página pública)', () => {
     expect(q('matricula-mensaje')?.textContent).toContain('Ya tienes una cuenta registrada.');
   });
 
-  it('T-FE-04: «Ya tengo cuenta» lleva al login con returnUrl y nunca pasa el token', async () => {
+  it('F-EST-012: «Ya tengo cuenta» lleva al login preservando el token t en returnUrl', async () => {
     await crear({ t: TOKEN });
 
     component.yaTengoCuenta();
 
     const args = (router.navigate as jasmine.Spy).calls.mostRecent().args;
     expect(args[0]).toEqual(['/login']);
-    expect(JSON.stringify(args[1])).not.toContain(TOKEN);
-    expect(args[1].queryParams.returnUrl).toBe('/app/estudiante/materias?matricula=1');
+    expect(args[1].queryParams.returnUrl).toBe(`/app/estudiante/materias?t=${encodeURIComponent(TOKEN)}`);
   });
 
   it('con PIN, «Ya tengo cuenta» pasa el PIN para precargarlo en el portal', async () => {

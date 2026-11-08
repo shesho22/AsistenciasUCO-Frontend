@@ -28,7 +28,7 @@ describe('StudentMatriculaCodigoModalComponent (HU176B)', () => {
   });
 
   it('con un PIN de 6 dígitos habilita el botón y emite el PIN al confirmar', () => {
-    const emitidos: string[] = [];
+    const emitidos: Array<string | { token: string }> = [];
     component.submitted.subscribe((v) => emitidos.push(v));
     component.codigo.set(' 482913 ');
     fixture.detectChanges();
@@ -53,6 +53,19 @@ describe('StudentMatriculaCodigoModalComponent (HU176B)', () => {
 
     expect(component.codigo()).toBe('482913');
     expect(component.pinValido()).toBeTrue();
+  });
+
+  it('F-EST-012: con tokenInicial el botón confirmar está habilitado y emite el token', () => {
+    let emitido: any;
+    component.submitted.subscribe((v) => (emitido = v));
+    fixture.componentRef.setInput('tokenInicial', 'TOKEN_ABC_123');
+    fixture.detectChanges();
+
+    expect(component.pinValido()).toBeTrue();
+    expect(confirmar().disabled).toBeFalse();
+    confirmar().click();
+
+    expect(emitido).toEqual({ token: 'TOKEN_ABC_123' });
   });
 
   it('Cancelar emite closed', () => {

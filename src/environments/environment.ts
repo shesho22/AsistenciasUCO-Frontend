@@ -19,10 +19,6 @@ function configuredApiRoot(): string {
 }
 
 function runtimeFlag(key: string, fallback = false): boolean {
-  if (typeof localStorage !== 'undefined') {
-    const stored = localStorage.getItem(key);
-    if (stored !== null) return stored === 'true';
-  }
   return (window as any)['env']?.[key] === 'true' || fallback;
 }
 
@@ -38,9 +34,6 @@ export const environment = {
     return `${configuredApiRoot()}/api/v2`;
   },
   get useFrontendMocks(): boolean {
-    if (typeof localStorage !== 'undefined' && localStorage.getItem('USE_MOCKS') !== null) {
-      return localStorage.getItem('USE_MOCKS') === 'true';
-    }
     return (window as any)['env']?.['USE_MOCKS'] === 'true' || false;
   },
   get useMocks(): boolean {
@@ -53,8 +46,6 @@ export const environment = {
     return true;
   },
   features: {
-    sessionsEnabled: true,
-    attendanceEnabled: true,
     sessionsV2Enabled: true,
     // CULM-001 B.1 (HU047): la cancelación de sesión tiene contrato (CONTRACT B 3.2.1). La bandera queda como
     // interruptor de retirada. CULM-001 B.2 (HU175): el QR de asistencia tiene contrato (CONTRACT B 3.2.6).

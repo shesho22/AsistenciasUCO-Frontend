@@ -4,6 +4,7 @@ import {
   inject,
   signal,
   computed,
+  effect,
   ChangeDetectionStrategy,
   DestroyRef,
 } from '@angular/core';
@@ -323,20 +324,24 @@ type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
 
             <div class="bg-white/10 backdrop-blur-sm border border-white/20 p-4 rounded-xl flex flex-col items-center gap-3 shrink-0">
               <label for="cierre-periodo" class="text-xs font-bold text-white uppercase">Período para Cierre</label>
-              <select
-                id="cierre-periodo"
-                [(ngModel)]="periodoSeleccionadoCierre"
-                class="px-4 py-2 rounded-lg bg-white text-warm-900 text-xs font-bold focus:outline-none"
-              >
-                @for (p of periodos(); track p.id) {
-                  <option [value]="p.codigo">{{ p.nombre }} ({{ p.codigo }})</option>
-                }
-              </select>
+              @if (periodos().length === 0) {
+                <p class="text-xs text-warm-300">No hay períodos académicos registrados para realizar el cierre.</p>
+              } @else {
+                <select
+                  id="cierre-periodo"
+                  [(ngModel)]="periodoSeleccionadoCierre"
+                  class="px-4 py-2 rounded-lg bg-white text-warm-900 text-xs font-bold focus:outline-none"
+                >
+                  @for (p of periodos(); track p.id) {
+                    <option [value]="p.id">{{ p.nombre }} ({{ p.codigo }})</option>
+                  }
+                </select>
+              }
 
               <button
                 type="button"
                 (click)="iniciarCierreSemestral()"
-                [disabled]="isProcesandoCierre()"
+                [disabled]="isProcesandoCierre() || periodos().length === 0 || !periodoSeleccionadoCierre"
                 class="w-full min-h-[44px] px-5 py-2.5 bg-accent-500 hover:bg-accent-600 disabled:bg-warm-400 text-warm-900 rounded-xl text-xs font-bold shadow-md transition-all flex items-center justify-center gap-2"
               >
                 @if (isProcesandoCierre()) {
@@ -421,7 +426,7 @@ export class AdminSystemComponent implements OnInit {
   private destroyRef = inject(DestroyRef);
 
   tabActiva = signal<TabAdminSystem>('PARAMETROS');
-  periodoSeleccionadoCierre = '2026-2';
+  periodoSeleccionadoCierre = '';
   isProcesandoCierre = signal<boolean>(false);
   cierrePendiente = signal<boolean>(false);
 
@@ -441,6 +446,10 @@ export class AdminSystemComponent implements OnInit {
   parametros = this.adminService.parametros;
   reportesCierre = this.adminService.reportesCierre;
   periodos = this.coordService.periodos;
+
+  private readonly sincronizarPeriodo = effect(() => {
+    this.actualizarPeriodoSeleccionado();
+  });
 
   parametrosPorCategoria = computed(() => {
     const list = this.parametros();
@@ -471,8 +480,10 @@ export class AdminSystemComponent implements OnInit {
 
   ngOnInit(): void {
     this.coordService.cargarPeriodosAcademicosBase();
+    this.actualizarPeriodoSeleccionado();
     this.cargarParametros();
   }
+
 
   cargarParametros(): void {
     this.cargandoParametros.set(true);
@@ -536,6 +547,16 @@ export class AdminSystemComponent implements OnInit {
     this.cargarParametros();
   }
 
+  private actualizarPeriodoSeleccionado(): void {
+    const lista = this.periodos();
+    if (lista.length > 0) {
+      const vigente = lista.find((p: any) => p.esVigente === true);
+      this.periodoSeleccionadoCierre = vigente ? vigente.id : lista[0].id;
+    } else {
+      this.periodoSeleccionadoCierre = '';
+    }
+  }
+
   porcentaje(parte: number, total: number): string {
     return total > 0 ? `${((parte / total) * 100).toFixed(1)}%` : '—';
   }
@@ -562,17 +583,23 @@ export class AdminSystemComponent implements OnInit {
   confirmarCierre(): void {
     this.cierrePendiente.set(false);
 
-    const periodoObj = this.periodos().find((p) => p.codigo === this.periodoSeleccionadoCierre);
+    const periodoObj = this.periodos().find((p) => p.id === this.periodoSeleccionadoCierre || p.codigo === this.periodoSeleccionadoCierre);
     const idPeriodo = periodoObj ? periodoObj.id : this.periodoSeleccionadoCierre;
+    const codigoPeriodo = periodoObj ? periodoObj.codigo : this.periodoSeleccionadoCierre;
+
+    if (!idPeriodo) {
+      this.toast.error('Debe seleccionar un período válido para ejecutar el cierre.');
+      return;
+    }
 
     this.isProcesandoCierre.set(true);
     this.adminService
-      .ejecutarCierreMasivo(idPeriodo, this.periodoSeleccionadoCierre)
+      .ejecutarCierreMasivo(idPeriodo, codigoPeriodo)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (res) => {
           this.isProcesandoCierre.set(false);
-          const mensajeExito = res?.mensajeUsuario || `Cierre masivo del período ${this.periodoSeleccionadoCierre} solicitado correctamente.`;
+          const mensajeExito = res?.mensajeUsuario || `Cierre masivo del período ${codigoPeriodo} solicitado correctamente.`;
           this.toast.success(mensajeExito);
         },
         error: (err: unknown) => {
