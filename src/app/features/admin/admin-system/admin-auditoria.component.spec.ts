@@ -193,7 +193,7 @@ describe('AdminAuditoriaComponent (HU172)', () => {
     http.expectOne((r) => r.url === url).flush({ exitoso: true, elementos: [], totalElementos: 0, totalPaginas: 0, numeroPagina: 1, tamanoPagina: 10 });
     spyOn(navigator.clipboard, 'writeText').and.returnValue(Promise.resolve());
 
-    component.copiarCorrelacion('corr-test-xyz');
+    await component.copiarCorrelacion('corr-test-xyz');
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith('corr-test-xyz');
     expect(toast.success).toHaveBeenCalledWith('ID de correlación copiado al portapapeles.');
   });
