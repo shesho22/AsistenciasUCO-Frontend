@@ -39,8 +39,8 @@ export interface AforoGrupo {
   codigoGrupo: number;
   idAsignatura: string;
   nombreAsignatura: string;
-  idPrograma: string;
-  nombrePrograma: string;
+  /** CULM-001 B2NM: una fila por grupo con los nombres de todos sus programas (sin idPrograma ni nombrePrograma). */
+  programas: string[];
   cupoMaximo: number;
   matriculadosActivos: number;
   cuposDisponibles: number;

@@ -80,7 +80,7 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
                 <tr class="border-t border-neutral-100">
                   <td class="py-2">{{ g.codigoGrupo }}</td>
                   <td>{{ g.nombreAsignatura }}</td>
-                  <td>{{ g.nombrePrograma }}</td>
+                  <td>{{ g.programas.join(', ') }}</td>
                   <td>{{ g.cupoMaximo }}</td>
                   <td>{{ g.matriculadosActivos }}</td>
                   <td>{{ g.cuposDisponibles }}</td>

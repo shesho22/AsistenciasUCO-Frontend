@@ -38,13 +38,12 @@ export interface AsignaturaInstitucionItem {
   creditos: number | null;
   nombreArea: string | null;
   nombreComponente: string | null;
-  codigoSemestre: string | null;
-  idPlanEstudio: string;
-  inpPlanEstudio: number | null;
-  idPrograma: string;
-  nombrePrograma: string;
-  idFacultad: string;
-  nombreFacultad: string;
+  /**
+   * CULM-001 B2NM: una asignatura puede estar en varios planes. Texto con los programas y planes donde está vinculada
+   * (el backend retiró nombrePrograma, idPlanEstudio, idFacultad y nombreFacultad).
+   */
+  planes: string | null;
+  totalPlanes: number;
   activa: boolean;
 }
 
