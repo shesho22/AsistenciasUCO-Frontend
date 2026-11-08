@@ -152,17 +152,33 @@ export type EstadoAsistenciaSesion = 'PRESENTE' | 'AUSENTE' | 'RETARDO' | 'JUSTI
 /** `RETIRADA`: el estudiante retiró su solicitud mientras estaba pendiente (CULM-001 A.2-7). */
 export type EstadoSolicitudRevision = 'PENDIENTE' | 'APROBADA' | 'RECHAZADA' | 'RETIRADA';
 
+export interface CategoriaReclamoItem {
+  codigo: string;
+  nombre: string;
+}
+
 /**
- * Nombre de la categoría de justificación del reclamo. HU005/HU016: los valores salen del catálogo de solo consulta
- * (`GET /categorias-justificacion`), no de una lista fija en el cliente.
+ * Nombre o estructura de la categoría de justificación del reclamo. HU005/HU016/HU015: soporta tanto
+ * el nombre plano como el objeto con código y nombre (CULM-001 D.2).
  */
-export type CategoriaJustificacion = string;
+export type CategoriaJustificacion = string | CategoriaReclamoItem;
+
+/** CULM-001 D.2: Configuración centralizada de reclamos y soportes. */
+export interface ConfiguracionReclamosDTO {
+  maximoSoportes: number;
+  tamanioMaximoBytes: number;
+  tiposPermitidos: string[];
+  limiteSubidasPorMinuto: number;
+  diasLimiteJustificacion: number;
+}
 
 export interface SoporteAdjuntoItem {
   /** Identificador opaco generado por el backend; unica fuente de verdad del vinculo del soporte. */
   fileId?: string;
   nombre: string;
   tipo: string;
+  /** Tipo MIME o de contenido exacto entregado por el backend o el archivo. */
+  tipoContenido?: string;
   tamanioKb: number;
   /** Tamano exacto reportado por el backend (bytes); `tamanioKb` es solo presentacion. */
   tamanioBytes?: number;
@@ -171,6 +187,10 @@ export interface SoporteAdjuntoItem {
   fechaSubida: string;
   /** Instante UTC original de registro del soporte; se presenta en la zona IANA del usuario. */
   fechaSubidaUtc?: string;
+  /** CULM-001 D.2: Estado de la subida individual en la interfaz de usuario. */
+  estado?: 'SUBIENDO' | 'LISTO' | 'RECHAZADO';
+  /** Mensaje de error reportado por el backend (ej. ClamAV malware, límite por minuto o validación). */
+  error?: string | null;
 }
 
 /** Estado de asistencia de una sesion vista por el estudiante; `NO_DISPONIBLE` jamas equivale a `AUSENTE`. */
@@ -244,6 +264,10 @@ export interface SolicitudRevisionItem {
   estadoSolicitud: EstadoSolicitudRevision;
   categoria?: CategoriaJustificacion;
   soporteAdjunto?: SoporteAdjuntoItem;
+  /** CULM-001 D.2: Lista completa de soportes documentales adjuntos al reclamo. */
+  soportes?: SoporteAdjuntoItem[];
+  /** CULM-001 D.2: Identificadores de soporte que viajan en el POST de radicación. */
+  soporteArchivoIds?: string[];
   justificacionSolicitud: string;
   justificacionRespuesta?: string;
   fechaRespuesta?: string;
@@ -414,9 +438,38 @@ export interface ParametroAdminDto {
   grupo: string;
   clave: string;
   valor: string;
+  valorDefecto?: string;
   tipoDato: string;
-  valorDefecto: string;
-  estaActivo: boolean;
+  esEditable?: boolean;
+  valorMinimo?: number | null;
+  valorMaximo?: number | null;
+  valoresPermitidos?: string[] | string | null;
+  etiqueta?: string;
+  descripcion?: string;
+  unidad?: string | null;
+  categoriaVisual?: string;
+  orden?: number;
+  fechaModificacion?: string;
+  fechaUltimoCambioUtc?: string | null;
+  nombreUltimoActor?: string | null;
+  esGrupoProtegido?: boolean;
+  estaActivo?: boolean;
+}
+
+export interface ParametroActualizadoDto {
+  id: string;
+  grupo: string;
+  clave: string;
+  valorAnterior: string;
+  valorNuevo: string;
+  fechaModificacion: string;
+  sinCambios: boolean;
+}
+
+export interface ActualizarParametroRequest {
+  valor: string;
+  fechaModificacionEsperada: string;
+  motivo: string;
 }
 
 export interface RegistroAuditoriaItem {

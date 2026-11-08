@@ -160,12 +160,14 @@ export interface EventoAuditoriaItem {
   idRecurso: string | null;
   resultado: 'SUCCESS' | 'FAILURE' | string;
   idTraza: string | null;
+  idCorrelacion?: string | null;
   metodoHttp: string;
   ruta: string;
   estadoHttp: number;
   ipCliente: string | null;
   codigoError: string | null;
-  metadatos: string | null;
+  metadatos?: string | null;
+  metadata?: string | null;
   accionAsistencia: boolean;
 }
 
@@ -175,6 +177,8 @@ export interface FiltroAuditoria {
   hasta?: string | null;
   accion?: string | null;
   resultado?: string | null;
+  idCorrelacion?: string | null;
+  soloAdministracion?: boolean | null;
   soloAsistencia?: boolean | null;
   pagina: number;
   tamano: number;
@@ -196,6 +200,8 @@ export interface CategoriaJustificacionItem {
   /** Texto que el formulario de reclamo envía como `categoria` (contrato vigente del radicado). */
   nombre: string;
   descripcion: string | null;
+  /** CULM-001 D.2 (HU014): indica si la categoría exige adjuntar al menos un soporte documental. */
+  requiereSoporte?: boolean;
 }
 
 export interface EstadoSistemaItem {
