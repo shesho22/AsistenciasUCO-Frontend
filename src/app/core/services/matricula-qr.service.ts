@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiDataResponse, ApiVoidDataResponse } from '../api/models/api-data-response.model';
@@ -25,9 +25,11 @@ export class MatriculaQrService {
     return `${environment.apiUrl}/grupos`;
   }
 
-  abrirVentana(grupoId: string): Observable<VentanaMatricula> {
+  /** CULM-001 B2NM (S3 mínimo): `programaId` es opcional y solo se envía cuando el grupo tiene más de un programa. */
+  abrirVentana(grupoId: string, programaId?: string | null): Observable<VentanaMatricula> {
+    const params = programaId ? new HttpParams().set('programaId', programaId) : new HttpParams();
     return this.http
-      .post<ApiDataResponse<VentanaMatricula>>(`${this.baseGrupos}/${encodeURIComponent(grupoId)}/matricula-qr`, {})
+      .post<ApiDataResponse<VentanaMatricula>>(`${this.baseGrupos}/${encodeURIComponent(grupoId)}/matricula-qr`, {}, { params })
       .pipe(map((response) => response.datos));
   }
 

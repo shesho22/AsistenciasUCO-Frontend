@@ -5,7 +5,7 @@ import { OfertaCreacionGruposDocenteApiDto } from '../../../../core/api/models/o
 const OFERTA: OfertaCreacionGruposDocenteApiDto = {
   idDocente: 'doc-1',
   asignaturas: [
-    { idAsignatura: 'asig-1', codigoAsignatura: 'MAT1', nombreAsignatura: 'Algebra', idPrograma: 'p1', nombrePrograma: 'Sistemas' },
+    { idAsignatura: 'asig-1', codigoAsignatura: 'MAT1', nombreAsignatura: 'Algebra', programas: ['Sistemas', 'Software'] },
   ],
 };
 
@@ -30,7 +30,7 @@ describe('TeacherGrupoFormComponent (F3)', () => {
 
     const opciones = fixture.nativeElement.querySelectorAll('select[name="idAsignatura"] option');
     expect(opciones.length).toBe(2);
-    expect(opciones[1].textContent).toContain('MAT1 - Algebra (Sistemas)');
+    expect(opciones[1].textContent).toContain('MAT1 - Algebra (Sistemas, Software)');
     expect(fixture.nativeElement.querySelector('[data-testid="sin-oferta"]')).toBeNull();
   });
 
