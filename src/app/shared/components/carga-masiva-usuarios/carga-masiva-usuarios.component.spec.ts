@@ -170,9 +170,11 @@ describe('CargaMasivaUsuariosComponent', () => {
     expect(conteos?.textContent).toContain('2'); // Validas
     expect(conteos?.textContent).toContain('1'); // Ya existen
 
-    // Comprobar filas en tabla o tarjetas
-    const filas = compiled.querySelectorAll('[data-testid="fila-validacion"]');
-    expect(filas.length).toBe(3);
+    // Comprobar filas en tabla de escritorio y tarjetas en móvil
+    const filasTabla = compiled.querySelectorAll('tbody tr[data-testid="fila-validacion"]');
+    expect(filasTabla.length).toBe(3);
+    const tarjetasMovil = compiled.querySelectorAll('.block.sm\\:hidden [data-testid="fila-validacion"]');
+    expect(tarjetasMovil.length).toBe(3);
 
     // REGLA CRÍTICA: Nunca debe haber campo de contraseña visible en el DOM
     expect(compiled.innerHTML.toLowerCase()).not.toContain('clave_inicial');
