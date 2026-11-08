@@ -95,6 +95,7 @@ type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO';
       <app-student-matricula-codigo-modal
         [isOpen]="modalMatriculaGrupoVisible()"
         [processing]="procesandoMatriculaGrupo()"
+        [tokenInicial]="tokenPrecargado()"
         [codigoInicial]="pinPrecargado()"
         (submitted)="enviarMatriculaPorCodigo($event)"
         (closed)="cerrarModalMatriculaGrupo()"
@@ -125,6 +126,8 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
   procesandoMatriculaGrupo = signal<boolean>(false);
   /** PIN que trae el login (`?matricula=<PIN>`); el modal lo muestra precargado. */
   pinPrecargado = signal<string>('');
+  /** Token QR que trae el login (`?t=<TOKEN>`); F-EST-012. */
+  tokenPrecargado = signal<string>('');
 
   // Drill-down sesiones
   selectedMateria = signal<MateriaEstudianteItem | null>(null);
@@ -173,7 +176,12 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
     this.cargarMaterias();
     this.cargarCategoriasJustificacion();
 
-    // HU176B: el login devuelve aqui con `?matricula=<PIN>` (o `1` si solo se conoce el QR): se abre el modal del codigo.
+    // HU176B & F-EST-012: el login devuelve aqui con `?matricula=<PIN>` o `?t=<TOKEN>`
+    const paramToken = this.route.snapshot.queryParamMap.get('t');
+    if (paramToken) {
+      this.tokenPrecargado.set(paramToken);
+      this.abrirModalMatriculaGrupo();
+    }
     const paramMatricula = this.route.snapshot.queryParamMap.get('matricula');
     if (paramMatricula) {
       if (/^[0-9]{6}$/.test(paramMatricula)) {
@@ -448,14 +456,21 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
     this.modalMatriculaGrupoVisible.set(false);
   }
 
-  enviarMatriculaPorCodigo(pin: string): void {
-    if (!/^[0-9]{6}$/.test(pin)) {
-      this.toast.error('Ingresa el PIN de 6 dígitos que proyecta tu docente.');
-      return;
+  enviarMatriculaPorCodigo(dato: string | { token?: string; pin?: string }): void {
+    let credencial: { token?: string; pin?: string };
+    if (typeof dato === 'object' && dato !== null) {
+      credencial = dato;
+    } else {
+      const pin = String(dato || '').trim();
+      if (!/^[0-9]{6}$/.test(pin)) {
+        this.toast.error('Ingresa el PIN de 6 dígitos que proyecta tu docente.');
+        return;
+      }
+      credencial = { pin };
     }
 
     this.procesandoMatriculaGrupo.set(true);
-    this.matriculaQrService.matricularAutenticado({ pin }).subscribe({
+    this.matriculaQrService.matricularAutenticado(credencial).subscribe({
       next: (resultado) => {
         this.procesandoMatriculaGrupo.set(false);
         this.toast.success(getApiSuccessMessage(resultado, '¡Matrícula confirmada exitosamente en el grupo!'));

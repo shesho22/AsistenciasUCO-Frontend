@@ -297,8 +297,8 @@ export class AttendanceControlComponent {
   emailDomain = signal<string>('');
   resendingStudentId = signal<string>('');
 
-  readonly sessionsEnabled = environment.features.sessionsEnabled;
-  readonly attendanceEnabled = environment.features.attendanceEnabled;
+  readonly sessionsEnabled = true;
+  readonly attendanceEnabled = true;
   readonly sessionQrEnabled = environment.features.sessionQrEnabled;
 
   courses = signal<Course[]>([]);

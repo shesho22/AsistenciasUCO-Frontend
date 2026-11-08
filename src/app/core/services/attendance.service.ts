@@ -18,15 +18,6 @@ export class AttendanceService {
     grupoId: string,
     sesionId?: string
   ): Observable<ApiListResponse<AsistenciaConsultadaApiDto>> {
-    if (!environment.features.attendanceEnabled) {
-      return throwError(
-        () =>
-          new Error(
-            'Funcionalidad de asistencia temporalmente no disponible.'
-          )
-      );
-    }
-
     return this.http.get<ApiListResponse<AsistenciaConsultadaApiDto>>(
       `${environment.apiUrl}/grupos/${grupoId}/asistencias`,
       {
@@ -38,15 +29,6 @@ export class AttendanceService {
   requestAttendanceRevision(
     request: SolicitarRevisionAsistenciaRequest
   ): Observable<ApiMessageResponse> {
-    if (!environment.features.attendanceEnabled) {
-      return throwError(
-        () =>
-          new Error(
-            'Funcionalidad de asistencia temporalmente no disponible.'
-          )
-      );
-    }
-
     const justificacion = (request.justificacion || '').trim();
 
     if (justificacion.length < 5 || justificacion.length > 500) {

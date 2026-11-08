@@ -81,6 +81,7 @@ import { resolveSessionInstant } from '../../../core/time/session-timezone.util'
         }
         <app-pagination
           [totalItems]="total()"
+          [totalPages]="totalPaginas()"
           [pageSize]="tamano()"
           [currentPage]="pagina()"
           (pageChange)="onPagina($event)"
@@ -102,6 +103,7 @@ export class DeanCronogramaComponent implements OnInit {
    */
   sinZona = computed(() => this.timeZone.hasUnzonedValue(this.sesiones().map((s) => this.inicio(s))));
   total = signal(0);
+  totalPaginas = signal(0);
   pagina = signal(1);
   tamano = signal(20);
   cargando = signal(false);
@@ -151,13 +153,15 @@ export class DeanCronogramaComponent implements OnInit {
       .getSesiones({ desde: this.desde(), hasta: this.hasta(), pagina: this.pagina(), tamano: this.tamano() })
       .subscribe({
         next: (res) => {
-          this.sesiones.set(res.datos ?? []);
-          this.total.set(Number(res.total ?? 0));
+          this.sesiones.set(res.elementos ?? (res as any).datos ?? []);
+          this.total.set(Number(res.totalElementos ?? (res as any).total ?? 0));
+          this.totalPaginas.set(res.totalPaginas ?? Math.max(1, Math.ceil(this.total() / this.tamano())));
           this.cargando.set(false);
         },
         error: (error: unknown) => {
           this.sesiones.set([]);
           this.total.set(0);
+          this.totalPaginas.set(0);
           this.cargando.set(false);
           this.toast.error(getApiErrorMessage(error));
         },

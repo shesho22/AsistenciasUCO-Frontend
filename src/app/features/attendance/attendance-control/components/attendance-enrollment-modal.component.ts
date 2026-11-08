@@ -7,7 +7,7 @@ import { ButtonComponent } from '../../../../shared/components/button/button.com
 import { FormFieldComponent } from '../../../../shared/components/form-field/form-field.component';
 import { FormSelectComponent, SelectOption } from '../../../../shared/components/form-select/form-select.component';
 import { StudentService } from '../../../../core/services/student.service';
-import { getApiErrorMessage } from '../../../../core/api/errors/api-error.util';
+import { getApiErrorMessage, getApiErrorCode, API_ERROR_CODE } from '../../../../core/api/errors/api-error.util';
 
 /** Datos del formulario de matricula/registro de estudiante que emite el modal. */
 export interface MatriculaEstudianteSolicitud {
@@ -456,12 +456,23 @@ export class AttendanceEnrollmentModalComponent {
           }
         },
         error: (error: unknown) => {
-          // 403/400…: el backend explica por qué; no se abre el alta para no duplicar una cuenta por un fallo de consulta.
-          this.isExistingStudent.set(false);
-          this.showRegistrationForm.set(false);
-          this.limpiarDatosFormulario();
-          this.searchStatus.set('IDLE');
-          this.searchError.set(getApiErrorMessage(error));
+          const status = (error as any)?.status;
+          const code = getApiErrorCode(error);
+          if (status === 404 || code === API_ERROR_CODE.RESOURCE_NOT_FOUND) {
+            // Estudiante no encontrado (404): abrir formulario de nuevo registro
+            this.isExistingStudent.set(false);
+            this.limpiarDatosFormulario();
+            this.showRegistrationForm.set(true);
+            this.searchStatus.set('NOT_FOUND');
+            this.searchError.set('');
+          } else {
+            // 403/500/fallo de red: el backend explica por qué; no se abre el alta para no duplicar una cuenta por un fallo de consulta.
+            this.isExistingStudent.set(false);
+            this.showRegistrationForm.set(false);
+            this.limpiarDatosFormulario();
+            this.searchStatus.set('IDLE');
+            this.searchError.set(getApiErrorMessage(error));
+          }
         },
       });
   }

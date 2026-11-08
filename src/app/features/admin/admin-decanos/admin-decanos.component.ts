@@ -132,7 +132,7 @@ type VistaAdmin = 'LISTA' | 'REGISTRO';
                     <div class="flex items-start justify-between gap-3 mb-2">
                       <div class="flex items-center gap-2">
                         <span class="text-xs font-mono font-semibold px-2 py-0.5 rounded-md bg-warm-100 text-warm-700">
-                          DEC-{{ decano.numeroIdentificacion }}
+                          {{ decano.id }}
                         </span>
                         <app-badge [variant]="decano.estado === 'ACTIVO' ? 'success' : 'neutral'">
                           {{ decano.estado }}
@@ -416,8 +416,8 @@ export class AdminDecanosComponent implements OnInit {
   private readonly ultimaPeticionDecanos = new UltimaPeticion();
 
   formData: Omit<DecanoItem, 'id'> & { password?: string } = {
-    tipoIdentificacionId: 'A1B2C3D4-0000-0000-0000-000000000001',
-    tipoIdentificacion: 'CC',
+    tipoIdentificacionId: '',
+    tipoIdentificacion: '',
     numeroIdentificacion: '',
     primerNombre: '',
     segundoNombre: '',
@@ -576,8 +576,8 @@ export class AdminDecanosComponent implements OnInit {
 
   abrirFormularioRegistro(): void {
     this.formData = {
-      tipoIdentificacionId: this.tiposIdentificacion().length > 0 ? this.tiposIdentificacion()[0].id : 'A1B2C3D4-0000-0000-0000-000000000001',
-      tipoIdentificacion: this.tiposIdentificacion().length > 0 ? this.tiposIdentificacion()[0].tipoIdentificacion : 'CC',
+      tipoIdentificacionId: this.tiposIdentificacion().length > 0 ? this.tiposIdentificacion()[0].id : '',
+      tipoIdentificacion: this.tiposIdentificacion().length > 0 ? this.tiposIdentificacion()[0].tipoIdentificacion : '',
       numeroIdentificacion: '',
       primerNombre: '',
       segundoNombre: '',
@@ -641,22 +641,6 @@ export class AdminDecanosComponent implements OnInit {
     const pwd = (this.formData.password || '').trim();
     if (!pwd) {
       this.toast.warning('La contraseña inicial de acceso es obligatoria.');
-      return;
-    }
-    if (pwd.length < 12) {
-      this.toast.warning('La contraseña inicial debe tener mínimo 12 caracteres según las políticas de Keycloak.');
-      return;
-    }
-    const hasUpper = /[A-Z]/.test(pwd);
-    const hasLower = /[a-z]/.test(pwd);
-    const hasDigit = /[0-9]/.test(pwd);
-    const hasSpecial = /[!@#$%^&*()_+\-=%]/.test(pwd);
-    if (!hasUpper || !hasLower || !hasDigit || !hasSpecial) {
-      this.toast.warning('La contraseña debe incluir al menos una mayúscula, una minúscula, un número y un símbolo (!@#$%^&*()_+-=%).');
-      return;
-    }
-    if (pwd === String(idResult.value) || pwd.toLowerCase() === this.formData.correo.trim().toLowerCase()) {
-      this.toast.warning('La contraseña no puede coincidir con el documento de identidad ni con el correo.');
       return;
     }
 

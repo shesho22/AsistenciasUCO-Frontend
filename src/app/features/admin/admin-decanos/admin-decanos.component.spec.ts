@@ -339,6 +339,12 @@ describe('AdminDecanosComponent', () => {
       const req = http.expectOne(`${environment.apiUrl}/admin/decanos`);
       expect(req.request.method).toBe('POST');
       req.flush({ exitoso: true, datos: { ...mockDecanos[0], id: 'dec-nuevo' } });
+
+      const reqDecReload = http.expectOne(`${environment.apiUrl}/admin/decanos`);
+      reqDecReload.flush({ exitoso: true, datos: mockDecanos });
+
+      const reqFacReload = http.expectOne(`${environment.apiUrl}/admin/facultades`);
+      reqFacReload.flush({ exitoso: true, datos: mockFacultades });
     });
 
     it('no utiliza GUID quemado ni CC como fallback cuando el catálogo está vacío (F-ADM-011)', () => {
@@ -349,8 +355,7 @@ describe('AdminDecanosComponent', () => {
     });
 
     it('la tarjeta muestra el id del decano y no calcula DEC-{{numeroIdentificacion}} (F-ADM-011)', () => {
-      fixture.detectChanges();
-      satisfyInitRequests();
+      component.volverALista();
       fixture.detectChanges();
 
       const html = fixture.nativeElement.innerHTML as string;

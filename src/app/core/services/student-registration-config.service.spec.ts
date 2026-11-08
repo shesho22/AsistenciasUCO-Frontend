@@ -51,12 +51,14 @@ describe('StudentRegistrationConfigService (IDENT-001)', () => {
   });
 
   it('con mocks no llama al backend', () => {
-    localStorage.setItem('USE_MOCKS', 'true');
+    const prevEnv = (window as any)['env'];
+    (window as any)['env'] = { USE_MOCKS: 'true' };
     let dominio = '';
 
     service.getEmailDomain().subscribe((d) => (dominio = d));
 
     http.expectNone(url());
     expect(dominio).toBe('@uco.edu.co');
+    (window as any)['env'] = prevEnv;
   });
 });

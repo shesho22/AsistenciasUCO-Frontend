@@ -28,7 +28,7 @@ describe('StudentMatriculaCodigoModalComponent (HU176B)', () => {
   });
 
   it('con un PIN de 6 dígitos habilita el botón y emite el PIN al confirmar', () => {
-    const emitidos: string[] = [];
+    const emitidos: Array<string | { token: string }> = [];
     component.submitted.subscribe((v) => emitidos.push(v));
     component.codigo.set(' 482913 ');
     fixture.detectChanges();

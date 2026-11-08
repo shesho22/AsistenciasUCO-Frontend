@@ -125,6 +125,7 @@ export function acumularOpciones(opciones: Opcion[], filas: ConsolidadoGrupoItem
         }
         <app-pagination
           [totalItems]="listado.total()"
+          [totalPages]="listado.totalPaginas()"
           [pageSize]="listado.tamano()"
           [currentPage]="listado.pagina()"
           (pageChange)="listado.irAPagina($event)"
@@ -159,7 +160,7 @@ export class ConsolidadoAsistenciaComponent implements OnInit {
         },
         this.comoDecano
       );
-      return consulta.pipe(tap((res) => this.recordarOpciones(res.datos ?? [])));
+      return consulta.pipe(tap((res) => this.recordarOpciones(res.elementos ?? (res as any).datos ?? [])));
     },
     (mensaje) => this.toast.error(mensaje)
   );

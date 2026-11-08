@@ -205,6 +205,15 @@ export const routes: Routes = [
             (m) => m.AdminEmailManagementComponent
           ),
       },
+      {
+        path: 'admin/instituciones',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMINISTRADOR', 'ADMIN'] },
+        loadComponent: () =>
+          import('./features/admin/admin-instituciones/admin-instituciones.component').then(
+            (m) => m.AdminInstitucionesComponent
+          ),
+      },
       // Rutas Decano
       {
         path: 'decano/facultad',

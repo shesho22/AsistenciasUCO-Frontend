@@ -101,6 +101,7 @@ type FiltroEstado = 'TODOS' | 'ACTIVO' | 'INACTIVO';
         }
         <app-pagination
           [totalItems]="total()"
+          [totalPages]="totalPaginas()"
           [pageSize]="tamano()"
           [currentPage]="pagina()"
           (pageChange)="onPagina($event)"
@@ -163,6 +164,7 @@ export class DeanEstudiantesComponent implements OnInit {
 
   estudiantes = signal<EstudianteFacultadItem[]>([]);
   total = signal(0);
+  totalPaginas = signal(0);
   pagina = signal(1);
   tamano = signal(10);
   cargando = signal(false);
@@ -247,13 +249,15 @@ export class DeanEstudiantesComponent implements OnInit {
       })
       .subscribe({
         next: (res) => {
-          this.estudiantes.set(res.datos ?? []);
-          this.total.set(Number(res.total ?? 0));
+          this.estudiantes.set(res.elementos ?? (res as any).datos ?? []);
+          this.total.set(Number(res.totalElementos ?? (res as any).total ?? 0));
+          this.totalPaginas.set(res.totalPaginas ?? Math.max(1, Math.ceil(this.total() / this.tamano())));
           this.cargando.set(false);
         },
         error: (error: unknown) => {
           this.estudiantes.set([]);
           this.total.set(0);
+          this.totalPaginas.set(0);
           this.cargando.set(false);
           this.toast.error(getApiErrorMessage(error));
         },

@@ -1,6 +1,7 @@
 import { signal } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiResponse } from '../../core/models/api-response.model';
+import { ApiPageResponse } from '../../core/api/models/api-page-response.model';
 import { getApiErrorMessage } from '../../core/api/errors/api-error.util';
 
 /**
@@ -11,12 +12,13 @@ import { getApiErrorMessage } from '../../core/api/errors/api-error.util';
 export class ListadoPaginado<T> {
   readonly filas = signal<T[]>([]);
   readonly total = signal(0);
+  readonly totalPaginas = signal(0);
   readonly pagina = signal(1);
   readonly tamano = signal(10);
   readonly cargando = signal(false);
 
   constructor(
-    private readonly consultar: (pagina: number, tamano: number) => Observable<ApiResponse<T[]>>,
+    private readonly consultar: (pagina: number, tamano: number) => Observable<ApiResponse<T[]> | ApiPageResponse<T>>,
     private readonly alFallar: (mensaje: string) => void
   ) {}
 
@@ -39,14 +41,19 @@ export class ListadoPaginado<T> {
   cargar(): void {
     this.cargando.set(true);
     this.consultar(this.pagina(), this.tamano()).subscribe({
-      next: (res) => {
-        this.filas.set(res.datos ?? []);
-        this.total.set(Number(res.total ?? 0));
+      next: (res: any) => {
+        const elementos = (res.elementos ?? res.datos ?? []) as T[];
+        const total = Number(res.totalElementos ?? res.total ?? elementos.length);
+        const totalPags = res.totalPaginas ?? Math.max(1, Math.ceil(total / this.tamano()));
+        this.filas.set(elementos);
+        this.total.set(total);
+        this.totalPaginas.set(totalPags);
         this.cargando.set(false);
       },
       error: (error: unknown) => {
         this.filas.set([]);
         this.total.set(0);
+        this.totalPaginas.set(0);
         this.cargando.set(false);
         this.alFallar(getApiErrorMessage(error));
       },

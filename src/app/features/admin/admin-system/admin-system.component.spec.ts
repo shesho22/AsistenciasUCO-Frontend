@@ -44,18 +44,23 @@ describe('AdminSystemComponent', () => {
     );
     adminServiceSpy.cargarParametros.and.returnValue(of({ exitoso: true, datos: mockParametros }));
 
-    coordServiceSpy = jasmine.createSpyObj('CoordinatorManagementService', ['cargarPeriodosAcademicosBase'], {
-      periodos: signal([
-        {
-          id: 'per-1',
-          codigo: '2026-2',
-          nombre: 'Segundo Semestre 2026',
-          fechaInicio: '2026-08-01',
-          fechaFin: '2026-12-15',
-          estado: 'ACTIVO' as const,
-        },
-      ]).asReadonly(),
-    });
+    const periodosSignal = signal([
+      {
+        id: 'per-1',
+        codigo: '2026-2',
+        nombre: 'Segundo Semestre 2026',
+        fechaInicio: '2026-08-01',
+        fechaFin: '2026-12-15',
+        estado: 'ACTIVO' as const,
+        esVigente: true,
+      },
+    ]);
+
+    coordServiceSpy = {
+      cargarPeriodosAcademicosBase: jasmine.createSpy('cargarPeriodosAcademicosBase'),
+      periodos: periodosSignal.asReadonly(),
+      _periodosSignal: periodosSignal,
+    } as unknown as jasmine.SpyObj<CoordinatorManagementService>;
 
     await TestBed.configureTestingModule({
       imports: [AdminSystemComponent],
@@ -146,7 +151,7 @@ describe('AdminSystemComponent', () => {
         { id: '3f0c1d2e-0000-4000-8000-000000000001', codigo: '2026-1', nombre: 'P1', fechaInicio: '2026-01-01', fechaFin: '2026-06-01', estado: 'FINALIZADO' as const, esVigente: false },
         { id: '3f0c1d2e-0000-4000-8000-000000000002', codigo: '2026-2', nombre: 'P2', fechaInicio: '2026-08-01', fechaFin: '2026-12-01', estado: 'ACTIVO' as const, esVigente: true },
       ];
-      (coordServiceSpy as any).periodos = signal(periodosConVigente).asReadonly();
+      (coordServiceSpy as any)._periodosSignal.set(periodosConVigente);
       fixture = TestBed.createComponent(AdminSystemComponent);
       component = fixture.componentInstance;
       fixture.detectChanges();
@@ -155,7 +160,7 @@ describe('AdminSystemComponent', () => {
     });
 
     it('F-ADM-005: si la lista de períodos está vacía muestra mensaje claro y no deja ejecutar cierre', () => {
-      (coordServiceSpy as any).periodos = signal([]).asReadonly();
+      (coordServiceSpy as any)._periodosSignal.set([]);
       fixture = TestBed.createComponent(AdminSystemComponent);
       component = fixture.componentInstance;
       component.tabActiva.set('CIERRE_MASIVO');
