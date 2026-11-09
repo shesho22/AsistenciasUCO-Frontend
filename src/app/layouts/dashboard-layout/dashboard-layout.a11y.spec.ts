@@ -1,6 +1,6 @@
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { DashboardLayoutComponent } from './dashboard-layout.component';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../shared/components/toast/toast.component';
@@ -43,5 +43,42 @@ describe('DashboardLayoutComponent accesibilidad (F-TRX-014)', () => {
     boton.click();
     fixture.detectChanges();
     expect(boton.getAttribute('aria-expanded')).toBe('true');
+  });
+
+  it('Escape cierra el menú móvil abierto y devuelve el foco a la hamburguesa', () => {
+    const boton = el.querySelector('button[aria-label="Menú principal"]') as HTMLButtonElement;
+    boton.click();
+    fixture.detectChanges();
+    expect(boton.getAttribute('aria-expanded')).toBe('true');
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    fixture.detectChanges();
+
+    expect(boton.getAttribute('aria-expanded')).toBe('false');
+    expect(document.activeElement).toBe(boton);
+  });
+
+  it('Escape con el menú cerrado no mueve el foco', () => {
+    const boton = el.querySelector('button[aria-label="Menú principal"]') as HTMLButtonElement;
+    const skip = el.querySelector('a[href="#contenido-principal"]') as HTMLAnchorElement;
+    skip.focus();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    fixture.detectChanges();
+    expect(boton.getAttribute('aria-expanded')).toBe('false');
+    expect(document.activeElement).toBe(skip);
+  });
+
+  it('el enlace de la ruta activa expone aria-current="page" y ningún otro lo hace', async () => {
+    const router = TestBed.inject(Router);
+    router.resetConfig([{ path: '**', children: [] }]);
+    const enlaces = Array.from(el.querySelectorAll<HTMLAnchorElement>('#menu-lateral nav a[href]'));
+    expect(enlaces.length).toBeGreaterThan(1);
+    const destino = enlaces[0].getAttribute('href') as string;
+
+    await router.navigateByUrl(destino);
+    fixture.detectChanges();
+
+    const activos = Array.from(el.querySelectorAll('#menu-lateral a[aria-current="page"]'));
+    expect(activos.map((a) => a.getAttribute('href'))).toEqual([destino]);
   });
 });
