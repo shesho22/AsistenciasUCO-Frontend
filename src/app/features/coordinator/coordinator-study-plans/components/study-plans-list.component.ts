@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { PlanEstudioItem } from '../../../../core/models/role-management.model';
 import { CardComponent } from '../../../../shared/components/card/card.component';
 import { BadgeComponent, BadgeVariant } from '../../../../shared/components/badge/badge.component';
+import { ActionMenuComponent, ActionMenuItem } from '../../../../shared/components/action-menu/action-menu.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 
@@ -10,7 +11,7 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
   selector: 'app-study-plans-list',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, CardComponent, BadgeComponent, ButtonComponent, PaginationComponent],
+  imports: [CommonModule, CardComponent, BadgeComponent, ButtonComponent, PaginationComponent, ActionMenuComponent],
   template: `
     <div class="space-y-6">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -81,40 +82,14 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
                   </div>
                 </div>
 
-                <div class="flex items-center justify-between pt-3 border-t border-warm-100">
-                  <div class="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      (click)="editPlan.emit(plan)"
-                      class="text-xs font-semibold text-warm-600 hover:text-warm-900 px-2.5 py-1.5 rounded-lg hover:bg-warm-100 transition-colors inline-flex items-center gap-1"
-                      title="Editar parámetros del plan"
-                    >
-                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                      Editar
-                    </button>
-
-                    <button
-                      type="button"
-                      (click)="toggleEstado.emit(plan)"
-                      [class]="plan.estado === 'VIGENTE' ? 'text-warning-700 hover:bg-warning-50' : 'text-primary-700 hover:bg-primary-50'"
-                      class="text-xs font-semibold px-2 py-1.5 rounded-lg transition-colors inline-flex items-center gap-1"
-                      title="Cambiar estado activo/inactivo"
-                    >
-                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                      </svg>
-                      {{ plan.estado === 'VIGENTE' ? 'Inactivar' : 'Activar' }}
-                    </button>
-                  </div>
-
-                  <app-button variant="primary" size="sm" (clicked)="viewMalla.emit(plan)">
+                <div class="flex items-center justify-between gap-2 pt-3 border-t border-warm-100" data-testid="acciones-plan">
+                  <app-button variant="primary" size="sm" data-testid="plan-malla" (clicked)="viewMalla.emit(plan)">
                     <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                     </svg>
                     Malla & Asignaturas
                   </app-button>
+                  <app-action-menu label="Más acciones del plan" [items]="accionesPlan(plan)" (selected)="alElegirAccion(plan, $event)" />
                 </div>
               </div>
             </app-card>
@@ -142,6 +117,18 @@ export class StudyPlansListComponent {
   editPlan = output<PlanEstudioItem>();
   toggleEstado = output<PlanEstudioItem>();
   viewMalla = output<PlanEstudioItem>();
+
+  accionesPlan(plan: PlanEstudioItem): ActionMenuItem[] {
+    return [
+      { id: 'editar', label: 'Editar parámetros', testid: 'plan-editar' },
+      { id: 'estado', label: plan.estado === 'VIGENTE' ? 'Inactivar plan' : 'Activar plan', testid: 'plan-estado', danger: plan.estado === 'VIGENTE' },
+    ];
+  }
+
+  alElegirAccion(plan: PlanEstudioItem, id: string): void {
+    if (id === 'editar') this.editPlan.emit(plan);
+    else if (id === 'estado') this.toggleEstado.emit(plan);
+  }
 
   currentPage = signal(1);
   pageSize = signal(6);
