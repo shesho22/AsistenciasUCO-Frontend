@@ -1,7 +1,7 @@
 import { API_ERROR_CODE, getApiErrorCode } from './api-error.util';
 
 /** Causa visible de un fallo de carga; permite distinguirlo de una respuesta 200 con cero elementos. */
-export type LoadErrorKind = 'IDENTIFICADOR' | 'VALIDACION' | 'AUTORIZACION' | 'SERVIDOR' | 'RED';
+export type LoadErrorKind = 'IDENTIFICADOR' | 'VALIDACION' | 'AUTORIZACION' | 'NO_IMPLEMENTADO' | 'SERVIDOR' | 'RED';
 
 export interface LoadErrorState {
   kind: LoadErrorKind;
@@ -22,6 +22,10 @@ const ESTADOS: Record<LoadErrorKind, Omit<LoadErrorState, 'kind'>> = {
     titulo: 'Sin autorización',
     mensaje: 'Tu sesión expiró o no tienes permiso para consultar esta información.',
   },
+  NO_IMPLEMENTADO: {
+    titulo: 'Funcionalidad no disponible',
+    mensaje: 'Esta consulta aún no está habilitada en el servidor. No significa que no existan datos.',
+  },
   SERVIDOR: {
     titulo: 'Servicio no disponible',
     mensaje: 'El servidor no pudo procesar la consulta. Inténtalo de nuevo en unos minutos.',
@@ -36,7 +40,7 @@ export function loadErrorState(kind: LoadErrorKind): LoadErrorState {
   return { kind, ...ESTADOS[kind] };
 }
 
-/** Clasifica por codigo semantico/status (nunca por texto): 400 validacion, 401/403 autorizacion, 5xx servidor, 0 red. */
+/** Clasifica por codigo semantico/status (nunca por texto): 400 validacion, 401/403 autorizacion, 501 no implementado, otros 5xx servidor, 0 red. */
 export function classifyLoadError(error: unknown): LoadErrorState {
   let code = getApiErrorCode(error);
   const status = (error as { status?: unknown } | null)?.status;
@@ -45,9 +49,11 @@ export function classifyLoadError(error: unknown): LoadErrorState {
     else if (status === 400) code = API_ERROR_CODE.INVALID_REQUEST;
     else if (status === 401) code = API_ERROR_CODE.UNAUTHORIZED;
     else if (status === 403) code = API_ERROR_CODE.FORBIDDEN;
+    else if (status === 501) code = API_ERROR_CODE.FEATURE_UNAVAILABLE;
   }
   if (code === API_ERROR_CODE.NETWORK_ERROR) return loadErrorState('RED');
   if (code === API_ERROR_CODE.UNAUTHORIZED || code === API_ERROR_CODE.FORBIDDEN) return loadErrorState('AUTORIZACION');
+  if (code === API_ERROR_CODE.FEATURE_UNAVAILABLE) return loadErrorState('NO_IMPLEMENTADO');
   if (code === API_ERROR_CODE.INVALID_REQUEST || code === API_ERROR_CODE.VALIDATION_ERROR) {
     return loadErrorState('VALIDACION');
   }

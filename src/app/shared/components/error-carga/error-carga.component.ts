@@ -4,7 +4,7 @@ import { ButtonComponent } from '../button/button.component';
 
 /**
  * Fallo de carga de una lista, distinguible de una lista vacía (`role="alert"`). Ofrece «Reintentar» solo cuando
- * reintentar puede cambiar el resultado: no ante un identificador inválido ni ante una autorización denegada.
+ * reintentar puede cambiar el resultado: no ante un identificador inválido, una autorización denegada ni una funcionalidad no implementada (501).
  */
 @Component({
   selector: 'app-error-carga',
@@ -27,6 +27,6 @@ export class ErrorCargaComponent {
 
   protected readonly permiteReintento = computed(() => {
     const tipo = this.error().kind;
-    return tipo !== 'IDENTIFICADOR' && tipo !== 'AUTORIZACION';
+    return tipo !== 'IDENTIFICADOR' && tipo !== 'AUTORIZACION' && tipo !== 'NO_IMPLEMENTADO';
   });
 }

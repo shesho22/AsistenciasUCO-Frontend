@@ -4,6 +4,12 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { AdminAuditoriaComponent, DIAS_AUDITORIA_MAXIMO, fechaLocal, rangoUtc } from './admin-auditoria.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { environment } from '../../../../environments/environment';
+import {
+  EscenarioListado,
+  afirmarAutorizacionDenegadaSinReintento,
+  afirmarFalloRecuperableConReintento,
+  afirmarNoImplementadoSinReintento,
+} from '../../../shared/testing/listado-error.helper';
 
 describe('AdminAuditoriaComponent (HU172)', () => {
   let fixture: ComponentFixture<AdminAuditoriaComponent>;
@@ -96,4 +102,37 @@ describe('AdminAuditoriaComponent (HU172)', () => {
     expect(rangoUtc('', fechaLocal(base))).toBeNull();
     expect(fechaLocal(new Date(2026, 0, 9))).toBe('2026-01-09');
   });
+});
+
+describe('AdminAuditoriaComponent estados de error de carga', () => {
+  const url = `${environment.apiUrl}/admin/auditoria`;
+
+  function escenario(): EscenarioListado {
+    TestBed.configureTestingModule({
+      imports: [AdminAuditoriaComponent],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: ToastService, useValue: jasmine.createSpyObj('ToastService', ['success', 'error']) },
+      ],
+    });
+    const http = TestBed.inject(HttpTestingController);
+    const fixture = TestBed.createComponent(AdminAuditoriaComponent);
+    fixture.detectChanges();
+    http.expectOne((r) => r.url === url).flush({ exitoso: true, total: 0, datos: [] });
+    fixture.detectChanges();
+    return {
+      fixture, http,
+      textoVacio: 'No hay eventos de auditoría',
+      recargar: () => fixture.componentInstance.listado.irAPagina(2),
+      coincide: (r) => r.url === url,
+      responderExito: (req) => req.flush({ exitoso: true, total: 0, datos: [] }),
+    };
+  }
+
+  afterEach(() => TestBed.inject(HttpTestingController).verify());
+
+  it('un fallo recuperable muestra alerta con Reintentar y no el vacío', () => afirmarFalloRecuperableConReintento(escenario()));
+  it('403 se anuncia como sin autorización, sin Reintentar', () => afirmarAutorizacionDenegadaSinReintento(escenario()));
+  it('501 se anuncia como no disponible, sin Reintentar', () => afirmarNoImplementadoSinReintento(escenario()));
 });

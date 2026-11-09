@@ -34,8 +34,9 @@ describe('ErrorCargaComponent', () => {
     }
   });
 
-  it('no ofrece Reintentar ante autorizacion denegada ni identificador invalido', () => {
+  it('no ofrece Reintentar ante autorizacion denegada, identificador invalido ni funcionalidad no implementada', () => {
     expect(boton(crear('AUTORIZACION'))).toBeUndefined();
     expect(boton(crear('IDENTIFICADOR'))).toBeUndefined();
+    expect(boton(crear('NO_IMPLEMENTADO'))).toBeUndefined();
   });
 });
