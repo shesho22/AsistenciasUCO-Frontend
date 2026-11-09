@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription, forkJoin, of } from 'rxjs';
@@ -13,6 +13,10 @@ import { SessionService } from '../../../core/services/session.service';
 import { GroupService } from '../../../core/services/group.service';
 import { StudentService } from '../../../core/services/student.service';
 import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
+import { AttendanceService } from '../../../core/services/attendance.service';
+import { AttendanceMapper } from '../../../core/mappers/attendance.mapper';
+import { AsistenciaConsultadaApiDto } from '../../../core/api/models/asistencia-consultada-api-dto.model';
+import { EstudianteGrupoApiDto } from '../../../core/api/models/estudiante-grupo-api-dto.model';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { Course } from '../../../core/models/course.model';
 import { EstudianteGrupoItem } from '../../../core/models/estudiante-grupo-item.model';
@@ -83,7 +87,7 @@ type VistaGrupos = 'LISTA' | 'HUB_GRUPO' | 'FORM_SESION' | 'FORM_GRUPO';
       @if (vistaActual() === 'HUB_GRUPO' && selectedCourse()) {
         <app-teacher-grupo-hub
           [selectedCourse]="selectedCourse()"
-          [sessions]="sessions()"
+          [sessions]="sessionsConRegistros()"
           [loadingSessions]="loadingSessions()"
           [estudiantes]="estudiantesGrupo()"
           [cargandoEstudiantes]="cargandoEstudiantes()"
@@ -159,6 +163,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   private groupService = inject(GroupService);
   private studentService = inject(StudentService);
   private claimService = inject(AttendanceClaimService);
+  private attendanceService = inject(AttendanceService);
   private router = inject(Router);
   private route = inject(ActivatedRoute, { optional: true });
   private toast = inject(ToastService);
@@ -213,6 +218,31 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
 
   modoFormSesion: 'CREAR' | 'EDITAR' = 'CREAR';
   sessions = signal<ClassSession[]>([]);
+  /** Estado consolidado por estudiante y sesion (GET /grupos/{id}/asistencias) del grupo abierto en el hub. */
+  private readonly asistenciasGrupo = signal<AsistenciaConsultadaApiDto[]>([]);
+
+  /**
+   * HU029: sesiones del grupo con sus registros (una marca por estudiante activo), para la sabana y el detalle de
+   * sesion. Sin registro del backend la marca queda en null: nunca se inventa un estado.
+   */
+  readonly sessionsConRegistros = computed<ClassSession[]>(() => {
+    const activos = this.estudiantesGrupo()
+      .filter((estudiante) => estudiante.codigoEstado === 'A')
+      .map((estudiante) => ({
+        idEstudiante: estudiante.idEstudiante ?? estudiante.id ?? '',
+        nombreCompleto: estudiante.nombreCompleto ?? '',
+        documento: estudiante.documento ?? '',
+      }) as EstudianteGrupoApiDto);
+    const asistencias = this.asistenciasGrupo();
+    return this.sessions().map((sesion) => {
+      try {
+        const deLaSesion = asistencias.filter((asistencia) => asistencia.sesion === sesion.id);
+        return { ...sesion, records: AttendanceMapper.fromGroupStudentsAndAttendances(activos, deLaSesion) };
+      } catch {
+        return sesion;
+      }
+    });
+  });
   loadingSessions = signal<boolean>(false);
   selectedSessionId: string | null = null;
 
@@ -310,6 +340,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
     this.subPestanaHub.set('SESIONES');
     this.cargarSesiones(course.id);
     this.cargarEstudiantesGrupo(course.id);
+    this.cargarAsistenciasGrupo(course.id);
     this.cargarReclamosGrupo(course.id);
     this.escucharCancelaciones(course.id);
   }
@@ -330,6 +361,17 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
       },
       error: (err: unknown) => {
         this.loadingSessions.set(false);
+        this.toast.error(getApiErrorMessage(err));
+      },
+    });
+  }
+
+  cargarAsistenciasGrupo(courseId: string): void {
+    this.asistenciasGrupo.set([]);
+    this.attendanceService.getAttendancesByGroup(courseId).subscribe({
+      next: (res) => this.asistenciasGrupo.set(res?.datos ?? []),
+      error: (err: unknown) => {
+        this.asistenciasGrupo.set([]);
         this.toast.error(getApiErrorMessage(err));
       },
     });

@@ -8,6 +8,8 @@ import { StudentService } from '../../../core/services/student.service';
 import { GroupService } from '../../../core/services/group.service';
 import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
 import { CatalogService } from '../../../core/services/catalog.service';
+import { AttendanceService } from '../../../core/services/attendance.service';
+import { TeacherAttendanceSummaryService } from '../../../core/services/teacher-attendance-summary.service';
 import { Course } from '../../../core/models/course.model';
 import { ClassSession } from '../../../core/models/attendance.model';
 import { ToastService } from '../../../shared/components/toast/toast.component';
@@ -28,6 +30,7 @@ describe('TeacherGruposComponent', () => {
   let studentService: jasmine.SpyObj<StudentService>;
   let claimService: jasmine.SpyObj<AttendanceClaimService>;
   let router: jasmine.SpyObj<Router>;
+  let attendanceService: jasmine.SpyObj<AttendanceService>;
   let realtimeEvents$: Subject<RealtimeEvent<SesionCanceladaRealtimePayload>>;
   let realtime: jasmine.SpyObj<RealtimeService>;
 
@@ -65,6 +68,12 @@ describe('TeacherGruposComponent', () => {
       'getReclamosDocentePorGrupo',
     ]);
     router = jasmine.createSpyObj<Router>('Router', ['navigate']);
+    attendanceService = jasmine.createSpyObj<AttendanceService>('AttendanceService', ['getAttendancesByGroup']);
+    attendanceService.getAttendancesByGroup.and.returnValue(of({ exitoso: true, datos: [], total: 0 }) as never);
+    const resumenService = jasmine.createSpyObj<TeacherAttendanceSummaryService>('TeacherAttendanceSummaryService', ['consultarResumen']);
+    resumenService.consultarResumen.and.returnValue(
+      of({ exitoso: true, elementos: [], numeroPagina: 1, tamanoPagina: 100, totalElementos: 0, totalPaginas: 0 }) as never
+    );
 
     courseService.getTeacherCourses.and.returnValue(
       of({ exitoso: true, datos: [course] } as any)
@@ -102,6 +111,8 @@ describe('TeacherGruposComponent', () => {
         { provide: StudentService, useValue: studentService },
         { provide: AttendanceClaimService, useValue: claimService },
         { provide: Router, useValue: router },
+        { provide: AttendanceService, useValue: attendanceService },
+        { provide: TeacherAttendanceSummaryService, useValue: resumenService },
         // HU058: catálogo real de tipos de programa para el filtro "Nivel formativo".
         { provide: CatalogService, useValue: { getTiposPrograma: () => of([{ id: 'TP-PRE', codigo: 'PRE', nombre: 'pregrado' }]) } },
       ],
@@ -604,6 +615,61 @@ describe('TeacherGruposComponent', () => {
       component.confirmarCancelarSesionConMotivo('Motivo suficientemente largo');
 
       expect(spy).not.toHaveBeenCalled();
+    });
+  });
+
+  // HU029 (F-DOC-S03): la sabana y el detalle de sesion del hub deben mostrar el estado consolidado por sesion
+  // que entrega GET /grupos/{id}/asistencias; antes el hub nunca lo cargaba y todas las celdas salian "—".
+  describe('sabana del hub: marcas por sesion', () => {
+    const sesion = {
+      id: 'ses-1',
+      courseId: 'crs-1',
+      sessionNumber: 1,
+      title: 'Sesion 1',
+      date: '2026-08-17',
+      startTime: '08:00',
+      endTime: '10:00',
+      records: [],
+    } as ClassSession;
+    const celda = (est: string) =>
+      (fixture.nativeElement as HTMLElement).querySelector(`[data-testid="sabana-celda-${est}-ses-1"]`);
+
+    beforeEach(() => {
+      sessionService.getSessionsByGroup.and.returnValue(of({ exitoso: true, datos: [sesion], total: 1 }) as never);
+      studentService.getStudentsByGroup.and.returnValue(
+        of({
+          exitoso: true,
+          datos: [
+            { idEstudiante: 'est-1', nombreCompleto: 'Ana Gomez', documento: '1001', codigoEstado: 'A' },
+            { idEstudiante: 'est-2', nombreCompleto: 'Luis Perez', documento: '1002', codigoEstado: 'A' },
+          ],
+        }) as never
+      );
+      attendanceService.getAttendancesByGroup.and.returnValue(
+        of({
+          exitoso: true,
+          total: 1,
+          datos: [{ asistencia: 'a1', estudiante: 'est-1', grupo: 'crs-1', sesion: 'ses-1', presente: false, estado: 'SJC', observacion: null }],
+        }) as never
+      );
+    });
+
+    it('pide las asistencias del grupo al abrir el hub y pinta la marca del estudiante en su sesion', () => {
+      component.verHubGrupo(course);
+      component.subPestanaHub.set('SABANA');
+      fixture.detectChanges();
+
+      expect(attendanceService.getAttendancesByGroup).toHaveBeenCalledWith('crs-1');
+      expect(celda('est-1')?.textContent).toContain('SJC');
+    });
+
+    it('un estudiante sin registro en esa sesion sigue mostrando "—" (nunca se inventa una marca)', () => {
+      component.verHubGrupo(course);
+      component.subPestanaHub.set('SABANA');
+      fixture.detectChanges();
+
+      expect(celda('est-2')?.textContent).toContain('—');
+      expect(celda('est-2')?.textContent).not.toMatch(/AN|EX|SJC/);
     });
   });
 });
