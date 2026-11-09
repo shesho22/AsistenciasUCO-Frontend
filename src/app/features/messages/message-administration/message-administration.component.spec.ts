@@ -156,7 +156,7 @@ describe('MessageAdministrationComponent', () => {
 
     signIn?.click();
 
-    expect(authService.startBaselineLogin).toHaveBeenCalledWith('/app/admin/mensajes');
+    expect(authService.startBaselineLogin).toHaveBeenCalledWith('/app/admin/configuracion/mensajes');
   });
 
   it('desmonta el micro frontend al recargar y al destruir el componente', async () => {

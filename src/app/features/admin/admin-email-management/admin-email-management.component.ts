@@ -106,7 +106,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
             <span>/</span>
             <span class="text-primary-700">Correos y notificaciones</span>
           </div>
-          <h1 class="text-2xl font-serif font-bold text-warm-900">Gestión de Correos y Notificaciones</h1>
+          <h2 class="text-2xl font-serif font-bold text-warm-900">Gestión de Correos y Notificaciones</h2>
           <p class="text-sm text-warm-600">
             Administración de las plantillas de correo, seguimiento de los envíos pendientes y diagnóstico del canal de correo institucional.
           </p>
