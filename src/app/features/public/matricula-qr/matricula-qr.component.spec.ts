@@ -1,9 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
+import { signal } from '@angular/core';
+import { AuthService } from '../../../core/services/auth.service';
 import { MatriculaQrComponent } from './matricula-qr.component';
 import { MatriculaQrService } from '../../../core/services/matricula-qr.service';
-import { CursoMatriculaQr } from '../../../core/models/matricula-qr.model';
+import { CursoMatriculaQr, MatriculaGrupoResultado } from '../../../core/models/matricula-qr.model';
 import { apiHttpError } from '../../../core/testing/api-error.fixture';
 
 describe('MatriculaQrComponent (HU176B, página pública)', () => {
@@ -11,6 +13,7 @@ describe('MatriculaQrComponent (HU176B, página pública)', () => {
   let component: MatriculaQrComponent;
   let servicio: jasmine.SpyObj<MatriculaQrService>;
   let router: Router;
+  let sesion: ReturnType<typeof signal<boolean>>;
 
   const TOKEN = 'T'.repeat(43);
   const curso: CursoMatriculaQr = {
@@ -26,8 +29,10 @@ describe('MatriculaQrComponent (HU176B, página pública)', () => {
     ],
   };
 
-  async function crear(query: Record<string, string> = {}): Promise<void> {
-    servicio = jasmine.createSpyObj('MatriculaQrService', ['validar', 'registrar']);
+  async function crear(query: Record<string, string> = {}, conSesion = false): Promise<void> {
+    sesion = signal(conSesion);
+    servicio = jasmine.createSpyObj('MatriculaQrService', ['validar', 'registrar', 'matricularAutenticado']);
+    servicio.matricularAutenticado.and.returnValue(of({ idGrupo: 'g-1' }));
     servicio.validar.and.returnValue(of(curso));
     servicio.registrar.and.returnValue(of({ idGrupo: 'g-1', usuario: '1017555444' }));
     await TestBed.configureTestingModule({
@@ -35,6 +40,7 @@ describe('MatriculaQrComponent (HU176B, página pública)', () => {
       providers: [
         provideRouter([]),
         { provide: MatriculaQrService, useValue: servicio },
+        { provide: AuthService, useValue: { isAuthenticated: sesion } },
         { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap(query) } } },
       ],
     }).compileComponents();
@@ -234,6 +240,69 @@ describe('MatriculaQrComponent (HU176B, página pública)', () => {
 
     const args = (router.navigate as jasmine.Spy).calls.mostRecent().args;
     expect(args[1].queryParams.returnUrl).toBe('/app/estudiante/materias?matricula=482913');
+  });
+
+  // CULM-001 HU176B: con la sesion abierta el estudiante se matricula con un toque, sin crear cuenta ni volver a iniciar sesion.
+  it('sin sesión no ofrece matricularse con la sesión', async () => {
+    await crear({ t: TOKEN });
+    expect(q('matricula-con-sesion')).toBeNull();
+    expect(q('matricula-crear')).not.toBeNull();
+  });
+
+  it('con sesión abierta ofrece «Matricularme» y oculta crear cuenta y «Ya tengo cuenta»', async () => {
+    await crear({ t: TOKEN }, true);
+    expect(q('matricula-con-sesion')).not.toBeNull();
+    expect(q('matricula-crear')).toBeNull();
+    expect(q('matricula-ya-tengo-cuenta')).toBeNull();
+    expect(q('matricula-curso')?.textContent).toContain('Cálculo');
+  });
+
+  it('con sesión confirma la matrícula con el token y muestra el mensaje del backend', async () => {
+    await crear({ t: TOKEN }, true);
+    servicio.matricularAutenticado.and.returnValue(of({ idGrupo: 'g-1', mensajeUsuario: 'Quedaste matriculado en Cálculo.' } as unknown as MatriculaGrupoResultado));
+
+    q('matricula-con-sesion')?.click();
+    fixture.detectChanges();
+
+    expect(servicio.matricularAutenticado).toHaveBeenCalledOnceWith({ token: TOKEN });
+    expect(component.estado()).toBe('EXITO_SESION');
+    expect(q('matricula-exito-sesion')?.textContent).toContain('Quedaste matriculado en Cálculo.');
+  });
+
+  it('con sesión y PIN confirma la matrícula con el PIN', async () => {
+    await crear({}, true);
+    component.pin.set('482913');
+    component.validarPin();
+    fixture.detectChanges();
+
+    q('matricula-con-sesion')?.click();
+
+    expect(servicio.matricularAutenticado).toHaveBeenCalledOnceWith({ pin: '482913' });
+    expect(component.estado()).toBe('EXITO_SESION');
+  });
+
+  it('con sesión, un rechazo del backend se muestra tal cual y permite reintentar', async () => {
+    await crear({ t: TOKEN }, true);
+    servicio.matricularAutenticado.and.returnValue(throwError(() => apiHttpError(409, 'Ya estás matriculado en este grupo.')));
+
+    q('matricula-con-sesion')?.click();
+    fixture.detectChanges();
+
+    expect(component.estado()).toBe('CURSO');
+    expect(q('matricula-mensaje')?.textContent).toContain('Ya estás matriculado en este grupo.');
+    expect(q('matricula-con-sesion')).not.toBeNull();
+  });
+
+  it('matricularConSesion sin credencial en memoria no llama al backend', async () => {
+    await crear({}, true);
+    component.matricularConSesion();
+    expect(servicio.matricularAutenticado).not.toHaveBeenCalled();
+  });
+
+  it('la confirmación del curso usa la misma estética de proyección (tarjeta de éxito con borde marcado)', async () => {
+    await crear({ t: TOKEN });
+    expect(q('matricula-curso-tarjeta')?.className).toContain('border-success-300');
+    expect(q('matricula-curso-tarjeta')?.className).toContain('border-2');
   });
 
   it('reiniciar descarta la credencial y vuelve a pedir el PIN', async () => {
