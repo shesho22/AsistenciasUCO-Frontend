@@ -120,12 +120,55 @@ describe('GroupSessionsOverviewComponent', () => {
     expect(text).not.toContain('undefined');
   });
 
-  it('HU051: el botón "Padrón" emite gestionarPadron', () => {
+  function abrirMenu(): void {
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('[data-testid="action-menu-trigger"]')!.click();
+    fixture.detectChanges();
+  }
+  const opcion = (id: string): HTMLButtonElement =>
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(`[data-testid="${id}"]`)!;
+
+  it('HU051: la accion "Padrón" del menu emite gestionarPadron', () => {
     const comp = render([session(1)]);
     let emitido = false;
     comp.gestionarPadron.subscribe(() => (emitido = true));
-    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('[data-testid="padron"]')!.click();
+    abrirMenu();
+    opcion('padron').click();
     expect(emitido).toBeTrue();
+  });
+
+  it('UX densidad: la cabecera muestra una accion primaria (+ Nueva Sesion) y un menu "Mas acciones"', () => {
+    render([session(1)]);
+    const el = fixture.nativeElement as HTMLElement;
+    const cabecera = el.querySelector('[data-testid="acciones-grupo"]') as HTMLElement;
+    expect(cabecera.querySelectorAll('button').length).toBe(2);
+    expect(cabecera.textContent).toContain('Nueva Sesión');
+    expect(el.querySelector('[data-testid="action-menu-trigger"]')).not.toBeNull();
+    expect(el.querySelector('[data-testid="padron"]')).toBeNull();
+  });
+
+  it('UX densidad: el menu ofrece matricula QR, matricular, info y alumnos y reclamos, y cada uno emite su evento', () => {
+    const comp = render([session(1)]);
+    const emitidos: string[] = [];
+    comp.openMatriculaQr.subscribe(() => emitidos.push('qr'));
+    comp.openEnrollment.subscribe(() => emitidos.push('matricular'));
+    comp.verAlumnos.subscribe(() => emitidos.push('alumnos'));
+    comp.verReclamos.subscribe(() => emitidos.push('reclamos'));
+    for (const id of ['grupo-matricula-qr', 'grupo-matricular', 'grupo-alumnos', 'grupo-reclamos']) {
+      abrirMenu();
+      opcion(id).click();
+      fixture.detectChanges();
+    }
+    expect(emitidos).toEqual(['qr', 'matricular', 'alumnos', 'reclamos']);
+  });
+
+  it('UX densidad: los reclamos pendientes se ven en el menu y en el boton', () => {
+    render([session(1)]);
+    fixture.componentRef.setInput('totalReclamosPendientes', 3);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[data-testid="action-menu-trigger"]')?.textContent).toContain('3');
+    abrirMenu();
+    expect(opcion('grupo-reclamos').textContent).toContain('Reclamos (3)');
   });
 
   it('B1-F-14 las sesiones canceladas no cuentan en el total', () => {

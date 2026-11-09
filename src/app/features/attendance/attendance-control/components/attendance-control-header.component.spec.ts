@@ -27,6 +27,16 @@ describe('AttendanceControlHeaderComponent', () => {
       (b) => label.test(b.textContent || '')
     )!;
 
+  /** Las acciones secundarias viven en el menu "Mas acciones": se abre y se busca la accion por su texto. */
+  const accionMenu = (label: RegExp): HTMLButtonElement => {
+    const el = fixture.nativeElement as HTMLElement;
+    if (!el.querySelector('[role="menu"]')) {
+      el.querySelector<HTMLButtonElement>('[data-testid="action-menu-trigger"]')!.click();
+      fixture.detectChanges();
+    }
+    return Array.from(el.querySelectorAll<HTMLButtonElement>('[role="menuitem"]')).find((b) => label.test(b.textContent || ''))!;
+  };
+
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [AttendanceControlHeaderComponent],
@@ -62,7 +72,7 @@ describe('AttendanceControlHeaderComponent', () => {
 
   it('con features activas, sesión seleccionada y sin guardado, "Todos Presentes/Ausentes" están habilitados', () => {
     expect(button(/Todos Presentes/).disabled).toBeFalse();
-    expect(button(/Todos Ausentes/).disabled).toBeFalse();
+    expect(accionMenu(/Todos ausentes/i).disabled).toBeFalse();
   });
 
   it('deshabilita el marcado masivo solo por features, guardado en curso o falta de sesión', () => {
@@ -73,7 +83,7 @@ describe('AttendanceControlHeaderComponent', () => {
 
     fixture.componentRef.setInput('sessionsEnabled', false);
     fixture.detectChanges();
-    expect(button(/Todos Ausentes/).disabled).toBeTrue();
+    expect(accionMenu(/Todos ausentes/i).disabled).toBeTrue();
     expect(text()).toContain('Sesiones deshabilitadas');
     fixture.componentRef.setInput('sessionsEnabled', true);
 
@@ -97,20 +107,62 @@ describe('AttendanceControlHeaderComponent', () => {
     it('queda deshabilitado con la ventana cerrada', () => {
       fixture.componentRef.setInput('attendanceWindowOpen', false);
       fixture.detectChanges();
-      expect(button(/Proyectar QR/).disabled).toBeTrue();
+      expect(accionMenu(/Proyectar QR/).disabled).toBeTrue();
     });
 
     it('queda habilitado con la ventana abierta y una sesion seleccionada', () => {
       fixture.componentRef.setInput('attendanceWindowOpen', true);
       fixture.detectChanges();
-      expect(button(/Proyectar QR/).disabled).toBeFalse();
+      expect(accionMenu(/Proyectar QR/).disabled).toBeFalse();
     });
 
     it('sigue deshabilitado sin sesion seleccionada aunque la ventana este abierta', () => {
       fixture.componentRef.setInput('attendanceWindowOpen', true);
       fixture.componentRef.setInput('selectedSessionId', '');
       fixture.detectChanges();
-      expect(button(/Proyectar QR/).disabled).toBeTrue();
+      expect(accionMenu(/Proyectar QR/).disabled).toBeTrue();
+    });
+  });
+
+  describe('UX densidad: una accion primaria y un menu "Mas acciones"', () => {
+    const botonesCabecera = (): HTMLButtonElement[] =>
+      Array.from((fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('header button')).filter(
+        (b) => !b.hasAttribute('role')
+      );
+
+    it('en detalle con marcado masivo solo hay "Todos Presentes" y el menu, no "Todos Ausentes" ni "Proyectar QR" sueltos', () => {
+      const etiquetas = botonesCabecera().map((b) => (b.textContent || '').trim());
+      expect(etiquetas.some((e) => /Todos Presentes/.test(e))).toBeTrue();
+      expect(etiquetas.some((e) => /Todos Ausentes/i.test(e))).toBeFalse();
+      expect(etiquetas.some((e) => /Proyectar QR/.test(e))).toBeFalse();
+      expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="action-menu-trigger"]')).not.toBeNull();
+    });
+
+    it('elegir "Todos ausentes" y "Proyectar QR" del menu emite sus eventos', () => {
+      fixture.componentRef.setInput('selectedSessionId', 'ses-1');
+      fixture.componentRef.setInput('attendanceWindowOpen', true);
+      fixture.detectChanges();
+      const emitidos: string[] = [];
+      component.markAllAbsent.subscribe(() => emitidos.push('ausentes'));
+      component.openProjection.subscribe(() => emitidos.push('proyectar'));
+      accionMenu(/Todos ausentes/i).click();
+      fixture.detectChanges();
+      accionMenu(/Proyectar QR/).click();
+      expect(emitidos).toEqual(['ausentes', 'proyectar']);
+    });
+
+    it('sin marcado masivo (sesion con tomas) "Proyectar QR" queda como boton visible, sin menu', () => {
+      fixture.componentRef.setInput('bulkActions', false);
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('[data-testid="action-menu-trigger"]')).toBeNull();
+      expect(button(/Proyectar QR/)).toBeTruthy();
+    });
+
+    it('en la vista general no repite "+ Sesion" (la accion vive en el historial del grupo)', () => {
+      fixture.componentRef.setInput('isDetailMode', false);
+      fixture.detectChanges();
+      expect(text()).not.toContain('+ Sesión');
     });
   });
 });

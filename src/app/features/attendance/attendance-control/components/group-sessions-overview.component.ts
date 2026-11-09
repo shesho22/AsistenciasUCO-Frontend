@@ -5,6 +5,7 @@ import { ButtonComponent } from '../../../../shared/components/button/button.com
 import { Course } from '../../../../core/models/course.model';
 import { ClassSession } from '../../../../core/models/attendance.model';
 import { estaCancelada } from '../../../../core/models/sesion-estado.model';
+import { ActionMenuComponent, ActionMenuItem } from '../../../../shared/components/action-menu/action-menu.component';
 import { SesionEstadoBadgeComponent } from '../../../../shared/components/sesion-estado-badge/sesion-estado-badge.component';
 import { findActiveOrUpcomingSession } from '../../../../core/utils/session-selection.util';
 import { SessionTimeZoneService } from '../../../../core/services/session-timezone.service';
@@ -13,7 +14,7 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
   selector: 'app-group-sessions-overview',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, ButtonComponent, SesionEstadoBadgeComponent],
+  imports: [CommonModule, ButtonComponent, SesionEstadoBadgeComponent, ActionMenuComponent],
   host: {
     class: 'block w-full'
   },
@@ -157,83 +158,16 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
             </h2>
           </div>
 
-          <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-            <button
-              type="button"
-              (click)="openMatriculaQr.emit()"
-              class="text-xs font-semibold text-primary-800 hover:text-primary-950 bg-primary-50 hover:bg-primary-100 border border-primary-300 px-3 py-1.5 rounded-xl transition-colors inline-flex items-center gap-1.5 shadow-2xs"
-              title="Ver código PIN y QR para que los estudiantes se matriculen al grupo"
-            >
-              <svg class="w-4 h-4 text-success-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-              </svg>
-              <span>QR / PIN Matrícula</span>
-            </button>
-
-            <button
-              type="button"
-              (click)="openEnrollment.emit()"
-              class="text-xs font-semibold text-warm-700 hover:text-warm-900 bg-warm-50 hover:bg-warm-100 border border-warm-200 px-3 py-1.5 rounded-xl transition-colors inline-flex items-center gap-1.5 shadow-2xs"
-              title="Registrar y matricular manualmente un nuevo alumno en este grupo"
-            >
-              <svg class="w-4 h-4 text-warm-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-              </svg>
-              <span>+ Matricular</span>
-            </button>
-
-            <button
-              type="button"
-              (click)="verAlumnos.emit()"
-              class="text-xs font-semibold text-warm-700 hover:text-warm-900 bg-warm-50 hover:bg-warm-100 border border-warm-200 px-3 py-1.5 rounded-xl transition-colors inline-flex items-center gap-1.5 shadow-2xs"
-              title="Ver información del grupo y lista de alumnos matriculados"
-            >
-              <svg class="w-4 h-4 text-warm-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-              </svg>
-              <span>Info & Alumnos</span>
-            </button>
-
-            <!-- HU051: padrón con retiro (hub del grupo del docente) -->
-            <button
-              type="button"
-              data-testid="padron"
-              (click)="gestionarPadron.emit()"
-              class="text-xs font-semibold text-warm-700 hover:text-warm-900 bg-warm-50 hover:bg-warm-100 border border-warm-200 px-3 py-1.5 rounded-xl transition-colors inline-flex items-center gap-1.5 shadow-2xs"
-              title="Retirar estudiantes del padrón del grupo"
-            >
-              <span>Padrón</span>
-            </button>
-
-            <button
-              type="button"
-              (click)="verReclamos.emit()"
-              class="text-xs font-semibold text-warning-900 hover:text-warning-950 bg-warning-50 hover:bg-warning-100 border border-warning-200 px-3 py-1.5 rounded-xl transition-colors inline-flex items-center gap-1.5 shadow-2xs"
-              title="Ver justificaciones y reclamos de asistencia del grupo"
-            >
-              <svg class="w-4 h-4 text-warning-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <span>Reclamos</span>
-              @if (totalReclamosPendientes() > 0) {
-                <span class="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-warning-200 text-warning-900">
-                  {{ totalReclamosPendientes() }}
-                </span>
-              }
-            </button>
-
-            <span class="hidden sm:inline-block h-4 w-px bg-warm-200 mx-0.5"></span>
-
-            <app-button
-              variant="primary"
-              size="sm"
-              (clicked)="openNewSession.emit()"
-            >
-              <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-              </svg>
+          <div class="flex items-center gap-2 w-full sm:w-auto" data-testid="acciones-grupo">
+            <app-button variant="primary" size="sm" (clicked)="openNewSession.emit()">
               + Nueva Sesión
             </app-button>
+            <app-action-menu
+              label="Más acciones del grupo"
+              [texto]="textoMenu()"
+              [items]="accionesGrupo()"
+              (selected)="alElegirAccion($event)"
+            />
           </div>
         </div>
 
@@ -336,6 +270,30 @@ export class GroupSessionsOverviewComponent {
   /** HU051: abre el hub del grupo del docente (padrón con retiro). */
   gestionarPadron = output<void>();
   verReclamos = output<void>();
+
+  /** Acciones secundarias del grupo: se agrupan en "Mas acciones" para dejar una sola accion primaria visible. */
+  readonly accionesGrupo = computed<ActionMenuItem[]>(() => {
+    const pendientes = this.totalReclamosPendientes();
+    return [
+      { id: 'matricula-qr', label: 'QR / PIN de matrícula', testid: 'grupo-matricula-qr' },
+      { id: 'matricular', label: 'Matricular estudiante', testid: 'grupo-matricular' },
+      { id: 'alumnos', label: 'Info y alumnos', testid: 'grupo-alumnos' },
+      { id: 'padron', label: 'Padrón y retiros', testid: 'padron' },
+      { id: 'reclamos', label: pendientes > 0 ? `Reclamos (${pendientes})` : 'Reclamos', testid: 'grupo-reclamos' },
+    ];
+  });
+  readonly textoMenu = computed(() => (this.totalReclamosPendientes() > 0 ? `Más (${this.totalReclamosPendientes()})` : 'Más'));
+
+  alElegirAccion(id: string): void {
+    const acciones: Record<string, () => void> = {
+      'matricula-qr': () => this.openMatriculaQr.emit(),
+      matricular: () => this.openEnrollment.emit(),
+      alumnos: () => this.verAlumnos.emit(),
+      padron: () => this.gestionarPadron.emit(),
+      reclamos: () => this.verReclamos.emit(),
+    };
+    acciones[id]?.();
+  }
 
   /** Sesiones vigentes: una sesión cancelada no cuenta como clase dictada (CULM-001 B.1). */
   private vigentes = computed(() => this.sessions().filter((s) => !estaCancelada(s)));
