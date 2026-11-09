@@ -5,6 +5,12 @@ import { ActivatedRoute } from '@angular/router';
 import { DeanDocentesComponent } from './dean-docentes.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { environment } from '../../../../environments/environment';
+import {
+  EscenarioListado,
+  afirmarAutorizacionDenegadaSinReintento,
+  afirmarFalloRecuperableConReintento,
+  afirmarNoImplementadoSinReintento,
+} from '../../../shared/testing/listado-error.helper';
 
 const DOCENTES = `${environment.apiUrl}/decano/docentes`;
 const ESTRUCTURA = `${environment.apiUrl}/decano/estructura`;
@@ -185,4 +191,37 @@ describe('DeanDocentesComponent (HU136, administrador)', () => {
     component.onEstadoVinculo('ACTIVO');
     expect(http.expectOne((r) => r.url === ADMIN_DOCENTES).request.params.has('estadoVinculo')).toBeFalse();
   });
+});
+
+describe('DeanDocentesComponent estados de error de carga', () => {
+  function escenario(): EscenarioListado {
+    TestBed.configureTestingModule({
+      imports: [DeanDocentesComponent],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: ToastService, useValue: jasmine.createSpyObj('ToastService', ['success', 'error', 'info', 'warning']) },
+        { provide: ActivatedRoute, useValue: { snapshot: { data: {} } } },
+      ],
+    });
+    const http = TestBed.inject(HttpTestingController);
+    const fixture = TestBed.createComponent(DeanDocentesComponent);
+    fixture.detectChanges();
+    http.expectOne((r) => r.url === DOCENTES).flush({ exitoso: true, datos: [], total: 0 });
+    http.expectOne(ESTRUCTURA).flush({ exitoso: true, datos: [] });
+    fixture.detectChanges();
+    return {
+      fixture, http,
+      textoVacio: 'No hay docentes que coincidan con los filtros.',
+      recargar: () => fixture.componentInstance.listado.irAPagina(2),
+      coincide: (r) => r.url === DOCENTES,
+      responderExito: (req) => req.flush({ exitoso: true, datos: [], total: 0 }),
+    };
+  }
+
+  afterEach(() => TestBed.inject(HttpTestingController).verify());
+
+  it('un fallo recuperable muestra alerta con Reintentar y no el vacío', () => afirmarFalloRecuperableConReintento(escenario()));
+  it('403 se anuncia como sin autorización, sin Reintentar', () => afirmarAutorizacionDenegadaSinReintento(escenario()));
+  it('501 se anuncia como no disponible, sin Reintentar', () => afirmarNoImplementadoSinReintento(escenario()));
 });

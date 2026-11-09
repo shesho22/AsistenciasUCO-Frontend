@@ -9,6 +9,7 @@ import { AdmisionEstudianteDto } from '../../../core/models/role-management.mode
 import { CorregirIdentidadPayload, IdentidadActual } from '../../../core/models/correccion-identidad.model';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { BadgeComponent } from '../../../shared/components/badge/badge.component';
+import { ErrorCargaComponent } from '../../../shared/components/error-carga/error-carga.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { HistorialEstudianteComponent } from '../../../shared/components/historial-estudiante/historial-estudiante.component';
@@ -39,6 +40,7 @@ interface OpcionFacultad {
     HistorialEstudianteComponent,
     AdmisionEstudianteModalComponent,
     CorreccionIdentidadModalComponent,
+    ErrorCargaComponent,
   ],
   template: `
     <div class="space-y-6 animate-fade-in">
@@ -105,7 +107,9 @@ interface OpcionFacultad {
           </select>
         </div>
 
-        @if (listado.cargando() && listado.filas().length === 0) {
+        @if (listado.error() && !listado.cargando()) {
+          <app-error-carga [error]="listado.error()!" (reintentar)="listado.reintentar()" />
+        } @else if (listado.cargando() && listado.filas().length === 0) {
           <p role="status" class="text-sm text-warm-500 text-center py-6">Cargando estudiantes…</p>
         } @else if (listado.filas().length === 0) {
           <p class="text-sm text-warm-500 text-center py-6">No hay estudiantes que coincidan con la búsqueda.</p>
@@ -360,4 +364,3 @@ export class AdminEstudiantesComponent implements OnInit {
     });
   }
 }
-

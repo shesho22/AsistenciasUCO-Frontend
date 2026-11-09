@@ -5,6 +5,12 @@ import { ActivatedRoute } from '@angular/router';
 import { DeanAsignaturasComponent } from './dean-asignaturas.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { environment } from '../../../../environments/environment';
+import {
+  EscenarioListado,
+  afirmarAutorizacionDenegadaSinReintento,
+  afirmarFalloRecuperableConReintento,
+  afirmarNoImplementadoSinReintento,
+} from '../../../shared/testing/listado-error.helper';
 
 const ASIGNATURA = {
   idAsignatura: 'a-1', codigo: 'SIS-101', nombre: 'Cálculo Diferencial', creditos: 4, nombreArea: 'Ciencias',
@@ -94,4 +100,27 @@ describe('DeanAsignaturasComponent (HU143, administrador)', () => {
     expect(component.facultades()).toEqual([]);
     http.verify();
   });
+});
+
+describe('DeanAsignaturasComponent estados de error de carga', () => {
+  const url = `${environment.apiUrl}/decano/asignaturas`;
+
+  function escenario(): EscenarioListado {
+    const { fixture, component, http } = crear(false);
+    http.expectOne((r) => r.url === url).flush({ exitoso: true, datos: [], total: 0 });
+    fixture.detectChanges();
+    return {
+      fixture, http,
+      textoVacio: 'No hay asignaturas que coincidan con la búsqueda.',
+      recargar: () => component.listado.irAPagina(2),
+      coincide: (r) => r.url === url,
+      responderExito: (req) => req.flush({ exitoso: true, datos: [], total: 0 }),
+    };
+  }
+
+  afterEach(() => TestBed.inject(HttpTestingController).verify());
+
+  it('un fallo recuperable muestra alerta con Reintentar y no el vacío', () => afirmarFalloRecuperableConReintento(escenario()));
+  it('403 se anuncia como sin autorización, sin Reintentar', () => afirmarAutorizacionDenegadaSinReintento(escenario()));
+  it('501 se anuncia como no disponible, sin Reintentar', () => afirmarNoImplementadoSinReintento(escenario()));
 });

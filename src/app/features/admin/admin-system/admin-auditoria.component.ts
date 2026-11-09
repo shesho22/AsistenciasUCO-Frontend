@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ConsultasTransversalesService } from '../../../core/services/consultas-transversales.service';
 import { EventoAuditoriaItem } from '../../../core/models/consultas-transversales.model';
 import { BadgeComponent } from '../../../shared/components/badge/badge.component';
+import { ErrorCargaComponent } from '../../../shared/components/error-carga/error-carga.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { ListadoPaginado } from '../../../shared/utils/listado-paginado';
@@ -43,7 +44,7 @@ export function rangoUtc(desde: string, hasta: string): { desde: string; hasta: 
   selector: 'app-admin-auditoria',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, BadgeComponent, PaginationComponent],
+  imports: [CommonModule, FormsModule, BadgeComponent, PaginationComponent, ErrorCargaComponent],
   template: `
     <div class="space-y-4">
       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 bg-white p-4 rounded-2xl border border-warm-200 shadow-warm-sm">
@@ -107,7 +108,9 @@ export function rangoUtc(desde: string, hasta: string): { desde: string; hasta: 
       }
 
       <section class="bg-white border border-warm-200 rounded-2xl overflow-hidden shadow-warm-sm">
-        @if (listado.cargando()) {
+        @if (listado.error() && !listado.cargando()) {
+          <app-error-carga [error]="listado.error()!" (reintentar)="listado.reintentar()" />
+        } @else if (listado.cargando()) {
           <p role="status" class="text-sm text-warm-500 text-center py-6">Cargando eventos de auditoría…</p>
         } @else if (listado.filas().length === 0) {
           <p class="text-sm text-warm-500 text-center py-6">No hay eventos de auditoría en el rango y filtros seleccionados.</p>
