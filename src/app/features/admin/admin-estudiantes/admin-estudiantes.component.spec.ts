@@ -52,6 +52,29 @@ describe('AdminEstudiantesComponent (HU157)', () => {
 
   // El texto sr-only de la cabecera es position:absolute: sin un ancestro `relative` dentro del contenedor con scroll escapa
   // del recorte y ensancha la pagina en movil (804 px sobre 375). Karma no compila Tailwind: se verifica la estructura.
+  it('UX densidad: busqueda y Buscar visibles; Facultad y Estado plegados tras "Filtros"', () => {
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('input[aria-label="Buscar estudiante"]')).not.toBeNull();
+    expect(Array.from(el.querySelectorAll('button')).some((b) => b.textContent?.trim() === 'Buscar')).toBeTrue();
+    expect(el.querySelector('select[aria-label="Facultad"]')).toBeNull();
+    expect(el.querySelector('select[aria-label="Estado"]')).toBeNull();
+    (el.querySelector('[data-testid="filtros-toggle"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(el.querySelector('select[aria-label="Facultad"]')).not.toBeNull();
+    expect(el.querySelector('select[aria-label="Estado"]')).not.toBeNull();
+  });
+
+  it('UX densidad: el boton Filtros cuenta los filtros aplicados (facultad y estado)', () => {
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[data-testid="filtros-activos"]')).toBeNull();
+    component.onFacultad('f-1');
+    http.expectOne((r) => r.url === BASE).flush({ exitoso: true, datos: [], total: 0 });
+    component.onEstado('ACTIVO');
+    http.expectOne((r) => r.url === BASE).flush({ exitoso: true, datos: [], total: 0 });
+    fixture.detectChanges();
+    expect(el.querySelector('[data-testid="filtros-activos"]')?.textContent?.trim()).toBe('2');
+  });
+
   it('F3-ADM-05: la tabla va en un contenedor relative con overflow-x-auto para que no desborde la pagina en movil', () => {
     const contenedor = (fixture.nativeElement as HTMLElement).querySelector('table')!.parentElement!;
     expect(contenedor.classList).toContain('overflow-x-auto');

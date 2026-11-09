@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, inject, signal, viewChild, ChangeDetectionStrategy } from '@angular/core';
+import { Component, ElementRef, OnInit, computed, inject, signal, viewChild, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ConsultasTransversalesService } from '../../../core/services/consultas-transversales.service';
@@ -9,6 +9,7 @@ import { AdmisionEstudianteDto } from '../../../core/models/role-management.mode
 import { CorregirIdentidadPayload, IdentidadActual } from '../../../core/models/correccion-identidad.model';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { BadgeComponent } from '../../../shared/components/badge/badge.component';
+import { FiltrosPlegablesComponent } from '../../../shared/components/filtros-plegables/filtros-plegables.component';
 import { ErrorCargaComponent } from '../../../shared/components/error-carga/error-carga.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
@@ -41,6 +42,7 @@ interface OpcionFacultad {
     AdmisionEstudianteModalComponent,
     CorreccionIdentidadModalComponent,
     ErrorCargaComponent,
+    FiltrosPlegablesComponent,
   ],
   template: `
     <div class="space-y-6 animate-fade-in">
@@ -67,45 +69,49 @@ interface OpcionFacultad {
       </div>
 
       <section class="bg-white p-6 rounded-2xl border border-warm-200 shadow-warm-sm space-y-4">
-        <div class="grid grid-cols-1 sm:grid-cols-5 gap-3">
-          <input
-            type="search"
-            aria-label="Buscar estudiante"
-            [ngModel]="busqueda()"
-            (ngModelChange)="busqueda.set($event)"
-            (keyup.enter)="listado.buscar()"
-            placeholder="Buscar por nombre o documento..."
-            class="sm:col-span-2 px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-900"
-          />
-          <button
-            type="button"
-            (click)="listado.buscar()"
-            class="min-h-[44px] px-4 rounded-xl bg-primary-700 hover:bg-primary-800 text-white text-sm font-semibold sm:col-span-1"
-          >
-            Buscar
-          </button>
-          <select
-            aria-label="Facultad"
-            [ngModel]="idFacultad()"
-            (ngModelChange)="onFacultad($event)"
-            class="px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-800"
-          >
-            <option value="">Todas las facultades</option>
-            @for (f of facultades(); track f.id) {
-              <option [value]="f.id">{{ f.nombre }}</option>
-            }
-          </select>
-          <select
-            aria-label="Estado"
-            [ngModel]="estado()"
-            (ngModelChange)="onEstado($event)"
-            class="px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-800"
-          >
-            <option value="TODOS">Todos los estados</option>
-            <option value="ACTIVO">Activos</option>
-            <option value="INACTIVO">Inactivos</option>
-          </select>
-        </div>
+        <app-filtros-plegables [activos]="filtrosActivos()">
+          <div buscar class="flex gap-2">
+            <input
+              type="search"
+              aria-label="Buscar estudiante"
+              [ngModel]="busqueda()"
+              (ngModelChange)="busqueda.set($event)"
+              (keyup.enter)="listado.buscar()"
+              placeholder="Buscar por nombre o documento..."
+              class="flex-1 min-w-0 px-3.5 py-2.5 min-h-[44px] bg-white border border-warm-200 rounded-xl text-sm text-warm-900"
+            />
+            <button
+              type="button"
+              (click)="listado.buscar()"
+              class="min-h-[44px] px-4 rounded-xl bg-primary-700 hover:bg-primary-800 text-white text-sm font-semibold"
+            >
+              Buscar
+            </button>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <select
+              aria-label="Facultad"
+              [ngModel]="idFacultad()"
+              (ngModelChange)="onFacultad($event)"
+              class="px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-800"
+            >
+              <option value="">Todas las facultades</option>
+              @for (f of facultades(); track f.id) {
+                <option [value]="f.id">{{ f.nombre }}</option>
+              }
+            </select>
+            <select
+              aria-label="Estado"
+              [ngModel]="estado()"
+              (ngModelChange)="onEstado($event)"
+              class="px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-800"
+            >
+              <option value="TODOS">Todos los estados</option>
+              <option value="ACTIVO">Activos</option>
+              <option value="INACTIVO">Inactivos</option>
+            </select>
+          </div>
+        </app-filtros-plegables>
 
         @if (listado.error() && !listado.cargando()) {
           <app-error-carga [error]="listado.error()!" (reintentar)="listado.reintentar()" />
@@ -224,6 +230,8 @@ export class AdminEstudiantesComponent implements OnInit {
   busqueda = signal('');
   idFacultad = signal('');
   estado = signal<FiltroEstado>('TODOS');
+  /** Filtros aplicados fuera de la busqueda: alimenta la insignia del boton "Filtros". */
+  filtrosActivos = computed(() => (this.idFacultad() ? 1 : 0) + (this.estado() !== 'TODOS' ? 1 : 0));
   facultades = signal<OpcionFacultad[]>([]);
   ficha = signal<FichaUnificadaEstudiante | null>(null);
   private readonly fichaPanel = viewChild<ElementRef<HTMLElement>>('fichaPanel');
