@@ -115,6 +115,29 @@ describe('DeanGrupoDetalleComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('2 sesiones');
   });
 
+  it('F3-DEC-01: pinta las 13 sesiones aunque el backend entregue fecha-hora sin zona (LocalDateTime)', () => {
+    crear();
+    const trece = Array.from({ length: 13 }, (_, i): SesionFacultadItem => ({
+      ...sesion(`s${i + 1}`, 'crs-1', i + 1),
+      fechaHoraInicio: `2026-09-${String(10 + i).padStart(2, '0')}T08:00:00`,
+      fechaHoraFin: `2026-09-${String(10 + i).padStart(2, '0')}T10:00:00`,
+    }));
+    http.expectOne(peticionSesiones).flush({
+      exitoso: true,
+      totalElementos: 13,
+      numeroPagina: 1,
+      tamanoPagina: 50,
+      totalPaginas: 1,
+      elementos: trece,
+    });
+    fixture.detectChanges();
+
+    const texto = fixture.nativeElement.textContent as string;
+    expect(texto).toContain('13 sesiones');
+    expect(fixture.nativeElement.querySelectorAll('[data-testid^="sesion-fila-"]').length).toBe(13);
+    expect(texto).toContain('08:00 - 10:00');
+  });
+
   it('un 200 sin sesiones del grupo se muestra como vacío legítimo, no como error', () => {
     crear();
     http.expectOne(peticionSesiones).flush({ exitoso: true, totalElementos: 0, totalPaginas: 0, numeroPagina: 1, tamanoPagina: 50, elementos: [] });
