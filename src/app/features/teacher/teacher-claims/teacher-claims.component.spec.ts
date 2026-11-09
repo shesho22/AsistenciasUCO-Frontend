@@ -420,6 +420,51 @@ describe('TeacherClaimsComponent — bandeja paginada y detalle (HU035/HU036)', 
     expect(fixture.nativeElement.textContent).not.toContain('No hay reclamos en esta categoría');
   });
 
+  // F-DOC-005 / error sin salida: un fallo de carga debe anunciarse (role=alert) y ofrecer reintento.
+  it('FE-06b un 500 de la bandeja se anuncia con role=alert y ofrece Reintentar, que vuelve a pedir la lista', () => {
+    fixture.detectChanges();
+    listaReq().flush({}, { status: 500, statusText: 'Server Error' });
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[role="alert"]')?.textContent).toContain(component.listStateMessage());
+    const reintentar = Array.from(el.querySelectorAll('button')).find((b) => /Reintentar/.test(b.textContent ?? ''));
+    expect(reintentar).toBeTruthy();
+
+    (reintentar as HTMLButtonElement).click();
+    listaReq().flush({ exitoso: true, datos: [fila(ID_1)], total: 1 });
+    http.expectOne((r) => r.url === LISTA && r.params.get('estado') === 'P').flush({ exitoso: true, datos: [], total: 1 });
+    fixture.detectChanges();
+    expect(component.listState()).toBe('LOADED');
+    expect(el.querySelector('[role="alert"]')).toBeNull();
+  });
+
+  it('FE-06b un 403 se anuncia pero no ofrece Reintentar (reintentar no cambia la autorizacion)', () => {
+    fixture.detectChanges();
+    listaReq().flush({}, { status: 403, statusText: 'Forbidden' });
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[role="alert"]')).not.toBeNull();
+    expect(Array.from(el.querySelectorAll('button')).some((b) => /Reintentar/.test(b.textContent ?? ''))).toBeFalse();
+  });
+
+  // F-DOC detalle: el contrato del detalle no trae fecha de respuesta; no se pinta una etiqueta con fecha vacia.
+  it('la resolucion registrada no muestra "el :" cuando el backend no entrega fecha de respuesta', () => {
+    cargarInicial([fila(ID_1, { estadoSolicitud: 'APROBADA' })], 1, 0);
+    component.abrirVistaResolucion(component.reclamos()[0]);
+    http.expectOne(`${LISTA}/${ID_1}`).flush({
+      exitoso: true,
+      datos: detalle(ID_1, { estadoSolicitud: 'APROBADA', codigoEstado: 'A', nombreEstado: 'aprobada', justificacionRespuesta: 'Aceptada por el docente' }),
+    });
+    fixture.detectChanges();
+
+    const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(texto).toContain('Resolución registrada');
+    expect(texto).toContain('Aceptada por el docente');
+    expect(texto).not.toMatch(/Resolución registrada el\s*:/);
+  });
+
   it('FE-06 un 501 de la bandeja se refleja como módulo no disponible', () => {
     fixture.detectChanges();
     listaReq().flush({}, { status: 501, statusText: 'Not Implemented' });
