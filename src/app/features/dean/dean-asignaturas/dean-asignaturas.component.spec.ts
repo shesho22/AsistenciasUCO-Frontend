@@ -14,8 +14,7 @@ import {
 
 const ASIGNATURA = {
   idAsignatura: 'a-1', codigo: 'SIS-101', nombre: 'Cálculo Diferencial', creditos: 4, nombreArea: 'Ciencias',
-  nombreComponente: 'Obligatorio', codigoSemestre: 'S1', idPlanEstudio: 'pl-1', inpPlanEstudio: 20241,
-  idPrograma: 'p-1', nombrePrograma: 'Sistemas', idFacultad: 'f-1', nombreFacultad: 'Ingeniería', activa: false,
+  nombreComponente: 'Obligatorio', planes: 'Sistemas (Plan 20241); Software (Plan 20241)', totalPlanes: 2, activa: false,
 };
 
 function crear(comoAdministrador: boolean) {
@@ -48,6 +47,9 @@ describe('DeanAsignaturasComponent (HU143, decano)', () => {
     expect(component.comoAdministrador).toBeFalse();
     expect(texto).toContain('SIS-101');
     expect(texto).toContain('Inactiva');
+    // B2NM: una asignatura puede estar en varios planes; se listan en lugar de un solo programa.
+    expect(texto).toContain('Sistemas (Plan 20241); Software (Plan 20241)');
+    expect(texto).toContain('2 planes');
     expect(texto).toContain('Asignaturas de los programas y planes de tu facultad.');
     expect((fixture.nativeElement as HTMLElement).querySelector('[aria-label="Facultad"]')).toBeNull();
 

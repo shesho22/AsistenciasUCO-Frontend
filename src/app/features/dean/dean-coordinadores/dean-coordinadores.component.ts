@@ -23,6 +23,7 @@ import {
 } from '../../../core/validation/request-form-validation.util';
 import { finalize } from 'rxjs';
 import { IdentidadEsperada, UltimaPeticion, advertirRegistroNoListado } from '../../../core/utils/registro-confirmado.util';
+import { CargaMasivaUsuariosComponent } from '../../../shared/components/carga-masiva-usuarios/carga-masiva-usuarios.component';
 
 type VistaDecano = 'LISTA' | 'REGISTRO';
 
@@ -42,6 +43,7 @@ type VistaDecano = 'LISTA' | 'REGISTRO';
     PaginationComponent,
     DeanCoordinadorEditModalComponent,
     DeanCoordinadorEstadoModalComponent,
+    CargaMasivaUsuariosComponent,
   ],
   template: `
     <div class="space-y-6 animate-fade-in">
@@ -72,6 +74,12 @@ type VistaDecano = 'LISTA' | 'REGISTRO';
               </svg>
               Nombrar Coordinador Existente
             </app-button>
+            <app-button variant="secondary" size="md" (clicked)="mostrarCargaMasiva.set(true)">
+              <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              </svg>
+              Carga Masiva CSV
+            </app-button>
             <app-button variant="secondary" size="md" (clicked)="abrirFormularioRegistro()">
               <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -80,6 +88,14 @@ type VistaDecano = 'LISTA' | 'REGISTRO';
             </app-button>
           </div>
         </div>
+
+        @if (mostrarCargaMasiva()) {
+          <app-carga-masiva-usuarios
+            destino="COORDINADOR"
+            (cargaCompletada)="onCargaMasivaCompletada()"
+            (cancelar)="mostrarCargaMasiva.set(false)"
+          />
+        }
 
         <!-- Estado de acceso de la ultima cuenta registrada (verificado por el backend, nunca por la SPA) -->
         <app-account-access-status [correo]="ultimaCuentaRegistrada()" />
@@ -464,6 +480,7 @@ export class DeanCoordinadoresComponent implements OnInit {
   programasAcademicos = signal<Array<{ id: string; nombre: string }>>([]);
   isLoading = signal<boolean>(true);
   isSubmitting = signal<boolean>(false);
+  readonly mostrarCargaMasiva = signal<boolean>(false);
   private readonly searchQuerySig = signal('');
   private readonly selectedEstadoSig = signal('TODOS');
   currentPage = signal(1);
@@ -532,6 +549,10 @@ export class DeanCoordinadoresComponent implements OnInit {
   onPageSizeChange(tamano: number): void {
     this.pageSize.set(tamano);
     this.currentPage.set(1);
+  }
+
+  onCargaMasivaCompletada(): void {
+    this.cargarCoordinadores();
   }
 
   ngOnInit(): void {

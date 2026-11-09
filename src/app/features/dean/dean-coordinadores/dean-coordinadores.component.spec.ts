@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { paginaApi, porUrl } from '../../../core/testing/pagina-api';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { DeanCoordinadoresComponent } from './dean-coordinadores.component';
@@ -69,8 +70,8 @@ describe('DeanCoordinadoresComponent', () => {
   function flushInitialRequests() {
     fixture.detectChanges();
 
-    const reqCoords = http.expectOne(`${environment.apiUrl}/decano/coordinadores`);
-    reqCoords.flush({ exitoso: true, datos: mockCoordinadores });
+    const reqCoords = http.expectOne(porUrl(`${environment.apiUrl}/decano/coordinadores`));
+    reqCoords.flush(paginaApi(mockCoordinadores));
 
     http.match(`${environment.apiUrl}/tipos-identificacion`).forEach((r) =>
       r.flush({
@@ -145,7 +146,7 @@ describe('DeanCoordinadoresComponent', () => {
   // HU121-HU122 (CONTRACT §4, D6): antes `toggleEstado` enviaba PATCH …/toggle al instante (ruta inexistente en el
   // backend). Ahora abre una confirmación y, al confirmar, envía PATCH …/estado con el estado explícito.
   function expectRecarga(lista: CoordinadorItem[] = mockCoordinadores) {
-    http.expectOne(`${environment.apiUrl}/decano/coordinadores`).flush({ exitoso: true, datos: lista });
+    http.expectOne(porUrl(`${environment.apiUrl}/decano/coordinadores`)).flush(paginaApi(lista));
   }
 
   const resultadoOk = { exitoso: true, datos: { idCoordinador: 'coord-1', sincronizacionIdentidad: 'OK', mensajeUsuario: null } };
@@ -344,7 +345,7 @@ describe('DeanCoordinadoresComponent', () => {
 
     component.guardarCoordinador();
     http.expectOne(`${environment.apiUrl}/decano/coordinadores`).flush({ exitoso: true, mensajeUsuario: 'Coordinador creado.', datos: {} });
-    http.expectOne(`${environment.apiUrl}/decano/coordinadores`).flush({ exitoso: true, datos: mockCoordinadores });
+    http.expectOne(porUrl(`${environment.apiUrl}/decano/coordinadores`)).flush({ exitoso: true, elementos: mockCoordinadores });
 
     fixture.detectChanges();
     fixture.detectChanges();
@@ -390,11 +391,11 @@ describe('DeanCoordinadoresComponent', () => {
       },
     });
 
-    const getReq = http.expectOne(`${environment.apiUrl}/decano/coordinadores`);
+    const getReq = http.expectOne(porUrl(`${environment.apiUrl}/decano/coordinadores`));
     expect(getReq.request.method).toBe('GET');
     getReq.flush({
       exitoso: true,
-      datos: [
+      elementos: [
         ...mockCoordinadores,
         {
           id: 'coord-nuevo',
@@ -427,7 +428,7 @@ describe('DeanCoordinadoresComponent', () => {
     expect(posts.length).toBe(1);
     expect(component.isSubmitting()).toBeTrue();
     posts[0].flush({ exitoso: true, mensajeUsuario: 'Coordinador creado.', datos: {} });
-    http.expectOne(`${environment.apiUrl}/decano/coordinadores`).flush({ exitoso: true, datos: [
+    http.expectOne(porUrl(`${environment.apiUrl}/decano/coordinadores`)).flush({ exitoso: true, elementos: [
       ...mockCoordinadores,
       { ...mockCoordinadores[0], id: 'coord-nuevo', numeroIdentificacion: '1017555444', correo: 'coordinador231@uco.edu.co' },
     ] });
@@ -440,14 +441,14 @@ describe('DeanCoordinadoresComponent', () => {
     component.cargarCoordinadores();
     component.cargarCoordinadores();
 
-    const requests = http.match(`${environment.apiUrl}/decano/coordinadores`);
+    const requests = http.match(porUrl(`${environment.apiUrl}/decano/coordinadores`));
     expect(requests.length).toBe(2);
     const nuevoListado = [
       ...mockCoordinadores,
       { ...mockCoordinadores[0], id: 'coord-nuevo', numeroIdentificacion: '1017555444' },
     ];
-    requests[1].flush({ exitoso: true, datos: nuevoListado });
-    requests[0].flush({ exitoso: true, datos: mockCoordinadores });
+    requests[1].flush({ exitoso: true, elementos: nuevoListado });
+    requests[0].flush({ exitoso: true, elementos: mockCoordinadores });
 
     expect(component.coordinadores().some((coord) => coord.id === 'coord-nuevo')).toBeTrue();
   });
@@ -526,11 +527,11 @@ describe('DeanCoordinadoresComponent', () => {
       },
     });
 
-    const getReq = http.expectOne(`${environment.apiUrl}/decano/coordinadores`);
+    const getReq = http.expectOne(porUrl(`${environment.apiUrl}/decano/coordinadores`));
     expect(getReq.request.method).toBe('GET');
     getReq.flush({
       exitoso: true,
-      datos: [
+      elementos: [
         ...mockCoordinadores,
         {
           id: 'coord-sin-prog',
@@ -545,5 +546,26 @@ describe('DeanCoordinadoresComponent', () => {
     expect(component.coordinadores().some((c) => c.id === 'coord-sin-prog')).toBeTrue();
     expect(component.vistaActual()).toBe('LISTA');
     expect(toastService.success).toHaveBeenCalled();
+  });
+
+  it('HU171: permite abrir el módulo de carga masiva de coordinadores y recarga al completar', () => {
+    flushInitialRequests();
+
+    expect(component.mostrarCargaMasiva()).toBeFalse();
+    expect(fixture.nativeElement.querySelector('app-carga-masiva-usuarios')).toBeNull();
+
+    // Abrir modulo
+    component.mostrarCargaMasiva.set(true);
+    fixture.detectChanges();
+
+    const cargaComp = fixture.nativeElement.querySelector('app-carga-masiva-usuarios');
+    expect(cargaComp).not.toBeNull();
+    expect(cargaComp.getAttribute('destino')).toBe('COORDINADOR');
+
+    // Emitir cargaCompletada -> debe recargar lista de coordinadores
+    component.onCargaMasivaCompletada();
+    const reqCoords = http.expectOne(porUrl(`${environment.apiUrl}/decano/coordinadores`));
+    expect(reqCoords.request.method).toBe('GET');
+    reqCoords.flush({ exitoso: true, elementos: mockCoordinadores });
   });
 });

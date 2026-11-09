@@ -9,6 +9,7 @@ import { DeanFacultyComponent } from './dean-faculty.component';
 import { environment } from '../../../../environments/environment';
 import { Course } from '../../../core/models/course.model';
 import { FacultadNodo } from '../../../core/models/facultad-decano.model';
+import { paginaApi, porUrl } from '../../../core/testing/pagina-api';
 
 // LB-001B.1B (DB source of truth cleanup): AS-IS #14 (tabla de cursos), #15 (ficha resumen) y #17 (filtro de
 // búsqueda por docenteName). INT-05/AUTH-03/AUTH-04/DAT-06/UX-09: el decano solo consume rutas de lectura que su
@@ -63,7 +64,7 @@ describe('DeanFacultyComponent', () => {
   });
 
   function responder(ruta: string, r: Respuesta): void {
-    const req = http.expectOne(`${api}${ruta}`);
+    const req = http.expectOne(porUrl(`${api}${ruta}`));
     req.flush(r.body, { status: r.status ?? 200, statusText: r.status && r.status >= 400 ? 'Error' : 'OK' });
   }
 
@@ -71,7 +72,7 @@ describe('DeanFacultyComponent', () => {
     fixture = TestBed.createComponent(DeanFacultyComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
-    responder('/decano/grupos', respuestas['/decano/grupos'] ?? ok([]));
+    responder('/decano/grupos', respuestas['/decano/grupos'] ?? { body: paginaApi([]) });
     responder('/decano/estructura', respuestas['/decano/estructura'] ?? ok(estructura));
     responder('/admin/areas', respuestas['/admin/areas'] ?? ok([{ id: 'a1', nombre: 'Matemáticas', estado: 'ACTIVO' }]));
     responder('/coordinador/periodos-academicos', respuestas['/coordinador/periodos-academicos'] ?? ok([

@@ -1,4 +1,4 @@
-import { Component, signal, inject, computed, ChangeDetectionStrategy, ElementRef, viewChild, DestroyRef } from '@angular/core';
+import { Component, signal, inject, computed, effect, ChangeDetectionStrategy, ElementRef, viewChild, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
@@ -7,6 +7,9 @@ import { AvatarComponent } from '../../shared/components/avatar/avatar.component
 import { BadgeComponent } from '../../shared/components/badge/badge.component';
 import { ToastComponent, ToastService } from '../../shared/components/toast/toast.component';
 import { IconComponent, IconName } from '../../shared/components/icon/icon.component';
+import { AlertaInasistenciaService } from '../../core/services/alerta-inasistencia.service';
+import { RevisionCancelacionService } from '../../core/services/revision-cancelacion.service';
+import { environment } from '../../../environments/environment';
 
 interface NavItem {
   label: string;
@@ -172,6 +175,7 @@ interface NavItem {
                 (click)="logout()"
                 class="p-2 text-warm-400 hover:text-danger-600 rounded-lg hover:bg-danger-50 transition-colors shrink-0"
                 title="Cerrar sesión"
+                aria-label="Cerrar sesión"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -225,20 +229,52 @@ export class DashboardLayoutComponent {
   /** WCAG 2.4.3 / 4.1.2: en móvil con el menú cerrado el panel está fuera de pantalla; no recibe foco ni se lee. */
   readonly menuInerte = computed(() => !this.esEscritorio() && !this.isMobileMenuOpen());
 
-  constructor() {
-    if (typeof window.matchMedia !== 'function') return;
-    const consulta = window.matchMedia('(min-width: 768px)');
-    this.esEscritorio.set(consulta.matches);
-    const alCambiar = (evento: MediaQueryListEvent): void => this.esEscritorio.set(evento.matches);
-    consulta.addEventListener('change', alCambiar);
-    inject(DestroyRef).onDestroy(() => consulta.removeEventListener('change', alCambiar));
-  }
-
   currentRole = computed<UserRole>(() => {
     const role = this.user()?.role;
     if (role === 'ADMIN') return 'ADMINISTRADOR';
     return (role || 'DOCENTE') as UserRole;
   });
+
+  private readonly alertaService = inject(AlertaInasistenciaService, { optional: true });
+  private readonly revisionService = inject(RevisionCancelacionService, { optional: true });
+  alertasVigentesCount = signal<number>(0);
+  revisionesPendientesCount = signal<number>(0);
+
+  constructor() {
+    if (typeof window.matchMedia === 'function') {
+      const consulta = window.matchMedia('(min-width: 768px)');
+      this.esEscritorio.set(consulta.matches);
+      const alCambiar = (evento: MediaQueryListEvent): void => this.esEscritorio.set(evento.matches);
+      consulta.addEventListener('change', alCambiar);
+      inject(DestroyRef).onDestroy(() => consulta.removeEventListener('change', alCambiar));
+    }
+
+    effect(() => {
+      const role = this.currentRole();
+      const cancelacionEnabled = Boolean(environment.features?.cancelacionInasistenciaEnabled);
+
+      if (!cancelacionEnabled) {
+        return;
+      }
+
+      if (role === 'ESTUDIANTE') {
+        this.alertaService?.contarVigentes().subscribe({
+          next: (count) => this.alertasVigentesCount.set(count),
+          error: () => this.alertasVigentesCount.set(0),
+        });
+      } else if (role === 'COORDINADOR') {
+        this.revisionService?.contarPendientes('COORDINADOR').subscribe({
+          next: (count) => this.revisionesPendientesCount.set(count),
+          error: () => this.revisionesPendientesCount.set(0),
+        });
+      } else if (role === 'DECANO') {
+        this.revisionService?.contarPendientes('DECANO').subscribe({
+          next: (count) => this.revisionesPendientesCount.set(count),
+          error: () => this.revisionesPendientesCount.set(0),
+        });
+      }
+    });
+  }
 
   private allNavItems: NavItem[] = [
     {
@@ -246,6 +282,12 @@ export class DashboardLayoutComponent {
       route: '/app/dashboard',
       roles: ['ADMINISTRADOR', 'DECANO', 'COORDINADOR', 'DOCENTE', 'ESTUDIANTE', 'ADMIN'],
       icon: 'dashboard',
+    },
+    {
+      label: 'Instituciones',
+      route: '/app/admin/instituciones',
+      roles: ['ADMINISTRADOR', 'ADMIN'],
+      icon: 'facultad',
     },
     {
       label: 'Gestión de Facultades',
@@ -416,6 +458,12 @@ export class DashboardLayoutComponent {
       icon: 'asistencia',
     },
     {
+      label: 'Revisiones de Cancelación',
+      route: '/app/decano/revisiones-cancelacion',
+      roles: ['DECANO'],
+      icon: 'asistencia',
+    },
+    {
       label: 'Gestión de Docentes',
       route: '/app/coordinador/docentes',
       roles: ['COORDINADOR'],
@@ -470,6 +518,12 @@ export class DashboardLayoutComponent {
       icon: 'asistencia',
     },
     {
+      label: 'Revisiones de Cancelación',
+      route: '/app/coordinador/revisiones-cancelacion',
+      roles: ['COORDINADOR'],
+      icon: 'asistencia',
+    },
+    {
       label: 'Mis Grupos',
       route: '/app/docente/grupos',
       roles: ['DOCENTE'],
@@ -517,12 +571,33 @@ export class DashboardLayoutComponent {
       roles: ['ESTUDIANTE'],
       icon: 'grupos',
     },
+    {
+      label: 'Mis Alertas',
+      route: '/app/estudiante/alertas',
+      roles: ['ESTUDIANTE'],
+      icon: 'asistencia',
+    },
   ];
 
   filteredNavItems = computed<NavItem[]>(() => {
     const user = this.user();
     const roles = user ? effectiveRoles(user) : [this.currentRole()];
-    return this.allNavItems.filter((item) => item.roles.some((role) => roles.includes(role)));
+    const cancelacionEnabled = Boolean(environment.features?.cancelacionInasistenciaEnabled);
+
+    return this.allNavItems
+      .filter((item) => {
+        if (!cancelacionEnabled) {
+          if (
+            item.route === '/app/estudiante/alertas' ||
+            item.route === '/app/coordinador/revisiones-cancelacion' ||
+            item.route === '/app/decano/revisiones-cancelacion'
+          ) {
+            return false;
+          }
+        }
+        return true;
+      })
+      .filter((item) => item.roles.some((role) => roles.includes(role)));
   });
 
   toggleCollapsed(): void {

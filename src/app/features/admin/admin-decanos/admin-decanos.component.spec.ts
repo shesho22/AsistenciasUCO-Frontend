@@ -326,7 +326,7 @@ describe('AdminDecanosComponent', () => {
       expect(toastService.warning).toHaveBeenCalledWith('La contraseña inicial de acceso es obligatoria.');
     });
 
-    it('valida longitud mínima de 12 caracteres', () => {
+    it('no valida longitud mínima de 12 caracteres en cliente (política delegada al backend, F-ADM-011)', () => {
       component.formData.tipoIdentificacionId = 'tipo-1';
       component.formData.numeroIdentificacion = '1020304050';
       component.formData.primerNombre = 'Ana';
@@ -334,29 +334,35 @@ describe('AdminDecanosComponent', () => {
       component.formData.correo = 'ana.mora@uco.edu.co';
       component.formData.password = 'Pass123!';
       component.guardarDecano();
-      expect(toastService.warning).toHaveBeenCalledWith('La contraseña inicial debe tener mínimo 12 caracteres según las políticas de Keycloak.');
+      // No debe advertir por longitud de 12 caracteres en cliente:
+      expect(toastService.warning).not.toHaveBeenCalledWith('La contraseña inicial debe tener mínimo 12 caracteres según las políticas de Keycloak.');
+      const req = http.expectOne(`${environment.apiUrl}/admin/decanos`);
+      expect(req.request.method).toBe('POST');
+      req.flush({ exitoso: true, datos: { ...mockDecanos[0], id: 'dec-nuevo' } });
+
+      const reqDecReload = http.expectOne(`${environment.apiUrl}/admin/decanos`);
+      reqDecReload.flush({ exitoso: true, datos: mockDecanos });
+
+      const reqFacReload = http.expectOne(`${environment.apiUrl}/admin/facultades`);
+      reqFacReload.flush({ exitoso: true, datos: mockFacultades });
     });
 
-    it('valida políticas de complejidad de contraseña (mayúscula, minúscula, dígito, símbolo)', () => {
-      component.formData.tipoIdentificacionId = 'tipo-1';
-      component.formData.numeroIdentificacion = '1020304050';
-      component.formData.primerNombre = 'Ana';
-      component.formData.primerApellido = 'Mora';
-      component.formData.correo = 'ana.mora@uco.edu.co';
-      component.formData.password = 'contraseniasinmayusculas123!';
-      component.guardarDecano();
-      expect(toastService.warning).toHaveBeenCalledWith('La contraseña debe incluir al menos una mayúscula, una minúscula, un número y un símbolo (!@#$%^&*()_+-=%).');
+    it('no utiliza GUID quemado ni CC como fallback cuando el catálogo está vacío (F-ADM-011)', () => {
+      component.tiposIdentificacion.set([]);
+      component.abrirFormularioRegistro();
+      expect(component.formData.tipoIdentificacionId).not.toContain('A1B2C3D4-0000-0000-0000-000000000001');
+      expect(component.formData.tipoIdentificacion).not.toBe('CC');
     });
 
-    it('valida que la contraseña no coincida con el documento ni correo', () => {
-      component.formData.tipoIdentificacionId = 'tipo-1';
-      component.formData.numeroIdentificacion = '1020304050';
-      component.formData.primerNombre = 'Ana';
-      component.formData.primerApellido = 'Mora';
-      component.formData.correo = 'Ana12345!@uco.edu.co';
-      component.formData.password = 'Ana12345!@uco.edu.co';
-      component.guardarDecano();
-      expect(toastService.warning).toHaveBeenCalledWith('La contraseña no puede coincidir con el documento de identidad ni con el correo.');
+    it('F3-ADM-03: la tarjeta titula con el nombre completo, no muestra el GUID y no calcula DEC-{{numeroIdentificacion}}', () => {
+      component.volverALista();
+      fixture.detectChanges();
+
+      const el = fixture.nativeElement as HTMLElement;
+      const titulos = Array.from(el.querySelectorAll('h3')).map((h) => h.textContent!.trim());
+      expect(titulos).toContain('Roberto Carlos Gómez Pérez');
+      expect(el.innerHTML).not.toContain('DEC-1017000001');
+      expect(el.textContent).not.toContain('dec-1');
     });
 
     it('guarda exitosamente el decano y actualiza la lista', () => {
@@ -559,5 +565,27 @@ describe('AdminDecanosComponent', () => {
     expect(component.decanoACorregir()).not.toBeNull();
     component.cerrarCorreccion();
     expect(component.decanoACorregir()).toBeNull();
+  });
+
+  it('HU171: permite abrir el módulo de carga masiva de decanos y recarga al completar', () => {
+    fixture.detectChanges();
+    satisfyInitRequests();
+
+    expect(component.mostrarCargaMasiva()).toBeFalse();
+    expect(fixture.nativeElement.querySelector('app-carga-masiva-usuarios')).toBeNull();
+
+    // Abrir modulo
+    component.mostrarCargaMasiva.set(true);
+    fixture.detectChanges();
+
+    const cargaComp = fixture.nativeElement.querySelector('app-carga-masiva-usuarios');
+    expect(cargaComp).not.toBeNull();
+    expect(cargaComp.getAttribute('destino')).toBe('DECANO');
+
+    // Emitir cargaCompletada -> debe recargar lista de decanos
+    component.onCargaMasivaCompletada();
+    const reqDec = http.expectOne(`${environment.apiUrl}/admin/decanos`);
+    expect(reqDec.request.method).toBe('GET');
+    reqDec.flush({ exitoso: true, datos: mockDecanos });
   });
 });

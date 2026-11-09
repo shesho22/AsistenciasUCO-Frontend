@@ -13,6 +13,13 @@ export interface MateriaEstudianteApiDto {
   nombreGrupo: string;
   /** CULM-001 B.2: indicadores por horas calculados por el backend (nunca `null` en B.2; opcional por compatibilidad). */
   indicadores?: IndicadoresAsistenciaResponse | null;
+  /** CULM-001 C.1: estado de matricula ('A' = ACTIVA, 'CI' = CANCELADA_POR_INASISTENCIA, etc.). */
+  estadoMatricula?: string | null;
+  /** CULM-001 D.9-a: creditos de la asignatura. */
+  creditos?: number | null;
+  /** B2: caracter de la asignatura (OBL/OPT) cuando el backend lo informa. */
+  codigoCaracter?: string | null;
+  nombreCaracter?: string | null;
 }
 
 /** `HorarioEstudianteDTO`. `dia` y las horas llegan como texto (`LocalTime`: `HH:mm` o `HH:mm:ss`). */

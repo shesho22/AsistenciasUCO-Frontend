@@ -1,19 +1,32 @@
-import { Component, OnInit, inject, input, signal, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, input, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { CourseService } from '../../../core/services/course.service';
+import { Subscription } from 'rxjs';
 import { DeanFacultadService } from '../../../core/services/dean-facultad.service';
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
+import { resolveSessionInstant } from '../../../core/time/session-timezone.util';
 import { Course } from '../../../core/models/course.model';
 import { SesionEstadoBadgeComponent } from '../../../shared/components/sesion-estado-badge/sesion-estado-badge.component';
 import { SesionFacultadItem } from '../../../core/models/facultad-decano.model';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
+import { RealtimeService } from '../../../core/realtime/realtime.service';
+import { onRealtimeReconnect } from '../../../core/realtime/realtime-reconnect-trigger';
+import { REALTIME_EVENT_TYPE } from '../../../core/realtime/model/realtime-event.model';
 
-/** Tamaño máximo de página que acepta GET /decano/sesiones. */
-const TAMANO_PAGINA_SESIONES = 100;
-/** Tope defensivo de páginas a recorrer para filtrar las sesiones de un grupo. */
-const MAX_PAGINAS_SESIONES = 50;
+function adaptarGrupoACurso(dto: any): Course {
+  return {
+    id: dto.id ?? '',
+    code: dto.codigo ?? dto.code ?? '',
+    name: dto.nombreAsignatura ?? dto.nombreMateria ?? dto.name ?? dto.nombre ?? '',
+    section: dto.nombre ?? dto.seccion ?? dto.section ?? '',
+    schedule: dto.horario ?? dto.schedule ?? '',
+    room: dto.aula ?? dto.room ?? '',
+    enrolledStudentsCount: dto.estudiantesActivos ?? dto.totalEstudiantes ?? dto.enrolledStudentsCount ?? 0,
+    cupoMaximo: dto.capacidadMaximaPermitida ?? dto.cupoMaximo,
+    colorCategory: 'blue',
+  };
+}
 
 @Component({
   selector: 'app-dean-grupo-detalle',
@@ -121,11 +134,11 @@ const MAX_PAGINAS_SESIONES = 50;
                     @if (s.numeroSemana !== null) {
                       <span class="text-xs font-mono font-bold px-2.5 py-0.5 rounded-md bg-warm-100 text-warm-800">Semana {{ s.numeroSemana }}</span>
                     }
-                    @if (s.fechaHoraInicio && s.fechaHoraFin) {
-                      <span class="text-xs font-medium text-warm-600">{{ fecha(s.fechaHoraInicio).date }}</span>
+                    @if (inicio(s) && fin(s)) {
+                      <span class="text-xs font-medium text-warm-600">{{ timeZone.formatTemporal(inicio(s), 'date') }}</span>
                       <span class="text-warm-300">•</span>
                       <span class="text-xs font-mono font-bold text-warm-800">
-                        {{ fecha(s.fechaHoraInicio).time }} - {{ fecha(s.fechaHoraFin).time }}
+                        {{ timeZone.formatTemporal(inicio(s), 'time') }} - {{ timeZone.formatTemporal(fin(s), 'time') }}
                       </span>
                     } @else {
                       <span class="text-xs font-semibold text-warning-800">Horario no confirmado</span>
@@ -142,17 +155,18 @@ const MAX_PAGINAS_SESIONES = 50;
     </div>
   `,
 })
-export class DeanGrupoDetalleComponent implements OnInit {
-  private courseService = inject(CourseService);
+export class DeanGrupoDetalleComponent implements OnInit, OnDestroy {
   private deanService = inject(DeanFacultadService);
   private toast = inject(ToastService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   readonly timeZone = inject(SessionTimeZoneService);
+  private readonly realtime = inject(RealtimeService, { optional: true });
+  private subRealtime?: Subscription;
 
   grupoId = input<string>();
 
-  courses = signal<Course[]>([]);
+  selectedCourse = signal<Course | null>(null);
   sessions = signal<SesionFacultadItem[]>([]);
   cargandoSesiones = signal(false);
   /** Mensaje del último error al cargar sesiones; `null` si la última carga terminó bien (aunque sea vacía). */
@@ -164,49 +178,86 @@ export class DeanGrupoDetalleComponent implements OnInit {
     return this.grupoId() || this.route.snapshot.paramMap.get('grupoId') || '';
   });
 
-  selectedCourse = computed<Course | null>(() => {
-    const id = this.effectiveGrupoId();
-    if (!id) return null;
-    return this.courses().find((c) => c.id === id) || null;
-  });
-
   ngOnInit(): void {
-    this.courseService.getDeanCourses().subscribe({
-      next: (res) => this.courses.set(res.datos || []),
-      error: (error: unknown) => this.errorGrupo.set(getApiErrorMessage(error)),
-    });
-    this.cargarSesiones();
+    const id = this.effectiveGrupoId();
+    if (id) {
+      this.deanService.getGrupoDetalle(id).subscribe({
+        next: (res) => this.selectedCourse.set(res.datos ? adaptarGrupoACurso(res.datos) : null),
+        error: (error: unknown) => this.errorGrupo.set(getApiErrorMessage(error)),
+      });
+      this.cargarSesiones(id);
+      this.iniciarRealtime(id);
+    }
   }
 
-  fecha(instante: string): { date: string; time: string } {
-    return this.timeZone.displayInstant(instante);
+  private iniciarRealtime(grupoId: string): void {
+    if (!this.realtime) return;
+    this.subRealtime?.unsubscribe();
+    this.realtime.startForGroup(grupoId);
+
+    const sub = new Subscription();
+    sub.add(
+      onRealtimeReconnect(this.realtime.connectionState$).subscribe(() => {
+        this.cargarSesiones();
+      })
+    );
+
+    const events$ = this.realtime.events ? this.realtime.events() : (this.realtime as any).events$;
+    if (events$) {
+      sub.add(
+        events$.subscribe((evt: any) => {
+          if (!evt) return;
+          const tipo = evt.type || evt.tipo;
+          if (
+            tipo === REALTIME_EVENT_TYPE.ALERTA_INASISTENCIA ||
+            tipo === REALTIME_EVENT_TYPE.REVISION_CANCELACION_CREADA ||
+            tipo === REALTIME_EVENT_TYPE.REVISION_CANCELACION_PROPUESTA ||
+            tipo === REALTIME_EVENT_TYPE.REVISION_CANCELACION_DECIDIDA ||
+            tipo === REALTIME_EVENT_TYPE.REVISION_CANCELACION_RESOLUCION ||
+            tipo === REALTIME_EVENT_TYPE.REVISION_CANCELACION_RESUELTA ||
+            tipo === REALTIME_EVENT_TYPE.ASISTENCIAS_SESION_ACTUALIZADAS ||
+            tipo === 'REVISION_CANCELACION_PROPUESTA' ||
+            tipo === 'REVISION_CANCELACION_RESOLUCION'
+          ) {
+            this.cargarSesiones();
+          }
+        })
+      );
+    }
+
+    this.subRealtime = sub;
+  }
+
+  ngOnDestroy(): void {
+    this.subRealtime?.unsubscribe();
+    if (this.realtime) {
+      this.realtime.stop();
+    }
+  }
+
+  /** Inicio de la sesión: instante UTC si está confirmado; si no, el valor v1 sin zona (se muestra literal). */
+  inicio(s: SesionFacultadItem): string | null {
+    return resolveSessionInstant(s.fechaHoraInicio, s.fechaHoraInicioUtc, s.estadoTemporal);
+  }
+
+  fin(s: SesionFacultadItem): string | null {
+    return resolveSessionInstant(s.fechaHoraFin, s.fechaHoraFinUtc, s.estadoTemporal);
   }
 
   /**
-   * Las sesiones del grupo salen del cronograma de la facultad (GET /decano/sesiones, ámbito forzado en backend):
+   * Las sesiones del grupo salen del cronograma de la facultad (GET /decano/sesiones?idGrupo={id}, ámbito forzado en backend):
    * GET /sesiones/grupo/{id} es del docente titular y le responde 403 al decano.
    */
-  cargarSesiones(): void {
-    const id = this.effectiveGrupoId();
+  cargarSesiones(idGrupo?: string): void {
+    const id = idGrupo || this.effectiveGrupoId();
     if (!id) {
       return;
     }
     this.cargandoSesiones.set(true);
     this.errorSesiones.set(null);
-    this.cargarPagina(id, 1, []);
-  }
-
-  private cargarPagina(idGrupo: string, pagina: number, acumuladas: SesionFacultadItem[]): void {
-    this.deanService.getSesiones({ pagina, tamano: TAMANO_PAGINA_SESIONES }).subscribe({
+    this.deanService.getSesiones({ idGrupo: id, pagina: 1, tamano: 50 }).subscribe({
       next: (res) => {
-        const datos = res.datos ?? [];
-        const delGrupo = [...acumuladas, ...datos.filter((s) => s.idGrupo === idGrupo)];
-        const total = Number(res.total ?? datos.length);
-        if (datos.length > 0 && pagina * TAMANO_PAGINA_SESIONES < total && pagina < MAX_PAGINAS_SESIONES) {
-          this.cargarPagina(idGrupo, pagina + 1, delGrupo);
-          return;
-        }
-        this.sessions.set(delGrupo);
+        this.sessions.set(res.elementos ?? []);
         this.cargandoSesiones.set(false);
       },
       error: (error: unknown) => {

@@ -198,12 +198,13 @@ describe('StudentCourseDetailComponent', () => {
       expect(texto()).toContain('Patrones GoF');
     });
 
-    it('NO_DISPONIBLE muestra "Estado no disponible" y NO ofrece Radicar Reclamo', () => {
+    it('NO_DISPONIBLE muestra "Sin registro" (F3-EST-03) y NO ofrece Radicar Reclamo', () => {
       fixture.componentRef.setInput('materia', crearMateria());
       fixture.componentRef.setInput('sesiones', [crearSesion({ estadoAsistencia: 'NO_DISPONIBLE' })]);
       fixture.detectChanges();
 
-      expect(fixture.nativeElement.querySelector('[data-testid="estado-no-disponible"]')).not.toBeNull();
+      expect(fixture.nativeElement.querySelector('[data-testid="estado-no-disponible"]')!.textContent.trim()).toBe('Sin registro');
+      expect(texto()).not.toContain('Estado no disponible');
       expect(texto()).not.toContain('Radicar Reclamo');
       expect(texto()).not.toContain('AUSENTE');
     });

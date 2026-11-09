@@ -5,6 +5,8 @@ import { CoordinatorStudentsComponent } from './coordinator-students.component';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { CourseService } from '../../../core/services/course.service';
 import { Course } from '../../../core/models/course.model';
+import { CoordinatorProgramService } from '../../../core/services/coordinator-program.service';
+import { crearProgramaCoordinadorStub, PROGRAMA_A, PROGRAMA_B } from '../../../core/testing/programa-coordinador.stub';
 
 // LB-001B.1B (DB source of truth cleanup, PLAN.md AS-IS #18): la ficha de curso seleccionado
 // en matrícula de estudiantes lee Course.docenteName sintetizado.
@@ -58,6 +60,7 @@ describe('CoordinatorStudentsComponent', () => {
       providers: [
         { provide: CoordinatorManagementService, useValue: coordinatorService },
         { provide: CourseService, useValue: courseService },
+        { provide: CoordinatorProgramService, useValue: crearProgramaCoordinadorStub([PROGRAMA_A, PROGRAMA_B]) },
         { provide: Router, useValue: routerSpy },
       ],
     });
@@ -173,5 +176,26 @@ describe('CoordinatorStudentsComponent', () => {
     expect(boton).not.toBeNull();
     component.abrirFicha(estudiante);
     expect(component.estudianteFicha()?.id).toBe('est-1');
+  });
+
+  // CULM-001 B2NM (S4): con varios programas el directorio se consulta con el programa seleccionado.
+  it('S4 carga los programas antes de consultar y muestra el selector con varios programas', () => {
+    const programa = TestBed.inject(CoordinatorProgramService);
+    expect(programa.cargar).toHaveBeenCalled();
+    expect(coordinatorService.getEstudiantesDirectorioPagina).toHaveBeenCalled();
+    const select = (fixture.nativeElement as HTMLElement).querySelector('#coordinador-programa') as HTMLSelectElement;
+    expect(Array.from(select.options).map((o) => o.textContent?.trim())).toEqual(['Ingeniería de Sistemas', 'Ingeniería de Software']);
+  });
+
+  it('S4 al cambiar de programa vuelve a la primera página y consulta de nuevo', () => {
+    coordinatorService.getEstudiantesDirectorioPagina.calls.reset();
+    component.currentPageDirectorio.set(3);
+    const select = (fixture.nativeElement as HTMLElement).querySelector('#coordinador-programa') as HTMLSelectElement;
+    select.value = 'prg-b';
+    select.dispatchEvent(new Event('change'));
+
+    expect(TestBed.inject(CoordinatorProgramService).seleccionar).toHaveBeenCalledWith('prg-b');
+    expect(component.currentPageDirectorio()).toBe(1);
+    expect(coordinatorService.getEstudiantesDirectorioPagina).toHaveBeenCalledWith(jasmine.objectContaining({ page: 0 }));
   });
 });

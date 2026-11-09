@@ -3,26 +3,11 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
+/** CULM-001 D.9-a: el backend entrega solo si el canal está activo, el último envío (UTC) y el último error. */
 export interface EstadoCanalNotificacionDto {
-  provider: string;
-  sender: string;
-  dispatcherEnabled: boolean;
-  disponible: boolean;
-  host: string;
-  port: number;
-  username: string;
-  tienePasswordConfigurado: boolean;
-  fromAddress: string;
-  fromName: string;
-  starttls: boolean;
-  ssl: boolean;
-  maxBcc: number;
-  ratePerMinute: number;
-  ratePerDay: number;
-  requireConfirmedEmail: boolean;
-  platformUrl: string;
-  testModeEnabled: boolean;
-  testModeRedirectCount: number;
+  canalActivo: boolean;
+  ultimoEnvioUtc: string | null;
+  ultimoError: string | null;
 }
 
 export interface MarcadorPlantillaDto {

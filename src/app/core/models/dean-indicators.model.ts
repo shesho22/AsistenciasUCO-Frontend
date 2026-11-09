@@ -31,7 +31,11 @@ export interface ComparativaPrograma {
   tasaRetencion: number | null;
   sesionesEjecutadas: number;
   faltasSinJustaCausa: number;
+  /** Calculado por horas (D.8): 100 × horasFalta / horasDictadas de las matrículas activas del programa. */
   porcentajeAusentismo: number | null;
+  /** Horas dictadas y horas de falta sin justa causa de esas matrículas (horas, 2 decimales). */
+  horasDictadas: number;
+  horasFalta: number;
 }
 
 export interface AforoGrupo {
@@ -39,8 +43,8 @@ export interface AforoGrupo {
   codigoGrupo: number;
   idAsignatura: string;
   nombreAsignatura: string;
-  idPrograma: string;
-  nombrePrograma: string;
+  /** CULM-001 B2NM: una fila por grupo con los nombres de todos sus programas (sin idPrograma ni nombrePrograma). */
+  programas: string[];
   cupoMaximo: number;
   matriculadosActivos: number;
   cuposDisponibles: number;

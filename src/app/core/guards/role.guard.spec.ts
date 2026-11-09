@@ -50,7 +50,7 @@ describe('roleGuard', () => {
 
   it('rechaza roles administrativos en la ruta exclusiva de DOCENTE', () => {
     expect(runFor('ADMINISTRADOR')).not.toBeTrue();
-    expect(router.createUrlTree).toHaveBeenCalledWith(['/app/admin/decanos']);
+    expect(router.createUrlTree).toHaveBeenCalledWith(['/app/acceso-denegado']);
   });
 
   it('redirige a login si no hay usuario', () => {
@@ -73,18 +73,12 @@ describe('roleGuard', () => {
     expect(res).toBeTrue();
   });
 
-  it('redirige a vistas iniciales por rol si no tiene permiso', () => {
-    expect(runFor('DECANO')).not.toBeTrue();
-    expect(router.createUrlTree).toHaveBeenCalledWith(['/app/decano/coordinadores']);
-
-    expect(runFor('COORDINADOR')).not.toBeTrue();
-    expect(router.createUrlTree).toHaveBeenCalledWith(['/app/coordinador/docentes']);
-
-    expect(runFor('ESTUDIANTE')).not.toBeTrue();
-    expect(router.createUrlTree).toHaveBeenCalledWith(['/app/estudiante/horarios']);
-
-    expect(runFor('OTRO' as any)).not.toBeTrue();
-    expect(router.createUrlTree).toHaveBeenCalledWith(['/app/dashboard']);
+  it('F3-TRX-01: toda ruta ajena al rol lleva a la página 403 dentro del layout, sea cual sea el rol', () => {
+    for (const rol of ['DECANO', 'COORDINADOR', 'ESTUDIANTE', 'ADMINISTRADOR', 'OTRO' as any]) {
+      router.createUrlTree.calls.reset();
+      expect(runFor(rol)).not.toBeTrue();
+      expect(router.createUrlTree).toHaveBeenCalledWith(['/app/acceso-denegado']);
+    }
   });
 
   it('permite la ruta si CUALQUIERA de los roles efectivos del usuario está permitido', () => {

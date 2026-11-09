@@ -80,11 +80,55 @@ describe('StudentManagementService', () => {
         nombreGrupo: 'Grupo 001 - Arq Software',
       }],
     });
+    http.expectOne(`${environment.apiUrl}/estudiante/horarios`).flush({ exitoso: true, total: 0, datos: [] });
 
     expect(resultado.length).toBe(1);
     expect(resultado[0].id).toBe('e2f3a4b5-0000-0000-0000-000000000001');
     expect(resultado[0].nombre).toBe('Arquitectura de Software');
     expect(resultado[0].grupo).toBe('Grupo 001 - Arq Software');
     expect(resultado[0].indicadores).toBeNull();
+  });
+
+  it('F3-EST-01/02: cruza docente y horario por idGrupo con /estudiante/horarios y toma creditos y caracter', () => {
+    const idGrupo = 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d';
+    let resultado: MateriaEstudianteItem[] = [];
+    service.getMaterias().subscribe((res) => (resultado = res.datos));
+    http.expectOne(`${environment.apiUrl}/estudiante/materias`).flush({
+      exitoso: true,
+      datos: [{
+        idAsignatura: 'e2f3a4b5-0000-0000-0000-000000000001',
+        nombreAsignatura: 'Arquitectura de Software',
+        idGrupo,
+        nombreGrupo: 'Grupo 001',
+        creditos: 3,
+        codigoCaracter: 'OBL',
+        nombreCaracter: 'Obligatoria',
+      }],
+    });
+    http.expectOne(`${environment.apiUrl}/estudiante/horarios`).flush({
+      exitoso: true,
+      datos: [{
+        id: 'f0000000-0000-0000-0000-000000000001', idEstudiante: 'f0000000-0000-0000-0000-000000000009', idGrupo,
+        codigoMateria: 'ARQ-401', nombreMateria: 'Arquitectura de Software', grupo: 'Grupo 001',
+        dia: 'Lunes', horaInicio: '08:00:00', horaFin: '10:00:00', docente: 'Ana Gómez',
+      }],
+    });
+    expect(resultado[0].docente).toBe('Ana Gómez');
+    expect(resultado[0].horario).toContain('08:00-10:00');
+    expect(resultado[0].creditos).toBe(3);
+    expect(resultado[0].caracter).toBe('Obligatoria');
+  });
+
+  it('si /estudiante/horarios falla, las materias se entregan igual con docente y horario en null', () => {
+    let resultado: MateriaEstudianteItem[] = [];
+    service.getMaterias().subscribe((res) => (resultado = res.datos));
+    http.expectOne(`${environment.apiUrl}/estudiante/materias`).flush({
+      exitoso: true,
+      datos: [{ idAsignatura: 'e2f3a4b5-0000-0000-0000-000000000001', nombreAsignatura: 'X', idGrupo: 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d', nombreGrupo: 'G' }],
+    });
+    http.expectOne(`${environment.apiUrl}/estudiante/horarios`).flush({}, { status: 500, statusText: 'err' });
+    expect(resultado.length).toBe(1);
+    expect(resultado[0].docente).toBeNull();
+    expect(resultado[0].horario).toBeNull();
   });
 });

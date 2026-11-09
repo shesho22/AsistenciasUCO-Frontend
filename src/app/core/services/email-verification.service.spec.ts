@@ -59,7 +59,8 @@ describe('EmailVerificationService (IDENT-001)', () => {
   });
 
   it('con mocks no llama al backend', fakeAsync(() => {
-    localStorage.setItem('USE_MOCKS', 'true');
+    const prevEnv = (window as any)['env'];
+    (window as any)['env'] = { USE_MOCKS: 'true' };
     let mensaje = '';
     let reenvio = false;
 
@@ -70,5 +71,6 @@ describe('EmailVerificationService (IDENT-001)', () => {
     http.expectNone(`${environment.apiUrl}/public/verificar-correo`);
     expect(mensaje).toContain('verificado');
     expect(reenvio).toBeTrue();
+    (window as any)['env'] = prevEnv;
   }));
 });

@@ -1,9 +1,19 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiResponse } from '../models/api-response.model';
 import { ActualizarCoordinadorPayload, CoordinadorItem, ResultadoGestionCoordinador } from '../models/role-management.model';
+
+/** `ApiPageResponse` de GET /decano/coordinadores. */
+interface CoordinadoresPageDto {
+  exitoso?: boolean;
+  elementos?: Record<string, any>[];
+  numeroPagina?: number;
+  tamanoPagina?: number;
+  totalElementos?: number;
+  totalPaginas?: number;
+}
 
 @Injectable({
   providedIn: 'root',
@@ -12,13 +22,16 @@ export class DeanManagementService {
   constructor(private http: HttpClient) {}
 
   getCoordinadores(): Observable<ApiResponse<CoordinadorItem[]>> {
-    return this.http.get<ApiResponse<any[]>>(`${environment.apiUrl}/decano/coordinadores`).pipe(
-      map((res) => {
-        if (res && res.exitoso && Array.isArray(res.datos)) {
+    // CULM-001 D.9-a: GET /decano/coordinadores es ApiPageResponse { elementos, totalElementos, ... }.
+    const params = new HttpParams().set('pagina', 1).set('tamano', 100);
+    return this.http.get<CoordinadoresPageDto>(`${environment.apiUrl}/decano/coordinadores`, { params }).pipe(
+      map((page) => {
+        const res = { ...page, datos: page?.elementos } as unknown as ApiResponse<any[]>;
+        if (page && page.exitoso !== false && Array.isArray(page.elementos)) {
           const coordMap = new Map<string, any>();
-          for (const item of res.datos) {
-            if (item && item.id && !coordMap.has(item.id)) {
-              coordMap.set(item.id, item);
+          for (const item of page.elementos) {
+            if (item && item['id'] && !coordMap.has(item['id'])) {
+              coordMap.set(item['id'], item);
             }
           }
 
@@ -70,7 +83,7 @@ export class DeanManagementService {
             };
           });
 
-          return { ...res, datos: normalizados };
+          return { ...res, exitoso: true, datos: normalizados };
         }
         return res as unknown as ApiResponse<CoordinadorItem[]>;
       })

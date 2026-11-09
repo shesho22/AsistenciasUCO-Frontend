@@ -3,6 +3,12 @@ import {
   AsistenciaQrRotadoPayload,
   REALTIME_EVENT_TYPE,
   SesionCanceladaRealtimePayload,
+  AlertaInasistenciaRealtimePayload,
+  RevisionCancelacionCreadaRealtimePayload,
+  RevisionCancelacionDecididaRealtimePayload,
+  RevisionCancelacionResueltaRealtimePayload,
+  RevisionCancelacionReasignadaRealtimePayload,
+  isValidRealtimeEvent,
 } from './realtime-event.model';
 
 describe('REALTIME_EVENT_TYPE (CULM-001 B.1)', () => {
@@ -41,5 +47,75 @@ describe('REALTIME_EVENT_TYPE (CULM-001 B.2)', () => {
     const registrada: AsistenciaQrRegistradaPayload = { grupo: 'g', sesion: 's', toma: 't', estudiante: 'e', totalPresentes: 3 };
     expect(rotado.pin).toBe('482913');
     expect(registrada.totalPresentes).toBe(3);
+  });
+});
+
+describe('REALTIME_EVENT_TYPE (CULM-001 C.1)', () => {
+  it('C-F-16 declara los eventos de alertas y revisiones de cancelación', () => {
+    expect(REALTIME_EVENT_TYPE.ALERTA_INASISTENCIA).toBe('ALERTA_INASISTENCIA');
+    expect(REALTIME_EVENT_TYPE.REVISION_CANCELACION_CREADA).toBe('REVISION_CANCELACION_CREADA');
+    expect(REALTIME_EVENT_TYPE.REVISION_CANCELACION_DECIDIDA).toBe('REVISION_CANCELACION_DECIDIDA');
+    expect(REALTIME_EVENT_TYPE.REVISION_CANCELACION_RESUELTA).toBe('REVISION_CANCELACION_RESUELTA');
+    expect(REALTIME_EVENT_TYPE.REVISION_CANCELACION_REASIGNADA).toBe('REVISION_CANCELACION_REASIGNADA');
+
+    const alertaPayload: AlertaInasistenciaRealtimePayload = {
+      grupo: 'grp-1',
+      alerta: 'alt-1',
+      estudianteGrupo: 'eg-1',
+      tipo: 'ADVERTENCIA',
+      porcentajeInasistencia: 16,
+      umbral: 15,
+    };
+    expect(alertaPayload.grupo).toBe('grp-1');
+
+    const revisionCreada: RevisionCancelacionCreadaRealtimePayload = {
+      grupo: 'grp-1',
+      revision: 'rev-1',
+      estudianteGrupo: 'eg-1',
+      estado: 'PENDIENTE_DOCENTE',
+    };
+    expect(revisionCreada.estado).toBe('PENDIENTE_DOCENTE');
+
+    const revisionDecidida: RevisionCancelacionDecididaRealtimePayload = {
+      grupo: 'grp-1',
+      revision: 'rev-1',
+      estudianteGrupo: 'eg-1',
+      decision: 'PROPONER',
+      estado: 'PROPUESTA',
+      perfilResolutor: 'COORDINADOR',
+    };
+    expect(revisionDecidida.perfilResolutor).toBe('COORDINADOR');
+
+    const revisionResuelta: RevisionCancelacionResueltaRealtimePayload = {
+      grupo: 'grp-1',
+      revision: 'rev-1',
+      estudianteGrupo: 'eg-1',
+      decision: 'APROBAR',
+      estado: 'APROBADA',
+      cambioMatricula: true,
+    };
+    expect(revisionResuelta.cambioMatricula).toBeTrue();
+
+    const revisionReasignada: RevisionCancelacionReasignadaRealtimePayload = {
+      grupo: 'grp-1',
+      revision: 'rev-1',
+      estudianteGrupo: 'eg-1',
+      perfilResolutor: 'DECANO',
+    };
+    expect(revisionReasignada.perfilResolutor).toBe('DECANO');
+  });
+
+  it('C-F-17 isValidRealtimeEvent valida la estructura del evento', () => {
+    expect(isValidRealtimeEvent(null)).toBeFalse();
+    expect(isValidRealtimeEvent({})).toBeFalse();
+    expect(
+      isValidRealtimeEvent({
+        eventId: 'evt-1',
+        type: 'ALERTA_INASISTENCIA',
+        occurredAt: '2026-11-08T10:00:00Z',
+        correlationId: null,
+        payload: { grupo: 'grp-1' },
+      })
+    ).toBeTrue();
   });
 });

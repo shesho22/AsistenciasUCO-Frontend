@@ -31,6 +31,22 @@ describe('GroupService', () => {
     request.flush({ exitoso: true, datos: [], total: 0 });
   });
 
+  it('B2NM consulta los programas del grupo para el selector de matrícula', () => {
+    let programas: { idPrograma: string }[] = [];
+    service.getProgramasGrupo('grupo 1').subscribe((r) => (programas = r.datos));
+
+    const req = http.expectOne(`${environment.apiUrl}/grupos/grupo%201/programas`);
+    expect(req.request.method).toBe('GET');
+    req.flush({
+      exitoso: true, total: 2,
+      datos: [
+        { idPrograma: 'prg-a', nombrePrograma: 'Sistemas', idPlanEstudio: 'pl-a', inpPlanEstudio: '2024' },
+        { idPrograma: 'prg-b', nombrePrograma: 'Software', idPlanEstudio: 'pl-b', inpPlanEstudio: '2023' },
+      ],
+    });
+    expect(programas.map((p) => p.idPrograma)).toEqual(['prg-a', 'prg-b']);
+  });
+
   it('consulta todos los grupos con getAllGroups', () => {
     service.getAllGroups().subscribe();
 

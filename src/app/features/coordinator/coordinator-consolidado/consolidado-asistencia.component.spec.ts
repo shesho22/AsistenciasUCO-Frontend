@@ -17,7 +17,7 @@ describe('ConsolidadoAsistenciaComponent (HU061)', () => {
     nombrePeriodoAcademico: '2026-2', idPrograma: 'PRG-1', nombrePrograma: 'Sistemas', idAsignatura, nombreAsignatura,
     idDocente, nombreDocente: idDocente ? 'Ana' : null, estudiantesActivos: 20, sesionesEjecutadas: 8, asistencias: 150,
     faltasSinJustaCausa: 10, excusas: 0, porcentajeAsistencia: 93.75, porcentajeInasistencia: 6.25,
-    estudiantesRiesgo: 2, estudiantesPerdida: 1,
+    estudiantesRiesgo: 2, estudiantesPerdida: 1, horasDictadas: 16, porcentajeExcusa: 0, porcentajeSinRegistro: 0,
   });
 
   function crear(comoDecano: boolean): ComponentFixture<ConsolidadoAsistenciaComponent> {
@@ -58,6 +58,34 @@ describe('ConsolidadoAsistenciaComponent (HU061)', () => {
     expect(texto).toContain('Sesiones ejecutadas');
     expect(fixture.componentInstance.periodos().length).toBe(1);
     expect(fixture.componentInstance.asignaturas()).toEqual([{ id: 'ASG-1', nombre: 'Cálculo' }]);
+  });
+
+  it('D.8 muestra Excusa y Sin registro con la barra apilada de cuatro segmentos y la nota de horas', () => {
+    const fixture = crear(false);
+    http
+      .expectOne((r) => r.url === `${api}/coordinador/consolidado-asistencia`)
+      .flush({
+        exitoso: true,
+        datos: [{ ...grupo('ASG-1', 'Cálculo', 'DOC-1'), porcentajeAsistencia: 60, porcentajeInasistencia: 10, porcentajeExcusa: 5.5, porcentajeSinRegistro: 24.5, horasDictadas: 16 }],
+        total: 1,
+      });
+    fixture.detectChanges();
+
+    const raiz = fixture.nativeElement as HTMLElement;
+    const texto = raiz.textContent ?? '';
+    expect(texto).toContain('Calculado por horas');
+    expect(texto).toContain('Excusa');
+    expect(texto).toContain('Sin registro');
+    expect(texto).toContain('5.5%');
+    expect(texto).toContain('24.5%');
+    const ancho = (id: string) => (raiz.querySelector(`[data-testid="${id}"]`) as HTMLElement).style.width;
+    expect(ancho('segmento-asistencia')).toBe('60%');
+    expect(ancho('segmento-inasistencia')).toBe('10%');
+    expect(ancho('segmento-excusa')).toBe('5.5%');
+    expect(ancho('segmento-sin-registro')).toBe('24.5%');
+    expect(raiz.querySelectorAll('[data-testid="barra-distribucion"] > span').length).toBe(4);
+    expect(raiz.querySelector('[data-testid="barra-distribucion"]')?.getAttribute('aria-label'))
+      .toBe('Asistencia 60%, inasistencia 10%, excusa 5.5%, sin registro 24.5%');
   });
 
   it('el decano usa su ruta y filtrar por cohorte vuelve a consultar desde la página 1', () => {

@@ -11,6 +11,7 @@ import {
   mockUuid,
 } from '../mocks/student-portal-mock.adapter';
 import { ApiResponse } from '../models/api-response.model';
+import { ApiPageResponse } from '../api/models/api-page-response.model';
 import { PlanEstudioItem } from '../models/role-management.model';
 import { AuthService } from '../services/auth.service';
 import { environment } from '../../../environments/environment';
@@ -26,6 +27,58 @@ function okResponse<T>(datos: T, mensajeUsuario?: string, total?: number): HttpR
       total: total ?? (Array.isArray(datos) ? datos.length : undefined),
     },
   });
+}
+
+function okPageResponse<T>(
+  elementos: T[],
+  pagina = 1,
+  tamano = 10,
+  totalElementos?: number
+): HttpResponse<ApiPageResponse<T>> {
+  const total = totalElementos ?? elementos.length;
+  return new HttpResponse<ApiPageResponse<T>>({
+    status: 200,
+    body: {
+      exitoso: true,
+      elementos,
+      datos: elementos,
+      total,
+      numeroPagina: pagina,
+      tamanoPagina: tamano,
+      totalElementos: total,
+      totalPaginas: Math.max(1, Math.ceil(total / tamano)),
+    } as any,
+  });
+}
+
+/** CULM-001 B2NM: respuesta paginada con la forma real de ApiPageResponse (los filtros del mock son mínimos). */
+function okPagina<T>(elementos: T[], req: { params: { get(nombre: string): string | null } }): HttpResponse<unknown> {
+  const tamano = Math.max(Number(req.params.get('tamano')) || 20, 1);
+  const pagina = Math.max(Number(req.params.get('pagina')) || 1, 1);
+  const inicio = (pagina - 1) * tamano;
+  return new HttpResponse<unknown>({
+    status: 200,
+    body: {
+      exitoso: true,
+      elementos: elementos.slice(inicio, inicio + tamano),
+      numeroPagina: pagina,
+      tamanoPagina: tamano,
+      totalElementos: elementos.length,
+      totalPaginas: Math.max(Math.ceil(elementos.length / tamano), 1),
+    },
+  });
+}
+
+/** Vínculo asignatura-plan del mock con carácter y semestre como los entrega el backend. */
+function vinculoMock(a: { id: string; codigo: string; nombre: string; creditos: number; semestre: number; area?: string; componente?: string }, planId: string) {
+  const compartida = a.codigo === 'SIS-101';
+  return {
+    idAsignatura: a.id, codigo: a.codigo, nombre: a.nombre, credito: a.creditos, nombreArea: a.area ?? '', nombreComponente: a.componente ?? '',
+    idPlanEstudio: planId, inpPlanEstudio: '2024', idPrograma: 'PRG-MOCK-1', nombrePrograma: 'Ingeniería de Sistemas',
+    idSemestrePlanEstudio: `SEM-${planId}-${a.semestre}`, numeroSemestre: a.semestre, codigoSemestre: `S${a.semestre}`,
+    codigoCaracter: a.semestre % 2 === 0 ? 'OPT' : 'OBL', nombreCaracter: a.semestre % 2 === 0 ? 'Optativa' : 'Obligatoria',
+    estaActivoVinculo: true, estaActivaAsignatura: true, compartida,
+  };
 }
 
 export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
@@ -145,8 +198,12 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   // HU161/HU162/HU164 descartadas: las instituciones son de solo consulta (sin POST/PUT/PATCH).
 
   // ================= DECANO: COORDINADORES =================
-  if (url.endsWith('/decano/coordinadores') && method === 'GET') {
-    return of(okResponse(mockStore.coordinadores)).pipe(delay(250));
+  if (url.split('?')[0].endsWith('/decano/coordinadores') && method === 'GET') {
+    const elementos = mockStore.coordinadores;
+    return of(new HttpResponse({
+      status: 200,
+      body: { exitoso: true, elementos, numeroPagina: 1, tamanoPagina: 100, totalElementos: elementos.length, totalPaginas: 1 },
+    })).pipe(delay(250));
   }
   if (url.endsWith('/decano/coordinadores') && method === 'POST') {
     const body = req.body as any;
@@ -265,7 +322,41 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
 
   // ================= COORDINADOR: PLANES DE ESTUDIO =================
   if (url.endsWith('/coordinador/planes-estudio') && method === 'GET') {
-    return of(okResponse(mockStore.planesEstudio)).pipe(delay(250));
+    const planes = mockStore.planesEstudio.map((p) => ({
+      ...p, idPrograma: 'PRG-MOCK-1', nombrePrograma: p.programa, inp: String(p.anioVigencia),
+      estaActivoPlanEstudio: p.estado !== 'INACTIVO',
+    }));
+    return of(okPagina(planes, req)).pipe(delay(250));
+  }
+  if (url.endsWith('/coordinador/caracteres-asignatura') && method === 'GET') {
+    return of(okResponse([{ codigo: 'OBL', nombre: 'Obligatoria', orden: 1 }, { codigo: 'OPT', nombre: 'Optativa', orden: 2 }])).pipe(delay(150));
+  }
+  if (url.includes('/coordinador/planes-estudio/') && url.endsWith('/asignaturas-asociables') && method === 'GET') {
+    const busqueda = (req.params.get('busqueda') ?? '').toLowerCase();
+    const asociables = [
+      { idAsignatura: 'ASG-EXT-1', codigo: 'SOF-310', nombre: 'Pruebas de Software', credito: 3, nombreArea: 'Software', nombreComponente: 'Específica', planes: 'Ingeniería de Software (Plan 2024)' },
+    ].filter((a) => !busqueda || a.codigo.toLowerCase().includes(busqueda) || a.nombre.toLowerCase().includes(busqueda));
+    return of(okPagina(asociables, req)).pipe(delay(200));
+  }
+  if (url.includes('/coordinador/planes-estudio/') && url.endsWith('/asignaturas-asociadas') && method === 'POST') {
+    return of(new HttpResponse({ status: 201, body: { exitoso: true, datos: null, mensajeUsuario: 'Asignatura asociada al plan.' } })).pipe(delay(200));
+  }
+  if (url.includes('/coordinador/planes-estudio/') && url.includes('/asignaturas/') && method === 'DELETE') {
+    const segments = url.split('/');
+    const planId = segments[segments.length - 3];
+    const asigId = segments[segments.length - 1];
+    mockStore.asignaturasPlan[planId] = (mockStore.asignaturasPlan[planId] || []).filter((a) => a.id !== asigId);
+    return of(okResponse(null, 'Asignatura quitada del plan.')).pipe(delay(200));
+  }
+  if (/\/grupos\/[^/]+\/programas$/.test(url) && method === 'GET') {
+    return of(okResponse([{ idPrograma: 'PRG-MOCK-1', nombrePrograma: 'Ingeniería de Sistemas', idPlanEstudio: 'PLAN-1', inpPlanEstudio: '2024' }])).pipe(delay(150));
+  }
+  if (url.endsWith('/coordinador/estudiantes') && method === 'GET') {
+    const estudiantes = mockStore.estudiantesDirectorio.map((e) => ({
+      id: e.id, idUsuario: e.id, numeroIdentificacion: Number(e.documento) || 0, nombreCompleto: e.nombreCompleto, correo: e.correo,
+      idPrograma: 'PRG-MOCK-1', nombrePrograma: e.programa,
+    }));
+    return of(okPagina(estudiantes, req)).pipe(delay(200));
   }
   if (url.endsWith('/coordinador/planes-estudio') && method === 'POST') {
     const body = req.body as any;
@@ -317,13 +408,18 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   if (url.includes('/coordinador/planes-estudio/') && url.endsWith('/asignaturas') && method === 'GET') {
     const segments = url.split('/');
     const planId = segments[segments.length - 2];
-    const asignaturas = mockStore.asignaturasPlan[planId] || [];
-    return of(okResponse(asignaturas)).pipe(delay(200));
+    const asignaturas = (mockStore.asignaturasPlan[planId] || []).map((a) => vinculoMock(a, planId));
+    return of(okPagina(asignaturas, req)).pipe(delay(200));
   }
 
   // ================= DECANO Y ADMINISTRADOR: CONSULTAS TRANSVERSALES (HU112/HU128/HU143/HU157) =================
   const transversal = respuestaConsultasTransversales(req, url);
   if (transversal) {
+    if (transversal.esPaginada && Array.isArray(transversal.datos)) {
+      const pagina = Number(req.params.get('pagina') ?? 1);
+      const tamano = Number(req.params.get('tamano') ?? 10);
+      return of(okPageResponse(transversal.datos, pagina, tamano, transversal.total)).pipe(delay(200));
+    }
     return of(okResponse(transversal.datos, undefined, transversal.total)).pipe(delay(200));
   }
 
@@ -343,7 +439,9 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     const filtrados = estudiantes.filter(
       (e) => !busqueda || e.nombreCompleto.toLowerCase().includes(busqueda) || e.numeroIdentificacion.includes(busqueda)
     );
-    return of(okResponse(filtrados, undefined, filtrados.length)).pipe(delay(200));
+    const pagina = Number(req.params.get('pagina') ?? 1);
+    const tamano = Number(req.params.get('tamano') ?? 10);
+    return of(okPageResponse(filtrados, pagina, tamano, filtrados.length)).pipe(delay(200));
   }
   if (url.includes('/decano/estudiantes/') && method === 'GET') {
     const idEstudiante = url.split('/').pop()!;
@@ -374,20 +472,24 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     return of(okResponse(estructura, undefined, estructura.length)).pipe(delay(200));
   }
   if (url.includes('/decano/planes-estudio/') && url.endsWith('/asignaturas') && method === 'GET') {
+    const planId = url.split('/').slice(-2)[0];
+    const semestre = Number(req.params.get('semestre')) || 0;
+    const caracter = req.params.get('caracter');
+    const busqueda = (req.params.get('busqueda') ?? '').toLowerCase();
     const asignaturas = [
-      {
-        id: 'ASG-1', codigo: 'SIS-101', nombre: 'Cálculo Diferencial', credito: 4, codigoSemestre: 'S1',
-        nombreArea: 'Ciencias Básicas', nombreComponente: 'Obligatorio',
-      },
-      {
-        id: 'ASG-2', codigo: 'SIS-201', nombre: 'Estructuras de Datos', credito: 3, codigoSemestre: 'S2',
-        nombreArea: 'Software', nombreComponente: 'Obligatorio',
-      },
-    ];
-    return of(okResponse(asignaturas, undefined, asignaturas.length)).pipe(delay(200));
+      vinculoMock({ id: 'ASG-1', codigo: 'SIS-101', nombre: 'Cálculo Diferencial', creditos: 4, semestre: 1, area: 'Ciencias Básicas', componente: 'Obligatorio' }, planId),
+      vinculoMock({ id: 'ASG-2', codigo: 'SIS-201', nombre: 'Estructuras de Datos', creditos: 3, semestre: 2, area: 'Software', componente: 'Obligatorio' }, planId),
+    ].filter(
+      (a) =>
+        (!semestre || a.numeroSemestre === semestre) &&
+        (!caracter || a.codigoCaracter === caracter) &&
+        (!busqueda || a.codigo.toLowerCase().includes(busqueda) || a.nombre.toLowerCase().includes(busqueda))
+    );
+    return of(okPagina(asignaturas, req)).pipe(delay(200));
   }
-  if (url.endsWith('/decano/sesiones') && method === 'GET') {
-    const sesiones = [
+  if (url.includes('/decano/sesiones') && method === 'GET') {
+    const idGrupo = req.params.get('idGrupo') || (url.includes('?') ? new URL(url, 'http://localhost').searchParams.get('idGrupo') : null);
+    const todasSesiones = [
       {
         id: 'SES-MOCK-1', nombre: 'Sesión 1', codigo: 'S-01', numeroSemana: 1, fechaHoraInicio: '2026-01-27T07:00:00',
         fechaHoraFin: '2026-01-27T09:00:00', idGrupo: 'GRP-MOCK-1', codigoGrupo: 1, nombreGrupo: 'Grupo 1',
@@ -395,7 +497,34 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
         nombrePrograma: 'Ingeniería de Sistemas',
       },
     ];
-    return of(okResponse(sesiones, undefined, sesiones.length)).pipe(delay(200));
+    const sesiones = idGrupo ? todasSesiones.filter((s) => s.idGrupo === idGrupo) : todasSesiones;
+    const pagina = Number(req.params.get('pagina') ?? 1);
+    const tamano = Number(req.params.get('tamano') ?? 10);
+    return of(okPageResponse(sesiones, pagina, tamano, sesiones.length)).pipe(delay(200));
+  }
+  if (url.includes('/decano/grupos/') && method === 'GET') {
+    const id = url.split('?')[0].split('/').pop()!;
+    const grupo = {
+      id,
+      codigoGrupo: 1,
+      codigo: 'MAT-301',
+      nombre: 'Grupo 1',
+      idAsignatura: 'ASG-1',
+      codigoAsignatura: 'SIS-101',
+      nombreAsignatura: 'Cálculo Diferencial',
+      creditos: 4,
+      idDocente: 'DOC-1',
+      nombreDocente: 'María Rostagno',
+      correoDocente: 'maria.rostagno@uco.edu.co',
+      idPeriodoAcademico: 'PER-1',
+      codigoPeriodoAcademico: '2026-1',
+      capacidadMaximaPermitida: 30,
+      totalEstudiantes: 25,
+      sesionesRegistradas: 8,
+      asistenciaPromedio: 92,
+      estado: 'ACTIVO',
+    };
+    return of(okResponse(grupo)).pipe(delay(200));
   }
 
   // ================= COORDINADOR: GRUPOS, SESIONES Y ASISTENCIAS (HU064/HU060/HU061) =================
@@ -533,12 +662,12 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
         nombreAsignatura: 'Matemática Avanzada III', nombreDocente: 'Docente Mock', idPeriodoAcademico: 'PER-2026-2',
         nombrePeriodoAcademico: '2026-2', fechaInicioPeriodo: '2026-07-20', fechaFinPeriodo: '2026-12-10', estadoPeriodo: 'VIGENTE',
         horario: 'Lunes 08:00-10:00; Miercoles 08:00-10:00', capacidadMaxima: 35, estudiantesActivos: 30, cuposDisponibles: 5,
-        matriculado: false, tipoAsignatura: 'ESPECIFICA', transversal: false },
+        matriculado: false, tipoAsignatura: 'ESPECIFICA', transversal: false, codigoCaracter: 'OBL', nombreCaracter: 'Obligatoria' },
       { idGrupo: 'grp-oferta-2', codigoGrupo: 2, nombreGrupo: 'Grupo 2', idAsignatura: 'asg-of-2', codigoAsignatura: 'FIS201',
         nombreAsignatura: 'Física II', nombreDocente: 'Docente Mock', idPeriodoAcademico: 'PER-2027-1',
         nombrePeriodoAcademico: '2027-1', fechaInicioPeriodo: '2027-01-20', fechaFinPeriodo: '2027-06-10', estadoPeriodo: 'PROXIMO',
         horario: null, capacidadMaxima: 30, estudiantesActivos: 30, cuposDisponibles: 0, matriculado: false,
-        tipoAsignatura: 'INSTITUCIONAL', transversal: true },
+        tipoAsignatura: 'INSTITUCIONAL', transversal: true, codigoCaracter: null, nombreCaracter: null },
     ];
     return of(okResponse(oferta, undefined, oferta.length)).pipe(delay(250));
   }
@@ -574,25 +703,9 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   // ================= ADMIN: NOTIFICACIONES (NOTIF-002B / TD-069) =================
   if (url.endsWith('/admin/notificaciones/estado-canal') && method === 'GET') {
     return of(okResponse({
-      provider: 'outbox',
-      sender: 'smtp',
-      dispatcherEnabled: true,
-      disponible: true,
-      host: 'smtp.gmail.com',
-      port: 587,
-      username: 'asistencias.notificaciones@uco.edu.co',
-      tienePasswordConfigurado: true,
-      fromAddress: 'asistencias.notificaciones@uco.edu.co',
-      fromName: 'Universidad Católica de Oriente',
-      starttls: true,
-      ssl: false,
-      maxBcc: 50,
-      ratePerMinute: 60,
-      ratePerDay: 500,
-      requireConfirmedEmail: false,
-      platformUrl: 'https://asistencias.uco.edu.co',
-      testModeEnabled: false,
-      testModeRedirectCount: 0,
+      canalActivo: true,
+      ultimoEnvioUtc: '2026-11-09T15:30:00Z',
+      ultimoError: null,
     })).pipe(delay(200));
   }
 

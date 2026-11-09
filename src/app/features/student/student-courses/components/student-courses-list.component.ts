@@ -148,6 +148,13 @@ import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
                     {{ materia.nombre }}
                   </h3>
                   <p class="text-xs text-warm-500 mt-1">Docente: {{ materia.docente ?? 'No informado' }}</p>
+                  @if (materia.creditos || materia.caracter) {
+                    <p class="text-xs text-warm-500 mt-0.5" data-testid="materia-creditos-caracter">
+                      @if (materia.creditos) { <span>{{ materia.creditos }} créditos</span> }
+                      @if (materia.creditos && materia.caracter) { <span> · </span> }
+                      @if (materia.caracter) { <span>{{ materia.caracter }}</span> }
+                    </p>
+                  }
                 </div>
 
                 <!-- Indicadores por horas (solo con fuente autoritativa: los entrega el backend) -->

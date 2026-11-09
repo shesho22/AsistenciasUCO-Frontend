@@ -5,6 +5,7 @@ import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { CoordinatorStudyPlanFormPageComponent } from './study-plan-form-page.component';
 import { ToastService } from '../../../../shared/components/toast/toast.component';
 import { environment } from '../../../../../environments/environment';
+import { paginaApi, porUrl } from '../../../../core/testing/pagina-api';
 
 describe('CoordinatorStudyPlanFormPageComponent', () => {
   let fixture: ComponentFixture<CoordinatorStudyPlanFormPageComponent>;
@@ -36,8 +37,8 @@ describe('CoordinatorStudyPlanFormPageComponent', () => {
     component = fixture.componentInstance;
     fixture.detectChanges();
 
-    http.match(`${environment.apiUrl}/coordinador/planes-estudio`).forEach((req) =>
-      req.flush({ exitoso: true, datos: [] })
+    http.match(porUrl(`${environment.apiUrl}/coordinador/planes-estudio`)).forEach((req) =>
+      req.flush(paginaApi([]))
     );
     http.match(`${environment.apiUrl}/coordinador/periodos-academicos`).forEach((req) =>
       req.flush({ exitoso: true, datos: [] })

@@ -143,26 +143,45 @@ export interface MateriaEstudianteItem {
   aula: string | null;
   horario: string | null;
   creditos: number | null;
+  /** Caracter de la asignatura (nombre, o codigo si no hay nombre); `null` si el backend no lo informa. */
+  caracter?: string | null;
   /** `null` = sin fuente confiable de asistencia (nunca se sustituye por ceros). */
   indicadores: IndicadoresAsistenciaMateria | null;
   estado: 'Al día' | 'Riesgo' | 'Crítico' | null;
+  estadoMatricula?: string | null;
 }
 
 export type EstadoAsistenciaSesion = 'PRESENTE' | 'AUSENTE' | 'RETARDO' | 'JUSTIFICADA';
 /** `RETIRADA`: el estudiante retiró su solicitud mientras estaba pendiente (CULM-001 A.2-7). */
 export type EstadoSolicitudRevision = 'PENDIENTE' | 'APROBADA' | 'RECHAZADA' | 'RETIRADA';
 
+export interface CategoriaReclamoItem {
+  codigo: string;
+  nombre: string;
+}
+
 /**
- * Nombre de la categoría de justificación del reclamo. HU005/HU016: los valores salen del catálogo de solo consulta
- * (`GET /categorias-justificacion`), no de una lista fija en el cliente.
+ * Nombre o estructura de la categoría de justificación del reclamo. HU005/HU016/HU015: soporta tanto
+ * el nombre plano como el objeto con código y nombre (CULM-001 D.2).
  */
-export type CategoriaJustificacion = string;
+export type CategoriaJustificacion = string | CategoriaReclamoItem;
+
+/** CULM-001 D.2: Configuración centralizada de reclamos y soportes. */
+export interface ConfiguracionReclamosDTO {
+  maximoSoportes: number;
+  tamanioMaximoBytes: number;
+  tiposPermitidos: string[];
+  limiteSubidasPorMinuto: number;
+  diasLimiteJustificacion: number;
+}
 
 export interface SoporteAdjuntoItem {
   /** Identificador opaco generado por el backend; unica fuente de verdad del vinculo del soporte. */
   fileId?: string;
   nombre: string;
   tipo: string;
+  /** Tipo MIME o de contenido exacto entregado por el backend o el archivo. */
+  tipoContenido?: string;
   tamanioKb: number;
   /** Tamano exacto reportado por el backend (bytes); `tamanioKb` es solo presentacion. */
   tamanioBytes?: number;
@@ -171,6 +190,10 @@ export interface SoporteAdjuntoItem {
   fechaSubida: string;
   /** Instante UTC original de registro del soporte; se presenta en la zona IANA del usuario. */
   fechaSubidaUtc?: string;
+  /** CULM-001 D.2: Estado de la subida individual en la interfaz de usuario. */
+  estado?: 'SUBIENDO' | 'LISTO' | 'RECHAZADO';
+  /** Mensaje de error reportado por el backend (ej. ClamAV malware, límite por minuto o validación). */
+  error?: string | null;
 }
 
 /** Estado de asistencia de una sesion vista por el estudiante; `NO_DISPONIBLE` jamas equivale a `AUSENTE`. */
@@ -244,6 +267,10 @@ export interface SolicitudRevisionItem {
   estadoSolicitud: EstadoSolicitudRevision;
   categoria?: CategoriaJustificacion;
   soporteAdjunto?: SoporteAdjuntoItem;
+  /** CULM-001 D.2: Lista completa de soportes documentales adjuntos al reclamo. */
+  soportes?: SoporteAdjuntoItem[];
+  /** CULM-001 D.2: Identificadores de soporte que viajan en el POST de radicación. */
+  soporteArchivoIds?: string[];
   justificacionSolicitud: string;
   justificacionRespuesta?: string;
   fechaRespuesta?: string;
@@ -275,6 +302,8 @@ export interface PlanEstudioItem {
   totalAsignaturas: number | null;
   estado: 'VIGENTE' | 'EN_TRANSICION' | 'HISTORICO' | 'INACTIVO';
   descripcion: string;
+  /** Programa del plan (CULM-001 B2NM); permite derivar los programas del ámbito del coordinador. */
+  idPrograma?: string;
 }
 
 export interface AsignaturaPlanItem {
@@ -288,6 +317,44 @@ export interface AsignaturaPlanItem {
   /** Nombre o código de un componente de formación real (BAS, INS, ESP; HU147). */
   componente: string;
   horasSemanales: number;
+  /** CULM-001 B2NM: vínculo asignatura-plan (N:M). */
+  idSemestrePlanEstudio?: string;
+  codigoCaracter?: string;
+  nombreCaracter?: string;
+  /** La asignatura está asociada a más de un plan. */
+  compartida?: boolean;
+  estaActivoVinculo?: boolean;
+  estaActivaAsignatura?: boolean;
+  idPrograma?: string;
+  nombrePrograma?: string;
+  inpPlanEstudio?: string;
+}
+
+/** Asignatura que aún no está en el plan: `GET /coordinador/planes-estudio/{planId}/asignaturas-asociables`. */
+export interface AsignaturaAsociable {
+  idAsignatura: string;
+  codigo: string;
+  nombre: string;
+  credito: number;
+  nombreArea: string;
+  nombreComponente: string;
+  /** Planes donde ya está asociada (texto del backend). */
+  planes: string | null;
+}
+
+/** Carácter de la asignatura en el plan (obligatoria u optativa): `GET /coordinador/caracteres-asignatura`. */
+export interface CaracterAsignatura {
+  codigo: string;
+  nombre: string;
+  orden: number;
+}
+
+/** Programa del ámbito del coordinador o de un grupo mixto. */
+export interface ProgramaResumen {
+  idPrograma: string;
+  nombrePrograma: string;
+  idPlanEstudio?: string;
+  inpPlanEstudio?: string;
 }
 
 export interface EstudianteDirectorioItem {
@@ -297,6 +364,7 @@ export interface EstudianteDirectorioItem {
   nombreCompleto: string;
   correo: string;
   programa: string;
+  idPrograma?: string;
   semestreActual?: number;
   estadoMatricula: 'ACTIVO' | 'INACTIVO' | 'BLOQUEADO';
   promedioAcumulado?: number;
@@ -373,9 +441,38 @@ export interface ParametroAdminDto {
   grupo: string;
   clave: string;
   valor: string;
+  valorDefecto?: string;
   tipoDato: string;
-  valorDefecto: string;
-  estaActivo: boolean;
+  esEditable?: boolean;
+  valorMinimo?: number | null;
+  valorMaximo?: number | null;
+  valoresPermitidos?: string[] | string | null;
+  etiqueta?: string;
+  descripcion?: string;
+  unidad?: string | null;
+  categoriaVisual?: string;
+  orden?: number;
+  fechaModificacion?: string;
+  fechaUltimoCambioUtc?: string | null;
+  nombreUltimoActor?: string | null;
+  esGrupoProtegido?: boolean;
+  estaActivo?: boolean;
+}
+
+export interface ParametroActualizadoDto {
+  id: string;
+  grupo: string;
+  clave: string;
+  valorAnterior: string;
+  valorNuevo: string;
+  fechaModificacion: string;
+  sinCambios: boolean;
+}
+
+export interface ActualizarParametroRequest {
+  valor: string;
+  fechaModificacionEsperada: string;
+  motivo: string;
 }
 
 export interface RegistroAuditoriaItem {
@@ -402,4 +499,37 @@ export interface CierrePeriodoReporte {
   estado: 'COMPLETADO' | 'CON_ALERTAS' | 'REVERTIDO';
   ejecutadoPor: string;
 }
+
+// ================= D.4 (HU156): ADMISIÓN DE ESTUDIANTES =================
+
+export interface ProgramaInstitucionDto {
+  id: string;
+  codigo: string;
+  nombre: string;
+  idFacultad: string;
+  nombreFacultad: string;
+}
+
+export type EstadoCuentaAdmision = 'ACTIVA' | 'PENDIENTE_VERIFICACION' | 'PENDIENTE_SINCRONIZACION';
+
+export interface AdmisionEstudianteDto {
+  idEstudiante: string;
+  idUsuario: string;
+  esUsuarioNuevo: boolean;
+  estadoCuenta: EstadoCuentaAdmision;
+  cuentaReparada?: boolean;
+}
+
+export interface AdmisionEstudianteRequest {
+  tipoIdentificacionId: string;
+  numeroIdentificacion: number | string;
+  primerNombre: string;
+  segundoNombre?: string;
+  primerApellido: string;
+  segundoApellido?: string;
+  correo: string;
+  password?: string;
+  idPrograma: string;
+}
+
 

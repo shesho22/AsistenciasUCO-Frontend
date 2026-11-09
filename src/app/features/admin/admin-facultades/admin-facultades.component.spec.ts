@@ -129,6 +129,28 @@ describe('AdminFacultadesComponent', () => {
     expect(component.facultades().length).toBe(2);
   });
 
+  it('F3-ADM-01: muestra los totales reales (incluido 0) y "—" si el backend no los entrega, sin cifras fijas', () => {
+    fixture.detectChanges();
+    http.expectOne(`${environment.apiUrl}/admin/facultades`).flush({
+      exitoso: true,
+      datos: [
+        { id: 'fac-0', nombreFacultad: 'Inactiva en cero', estaActivaFacultad: false, totalProgramas: 0, totalEstudiantes: 0 },
+        { id: 'fac-x', nombreFacultad: 'Sin conteos', estaActivaFacultad: false },
+      ],
+    });
+    http.expectOne(`${environment.apiUrl}/admin/decanos`).flush({ exitoso: true, datos: mockDecanos });
+    http.expectOne(`${environment.apiUrl}/admin/instituciones`).flush({ exitoso: true, datos: [] });
+    flushCoordinatorCatalogs();
+    fixture.detectChanges();
+
+    const texto = (fixture.nativeElement.textContent as string).replace(/\s+/g, ' ');
+    expect(texto).not.toContain('320');
+    expect(texto).toContain('Programas0');
+    expect(texto).toContain('Estudiantes0');
+    expect(texto).toContain('Programas—');
+    expect(texto).toContain('Estudiantes—');
+  });
+
   it('calcula métricas Bento Grid correctamente (Totales, Activas, Inactivas, Con Decano)', () => {
     fixture.detectChanges();
 

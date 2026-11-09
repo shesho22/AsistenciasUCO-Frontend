@@ -94,7 +94,7 @@ interface OpcionFacultad {
                 <tr class="text-left text-xs uppercase tracking-wider text-warm-500 border-b border-warm-100">
                   <th scope="col" class="py-2 pr-3">Asignatura</th>
                   <th scope="col" class="py-2 pr-3">Créditos</th>
-                  <th scope="col" class="py-2 pr-3">Programa y plan</th>
+                  <th scope="col" class="py-2 pr-3">Planes</th>
                   <th scope="col" class="py-2 pr-3">Área y componente</th>
                   <th scope="col" class="py-2">Estado</th>
                 </tr>
@@ -108,8 +108,8 @@ interface OpcionFacultad {
                     </td>
                     <td class="py-2 pr-3 text-warm-700">{{ a.creditos ?? '—' }}</td>
                     <td class="py-2 pr-3">
-                      <span class="text-warm-900 block">{{ a.nombrePrograma }}</span>
-                      <span class="text-xs text-warm-500">{{ a.nombreFacultad }} · Plan {{ a.inpPlanEstudio ?? '—' }} · {{ a.codigoSemestre || '—' }}</span>
+                      <span class="text-warm-900 block">{{ a.planes || 'Sin plan' }}</span>
+                      <span class="text-xs text-warm-500">{{ a.totalPlanes }} {{ a.totalPlanes === 1 ? 'plan' : 'planes' }}</span>
                     </td>
                     <td class="py-2 pr-3 text-warm-700">{{ a.nombreArea || '—' }} · {{ a.nombreComponente || '—' }}</td>
                     <td class="py-2">
@@ -123,6 +123,7 @@ interface OpcionFacultad {
         }
         <app-pagination
           [totalItems]="listado.total()"
+          [totalPages]="listado.totalPaginas()"
           [pageSize]="listado.tamano()"
           [currentPage]="listado.pagina()"
           (pageChange)="listado.irAPagina($event)"
