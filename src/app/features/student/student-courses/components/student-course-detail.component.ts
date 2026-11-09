@@ -227,7 +227,7 @@ import { ToastService } from '../../../../shared/components/toast/toast.componen
                         class="text-xs font-medium px-2.5 py-1 rounded-lg border border-warm-200 bg-warm-50 text-warm-500"
                         data-testid="estado-no-disponible"
                         title="Aún no hay un registro de asistencia confirmado para esta sesión; no se puede radicar revisión."
-                      >Estado no disponible</span>
+                      >Sin registro</span>
                     }
 
                     @if (sesion.estadoReclamo) {
