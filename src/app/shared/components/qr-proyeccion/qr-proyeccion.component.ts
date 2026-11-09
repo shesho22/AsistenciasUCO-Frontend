@@ -1,3 +1,4 @@
+import { ActionMenuComponent, ActionMenuItem } from '../action-menu/action-menu.component';
 import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed, inject, input, output, signal } from '@angular/core';
 
 /**
@@ -8,6 +9,7 @@ import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed,
 @Component({
   selector: 'app-qr-proyeccion',
   standalone: true,
+  imports: [ActionMenuComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [
     `
@@ -56,11 +58,6 @@ import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed,
             <p class="text-xs sm:text-sm text-success-200 truncate" data-testid="qr-subtitulo">{{ subtitulo() }}</p>
           }
           <div class="flex flex-wrap gap-2 mt-1">
-            @if (estadoVentana(); as estado) {
-              <span class="text-[11px] font-bold uppercase tracking-wider rounded-full bg-success-100 text-success-900 px-2 py-0.5" data-testid="qr-estado">
-                Ventana {{ estado }}
-              </span>
-            }
             @if (programa(); as prog) {
               <span class="text-[11px] font-semibold rounded-full bg-primary-800 text-primary-100 px-2 py-0.5" data-testid="qr-programa">
                 Programa: {{ prog }}
@@ -69,7 +66,6 @@ import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed,
           </div>
         </div>
         <div class="flex flex-wrap items-center gap-2">
-          <ng-content select="[acciones]" />
           <button
             type="button"
             data-testid="qr-pantalla-completa"
@@ -88,6 +84,7 @@ import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed,
               {{ etiquetaCerrar() }}
             </button>
           }
+          <app-action-menu tone="dark" label="Más acciones de la proyección" [items]="accionesMenu()" (selected)="accionElegida.emit($event)" />
         </div>
       </header>
 
@@ -143,7 +140,19 @@ import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed,
               <p class="text-sm text-warm-700" data-testid="qr-rotacion-automatica">El código se renueva automáticamente.</p>
             }
           </div>
-          <ng-content select="[pie]" />
+          <details data-testid="qr-detalles" class="max-w-md mx-auto text-left rounded-xl border border-warm-200 bg-white/70 px-3 py-2">
+            <summary class="cursor-pointer text-sm font-semibold text-warm-800 min-h-[32px] flex items-center">Detalles</summary>
+            <div class="mt-2 space-y-2 text-xs text-warm-700">
+              @if (estadoVentana(); as estado) {
+                <p>
+                  <span class="text-[11px] font-bold uppercase tracking-wider rounded-full bg-success-100 text-success-900 px-2 py-0.5" data-testid="qr-estado">
+                    Ventana {{ estado }}
+                  </span>
+                </p>
+              }
+              <ng-content select="[detalles]" />
+            </div>
+          </details>
         </div>
       </main>
      </div>
@@ -174,8 +183,13 @@ export class QrProyeccionComponent {
   readonly testidQr = input<string>('qr-img');
   readonly testidPin = input<string>('qr-pin');
   readonly testidCerrar = input<string>('qr-cerrar');
+  /** Acciones secundarias (regenerar, copiar, cerrar la toma...) agrupadas en "Mas". */
+  readonly accionesMenu = input<ActionMenuItem[]>([]);
+  /** Si es false, Escape no cierra la proyeccion (solo reduce el QR ampliado). */
+  readonly cerrarConEscape = input<boolean>(true);
 
   readonly cerrar = output<void>();
+  readonly accionElegida = output<string>();
 
   private readonly enPantallaCompleta = signal(false);
   private readonly maximizado = signal(false);
@@ -198,7 +212,7 @@ export class QrProyeccionComponent {
   protected alPresionarEscape(): void {
     if (this.maximizado()) {
       this.maximizado.set(false);
-    } else if (!this.enPantallaCompleta() && this.mostrarCerrar()) {
+    } else if (!this.enPantallaCompleta() && this.mostrarCerrar() && this.cerrarConEscape()) {
       this.cerrar.emit();
     }
   }

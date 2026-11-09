@@ -7,14 +7,26 @@ import { QrProyeccionComponent } from './qr-proyeccion.component';
   imports: [QrProyeccionComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <app-qr-proyeccion qrPngBase64="AAAA" pin="482 913" titulo="Calculo - Grupo 1" (cerrar)="cerrados = cerrados + 1">
-      <button acciones data-testid="accion-proyectada">Accion</button>
+    <app-qr-proyeccion
+      qrPngBase64="AAAA"
+      pin="482 913"
+      titulo="Calculo - Grupo 1"
+      [accionesMenu]="menu"
+      (accionElegida)="elegidas.push($event)"
+      (cerrar)="cerrados = cerrados + 1"
+    >
+      <p detalles data-testid="detalle-proyectado">Solo con la red Wi-Fi del campus</p>
       <p data-testid="contenido-proyectado">Presentes: 3</p>
     </app-qr-proyeccion>
   `,
 })
 class HostComponent {
   cerrados = 0;
+  elegidas: string[] = [];
+  menu = [
+    { id: 'regenerar', label: 'Regenerar', testid: 'it-regenerar' },
+    { id: 'cerrar-toma', label: 'Cerrar toma', testid: 'it-cerrar-toma', danger: true },
+  ];
 }
 
 describe('QrProyeccionComponent (CULM-001, estetica unificada de proyeccion)', () => {
@@ -170,14 +182,66 @@ describe('QrProyeccionComponent (CULM-001, estetica unificada de proyeccion)', (
     expect((el('qr-img') as HTMLImageElement).alt).not.toBe('');
   });
 
-  it('proyecta acciones y contenido adicional', () => {
+  it('proyecta el contenido adicional y el cierre emite', () => {
     const host = TestBed.createComponent(HostComponent);
     host.detectChanges();
     const n = host.nativeElement as HTMLElement;
-    expect(n.querySelector('[data-testid="accion-proyectada"]')).not.toBeNull();
     expect(n.querySelector('[data-testid="contenido-proyectado"]')?.textContent).toContain('Presentes: 3');
     (n.querySelector('[data-testid="qr-cerrar"]') as HTMLButtonElement).click();
     expect(host.componentInstance.cerrados).toBe(1);
+  });
+
+  describe('UX densidad: proyeccion limpia', () => {
+    it('la cabecera solo tiene Ampliar, Cerrar y el menu; las acciones extra salen del menu', () => {
+      const host = TestBed.createComponent(HostComponent);
+      host.detectChanges();
+      const n = host.nativeElement as HTMLElement;
+      const visibles = Array.from(n.querySelectorAll('header button')).filter((b) => !b.hasAttribute('role'));
+      expect(visibles.length).toBe(3);
+      expect(n.querySelector('[data-testid="qr-pantalla-completa"]')).not.toBeNull();
+      expect(n.querySelector('[data-testid="qr-cerrar"]')).not.toBeNull();
+      expect(n.querySelector('[data-testid="action-menu-trigger"]')).not.toBeNull();
+    });
+
+    it('elegir una accion del menu emite accionElegida con su id', () => {
+      const host = TestBed.createComponent(HostComponent);
+      host.detectChanges();
+      const n = host.nativeElement as HTMLElement;
+      (n.querySelector('[data-testid="action-menu-trigger"]') as HTMLButtonElement).click();
+      host.detectChanges();
+      (n.querySelector('[data-testid="it-cerrar-toma"]') as HTMLButtonElement).click();
+      expect(host.componentInstance.elegidas).toEqual(['cerrar-toma']);
+    });
+
+    it('sin acciones de menu no aparece el boton "Mas"', () => {
+      crear();
+      expect(el('action-menu-trigger')).toBeNull();
+    });
+
+    it('el estado de la ventana y el contenido secundario viven en un panel plegable "Detalles"', () => {
+      const host = TestBed.createComponent(HostComponent);
+      host.detectChanges();
+      const n = host.nativeElement as HTMLElement;
+      const detalles = n.querySelector('[data-testid="qr-detalles"]') as HTMLDetailsElement;
+      expect(detalles.tagName).toBe('DETAILS');
+      expect(detalles.open).toBeFalse();
+      expect(detalles.textContent).toContain('Wi-Fi');
+    });
+
+    it('el chip de estado ya no esta en la cabecera sino dentro de Detalles', () => {
+      crear({ estadoVentana: 'ABIERTA' });
+      const estado = el('qr-estado') as HTMLElement;
+      expect(estado.closest('header')).toBeNull();
+      expect(estado.closest('[data-testid="qr-detalles"]')).not.toBeNull();
+    });
+
+    it('cerrarConEscape=false evita que Escape cierre la proyeccion', () => {
+      crear({ cerrarConEscape: false });
+      let n = 0;
+      fixture.componentInstance.cerrar.subscribe(() => n++);
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+      expect(n).toBe(0);
+    });
   });
 
   it('no usa setInterval', () => {

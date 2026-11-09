@@ -2,6 +2,7 @@ import { Component, ChangeDetectionStrategy, Injector, input, output, inject, si
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { ButtonComponent } from '../../../../../shared/components/button/button.component';
+import { ActionMenuItem } from '../../../../../shared/components/action-menu/action-menu.component';
 import { QrProyeccionComponent } from '../../../../../shared/components/qr-proyeccion/qr-proyeccion.component';
 import { ToastService } from '../../../../../shared/components/toast/toast.component';
 import { Course } from '../../../../../core/models/course.model';
@@ -48,28 +49,16 @@ import {
           testidQr="matricula-qr"
           testidPin="matricula-pin"
           testidCerrar="matricula-ocultar"
+          [accionesMenu]="acciones"
+          (accionElegida)="alElegirAccion($event)"
           (cerrar)="closed.emit()"
         >
-          <ng-container acciones>
-            <button type="button" (click)="copiarPin()" class="min-h-[44px] min-w-[44px] px-4 rounded-xl border border-primary-300 text-white text-sm font-semibold hover:bg-primary-800">
-              Copiar PIN
-            </button>
-            <button type="button" (click)="copiarEnlace()" class="min-h-[44px] min-w-[44px] px-4 rounded-xl border border-primary-300 text-white text-sm font-semibold hover:bg-primary-800">
-              Copiar enlace
-            </button>
-            <button type="button" data-testid="matricula-regenerar" (click)="regenerar()" class="min-h-[44px] min-w-[44px] px-4 rounded-xl border border-primary-300 text-white text-sm font-semibold hover:bg-primary-800">
-              Generar nuevo código
-            </button>
-            <button type="button" data-testid="matricula-cerrar" (click)="cerrarMatricula()" class="min-h-[44px] min-w-[44px] px-4 rounded-xl bg-danger-600 text-white text-sm font-semibold hover:bg-danger-700">
-              Cerrar matrícula
-            </button>
-          </ng-container>
-          <p class="text-xs sm:text-sm text-warm-700">
-            Proyecta el código QR o comparte el PIN. El código cambia automáticamente cada pocos segundos: pide a los
-            estudiantes que lo escaneen desde la red Wi-Fi del campus.
-          </p>
           <p class="text-sm font-semibold text-warm-800" data-testid="matricula-fin">
             La ventana de matrícula termina a las {{ v.fechaExpiracionUtc | date: 'shortTime' }}.
+          </p>
+          <p detalles>
+            Proyecta el código QR o comparte el PIN. El código cambia automáticamente cada pocos segundos: pide a los
+            estudiantes que lo escaneen desde la red Wi-Fi del campus.
           </p>
         </app-qr-proyeccion>
       } @else {
@@ -250,6 +239,21 @@ export class TeacherMatriculaModalComponent {
       },
       error: (err: unknown) => this.toast.error(getApiErrorMessage(err)),
     });
+  }
+
+  /** Acciones secundarias de la proyeccion: la cabecera solo muestra Ampliar y Ocultar. */
+  protected readonly acciones: ActionMenuItem[] = [
+    { id: 'copiar-pin', label: 'Copiar PIN', testid: 'matricula-copiar-pin' },
+    { id: 'copiar-enlace', label: 'Copiar enlace', testid: 'matricula-copiar-enlace' },
+    { id: 'regenerar', label: 'Generar nuevo código', testid: 'matricula-regenerar' },
+    { id: 'cerrar', label: 'Cerrar matrícula', testid: 'matricula-cerrar', danger: true },
+  ];
+
+  protected alElegirAccion(id: string): void {
+    if (id === 'copiar-pin') this.copiarPin();
+    else if (id === 'copiar-enlace') this.copiarEnlace();
+    else if (id === 'regenerar') this.regenerar();
+    else if (id === 'cerrar') this.cerrarMatricula();
   }
 
   copiarPin(): void {

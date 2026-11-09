@@ -321,4 +321,31 @@ describe('TeacherMatriculaModalComponent (HU176B)', () => {
     expect(component.rotacionSegundos()).toBe(60);
     expect((html().querySelector('[data-testid="qr-barra-rotacion"]') as HTMLElement).style.animationDuration).toBe('60s');
   });
+
+  it('UX densidad: la cabecera solo tiene Ampliar, Ocultar y el menu; copiar, regenerar y cerrar van al menu', async () => {
+    await crear();
+    const raiz = fixture.nativeElement as HTMLElement;
+    const visibles = Array.from(raiz.querySelectorAll('header button')).filter((b) => !b.hasAttribute('role'));
+    expect(visibles.length).toBe(3);
+    expect(raiz.querySelector('[data-testid="matricula-cerrar"]')).toBeNull();
+    (raiz.querySelector('[data-testid="action-menu-trigger"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    for (const id of ['matricula-copiar-pin', 'matricula-copiar-enlace', 'matricula-regenerar', 'matricula-cerrar']) {
+      expect(raiz.querySelector(`[role="menuitem"][data-testid="${id}"]`)).not.toBeNull();
+    }
+  });
+
+  it('UX densidad: elegir "Cerrar matricula" del menu cierra la ventana en el backend y "Copiar PIN" copia el PIN', async () => {
+    await crear();
+    const raiz = fixture.nativeElement as HTMLElement;
+    spyOn(navigator.clipboard, 'writeText').and.returnValue(Promise.resolve());
+    (raiz.querySelector('[data-testid="action-menu-trigger"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    (raiz.querySelector('[data-testid="matricula-copiar-pin"]') as HTMLButtonElement).click();
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('482913');
+    (raiz.querySelector('[data-testid="action-menu-trigger"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    (raiz.querySelector('[data-testid="matricula-cerrar"]') as HTMLButtonElement).click();
+    expect(qrSpy.cerrarVentana).toHaveBeenCalledOnceWith('grp-12345');
+  });
 });

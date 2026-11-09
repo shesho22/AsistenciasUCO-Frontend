@@ -20,6 +20,7 @@ import { AsistenciaQrService } from '../../../../core/services/asistencia-qr.ser
 import { QrToma } from '../../../../core/models/asistencia-qr.model';
 import { TomaAsistencia } from '../../../../core/models/toma-asistencia.model';
 import { ATTENDANCE_NOW } from '../../../../core/utils/attendance-now.token';
+import { ActionMenuItem } from '../../../../shared/components/action-menu/action-menu.component';
 import { QrProyeccionComponent } from '../../../../shared/components/qr-proyeccion/qr-proyeccion.component';
 import { getApiErrorMessage } from '../../../../core/api/errors/api-error.util';
 
@@ -49,36 +50,13 @@ const ESTADOS_SIN_CANAL: readonly RealtimeConnectionState[] = ['RECONNECTING', '
       [segundosRestantes]="duracionBarra()"
       [proximaRotacion]="proximaRotacion()"
       [ciclo]="ciclo()"
-      [mostrarCerrar]="false"
+      etiquetaCerrar="Dejar de proyectar"
+      testidCerrar="qr-dejar"
+      [cerrarConEscape]="false"
+      [accionesMenu]="acciones()"
+      (cerrar)="dejarDeProyectarClick()"
+      (accionElegida)="alElegirAccion($event)"
     >
-      <ng-container acciones>
-        <button
-          type="button"
-          data-testid="qr-regenerar"
-          (click)="regenerar()"
-          [disabled]="regenerando()"
-          class="min-h-[44px] min-w-[44px] px-4 rounded-xl bg-primary-700 text-white text-sm font-semibold hover:bg-primary-600 disabled:opacity-50"
-        >
-          Regenerar
-        </button>
-        <button
-          type="button"
-          data-testid="qr-dejar"
-          (click)="dejarDeProyectarClick()"
-          class="min-h-[44px] min-w-[44px] px-4 rounded-xl border border-primary-300 text-white text-sm font-semibold hover:bg-primary-800"
-        >
-          Dejar de proyectar
-        </button>
-        <button
-          type="button"
-          data-testid="qr-cerrar-toma"
-          (click)="cerrarToma.emit()"
-          class="min-h-[44px] min-w-[44px] px-4 rounded-xl bg-danger-600 text-white text-sm font-semibold hover:bg-danger-700"
-        >
-          Cerrar toma
-        </button>
-      </ng-container>
-
       <div avisos class="space-y-2">
         @if (sinCanal()) {
           <div
@@ -97,7 +75,7 @@ const ESTADOS_SIN_CANAL: readonly RealtimeConnectionState[] = ['RECONNECTING', '
       </div>
 
       <p class="text-3xl font-serif font-bold text-primary-700" data-testid="qr-presentes">Presentes: {{ presentes() }}</p>
-      <p pie class="text-xs text-warm-600">Válido solo con la red Wi-Fi del campus UCO.</p>
+      <p detalles>Válido solo con la red Wi-Fi del campus UCO.</p>
     </app-qr-proyeccion>
   `,
 })
@@ -126,6 +104,16 @@ export class TomaQrProyeccionComponent {
     const inicial = this.qr();
     return recibido && recibido.idToma === inicial.idToma ? recibido : inicial;
   });
+
+  protected readonly acciones = computed<ActionMenuItem[]>(() => [
+    { id: 'regenerar', label: 'Regenerar código', testid: 'qr-regenerar', disabled: this.regenerando() },
+    { id: 'cerrar-toma', label: 'Cerrar toma', testid: 'qr-cerrar-toma', danger: true },
+  ]);
+
+  protected alElegirAccion(id: string): void {
+    if (id === 'regenerar') this.regenerar();
+    else if (id === 'cerrar-toma') this.cerrarToma.emit();
+  }
 
   protected readonly presentes = computed(() => this.presentesRecibidos() ?? this.toma().totalPresentes);
 
