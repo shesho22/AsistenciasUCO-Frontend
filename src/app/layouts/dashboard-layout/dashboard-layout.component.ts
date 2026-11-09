@@ -1,4 +1,4 @@
-import { Component, signal, inject, computed, ChangeDetectionStrategy, ElementRef, viewChild } from '@angular/core';
+import { Component, signal, inject, computed, ChangeDetectionStrategy, ElementRef, viewChild, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
@@ -68,7 +68,7 @@ interface NavItem {
       }
 
       <!-- Sidebar Container -->
-      <aside id="menu-lateral" [class]="sidebarClasses()">
+      <aside id="menu-lateral" [class]="sidebarClasses()" [attr.inert]="menuInerte() ? '' : null">
         <!-- Brand Header -->
         <div class="p-5 flex items-center justify-between border-b border-warm-200/80 shrink-0">
           <div class="flex items-center gap-3">
@@ -220,6 +220,19 @@ export class DashboardLayoutComponent {
   isCollapsed = signal<boolean>(false);
   isMobileMenuOpen = signal<boolean>(false);
   private readonly botonMenu = viewChild<ElementRef<HTMLButtonElement>>('botonMenu');
+  /** true desde el breakpoint `md` (768 px): el menú lateral es fijo y siempre visible. */
+  private readonly esEscritorio = signal<boolean>(true);
+  /** WCAG 2.4.3 / 4.1.2: en móvil con el menú cerrado el panel está fuera de pantalla; no recibe foco ni se lee. */
+  readonly menuInerte = computed(() => !this.esEscritorio() && !this.isMobileMenuOpen());
+
+  constructor() {
+    if (typeof window.matchMedia !== 'function') return;
+    const consulta = window.matchMedia('(min-width: 768px)');
+    this.esEscritorio.set(consulta.matches);
+    const alCambiar = (evento: MediaQueryListEvent): void => this.esEscritorio.set(evento.matches);
+    consulta.addEventListener('change', alCambiar);
+    inject(DestroyRef).onDestroy(() => consulta.removeEventListener('change', alCambiar));
+  }
 
   currentRole = computed<UserRole>(() => {
     const role = this.user()?.role;
