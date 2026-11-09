@@ -22,6 +22,8 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { AccountAccessStatusComponent } from '../../../shared/components/account-access-status/account-access-status.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
+import { ErrorCargaComponent } from '../../../shared/components/error-carga/error-carga.component';
+import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load-error.util';
 import { CoordinatorDocenteFormModalComponent } from './components/coordinator-docente-form-modal.component';
 import { CoordinatorDocenteEditModalComponent } from './components/coordinator-docente-edit-modal.component';
 import { CoordinatorDocenteFichaModalComponent } from './components/coordinator-docente-ficha-modal.component';
@@ -46,6 +48,7 @@ const MIN_CARACTERES_CANDIDATOS = 3;
     CoordinatorDocenteFormModalComponent,
     CoordinatorDocenteEditModalComponent,
     CoordinatorDocenteFichaModalComponent,
+    ErrorCargaComponent,
   ],
   template: `
     <div class="space-y-6 animate-fade-in">
@@ -136,6 +139,8 @@ const MIN_CARACTERES_CANDIDATOS = 3;
             <div class="h-44 bg-warm-100 rounded-2xl animate-pulse"></div>
           }
         </div>
+      } @else if (errorCarga()) {
+        <app-error-carga [error]="errorCarga()!" (reintentar)="reintentarCarga()" />
       } @else if (docentes().length === 0) {
         <div class="bg-white rounded-2xl border border-warm-200 p-12 text-center shadow-warm-sm">
           <h3 class="text-base font-semibold text-warm-900">No se encontraron docentes</h3>
@@ -270,6 +275,7 @@ export class CoordinatorDocentesComponent implements OnInit {
   private readonly recarga = signal(0);
 
   readonly isLoading = signal(true);
+  readonly errorCarga = signal<LoadErrorState | null>(null);
   readonly formularioAbierto = signal(false);
   readonly tiposIdentificacion = signal<TipoIdentificacionItem[]>([]);
   readonly tiposVinculacion = signal<TipoVinculacionItem[]>([]);
@@ -292,10 +298,14 @@ export class CoordinatorDocentesComponent implements OnInit {
     toObservable(this.consulta)
       .pipe(
         debounceTime(DEBOUNCE_MS),
-        tap(() => this.isLoading.set(true)),
+        tap(() => {
+          this.isLoading.set(true);
+          this.errorCarga.set(null);
+        }),
         switchMap(({ pagina, tamano, busqueda, estaActivo, idTipoVinculacion }) =>
           this.coordService.getDocentesPrograma({ pagina, tamano, busqueda, estaActivo, idTipoVinculacion }).pipe(
             catchError((error: unknown) => {
+              this.errorCarga.set(classifyLoadError(error));
               this.toast.error(getApiErrorMessage(error));
               this.isLoading.set(false);
               return EMPTY;
@@ -324,6 +334,10 @@ export class CoordinatorDocentesComponent implements OnInit {
       next: (tipos) => this.tiposVinculacion.set(tipos),
       error: (error: unknown) => this.toast.error(getApiErrorMessage(error)),
     });
+  }
+
+  reintentarCarga(): void {
+    this.recarga.update((n) => n + 1);
   }
 
   onBusquedaChange(valor: string): void {
