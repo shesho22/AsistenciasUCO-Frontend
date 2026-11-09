@@ -9,6 +9,7 @@ import { DeanCoordinadorEditModalComponent } from './components/dean-coordinador
 import { DeanCoordinadorEstadoModalComponent } from './components/dean-coordinador-estado-modal.component';
 import { CardComponent } from '../../../shared/components/card/card.component';
 import { BadgeComponent } from '../../../shared/components/badge/badge.component';
+import { ActionMenuComponent, ActionMenuItem } from '../../../shared/components/action-menu/action-menu.component';
 import { ButtonComponent } from '../../../shared/components/button/button.component';
 import { FormFieldComponent } from '../../../shared/components/form-field/form-field.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
@@ -32,6 +33,7 @@ type VistaDecano = 'LISTA' | 'REGISTRO';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    ActionMenuComponent,
     CommonModule,
     FormsModule,
     CardComponent,
@@ -67,25 +69,14 @@ type VistaDecano = 'LISTA' | 'REGISTRO';
             </p>
           </div>
 
-          <div class="flex flex-wrap items-center gap-3">
+          <div class="flex items-center gap-3" data-testid="acciones-encabezado">
             <app-button variant="primary" size="md" (clicked)="abrirModalSeleccionarCoordinador()">
               <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
               </svg>
               Nombrar Coordinador Existente
             </app-button>
-            <app-button variant="secondary" size="md" (clicked)="mostrarCargaMasiva.set(true)">
-              <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-              </svg>
-              Carga Masiva CSV
-            </app-button>
-            <app-button variant="secondary" size="md" (clicked)="abrirFormularioRegistro()">
-              <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-              </svg>
-              Registrar Nuevo
-            </app-button>
+            <app-action-menu label="Más acciones" [items]="accionesEncabezado" (selected)="alElegirAccion($event)" />
           </div>
         </div>
 
@@ -481,6 +472,17 @@ export class DeanCoordinadoresComponent implements OnInit {
   isLoading = signal<boolean>(true);
   isSubmitting = signal<boolean>(false);
   readonly mostrarCargaMasiva = signal<boolean>(false);
+
+  /** Acciones secundarias de la cabecera: se agrupan en "Mas" para dejar una sola accion primaria. */
+  readonly accionesEncabezado: ActionMenuItem[] = [
+    { id: 'registrar', label: 'Registrar nuevo', testid: 'accion-registrar-nuevo' },
+    { id: 'carga-masiva', label: 'Carga masiva CSV', testid: 'accion-carga-masiva' },
+  ];
+
+  alElegirAccion(id: string): void {
+    if (id === 'registrar') this.abrirFormularioRegistro();
+    else if (id === 'carga-masiva') this.mostrarCargaMasiva.set(true);
+  }
   private readonly searchQuerySig = signal('');
   private readonly selectedEstadoSig = signal('TODOS');
   currentPage = signal(1);

@@ -92,4 +92,34 @@ describe('DeanCoordinadoresComponent UX (F-DEC-004, F-DEC-007, F-DEC-S04, F-COO-
     expect(alertas.some((t) => t?.includes('contraseña es obligatoria'))).toBeTrue();
     expect(alertas.length).toBeGreaterThanOrEqual(5);
   });
+
+  describe('UX densidad: cabecera con una accion primaria', () => {
+    function abrirMenu(): void {
+      (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('[data-testid="action-menu-trigger"]')!.click();
+      fixture.detectChanges();
+    }
+
+    it('muestra "Nombrar" como unica accion visible mas el menu "Mas"', () => {
+      iniciar([coord(1)]);
+      const cab = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="acciones-encabezado"]') as HTMLElement;
+      expect(cab.querySelectorAll('button').length).toBe(2);
+      expect(cab.textContent).toContain('Nombrar');
+      expect(cab.textContent).not.toContain('Carga Masiva');
+    });
+
+    it('"Carga masiva CSV" y "Registrar nuevo" estan en el menu y ejecutan su accion', () => {
+      iniciar([coord(1)]);
+      const el = fixture.nativeElement as HTMLElement;
+      abrirMenu();
+      (el.querySelector('[data-testid="accion-carga-masiva"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(component.mostrarCargaMasiva()).toBeTrue();
+      component.mostrarCargaMasiva.set(false);
+      fixture.detectChanges();
+      abrirMenu();
+      (el.querySelector('[data-testid="accion-registrar-nuevo"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(component.vistaActual()).toBe('REGISTRO');
+    });
+  });
 });
