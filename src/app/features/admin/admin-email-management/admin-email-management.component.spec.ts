@@ -79,25 +79,9 @@ describe('AdminEmailManagementComponent', () => {
   ];
 
   const mockEstadoCanal: EstadoCanalNotificacionDto = {
-    provider: 'outbox',
-    sender: 'smtp',
-    dispatcherEnabled: true,
-    disponible: true,
-    host: 'smtp.gmail.com',
-    port: 587,
-    username: 'asistencias.notificaciones@uco.edu.co',
-    tienePasswordConfigurado: true,
-    fromAddress: 'asistencias.notificaciones@uco.edu.co',
-    fromName: 'Universidad Católica de Oriente',
-    starttls: true,
-    ssl: false,
-    maxBcc: 50,
-    ratePerMinute: 60,
-    ratePerDay: 500,
-    requireConfirmedEmail: false,
-    platformUrl: 'https://asistencias.uco.edu.co',
-    testModeEnabled: false,
-    testModeRedirectCount: 0,
+    canalActivo: true,
+    ultimoEnvioUtc: '2026-11-09T15:30:00Z',
+    ultimoError: null,
   };
 
   const mockColaResponse: ConsultaColaNotificacionesResponse = {
@@ -335,11 +319,20 @@ describe('AdminEmailManagementComponent', () => {
       fixture.detectChanges();
     });
 
+    it('F3-ADM-04: muestra solo canal activo, último envío y último error; sin host, puerto, remitente ni topes', () => {
+      const el = fixture.nativeElement as HTMLElement;
+      const texto = el.textContent ?? '';
+      expect(el.querySelector('[data-testid="canal-activo"]')?.textContent?.trim()).toBe('Activo');
+      expect(el.querySelector('[data-testid="canal-ultimo-envio"]')?.textContent?.trim()).not.toBe('—');
+      expect(el.querySelector('[data-testid="canal-ultimo-error"]')?.textContent?.trim()).toBe('Sin errores');
+      for (const prohibido of ['smtp.gmail.com', '587', 'Servidor Host', 'Puerto', 'Remitente', 'Usuario Autenticación', 'Tope de Envíos', 'Modo de Pruebas']) {
+        expect(texto).not.toContain(prohibido);
+      }
+    });
+
     it('expone el estado y los parámetros del canal SMTP', () => {
       expect(component.canalEstado()).toEqual(mockEstadoCanal);
-      expect(component.canalEstado()?.provider).toBe('outbox');
-      expect(component.canalEstado()?.sender).toBe('smtp');
-      expect(component.canalEstado()?.dispatcherEnabled).toBeTrue();
+      expect(component.canalEstado()?.canalActivo).toBeTrue();
     });
 
     it('enviarCorreoPrueba ejecuta el test en vivo y muestra feedback', () => {

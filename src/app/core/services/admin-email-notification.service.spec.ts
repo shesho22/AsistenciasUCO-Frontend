@@ -23,9 +23,9 @@ describe('AdminEmailNotificationService', () => {
 
     const req = http.expectOne(`${base}/estado-canal`);
     expect(req.request.method).toBe('GET');
-    req.flush({ exitoso: true, datos: { provider: 'outbox' } });
+    req.flush({ exitoso: true, datos: { canalActivo: true, ultimoEnvioUtc: null, ultimoError: null } });
 
-    expect(resultado).toEqual(jasmine.objectContaining({ provider: 'outbox' }));
+    expect(resultado).toEqual({ canalActivo: true, ultimoEnvioUtc: null, ultimoError: null });
   });
 
   it('listarPlantillas envía el idioma por defecto y uno explícito', () => {
