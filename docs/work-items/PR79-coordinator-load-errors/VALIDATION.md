@@ -46,6 +46,11 @@ PR #78, head 9a0c77e94ba9adffd8f604302cfc8b75feae4e66: build-test-verify, SonarC
 | Spec `coordinator-subjects.component.spec.ts` | PASS, 6/6, exit 0 | Chrome Headless; incluye el reintento y la aserción tipada con `toHaveSize(1)`. |
 | `npm run verify` | PASS, exit 0 | lint tokens/a11y OK; 1983/1983; statements 93.10%, branches 78.63%, functions 93.50%, lines 94.10%; gate realtime LINE 95.18% / BRANCH 85.23%; `check-retiro-solicitudes` OK; build production completado. |
 | Advertencias de build | WARN | Las dos reglas Tailwind `group-open` siguen omitidas por sub-selector vacío; no falló el build. |
-| CI remoto del nuevo head | PENDIENTE | Se verificará después de publicar el commit de corrección en PR #80. |
+| `build-test-verify` remoto | PASS, exit 0 | GitHub Actions, PR #80, head `9f72c904e134d516022e7a9b0d5bad51486406ac`. |
+| SonarCloud remoto | PASS | Sin alertas nuevas en los archivos cambiados. |
+| SonarCloud Code Analysis | PASS | Quality Gate PASS; 0 issues nuevas, 0 hotspots, 100% cobertura en código nuevo y 0% duplicación nueva. |
+| Anotaciones de GitHub Actions | WARN | Dos advertencias no bloqueantes: acciones forzadas a Node.js 24 por deprecación de Node.js 20, y acción `SonarScanner` deprecada. No son issues nuevas de mantenibilidad del código. |
 
 - Merge/despliegue: no ejecutados.
+- PR #80 continúa abierto como draft; la corrección se encuentra validada en la rama para revisión, no integrada en `develop`.
+- El CI remoto descrito corresponde al commit de código `9f72c904e134d516022e7a9b0d5bad51486406ac`; el seguimiento de esta evidencia cambiará únicamente documentación.
