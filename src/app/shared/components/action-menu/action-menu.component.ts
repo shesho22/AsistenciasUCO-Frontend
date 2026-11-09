@@ -99,8 +99,8 @@ export class ActionMenuComponent {
 
   private abrir(): void {
     this.abierto.set(true);
-    // El menu se pinta tras el siguiente ciclo de deteccion: se enfoca la primera accion habilitada.
-    queueMicrotask(() => this.botones()[0]?.focus());
+    // El menu se pinta en la deteccion de cambios que sigue al clic (antes de la proxima tarea): se enfoca la primera accion habilitada.
+    setTimeout(() => this.botones()[0]?.focus(), 0);
   }
 
   protected elegir(item: ActionMenuItem): void {

@@ -114,7 +114,7 @@ import { ClassSession } from '../../../../core/models/attendance.model';
         </div>
       </header>
 
-      @if (sessions().length === 0 && selectedCourseId() && !isLoadingSession()) {
+      @if (isDetailMode() && sessions().length === 0 && selectedCourseId() && !isLoadingSession()) {
         <div class="bg-white p-8 rounded-2xl border border-dashed border-warm-300 text-center space-y-3 shadow-warm-xs">
           <div class="w-12 h-12 rounded-full bg-primary-50 text-primary-700 flex items-center justify-center mx-auto">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

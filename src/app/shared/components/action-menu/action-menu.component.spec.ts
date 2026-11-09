@@ -25,7 +25,7 @@ describe('ActionMenuComponent (CULM-001, patron "Mas acciones")', () => {
   }
   async function abrirYEnfocar(): Promise<void> {
     abrir();
-    await Promise.resolve();
+    await new Promise<void>((r) => setTimeout(r, 0));
   }
   const tecla = (el: Element, key: string): void => {
     el.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));

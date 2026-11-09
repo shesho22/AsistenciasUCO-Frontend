@@ -183,6 +183,14 @@ describe('GroupSessionsOverviewComponent', () => {
     expect(creadas).toBe(1);
   });
 
+  it('UX densidad: sin sesiones la accion de crear no se repite en la tarjeta de sesion seleccionada', () => {
+    render([]);
+    const botones = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('button')).filter((b) =>
+      (b.textContent || '').includes('Nueva Sesión')
+    );
+    expect(botones.length).toBe(1);
+  });
+
   it('B1-F-14 las sesiones canceladas no cuentan en el total', () => {
     const cancelada: ClassSession = { ...session(3), estado: 'CANCELADA' };
     const component = render([

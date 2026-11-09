@@ -159,6 +159,13 @@ describe('AttendanceControlHeaderComponent', () => {
       expect(button(/Proyectar QR/)).toBeTruthy();
     });
 
+    it('en la vista general sin sesiones no duplica el estado vacio (lo muestra el historial del grupo)', () => {
+      fixture.componentRef.setInput('isDetailMode', false);
+      fixture.componentRef.setInput('sessions', []);
+      fixture.detectChanges();
+      expect(text()).not.toContain('Programar Primera Sesión');
+    });
+
     it('en la vista general no repite "+ Sesion" (la accion vive en el historial del grupo)', () => {
       fixture.componentRef.setInput('isDetailMode', false);
       fixture.detectChanges();

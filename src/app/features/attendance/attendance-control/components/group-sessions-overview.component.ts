@@ -130,14 +130,6 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
               >
                 Abrir Sesión #{{ sesionReciente()?.sessionNumber }}
               </app-button>
-            } @else {
-              <app-button
-                variant="primary"
-                size="sm"
-                (clicked)="openNewSession.emit()"
-              >
-                + Nueva Sesión
-              </app-button>
             }
           </div>
         </div>
