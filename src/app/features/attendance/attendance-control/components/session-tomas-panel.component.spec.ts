@@ -1,8 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { NEVER, of } from 'rxjs';
 import { SessionTomasPanelComponent } from './session-tomas-panel.component';
 import { TomaModoSelectorComponent } from './toma-modo-selector.component';
 import { TomaCierreDialogComponent } from './toma-cierre-dialog.component';
-import { TomaAsistencia, TomasSesion } from '../../../../core/models/toma-asistencia.model';
+import { AsistenciaToma, TomaAsistencia, TomasSesion } from '../../../../core/models/toma-asistencia.model';
+import { TomaAsistenciaService } from '../../../../core/services/toma-asistencia.service';
+import { RealtimeService } from '../../../../core/realtime/realtime.service';
 
 function toma(parcial: Partial<TomaAsistencia> = {}): TomaAsistencia {
   return {
@@ -21,34 +24,156 @@ function tomasSesion(parcial: Partial<TomasSesion> = {}): TomasSesion {
   };
 }
 
-describe('SessionTomasPanelComponent (CULM-001 B.2)', () => {
+describe('SessionTomasPanelComponent (CULM-001 B.2 + UX toma)', () => {
   let fixture: ComponentFixture<SessionTomasPanelComponent>;
+  let service: jasmine.SpyObj<TomaAsistenciaService>;
   const el = (id: string) => (fixture.nativeElement as HTMLElement).querySelector(`[data-testid="${id}"]`) as HTMLElement | null;
   const boton = (id: string) => el(id) as HTMLButtonElement;
+  const texto = (id: string) => (el(id)?.textContent ?? '').replace(/\s+/g, ' ').trim();
 
   function render(datos: TomasSesion | null, extra: { abriendo?: boolean } = {}) {
     fixture = TestBed.createComponent(SessionTomasPanelComponent);
     fixture.componentRef.setInput('tomasSesion', datos);
     fixture.componentRef.setInput('abriendo', extra.abriendo ?? false);
     fixture.detectChanges();
+    fixture.detectChanges();
   }
 
-  beforeEach(() => TestBed.configureTestingModule({ imports: [SessionTomasPanelComponent] }));
+  const pagina = (elementos: AsistenciaToma[]) =>
+    ({ exitoso: true, elementos, numeroPagina: 1, tamanoPagina: 100, totalElementos: elementos.length, totalPaginas: 1 });
+  const alumno = (id: string, estado: AsistenciaToma['estado']): AsistenciaToma =>
+    ({ estudianteId: id, nombreCompleto: `Estudiante ${id}`, estado, registradoPorEstudiante: false, fechaRegistroUtc: null });
 
-  it('B2-F-06 lista cada toma con numero, modo, estado, horas y conteos', () => {
-    render(tomasSesion({ tomas: [toma(), toma({ idToma: 't-2', numero: 2, modo: 'QR', estado: 'ABIERTA', horasToma: 0.5 })] }));
-    const t1 = el('toma-t-1')!.textContent!.replace(/\s+/g, ' ');
-    expect(t1).toContain('Toma 1');
-    expect(t1).toContain('Manual');
-    expect(t1).toContain('Cerrada');
-    expect(t1).toContain('1 h');
-    expect(t1).toContain('8 presentes');
-    expect(t1).toContain('1 ausentes');
-    expect(t1).toContain('1 excusas');
-    const t2 = el('toma-t-2')!.textContent!.replace(/\s+/g, ' ');
-    expect(t2).toContain('Código QR');
-    expect(t2).toContain('Abierta');
-    expect(t2).toContain('0.5 h');
+  beforeEach(() => {
+    service = jasmine.createSpyObj<TomaAsistenciaService>('TomaAsistenciaService', [
+      'consultarAsistencias', 'consultarFaltantes', 'registrarAsistencias',
+    ]);
+    service.consultarAsistencias.and.returnValue(of(pagina([alumno('a', null), alumno('b', 'AN')])));
+    service.consultarFaltantes.and.returnValue(of({ exitoso: true, elementos: [], numeroPagina: 1, tamanoPagina: 100, totalElementos: 0, totalPaginas: 1 }));
+    TestBed.configureTestingModule({
+      imports: [SessionTomasPanelComponent],
+      providers: [
+        { provide: TomaAsistenciaService, useValue: service },
+        { provide: RealtimeService, useValue: { listenType: () => NEVER } },
+      ],
+    });
+  });
+
+  afterEach(() => fixture?.destroy());
+
+  it('UX-toma con una sola toma muestra su lista directamente, sin pestanas', () => {
+    render(tomasSesion({ tomas: [toma({ estado: 'ABIERTA' })] }));
+    expect(el('tabs-tomas')).toBeNull();
+    expect(el('toma-t-1')).not.toBeNull();
+    expect(el('fila-a')).not.toBeNull();
+    expect(el('tabpanel-t-1')!.hidden).toBeFalse();
+  });
+
+  it('UX-toma con varias tomas muestra una pestana por toma mas el resumen, y la toma abierta es la activa', () => {
+    render(tomasSesion({ tomas: [toma(), toma({ idToma: 't-2', numero: 2, estado: 'ABIERTA', modo: 'QR' })] }));
+    expect(el('tabs-tomas')!.getAttribute('role')).toBe('tablist');
+    expect(texto('tab-t-1')).toContain('Toma 1');
+    expect(texto('tab-t-2')).toContain('Toma 2');
+    expect(texto('tab-resumen')).toContain('Resumen de la sesión');
+    expect(el('tab-t-2')!.getAttribute('aria-selected')).toBe('true');
+    expect(el('tabpanel-t-1')!.hidden).toBeTrue();
+    expect(el('tabpanel-t-2')!.hidden).toBeFalse();
+  });
+
+  it('UX-toma sin toma abierta la activa es la mas reciente', () => {
+    render(tomasSesion({ tomas: [toma(), toma({ idToma: 't-2', numero: 2 })] }));
+    expect(el('tab-t-2')!.getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('UX-toma cada toma consulta SU propia lista', () => {
+    render(tomasSesion({ tomas: [toma(), toma({ idToma: 't-2', numero: 2 })] }));
+    expect(service.consultarAsistencias).toHaveBeenCalledWith('t-1', 1, 100);
+    expect(service.consultarAsistencias).toHaveBeenCalledWith('t-2', 1, 100);
+  });
+
+  it('UX-toma cambiar de pestana muestra la otra toma sin perder lo marcado sin guardar', () => {
+    render(tomasSesion({ tomas: [toma(), toma({ idToma: 't-2', numero: 2, estado: 'ABIERTA' })] }));
+    const enT2 = (id: string) => el('tabpanel-t-2')!.querySelector(`[data-testid="${id}"]`) as HTMLElement;
+    enT2('estado-a-AN').click();
+    fixture.detectChanges();
+    boton('tab-t-1').click();
+    fixture.detectChanges();
+    expect(el('tabpanel-t-1')!.hidden).toBeFalse();
+    expect(el('tabpanel-t-2')!.hidden).toBeTrue();
+    boton('tab-t-2').click();
+    fixture.detectChanges();
+    expect(enT2('indicador-sin-guardar').textContent).toContain('1 sin guardar');
+  });
+
+  it('UX-toma la pestana de una toma con cambios sin guardar lo indica', () => {
+    render(tomasSesion({ tomas: [toma(), toma({ idToma: 't-2', numero: 2, estado: 'ABIERTA' })] }));
+    expect(el('tab-sin-guardar-t-2')).toBeNull();
+    (el('tabpanel-t-2')!.querySelector('[data-testid="estado-a-AN"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(el('tab-sin-guardar-t-2')).not.toBeNull();
+    expect(el('tab-sin-guardar-t-1')).toBeNull();
+  });
+
+  it('UX-toma la pestana Resumen muestra la matriz estudiante x toma', () => {
+    render(tomasSesion({ tomas: [toma(), toma({ idToma: 't-2', numero: 2 })] }));
+    expect(el('tabpanel-resumen')).toBeNull();
+    boton('tab-resumen').click();
+    fixture.detectChanges();
+    fixture.detectChanges();
+    expect(el('tabpanel-resumen')).not.toBeNull();
+    expect(el('celda-b-t-1')!.getAttribute('data-estado')).toBe('AN');
+    expect(el('tab-resumen')!.getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('UX-toma al abrirse una toma nueva pasa a ser la activa', () => {
+    render(tomasSesion({ tomas: [toma(), toma({ idToma: 't-2', numero: 2 })] }));
+    boton('tab-t-1').click();
+    fixture.detectChanges();
+    fixture.componentRef.setInput('tomasSesion', tomasSesion({
+      tomas: [toma(), toma({ idToma: 't-2', numero: 2 }), toma({ idToma: 't-3', numero: 3, estado: 'ABIERTA' })],
+    }));
+    fixture.detectChanges();
+    expect(el('tab-t-3')!.getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('UX-toma las pestanas se desplazan solas en movil (overflow-x-auto) y miden 44 px', () => {
+    render(tomasSesion({ tomas: [toma(), toma({ idToma: 't-2', numero: 2 })] }));
+    expect(el('tabs-tomas')!.className).toContain('overflow-x-auto');
+    expect(el('tab-t-1')!.className).toContain('min-h-[44px]');
+  });
+
+  it('UX-toma sin tomas explica que aun no hay ninguna', () => {
+    render(tomasSesion({ tomas: [] }));
+    expect(el('sin-tomas')).not.toBeNull();
+    expect(el('tabs-tomas')).toBeNull();
+  });
+
+  it('UX-toma la ventana cerrada del backend bloquea la edicion de las tomas', () => {
+    render(tomasSesion({ tomas: [toma({ estado: 'ABIERTA' })], ventana: { aperturaUtc: null, cierreUtc: null, abierta: false } }));
+    expect(boton('guardar-toma').disabled).toBeTrue();
+    expect(el('toma-ventana-cerrada')).not.toBeNull();
+  });
+
+  it('UX-toma re-emite proyectar, cerrar, actualizado y notificaciones de la toma', () => {
+    service.registrarAsistencias.and.returnValue(of({ exitoso: true, mensajeUsuario: 'Guardado.', datos: { idToma: 't-1', idSesion: 's-1', totalRegistros: 1 } }));
+    render(tomasSesion({ tomas: [toma({ estado: 'ABIERTA', modo: 'QR' })] }));
+    const proyectar = jasmine.createSpy('proyectar');
+    const cerrar = jasmine.createSpy('cerrar');
+    const actualizado = jasmine.createSpy('actualizado');
+    const aviso = jasmine.createSpy('aviso');
+    fixture.componentInstance.proyectarQr.subscribe(proyectar);
+    fixture.componentInstance.cerrarToma.subscribe(cerrar);
+    fixture.componentInstance.actualizado.subscribe(actualizado);
+    fixture.componentInstance.notificacion.subscribe(aviso);
+    boton('proyectar-qr').click();
+    boton('cerrar-toma').click();
+    boton('estado-a-AN').click();
+    fixture.detectChanges();
+    boton('guardar-toma').click();
+    expect(proyectar).toHaveBeenCalledWith(jasmine.objectContaining({ idToma: 't-1' }));
+    expect(cerrar).toHaveBeenCalledWith(jasmine.objectContaining({ idToma: 't-1' }));
+    expect(actualizado).toHaveBeenCalledTimes(1);
+    expect(aviso).toHaveBeenCalledWith({ tipo: 'success', texto: 'Guardado.' });
   });
 
   it('B2-F-06 Nueva toma esta habilitada con ventana abierta, sin toma abierta y bajo el maximo', () => {
@@ -81,22 +206,6 @@ describe('SessionTomasPanelComponent (CULM-001 B.2)', () => {
     expect(boton('nueva-toma').disabled).toBeTrue();
     expect(el('panel-tomas')!.textContent).toContain('Cancelada');
     expect(el('panel-tomas')!.textContent).toContain('Todos los Santos');
-  });
-
-  it('B2-F-06 emite nuevaToma, seleccionarToma y verFaltantes', () => {
-    const nueva = jasmine.createSpy('nueva');
-    const abrir = jasmine.createSpy('abrir');
-    const faltantes = jasmine.createSpy('faltantes');
-    render(tomasSesion({ tomas: [toma({ idToma: 'cerrada', numero: 1 }), toma({ idToma: 'abierta', numero: 2, estado: 'ABIERTA' })], maximoTomas: 9 }));
-    fixture.componentInstance.nuevaToma.subscribe(nueva);
-    fixture.componentInstance.seleccionarToma.subscribe(abrir);
-    fixture.componentInstance.verFaltantes.subscribe(faltantes);
-
-    boton('ver-faltantes-cerrada').click();
-    boton('abrir-toma-abierta').click();
-    expect(faltantes).toHaveBeenCalledWith(jasmine.objectContaining({ idToma: 'cerrada' }));
-    expect(abrir).toHaveBeenCalledWith(jasmine.objectContaining({ idToma: 'abierta' }));
-    expect(nueva).not.toHaveBeenCalled();
   });
 
   it('B2-F-06 Nueva toma emite nuevaToma cuando esta habilitada', () => {

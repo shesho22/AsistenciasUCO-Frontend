@@ -71,7 +71,7 @@ describe('AttendanceControlComponent tomas (CULM-001 B.2)', () => {
     const groupService = jasmine.createSpyObj('GroupService', ['getStudentsByGroup']);
     attendanceService = jasmine.createSpyObj('AttendanceService', ['getAttendancesByGroup', 'saveBatchAttendance']);
     tomaService = jasmine.createSpyObj('TomaAsistenciaService', [
-      'abrirToma', 'consultarTomas', 'cerrarToma', 'registrarAsistencias', 'consultarFaltantes',
+      'abrirToma', 'consultarTomas', 'cerrarToma', 'registrarAsistencias', 'consultarFaltantes', 'consultarAsistencias',
     ]);
     qrService = jasmine.createSpyObj('AsistenciaQrService', ['abrirQr', 'rotarQr', 'cerrarQr']);
     const realtime = jasmine.createSpyObj<AttendanceRealtimeSyncService>('AttendanceRealtimeSyncService', [
@@ -91,6 +91,11 @@ describe('AttendanceControlComponent tomas (CULM-001 B.2)', () => {
     attendanceService.saveBatchAttendance.and.returnValue(of({ exitoso: true, mensaje: 'Guardada' }));
     tomaService.consultarTomas.and.returnValue(of({ exitoso: true, datos: tomasSesion([]) }));
     tomaService.consultarFaltantes.and.returnValue(of({ exitoso: true, elementos: [], numeroPagina: 1, tamanoPagina: 50, totalElementos: 0, totalPaginas: 0 }));
+    tomaService.consultarAsistencias.and.returnValue(of({
+      exitoso: true,
+      elementos: [{ estudianteId: 'student-1', nombreCompleto: 'Ada', estado: null, registradoPorEstudiante: false, fechaRegistroUtc: null }],
+      numeroPagina: 1, tamanoPagina: 100, totalElementos: 1, totalPaginas: 1,
+    }));
     realtime.watch.and.returnValue(NEVER);
     (realtime as never as { watchCancelaciones: jasmine.Spy }).watchCancelaciones.and.returnValue(NEVER);
     (realtime as never as { watchTomas: jasmine.Spy }).watchTomas.and.returnValue(tomasEvents$.asObservable());
@@ -169,14 +174,42 @@ describe('AttendanceControlComponent tomas (CULM-001 B.2)', () => {
     expect(qrService.abrirQr).not.toHaveBeenCalled();
   });
 
-  it('B2-F-10 con una toma abierta, guardar envia el lote a /tomas/{id}/asistencias y no al lote legado', () => {
+  it('B2-F-10 con una toma abierta la lista y el Guardar viven en la toma; guardar envia el lote a /tomas/{id}/asistencias y no al lote legado', () => {
     tomaService.consultarTomas.and.returnValue(of({ exitoso: true, datos: tomasSesion([toma()]) }));
     tomaService.registrarAsistencias.and.returnValue(of({ exitoso: true, datos: { idToma: 'toma-1', idSesion: 'session-1', totalRegistros: 1 } }));
-    const c = entrar();
-    c.markAllPresent();
-    c.saveAttendance();
+    entrar();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('app-attendance-control-table')).toBeNull();
+    (el.querySelector('[data-testid="marcar-todos-presentes"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    const guardar = el.querySelector('[data-testid="guardar-toma"]') as HTMLButtonElement;
+    expect(guardar.disabled).toBeFalse();
+    guardar.click();
     expect(tomaService.registrarAsistencias).toHaveBeenCalledOnceWith('toma-1', [{ estudianteId: 'student-1', estado: 'AN' }]);
     expect(attendanceService.saveBatchAttendance).not.toHaveBeenCalled();
+  });
+
+  it('UX-toma las notificaciones de la toma se muestran como aviso con el mensaje del backend', () => {
+    tomaService.consultarTomas.and.returnValue(of({ exitoso: true, datos: tomasSesion([toma()]) }));
+    tomaService.registrarAsistencias.and.returnValue(of({ exitoso: true, mensajeUsuario: 'Asistencia de la toma guardada.', datos: { idToma: 'toma-1', idSesion: 'session-1', totalRegistros: 1 } }));
+    const c = entrar();
+    const el = fixture.nativeElement as HTMLElement;
+    (el.querySelector('[data-testid="marcar-todos-presentes"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    (el.querySelector('[data-testid="guardar-toma"]') as HTMLButtonElement).click();
+    expect(c.toastMessage()).toBe('Asistencia de la toma guardada.');
+    expect(c.toastType()).toBe('success');
+  });
+
+  it('UX-toma con tomas el encabezado ya no ofrece el marcado masivo de la sesion', () => {
+    tomaService.consultarTomas.and.returnValue(of({ exitoso: true, datos: tomasSesion([toma()]) }));
+    entrar();
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Todos Presentes');
+  });
+
+  it('UX-toma sin tomas el encabezado conserva el marcado masivo del lote de la sesion', () => {
+    entrar();
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Todos Presentes');
   });
 
   it('B2-F-10 sin toma abierta conserva el lote legado de la sesion', () => {
@@ -193,12 +226,19 @@ describe('AttendanceControlComponent tomas (CULM-001 B.2)', () => {
     expect(c.attendanceWindowState()).not.toBe('ABIERTA');
   });
 
-  it('B2-F-11 cerrar la toma pide confirmacion, envia marcarAusentes=true y muestra los faltantes', () => {
-    tomaService.consultarTomas.and.returnValue(of({ exitoso: true, datos: tomasSesion([toma()]) }));
-    tomaService.cerrarToma.and.returnValue(of({
+  it('B2-F-11 cerrar la toma pide confirmacion, envia marcarAusentes=true y muestra los pendientes de validar en la toma', () => {
+    let cerrada = false;
+    tomaService.consultarTomas.and.callFake(() => of({
       exitoso: true,
-      datos: { toma: toma({ estado: 'CERRADA' }), totalAusentesMarcados: 1, totalFaltantes: 1, yaEstabaCerrada: false },
+      datos: tomasSesion([cerrada ? toma({ estado: 'CERRADA', fechaCierreUtc: '2026-11-03T14:30:00Z' }) : toma()]),
     }));
+    tomaService.cerrarToma.and.callFake(() => {
+      cerrada = true;
+      return of({
+        exitoso: true,
+        datos: { toma: toma({ estado: 'CERRADA' }), totalAusentesMarcados: 1, totalFaltantes: 1, yaEstabaCerrada: false },
+      });
+    });
     const c = entrar();
     c.solicitarCierreToma();
     expect(tomaService.cerrarToma).not.toHaveBeenCalled();
