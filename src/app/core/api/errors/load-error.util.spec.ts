@@ -21,4 +21,19 @@ describe('classifyLoadError', () => {
     expect(classifyLoadError(http(0)).kind).toBe('RED');
     expect(classifyLoadError(http(400)).kind).toBe('VALIDACION');
   });
+
+  it('usa el status cuando el error no es una respuesta HTTP de Angular', () => {
+    const casos = [
+      { status: 0, kind: 'RED' },
+      { status: 400, kind: 'VALIDACION' },
+      { status: 401, kind: 'AUTORIZACION' },
+      { status: 403, kind: 'AUTORIZACION' },
+      { status: 501, kind: 'NO_IMPLEMENTADO' },
+      { status: 418, kind: 'SERVIDOR' },
+    ] as const;
+
+    for (const caso of casos) {
+      expect(classifyLoadError({ status: caso.status }).kind).toBe(caso.kind);
+    }
+  });
 });
