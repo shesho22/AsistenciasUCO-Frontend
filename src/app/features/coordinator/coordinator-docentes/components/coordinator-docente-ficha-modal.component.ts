@@ -11,6 +11,9 @@ import {
 import { BadgeComponent, BadgeVariant } from '../../../../shared/components/badge/badge.component';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 import { getApiErrorMessage } from '../../../../core/api/errors/api-error.util';
+import { DialogoAccesibleDirective } from '../../../../shared/directives/dialogo-accesible.directive';
+
+let fichaDocenteIdContador = 0;
 
 const TAMANO_POR_DEFECTO = 5;
 
@@ -28,13 +31,20 @@ const ESTADOS: Record<EstadoPeriodoHistorial, { etiqueta: string; variante: Badg
   selector: 'app-coordinator-docente-ficha-modal',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, BadgeComponent, PaginationComponent],
+  imports: [DatePipe, BadgeComponent, PaginationComponent, DialogoAccesibleDirective],
   template: `
-    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-warm-950/40 backdrop-blur-xs" role="dialog" aria-modal="true">
+    <div
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-warm-950/40 backdrop-blur-xs focus:outline-none"
+      role="dialog"
+      aria-modal="true"
+      [attr.aria-labelledby]="tituloId"
+      appDialogoAccesible
+      (cerrarSolicitado)="cerrar.emit()"
+    >
       <div class="bg-white border border-warm-200 rounded-3xl max-w-3xl w-full shadow-warm-xl overflow-hidden max-h-[90vh] flex flex-col">
         <div class="p-6 bg-warm-50 border-b border-warm-200/80 flex items-start justify-between">
           <div>
-            <h3 class="font-serif font-bold text-xl text-warm-900">{{ docente().nombreCompleto }}</h3>
+            <h3 [id]="tituloId" class="font-serif font-bold text-xl text-warm-900">{{ docente().nombreCompleto }}</h3>
             <p class="text-xs text-warm-600 mt-0.5">
               {{ docente().codigoTipoIdentificacion }} {{ docente().numeroIdentificacion }} • {{ docente().correo }} • {{ docente().nombreTipoVinculacion }}
             </p>
@@ -119,6 +129,7 @@ export class CoordinatorDocenteFichaModalComponent implements OnInit {
   private readonly coordService = inject(CoordinatorManagementService);
   private readonly destroyRef = inject(DestroyRef);
 
+  readonly tituloId = `ficha-docente-titulo-${++fichaDocenteIdContador}`;
   readonly docente = input.required<DocentePrograma>();
   readonly cerrar = output<void>();
 
