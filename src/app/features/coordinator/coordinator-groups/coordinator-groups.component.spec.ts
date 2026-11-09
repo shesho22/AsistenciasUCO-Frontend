@@ -86,6 +86,32 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
     expect(toast.error).toHaveBeenCalled();
   });
 
+  // Un fallo de carga no puede verse como "El programa aun no tiene grupos": alerta accesible y Reintentar.
+  it('un fallo al cargar los grupos muestra una alerta con Reintentar y no el estado vacio', () => {
+    courseService.getCoordinatorCourses.and.returnValue(throwError(() => new Error('falla')));
+    component.cargarGrupos();
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[role="alert"]')).not.toBeNull();
+    expect(el.querySelector('[data-testid="sin-grupos"]')).toBeNull();
+    expect(Array.from(el.querySelectorAll('button')).some((b) => /Reintentar/.test(b.textContent ?? ''))).toBeTrue();
+  });
+
+  it('Reintentar vuelve a pedir los grupos y, si responde, pinta la tabla y retira la alerta', () => {
+    courseService.getCoordinatorCourses.and.returnValue(throwError(() => new Error('falla')));
+    component.cargarGrupos();
+    fixture.detectChanges();
+
+    courseService.getCoordinatorCourses.and.returnValue(of({ exitoso: true, datos: [grupo] }));
+    const el = fixture.nativeElement as HTMLElement;
+    (Array.from(el.querySelectorAll('button')).find((b) => /Reintentar/.test(b.textContent ?? '')) as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(el.querySelector('[role="alert"]')).toBeNull();
+    expect(component.grupos().length).toBe(1);
+  });
+
   it('sin planes o con catálogos que fallan deja las listas vacías', () => {
     coordinatorService.getPlanesEstudio.and.returnValue(of({ exitoso: true, datos: [] }));
     coordinatorService.getDocentesPrograma.and.returnValue(throwError(() => new Error('x')));

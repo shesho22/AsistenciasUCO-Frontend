@@ -115,6 +115,39 @@ describe('CoordinatorDocentesComponent', () => {
     });
   });
 
+  // Un fallo de carga no puede verse como "No se encontraron docentes": alerta accesible y Reintentar.
+  it('un fallo al cargar el directorio muestra una alerta con Reintentar y no el estado vacio', fakeAsync(() => {
+    coordService.getDocentesPrograma.and.returnValue(throwError(() => new Error('falla')));
+    crear();
+    tick(300);
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[role="alert"]')).not.toBeNull();
+    expect(el.textContent).not.toContain('No se encontraron docentes');
+    expect(Array.from(el.querySelectorAll('button')).some((b) => /Reintentar/.test(b.textContent ?? ''))).toBeTrue();
+  }));
+
+  it('Reintentar vuelve a consultar el directorio y retira la alerta al responder', fakeAsync(() => {
+    coordService.getDocentesPrograma.and.returnValue(throwError(() => new Error('falla')));
+    crear();
+    tick(300);
+    fixture.detectChanges();
+
+    coordService.getDocentesPrograma.and.callFake(() => {
+      docentesSignal.set([fila('doc-1', 'Roberto')]);
+      totalSignal.set(1);
+      return of({ exitoso: true, datos: docentesSignal(), total: 1 });
+    });
+    const el = fixture.nativeElement as HTMLElement;
+    (Array.from(el.querySelectorAll('button')).find((b) => /Reintentar/.test(b.textContent ?? '')) as HTMLButtonElement).click();
+    tick(300);
+    fixture.detectChanges();
+
+    expect(el.querySelector('[role="alert"]')).toBeNull();
+    expect(el.textContent).toContain('Roberto');
+  }));
+
   it('T-FE-02: carga el directorio una sola vez tras el debounce y los catálogos', fakeAsync(() => {
     crear();
     expect(coordService.getDocentesPrograma).not.toHaveBeenCalled(); // aún dentro del debounce

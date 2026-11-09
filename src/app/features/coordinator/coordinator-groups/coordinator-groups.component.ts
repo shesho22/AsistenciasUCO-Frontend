@@ -10,6 +10,8 @@ import { AsignaturaPlanItem, PeriodoAcademicoItem } from '../../../core/models/r
 import { DocentePrograma } from '../../../core/models/docente-programa.model';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
+import { ErrorCargaComponent } from '../../../shared/components/error-carga/error-carga.component';
+import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load-error.util';
 import { franjaNueva, validarFranjas } from '../../../core/validation/franjas.util';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { FranjasEditorComponent } from '../../../shared/components/franjas-editor/franjas-editor.component';
@@ -34,7 +36,7 @@ interface GrupoForm {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full' },
-  imports: [CommonModule, FormsModule, FranjasEditorComponent, PaginationComponent],
+  imports: [CommonModule, FormsModule, FranjasEditorComponent, PaginationComponent, ErrorCargaComponent],
   template: `
     <div class="space-y-6 animate-fade-in">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
@@ -59,6 +61,8 @@ interface GrupoForm {
         <div class="bg-white rounded-2xl border border-warm-200 shadow-warm-sm overflow-x-auto">
           @if (cargando()) {
             <p class="p-6 text-sm text-warm-500">Cargando grupos...</p>
+          } @else if (errorCarga()) {
+            <app-error-carga [error]="errorCarga()!" (reintentar)="cargarGrupos()" />
           } @else if (grupos().length === 0) {
             <p class="p-6 text-sm text-warm-500" data-testid="sin-grupos">El programa aún no tiene grupos.</p>
           } @else {
@@ -170,6 +174,7 @@ export class CoordinatorGroupsComponent implements OnInit {
   vista = signal<'LISTA' | 'FORM'>('LISTA');
   modo = signal<'CREAR' | 'EDITAR'>('CREAR');
   cargando = signal<boolean>(true);
+  errorCarga = signal<LoadErrorState | null>(null);
   guardando = signal<boolean>(false);
   grupos = signal<Course[]>([]);
   paginaActual = signal(1);
@@ -193,6 +198,7 @@ export class CoordinatorGroupsComponent implements OnInit {
 
   cargarGrupos(): void {
     this.cargando.set(true);
+    this.errorCarga.set(null);
     this.courseService.getCoordinatorCourses().subscribe({
       next: (res) => {
         this.grupos.set(res.datos ?? []);
@@ -201,6 +207,7 @@ export class CoordinatorGroupsComponent implements OnInit {
       },
       error: (err: unknown) => {
         this.cargando.set(false);
+        this.errorCarga.set(classifyLoadError(err));
         this.toast.error(getApiErrorMessage(err) || 'No fue posible cargar los grupos.');
       },
     });
