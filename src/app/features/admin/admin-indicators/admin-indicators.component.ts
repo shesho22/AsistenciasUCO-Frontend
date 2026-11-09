@@ -1,3 +1,4 @@
+import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { Observable, finalize } from 'rxjs';
 import { AdminIndicatorsService } from '../../../core/services/admin-indicators.service';
@@ -15,6 +16,7 @@ const MARGEN_IZQ = 44;
 @Component({
   selector: 'app-admin-indicators',
   standalone: true,
+  imports: [DecimalPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="space-y-6">
@@ -46,7 +48,8 @@ const MARGEN_IZQ = 44;
       }
 
       <div class="rounded-2xl border border-warm-200 bg-white p-4 shadow-warm-sm">
-        <h2 class="mb-3 font-serif font-bold text-lg text-warm-900">Ausentismo por facultad</h2>
+        <h2 class="font-serif font-bold text-lg text-warm-900">Ausentismo por facultad</h2>
+        <p class="mb-3 text-xs text-warm-600" data-testid="nota-horas">Calculado por horas dictadas.</p>
         @if (service.comparativa().length === 0 && !cargando()) {
           <p class="py-6 text-center text-sm text-warm-600">No hay facultades en esta institución.</p>
         } @else {
@@ -55,6 +58,7 @@ const MARGEN_IZQ = 44;
               <article class="rounded-xl border border-warm-200 p-4" data-testid="tarjeta-facultad">
                 <p class="font-medium">{{ f.nombreFacultad }}@if (!f.estaActivaFacultad) { <span class="ml-2 text-xs text-warm-600">Inactiva</span> }</p>
                 <p class="text-2xl font-semibold">{{ formatoPorcentaje(f.porcentajeAusentismo) }}</p>
+                <p class="text-xs text-warm-600">{{ f.horasFalta | number: '1.0-2' }} h de falta sobre {{ f.horasDictadas | number: '1.0-2' }} h dictadas</p>
                 <p class="text-xs text-warm-600">{{ f.totalEstudiantes }} estudiantes · {{ f.totalProgramas }} programas · retención {{ formatoPorcentaje(f.tasaRetencion) }}</p>
               </article>
             }
@@ -64,7 +68,10 @@ const MARGEN_IZQ = 44;
 
       <div class="rounded-2xl border border-warm-200 bg-white p-4 shadow-warm-sm">
         <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
-          <h2 class="font-serif font-bold text-lg text-warm-900">Tendencia de ausentismo</h2>
+          <div>
+            <h2 class="font-serif font-bold text-lg text-warm-900">Tendencia de ausentismo</h2>
+            <p class="text-xs text-warm-600" data-testid="nota-horas">Calculado por horas dictadas.</p>
+          </div>
           <div class="flex gap-2" role="group" aria-label="Granularidad">
             <button type="button" class="min-h-[44px] rounded-xl border border-warm-200 px-4 py-1 text-sm font-semibold text-warm-800" [class.bg-warm-100]="granularidad() === 'SEMANA'" (click)="cambiarGranularidad('SEMANA')">Semana</button>
             <button type="button" class="min-h-[44px] rounded-xl border border-warm-200 px-4 py-1 text-sm font-semibold text-warm-800" [class.bg-warm-100]="granularidad() === 'MES'" (click)="cambiarGranularidad('MES')">Mes</button>
@@ -82,7 +89,7 @@ const MARGEN_IZQ = 44;
             @for (p of service.tendencia(); track p.inicioIntervalo; let i = $index) {
               @if (p.porcentajeAusentismo !== null) {
                 <circle data-testid="punto-tendencia" r="4" [attr.cx]="xPunto(i)" [attr.cy]="yPunto(p.porcentajeAusentismo)">
-                  <title>{{ p.inicioIntervalo }} – {{ p.finIntervalo }}: {{ p.porcentajeAusentismo }}%</title>
+                  <title>{{ p.inicioIntervalo }} – {{ p.finIntervalo }}: {{ p.porcentajeAusentismo }}% ({{ p.horasFalta }} h de {{ p.horasDictadasEstudiante }} h-estudiante)</title>
                 </circle>
                 <text data-testid="valor-punto" [attr.x]="xPunto(i)" [attr.y]="yPunto(p.porcentajeAusentismo) - 9" text-anchor="middle" font-size="11" font-weight="600" fill="currentColor">{{ p.porcentajeAusentismo }}%</text>
               }

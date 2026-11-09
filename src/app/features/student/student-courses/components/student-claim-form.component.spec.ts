@@ -241,4 +241,134 @@ describe('StudentClaimFormComponent', () => {
     fileInput.dispatchEvent(new Event('change'));
     expect(component.fileSelected.emit).toHaveBeenCalled();
   });
+
+  describe('CULM-001 D.2 — soporte múltiple y categoría obligatoria (HU015, HU014)', () => {
+    it('muestra múltiples adjuntos en la lista con su estado (SUBIENDO, LISTO, RECHAZADO) y mensaje de error', () => {
+      prepare();
+      fixture.componentRef.setInput('archivos', [
+        { nombre: 'formula.pdf', tamanioKb: 120, estado: 'LISTO', fileId: 'f-1' },
+        { nombre: 'analisis.pdf', tamanioKb: 250, estado: 'SUBIENDO' },
+        { nombre: 'malware.exe', tamanioKb: 50, estado: 'RECHAZADO', error: 'Archivo infectado por malware' },
+      ]);
+      fixture.detectChanges();
+
+      const text = fixture.nativeElement.textContent;
+      expect(text).toContain('formula.pdf');
+      expect(text).toContain('analisis.pdf');
+      expect(text).toContain('malware.exe');
+      expect(text).toContain('Archivo infectado por malware');
+    });
+
+    it('muestra los límites de la configuración (máximo soportes, tipos permitidos y límite por minuto)', () => {
+      prepare();
+      fixture.componentRef.setInput('configuracion', {
+        maximoSoportes: 4,
+        tamanioMaximoBytes: 2097152,
+        tiposPermitidos: ['application/pdf', 'image/png'],
+        limiteSubidasPorMinuto: 7,
+        diasLimiteJustificacion: 5,
+      });
+      fixture.detectChanges();
+
+      const text = fixture.nativeElement.textContent;
+      expect(text).toContain('4');
+      expect(text).toContain('7');
+    });
+
+    it('muestra el indicador "Soporte obligatorio" cuando la categoría seleccionada tiene requiereSoporte === true', () => {
+      prepare();
+      fixture.componentRef.setInput('categorias', [
+        { id: 'c-med', codigo: 'MED', nombre: 'Médico / Salud', descripcion: 'Enfermedad comprobada', requiereSoporte: true },
+        { id: 'c-otr', codigo: 'OTR', nombre: 'Otro', descripcion: 'Motivo general', requiereSoporte: false },
+      ]);
+      component.categoria.set('Médico / Salud');
+      fixture.detectChanges();
+
+      const badge = fixture.nativeElement.querySelector('[data-testid="soporte-obligatorio-badge"]');
+      expect(badge).toBeTruthy();
+      expect(badge.textContent).toContain('Soporte obligatorio');
+
+      component.categoria.set('Otro');
+      fixture.detectChanges();
+      const badgeOtro = fixture.nativeElement.querySelector('[data-testid="soporte-obligatorio-badge"]');
+      expect(badgeOtro).toBeNull();
+    });
+
+    it('desactiva el botón de radicación cuando requiereSoporte === true y no hay ningún soporte LISTO', () => {
+      prepare();
+      fixture.componentRef.setInput('categorias', [
+        { id: 'c-med', codigo: 'MED', nombre: 'Médico / Salud', descripcion: 'Enfermedad comprobada', requiereSoporte: true },
+      ]);
+      component.categoria.set('Médico / Salud');
+      component.justificacion.set('Cita médica programada');
+      fixture.componentRef.setInput('archivos', [
+        { nombre: 'subiendo.pdf', estado: 'SUBIENDO', tamanioKb: 10 },
+      ]);
+      fixture.detectChanges();
+
+      const submitBtn = Array.from(fixture.nativeElement.querySelectorAll('button')).find((b: any) => b.textContent?.includes('Radicar Reclamo')) as HTMLButtonElement;
+      expect(submitBtn.disabled).toBeTrue();
+    });
+
+    it('habilita el botón de radicación cuando requiereSoporte === true y al menos un soporte está LISTO', () => {
+      prepare();
+      fixture.componentRef.setInput('categorias', [
+        { id: 'c-med', codigo: 'MED', nombre: 'Médico / Salud', descripcion: 'Enfermedad comprobada', requiereSoporte: true },
+      ]);
+      component.categoria.set('Médico / Salud');
+      component.justificacion.set('Cita médica programada');
+      fixture.componentRef.setInput('archivos', [
+        { nombre: 'constancia.pdf', estado: 'LISTO', fileId: 'f-1', tamanioKb: 20 },
+      ]);
+      fixture.detectChanges();
+
+      const submitBtn = Array.from(fixture.nativeElement.querySelectorAll('button')).find((b: any) => b.textContent?.includes('Radicar Reclamo')) as HTMLButtonElement;
+      expect(submitBtn.disabled).toBeFalse();
+    });
+
+    it('desactiva el botón de radicación mientras haya subidas en curso (estado === SUBIENDO)', () => {
+      prepare();
+      component.categoria.set('Laboral');
+      component.justificacion.set('Turno laboral imprevisto');
+      fixture.componentRef.setInput('archivos', [
+        { nombre: 'listo.pdf', estado: 'LISTO', fileId: 'f-1', tamanioKb: 10 },
+        { nombre: 'en-curso.pdf', estado: 'SUBIENDO', tamanioKb: 15 },
+      ]);
+      fixture.detectChanges();
+
+      const submitBtn = Array.from(fixture.nativeElement.querySelectorAll('button')).find((b: any) => b.textContent?.includes('Radicar Reclamo')) as HTMLButtonElement;
+      expect(submitBtn.disabled).toBeTrue();
+    });
+
+    it('desactiva el botón de radicación si la cantidad de adjuntos supera maximoSoportes', () => {
+      prepare();
+      fixture.componentRef.setInput('configuracion', { maximoSoportes: 2, tamanioMaximoBytes: 5000000, tiposPermitidos: [], limiteSubidasPorMinuto: 10, diasLimiteJustificacion: 5 });
+      component.categoria.set('Laboral');
+      component.justificacion.set('Motivo justificado');
+      fixture.componentRef.setInput('archivos', [
+        { nombre: 's1.pdf', estado: 'LISTO', fileId: 'f-1', tamanioKb: 10 },
+        { nombre: 's2.pdf', estado: 'LISTO', fileId: 'f-2', tamanioKb: 10 },
+        { nombre: 's3.pdf', estado: 'LISTO', fileId: 'f-3', tamanioKb: 10 },
+      ]);
+      fixture.detectChanges();
+
+      const submitBtn = Array.from(fixture.nativeElement.querySelectorAll('button')).find((b: any) => b.textContent?.includes('Radicar Reclamo')) as HTMLButtonElement;
+      expect(submitBtn.disabled).toBeTrue();
+    });
+
+    it('emite quitar con el índice del archivo al hacer clic en remover', () => {
+      spyOn(component.quitar, 'emit');
+      prepare();
+      fixture.componentRef.setInput('archivos', [
+        { nombre: 'doc1.pdf', estado: 'LISTO', fileId: 'f-1', tamanioKb: 10 },
+        { nombre: 'doc2.pdf', estado: 'LISTO', fileId: 'f-2', tamanioKb: 20 },
+      ]);
+      fixture.detectChanges();
+
+      const removeBtns = fixture.nativeElement.querySelectorAll('button[title="Remover adjunto"]');
+      expect(removeBtns.length).toBeGreaterThanOrEqual(2);
+      removeBtns[1].click();
+      expect(component.quitar.emit).toHaveBeenCalledWith(1);
+    });
+  });
 });

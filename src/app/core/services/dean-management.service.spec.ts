@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { DeanManagementService } from './dean-management.service';
+import { paginaApi } from '../testing/pagina-api';
 import { environment } from '../../../environments/environment';
 import { CoordinadorItem } from '../models/role-management.model';
 
@@ -45,9 +46,10 @@ describe('DeanManagementService', () => {
       expect(res.datos?.[0].nombres).toBe('Carlos');
     });
 
-    const req = http.expectOne(`${environment.apiUrl}/decano/coordinadores`);
+    const req = http.expectOne((r) => r.url === `${environment.apiUrl}/decano/coordinadores`);
     expect(req.request.method).toBe('GET');
-    req.flush({ exitoso: true, datos: mockCoordinadores });
+    expect(req.request.params.get('pagina')).toBe('1');
+    req.flush(paginaApi(mockCoordinadores));
   });
 
   it('getCoordinadores normaliza y deduplica DTOs del backend incluyendo coordinadores sin programa', () => {
@@ -85,9 +87,9 @@ describe('DeanManagementService', () => {
       expect(res.datos?.[0].totalGrupos).toBeNull();
     });
 
-    const req = http.expectOne(`${environment.apiUrl}/decano/coordinadores`);
+    const req = http.expectOne((r) => r.url === `${environment.apiUrl}/decano/coordinadores`);
     expect(req.request.method).toBe('GET');
-    req.flush({ exitoso: true, datos: backendDtos });
+    req.flush(paginaApi(backendDtos));
   });
 
   it('certificación F3: usa la facultad y los conteos reales que envía /decano/coordinadores', () => {
@@ -97,10 +99,8 @@ describe('DeanManagementService', () => {
       expect(res.datos?.[0].totalGrupos).toBe(2);
     });
 
-    const req = http.expectOne(`${environment.apiUrl}/decano/coordinadores`);
-    req.flush({
-      exitoso: true,
-      datos: [
+    const req = http.expectOne((r) => r.url === `${environment.apiUrl}/decano/coordinadores`);
+    req.flush(paginaApi([
         {
           id: 'coord-3',
           idUsuario: 'usr-3',
@@ -113,8 +113,17 @@ describe('DeanManagementService', () => {
           totalDocentes: 1,
           totalGrupos: 2,
         },
-      ],
-    });
+    ]));
+  });
+
+  it('F3-DEC-02: consume ApiPageResponse (elementos/totalElementos) y entrega el coordinador', () => {
+    let datos: CoordinadorItem[] | undefined;
+    service.getCoordinadores().subscribe((res) => (datos = res.datos));
+    http.expectOne((r) => r.url === `${environment.apiUrl}/decano/coordinadores`).flush(
+      paginaApi([{ id: 'c1', idUsuario: 'u1', numeroIdentificacion: '1', nombreCompleto: 'Andres Felipe Lopez Martinez', estaActivoCoordinador: true }])
+    );
+    expect(datos?.length).toBe(1);
+    expect(datos?.[0].nombreCompleto).toBe('Andres Felipe Lopez Martinez');
   });
 
   it('createCoordinador envía POST con los datos del nuevo coordinador', () => {
@@ -208,9 +217,9 @@ describe('DeanManagementService', () => {
       expect(item?.estado).toBe('INACTIVO');
     });
 
-    http.expectOne(`${environment.apiUrl}/decano/coordinadores`).flush({
+    http.expectOne((r) => r.url === `${environment.apiUrl}/decano/coordinadores`).flush({
       exitoso: true,
-      datos: [
+      elementos: [
         {
           id: 'coord-1',
           idUsuario: 'usr-1',

@@ -5,6 +5,10 @@ import { CoordinatorIndicatorsComponent } from './coordinator-indicators.compone
 import { environment } from '../../../../environments/environment';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { AlertaTemprana, KpisCoordinador } from '../../../core/models/coordinator-indicators.model';
+import { paginaApi, porUrl } from '../../../core/testing/pagina-api';
+import { CoordinatorProgramService } from '../../../core/services/coordinator-program.service';
+
+const planDe = (idPrograma: string, nombrePrograma: string) => ({ id: `plan-${idPrograma}`, idPrograma, nombrePrograma, inp: '2024' });
 
 describe('CoordinatorIndicatorsComponent', () => {
   let fixture: ComponentFixture<CoordinatorIndicatorsComponent>;
@@ -27,19 +31,39 @@ describe('CoordinatorIndicatorsComponent', () => {
   const alertasReq = () => http.match((r) => r.url === `${base}/alertas-tempranas`);
   const texto = () => (fixture.nativeElement as HTMLElement).textContent ?? '';
 
-  beforeEach(() => {
+  /** S4: antes de pedir cifras se cargan los programas del coordinador (derivados de sus planes). */
+  function crear(planes: unknown[]): void {
+    try { sessionStorage.removeItem('coordinador.programaId'); } catch { /* sin almacenamiento de sesión */ }
     TestBed.configureTestingModule({ imports: [CoordinatorIndicatorsComponent], providers: [provideHttpClient(), provideHttpClientTesting()] });
     http = TestBed.inject(HttpTestingController);
     toast = TestBed.inject(ToastService);
     fixture = TestBed.createComponent(CoordinatorIndicatorsComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
+    http.expectOne(porUrl(`${base}/planes-estudio`)).flush(paginaApi(planes));
+  }
+
+  beforeEach(() => {
+    crear([planDe('p-1', 'Sistemas')]);
     http.expectOne((r) => r.url === `${base}/indicadores`).flush({ exitoso: true, datos: kpis });
     alertasReq().forEach((r) => r.flush({ exitoso: true, datos: [alerta], total: 12 }));
     fixture.detectChanges();
   });
 
-  afterEach(() => http.verify());
+  afterEach(() => {
+    // La selección de programa vive en sessionStorage: no debe filtrarse a los demás specs.
+    try { sessionStorage.removeItem('coordinador.programaId'); } catch { /* sin almacenamiento de sesión */ }
+    http.verify();
+  });
+
+  it('S4 con un solo programa envía programaId en KPIs y alertas y no muestra el selector', () => {
+    expect(TestBed.inject(CoordinatorProgramService).programaId()).toBe('p-1');
+    component.onPageChange(2);
+    const req = http.expectOne((r) => r.url === `${base}/alertas-tempranas`);
+    expect(req.request.params.get('programaId')).toBe('p-1');
+    req.flush({ exitoso: true, datos: [], total: 12 });
+    expect(fixture.nativeElement.querySelector('#coordinador-programa')).toBeNull();
+  });
 
   it('T-FE-02 muestra exactamente las cifras recibidas (sin calcular nada en el cliente)', () => {
     const t = texto();
@@ -108,5 +132,68 @@ describe('CoordinatorIndicatorsComponent', () => {
     component.service.alertas.set([]);
     fixture.detectChanges();
     expect(texto()).toContain('No hay estudiantes');
+  });
+});
+
+describe('CoordinatorIndicatorsComponent (S4: coordinador de varios programas)', () => {
+  const base = `${environment.apiUrl}/coordinador`;
+  let fixture: ComponentFixture<CoordinatorIndicatorsComponent>;
+  let http: HttpTestingController;
+
+  beforeEach(() => {
+    try { sessionStorage.removeItem('coordinador.programaId'); } catch { /* sin almacenamiento de sesión */ }
+    TestBed.configureTestingModule({ imports: [CoordinatorIndicatorsComponent], providers: [provideHttpClient(), provideHttpClientTesting()] });
+    http = TestBed.inject(HttpTestingController);
+    fixture = TestBed.createComponent(CoordinatorIndicatorsComponent);
+    fixture.detectChanges();
+    http
+      .expectOne(porUrl(`${base}/planes-estudio`))
+      .flush(paginaApi([planDe('p-1', 'Sistemas'), planDe('p-2', 'Software'), planDe('p-1', 'Sistemas')]));
+  });
+
+  afterEach(() => {
+    try { sessionStorage.removeItem('coordinador.programaId'); } catch { /* sin almacenamiento de sesión */ }
+    http.verify();
+  });
+
+  it('muestra el selector con los programas distintos y consulta con el primero por defecto (sin COO_002)', () => {
+    const kpisReq = http.expectOne((r) => r.url === `${base}/indicadores`);
+    expect(kpisReq.request.params.get('programaId')).toBe('p-1');
+    kpisReq.flush({ exitoso: true, datos: null });
+    http.match((r) => r.url === `${base}/alertas-tempranas`).forEach((r) => r.flush({ exitoso: true, datos: [], total: 0 }));
+    fixture.detectChanges();
+
+    const select = fixture.nativeElement.querySelector('#coordinador-programa') as HTMLSelectElement;
+    expect(Array.from(select.options).map((o) => o.textContent?.trim())).toEqual(['Sistemas', 'Software']);
+    expect(select.value).toBe('p-1');
+  });
+
+  it('al cambiar de programa se guarda en la sesión y se vuelve a consultar con el nuevo programaId', () => {
+    http.expectOne((r) => r.url === `${base}/indicadores`).flush({ exitoso: true, datos: null });
+    http.match((r) => r.url === `${base}/alertas-tempranas`).forEach((r) => r.flush({ exitoso: true, datos: [], total: 0 }));
+    fixture.detectChanges();
+
+    const select = fixture.nativeElement.querySelector('#coordinador-programa') as HTMLSelectElement;
+    select.value = 'p-2';
+    select.dispatchEvent(new Event('change'));
+
+    const kpisReq = http.expectOne((r) => r.url === `${base}/indicadores`);
+    expect(kpisReq.request.params.get('programaId')).toBe('p-2');
+    kpisReq.flush({ exitoso: true, datos: null });
+    const alertas = http.expectOne((r) => r.url === `${base}/alertas-tempranas`);
+    expect(alertas.request.params.get('programaId')).toBe('p-2');
+    expect(alertas.request.params.get('pagina')).toBe('1');
+    alertas.flush({ exitoso: true, datos: [], total: 0 });
+    expect(sessionStorage.getItem('coordinador.programaId')).toBe('p-2');
+  });
+
+  it('solo permite seleccionar programas de su ámbito', () => {
+    http.expectOne((r) => r.url === `${base}/indicadores`).flush({ exitoso: true, datos: null });
+    http.match((r) => r.url === `${base}/alertas-tempranas`).forEach((r) => r.flush({ exitoso: true, datos: [], total: 0 }));
+    TestBed.inject(CoordinatorProgramService).seleccionar('p-2');
+    expect(TestBed.inject(CoordinatorProgramService).programaId()).toBe('p-2');
+    // Un programa ajeno no se puede seleccionar.
+    TestBed.inject(CoordinatorProgramService).seleccionar('p-99');
+    expect(TestBed.inject(CoordinatorProgramService).programaId()).toBe('p-2');
   });
 });

@@ -504,4 +504,43 @@ describe('TeacherClaimsComponent — bandeja paginada y detalle (HU035/HU036)', 
     tick(10 * 60 * 1000);
     http.expectNone(() => true);
   }));
+
+  describe('CULM-001 D.2 — visualización de categoría y múltiples soportes del docente (HU015, HU014)', () => {
+    it('muestra la categoría con su nombre y código tanto si viene como objeto o como string', () => {
+      cargarInicial([
+        fila('rec-cat-1', {
+          categoria: { codigo: 'MED', nombre: 'Médico / Salud' },
+          justificacionSolicitud: 'Cita médica urgente',
+        }),
+      ], 1, 1);
+
+      expect(fixture.nativeElement.textContent).toContain('Médico / Salud');
+    });
+
+    it('muestra la lista completa de soportes adjuntos con botón de descarga individual para cada uno', () => {
+      const soportes = [
+        { fileId: 'file-001', nombre: 'constancia.pdf', tipo: 'application/pdf', tamanioKb: 100, fechaSubida: '2026-10-10' },
+        { fileId: 'file-002', nombre: 'receta.png', tipo: 'image/png', tamanioKb: 50, fechaSubida: '2026-10-10' },
+      ];
+      cargarInicial([fila('rec-sop-1')], 1, 1);
+      component.selectedReclamo.set({
+        ...component.reclamos()[0],
+        soportes,
+        causalInasistencia: null,
+        nombreEstado: 'Pendiente',
+      });
+      component.vistaActual.set('RESOLUCION');
+      fixture.detectChanges();
+
+      const text = fixture.nativeElement.textContent;
+      expect(text).toContain('constancia.pdf');
+      expect(text).toContain('receta.png');
+
+      spyOn(component, 'descargarSoporte');
+      const downloadBtns = fixture.nativeElement.querySelectorAll('button[data-testid^="btn-descargar-soporte-"]');
+      expect(downloadBtns.length).toBe(2);
+      downloadBtns[0].click();
+      expect(component.descargarSoporte).toHaveBeenCalledWith(soportes[0]);
+    });
+  });
 });

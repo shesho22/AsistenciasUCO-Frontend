@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { ApiResponse } from '../models/api-response.model';
+import { ApiPageResponse, ApiResponse } from '../models/api-response.model';
 import { AsignaturaPlanItem, PlanEstudioItem } from '../models/role-management.model';
 import { normalizarAsignaturaPlan } from './coordinator-management.service';
 import {
@@ -29,8 +29,8 @@ export class DeanFacultadService {
     estaActivo?: boolean | null;
     pagina: number;
     tamano: number;
-  }): Observable<ApiResponse<EstudianteFacultadItem[]>> {
-    return this.http.get<ApiResponse<EstudianteFacultadItem[]>>(`${this.base}/estudiantes`, {
+  }): Observable<ApiPageResponse<EstudianteFacultadItem>> {
+    return this.http.get<ApiPageResponse<EstudianteFacultadItem>>(`${this.base}/estudiantes`, {
       params: parametros(filtro),
     });
   }
@@ -39,25 +39,38 @@ export class DeanFacultadService {
     return this.http.get<ApiResponse<FichaEstudianteFacultad>>(`${this.base}/estudiantes/${idEstudiante}`);
   }
 
+  getGrupoDetalle(grupoId: string): Observable<ApiResponse<any>> {
+    return this.http.get<ApiResponse<any>>(`${this.base}/grupos/${grupoId}`);
+  }
+
   getEstructura(): Observable<ApiResponse<FacultadNodo[]>> {
     return this.http.get<ApiResponse<FacultadNodo[]>>(`${this.base}/estructura`);
   }
 
-  /** HU108: malla (asignaturas) de un plan de un programa de la facultad del decano. */
-  getAsignaturasPlan(idPlan: string): Observable<ApiResponse<AsignaturaPlanItem[]>> {
+  /**
+   * HU108: malla (asignaturas) de un plan de un programa de la facultad del decano, paginada y filtrada en el servidor
+   * (semestre, carácter y búsqueda). Un plan ajeno o inexistente responde 404 (PLA_002).
+   */
+  getAsignaturasPlan(
+    idPlan: string,
+    filtro: { semestre?: number | null; caracter?: string | null; busqueda?: string | null; pagina: number; tamano: number }
+  ): Observable<ApiPageResponse<AsignaturaPlanItem>> {
     return this.http
-      .get<ApiResponse<AsignaturaPlanItem[]>>(`${this.base}/planes-estudio/${idPlan}/asignaturas`)
-      .pipe(map((res) => (res.datos ? { ...res, datos: res.datos.map(normalizarAsignaturaPlan) } : res)));
+      .get<ApiPageResponse<AsignaturaPlanItem>>(`${this.base}/planes-estudio/${idPlan}/asignaturas`, {
+        params: parametros({ ...filtro, semestre: filtro.semestre || null }),
+      })
+      .pipe(map((page) => ({ ...page, elementos: (page.elementos ?? []).map(normalizarAsignaturaPlan) })));
   }
 
   getSesiones(filtro: {
     desde?: string | null;
     hasta?: string | null;
     idPrograma?: string | null;
+    idGrupo?: string | null;
     pagina: number;
     tamano: number;
-  }): Observable<ApiResponse<SesionFacultadItem[]>> {
-    return this.http.get<ApiResponse<SesionFacultadItem[]>>(`${this.base}/sesiones`, { params: parametros(filtro) });
+  }): Observable<ApiPageResponse<SesionFacultadItem>> {
+    return this.http.get<ApiPageResponse<SesionFacultadItem>>(`${this.base}/sesiones`, { params: parametros(filtro) });
   }
 }
 

@@ -32,10 +32,10 @@ describe('mockBackendInterceptor - notificaciones', () => {
     return resultado as T;
   }
 
-  it('estado-canal simula un canal SMTP disponible', fakeAsync(() => {
-    const r = respuesta<{ datos: { sender: string; disponible: boolean } }>(() => httpClient.get(`${base}/estado-canal`));
-    expect(r.datos.sender).toBe('smtp');
-    expect(r.datos.disponible).toBeTrue();
+  it('estado-canal simula solo canalActivo, ultimoEnvioUtc y ultimoError (sin host ni puerto)', fakeAsync(() => {
+    const r = respuesta<{ datos: Record<string, unknown> }>(() => httpClient.get(`${base}/estado-canal`));
+    expect(Object.keys(r.datos).sort()).toEqual(['canalActivo', 'ultimoEnvioUtc', 'ultimoError']);
+    expect(r.datos['canalActivo']).toBeTrue();
   }));
 
   it('plantillas lista el catálogo con marcadores y versiones', fakeAsync(() => {

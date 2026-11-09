@@ -46,8 +46,6 @@ describe('DeanCronogramaComponent (HU145)', () => {
           nombreGrupo: 'Grupo 1',
           idAsignatura: 'a-1',
           nombreAsignatura: 'Cálculo',
-          idPrograma: 'p-1',
-          nombrePrograma: 'Ingeniería de Sistemas',
         },
       ],
     });
@@ -83,8 +81,6 @@ describe('DeanCronogramaComponent (HU145)', () => {
           nombreGrupo: 'Grupo 1',
           idAsignatura: 'a-1',
           nombreAsignatura: 'Cálculo',
-          idPrograma: 'p-1',
-          nombrePrograma: 'Ingeniería de Sistemas',
         },
       ],
     });
@@ -97,12 +93,12 @@ describe('DeanCronogramaComponent (HU145)', () => {
     expect(texto).toContain('Horas en');
   });
 
-  it('HU145: lista las sesiones con asignatura, grupo y programa', () => {
+  it('HU145: lista las sesiones con asignatura y grupo (B2NM: la sesión ya no trae programa)', () => {
     const texto = fixture.nativeElement.textContent as string;
     expect(component.total()).toBe(1);
     expect(texto).toContain('S-01');
     expect(texto).toContain('Cálculo · Grupo 1');
-    expect(texto).toContain('Ingeniería de Sistemas');
+    expect(texto).not.toContain('Programa');
   });
 
   it('HU145: filtra por rango y rechaza un rango invertido sin consultar', () => {
@@ -141,7 +137,7 @@ describe('DeanCronogramaComponent (HU145)', () => {
           id: 's-9', nombre: 'Sesión 9', codigo: 'S-09', numeroSemana: 3,
           fechaHoraInicio: '2026-03-23T07:00:00', fechaHoraFin: '2026-03-23T09:00:00',
           idGrupo: 'g-1', codigoGrupo: 1, nombreGrupo: 'Grupo 1', idAsignatura: 'a-1',
-          nombreAsignatura: 'Cálculo', idPrograma: 'p-1', nombrePrograma: 'Ingeniería de Sistemas',
+          nombreAsignatura: 'Cálculo',
           estado: 'CANCELADA',
           cancelacion: { tipo: 'FESTIVO', motivo: null, nombreFestivo: 'San José', fechaCancelacionUtc: null },
         },
@@ -169,18 +165,20 @@ describe('Mock backend de consultas del decano (HU104/HU105/HU109/HU119/HU145)',
     const service = TestBed.inject(DeanFacultadService);
 
     service.getEstudiantes({ busqueda: 'luis', pagina: 1, tamano: 10 }).subscribe((estudiantes) => {
-      expect(estudiantes.datos.length).toBe(1);
-      expect(estudiantes.datos[0].nombreCompleto).toBe('Luis Gómez');
+      expect(estudiantes.elementos.length).toBe(1);
+      expect(estudiantes.elementos[0].nombreCompleto).toBe('Luis Gómez');
       service.getFichaEstudiante('EST-MOCK-1').subscribe((ficha) => {
         expect(ficha.datos.matriculas.length).toBe(1);
         service.getEstructura().subscribe((estructura) => {
           expect(estructura.datos[0].programas[0].planes[0].inp).toBe(20241);
           service.getSesiones({ pagina: 1, tamano: 10 }).subscribe((sesiones) => {
-            expect(sesiones.datos[0].codigo).toBe('S-01');
-            service.getAsignaturasPlan('PLAN-1').subscribe((malla) => {
-              expect(malla.datos.length).toBe(2);
-              expect(malla.datos[1].semestre).toBe(2);
-              expect(malla.datos[1].creditos).toBe(3);
+            expect(sesiones.elementos[0].codigo).toBe('S-01');
+            service.getAsignaturasPlan('PLAN-1', { pagina: 1, tamano: 10 }).subscribe((malla) => {
+              expect(malla.elementos.length).toBe(2);
+              expect(malla.totalElementos).toBe(2);
+              expect(malla.elementos[1].semestre).toBe(2);
+              expect(malla.elementos[1].creditos).toBe(3);
+              expect(malla.elementos[1].nombreCaracter).toBe('Optativa');
               done();
             });
           });

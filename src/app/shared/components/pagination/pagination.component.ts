@@ -119,11 +119,16 @@ export class PaginationComponent {
   readonly currentPage = input<number>(1);
   readonly showPageSizeSelector = input<boolean>(true);
   readonly pageSizeOptions = input<number[]>([5, 10, 20, 50]);
+  readonly totalPagesInput = input<number | undefined>(undefined, { alias: 'totalPages' });
 
   readonly pageChange = output<number>();
   readonly pageSizeChange = output<number>();
 
   readonly totalPages = computed(() => {
+    const fromInput = this.totalPagesInput();
+    if (fromInput !== undefined && fromInput !== null) {
+      return Math.max(1, fromInput);
+    }
     return Math.max(1, Math.ceil(this.totalItems() / this.pageSize()));
   });
 

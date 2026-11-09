@@ -38,6 +38,18 @@ describe('MatriculaQrService (HU176B)', () => {
     expect(resultado).toEqual(ventana);
   });
 
+  it('B2NM abrirVentana envía programaId solo cuando se informa (grupo con varios programas)', () => {
+    service.abrirVentana('g-1', 'prg-b').subscribe();
+    const conPrograma = http.expectOne((r) => r.url === `${environment.apiUrl}/grupos/g-1/matricula-qr`);
+    expect(conPrograma.request.params.get('programaId')).toBe('prg-b');
+    conPrograma.flush({ exitoso: true, datos: ventana });
+
+    service.abrirVentana('g-1').subscribe();
+    const sinPrograma = http.expectOne(`${environment.apiUrl}/grupos/g-1/matricula-qr`);
+    expect(sinPrograma.request.params.has('programaId')).toBeFalse();
+    sinPrograma.flush({ exitoso: true, datos: ventana });
+  });
+
   it('rotarVentana hace POST a /rotacion', () => {
     let resultado: VentanaMatricula | undefined;
     service.rotarVentana('g-1').subscribe((v) => (resultado = v));

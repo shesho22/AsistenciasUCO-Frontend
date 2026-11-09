@@ -8,6 +8,7 @@ import { CourseService } from '../../../core/services/course.service';
 import { AdminManagementService } from '../../../core/services/admin-management.service';
 import { DeanManagementService } from '../../../core/services/dean-management.service';
 import { DeanIndicatorsService } from '../../../core/services/dean-indicators.service';
+import { CoordinatorIndicatorsService } from '../../../core/services/coordinator-indicators.service';
 import { AdminIndicatorsService } from '../../../core/services/admin-indicators.service';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { StudentManagementService } from '../../../core/services/student-management.service';
@@ -35,6 +36,7 @@ describe('OverviewComponent', () => {
   let adminServiceSpy: jasmine.SpyObj<AdminManagementService>;
   let deanIndicatorsSpy: jasmine.SpyObj<DeanIndicatorsService>;
   let adminIndicatorsSpy: jasmine.SpyObj<AdminIndicatorsService>;
+  let coordinatorIndicatorsSpy: jasmine.SpyObj<CoordinatorIndicatorsService>;
   let deanServiceSpy: jasmine.SpyObj<DeanManagementService>;
   let coordinatorServiceSpy: jasmine.SpyObj<CoordinatorManagementService>;
   let studentServiceSpy: jasmine.SpyObj<StudentManagementService>;
@@ -182,12 +184,15 @@ describe('OverviewComponent', () => {
     deanServiceSpy.getCoordinadores.and.returnValue(of({ exitoso: true, datos: mockCoordinadores }));
 
     adminIndicatorsSpy = jasmine.createSpyObj('AdminIndicatorsService', ['consultarKpis']);
-    adminIndicatorsSpy.consultarKpis.and.returnValue(of({ exitoso: true, datos: { totalProgramas: 4 } as any }));
+    adminIndicatorsSpy.consultarKpis.and.returnValue(of({ exitoso: true, datos: { totalProgramas: 4, porcentajeAsistencia: 96.54 } as any }));
 
     deanIndicatorsSpy = jasmine.createSpyObj('DeanIndicatorsService', ['consultarKpis']);
     deanIndicatorsSpy.consultarKpis.and.returnValue(
       of({ exitoso: true, datos: { porcentajeAsistencia: 82.86, gruposActivos: 5, nombrePeriodoAcademico: '2026-2' } as any })
     );
+
+    coordinatorIndicatorsSpy = jasmine.createSpyObj('CoordinatorIndicatorsService', ['consultarKpis']);
+    coordinatorIndicatorsSpy.consultarKpis.and.returnValue(of({ exitoso: true, datos: { estudiantesRiesgo: 3 } as any }));
 
     coordinatorServiceSpy = jasmine.createSpyObj('CoordinatorManagementService', [
       'getPlanesEstudio',
@@ -224,6 +229,7 @@ describe('OverviewComponent', () => {
         { provide: DeanIndicatorsService, useValue: deanIndicatorsSpy },
         { provide: AdminIndicatorsService, useValue: adminIndicatorsSpy },
         { provide: CoordinatorManagementService, useValue: coordinatorServiceSpy },
+        { provide: CoordinatorIndicatorsService, useValue: coordinatorIndicatorsSpy },
         { provide: StudentManagementService, useValue: studentServiceSpy },
         { provide: AttendanceClaimService, useValue: claimServiceSpy },
       ],
@@ -301,6 +307,37 @@ describe('OverviewComponent', () => {
   });
 
 
+
+  it('F3-ADM-02: Asistencia campus sale de /admin/indicadores y decanos en ejercicio solo cuenta los activos', () => {
+    adminServiceSpy.getDecanos.and.returnValue(of({
+      exitoso: true,
+      datos: [
+        { id: 'd1', estaActivoDecano: true },
+        { id: 'd2', estaActivoDecano: false },
+        { id: 'd3', estaActivoDecano: false },
+      ] as any,
+    }));
+    createComponentWithRole('ADMINISTRADOR');
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[data-testid="asistencia-campus"]')!.textContent!.trim()).toBe('96.54%');
+    expect(el.querySelector('[data-testid="decanos-activos"]')!.textContent!.trim()).toBe('1');
+    expect(el.textContent).toContain('3 registrados');
+  });
+
+  it('F3-ADM-02: sin porcentajeAsistencia la tarjeta de campus muestra Sin datos, no 100%', () => {
+    adminIndicatorsSpy.consultarKpis.and.returnValue(of({ exitoso: true, datos: { totalProgramas: 4, porcentajeAsistencia: null } as any }));
+    createComponentWithRole('ADMINISTRADOR');
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="asistencia-campus"]')!.textContent!.trim()).toBe('Sin datos');
+  });
+
+  it('F3-COO-01: la tarjeta fija de 92% se reemplaza por estudiantes en riesgo de /coordinador/indicadores y el rotulo dice Registrados', () => {
+    createComponentWithRole('COORDINADOR');
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[data-testid="estudiantes-riesgo"]')!.textContent!.trim()).toBe('3');
+    expect(el.textContent).toContain('Estudiantes Registrados');
+    expect(el.textContent).not.toContain('Estudiantes Matriculados');
+    expect(el.textContent).not.toContain('92%');
+  });
 
   it('ADMIN: sin total (null) la tarjeta de programas muestra Sin datos, no 0 ni 1', () => {
 

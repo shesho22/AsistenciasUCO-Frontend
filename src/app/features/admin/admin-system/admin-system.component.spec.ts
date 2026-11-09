@@ -23,11 +23,32 @@ describe('AdminSystemComponent', () => {
     {
       id: 'param-1',
       grupo: 'ASISTENCIA',
-      clave: 'asistencias.limite.inasistencia',
-      valor: '20',
-      tipoDato: 'NUMERO',
-      valorDefecto: '0',
-      estaActivo: true,
+      clave: 'ASISTENCIA/TOLERANCIA_MINUTOS',
+      valor: '15',
+      tipoDato: 'INT',
+      esEditable: true,
+      valorMinimo: 0,
+      valorMaximo: 60,
+      etiqueta: 'Tolerancia de ingreso',
+      descripcion: 'Minutos permitidos antes de marcar retardo',
+      unidad: 'minutos',
+      categoriaVisual: 'Reglas de Asistencia',
+      orden: 1,
+      fechaModificacion: '2026-11-07T15:04:05.007Z',
+      fechaUltimoCambioUtc: '2026-11-07T15:04:05.007Z',
+      nombreUltimoActor: 'Admin TI',
+    },
+    {
+      id: 'param-2',
+      grupo: 'RED',
+      clave: 'RED/CIDRS_CAMPUS',
+      valor: '10.0.0.0/8',
+      tipoDato: 'STRING',
+      esEditable: false,
+      etiqueta: 'Segmentos de red campus',
+      descripcion: 'Redes institucionales autorizadas',
+      categoriaVisual: 'Infraestructura y Red',
+      orden: 2,
     },
   ];
 
@@ -42,20 +63,34 @@ describe('AdminSystemComponent', () => {
         reportesCierre: signal([]).asReadonly(),
       }
     );
-    adminServiceSpy.cargarParametros.and.returnValue(of({ exitoso: true, datos: mockParametros }));
+    adminServiceSpy.cargarParametros.and.returnValue(
+      of({
+        exitoso: true,
+        elementos: mockParametros,
+        numeroPagina: 1,
+        tamanoPagina: 20,
+        totalElementos: 2,
+        totalPaginas: 1,
+      } as any)
+    );
 
-    coordServiceSpy = jasmine.createSpyObj('CoordinatorManagementService', ['cargarPeriodosAcademicosBase'], {
-      periodos: signal([
-        {
-          id: 'per-1',
-          codigo: '2026-2',
-          nombre: 'Segundo Semestre 2026',
-          fechaInicio: '2026-08-01',
-          fechaFin: '2026-12-15',
-          estado: 'ACTIVO' as const,
-        },
-      ]).asReadonly(),
-    });
+    const periodosSignal = signal([
+      {
+        id: 'per-1',
+        codigo: '2026-2',
+        nombre: 'Segundo Semestre 2026',
+        fechaInicio: '2026-08-01',
+        fechaFin: '2026-12-15',
+        estado: 'ACTIVO' as const,
+        esVigente: true,
+      },
+    ]);
+
+    coordServiceSpy = {
+      cargarPeriodosAcademicosBase: jasmine.createSpy('cargarPeriodosAcademicosBase'),
+      periodos: periodosSignal.asReadonly(),
+      _periodosSignal: periodosSignal,
+    } as unknown as jasmine.SpyObj<CoordinatorManagementService>;
 
     await TestBed.configureTestingModule({
       imports: [AdminSystemComponent],
@@ -78,7 +113,7 @@ describe('AdminSystemComponent', () => {
     expect(component).toBeTruthy();
     expect(coordServiceSpy.cargarPeriodosAcademicosBase).toHaveBeenCalled();
     expect(adminServiceSpy.cargarParametros).toHaveBeenCalled();
-    expect(component.parametros().length).toBe(1);
+    expect(component.parametros().length).toBe(2);
   });
 
   it('tabActiva alterna correctamente entre pestañas', () => {
@@ -102,18 +137,45 @@ describe('AdminSystemComponent', () => {
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('No hay eventos de auditoría');
   });
 
-  it('muestra el parámetro real en modo consulta y no ofrece una acción de guardado', () => {
+  it('HU168: muestra parámetros agrupados por categoría, unidad, rango y último actor', () => {
     const host = fixture.nativeElement as HTMLElement;
-    const card = host.querySelector('.bg-warm-50') as HTMLElement;
-    const valueInput = card.querySelector('input') as HTMLInputElement;
+    expect(host.textContent).toContain('Reglas de Asistencia');
+    expect(host.textContent).toContain('Tolerancia de ingreso');
+    expect(host.textContent).toContain('15');
+    expect(host.textContent).toContain('minutos');
+    expect(host.textContent).toContain('Admin TI');
+  });
 
-    expect(host.textContent).toContain('Edición de parámetros no disponible');
-    expect(host.textContent).toContain('ASISTENCIA');
-    expect(host.textContent).toContain('NUMERO');
-    expect(valueInput.value).toBe('20');
-    expect(valueInput.readOnly).toBeTrue();
-    expect(card.querySelectorAll('button').length).toBe(0);
-    expect(toastServiceSpy.success).not.toHaveBeenCalled();
+  it('HU168: muestra botón Editar solo si esEditable === true', () => {
+    const host = fixture.nativeElement as HTMLElement;
+    const btnEditar = host.querySelector('[data-testid="btn-editar-param-1"]') as HTMLButtonElement;
+    expect(btnEditar).toBeTruthy();
+
+    const btnEditarTecnico = host.querySelector('[data-testid="btn-editar-param-2"]');
+    expect(btnEditarTecnico).toBeNull();
+  });
+
+  it('HU168: al presionar Editar abre el modal con el parámetro seleccionado', () => {
+    const host = fixture.nativeElement as HTMLElement;
+    const btnEditar = host.querySelector('[data-testid="btn-editar-param-1"]') as HTMLButtonElement;
+    btnEditar.click();
+    fixture.detectChanges();
+
+    expect(component.parametroSeleccionadoEdicion()?.id).toBe('param-1');
+    expect(component.modalEdicionAbierto()).toBeTrue();
+  });
+
+  it('HU168: el switch alterna entre solo editables y técnicos', () => {
+    adminServiceSpy.cargarParametros.calls.reset();
+    component.toggleMostrarTecnicos(true);
+    expect(adminServiceSpy.cargarParametros).toHaveBeenCalledWith(
+      jasmine.objectContaining({ soloEditables: false })
+    );
+
+    component.toggleMostrarTecnicos(false);
+    expect(adminServiceSpy.cargarParametros).toHaveBeenCalledWith(
+      jasmine.objectContaining({ soloEditables: true })
+    );
   });
 
   describe('cierre masivo y accesibilidad (F-ADM-006, F-ADM-007, F-ADM-014, F-ADM-S14)', () => {
@@ -139,6 +201,31 @@ describe('AdminSystemComponent', () => {
       component.confirmarCierre();
       expect(adminServiceSpy.ejecutarCierreMasivo).toHaveBeenCalledWith('per-1', '2026-2');
       expect(component.cierrePendiente()).toBeFalse();
+    });
+
+    it('F-ADM-005: selecciona por defecto el período con esVigente === true', () => {
+      const periodosConVigente = [
+        { id: '3f0c1d2e-0000-4000-8000-000000000001', codigo: '2026-1', nombre: 'P1', fechaInicio: '2026-01-01', fechaFin: '2026-06-01', estado: 'FINALIZADO' as const, esVigente: false },
+        { id: '3f0c1d2e-0000-4000-8000-000000000002', codigo: '2026-2', nombre: 'P2', fechaInicio: '2026-08-01', fechaFin: '2026-12-01', estado: 'ACTIVO' as const, esVigente: true },
+      ];
+      (coordServiceSpy as any)._periodosSignal.set(periodosConVigente);
+      fixture = TestBed.createComponent(AdminSystemComponent);
+      component = fixture.componentInstance;
+      fixture.detectChanges();
+
+      expect(component.periodoSeleccionadoCierre).toBe('3f0c1d2e-0000-4000-8000-000000000002');
+    });
+
+    it('F-ADM-005: si la lista de períodos está vacía muestra mensaje claro y no deja ejecutar cierre', () => {
+      (coordServiceSpy as any)._periodosSignal.set([]);
+      fixture = TestBed.createComponent(AdminSystemComponent);
+      component = fixture.componentInstance;
+      component.tabActiva.set('CIERRE_MASIVO');
+      fixture.detectChanges();
+
+      expect(el().textContent).toContain('No hay períodos académicos registrados');
+      const boton = el().querySelector('button[type="button"][disabled]') as HTMLButtonElement;
+      expect(boton).toBeTruthy();
     });
 
     it('el porcentaje no produce NaN con total 0 y el historial vacio lo explica con overflow horizontal', () => {

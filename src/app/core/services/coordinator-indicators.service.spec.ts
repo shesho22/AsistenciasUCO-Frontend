@@ -3,6 +3,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { CoordinatorIndicatorsService } from './coordinator-indicators.service';
 import { environment } from '../../../environments/environment';
+import { CoordinatorProgramService } from './coordinator-program.service';
 import { AlertaTemprana, BitacoraSesion, FichaEstudiante, KpisCoordinador } from '../models/coordinator-indicators.model';
 
 describe('CoordinatorIndicatorsService', () => {
@@ -118,5 +119,35 @@ describe('CoordinatorIndicatorsService', () => {
     service.consultarFicha('e-9').subscribe({ next: () => fail('no debe emitir éxito'), error: (e) => (fallo = e) });
     http.expectOne(`${base}/estudiantes/e-9/ficha`).flush({ message: 'no existe' }, { status: 404, statusText: 'Not Found' });
     expect(fallo?.status).toBe(404);
+  });
+
+  // CULM-001 B2NM (S4): con varios programas el backend exige programaId (COO_002); se envía siempre que se conozca.
+  it('S4 envía programaId en KPIs, alertas, bitácora y ficha; sin programa seleccionado no lo envía', () => {
+    service.consultarKpis().subscribe();
+    const sinPrograma = http.expectOne((r) => r.url === `${base}/indicadores`);
+    expect(sinPrograma.request.params.has('programaId')).toBeFalse();
+    sinPrograma.flush({ exitoso: true, datos: kpis });
+
+    TestBed.inject(CoordinatorProgramService).programaId.set('p-2');
+
+    service.consultarKpis().subscribe();
+    const kpisReq = http.expectOne((r) => r.url === `${base}/indicadores`);
+    expect(kpisReq.request.params.get('programaId')).toBe('p-2');
+    kpisReq.flush({ exitoso: true, datos: kpis });
+
+    service.consultarAlertas({ pagina: 1, tamano: 10 }).subscribe();
+    const alertasReq = http.expectOne((r) => r.url === `${base}/alertas-tempranas`);
+    expect(alertasReq.request.params.get('programaId')).toBe('p-2');
+    alertasReq.flush({ exitoso: true, datos: [alerta], total: 1 });
+
+    service.consultarBitacora('e-1', 1, 10).subscribe();
+    const bitacoraReq = http.expectOne((r) => r.url === `${base}/estudiantes/e-1/bitacora`);
+    expect(bitacoraReq.request.params.get('programaId')).toBe('p-2');
+    bitacoraReq.flush({ exitoso: true, datos: [], total: 0 });
+
+    service.consultarFicha('e-1').subscribe();
+    const fichaReq = http.expectOne((r) => r.url === `${base}/estudiantes/e-1/ficha`);
+    expect(fichaReq.request.params.get('programaId')).toBe('p-2');
+    fichaReq.flush({ exitoso: true, datos: null });
   });
 });

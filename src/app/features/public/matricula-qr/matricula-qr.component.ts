@@ -233,11 +233,16 @@ export class MatriculaQrComponent implements OnInit {
     });
   }
 
-  /** Con cuenta existente: inicia sesion y se matricula con el PIN en el portal; nunca se pasa el token por la URL. */
+  /** Con cuenta existente: inicia sesion y se matricula en el portal (preservando token o PIN). */
   yaTengoCuenta(): void {
-    const pin = this.credencial?.pin ?? '1';
+    let returnUrl = '/app/estudiante/materias';
+    if (this.credencial?.token) {
+      returnUrl = `/app/estudiante/materias?t=${encodeURIComponent(this.credencial.token)}`;
+    } else if (this.credencial?.pin) {
+      returnUrl = `/app/estudiante/materias?matricula=${encodeURIComponent(this.credencial.pin)}`;
+    }
     void this.router.navigate(['/login'], {
-      queryParams: { returnUrl: `/app/estudiante/materias?matricula=${encodeURIComponent(pin)}` },
+      queryParams: { returnUrl },
     });
   }
 

@@ -3,8 +3,8 @@ export interface AsignaturaOfertaDocenteApiDto {
   idAsignatura: string;
   codigoAsignatura: string;
   nombreAsignatura: string;
-  idPrograma: string;
-  nombrePrograma: string;
+  /** CULM-001 B2NM: nombres de todos los programas donde está la asignatura (sustituye a idPrograma y nombrePrograma). */
+  programas: string[];
 }
 
 /** F3: respuesta de GET /docente/oferta-creacion-grupos: el idDocente del token y sus asignaturas. */

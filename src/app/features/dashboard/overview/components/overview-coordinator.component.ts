@@ -29,14 +29,14 @@ import { DocenteItem, PlanEstudioItem } from '../../../../core/models/role-manag
           <span class="text-[11px] text-primary-700 font-medium">Periodo 2026-II</span>
         </div>
         <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px]">
-          <span class="text-xs text-warm-500 font-medium">Estudiantes Matriculados</span>
+          <span class="text-xs text-warm-500 font-medium">Estudiantes Registrados</span>
           <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ totalEstudiantes() }}</p>
           <span class="text-[11px] text-warm-500 font-medium">Padrón del programa</span>
         </div>
         <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px]">
-          <span class="text-xs text-warm-500 font-medium">Asistencia Promedio</span>
-          <p class="text-2xl font-serif font-bold text-accent-700 mt-1">92%</p>
-          <span class="text-[11px] text-success-700 font-medium">Meta institucional cumplida</span>
+          <span class="text-xs text-warm-500 font-medium">Estudiantes en Riesgo</span>
+          <p class="text-2xl font-serif font-bold text-accent-700 mt-1" data-testid="estudiantes-riesgo">{{ estudiantesRiesgo() === null ? 'Sin datos' : estudiantesRiesgo() }}</p>
+          <span class="text-[11px] text-warm-500 font-medium">Indicador del programa</span>
         </div>
       </section>
 
@@ -140,4 +140,6 @@ export class OverviewCoordinatorComponent {
   planesEstudio = input<PlanEstudioItem[]>([]);
   totalGrupos = input<number>(0);
   totalEstudiantes = input<number>(0);
+  /** `estudiantesRiesgo` de GET /coordinador/indicadores; `null` = sin dato (el KPI no entrega % de asistencia). */
+  estudiantesRiesgo = input<number | null>(null);
 }

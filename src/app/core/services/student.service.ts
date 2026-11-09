@@ -20,6 +20,8 @@ export interface EnrollStudentFormValue {
   segundoNombre?: string;
   primerApellido: string;
   segundoApellido?: string;
+  /** Programa del estudiante cuando el grupo tiene más de uno. */
+  idPrograma?: string;
   /** Solo en el alta de un estudiante nuevo; al matricular a uno existente se omiten. */
   correoElectronico?: string;
   password?: string;
@@ -62,6 +64,10 @@ export class StudentService {
     if (esAltaNueva) {
       request.correo = dto.correoElectronico?.trim() ?? '';
       request.password = password;
+    }
+
+    if (dto.idPrograma) {
+      request.idPrograma = dto.idPrograma;
     }
 
     if (dto.segundoNombre?.trim()) {

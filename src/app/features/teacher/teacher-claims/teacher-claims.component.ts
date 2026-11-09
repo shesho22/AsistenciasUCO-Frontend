@@ -144,7 +144,7 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
                         </span>
                         @if (reclamo.categoria) {
                           <span class="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-warning-50 text-warning-900 border border-warning-200">
-                            {{ reclamo.categoria }}
+                            {{ categoriaTexto(reclamo.categoria) }}
                           </span>
                         }
                         @if (reclamo.soporteAdjunto) {
@@ -262,7 +262,7 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
             <div class="flex items-center gap-2">
               @if (selectedReclamo()?.categoria) {
                 <span class="px-3 py-1 rounded-xl text-xs font-semibold bg-warning-50 text-warning-900 border border-warning-200">
-                  {{ selectedReclamo()?.categoria }}
+                  {{ categoriaTexto(selectedReclamo()?.categoria) }}
                 </span>
               }
               <app-badge [variant]="getReclamoBadgeVariant(selectedReclamo()!.estadoSolicitud)" size="md">
@@ -315,37 +315,44 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
             </div>
           </div>
 
-          <!-- Soporte Documental Anexo -->
-          @if (selectedReclamo()?.soporteAdjunto; as adjunto) {
-            <div class="space-y-2">
-              <span class="text-xs font-bold uppercase tracking-wider text-warm-500 block">
-                Soporte Documental Anexo:
-              </span>
-              <div class="p-4 bg-warm-50 border border-warm-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div class="flex items-center gap-3">
-                  <div class="w-10 h-10 rounded-xl bg-primary-100 text-primary-700 flex items-center justify-center shrink-0">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p class="text-sm font-bold text-warm-900">{{ adjunto.nombre }}</p>
-                    <p class="text-xs text-warm-500">{{ adjunto.tamanioKb }} KB • Formato {{ adjunto.tipo }} • Subido el {{ adjunto.fechaSubida }}</p>
-                  </div>
-                </div>
+          <!-- Soporte Documental Anexo (múltiples soportes) -->
+          @if (soportesReclamo(selectedReclamo()); as listaSoportes) {
+            @if (listaSoportes.length > 0) {
+              <div class="space-y-3">
+                <span class="text-xs font-bold uppercase tracking-wider text-warm-500 block">
+                  Soportes Documentales Anexos ({{ listaSoportes.length }}):
+                </span>
+                <div class="space-y-2">
+                  @for (adjunto of listaSoportes; track (adjunto.fileId || adjunto.nombre); let idx = $index) {
+                    <div class="p-4 bg-warm-50 border border-warm-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-primary-100 text-primary-700 flex items-center justify-center shrink-0">
+                          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p class="text-sm font-bold text-warm-900">{{ adjunto.nombre }}</p>
+                          <p class="text-xs text-warm-500">{{ adjunto.tamanioKb }} KB • Formato {{ adjunto.tipo }} @if (adjunto.fechaSubida) { • Subido el {{ adjunto.fechaSubida }} }</p>
+                        </div>
+                      </div>
 
-                <button
-                  type="button"
-                  (click)="descargarSoporte(adjunto)"
-                  class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-primary-800 bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-xl transition-colors shadow-xs"
-                >
-                  <svg class="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                  Descargar Soporte
-                </button>
+                      <button
+                        type="button"
+                        [attr.data-testid]="'btn-descargar-soporte-' + (adjunto.fileId || idx)"
+                        (click)="descargarSoporte(adjunto)"
+                        class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-primary-800 bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-xl transition-colors shadow-xs"
+                      >
+                        <svg class="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Descargar Soporte
+                      </button>
+                    </div>
+                  }
+                </div>
               </div>
-            </div>
+            }
           }
 
           <!-- Panel de Decisión Docente -->
@@ -643,6 +650,22 @@ export class TeacherClaimsComponent implements OnInit, OnDestroy {
       default:
         return getApiErrorMessage(error);
     }
+  }
+
+  categoriaTexto(cat: unknown): string {
+    if (!cat) return '';
+    if (typeof cat === 'object') {
+      const obj = cat as { nombre?: string; codigo?: string };
+      return obj.nombre || obj.codigo || '';
+    }
+    return String(cat);
+  }
+
+  soportesReclamo(reclamo: SolicitudRevisionItem | null): SoporteAdjuntoItem[] {
+    if (!reclamo) return [];
+    if (reclamo.soportes && reclamo.soportes.length > 0) return reclamo.soportes;
+    if (reclamo.soporteAdjunto) return [reclamo.soporteAdjunto];
+    return [];
   }
 
   readonly etiquetaEstado = etiquetaEstadoReclamo;

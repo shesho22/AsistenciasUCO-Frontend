@@ -3,12 +3,12 @@ import { convertToParamMap, Router } from '@angular/router';
 import { of, Subject, throwError } from 'rxjs';
 import { TeacherGruposComponent } from './teacher-grupos.component';
 import { CourseService } from '../../../core/services/course.service';
+import { AttendanceService } from '../../../core/services/attendance.service';
 import { SessionService } from '../../../core/services/session.service';
 import { StudentService } from '../../../core/services/student.service';
 import { GroupService } from '../../../core/services/group.service';
 import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
 import { CatalogService } from '../../../core/services/catalog.service';
-import { AttendanceService } from '../../../core/services/attendance.service';
 import { TeacherAttendanceSummaryService } from '../../../core/services/teacher-attendance-summary.service';
 import { Course } from '../../../core/models/course.model';
 import { ClassSession } from '../../../core/models/attendance.model';
@@ -195,6 +195,50 @@ describe('TeacherGruposComponent', () => {
 
     expect(sessionService.updateSession).toHaveBeenCalledTimes(1);
     expect(sessionService.getSessionsByGroup).toHaveBeenCalledWith('crs-1');
+  });
+
+  it('F3-DOC-01: la sábana recibe el estado por sesión desde GET /grupos/{id}/asistencias', () => {
+    sessionService.getSessionsByGroup.and.returnValue(of({
+      exitoso: true,
+      total: 2,
+      datos: [
+        { id: 'ses-1', courseId: 'crs-1', sessionNumber: 1, title: 'S1', date: '2026-09-10', startTime: '08:00', endTime: '10:00', records: [] },
+        { id: 'ses-2', courseId: 'crs-1', sessionNumber: 2, title: 'S2', date: '2026-09-17', startTime: '08:00', endTime: '10:00', records: [] },
+      ],
+    } as any));
+    attendanceService.getAttendancesByGroup.and.returnValue(of({
+      exitoso: true,
+      total: 2,
+      datos: [
+        { asistencia: 'a1', estudiante: 'est-1', grupo: 'crs-1', sesion: 'ses-1', presente: true, estado: 'AN', observacion: null },
+        { asistencia: 'a2', estudiante: 'est-1', grupo: 'crs-1', sesion: 'ses-2', presente: false, estado: 'EX', observacion: null },
+      ],
+    } as any));
+
+    studentService.getStudentsByGroup.and.returnValue(
+      of({ exitoso: true, datos: [{ idEstudiante: 'est-1', nombreCompleto: 'Ana Gomez', documento: '1001', codigoEstado: 'A' }] }) as never
+    );
+
+    component.verHubGrupo(course);
+
+    expect(attendanceService.getAttendancesByGroup).toHaveBeenCalledWith('crs-1');
+    const [s1, s2] = component.sessionsConRegistros();
+    expect(s1.records.map((r) => [r.studentId, r.status])).toEqual([['est-1', 'AN']]);
+    expect(s2.records.map((r) => [r.studentId, r.status])).toEqual([['est-1', 'EX']]);
+  });
+
+  it('F3-DOC-01: si falla la consulta de asistencias las sesiones se muestran igual sin estados', () => {
+    sessionService.getSessionsByGroup.and.returnValue(of({
+      exitoso: true,
+      total: 1,
+      datos: [{ id: 'ses-1', courseId: 'crs-1', sessionNumber: 1, title: 'S1', date: '2026-09-10', startTime: '08:00', endTime: '10:00', records: [] }],
+    } as any));
+    attendanceService.getAttendancesByGroup.and.returnValue(throwError(() => new Error('x')));
+
+    component.verHubGrupo(course);
+
+    expect(component.sessionsConRegistros().length).toBe(1);
+    expect(component.sessionsConRegistros()[0].records).toEqual([]);
   });
 
   it('abrirDetalleSesionModal() ya no sintetiza AN/SJC por paridad del ID del estudiante', () => {

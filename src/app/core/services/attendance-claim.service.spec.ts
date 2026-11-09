@@ -2,8 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { environment } from '../../../environments/environment';
-import { AttendanceClaimService, IdentificadorInvalidoError } from './attendance-claim.service';
-import { SesionMateriaDetalle, SolicitudRevisionItem } from '../models/role-management.model';
+import { AttendanceClaimService, DEFAULT_CONFIGURACION_RECLAMOS, IdentificadorInvalidoError } from './attendance-claim.service';
+import { ConfiguracionReclamosDTO, SesionMateriaDetalle, SolicitudRevisionItem } from '../models/role-management.model';
 import { SessionTimeZoneService } from './session-timezone.service';
 
 describe('AttendanceClaimService', () => {
@@ -586,6 +586,102 @@ describe('AttendanceClaimService', () => {
       http.expectOne((request) => request.url === LISTA).error(new ProgressEvent('error'));
       expect(resultado).toBeUndefined();
       expect(error?.status).toBe(0);
+    });
+  });
+
+  describe('PAG_001 propagación de mensaje en 400', () => {
+    it('getReclamosDocente propaga el mensaje del backend en 400 PAG_001', () => {
+      let error: any;
+      service.getReclamosDocente({ pagina: 99, tamano: 10 }).subscribe({
+        error: (e) => (error = e),
+      });
+
+      http.expectOne((r) => r.url === `${environment.apiUrl}/docente/reclamos`).flush(
+        { code: 'PAG_001', message: 'La página solicitada supera el total de registros disponibles.' },
+        { status: 400, statusText: 'Bad Request' }
+      );
+
+      expect(error.status).toBe(400);
+      expect(error.error?.message).toBe('La página solicitada supera el total de registros disponibles.');
+      expect(error.error?.code).toBe('PAG_001');
+    });
+
+    it('getReclamosEstudiante propaga el mensaje del backend en 400 PAG_001', () => {
+      let error: any;
+      service.getReclamosEstudiante({ pagina: 99, tamano: 10 }).subscribe({
+        error: (e) => (error = e),
+      });
+
+      http.expectOne((r) => r.url === `${environment.apiUrl}/estudiante/reclamos`).flush(
+        { code: 'PAG_001', message: 'La página solicitada supera el total de registros disponibles.' },
+        { status: 400, statusText: 'Bad Request' }
+      );
+
+      expect(error.status).toBe(400);
+      expect(error.error?.message).toBe('La página solicitada supera el total de registros disponibles.');
+      expect(error.error?.code).toBe('PAG_001');
+    });
+  });
+
+  describe('CULM-001 D.2 — soporte múltiple y configuración de reclamos (HU015, HU014)', () => {
+    it('getConfiguracionReclamos consulta /configuracion/reclamos y devuelve la configuración', () => {
+      let config: ConfiguracionReclamosDTO | undefined;
+      service.getConfiguracionReclamos().subscribe((res) => (config = res.datos));
+
+      const req = http.expectOne(`${environment.apiUrl}/configuracion/reclamos`);
+      expect(req.request.method).toBe('GET');
+      req.flush({
+        exitoso: true,
+        datos: {
+          maximoSoportes: 5,
+          tamanioMaximoBytes: 3145728,
+          tiposPermitidos: ['application/pdf'],
+          limiteSubidasPorMinuto: 6,
+          diasLimiteJustificacion: 8,
+        },
+      });
+
+      expect(config).toEqual({
+        maximoSoportes: 5,
+        tamanioMaximoBytes: 3145728,
+        tiposPermitidos: ['application/pdf'],
+        limiteSubidasPorMinuto: 6,
+        diasLimiteJustificacion: 8,
+      });
+    });
+
+    it('getConfiguracionReclamos ante error 500 o desconexión devuelve fallback limpio con valores por defecto', () => {
+      let config: ConfiguracionReclamosDTO | undefined;
+      service.getConfiguracionReclamos().subscribe((res) => (config = res.datos));
+
+      const req = http.expectOne(`${environment.apiUrl}/configuracion/reclamos`);
+      req.flush(null, { status: 500, statusText: 'Server Error' });
+
+      expect(config).toEqual(DEFAULT_CONFIGURACION_RECLAMOS);
+      expect(config?.maximoSoportes).toBe(3);
+      expect(config?.tamanioMaximoBytes).toBe(5242880);
+      expect(config?.limiteSubidasPorMinuto).toBe(10);
+    });
+
+    it('crearReclamo envía soporteArchivoIds con la lista de UUIDs de soportes exitosos', () => {
+      service
+        .crearReclamo({
+          sesionId: 'ses-10',
+          categoria: 'MED',
+          justificacionSolicitud: 'Incapacidad médica',
+          soporteArchivoIds: ['00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000002'],
+        } as never)
+        .subscribe();
+
+      const req = http.expectOne(`${environment.apiUrl}/asistencias/revisiones`);
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({
+        sesionId: 'ses-10',
+        categoria: 'MED',
+        justificacion: 'Incapacidad médica',
+        soporteArchivoIds: ['00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000002'],
+      });
+      req.flush({ exitoso: true });
     });
   });
 });

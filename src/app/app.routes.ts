@@ -205,6 +205,15 @@ export const routes: Routes = [
             (m) => m.AdminEmailManagementComponent
           ),
       },
+      {
+        path: 'admin/instituciones',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMINISTRADOR', 'ADMIN'] },
+        loadComponent: () =>
+          import('./features/admin/admin-instituciones/admin-instituciones.component').then(
+            (m) => m.AdminInstitucionesComponent
+          ),
+      },
       // Rutas Decano
       {
         path: 'decano/facultad',
@@ -324,6 +333,16 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/coordinator/coordinator-consolidado/consolidado-asistencia.component').then(
             (m) => m.ConsolidadoAsistenciaComponent
+          ),
+      },
+      // CULM-001 C.1: revisiones de cancelación de matrícula por pérdida de inasistencia (decano)
+      {
+        path: 'decano/revisiones-cancelacion',
+        canActivate: [roleGuard],
+        data: { roles: ['DECANO'], rol: 'DECANO' },
+        loadComponent: () =>
+          import('./features/shared/revisiones-resolucion/revisiones-resolucion.component').then(
+            (m) => m.RevisionesResolucionComponent
           ),
       },
       // HU143 / HU157: búsqueda de asignaturas y ficha unificada de estudiantes del administrador
@@ -485,6 +504,16 @@ export const routes: Routes = [
             (m) => m.ConsolidadoAsistenciaComponent
           ),
       },
+      // CULM-001 C.1: revisiones de cancelación de matrícula por pérdida de inasistencia (coordinador)
+      {
+        path: 'coordinador/revisiones-cancelacion',
+        canActivate: [roleGuard],
+        data: { roles: ['COORDINADOR'], rol: 'COORDINADOR' },
+        loadComponent: () =>
+          import('./features/shared/revisiones-resolucion/revisiones-resolucion.component').then(
+            (m) => m.RevisionesResolucionComponent
+          ),
+      },
       // Rutas Docente
       {
         path: 'docente/grupos',
@@ -514,6 +543,15 @@ export const routes: Routes = [
           ),
       },
       // Rutas Estudiante
+      {
+        path: 'estudiante/alertas',
+        canActivate: [roleGuard],
+        data: { roles: ['ESTUDIANTE'] },
+        loadComponent: () =>
+          import('./features/student/student-alerts/student-alerts.component').then(
+            (m) => m.StudentAlertsComponent
+          ),
+      },
       {
         path: 'estudiante/horarios',
         canActivate: [roleGuard],
@@ -548,6 +586,23 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/student/student-group-offer/student-group-offer.component').then(
             (m) => m.StudentGroupOfferComponent
+          ),
+      },
+      {
+        path: 'acceso-denegado',
+        data: { codigo: 403 },
+        loadComponent: () =>
+          import('./features/shared/ruta-no-disponible/ruta-no-disponible.component').then(
+            (m) => m.RutaNoDisponibleComponent
+          ),
+      },
+      {
+        // F3-TRX-01: una ruta inexistente dentro de /app muestra 404 en el layout, sin perder la sesión.
+        path: '**',
+        data: { codigo: 404 },
+        loadComponent: () =>
+          import('./features/shared/ruta-no-disponible/ruta-no-disponible.component').then(
+            (m) => m.RutaNoDisponibleComponent
           ),
       },
     ],

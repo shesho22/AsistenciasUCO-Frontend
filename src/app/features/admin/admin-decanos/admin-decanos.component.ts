@@ -19,6 +19,7 @@ import { IdentidadEsperada, UltimaPeticion, advertirRegistroNoListado } from '..
 import { CorreccionIdentidadService } from '../../../core/services/correccion-identidad.service';
 import { CorregirIdentidadPayload, IdentidadActual } from '../../../core/models/correccion-identidad.model';
 import { CorreccionIdentidadModalComponent } from '../../../shared/components/correccion-identidad-modal/correccion-identidad-modal.component';
+import { CargaMasivaUsuariosComponent } from '../../../shared/components/carga-masiva-usuarios/carga-masiva-usuarios.component';
 
 type VistaAdmin = 'LISTA' | 'REGISTRO';
 
@@ -36,6 +37,7 @@ type VistaAdmin = 'LISTA' | 'REGISTRO';
     UserPickerModalComponent,
     AccountAccessStatusComponent,
     CorreccionIdentidadModalComponent,
+    CargaMasivaUsuariosComponent,
   ],
   template: `
     <div class="space-y-6 animate-fade-in">
@@ -66,6 +68,12 @@ type VistaAdmin = 'LISTA' | 'REGISTRO';
               </svg>
               Nombrar Decano Existente
             </app-button>
+            <app-button variant="secondary" size="md" (clicked)="mostrarCargaMasiva.set(true)">
+              <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              </svg>
+              Carga Masiva CSV
+            </app-button>
             <app-button variant="secondary" size="md" (clicked)="abrirFormularioRegistro()">
               <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -74,6 +82,14 @@ type VistaAdmin = 'LISTA' | 'REGISTRO';
             </app-button>
           </div>
         </div>
+
+        @if (mostrarCargaMasiva()) {
+          <app-carga-masiva-usuarios
+            destino="DECANO"
+            (cargaCompletada)="onCargaMasivaCompletada()"
+            (cancelar)="mostrarCargaMasiva.set(false)"
+          />
+        }
 
         <!-- Estado de acceso de la ultima cuenta registrada (verificado por el backend, nunca por la SPA) -->
         <app-account-access-status [correo]="ultimaCuentaRegistrada()" />
@@ -131,9 +147,6 @@ type VistaAdmin = 'LISTA' | 'REGISTRO';
                   <div>
                     <div class="flex items-start justify-between gap-3 mb-2">
                       <div class="flex items-center gap-2">
-                        <span class="text-xs font-mono font-semibold px-2 py-0.5 rounded-md bg-warm-100 text-warm-700">
-                          DEC-{{ decano.numeroIdentificacion }}
-                        </span>
                         <app-badge [variant]="decano.estado === 'ACTIVO' ? 'success' : 'neutral'">
                           {{ decano.estado }}
                         </app-badge>
@@ -411,13 +424,14 @@ export class AdminDecanosComponent implements OnInit {
   facultades = signal<FacultadItem[]>([]);
   isLoading = signal<boolean>(true);
   isSubmitting = signal<boolean>(false);
+  readonly mostrarCargaMasiva = signal<boolean>(false);
   searchQuery = '';
   selectedEstado = 'TODOS';
   private readonly ultimaPeticionDecanos = new UltimaPeticion();
 
   formData: Omit<DecanoItem, 'id'> & { password?: string } = {
-    tipoIdentificacionId: 'A1B2C3D4-0000-0000-0000-000000000001',
-    tipoIdentificacion: 'CC',
+    tipoIdentificacionId: '',
+    tipoIdentificacion: '',
     numeroIdentificacion: '',
     primerNombre: '',
     segundoNombre: '',
@@ -499,6 +513,10 @@ export class AdminDecanosComponent implements OnInit {
     this.errorCorreccion.set(null);
   }
 
+  onCargaMasivaCompletada(): void {
+    this.cargarDecanos();
+  }
+
   ngOnInit(): void {
     this.cargarTiposIdentificacion();
     this.cargarFacultades();
@@ -576,8 +594,8 @@ export class AdminDecanosComponent implements OnInit {
 
   abrirFormularioRegistro(): void {
     this.formData = {
-      tipoIdentificacionId: this.tiposIdentificacion().length > 0 ? this.tiposIdentificacion()[0].id : 'A1B2C3D4-0000-0000-0000-000000000001',
-      tipoIdentificacion: this.tiposIdentificacion().length > 0 ? this.tiposIdentificacion()[0].tipoIdentificacion : 'CC',
+      tipoIdentificacionId: this.tiposIdentificacion().length > 0 ? this.tiposIdentificacion()[0].id : '',
+      tipoIdentificacion: this.tiposIdentificacion().length > 0 ? this.tiposIdentificacion()[0].tipoIdentificacion : '',
       numeroIdentificacion: '',
       primerNombre: '',
       segundoNombre: '',
@@ -641,22 +659,6 @@ export class AdminDecanosComponent implements OnInit {
     const pwd = (this.formData.password || '').trim();
     if (!pwd) {
       this.toast.warning('La contraseña inicial de acceso es obligatoria.');
-      return;
-    }
-    if (pwd.length < 12) {
-      this.toast.warning('La contraseña inicial debe tener mínimo 12 caracteres según las políticas de Keycloak.');
-      return;
-    }
-    const hasUpper = /[A-Z]/.test(pwd);
-    const hasLower = /[a-z]/.test(pwd);
-    const hasDigit = /[0-9]/.test(pwd);
-    const hasSpecial = /[!@#$%^&*()_+\-=%]/.test(pwd);
-    if (!hasUpper || !hasLower || !hasDigit || !hasSpecial) {
-      this.toast.warning('La contraseña debe incluir al menos una mayúscula, una minúscula, un número y un símbolo (!@#$%^&*()_+-=%).');
-      return;
-    }
-    if (pwd === String(idResult.value) || pwd.toLowerCase() === this.formData.correo.trim().toLowerCase()) {
-      this.toast.warning('La contraseña no puede coincidir con el documento de identidad ni con el correo.');
       return;
     }
 

@@ -37,7 +37,7 @@ import { FranjasEditorComponent } from '../../../../shared/components/franjas-ed
             <select name="idAsignatura" [(ngModel)]="idAsignatura" class="mt-1 w-full px-3 py-2 border border-warm-200 rounded-xl text-sm">
               <option value="">Seleccione...</option>
               @for (a of asignaturas(); track a.idAsignatura) {
-                <option [value]="a.idAsignatura">{{ a.codigoAsignatura }} - {{ a.nombreAsignatura }} ({{ a.nombrePrograma }})</option>
+                <option [value]="a.idAsignatura">{{ a.codigoAsignatura }} - {{ a.nombreAsignatura }} ({{ a.programas.join(', ') }})</option>
               }
             </select>
           </label>

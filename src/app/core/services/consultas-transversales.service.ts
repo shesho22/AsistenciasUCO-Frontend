@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiResponse } from '../models/api-response.model';
+import { ApiPageResponse } from '../api/models/api-page-response.model';
 import {
   AsignaturaInstitucionItem,
   CategoriaJustificacionItem,
@@ -34,27 +35,27 @@ export class ConsultasTransversalesService {
   private readonly coordinador = `${environment.apiUrl}/coordinador`;
 
   /** HU112: una fila por programa y plan de la facultad, con semestres, asignaturas y suma de créditos. */
-  getProgramasCreditos(filtro: FiltroListado): Observable<ApiResponse<ProgramaCreditosItem[]>> {
+  getProgramasCreditos(filtro: FiltroListado): Observable<ApiPageResponse<ProgramaCreditosItem>> {
     return this.listar(`${this.decano}/programas-creditos`, filtro);
   }
 
   /** HU128: docentes de la facultad con vínculo activo, filtrables por programa. */
-  getDocentesFacultad(filtro: FiltroListado): Observable<ApiResponse<DocenteFacultadItem[]>> {
+  getDocentesFacultad(filtro: FiltroListado): Observable<ApiPageResponse<DocenteFacultadItem>> {
     return this.listar(`${this.decano}/docentes`, filtro);
   }
 
   /** HU136: docentes de toda la institución del administrador, filtrables por facultad y programa. */
-  getDocentesInstitucion(filtro: FiltroListado): Observable<ApiResponse<DocenteFacultadItem[]>> {
+  getDocentesInstitucion(filtro: FiltroListado): Observable<ApiPageResponse<DocenteFacultadItem>> {
     return this.listar(`${this.admin}/docentes`, filtro);
   }
 
   /** HU143: el decano busca en su facultad; el administrador, en su institución (con filtro opcional por facultad). */
-  buscarAsignaturas(filtro: FiltroListado, comoAdministrador = false): Observable<ApiResponse<AsignaturaInstitucionItem[]>> {
+  buscarAsignaturas(filtro: FiltroListado, comoAdministrador = false): Observable<ApiPageResponse<AsignaturaInstitucionItem>> {
     return this.listar(`${comoAdministrador ? this.admin : this.decano}/asignaturas`, filtro);
   }
 
   /** HU157: buscador de estudiantes de la institución del administrador. */
-  buscarEstudiantes(filtro: FiltroListado): Observable<ApiResponse<EstudianteInstitucionItem[]>> {
+  buscarEstudiantes(filtro: FiltroListado): Observable<ApiPageResponse<EstudianteInstitucionItem>> {
     return this.listar(`${this.admin}/estudiantes`, filtro);
   }
 
@@ -65,12 +66,12 @@ export class ConsultasTransversalesService {
   }
 
   /** HU061: una fila por grupo con el consolidado de asistencia; el ámbito lo decide el rol del usuario. */
-  getConsolidadoAsistencia(filtro: FiltroConsolidado, comoDecano = false): Observable<ApiResponse<ConsolidadoGrupoItem[]>> {
+  getConsolidadoAsistencia(filtro: FiltroConsolidado, comoDecano = false): Observable<ApiPageResponse<ConsolidadoGrupoItem>> {
     return this.listar(`${comoDecano ? this.decano : this.coordinador}/consolidado-asistencia`, filtro);
   }
 
   /** HU172: rastro de auditoría del administrador, paginado y con rango de fechas. */
-  getAuditoria(filtro: FiltroAuditoria): Observable<ApiResponse<EventoAuditoriaItem[]>> {
+  getAuditoria(filtro: FiltroAuditoria): Observable<ApiPageResponse<EventoAuditoriaItem>> {
     return this.listar(`${this.admin}/auditoria`, filtro);
   }
 
@@ -89,7 +90,7 @@ export class ConsultasTransversalesService {
     return this.http.get<ApiResponse<ComponenteFormacionItem[]>>(`${this.coordinador}/componentes-formacion`);
   }
 
-  private listar<T>(url: string, filtro: FiltroListado | FiltroConsolidado | FiltroAuditoria): Observable<ApiResponse<T[]>> {
-    return this.http.get<ApiResponse<T[]>>(url, { params: parametros({ ...filtro }) });
+  private listar<T>(url: string, filtro: FiltroListado | FiltroConsolidado | FiltroAuditoria): Observable<ApiPageResponse<T>> {
+    return this.http.get<ApiPageResponse<T>>(url, { params: parametros({ ...filtro }) });
   }
 }

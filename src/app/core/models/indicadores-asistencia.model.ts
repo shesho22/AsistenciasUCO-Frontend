@@ -1,3 +1,5 @@
+import { MarcaInasistencia } from './revision-cancelacion.model';
+
 /** CULM-001 B.2 (CONTRACT B 3.2.8): indicadores por horas entregados por el backend; el cliente solo los pinta. */
 
 export type CodigoPermanencia = 'REGULAR' | 'RIESGO' | 'PERDIDA';
@@ -20,4 +22,5 @@ export interface ResumenAsistenciaEstudiante extends IndicadoresAsistenciaRespon
   estudianteId: string;
   nombreCompleto: string;
   codigoEstadoEstudiante: string;
+  marca?: MarcaInasistencia | null;
 }
