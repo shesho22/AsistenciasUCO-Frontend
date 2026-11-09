@@ -1,7 +1,7 @@
 /** Estado de una sesión de clase (CULM-001 B.1, `EstadoSesion` del backend). */
 export type EstadoSesion = 'PROGRAMADA' | 'CANCELADA';
 
-export type TipoCancelacionSesion = 'DOCENTE' | 'FESTIVO';
+export type TipoCancelacionSesion = 'DOCENTE' | 'FESTIVO' | 'COORDINADOR';
 
 /** Detalle de la cancelación; `null` en la sesión cuando no está cancelada. */
 export interface CancelacionSesion {

@@ -299,6 +299,30 @@ describe('TeacherGruposComponent', () => {
     expect(sessionService.createSession).toHaveBeenCalled();
   });
 
+  it('DEC-064: tras crear la sesión informa que se notificó a estudiantes y coordinador', () => {
+    const toastSuccess = spyOn(TestBed.inject(ToastService), 'success');
+    sessionService.createSession.and.returnValue(of({ exitoso: true, mensaje: 'Sesión creada' } as any));
+    component.verHubGrupo(course);
+    component.abrirCrearSesionExtraordinaria();
+    component.sesionForm = { title: 'Sesión de repaso', date: '2026-09-15', startTime: '08:00', endTime: '10:00', sessionNumber: 1 };
+
+    component.guardarSesion();
+
+    expect(toastSuccess).toHaveBeenCalledOnceWith('Sesión creada Se notificó a los estudiantes y al coordinador del programa.');
+  });
+
+  it('DEC-064: sin mensaje del backend usa el texto de respaldo más el aviso de notificación', () => {
+    const toastSuccess = spyOn(TestBed.inject(ToastService), 'success');
+    sessionService.createSession.and.returnValue(of({ exitoso: true } as any));
+    component.verHubGrupo(course);
+    component.abrirCrearSesionExtraordinaria();
+    component.sesionForm = { title: 'Sesión de repaso', date: '2026-09-15', startTime: '08:00', endTime: '10:00', sessionNumber: 1 };
+
+    component.guardarSesion();
+
+    expect(toastSuccess).toHaveBeenCalledOnceWith('Sesión programada con éxito. Se notificó a los estudiantes y al coordinador del programa.');
+  });
+
   it('A2-F-09 un 400 SES_017 al crear una sesión muestra el message del backend, sin texto local', () => {
     const toastError = spyOn(TestBed.inject(ToastService), 'error');
     sessionService.createSession.and.returnValue(throwError(() => apiHttpError(400, 'La sesión se cruza con otra sesión del grupo o del docente en ese horario.', 'VALIDATION_ERROR')));
@@ -630,6 +654,29 @@ describe('TeacherGruposComponent', () => {
       expect(component.sessions()[0].estado).toBe('CANCELADA');
       expect(component.sessions()[0].cancelacion?.tipo).toBe('DOCENTE');
       expect(sessionService.getSessionsByGroup).not.toHaveBeenCalled();
+    });
+
+    it('DEC-064: SESION_CANCELADA de tipo COORDINADOR marca la sesión y avisa "Sesión cancelada por coordinación"', () => {
+      const toastInfo = spyOn(TestBed.inject(ToastService), 'info');
+      abrirHub();
+
+      realtimeEvents$.next({
+        eventId: 'e', type: 'SESION_CANCELADA', occurredAt: '2026-11-10T14:00:00Z', correlationId: null,
+        payload: { grupo: 'crs-1', sesion: 'ses-1', tipo: 'COORDINADOR', fechaHoraInicioUtc: null },
+      });
+
+      expect(component.sessions()[0].estado).toBe('CANCELADA');
+      expect(component.sessions()[0].cancelacion?.tipo).toBe('COORDINADOR');
+      expect(toastInfo).toHaveBeenCalledOnceWith('Sesión cancelada por coordinación');
+    });
+
+    it('DEC-064: la cancelación del propio docente no muestra el aviso de coordinación', () => {
+      const toastInfo = spyOn(TestBed.inject(ToastService), 'info');
+      abrirHub();
+
+      realtimeEvents$.next(eventoCancelada('crs-1', 'ses-1'));
+
+      expect(toastInfo).not.toHaveBeenCalled();
     });
 
     it('B1-F-22 ignora eventos de otro grupo', () => {

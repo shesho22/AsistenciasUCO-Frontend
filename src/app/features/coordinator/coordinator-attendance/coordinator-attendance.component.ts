@@ -12,13 +12,23 @@ import {
 import { BadgeComponent } from '../../../shared/components/badge/badge.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
-import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
+import { getApiErrorMessage, getApiSuccessMessage } from '../../../core/api/errors/api-error.util';
 import { SesionEstadoBadgeComponent } from '../../../shared/components/sesion-estado-badge/sesion-estado-badge.component';
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
 import { resolveSessionInstant } from '../../../core/time/session-timezone.util';
 import { RealtimeService } from '../../../core/realtime/realtime.service';
 import { onRealtimeReconnect } from '../../../core/realtime/realtime-reconnect-trigger';
-import { REALTIME_EVENT_TYPE } from '../../../core/realtime/model/realtime-event.model';
+import {
+  REALTIME_EVENT_TYPE,
+  RealtimeEvent,
+  SesionCanceladaRealtimePayload,
+  SesionManualCreadaRealtimePayload,
+} from '../../../core/realtime/model/realtime-event.model';
+import { CoordinadorSesionesService } from '../../../core/services/coordinador-sesiones.service';
+import { MotivoCancelacionCoordinador } from '../../../core/models/coordinador-sesion-cancelacion.model';
+import { estaCancelada } from '../../../core/models/sesion-estado.model';
+import { mensajeSesionManualCreada } from '../../../core/models/sesion-manual.util';
+import { CoordinatorCancelarSesionModalComponent } from './coordinator-cancelar-sesion-modal.component';
 import { ErrorCargaComponent } from '../../../shared/components/error-carga/error-carga.component';
 import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load-error.util';
 
@@ -33,7 +43,7 @@ type FiltroAsistio = 'TODOS' | 'ASISTIO' | 'NO_ASISTIO';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full' },
-  imports: [CommonModule, FormsModule, BadgeComponent, PaginationComponent, SesionEstadoBadgeComponent, ErrorCargaComponent],
+  imports: [CommonModule, FormsModule, BadgeComponent, PaginationComponent, SesionEstadoBadgeComponent, ErrorCargaComponent, CoordinatorCancelarSesionModalComponent],
   template: `
     <div class="space-y-6 animate-fade-in">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
@@ -174,10 +184,20 @@ type FiltroAsistio = 'TODOS' | 'ASISTIO' | 'NO_ASISTIO';
                       </td>
                       <td class="py-2 pr-3 text-warm-700">{{ s.numeroSemana ?? '—' }}</td>
                       <td class="py-2 pr-3 text-warm-600 text-xs">{{ horario(s) }}</td>
-                      <td class="py-2 text-right">
+                      <td class="py-2 text-right space-x-3">
                         <button type="button" class="text-xs font-semibold text-primary-700 hover:underline" (click)="seleccionarSesion(s)">
                           Ver asistencia
                         </button>
+                        @if (!esCancelada(s)) {
+                          <button
+                            type="button"
+                            data-testid="cancelar-sesion"
+                            class="text-xs font-semibold text-danger-700 hover:underline"
+                            (click)="abrirCancelar(s)"
+                          >
+                            Cancelar sesión
+                          </button>
+                        }
                       </td>
                     </tr>
                   }
@@ -256,12 +276,24 @@ type FiltroAsistio = 'TODOS' | 'ASISTIO' | 'NO_ASISTIO';
           ></app-pagination>
         </section>
       }
+
+      <app-coordinator-cancelar-sesion-modal
+        [isOpen]="sesionACancelar() !== null"
+        [nombreSesion]="sesionACancelar()?.nombre ?? ''"
+        [motivos]="motivos()"
+        [errorMotivos]="errorMotivos()"
+        [errorMensaje]="errorCancelar()"
+        [enviando]="enviandoCancelacion()"
+        (confirmado)="confirmarCancelacion($event)"
+        (closed)="cerrarCancelar()"
+      />
     </div>
   `,
 })
 export class CoordinatorAttendanceComponent implements OnInit, OnDestroy {
   private readonly service = inject(CoordinatorManagementService);
   private readonly toast = inject(ToastService);
+  private readonly sesionesService = inject(CoordinadorSesionesService);
   readonly timeZone = inject(SessionTimeZoneService);
   private readonly realtime = inject(RealtimeService, { optional: true });
   private subRealtime?: Subscription;
@@ -287,6 +319,14 @@ export class CoordinatorAttendanceComponent implements OnInit, OnDestroy {
   desde = signal('');
   hasta = signal('');
   sesionSeleccionada = signal<SesionGrupoItem | null>(null);
+
+  /** DEC-064: cancelación de una sesión manual por el coordinador. */
+  sesionACancelar = signal<SesionGrupoItem | null>(null);
+  motivos = signal<MotivoCancelacionCoordinador[]>([]);
+  errorMotivos = signal<string | null>(null);
+  errorCancelar = signal<string | null>(null);
+  enviandoCancelacion = signal(false);
+  readonly esCancelada = estaCancelada;
 
   asistencias = signal<AsistenciaSesionItem[]>([]);
   totalAsistencias = signal(0);
@@ -369,30 +409,82 @@ export class CoordinatorAttendanceComponent implements OnInit, OnDestroy {
       })
     );
 
-    const events$ = this.realtime.events ? this.realtime.events() : (this.realtime as any).events$;
-    if (events$) {
-      sub.add(
-        events$.subscribe((evt: any) => {
-          if (!evt) return;
-          const tipo = evt.type || evt.tipo;
-          if (
-            tipo === REALTIME_EVENT_TYPE.ALERTA_INASISTENCIA ||
-            tipo === REALTIME_EVENT_TYPE.REVISION_CANCELACION_CREADA ||
-            tipo === REALTIME_EVENT_TYPE.REVISION_CANCELACION_PROPUESTA ||
-            tipo === REALTIME_EVENT_TYPE.REVISION_CANCELACION_DECIDIDA ||
-            tipo === REALTIME_EVENT_TYPE.REVISION_CANCELACION_RESOLUCION ||
-            tipo === REALTIME_EVENT_TYPE.REVISION_CANCELACION_RESUELTA ||
-            tipo === REALTIME_EVENT_TYPE.ASISTENCIAS_SESION_ACTUALIZADAS ||
-            tipo === 'REVISION_CANCELACION_PROPUESTA' ||
-            tipo === 'REVISION_CANCELACION_RESOLUCION'
-          ) {
-            this.cargarSesiones();
-          }
-        })
-      );
-    }
+    sub.add(
+      this.realtime.events().subscribe((evt: RealtimeEvent) => {
+        if (!evt) return;
+        const tipo = evt.type;
+        if (tipo === REALTIME_EVENT_TYPE.SESION_MANUAL_CREADA) {
+          const payload = evt.payload as SesionManualCreadaRealtimePayload;
+          if (payload?.grupo !== grupoId) return;
+          this.toast.info(
+            mensajeSesionManualCreada(payload, this.timeZone.formatTemporal(payload.fechaHoraInicio))
+          );
+          this.cargarSesiones();
+          return;
+        }
+        if (tipo === REALTIME_EVENT_TYPE.SESION_CANCELADA) {
+          const payload = evt.payload as SesionCanceladaRealtimePayload;
+          if (payload?.grupo === grupoId) this.cargarSesiones();
+          return;
+        }
+        if (
+          tipo === REALTIME_EVENT_TYPE.ALERTA_INASISTENCIA ||
+          tipo === REALTIME_EVENT_TYPE.REVISION_CANCELACION_CREADA ||
+          tipo === REALTIME_EVENT_TYPE.REVISION_CANCELACION_PROPUESTA ||
+          tipo === REALTIME_EVENT_TYPE.REVISION_CANCELACION_DECIDIDA ||
+          tipo === REALTIME_EVENT_TYPE.REVISION_CANCELACION_RESOLUCION ||
+          tipo === REALTIME_EVENT_TYPE.REVISION_CANCELACION_RESUELTA ||
+          tipo === REALTIME_EVENT_TYPE.ASISTENCIAS_SESION_ACTUALIZADAS
+        ) {
+          this.cargarSesiones();
+        }
+      })
+    );
 
     this.subRealtime = sub;
+  }
+
+  abrirCancelar(sesion: SesionGrupoItem): void {
+    if (estaCancelada(sesion)) return;
+    this.errorCancelar.set(null);
+    this.sesionACancelar.set(sesion);
+    if (this.motivos().length === 0) this.cargarMotivos();
+  }
+
+  cerrarCancelar(): void {
+    this.sesionACancelar.set(null);
+    this.errorCancelar.set(null);
+    this.enviandoCancelacion.set(false);
+  }
+
+  private cargarMotivos(): void {
+    this.errorMotivos.set(null);
+    this.sesionesService.getMotivosCancelacion().subscribe({
+      next: (res) => this.motivos.set(res.datos ?? []),
+      error: (error: unknown) => {
+        this.motivos.set([]);
+        this.errorMotivos.set(getApiErrorMessage(error));
+      },
+    });
+  }
+
+  confirmarCancelacion(request: { codigoMotivo: string; observacion?: string }): void {
+    const sesion = this.sesionACancelar();
+    if (!sesion || this.enviandoCancelacion()) return;
+    this.errorCancelar.set(null);
+    this.enviandoCancelacion.set(true);
+    this.sesionesService.cancelarSesion(sesion.id, request).subscribe({
+      next: (res) => {
+        this.enviandoCancelacion.set(false);
+        this.toast.success(getApiSuccessMessage(res, 'Sesión cancelada.'));
+        this.cerrarCancelar();
+        this.cargarSesiones();
+      },
+      error: (error: unknown) => {
+        this.enviandoCancelacion.set(false);
+        this.errorCancelar.set(getApiErrorMessage(error));
+      },
+    });
   }
 
   ngOnDestroy(): void {
