@@ -14,7 +14,8 @@
     "lint:tokens": "node scripts/check-design-tokens.mjs && node scripts/check-a11y-controles.mjs",
     "check:retiro-solicitudes": "node scripts/check-retiro-solicitudes.mjs",
     "check:registro-individual": "node scripts/check-registro-individual-retirado.mjs",
-    "verify": "npm run lint:tokens && npm run test:ci && npm run coverage:realtime:check && npm run check:retiro-solicitudes && npm run check:registro-individual && npm run build -- --configuration=production"
+    "check:hu-en-ui": "node scripts/check-hu-en-ui.mjs",
+    "verify": "npm run lint:tokens && npm run test:ci && npm run coverage:realtime:check && npm run check:retiro-solicitudes && npm run check:registro-individual && npm run check:hu-en-ui && npm run build -- --configuration=production"
   },
   "private": true,
   "dependencies": {

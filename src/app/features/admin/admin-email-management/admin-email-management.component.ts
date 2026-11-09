@@ -41,64 +41,52 @@ export type TabNotificaciones = 'PLANTILLAS' | 'COLA_OUTBOX' | 'CANAL_SMTP';
 
 export interface PlantillaMetaInfo {
   titulo: string;
-  hu: string;
   descripcion: string;
 }
 
 export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
   VERIFICACION_CORREO: {
     titulo: 'Verificación de Correo Institucional',
-    hu: 'HU050 / IDENT-001',
     descripcion: 'Enlace seguro para validar el correo del estudiante en su primer acceso.',
   },
   RETIRO_ESTUDIANTE_GRUPO: {
     titulo: 'Retiro de Estudiante de Grupo',
-    hu: 'HU051',
     descripcion: 'Notificación oficial cuando el docente titular desvincula un estudiante del grupo.',
   },
   RECLAMO_ASISTENCIA_RADICADO: {
     titulo: 'Nueva Solicitud de Revisión de Asistencia',
-    hu: 'HU010 / HU035',
     descripcion: 'Aviso al docente titular cuando un estudiante radica una reclamación de inasistencia.',
   },
   RECLAMO_ASISTENCIA_RESUELTO: {
     titulo: 'Resolución de Reclamo de Asistencia',
-    hu: 'HU037 / HU042',
     descripcion: 'Aviso al alumno con la decisión sobre su reclamo o justificación de falta.',
   },
   ALERTA_RIESGO_INASISTENCIA: {
     titulo: 'Alerta Preventiva de Ausentismo (15%)',
-    hu: 'HU026C (15%)',
     descripcion: 'Alerta temprana al estudiante antes de alcanzar el umbral de reprobación.',
   },
   ALERTA_PERDIDA_INASISTENCIA: {
     titulo: 'Pérdida de Asignatura por Inasistencia (20%)',
-    hu: 'HU026C (20%)',
     descripcion: 'Notificación formal institucional de pérdida de materia por inasistencia.',
   },
   CIERRE_MASIVO_PERIODO_EJECUTADO: {
     titulo: 'Consolidación de Cierre Masivo de Período',
-    hu: 'HU174',
     descripcion: 'Resumen oficial enviado al administrador tras consolidar el cierre masivo del semestre.',
   },
   ALERTA_INASISTENCIA_15: {
     titulo: 'Alerta Preventiva de Ausentismo (15%)',
-    hu: 'HU026C (15%)',
     descripcion: 'Alerta temprana al estudiante antes de alcanzar el umbral de reprobación.',
   },
   PERDIDA_ASIGNATURA_20: {
     titulo: 'Pérdida de Asignatura por Inasistencia (20%)',
-    hu: 'HU026C (20%)',
     descripcion: 'Notificación formal institucional de pérdida de materia por inasistencia.',
   },
   CIERRE_SESION_ASISTENCIA: {
     titulo: 'Consolidación de Sesión de Clase',
-    hu: 'HU010/HU035',
     descripcion: 'Resumen digital de asistencia enviado al docente tras consolidar la clase.',
   },
   SOLICITUD_REVISION_ASISTENCIA: {
     titulo: 'Nueva Solicitud de Revisión de Faltas',
-    hu: 'HU010 / HU035',
     descripcion: 'Aviso al docente cuando un estudiante radica una reclamación con soportes.',
   },
 };
@@ -227,7 +215,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
                   >
                     <div class="flex items-center justify-between gap-2">
                       <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary-100 text-primary-800 font-mono">
-                        {{ getMetadata(tpl.tipo).hu }}
+                        {{ tpl.tipo }}
                       </span>
                       <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-warm-100 text-warm-700">
                         v{{ tpl.versionActiva }}
@@ -235,9 +223,6 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
                     </div>
                     <div class="font-bold text-xs text-warm-900 leading-tight">
                       {{ getMetadata(tpl.tipo).titulo }}
-                    </div>
-                    <div class="text-[11px] text-warm-500 line-clamp-1 font-mono">
-                      {{ tpl.tipo }}
                     </div>
                   </button>
                 }
@@ -252,10 +237,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
                   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-warm-100">
                     <div>
                       <div class="flex items-center gap-2">
-                        <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-primary-100 text-primary-800 font-mono">
-                          {{ getMetadata(tpl.tipo).hu }}
-                        </span>
-                        <span class="text-xs font-semibold text-warm-500 font-mono">{{ tpl.tipo }}</span>
+                        <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-primary-100 text-primary-800 font-mono">{{ tpl.tipo }}</span>
                       </div>
                       <h2 class="text-lg font-serif font-bold text-warm-900 mt-1">
                         {{ getMetadata(tpl.tipo).titulo }}
@@ -870,8 +852,7 @@ export class AdminEmailManagementComponent implements OnInit {
       const meta = PLANTILLA_METADATA[item.tipo];
       const matchTipo = item.tipo.toLowerCase().includes(query);
       const matchTitulo = meta?.titulo.toLowerCase().includes(query);
-      const matchHu = meta?.hu.toLowerCase().includes(query);
-      return matchTipo || matchTitulo || matchHu;
+      return matchTipo || matchTitulo;
     });
   });
 
