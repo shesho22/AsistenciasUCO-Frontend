@@ -295,11 +295,11 @@ describe('TeacherMatriculaModalComponent (HU176B)', () => {
     expect(component.ventana()).toBeNull();
     expect(rotado$.observed).toBeFalse();
   });
-  it('CULM-001 usa la proyeccion compartida con el QR grande, el estado de la ventana y el curso', async () => {
+  it('CULM-001 usa la proyeccion compartida con el QR a tamano normal, el estado de la ventana y el curso', async () => {
     await crear();
     const n = html();
     expect(n.querySelector('app-qr-proyeccion')).not.toBeNull();
-    expect((n.querySelector('[data-testid="qr-tarjeta"]') as HTMLElement).style.width).toBe('min(78vh, 92vw)');
+    expect((n.querySelector('[data-testid="qr-tarjeta"]') as HTMLElement).style.width).toBe('');
     expect(n.querySelector('[data-testid="qr-estado"]')?.textContent).toContain('ABIERTA');
     expect(n.querySelector('[data-testid="qr-titulo"]')?.textContent).toContain('Ingeniería de Software I');
     expect(n.querySelector('[data-testid="qr-pantalla-completa"]')).not.toBeNull();

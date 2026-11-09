@@ -46,14 +46,43 @@ describe('QrProyeccionComponent (CULM-001, estetica unificada de proyeccion)', (
     expect(el('qr-etiqueta')?.textContent).toContain('Matricula por QR');
   });
 
-  it('el QR ocupa el maximo espacio: ancho min(78vh, 92vw) y el PIN usa tipografia grande', () => {
+  it('por defecto muestra el QR a tamano normal (tarjeta de matricula) y ofrece Ampliar', () => {
     crear();
     const tarjeta = el('qr-tarjeta') as HTMLElement;
-    expect(tarjeta.style.width).toBe('min(78vh, 92vw)');
+    expect(tarjeta.style.width).toBe('');
+    expect(tarjeta.className).toContain('w-40');
     expect(tarjeta.className).toContain('bg-white');
+    expect(el('qr-contenedor')?.className).toContain('max-w-lg');
     expect((el('qr-img') as HTMLElement).className).toContain('w-full');
-    expect((el('qr-pin') as HTMLElement).style.fontSize).toContain('vmin');
+    expect((el('qr-pin') as HTMLElement).style.fontSize).toBe('');
     expect((el('qr-pin') as HTMLElement).className).toContain('font-mono');
+    expect(el('qr-pantalla-completa')?.textContent).toContain('Ampliar');
+  });
+
+  it('Escape con tamano normal cierra; con el QR ampliado primero lo reduce', () => {
+    crear();
+    let n = 0;
+    fixture.componentInstance.cerrar.subscribe(() => n++);
+    (fixture.nativeElement as { requestFullscreen?: unknown }).requestFullscreen = undefined;
+    (el('qr-pantalla-completa') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect((el('qr-tarjeta') as HTMLElement).style.width).toBe('min(88vh, 92vw)');
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    fixture.detectChanges();
+    expect(n).toBe(0);
+    expect((el('qr-tarjeta') as HTMLElement).style.width).toBe('');
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    expect(n).toBe(1);
+  });
+
+  it('Escape no cierra si el boton cerrar esta oculto', () => {
+    crear({ mostrarCerrar: false });
+    let n = 0;
+    fixture.componentInstance.cerrar.subscribe(() => n++);
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    expect(n).toBe(0);
   });
 
   it('en pantalla completa amplia el QR a min(88vh, 92vw)', async () => {
@@ -65,7 +94,7 @@ describe('QrProyeccionComponent (CULM-001, estetica unificada de proyeccion)', (
     document.dispatchEvent(new Event('fullscreenchange'));
     fixture.detectChanges();
     expect((el('qr-tarjeta') as HTMLElement).style.width).toBe('min(88vh, 92vw)');
-    expect(el('qr-pantalla-completa')?.textContent).toContain('Salir');
+    expect(el('qr-pantalla-completa')?.textContent).toContain('Reducir');
   });
 
   it('sin Fullscreen API cae a modal maximizado y alterna', () => {
@@ -76,7 +105,7 @@ describe('QrProyeccionComponent (CULM-001, estetica unificada de proyeccion)', (
     expect((el('qr-tarjeta') as HTMLElement).style.width).toBe('min(88vh, 92vw)');
     (el('qr-pantalla-completa') as HTMLButtonElement).click();
     fixture.detectChanges();
-    expect((el('qr-tarjeta') as HTMLElement).style.width).toBe('min(78vh, 92vw)');
+    expect((el('qr-tarjeta') as HTMLElement).style.width).toBe('');
   });
 
   it('si requestFullscreen es rechazado cae a modal maximizado', async () => {

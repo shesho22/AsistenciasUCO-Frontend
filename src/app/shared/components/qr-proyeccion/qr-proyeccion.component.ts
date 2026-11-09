@@ -36,11 +36,16 @@ import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed,
   ],
   template: `
     <div
-      class="fixed inset-0 z-50 flex flex-col bg-warm-50 text-warm-900 overflow-y-auto"
+      class="fixed inset-0 z-50 text-warm-900 overflow-y-auto"
+      [class]="ampliado() ? 'flex flex-col bg-warm-50' : 'flex items-center justify-center p-4 bg-warm-900/60 backdrop-blur-sm'"
       role="dialog"
       aria-modal="true"
       [attr.aria-label]="'Proyección del código: ' + titulo()"
     >
+     <div
+      data-testid="qr-contenedor"
+      [class]="ampliado() ? 'flex flex-col flex-1 w-full' : 'bg-warm-50 rounded-3xl border border-warm-200 shadow-warm-2xl max-w-lg w-full overflow-hidden'"
+     >
       <header class="flex flex-wrap items-center justify-between gap-3 p-4 bg-primary-900 text-white">
         <div class="min-w-0">
           @if (etiqueta()) {
@@ -71,7 +76,7 @@ import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed,
             (click)="alternarPantallaCompleta()"
             class="min-h-[44px] min-w-[44px] px-4 rounded-xl border border-primary-300 text-sm font-semibold text-white hover:bg-primary-800"
           >
-            {{ ampliado() ? 'Salir de pantalla completa' : 'Pantalla completa' }}
+            {{ ampliado() ? 'Reducir' : 'Ampliar' }}
           </button>
           @if (mostrarCerrar()) {
             <button
@@ -88,10 +93,14 @@ import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed,
 
       <ng-content select="[avisos]" />
 
-      <main class="flex-1 grid gap-6 p-3 sm:p-6 items-center justify-items-center lg:grid-cols-[auto_minmax(0,1fr)]">
+      <main
+        class="grid items-center justify-items-center"
+        [class]="ampliado() ? 'flex-1 gap-6 p-3 sm:p-6 lg:grid-cols-[auto_minmax(0,1fr)]' : 'gap-5 p-5 sm:grid-cols-2'"
+      >
         <div
           data-testid="qr-tarjeta"
-          class="bg-white rounded-3xl p-2 sm:p-4 border-2 border-warm-200 shadow-warm-sm flex items-center justify-center"
+          class="bg-white border-2 border-warm-200 shadow-warm-sm flex items-center justify-center"
+          [class]="ampliado() ? 'rounded-3xl p-2 sm:p-4' : 'rounded-xl p-2 w-40 h-40'"
           [style.width]="anchoQr()"
         >
           <img
@@ -107,6 +116,7 @@ import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed,
             <p class="text-xs font-bold uppercase tracking-wider text-success-800">{{ etiquetaPin() }}</p>
             <p
               class="font-mono font-extrabold tracking-widest leading-none text-success-950 select-all my-2 break-all"
+              [class.text-3xl]="!ampliado()"
               [style.font-size]="tamanoPin()"
               [attr.data-testid]="testidPin()"
             >
@@ -136,6 +146,7 @@ import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed,
           <ng-content select="[pie]" />
         </div>
       </main>
+     </div>
     </div>
   `,
 })
@@ -170,8 +181,9 @@ export class QrProyeccionComponent {
   private readonly maximizado = signal(false);
   protected readonly ampliado = computed(() => this.enPantallaCompleta() || this.maximizado());
 
-  protected readonly anchoQr = computed(() => (this.ampliado() ? 'min(88vh, 92vw)' : 'min(78vh, 92vw)'));
-  protected readonly tamanoPin = computed(() => (this.ampliado() ? 'clamp(2.75rem, 12vmin, 9rem)' : 'clamp(2.5rem, 9vmin, 7rem)'));
+  /** Tamano normal: el de la tarjeta de matricula (sin ancho forzado); ampliado: el maximo del viewport. */
+  protected readonly anchoQr = computed(() => (this.ampliado() ? 'min(88vh, 92vw)' : null));
+  protected readonly tamanoPin = computed(() => (this.ampliado() ? 'clamp(2.75rem, 12vmin, 9rem)' : null));
   protected readonly nombreAnimacion = computed(() => (this.ciclo() % 2 === 0 ? 'qr-barra-a' : 'qr-barra-b'));
 
   @HostListener('document:fullscreenchange')
@@ -179,6 +191,16 @@ export class QrProyeccionComponent {
     const activa = document.fullscreenElement === this.host.nativeElement;
     this.enPantallaCompleta.set(activa);
     if (activa) this.maximizado.set(false);
+  }
+
+  /** Escape reduce primero el QR ampliado; solo con tamano normal cierra la proyeccion. */
+  @HostListener('document:keydown.escape')
+  protected alPresionarEscape(): void {
+    if (this.maximizado()) {
+      this.maximizado.set(false);
+    } else if (!this.enPantallaCompleta() && this.mostrarCerrar()) {
+      this.cerrar.emit();
+    }
   }
 
   protected alternarPantallaCompleta(): void {
