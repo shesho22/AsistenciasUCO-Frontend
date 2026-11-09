@@ -536,4 +536,48 @@ describe('AdminFacultadesComponent', () => {
       expect(el.querySelector('label[for="fac-nombre"]')).toBeTruthy();
     });
   });
+
+  describe('UX densidad: tarjeta de facultad con una accion primaria', () => {
+    function iniciar(): HTMLElement {
+      fixture.detectChanges();
+      http.expectOne(`${environment.apiUrl}/admin/facultades`).flush({ exitoso: true, datos: mockFacultadesApi });
+      http.expectOne(`${environment.apiUrl}/admin/decanos`).flush({ exitoso: true, datos: mockDecanos });
+      http.expectOne(`${environment.apiUrl}/admin/instituciones`).flush({ exitoso: true, datos: [{ id: 'inst-uco', nombre: 'UCO' }] });
+      flushCoordinatorCatalogs();
+      fixture.detectChanges();
+      return fixture.nativeElement as HTMLElement;
+    }
+
+    it('cada tarjeta muestra "Ver Programas y Planes" y un menu; Editar, Cambiar decano y Activar/Desactivar no estan sueltos', () => {
+      const el = iniciar();
+      const tarjeta = el.querySelector('[data-testid="acciones-facultad"]') as HTMLElement;
+      expect(tarjeta.querySelectorAll('button').length).toBe(2);
+      expect(tarjeta.textContent).toContain('Ver Programas y Planes');
+      expect(tarjeta.textContent).not.toContain('Editar');
+      expect(el.textContent).not.toContain('Cambiar Decano(a)');
+    });
+
+    it('el menu ofrece Editar, Cambiar decano(a) y Desactivar y cada uno invoca su metodo', () => {
+      const el = iniciar();
+      const editar = spyOn(component, 'editarFacultad');
+      const cambiar = spyOn(component, 'abrirModalVincularDecano');
+      const toggle = spyOn(component, 'toggleEstadoFacultad');
+      const abrir = (): void => {
+        el.querySelector<HTMLButtonElement>('[data-testid="acciones-facultad"] [data-testid="action-menu-trigger"]')!.click();
+        fixture.detectChanges();
+      };
+      abrir();
+      expect(el.querySelector('[data-testid="facultad-cambiar-decano"]')?.textContent).toContain('Cambiar decano(a)');
+      (el.querySelector('[data-testid="facultad-editar"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      abrir();
+      (el.querySelector('[data-testid="facultad-cambiar-decano"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      abrir();
+      (el.querySelector('[data-testid="facultad-estado"]') as HTMLButtonElement).click();
+      expect(editar).toHaveBeenCalledTimes(1);
+      expect(cambiar).toHaveBeenCalledTimes(1);
+      expect(toggle).toHaveBeenCalledTimes(1);
+    });
+  });
 });
