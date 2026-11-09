@@ -2,6 +2,7 @@ import { Component, ChangeDetectionStrategy, Injector, input, output, inject, si
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { ButtonComponent } from '../../../../../shared/components/button/button.component';
+import { QrProyeccionComponent } from '../../../../../shared/components/qr-proyeccion/qr-proyeccion.component';
 import { ToastService } from '../../../../../shared/components/toast/toast.component';
 import { Course } from '../../../../../core/models/course.model';
 import { MatriculaQrService } from '../../../../../core/services/matricula-qr.service';
@@ -26,9 +27,52 @@ import {
   selector: 'app-teacher-matricula-modal',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, ButtonComponent],
+  imports: [CommonModule, ButtonComponent, QrProyeccionComponent],
   template: `
     @if (isOpen() && curso()) {
+      @if (ventana(); as v) {
+        <app-qr-proyeccion
+          etiqueta="Inscripción y matrícula al grupo"
+          [titulo]="tituloProyeccion()"
+          [subtitulo]="subtituloProyeccion()"
+          [qrPngBase64]="v.qrPngBase64"
+          [pin]="v.pin"
+          etiquetaPin="PIN de matrícula"
+          altQr="Código QR de matrícula"
+          estadoVentana="ABIERTA"
+          [programa]="programaSeleccionado()"
+          [segundosRestantes]="rotacionSegundos()"
+          [proximaRotacion]="proximaRotacion()"
+          [ciclo]="ciclo()"
+          etiquetaCerrar="Ocultar"
+          testidQr="matricula-qr"
+          testidPin="matricula-pin"
+          testidCerrar="matricula-ocultar"
+          (cerrar)="closed.emit()"
+        >
+          <ng-container acciones>
+            <button type="button" (click)="copiarPin()" class="min-h-[44px] min-w-[44px] px-4 rounded-xl border border-primary-300 text-white text-sm font-semibold hover:bg-primary-800">
+              Copiar PIN
+            </button>
+            <button type="button" (click)="copiarEnlace()" class="min-h-[44px] min-w-[44px] px-4 rounded-xl border border-primary-300 text-white text-sm font-semibold hover:bg-primary-800">
+              Copiar enlace
+            </button>
+            <button type="button" data-testid="matricula-regenerar" (click)="regenerar()" class="min-h-[44px] min-w-[44px] px-4 rounded-xl border border-primary-300 text-white text-sm font-semibold hover:bg-primary-800">
+              Generar nuevo código
+            </button>
+            <button type="button" data-testid="matricula-cerrar" (click)="cerrarMatricula()" class="min-h-[44px] min-w-[44px] px-4 rounded-xl bg-danger-600 text-white text-sm font-semibold hover:bg-danger-700">
+              Cerrar matrícula
+            </button>
+          </ng-container>
+          <p class="text-xs sm:text-sm text-warm-700">
+            Proyecta el código QR o comparte el PIN. El código cambia automáticamente cada pocos segundos: pide a los
+            estudiantes que lo escaneen desde la red Wi-Fi del campus.
+          </p>
+          <p class="text-sm font-semibold text-warm-800" data-testid="matricula-fin">
+            La ventana de matrícula termina a las {{ v.fechaExpiracionUtc | date: 'shortTime' }}.
+          </p>
+        </app-qr-proyeccion>
+      } @else {
       <div class="fixed inset-0 bg-warm-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
         <div class="bg-white rounded-3xl border border-warm-200 shadow-warm-2xl max-w-lg w-full overflow-hidden animate-scale-up">
           <div class="p-6 border-b border-warm-100 flex items-center justify-between bg-primary-900 text-white">
@@ -81,50 +125,6 @@ import {
               <app-button variant="primary" size="sm" [disabled]="!programaElegido()" (clicked)="abrirConPrograma()">
                 Abrir matrícula
               </app-button>
-            } @else {
-              @if (ventana(); as v) {
-              <p class="text-xs sm:text-sm text-warm-600">
-                Proyecta el código QR o comparte el PIN. El código cambia automáticamente cada pocos segundos: pide a los
-                estudiantes que lo escaneen desde la red Wi-Fi del campus.
-              </p>
-
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 items-center">
-                <div class="p-5 rounded-2xl bg-success-50 border-2 border-success-300 shadow-warm-sm space-y-2">
-                  <span class="text-xs font-bold uppercase tracking-wider text-success-800">PIN de matrícula</span>
-                  <div class="font-mono font-extrabold text-3xl sm:text-4xl text-success-950 tracking-wider my-2 select-all" data-testid="matricula-pin">
-                    {{ v.pin }}
-                  </div>
-                  <button type="button" (click)="copiarPin()" class="w-full py-2 px-3 text-xs font-bold bg-white hover:bg-primary-100 text-primary-800 border border-primary-300 rounded-xl transition-all">
-                    Copiar PIN
-                  </button>
-                </div>
-
-                <div class="p-5 rounded-2xl bg-warm-50 border-2 border-warm-200 shadow-warm-sm flex flex-col items-center space-y-2">
-                  <span class="text-xs font-bold uppercase tracking-wider text-warm-700">Escanear para matricularse</span>
-                  <div class="w-40 h-40 bg-white p-2 rounded-xl border border-warm-300 shadow-inner flex items-center justify-center">
-                    <img
-                      [src]="'data:image/png;base64,' + v.qrPngBase64"
-                      alt="Código QR de matrícula"
-                      data-testid="matricula-qr"
-                      class="w-full h-full object-contain"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <p class="text-[11px] text-warm-500" data-testid="matricula-fin">
-                La ventana de matrícula termina a las {{ v.fechaExpiracionUtc | date: 'shortTime' }}.
-              </p>
-
-              <div class="flex flex-wrap items-center justify-center gap-2">
-                <button type="button" (click)="copiarEnlace()" class="px-3 py-1.5 text-xs font-semibold bg-white hover:bg-warm-100 border border-warm-300 rounded-lg text-warm-700 transition-colors">
-                  Copiar enlace
-                </button>
-                <button type="button" data-testid="matricula-regenerar" (click)="regenerar()" class="px-3 py-1.5 text-xs font-semibold bg-white hover:bg-warm-100 border border-warm-300 rounded-lg text-warm-700 transition-colors">
-                  Generar nuevo código
-                </button>
-              </div>
-              }
             }
           </div>
 
@@ -134,6 +134,7 @@ import {
           </div>
         </div>
       </div>
+      }
     }
   `,
 })
@@ -168,6 +169,28 @@ export class TeacherMatriculaModalComponent {
   readonly esperandoPrograma = computed(() => this.programas().length > 1 && !this.ventana());
 
   readonly ventana = signal<VentanaMatricula | null>(null);
+  /** Intervalo de rotacion observado entre dos codigos consecutivos del SSE; `null` hasta la primera rotacion. */
+  readonly rotacionSegundos = signal<number | null>(null);
+  readonly ciclo = signal(0);
+
+  readonly tituloProyeccion = computed(() => {
+    const c = this.curso();
+    return c ? `${c.name}${c.section ? ' (' + c.section + ')' : ''}` : '';
+  });
+  readonly subtituloProyeccion = computed(() => this.curso()?.code ?? '');
+  readonly programaSeleccionado = computed(() => {
+    const id = this.programaElegido();
+    return id ? (this.programas().find((p) => p.idPrograma === id)?.nombrePrograma ?? null) : null;
+  });
+  readonly proximaRotacion = computed(() => {
+    const v = this.ventana();
+    const seg = this.rotacionSegundos();
+    if (!v || seg === null) return null;
+    const ms = Date.parse(v.fechaRotacionUtc) + seg * 1000;
+    return Number.isNaN(ms)
+      ? null
+      : new Date(ms).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  });
   readonly cargando = signal(false);
   readonly error = signal<string | null>(null);
 
@@ -206,7 +229,10 @@ export class TeacherMatriculaModalComponent {
       return;
     }
     this.matriculaQr.rotarVentana(grupoId).subscribe({
-      next: (ventana) => this.ventana.set(ventana),
+      next: (ventana) => {
+        this.ciclo.update((n) => n + 1);
+        this.ventana.set(ventana);
+      },
       error: (err: unknown) => this.toast.error(getApiErrorMessage(err)),
     });
   }
@@ -255,6 +281,11 @@ export class TeacherMatriculaModalComponent {
         }
         const actual = this.ventana();
         if (actual) {
+          const intervalo = (Date.parse(payload.fechaRotacionUtc) - Date.parse(actual.fechaRotacionUtc)) / 1000;
+          if (Number.isFinite(intervalo) && intervalo > 0) {
+            this.rotacionSegundos.set(Math.round(intervalo));
+          }
+          this.ciclo.update((n) => n + 1);
           this.ventana.set({ ...actual, ...payload, idVentana: actual.idVentana });
         }
       })
@@ -320,6 +351,7 @@ export class TeacherMatriculaModalComponent {
     this.programas.set([]);
     this.programaElegido.set('');
     this.ventana.set(null);
+    this.rotacionSegundos.set(null);
     this.cargando.set(false);
     this.error.set(null);
   }

@@ -231,4 +231,15 @@ describe('TomaQrProyeccionComponent (CULM-001 B.2, HU175)', () => {
       expect((el(id) as HTMLElement).className).toContain('min-h-[44px]');
     }
   });
+  it('CULM-001 usa la proyeccion compartida: QR grande, estado de la ventana y programa opcional', () => {
+    const n = fixture.nativeElement as HTMLElement;
+    expect(n.querySelector('app-qr-proyeccion')).not.toBeNull();
+    expect((el('qr-tarjeta') as HTMLElement).style.width).toBe('min(78vh, 92vw)');
+    expect(texto('qr-estado')).toContain('ABIERTA');
+    expect(el('qr-programa')).toBeNull();
+    fixture.componentRef.setInput('programa', 'Ingenieria de Sistemas');
+    fixture.detectChanges();
+    expect(texto('qr-programa')).toContain('Ingenieria de Sistemas');
+    expect(el('qr-pantalla-completa')).not.toBeNull();
+  });
 });

@@ -295,4 +295,30 @@ describe('TeacherMatriculaModalComponent (HU176B)', () => {
     expect(component.ventana()).toBeNull();
     expect(rotado$.observed).toBeFalse();
   });
+  it('CULM-001 usa la proyeccion compartida con el QR grande, el estado de la ventana y el curso', async () => {
+    await crear();
+    const n = html();
+    expect(n.querySelector('app-qr-proyeccion')).not.toBeNull();
+    expect((n.querySelector('[data-testid="qr-tarjeta"]') as HTMLElement).style.width).toBe('min(78vh, 92vw)');
+    expect(n.querySelector('[data-testid="qr-estado"]')?.textContent).toContain('ABIERTA');
+    expect(n.querySelector('[data-testid="qr-titulo"]')?.textContent).toContain('Ingeniería de Software I');
+    expect(n.querySelector('[data-testid="qr-pantalla-completa"]')).not.toBeNull();
+  });
+
+  it('CULM-001 con varios programas muestra el programa elegido en la proyeccion', async () => {
+    await crear(true, [prog('prg-a', 'Sistemas'), prog('prg-b', 'Software')]);
+    component.programaElegido.set('prg-b');
+    component.abrirConPrograma();
+    fixture.detectChanges();
+    expect(html().querySelector('[data-testid="qr-programa"]')?.textContent).toContain('Software');
+  });
+
+  it('CULM-001 tras la primera rotacion calcula el intervalo y muestra la barra de rotacion', async () => {
+    await crear();
+    expect(html().querySelector('[data-testid="qr-barra-rotacion"]')).toBeNull();
+    rotado$.next(evento('MATRICULA_QR_ROTADO', { ...ventana, grupo: 'grp-12345', fechaRotacionUtc: '2026-11-04T15:01:00Z' }));
+    fixture.detectChanges();
+    expect(component.rotacionSegundos()).toBe(60);
+    expect((html().querySelector('[data-testid="qr-barra-rotacion"]') as HTMLElement).style.animationDuration).toBe('60s');
+  });
 });
