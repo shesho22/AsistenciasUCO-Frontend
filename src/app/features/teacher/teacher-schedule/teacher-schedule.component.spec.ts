@@ -66,6 +66,19 @@ describe('TeacherScheduleComponent', () => {
     expect(component.totalHorasSemanales()).toBe(4);
   });
 
+  it('F3-DOC-06: muestra las horas sin segundos y singulariza "1 estudiante"', () => {
+    expect(component.hora('08:00:00')).toBe('08:00');
+    expect(component.hora('08:00')).toBe('08:00');
+    expect(component.hora(null)).toBe('');
+    component.horarios.set([{ ...mockHorarios[0], horaInicio: '08:00:00', horaFin: '10:00:00', totalEstudiantes: 1 }]);
+    fixture.detectChanges();
+    const t = (fixture.nativeElement.textContent as string).replace(/\s+/g, ' ');
+    expect(t).toContain('08:00 - 10:00');
+    expect(t).not.toContain('08:00:00');
+    expect(t).toContain('1 estudiante');
+    expect(t).not.toContain('1 estudiantes');
+  });
+
   it('debe filtrar las clases por día correctamente', () => {
     const clasesLunes = component.clasesPorDia('Lunes');
     expect(clasesLunes.length).toBe(1);

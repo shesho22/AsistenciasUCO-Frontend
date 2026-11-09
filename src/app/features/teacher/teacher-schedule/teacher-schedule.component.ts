@@ -70,7 +70,7 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
                   @for (clase of clasesPorDia(dia); track clase.id) {
                     <div [class]="getClaseClasses(clase.colorCategory)">
                       <div class="flex items-center justify-between text-[11px] font-semibold mb-1">
-                        <span class="font-mono">{{ clase.horaInicio }} - {{ clase.horaFin }}</span>
+                        <span class="font-mono">{{ hora(clase.horaInicio) }} - {{ hora(clase.horaFin) }}</span>
                         <span class="uppercase tracking-wider px-1.5 py-0.2 rounded bg-white/80 text-[10px] font-bold">
                           {{ clase.codigoMateria }}
                         </span>
@@ -86,7 +86,7 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
                           <svg class="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                           </svg>
-                          <span>{{ clase.totalEstudiantes }} estudiantes</span>
+                          <span>{{ clase.totalEstudiantes }} {{ clase.totalEstudiantes === 1 ? 'estudiante' : 'estudiantes' }}</span>
                         </div>
                       </div>
                     </div>
@@ -108,6 +108,11 @@ export class TeacherScheduleComponent implements OnInit {
   isLoading = signal<boolean>(true);
 
   diasSemana: DiaSemana[] = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
+
+  /** `HH:mm`: el backend entrega `LocalTime` con segundos (`08:00:00`). */
+  hora(valor: string | null | undefined): string {
+    return (valor ?? '').replace(/^(\d{2}:\d{2}):\d{2}(?:\.\d+)?$/, '$1');
+  }
 
   totalHorasSemanales = () => {
     return this.horarios().length * 2;
