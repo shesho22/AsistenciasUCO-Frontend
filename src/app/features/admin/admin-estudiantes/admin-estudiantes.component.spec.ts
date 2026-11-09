@@ -44,6 +44,15 @@ describe('AdminEstudiantesComponent (HU157)', () => {
     expect(component.facultades()).toEqual([{ id: 'f-1', nombre: 'Ingeniería' }]);
   });
 
+  // El texto sr-only de la cabecera es position:absolute: sin un ancestro `relative` dentro del contenedor con scroll escapa
+  // del recorte y ensancha la pagina en movil (804 px sobre 375). Karma no compila Tailwind: se verifica la estructura.
+  it('F3-ADM-05: la tabla va en un contenedor relative con overflow-x-auto para que no desborde la pagina en movil', () => {
+    const contenedor = (fixture.nativeElement as HTMLElement).querySelector('table')!.parentElement!;
+    expect(contenedor.classList).toContain('overflow-x-auto');
+    expect(contenedor.classList).toContain('relative');
+    expect(contenedor.contains(contenedor.querySelector('.sr-only'))).toBeTrue();
+  });
+
   it('filtra por facultad, estado y texto', () => {
     component.onFacultad('f-1');
     expect(http.expectOne((r) => r.url === BASE).request.params.get('idFacultad')).toBe('f-1');

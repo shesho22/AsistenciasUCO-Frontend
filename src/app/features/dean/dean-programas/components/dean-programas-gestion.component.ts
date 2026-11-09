@@ -67,7 +67,7 @@ import { DeanProgramaEstadoModalComponent } from './dean-programa-estado-modal.c
           </p>
         </div>
       } @else {
-        <div class="overflow-x-auto bg-white rounded-2xl border border-warm-200 shadow-warm-sm">
+        <div class="relative overflow-x-auto bg-white rounded-2xl border border-warm-200 shadow-warm-sm">
           <table class="min-w-full text-sm">
             <thead class="bg-warm-50 text-xs uppercase text-warm-500">
               <tr>

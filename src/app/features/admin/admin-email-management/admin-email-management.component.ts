@@ -18,6 +18,7 @@ import {
   ResumenColaNotificacionDto,
   TipoPlantillaAdminDto,
 } from '../../../core/services/admin-email-notification.service';
+import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { getBackendUserMessage } from '../../../core/api/errors/api-error.util';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
@@ -707,29 +708,26 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
                 </span>
               </div>
 
-              <!-- Architecture Highlights Grid -->
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <!-- Estado del canal (D.9-a): solo canalActivo, ultimoEnvioUtc y ultimoError -->
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4" data-testid="estado-canal">
                 <div class="p-4 rounded-xl bg-warm-50 border border-warm-200">
-                  <span class="text-[10px] font-bold text-warm-500 uppercase block mb-1">Proveedor Primario Activo</span>
-                  <span class="text-sm font-mono font-bold text-warm-900 block">{{ canalEstado()?.provider || 'outbox' }}</span>
-                  <span class="text-[11px] text-warm-500 mt-1 block">Cola de envíos pendientes</span>
-                </div>
-
-                <div class="p-4 rounded-xl bg-warm-50 border border-warm-200">
-                  <span class="text-[10px] font-bold text-warm-500 uppercase block mb-1">Canal de Salida (Sender)</span>
-                  <span class="text-sm font-mono font-bold text-primary-800 block">{{ canalEstado()?.sender || 'smtp' }}</span>
-                  <span class="text-[11px] text-warm-500 mt-1 block">Medio por el que se envían los correos</span>
-                </div>
-
-                <div class="p-4 rounded-xl bg-warm-50 border border-warm-200">
-                  <span class="text-[10px] font-bold text-warm-500 uppercase block mb-1">Despachador en Segundo Plano</span>
+                  <span class="text-[10px] font-bold text-warm-500 uppercase block mb-1">Canal de correo</span>
                   <div class="flex items-center gap-1.5 mt-1">
-                    <span class="w-2.5 h-2.5 rounded-full" [class]="canalEstado()?.dispatcherEnabled ? 'bg-success-500' : 'bg-danger-500'"></span>
-                    <span class="text-xs font-bold" [class]="canalEstado()?.dispatcherEnabled ? 'text-success-800' : 'text-danger-800'">
-                      {{ canalEstado()?.dispatcherEnabled ? 'Activo' : 'Inactivo' }}
+                    <span class="w-2.5 h-2.5 rounded-full" [class]="canalEstado()?.canalActivo ? 'bg-success-500' : 'bg-danger-500'"></span>
+                    <span class="text-xs font-bold" data-testid="canal-activo" [class]="canalEstado()?.canalActivo ? 'text-success-800' : 'text-danger-800'">
+                      {{ canalEstado()?.canalActivo ? 'Activo' : 'Inactivo' }}
                     </span>
                   </div>
-                  <span class="text-[11px] text-warm-500 mt-1 block">Envía los correos pendientes en segundo plano</span>
+                </div>
+
+                <div class="p-4 rounded-xl bg-warm-50 border border-warm-200">
+                  <span class="text-[10px] font-bold text-warm-500 uppercase block mb-1">Último envío</span>
+                  <span class="text-sm font-mono font-bold text-warm-900 block" data-testid="canal-ultimo-envio">{{ timeZone.formatTemporal(canalEstado()?.ultimoEnvioUtc) }}</span>
+                </div>
+
+                <div class="p-4 rounded-xl bg-warm-50 border border-warm-200">
+                  <span class="text-[10px] font-bold text-warm-500 uppercase block mb-1">Último error</span>
+                  <span class="text-sm font-mono font-bold text-warm-900 block" data-testid="canal-ultimo-error">{{ canalEstado()?.ultimoError || 'Sin errores' }}</span>
                 </div>
               </div>
 
@@ -744,84 +742,13 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
             </div>
 
             <!-- SMTP Connection Diagnostic & Live Test Grid -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-              <!-- Card: Connection Details (Read-only, Zero secret exposure) -->
-              <div class="bg-white border border-warm-200 rounded-2xl p-5 shadow-warm-sm space-y-4">
-                <div class="pb-3 border-b border-warm-100 flex items-center justify-between">
-                  <h4 class="text-sm font-bold text-warm-900 uppercase tracking-wider">Parámetros del Servidor SMTP</h4>
-                  <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-warm-100 text-warm-700">Solo Diagnóstico</span>
-                </div>
-
-                <div class="grid grid-cols-2 gap-3 text-xs">
-                  <div class="p-3 rounded-xl bg-warm-50 border border-warm-100">
-                    <span class="text-[10px] text-warm-500 font-bold uppercase block mb-1">Servidor Host</span>
-                    <span class="font-mono font-bold text-warm-900">{{ canalEstado()?.host || 'smtp.gmail.com' }}</span>
-                  </div>
-
-                  <div class="p-3 rounded-xl bg-warm-50 border border-warm-100">
-                    <span class="text-[10px] text-warm-500 font-bold uppercase block mb-1">Puerto</span>
-                    <span class="font-mono font-bold text-warm-900">{{ canalEstado()?.port || 587 }}</span>
-                  </div>
-
-                  <div class="p-3 rounded-xl bg-warm-50 border border-warm-100">
-                    <span class="text-[10px] text-warm-500 font-bold uppercase block mb-1">Seguridad TLS</span>
-                    <span class="font-bold text-success-800">
-                      {{ canalEstado()?.starttls ? 'STARTTLS Activo' : (canalEstado()?.ssl ? 'SSL' : 'Plano') }}
-                    </span>
-                  </div>
-
-                  <div class="p-3 rounded-xl bg-warm-50 border border-warm-100">
-                    <span class="text-[10px] text-warm-500 font-bold uppercase block mb-1">Password Configurada</span>
-                    <span
-                      [class]="canalEstado()?.tienePasswordConfigurado ? 'text-success-800 bg-success-100' : 'text-danger-800 bg-danger-100'"
-                      class="text-[10px] font-bold px-2 py-0.5 rounded-full inline-block"
-                    >
-                      {{ canalEstado()?.tienePasswordConfigurado ? 'Configurada (Protegida)' : 'Sin Configurar' }}
-                    </span>
-                  </div>
-                </div>
-
-                <div class="space-y-2 text-xs">
-                  <div class="flex items-center justify-between p-2.5 rounded-xl bg-warm-50 border border-warm-100">
-                    <span class="text-warm-600">Remitente Institucional:</span>
-                    <span class="font-bold text-warm-900 font-mono text-[11px]">
-                      {{ canalEstado()?.fromName }} &lt;{{ canalEstado()?.fromAddress }}&gt;
-                    </span>
-                  </div>
-
-                  <div class="flex items-center justify-between p-2.5 rounded-xl bg-warm-50 border border-warm-100">
-                    <span class="text-warm-600">Usuario Autenticación:</span>
-                    <span class="font-bold text-warm-900 font-mono text-[11px]">{{ canalEstado()?.username }}</span>
-                  </div>
-
-                  <div class="flex items-center justify-between p-2.5 rounded-xl bg-warm-50 border border-warm-100">
-                    <span class="text-warm-600">Tope de Envíos:</span>
-                    <span class="font-bold text-warm-800 font-mono text-[11px]">
-                      {{ canalEstado()?.ratePerMinute }} / min · {{ canalEstado()?.ratePerDay }} / día
-                    </span>
-                  </div>
-
-                  <div class="flex items-center justify-between p-2.5 rounded-xl bg-warm-50 border border-warm-100">
-                    <span class="text-warm-600">Modo de Pruebas (Redirección):</span>
-                    @if (canalEstado()?.testModeEnabled) {
-                      <span class="text-warning-800 font-bold text-[11px] bg-warning-100 px-2 py-0.5 rounded-full">
-                        Activo ({{ canalEstado()?.testModeRedirectCount || 0 }} redirigidos)
-                      </span>
-                    } @else {
-                      <span class="text-success-800 font-bold text-[11px] bg-success-100 px-2 py-0.5 rounded-full">
-                        Producción (Envíos directos)
-                      </span>
-                    }
-                  </div>
-                </div>
-              </div>
-
+            <div class="grid grid-cols-1 gap-6 items-start">
               <!-- Card: Live Test Email -->
               <div class="bg-white border border-warm-200 rounded-2xl p-5 shadow-warm-sm space-y-4">
                 <div class="pb-3 border-b border-warm-100">
                   <h4 class="text-sm font-bold text-warm-900 uppercase tracking-wider">Probar Envío de Correo en Vivo</h4>
                   <p class="text-xs text-warm-600 mt-0.5">
-                    Envía un correo de comprobación de conectividad utilizando las credenciales SMTP configuradas.
+                    Envía un correo de comprobación de conectividad por el canal de correo institucional.
                   </p>
                 </div>
 
@@ -929,6 +856,7 @@ export class AdminEmailManagementComponent implements OnInit {
 
   // Tab 3: Canal SMTP
   readonly canalEstado = signal<EstadoCanalNotificacionDto | null>(null);
+  readonly timeZone = inject(SessionTimeZoneService);
   readonly pruebaTipo = signal<string>('VERIFICACION_CORREO');
   readonly pruebaCorreoDestino = signal<string>('');
   readonly resultadoPrueba = signal<{ exitoso: boolean; mensaje: string } | null>(null);

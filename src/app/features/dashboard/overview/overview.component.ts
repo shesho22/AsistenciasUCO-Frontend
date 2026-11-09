@@ -15,6 +15,7 @@ import { CourseService } from '../../../core/services/course.service';
 import { AdminManagementService } from '../../../core/services/admin-management.service';
 import { DeanManagementService } from '../../../core/services/dean-management.service';
 import { DeanIndicatorsService } from '../../../core/services/dean-indicators.service';
+import { CoordinatorIndicatorsService } from '../../../core/services/coordinator-indicators.service';
 import { AdminIndicatorsService } from '../../../core/services/admin-indicators.service';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { StudentManagementService } from '../../../core/services/student-management.service';
@@ -77,6 +78,7 @@ import { OverviewStudentComponent } from './components/overview-student.componen
             [decanos]="decanos()"
             [totalFacultades]="totalFacultadesAdmin()"
             [totalProgramas]="totalProgramasAdmin()"
+            [porcentajeAsistencia]="porcentajeAsistenciaCampus()"
           />
         }
         @case ('ADMIN') {
@@ -84,6 +86,7 @@ import { OverviewStudentComponent } from './components/overview-student.componen
             [decanos]="decanos()"
             [totalFacultades]="totalFacultadesAdmin()"
             [totalProgramas]="totalProgramasAdmin()"
+            [porcentajeAsistencia]="porcentajeAsistenciaCampus()"
           />
         }
         @case ('DECANO') {
@@ -101,6 +104,7 @@ import { OverviewStudentComponent } from './components/overview-student.componen
             [planesEstudio]="planesEstudio()"
             [totalGrupos]="totalGruposPrograma()"
             [totalEstudiantes]="totalEstudiantesPrograma()"
+            [estudiantesRiesgo]="estudiantesRiesgoPrograma()"
           />
         }
         @case ('DOCENTE') {
@@ -132,6 +136,7 @@ export class OverviewComponent implements OnInit {
   private deanIndicators = inject(DeanIndicatorsService);
   private adminIndicators = inject(AdminIndicatorsService);
   private coordinatorService = inject(CoordinatorManagementService);
+  private coordinatorIndicators = inject(CoordinatorIndicatorsService);
   private studentService = inject(StudentManagementService);
   private claimService = inject(AttendanceClaimService);
   private destroyRef = inject(DestroyRef);
@@ -163,6 +168,8 @@ export class OverviewComponent implements OnInit {
   coordinadores = signal<CoordinadorItem[]>([]);
   porcentajeAsistenciaFacultad = signal<number | null>(null);
   totalProgramasAdmin = signal<number | null>(null);
+  porcentajeAsistenciaCampus = signal<number | null>(null);
+  estudiantesRiesgoPrograma = signal<number | null>(null);
   totalDocentesFacultad = computed<number>(() => {
     return this.coordinadores().reduce((acc, c) => acc + (c.totalDocentes || 0), 0);
   });
@@ -200,8 +207,14 @@ export class OverviewComponent implements OnInit {
       case 'ADMINISTRADOR':
       case 'ADMIN':
         this.adminIndicators.consultarKpis().subscribe({
-          next: (res) => this.totalProgramasAdmin.set(res.datos?.totalProgramas ?? null),
-          error: () => this.totalProgramasAdmin.set(null),
+          next: (res) => {
+            this.totalProgramasAdmin.set(res.datos?.totalProgramas ?? null);
+            this.porcentajeAsistenciaCampus.set(res.datos?.porcentajeAsistencia ?? null);
+          },
+          error: () => {
+            this.totalProgramasAdmin.set(null);
+            this.porcentajeAsistenciaCampus.set(null);
+          },
         });
         this.adminService.getDecanos().subscribe({
           next: (res) => {
@@ -245,6 +258,10 @@ export class OverviewComponent implements OnInit {
               this.planesEstudio.set(res.datos);
             }
           },
+        });
+        this.coordinatorIndicators.consultarKpis().subscribe({
+          next: (res) => this.estudiantesRiesgoPrograma.set(res.datos?.estudiantesRiesgo ?? null),
+          error: () => this.estudiantesRiesgoPrograma.set(null),
         });
         this.coordinatorService.getDocentes().subscribe({
           next: (res) => {

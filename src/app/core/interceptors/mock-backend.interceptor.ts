@@ -198,8 +198,12 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   // HU161/HU162/HU164 descartadas: las instituciones son de solo consulta (sin POST/PUT/PATCH).
 
   // ================= DECANO: COORDINADORES =================
-  if (url.endsWith('/decano/coordinadores') && method === 'GET') {
-    return of(okResponse(mockStore.coordinadores)).pipe(delay(250));
+  if (url.split('?')[0].endsWith('/decano/coordinadores') && method === 'GET') {
+    const elementos = mockStore.coordinadores;
+    return of(new HttpResponse({
+      status: 200,
+      body: { exitoso: true, elementos, numeroPagina: 1, tamanoPagina: 100, totalElementos: elementos.length, totalPaginas: 1 },
+    })).pipe(delay(250));
   }
   if (url.endsWith('/decano/coordinadores') && method === 'POST') {
     const body = req.body as any;
@@ -699,25 +703,9 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   // ================= ADMIN: NOTIFICACIONES (NOTIF-002B / TD-069) =================
   if (url.endsWith('/admin/notificaciones/estado-canal') && method === 'GET') {
     return of(okResponse({
-      provider: 'outbox',
-      sender: 'smtp',
-      dispatcherEnabled: true,
-      disponible: true,
-      host: 'smtp.gmail.com',
-      port: 587,
-      username: 'asistencias.notificaciones@uco.edu.co',
-      tienePasswordConfigurado: true,
-      fromAddress: 'asistencias.notificaciones@uco.edu.co',
-      fromName: 'Universidad Católica de Oriente',
-      starttls: true,
-      ssl: false,
-      maxBcc: 50,
-      ratePerMinute: 60,
-      ratePerDay: 500,
-      requireConfirmedEmail: false,
-      platformUrl: 'https://asistencias.uco.edu.co',
-      testModeEnabled: false,
-      testModeRedirectCount: 0,
+      canalActivo: true,
+      ultimoEnvioUtc: '2026-11-09T15:30:00Z',
+      ultimoError: null,
     })).pipe(delay(200));
   }
 

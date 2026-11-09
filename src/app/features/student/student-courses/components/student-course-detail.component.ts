@@ -58,6 +58,9 @@ import { ToastService } from '../../../../shared/components/toast/toast.componen
                   {{ materia()?.creditos }} Créditos
                 </span>
               }
+              @if (materia()?.caracter) {
+                <span data-testid="detalle-caracter" class="text-xs font-semibold px-2 py-0.5 rounded bg-warm-100 text-warm-800">{{ materia()?.caracter }}</span>
+              }
               @if (materia()?.estadoMatricula === 'CI') {
                 <span
                   data-testid="badge-estado-matricula"
@@ -224,7 +227,7 @@ import { ToastService } from '../../../../shared/components/toast/toast.componen
                         class="text-xs font-medium px-2.5 py-1 rounded-lg border border-warm-200 bg-warm-50 text-warm-500"
                         data-testid="estado-no-disponible"
                         title="Aún no hay un registro de asistencia confirmado para esta sesión; no se puede radicar revisión."
-                      >Estado no disponible</span>
+                      >Sin registro</span>
                     }
 
                     @if (sesion.estadoReclamo) {

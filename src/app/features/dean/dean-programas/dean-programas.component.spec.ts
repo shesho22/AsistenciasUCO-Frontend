@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { paginaApi, porUrl } from '../../../core/testing/pagina-api';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Router } from '@angular/router';
@@ -98,7 +99,7 @@ describe('DeanProgramasComponent', () => {
     http.match((r) => r.url === `${environment.apiUrl}/decano/programas`).forEach((req) =>
       req.flush({ exitoso: true, datos: [], total: 0 })
     );
-    http.match(`${environment.apiUrl}/decano/coordinadores`).forEach((req) => req.flush({ exitoso: true, datos: [] }));
+    http.match(porUrl(`${environment.apiUrl}/decano/coordinadores`)).forEach((req) => req.flush(paginaApi([])));
     http.match(`${environment.apiUrl}/tipos-programa`).forEach((req) => req.flush([]));
     http.match(`${environment.apiUrl}/modalidades-programa`).forEach((req) => req.flush([]));
     http.match(`${environment.apiUrl}/jornadas-programa`).forEach((req) => req.flush([]));

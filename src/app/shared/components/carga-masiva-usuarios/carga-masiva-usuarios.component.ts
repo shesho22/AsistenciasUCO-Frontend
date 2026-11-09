@@ -33,7 +33,7 @@ export type PasoCargaMasiva =
   imports: [CommonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="bg-white rounded-2xl border border-warm-200/80 shadow-warm-sm p-4 sm:p-6 space-y-6 animate-fade-in">
+    <div role="dialog" aria-labelledby="carga-masiva-titulo" class="bg-white rounded-2xl border border-warm-200/80 shadow-warm-sm p-4 sm:p-6 space-y-6 animate-fade-in">
       <!-- Encabezado con título y botón de cancelar/cerrar -->
       <div class="flex items-center justify-between pb-4 border-b border-warm-100">
         <div>
@@ -44,7 +44,7 @@ export type PasoCargaMasiva =
             <span class="text-xs text-warm-400">•</span>
             <span class="text-xs font-medium text-warm-600">{{ etiquetaDestino() }}</span>
           </div>
-          <h2 class="font-serif font-bold text-xl sm:text-2xl text-warm-900 tracking-tight mt-1">
+          <h2 id="carga-masiva-titulo" class="font-serif font-bold text-xl sm:text-2xl text-warm-900 tracking-tight mt-1">
             Carga Masiva de {{ etiquetaDestino() }}
           </h2>
           <p class="text-xs sm:text-sm text-warm-600 mt-1">

@@ -139,8 +139,8 @@ export class AdminManagementService {
             decanoId: dto.idDecano || dto.decanoId,
             decanoNombre: dto.nombreCompletoDecano || dto.decanoNombre || 'Sin asignar',
             estado: (dto.estaActivaFacultad ?? true) ? 'ACTIVO' : 'INACTIVO',
-            totalProgramas: dto.totalProgramas || 0,
-            totalEstudiantes: dto.totalEstudiantes || 0,
+            totalProgramas: typeof dto.totalProgramas === 'number' ? dto.totalProgramas : undefined,
+            totalEstudiantes: typeof dto.totalEstudiantes === 'number' ? dto.totalEstudiantes : undefined,
           }));
           this._facultades.set(items);
           return { ...res, datos: items };

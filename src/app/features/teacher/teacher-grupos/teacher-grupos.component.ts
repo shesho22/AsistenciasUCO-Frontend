@@ -1,7 +1,9 @@
 import { Component, OnInit, OnDestroy, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subscription, forkJoin, of } from 'rxjs';
+import { Subscription, catchError, forkJoin, of } from 'rxjs';
+import { AttendanceService } from '../../../core/services/attendance.service';
+import { StudentAttendance } from '../../../core/models/attendance.model';
 import { RealtimeService } from '../../../core/realtime/realtime.service';
 import { REALTIME_EVENT_TYPE, SesionCanceladaRealtimePayload } from '../../../core/realtime/model/realtime-event.model';
 import { marcarSesionCancelada } from '../../../core/models/sesion-estado.model';
@@ -156,6 +158,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   private courseService = inject(CourseService);
   private catalogService = inject(CatalogService);
   private sessionService = inject(SessionService);
+  private attendanceService = inject(AttendanceService);
   private groupService = inject(GroupService);
   private studentService = inject(StudentService);
   private claimService = inject(AttendanceClaimService);
@@ -323,9 +326,33 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
 
   cargarSesiones(courseId: string): void {
     this.loadingSessions.set(true);
-    this.sessionService.getSessionsByGroup(courseId).subscribe({
-      next: (res) => {
-        this.sessions.set(res.datos || []);
+    // F3-DOC-01: la sábana pinta el estado por sesión; se alimenta de GET /grupos/{id}/asistencias (lista completa).
+    // Si esa consulta falla, las sesiones se muestran igual y las celdas quedan sin estado ('—').
+    forkJoin({
+      sesiones: this.sessionService.getSessionsByGroup(courseId),
+      asistencias: this.attendanceService.getAttendancesByGroup(courseId).pipe(catchError(() => of(null))),
+    }).subscribe({
+      next: ({ sesiones, asistencias }) => {
+        const porEstudiante = new Map(
+          this.estudiantesGrupo().map((e) => [e.idEstudiante ?? e.studentId ?? e.id ?? '', e] as const)
+        );
+        const lista = asistencias?.datos ?? [];
+        this.sessions.set(
+          (sesiones.datos || []).map((sesion) => {
+            const records: StudentAttendance[] = lista
+              .filter((a) => a.sesion === sesion.id)
+              .map((a) => {
+                const est = porEstudiante.get(a.estudiante);
+                return {
+                  studentId: a.estudiante,
+                  studentName: est?.nombreCompleto ?? est?.studentName ?? '',
+                  studentCode: est?.studentCode ?? '',
+                  status: a.estado,
+                };
+              });
+            return { ...sesion, records };
+          })
+        );
         this.loadingSessions.set(false);
       },
       error: (err: unknown) => {

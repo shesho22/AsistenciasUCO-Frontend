@@ -119,6 +119,13 @@ describe('CargaMasivaUsuariosComponent', () => {
     expect(aviso?.textContent?.toLowerCase()).toContain('contraseñas iniciales');
   });
 
+  it('F3-TRX-02: el panel de carga masiva es role=dialog nombrado por su titulo', () => {
+    const dialogo = (fixture.nativeElement as HTMLElement).querySelector('[role="dialog"]')!;
+    expect(dialogo).not.toBeNull();
+    const titulo = (fixture.nativeElement as HTMLElement).querySelector('#' + dialogo.getAttribute('aria-labelledby'))!;
+    expect(titulo.textContent).toContain('Carga Masiva de');
+  });
+
   it('debe permitir descargar la plantilla CSV del rol configurado', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     const btnDescargar = compiled.querySelector(

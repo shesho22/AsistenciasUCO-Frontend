@@ -35,6 +35,11 @@ describe('DashboardLayoutComponent accesibilidad (F-TRX-014)', () => {
     expect(document.activeElement?.id).toBe('contenido-principal');
   });
 
+  it('F3-TRX-02: el boton Cerrar sesion tiene aria-label', () => {
+    const boton = el.querySelector('button[title="Cerrar sesión"]') as HTMLButtonElement;
+    expect(boton.getAttribute('aria-label')).toBe('Cerrar sesión');
+  });
+
   it('la hamburguesa expone aria-controls y aria-expanded sincronizado', () => {
     const boton = el.querySelector('button[aria-label="Menú principal"]') as HTMLButtonElement;
     expect(boton.getAttribute('aria-controls')).toBe('menu-lateral');

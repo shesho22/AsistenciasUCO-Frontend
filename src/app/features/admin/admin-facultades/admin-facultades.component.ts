@@ -207,11 +207,11 @@ type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
                   <div class="grid grid-cols-2 gap-3 py-2.5 border-t border-warm-100 mb-4 bg-warm-50/50 rounded-xl px-3">
                     <div>
                       <span class="text-[10px] text-warm-500 font-semibold uppercase block">Programas</span>
-                      <span class="text-sm font-bold text-warm-900">{{ fac.totalProgramas || 4 }}</span>
+                      <span class="text-sm font-bold text-warm-900">{{ fac.totalProgramas ?? '—' }}</span>
                     </div>
                     <div>
                       <span class="text-[10px] text-warm-500 font-semibold uppercase block">Estudiantes</span>
-                      <span class="text-sm font-bold text-warm-900">{{ fac.totalEstudiantes || 320 }}</span>
+                      <span class="text-sm font-bold text-warm-900">{{ fac.totalEstudiantes ?? '—' }}</span>
                     </div>
                   </div>
                 </div>

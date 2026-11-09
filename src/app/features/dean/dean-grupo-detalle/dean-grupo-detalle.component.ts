@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { DeanFacultadService } from '../../../core/services/dean-facultad.service';
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
+import { resolveSessionInstant } from '../../../core/time/session-timezone.util';
 import { Course } from '../../../core/models/course.model';
 import { SesionEstadoBadgeComponent } from '../../../shared/components/sesion-estado-badge/sesion-estado-badge.component';
 import { SesionFacultadItem } from '../../../core/models/facultad-decano.model';
@@ -133,11 +134,11 @@ function adaptarGrupoACurso(dto: any): Course {
                     @if (s.numeroSemana !== null) {
                       <span class="text-xs font-mono font-bold px-2.5 py-0.5 rounded-md bg-warm-100 text-warm-800">Semana {{ s.numeroSemana }}</span>
                     }
-                    @if (s.fechaHoraInicio && s.fechaHoraFin) {
-                      <span class="text-xs font-medium text-warm-600">{{ fecha(s.fechaHoraInicio).date }}</span>
+                    @if (inicio(s) && fin(s)) {
+                      <span class="text-xs font-medium text-warm-600">{{ timeZone.formatTemporal(inicio(s), 'date') }}</span>
                       <span class="text-warm-300">•</span>
                       <span class="text-xs font-mono font-bold text-warm-800">
-                        {{ fecha(s.fechaHoraInicio).time }} - {{ fecha(s.fechaHoraFin).time }}
+                        {{ timeZone.formatTemporal(inicio(s), 'time') }} - {{ timeZone.formatTemporal(fin(s), 'time') }}
                       </span>
                     } @else {
                       <span class="text-xs font-semibold text-warning-800">Horario no confirmado</span>
@@ -234,8 +235,13 @@ export class DeanGrupoDetalleComponent implements OnInit, OnDestroy {
     }
   }
 
-  fecha(instante: string): { date: string; time: string } {
-    return this.timeZone.displayInstant(instante);
+  /** Inicio de la sesión: instante UTC si está confirmado; si no, el valor v1 sin zona (se muestra literal). */
+  inicio(s: SesionFacultadItem): string | null {
+    return resolveSessionInstant(s.fechaHoraInicio, s.fechaHoraInicioUtc, s.estadoTemporal);
+  }
+
+  fin(s: SesionFacultadItem): string | null {
+    return resolveSessionInstant(s.fechaHoraFin, s.fechaHoraFinUtc, s.estadoTemporal);
   }
 
   /**

@@ -110,7 +110,7 @@ interface OpcionFacultad {
         } @else if (listado.filas().length === 0) {
           <p class="text-sm text-warm-500 text-center py-6">No hay estudiantes que coincidan con la búsqueda.</p>
         } @else {
-          <div class="overflow-x-auto">
+          <div class="relative overflow-x-auto">
             <table class="w-full text-sm">
               <thead>
                 <tr class="text-left text-xs uppercase tracking-wider text-warm-500 border-b border-warm-100">

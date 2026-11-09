@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, input } from '@angular/core';
+import { Component, ChangeDetectionStrategy, computed, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { CardComponent } from '../../../../shared/components/card/card.component';
@@ -24,9 +24,9 @@ import { DecanoItem } from '../../../../core/models/role-management.model';
           <span class="text-[11px] text-success-700 font-medium">Sincronizadas con base de datos</span>
         </div>
         <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px]">
-          <span class="text-xs text-warm-500 font-medium">Decanos Registrados</span>
-          <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ decanos().length }}</p>
-          <span class="text-[11px] text-warm-500 font-medium">En ejercicio activo</span>
+          <span class="text-xs text-warm-500 font-medium">Decanos en ejercicio</span>
+          <p class="text-2xl font-serif font-bold text-warm-900 mt-1" data-testid="decanos-activos">{{ decanosActivos() }}</p>
+          <span class="text-[11px] text-warm-500 font-medium">{{ decanos().length }} registrados</span>
         </div>
         <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Programas Académicos</span>
@@ -35,8 +35,8 @@ import { DecanoItem } from '../../../../core/models/role-management.model';
         </div>
         <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Asistencia Promedio Campus</span>
-          <p class="text-2xl font-serif font-bold text-accent-700 mt-1">100%</p>
-          <span class="text-[11px] text-success-700 font-medium">Monitoreo activo</span>
+          <p class="text-2xl font-serif font-bold text-accent-700 mt-1" data-testid="asistencia-campus">{{ porcentajeAsistencia() === null ? 'Sin datos' : porcentajeAsistencia() + '%' }}</p>
+          <span class="text-[11px] text-success-700 font-medium">Indicador institucional</span>
         </div>
       </section>
 
@@ -98,4 +98,8 @@ export class OverviewAdminComponent {
   decanos = input<DecanoItem[]>([]);
   totalFacultades = input<number>(0);
   totalProgramas = input<number | null>(null);
+  /** `porcentajeAsistencia` de GET /admin/indicadores; `null` = sin dato. */
+  porcentajeAsistencia = input<number | null>(null);
+  /** Solo los decanos con `estaActivoDecano` distinto de false. */
+  decanosActivos = computed(() => this.decanos().filter((d) => d.estaActivoDecano !== false).length);
 }

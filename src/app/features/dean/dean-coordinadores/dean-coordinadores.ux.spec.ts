@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { paginaApi, porUrl } from '../../../core/testing/pagina-api';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { DeanCoordinadoresComponent } from './dean-coordinadores.component';
@@ -28,11 +29,11 @@ describe('DeanCoordinadoresComponent UX (F-DEC-004, F-DEC-007, F-DEC-S04, F-COO-
 
   function iniciar(coordinadores: unknown[] | 'error') {
     fixture.detectChanges();
-    const req = http.expectOne(`${environment.apiUrl}/decano/coordinadores`);
+    const req = http.expectOne(porUrl(`${environment.apiUrl}/decano/coordinadores`));
     if (coordinadores === 'error') {
       req.flush({ code: 'ERR_INTERNAL', message: 'Servicio de coordinadores no disponible.', correlationId: 'x' }, { status: 500, statusText: 'err' });
     } else {
-      req.flush({ exitoso: true, datos: coordinadores });
+      req.flush(paginaApi(coordinadores));
     }
     http.match(() => true).forEach((r) => r.flush({ exitoso: true, datos: [] }));
     fixture.detectChanges();

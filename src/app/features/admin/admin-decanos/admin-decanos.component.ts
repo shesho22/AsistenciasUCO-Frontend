@@ -147,9 +147,6 @@ type VistaAdmin = 'LISTA' | 'REGISTRO';
                   <div>
                     <div class="flex items-start justify-between gap-3 mb-2">
                       <div class="flex items-center gap-2">
-                        <span class="text-xs font-mono font-semibold px-2 py-0.5 rounded-md bg-warm-100 text-warm-700">
-                          {{ decano.id }}
-                        </span>
                         <app-badge [variant]="decano.estado === 'ACTIVO' ? 'success' : 'neutral'">
                           {{ decano.estado }}
                         </app-badge>
