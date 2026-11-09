@@ -3,6 +3,7 @@ import {
   AsistenciaQrRotadoPayload,
   REALTIME_EVENT_TYPE,
   SesionCanceladaRealtimePayload,
+  SesionManualCreadaRealtimePayload,
   AlertaInasistenciaRealtimePayload,
   RevisionCancelacionCreadaRealtimePayload,
   RevisionCancelacionDecididaRealtimePayload,
@@ -22,6 +23,27 @@ describe('REALTIME_EVENT_TYPE (CULM-001 B.1)', () => {
 
     expect(REALTIME_EVENT_TYPE.SESION_CANCELADA).toBe('SESION_CANCELADA');
     expect(Object.keys(payload)).not.toContain('motivo');
+  });
+});
+
+describe('REALTIME_EVENT_TYPE (CULM-001 / DEC-064)', () => {
+  it('declara SESION_MANUAL_CREADA con su payload tipado y SESION_CANCELADA admite tipo COORDINADOR', () => {
+    const manual: SesionManualCreadaRealtimePayload = {
+      grupo: 'grp-1',
+      sesion: 'ses-9',
+      fechaHoraInicio: '2026-11-10T13:00:00Z',
+      docente: 'Ana Pérez',
+    };
+    const cancelada: SesionCanceladaRealtimePayload = {
+      grupo: 'grp-1',
+      sesion: 'ses-9',
+      tipo: 'COORDINADOR',
+      fechaHoraInicioUtc: null,
+    };
+
+    expect(REALTIME_EVENT_TYPE.SESION_MANUAL_CREADA).toBe('SESION_MANUAL_CREADA');
+    expect(Object.keys(manual).sort()).toEqual(['docente', 'fechaHoraInicio', 'grupo', 'sesion']);
+    expect(cancelada.tipo).toBe('COORDINADOR');
   });
 });
 
