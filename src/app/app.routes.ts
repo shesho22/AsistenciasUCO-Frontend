@@ -109,14 +109,15 @@ export const routes: Routes = [
           ),
       },
       {
-        path: 'admin/areas',
+        // Vista única de configuración (parámetros, catálogos, estados, mensajes, festivos, correo, áreas e instituciones):
+        // /app/admin/configuracion/:pestaña; sin pestaña abre parámetros. Las rutas hijas viven en su propio archivo diferido.
+        path: 'admin/configuracion',
         canActivate: [roleGuard],
         data: { roles: ['ADMINISTRADOR', 'ADMIN'] },
-        loadComponent: () =>
-          import('./features/admin/admin-areas/admin-areas.component').then(
-            (m) => m.AdminAreasComponent
-          ),
+        loadChildren: () =>
+          import('./features/admin/admin-configuracion/admin-configuracion.routes').then((m) => m.CONFIGURACION_ROUTES),
       },
+      { path: 'admin/areas', redirectTo: 'admin/configuracion/areas', pathMatch: 'full' },
       {
         path: 'admin/decanos',
         canActivate: [roleGuard],
@@ -145,30 +146,9 @@ export const routes: Routes = [
             (m) => m.AdminPeriodosComponent
           ),
       },
-      {
-        // HU154 (tipos de programa): antes redirigía a facultades y la pantalla no tenía ruta.
-        path: 'admin/catalogos',
-        canActivate: [roleGuard],
-        data: { roles: ['ADMINISTRADOR', 'ADMIN'] },
-        loadComponent: () =>
-          import('./features/admin/admin-catalogs/admin-catalogs.component').then((m) => m.AdminCatalogsComponent),
-      },
-      {
-        // HU155 / HU167: estados del sistema, solo consulta.
-        path: 'admin/estados',
-        canActivate: [roleGuard],
-        data: { roles: ['ADMINISTRADOR', 'ADMIN'] },
-        loadComponent: () =>
-          import('./features/admin/admin-estados/admin-estados.component').then((m) => m.AdminEstadosComponent),
-      },
-      {
-        // CULM-001 B.1 (pantalla 3.7): festivos de Colombia (consulta, recarga y sesiones en festivo con asistencia).
-        path: 'admin/festivos',
-        canActivate: [roleGuard],
-        data: { roles: ['ADMINISTRADOR', 'ADMIN'] },
-        loadComponent: () =>
-          import('./features/admin/admin-festivos/admin-festivos.component').then((m) => m.AdminFestivosComponent),
-      },
+      { path: 'admin/catalogos', redirectTo: 'admin/configuracion/catalogos', pathMatch: 'full' },
+      { path: 'admin/estados', redirectTo: 'admin/configuracion/estados', pathMatch: 'full' },
+      { path: 'admin/festivos', redirectTo: 'admin/configuracion/festivos', pathMatch: 'full' },
       {
         path: 'admin/sistema',
         canActivate: [roleGuard],
@@ -187,33 +167,9 @@ export const routes: Routes = [
             (m) => m.SecurityAdministrationComponent
           ),
       },
-      {
-        path: 'admin/mensajes',
-        canActivate: [roleGuard],
-        data: { roles: ['ADMINISTRADOR', 'ADMIN'] },
-        loadComponent: () =>
-          import('./features/messages/message-administration/message-administration.component').then(
-            (m) => m.MessageAdministrationComponent
-          ),
-      },
-      {
-        path: 'admin/correos',
-        canActivate: [roleGuard],
-        data: { roles: ['ADMINISTRADOR', 'ADMIN'] },
-        loadComponent: () =>
-          import('./features/admin/admin-email-management/admin-email-management.component').then(
-            (m) => m.AdminEmailManagementComponent
-          ),
-      },
-      {
-        path: 'admin/instituciones',
-        canActivate: [roleGuard],
-        data: { roles: ['ADMINISTRADOR', 'ADMIN'] },
-        loadComponent: () =>
-          import('./features/admin/admin-instituciones/admin-instituciones.component').then(
-            (m) => m.AdminInstitucionesComponent
-          ),
-      },
+      { path: 'admin/mensajes', redirectTo: 'admin/configuracion/mensajes', pathMatch: 'full' },
+      { path: 'admin/correos', redirectTo: 'admin/configuracion/correo', pathMatch: 'full' },
+      { path: 'admin/instituciones', redirectTo: 'admin/configuracion/instituciones', pathMatch: 'full' },
       // Rutas Decano
       {
         path: 'decano/facultad',

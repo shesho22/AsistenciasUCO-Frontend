@@ -116,6 +116,13 @@ describe('AdminSystemComponent', () => {
     expect(component.parametros().length).toBe(2);
   });
 
+  it('en admin/sistema (sin dato de ruta) muestra el encabezado y las pestañas de operaciones', () => {
+    expect(component.modo).toBe('completo');
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('h1')).not.toBeNull();
+    expect(el.querySelector('[role="tablist"]')).not.toBeNull();
+  });
+
   it('tabActiva alterna correctamente entre pestañas', () => {
     expect(component.tabActiva()).toBe('PARAMETROS');
     component.tabActiva.set('AUDITORIA');

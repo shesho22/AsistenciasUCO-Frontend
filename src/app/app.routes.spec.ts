@@ -22,13 +22,15 @@ describe('application routes', () => {
     }
   });
 
-  it('B1-F-39 /app/admin/festivos existe y autoriza exclusivamente al administrador', () => {
+  it('B1-F-39 /app/admin/festivos ya no es una pantalla propia: el acceso del administrador vive en la pestaña de configuracion', () => {
     const appRoute = routes.find((route) => route.path === 'app');
     const festivos = appRoute?.children?.find((route) => route.path === 'admin/festivos');
+    const configuracion = appRoute?.children?.find((route) => route.path === 'admin/configuracion');
 
-    expect(festivos).toBeDefined();
-    expect(festivos?.canActivate?.length).toBeGreaterThan(0);
-    const roles = festivos?.data?.['roles'] as string[];
+    expect(festivos?.redirectTo).toBeDefined();
+    expect(festivos?.loadComponent).toBeUndefined();
+    expect(configuracion?.canActivate?.length).toBeGreaterThan(0);
+    const roles = configuracion?.data?.['roles'] as string[];
     expect(roles).toContain('ADMINISTRADOR');
     for (const role of ['DOCENTE', 'ESTUDIANTE', 'COORDINADOR', 'DECANO']) {
       expect(roles).not.toContain(role);
@@ -68,5 +70,47 @@ describe('application routes', () => {
     const heredada = appRoute?.children?.find((route) => route.path === 'decano/infraestructura');
     expect(heredada?.redirectTo).toBe('decano/areas');
     expect(heredada?.loadComponent).toBeUndefined();
+  });
+
+  describe('configuracion unificada del administrador', () => {
+    const appChildren = () => routes.find((route) => route.path === 'app')?.children ?? [];
+
+    it('/app/admin/configuracion existe, exige sesion y autoriza solo al administrador', () => {
+      const cfg = appChildren().find((route) => route.path === 'admin/configuracion');
+      expect(cfg).toBeDefined();
+      expect(cfg?.canActivate?.length).toBeGreaterThan(0);
+      const roles = cfg?.data?.['roles'] as string[];
+      expect(roles).toContain('ADMINISTRADOR');
+      for (const role of ['DOCENTE', 'ESTUDIANTE', 'COORDINADOR', 'DECANO']) {
+        expect(roles).not.toContain(role);
+      }
+    });
+
+    const antiguas: Array<[string, string]> = [
+      ['admin/catalogos', 'catalogos'],
+      ['admin/estados', 'estados'],
+      ['admin/mensajes', 'mensajes'],
+      ['admin/festivos', 'festivos'],
+      ['admin/correos', 'correo'],
+      ['admin/areas', 'areas'],
+      ['admin/instituciones', 'instituciones'],
+    ];
+    for (const [ruta, tab] of antiguas) {
+      it(`${ruta} redirige a /app/admin/configuracion/${tab}`, () => {
+        const ruta$ = appChildren().find((route) => route.path === ruta);
+        expect(ruta$?.loadComponent).toBeUndefined();
+        expect(ruta$?.redirectTo).toBe(`admin/configuracion/${tab}`);
+      });
+    }
+
+    it('/app/admin/configuracion carga sus rutas hijas de forma diferida', () => {
+      const cfg = appChildren().find((route) => route.path === 'admin/configuracion');
+      expect(cfg?.loadChildren).toBeDefined();
+      expect(cfg?.loadComponent).toBeUndefined();
+    });
+
+    it('admin/sistema se conserva para las operaciones (auditoria y cierre masivo)', () => {
+      expect(appChildren().some((route) => route.path === 'admin/sistema')).toBeTrue();
+    });
   });
 });

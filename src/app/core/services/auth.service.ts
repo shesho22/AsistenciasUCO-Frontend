@@ -765,7 +765,7 @@ export class AuthService implements OnDestroy {
 
 
   async fetchProfileFromBackend(token?: string): Promise<User | null> {
-    if (this.mockModeSignal() || !environment.features.userProfileEndpointEnabled) {
+    if (this.mockModeSignal()) {
       return this.currentUser();
     }
 
@@ -904,7 +904,7 @@ export class AuthService implements OnDestroy {
   private buildUser(payload: JwtTokenPayload, id: string, primaryRole: UserRole): User {
     const fullName = [payload.given_name, payload.family_name].filter(Boolean).join(' ') ||
       payload.name ||
-      payload.preferred_username ||
+      // Nunca el usuario tecnico (preferred_username): hasta hidratar el perfil se muestra un marcador neutro.
       'Usuario Institucional';
 
     return {

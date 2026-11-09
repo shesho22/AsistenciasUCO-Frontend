@@ -284,12 +284,6 @@ export class DashboardLayoutComponent {
       icon: 'dashboard',
     },
     {
-      label: 'Instituciones',
-      route: '/app/admin/instituciones',
-      roles: ['ADMINISTRADOR', 'ADMIN'],
-      icon: 'facultad',
-    },
-    {
       label: 'Gestión de Facultades',
       route: '/app/admin/facultades',
       roles: ['ADMINISTRADOR', 'ADMIN'],
@@ -306,30 +300,6 @@ export class DashboardLayoutComponent {
       route: '/app/admin/decanos',
       roles: ['ADMINISTRADOR', 'ADMIN'],
       icon: 'decanos',
-    },
-    {
-      label: 'Tipos de Programa',
-      route: '/app/admin/catalogos',
-      roles: ['ADMINISTRADOR', 'ADMIN'],
-      icon: 'catalogos',
-    },
-    {
-      label: 'Estados del Sistema',
-      route: '/app/admin/estados',
-      roles: ['ADMINISTRADOR', 'ADMIN'],
-      icon: 'catalogos',
-    },
-    {
-      label: 'Festivos',
-      route: '/app/admin/festivos',
-      roles: ['ADMINISTRADOR', 'ADMIN'],
-      icon: 'horarios',
-    },
-    {
-      label: 'Áreas de Conocimiento',
-      route: '/app/admin/areas',
-      roles: ['ADMINISTRADOR', 'ADMIN'],
-      icon: 'materias',
     },
     {
       label: 'Períodos Académicos',
@@ -356,6 +326,12 @@ export class DashboardLayoutComponent {
       icon: 'materias',
     },
     {
+      label: 'Configuración',
+      route: '/app/admin/configuracion',
+      roles: ['ADMINISTRADOR', 'ADMIN'],
+      icon: 'catalogos',
+    },
+    {
       label: 'Sistema & Auditoría',
       route: '/app/admin/sistema',
       roles: ['ADMINISTRADOR', 'ADMIN'],
@@ -366,18 +342,6 @@ export class DashboardLayoutComponent {
       route: '/app/admin/seguridad',
       roles: ['ADMINISTRADOR', 'ADMIN'],
       icon: 'sistema',
-    },
-    {
-      label: 'Mensajes',
-      route: '/app/admin/mensajes',
-      roles: ['ADMINISTRADOR', 'ADMIN'],
-      icon: 'sistema',
-    },
-    {
-      label: 'Gestión de Correos',
-      route: '/app/admin/correos',
-      roles: ['ADMINISTRADOR', 'ADMIN'],
-      icon: 'correo',
     },
     {
       label: 'Indicadores',

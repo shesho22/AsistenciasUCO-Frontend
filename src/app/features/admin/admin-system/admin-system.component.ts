@@ -11,7 +11,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AdminManagementService } from '../../../core/services/admin-management.service';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { ToastService } from '../../../shared/components/toast/toast.component';
@@ -42,6 +42,7 @@ type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
   ],
   template: `
     <div class="space-y-6">
+     @if (modo === 'completo') {
       <!-- ================= HEADER & BREADCRUMB ================= -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -58,7 +59,7 @@ type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
 
         <div class="flex flex-wrap items-center gap-2">
           <a
-            routerLink="/app/admin/correos"
+            routerLink="/app/admin/configuracion/correo"
             class="min-h-[44px] px-4 py-2 bg-warm-100 text-warm-800 border border-warm-300 rounded-xl text-xs font-bold hover:bg-warm-200 shadow-sm transition-all flex items-center gap-2"
             title="Gestión de plantillas, cola outbox y canal SMTP"
           >
@@ -126,6 +127,7 @@ type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
           <span>Cierre Masivo de Asistencia</span>
         </button>
       </div>
+     }
 
       <!-- ================= TAB 1: PARÁMETROS DEL SISTEMA (HU168) ================= -->
       @if (tabActiva() === 'PARAMETROS') {
@@ -425,6 +427,12 @@ export class AdminSystemComponent implements OnInit {
   private toast = inject(ToastService);
   private destroyRef = inject(DestroyRef);
 
+  /**
+   * La ruta de Configuración declara `data.modo = 'parametros'`: se ocultan el encabezado y las pestañas de operaciones y
+   * solo se muestran los parámetros. En `admin/sistema` (sin ese dato) la pantalla es completa.
+   */
+  readonly modo: 'completo' | 'parametros' =
+    inject(ActivatedRoute, { optional: true })?.snapshot.data['modo'] === 'parametros' ? 'parametros' : 'completo';
   tabActiva = signal<TabAdminSystem>('PARAMETROS');
   periodoSeleccionadoCierre = '';
   isProcesandoCierre = signal<boolean>(false);

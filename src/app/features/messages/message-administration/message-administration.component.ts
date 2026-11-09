@@ -25,7 +25,7 @@ export const MESSAGE_ADMIN_MOUNT = new InjectionToken<MessageAdminMount>('MESSAG
 
 type ViewState = 'loading' | 'ready' | 'error' | 'unauthorized' | 'forbidden';
 
-const ROUTE = '/app/admin/mensajes';
+const ROUTE = '/app/admin/configuracion/mensajes';
 
 @Component({
   selector: 'app-message-administration',
@@ -35,7 +35,7 @@ const ROUTE = '/app/admin/mensajes';
     <section class="rounded-2xl border border-warm-200 bg-white p-6 shadow-warm-sm">
       <div class="mb-5">
         <p class="text-xs font-bold uppercase tracking-wider text-primary-700">MessageUcoLab</p>
-        <h1 class="mt-1 text-2xl font-bold text-warm-900">Administración de mensajes</h1>
+        <h2 class="mt-1 text-2xl font-bold text-warm-900">Administración de mensajes</h2>
         <p class="mt-2 text-sm text-warm-600">
           Catálogo de mensajes institucionales de <strong>AsistenciasUCO</strong>: consulta, edición, traducción e
           importación por Excel.

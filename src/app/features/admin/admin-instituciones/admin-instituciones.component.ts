@@ -24,7 +24,7 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
           <span class="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1 block">
             Configuración Institucional
           </span>
-          <h1 class="text-2xl font-serif font-bold text-warm-950">Instituciones de Educación Superior</h1>
+          <h2 class="text-2xl font-serif font-bold text-warm-950">Instituciones de Educación Superior</h2>
           <p class="text-xs text-warm-600 mt-1">
             Catálogo canónico de entidades institucionales habilitadas en el sistema (modo solo consulta).
           </p>
