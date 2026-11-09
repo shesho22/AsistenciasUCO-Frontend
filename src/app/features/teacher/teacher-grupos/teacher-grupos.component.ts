@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AttendanceService } from '../../../core/services/attendance.service';
 import { StudentAttendance } from '../../../core/models/attendance.model';
+import { AVISO_SESION_CANCELADA_POR_COORDINACION, AVISO_SESION_MANUAL_NOTIFICADA } from '../../../core/models/sesion-manual.util';
 import { RealtimeService } from '../../../core/realtime/realtime.service';
 import { REALTIME_EVENT_TYPE, SesionCanceladaRealtimePayload } from '../../../core/realtime/model/realtime-event.model';
 import { marcarSesionCancelada } from '../../../core/models/sesion-estado.model';
@@ -553,7 +554,8 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
         .subscribe({
           next: (res) => {
             if (res.exitoso) {
-              this.toast.success(res.mensaje || 'Sesión programada con éxito.');
+              // DEC-064: la sesión creada a mano se notifica a estudiantes y coordinador.
+              this.toast.success(`${res.mensaje || 'Sesión programada con éxito.'} ${AVISO_SESION_MANUAL_NOTIFICADA}`);
               this.cargarSesiones(course.id);
               this.volverASesiones();
             }
@@ -613,6 +615,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
         this.sessions.update((prev) =>
           marcarSesionCancelada(prev, sesion, { tipo, motivo: null, nombreFestivo: null, fechaCancelacionUtc: null })
         );
+        if (tipo === 'COORDINADOR') this.toast.info(AVISO_SESION_CANCELADA_POR_COORDINACION);
       });
   }
 
