@@ -5,12 +5,14 @@ import { HorarioDocenteItem, DiaSemana } from '../../../core/models/role-managem
 import { CardComponent } from '../../../shared/components/card/card.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { ToastService } from '../../../shared/components/toast/toast.component';
+import { ButtonComponent } from '../../../shared/components/button/button.component';
+import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load-error.util';
 
 @Component({
   selector: 'app-teacher-schedule',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, CardComponent],
+  imports: [CommonModule, CardComponent, ButtonComponent],
   template: `
     <div class="space-y-6 animate-fade-in">
       <!-- Header Bento -->
@@ -31,11 +33,13 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
           </p>
         </div>
 
-        <div class="flex items-center gap-2">
-          <span class="px-3 py-1.5 rounded-xl bg-warm-100 text-xs font-bold text-warm-800 border border-warm-200">
-            {{ totalHorasSemanales() }} Horas / Semana
-          </span>
-        </div>
+        @if (!errorCarga()) {
+          <div class="flex items-center gap-2">
+            <span class="px-3 py-1.5 rounded-xl bg-warm-100 text-xs font-bold text-warm-800 border border-warm-200">
+              {{ totalHorasSemanales() }} Horas / Semana
+            </span>
+          </div>
+        }
       </div>
 
       <!-- Grilla Semanal Bento (Lunes a Viernes) -->
@@ -44,6 +48,12 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
           @for (d of [1, 2, 3, 4, 5]; track d) {
             <div class="h-80 bg-warm-100 rounded-2xl animate-pulse"></div>
           }
+        </div>
+      } @else if (errorCarga()) {
+        <div class="bg-danger-50 border border-danger-200 rounded-2xl p-6 text-center text-sm text-danger-900 space-y-3" role="alert">
+          <p class="font-bold">{{ errorCarga()!.titulo }}</p>
+          <p>{{ errorCarga()!.mensaje }}</p>
+          <app-button variant="secondary" size="sm" (clicked)="cargarHorario()">Reintentar</app-button>
         </div>
       } @else {
         <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -106,6 +116,7 @@ export class TeacherScheduleComponent implements OnInit {
 
   horarios = signal<HorarioDocenteItem[]>([]);
   isLoading = signal<boolean>(true);
+  errorCarga = signal<LoadErrorState | null>(null);
 
   diasSemana: DiaSemana[] = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
 
@@ -124,12 +135,14 @@ export class TeacherScheduleComponent implements OnInit {
 
   cargarHorario(): void {
     this.isLoading.set(true);
+    this.errorCarga.set(null);
     this.claimService.getHorarioDocente().subscribe({
       next: (res) => {
         this.horarios.set(res.datos || []);
         this.isLoading.set(false);
       },
       error: (err: unknown) => {
+        this.errorCarga.set(classifyLoadError(err));
         this.isLoading.set(false);
         this.toast.error(getApiErrorMessage(err));
       },

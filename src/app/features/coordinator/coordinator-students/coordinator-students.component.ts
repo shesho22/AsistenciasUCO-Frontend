@@ -10,6 +10,8 @@ import { AvatarComponent } from '../../../shared/components/avatar/avatar.compon
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
+import { ErrorCargaComponent } from '../../../shared/components/error-carga/error-carga.component';
+import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load-error.util';
 import { Subject, EMPTY } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, finalize, switchMap } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -33,6 +35,7 @@ type PestanaModulo = 'DIRECTORIO';
     PaginationComponent,
     CoordinatorFichaModalComponent,
     CoordinatorProgramSelectorComponent,
+    ErrorCargaComponent,
   ],
   template: `
     <div class="space-y-6">
@@ -113,7 +116,9 @@ type PestanaModulo = 'DIRECTORIO';
       </div>
 
       <!-- Grid de Tarjetas de Estudiante -->
-      @if (paginatedDirectorio().length === 0 && !isLoadingDirectorio()) {
+      @if (errorDirectorio() && !isLoadingDirectorio()) {
+        <app-error-carga [error]="errorDirectorio()!" (reintentar)="cargarDatos()" />
+      } @else if (paginatedDirectorio().length === 0 && !isLoadingDirectorio()) {
         <div class="bg-white rounded-2xl border border-warm-200 p-10 text-center text-sm text-warm-500">
           No hay estudiantes que coincidan con los filtros actuales.
         </div>
@@ -217,6 +222,7 @@ export class CoordinatorStudentsComponent implements OnInit {
   filtroEstadoDirectorio = signal('TODOS');
   totalDirectorio = signal(0);
   isLoadingDirectorio = signal(false);
+  errorDirectorio = signal<LoadErrorState | null>(null);
 
   // Paginación Directorio
   currentPageDirectorio = signal(1);
@@ -265,6 +271,7 @@ export class CoordinatorStudentsComponent implements OnInit {
     const query = this.searchDirectorio().trim();
     const isNumeric = /^\d+$/.test(query);
     this.isLoadingDirectorio.set(true);
+    this.errorDirectorio.set(null);
     return this.coordinatorService
       .getEstudiantesDirectorioPagina({
         page: this.currentPageDirectorio() - 1,
@@ -278,6 +285,7 @@ export class CoordinatorStudentsComponent implements OnInit {
         catchError((error: unknown) => {
           this.directorio.set([]);
           this.totalDirectorio.set(0);
+          this.errorDirectorio.set(classifyLoadError(error));
           this.toast.error(getApiErrorMessage(error));
           return EMPTY;
         }),

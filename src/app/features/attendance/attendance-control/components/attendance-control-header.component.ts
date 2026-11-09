@@ -97,7 +97,7 @@ import { ClassSession } from '../../../../core/models/attendance.model';
               <app-button
                 variant="secondary"
                 size="sm"
-                [disabled]="!selectedCourseId() || !selectedSessionId()"
+                [disabled]="!selectedCourseId() || !selectedSessionId() || !attendanceWindowOpen()"
                 (clicked)="openProjection.emit()"
               >
                 <svg class="w-4 h-4 mr-1 text-success-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

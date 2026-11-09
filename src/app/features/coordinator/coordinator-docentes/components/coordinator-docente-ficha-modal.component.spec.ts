@@ -129,6 +129,29 @@ describe('CoordinatorDocenteFichaModalComponent', () => {
     expect(fixture.nativeElement.querySelector('[role="alert"]')).not.toBeNull();
   });
 
+  // WCAG 2.4.3 / 4.1.2 / 2.1.1: el dialogo se nombra con el docente, recibe el foco y se cierra con Escape.
+  it('A11Y-01 aria-labelledby apunta al nombre del docente', () => {
+    crear();
+    const dialogo = fixture.nativeElement.querySelector('[role="dialog"]') as HTMLElement;
+    const id = dialogo.getAttribute('aria-labelledby');
+    expect(id).toBeTruthy();
+    expect(document.getElementById(id as string)?.textContent).toContain('Roberto Prueba');
+  });
+
+  it('A11Y-02 al abrirse el foco entra en el dialogo', () => {
+    crear();
+    const dialogo = fixture.nativeElement.querySelector('[role="dialog"]') as HTMLElement;
+    expect(dialogo.contains(document.activeElement)).toBeTrue();
+  });
+
+  it('A11Y-03 Escape emite cerrar', () => {
+    crear();
+    let cerrado = false;
+    component.cerrar.subscribe(() => (cerrado = true));
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(cerrado).toBeTrue();
+  });
+
   it('FM-06 cerrar emite el evento y las etiquetas desconocidas caen al valor neutro', () => {
     crear();
     let cerrado = false;

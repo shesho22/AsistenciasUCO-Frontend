@@ -9,6 +9,8 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { getApiErrorMessage, getApiSuccessMessage } from '../../../core/api/errors/api-error.util';
 import { etiquetaEstadoReclamo, varianteEstadoReclamo } from '../../../core/utils/reclamo-estado.util';
+import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load-error.util';
+import { ButtonComponent } from '../../../shared/components/button/button.component';
 
 type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
 
@@ -21,7 +23,7 @@ type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
   selector: 'app-student-claims',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, CardComponent, BadgeComponent, PaginationComponent],
+  imports: [CommonModule, CardComponent, BadgeComponent, PaginationComponent, ButtonComponent],
   template: `
     <div class="space-y-6 animate-fade-in">
       <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
@@ -50,6 +52,14 @@ type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
             <div class="h-32 bg-warm-100 rounded-2xl animate-pulse"></div>
           }
         </div>
+      } @else if (errorCarga()) {
+        <app-card>
+          <div class="py-6 text-center space-y-3" role="alert" data-testid="reclamos-error">
+            <p class="text-sm font-bold text-danger-800">{{ errorCarga()!.titulo }}</p>
+            <p class="text-xs text-warm-600">{{ errorCarga()!.mensaje }}</p>
+            <app-button variant="secondary" size="sm" (clicked)="cargar()">Reintentar</app-button>
+          </div>
+        </app-card>
       } @else if (reclamos().length === 0) {
         <app-card>
           <p class="text-sm text-warm-600 text-center py-6">No tienes solicitudes de revisión con este filtro.</p>
@@ -133,6 +143,7 @@ export class StudentClaimsComponent implements OnInit, OnDestroy {
   readonly tamano = signal(10);
   readonly estadoFiltro = signal<EstadoFiltro>('TODOS');
   readonly isLoading = signal(false);
+  readonly errorCarga = signal<LoadErrorState | null>(null);
   readonly descargando = signal(false);
   /** id del reclamo que se está retirando (evita el doble envío). */
   readonly retirando = signal<string | null>(null);
@@ -165,6 +176,7 @@ export class StudentClaimsComponent implements OnInit, OnDestroy {
   cargar(): void {
     this.listaSub?.unsubscribe();
     this.isLoading.set(true);
+    this.errorCarga.set(null);
     const estado = this.estadoFiltro();
     this.listaSub = this.claimService
       .getReclamosEstudiante({
@@ -181,6 +193,7 @@ export class StudentClaimsComponent implements OnInit, OnDestroy {
         error: (error: unknown) => {
           this.reclamos.set([]);
           this.total.set(0);
+          this.errorCarga.set(classifyLoadError(error));
           this.isLoading.set(false);
           this.toast.error(getApiErrorMessage(error));
         },

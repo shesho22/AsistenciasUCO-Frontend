@@ -3,6 +3,7 @@ import { Observable } from 'rxjs';
 import { ApiResponse } from '../../core/models/api-response.model';
 import { ApiPageResponse } from '../../core/api/models/api-page-response.model';
 import { getApiErrorMessage } from '../../core/api/errors/api-error.util';
+import { LoadErrorState, classifyLoadError } from '../../core/api/errors/load-error.util';
 
 /**
  * Estado y carga de un listado paginado del servidor (HU112/HU128/HU143/HU157): filas, total, página, tamaño y
@@ -16,6 +17,8 @@ export class ListadoPaginado<T> {
   readonly pagina = signal(1);
   readonly tamano = signal(10);
   readonly cargando = signal(false);
+  /** Fallo de la última carga (null si fue bien): permite distinguirlo de una lista vacía y ofrecer reintento. */
+  readonly error = signal<LoadErrorState | null>(null);
 
   constructor(
     private readonly consultar: (pagina: number, tamano: number) => Observable<ApiResponse<T[]> | ApiPageResponse<T>>,
@@ -38,8 +41,14 @@ export class ListadoPaginado<T> {
     this.buscar();
   }
 
+  /** Repite la carga de la página actual tras un fallo. */
+  reintentar(): void {
+    this.cargar();
+  }
+
   cargar(): void {
     this.cargando.set(true);
+    this.error.set(null);
     this.consultar(this.pagina(), this.tamano()).subscribe({
       next: (res: any) => {
         const elementos = (res.elementos ?? res.datos ?? []) as T[];
@@ -55,6 +64,7 @@ export class ListadoPaginado<T> {
         this.total.set(0);
         this.totalPaginas.set(0);
         this.cargando.set(false);
+        this.error.set(classifyLoadError(error));
         this.alFallar(getApiErrorMessage(error));
       },
     });

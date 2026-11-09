@@ -29,6 +29,21 @@ describe('ListadoPaginado (HU112/HU128/HU143/HU157)', () => {
     expect(listado.total()).toBe(0);
   });
 
+  it('un error publica su clasificacion, reintentar vuelve a consultar y un exito la limpia', () => {
+    const consultar = jasmine.createSpy('consultar');
+    consultar.and.returnValue(throwError(() => new HttpErrorResponse({ status: 0 })));
+    const listado = new ListadoPaginado<string>(consultar, jasmine.createSpy('alFallar'));
+
+    listado.cargar();
+    expect(listado.error()?.kind).toBe('RED');
+
+    consultar.and.returnValue(of({ exitoso: true, datos: ['a'], total: 1 }));
+    listado.reintentar();
+    expect(consultar).toHaveBeenCalledTimes(2);
+    expect(listado.error()).toBeNull();
+    expect(listado.filas()).toEqual(['a']);
+  });
+
   it('un error limpia la lista e informa el mensaje del servidor', () => {
     const alFallar = jasmine.createSpy('alFallar');
     const error = new HttpErrorResponse({ status: 403, error: { mensaje: 'Sin permiso' } });
