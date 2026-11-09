@@ -30,6 +30,16 @@ describe('TeacherGrupoHubComponent', () => {
     fixture = TestBed.createComponent(TeacherGrupoHubComponent);
   });
 
+  /** Abre el menu "Mas acciones" del grupo y devuelve el texto de sus opciones. */
+  const textoMenu = (): string => {
+    const el = fixture.nativeElement as HTMLElement;
+    if (!el.querySelector('[role="menu"]')) {
+      el.querySelector<HTMLButtonElement>('[data-testid="action-menu-trigger"]')?.click();
+      fixture.detectChanges();
+    }
+    return el.querySelector('[role="menu"]')?.textContent ?? '';
+  };
+
   it('no renderiza docenteName en la ficha de encabezado del grupo', () => {
     fixture.componentRef.setInput('selectedCourse', course);
     fixture.detectChanges();
@@ -52,11 +62,11 @@ describe('TeacherGrupoHubComponent', () => {
   it('oculta "Proyectar Auto-Registro" (QR de sesión) por defecto y lo muestra solo con feature explícita', () => {
     fixture.componentRef.setInput('selectedCourse', course);
     fixture.detectChanges();
-    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Proyectar Auto-Registro');
+    expect(textoMenu()).not.toContain('Proyectar Auto-Registro');
 
     fixture.componentRef.setInput('sessionQrEnabled', true);
     fixture.detectChanges();
-    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Proyectar Auto-Registro');
+    expect(textoMenu()).toContain('Proyectar Auto-Registro');
   });
 
   it('F-RED-06 el hub no renderiza la pestaña ni la bandeja de solicitudes de ingreso', () => {
@@ -99,5 +109,44 @@ describe('TeacherGrupoHubComponent', () => {
     fixture.componentRef.setInput('estadoCargaReclamos', 'UNAVAILABLE');
     fixture.detectChanges();
     expect(count.textContent?.trim()).toBe('—');
+  });
+
+  describe('UX densidad: una accion primaria y un menu', () => {
+    it('la ficha ofrece "Tomar Asistencia Hoy" como unica accion visible y emite irAsistencia', () => {
+      const irAsistencia = jasmine.createSpy('irAsistencia');
+      fixture.componentInstance.irAsistencia.subscribe(irAsistencia);
+      fixture.componentRef.setInput('selectedCourse', course);
+      fixture.componentRef.setInput('sessionQrEnabled', true);
+      fixture.detectChanges();
+      const ficha = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="hub-acciones"]') as HTMLElement;
+      const visibles = Array.from(ficha.querySelectorAll('button')).filter((b) => !b.hasAttribute('role'));
+      expect(visibles.length).toBe(2);
+      (ficha.querySelector('[data-testid="hub-tomar-asistencia"]') as HTMLButtonElement).click();
+      expect(irAsistencia).toHaveBeenCalledOnceWith(course);
+    });
+
+    it('"QR / PIN Matricula" y "Proyectar Auto-Registro" del menu emiten matricular y proyectarQr', () => {
+      const matricular = jasmine.createSpy('matricular');
+      const proyectar = jasmine.createSpy('proyectarQr');
+      fixture.componentInstance.matricular.subscribe(matricular);
+      fixture.componentInstance.proyectarQr.subscribe(proyectar);
+      fixture.componentRef.setInput('selectedCourse', course);
+      fixture.componentRef.setInput('sessionQrEnabled', true);
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      textoMenu();
+      (el.querySelector('[data-testid="hub-matricula-qr"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      textoMenu();
+      (el.querySelector('[data-testid="hub-proyectar-qr"]') as HTMLButtonElement).click();
+      expect(matricular).toHaveBeenCalledOnceWith(course);
+      expect(proyectar).toHaveBeenCalledOnceWith(course);
+    });
+
+    it('la barra superior no repite el codigo del grupo ni el chip "Grupo Activo"', () => {
+      fixture.componentRef.setInput('selectedCourse', course);
+      fixture.detectChanges();
+      expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Grupo Activo');
+    });
   });
 });

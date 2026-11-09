@@ -1,6 +1,6 @@
-import { Component, ChangeDetectionStrategy, input, output, model } from '@angular/core';
+import { Component, ChangeDetectionStrategy, computed, input, output, model } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
+import { ActionMenuComponent, ActionMenuItem } from '../../../../shared/components/action-menu/action-menu.component';
 import { Course } from '../../../../core/models/course.model';
 import { ClassSession } from '../../../../core/models/attendance.model';
 import { TeacherGrupoSesionesComponent } from './teacher-grupo-sesiones.component';
@@ -17,7 +17,7 @@ import { TeacherGrupoSabanaComponent } from './teacher-grupo-sabana.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,
-    BadgeComponent,
+    ActionMenuComponent,
     TeacherGrupoSesionesComponent,
     TeacherGrupoHorariosComponent,
     TeacherGrupoEstudiantesComponent,
@@ -40,12 +40,6 @@ import { TeacherGrupoSabanaComponent } from './teacher-grupo-sabana.component';
             Volver a Mis Grupos
           </button>
 
-          <div class="flex items-center gap-2">
-            <span class="text-xs font-mono font-bold px-2.5 py-1 rounded-md bg-warm-100 text-warm-800">
-              {{ selectedCourse()?.code ? selectedCourse()?.code + ' • ' : '' }}{{ selectedCourse()?.section }}
-            </span>
-            <app-badge variant="success">Grupo Activo</app-badge>
-          </div>
         </div>
 
         <!-- Ficha de Encabezado Bento del Grupo -->
@@ -70,41 +64,19 @@ import { TeacherGrupoSabanaComponent } from './teacher-grupo-sabana.component';
           </div>
 
           <!-- Acciones Rápidas del Docente -->
-          <div class="flex flex-wrap items-center gap-2.5 shrink-0">
+          <div class="flex items-center gap-2.5 shrink-0" data-testid="hub-acciones">
             <button
               type="button"
-              (click)="matricular.emit(selectedCourse()!)"
-              class="text-xs font-bold text-primary-800 hover:text-primary-950 bg-primary-50 hover:bg-primary-100 border border-primary-300 px-3.5 py-2 rounded-xl transition-colors inline-flex items-center gap-1.5 shadow-xs"
-            >
-              <svg class="w-4 h-4 text-success-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-              </svg>
-              QR / PIN Matrícula
-            </button>
-
-            @if (sessionQrEnabled()) {
-              <button
-                type="button"
-                (click)="proyectarQr.emit(selectedCourse()!)"
-                class="text-xs font-bold text-primary-900 hover:text-primary-950 bg-accent-200 hover:bg-accent-300 border border-accent-400 px-3.5 py-2 rounded-xl transition-colors inline-flex items-center gap-1.5 shadow-xs"
-              >
-                <svg class="w-4 h-4 text-primary-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-                </svg>
-                Proyectar Auto-Registro
-              </button>
-            }
-
-            <button
-              type="button"
+              data-testid="hub-tomar-asistencia"
               (click)="irAsistencia.emit(selectedCourse()!)"
-              class="text-xs font-bold text-white bg-primary-800 hover:bg-primary-900 px-4 py-2 rounded-xl transition-colors inline-flex items-center gap-1.5 shadow-sm"
+              class="text-sm font-bold text-white bg-primary-800 hover:bg-primary-900 px-4 min-h-[44px] rounded-xl transition-colors inline-flex items-center gap-1.5 shadow-sm"
             >
               <svg class="w-4 h-4 text-primary-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               Tomar Asistencia Hoy
             </button>
+            <app-action-menu label="Más acciones del grupo" [items]="acciones()" (selected)="alElegirAccion($event)" />
           </div>
         </div>
 
@@ -233,6 +205,19 @@ import { TeacherGrupoSabanaComponent } from './teacher-grupo-sabana.component';
 })
 export class TeacherGrupoHubComponent {
   selectedCourse = input<Course | null>(null);
+
+  protected readonly acciones = computed<ActionMenuItem[]>(() => {
+    const items: ActionMenuItem[] = [{ id: 'matricula-qr', label: 'QR / PIN Matrícula', testid: 'hub-matricula-qr' }];
+    if (this.sessionQrEnabled()) items.push({ id: 'proyectar-qr', label: 'Proyectar Auto-Registro', testid: 'hub-proyectar-qr' });
+    return items;
+  });
+
+  protected alElegirAccion(id: string): void {
+    const curso = this.selectedCourse();
+    if (!curso) return;
+    if (id === 'matricula-qr') this.matricular.emit(curso);
+    else if (id === 'proyectar-qr') this.proyectarQr.emit(curso);
+  }
   sessions = input<ClassSession[]>([]);
   loadingSessions = input<boolean>(false);
   estudiantes = input<EstudianteGrupoItem[]>([]);
