@@ -34,7 +34,18 @@ PR #78, head 9a0c77e94ba9adffd8f604302cfc8b75feae4e66: build-test-verify, SonarC
 
 ## Estado de publicación
 
-- Commit: pendiente.
-- PR personal a develop: pendiente de push y creación.
+- Commit inicial: `72917f5ccbac2948b38113e4666af601f7e18dba`.
+- PR personal #80 a `develop`: abierto como draft; head `fix/coordinator-load-error-pr79`; base `7cd38312838c2fc3456ab3b48f734d0106e28fcf`.
+- CI inicial del PR #80 (head `72917f5ccbac2948b38113e4666af601f7e18dba`): `build-test-verify` PASS; `SonarCloud` PASS; `SonarCloud Code Analysis` Quality Gate PASS con 1 issue nueva de mantenibilidad.
+- Anotación nueva: `typescript:S5906` en `coordinator-subjects.component.spec.ts:162`; se corrigió usando `toHaveSize(1)` conforme al addendum autorizado.
+
+## Revalidación de mantenibilidad — 2026-11-08 (America/Bogota)
+
+| Check | Resultado | Alcance y limitación |
+|---|---|---|
+| Spec `coordinator-subjects.component.spec.ts` | PASS, 6/6, exit 0 | Chrome Headless; incluye el reintento y la aserción tipada con `toHaveSize(1)`. |
+| `npm run verify` | PASS, exit 0 | lint tokens/a11y OK; 1983/1983; statements 93.10%, branches 78.63%, functions 93.50%, lines 94.10%; gate realtime LINE 95.18% / BRANCH 85.23%; `check-retiro-solicitudes` OK; build production completado. |
+| Advertencias de build | WARN | Las dos reglas Tailwind `group-open` siguen omitidas por sub-selector vacío; no falló el build. |
+| CI remoto del nuevo head | PENDIENTE | Se verificará después de publicar el commit de corrección en PR #80. |
+
 - Merge/despliegue: no ejecutados.
-- CI de este nuevo PR: pendiente de creación y resultado remoto.

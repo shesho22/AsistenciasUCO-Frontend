@@ -159,7 +159,7 @@ describe('CoordinatorSubjectsComponent', () => {
       reintentar()?.click();
       fixture.detectChanges();
       expect(el().querySelector('[role="alert"]')).toBeNull();
-      expect(component.courses().length).toBe(1);
+      expect(component.courses()).toHaveSize(1);
     });
   });
 });

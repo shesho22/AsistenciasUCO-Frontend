@@ -71,3 +71,12 @@ La conducta está descrita por los tests existentes de #79 y las respuestas de e
 ## Definition of Ready
 
 READY (2026-11-08) para RED/GREEN y PR de revisión. El usuario nombró explícitamente el PR pendiente; su diff y base están verificados; #78 aporta el estado verde del baseline remoto; los tests conductuales están versionados en el PR de origen; no se requiere DB ni contrato nuevo. La autorización no incluye merge ni despliegue.
+
+## Addendum — hallazgo de mantenibilidad de PR #80
+
+- Autorización: el usuario solicitó corregir la issue de mantenibilidad mostrada por SonarCloud y volver a revisar CI.
+- Evidencia: check `SonarCloud Code Analysis` del head `72917f5ccbac2948b38113e4666af601f7e18dba`, PR #80, anotación `typescript:S5906` en `src/app/features/coordinator/coordinator-subjects/coordinator-subjects.component.spec.ts:162`.
+- Causa: la aserción nueva usa `.length` con `toBe(1)` en lugar del matcher específico de tamaño de Jasmine.
+- Cambio autorizado: reemplazar únicamente esa aserción por `expect(component.courses()).toHaveSize(1)`. El mismo matcher ya se utiliza en otras specs del repositorio; no cambia la conducta probada ni el contrato.
+- Alcance ampliado: la ruta de spec ya permitida y este work item. Sin cambios a dependencias, producto, API, datos, workflows o configuración Sonar.
+- DoR: READY para la corrección puntual y la regresión de la spec más el gate `npm run verify`; la evidencia identifica archivo, línea, regla y solución compatible existente.
