@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { CoordinatorSubjectsComponent } from './coordinator-subjects.component';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { CourseService } from '../../../core/services/course.service';
@@ -123,5 +123,43 @@ describe('CoordinatorSubjectsComponent', () => {
     const navSpy = spyOn(router, 'navigate').and.returnValue(Promise.resolve(true));
     component.irAMallaPlan('plan-1');
     expect(navSpy).toHaveBeenCalledWith(['/app/coordinador/planes-estudio', 'plan-1', 'malla']);
+  });
+
+  // Un fallo de carga no puede verse como "No se encontraron grupos ofertados": alerta accesible y Reintentar.
+  describe('errores de carga distinguibles del vacio', () => {
+    const el = () => fixture.nativeElement as HTMLElement;
+    const reintentar = () =>
+      Array.from(el().querySelectorAll('button')).find((b) => /Reintentar/.test(b.textContent ?? '')) as HTMLButtonElement | undefined;
+
+    it('si falla la consulta de grupos muestra una alerta con Reintentar y no el estado vacio', () => {
+      courseService.getCoordinatorCourses.and.returnValue(throwError(() => new Error('falla')));
+      component.cargarDatos();
+      fixture.detectChanges();
+
+      expect(el().querySelector('[role="alert"]')).not.toBeNull();
+      expect(el().textContent).not.toContain('No se encontraron grupos ofertados');
+      expect(reintentar()).toBeTruthy();
+    });
+
+    it('si falla la consulta de asignaturas de un plan tambien se anuncia', () => {
+      coordinatorService.getAsignaturasPorPlan.and.returnValue(throwError(() => new Error('falla')));
+      component.cargarDatos();
+      fixture.detectChanges();
+      expect(el().querySelector('[role="alert"]')).not.toBeNull();
+    });
+
+    it('si falla la consulta de planes tambien se anuncia y Reintentar recupera la pantalla', () => {
+      coordinatorService.getPlanesEstudio.and.returnValue(throwError(() => new Error('falla')));
+      component.cargarDatos();
+      fixture.detectChanges();
+      expect(el().querySelector('[role="alert"]')).not.toBeNull();
+
+      coordinatorService.getPlanesEstudio.and.returnValue(of({ exitoso: true, datos: [] }) as never);
+      courseService.getCoordinatorCourses.and.returnValue(of({ exitoso: true, datos: [course] }) as never);
+      reintentar()?.click();
+      fixture.detectChanges();
+      expect(el().querySelector('[role="alert"]')).toBeNull();
+      expect(component.courses()).toHaveSize(1);
+    });
   });
 });
