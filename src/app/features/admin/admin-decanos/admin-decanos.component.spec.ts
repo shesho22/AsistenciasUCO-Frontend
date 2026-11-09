@@ -354,13 +354,15 @@ describe('AdminDecanosComponent', () => {
       expect(component.formData.tipoIdentificacion).not.toBe('CC');
     });
 
-    it('la tarjeta muestra el id del decano y no calcula DEC-{{numeroIdentificacion}} (F-ADM-011)', () => {
+    it('F3-ADM-03: la tarjeta titula con el nombre completo, no muestra el GUID y no calcula DEC-{{numeroIdentificacion}}', () => {
       component.volverALista();
       fixture.detectChanges();
 
-      const html = fixture.nativeElement.innerHTML as string;
-      expect(html).not.toContain('DEC-1017000001');
-      expect(html).toContain('dec-1');
+      const el = fixture.nativeElement as HTMLElement;
+      const titulos = Array.from(el.querySelectorAll('h3')).map((h) => h.textContent!.trim());
+      expect(titulos).toContain('Roberto Carlos Gómez Pérez');
+      expect(el.innerHTML).not.toContain('DEC-1017000001');
+      expect(el.textContent).not.toContain('dec-1');
     });
 
     it('guarda exitosamente el decano y actualiza la lista', () => {
