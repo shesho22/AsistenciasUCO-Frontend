@@ -143,6 +143,8 @@ export interface MateriaEstudianteItem {
   aula: string | null;
   horario: string | null;
   creditos: number | null;
+  /** Caracter de la asignatura (nombre, o codigo si no hay nombre); `null` si el backend no lo informa. */
+  caracter?: string | null;
   /** `null` = sin fuente confiable de asistencia (nunca se sustituye por ceros). */
   indicadores: IndicadoresAsistenciaMateria | null;
   estado: 'Al día' | 'Riesgo' | 'Crítico' | null;

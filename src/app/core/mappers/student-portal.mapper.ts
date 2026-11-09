@@ -136,7 +136,8 @@ export class StudentPortalMapper {
       docente: null,
       aula: null,
       horario: null,
-      creditos: null,
+      creditos: typeof dto.creditos === 'number' && dto.creditos > 0 ? dto.creditos : null,
+      caracter: texto(dto.nombreCaracter) ?? texto(dto.codigoCaracter),
       indicadores: dto.indicadores ?? null,
       estado: null,
       estadoMatricula: dto.estadoMatricula ?? null,
@@ -150,6 +151,24 @@ export class StudentPortalMapper {
       .filter((item): item is MateriaEstudianteItem => item !== null);
     descartadas('materias', crudos, validas.length, crudos.find((dto) => StudentPortalMapper.toMateria(dto) === null));
     return validas;
+  }
+
+  /**
+   * GET /estudiante/materias no trae docente ni horario: se cruzan por `idGrupo` con los bloques de
+   * GET /estudiante/horarios. Sin bloques para el grupo, siguen en `null` (no se inventan).
+   */
+  static conHorarios(materias: readonly MateriaEstudianteItem[], horarios: readonly HorarioItem[]): MateriaEstudianteItem[] {
+    return materias.map((materia) => {
+      const bloques = horarios.filter((h) => h.idGrupo === materia.idGrupo);
+      if (bloques.length === 0) return materia;
+      return {
+        ...materia,
+        codigo: materia.codigo ?? (bloques[0].codigoMateria !== NO_INFORMADO ? bloques[0].codigoMateria : null),
+        docente: materia.docente ?? bloques.find((b) => b.docente)?.docente ?? null,
+        aula: materia.aula ?? bloques.find((b) => b.aula)?.aula ?? null,
+        horario: materia.horario ?? bloques.map((b) => `${b.dia} ${b.horaInicio}-${b.horaFin}`).join(' · '),
+      };
+    });
   }
 
   static toHorario(dto: HorarioEstudianteApiDto): HorarioItem | null {

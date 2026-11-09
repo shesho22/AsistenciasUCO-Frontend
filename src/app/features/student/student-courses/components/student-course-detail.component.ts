@@ -58,6 +58,9 @@ import { ToastService } from '../../../../shared/components/toast/toast.componen
                   {{ materia()?.creditos }} Créditos
                 </span>
               }
+              @if (materia()?.caracter) {
+                <span data-testid="detalle-caracter" class="text-xs font-semibold px-2 py-0.5 rounded bg-warm-100 text-warm-800">{{ materia()?.caracter }}</span>
+              }
               @if (materia()?.estadoMatricula === 'CI') {
                 <span
                   data-testid="badge-estado-matricula"

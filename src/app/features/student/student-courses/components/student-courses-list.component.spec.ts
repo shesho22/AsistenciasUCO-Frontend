@@ -45,6 +45,16 @@ describe('StudentCoursesListComponent — indicadores por horas (CULM-001 B.2)',
     expect(texto(fixture)).not.toContain('NaN');
   });
 
+  it('F3-EST-02 muestra creditos y caracter de la asignatura cuando el backend los informa', () => {
+    const fixture = render([crearMateria({ creditos: 3, caracter: 'Obligatoria' })]);
+    expect(fixture.nativeElement.querySelector('[data-testid="materia-creditos-caracter"]')!.textContent.replace(/\s+/g, ' ')).toContain('3 créditos · Obligatoria');
+  });
+
+  it('F3-EST-02 sin creditos ni caracter no pinta la linea', () => {
+    const fixture = render([crearMateria({ creditos: null, caracter: null })]);
+    expect(fixture.nativeElement.querySelector('[data-testid="materia-creditos-caracter"]')).toBeNull();
+  });
+
   it('B2-F-17 el boton "Registrar asistencia con PIN" emite registrarConPin y mide 44 px', () => {
     const fixture = render();
     const emitido = jasmine.createSpy('pin');

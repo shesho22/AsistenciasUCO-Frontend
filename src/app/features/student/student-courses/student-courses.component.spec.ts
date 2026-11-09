@@ -578,6 +578,7 @@ describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', 
     component = fixture.componentInstance;
     fixture.detectChanges();
     http.expectOne(MATERIAS_URL).flush({ exitoso: true, datos: materias, total: materias.length });
+    http.expectOne(`${environment.apiUrl}/estudiante/horarios`).flush({ exitoso: true, datos: [], total: 0 });
     http.match((r) => r.url.includes('/configuracion/reclamos')).forEach((req) =>
       req.flush({
         exitoso: true,
@@ -734,6 +735,7 @@ describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', 
     fixture = TestBed.createComponent(StudentCoursesComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
+    http.expectOne(`${environment.apiUrl}/estudiante/horarios`).flush({ exitoso: true, datos: [], total: 0 });
     http.expectOne(MATERIAS_URL).flush(null, { status: 500, statusText: 'err' });
     http.match((r) => r.url.includes('/configuracion/reclamos')).forEach((req) =>
       req.flush({
