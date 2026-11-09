@@ -588,6 +588,23 @@ export const routes: Routes = [
             (m) => m.StudentGroupOfferComponent
           ),
       },
+      {
+        path: 'acceso-denegado',
+        data: { codigo: 403 },
+        loadComponent: () =>
+          import('./features/shared/ruta-no-disponible/ruta-no-disponible.component').then(
+            (m) => m.RutaNoDisponibleComponent
+          ),
+      },
+      {
+        // F3-TRX-01: una ruta inexistente dentro de /app muestra 404 en el layout, sin perder la sesión.
+        path: '**',
+        data: { codigo: 404 },
+        loadComponent: () =>
+          import('./features/shared/ruta-no-disponible/ruta-no-disponible.component').then(
+            (m) => m.RutaNoDisponibleComponent
+          ),
+      },
     ],
   },
   {
