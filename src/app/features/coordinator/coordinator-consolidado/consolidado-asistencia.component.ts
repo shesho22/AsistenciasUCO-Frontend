@@ -10,6 +10,7 @@ import { PeriodoAcademicoItem } from '../../../core/models/role-management.model
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { ListadoPaginado } from '../../../shared/utils/listado-paginado';
+import { ErrorCargaComponent } from '../../../shared/components/error-carga/error-carga.component';
 
 interface Opcion {
   id: string;
@@ -37,7 +38,7 @@ export function acumularOpciones(opciones: Opcion[], filas: ConsolidadoGrupoItem
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full' },
-  imports: [CommonModule, FormsModule, PaginationComponent],
+  imports: [CommonModule, FormsModule, PaginationComponent, ErrorCargaComponent],
   template: `
     <div class="space-y-6 animate-fade-in">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
@@ -82,7 +83,9 @@ export function acumularOpciones(opciones: Opcion[], filas: ConsolidadoGrupoItem
           </select>
         </div>
 
-        @if (listado.filas().length === 0 && !listado.cargando()) {
+        @if (listado.error() && !listado.cargando()) {
+          <app-error-carga [error]="listado.error()!" (reintentar)="listado.reintentar()" />
+        } @else if (listado.filas().length === 0 && !listado.cargando()) {
           <p class="text-sm text-warm-500 text-center py-6">No hay grupos con asistencia para los filtros seleccionados.</p>
         } @else {
           <div class="overflow-x-auto">
