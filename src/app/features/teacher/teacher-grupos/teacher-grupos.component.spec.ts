@@ -3,6 +3,7 @@ import { convertToParamMap, Router } from '@angular/router';
 import { of, Subject, throwError } from 'rxjs';
 import { TeacherGruposComponent } from './teacher-grupos.component';
 import { CourseService } from '../../../core/services/course.service';
+import { AttendanceService } from '../../../core/services/attendance.service';
 import { SessionService } from '../../../core/services/session.service';
 import { StudentService } from '../../../core/services/student.service';
 import { GroupService } from '../../../core/services/group.service';
@@ -28,6 +29,7 @@ describe('TeacherGruposComponent', () => {
   let studentService: jasmine.SpyObj<StudentService>;
   let claimService: jasmine.SpyObj<AttendanceClaimService>;
   let router: jasmine.SpyObj<Router>;
+  let attendanceService: jasmine.SpyObj<AttendanceService>;
   let realtimeEvents$: Subject<RealtimeEvent<SesionCanceladaRealtimePayload>>;
   let realtime: jasmine.SpyObj<RealtimeService>;
 
@@ -65,6 +67,8 @@ describe('TeacherGruposComponent', () => {
       'getReclamosDocentePorGrupo',
     ]);
     router = jasmine.createSpyObj<Router>('Router', ['navigate']);
+    attendanceService = jasmine.createSpyObj<AttendanceService>('AttendanceService', ['getAttendancesByGroup']);
+    attendanceService.getAttendancesByGroup.and.returnValue(of({ exitoso: true, datos: [], total: 0 } as any));
 
     courseService.getTeacherCourses.and.returnValue(
       of({ exitoso: true, datos: [course] } as any)
@@ -102,6 +106,7 @@ describe('TeacherGruposComponent', () => {
         { provide: StudentService, useValue: studentService },
         { provide: AttendanceClaimService, useValue: claimService },
         { provide: Router, useValue: router },
+        { provide: AttendanceService, useValue: attendanceService },
         // HU058: catálogo real de tipos de programa para el filtro "Nivel formativo".
         { provide: CatalogService, useValue: { getTiposPrograma: () => of([{ id: 'TP-PRE', codigo: 'PRE', nombre: 'pregrado' }]) } },
       ],
@@ -184,6 +189,46 @@ describe('TeacherGruposComponent', () => {
 
     expect(sessionService.updateSession).toHaveBeenCalledTimes(1);
     expect(sessionService.getSessionsByGroup).toHaveBeenCalledWith('crs-1');
+  });
+
+  it('F3-DOC-01: la sábana recibe el estado por sesión desde GET /grupos/{id}/asistencias', () => {
+    sessionService.getSessionsByGroup.and.returnValue(of({
+      exitoso: true,
+      total: 2,
+      datos: [
+        { id: 'ses-1', courseId: 'crs-1', sessionNumber: 1, title: 'S1', date: '2026-09-10', startTime: '08:00', endTime: '10:00', records: [] },
+        { id: 'ses-2', courseId: 'crs-1', sessionNumber: 2, title: 'S2', date: '2026-09-17', startTime: '08:00', endTime: '10:00', records: [] },
+      ],
+    } as any));
+    attendanceService.getAttendancesByGroup.and.returnValue(of({
+      exitoso: true,
+      total: 2,
+      datos: [
+        { asistencia: 'a1', estudiante: 'est-1', grupo: 'crs-1', sesion: 'ses-1', presente: true, estado: 'AN', observacion: null },
+        { asistencia: 'a2', estudiante: 'est-1', grupo: 'crs-1', sesion: 'ses-2', presente: false, estado: 'EX', observacion: null },
+      ],
+    } as any));
+
+    component.verHubGrupo(course);
+
+    expect(attendanceService.getAttendancesByGroup).toHaveBeenCalledWith('crs-1');
+    const [s1, s2] = component.sessions();
+    expect(s1.records.map((r) => [r.studentId, r.status])).toEqual([['est-1', 'AN']]);
+    expect(s2.records.map((r) => [r.studentId, r.status])).toEqual([['est-1', 'EX']]);
+  });
+
+  it('F3-DOC-01: si falla la consulta de asistencias las sesiones se muestran igual sin estados', () => {
+    sessionService.getSessionsByGroup.and.returnValue(of({
+      exitoso: true,
+      total: 1,
+      datos: [{ id: 'ses-1', courseId: 'crs-1', sessionNumber: 1, title: 'S1', date: '2026-09-10', startTime: '08:00', endTime: '10:00', records: [] }],
+    } as any));
+    attendanceService.getAttendancesByGroup.and.returnValue(throwError(() => new Error('x')));
+
+    component.verHubGrupo(course);
+
+    expect(component.sessions().length).toBe(1);
+    expect(component.sessions()[0].records).toEqual([]);
   });
 
   it('abrirDetalleSesionModal() ya no sintetiza AN/SJC por paridad del ID del estudiante', () => {
