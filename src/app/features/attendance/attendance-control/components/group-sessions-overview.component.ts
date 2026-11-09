@@ -6,6 +6,7 @@ import { Course } from '../../../../core/models/course.model';
 import { ClassSession } from '../../../../core/models/attendance.model';
 import { estaCancelada } from '../../../../core/models/sesion-estado.model';
 import { ActionMenuComponent, ActionMenuItem } from '../../../../shared/components/action-menu/action-menu.component';
+import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 import { SesionEstadoBadgeComponent } from '../../../../shared/components/sesion-estado-badge/sesion-estado-badge.component';
 import { findActiveOrUpcomingSession } from '../../../../core/utils/session-selection.util';
 import { SessionTimeZoneService } from '../../../../core/services/session-timezone.service';
@@ -14,7 +15,7 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
   selector: 'app-group-sessions-overview',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, ButtonComponent, SesionEstadoBadgeComponent, ActionMenuComponent],
+  imports: [CommonModule, ButtonComponent, SesionEstadoBadgeComponent, ActionMenuComponent, EmptyStateComponent],
   host: {
     class: 'block w-full'
   },
@@ -173,21 +174,15 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
 
         <!-- 3. TABLA PANORÁMICA DE SESIONES -->
         @if (sessions().length === 0) {
-          <div class="p-12 text-center">
-            <div class="w-12 h-12 rounded-full bg-warm-100 text-warm-500 flex items-center justify-center mx-auto mb-3">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <h3 class="font-serif font-bold text-warm-900 text-base">No hay sesiones registradas</h3>
-            <p class="text-xs text-warm-500 mt-1 max-w-sm mx-auto">
-              Crea la primera sesión de clase para comenzar a registrar la asistencia académica del grupo.
-            </p>
-            <div class="mt-4">
-              <app-button variant="primary" size="sm" (clicked)="openNewSession.emit()">
+          <div class="p-4" data-testid="sesiones-vacio">
+            <app-empty-state
+              title="No hay sesiones registradas"
+              description="Crea la primera sesión de clase para comenzar a registrar la asistencia académica del grupo."
+            >
+              <app-button empty-action variant="primary" size="sm" (clicked)="openNewSession.emit()">
                 Programar Primera Sesión
               </app-button>
-            </div>
+            </app-empty-state>
           </div>
         } @else {
           <div class="overflow-x-auto">

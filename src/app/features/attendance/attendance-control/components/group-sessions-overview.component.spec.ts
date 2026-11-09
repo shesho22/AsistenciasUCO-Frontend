@@ -171,6 +171,18 @@ describe('GroupSessionsOverviewComponent', () => {
     expect(opcion('grupo-reclamos').textContent).toContain('Reclamos (3)');
   });
 
+  it('UX densidad: sin sesiones usa el estado vacio compartido con su accion de crear la primera', () => {
+    const comp = render([]);
+    const el = fixture.nativeElement as HTMLElement;
+    const vacio = el.querySelector('[data-testid="sesiones-vacio"] app-empty-state') as HTMLElement;
+    expect(vacio).not.toBeNull();
+    expect(vacio.textContent).toContain('No hay sesiones registradas');
+    let creadas = 0;
+    comp.openNewSession.subscribe(() => creadas++);
+    (vacio.querySelector('button') as HTMLButtonElement).click();
+    expect(creadas).toBe(1);
+  });
+
   it('B1-F-14 las sesiones canceladas no cuentan en el total', () => {
     const cancelada: ClassSession = { ...session(3), estado: 'CANCELADA' };
     const component = render([
