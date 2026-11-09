@@ -671,5 +671,80 @@ describe('TeacherGruposComponent', () => {
       expect(celda('est-2')?.textContent).toContain('—');
       expect(celda('est-2')?.textContent).not.toMatch(/AN|EX|SJC/);
     });
+
+    it('un fallo al cargar las asistencias avisa con el mensaje del backend y deja las marcas sin inventar', () => {
+      attendanceService.getAttendancesByGroup.and.returnValue(
+        throwError(() => apiHttpError(409, 'No se pudieron consultar las asistencias.', 'CONFLICT')) as never
+      );
+      const toastError = spyOn(TestBed.inject(ToastService), 'error');
+      component.verHubGrupo(course);
+      component.subPestanaHub.set('SABANA');
+      fixture.detectChanges();
+
+      expect(toastError).toHaveBeenCalledWith('No se pudieron consultar las asistencias.');
+      expect(celda('est-1')?.textContent).toContain('—');
+    });
+
+    it('una respuesta sin datos se trata como sin registros', () => {
+      attendanceService.getAttendancesByGroup.and.returnValue(of({ exitoso: true }) as never);
+      component.verHubGrupo(course);
+      fixture.detectChanges();
+
+      expect(component.sessionsConRegistros()[0].records.every((r) => r.status === null)).toBeTrue();
+    });
+
+    it('un estado no soportado por el mapper no rompe el hub: la sesion queda sin registros', () => {
+      attendanceService.getAttendancesByGroup.and.returnValue(
+        of({
+          exitoso: true,
+          datos: [{ asistencia: 'a9', estudiante: 'est-1', grupo: 'crs-1', sesion: 'ses-1', presente: true, estado: 'XX', observacion: null }],
+        }) as never
+      );
+      component.verHubGrupo(course);
+      component.subPestanaHub.set('SABANA');
+      fixture.detectChanges();
+
+      expect(component.sessionsConRegistros()[0].records).toEqual([]);
+      expect(celda('est-1')?.textContent).toContain('—');
+    });
+
+    it('solo compone registros de los estudiantes activos y tolera un padron con campos minimos', () => {
+      studentService.getStudentsByGroup.and.returnValue(
+        of({
+          exitoso: true,
+          datos: [
+            { id: 'est-9', codigoEstado: 'A' },
+            { codigoEstado: 'A' },
+            { idEstudiante: 'est-8', nombreCompleto: 'Retirado', documento: '1', codigoEstado: 'R' },
+          ],
+        }) as never
+      );
+      attendanceService.getAttendancesByGroup.and.returnValue(
+        of({
+          exitoso: true,
+          datos: [{ asistencia: 'a2', estudiante: 'est-9', grupo: 'crs-1', sesion: 'ses-1', presente: true, estado: 'AN', observacion: null }],
+        }) as never
+      );
+      component.verHubGrupo(course);
+      fixture.detectChanges();
+
+      const records = component.sessionsConRegistros()[0].records;
+      expect(records.length).toBe(2);
+      expect(records.find((r) => r.studentId === 'est-9')).toEqual(jasmine.objectContaining({ status: 'AN' }));
+      expect(records.find((r) => r.studentId === '')?.status).toBeNull();
+    });
+
+    it('al abrir otro grupo se descartan las asistencias del anterior antes de cargar las nuevas', () => {
+      component.verHubGrupo(course);
+      fixture.detectChanges();
+      expect(component.sessionsConRegistros()[0].records.some((r) => r.status === 'SJC')).toBeTrue();
+
+      attendanceService.getAttendancesByGroup.and.returnValue(new Subject() as never);
+      component.verHubGrupo({ ...course, id: 'crs-2' });
+      fixture.detectChanges();
+
+      expect(attendanceService.getAttendancesByGroup).toHaveBeenCalledWith('crs-2');
+      expect(component.sessionsConRegistros()[0].records.every((r) => r.status === null)).toBeTrue();
+    });
   });
 });
