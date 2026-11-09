@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { paginaApi, porUrl } from '../../../../core/testing/pagina-api';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@angular/common/http/testing';
 import { DeanProgramasGestionComponent } from './dean-programas-gestion.component';
@@ -27,15 +28,12 @@ describe('DeanProgramasGestionComponent', () => {
     component = fixture.componentInstance;
     fixture.detectChanges();
     listados().forEach((r) => r.flush({ exitoso: true, datos: [programa], total: 12 }));
-    http.expectOne(`${api}/decano/coordinadores`).flush({
-      exitoso: true,
-      datos: [
+    http.expectOne(porUrl(`${api}/decano/coordinadores`)).flush(paginaApi([
         { id: 'c-1', idPrograma: 'p-1', nombreCompleto: 'Ana Pérez' },
         { id: 'c-2', idPrograma: null, nombreCompleto: 'Luis Gómez', estaActivoCoordinador: true, estaActivoRolCoordinador: true },
         { id: 'c-3', idPrograma: null, nombreCompleto: 'Rol Inactivo', estaActivoCoordinador: false, estaActivoRolCoordinador: false },
         { id: 'c-4', idPrograma: null, nombreCompleto: 'Usuario Inactivo', estaActivoCoordinador: false, estaActivoRolCoordinador: true },
-      ],
-    });
+      ]));
     http.expectOne(`${api}/tipos-programa`).flush([{ id: 't-1', codigo: 'PRE', nombre: 'pregrado' }]);
     http.expectOne(`${api}/modalidades-programa`).flush([]);
     http.expectOne(`${api}/jornadas-programa`).flush([]);
@@ -51,7 +49,7 @@ describe('DeanProgramasGestionComponent', () => {
 
   afterEach(() => {
     // Tras una mutacion exitosa el componente recarga tambien los coordinadores disponibles.
-    http.match(`${api}/decano/coordinadores`).forEach((r) => r.flush({ exitoso: true, datos: [] }));
+    http.match(porUrl(`${api}/decano/coordinadores`)).forEach((r) => r.flush(paginaApi([])));
     http.verify();
   });
 

@@ -198,8 +198,12 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   // HU161/HU162/HU164 descartadas: las instituciones son de solo consulta (sin POST/PUT/PATCH).
 
   // ================= DECANO: COORDINADORES =================
-  if (url.endsWith('/decano/coordinadores') && method === 'GET') {
-    return of(okResponse(mockStore.coordinadores)).pipe(delay(250));
+  if (url.split('?')[0].endsWith('/decano/coordinadores') && method === 'GET') {
+    const elementos = mockStore.coordinadores;
+    return of(new HttpResponse({
+      status: 200,
+      body: { exitoso: true, elementos, numeroPagina: 1, tamanoPagina: 100, totalElementos: elementos.length, totalPaginas: 1 },
+    })).pipe(delay(250));
   }
   if (url.endsWith('/decano/coordinadores') && method === 'POST') {
     const body = req.body as any;
