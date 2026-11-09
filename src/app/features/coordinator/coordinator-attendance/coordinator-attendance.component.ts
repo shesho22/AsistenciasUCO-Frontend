@@ -15,6 +15,8 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { SesionEstadoBadgeComponent } from '../../../shared/components/sesion-estado-badge/sesion-estado-badge.component';
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
 import { resolveSessionInstant } from '../../../core/time/session-timezone.util';
+import { ErrorCargaComponent } from '../../../shared/components/error-carga/error-carga.component';
+import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load-error.util';
 
 type FiltroAsistio = 'TODOS' | 'ASISTIO' | 'NO_ASISTIO';
 
@@ -27,7 +29,7 @@ type FiltroAsistio = 'TODOS' | 'ASISTIO' | 'NO_ASISTIO';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full' },
-  imports: [CommonModule, FormsModule, BadgeComponent, PaginationComponent, SesionEstadoBadgeComponent],
+  imports: [CommonModule, FormsModule, BadgeComponent, PaginationComponent, SesionEstadoBadgeComponent, ErrorCargaComponent],
   template: `
     <div class="space-y-6 animate-fade-in">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
@@ -75,7 +77,9 @@ type FiltroAsistio = 'TODOS' | 'ASISTIO' | 'NO_ASISTIO';
           />
         </div>
 
-        @if (grupos().length === 0 && !cargandoGrupos()) {
+        @if (errorGrupos() && !cargandoGrupos()) {
+          <app-error-carga [error]="errorGrupos()!" (reintentar)="cargarGrupos()" />
+        } @else if (grupos().length === 0 && !cargandoGrupos()) {
           <p class="text-sm text-warm-500 text-center py-6">No hay grupos para los filtros seleccionados.</p>
         } @else {
           <div class="overflow-x-auto">
@@ -135,7 +139,9 @@ type FiltroAsistio = 'TODOS' | 'ASISTIO' | 'NO_ASISTIO';
               <button type="button" class="px-3 py-1.5 rounded-lg bg-primary-600 text-white font-semibold" (click)="filtrarSesiones()">Filtrar</button>
             </div>
           </div>
-          @if (sesiones().length === 0 && !cargandoSesiones()) {
+          @if (errorSesiones() && !cargandoSesiones()) {
+            <app-error-carga [error]="errorSesiones()!" (reintentar)="cargarSesiones()" />
+          } @else if (sesiones().length === 0 && !cargandoSesiones()) {
             <p class="text-sm text-warm-500 text-center py-6">El grupo no tiene sesiones en el rango seleccionado.</p>
           } @else {
             <p class="text-xs text-warm-500" data-testid="zona-horaria-sesiones">
@@ -207,7 +213,9 @@ type FiltroAsistio = 'TODOS' | 'ASISTIO' | 'NO_ASISTIO';
               <option value="NO_ASISTIO">No asistieron</option>
             </select>
           </div>
-          @if (asistencias().length === 0 && !cargandoAsistencias()) {
+          @if (errorAsistencias() && !cargandoAsistencias()) {
+            <app-error-carga [error]="errorAsistencias()!" (reintentar)="cargarAsistencias()" />
+          } @else if (asistencias().length === 0 && !cargandoAsistencias()) {
             <p class="text-sm text-warm-500 text-center py-6">No hay registros de asistencia para esta sesión.</p>
           } @else {
             <div class="overflow-x-auto">
@@ -261,6 +269,7 @@ export class CoordinatorAttendanceComponent implements OnInit {
   paginaGrupos = signal(1);
   tamanoGrupos = signal(10);
   cargandoGrupos = signal(false);
+  errorGrupos = signal<LoadErrorState | null>(null);
   grupoSeleccionado = signal<GrupoProgramaItem | null>(null);
 
   sesiones = signal<SesionGrupoItem[]>([]);
@@ -268,6 +277,7 @@ export class CoordinatorAttendanceComponent implements OnInit {
   paginaSesiones = signal(1);
   tamanoSesiones = signal(10);
   cargandoSesiones = signal(false);
+  errorSesiones = signal<LoadErrorState | null>(null);
   desde = signal('');
   hasta = signal('');
   sesionSeleccionada = signal<SesionGrupoItem | null>(null);
@@ -277,6 +287,7 @@ export class CoordinatorAttendanceComponent implements OnInit {
   paginaAsistencias = signal(1);
   tamanoAsistencias = signal(20);
   cargandoAsistencias = signal(false);
+  errorAsistencias = signal<LoadErrorState | null>(null);
   filtroAsistio = signal<FiltroAsistio>('TODOS');
 
   /** APP-04: hay sesiones cuyo horario no es un instante confirmado (v1 sin zona o INDETERMINADA). */
@@ -379,8 +390,9 @@ export class CoordinatorAttendanceComponent implements OnInit {
     this.cargarAsistencias();
   }
 
-  private cargarGrupos(): void {
+  cargarGrupos(): void {
     this.cargandoGrupos.set(true);
+    this.errorGrupos.set(null);
     this.service
       .getGruposPrograma({
         idPeriodo: this.idPeriodo(),
@@ -398,17 +410,19 @@ export class CoordinatorAttendanceComponent implements OnInit {
           this.grupos.set([]);
           this.totalGrupos.set(0);
           this.cargandoGrupos.set(false);
+          this.errorGrupos.set(classifyLoadError(error));
           this.toast.error(getApiErrorMessage(error));
         },
       });
   }
 
-  private cargarSesiones(): void {
+  cargarSesiones(): void {
     const grupo = this.grupoSeleccionado();
     if (!grupo) {
       return;
     }
     this.cargandoSesiones.set(true);
+    this.errorSesiones.set(null);
     this.service
       .getSesionesGrupo(grupo.id, {
         desde: this.desde(),
@@ -426,18 +440,20 @@ export class CoordinatorAttendanceComponent implements OnInit {
           this.sesiones.set([]);
           this.totalSesiones.set(0);
           this.cargandoSesiones.set(false);
+          this.errorSesiones.set(classifyLoadError(error));
           this.toast.error(getApiErrorMessage(error));
         },
       });
   }
 
-  private cargarAsistencias(): void {
+  cargarAsistencias(): void {
     const sesion = this.sesionSeleccionada();
     if (!sesion) {
       return;
     }
     const filtro = this.filtroAsistio();
     this.cargandoAsistencias.set(true);
+    this.errorAsistencias.set(null);
     this.service
       .getAsistenciasSesion(sesion.id, {
         asistio: filtro === 'TODOS' ? null : filtro === 'ASISTIO',
@@ -454,6 +470,7 @@ export class CoordinatorAttendanceComponent implements OnInit {
           this.asistencias.set([]);
           this.totalAsistencias.set(0);
           this.cargandoAsistencias.set(false);
+          this.errorAsistencias.set(classifyLoadError(error));
           this.toast.error(getApiErrorMessage(error));
         },
       });

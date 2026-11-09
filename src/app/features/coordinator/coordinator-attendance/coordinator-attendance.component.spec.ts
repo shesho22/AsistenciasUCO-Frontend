@@ -148,6 +148,56 @@ describe('CoordinatorAttendanceComponent (HU064/HU060/HU061)', () => {
     expect(toastSpy.error).toHaveBeenCalled();
   });
 
+  // Un fallo de carga no puede verse como una lista vacia: alerta accesible y Reintentar en cada nivel.
+  describe('errores de carga distinguibles del vacio', () => {
+    const el = () => fixture.nativeElement as HTMLElement;
+    const alerta = () => el().querySelector('[role="alert"]');
+    const hayReintentar = () => Array.from(el().querySelectorAll('button')).some((b) => /Reintentar/.test(b.textContent ?? ''));
+
+    it('grupos: un 500 muestra alerta con Reintentar y no "No hay grupos"; Reintentar recupera la lista', () => {
+      component.buscarGrupos();
+      http.expectOne((r) => r.url === `${API}/coordinador/grupos`).flush({}, { status: 500, statusText: 'Error' });
+      fixture.detectChanges();
+      expect(alerta()).not.toBeNull();
+      expect(hayReintentar()).toBeTrue();
+      expect(el().textContent).not.toContain('No hay grupos para los filtros seleccionados.');
+
+      (Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('button')).find((b) => /Reintentar/.test(b.textContent ?? '')) as HTMLButtonElement).click();
+      http.expectOne((r) => r.url === `${API}/coordinador/grupos`).flush({ exitoso: true, datos: [grupo], total: 1 });
+      fixture.detectChanges();
+      expect(alerta()).toBeNull();
+      expect(component.totalGrupos()).toBe(1);
+    });
+
+    it('sesiones: un 500 muestra alerta con Reintentar y no "El grupo no tiene sesiones"; Reintentar recupera', () => {
+      component.seleccionarGrupo(grupo);
+      http.expectOne((r) => r.url.endsWith('/sesiones')).flush({}, { status: 500, statusText: 'Error' });
+      fixture.detectChanges();
+      expect(el().querySelectorAll('[role="alert"]').length).toBeGreaterThan(0);
+      expect(el().textContent).not.toContain('El grupo no tiene sesiones en el rango seleccionado.');
+
+      (Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('button')).find((b) => /Reintentar/.test(b.textContent ?? '')) as HTMLButtonElement).click();
+      http.expectOne((r) => r.url.endsWith('/sesiones')).flush({ exitoso: true, datos: [sesion], total: 1 });
+      fixture.detectChanges();
+      expect(el().textContent).toContain('S-01');
+    });
+
+    it('asistencias: un 500 muestra alerta con Reintentar y no "No hay registros"; Reintentar recupera', () => {
+      component.seleccionarGrupo(grupo);
+      http.expectOne((r) => r.url.endsWith('/sesiones')).flush({ exitoso: true, datos: [sesion], total: 1 });
+      component.seleccionarSesion(sesion);
+      http.expectOne((r) => r.url.endsWith('/asistencias')).flush({}, { status: 500, statusText: 'Error' });
+      fixture.detectChanges();
+      expect(el().textContent).not.toContain('No hay registros de asistencia para esta sesión.');
+      expect(el().querySelectorAll('[role="alert"]').length).toBeGreaterThan(0);
+
+      (Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('button')).find((b) => /Reintentar/.test(b.textContent ?? '')) as HTMLButtonElement).click();
+      http.expectOne((r) => r.url.endsWith('/asistencias')).flush({ exitoso: true, datos: asistencias, total: 2 });
+      fixture.detectChanges();
+      expect(el().textContent).toContain('Ana Ruiz');
+    });
+  });
+
   it('HU060/HU061: del grupo pasa a sus sesiones y de la sesión al detalle por estudiante', () => {
     component.seleccionarGrupo(grupo);
     const sesiones = http.expectOne((r) => r.url === `${API}/coordinador/grupos/grp-1/sesiones`);
