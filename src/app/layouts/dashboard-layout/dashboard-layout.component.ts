@@ -1,4 +1,4 @@
-import { Component, signal, inject, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Component, signal, inject, computed, ChangeDetectionStrategy, ElementRef, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
@@ -19,6 +19,7 @@ interface NavItem {
   selector: 'app-dashboard-layout',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '(document:keydown.escape)': 'cerrarMenuConEscape()' },
   imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, AvatarComponent, BadgeComponent, ToastComponent, IconComponent],
   template: `
     <app-toast
@@ -40,6 +41,7 @@ interface NavItem {
           <span class="font-serif font-bold text-warm-900 text-lg">Gestió Asistencia</span>
         </div>
         <button
+          #botonMenu
           type="button"
           (click)="toggleMobileMenu()"
           class="p-2 min-w-[44px] min-h-[44px] inline-flex items-center justify-center text-warm-600 hover:text-warm-900 rounded-lg hover:bg-warm-100 focus-visible:ring-2 focus-visible:ring-primary-500"
@@ -103,6 +105,7 @@ interface NavItem {
             <a
               [routerLink]="item.route"
               routerLinkActive="bg-primary-50 text-primary-800 font-semibold shadow-xs"
+              ariaCurrentWhenActive="page"
               (click)="isMobileMenuOpen.set(false)"
               class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-warm-700 hover:bg-warm-100 hover:text-warm-900 transition-all duration-150 group"
               [title]="isCollapsed() ? item.label : ''"
@@ -216,6 +219,7 @@ export class DashboardLayoutComponent {
   isMockMode = this.authService.isMockMode;
   isCollapsed = signal<boolean>(false);
   isMobileMenuOpen = signal<boolean>(false);
+  private readonly botonMenu = viewChild<ElementRef<HTMLButtonElement>>('botonMenu');
 
   currentRole = computed<UserRole>(() => {
     const role = this.user()?.role;
@@ -519,6 +523,13 @@ export class DashboardLayoutComponent {
 
   toggleMobileMenu(): void {
     this.isMobileMenuOpen.update((val) => !val);
+  }
+
+  /** WCAG 2.1.2/2.4.3: Escape cierra el menú móvil y devuelve el foco a la hamburguesa que lo abrió. */
+  cerrarMenuConEscape(): void {
+    if (!this.isMobileMenuOpen()) return;
+    this.isMobileMenuOpen.set(false);
+    this.botonMenu()?.nativeElement.focus();
   }
 
   onRoleChange(event: Event): void {
