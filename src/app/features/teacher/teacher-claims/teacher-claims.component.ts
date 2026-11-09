@@ -115,8 +115,11 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
             }
           </div>
         } @else if (listState() !== 'LOADED') {
-          <div class="bg-danger-50 border border-danger-200 rounded-2xl p-6 text-center text-sm text-danger-900">
-            {{ listStateMessage() }}
+          <div class="bg-danger-50 border border-danger-200 rounded-2xl p-6 text-center text-sm text-danger-900 space-y-3" role="alert">
+            <p>{{ listStateMessage() }}</p>
+            @if (listState() === 'NETWORK_ERROR' || listState() === 'SERVER_ERROR') {
+              <app-button variant="secondary" size="sm" (clicked)="cargarReclamos()">Reintentar</app-button>
+            }
           </div>
         } @else if (filteredReclamos().length === 0) {
           <div class="bg-white rounded-2xl border border-warm-200 p-12 text-center shadow-warm-sm">
@@ -389,7 +392,7 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
             </div>
           } @else {
             <div class="p-4 rounded-xl bg-primary-50/60 border border-primary-200 space-y-1 text-xs">
-              <span class="font-bold text-primary-900 block">Resolución registrada el {{ selectedReclamo()?.fechaRespuesta }}:</span>
+              <span class="font-bold text-primary-900 block">Resolución registrada@if (selectedReclamo()?.fechaRespuesta) { el {{ selectedReclamo()?.fechaRespuesta }}}:</span>
               <p class="text-primary-800 italic">"{{ selectedReclamo()?.justificacionRespuesta }}"</p>
             </div>
           }

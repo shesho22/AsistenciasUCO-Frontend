@@ -87,6 +87,41 @@ describe('TeacherScheduleComponent', () => {
     expect(toastSpy.error).toHaveBeenCalledWith('Horario no disponible para el periodo.');
   });
 
+  // F-DOC-005: un fallo de carga no puede verse como un horario vacio ("Sin grupos este dia" / "0 Horas").
+  describe('error de carga distinguible del horario vacio', () => {
+    const el = () => fixture.nativeElement as HTMLElement;
+    const boton = () => Array.from(el().querySelectorAll('button')).find((b) => /Reintentar/.test(b.textContent ?? ''));
+
+    beforeEach(() => {
+      claimServiceSpy.getHorarioDocente.and.returnValue(throwError(() => apiHttpError(0, 'sin conexion', 'NETWORK_ERROR')));
+      component.cargarHorario();
+      fixture.detectChanges();
+    });
+
+    it('muestra una alerta con Reintentar y no la grilla vacia ni el total de horas', () => {
+      expect(el().querySelector('[role="alert"]')).not.toBeNull();
+      expect(boton()).toBeTruthy();
+      expect(el().textContent).not.toContain('Sin grupos este día');
+      expect(el().textContent).not.toContain('Horas / Semana');
+    });
+
+    it('Reintentar vuelve a pedir el horario y, si responde, pinta la grilla y retira la alerta', () => {
+      claimServiceSpy.getHorarioDocente.and.returnValue(of({ exitoso: true, datos: mockHorarios }));
+      (boton() as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(el().querySelector('[role="alert"]')).toBeNull();
+      expect(el().textContent).toContain('4 Horas / Semana');
+    });
+
+    it('un horario realmente vacio (200 sin clases) sigue mostrando "Sin grupos este día" y sin alerta', () => {
+      claimServiceSpy.getHorarioDocente.and.returnValue(of({ exitoso: true, datos: [] }));
+      component.cargarHorario();
+      fixture.detectChanges();
+      expect(el().querySelector('[role="alert"]')).toBeNull();
+      expect(el().textContent).toContain('Sin grupos este día');
+    });
+  });
+
   it('debe retornar estilos de clases para cada categoría de color', () => {
     expect(component.getClaseClasses('emerald')).toContain('bg-success-50');
     expect(component.getClaseClasses('amber')).toContain('bg-warning-50');
