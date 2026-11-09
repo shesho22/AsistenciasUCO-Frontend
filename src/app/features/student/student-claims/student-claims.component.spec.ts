@@ -141,6 +141,45 @@ describe('StudentClaimsComponent (HU010/HU011: consulta del estudiante)', () => 
     expect(toastSpy.error).toHaveBeenCalled();
   });
 
+  // F-EST-S03 (patron de Mis Materias): un fallo de carga no puede mostrarse como lista vacia.
+  describe('error de carga distinguible de la lista vacia', () => {
+    const textoPantalla = () => (fixture.nativeElement as HTMLElement).textContent ?? '';
+    const alerta = () => (fixture.nativeElement as HTMLElement).querySelector('[role="alert"]');
+
+    function fallarCarga(status: number): void {
+      component.cargar();
+      http.expectOne((r) => r.url === ENDPOINT).flush({ message: 'fallo' }, { status, statusText: 'Error' });
+      fixture.detectChanges();
+    }
+
+    it('un 500 muestra una alerta con Reintentar y NO el texto de lista vacia', () => {
+      fallarCarga(500);
+      expect(alerta()).not.toBeNull();
+      expect(textoPantalla()).toContain('Reintentar');
+      expect(textoPantalla()).not.toContain('No tienes solicitudes de revisión');
+    });
+
+    it('Reintentar vuelve a pedir los reclamos y, si responde, pinta la lista y retira la alerta', () => {
+      fallarCarga(0);
+      const reintentar = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('button')).find((b) =>
+        /Reintentar/.test(b.textContent ?? '')
+      ) as HTMLButtonElement;
+      reintentar.click();
+      http.expectOne((r) => r.url === ENDPOINT).flush({ exitoso: true, total: 1, datos: [reclamoApi] });
+      fixture.detectChanges();
+      expect(alerta()).toBeNull();
+      expect(textoPantalla()).toContain('Cálculo');
+    });
+
+    it('una respuesta 200 con cero elementos sigue mostrando el estado vacio, sin alerta', () => {
+      component.cargar();
+      http.expectOne((r) => r.url === ENDPOINT).flush({ exitoso: true, total: 0, datos: [] });
+      fixture.detectChanges();
+      expect(alerta()).toBeNull();
+      expect(textoPantalla()).toContain('No tienes solicitudes de revisión');
+    });
+  });
+
   it('SC-05 descarga el soporte por el backend autenticado (GET /archivos/{fileId})', () => {
     const anchor = document.createElement('a');
     spyOn(anchor, 'click');
@@ -190,4 +229,5 @@ describe('AttendanceClaimService.getReclamosEstudiante (modo mock)', () => {
         done();
       });
   });
+
 });

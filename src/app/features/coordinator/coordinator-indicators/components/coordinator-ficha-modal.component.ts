@@ -8,17 +8,27 @@ import { CorreccionIdentidadService } from '../../../../core/services/correccion
 import { CorregirIdentidadPayload, IdentidadActual } from '../../../../core/models/correccion-identidad.model';
 import { CorreccionIdentidadModalComponent } from '../../../../shared/components/correccion-identidad-modal/correccion-identidad-modal.component';
 import { ToastService } from '../../../../shared/components/toast/toast.component';
+import { DialogoAccesibleDirective } from '../../../../shared/directives/dialogo-accesible.directive';
+
+let fichaEstudianteIdContador = 0;
 
 @Component({
   selector: 'app-coordinator-ficha-modal',
   standalone: true,
-  imports: [PaginationComponent, CorreccionIdentidadModalComponent],
+  imports: [PaginationComponent, CorreccionIdentidadModalComponent, DialogoAccesibleDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
+    <div
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 focus:outline-none"
+      role="dialog"
+      aria-modal="true"
+      [attr.aria-labelledby]="tituloId"
+      appDialogoAccesible
+      (cerrarSolicitado)="cancelar()"
+    >
       <div class="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
         <div class="mb-4 flex items-start justify-between gap-4">
-          <h2 class="text-xl font-semibold text-neutral-900">Ficha de {{ nombre() }}</h2>
+          <h2 [id]="tituloId" class="text-xl font-semibold text-neutral-900">Ficha de {{ nombre() }}</h2>
           <button type="button" class="text-neutral-500 hover:text-neutral-800" aria-label="Cerrar" (click)="cancelar()">✕</button>
         </div>
 
@@ -105,6 +115,7 @@ export class CoordinatorFichaModalComponent implements OnInit {
   private readonly toast = inject(ToastService);
   readonly timeZone = inject(SessionTimeZoneService);
 
+  readonly tituloId = `ficha-estudiante-titulo-${++fichaEstudianteIdContador}`;
   readonly idEstudiante = input.required<string>();
   readonly nombre = input<string>('');
   readonly cerrar = output<void>();

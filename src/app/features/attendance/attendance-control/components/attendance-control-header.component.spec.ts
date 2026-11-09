@@ -86,4 +86,31 @@ describe('AttendanceControlHeaderComponent', () => {
     fixture.detectChanges();
     expect(button(/Todos Presentes/).disabled).toBeTrue();
   });
+
+  // HU175 (CULM-001 B.2): la ventana de asistencia la calcula la BD. Con la ventana cerrada (sesion futura,
+  // finalizada o cancelada) no se ofrece proyectar un QR: el backend respondería 409 al abrir la toma.
+  describe('Proyectar QR segun la ventana de asistencia', () => {
+    beforeEach(() => {
+      fixture.componentRef.setInput('selectedSessionId', 'ses-1');
+    });
+
+    it('queda deshabilitado con la ventana cerrada', () => {
+      fixture.componentRef.setInput('attendanceWindowOpen', false);
+      fixture.detectChanges();
+      expect(button(/Proyectar QR/).disabled).toBeTrue();
+    });
+
+    it('queda habilitado con la ventana abierta y una sesion seleccionada', () => {
+      fixture.componentRef.setInput('attendanceWindowOpen', true);
+      fixture.detectChanges();
+      expect(button(/Proyectar QR/).disabled).toBeFalse();
+    });
+
+    it('sigue deshabilitado sin sesion seleccionada aunque la ventana este abierta', () => {
+      fixture.componentRef.setInput('attendanceWindowOpen', true);
+      fixture.componentRef.setInput('selectedSessionId', '');
+      fixture.detectChanges();
+      expect(button(/Proyectar QR/).disabled).toBeTrue();
+    });
+  });
 });

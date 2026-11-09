@@ -59,6 +59,37 @@ describe('CoordinatorFichaModalComponent', () => {
     expect(component.totalBitacora()).toBe(25);
   });
 
+  // WCAG 2.4.3 / 4.1.2 / 2.1.1: el dialogo se nombra con su titulo, recibe el foco, atrapa Tab y se cierra con Escape.
+  describe('accesibilidad del dialogo', () => {
+    function abrirCargado(): HTMLElement {
+      abrir();
+      http.expectOne(`${base}/ficha`).flush({ exitoso: true, datos: ficha });
+      http.expectOne((r) => r.url === `${base}/bitacora`).flush({ exitoso: true, datos: [sesion(6, true)], total: 1 });
+      fixture.detectChanges();
+      return fixture.nativeElement.querySelector('[role="dialog"]') as HTMLElement;
+    }
+
+    it('A11Y-01 aria-labelledby apunta al titulo "Ficha de ..."', () => {
+      const dialogo = abrirCargado();
+      const id = dialogo.getAttribute('aria-labelledby');
+      expect(id).toBeTruthy();
+      expect(document.getElementById(id as string)?.textContent).toContain('Ficha de Ana Pérez');
+    });
+
+    it('A11Y-02 al abrirse el foco entra en el dialogo', () => {
+      const dialogo = abrirCargado();
+      expect(dialogo.contains(document.activeElement)).toBeTrue();
+    });
+
+    it('A11Y-03 Escape emite cerrar', () => {
+      abrirCargado();
+      let cerrado = false;
+      component.cerrar.subscribe(() => (cerrado = true));
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      expect(cerrado).toBeTrue();
+    });
+  });
+
   it('APP-04 la bitácora presenta el instante UTC en la zona efectiva (Londres)', () => {
     TestBed.inject(SessionTimeZoneService).setManualTimeZone('Europe/London');
     abrir();

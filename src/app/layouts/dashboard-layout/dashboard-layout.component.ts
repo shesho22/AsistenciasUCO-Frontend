@@ -1,4 +1,4 @@
-import { Component, signal, inject, computed, effect, ChangeDetectionStrategy } from '@angular/core';
+import { Component, signal, inject, computed, effect, ChangeDetectionStrategy, ElementRef, viewChild, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
@@ -22,6 +22,7 @@ interface NavItem {
   selector: 'app-dashboard-layout',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '(document:keydown.escape)': 'cerrarMenuConEscape()' },
   imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, AvatarComponent, BadgeComponent, ToastComponent, IconComponent],
   template: `
     <app-toast
@@ -43,6 +44,7 @@ interface NavItem {
           <span class="font-serif font-bold text-warm-900 text-lg">Gestió Asistencia</span>
         </div>
         <button
+          #botonMenu
           type="button"
           (click)="toggleMobileMenu()"
           class="p-2 min-w-[44px] min-h-[44px] inline-flex items-center justify-center text-warm-600 hover:text-warm-900 rounded-lg hover:bg-warm-100 focus-visible:ring-2 focus-visible:ring-primary-500"
@@ -69,7 +71,7 @@ interface NavItem {
       }
 
       <!-- Sidebar Container -->
-      <aside id="menu-lateral" [class]="sidebarClasses()">
+      <aside id="menu-lateral" [class]="sidebarClasses()" [attr.inert]="menuInerte() ? '' : null">
         <!-- Brand Header -->
         <div class="p-5 flex items-center justify-between border-b border-warm-200/80 shrink-0">
           <div class="flex items-center gap-3">
@@ -106,6 +108,7 @@ interface NavItem {
             <a
               [routerLink]="item.route"
               routerLinkActive="bg-primary-50 text-primary-800 font-semibold shadow-xs"
+              ariaCurrentWhenActive="page"
               (click)="isMobileMenuOpen.set(false)"
               class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-warm-700 hover:bg-warm-100 hover:text-warm-900 transition-all duration-150 group"
               [title]="isCollapsed() ? item.label : ''"
@@ -220,6 +223,11 @@ export class DashboardLayoutComponent {
   isMockMode = this.authService.isMockMode;
   isCollapsed = signal<boolean>(false);
   isMobileMenuOpen = signal<boolean>(false);
+  private readonly botonMenu = viewChild<ElementRef<HTMLButtonElement>>('botonMenu');
+  /** true desde el breakpoint `md` (768 px): el menú lateral es fijo y siempre visible. */
+  private readonly esEscritorio = signal<boolean>(true);
+  /** WCAG 2.4.3 / 4.1.2: en móvil con el menú cerrado el panel está fuera de pantalla; no recibe foco ni se lee. */
+  readonly menuInerte = computed(() => !this.esEscritorio() && !this.isMobileMenuOpen());
 
   currentRole = computed<UserRole>(() => {
     const role = this.user()?.role;
@@ -233,6 +241,14 @@ export class DashboardLayoutComponent {
   revisionesPendientesCount = signal<number>(0);
 
   constructor() {
+    if (typeof window.matchMedia === 'function') {
+      const consulta = window.matchMedia('(min-width: 768px)');
+      this.esEscritorio.set(consulta.matches);
+      const alCambiar = (evento: MediaQueryListEvent): void => this.esEscritorio.set(evento.matches);
+      consulta.addEventListener('change', alCambiar);
+      inject(DestroyRef).onDestroy(() => consulta.removeEventListener('change', alCambiar));
+    }
+
     effect(() => {
       const role = this.currentRole();
       const cancelacionEnabled = Boolean(environment.features?.cancelacionInasistenciaEnabled);
@@ -595,6 +611,13 @@ export class DashboardLayoutComponent {
 
   toggleMobileMenu(): void {
     this.isMobileMenuOpen.update((val) => !val);
+  }
+
+  /** WCAG 2.1.2/2.4.3: Escape cierra el menú móvil y devuelve el foco a la hamburguesa que lo abrió. */
+  cerrarMenuConEscape(): void {
+    if (!this.isMobileMenuOpen()) return;
+    this.isMobileMenuOpen.set(false);
+    this.botonMenu()?.nativeElement.focus();
   }
 
   onRoleChange(event: Event): void {

@@ -111,6 +111,25 @@ describe('ConsolidadoAsistenciaComponent (HU061)', () => {
     expect(toast.error).toHaveBeenCalled();
   });
 
+  // Un fallo de carga no puede verse como "No hay grupos con asistencia": alerta accesible y Reintentar.
+  it('un 500 muestra una alerta con Reintentar y no el estado vacio; Reintentar recupera la lista', () => {
+    const fixture = crear(false);
+    http.expectOne((r) => r.url === `${api}/coordinador/consolidado-asistencia`).flush({}, { status: 500, statusText: 'Error' });
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[role="alert"]')).not.toBeNull();
+    expect(el.textContent).not.toContain('No hay grupos con asistencia');
+
+    (Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('button')).find((b) => /Reintentar/.test(b.textContent ?? '')) as HTMLButtonElement).click();
+    http
+      .expectOne((r) => r.url === `${api}/coordinador/consolidado-asistencia`)
+      .flush({ exitoso: true, datos: [grupo('ASG-1', 'Cálculo', 'DOC-1')], total: 1 });
+    fixture.detectChanges();
+    expect(el.querySelector('[role="alert"]')).toBeNull();
+    expect(el.textContent).toContain('Cálculo');
+  });
+
   it('acumularOpciones no repite, ignora ids nulos y ordena por nombre', () => {
     const opciones = acumularOpciones([{ id: 'ASG-2', nombre: 'Estructuras' }], [
       grupo('ASG-1', 'Cálculo', null),

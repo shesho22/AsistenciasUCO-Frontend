@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { Router } from '@angular/router';
 import { CoordinatorStudentsComponent } from './coordinator-students.component';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
@@ -68,6 +68,32 @@ describe('CoordinatorStudentsComponent', () => {
     fixture = TestBed.createComponent(CoordinatorStudentsComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
+  });
+
+  // Un fallo de carga no puede verse como "No hay estudiantes...": alerta accesible y Reintentar.
+  it('un fallo al cargar el directorio muestra una alerta con Reintentar y no el estado vacio', () => {
+    coordinatorService.getEstudiantesDirectorioPagina.and.returnValue(throwError(() => new Error('falla')));
+    component.cargarDatos();
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[role="alert"]')).not.toBeNull();
+    expect(el.textContent).not.toContain('No hay estudiantes que coincidan');
+    expect(Array.from(el.querySelectorAll('button')).some((b) => /Reintentar/.test(b.textContent ?? ''))).toBeTrue();
+  });
+
+  it('Reintentar vuelve a pedir el directorio y retira la alerta al responder', () => {
+    coordinatorService.getEstudiantesDirectorioPagina.and.returnValue(throwError(() => new Error('falla')));
+    component.cargarDatos();
+    fixture.detectChanges();
+
+    coordinatorService.getEstudiantesDirectorioPagina.and.returnValue(of({ items: [], totalItems: 0, totalPages: 0, page: 0, size: 6 }));
+    const el = fixture.nativeElement as HTMLElement;
+    (Array.from(el.querySelectorAll('button')).find((b) => /Reintentar/.test(b.textContent ?? '')) as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(el.querySelector('[role="alert"]')).toBeNull();
+    expect(el.textContent).toContain('No hay estudiantes que coincidan');
   });
 
   it('no renderiza docenteName en la ficha del curso seleccionado (pestaña Directorio)', () => {

@@ -13,6 +13,8 @@ import {
 import { BadgeComponent, BadgeVariant } from '../../../shared/components/badge/badge.component';
 import { ButtonComponent } from '../../../shared/components/button/button.component';
 import { AvatarComponent } from '../../../shared/components/avatar/avatar.component';
+import { ErrorCargaComponent } from '../../../shared/components/error-carga/error-carga.component';
+import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load-error.util';
 
 @Component({
   selector: 'app-coordinator-subjects',
@@ -24,8 +26,7 @@ import { AvatarComponent } from '../../../shared/components/avatar/avatar.compon
     RouterLink,
     BadgeComponent,
     ButtonComponent,
-    AvatarComponent,
-  ],
+    AvatarComponent, ErrorCargaComponent],
   template: `
     <div class="space-y-6">
       <!-- Header Bento -->
@@ -126,7 +127,9 @@ import { AvatarComponent } from '../../../shared/components/avatar/avatar.compon
           </span>
         </div>
 
-        @if (filteredCourses().length === 0) {
+        @if (errorCarga()) {
+          <app-error-carga [error]="errorCarga()!" (reintentar)="cargarDatos()" />
+        } @else if (filteredCourses().length === 0) {
           <div class="bg-white rounded-2xl border border-warm-200 p-10 text-center text-sm text-warm-500">
             No se encontraron grupos ofertados que coincidan con la búsqueda.
           </div>
@@ -371,11 +374,14 @@ export class CoordinatorSubjectsComponent implements OnInit {
     this.courses().reduce((acc, c) => acc + (c.cupoMaximo || 35), 0)
   );
 
+  readonly errorCarga = signal<LoadErrorState | null>(null);
+
   ngOnInit(): void {
     this.cargarDatos();
   }
 
   cargarDatos(): void {
+    this.errorCarga.set(null);
     this.courseService.getCoordinatorCourses().subscribe({
       next: (res) => {
         const list = res.datos || [];
@@ -384,6 +390,7 @@ export class CoordinatorSubjectsComponent implements OnInit {
           this.onSelectCourse(list[0].id);
         }
       },
+      error: (error: unknown) => this.errorCarga.set(classifyLoadError(error)),
     });
 
     this.coordinatorService.getPlanesEstudio().subscribe({
@@ -400,9 +407,11 @@ export class CoordinatorSubjectsComponent implements OnInit {
                 return [...prev, ...nuevas.filter((item) => !claves.has(this.clavePlan(item)))];
               });
             },
+            error: (error: unknown) => this.errorCarga.set(classifyLoadError(error)),
           });
         }
       },
+      error: (error: unknown) => this.errorCarga.set(classifyLoadError(error)),
     });
   }
 
