@@ -46,6 +46,22 @@ describe('TomaAsistenciasComponent (CULM-001 UX toma)', () => {
     boton(id).click();
     fixture.detectChanges();
   };
+  /** Las acciones secundarias de la toma viven en el menu "Mas acciones": se abre y se busca la accion. */
+  const itemMenu = (id: string): HTMLButtonElement | null => {
+    const raiz = fixture.nativeElement as HTMLElement;
+    if (!raiz.querySelector('[role="menu"]')) {
+      raiz.querySelector<HTMLButtonElement>('[data-testid="action-menu-trigger"]')?.click();
+      fixture.detectChanges();
+    }
+    return raiz.querySelector<HTMLButtonElement>(`[role="menuitem"][data-testid="${id}"]`);
+  };
+  const clicMenu = (id: string) => {
+    itemMenu(id)!.click();
+    fixture.detectChanges();
+  };
+  const abrirFiltros = () => {
+    if (!el('filtros-panel')) clic('filtros-toggle');
+  };
 
   function confirmar(accion: 'confirmar' | 'cancelar') {
     (document.querySelector(`[data-accion="${accion}"]`) as HTMLButtonElement).click();
@@ -175,7 +191,7 @@ describe('TomaAsistenciasComponent (CULM-001 UX toma)', () => {
 
   it('"Marcar faltantes" confirma y marca falta solo a quienes no tienen registro', () => {
     crear();
-    clic('marcar-faltantes');
+    clicMenu('marcar-faltantes');
     expect(document.querySelector('[data-accion="confirmar"]')).not.toBeNull();
     confirmar('confirmar');
     expect(marcado('c', 'SJC')).toBeTrue();
@@ -188,7 +204,7 @@ describe('TomaAsistenciasComponent (CULM-001 UX toma)', () => {
     crear();
     const avisos: string[] = [];
     fixture.componentInstance.notificacion.subscribe((n) => avisos.push(n.tipo));
-    clic('marcar-faltantes');
+    clicMenu('marcar-faltantes');
     expect(document.querySelector('[data-accion="confirmar"]')).toBeNull();
     expect(avisos).toEqual(['info']);
   });
@@ -217,7 +233,7 @@ describe('TomaAsistenciasComponent (CULM-001 UX toma)', () => {
   it('el Guardar del final de la lista hace lo mismo que el de arriba', () => {
     crear();
     clic('estado-c-AN');
-    clic('guardar-toma-final');
+    clic('guardar-toma');
     expect(tomas.registrarAsistencias).toHaveBeenCalledOnceWith('t-1', [{ estudianteId: 'c', estado: 'AN' }]);
   });
 
@@ -260,7 +276,7 @@ describe('TomaAsistenciasComponent (CULM-001 UX toma)', () => {
   it('con la ventana cerrada los controles se deshabilitan y se explica por que', () => {
     crear({ ventanaAbierta: false });
     expect(boton('marcar-todos-presentes').disabled).toBeTrue();
-    expect(boton('marcar-faltantes').disabled).toBeTrue();
+    expect(itemMenu('marcar-faltantes')!.disabled).toBeTrue();
     expect(boton('estado-c-AN').disabled).toBeTrue();
     expect(boton('guardar-toma').disabled).toBeTrue();
     expect(el('toma-ventana-cerrada')).not.toBeNull();
@@ -287,6 +303,7 @@ describe('TomaAsistenciasComponent (CULM-001 UX toma)', () => {
     expect(el('fila-b')).not.toBeNull();
     buscar.value = '';
     buscar.dispatchEvent(new Event('input'));
+    abrirFiltros();
     clic('filtro-SIN');
     expect(el('fila-a')).toBeNull();
     expect(el('fila-c')).not.toBeNull();
@@ -324,28 +341,28 @@ describe('TomaAsistenciasComponent (CULM-001 UX toma)', () => {
     crear({ toma: toma({ modo: 'QR' }) });
     const proyecciones: TomaAsistencia[] = [];
     fixture.componentInstance.proyectarQr.subscribe((t) => proyecciones.push(t));
-    clic('proyectar-qr');
+    clicMenu('proyectar-qr');
     expect(proyecciones.map((t) => t.idToma)).toEqual(['t-1']);
     fixture.destroy();
     crear({ toma: toma({ modo: 'QR' }), ventanaAbierta: false });
-    expect(boton('proyectar-qr').disabled).toBeTrue();
+    expect(itemMenu('proyectar-qr')!.disabled).toBeTrue();
   });
 
   it('una toma manual no ofrece proyectar y una cerrada tampoco ofrece cerrar', () => {
     crear();
-    expect(el('proyectar-qr')).toBeNull();
-    expect(el('cerrar-toma')).not.toBeNull();
+    expect(itemMenu('proyectar-qr')).toBeNull();
+    expect(itemMenu('cerrar-toma')).not.toBeNull();
     fixture.destroy();
     crear({ toma: toma({ modo: 'QR', estado: 'CERRADA' }) });
-    expect(el('proyectar-qr')).toBeNull();
-    expect(el('cerrar-toma')).toBeNull();
+    expect(itemMenu('proyectar-qr')).toBeNull();
+    expect(itemMenu('cerrar-toma')).toBeNull();
   });
 
   it('Cerrar toma emite la toma para que el contenedor pida la confirmacion', () => {
     crear();
     const cierres: string[] = [];
     fixture.componentInstance.cerrarToma.subscribe((t) => cierres.push(t.idToma));
-    clic('cerrar-toma');
+    clicMenu('cerrar-toma');
     expect(cierres).toEqual(['t-1']);
   });
 
@@ -364,5 +381,51 @@ describe('TomaAsistenciasComponent (CULM-001 UX toma)', () => {
     const intervalo = spyOn(window, 'setInterval').and.callThrough();
     crear();
     expect(intervalo).not.toHaveBeenCalled();
+  });
+
+  describe('UX densidad: barra fija con una accion primaria', () => {
+    it('la barra visible conserva Guardar, "Marcar todos presentes", contador e indicador; el resto va al menu', () => {
+      crear({ toma: toma({ modo: 'QR' }) });
+      const barra = el('barra-acciones') as HTMLElement;
+      const visibles = Array.from(barra.querySelectorAll('button')).filter((b) => !b.hasAttribute('role'));
+      expect(visibles.length).toBe(3);
+      expect(el('marcar-todos-presentes')).not.toBeNull();
+      expect(el('guardar-toma')).not.toBeNull();
+      expect(el('contador-marcados')).not.toBeNull();
+      expect(el('indicador-sin-guardar')).not.toBeNull();
+      expect(el('marcar-faltantes')).toBeNull();
+      expect(itemMenu('marcar-faltantes')).not.toBeNull();
+      expect(itemMenu('proyectar-qr')).not.toBeNull();
+      expect(itemMenu('cerrar-toma')).not.toBeNull();
+    });
+
+    it('la cabecera de la toma ya no repite botones de accion', () => {
+      crear({ toma: toma({ modo: 'QR' }) });
+      const raiz = fixture.nativeElement as HTMLElement;
+      const cabecera = raiz.querySelector('[data-testid="toma-cabecera"]') as HTMLElement;
+      expect(cabecera.querySelectorAll('button').length).toBe(0);
+    });
+
+    it('existe un unico boton Guardar (se retira el duplicado al pie de la lista)', () => {
+      crear();
+      expect(el('guardar-toma-final')).toBeNull();
+      expect(el('guardar-toma')).not.toBeNull();
+    });
+
+    it('los filtros por estado estan plegados hasta pulsar "Filtros" y la busqueda siempre se ve', () => {
+      crear();
+      expect(el('buscar-estudiante')).not.toBeNull();
+      expect(el('filtro-SIN')).toBeNull();
+      abrirFiltros();
+      expect(el('filtro-SIN')).not.toBeNull();
+    });
+
+    it('con un filtro de estado aplicado el boton Filtros indica 1 activo', () => {
+      crear();
+      expect(el('filtros-activos')).toBeNull();
+      abrirFiltros();
+      clic('filtro-SIN');
+      expect(el('filtros-activos')?.textContent?.trim()).toBe('1');
+    });
   });
 });

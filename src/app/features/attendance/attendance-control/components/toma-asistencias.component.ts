@@ -24,6 +24,8 @@ import {
 } from '../../../../core/models/toma-asistencia.model';
 import { getApiErrorCode, getApiErrorMessage } from '../../../../core/api/errors/api-error.util';
 import { isAttendanceWindowErrorCode } from '../../../../core/utils/session-attendance-window.util';
+import { ActionMenuComponent, ActionMenuItem } from '../../../../shared/components/action-menu/action-menu.component';
+import { FiltrosPlegablesComponent } from '../../../../shared/components/filtros-plegables/filtros-plegables.component';
 import { TomaFaltantesComponent } from './toma-faltantes.component';
 import { TAMANO_PAGINA_TOMA, cargarTodasLasPaginas } from './toma-paginas.util';
 import { ClaveEstadoToma, ETIQUETA_ESTADO_TOMA, EstadoFilaToma, claveEstadoToma } from './toma-estado';
@@ -73,13 +75,13 @@ const OPCIONES_ESTADO: readonly EstadoRegistroToma[] = ['AN', 'SJC', 'EX'];
   selector: 'app-toma-asistencias',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ConfirmDialogComponent, AvatarComponent, TomaFaltantesComponent],
+  imports: [ConfirmDialogComponent, AvatarComponent, TomaFaltantesComponent, ActionMenuComponent, FiltrosPlegablesComponent],
   // La barra queda fija bajo la barra superior de escritorio (4 rem) y al tope en móvil, sin sumar CSS global.
   styles: ['.barra-fija { top: 0; } @media (min-width: 768px) { .barra-fija { top: 4rem; } }'],
   template: `
     <div class="space-y-4" [attr.data-testid]="'toma-' + toma().idToma">
       <!-- Cabecera de la toma -->
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3" data-testid="toma-cabecera">
         <div class="min-w-0 space-y-0.5">
           <p class="text-sm font-bold text-warm-900">
             Toma {{ toma().numero }}
@@ -95,29 +97,6 @@ const OPCIONES_ESTADO: readonly EstadoRegistroToma[] = ['AN', 'SJC', 'EX'];
             {{ toma().horasToma }} h · {{ toma().totalPresentes }} presentes · {{ toma().totalAusentes }} ausentes ·
             {{ toma().totalExcusas }} excusas
           </p>
-        </div>
-        <div class="flex flex-wrap items-center gap-2">
-          @if (toma().modo === 'QR' && toma().estado === 'ABIERTA') {
-            <button
-              type="button"
-              data-testid="proyectar-qr"
-              (click)="proyectarQr.emit(toma())"
-              [disabled]="!ventanaAbierta()"
-              class="min-h-[44px] px-4 rounded-xl border border-primary-300 bg-primary-50 text-primary-900 text-sm font-semibold hover:bg-primary-100 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Proyectar QR / PIN
-            </button>
-          }
-          @if (toma().estado === 'ABIERTA') {
-            <button
-              type="button"
-              data-testid="cerrar-toma"
-              (click)="cerrarToma.emit(toma())"
-              class="min-h-[44px] px-4 rounded-xl border border-warm-300 bg-warm-50 text-warm-800 text-sm font-semibold hover:bg-warm-100"
-            >
-              Cerrar toma
-            </button>
-          }
         </div>
       </div>
 
@@ -147,15 +126,6 @@ const OPCIONES_ESTADO: readonly EstadoRegistroToma[] = ['AN', 'SJC', 'EX'];
         >
           Marcar todos presentes
         </button>
-        <button
-          type="button"
-          data-testid="marcar-faltantes"
-          (click)="solicitarMasiva('FALTANTES')"
-          [disabled]="bloqueado()"
-          class="min-h-[44px] px-3 rounded-xl bg-attendance-absent-soft text-attendance-absent text-xs font-bold hover:bg-danger-100 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Marcar faltantes
-        </button>
         <div class="flex-1 min-w-[8rem] text-xs leading-tight">
           <p class="font-semibold text-warm-900" data-testid="contador-marcados">
             {{ marcados() }} de {{ filas().length }} marcados
@@ -172,6 +142,11 @@ const OPCIONES_ESTADO: readonly EstadoRegistroToma[] = ['AN', 'SJC', 'EX'];
             }
           </p>
         </div>
+        <app-action-menu
+          label="Más acciones de la toma"
+          [items]="accionesMenu()"
+          (selected)="alElegirAccion($event)"
+        />
         <button
           type="button"
           data-testid="guardar-toma"
@@ -184,16 +159,17 @@ const OPCIONES_ESTADO: readonly EstadoRegistroToma[] = ['AN', 'SJC', 'EX'];
         </button>
       </div>
 
-      <!-- Filtros -->
-      <div class="flex flex-col md:flex-row gap-2 md:items-center justify-between">
+      <!-- Busqueda siempre visible; los filtros por estado se pliegan -->
+      <app-filtros-plegables [activos]="filtro() === 'TODOS' ? 0 : 1">
         <input
+          buscar
           type="search"
           data-testid="buscar-estudiante"
           aria-label="Buscar estudiante en la toma"
           placeholder="Buscar por nombre…"
           [value]="busqueda()"
           (input)="busqueda.set(valorDe($event))"
-          class="w-full md:w-72 bg-warm-50 text-warm-900 border border-warm-300 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+          class="w-full md:w-72 bg-warm-50 text-warm-900 border border-warm-300 rounded-xl px-3 py-2 text-xs min-h-[44px] focus:outline-none focus:ring-2 focus:ring-primary-500"
         />
         <div class="flex items-center bg-warm-100/80 p-1 rounded-xl gap-1 overflow-x-auto max-w-full" role="group" aria-label="Filtrar por estado">
           @for (f of filtros; track f.clave) {
@@ -209,7 +185,7 @@ const OPCIONES_ESTADO: readonly EstadoRegistroToma[] = ['AN', 'SJC', 'EX'];
             </button>
           }
         </div>
-      </div>
+      </app-filtros-plegables>
 
       @if (error()) {
         <p class="rounded-xl bg-danger-100 text-danger-900 px-4 py-2 text-sm font-medium" role="alert" data-testid="toma-error">
@@ -265,18 +241,6 @@ const OPCIONES_ESTADO: readonly EstadoRegistroToma[] = ['AN', 'SJC', 'EX'];
             </li>
           }
         </ul>
-
-        <div class="flex justify-end">
-          <button
-            type="button"
-            data-testid="guardar-toma-final"
-            (click)="guardar()"
-            [disabled]="!puedeGuardar()"
-            class="min-h-[44px] px-5 rounded-xl bg-primary-700 text-white text-sm font-semibold hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {{ guardando() ? 'Guardando…' : pendientes() > 0 ? 'Guardar (' + pendientes() + ')' : 'Guardar' }}
-          </button>
-        </div>
       }
 
       <!-- Pendientes de validar (estudiantes que no lograron usar el QR / PIN) -->
@@ -334,6 +298,27 @@ export class TomaAsistenciasComponent {
   protected readonly version = signal(0);
 
   protected readonly bloqueado = computed(() => !this.ventanaAbierta() || this.guardando());
+
+  /** Acciones secundarias de la toma (la barra fija conserva solo marcar todos presentes y Guardar). */
+  protected readonly accionesMenu = computed<ActionMenuItem[]>(() => {
+    const items: ActionMenuItem[] = [
+      { id: 'faltantes', label: 'Marcar faltantes', testid: 'marcar-faltantes', disabled: this.bloqueado() },
+    ];
+    const toma = this.toma();
+    if (toma.modo === 'QR' && toma.estado === 'ABIERTA') {
+      items.push({ id: 'proyectar', label: 'Proyectar QR / PIN', testid: 'proyectar-qr', disabled: !this.ventanaAbierta() });
+    }
+    if (toma.estado === 'ABIERTA') {
+      items.push({ id: 'cerrar', label: 'Cerrar toma', testid: 'cerrar-toma', danger: true });
+    }
+    return items;
+  });
+
+  protected alElegirAccion(id: string): void {
+    if (id === 'faltantes') this.solicitarMasiva('FALTANTES');
+    else if (id === 'proyectar') this.proyectarQr.emit(this.toma());
+    else if (id === 'cerrar') this.cerrarToma.emit(this.toma());
+  }
   protected readonly pendientes = computed(() => this.locales().size);
   protected readonly puedeGuardar = computed(() => this.pendientes() > 0 && !this.bloqueado());
   protected readonly mostrarPendientes = computed(() => this.toma().modo === 'QR' || this.toma().estado === 'CERRADA');

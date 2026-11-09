@@ -165,7 +165,14 @@ describe('SessionTomasPanelComponent (CULM-001 B.2 + UX toma)', () => {
     fixture.componentInstance.cerrarToma.subscribe(cerrar);
     fixture.componentInstance.actualizado.subscribe(actualizado);
     fixture.componentInstance.notificacion.subscribe(aviso);
+    const triggerMenu = (): HTMLButtonElement =>
+      (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('[data-testid="action-menu-trigger"]')!;
+    triggerMenu().click();
+    fixture.detectChanges();
     boton('proyectar-qr').click();
+    fixture.detectChanges();
+    triggerMenu().click();
+    fixture.detectChanges();
     boton('cerrar-toma').click();
     boton('estado-a-AN').click();
     fixture.detectChanges();
