@@ -41,9 +41,9 @@ import { AttendanceControlTableComponent } from './components/attendance-control
 import { AttendanceEnrollmentModalComponent } from './components/attendance-enrollment-modal.component';
 import { AttendanceNewSessionModalComponent } from './components/attendance-new-session-modal.component';
 import { SessionTomasPanelComponent } from './components/session-tomas-panel.component';
+import type { NotificacionToma } from './components/toma-asistencias.component';
 import { TomaModoSelectorComponent } from './components/toma-modo-selector.component';
 import { TomaCierreDialogComponent } from './components/toma-cierre-dialog.component';
-import { TomaFaltantesComponent } from './components/toma-faltantes.component';
 import { TomaQrProyeccionComponent } from './components/toma-qr-proyeccion.component';
 import { TeacherAttendanceSummaryService } from '../../../core/services/teacher-attendance-summary.service';
 import { ResumenAsistenciaEstudiante } from '../../../core/models/indicadores-asistencia.model';
@@ -101,7 +101,6 @@ type StudentEnrollmentField =
     SessionTomasPanelComponent,
     TomaModoSelectorComponent,
     TomaCierreDialogComponent,
-    TomaFaltantesComponent,
     TomaQrProyeccionComponent,
     GroupSessionsOverviewComponent,
     GroupInfoModalComponent,
@@ -126,6 +125,7 @@ type StudentEnrollmentField =
         [showBackButton]="vistaActual() === 'DETALLE'"
         [isDetailMode]="vistaActual() === 'DETALLE'"
         [attendanceWindowOpen]="attendanceWindowOpen()"
+        [bulkActions]="!hayTomas()"
         (markAllPresent)="markAllPresent()"
         (markAllAbsent)="markAllAbsent()"
         (openEnrollment)="openStudentRegistration()"
@@ -162,30 +162,27 @@ type StudentEnrollmentField =
           [tomasSesion]="tomasSesionActual()"
           [abriendo]="abriendoToma()"
           (nuevaToma)="abrirSelectorModo()"
-          (seleccionarToma)="onSeleccionarToma($event)"
-          (verFaltantes)="tomaFaltantes.set($event)"
+          (proyectarQr)="onSeleccionarToma($event)"
+          (cerrarToma)="solicitarCierreToma()"
+          (actualizado)="recargarSesionActual()"
+          (notificacion)="mostrarNotificacion($event)"
         />
 
-        @if (tomaFaltantes(); as tf) {
-          <app-toma-faltantes
-            [tomaId]="tf.idToma"
-            [ventanaAbierta]="tomasSesionActual()?.ventana?.abierta ?? false"
-            (actualizado)="recargarSesionActual()"
+        <!-- Sin tomas la sesión usa el lote de la sesión (toma implícita); con tomas, cada toma trae su lista -->
+        @if (!hayTomas()) {
+          <app-attendance-control-table
+            [students]="students()"
+            [isLoading]="isLoadingSession()"
+            [isSaving]="isSaving()"
+            [sessionsEnabled]="sessionsEnabled"
+            [attendanceEnabled]="attendanceEnabled"
+            [attendanceWindowState]="attendanceWindowState()"
+            [cancelacion]="currentSession()?.cancelacion"
+            (statusChange)="onStudentStatusChange($event)"
+            (openExcuseModal)="openExcuseModal($event)"
+            (saveAttendance)="saveAttendance()"
           />
         }
-
-        <app-attendance-control-table
-          [students]="students()"
-          [isLoading]="isLoadingSession()"
-          [isSaving]="isSaving()"
-          [sessionsEnabled]="sessionsEnabled"
-          [attendanceEnabled]="attendanceEnabled"
-          [attendanceWindowState]="attendanceWindowState()"
-          [cancelacion]="currentSession()?.cancelacion"
-          (statusChange)="onStudentStatusChange($event)"
-          (openExcuseModal)="openExcuseModal($event)"
-          (saveAttendance)="saveAttendance()"
-        />
       }
 
       <!-- 4. Modal de Matrícula de Estudiante -->
@@ -335,13 +332,13 @@ export class AttendanceControlComponent {
   cierrePendiente = signal<boolean>(false);
   tomaProyectada = signal<TomaAsistencia | null>(null);
   qrActual = signal<QrToma | null>(null);
-  tomaFaltantes = signal<TomaAsistencia | null>(null);
 
   /** Tomas de la sesión mostrada (nunca las de otra sesión). */
   tomasSesionActual = computed(() => {
     const datos = this.tomasSesion();
     return datos && datos.idSesion === this.selectedSessionId() ? datos : null;
   });
+  hayTomas = computed(() => (this.tomasSesionActual()?.tomas.length ?? 0) > 0);
   tomaAbierta = computed(() => this.tomasSesionActual()?.tomas.find((t) => t.estado === 'ABIERTA') ?? null);
   tituloProyeccion = computed(() => {
     const c = this.currentCourse();
@@ -455,7 +452,6 @@ export class AttendanceControlComponent {
     this.tomaService.cerrarToma(toma.idToma, marcarAusentes).subscribe({
       next: (res) => {
         this.dejarDeProyectar();
-        this.tomaFaltantes.set(res.datos.toma);
         this.cargarTomas(toma.idSesion);
         this.recargarSesionActual();
       },
@@ -491,15 +487,20 @@ export class AttendanceControlComponent {
         if (!proyectada) return;
         const actual = res.datos.tomas.find((t) => t.idToma === proyectada.idToma);
         if (actual?.estado === 'CERRADA') {
-          // Cierre automático del job: la proyección termina y se muestran los faltantes.
+          // Cierre automático del job: la proyección termina; los pendientes quedan en la pestaña de la toma.
           this.dejarDeProyectar();
-          this.tomaFaltantes.set(actual);
         } else if (actual) {
           this.tomaProyectada.set(actual);
         }
       },
       error: () => this.tomasSesion.set(null),
     });
+  }
+
+  mostrarNotificacion(notificacion: NotificacionToma): void {
+    this.toastType.set(notificacion.tipo);
+    this.toastMessage.set(notificacion.texto);
+    this.showToast.set(true);
   }
 
   private mostrarError(err: unknown, respaldo: string): void {
@@ -1373,14 +1374,9 @@ export class AttendanceControlComponent {
       })),
     };
 
-    const toma = this.tomaAbierta();
-    const guardado$ = toma
-      ? this.tomaService
-          .registrarAsistencias(toma.idToma, request.registros)
-          .pipe(map(() => ({ exitoso: true, mensaje: '' })))
-      : this.attendanceService.saveBatchAttendance(request);
-
-    guardado$
+    // Con tomas cada una guarda su propia lista (TomaAsistenciasComponent); este lote es el de la sesión sin tomas.
+    this.attendanceService
+      .saveBatchAttendance(request)
       .pipe(finalize(() => this.isSaving.set(false)))
       .subscribe({
         next: (response) => {

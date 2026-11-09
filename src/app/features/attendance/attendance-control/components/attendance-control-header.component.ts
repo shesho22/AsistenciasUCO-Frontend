@@ -70,29 +70,31 @@ import { ClassSession } from '../../../../core/models/attendance.model';
           <div class="flex flex-wrap items-center gap-2">
             <!-- Botones contextuales de la sesión activa: Visibles SOLO en modo DETALLE -->
             @if (isDetailMode()) {
-              <app-button
-                variant="accent"
-                size="sm"
-                [disabled]="bulkDisabled()"
-                (clicked)="markAllPresent.emit()"
-              >
-                <svg class="w-4 h-4 mr-1 text-warm-950 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                </svg>
-                Todos Presentes
-              </app-button>
+              @if (bulkActions()) {
+                <app-button
+                  variant="accent"
+                  size="sm"
+                  [disabled]="bulkDisabled()"
+                  (clicked)="markAllPresent.emit()"
+                >
+                  <svg class="w-4 h-4 mr-1 text-warm-950 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  Todos Presentes
+                </app-button>
 
-              <app-button
-                variant="danger"
-                size="sm"
-                [disabled]="bulkDisabled()"
-                (clicked)="markAllAbsent.emit()"
-              >
-                <svg class="w-4 h-4 mr-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-                Todos Ausentes
-              </app-button>
+                <app-button
+                  variant="danger"
+                  size="sm"
+                  [disabled]="bulkDisabled()"
+                  (clicked)="markAllAbsent.emit()"
+                >
+                  <svg class="w-4 h-4 mr-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  Todos Ausentes
+                </app-button>
+              }
 
               <app-button
                 variant="secondary"
@@ -189,6 +191,8 @@ export class AttendanceControlHeaderComponent {
   isDetailMode = input<boolean>(false);
   /** SES-01: la sesión mostrada está activa ([inicio, fin) sobre instantes v2 confirmados). */
   attendanceWindowOpen = input<boolean>(true);
+  /** Los botones de marcado masivo son los de la sesión sin tomas; con tomas, cada toma tiene su propia barra de acciones. */
+  bulkActions = input<boolean>(true);
 
   // Marcado masivo: features + guardado en curso + existencia de sesión + ventana activa (SES-01).
   bulkDisabled = computed(
