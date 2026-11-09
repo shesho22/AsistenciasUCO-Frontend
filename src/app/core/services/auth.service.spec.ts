@@ -399,7 +399,7 @@ describe('AuthService', () => {
       }
     });
 
-    it('callback válido con el perfil apagado: no consulta /usuarios/perfil', async () => {
+    it('callback válido con la bandera heredada apagada: igual hidrata el nombre desde /usuarios/perfil (la bandera ya no gobierna)', async () => {
       const features = environment.features as { userProfileEndpointEnabled: boolean };
       const flagOriginal = features.userProfileEndpointEnabled;
       features.userProfileEndpointEnabled = false;
@@ -410,7 +410,7 @@ describe('AuthService', () => {
         await new Promise((resolve) => setTimeout(resolve));
 
         const llamadas = fetchSpy.calls.allArgs().map((args) => String(args[0]));
-        expect(llamadas.some((u) => u.endsWith('/usuarios/perfil'))).toBeFalse();
+        expect(llamadas.some((u) => u.endsWith('/usuarios/perfil'))).toBeTrue();
       } finally {
         features.userProfileEndpointEnabled = flagOriginal;
       }
@@ -453,7 +453,7 @@ describe('AuthService', () => {
 
       expect(service.currentUser()?.id).toBe(VALID_UUID);
       expect(service.currentUser()?.role).toBe('DOCENTE');
-      const identityCall = fetchSpy.calls.mostRecent().args as [string, RequestInit];
+      const identityCall = fetchSpy.calls.allArgs().find(([url]) => String(url).endsWith('/auth/me')) as [string, RequestInit];
       expect(identityCall[0]).toBe(`${environment.apiUrl}/auth/me`);
       expect(identityCall[1].credentials).toBe('omit');
       expect((identityCall[1].headers as Record<string, string>)['Authorization']).toBe(`Bearer ${service.token()}`);
@@ -1282,13 +1282,14 @@ describe('AuthService', () => {
         expect(sessionStorage.getItem(SESSION_REFRESH_KEY)).toBe('refresh-1');
       });
 
-      it('el login no solicita /usuarios/perfil mientras el endpoint esté deshabilitado', async () => {
+      it('el login solicita /usuarios/perfil y tolera que responda 501 sin interrumpir la sesion', async () => {
         profileUnavailable();
 
         await service.loginWithCredentials('docente@uco.edu.co', 'pass');
 
         const urls = fetchSpy.calls.allArgs().map(([input]) => String(input));
-        expect(urls.some((url) => url.includes('/usuarios/perfil'))).toBeFalse();
+        expect(urls.some((url) => url.includes('/usuarios/perfil'))).toBeTrue();
+        expect(service.isAuthenticated()).toBeTrue();
       });
 
       it('la restauración tras F5 no depende del perfil', async () => {
@@ -1381,16 +1382,15 @@ describe('AuthService', () => {
       features.userProfileEndpointEnabled = profileFlag;
     });
 
-    it('con userProfileEndpointEnabled apagado no llama a /usuarios/perfil (backend responde 501)', async () => {
+    it('con la bandera heredada apagada igual consulta /usuarios/perfil (la bandera ya no gobierna la hidratacion)', async () => {
       mockTokenResponse(basePayload());
       await service.loginWithCredentials('docente@uco.edu.co', 'pass');
       features.userProfileEndpointEnabled = false;
       fetchSpy.calls.reset();
 
-      const result = await service.fetchProfileFromBackend();
+      await service.fetchProfileFromBackend();
 
-      expect(result).toBe(service.currentUser());
-      expect(fetchSpy).not.toHaveBeenCalled();
+      expect(fetchSpy).toHaveBeenCalled();
     });
 
     it('el flag userProfileEndpointEnabled está apagado por defecto', () => {
@@ -1523,7 +1523,7 @@ describe('AuthService', () => {
       expect(user.name).toBe('Nombre Completo');
     });
 
-    it('usa preferred_username si no hay name ni given_name/family_name', async () => {
+    it('no usa preferred_username como nombre visible: cae al marcador neutro', async () => {
       mockTokenResponse(
         basePayload({
           given_name: undefined,
@@ -1535,7 +1535,7 @@ describe('AuthService', () => {
 
       const user = await service.loginWithCredentials('docente@uco.edu.co', 'pass');
 
-      expect(user.name).toBe('jdocente');
+      expect(user.name).toBe('Usuario Institucional');
     });
 
     it('usa preferred_username para construir el email cuando el token no trae email', async () => {

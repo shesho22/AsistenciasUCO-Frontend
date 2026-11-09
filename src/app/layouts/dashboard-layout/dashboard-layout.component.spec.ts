@@ -48,6 +48,14 @@ describe('DashboardLayoutComponent', () => {
     expect(component).toBeTruthy();
   });
 
+  it('el pie del menu muestra el nombre completo de la persona y su rol debajo, no el usuario tecnico', () => {
+    const tarjeta = (fixture.nativeElement as HTMLElement).querySelector('a[href="/app/perfil"]') as HTMLElement;
+    const nombre = tarjeta.querySelector('p') as HTMLElement;
+    expect(nombre.textContent?.trim()).toBe('Dr. Roberto Gómez');
+    expect(tarjeta.textContent).toContain('DOCENTE');
+    expect(tarjeta.textContent).not.toMatch(/uco-/);
+  });
+
   it('toggleMobileMenu alterna el estado del menú móvil', () => {
     expect(component.isMobileMenuOpen()).toBeFalse();
     component.toggleMobileMenu();
