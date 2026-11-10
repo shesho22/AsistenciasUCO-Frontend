@@ -6,6 +6,7 @@ import { SesionEstadoBadgeComponent } from '../../../../shared/components/sesion
 import { Course } from '../../../../core/models/course.model';
 import { ClassSession } from '../../../../core/models/attendance.model';
 import { DEFINICION_CONTEO_SESIONES, resumirSesiones, sesionDeHoy } from '../../../../core/models/sesiones-resumen.util';
+import { estaPendienteAprobacion, TEXTO_SESION_PENDIENTE } from '../../../../core/models/sesion-estado.model';
 import { SessionTimeZoneService } from '../../../../core/services/session-timezone.service';
 import { TeacherGrupoSesionesComponent } from './teacher-grupo-sesiones.component';
 import { TeacherGrupoEstudiantesComponent } from './teacher-grupo-estudiantes.component';
@@ -146,15 +147,24 @@ const PESTANAS_GRUPO: readonly PestanaGrupo[] = [
                     [class]="h.tipo === 'EN_CURSO' ? 'bg-success-50 text-success-800 border-success-200' : 'bg-warm-100 text-warm-700 border-warm-200'">
                     {{ h.tipo === 'EN_CURSO' ? 'En curso' : 'Programada' }}
                   </span>
-                  <app-sesion-estado-badge [estado]="h.sesion.estado" [cancelacion]="h.sesion.cancelacion" />
+                  <app-sesion-estado-badge
+                    [estado]="h.sesion.estado"
+                    [cancelacion]="h.sesion.cancelacion"
+                    [estadoSolicitud]="h.sesion.estadoSolicitud"
+                    [pendienteAprobacion]="h.sesion.pendienteAprobacion"
+                  />
                 </p>
+                @if (esPendiente(h.sesion)) {
+                  <p class="text-xs text-warning-800" data-testid="hub-hoy-pendiente">{{ textoPendiente }}</p>
+                }
               </div>
               <div class="flex flex-wrap items-center gap-2.5">
                 <button
                   type="button"
                   data-testid="hub-tomar-asistencia"
+                  [disabled]="esPendiente(h.sesion)"
                   (click)="tomarAsistenciaSesion.emit(h.sesion)"
-                  class="text-sm font-bold text-white bg-primary-800 hover:bg-primary-900 px-5 min-h-[44px] rounded-xl transition-colors inline-flex items-center gap-1.5 shadow-sm"
+                  class="text-sm font-bold text-white bg-primary-800 hover:bg-primary-900 disabled:opacity-50 disabled:cursor-not-allowed px-5 min-h-[44px] rounded-xl transition-colors inline-flex items-center gap-1.5 shadow-sm"
                 >
                   <svg class="w-4 h-4 text-primary-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -165,8 +175,9 @@ const PESTANAS_GRUPO: readonly PestanaGrupo[] = [
                   <button
                     type="button"
                     data-testid="hub-hoy-qr"
+                    [disabled]="esPendiente(h.sesion)"
                     (click)="proyectarSesion.emit(h.sesion)"
-                    class="text-sm font-semibold text-primary-800 bg-accent-100 hover:bg-accent-200 border border-accent-300 px-4 min-h-[44px] rounded-xl transition-colors"
+                    class="text-sm font-semibold text-primary-800 bg-accent-100 hover:bg-accent-200 border border-accent-300 disabled:opacity-50 disabled:cursor-not-allowed px-4 min-h-[44px] rounded-xl transition-colors"
                   >
                     Proyectar QR / PIN
                   </button>
@@ -175,7 +186,7 @@ const PESTANAS_GRUPO: readonly PestanaGrupo[] = [
             } @else {
               <app-empty-state
                 title="No hay sesiones vigentes"
-                description="No quedan sesiones por dictar en este grupo. Puedes programar una extraordinaria desde el cronograma del grupo."
+                description="No quedan sesiones por dictar en este grupo. Puedes solicitar una extraordinaria desde el cronograma del grupo."
               />
               <div>
                 <button
@@ -305,6 +316,8 @@ export class TeacherGrupoHubComponent {
   protected readonly modo = computed<'HOY' | 'GRUPO'>(() => (this.subPestanaHub() === 'HOY' ? 'HOY' : 'GRUPO'));
 
   /** Un solo conteo de sesiones del grupo; la definición viaja en el `title` de la cifra. */
+  protected readonly esPendiente = estaPendienteAprobacion;
+  protected readonly textoPendiente = TEXTO_SESION_PENDIENTE;
   protected readonly resumen = computed(() => resumirSesiones(this.sessions(), this.ahora() ?? new Date()));
   protected readonly hoy = computed(() => sesionDeHoy(this.sessions(), this.ahora() ?? new Date()));
 

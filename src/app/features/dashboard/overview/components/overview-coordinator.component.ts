@@ -23,7 +23,7 @@ import { DocenteItem, PlanEstudioItem } from '../../../../core/models/role-manag
       </div>
 
       <!-- KPIs Coordinador -->
-      <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <section class="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Planta Docente Activa</span>
           <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ docentes().length }}</p>
@@ -44,6 +44,15 @@ import { DocenteItem, PlanEstudioItem } from '../../../../core/models/role-manag
           <p class="text-2xl font-serif font-bold text-accent-700 mt-1" data-testid="estudiantes-riesgo">{{ estudiantesRiesgo() === null ? 'Sin datos' : estudiantesRiesgo() }}</p>
           <span class="text-[11px] text-warm-500 font-medium">Indicador del programa</span>
         </div>
+        <a
+          routerLink="/app/coordinador/asistencia"
+          data-testid="solicitudes-sesion-pendientes"
+          class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px] hover:bg-warm-50 transition-colors"
+        >
+          <span class="text-xs text-warm-500 font-medium">Solicitudes de sesión pendientes</span>
+          <p class="text-2xl font-serif font-bold text-warning-700 mt-1" data-testid="solicitudes-sesion-valor">{{ solicitudesSesionPendientes() === null ? 'Sin datos' : solicitudesSesionPendientes() }}</p>
+          <span class="text-[11px] text-primary-700 font-medium">Revisar en Asistencia →</span>
+        </a>
       </section>
 
       <!-- Planes de Estudio del Programa -->
@@ -148,4 +157,6 @@ export class OverviewCoordinatorComponent {
   totalEstudiantes = input<number>(0);
   /** `estudiantesRiesgo` de GET /coordinador/indicadores; `null` = sin dato (el KPI no entrega % de asistencia). */
   estudiantesRiesgo = input<number | null>(null);
+  /** DEC-065 (2): solicitudes de sesión extraordinaria por aprobar; `null` = sin dato. */
+  solicitudesSesionPendientes = input<number | null>(null);
 }

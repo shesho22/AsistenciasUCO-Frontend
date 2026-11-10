@@ -49,3 +49,27 @@ describe('TeacherSesionFormComponent nombre 1..50', () => {
     expect(fixture.componentInstance.nombreInvalido()).toBeTrue();
   });
 });
+
+describe('TeacherSesionFormComponent solicitud (DEC-065 (2))', () => {
+  let fixture: ComponentFixture<TeacherSesionFormComponent>;
+  const el = () => fixture.nativeElement as HTMLElement;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({ imports: [TeacherSesionFormComponent] });
+    fixture = TestBed.createComponent(TeacherSesionFormComponent);
+  });
+
+  it('en modo CREAR se titula "Solicitar sesión extraordinaria" y avisa que queda pendiente', () => {
+    fixture.detectChanges();
+    expect(el().querySelector('h2')?.textContent).toContain('Solicitar sesión extraordinaria');
+    expect(el().querySelector('[data-testid="nota-solicitud-sesion"]')?.textContent)
+      .toContain('La sesión queda pendiente hasta que el coordinador del programa la apruebe');
+  });
+
+  it('en modo EDITAR no muestra la nota de solicitud', () => {
+    fixture.componentRef.setInput('modo', 'EDITAR');
+    fixture.detectChanges();
+    expect(el().querySelector('[data-testid="nota-solicitud-sesion"]')).toBeNull();
+    expect(el().querySelector('h2')?.textContent).toContain('Modificar Sesión');
+  });
+});

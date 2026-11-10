@@ -1,6 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map, of, tap } from 'rxjs';
+import { Observable, finalize, map, of, shareReplay, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { obtenerTodasLasPaginas } from '../api/pagination.util';
 import { ProgramaResumen } from '../models/role-management.model';
@@ -21,6 +21,9 @@ interface PlanDelCoordinador {
 export class CoordinatorProgramService {
   private readonly http = inject(HttpClient);
 
+  /** DEC-065 (2): varias pantallas piden los programas a la vez; comparten una sola consulta en curso. */
+  private enCurso: Observable<ProgramaResumen[]> | null = null;
+
   private readonly programasSignal = signal<ProgramaResumen[]>([]);
   readonly programas = this.programasSignal.asReadonly();
   readonly cargado = signal(false);
@@ -33,7 +36,10 @@ export class CoordinatorProgramService {
     if (this.cargado() && !forzar) {
       return of(this.programasSignal());
     }
-    return obtenerTodasLasPaginas<PlanDelCoordinador>(this.http, `${environment.apiUrl}/coordinador/planes-estudio`).pipe(
+    if (this.enCurso && !forzar) {
+      return this.enCurso;
+    }
+    const consulta = obtenerTodasLasPaginas<PlanDelCoordinador>(this.http, `${environment.apiUrl}/coordinador/planes-estudio`).pipe(
       map(({ elementos }) => programasDistintos(elementos)),
       tap((programas) => {
         this.programasSignal.set(programas);
@@ -42,8 +48,14 @@ export class CoordinatorProgramService {
         if (!actual || !programas.some((p) => p.idPrograma === actual)) {
           this.fijar(programas[0]?.idPrograma ?? null);
         }
-      })
+      }),
+      finalize(() => {
+        if (this.enCurso === consulta) this.enCurso = null;
+      }),
+      shareReplay({ bufferSize: 1, refCount: false })
     );
+    this.enCurso = consulta;
+    return consulta;
   }
 
   seleccionar(idPrograma: string): void {

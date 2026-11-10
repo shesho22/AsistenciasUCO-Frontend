@@ -1,4 +1,4 @@
-import { CancelacionSesion, EstadoSesion } from '../../models/sesion-estado.model';
+import { CancelacionSesion, EstadoSesion, EstadoSolicitudSesion } from '../../models/sesion-estado.model';
 
 export type EstadoTemporalSesion = 'CONFIRMADA' | 'INDETERMINADA';
 export type ProcedenciaTemporalSesion = 'UTC_V2' | 'UTC_GENERADOR' | 'UTC_OWNER';
@@ -19,6 +19,9 @@ export interface SesionV2ApiDto {
   /** CULM-001 B.1 (aditivo): ausente en un backend anterior. */
   estado?: EstadoSesion;
   cancelacion?: CancelacionSesion | null;
+  /** DEC-065 (2): ausentes en un backend anterior; `estadoSolicitud` null = sesión sin solicitud. */
+  estadoSolicitud?: EstadoSolicitudSesion | null;
+  pendienteAprobacion?: boolean;
 }
 
 export interface CrearSesionV2Request {
