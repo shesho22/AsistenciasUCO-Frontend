@@ -90,7 +90,8 @@ describe('DashboardLayoutComponent - Cancelación por Inasistencia C.1 (C-F-58..
     const decanoItem = items.find((i) => i.route === '/app/decano/revisiones-cancelacion');
     expect(decanoItem).toBeDefined();
     expect(decanoItem?.label).toBe('Revisiones de Cancelación');
-    expect(revisionServiceSpy.contarPendientes).toHaveBeenCalledWith('DECANO');
+    // DEC-065: el decano solo consulta; su menú ya no lleva contador de pendientes.
+    expect(revisionServiceSpy.contarPendientes).not.toHaveBeenCalled();
   });
 
   it('C-F-59: con cancelacionInasistenciaEnabled=false, no muestra opciones ni consulta contadores', () => {

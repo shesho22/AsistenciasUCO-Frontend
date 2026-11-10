@@ -114,18 +114,12 @@ describe('RevisionCancelacionService (CULM-001 C.1)', () => {
     req.flush(mockPage);
   });
 
-  it('C-F-09 resolverDecano() hace PATCH /api/v1/decano/revisiones-cancelacion/{id}', () => {
-    service.resolverDecano('rev-1', { decision: 'RECHAZAR', motivo: 'Se otorga plazo especial' }).subscribe((res) => {
-      expect(res.exitoso).toBeTrue();
-    });
-
-    const req = httpMock.expectOne(`${environment.apiUrl}/decano/revisiones-cancelacion/rev-1`);
-    expect(req.request.method).toBe('PATCH');
-    expect(req.request.body).toEqual({ decision: 'RECHAZAR', motivo: 'Se otorga plazo especial' });
-    req.flush(mockData);
+  // DEC-065: el decano ya no resuelve; solo consulta (el backend responde 403 al PATCH).
+  it('C-F-09 (DEC-065) el servicio ya no expone resolverDecano', () => {
+    expect((service as unknown as Record<string, unknown>)['resolverDecano']).toBeUndefined();
   });
 
-  it('C-F-10 contarPendientes("COORDINADOR") y contarPendientes("DECANO") consultan el endpoint correspondiente', () => {
+  it('C-F-10 contarPendientes("COORDINADOR") consulta el endpoint del coordinador con soloPendientes y tamano=1', () => {
     service.contarPendientes('COORDINADOR').subscribe((total) => {
       expect(total).toBe(1);
     });
@@ -133,14 +127,14 @@ describe('RevisionCancelacionService (CULM-001 C.1)', () => {
     expect(reqCoord.request.params.get('soloPendientes')).toBe('true');
     expect(reqCoord.request.params.get('tamano')).toBe('1');
     reqCoord.flush(mockPage);
+  });
 
-    service.contarPendientes('DECANO').subscribe((total) => {
-      expect(total).toBe(1);
-    });
-    const reqDec = httpMock.expectOne((r) => r.url === `${environment.apiUrl}/decano/revisiones-cancelacion`);
-    expect(reqDec.request.params.get('soloPendientes')).toBe('true');
-    expect(reqDec.request.params.get('tamano')).toBe('1');
-    reqDec.flush(mockPage);
+  it('C-F-08b consultarDecano() sin filtros no envía parámetros de estado', () => {
+    service.consultarDecano({ estado: 'APROBADA', pagina: 2, tamano: 10 }).subscribe();
+    const req = httpMock.expectOne((r) => r.url === `${environment.apiUrl}/decano/revisiones-cancelacion`);
+    expect(req.request.params.get('estado')).toBe('APROBADA');
+    expect(req.request.params.get('soloPendientes')).toBeNull();
+    req.flush(mockPage);
   });
 
   it('consultarDocente() hace GET /docente/revisiones-cancelacion con grupo y paginación', () => {

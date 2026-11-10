@@ -271,11 +271,6 @@ export class DashboardLayoutComponent {
           next: (count) => this.revisionesPendientesCount.set(count),
           error: () => this.revisionesPendientesCount.set(0),
         });
-      } else if (role === 'DECANO') {
-        this.revisionService?.contarPendientes('DECANO').subscribe({
-          next: (count) => this.revisionesPendientesCount.set(count),
-          error: () => this.revisionesPendientesCount.set(0),
-        });
       }
     });
   }
