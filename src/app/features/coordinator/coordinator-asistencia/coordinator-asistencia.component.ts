@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, signal, viewChild } from '@angular/core';
 import { CoordinatorIndicatorsComponent } from '../coordinator-indicators/coordinator-indicators.component';
 import { ConsolidadoAsistenciaComponent } from '../coordinator-consolidado/consolidado-asistencia.component';
+import { RevisionesPendientesKpiComponent } from '../../../shared/components/revisiones-pendientes-kpi/revisiones-pendientes-kpi.component';
 
 /**
  * CULM-001: pantalla única de asistencia del coordinador. Fusiona las antiguas «Asistencias del programa», «Consolidado
@@ -13,7 +14,7 @@ import { ConsolidadoAsistenciaComponent } from '../coordinator-consolidado/conso
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full' },
-  imports: [CoordinatorIndicatorsComponent, ConsolidadoAsistenciaComponent],
+  imports: [CoordinatorIndicatorsComponent, ConsolidadoAsistenciaComponent, RevisionesPendientesKpiComponent],
   template: `
     <div class="space-y-5 min-w-0">
       <div>
@@ -21,6 +22,10 @@ import { ConsolidadoAsistenciaComponent } from '../coordinator-consolidado/conso
         <p class="text-sm text-warm-600 mt-1">
           Indicadores del programa y consolidado por grupo; despliega un grupo para ver sus sesiones.
         </p>
+      </div>
+
+      <div class="max-w-sm">
+        <app-revisiones-pendientes-kpi rol="COORDINADOR" />
       </div>
 
       <app-coordinator-indicators parte="kpis" [embebido]="true" (programaCambiado)="alRecambiarPrograma()" />

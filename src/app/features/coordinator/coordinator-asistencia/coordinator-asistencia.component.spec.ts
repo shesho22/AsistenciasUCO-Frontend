@@ -40,6 +40,7 @@ describe('CoordinatorAsistenciaComponent (CULM-001: asistencia unificada)', () =
     http.expectOne((r) => r.url === `${base}/indicadores`).flush({ exitoso: true, datos: kpis });
     http.expectOne(`${base}/periodos-academicos`).flush({ exitoso: true, datos: [] });
     http.expectOne((r) => r.url === `${base}/consolidado-asistencia`).flush({ exitoso: true, datos: [grupo], total: 1 });
+    http.expectOne((r) => r.url === `${base}/revisiones-cancelacion`).flush(paginaApi([], 1, 1, 3));
     fixture.detectChanges();
   });
 
@@ -54,6 +55,13 @@ describe('CoordinatorAsistenciaComponent (CULM-001: asistencia unificada)', () =
     const texto = el().textContent ?? '';
     expect(texto.indexOf('Sesiones ejecutadas')).toBeGreaterThan(-1);
     expect(texto.indexOf('Estudiantes en riesgo')).toBeLessThan(texto.indexOf('Cálculo'));
+  });
+
+  it('DEC-065: muestra el KPI "Revisiones por resolver" con el conteo y el enlace a las revisiones', () => {
+    const kpi = el().querySelector('[data-testid="revisiones-pendientes-kpi"]');
+    expect(kpi?.textContent).toContain('Revisiones por resolver');
+    expect(kpi?.querySelector('[data-testid="kpi-valor"]')?.textContent).toContain('3');
+    expect(kpi?.querySelector('a')?.getAttribute('href')).toBe('/app/coordinador/revisiones-cancelacion');
   });
 
   it('los KPIs por persona se rotulan «estudiantes en riesgo», no como porcentaje del grupo', () => {
