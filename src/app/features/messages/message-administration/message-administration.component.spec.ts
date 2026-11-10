@@ -3,6 +3,7 @@ import { signal } from '@angular/core';
 import { MessageAdminHandle, MessageAdminOptions } from 'minifront-mensajes';
 import { AuthService } from '../../../core/services/auth.service';
 import { User } from '../../../core/models/user.model';
+import { ComponentesExternosService } from '../../../core/services/componentes-externos.service';
 import { MESSAGE_ADMIN_MOUNT, MessageAdministrationComponent } from './message-administration.component';
 
 describe('MessageAdministrationComponent', () => {
@@ -168,5 +169,28 @@ describe('MessageAdministrationComponent', () => {
     fixture.destroy();
 
     expect(unmountSpy).toHaveBeenCalledTimes(2);
+  });
+
+  describe('F3-ADM-07: estado explicativo sin exponer rutas internas y aviso al menu', () => {
+    it('si el montaje falla, el texto no menciona el proxy interno y el menu oculta la entrada', async () => {
+      mountSpy.and.throwError('boom');
+
+      await createComponent();
+
+      const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
+      expect(texto).not.toContain('/messageucolab');
+      expect(texto).not.toContain('localhost');
+      expect(TestBed.inject(ComponentesExternosService).disponible('mensajes')).toBeFalse();
+    });
+
+    it('al montar correctamente el componente queda disponible para el menu', async () => {
+      const externos = TestBed.inject(ComponentesExternosService);
+      externos.marcarNoDisponible('mensajes');
+
+      await createComponent();
+
+      expect(component.state()).toBe('ready');
+      expect(externos.disponible('mensajes')).toBeTrue();
+    });
   });
 });

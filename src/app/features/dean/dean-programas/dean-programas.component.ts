@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -26,6 +26,7 @@ const TAMANO_CREDITOS = 100;
     <div class="space-y-6 animate-fade-in">
       <!-- Header Bento -->
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
+        @if (!embebido()) {
         <div>
           <div class="flex items-center gap-2 mb-1">
             <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-accent-100 text-accent-900 border border-accent-200">
@@ -41,15 +42,9 @@ const TAMANO_CREDITOS = 100;
             Consulta los programas académicos adscritos a la facultad, sus créditos, semestres y mallas curriculares.
           </p>
         </div>
+        }
 
         <div class="flex items-center gap-2.5">
-          <button
-            type="button"
-            (click)="volverAFacultad()"
-            class="px-3.5 py-2 rounded-xl bg-warm-50 hover:bg-warm-100 text-xs font-semibold text-warm-700 border border-warm-200 transition-colors"
-          >
-            ← Resumen de Facultad
-          </button>
           <span class="px-3.5 py-2 rounded-xl bg-primary-50 text-xs font-bold text-primary-800 border border-primary-200">
             {{ cargandoEstructura() ? '…' : planes().length }} Planes
           </span>
@@ -62,6 +57,7 @@ const TAMANO_CREDITOS = 100;
       <!-- Tabla unificada de programas y créditos (HU112) -->
       <app-dean-programas-creditos [filas]="creditos()" [error]="errorCreditos()" />
 
+      @if (!embebido()) {
       <!-- KPIs Bento -->
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div class="p-4 rounded-2xl bg-white border border-warm-200 shadow-warm-sm flex items-center justify-between">
@@ -100,7 +96,9 @@ const TAMANO_CREDITOS = 100;
           </div>
         </div>
       </div>
+      }
 
+      @if (!embebido()) {
       <!-- Buscador -->
       <div class="relative">
         <input
@@ -187,10 +185,13 @@ const TAMANO_CREDITOS = 100;
           />
         }
       }
+      }
     </div>
   `,
 })
 export class DeanProgramasComponent implements OnInit {
+  /** CULM-001: dentro de una pestaña, el título lo pone el cascarón. */
+  readonly embebido = input(false);
   private deanService = inject(DeanFacultadService);
   private consultas = inject(ConsultasTransversalesService);
   private router = inject(Router);
@@ -297,7 +298,4 @@ export class DeanProgramasComponent implements OnInit {
     void this.router.navigate(['/app/decano/programas', plan.id]);
   }
 
-  volverAFacultad(): void {
-    void this.router.navigate(['/app/decano/facultad']);
-  }
 }

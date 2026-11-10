@@ -27,7 +27,7 @@ export interface FilaCatalogo {
       } @else {
         <div>
           <div class="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1">Administración Institucional</div>
-          <h1 class="text-2xl font-bold font-serif text-warm-900">{{ titulo() }}</h1>
+          <h2 class="text-2xl font-bold font-serif text-warm-900">{{ titulo() }}</h2>
           <p class="text-sm text-warm-600">{{ descripcion() }}</p>
           <p class="text-xs text-warm-500 mt-1">Catálogo de solo consulta: sus valores se cargan con la base de datos.</p>
         </div>

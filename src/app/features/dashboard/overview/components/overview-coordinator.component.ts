@@ -100,7 +100,7 @@ import { DocenteItem, PlanEstudioItem } from '../../../../core/models/role-manag
             <h2 class="font-serif text-xl sm:text-2xl font-bold text-warm-900">Planta Docente Adscrita</h2>
             <p class="text-xs text-warm-500">Profesores vinculados y asignación de grupos de la carrera</p>
           </div>
-          <a routerLink="/app/coordinador/docentes">
+          <a routerLink="/app/coordinador/programa/docentes">
             <app-button variant="secondary" size="sm">Gestionar Planta Docente →</app-button>
           </a>
         </div>
@@ -119,7 +119,7 @@ import { DocenteItem, PlanEstudioItem } from '../../../../core/models/role-manag
                   Grupos a cargo: <strong class="text-warm-900">{{ docente.totalGruposAsignados }}</strong>
                 </p>
               </div>
-              <a routerLink="/app/coordinador/docentes" class="w-full">
+              <a routerLink="/app/coordinador/programa/docentes" class="w-full">
                 <app-button variant="ghost" size="sm" [fullWidth]="true">
                   Ver Perfil y Carga
                 </app-button>

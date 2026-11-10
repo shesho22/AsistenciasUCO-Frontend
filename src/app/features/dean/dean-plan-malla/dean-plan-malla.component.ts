@@ -290,7 +290,7 @@ export class DeanPlanMallaComponent implements OnInit {
   }
 
   volverAProgramas(): void {
-    void this.router.navigate(['/app/decano/programas']);
+    void this.router.navigate(['/app/decano/mi-facultad/programas']);
   }
 
   private recordarCaracteres(items: AsignaturaPlanItem[]): void {

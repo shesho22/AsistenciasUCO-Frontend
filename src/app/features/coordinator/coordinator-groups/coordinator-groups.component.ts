@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { EMPTY, forkJoin, of } from 'rxjs';
@@ -40,6 +40,7 @@ interface GrupoForm {
   template: `
     <div class="space-y-6 animate-fade-in">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
+        @if (!embebido()) {
         <div>
           <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary-100 text-primary-900 border border-primary-200">
             Coordinación de Programa
@@ -49,6 +50,7 @@ interface GrupoForm {
             Crea los grupos del programa, asigna el docente titular y define su horario semanal.
           </p>
         </div>
+        }
         @if (vista() === 'LISTA') {
           <button type="button" data-testid="nuevo-grupo" (click)="abrirCrear()"
             class="px-4 py-2 rounded-xl bg-primary-700 hover:bg-primary-800 text-sm font-semibold text-white transition-colors">
@@ -167,6 +169,8 @@ interface GrupoForm {
   `,
 })
 export class CoordinatorGroupsComponent implements OnInit {
+  /** CULM-001: dentro de una pestaña, el título lo pone el cascarón. */
+  readonly embebido = input(false);
   private readonly courseService = inject(CourseService);
   private readonly coordinatorService = inject(CoordinatorManagementService);
   private readonly toast = inject(ToastService);

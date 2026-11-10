@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AttendanceService } from '../../../core/services/attendance.service';
 import { StudentAttendance } from '../../../core/models/attendance.model';
+import { AVISO_SESION_CANCELADA_POR_COORDINACION, AVISO_SESION_MANUAL_NOTIFICADA } from '../../../core/models/sesion-manual.util';
 import { RealtimeService } from '../../../core/realtime/realtime.service';
 import { REALTIME_EVENT_TYPE, SesionCanceladaRealtimePayload } from '../../../core/realtime/model/realtime-event.model';
 import { marcarSesionCancelada } from '../../../core/models/sesion-estado.model';
@@ -28,7 +29,7 @@ import { isUuid } from '../../../core/utils/uuid.util';
 
 // Componentes Hijos Desacoplados
 import { TeacherGruposListComponent } from './components/teacher-grupos-list.component';
-import { TeacherGrupoHubComponent } from './components/teacher-grupo-hub.component';
+import { SubPestanaHub, TeacherGrupoHubComponent } from './components/teacher-grupo-hub.component';
 import { TeacherSesionFormComponent } from './components/teacher-sesion-form.component';
 import { TeacherGrupoFormComponent } from './components/teacher-grupo-form.component';
 import { TeacherMatriculaModalComponent } from './components/modals/teacher-matricula-modal.component';
@@ -188,7 +189,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   guardandoGrupo = signal<boolean>(false);
 
   // Hub del Grupo
-  subPestanaHub = signal<'SESIONES' | 'HORARIOS' | 'ESTUDIANTES' | 'RECLAMOS' | 'SABANA'>('SESIONES');
+  subPestanaHub = signal<SubPestanaHub>('HOY');
   estudiantesGrupo = signal<EstudianteGrupoItem[]>([]);
   cargandoEstudiantes = signal<boolean>(false);
   reclamosGrupo = signal<SolicitudRevisionItem[]>([]);
@@ -338,7 +339,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   verHubGrupo(course: Course): void {
     this.selectedCourse.set(course);
     this.vistaActual.set('HUB_GRUPO');
-    this.subPestanaHub.set('SESIONES');
+    this.subPestanaHub.set('HOY');
     this.cargarSesiones(course.id);
     this.cargarEstudiantesGrupo(course.id);
     this.cargarAsistenciasGrupo(course.id);
@@ -553,7 +554,8 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
         .subscribe({
           next: (res) => {
             if (res.exitoso) {
-              this.toast.success(res.mensaje || 'Sesión programada con éxito.');
+              // DEC-064: la sesión creada a mano se notifica a estudiantes y coordinador.
+              this.toast.success(`${res.mensaje || 'Sesión programada con éxito.'} ${AVISO_SESION_MANUAL_NOTIFICADA}`);
               this.cargarSesiones(course.id);
               this.volverASesiones();
             }
@@ -613,6 +615,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
         this.sessions.update((prev) =>
           marcarSesionCancelada(prev, sesion, { tipo, motivo: null, nombreFestivo: null, fechaCancelacionUtc: null })
         );
+        if (tipo === 'COORDINADOR') this.toast.info(AVISO_SESION_CANCELADA_POR_COORDINACION);
       });
   }
 

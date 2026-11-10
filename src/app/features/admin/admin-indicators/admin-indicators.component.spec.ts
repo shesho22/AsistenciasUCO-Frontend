@@ -167,4 +167,17 @@ describe('AdminIndicatorsComponent', () => {
     expect(component.cargando()).toBeFalse();
     expect(texto()).not.toContain('Cargando indicadores');
   });
+
+  it('KPI de ausentismo global muestra la variacion por horas frente al intervalo anterior', () => {
+    const variacion = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="kpi-variacion"]');
+    expect(variacion).not.toBeNull();
+    expect(variacion!.getAttribute('data-tono')).toBe('empeora');
+    expect(variacion!.textContent).toContain('35');
+  });
+
+  it('sin intervalo previo con dato se oculta la variacion', () => {
+    component.service.tendencia.set([puntos[0]]);
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="kpi-variacion"]')).toBeNull();
+  });
 });

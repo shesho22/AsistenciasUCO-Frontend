@@ -1,3 +1,4 @@
+import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { Component, OnInit, OnDestroy, inject, input, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -33,7 +34,7 @@ function adaptarGrupoACurso(dto: any): Course {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full' },
-  imports: [CommonModule, SesionEstadoBadgeComponent],
+  imports: [EmptyStateComponent, CommonModule, SesionEstadoBadgeComponent],
   template: `
     <div class="space-y-6 animate-fade-in">
       <!-- Barra de Retorno -->
@@ -119,9 +120,10 @@ function adaptarGrupoACurso(dto: any): Course {
             </button>
           </div>
         } @else if (sessions().length === 0) {
-          <div class="p-10 text-center text-sm text-warm-500">
-            No hay sesiones registradas para este grupo.
-          </div>
+          <app-empty-state
+            title="No hay sesiones registradas para este grupo."
+            causa="El docente titular aún no ha programado sesiones en este período."
+          />
         } @else {
           <div class="divide-y divide-warm-100">
             @for (s of sessions(); track s.id) {
@@ -271,6 +273,6 @@ export class DeanGrupoDetalleComponent implements OnInit, OnDestroy {
   }
 
   volverAGrupos(): void {
-    void this.router.navigate(['/app/decano/grupos']);
+    void this.router.navigate(['/app/decano/directorio/grupos']);
   }
 }

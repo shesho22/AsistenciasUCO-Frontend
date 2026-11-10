@@ -1,15 +1,34 @@
-import { Component, ChangeDetectionStrategy, input, output, model } from '@angular/core';
+import { Component, ChangeDetectionStrategy, computed, inject, input, output, model } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
+import { ActionMenuComponent, ActionMenuItem } from '../../../../shared/components/action-menu/action-menu.component';
+import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
+import { SesionEstadoBadgeComponent } from '../../../../shared/components/sesion-estado-badge/sesion-estado-badge.component';
 import { Course } from '../../../../core/models/course.model';
 import { ClassSession } from '../../../../core/models/attendance.model';
+import { DEFINICION_CONTEO_SESIONES, resumirSesiones, sesionDeHoy } from '../../../../core/models/sesiones-resumen.util';
+import { SessionTimeZoneService } from '../../../../core/services/session-timezone.service';
 import { TeacherGrupoSesionesComponent } from './teacher-grupo-sesiones.component';
-import { TeacherGrupoHorariosComponent } from './teacher-grupo-horarios.component';
 import { TeacherGrupoEstudiantesComponent } from './teacher-grupo-estudiantes.component';
 import { TeacherGrupoReclamosComponent } from './teacher-grupo-reclamos.component';
 import { EstudianteGrupoItem } from '../../../../core/models/estudiante-grupo-item.model';
 import { SolicitudRevisionItem, type EstadoCargaReclamos } from '../../../../core/models/role-management.model';
 import { TeacherGrupoSabanaComponent } from './teacher-grupo-sabana.component';
+
+/** `HOY` es el modo operativo del día; el resto son las pestañas del modo `Grupo`. */
+export type SubPestanaHub = 'HOY' | 'SABANA' | 'SESIONES' | 'RECLAMOS' | 'ESTUDIANTES';
+
+interface PestanaGrupo {
+  id: Exclude<SubPestanaHub, 'HOY'>;
+  etiqueta: string;
+  testid: string;
+}
+
+const PESTANAS_GRUPO: readonly PestanaGrupo[] = [
+  { id: 'SABANA', etiqueta: 'Planilla', testid: 'hub-tab-sabana' },
+  { id: 'SESIONES', etiqueta: 'Cronograma', testid: 'hub-tab-sesiones' },
+  { id: 'RECLAMOS', etiqueta: 'Reclamos', testid: 'hub-tab-reclamos' },
+  { id: 'ESTUDIANTES', etiqueta: 'Matrícula', testid: 'hub-tab-estudiantes' },
+];
 
 @Component({
   selector: 'app-teacher-grupo-hub',
@@ -17,9 +36,10 @@ import { TeacherGrupoSabanaComponent } from './teacher-grupo-sabana.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,
-    BadgeComponent,
+    ActionMenuComponent,
+    EmptyStateComponent,
+    SesionEstadoBadgeComponent,
     TeacherGrupoSesionesComponent,
-    TeacherGrupoHorariosComponent,
     TeacherGrupoEstudiantesComponent,
     TeacherGrupoReclamosComponent,
     TeacherGrupoSabanaComponent,
@@ -40,18 +60,12 @@ import { TeacherGrupoSabanaComponent } from './teacher-grupo-sabana.component';
             Volver a Mis Grupos
           </button>
 
-          <div class="flex items-center gap-2">
-            <span class="text-xs font-mono font-bold px-2.5 py-1 rounded-md bg-warm-100 text-warm-800">
-              {{ selectedCourse()?.code ? selectedCourse()?.code + ' • ' : '' }}{{ selectedCourse()?.section }}
-            </span>
-            <app-badge variant="success">Grupo Activo</app-badge>
-          </div>
         </div>
 
         <!-- Ficha de Encabezado Bento del Grupo -->
         <div class="bg-white p-6 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div class="space-y-1.5">
-            <div class="flex items-center gap-2">
+          <div class="space-y-1.5 min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
               @if (selectedCourse()?.code) {
                 <span class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-primary-50 text-primary-800 border border-primary-200">
                   {{ selectedCourse()?.code }}
@@ -67,172 +81,204 @@ import { TeacherGrupoSabanaComponent } from './teacher-grupo-sabana.component';
             <p class="text-xs text-warm-600">
               Horario Regular: <strong class="text-warm-900">{{ selectedCourse()?.schedule }}</strong>
             </p>
+            <!-- Un solo conteo de sesiones, con su definicion (F3-DOC-03) -->
+            <p
+              class="text-xs text-warm-600"
+              data-testid="hub-conteo-sesiones"
+              [attr.title]="definicionConteo"
+            >
+              Sesiones: <strong class="text-warm-900">{{ resumen().texto }}</strong>
+            </p>
           </div>
 
-          <!-- Acciones Rápidas del Docente -->
-          <div class="flex flex-wrap items-center gap-2.5 shrink-0">
-            <button
-              type="button"
-              (click)="matricular.emit(selectedCourse()!)"
-              class="text-xs font-bold text-primary-800 hover:text-primary-950 bg-primary-50 hover:bg-primary-100 border border-primary-300 px-3.5 py-2 rounded-xl transition-colors inline-flex items-center gap-1.5 shadow-xs"
-            >
-              <svg class="w-4 h-4 text-success-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-              </svg>
-              QR / PIN Matrícula
-            </button>
+          <div class="flex items-center gap-2.5 shrink-0" data-testid="hub-acciones">
+            <app-action-menu label="Más acciones del grupo" [items]="acciones()" (selected)="alElegirAccion($event)" />
+          </div>
+        </div>
 
-            @if (sessionQrEnabled()) {
+        <!-- Modo del hub: Hoy (operar la sesion) o Grupo (consultar y administrar) -->
+        <div class="inline-flex rounded-xl border border-warm-200 bg-white p-1 shadow-xs" role="tablist" aria-label="Modo del grupo">
+          <button
+            type="button"
+            role="tab"
+            data-testid="hub-modo-hoy"
+            [attr.aria-selected]="modo() === 'HOY'"
+            (click)="subPestanaHub.set('HOY')"
+            [class]="modo() === 'HOY' ? 'bg-primary-800 text-white font-bold' : 'text-warm-700 hover:bg-warm-100 font-medium'"
+            class="min-h-[44px] px-5 rounded-lg text-sm transition-colors"
+          >Hoy</button>
+          <button
+            type="button"
+            role="tab"
+            data-testid="hub-modo-grupo"
+            [attr.aria-selected]="modo() === 'GRUPO'"
+            (click)="irAGrupo()"
+            [class]="modo() === 'GRUPO' ? 'bg-primary-800 text-white font-bold' : 'text-warm-700 hover:bg-warm-100 font-medium'"
+            class="min-h-[44px] px-5 rounded-lg text-sm transition-colors"
+          >Grupo</button>
+        </div>
+
+        @if (modo() === 'HOY') {
+          <!-- MODO HOY: la sesion en curso o la proxima, con una unica accion primaria -->
+          <section class="bg-white p-5 sm:p-6 rounded-2xl border border-warm-200 shadow-warm-sm space-y-4" data-testid="hub-hoy" aria-label="Sesión de hoy">
+            @if (hoy(); as h) {
+              <div class="space-y-1.5 min-w-0">
+                <p class="text-xs font-bold uppercase tracking-wider text-primary-700">
+                  {{ h.tipo === 'EN_CURSO' ? 'Sesión en curso' : 'Próxima sesión' }}
+                </p>
+                <h3 class="font-serif font-bold text-xl text-warm-900 break-words">{{ h.sesion.title }}</h3>
+                <p class="text-sm text-warm-600">
+                  #{{ h.sesion.sessionNumber }} ·
+                  {{ timeZone.displaySessionDate(h.sesion) }} ·
+                  <span class="font-mono font-bold text-warm-800">{{ timeZone.displaySessionStartTime(h.sesion) }} - {{ timeZone.displaySessionEndTime(h.sesion) }}</span>
+                </p>
+                <p class="flex flex-wrap items-center gap-2 text-xs" data-testid="hub-hoy-estado">
+                  <span class="px-2 py-0.5 rounded-full font-semibold border"
+                    [class]="h.tipo === 'EN_CURSO' ? 'bg-success-50 text-success-800 border-success-200' : 'bg-warm-100 text-warm-700 border-warm-200'">
+                    {{ h.tipo === 'EN_CURSO' ? 'En curso' : 'Programada' }}
+                  </span>
+                  <app-sesion-estado-badge [estado]="h.sesion.estado" [cancelacion]="h.sesion.cancelacion" />
+                </p>
+              </div>
+              <div class="flex flex-wrap items-center gap-2.5">
+                <button
+                  type="button"
+                  data-testid="hub-tomar-asistencia"
+                  (click)="tomarAsistenciaSesion.emit(h.sesion)"
+                  class="text-sm font-bold text-white bg-primary-800 hover:bg-primary-900 px-5 min-h-[44px] rounded-xl transition-colors inline-flex items-center gap-1.5 shadow-sm"
+                >
+                  <svg class="w-4 h-4 text-primary-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Tomar asistencia
+                </button>
+                @if (sessionQrEnabled()) {
+                  <button
+                    type="button"
+                    data-testid="hub-hoy-qr"
+                    (click)="proyectarSesion.emit(h.sesion)"
+                    class="text-sm font-semibold text-primary-800 bg-accent-100 hover:bg-accent-200 border border-accent-300 px-4 min-h-[44px] rounded-xl transition-colors"
+                  >
+                    Proyectar QR / PIN
+                  </button>
+                }
+              </div>
+            } @else {
+              <app-empty-state
+                title="No hay sesiones vigentes"
+                description="No quedan sesiones por dictar en este grupo. Puedes programar una extraordinaria desde el cronograma del grupo."
+              />
+              <div>
+                <button
+                  type="button"
+                  data-testid="hub-tomar-asistencia"
+                  (click)="irAsistencia.emit(selectedCourse()!)"
+                  class="text-sm font-bold text-white bg-primary-800 hover:bg-primary-900 px-5 min-h-[44px] rounded-xl transition-colors"
+                >
+                  Tomar asistencia
+                </button>
+              </div>
+            }
+          </section>
+        } @else {
+          <!-- MODO GRUPO: planilla, cronograma, reclamos y matricula -->
+          <div
+            class="flex border-b border-warm-200 gap-2 bg-white px-4 pt-2 rounded-t-2xl shadow-xs overflow-x-auto max-w-full"
+            role="tablist"
+            aria-label="Secciones del grupo"
+            data-testid="hub-grupo-tabs"
+          >
+            @for (tab of pestanasGrupo; track tab.id) {
               <button
                 type="button"
-                (click)="proyectarQr.emit(selectedCourse()!)"
-                class="text-xs font-bold text-primary-900 hover:text-primary-950 bg-accent-200 hover:bg-accent-300 border border-accent-400 px-3.5 py-2 rounded-xl transition-colors inline-flex items-center gap-1.5 shadow-xs"
+                role="tab"
+                [attr.data-testid]="tab.testid"
+                [attr.aria-selected]="subPestanaHub() === tab.id"
+                (click)="subPestanaHub.set(tab.id)"
+                [class]="subPestanaHub() === tab.id ? 'border-primary-700 text-primary-900 font-bold' : 'border-transparent text-warm-500 hover:text-warm-800 font-medium'"
+                class="px-4 py-3 text-xs sm:text-sm border-b-2 transition-colors inline-flex items-center gap-2 whitespace-nowrap shrink-0 min-h-[44px]"
               >
-                <svg class="w-4 h-4 text-primary-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-                </svg>
-                Proyectar Auto-Registro
+                {{ tab.etiqueta }}
+                @if (tab.id === 'ESTUDIANTES') {
+                  <span class="px-2 py-0.5 rounded-full text-[11px] bg-success-100 text-success-800">{{ estudiantes().length }}</span>
+                }
+                @if (tab.id === 'RECLAMOS') {
+                  <span
+                    data-testid="grupo-reclamos-count"
+                    class="px-2 py-0.5 rounded-full text-[11px] bg-warning-100 text-warning-800"
+                  >{{ estadoCargaReclamos() === 'LOADED' ? reclamos().length : (estadoCargaReclamos() === 'LOADING' ? '…' : '—') }}</span>
+                }
               </button>
             }
-
-            <button
-              type="button"
-              (click)="irAsistencia.emit(selectedCourse()!)"
-              class="text-xs font-bold text-white bg-primary-800 hover:bg-primary-900 px-4 py-2 rounded-xl transition-colors inline-flex items-center gap-1.5 shadow-sm"
-            >
-              <svg class="w-4 h-4 text-primary-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Tomar Asistencia Hoy
-            </button>
           </div>
-        </div>
 
-        <!-- Navegación por Sub-Pestañas del Hub -->
-        <div class="flex border-b border-warm-200 gap-2 bg-white px-4 pt-2 rounded-t-2xl shadow-xs overflow-x-auto">
-          <button
-            type="button"
-            (click)="subPestanaHub.set('SESIONES')"
-            [class]="subPestanaHub() === 'SESIONES' ? 'border-primary-700 text-primary-900 font-bold' : 'border-transparent text-warm-500 hover:text-warm-800 font-medium'"
-            class="px-4 py-3 text-xs sm:text-sm border-b-2 transition-colors inline-flex items-center gap-2 whitespace-nowrap"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            Sesiones de Clase
-            <span class="px-2 py-0.5 rounded-full text-[11px] bg-warm-100 text-warm-700">{{ sessions().length }}</span>
-          </button>
+          @if (subPestanaHub() === 'SABANA') {
+            <app-teacher-grupo-sabana
+              [grupoId]="selectedCourse()?.id ?? ''"
+              [estudiantes]="estudiantes()"
+              [sessions]="sessions()"
+              [cargando]="cargandoEstudiantes() || loadingSessions()"
+            />
+          }
 
-          <button
-            type="button"
-            (click)="subPestanaHub.set('HORARIOS')"
-            [class]="subPestanaHub() === 'HORARIOS' ? 'border-primary-700 text-primary-900 font-bold' : 'border-transparent text-warm-500 hover:text-warm-800 font-medium'"
-            class="px-4 py-3 text-xs sm:text-sm border-b-2 transition-colors inline-flex items-center gap-2 whitespace-nowrap"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            Horario
-          </button>
+          @if (subPestanaHub() === 'SESIONES') {
+            <app-teacher-grupo-sesiones
+              [sessions]="sessions()"
+              [loading]="loadingSessions()"
+              [qrEnabled]="sessionQrEnabled()"
+              [cancelEnabled]="sessionCancelEnabled()"
+              (programarExtraordinaria)="programarExtraordinaria.emit()"
+              (tomarAsistencia)="tomarAsistenciaSesion.emit($event)"
+              (proyectar)="proyectarSesion.emit($event)"
+              (verDetalle)="verDetalleSesion.emit($event)"
+              (ajustarHorario)="ajustarHorarioSesion.emit($event)"
+              (cancelar)="cancelarSesion.emit($event)"
+            />
+          }
 
-          <button
-            type="button"
-            (click)="subPestanaHub.set('ESTUDIANTES')"
-            [class]="subPestanaHub() === 'ESTUDIANTES' ? 'border-primary-700 text-primary-900 font-bold' : 'border-transparent text-warm-500 hover:text-warm-800 font-medium'"
-            class="px-4 py-3 text-xs sm:text-sm border-b-2 transition-colors inline-flex items-center gap-2 whitespace-nowrap"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-            Alumnos Matriculados
-            <span class="px-2 py-0.5 rounded-full text-[11px] bg-success-100 text-success-800">{{ estudiantes().length }}</span>
-          </button>
+          @if (subPestanaHub() === 'RECLAMOS') {
+            <app-teacher-grupo-reclamos
+              [reclamos]="reclamos()"
+              [estadoCarga]="estadoCargaReclamos()"
+              (irAReclamos)="irReclamos.emit()"
+              (reintentar)="reintentarReclamos.emit()"
+            />
+          }
 
-          <button
-            type="button"
-            (click)="subPestanaHub.set('RECLAMOS')"
-            [class]="subPestanaHub() === 'RECLAMOS' ? 'border-primary-700 text-primary-900 font-bold' : 'border-transparent text-warm-500 hover:text-warm-800 font-medium'"
-            class="px-4 py-3 text-xs sm:text-sm border-b-2 transition-colors inline-flex items-center gap-2 whitespace-nowrap"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            Reclamos & Novedades
-            <span
-              data-testid="grupo-reclamos-count"
-              class="px-2 py-0.5 rounded-full text-[11px] bg-warning-100 text-warning-800"
-            >{{ estadoCargaReclamos() === 'LOADED' ? reclamos().length : (estadoCargaReclamos() === 'LOADING' ? '…' : '—') }}</span>
-          </button>
-
-          <button
-            type="button"
-            (click)="subPestanaHub.set('SABANA')"
-            [class]="subPestanaHub() === 'SABANA' ? 'border-primary-700 text-primary-900 font-bold' : 'border-transparent text-warm-500 hover:text-warm-800 font-medium'"
-            class="px-4 py-3 text-xs sm:text-sm border-b-2 transition-colors inline-flex items-center gap-2 whitespace-nowrap"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
-            Sábana de Asistencia
-            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary-100 text-primary-900">Matriz</span>
-          </button>
-        </div>
-
-        <!-- Renderizado de la Sub-Pestaña Activa -->
-        @if (subPestanaHub() === 'SESIONES') {
-          <app-teacher-grupo-sesiones
-            [sessions]="sessions()"
-            [loading]="loadingSessions()"
-            [qrEnabled]="sessionQrEnabled()"
-            [cancelEnabled]="sessionCancelEnabled()"
-            (programarExtraordinaria)="programarExtraordinaria.emit()"
-            (tomarAsistencia)="tomarAsistenciaSesion.emit($event)"
-            (proyectar)="proyectarSesion.emit($event)"
-            (verDetalle)="verDetalleSesion.emit($event)"
-            (ajustarHorario)="ajustarHorarioSesion.emit($event)"
-            (cancelar)="cancelarSesion.emit($event)"
-          />
-        }
-
-        @if (subPestanaHub() === 'HORARIOS') {
-          <app-teacher-grupo-horarios
-            [curso]="selectedCourse()"
-            [totalMatriculados]="estudiantes().length"
-          />
-        }
-
-        @if (subPestanaHub() === 'ESTUDIANTES') {
-          <app-teacher-grupo-estudiantes
-            [estudiantes]="estudiantes()"
-            [cargando]="cargandoEstudiantes()"
-            [curso]="selectedCourse()"
-            (retirar)="retirarEstudiante.emit($event)"
-          />
-        }
-
-        @if (subPestanaHub() === 'RECLAMOS') {
-          <app-teacher-grupo-reclamos
-            [reclamos]="reclamos()"
-            [estadoCarga]="estadoCargaReclamos()"
-            (irAReclamos)="irReclamos.emit()"
-            (reintentar)="reintentarReclamos.emit()"
-          />
-        }
-
-        @if (subPestanaHub() === 'SABANA') {
-          <app-teacher-grupo-sabana
-            [grupoId]="selectedCourse()?.id ?? ''"
-            [estudiantes]="estudiantes()"
-            [sessions]="sessions()"
-            [cargando]="cargandoEstudiantes() || loadingSessions()"
-          />
+          @if (subPestanaHub() === 'ESTUDIANTES') {
+            <app-teacher-grupo-estudiantes
+              [estudiantes]="estudiantes()"
+              [cargando]="cargandoEstudiantes()"
+              [curso]="selectedCourse()"
+              (retirar)="retirarEstudiante.emit($event)"
+            />
+          }
         }
       </div>
     }
   `,
 })
 export class TeacherGrupoHubComponent {
+  protected readonly timeZone = inject(SessionTimeZoneService);
+  protected readonly pestanasGrupo = PESTANAS_GRUPO;
+  protected readonly definicionConteo = DEFINICION_CONTEO_SESIONES;
+
   selectedCourse = input<Course | null>(null);
+  /** Instante de referencia para "en curso", "próxima" y "ejecutada"; sin valor se usa la hora actual. */
+  ahora = input<Date | null>(null);
+
+  protected readonly acciones = computed<ActionMenuItem[]>(() => {
+    const items: ActionMenuItem[] = [{ id: 'matricula-qr', label: 'QR / PIN Matrícula', testid: 'hub-matricula-qr' }];
+    if (this.sessionQrEnabled()) items.push({ id: 'proyectar-qr', label: 'Proyectar Auto-Registro', testid: 'hub-proyectar-qr' });
+    return items;
+  });
+
+  protected alElegirAccion(id: string): void {
+    const curso = this.selectedCourse();
+    if (!curso) return;
+    if (id === 'matricula-qr') this.matricular.emit(curso);
+    else if (id === 'proyectar-qr') this.proyectarQr.emit(curso);
+  }
   sessions = input<ClassSession[]>([]);
   loadingSessions = input<boolean>(false);
   estudiantes = input<EstudianteGrupoItem[]>([]);
@@ -243,7 +289,18 @@ export class TeacherGrupoHubComponent {
   sessionQrEnabled = input<boolean>(false);
   sessionCancelEnabled = input<boolean>(false);
 
-  subPestanaHub = model<'SESIONES' | 'HORARIOS' | 'ESTUDIANTES' | 'RECLAMOS' | 'SABANA'>('SESIONES');
+  /** `HOY` = modo Hoy; cualquier otro valor es la pestaña activa del modo Grupo. */
+  subPestanaHub = model<SubPestanaHub>('HOY');
+
+  protected readonly modo = computed<'HOY' | 'GRUPO'>(() => (this.subPestanaHub() === 'HOY' ? 'HOY' : 'GRUPO'));
+
+  /** Un solo conteo de sesiones del grupo; la definición viaja en el `title` de la cifra. */
+  protected readonly resumen = computed(() => resumirSesiones(this.sessions(), this.ahora() ?? new Date()));
+  protected readonly hoy = computed(() => sesionDeHoy(this.sessions(), this.ahora() ?? new Date()));
+
+  protected irAGrupo(): void {
+    if (this.subPestanaHub() === 'HOY') this.subPestanaHub.set('SABANA');
+  }
 
   reintentarReclamos = output<void>();
 

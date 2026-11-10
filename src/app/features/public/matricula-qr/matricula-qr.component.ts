@@ -2,15 +2,16 @@ import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@ang
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { AuthService } from '../../../core/services/auth.service';
 import { MatriculaQrService } from '../../../core/services/matricula-qr.service';
-import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
+import { getApiErrorMessage, getApiSuccessMessage } from '../../../core/api/errors/api-error.util';
 import {
   CredencialMatricula,
   CursoMatriculaQr,
   RegistroMatriculaQrPayload,
 } from '../../../core/models/matricula-qr.model';
 
-export type MatriculaQrEstado = 'PIN' | 'VALIDANDO' | 'CURSO' | 'REGISTRO' | 'ENVIANDO' | 'EXITO' | 'ERROR';
+export type MatriculaQrEstado = 'PIN' | 'VALIDANDO' | 'CURSO' | 'REGISTRO' | 'ENVIANDO' | 'EXITO' | 'EXITO_SESION' | 'ERROR';
 
 const PIN_SEIS_DIGITOS = /^[0-9]{6}$/;
 
@@ -57,17 +58,26 @@ const PIN_SEIS_DIGITOS = /^[0-9]{6}$/;
         @case ('CURSO') {
           @if (curso(); as c) {
             <div class="space-y-4" data-testid="matricula-curso">
-              <div class="rounded-xl bg-success-50 border border-success-200 p-4 text-sm text-success-900 space-y-1">
+              <div data-testid="matricula-curso-tarjeta" class="rounded-2xl bg-success-50 border-2 border-success-300 shadow-warm-sm p-5 text-sm text-success-950 space-y-1">
                 <p class="font-bold">{{ c.nombreAsignatura }} — {{ c.nombreGrupo }}</p>
                 <p>Docente: {{ c.nombreDocente }}</p>
                 <p>Cupos disponibles: {{ c.cupoDisponible }}</p>
               </div>
-              <button type="button" data-testid="matricula-crear" (click)="mostrarRegistro()" class="w-full py-2.5 text-sm font-bold text-white bg-primary-700 hover:bg-primary-800 rounded-xl">
-                Crear cuenta y matricularme
-              </button>
-              <button type="button" data-testid="matricula-ya-tengo-cuenta" (click)="yaTengoCuenta()" class="w-full py-2.5 text-sm font-semibold text-primary-700 border border-primary-300 hover:bg-primary-50 rounded-xl">
-                Ya tengo cuenta
-              </button>
+              @if (mensaje()) {
+                <p class="text-sm text-danger-800 bg-danger-50 border border-danger-200 rounded-xl p-3" role="alert" data-testid="matricula-mensaje">{{ mensaje() }}</p>
+              }
+              @if (sesionAbierta()) {
+                <button type="button" data-testid="matricula-con-sesion" (click)="matricularConSesion()" class="w-full min-h-[44px] py-2.5 text-sm font-bold text-white bg-primary-700 hover:bg-primary-800 rounded-xl">
+                  Matricularme con mi sesión
+                </button>
+              } @else {
+                <button type="button" data-testid="matricula-crear" (click)="mostrarRegistro()" class="w-full min-h-[44px] py-2.5 text-sm font-bold text-white bg-primary-700 hover:bg-primary-800 rounded-xl">
+                  Crear cuenta y matricularme
+                </button>
+                <button type="button" data-testid="matricula-ya-tengo-cuenta" (click)="yaTengoCuenta()" class="w-full min-h-[44px] py-2.5 text-sm font-semibold text-primary-700 border border-primary-300 hover:bg-primary-50 rounded-xl">
+                  Ya tengo cuenta
+                </button>
+              }
             </div>
           }
         }
@@ -122,6 +132,12 @@ const PIN_SEIS_DIGITOS = /^[0-9]{6}$/;
             <a routerLink="/login" class="inline-block text-sm font-semibold text-primary-600 hover:underline">Ir a iniciar sesión</a>
           </div>
         }
+        @case ('EXITO_SESION') {
+          <div class="space-y-3 text-center" data-testid="matricula-exito-sesion">
+            <p class="text-sm text-success-900 bg-success-50 border-2 border-success-300 rounded-2xl p-4 shadow-warm-sm">{{ mensajeExito() }}</p>
+            <a routerLink="/app/estudiante/materias" class="inline-block text-sm font-semibold text-primary-600 hover:underline">Ir a mis materias</a>
+          </div>
+        }
         @case ('ERROR') {
           <div class="space-y-3 text-center" role="alert" data-testid="matricula-error">
             <p class="text-sm text-danger-800 bg-danger-50 border border-danger-200 rounded-xl p-3">{{ mensaje() }}</p>
@@ -136,6 +152,11 @@ export class MatriculaQrComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly matriculaQr = inject(MatriculaQrService);
+  private readonly auth = inject(AuthService);
+
+  /** Con sesion abierta se matricula con un toque; sin sesion se ofrece crear cuenta o iniciar sesion. */
+  readonly sesionAbierta = this.auth.isAuthenticated;
+  readonly mensajeExito = signal<string>('');
 
   readonly estado = signal<MatriculaQrEstado>('PIN');
   readonly mensaje = signal<string>('');
@@ -229,6 +250,27 @@ export class MatriculaQrComponent implements OnInit {
       error: (error: unknown) => {
         this.mensaje.set(getApiErrorMessage(error));
         this.estado.set('REGISTRO');
+      },
+    });
+  }
+
+  /** Estudiante con sesion abierta: confirma la matricula con la credencial en memoria (token o PIN). */
+  matricularConSesion(): void {
+    const credencial = this.credencial;
+    if (!credencial) {
+      return;
+    }
+    this.mensaje.set('');
+    this.estado.set('ENVIANDO');
+    this.matriculaQr.matricularAutenticado(credencial).subscribe({
+      next: (resultado) => {
+        this.mensajeExito.set(getApiSuccessMessage(resultado, 'Quedaste matriculado en el grupo.'));
+        this.descartarDatos();
+        this.estado.set('EXITO_SESION');
+      },
+      error: (error: unknown) => {
+        this.mensaje.set(getApiErrorMessage(error));
+        this.estado.set('CURSO');
       },
     });
   }

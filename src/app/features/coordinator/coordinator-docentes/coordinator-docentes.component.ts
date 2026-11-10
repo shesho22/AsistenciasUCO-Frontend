@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal, input } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -55,6 +55,7 @@ const MIN_CARACTERES_CANDIDATOS = 3;
   template: `
     <div class="space-y-6 animate-fade-in">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
+        @if (!embebido()) {
         <div>
           <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary-100 text-primary-900 border border-primary-200">
             Coordinación de Programa
@@ -62,6 +63,7 @@ const MIN_CARACTERES_CANDIDATOS = 3;
           <h1 class="font-serif font-bold text-2xl sm:text-3xl text-warm-900 tracking-tight mt-2">Gestión de Docentes</h1>
           <p class="text-sm text-warm-600 mt-1">Directorio de docentes vinculados a su programa, con su tipo de vinculación y grupos asignados.</p>
         </div>
+        }
         <div class="flex flex-wrap items-center gap-3">
           <app-button variant="secondary" size="md" (clicked)="mostrarCargaMasiva.set(true)">
             <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -271,6 +273,8 @@ const MIN_CARACTERES_CANDIDATOS = 3;
   `,
 })
 export class CoordinatorDocentesComponent implements OnInit {
+  /** CULM-001: dentro de una pestaña, el título lo pone el cascarón. */
+  readonly embebido = input(false);
   private readonly coordService = inject(CoordinatorManagementService);
   private readonly catalogService = inject(CatalogService);
   private readonly toast = inject(ToastService);

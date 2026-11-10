@@ -9,6 +9,7 @@ import { ToastComponent, ToastService } from '../../shared/components/toast/toas
 import { IconComponent, IconName } from '../../shared/components/icon/icon.component';
 import { AlertaInasistenciaService } from '../../core/services/alerta-inasistencia.service';
 import { RevisionCancelacionService } from '../../core/services/revision-cancelacion.service';
+import { ComponentesExternosService, ComponenteExterno } from '../../core/services/componentes-externos.service';
 import { environment } from '../../../environments/environment';
 
 interface NavItem {
@@ -16,6 +17,8 @@ interface NavItem {
   route: string;
   roles: UserRole[];
   icon: IconName;
+  /** Entrada que depende de un componente externo: solo se muestra si esta disponible. */
+  externo?: ComponenteExterno;
 }
 
 @Component({
@@ -237,6 +240,7 @@ export class DashboardLayoutComponent {
 
   private readonly alertaService = inject(AlertaInasistenciaService, { optional: true });
   private readonly revisionService = inject(RevisionCancelacionService, { optional: true });
+  private readonly externos = inject(ComponentesExternosService);
   alertasVigentesCount = signal<number>(0);
   revisionesPendientesCount = signal<number>(0);
 
@@ -284,76 +288,22 @@ export class DashboardLayoutComponent {
       icon: 'dashboard',
     },
     {
-      label: 'Instituciones',
-      route: '/app/admin/instituciones',
-      roles: ['ADMINISTRADOR', 'ADMIN'],
-      icon: 'facultad',
-    },
-    {
-      label: 'Gestión de Facultades',
-      route: '/app/admin/facultades',
-      roles: ['ADMINISTRADOR', 'ADMIN'],
-      icon: 'facultad',
-    },
-    {
-      label: 'Indicadores',
-      route: '/app/admin/indicadores',
+      label: 'Personas',
+      route: '/app/admin/personas',
       roles: ['ADMINISTRADOR', 'ADMIN'],
       icon: 'estudiantes',
     },
     {
-      label: 'Gestión de Decanos',
-      route: '/app/admin/decanos',
+      label: 'Estructura',
+      route: '/app/admin/estructura',
       roles: ['ADMINISTRADOR', 'ADMIN'],
-      icon: 'decanos',
+      icon: 'facultad',
     },
     {
-      label: 'Tipos de Programa',
-      route: '/app/admin/catalogos',
+      label: 'Configuración',
+      route: '/app/admin/configuracion',
       roles: ['ADMINISTRADOR', 'ADMIN'],
       icon: 'catalogos',
-    },
-    {
-      label: 'Estados del Sistema',
-      route: '/app/admin/estados',
-      roles: ['ADMINISTRADOR', 'ADMIN'],
-      icon: 'catalogos',
-    },
-    {
-      label: 'Festivos',
-      route: '/app/admin/festivos',
-      roles: ['ADMINISTRADOR', 'ADMIN'],
-      icon: 'horarios',
-    },
-    {
-      label: 'Áreas de Conocimiento',
-      route: '/app/admin/areas',
-      roles: ['ADMINISTRADOR', 'ADMIN'],
-      icon: 'materias',
-    },
-    {
-      label: 'Períodos Académicos',
-      route: '/app/admin/periodos',
-      roles: ['ADMINISTRADOR', 'ADMIN'],
-      icon: 'horarios',
-    },
-    {
-      label: 'Docentes',
-      route: '/app/admin/docentes',
-      roles: ['ADMINISTRADOR', 'ADMIN'],
-      icon: 'docentes',
-    },
-    {
-      label: 'Estudiantes',
-      route: '/app/admin/estudiantes',
-      roles: ['ADMINISTRADOR', 'ADMIN'],
-      icon: 'estudiantes',
-    },
-    {
-      label: 'Búsqueda de Asignaturas',
-      route: '/app/admin/asignaturas',
-      roles: ['ADMINISTRADOR', 'ADMIN'],
-      icon: 'materias',
     },
     {
       label: 'Sistema & Auditoría',
@@ -362,46 +312,44 @@ export class DashboardLayoutComponent {
       icon: 'sistema',
     },
     {
+      label: 'Indicadores',
+      route: '/app/admin/indicadores',
+      roles: ['ADMINISTRADOR', 'ADMIN'],
+      icon: 'estudiantes',
+    },
+    {
+      // Depende del componente externo de seguridad: se oculta si no esta disponible (F3-ADM-07).
       label: 'Seguridad UCO',
       route: '/app/admin/seguridad',
       roles: ['ADMINISTRADOR', 'ADMIN'],
       icon: 'sistema',
+      externo: 'seguridad',
     },
     {
+      // Depende del micro frontend de MessageUcoLab: se oculta si no esta disponible (F3-ADM-07).
       label: 'Mensajes',
       route: '/app/admin/mensajes',
       roles: ['ADMINISTRADOR', 'ADMIN'],
-      icon: 'sistema',
-    },
-    {
-      label: 'Gestión de Correos',
-      route: '/app/admin/correos',
-      roles: ['ADMINISTRADOR', 'ADMIN'],
-      icon: 'correo',
-    },
-    {
-      label: 'Indicadores',
-      route: '/app/decano/indicadores',
-      roles: ['DECANO'],
-      icon: 'estudiantes',
+      icon: 'catalogos',
+      externo: 'mensajes',
     },
     {
       label: 'Mi Facultad',
-      route: '/app/decano/facultad',
+      route: '/app/decano/mi-facultad',
       roles: ['DECANO'],
       icon: 'facultad',
     },
     {
-      label: 'Grupos de la Facultad',
-      route: '/app/decano/grupos',
+      label: 'Seguimiento',
+      route: '/app/decano/seguimiento',
       roles: ['DECANO'],
-      icon: 'grupos',
+      icon: 'asistencia',
     },
     {
-      label: 'Programas y Planes',
-      route: '/app/decano/programas',
+      label: 'Directorio',
+      route: '/app/decano/directorio',
       roles: ['DECANO'],
-      icon: 'planes-estudio',
+      icon: 'estudiantes',
     },
     {
       label: 'Períodos Académicos',
@@ -410,64 +358,22 @@ export class DashboardLayoutComponent {
       icon: 'horarios',
     },
     {
-      label: 'Áreas de Conocimiento',
-      route: '/app/decano/areas',
-      roles: ['DECANO'],
-      icon: 'catalogos',
-    },
-    {
-      label: 'Gestión de Coordinadores',
-      route: '/app/decano/coordinadores',
-      roles: ['DECANO'],
-      icon: 'coordinadores',
-    },
-    {
-      label: 'Estudiantes de la Facultad',
-      route: '/app/decano/estudiantes',
-      roles: ['DECANO'],
-      icon: 'estudiantes',
-    },
-    {
-      label: 'Estructura de la Facultad',
-      route: '/app/decano/estructura',
-      roles: ['DECANO'],
-      icon: 'facultad',
-    },
-    {
-      label: 'Cronograma de Sesiones',
-      route: '/app/decano/cronograma',
-      roles: ['DECANO'],
-      icon: 'horarios',
-    },
-    {
-      label: 'Docentes de la Facultad',
-      route: '/app/decano/docentes',
-      roles: ['DECANO'],
-      icon: 'docentes',
-    },
-    {
-      label: 'Búsqueda de Asignaturas',
-      route: '/app/decano/asignaturas',
-      roles: ['DECANO'],
-      icon: 'materias',
-    },
-    {
-      label: 'Consolidado de Asistencia',
-      route: '/app/decano/consolidado-asistencia',
-      roles: ['DECANO'],
-      icon: 'asistencia',
-    },
-    {
       label: 'Revisiones de Cancelación',
       route: '/app/decano/revisiones-cancelacion',
       roles: ['DECANO'],
       icon: 'asistencia',
     },
     {
-      label: 'Gestión de Docentes',
-      route: '/app/coordinador/docentes',
+      label: 'Asistencia',
+      route: '/app/coordinador/asistencia',
       roles: ['COORDINADOR'],
-      icon: 'docentes',
+      icon: 'asistencia',
+    },
+    {
+      label: 'Programa',
+      route: '/app/coordinador/programa',
+      roles: ['COORDINADOR'],
+      icon: 'grupos',
     },
     {
       label: 'Planes de Estudio',
@@ -476,46 +382,10 @@ export class DashboardLayoutComponent {
       icon: 'planes-estudio',
     },
     {
-      label: 'Períodos Académicos',
-      route: '/app/coordinador/periodos',
-      roles: ['COORDINADOR'],
-      icon: 'horarios',
-    },
-    {
-      label: 'Indicadores',
-      route: '/app/coordinador/indicadores',
-      roles: ['COORDINADOR'],
-      icon: 'estudiantes',
-    },
-    {
       label: 'Estudiantes del Programa',
       route: '/app/coordinador/estudiantes',
       roles: ['COORDINADOR'],
       icon: 'estudiantes',
-    },
-    {
-      label: 'Grupos y Horarios',
-      route: '/app/coordinador/grupos',
-      roles: ['COORDINADOR'],
-      icon: 'grupos',
-    },
-    {
-      label: 'Materias del Programa',
-      route: '/app/coordinador/materias',
-      roles: ['COORDINADOR'],
-      icon: 'materias',
-    },
-    {
-      label: 'Asistencias del Programa',
-      route: '/app/coordinador/asistencias',
-      roles: ['COORDINADOR'],
-      icon: 'grupos',
-    },
-    {
-      label: 'Consolidado de Asistencia',
-      route: '/app/coordinador/consolidado-asistencia',
-      roles: ['COORDINADOR'],
-      icon: 'asistencia',
     },
     {
       label: 'Revisiones de Cancelación',
@@ -548,14 +418,8 @@ export class DashboardLayoutComponent {
       icon: 'horarios',
     },
     {
-      label: 'Mis Horarios',
-      route: '/app/estudiante/horarios',
-      roles: ['ESTUDIANTE'],
-      icon: 'horarios',
-    },
-    {
       label: 'Mis Materias',
-      route: '/app/estudiante/materias',
+      route: '/app/estudiante/mis-materias',
       roles: ['ESTUDIANTE'],
       icon: 'materias',
     },
@@ -564,12 +428,6 @@ export class DashboardLayoutComponent {
       route: '/app/estudiante/reclamos',
       roles: ['ESTUDIANTE'],
       icon: 'reclamos',
-    },
-    {
-      label: 'Oferta de Grupos',
-      route: '/app/estudiante/oferta',
-      roles: ['ESTUDIANTE'],
-      icon: 'grupos',
     },
     {
       label: 'Mis Alertas',
@@ -597,6 +455,7 @@ export class DashboardLayoutComponent {
         }
         return true;
       })
+      .filter((item) => !item.externo || this.externos.disponible(item.externo))
       .filter((item) => item.roles.some((role) => roles.includes(role)));
   });
 

@@ -26,7 +26,7 @@ export function filasDe(estados: EstadoSistemaItem[], catalogo: EstadoSistemaIte
     <div class="space-y-8 animate-fade-in">
       <div>
         <div class="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1">Administración Institucional</div>
-        <h1 class="text-2xl font-bold font-serif text-warm-900">Estados del Sistema</h1>
+        <h2 class="text-2xl font-bold font-serif text-warm-900">Estados del Sistema</h2>
         <p class="text-sm text-warm-600">Estados que usa la aplicación. Catálogo de solo consulta: se cargan con la base de datos.</p>
       </div>
       <app-catalogo-solo-consulta

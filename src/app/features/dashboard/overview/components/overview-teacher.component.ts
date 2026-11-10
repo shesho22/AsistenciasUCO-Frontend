@@ -1,3 +1,4 @@
+import { RangoHorarioPipe } from '../../../../shared/pipes/fecha-hora.pipes';
 import { Component, ChangeDetectionStrategy, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
@@ -10,7 +11,7 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
   selector: 'app-overview-teacher',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, RouterLink, CardComponent, ButtonComponent],
+  imports: [RangoHorarioPipe, CommonModule, RouterLink, CardComponent, ButtonComponent],
   host: {
     class: 'block w-full',
   },
@@ -123,7 +124,7 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
                       [ngClass]="pc.enCurso ? 'bg-success-600 text-white animate-pulse' : 'bg-warm-200 text-warm-800'">
                   {{ pc.tiempoRestanteTexto }}
                 </span>
-                <span class="text-xs text-warm-500 font-medium">| {{ pc.dia }} {{ hora(pc.horaInicio) }} - {{ hora(pc.horaFin) }}</span>
+                <span class="text-xs text-warm-500 font-medium">| {{ pc.dia }} {{ pc.horaInicio | rangoHorario: pc.horaFin }}</span>
               </div>
               <h3 class="font-serif font-bold text-warm-900 text-base sm:text-lg mt-1">
                 {{ pc.materia }}
@@ -213,11 +214,6 @@ export class OverviewTeacherComponent {
   pendingClaimsCount = input<number | null>(0);
   proximaClase = input<ProximaClaseInfo | null>(null);
   isLoading = input<boolean>(false);
-
-  /** `HH:mm`: el backend entrega `LocalTime` con segundos. */
-  hora(valor: string | null | undefined): string {
-    return (valor ?? '').replace(/^(\d{2}:\d{2}):\d{2}(?:\.\d+)?$/, '$1');
-  }
 
   /** Codigo y grupo; sin codigo solo el grupo (nunca el literal "undefined"). */
   subtituloCurso(course: Course): string {

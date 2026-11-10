@@ -1,4 +1,5 @@
-import { Component, OnInit, inject, signal, ChangeDetectionStrategy, WritableSignal } from '@angular/core';
+import { SemaforoAsistenciaComponent } from '../../../shared/components/semaforo-asistencia/semaforo-asistencia.component';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy, WritableSignal, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -11,6 +12,10 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { ListadoPaginado } from '../../../shared/utils/listado-paginado';
 import { ErrorCargaComponent } from '../../../shared/components/error-carga/error-carga.component';
+import { DeanSesionesGrupoComponent } from '../../dean/dean-sesiones-grupo/dean-sesiones-grupo.component';
+import { CoordinatorSesionesGrupoComponent } from '../coordinator-sesiones-grupo/coordinator-sesiones-grupo.component';
+
+const NUMERO_ES = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 2 });
 
 interface Opcion {
   id: string;
@@ -38,10 +43,11 @@ export function acumularOpciones(opciones: Opcion[], filas: ConsolidadoGrupoItem
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full' },
-  imports: [CommonModule, FormsModule, PaginationComponent, ErrorCargaComponent],
+  imports: [CommonModule, FormsModule, PaginationComponent, ErrorCargaComponent, DeanSesionesGrupoComponent, CoordinatorSesionesGrupoComponent, SemaforoAsistenciaComponent],
   template: `
     <div class="space-y-6 animate-fade-in">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
+        @if (!embebido()) {
         <div>
           <div class="flex items-center gap-2 mb-1">
             <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary-100 text-primary-900 border border-primary-200">
@@ -56,6 +62,7 @@ export function acumularOpciones(opciones: Opcion[], filas: ConsolidadoGrupoItem
             <span data-testid="nota-horas">Calculado por horas dictadas.</span>
           </p>
         </div>
+        }
         <span class="px-3.5 py-2 rounded-xl bg-warm-100 text-xs font-bold text-warm-800 border border-warm-200">{{ listado.total() }} Grupos</span>
       </div>
 
@@ -93,6 +100,7 @@ export function acumularOpciones(opciones: Opcion[], filas: ConsolidadoGrupoItem
             <table class="w-full text-sm">
               <thead>
                 <tr class="text-left text-xs uppercase tracking-wider text-warm-500 border-b border-warm-100">
+                  <th scope="col" class="py-2 pr-1 w-8"><span class="sr-only">Sesiones del grupo</span></th>
                   <th scope="col" class="py-2 pr-3">Cohorte</th>
                   <th scope="col" class="py-2 pr-3">Materia / Grupo</th>
                   <th scope="col" class="py-2 pr-3">Docente</th>
@@ -109,7 +117,18 @@ export function acumularOpciones(opciones: Opcion[], filas: ConsolidadoGrupoItem
               </thead>
               <tbody>
                 @for (g of listado.filas(); track g.idGrupo) {
-                  <tr class="border-b border-warm-50">
+                  <tr class="border-b border-warm-50" [class.bg-primary-50]="expandido() === g.idGrupo">
+                    <td class="py-2 pr-1">
+                      <button
+                        type="button"
+                        class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-warm-700 hover:bg-warm-100 focus-visible:ring-2 focus-visible:ring-primary-600 outline-none"
+                        [attr.data-testid]="'expandir-' + g.idGrupo"
+                        [attr.aria-expanded]="expandido() === g.idGrupo"
+                        [attr.aria-controls]="'sesiones-grupo-' + g.idGrupo"
+                        [attr.aria-label]="(expandido() === g.idGrupo ? 'Ocultar' : 'Ver') + ' las sesiones de ' + (g.nombreAsignatura || 'la asignatura') + ' ' + (g.nombreGrupo || g.codigoGrupo)"
+                        (click)="alternar(g.idGrupo)"
+                      >{{ expandido() === g.idGrupo ? '▾' : '▸' }}</button>
+                    </td>
                     <td class="py-2 pr-3 text-warm-700">{{ g.nombrePeriodoAcademico || '—' }}</td>
                     <td class="py-2 pr-3">
                       <span class="font-semibold text-warm-900 block">{{ g.nombreAsignatura || '—' }}</span>
@@ -119,8 +138,9 @@ export function acumularOpciones(opciones: Opcion[], filas: ConsolidadoGrupoItem
                     <td class="py-2 pr-3 text-right text-warm-700">{{ g.estudiantesActivos }}</td>
                     <td class="py-2 pr-3 text-right text-warm-700">{{ g.sesionesEjecutadas }}</td>
                     <td class="py-2 pr-3 text-right font-semibold text-warm-900">{{ g.porcentajeAsistencia | number: '1.0-2' }}%</td>
-                    <td class="py-2 pr-3 text-right" [class]="g.porcentajeInasistencia >= 15 ? 'text-danger-700 font-semibold' : 'text-warm-700'">
-                      {{ g.porcentajeInasistencia | number: '1.0-2' }}%
+                    <td class="py-2 pr-3 text-right whitespace-nowrap" data-testid="inasistencia" [class]="g.porcentajeInasistencia >= 15 ? 'text-danger-700 font-semibold' : 'text-warm-700'">
+                      {{ inasistenciaConBase(g) }}
+                      <app-semaforo-asistencia [porcentaje]="g.porcentajeInasistencia" [compacto]="true" />
                     </td>
                     <td class="py-2 pr-3 text-right text-warm-700">{{ g.porcentajeExcusa | number: '1.0-2' }}%</td>
                     <td class="py-2 pr-3 text-right text-warm-700">{{ g.porcentajeSinRegistro | number: '1.0-2' }}%</td>
@@ -136,6 +156,17 @@ export function acumularOpciones(opciones: Opcion[], filas: ConsolidadoGrupoItem
                     <td class="py-2 pr-3 text-right" [class]="g.estudiantesRiesgo > 0 ? 'text-warning-700 font-semibold' : 'text-warm-700'">{{ g.estudiantesRiesgo }}</td>
                     <td class="py-2 text-right" [class]="g.estudiantesPerdida > 0 ? 'text-danger-700 font-semibold' : 'text-warm-700'">{{ g.estudiantesPerdida }}</td>
                   </tr>
+                  @if (expandido() === g.idGrupo) {
+                    <tr [id]="'sesiones-grupo-' + g.idGrupo" [attr.data-testid]="'sesiones-' + g.idGrupo" class="bg-warm-50/60">
+                      <td colspan="13" class="p-3">
+                        @if (comoDecano) {
+                          <app-dean-sesiones-grupo [idGrupo]="g.idGrupo" />
+                        } @else {
+                          <app-coordinator-sesiones-grupo [grupo]="{ id: g.idGrupo, nombre: g.nombreGrupo || 'Grupo ' + g.codigoGrupo, nombreAsignatura: g.nombreAsignatura || '' }" />
+                        }
+                      </td>
+                    </tr>
+                  }
                 }
               </tbody>
             </table>
@@ -152,7 +183,7 @@ export function acumularOpciones(opciones: Opcion[], filas: ConsolidadoGrupoItem
           [totalPages]="listado.totalPaginas()"
           [pageSize]="listado.tamano()"
           [currentPage]="listado.pagina()"
-          (pageChange)="listado.irAPagina($event)"
+          (pageChange)="expandido.set(null); listado.irAPagina($event)"
           (pageSizeChange)="listado.cambiarTamano($event)"
         ></app-pagination>
       </section>
@@ -160,11 +191,15 @@ export function acumularOpciones(opciones: Opcion[], filas: ConsolidadoGrupoItem
   `,
 })
 export class ConsolidadoAsistenciaComponent implements OnInit {
+  /** CULM-001: dentro de una pestaña, el título lo pone el cascarón. */
+  readonly embebido = input(false);
   private readonly service = inject(ConsultasTransversalesService);
   private readonly coordinador = inject(CoordinatorManagementService);
   private readonly toast = inject(ToastService);
   readonly comoDecano = inject(ActivatedRoute).snapshot.data['comoDecano'] === true;
 
+  /** Un solo grupo expandido a la vez: el stream en tiempo real de sesiones es uno por pantalla. */
+  readonly expandido = signal<string | null>(null);
   idPeriodo = signal('');
   idAsignatura = signal('');
   idDocente = signal('');
@@ -199,7 +234,22 @@ export class ConsolidadoAsistenciaComponent implements OnInit {
 
   filtrar(filtro: WritableSignal<string>, valor: string): void {
     filtro.set(valor);
+    this.expandido.set(null);
     this.listado.buscar();
+  }
+
+  alternar(idGrupo: string): void {
+    this.expandido.update((actual) => (actual === idGrupo ? null : idGrupo));
+  }
+
+  /**
+   * Una sola cifra de inasistencia por grupo: el porcentaje por horas del consolidado con su base entre las horas
+   * dictadas (D.8), p. ej. «3,46 % · 2,25 h de 65 h». Las horas de falta son el mismo porcentaje aplicado a las horas
+   * dictadas del grupo; no es otra métrica.
+   */
+  inasistenciaConBase(g: ConsolidadoGrupoItem): string {
+    const horasFalta = (g.porcentajeInasistencia * g.horasDictadas) / 100;
+    return `${NUMERO_ES.format(g.porcentajeInasistencia)} % · ${NUMERO_ES.format(horasFalta)} h de ${NUMERO_ES.format(g.horasDictadas)} h`;
   }
 
   /** Las opciones de materia y docente se acumulan con lo que devuelve el backend (no se pierden al filtrar). */

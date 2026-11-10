@@ -1,3 +1,5 @@
+import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
+import { FechaHoraCortaPipe } from '../../../shared/pipes/fecha-hora.pipes';
 import {
   Component,
   OnInit,
@@ -11,7 +13,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AdminManagementService } from '../../../core/services/admin-management.service';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { ToastService } from '../../../shared/components/toast/toast.component';
@@ -32,6 +34,8 @@ type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    EmptyStateComponent,
+    FechaHoraCortaPipe,
     CommonModule,
     FormsModule,
     RouterLink,
@@ -42,6 +46,7 @@ type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
   ],
   template: `
     <div class="space-y-6">
+     @if (modo === 'completo') {
       <!-- ================= HEADER & BREADCRUMB ================= -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -58,7 +63,7 @@ type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
 
         <div class="flex flex-wrap items-center gap-2">
           <a
-            routerLink="/app/admin/correos"
+            routerLink="/app/admin/configuracion/correo"
             class="min-h-[44px] px-4 py-2 bg-warm-100 text-warm-800 border border-warm-300 rounded-xl text-xs font-bold hover:bg-warm-200 shadow-sm transition-all flex items-center gap-2"
             title="Gestión de plantillas, cola outbox y canal SMTP"
           >
@@ -126,6 +131,7 @@ type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
           <span>Cierre Masivo de Asistencia</span>
         </button>
       </div>
+     }
 
       <!-- ================= TAB 1: PARÁMETROS DEL SISTEMA (HU168) ================= -->
       @if (tabActiva() === 'PARAMETROS') {
@@ -247,7 +253,7 @@ type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
                             @if (p.nombreUltimoActor || p.fechaUltimoCambioUtc) {
                               <span>Último cambio por <strong>{{ p.nombreUltimoActor || 'Admin TI' }}</strong></span>
                               @if (p.fechaUltimoCambioUtc) {
-                                <span class="block text-warm-400 font-mono">{{ p.fechaUltimoCambioUtc | date: 'yyyy-MM-dd HH:mm' }}</span>
+                                <span class="block text-warm-400 font-mono" [attr.title]="p.fechaUltimoCambioUtc">{{ p.fechaUltimoCambioUtc | fechaHoraCorta }}</span>
                               }
                             } @else {
                               <span>Tipo: {{ p.tipoDato }}</span>
@@ -395,8 +401,12 @@ type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
                     </tr>
                   } @empty {
                     <tr>
-                      <td colspan="8" class="px-5 py-8 text-center text-sm text-warm-600">
-                        El historial de cierres no está disponible en esta pantalla. Tras ejecutar un cierre, consulte su resultado en Trazabilidad y Auditoría.
+                      <td colspan="8" class="px-5 py-4">
+                        <app-empty-state
+                          title="Aún no hay cierres masivos"
+                          description="El historial de cierres no está disponible en esta pantalla. Tras ejecutar un cierre, consulte su resultado en Trazabilidad y Auditoría."
+                          causa="Se llena cuando se ejecuta el primer cierre masivo de un período."
+                        />
                       </td>
                     </tr>
                   }
@@ -425,6 +435,12 @@ export class AdminSystemComponent implements OnInit {
   private toast = inject(ToastService);
   private destroyRef = inject(DestroyRef);
 
+  /**
+   * La ruta de Configuración declara `data.modo = 'parametros'`: se ocultan el encabezado y las pestañas de operaciones y
+   * solo se muestran los parámetros. En `admin/sistema` (sin ese dato) la pantalla es completa.
+   */
+  readonly modo: 'completo' | 'parametros' =
+    inject(ActivatedRoute, { optional: true })?.snapshot.data['modo'] === 'parametros' ? 'parametros' : 'completo';
   tabActiva = signal<TabAdminSystem>('PARAMETROS');
   periodoSeleccionadoCierre = '';
   isProcesandoCierre = signal<boolean>(false);

@@ -12,6 +12,7 @@ import {
   AsignaturaPlanItem,
 } from '../../../core/models/role-management.model';
 import { getBackendUserMessage } from '../../../core/api/errors/api-error.util';
+import { ActionMenuComponent, ActionMenuItem } from '../../../shared/components/action-menu/action-menu.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 
 type VistaFacultad = 'LISTA' | 'FORM';
@@ -21,7 +22,7 @@ type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
   selector: 'app-admin-facultades',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, PaginationComponent],
+  imports: [CommonModule, FormsModule, PaginationComponent, ActionMenuComponent],
   template: `
     <div class="space-y-6 animate-fade-in">
       <!-- ================= HEADER & BREADCRUMB ================= -->
@@ -188,19 +189,6 @@ type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
                       </svg>
                       <p class="text-xs font-bold text-warm-900 truncate">{{ fac.decanoNombre }}</p>
                     </div>
-
-                    <div class="flex items-center pt-1 border-t border-warm-200/60">
-                      <button
-                        type="button"
-                        (click)="abrirModalVincularDecano(fac)"
-                        class="text-[11px] font-semibold text-primary-700 hover:text-primary-900 transition-colors flex items-center gap-1"
-                      >
-                        <svg aria-hidden="true" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                        </svg>
-                        <span>Cambiar Decano(a)</span>
-                      </button>
-                    </div>
                   </div>
 
                   <!-- Métricas Académicas -->
@@ -216,39 +204,20 @@ type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
                   </div>
                 </div>
 
-                <!-- Botonera de Acciones -->
-                <div class="flex flex-col gap-2 pt-2">
+                <!-- Botonera de Acciones: una primaria y el resto en "Mas" -->
+                <div class="flex items-center gap-2 pt-2" data-testid="acciones-facultad">
                   <button
                     type="button"
                     (click)="verProgramasFacultad(fac)"
-                    class="w-full py-2 px-3 bg-primary-50 hover:bg-primary-100 text-primary-900 rounded-xl text-xs font-semibold transition-colors flex items-center justify-center gap-1.5"
+                    class="flex-1 min-h-[44px] py-2 px-3 bg-primary-700 hover:bg-primary-800 text-white rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-1.5"
                   >
-                    <svg aria-hidden="true" class="w-3.5 h-3.5 text-primary-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                    </svg>
-                    <span>Ver Programas y Planes (HU108)</span>
+                    <span>Ver Programas y Planes</span>
                   </button>
-
-                  <div class="flex items-center gap-2">
-                    <button
-                      type="button"
-                      (click)="editarFacultad(fac)"
-                      class="flex-1 py-2 px-3 bg-warm-100 hover:bg-warm-200 text-warm-800 rounded-xl text-xs font-semibold transition-colors text-center"
-                    >
-                      Editar
-                    </button>
-                    <button
-                      type="button"
-                      (click)="toggleEstadoFacultad(fac)"
-                      [disabled]="facultadCambiandoEstado() === fac.id"
-                      class="p-2 text-warm-500 hover:text-warm-800 hover:bg-warm-100 rounded-xl transition-colors"
-                      [title]="fac.estado === 'ACTIVO' ? 'Desactivar Facultad' : 'Activar Facultad'"
-                    >
-                      <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                      </svg>
-                    </button>
-                  </div>
+                  <app-action-menu
+                    label="Más acciones de la facultad"
+                    [items]="accionesFacultad(fac)"
+                    (selected)="alElegirAccionFacultad(fac, $event)"
+                  />
                 </div>
               </div>
             }
@@ -770,6 +739,27 @@ export class AdminFacultadesComponent implements OnInit {
           },
         });
     }
+  }
+
+  /** Acciones secundarias de la tarjeta; la primaria visible es "Ver Programas y Planes". */
+  accionesFacultad(fac: FacultadItem): ActionMenuItem[] {
+    return [
+      { id: 'editar', label: 'Editar', testid: 'facultad-editar' },
+      { id: 'decano', label: 'Cambiar decano(a)', testid: 'facultad-cambiar-decano' },
+      {
+        id: 'estado',
+        label: fac.estado === 'ACTIVO' ? 'Desactivar facultad' : 'Activar facultad',
+        testid: 'facultad-estado',
+        disabled: this.facultadCambiandoEstado() === fac.id,
+        danger: fac.estado === 'ACTIVO',
+      },
+    ];
+  }
+
+  alElegirAccionFacultad(fac: FacultadItem, id: string): void {
+    if (id === 'editar') this.editarFacultad(fac);
+    else if (id === 'decano') this.abrirModalVincularDecano(fac);
+    else if (id === 'estado') this.toggleEstadoFacultad(fac);
   }
 
   toggleEstadoFacultad(fac: FacultadItem): void {

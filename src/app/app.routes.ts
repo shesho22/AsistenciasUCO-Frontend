@@ -100,32 +100,33 @@ export const routes: Routes = [
       })),
       // Rutas Administrador
       {
-        path: 'admin/facultades',
+        // Estructura institucional: pestañas facultades e instituciones (/app/admin/estructura/:pestaña).
+        path: 'admin/estructura',
         canActivate: [roleGuard],
         data: { roles: ['ADMINISTRADOR', 'ADMIN'] },
-        loadComponent: () =>
-          import('./features/admin/admin-facultades/admin-facultades.component').then(
-            (m) => m.AdminFacultadesComponent
-          ),
+        loadChildren: () =>
+          import('./features/admin/admin-estructura/admin-estructura.routes').then((m) => m.ESTRUCTURA_ROUTES),
       },
       {
-        path: 'admin/areas',
+        // Personas: estudiantes, docentes, decanos y asignaturas (/app/admin/personas/:pestaña).
+        path: 'admin/personas',
         canActivate: [roleGuard],
         data: { roles: ['ADMINISTRADOR', 'ADMIN'] },
-        loadComponent: () =>
-          import('./features/admin/admin-areas/admin-areas.component').then(
-            (m) => m.AdminAreasComponent
-          ),
+        loadChildren: () =>
+          import('./features/admin/admin-personas/admin-personas.routes').then((m) => m.PERSONAS_ROUTES),
       },
+      { path: 'admin/facultades', redirectTo: 'admin/estructura/facultades', pathMatch: 'full' },
       {
-        path: 'admin/decanos',
+        // Vista única de configuración (parámetros, catálogos, estados, mensajes, festivos, correo, áreas e instituciones):
+        // /app/admin/configuracion/:pestaña; sin pestaña abre parámetros. Las rutas hijas viven en su propio archivo diferido.
+        path: 'admin/configuracion',
         canActivate: [roleGuard],
         data: { roles: ['ADMINISTRADOR', 'ADMIN'] },
-        loadComponent: () =>
-          import('./features/admin/admin-decanos/admin-decanos.component').then(
-            (m) => m.AdminDecanosComponent
-          ),
+        loadChildren: () =>
+          import('./features/admin/admin-configuracion/admin-configuracion.routes').then((m) => m.CONFIGURACION_ROUTES),
       },
+      { path: 'admin/areas', redirectTo: 'admin/configuracion/areas', pathMatch: 'full' },
+      { path: 'admin/decanos', redirectTo: 'admin/personas/decanos', pathMatch: 'full' },
       {
         path: 'admin/indicadores',
         canActivate: [roleGuard],
@@ -145,30 +146,9 @@ export const routes: Routes = [
             (m) => m.AdminPeriodosComponent
           ),
       },
-      {
-        // HU154 (tipos de programa): antes redirigía a facultades y la pantalla no tenía ruta.
-        path: 'admin/catalogos',
-        canActivate: [roleGuard],
-        data: { roles: ['ADMINISTRADOR', 'ADMIN'] },
-        loadComponent: () =>
-          import('./features/admin/admin-catalogs/admin-catalogs.component').then((m) => m.AdminCatalogsComponent),
-      },
-      {
-        // HU155 / HU167: estados del sistema, solo consulta.
-        path: 'admin/estados',
-        canActivate: [roleGuard],
-        data: { roles: ['ADMINISTRADOR', 'ADMIN'] },
-        loadComponent: () =>
-          import('./features/admin/admin-estados/admin-estados.component').then((m) => m.AdminEstadosComponent),
-      },
-      {
-        // CULM-001 B.1 (pantalla 3.7): festivos de Colombia (consulta, recarga y sesiones en festivo con asistencia).
-        path: 'admin/festivos',
-        canActivate: [roleGuard],
-        data: { roles: ['ADMINISTRADOR', 'ADMIN'] },
-        loadComponent: () =>
-          import('./features/admin/admin-festivos/admin-festivos.component').then((m) => m.AdminFestivosComponent),
-      },
+      { path: 'admin/catalogos', redirectTo: 'admin/configuracion/catalogos', pathMatch: 'full' },
+      { path: 'admin/estados', redirectTo: 'admin/configuracion/estados', pathMatch: 'full' },
+      { path: 'admin/festivos', redirectTo: 'admin/configuracion/festivos', pathMatch: 'full' },
       {
         path: 'admin/sistema',
         canActivate: [roleGuard],
@@ -188,6 +168,7 @@ export const routes: Routes = [
           ),
       },
       {
+        // Vista propia: depende del micro frontend de MessageUcoLab; el menú la oculta si el componente externo no está.
         path: 'admin/mensajes',
         canActivate: [roleGuard],
         data: { roles: ['ADMINISTRADOR', 'ADMIN'] },
@@ -196,43 +177,49 @@ export const routes: Routes = [
             (m) => m.MessageAdministrationComponent
           ),
       },
+      { path: 'admin/correos', redirectTo: 'admin/configuracion/correo', pathMatch: 'full' },
+      { path: 'admin/instituciones', redirectTo: 'admin/estructura/instituciones', pathMatch: 'full' },
+      // Rutas Decano (CULM-001: 16 pantallas -> 8). Mi facultad, Seguimiento y Directorio agrupan las antiguas por pestaña
+      // o selector; Períodos y Revisiones se mantienen. Los destinos hijos viven en su propio archivo diferido.
       {
-        path: 'admin/correos',
-        canActivate: [roleGuard],
-        data: { roles: ['ADMINISTRADOR', 'ADMIN'] },
-        loadComponent: () =>
-          import('./features/admin/admin-email-management/admin-email-management.component').then(
-            (m) => m.AdminEmailManagementComponent
-          ),
-      },
-      {
-        path: 'admin/instituciones',
-        canActivate: [roleGuard],
-        data: { roles: ['ADMINISTRADOR', 'ADMIN'] },
-        loadComponent: () =>
-          import('./features/admin/admin-instituciones/admin-instituciones.component').then(
-            (m) => m.AdminInstitucionesComponent
-          ),
-      },
-      // Rutas Decano
-      {
-        path: 'decano/facultad',
+        path: 'decano/mi-facultad',
         canActivate: [roleGuard],
         data: { roles: ['DECANO'] },
-        loadComponent: () =>
-          import('./features/dean/dean-faculty/dean-faculty.component').then(
-            (m) => m.DeanFacultyComponent
-          ),
+        loadChildren: () => import('./features/dean/dean.routes').then((m) => m.MI_FACULTAD_ROUTES),
       },
       {
-        path: 'decano/grupos',
+        path: 'decano/seguimiento',
         canActivate: [roleGuard],
         data: { roles: ['DECANO'] },
-        loadComponent: () =>
-          import('./features/dean/dean-grupos/dean-grupos.component').then(
-            (m) => m.DeanGruposComponent
-          ),
+        loadChildren: () => import('./features/dean/dean.routes').then((m) => m.SEGUIMIENTO_ROUTES),
       },
+      {
+        path: 'decano/directorio',
+        canActivate: [roleGuard],
+        data: { roles: ['DECANO'] },
+        children: [
+          { path: '', pathMatch: 'full', redirectTo: 'docentes' },
+          {
+            path: ':entidad',
+            loadComponent: () =>
+              import('./features/dean/dean-directorio/dean-directorio.component').then((m) => m.DeanDirectorioComponent),
+          },
+        ],
+      },
+      // Rutas antiguas del decano: se conservan solo para no romper marcadores guardados.
+      { path: 'decano/facultad', redirectTo: 'decano/mi-facultad/programas', pathMatch: 'full' },
+      { path: 'decano/estructura', redirectTo: 'decano/mi-facultad/programas', pathMatch: 'full' },
+      { path: 'decano/programas', redirectTo: 'decano/mi-facultad/programas', pathMatch: 'full' },
+      { path: 'decano/coordinadores', redirectTo: 'decano/mi-facultad/coordinadores', pathMatch: 'full' },
+      { path: 'decano/areas', redirectTo: 'decano/mi-facultad/areas', pathMatch: 'full' },
+      { path: 'decano/infraestructura', redirectTo: 'decano/mi-facultad/areas', pathMatch: 'full' },
+      { path: 'decano/indicadores', redirectTo: 'decano/seguimiento/indicadores', pathMatch: 'full' },
+      { path: 'decano/consolidado-asistencia', redirectTo: 'decano/seguimiento/consolidado', pathMatch: 'full' },
+      { path: 'decano/cronograma', redirectTo: 'decano/seguimiento/cronograma', pathMatch: 'full' },
+      { path: 'decano/docentes', redirectTo: 'decano/directorio/docentes', pathMatch: 'full' },
+      { path: 'decano/estudiantes', redirectTo: 'decano/directorio/estudiantes', pathMatch: 'full' },
+      { path: 'decano/asignaturas', redirectTo: 'decano/directorio/asignaturas', pathMatch: 'full' },
+      { path: 'decano/grupos', redirectTo: 'decano/directorio/grupos', pathMatch: 'full' },
       {
         path: 'decano/grupos/:grupoId',
         canActivate: [roleGuard],
@@ -240,15 +227,6 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/dean/dean-grupo-detalle/dean-grupo-detalle.component').then(
             (m) => m.DeanGrupoDetalleComponent
-          ),
-      },
-      {
-        path: 'decano/programas',
-        canActivate: [roleGuard],
-        data: { roles: ['DECANO'] },
-        loadComponent: () =>
-          import('./features/dean/dean-programas/dean-programas.component').then(
-            (m) => m.DeanProgramasComponent
           ),
       },
       {
@@ -269,72 +247,6 @@ export const routes: Routes = [
             (m) => m.DeanPeriodosComponent
           ),
       },
-      {
-        path: 'decano/areas',
-        canActivate: [roleGuard],
-        data: { roles: ['DECANO'] },
-        loadComponent: () =>
-          import('./features/dean/dean-areas/dean-areas.component').then(
-            (m) => m.DeanAreasComponent
-          ),
-      },
-      // Ruta heredada: se conserva solo para no romper marcadores guardados.
-      { path: 'decano/infraestructura', redirectTo: 'decano/areas', pathMatch: 'full' },
-      {
-        path: 'decano/coordinadores',
-        canActivate: [roleGuard],
-        data: { roles: ['DECANO'] },
-        loadComponent: () =>
-          import('./features/dean/dean-coordinadores/dean-coordinadores.component').then(
-            (m) => m.DeanCoordinadoresComponent
-          ),
-      },
-      {
-        path: 'decano/estudiantes',
-        canActivate: [roleGuard],
-        data: { roles: ['DECANO'] },
-        loadComponent: () =>
-          import('./features/dean/dean-estudiantes/dean-estudiantes.component').then((m) => m.DeanEstudiantesComponent),
-      },
-      {
-        path: 'decano/estructura',
-        canActivate: [roleGuard],
-        data: { roles: ['DECANO'] },
-        loadComponent: () =>
-          import('./features/dean/dean-estructura/dean-estructura.component').then((m) => m.DeanEstructuraComponent),
-      },
-      {
-        path: 'decano/cronograma',
-        canActivate: [roleGuard],
-        data: { roles: ['DECANO'] },
-        loadComponent: () =>
-          import('./features/dean/dean-cronograma/dean-cronograma.component').then((m) => m.DeanCronogramaComponent),
-      },
-      // HU128 / HU143: docentes y búsqueda de asignaturas de la facultad del decano
-      {
-        path: 'decano/docentes',
-        canActivate: [roleGuard],
-        data: { roles: ['DECANO'] },
-        loadComponent: () =>
-          import('./features/dean/dean-docentes/dean-docentes.component').then((m) => m.DeanDocentesComponent),
-      },
-      {
-        path: 'decano/asignaturas',
-        canActivate: [roleGuard],
-        data: { roles: ['DECANO'] },
-        loadComponent: () =>
-          import('./features/dean/dean-asignaturas/dean-asignaturas.component').then((m) => m.DeanAsignaturasComponent),
-      },
-      // HU061: consolidado de asistencia por cohorte, materia y docente (facultad del decano)
-      {
-        path: 'decano/consolidado-asistencia',
-        canActivate: [roleGuard],
-        data: { roles: ['DECANO'], comoDecano: true },
-        loadComponent: () =>
-          import('./features/coordinator/coordinator-consolidado/consolidado-asistencia.component').then(
-            (m) => m.ConsolidadoAsistenciaComponent
-          ),
-      },
       // CULM-001 C.1: revisiones de cancelación de matrícula por pérdida de inasistencia (decano)
       {
         path: 'decano/revisiones-cancelacion',
@@ -346,37 +258,34 @@ export const routes: Routes = [
           ),
       },
       // HU143 / HU157: búsqueda de asignaturas y ficha unificada de estudiantes del administrador
+      { path: 'admin/asignaturas', redirectTo: 'admin/personas/asignaturas', pathMatch: 'full' },
+      { path: 'admin/docentes', redirectTo: 'admin/personas/docentes', pathMatch: 'full' },
+      { path: 'admin/estudiantes', redirectTo: 'admin/personas/estudiantes', pathMatch: 'full' },
+      // Rutas Coordinador (CULM-001: 12 pantallas -> 7). Programa agrupa por pestaña; Asistencia fusiona asistencias,
+      // consolidado e indicadores; Estudiantes, Planes de estudio y Revisiones se mantienen.
       {
-        path: 'admin/asignaturas',
+        path: 'coordinador/programa',
         canActivate: [roleGuard],
-        data: { roles: ['ADMINISTRADOR', 'ADMIN'], comoAdministrador: true },
-        loadComponent: () =>
-          import('./features/dean/dean-asignaturas/dean-asignaturas.component').then((m) => m.DeanAsignaturasComponent),
+        data: { roles: ['COORDINADOR'] },
+        loadChildren: () => import('./features/coordinator/coordinator.routes').then((m) => m.PROGRAMA_ROUTES),
       },
       {
-        path: 'admin/docentes',
-        canActivate: [roleGuard],
-        data: { roles: ['ADMINISTRADOR', 'ADMIN'], comoAdministrador: true },
-        loadComponent: () =>
-          import('./features/dean/dean-docentes/dean-docentes.component').then((m) => m.DeanDocentesComponent),
-      },
-      {
-        path: 'admin/estudiantes',
-        canActivate: [roleGuard],
-        data: { roles: ['ADMINISTRADOR', 'ADMIN'] },
-        loadComponent: () =>
-          import('./features/admin/admin-estudiantes/admin-estudiantes.component').then((m) => m.AdminEstudiantesComponent),
-      },
-      // Rutas Coordinador
-      {
-        path: 'coordinador/docentes',
+        path: 'coordinador/asistencia',
         canActivate: [roleGuard],
         data: { roles: ['COORDINADOR'] },
         loadComponent: () =>
-          import('./features/coordinator/coordinator-docentes/coordinator-docentes.component').then(
-            (m) => m.CoordinatorDocentesComponent
+          import('./features/coordinator/coordinator-asistencia/coordinator-asistencia.component').then(
+            (m) => m.CoordinatorAsistenciaComponent
           ),
       },
+      // Rutas antiguas del coordinador: se conservan solo para no romper marcadores guardados.
+      { path: 'coordinador/grupos', redirectTo: 'coordinador/programa/grupos', pathMatch: 'full' },
+      { path: 'coordinador/materias', redirectTo: 'coordinador/programa/materias', pathMatch: 'full' },
+      { path: 'coordinador/docentes', redirectTo: 'coordinador/programa/docentes', pathMatch: 'full' },
+      { path: 'coordinador/periodos', redirectTo: 'coordinador/programa/periodos', pathMatch: 'full' },
+      { path: 'coordinador/asistencias', redirectTo: 'coordinador/asistencia', pathMatch: 'full' },
+      { path: 'coordinador/consolidado-asistencia', redirectTo: 'coordinador/asistencia', pathMatch: 'full' },
+      { path: 'coordinador/indicadores', redirectTo: 'coordinador/asistencia', pathMatch: 'full' },
       {
         path: 'coordinador/planes-estudio',
         canActivate: [roleGuard],
@@ -432,33 +341,6 @@ export const routes: Routes = [
           ).then((m) => m.CoordinatorSubjectFormPageComponent),
       },
       {
-        path: 'coordinador/periodos',
-        canActivate: [roleGuard],
-        data: { roles: ['COORDINADOR'] },
-        loadComponent: () =>
-          import('./features/coordinator/coordinator-periods/coordinator-periods.component').then(
-            (m) => m.CoordinatorPeriodsComponent
-          ),
-      },
-      {
-        path: 'coordinador/indicadores',
-        canActivate: [roleGuard],
-        data: { roles: ['COORDINADOR'] },
-        loadComponent: () =>
-          import(
-            './features/coordinator/coordinator-indicators/coordinator-indicators.component'
-          ).then((m) => m.CoordinatorIndicatorsComponent),
-      },
-      {
-        path: 'decano/indicadores',
-        canActivate: [roleGuard],
-        data: { roles: ['DECANO'] },
-        loadComponent: () =>
-          import('./features/dean/dean-indicators/dean-indicators.component').then(
-            (m) => m.DeanIndicatorsComponent
-          ),
-      },
-      {
         path: 'coordinador/estudiantes',
         canActivate: [roleGuard],
         data: { roles: ['COORDINADOR'] },
@@ -466,43 +348,6 @@ export const routes: Routes = [
           import(
             './features/coordinator/coordinator-students/coordinator-students.component'
           ).then((m) => m.CoordinatorStudentsComponent),
-      },
-      {
-        path: 'coordinador/grupos',
-        canActivate: [roleGuard],
-        data: { roles: ['COORDINADOR'] },
-        loadComponent: () =>
-          import(
-            './features/coordinator/coordinator-groups/coordinator-groups.component'
-          ).then((m) => m.CoordinatorGroupsComponent),
-      },
-      {
-        path: 'coordinador/materias',
-        canActivate: [roleGuard],
-        data: { roles: ['COORDINADOR'] },
-        loadComponent: () =>
-          import(
-            './features/coordinator/coordinator-subjects/coordinator-subjects.component'
-          ).then((m) => m.CoordinatorSubjectsComponent),
-      },
-      {
-        path: 'coordinador/asistencias',
-        canActivate: [roleGuard],
-        data: { roles: ['COORDINADOR'] },
-        loadComponent: () =>
-          import(
-            './features/coordinator/coordinator-attendance/coordinator-attendance.component'
-          ).then((m) => m.CoordinatorAttendanceComponent),
-      },
-      // HU061: consolidado de asistencia por cohorte, materia y docente (programa del coordinador)
-      {
-        path: 'coordinador/consolidado-asistencia',
-        canActivate: [roleGuard],
-        data: { roles: ['COORDINADOR'] },
-        loadComponent: () =>
-          import('./features/coordinator/coordinator-consolidado/consolidado-asistencia.component').then(
-            (m) => m.ConsolidadoAsistenciaComponent
-          ),
       },
       // CULM-001 C.1: revisiones de cancelación de matrícula por pérdida de inasistencia (coordinador)
       {
@@ -552,22 +397,16 @@ export const routes: Routes = [
             (m) => m.StudentAlertsComponent
           ),
       },
+      { path: 'estudiante/horarios', redirectTo: 'estudiante/mis-materias/horarios', pathMatch: 'full' },
+      { path: 'estudiante/materias', redirectTo: 'estudiante/mis-materias/materias', pathMatch: 'full' },
       {
-        path: 'estudiante/horarios',
+        // Mis materias: pestañas materias, horarios y oferta (/app/estudiante/mis-materias/:pestaña).
+        path: 'estudiante/mis-materias',
         canActivate: [roleGuard],
         data: { roles: ['ESTUDIANTE'] },
-        loadComponent: () =>
-          import('./features/student/student-schedule/student-schedule.component').then(
-            (m) => m.StudentScheduleComponent
-          ),
-      },
-      {
-        path: 'estudiante/materias',
-        canActivate: [roleGuard],
-        data: { roles: ['ESTUDIANTE'] },
-        loadComponent: () =>
-          import('./features/student/student-courses/student-courses.component').then(
-            (m) => m.StudentCoursesComponent
+        loadChildren: () =>
+          import('./features/student/student-mis-materias/student-mis-materias.routes').then(
+            (m) => m.MIS_MATERIAS_ROUTES
           ),
       },
       {
@@ -579,15 +418,7 @@ export const routes: Routes = [
             (m) => m.StudentClaimsComponent
           ),
       },
-      {
-        path: 'estudiante/oferta',
-        canActivate: [roleGuard],
-        data: { roles: ['ESTUDIANTE'] },
-        loadComponent: () =>
-          import('./features/student/student-group-offer/student-group-offer.component').then(
-            (m) => m.StudentGroupOfferComponent
-          ),
-      },
+      { path: 'estudiante/oferta', redirectTo: 'estudiante/mis-materias/oferta', pathMatch: 'full' },
       {
         path: 'acceso-denegado',
         data: { codigo: 403 },

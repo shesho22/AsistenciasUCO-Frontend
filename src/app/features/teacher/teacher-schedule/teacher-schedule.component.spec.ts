@@ -73,7 +73,7 @@ describe('TeacherScheduleComponent', () => {
     component.horarios.set([{ ...mockHorarios[0], horaInicio: '08:00:00', horaFin: '10:00:00', totalEstudiantes: 1 }]);
     fixture.detectChanges();
     const t = (fixture.nativeElement.textContent as string).replace(/\s+/g, ' ');
-    expect(t).toContain('08:00 - 10:00');
+    expect(t).toContain('08:00–10:00');
     expect(t).not.toContain('08:00:00');
     expect(t).toContain('1 estudiante');
     expect(t).not.toContain('1 estudiantes');

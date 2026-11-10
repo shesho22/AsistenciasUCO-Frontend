@@ -40,7 +40,7 @@ const ANIO_VALIDO = /^\d{4}$/;
       <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <div class="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1">Administración Institucional</div>
-          <h1 class="text-2xl font-bold font-serif text-warm-900">Festivos</h1>
+          <h2 class="text-2xl font-bold font-serif text-warm-900">Festivos</h2>
           <p class="text-sm text-warm-600">
             Días festivos de Colombia. Las sesiones que caen en festivo se cancelan automáticamente.
           </p>

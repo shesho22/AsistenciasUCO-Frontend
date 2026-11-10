@@ -24,6 +24,15 @@ import {
 } from '../../../core/models/role-management.model';
 
 // Subcomponentes Desacoplados
+import { RealtimeService } from '../../../core/realtime/realtime.service';
+import { onRealtimeReconnect } from '../../../core/realtime/realtime-reconnect-trigger';
+import {
+  REALTIME_EVENT_TYPE,
+  RealtimeEvent,
+  SesionCanceladaRealtimePayload,
+  SesionManualCreadaRealtimePayload,
+} from '../../../core/realtime/model/realtime-event.model';
+import { mensajeSesionManualCreada } from '../../../core/models/sesion-manual.util';
 import { StudentCoursesListComponent } from './components/student-courses-list.component';
 import { StudentCourseDetailComponent } from './components/student-course-detail.component';
 import { StudentClaimFormComponent } from './components/student-claim-form.component';
@@ -118,6 +127,8 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
   private readonly consultasService = inject(ConsultasTransversalesService);
   private readonly toast = inject(ToastService);
   private readonly sessionTimeZone = inject(SessionTimeZoneService);
+  private readonly realtime = inject(RealtimeService, { optional: true });
+  private realtimeSub: Subscription | null = null;
 
   vistaActual = signal<VistaEstudiante>('LISTA');
   materias = signal<MateriaEstudianteItem[]>([]);
@@ -240,10 +251,47 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
     this.selectedMateria.set(materia);
     this.vistaActual.set('DETALLE');
     this.cargarSesiones(materia);
+    this.iniciarRealtime(materia);
+  }
+
+  /**
+   * DEC-064: el canal SSE del grupo avisa de una sesión creada manualmente o cancelada y recarga el detalle. Sin
+   * polling: la lista se recarga por evento o al recuperarse la conexión.
+   */
+  private iniciarRealtime(materia: MateriaEstudianteItem): void {
+    this.detenerRealtime();
+    if (!this.realtime || !materia.idGrupo) return;
+    const grupoId = materia.idGrupo;
+    this.realtime.startForGroup(grupoId);
+
+    const sub = new Subscription();
+    sub.add(onRealtimeReconnect(this.realtime.connectionState$).subscribe(() => this.cargarSesiones(materia)));
+    sub.add(
+      this.realtime.events().subscribe((evt: RealtimeEvent) => {
+        if (evt.type === REALTIME_EVENT_TYPE.SESION_MANUAL_CREADA) {
+          const payload = evt.payload as SesionManualCreadaRealtimePayload;
+          if (payload?.grupo !== grupoId) return;
+          this.toast.info(mensajeSesionManualCreada(payload, this.sessionTimeZone.formatTemporal(payload.fechaHoraInicio)));
+          this.cargarSesiones(materia);
+        } else if (evt.type === REALTIME_EVENT_TYPE.SESION_CANCELADA) {
+          const payload = evt.payload as SesionCanceladaRealtimePayload;
+          if (payload?.grupo === grupoId) this.cargarSesiones(materia);
+        }
+      })
+    );
+    this.realtimeSub = sub;
+  }
+
+  private detenerRealtime(): void {
+    if (!this.realtimeSub) return;
+    this.realtimeSub.unsubscribe();
+    this.realtimeSub = null;
+    this.realtime?.stop();
   }
 
   volverALista(): void {
     this.vistaActual.set('LISTA');
+    this.detenerRealtime();
     this.selectedMateria.set(null);
     this.sesiones.set([]);
     this.sesionesError.set(null);
@@ -266,6 +314,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.cancelarSubida();
+    this.detenerRealtime();
   }
 
   onFileSelected(event: Event): void {

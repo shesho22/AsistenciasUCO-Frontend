@@ -56,6 +56,15 @@ describe('TomaQrProyeccionComponent (CULM-001 B.2, HU175)', () => {
 
   const el = (id: string): HTMLElement | null =>
     (fixture.nativeElement as HTMLElement).querySelector(`[data-testid="${id}"]`);
+  /** "Regenerar" y "Cerrar toma" viven en el menu "Mas": se abre y se devuelve la opcion pedida. */
+  const itemMenu = (id: string): HTMLButtonElement => {
+    const raiz = fixture.nativeElement as HTMLElement;
+    if (!raiz.querySelector('[role="menu"]')) {
+      raiz.querySelector<HTMLButtonElement>('[data-testid="action-menu-trigger"]')!.click();
+      fixture.detectChanges();
+    }
+    return raiz.querySelector<HTMLButtonElement>(`[role="menuitem"][data-testid="${id}"]`)!;
+  };
   const texto = (id: string) => el(id)?.textContent?.replace(/\s+/g, ' ').trim();
 
   beforeEach(() => {
@@ -184,7 +193,7 @@ describe('TomaQrProyeccionComponent (CULM-001 B.2, HU175)', () => {
     qrService.rotarQr.and.returnValue(
       of({ exitoso: true, datos: { ...qr, pin: '333444', qrPngBase64: 'CCCC' } })
     );
-    (el('qr-regenerar') as HTMLButtonElement).click();
+    itemMenu('qr-regenerar').click();
     fixture.detectChanges();
 
     expect(qrService.rotarQr).toHaveBeenCalledOnceWith('toma-1');
@@ -195,7 +204,7 @@ describe('TomaQrProyeccionComponent (CULM-001 B.2, HU175)', () => {
     qrService.rotarQr.and.returnValue(
       throwError(() => apiHttpError(409, 'La toma ya esta cerrada.', 'AQR_005'))
     );
-    (el('qr-regenerar') as HTMLButtonElement).click();
+    itemMenu('qr-regenerar').click();
     fixture.detectChanges();
     expect(texto('qr-error')).toBe('La toma ya esta cerrada.');
   });
@@ -221,14 +230,47 @@ describe('TomaQrProyeccionComponent (CULM-001 B.2, HU175)', () => {
     expect(qrService.cerrarQr).toHaveBeenCalledOnceWith('toma-1');
     expect(dejar).toHaveBeenCalledTimes(1);
 
-    (el('qr-cerrar-toma') as HTMLButtonElement).click();
+    itemMenu('qr-cerrar-toma').click();
     expect(cerrar).toHaveBeenCalledTimes(1);
     expect(qrService.cerrarQr).toHaveBeenCalledTimes(1);
   });
 
   it('B2-F-05 los controles tactiles miden al menos 44 px', () => {
-    for (const id of ['qr-regenerar', 'qr-dejar', 'qr-cerrar-toma']) {
-      expect((el(id) as HTMLElement).className).toContain('min-h-[44px]');
+    expect((el('qr-dejar') as HTMLElement).className).toContain('min-h-[44px]');
+    for (const id of ['qr-regenerar', 'qr-cerrar-toma']) {
+      expect(itemMenu(id).className).toContain('min-h-[44px]');
     }
+  });
+  it('CULM-001 usa la proyeccion compartida: QR a tamano normal, estado de la ventana y programa opcional', () => {
+    const n = fixture.nativeElement as HTMLElement;
+    expect(n.querySelector('app-qr-proyeccion')).not.toBeNull();
+    expect((el('qr-tarjeta') as HTMLElement).style.width).toBe('');
+    expect(texto('qr-estado')).toContain('ABIERTA');
+    expect(el('qr-programa')).toBeNull();
+    fixture.componentRef.setInput('programa', 'Ingenieria de Sistemas');
+    fixture.detectChanges();
+    expect(texto('qr-programa')).toContain('Ingenieria de Sistemas');
+    expect(el('qr-pantalla-completa')).not.toBeNull();
+  });
+
+  it('UX densidad: visibles solo Ampliar, Dejar de proyectar y el menu; Regenerar y Cerrar toma van al menu', () => {
+    const raiz = fixture.nativeElement as HTMLElement;
+    const visibles = Array.from(raiz.querySelectorAll('header button')).filter((b) => !b.hasAttribute('role'));
+    expect(visibles.length).toBe(3);
+    expect(el('qr-regenerar')).toBeNull();
+    expect(el('qr-cerrar-toma')).toBeNull();
+    expect(itemMenu('qr-regenerar')).not.toBeNull();
+    expect(itemMenu('qr-cerrar-toma')).not.toBeNull();
+  });
+
+  it('UX densidad: Escape no detiene la proyeccion (solo el boton lo hace)', () => {
+    qrService.cerrarQr.calls.reset();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    expect(qrService.cerrarQr).not.toHaveBeenCalled();
+  });
+
+  it('UX densidad: el aviso de la red Wi-Fi esta dentro del panel Detalles', () => {
+    const detalles = el('qr-detalles') as HTMLElement;
+    expect(detalles.textContent).toContain('red Wi-Fi del campus UCO');
   });
 });

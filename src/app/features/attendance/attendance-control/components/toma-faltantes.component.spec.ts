@@ -1,9 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Subject, filter, of, throwError } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { TomaFaltantesComponent } from './toma-faltantes.component';
 import { TomaAsistenciaService } from '../../../../core/services/toma-asistencia.service';
-import { RealtimeService } from '../../../../core/realtime/realtime.service';
-import { RealtimeEvent, REALTIME_EVENT_TYPE } from '../../../../core/realtime/model/realtime-event.model';
 import { FaltanteToma } from '../../../../core/models/toma-asistencia.model';
 import { apiHttpError } from '../../../../core/testing/api-error.fixture';
 
@@ -12,13 +10,12 @@ function faltante(id: string, parcial: Partial<FaltanteToma> = {}): FaltanteToma
 }
 
 function pagina(elementos: FaltanteToma[], numeroPagina = 1, totalPaginas = 1) {
-  return { exitoso: true, elementos, numeroPagina, tamanoPagina: 50, totalElementos: elementos.length, totalPaginas };
+  return { exitoso: true, elementos, numeroPagina, tamanoPagina: 100, totalElementos: elementos.length, totalPaginas };
 }
 
 describe('TomaFaltantesComponent (CULM-001 B.2)', () => {
   let fixture: ComponentFixture<TomaFaltantesComponent>;
   let tomas: jasmine.SpyObj<TomaAsistenciaService>;
-  let events$: Subject<RealtimeEvent>;
 
   const el = (id: string) => (fixture.nativeElement as HTMLElement).querySelector(`[data-testid="${id}"]`) as HTMLElement | null;
   const boton = (id: string) => el(id) as HTMLButtonElement;
@@ -32,23 +29,19 @@ describe('TomaFaltantesComponent (CULM-001 B.2)', () => {
   }
 
   beforeEach(() => {
-    events$ = new Subject<RealtimeEvent>();
     tomas = jasmine.createSpyObj<TomaAsistenciaService>('TomaAsistenciaService', ['consultarFaltantes', 'registrarAsistencias']);
     tomas.consultarFaltantes.and.returnValue(of(pagina([faltante('a'), faltante('b', { tieneRegistro: true, estado: 'SJC', marcadoAlCerrar: true })])));
-    const realtime = jasmine.createSpyObj<RealtimeService>('RealtimeService', ['listenType']);
-    realtime.listenType.and.callFake(((type: string) => events$.pipe(filter((e) => e.type === type))) as never);
     TestBed.configureTestingModule({
       imports: [TomaFaltantesComponent],
       providers: [
         { provide: TomaAsistenciaService, useValue: tomas },
-        { provide: RealtimeService, useValue: realtime },
       ],
     });
   });
 
   it('B2-F-08 consulta la primera pagina y lista tarjetas con "Sin lectura" o "Ausente"', () => {
     crear();
-    expect(tomas.consultarFaltantes).toHaveBeenCalledWith('t-1', 1, 50);
+    expect(tomas.consultarFaltantes).toHaveBeenCalledWith('t-1', 1, 100);
     expect(el('faltante-a')!.textContent).toContain('Estudiante a');
     expect(el('faltante-a')!.textContent).toContain('Sin lectura');
     expect(el('faltante-b')!.textContent).toContain('Ausente');
@@ -112,23 +105,52 @@ describe('TomaFaltantesComponent (CULM-001 B.2)', () => {
     expect(boton('marcar-seleccionados').disabled).toBeTrue();
   });
 
-  it('B2-F-08 ASISTENCIAS_TOMA_ACTUALIZADAS de la toma recarga la lista; las de otra toma no', () => {
+  it('UX-toma el contenedor recarga los pendientes incrementando la version', () => {
     crear();
     tomas.consultarFaltantes.calls.reset();
-    events$.next({ eventId: 'e', type: REALTIME_EVENT_TYPE.ASISTENCIAS_TOMA_ACTUALIZADAS, occurredAt: 'x', correlationId: null,
-      payload: { grupo: 'g', sesion: 's', toma: 'otra', totalRegistros: 1 } });
-    expect(tomas.consultarFaltantes).not.toHaveBeenCalled();
-    events$.next({ eventId: 'e', type: REALTIME_EVENT_TYPE.ASISTENCIAS_TOMA_ACTUALIZADAS, occurredAt: 'x', correlationId: null,
-      payload: { grupo: 'g', sesion: 's', toma: 't-1', totalRegistros: 3 } });
+    fixture.componentRef.setInput('version', 1);
+    fixture.detectChanges();
     expect(tomas.consultarFaltantes).toHaveBeenCalledTimes(1);
   });
 
-  it('B2-F-08 pagina la lista con la respuesta del backend', () => {
-    tomas.consultarFaltantes.and.returnValue(of(pagina([faltante('a')], 1, 3)));
+  it('UX-toma recorre todas las paginas de pendientes', () => {
+    tomas.consultarFaltantes.and.callFake(((_t: string, p: number) =>
+      of(p === 1 ? pagina([faltante('a')], 1, 2) : pagina([faltante('b')], 2, 2))) as never);
     crear();
-    tomas.consultarFaltantes.calls.reset();
-    fixture.componentInstance.cambiarPagina(2);
-    expect(tomas.consultarFaltantes).toHaveBeenCalledWith('t-1', 2, 50);
+    expect(el('faltante-a')).not.toBeNull();
+    expect(el('faltante-b')).not.toBeNull();
+  });
+
+  it('UX-toma Marcar falta envia SJC de un elemento y se deshabilita para quien ya esta ausente', () => {
+    tomas.registrarAsistencias.and.returnValue(of({ exitoso: true, datos: { idToma: 't-1', idSesion: 's', totalRegistros: 1 } }));
+    crear();
+    expect(boton('marcar-falta-b').disabled).toBeTrue();
+    boton('marcar-falta-a').click();
+    fixture.detectChanges();
+    expect(tomas.registrarAsistencias).toHaveBeenCalledOnceWith('t-1', [{ estudianteId: 'a', estado: 'SJC' }]);
+  });
+
+  it('UX-toma filtra los pendientes por nombre', () => {
+    crear();
+    const buscar = el('buscar-pendiente') as HTMLInputElement;
+    buscar.value = 'estudiante b';
+    buscar.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(el('faltante-a')).toBeNull();
+    expect(el('faltante-b')).not.toBeNull();
+    buscar.value = 'zzz';
+    buscar.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(el('faltantes-sin-coincidencias')).not.toBeNull();
+  });
+
+  it('UX-toma emite actualizado tras marcar para que la toma refresque su lista', () => {
+    tomas.registrarAsistencias.and.returnValue(of({ exitoso: true, datos: { idToma: 't-1', idSesion: 's', totalRegistros: 1 } }));
+    crear();
+    let emitido = 0;
+    fixture.componentInstance.actualizado.subscribe(() => emitido++);
+    boton('marcar-presente-a').click();
+    expect(emitido).toBe(1);
   });
 
   it('B2-F-08 sin faltantes muestra el estado vacio', () => {

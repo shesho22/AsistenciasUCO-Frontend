@@ -1,6 +1,7 @@
 import { Component, ChangeDetectionStrategy, computed, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
+import { ActionMenuComponent, ActionMenuItem } from '../../../../shared/components/action-menu/action-menu.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { FormSelectComponent, SelectOption } from '../../../../shared/components/form-select/form-select.component';
 import { Course } from '../../../../core/models/course.model';
@@ -10,7 +11,7 @@ import { ClassSession } from '../../../../core/models/attendance.model';
   selector: 'app-attendance-control-header',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, BadgeComponent, ButtonComponent, FormSelectComponent],
+  imports: [CommonModule, BadgeComponent, ButtonComponent, FormSelectComponent, ActionMenuComponent],
   host: {
     class: 'block w-full'
   },
@@ -70,41 +71,19 @@ import { ClassSession } from '../../../../core/models/attendance.model';
           <div class="flex flex-wrap items-center gap-2">
             <!-- Botones contextuales de la sesión activa: Visibles SOLO en modo DETALLE -->
             @if (isDetailMode()) {
-              <app-button
-                variant="accent"
-                size="sm"
-                [disabled]="bulkDisabled()"
-                (clicked)="markAllPresent.emit()"
-              >
-                <svg class="w-4 h-4 mr-1 text-warm-950 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                </svg>
-                Todos Presentes
-              </app-button>
-
-              <app-button
-                variant="danger"
-                size="sm"
-                [disabled]="bulkDisabled()"
-                (clicked)="markAllAbsent.emit()"
-              >
-                <svg class="w-4 h-4 mr-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-                Todos Ausentes
-              </app-button>
-
-              <app-button
-                variant="secondary"
-                size="sm"
-                [disabled]="!selectedCourseId() || !selectedSessionId() || !attendanceWindowOpen()"
-                (clicked)="openProjection.emit()"
-              >
-                <svg class="w-4 h-4 mr-1 text-success-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-                </svg>
-                Proyectar QR
-              </app-button>
+              @if (bulkActions()) {
+                <app-button variant="accent" size="sm" [disabled]="bulkDisabled()" (clicked)="markAllPresent.emit()">
+                  <svg class="w-4 h-4 mr-1 text-warm-950 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  Todos Presentes
+                </app-button>
+                <app-action-menu label="Más acciones de la sesión" [items]="accionesSesion()" (selected)="alElegirAccion($event)" />
+              } @else {
+                <app-button variant="secondary" size="sm" [disabled]="proyeccionDeshabilitada()" (clicked)="openProjection.emit()">
+                  Proyectar QR
+                </app-button>
+              }
             }
           </div>
         </div>
@@ -112,7 +91,7 @@ import { ClassSession } from '../../../../core/models/attendance.model';
         <!-- Fila Inferior: Selectores de Curso y Sesión contextualmente adaptados -->
         <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center text-xs">
           <!-- Selector de Grupo / Asignatura -->
-          <div [class]="isDetailMode() ? 'md:col-span-6' : 'md:col-span-9'">
+          <div [class]="isDetailMode() ? 'md:col-span-6' : 'md:col-span-12'">
             <app-form-select
               [options]="courseOptions()"
               [value]="selectedCourseId()"
@@ -132,26 +111,10 @@ import { ClassSession } from '../../../../core/models/attendance.model';
             </div>
           }
 
-          <!-- Botón Nueva Sesión: Visible SOLO en modo OVERVIEW (en detalle de sesión no se crean sesiones) -->
-          @if (!isDetailMode()) {
-            <div class="md:col-span-3 flex justify-end">
-              <app-button
-                variant="primary"
-                size="sm"
-                [disabled]="!selectedCourseId()"
-                (clicked)="openNewSession.emit()"
-              >
-                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                </svg>
-                + Sesión
-              </app-button>
-            </div>
-          }
         </div>
       </header>
 
-      @if (sessions().length === 0 && selectedCourseId() && !isLoadingSession()) {
+      @if (isDetailMode() && sessions().length === 0 && selectedCourseId() && !isLoadingSession()) {
         <div class="bg-white p-8 rounded-2xl border border-dashed border-warm-300 text-center space-y-3 shadow-warm-xs">
           <div class="w-12 h-12 rounded-full bg-primary-50 text-primary-700 flex items-center justify-center mx-auto">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -189,6 +152,8 @@ export class AttendanceControlHeaderComponent {
   isDetailMode = input<boolean>(false);
   /** SES-01: la sesión mostrada está activa ([inicio, fin) sobre instantes v2 confirmados). */
   attendanceWindowOpen = input<boolean>(true);
+  /** Los botones de marcado masivo son los de la sesión sin tomas; con tomas, cada toma tiene su propia barra de acciones. */
+  bulkActions = input<boolean>(true);
 
   // Marcado masivo: features + guardado en curso + existencia de sesión + ventana activa (SES-01).
   bulkDisabled = computed(
@@ -199,6 +164,21 @@ export class AttendanceControlHeaderComponent {
       !this.currentSession() ||
       !this.attendanceWindowOpen()
   );
+
+  protected proyeccionDeshabilitada = computed(
+    () => !this.selectedCourseId() || !this.selectedSessionId() || !this.attendanceWindowOpen()
+  );
+
+  /** Acciones secundarias de la sesion: el marcado masivo "ausentes" es destructivo y la proyeccion es ocasional. */
+  protected accionesSesion = computed<ActionMenuItem[]>(() => [
+    { id: 'ausentes', label: 'Todos ausentes', danger: true, disabled: this.bulkDisabled() },
+    { id: 'proyectar', label: 'Proyectar QR', disabled: this.proyeccionDeshabilitada() },
+  ]);
+
+  protected alElegirAccion(id: string): void {
+    if (id === 'ausentes') this.markAllAbsent.emit();
+    else if (id === 'proyectar') this.openProjection.emit();
+  }
 
   markAllPresent = output<void>();
   markAllAbsent = output<void>();

@@ -1,3 +1,4 @@
+import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 import { Component, ChangeDetectionStrategy, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
@@ -9,7 +10,7 @@ import { CoordinadorItem } from '../../../../core/models/role-management.model';
   selector: 'app-overview-dean',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, RouterLink, CardComponent, ButtonComponent],
+  imports: [EmptyStateComponent, CommonModule, RouterLink, CardComponent, ButtonComponent],
   host: {
     class: 'block w-full',
   },
@@ -46,7 +47,7 @@ import { CoordinadorItem } from '../../../../core/models/role-management.model';
             <h2 class="font-serif text-xl sm:text-2xl font-bold text-warm-900">Programas Académicos de la Facultad</h2>
             <p class="text-xs text-warm-500">Supervisión de coordinadores responsables y carga académica adscrita</p>
           </div>
-          <a routerLink="/app/decano/coordinadores">
+          <a routerLink="/app/decano/mi-facultad/coordinadores">
             <app-button variant="secondary" size="sm">Gestionar Todos →</app-button>
           </a>
         </div>
@@ -74,7 +75,7 @@ import { CoordinadorItem } from '../../../../core/models/role-management.model';
               </div>
 
               <div card-footer class="mt-4 pt-3 border-t border-warm-100 flex items-center justify-end">
-                <a routerLink="/app/decano/coordinadores" class="w-full">
+                <a routerLink="/app/decano/mi-facultad/coordinadores" class="w-full">
                   <app-button variant="secondary" size="sm" [fullWidth]="true">
                     Administrar Coordinación
                   </app-button>
@@ -82,8 +83,11 @@ import { CoordinadorItem } from '../../../../core/models/role-management.model';
               </div>
             </app-card>
           } @empty {
-            <div class="col-span-3 bg-white p-12 rounded-2xl border border-warm-200 text-center space-y-3">
-              <p class="text-xs text-warm-500">No hay coordinadores asignados en esta facultad.</p>
+            <div class="col-span-3">
+              <app-empty-state
+                title="No hay coordinadores asignados en esta facultad."
+                causa="Asigna un coordinador a cada programa desde la gestión de coordinadores."
+              />
             </div>
           }
         </div>

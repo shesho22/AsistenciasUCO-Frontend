@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../core/services/auth.service';
+import { ComponentesExternosService } from '../../../core/services/componentes-externos.service';
 import { hasAnyRole } from '../../../core/models/user.model';
 import { environment } from '../../../../environments/environment';
 import { readDesignToken } from '../../../shared/utils/design-tokens';
@@ -113,6 +114,7 @@ export class SecurityAdministrationComponent implements AfterViewInit, OnDestroy
   private handle?: SecurityUiHandle;
   private loadInFlight?: Promise<void>;
   private readonly authService = inject(AuthService);
+  private readonly externos = inject(ComponentesExternosService);
   private readonly securityUiLoader = inject(SECURITY_UI_LOADER);
 
   ngAfterViewInit(): void {
@@ -160,7 +162,7 @@ export class SecurityAdministrationComponent implements AfterViewInit, OnDestroy
         headers: { Accept: 'application/json' },
       });
     } catch {
-      this.fail('error', 'No fue posible contactar la sesión BFF del PDP en el puerto 18080.');
+      this.fail('error', 'No fue posible contactar la sesión BFF del servicio de seguridad. Intenta de nuevo más tarde o avisa al administrador técnico.');
       return;
     }
 
@@ -196,12 +198,15 @@ export class SecurityAdministrationComponent implements AfterViewInit, OnDestroy
         },
       });
       this.state.set('ready');
+      this.externos.marcarDisponible('seguridad');
     } catch {
-      this.fail('error', 'No se pudo cargar Security UI desde http://localhost:5175/security-administration.js. Verifica que su preview esté activo y que CORS permita el origen Angular.');
+      this.fail('error', 'No se pudo cargar Security UI. El servicio de administración de seguridad no está disponible por ahora; avisa al administrador técnico.');
     }
   }
 
   private fail(state: Exclude<ViewState, 'loading' | 'ready'>, message: string): void {
+    // Solo un fallo de conectividad (servicio externo que no responde) oculta la entrada del menu.
+    if (state === 'error') this.externos.marcarNoDisponible('seguridad');
     this.state.set(state);
     this.message.set(message);
   }

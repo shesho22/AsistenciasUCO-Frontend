@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideRouter } from '@angular/router';
 import { DeanEstructuraComponent } from './dean-estructura.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { environment } from '../../../../environments/environment';
@@ -58,7 +59,7 @@ describe('DeanEstructuraComponent (HU109/HU119)', () => {
     toastSpy = jasmine.createSpyObj('ToastService', ['success', 'error', 'info', 'warning']);
     TestBed.configureTestingModule({
       imports: [DeanEstructuraComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting(), { provide: ToastService, useValue: toastSpy }],
+      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting(), { provide: ToastService, useValue: toastSpy }],
     });
     http = TestBed.inject(HttpTestingController);
   });
@@ -92,6 +93,29 @@ describe('DeanEstructuraComponent (HU109/HU119)', () => {
 
     component.alternar('p-1');
     expect(component.abiertos().has('p-1')).toBeTrue();
+  });
+
+
+  it('CULM-001: cada plan ofrece «Ver malla» hacia la malla del plan', () => {
+    crear();
+    http.expectOne(URL).flush({ exitoso: true, datos: estructura, total: 1 });
+    fixture.detectChanges();
+    const enlaces = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('a')).map((a) => a.getAttribute('href'));
+    expect(enlaces).toEqual(['/app/decano/programas/pl-1', '/app/decano/programas/pl-2']);
+  });
+
+  it('CULM-001: embebido oculta el encabezado de la facultad y conserva el árbol de programas', () => {
+    crear();
+    http.expectOne(URL).flush({ exitoso: true, datos: estructura, total: 1 });
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Decana Uno');
+    expect(fixture.nativeElement.querySelector('h1')).not.toBeNull();
+
+    fixture.componentRef.setInput('embebido', true);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('h1')).toBeNull();
+    expect(fixture.nativeElement.textContent).not.toContain('Decana Uno');
+    expect(fixture.nativeElement.textContent).toContain('Ingeniería de Sistemas');
   });
 
   it('facultad sin programas y respuesta vacía muestran avisos', () => {

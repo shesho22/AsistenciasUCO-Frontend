@@ -33,15 +33,30 @@ describe('DashboardLayoutComponent menú de festivos (CULM-001 B.1)', () => {
     return fixture.componentInstance;
   }
 
-  it('B1-F-40 el administrador ve "Festivos" en el menú lateral hacia /app/admin/festivos', () => {
-    const item = crear('ADMINISTRADOR').filteredNavItems().find((i) => i.route === '/app/admin/festivos');
-    expect(item?.label).toBe('Festivos');
+  const SUELTAS = [
+    '/app/admin/instituciones', '/app/admin/catalogos', '/app/admin/estados', '/app/admin/festivos',
+    '/app/admin/areas', '/app/admin/correos',
+  ];
+
+  it('el administrador ve una sola entrada "Configuración" hacia /app/admin/configuracion', () => {
+    const items = crear('ADMINISTRADOR').filteredNavItems();
+    const cfg = items.filter((i) => i.route === '/app/admin/configuracion');
+    expect(cfg.length).toBe(1);
+    expect(cfg[0].label).toBe('Configuración');
   });
 
-  it('B1-F-40 los demás roles no ven la opción', () => {
+  it('las entradas sueltas de variables y pre-registros ya no aparecen en el menu del administrador', () => {
+    const rutas = crear('ADMINISTRADOR').filteredNavItems().map((i) => i.route);
+    for (const suelta of SUELTAS) {
+      expect(rutas).not.toContain(suelta);
+    }
+    expect(rutas).toContain('/app/admin/sistema');
+  });
+
+  it('los demás roles no ven la opción de configuración', () => {
     for (const role of ['DOCENTE', 'ESTUDIANTE', 'COORDINADOR', 'DECANO'] as UserRole[]) {
       TestBed.resetTestingModule();
-      expect(crear(role).filteredNavItems().some((i) => i.route === '/app/admin/festivos')).toBeFalse();
+      expect(crear(role).filteredNavItems().some((i) => i.route === '/app/admin/configuracion')).toBeFalse();
     }
   });
 });

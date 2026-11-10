@@ -197,3 +197,82 @@ describe('CoordinatorIndicatorsComponent (S4: coordinador de varios programas)',
     expect(TestBed.inject(CoordinatorProgramService).programaId()).toBe('p-2');
   });
 });
+
+describe('CoordinatorIndicatorsComponent (CULM-001: rótulos por persona y partes de la pantalla)', () => {
+  const base = `${environment.apiUrl}/coordinador`;
+  let fixture: ComponentFixture<CoordinatorIndicatorsComponent>;
+  let http: HttpTestingController;
+  const el = () => fixture.nativeElement as HTMLElement;
+
+  const kpis = {
+    idPrograma: 'p-1', nombrePrograma: 'Sistemas', idPeriodoAcademico: 'per-1', nombrePeriodoAcademico: '2026-2',
+    totalEstudiantes: 5, estudiantesRegulares: 2, estudiantesRiesgo: 1, estudiantesPerdida: 2, tasaPermanencia: 60,
+    sesionesProgramadas: 15, sesionesVencidas: 10, sesionesEjecutadas: 9, sesionesVencidasSinRegistro: 1,
+    sesionesSinProcedenciaTemporal: 1, porcentajeCumplimiento: 90, porcentajeProgresoCalendario: 66.67,
+    umbralAdvertencia: 15, umbralPerdida: 20,
+  };
+
+  function crear(entradas: Record<string, unknown>): void {
+    try { sessionStorage.removeItem('coordinador.programaId'); } catch { /* sin almacenamiento de sesión */ }
+    TestBed.configureTestingModule({ imports: [CoordinatorIndicatorsComponent], providers: [provideHttpClient(), provideHttpClientTesting()] });
+    http = TestBed.inject(HttpTestingController);
+    fixture = TestBed.createComponent(CoordinatorIndicatorsComponent);
+    for (const [nombre, valor] of Object.entries(entradas)) fixture.componentRef.setInput(nombre, valor);
+    fixture.detectChanges();
+    http.expectOne(porUrl(`${base}/planes-estudio`)).flush(paginaApi([planDe('p-1', 'Sistemas')]));
+  }
+
+  afterEach(() => {
+    try { sessionStorage.removeItem('coordinador.programaId'); } catch { /* sin almacenamiento de sesión */ }
+    http.verify();
+  });
+
+  it('rotula los conteos por persona como «Estudiantes en riesgo» y «Estudiantes en pérdida», no como % del grupo', () => {
+    crear({ parte: 'kpis', embebido: true });
+    http.expectOne((r) => r.url === `${base}/indicadores`).flush({ exitoso: true, datos: kpis });
+    fixture.detectChanges();
+    const texto = el().textContent ?? '';
+    expect(texto).toContain('Estudiantes en riesgo');
+    expect(texto).toContain('Estudiantes en pérdida');
+    expect(texto).not.toMatch(/\bEn riesgo\b/);
+    expect(texto).not.toMatch(/\bEn pérdida\b/);
+  });
+
+  it('parte "kpis" muestra solo las tarjetas, sin título embebido y sin consultar alertas', () => {
+    crear({ parte: 'kpis', embebido: true });
+    http.expectOne((r) => r.url === `${base}/indicadores`).flush({ exitoso: true, datos: kpis });
+    http.expectNone((r) => r.url === `${base}/alertas-tempranas`);
+    fixture.detectChanges();
+    expect(el().querySelector('h1')).toBeNull();
+    expect(el().textContent).toContain('Sistemas · 2026-2');
+    expect(el().textContent).not.toContain('Alertas tempranas');
+  });
+
+  it('parte "alertas" muestra solo las alertas, sin consultar los KPIs', () => {
+    crear({ parte: 'alertas', embebido: true });
+    http.expectNone((r) => r.url === `${base}/indicadores`);
+    http.expectOne((r) => r.url === `${base}/alertas-tempranas`).flush({ exitoso: true, datos: [], total: 0 });
+    fixture.detectChanges();
+    expect(el().textContent).toContain('Alertas tempranas');
+    expect(el().textContent).not.toContain('Estudiantes en riesgo');
+  });
+
+  it('por defecto (todo, sin embeber) conserva el título, las tarjetas y las alertas', () => {
+    crear({});
+    http.expectOne((r) => r.url === `${base}/indicadores`).flush({ exitoso: true, datos: kpis });
+    http.expectOne((r) => r.url === `${base}/alertas-tempranas`).flush({ exitoso: true, datos: [], total: 0 });
+    fixture.detectChanges();
+    expect(el().querySelector('h1')?.textContent).toContain('Indicadores del programa');
+    expect(el().textContent).toContain('Alertas tempranas');
+  });
+
+  it('cambiar de programa avisa a la pantalla que lo aloja', () => {
+    crear({ parte: 'kpis' });
+    http.expectOne((r) => r.url === `${base}/indicadores`).flush({ exitoso: true, datos: kpis });
+    const emitido = jasmine.createSpy('programaCambiado');
+    fixture.componentInstance.programaCambiado.subscribe(emitido);
+    fixture.componentInstance.cambiarPrograma();
+    http.expectOne((r) => r.url === `${base}/indicadores`).flush({ exitoso: true, datos: kpis });
+    expect(emitido).toHaveBeenCalledTimes(1);
+  });
+});

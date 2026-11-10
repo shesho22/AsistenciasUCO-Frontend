@@ -161,7 +161,7 @@ import {
           }
 
           <!-- Botón Móvil de Guardado -->
-          <div class="pt-2">
+          <div class="pt-2 sticky bottom-0 z-10 bg-warm-50/90 pb-2">
             <app-button
               variant="primary"
               size="md"
@@ -246,7 +246,7 @@ import {
             </div>
 
             <!-- UNICO BOTÓN PRINCIPAL AL FINAL DE LA TABLA -->
-            <div class="p-4 bg-warm-50/90 border-t border-warm-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div class="p-4 bg-warm-50/90 border-t border-warm-200 sticky bottom-0 z-10 flex flex-col sm:flex-row items-center justify-between gap-3">
               <span class="text-xs text-warm-600 font-medium">Fin del registro ({{ students().length }} alumnos en lista)</span>
               <app-button
                 variant="primary"
