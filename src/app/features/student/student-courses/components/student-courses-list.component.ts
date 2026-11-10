@@ -8,6 +8,11 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
 import { MateriaEstudianteItem } from '../../../../core/models/role-management.model';
 import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
 
+/** Minúsculas y sin tildes, para que "calculo" encuentre "Cálculo". */
+function normalizar(texto: string): string {
+  return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+
 @Component({
   selector: 'app-student-courses-list',
   standalone: true,
@@ -108,6 +113,27 @@ import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
         </div>
       </div>
 
+      <!-- HU007 (CERT-CULM001): búsqueda y filtrado de las materias matriculadas -->
+      @if (!isLoading() && !error() && materias().length > 0) {
+        <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+          <label for="buscar-materia" class="text-xs font-semibold text-warm-700 shrink-0">Buscar materia</label>
+          <input
+            id="buscar-materia"
+            type="search"
+            aria-label="Buscar materia por nombre, código, grupo o docente"
+            placeholder="Nombre, código, grupo o docente"
+            #campoBusqueda
+            [value]="busqueda()"
+            (input)="buscar(campoBusqueda.value)"
+            class="w-full sm:max-w-sm bg-white text-warm-900 border border-warm-300 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+            data-testid="buscar-materia"
+          />
+          @if (busqueda().trim()) {
+            <span class="text-xs text-warm-500" aria-live="polite" data-testid="resultado-busqueda">{{ materiasFiltradas().length }} de {{ materias().length }} materias</span>
+          }
+        </div>
+      }
+
       <!-- Grid de Materias -->
       @if (isLoading()) {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -188,13 +214,19 @@ import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
               </div>
             </app-card>
           } @empty {
-            <div class="md:col-span-2 bg-white p-12 rounded-2xl border border-warm-200 text-center space-y-3" data-testid="materias-vacio">
-              <p class="text-xs text-warm-500">No tienes asignaturas matriculadas actualmente.</p>
-            </div>
+            @if (materias().length === 0) {
+              <div class="md:col-span-2 bg-white p-12 rounded-2xl border border-warm-200 text-center space-y-3" data-testid="materias-vacio">
+                <p class="text-xs text-warm-500">No tienes asignaturas matriculadas actualmente.</p>
+              </div>
+            } @else {
+              <p class="md:col-span-2 text-sm text-warm-600 text-center py-6" data-testid="sin-coincidencias">
+                No hay materias que coincidan con «{{ busqueda().trim() }}».
+              </p>
+            }
           }
         </div>
         <app-pagination
-          [totalItems]="materias().length"
+          [totalItems]="materiasFiltradas().length"
           [pageSize]="tamano()"
           [currentPage]="paginaEfectiva()"
           [pageSizeOptions]="[6, 12, 24]"
@@ -214,15 +246,35 @@ export class StudentCoursesListComponent {
   materiasEnRiesgo = input<number | null>(null);
   totalHorasFalta = input<number | null>(null);
 
+  /** HU007 (CERT-CULM001): texto libre para filtrar por nombre, código, grupo o docente. */
+  readonly busqueda = signal('');
+  readonly materiasFiltradas = computed(() => {
+    const termino = normalizar(this.busqueda());
+    if (!termino) {
+      return this.materias();
+    }
+    return this.materias().filter((materia) =>
+      [materia.nombre, materia.codigo, materia.grupo, materia.docente].some(
+        (campo) => campo != null && normalizar(campo).includes(termino)
+      )
+    );
+  });
+
   readonly pagina = signal(1);
   readonly tamano = signal(12);
   readonly paginaEfectiva = computed(() =>
-    Math.min(this.pagina(), Math.max(1, Math.ceil(this.materias().length / this.tamano())))
+    Math.min(this.pagina(), Math.max(1, Math.ceil(this.materiasFiltradas().length / this.tamano())))
   );
   readonly materiasPagina = computed(() => {
     const inicio = (this.paginaEfectiva() - 1) * this.tamano();
-    return this.materias().slice(inicio, inicio + this.tamano());
+    return this.materiasFiltradas().slice(inicio, inicio + this.tamano());
   });
+
+  /** Cada búsqueda vuelve a la página 1 para no quedar en una página vacía. */
+  buscar(texto: string): void {
+    this.busqueda.set(texto);
+    this.pagina.set(1);
+  }
 
   cambiarTamano(tamano: number): void {
     this.tamano.set(tamano);

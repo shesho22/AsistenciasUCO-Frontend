@@ -183,6 +183,22 @@ describe('StudentCoursesComponent — soporte y radicación (LB-004D FE-01..FE-0
     expect(component.enviandoReclamo()).toBeFalse();
   });
 
+  it('SUPUESTO-B-15 (CERT-CULM001): una sesion PARCIAL reclamable se radica por su toma ausente', () => {
+    claims.crearReclamo.and.returnValue(of({ exitoso: true, mensajeUsuario: 'ok' }) as never);
+    component.sesionReclamar.set(crearSesion({ id: 's-2', estadoAsistencia: 'PARCIAL', reclamable: true }));
+    component.enviarReclamo({ categoria: 'Otro', justificacion: 'llegue tarde a la segunda toma' });
+
+    expect(claims.crearReclamo).toHaveBeenCalledTimes(1);
+    expect(claims.crearReclamo.calls.mostRecent().args[0].sesionId).toBe('s-2');
+    expect(claims.crearReclamo.calls.mostRecent().args[0].estadoOriginal).toBe('AUSENTE');
+  });
+
+  it('una sesion NO_DISPONIBLE nunca se radica aunque llegue marcada como reclamable', () => {
+    component.sesionReclamar.set(crearSesion({ id: 's-3', estadoAsistencia: 'NO_DISPONIBLE', reclamable: true }));
+    component.enviarReclamo({ categoria: 'Otro', justificacion: 'motivo' });
+    expect(claims.crearReclamo).not.toHaveBeenCalled();
+  });
+
   it('FE-05: radica sin soporte porque el soporte es opcional', () => {
     claims.crearReclamo.and.returnValue(of({ exitoso: true, mensajeUsuario: 'ok' }) as never);
     component.enviarReclamo({ categoria: 'Otro', justificacion: 'sin archivo' });
@@ -833,5 +849,99 @@ describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', 
 
     http.expectNone((r) => r.url.includes('/coordinador/') || r.url.includes('/admin/') || r.url.includes('/decano/'));
     expect(component.materias().length).toBe(1);
+  });
+});
+
+describe('StudentCoursesComponent — enlace desde Mis Alertas (CERT-CULM001)', () => {
+  let fixture: ComponentFixture<StudentCoursesComponent>;
+  let component: StudentCoursesComponent;
+  let http: HttpTestingController;
+
+  const MATERIAS_URL = `${environment.apiUrl}/estudiante/materias`;
+  const sesionesUrl = (id: string) => `${MATERIAS_URL}/${id}/sesiones`;
+  const OTRA_ASIGNATURA = 'e2f3a4b5-0000-0000-0000-000000000002';
+  const materiaApi = (over: Record<string, unknown> = {}) => ({
+    idAsignatura: ASIGNATURA_ID,
+    nombreAsignatura: 'Arquitectura de Software',
+    idGrupo: GRUPO_ID,
+    nombreGrupo: 'Grupo 001 - Arq Software',
+    ...over,
+  });
+
+  async function crear(queryParams: Record<string, string>, materias: unknown[]): Promise<void> {
+    await TestBed.configureTestingModule({
+      imports: [StudentCoursesComponent],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: ToastService, useValue: jasmine.createSpyObj<ToastService>('ToastService', ['success', 'error', 'warning', 'info']) },
+        { provide: AuthService, useValue: { currentUser: () => ({ id: 'u-1', name: 'Ana', email: 'ana@uco.edu.co' }) } },
+        { provide: CourseService, useValue: {} },
+        { provide: SessionService, useValue: {} },
+        { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap(queryParams) } } },
+        { provide: ConsultasTransversalesService, useValue: consultasStub },
+      ],
+    }).compileComponents();
+    http = TestBed.inject(HttpTestingController);
+    fixture = TestBed.createComponent(StudentCoursesComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+    http.expectOne(MATERIAS_URL).flush({ exitoso: true, datos: materias, total: materias.length });
+    http.expectOne(`${environment.apiUrl}/estudiante/horarios`).flush({ exitoso: true, datos: [], total: 0 });
+    http.match((r) => r.url.includes('/configuracion/reclamos')).forEach((req) => req.flush({ exitoso: true, datos: null }));
+    fixture.detectChanges();
+  }
+
+  afterEach(() => http.verify());
+
+  it('con ?materia y ?grupo abre el detalle de esa materia en ese grupo', async () => {
+    await crear({ materia: ASIGNATURA_ID, grupo: GRUPO_2_ID }, [
+      materiaApi(),
+      materiaApi({ idGrupo: GRUPO_2_ID, nombreGrupo: 'Grupo 002 - Arq Software' }),
+    ]);
+
+    http.expectOne(sesionesUrl(ASIGNATURA_ID)).flush({ exitoso: true, datos: [], total: 0 });
+    expect(component.vistaActual()).toBe('DETALLE');
+    expect(component.selectedMateria()?.idGrupo).toBe(GRUPO_2_ID);
+  });
+
+  it('con solo ?materia abre el primer grupo de esa materia', async () => {
+    await crear({ materia: ASIGNATURA_ID }, [materiaApi({ idAsignatura: OTRA_ASIGNATURA, nombreAsignatura: 'Bases de Datos' }), materiaApi()]);
+
+    http.expectOne(sesionesUrl(ASIGNATURA_ID)).flush({ exitoso: true, datos: [], total: 0 });
+    expect(component.selectedMateria()?.id).toBe(ASIGNATURA_ID);
+    expect(component.selectedMateria()?.idGrupo).toBe(GRUPO_ID);
+  });
+
+  it('un grupo que no es del estudiante cae al grupo propio de esa materia', async () => {
+    await crear({ materia: ASIGNATURA_ID, grupo: GRUPO_2_ID }, [materiaApi()]);
+
+    http.expectOne(sesionesUrl(ASIGNATURA_ID)).flush({ exitoso: true, datos: [], total: 0 });
+    expect(component.selectedMateria()?.idGrupo).toBe(GRUPO_ID);
+  });
+
+  it('una materia que no es del estudiante o un identificador inválido dejan la lista', async () => {
+    await crear({ materia: OTRA_ASIGNATURA }, [materiaApi()]);
+    expect(component.vistaActual()).not.toBe('DETALLE');
+    expect(component.selectedMateria()).toBeNull();
+    http.expectNone((r) => r.url.endsWith('/sesiones'));
+
+    TestBed.resetTestingModule();
+    await crear({ materia: 'no-es-uuid', grupo: GRUPO_ID }, [materiaApi()]);
+    expect(component.selectedMateria()).toBeNull();
+    http.expectNone((r) => r.url.endsWith('/sesiones'));
+  });
+
+  it('el enlace se usa una sola vez: recargar las materias no reabre el detalle', async () => {
+    await crear({ materia: ASIGNATURA_ID }, [materiaApi()]);
+    http.expectOne(sesionesUrl(ASIGNATURA_ID)).flush({ exitoso: true, datos: [], total: 0 });
+    component.volverALista();
+
+    component.cargarMaterias();
+    http.expectOne(MATERIAS_URL).flush({ exitoso: true, datos: [materiaApi()], total: 1 });
+    http.match(`${environment.apiUrl}/estudiante/horarios`).forEach((req) => req.flush({ exitoso: true, datos: [], total: 0 }));
+
+    expect(component.selectedMateria()).toBeNull();
+    http.expectNone((r) => r.url.endsWith('/sesiones'));
   });
 });

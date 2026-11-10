@@ -308,11 +308,15 @@ describe('StudentPortalMapper', () => {
       expect(s.reclamable).toBeFalse();
     });
 
-    it('reclamable exige la pista del backend, un estado AUSENTE/RETARDO y ninguna solicitud previa', () => {
+    it('reclamable exige la pista del backend, un estado AUSENTE/RETARDO/PARCIAL y ninguna solicitud previa', () => {
       const sesion = (parcial: Partial<SesionMateriaEstudianteApiDto>) =>
         StudentPortalMapper.toSesion({ ...dto, ...parcial }, ASIGNATURA, formato)!;
       expect(sesion({ estadoAsistencia: 'AUSENTE', reclamable: true }).reclamable).toBeTrue();
       expect(sesion({ estadoAsistencia: 'RETARDO', reclamable: true }).reclamable).toBeTrue();
+      // SUPUESTO-B-15 (CERT-CULM001): varias tomas con alguna ausente.
+      expect(sesion({ estadoAsistencia: 'PARCIAL', reclamable: true }).estadoAsistencia).toBe('PARCIAL');
+      expect(sesion({ estadoAsistencia: 'PARCIAL', reclamable: true }).reclamable).toBeTrue();
+      expect(sesion({ estadoAsistencia: 'PARCIAL', reclamable: false }).reclamable).toBeFalse();
       expect(sesion({ estadoAsistencia: 'AUSENTE', reclamable: false }).reclamable).toBeFalse();
       expect(sesion({ estadoAsistencia: 'AUSENTE' }).reclamable).toBeFalse();
       expect(sesion({ estadoAsistencia: 'PRESENTE', reclamable: true }).reclamable).toBeFalse();

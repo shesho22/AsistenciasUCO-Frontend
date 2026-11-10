@@ -40,8 +40,12 @@ const ESTADOS_ASISTENCIA: readonly EstadoAsistenciaSesionEstudiante[] = [
   'NO_DISPONIBLE',
 ];
 
-/** Estados con los que el estudiante puede pedir revision; `NO_DISPONIBLE` jamas habilita un reclamo. */
-const ESTADOS_RECLAMABLES = new Set<EstadoAsistenciaSesionEstudiante>(['AUSENTE', 'RETARDO']);
+/**
+ * Estados con los que el estudiante puede pedir revision; `NO_DISPONIBLE` jamas habilita un reclamo.
+ * `PARCIAL` (SUPUESTO-B-15, CERT-CULM001): sesion con varias tomas en la que alguna quedo ausente y otra presente;
+ * el reclamo es por la toma ausente.
+ */
+const ESTADOS_RECLAMABLES = new Set<EstadoAsistenciaSesionEstudiante>(['AUSENTE', 'RETARDO', 'PARCIAL']);
 
 /** Nombres de estado de solicitud que entrega el catalogo de la DB (`pendiente`, `aceptada`, `rechazada`, `retirada`). */
 const SOLICITUD_POR_NOMBRE: Record<string, EstadoSolicitudRevision> = {

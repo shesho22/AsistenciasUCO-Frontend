@@ -42,8 +42,9 @@ export interface HorarioEstudianteApiDto {
  *
  * Campos de asistencia (contrato LB-004D, backend `SesionMateriaEstudianteDTO`), todos derivados en el servidor
  * para el estudiante autenticado:
- * - `estadoAsistencia`: `PRESENTE | AUSENTE | JUSTIFICADA | NO_DISPONIBLE`. `NO_DISPONIBLE` = sin registro o con una
- *   combinacion que la DB no define; nunca equivale a ausencia. La DB no distingue retardo, asi que no llega `RETARDO`.
+ * - `estadoAsistencia`: `PRESENTE | AUSENTE | JUSTIFICADA | PARCIAL | NO_DISPONIBLE`. `NO_DISPONIBLE` = sin registro o con
+ *   una combinacion que la DB no define; nunca equivale a ausencia. La DB no distingue retardo, asi que no llega `RETARDO`.
+ *   `PARCIAL` (SUPUESTO-B-15) = sesion con varias tomas en la que alguna quedo ausente y otra presente; es reclamable.
  * - `estadoSolicitudRevision`: nombre del estado de la solicitud de revision existente (`pendiente`, `aceptada`,
  *   `rechazada`, `DESCONOCIDO`) o `null`.
  * - `reclamable`: pista de presentacion (ausencia confirmada y sin solicitud previa). La autorizacion definitiva

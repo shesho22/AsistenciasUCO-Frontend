@@ -9,7 +9,7 @@ Este documento sirve como **guía y catálogo de navegación rápida** de la apl
 ```text
 AppComponent
  ├── PublicLayoutComponent  [Rutas públicas: /login]
- │    └── LoginComponent
+ │    └── LoginComponent  [Botón "¿Olvidaste tu contraseña?" solo informativo: HU177 pendiente]
  └── DashboardLayoutComponent  [Rutas privadas: /app/** (Con AuthGuard)]
       ├── Sidebar Navigation
       ├── Header & Profile Menu
@@ -72,8 +72,8 @@ Control centralizado de sesiones y registro de asistencia en aula.
   - **Ruta:** `/app/estudiante/materias`
   - **Componente:** `StudentCoursesComponent`
   - **Subcomponentes:**
-    - `StudentCoursesListComponent`: Tarjetas de asignaturas inscritas.
-    - `StudentCourseDetailComponent`: Detalle de asistencias acumuladas y porcentaje de inasistencia (alerta de 20%). Incluye `MotivosJustificacionComponent` (HU016: motivos para justificar una inasistencia, del catálogo `GET /categorias-justificacion`).
+    - `StudentCoursesListComponent`: Tarjetas de asignaturas inscritas, con buscador por nombre, código, grupo o docente sin distinguir tildes (HU007, CERT-CULM001).
+    - `StudentCourseDetailComponent`: Detalle de asistencias acumuladas y porcentaje de inasistencia (alerta de 20%). Una sesión con varias tomas y alguna ausente se ve `PARCIAL` y se puede reclamar (SUPUESTO-B-15). Incluye `MotivosJustificacionComponent` (HU016: motivos para justificar una inasistencia, del catálogo `GET /categorias-justificacion`).
     - `StudentClaimFormComponent`: Radicación de reclamos e incapacidades. La categoría sale del catálogo de solo consulta y muestra su descripción (HU005).
     - `StudentCourseEnrollFormComponent`: Matrícula por código.
   - **Modales:**

@@ -224,6 +224,12 @@ describe('StudentCourseDetailComponent', () => {
       fixture.detectChanges();
       expect(texto()).not.toContain('Radicar Reclamo');
 
+      // SUPUESTO-B-15 (CERT-CULM001): varias tomas con alguna ausente también se reclama.
+      fixture.componentRef.setInput('sesiones', [crearSesion({ id: 'pa', estadoAsistencia: 'PARCIAL', reclamable: true })]);
+      fixture.detectChanges();
+      expect(texto()).toContain('Radicar Reclamo');
+      expect(texto()).toContain('PARCIAL');
+
       fixture.componentRef.setInput('sesiones', [crearSesion({ id: 'j', estadoAsistencia: 'JUSTIFICADA' })]);
       fixture.detectChanges();
       expect(texto()).not.toContain('Radicar Reclamo');

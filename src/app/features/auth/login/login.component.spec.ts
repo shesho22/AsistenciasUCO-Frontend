@@ -98,6 +98,44 @@ describe('LoginComponent', () => {
     expect(component.errorMessage()).toContain('Credenciales inválidas');
   });
 
+  describe('HU177 ¿Olvidaste tu contraseña? (pendiente de implementación)', () => {
+    const boton = () => fixture.nativeElement.querySelector('[data-testid="olvide-contrasena"]') as HTMLButtonElement | null;
+    const aviso = () => fixture.nativeElement.querySelector('[data-testid="aviso-recuperacion"]') as HTMLElement | null;
+
+    it('muestra el botón y al pulsarlo solo informa, sin iniciar sesión ni llamar al proveedor', () => {
+      expect(boton()!.textContent).toContain('¿Olvidaste tu contraseña?');
+      expect(boton()!.type).toBe('button');
+      expect(boton()!.getAttribute('aria-expanded')).toBe('false');
+      expect(aviso()).toBeNull();
+
+      boton()!.click();
+      fixture.detectChanges();
+
+      expect(aviso()!.textContent).toContain('aún no está habilitada');
+      expect(boton()!.getAttribute('aria-expanded')).toBe('true');
+      expect(authServiceSpy.loginWithCredentials).not.toHaveBeenCalled();
+      expect(authServiceSpy.startBaselineLogin).not.toHaveBeenCalled();
+
+      boton()!.click();
+      fixture.detectChanges();
+      expect(aviso()).toBeNull();
+    });
+
+    it('también aparece en el modo baseline', async () => {
+      TestBed.resetTestingModule();
+      baselineMode = true;
+      await createComponent();
+      expect(boton()).not.toBeNull();
+    });
+
+    it('no aparece si la configuración de seguridad es inválida', async () => {
+      TestBed.resetTestingModule();
+      securityConfigError.set('Configuración de seguridad inválida.');
+      await createComponent();
+      expect(boton()).toBeNull();
+    });
+  });
+
   describe('modo baseline', () => {
     it('delega en el login institucional sin pedir ni enviar credenciales', async () => {
       TestBed.resetTestingModule();

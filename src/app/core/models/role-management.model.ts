@@ -202,7 +202,7 @@ export type EstadoAsistenciaSesionEstudiante = EstadoAsistenciaSesion | 'PARCIAL
 /**
  * Sesion de una materia del estudiante. `estadoAsistencia` proviene del backend para el estudiante autenticado y es
  * `NO_DISPONIBLE` cuando no hay un registro confirmable: nunca se infiere AUSENTE para habilitar radicaciones.
- * `reclamable` solo es verdadero si el backend lo indica Y el estado es AUSENTE/RETARDO; no sustituye la validacion
+ * `reclamable` solo es verdadero si el backend lo indica Y el estado es AUSENTE/RETARDO/PARCIAL; no sustituye la validacion
  * del backend al radicar.
  */
 export interface SesionMateriaDetalle {

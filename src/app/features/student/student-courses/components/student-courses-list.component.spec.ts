@@ -86,3 +86,58 @@ describe('StudentCoursesListComponent: paginacion y vacio (F-EST-013, F-EST-015)
     expect(fixture.nativeElement.querySelector('app-pagination')).not.toBeNull();
   });
 });
+
+describe('StudentCoursesListComponent: busqueda de materias (HU007, CERT-CULM001)', () => {
+  function render() {
+    const fixture = TestBed.createComponent(StudentCoursesListComponent);
+    fixture.componentRef.setInput('isLoading', false);
+    fixture.componentRef.setInput('materias', [
+      crearMateria({ claveGrupo: 'g-1', nombre: 'Cálculo Diferencial', codigo: 'MAT-101', grupo: 'G01', docente: 'Ana Pérez' }),
+      crearMateria({ claveGrupo: 'g-2', nombre: 'Arquitectura de Software', codigo: 'ARQ-402', grupo: 'G02', docente: 'María Rostagno' }),
+      crearMateria({ claveGrupo: 'g-3', nombre: 'Bases de Datos', codigo: 'BD-201', grupo: 'G03', docente: null }),
+    ]);
+    fixture.detectChanges();
+    return fixture;
+  }
+  const buscar = (fixture: ReturnType<typeof render>, texto: string) => {
+    const input = fixture.nativeElement.querySelector('[data-testid="buscar-materia"]') as HTMLInputElement;
+    input.value = texto;
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+  };
+  const tarjetas = (fixture: ReturnType<typeof render>) => fixture.nativeElement.querySelectorAll('app-card').length;
+
+  it('muestra el campo de busqueda con su etiqueta accesible', () => {
+    const fixture = render();
+    const input = fixture.nativeElement.querySelector('[data-testid="buscar-materia"]') as HTMLInputElement;
+    expect(input).not.toBeNull();
+    expect(input.getAttribute('aria-label')).toContain('Buscar materia');
+    expect(tarjetas(fixture)).toBe(3);
+  });
+
+  it('filtra por nombre sin distinguir tildes ni mayusculas, por codigo, grupo y docente', () => {
+    const fixture = render();
+    buscar(fixture, 'calculo');
+    expect(tarjetas(fixture)).toBe(1);
+    buscar(fixture, 'arq-402');
+    expect(tarjetas(fixture)).toBe(1);
+    buscar(fixture, 'g03');
+    expect(tarjetas(fixture)).toBe(1);
+    buscar(fixture, 'rostagno');
+    expect(tarjetas(fixture)).toBe(1);
+    expect(fixture.nativeElement.querySelector('[data-testid="resultado-busqueda"]').textContent).toContain('1 de 3');
+  });
+
+  it('sin coincidencias muestra un aviso y al borrar vuelve a la lista completa en la pagina 1', () => {
+    const fixture = render();
+    fixture.componentInstance.pagina.set(2);
+    buscar(fixture, 'quimica');
+    expect(tarjetas(fixture)).toBe(0);
+    expect(fixture.nativeElement.querySelector('[data-testid="sin-coincidencias"]').textContent).toContain('quimica');
+    expect(fixture.nativeElement.querySelector('[data-testid="materias-vacio"]')).toBeNull();
+    expect(fixture.componentInstance.pagina()).toBe(1);
+    buscar(fixture, '');
+    expect(tarjetas(fixture)).toBe(3);
+    expect(fixture.nativeElement.querySelector('[data-testid="sin-coincidencias"]')).toBeNull();
+  });
+});
