@@ -1,3 +1,4 @@
+import { CifraConBaseComponent } from '../../../shared/components/cifra-con-base/cifra-con-base.component';
 import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
@@ -15,7 +16,7 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full' },
-  imports: [CommonModule, BadgeComponent],
+  imports: [CifraConBaseComponent, CommonModule, BadgeComponent],
   template: `
     <div class="space-y-6 animate-fade-in">
       <!-- Header Bento -->
@@ -56,7 +57,7 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
           <div>
             <span class="text-xs font-bold uppercase tracking-wider text-warm-500">Grupos en Facultad</span>
             <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ courses().length }}</p>
-            <span class="text-[11px] text-warm-500">{{ totalEstudiantes() }} inscritos / {{ totalCupos() }} cupos</span>
+            <span class="text-[11px] text-warm-500"><app-cifra-con-base [valor]="totalEstudiantes()" [base]="totalCupos()" etiquetaValor="inscritos" etiquetaBase="cupos" /></span>
           </div>
           <div class="w-11 h-11 rounded-xl bg-primary-50 text-primary-700 flex items-center justify-center shrink-0">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

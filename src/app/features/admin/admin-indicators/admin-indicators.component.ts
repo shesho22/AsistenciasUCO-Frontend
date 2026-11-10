@@ -1,3 +1,4 @@
+import { CifraConBaseComponent } from '../../../shared/components/cifra-con-base/cifra-con-base.component';
 import { KpiCardComponent } from '../../../shared/components/kpi-card/kpi-card.component';
 import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
@@ -17,7 +18,7 @@ const MARGEN_IZQ = 44;
 @Component({
   selector: 'app-admin-indicators',
   standalone: true,
-  imports: [KpiCardComponent, DecimalPipe],
+  imports: [CifraConBaseComponent, KpiCardComponent, DecimalPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="space-y-6">
@@ -41,8 +42,8 @@ const MARGEN_IZQ = 44;
           <app-kpi-card etiqueta="Ausentismo global" [valor]="k.porcentajeAusentismo" unidad="%" [variacion]="variacionAusentismo()" sentido="menor-mejor" />
           <app-kpi-card [etiqueta]="'Cumplimiento de sesiones con asistencia registrada (' + k.sesionesConRegistro + ' / ' + k.sesionesVencidas + ')'" [valor]="k.porcentajeCumplimiento" unidad="%" />
           <app-kpi-card etiqueta="Retención por asistencia (período vigente)" [valor]="k.tasaRetencion" unidad="%" />
-          <app-kpi-card etiqueta="Estudiantes con matrícula activa" [valor]="k.estudiantesConMatriculaActiva" [descripcion]="'' + k.estudiantesRegistrados + ' registrados'" />
-          <app-kpi-card etiqueta="Docentes con grupo activo" [valor]="k.docentesConGrupoActivo" [descripcion]="'' + k.docentesRegistrados + ' registrados'" />
+          <app-kpi-card etiqueta="Estudiantes con matrícula activa" [valor]="k.estudiantesConMatriculaActiva"><p class="text-xs text-warm-600"><app-cifra-con-base [valor]="k.estudiantesConMatriculaActiva" [base]="k.estudiantesRegistrados" [soloBase]="true" /></p></app-kpi-card>
+          <app-kpi-card etiqueta="Docentes con grupo activo" [valor]="k.docentesConGrupoActivo"><p class="text-xs text-warm-600"><app-cifra-con-base [valor]="k.docentesConGrupoActivo" [base]="k.docentesRegistrados" [soloBase]="true" /></p></app-kpi-card>
           <app-kpi-card etiqueta="Facultades" [valor]="k.totalFacultades" />
           <app-kpi-card etiqueta="Programas" [valor]="k.totalProgramas" />
         </div>

@@ -1,3 +1,4 @@
+import { CifraConBaseComponent } from '../../../../shared/components/cifra-con-base/cifra-con-base.component';
 import { Component, ChangeDetectionStrategy, computed, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
@@ -10,7 +11,7 @@ import { DecanoItem } from '../../../../core/models/role-management.model';
   selector: 'app-overview-admin',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, RouterLink, CardComponent, BadgeComponent, ButtonComponent],
+  imports: [CifraConBaseComponent, CommonModule, RouterLink, CardComponent, BadgeComponent, ButtonComponent],
   host: {
     class: 'block w-full',
   },
@@ -26,7 +27,7 @@ import { DecanoItem } from '../../../../core/models/role-management.model';
         <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Decanos en ejercicio</span>
           <p class="text-2xl font-serif font-bold text-warm-900 mt-1" data-testid="decanos-activos">{{ decanosActivos() }}</p>
-          <span class="text-[11px] text-warm-500 font-medium">{{ decanos().length }} registrados</span>
+          <span class="text-[11px] text-warm-500 font-medium"><app-cifra-con-base [valor]="decanosActivos()" [base]="decanos().length" [soloBase]="true" /></span>
         </div>
         <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Programas Académicos</span>

@@ -17,6 +17,7 @@ export type SentidoMejora = 'menor-mejor' | 'mayor-mejor';
       @if (descripcion()) {
         <p class="text-xs text-warm-600" data-testid="kpi-descripcion">{{ descripcion() }}</p>
       }
+      <ng-content />
       @if (variacionVista(); as v) {
         <p class="mt-1 inline-flex items-center gap-1 text-xs font-semibold" [class]="v.clases" data-testid="kpi-variacion" [attr.data-tono]="v.tono" [attr.aria-label]="v.aria">
           @if (v.direccion === 'sube') {
