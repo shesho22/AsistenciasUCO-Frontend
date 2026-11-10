@@ -1,3 +1,5 @@
+import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
+import { FechaHoraCortaPipe } from '../../../shared/pipes/fecha-hora.pipes';
 import {
   Component,
   OnInit,
@@ -32,6 +34,8 @@ type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    EmptyStateComponent,
+    FechaHoraCortaPipe,
     CommonModule,
     FormsModule,
     RouterLink,
@@ -249,7 +253,7 @@ type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
                             @if (p.nombreUltimoActor || p.fechaUltimoCambioUtc) {
                               <span>Último cambio por <strong>{{ p.nombreUltimoActor || 'Admin TI' }}</strong></span>
                               @if (p.fechaUltimoCambioUtc) {
-                                <span class="block text-warm-400 font-mono">{{ p.fechaUltimoCambioUtc | date: 'yyyy-MM-dd HH:mm' }}</span>
+                                <span class="block text-warm-400 font-mono" [attr.title]="p.fechaUltimoCambioUtc">{{ p.fechaUltimoCambioUtc | fechaHoraCorta }}</span>
                               }
                             } @else {
                               <span>Tipo: {{ p.tipoDato }}</span>
@@ -397,8 +401,12 @@ type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
                     </tr>
                   } @empty {
                     <tr>
-                      <td colspan="8" class="px-5 py-8 text-center text-sm text-warm-600">
-                        El historial de cierres no está disponible en esta pantalla. Tras ejecutar un cierre, consulte su resultado en Trazabilidad y Auditoría.
+                      <td colspan="8" class="px-5 py-4">
+                        <app-empty-state
+                          title="Aún no hay cierres masivos"
+                          description="El historial de cierres no está disponible en esta pantalla. Tras ejecutar un cierre, consulte su resultado en Trazabilidad y Auditoría."
+                          causa="Se llena cuando se ejecuta el primer cierre masivo de un período."
+                        />
                       </td>
                     </tr>
                   }

@@ -1,3 +1,4 @@
+import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import {
   Component,
   OnInit,
@@ -20,7 +21,7 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 @Component({
   selector: 'app-revisiones-resolucion',
   standalone: true,
-  imports: [CommonModule, FormsModule, BadgeComponent],
+  imports: [EmptyStateComponent, CommonModule, FormsModule, BadgeComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="space-y-6 animate-fade-in">
@@ -58,12 +59,11 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
           Cargando revisiones…
         </div>
       } @else if (revisiones().length === 0) {
-        <div class="bg-white p-12 rounded-2xl border border-warm-200 text-center space-y-2">
-          <p class="text-base font-serif font-bold text-warm-800">No hay revisiones para mostrar</p>
-          <p class="text-xs text-warm-500">
-            {{ filtroSoloPendientes() ? 'No tienes revisiones de cancelación pendientes en este momento.' : 'No se encontraron registros de revisión.' }}
-          </p>
-        </div>
+        <app-empty-state
+          title="No hay revisiones para mostrar"
+          [description]="filtroSoloPendientes() ? 'No tienes revisiones de cancelación pendientes en este momento.' : 'No se encontraron registros de revisión.'"
+          [causa]="filtroSoloPendientes() ? 'Quita el filtro de pendientes para ver también las ya resueltas.' : ''"
+        />
       } @else {
         <div class="bg-white rounded-2xl border border-warm-200 shadow-warm-sm overflow-hidden">
           <div class="overflow-x-auto">

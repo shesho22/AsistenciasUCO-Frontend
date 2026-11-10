@@ -175,7 +175,7 @@ describe('DeanFacultyComponent', () => {
     const el = fixture.nativeElement as HTMLElement;
     expect(el.querySelectorAll('[aria-label="Cifras de la facultad"] li').length).toBe(3);
     expect(el.querySelector('[data-testid="chip-grupos"]')?.textContent).toContain('1');
-    expect(el.querySelector('[data-testid="chip-grupos"]')?.textContent).toContain('32 inscritos / 35 cupos');
+    expect(el.querySelector('[data-testid="chip-grupos"]')?.textContent).toContain('32 inscritos de 35 cupos');
     expect(el.querySelector('[data-testid="chip-planes"]')?.textContent).toContain('2');
     expect(el.querySelector('[data-testid="chip-areas"]')?.textContent).toContain('1');
   });

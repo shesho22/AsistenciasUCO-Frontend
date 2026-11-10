@@ -1,3 +1,4 @@
+import { CifraConBaseComponent } from '../../../shared/components/cifra-con-base/cifra-con-base.component';
 import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CourseService } from '../../../core/services/course.service';
 import { AdminManagementService } from '../../../core/services/admin-management.service';
@@ -13,7 +14,7 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full' },
-  imports: [BadgeComponent],
+  imports: [BadgeComponent, CifraConBaseComponent],
   template: `
     <div class="space-y-4">
       <!-- CULM-001: cabecera compacta de la facultad con tres cifras (grupos, planes, áreas) -->
@@ -39,7 +40,7 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
         <ul class="flex flex-wrap gap-2" aria-label="Cifras de la facultad">
           <li class="px-3 py-1.5 rounded-xl bg-primary-50 border border-primary-200 text-xs text-primary-900" data-testid="chip-grupos">
             <span class="font-bold">{{ gruposTotal() }}</span> Grupos
-            <span class="text-primary-700">· {{ totalEstudiantes() }} inscritos / {{ totalCupos() }} cupos</span>
+            <span class="text-primary-700">· <app-cifra-con-base [valor]="totalEstudiantes()" [base]="totalCupos()" etiquetaValor="inscritos" etiquetaBase="cupos" /></span>
           </li>
           <li class="px-3 py-1.5 rounded-xl bg-accent-100 border border-accent-200 text-xs text-accent-900" data-testid="chip-planes">
             <span class="font-bold">{{ planesTotal() }}</span> Planes de Estudio

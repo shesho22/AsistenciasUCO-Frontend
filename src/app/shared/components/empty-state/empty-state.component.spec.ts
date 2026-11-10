@@ -66,4 +66,26 @@ describe('EmptyStateComponent (CULM-001, estados vacios uniformes)', () => {
     expect(el.querySelector('[data-testid="cta"]')?.textContent).toContain('Crear');
     expect(el.querySelector('h3')?.textContent).toContain('Sin sesiones');
   });
+
+  it('muestra la causa cuando se informa y no pinta el bloque si falta', () => {
+    crear({ title: 'Sin sesiones ejecutadas aún' });
+    expect(root().querySelector('[data-testid="empty-causa"]')).toBeNull();
+    fixture.destroy();
+    crear({ title: 'Sin sesiones ejecutadas aún', causa: 'La próxima es el jue 12 nov, 08:00.' });
+    expect(root().querySelector('[data-testid="empty-causa"]')?.textContent).toContain('La próxima es el jue 12 nov, 08:00.');
+  });
+
+  it('accion opcional: sin texto no hay boton; con texto emite al hacer clic', () => {
+    crear({});
+    expect(root().querySelector('[data-testid="empty-accion"]')).toBeNull();
+    fixture.destroy();
+    crear({ accionTexto: 'Limpiar filtros' });
+    let emitido = 0;
+    fixture.componentInstance.accion.subscribe(() => emitido++);
+    const boton = root().querySelector('[data-testid="empty-accion"]') as HTMLButtonElement;
+    expect(boton.textContent).toContain('Limpiar filtros');
+    expect(boton.type).toBe('button');
+    boton.click();
+    expect(emitido).toBe(1);
+  });
 });

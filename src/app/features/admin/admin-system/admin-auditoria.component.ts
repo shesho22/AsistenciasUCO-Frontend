@@ -1,3 +1,4 @@
+import { FechaHoraCortaPipe } from '../../../shared/pipes/fecha-hora.pipes';
 import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -44,7 +45,7 @@ export function rangoUtc(desde: string, hasta: string): { desde: string; hasta: 
   selector: 'app-admin-auditoria',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, BadgeComponent, PaginationComponent, ErrorCargaComponent],
+  imports: [FechaHoraCortaPipe, CommonModule, FormsModule, BadgeComponent, PaginationComponent, ErrorCargaComponent],
   template: `
     <div class="space-y-4">
       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 bg-white p-4 rounded-2xl border border-warm-200 shadow-warm-sm">
@@ -131,7 +132,7 @@ export function rangoUtc(desde: string, hasta: string): { desde: string; hasta: 
               <tbody class="divide-y divide-warm-100">
                 @for (e of listado.filas(); track e.id) {
                   <tr class="hover:bg-warm-50/70 transition-colors">
-                    <td class="px-4 py-3 font-mono text-xs text-warm-600 whitespace-nowrap">{{ e.ocurridoEn | date: 'yyyy-MM-dd HH:mm:ss' }}</td>
+                    <td class="px-4 py-3 font-mono text-xs text-warm-600 whitespace-nowrap" [attr.title]="e.ocurridoEn">{{ e.ocurridoEn | fechaHoraCorta }}</td>
                     <td class="px-4 py-3">
                       <span class="font-semibold text-warm-900 text-xs block">{{ e.nombreActor || e.idActor || 'Sistema' }}</span>
                       <span class="text-[10px] text-warm-500 uppercase">{{ e.tipoActor }}</span>

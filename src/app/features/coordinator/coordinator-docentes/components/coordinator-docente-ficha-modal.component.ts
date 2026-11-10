@@ -1,3 +1,4 @@
+import { CifraConBaseComponent } from '../../../../shared/components/cifra-con-base/cifra-con-base.component';
 import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject, input, output, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DatePipe } from '@angular/common';
@@ -31,7 +32,7 @@ const ESTADOS: Record<EstadoPeriodoHistorial, { etiqueta: string; variante: Badg
   selector: 'app-coordinator-docente-ficha-modal',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, BadgeComponent, PaginationComponent, DialogoAccesibleDirective],
+  imports: [CifraConBaseComponent, DatePipe, BadgeComponent, PaginationComponent, DialogoAccesibleDirective],
   template: `
     <div
       class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-warm-950/40 backdrop-blur-xs focus:outline-none"
@@ -107,7 +108,7 @@ const ESTADOS: Record<EstadoPeriodoHistorial, { etiqueta: string; variante: Badg
                   {{ grupo.nombrePeriodoAcademico }} ({{ grupo.fechaInicioPeriodo | date: 'mediumDate' }} – {{ grupo.fechaFinPeriodo | date: 'mediumDate' }})
                 </p>
                 <p class="text-xs text-warm-600 mt-0.5">
-                  {{ grupo.estudiantesActivos }} activos de {{ grupo.capacidadMaxima }} cupos • {{ grupo.estudiantesFinalizados }} finalizaron •
+                  <app-cifra-con-base [valor]="grupo.estudiantesActivos" [base]="grupo.capacidadMaxima" etiquetaBase="cupos" /> • {{ grupo.estudiantesFinalizados }} finalizaron •
                   {{ grupo.estudiantesCanceladosVoluntad + grupo.estudiantesCanceladosInasistencia }} cancelaron
                 </p>
               </div>

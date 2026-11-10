@@ -1,3 +1,4 @@
+import { RangoHorarioPipe } from '../../../shared/pipes/fecha-hora.pipes';
 import { Component, OnInit, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { StudentManagementService } from '../../../core/services/student-management.service';
@@ -11,6 +12,7 @@ import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    RangoHorarioPipe,
     CommonModule,
     CardComponent,
     ButtonComponent,
@@ -80,7 +82,7 @@ import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load
                   @for (clase of clasesPorDia(dia); track clase.id) {
                     <div [class]="getClaseClasses(clase.colorCategory)">
                       <div class="flex items-center justify-between text-xs font-semibold mb-1">
-                        <span class="font-mono">{{ clase.horaInicio }} - {{ clase.horaFin }}</span>
+                        <span class="font-mono">{{ clase.horaInicio | rangoHorario: clase.horaFin }}</span>
                         <span class="uppercase tracking-wider px-1.5 py-0.2 rounded bg-white/70 text-xs">
                           {{ clase.grupo }}
                         </span>

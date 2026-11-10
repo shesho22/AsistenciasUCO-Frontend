@@ -22,6 +22,7 @@ import { ResumenAsistenciaEstudiante } from '../../../../core/models/indicadores
 import { AttendanceStatusBadgeComponent } from '../../../../shared/components/attendance-status-badge/attendance-status-badge.component';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 import { getApiErrorMessage } from '../../../../core/api/errors/api-error.util';
+import { SemaforoAsistenciaComponent } from '../../../../shared/components/semaforo-asistencia/semaforo-asistencia.component';
 import { InasistenciaMarcaBadgeComponent } from '../../../../shared/components/inasistencia-marca-badge/inasistencia-marca-badge.component';
 import { RevisionDecisionModalComponent } from '../../revision-cancelacion/revision-decision-modal.component';
 import { RealtimeService } from '../../../../core/realtime/realtime.service';
@@ -37,6 +38,7 @@ import { REALTIME_EVENT_TYPE } from '../../../../core/realtime/model/realtime-ev
     AttendanceStatusBadgeComponent,
     PaginationComponent,
     InasistenciaMarcaBadgeComponent,
+    SemaforoAsistenciaComponent,
     RevisionDecisionModalComponent,
   ],
   template: `
@@ -182,6 +184,9 @@ import { REALTIME_EVENT_TYPE } from '../../../../core/realtime/model/realtime-ev
                   </td>
                   <td class="p-3 text-center font-mono font-bold text-xs border-r border-warm-100 bg-warm-50/40">
                     {{ r ? r.porcentajeInasistencia + '%' : '—' }}
+                    @if (r) {
+                      <app-semaforo-asistencia [porcentaje]="r.porcentajeInasistencia" [umbralAdvertencia]="r.umbralAdvertencia" [umbralPerdida]="r.umbralPerdida" [compacto]="true" />
+                    }
                   </td>
                   <td class="p-3 text-center bg-warm-50/40 border-r border-warm-100">
                     @if (r) {

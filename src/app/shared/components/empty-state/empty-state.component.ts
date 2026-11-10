@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, input, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, output, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 export type EmptyStateVariant = 'neutral' | 'search' | 'info' | 'error';
@@ -34,8 +34,23 @@ export type EmptyStateVariant = 'neutral' | 'search' | 'info' | 'error';
         </p>
       }
 
+      <!-- Causa probable del vacío (opcional) -->
+      @if (causa()) {
+        <p class="text-xs text-warm-500 max-w-md mt-1" data-testid="empty-causa">{{ causa() }}</p>
+      }
+
       <!-- Slot para Botón de Llamada a la Acción (CTA) -->
       <div class="mt-5 flex items-center gap-3">
+        @if (accionTexto()) {
+          <button
+            type="button"
+            data-testid="empty-accion"
+            class="min-h-[44px] rounded-xl border border-warm-200 bg-white px-4 py-2 text-sm font-semibold text-warm-800 hover:bg-warm-50"
+            (click)="accion.emit()"
+          >
+            {{ accionTexto() }}
+          </button>
+        }
         <ng-content select="[empty-action]"></ng-content>
       </div>
     </div>
@@ -45,6 +60,11 @@ export class EmptyStateComponent {
   title = input<string>('No se encontraron registros');
   description = input<string>('');
   variant = input<EmptyStateVariant>('neutral');
+  /** Por qué está vacío y qué sigue (opcional). */
+  causa = input<string>('');
+  /** Texto de la acción sugerida; sin texto no se pinta el botón. */
+  accionTexto = input<string>('');
+  accion = output<void>();
 
   readonly iconBgClasses = computed(() => {
     const base = 'w-14 h-14 rounded-2xl flex items-center justify-center shadow-xs transition-colors shrink-0';

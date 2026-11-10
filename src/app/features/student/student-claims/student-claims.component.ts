@@ -1,3 +1,4 @@
+import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subscription, finalize } from 'rxjs';
@@ -23,7 +24,7 @@ type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
   selector: 'app-student-claims',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, CardComponent, BadgeComponent, PaginationComponent, ButtonComponent],
+  imports: [EmptyStateComponent, CommonModule, CardComponent, BadgeComponent, PaginationComponent, ButtonComponent],
   template: `
     <div class="space-y-6 animate-fade-in">
       <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
@@ -61,9 +62,11 @@ type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
           </div>
         </app-card>
       } @else if (reclamos().length === 0) {
-        <app-card>
-          <p class="text-sm text-warm-600 text-center py-6">No tienes solicitudes de revisión con este filtro.</p>
-        </app-card>
+        <app-empty-state
+          variant="search"
+          title="No tienes solicitudes de revisión con este filtro"
+          causa="Cambia el filtro de estado o radica una solicitud desde el detalle de tu materia."
+        />
       } @else {
         <div class="space-y-4">
           @for (reclamo of reclamos(); track reclamo.id) {

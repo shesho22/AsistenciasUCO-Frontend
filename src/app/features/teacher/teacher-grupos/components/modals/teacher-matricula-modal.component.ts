@@ -1,3 +1,4 @@
+import { HoraCortaPipe } from '../../../../../shared/pipes/fecha-hora.pipes';
 import { Component, ChangeDetectionStrategy, Injector, input, output, inject, signal, computed, effect, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
@@ -28,7 +29,7 @@ import {
   selector: 'app-teacher-matricula-modal',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, ButtonComponent, QrProyeccionComponent],
+  imports: [HoraCortaPipe, CommonModule, ButtonComponent, QrProyeccionComponent],
   template: `
     @if (isOpen() && curso()) {
       @if (ventana(); as v) {
@@ -54,7 +55,7 @@ import {
           (cerrar)="closed.emit()"
         >
           <p class="text-sm font-semibold text-warm-800" data-testid="matricula-fin">
-            La ventana de matrícula termina a las {{ v.fechaExpiracionUtc | date: 'shortTime' }}.
+            La ventana de matrícula termina a las {{ v.fechaExpiracionUtc | horaCorta }}.
           </p>
           <p detalles>
             Proyecta el código QR o comparte el PIN. El código cambia automáticamente cada pocos segundos: pide a los

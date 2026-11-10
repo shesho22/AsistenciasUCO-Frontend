@@ -1,3 +1,4 @@
+import { RangoHorarioPipe } from '../../../../shared/pipes/fecha-hora.pipes';
 import { Component, ChangeDetectionStrategy, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
@@ -12,7 +13,7 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
   selector: 'app-overview-student',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, RouterLink, CardComponent, BadgeComponent, ButtonComponent, AttendanceStatusBadgeComponent],
+  imports: [RangoHorarioPipe, CommonModule, RouterLink, CardComponent, BadgeComponent, ButtonComponent, AttendanceStatusBadgeComponent],
   host: {
     class: 'block w-full',
   },
@@ -107,7 +108,7 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
                       [ngClass]="pc.enCurso ? 'bg-success-600 text-white animate-pulse' : 'bg-warm-200 text-warm-800'">
                   {{ pc.tiempoRestanteTexto }}
                 </span>
-                <span class="text-xs text-warm-500 font-medium">| {{ pc.dia }} {{ pc.horaInicio }} - {{ pc.horaFin }}</span>
+                <span class="text-xs text-warm-500 font-medium">| {{ pc.dia }} {{ pc.horaInicio | rangoHorario: pc.horaFin }}</span>
               </div>
               <h3 class="font-serif font-bold text-warm-900 text-base sm:text-lg mt-1">
                 {{ pc.materia }}
