@@ -29,7 +29,7 @@ import { isUuid } from '../../../core/utils/uuid.util';
 
 // Componentes Hijos Desacoplados
 import { TeacherGruposListComponent } from './components/teacher-grupos-list.component';
-import { TeacherGrupoHubComponent } from './components/teacher-grupo-hub.component';
+import { SubPestanaHub, TeacherGrupoHubComponent } from './components/teacher-grupo-hub.component';
 import { TeacherSesionFormComponent } from './components/teacher-sesion-form.component';
 import { TeacherGrupoFormComponent } from './components/teacher-grupo-form.component';
 import { TeacherMatriculaModalComponent } from './components/modals/teacher-matricula-modal.component';
@@ -189,7 +189,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   guardandoGrupo = signal<boolean>(false);
 
   // Hub del Grupo
-  subPestanaHub = signal<'SESIONES' | 'HORARIOS' | 'ESTUDIANTES' | 'RECLAMOS' | 'SABANA'>('SESIONES');
+  subPestanaHub = signal<SubPestanaHub>('HOY');
   estudiantesGrupo = signal<EstudianteGrupoItem[]>([]);
   cargandoEstudiantes = signal<boolean>(false);
   reclamosGrupo = signal<SolicitudRevisionItem[]>([]);
@@ -339,7 +339,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   verHubGrupo(course: Course): void {
     this.selectedCourse.set(course);
     this.vistaActual.set('HUB_GRUPO');
-    this.subPestanaHub.set('SESIONES');
+    this.subPestanaHub.set('HOY');
     this.cargarSesiones(course.id);
     this.cargarEstudiantesGrupo(course.id);
     this.cargarAsistenciasGrupo(course.id);
