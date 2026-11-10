@@ -502,14 +502,8 @@ export class DashboardLayoutComponent {
       icon: 'horarios',
     },
     {
-      label: 'Mis Horarios',
-      route: '/app/estudiante/horarios',
-      roles: ['ESTUDIANTE'],
-      icon: 'horarios',
-    },
-    {
       label: 'Mis Materias',
-      route: '/app/estudiante/materias',
+      route: '/app/estudiante/mis-materias',
       roles: ['ESTUDIANTE'],
       icon: 'materias',
     },
@@ -518,12 +512,6 @@ export class DashboardLayoutComponent {
       route: '/app/estudiante/reclamos',
       roles: ['ESTUDIANTE'],
       icon: 'reclamos',
-    },
-    {
-      label: 'Oferta de Grupos',
-      route: '/app/estudiante/oferta',
-      roles: ['ESTUDIANTE'],
-      icon: 'grupos',
     },
     {
       label: 'Mis Alertas',

@@ -128,6 +128,13 @@ describe('application routes', () => {
       });
     }
 
+    it('estudiante/mis-materias exige sesion, solo ESTUDIANTE y carga sus hijas de forma diferida', () => {
+      const r = ruta('estudiante/mis-materias');
+      expect(r?.canActivate?.length).toBeGreaterThan(0);
+      expect(r?.data?.['roles']).toEqual(['ESTUDIANTE']);
+      expect(r?.loadChildren).toBeDefined();
+    });
+
     const redirecciones: Array<[string, string]> = [
       ['admin/estudiantes', 'admin/personas/estudiantes'],
       ['admin/docentes', 'admin/personas/docentes'],
@@ -136,6 +143,9 @@ describe('application routes', () => {
       ['admin/facultades', 'admin/estructura/facultades'],
       ['admin/instituciones', 'admin/estructura/instituciones'],
       ['admin/configuracion/mensajes', 'admin/mensajes'],
+      ['estudiante/materias', 'estudiante/mis-materias/materias'],
+      ['estudiante/horarios', 'estudiante/mis-materias/horarios'],
+      ['estudiante/oferta', 'estudiante/mis-materias/oferta'],
     ];
     for (const [antigua, nueva] of redirecciones) {
       if (antigua === 'admin/configuracion/mensajes') continue;
@@ -159,6 +169,13 @@ describe('application routes', () => {
     it('se conservan indicadores, periodos y sistema como pantallas del administrador', () => {
       for (const path of ['admin/indicadores', 'admin/periodos', 'admin/sistema']) {
         expect(ruta(path)?.loadComponent).toBeDefined();
+      }
+    });
+
+    it('se conservan alertas y reclamos del estudiante', () => {
+      for (const path of ['estudiante/alertas', 'estudiante/reclamos']) {
+        expect(ruta(path)?.loadComponent).toBeDefined();
+        expect(ruta(path)?.data?.['roles']).toEqual(['ESTUDIANTE']);
       }
     });
   });

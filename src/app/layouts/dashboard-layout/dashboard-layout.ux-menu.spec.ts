@@ -90,6 +90,18 @@ describe('DashboardLayoutComponent menu simplificado (CULM-001 UX)', () => {
     }
   });
 
+  it('estudiante: Mis materias unifica materias, horarios y oferta; se mantienen alertas y reclamos', () => {
+    const c = crear('ESTUDIANTE');
+    const r = rutas(c);
+    expect(r).toContain('/app/estudiante/mis-materias');
+    expect(r).toContain('/app/estudiante/reclamos');
+    expect(r).toContain('/app/estudiante/alertas');
+    for (const antigua of ['/app/estudiante/materias', '/app/estudiante/horarios', '/app/estudiante/oferta']) {
+      expect(r).not.toContain(antigua);
+    }
+    expect(etiquetas(c)).toContain('Mis Materias');
+  });
+
   it('los demas roles no ven Seguridad ni Mensajes aunque el proveedor sea baseline', () => {
     for (const role of ['DOCENTE', 'ESTUDIANTE', 'COORDINADOR', 'DECANO'] as UserRole[]) {
       TestBed.resetTestingModule();

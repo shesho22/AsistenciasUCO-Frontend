@@ -499,22 +499,16 @@ export const routes: Routes = [
             (m) => m.StudentAlertsComponent
           ),
       },
+      { path: 'estudiante/horarios', redirectTo: 'estudiante/mis-materias/horarios', pathMatch: 'full' },
+      { path: 'estudiante/materias', redirectTo: 'estudiante/mis-materias/materias', pathMatch: 'full' },
       {
-        path: 'estudiante/horarios',
+        // Mis materias: pestañas materias, horarios y oferta (/app/estudiante/mis-materias/:pestaña).
+        path: 'estudiante/mis-materias',
         canActivate: [roleGuard],
         data: { roles: ['ESTUDIANTE'] },
-        loadComponent: () =>
-          import('./features/student/student-schedule/student-schedule.component').then(
-            (m) => m.StudentScheduleComponent
-          ),
-      },
-      {
-        path: 'estudiante/materias',
-        canActivate: [roleGuard],
-        data: { roles: ['ESTUDIANTE'] },
-        loadComponent: () =>
-          import('./features/student/student-courses/student-courses.component').then(
-            (m) => m.StudentCoursesComponent
+        loadChildren: () =>
+          import('./features/student/student-mis-materias/student-mis-materias.routes').then(
+            (m) => m.MIS_MATERIAS_ROUTES
           ),
       },
       {
@@ -526,15 +520,7 @@ export const routes: Routes = [
             (m) => m.StudentClaimsComponent
           ),
       },
-      {
-        path: 'estudiante/oferta',
-        canActivate: [roleGuard],
-        data: { roles: ['ESTUDIANTE'] },
-        loadComponent: () =>
-          import('./features/student/student-group-offer/student-group-offer.component').then(
-            (m) => m.StudentGroupOfferComponent
-          ),
-      },
+      { path: 'estudiante/oferta', redirectTo: 'estudiante/mis-materias/oferta', pathMatch: 'full' },
       {
         path: 'acceso-denegado',
         data: { codigo: 403 },
