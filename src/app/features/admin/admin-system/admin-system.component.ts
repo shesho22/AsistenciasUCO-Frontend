@@ -1,3 +1,4 @@
+import { FechaHoraCortaPipe } from '../../../shared/pipes/fecha-hora.pipes';
 import {
   Component,
   OnInit,
@@ -32,6 +33,7 @@ type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    FechaHoraCortaPipe,
     CommonModule,
     FormsModule,
     RouterLink,
@@ -249,7 +251,7 @@ type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
                             @if (p.nombreUltimoActor || p.fechaUltimoCambioUtc) {
                               <span>Último cambio por <strong>{{ p.nombreUltimoActor || 'Admin TI' }}</strong></span>
                               @if (p.fechaUltimoCambioUtc) {
-                                <span class="block text-warm-400 font-mono">{{ p.fechaUltimoCambioUtc | date: 'yyyy-MM-dd HH:mm' }}</span>
+                                <span class="block text-warm-400 font-mono" [attr.title]="p.fechaUltimoCambioUtc">{{ p.fechaUltimoCambioUtc | fechaHoraCorta }}</span>
                               }
                             } @else {
                               <span>Tipo: {{ p.tipoDato }}</span>

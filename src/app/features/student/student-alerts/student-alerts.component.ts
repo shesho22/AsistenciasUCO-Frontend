@@ -1,3 +1,4 @@
+import { FechaHoraCortaPipe } from '../../../shared/pipes/fecha-hora.pipes';
 import { SemaforoAsistenciaComponent } from '../../../shared/components/semaforo-asistencia/semaforo-asistencia.component';
 import { Component, OnInit, ChangeDetectionStrategy, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -10,7 +11,7 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
 @Component({
   selector: 'app-student-alerts',
   standalone: true,
-  imports: [CommonModule, FormsModule, BadgeComponent, SemaforoAsistenciaComponent],
+  imports: [FechaHoraCortaPipe, CommonModule, FormsModule, BadgeComponent, SemaforoAsistenciaComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="space-y-6 animate-fade-in max-w-4xl mx-auto">
@@ -84,8 +85,8 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
               </p>
 
               <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
-                <span class="text-xs text-warm-400">
-                  {{ alerta.fechaCruceUtc || alerta.fechaGeneracion | date: 'dd/MM/yyyy HH:mm' }}
+                <span class="text-xs text-warm-400" [attr.title]="alerta.fechaCruceUtc || alerta.fechaGeneracion">
+                  {{ alerta.fechaCruceUtc || alerta.fechaGeneracion | fechaHoraCorta }}
                 </span>
 
                 <button

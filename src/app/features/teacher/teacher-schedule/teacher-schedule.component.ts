@@ -1,3 +1,4 @@
+import { RangoHorarioPipe } from '../../../shared/pipes/fecha-hora.pipes';
 import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
@@ -12,7 +13,7 @@ import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load
   selector: 'app-teacher-schedule',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, CardComponent, ButtonComponent],
+  imports: [RangoHorarioPipe, CommonModule, CardComponent, ButtonComponent],
   template: `
     <div class="space-y-6 animate-fade-in">
       <!-- Header Bento -->
@@ -80,7 +81,7 @@ import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load
                   @for (clase of clasesPorDia(dia); track clase.id) {
                     <div [class]="getClaseClasses(clase.colorCategory)">
                       <div class="flex items-center justify-between text-[11px] font-semibold mb-1">
-                        <span class="font-mono">{{ hora(clase.horaInicio) }} - {{ hora(clase.horaFin) }}</span>
+                        <span class="font-mono">{{ clase.horaInicio | rangoHorario: clase.horaFin }}</span>
                         <span class="uppercase tracking-wider px-1.5 py-0.2 rounded bg-white/80 text-[10px] font-bold">
                           {{ clase.codigoMateria }}
                         </span>
