@@ -27,14 +27,6 @@ export const CONFIGURACION_ROUTES: Routes = [
         loadComponent: () => import('../admin-estados/admin-estados.component').then((m) => m.AdminEstadosComponent),
       },
       {
-        path: 'mensajes',
-        data: { tab: 'mensajes' },
-        loadComponent: () =>
-          import('../../messages/message-administration/message-administration.component').then(
-            (m) => m.MessageAdministrationComponent
-          ),
-      },
-      {
         path: 'festivos',
         data: { tab: 'festivos' },
         loadComponent: () => import('../admin-festivos/admin-festivos.component').then((m) => m.AdminFestivosComponent),
@@ -53,11 +45,14 @@ export const CONFIGURACION_ROUTES: Routes = [
         loadComponent: () => import('../admin-areas/admin-areas.component').then((m) => m.AdminAreasComponent),
       },
       {
-        path: 'instituciones',
-        data: { tab: 'instituciones' },
-        loadComponent: () =>
-          import('../admin-instituciones/admin-instituciones.component').then((m) => m.AdminInstitucionesComponent),
+        // Los períodos se gestionan aquí; /app/admin/periodos se conserva como acceso directo.
+        path: 'periodos',
+        data: { tab: 'periodos' },
+        loadComponent: () => import('../admin-periodos/admin-periodos.component').then((m) => m.AdminPeriodosComponent),
       },
+      // Instituciones pasó a Estructura y los mensajes son una vista propia (dependen de un componente externo).
+      { path: 'instituciones', pathMatch: 'full', redirectTo: '/app/admin/estructura/instituciones' },
+      { path: 'mensajes', pathMatch: 'full', redirectTo: '/app/admin/mensajes' },
     ],
   },
 ];

@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import { mount, MessageAdminHandle, MessageAdminOptions } from 'minifront-mensajes';
 import { AuthService } from '../../../core/services/auth.service';
+import { ComponentesExternosService } from '../../../core/services/componentes-externos.service';
 import { hasAnyRole } from '../../../core/models/user.model';
 import { environment } from '../../../../environments/environment';
 import { readDesignToken } from '../../../shared/utils/design-tokens';
@@ -25,7 +26,7 @@ export const MESSAGE_ADMIN_MOUNT = new InjectionToken<MessageAdminMount>('MESSAG
 
 type ViewState = 'loading' | 'ready' | 'error' | 'unauthorized' | 'forbidden';
 
-const ROUTE = '/app/admin/configuracion/mensajes';
+const ROUTE = '/app/admin/mensajes';
 
 @Component({
   selector: 'app-message-administration',
@@ -71,6 +72,7 @@ const ROUTE = '/app/admin/configuracion/mensajes';
 export class MessageAdministrationComponent implements AfterViewInit, OnDestroy {
   private readonly mountPoint = viewChild.required<ElementRef<HTMLElement>>('mountPoint');
   private readonly authService = inject(AuthService);
+  private readonly externos = inject(ComponentesExternosService);
   private readonly mountAdmin = inject(MESSAGE_ADMIN_MOUNT);
   private handle?: MessageAdminHandle;
 
@@ -113,8 +115,9 @@ export class MessageAdministrationComponent implements AfterViewInit, OnDestroy 
         onUnauthorized: () => this.fail('unauthorized', 'La sesión institucional no está activa o venció. Inicia sesión para continuar.'),
       });
       this.state.set('ready');
+      this.externos.marcarDisponible('mensajes');
     } catch {
-      this.fail('error', 'No se pudo cargar la administración de mensajes. Verifica que MessageUcoLab esté activo y que el proxy /messageucolab apunte a su gateway.');
+      this.fail('error', 'No se pudo cargar la administración de mensajes. El servicio no está disponible por ahora; avisa al administrador técnico.');
     }
   }
 
@@ -128,6 +131,8 @@ export class MessageAdministrationComponent implements AfterViewInit, OnDestroy 
   }
 
   private fail(state: Exclude<ViewState, 'loading' | 'ready'>, message: string): void {
+    // Solo un fallo de montaje (servicio externo que no responde) oculta la entrada del menu.
+    if (state === 'error') this.externos.marcarNoDisponible('mensajes');
     this.state.set(state);
     this.message.set(message);
   }

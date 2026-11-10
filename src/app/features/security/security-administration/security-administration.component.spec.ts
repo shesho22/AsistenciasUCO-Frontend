@@ -3,6 +3,7 @@ import { signal } from '@angular/core';
 import { AuthService } from '../../../core/services/auth.service';
 import { User } from '../../../core/models/user.model';
 import { readDesignToken } from '../../../shared/utils/design-tokens';
+import { ComponentesExternosService } from '../../../core/services/componentes-externos.service';
 import {
   SECURITY_UI_LOADER,
   SecurityAdministrationComponent,
@@ -270,6 +271,46 @@ describe('SecurityAdministrationComponent', () => {
     expect(authService.currentUser()).toEqual(jasmine.objectContaining({ role: 'DOCENTE', roles: [] }));
     expect(securityUiLoader.load).not.toHaveBeenCalled();
   });
+
+  describe('F3-ADM-07: estado explicativo sin exponer direcciones locales y aviso al menu', () => {
+    const FILTRADOS = ['localhost', '127.0.0.1', '5175', '18080', 'http://'];
+
+    function sinDireccionesLocales(texto: string): void {
+      for (const fragmento of FILTRADOS) {
+        expect(texto).not.toContain(fragmento);
+      }
+    }
+
+    it('si el BFF no responde, el mensaje no expone puertos ni URLs y el menu oculta la entrada', async () => {
+      fetchSpy.and.rejectWith(new Error('network'));
+
+      await finishInitialLoad();
+
+      expect(component.state()).toBe('error');
+      sinDireccionesLocales(component.message());
+      sinDireccionesLocales((fixture.nativeElement as HTMLElement).textContent ?? '');
+      expect(TestBed.inject(ComponentesExternosService).disponible('seguridad')).toBeFalse();
+    });
+
+    it('si el modulo remoto no carga, el mensaje no expone la URL del servidor local', async () => {
+      securityUiLoader.load.and.rejectWith(new Error('module unavailable'));
+
+      await finishInitialLoad();
+
+      sinDireccionesLocales(component.message());
+      expect(TestBed.inject(ComponentesExternosService).disponible('seguridad')).toBeFalse();
+    });
+
+    it('al cargar correctamente el componente queda disponible para el menu', async () => {
+      const externos = TestBed.inject(ComponentesExternosService);
+      externos.marcarNoDisponible('seguridad');
+
+      await finishInitialLoad();
+
+      expect(component.state()).toBe('ready');
+      expect(externos.disponible('seguridad')).toBeTrue();
+    });
+  });
 });
 
 /**
@@ -328,4 +369,5 @@ describe('SecurityAdministrationComponent: process para el bundle de Security UI
 
     expect((global.process as { env: { NODE_ENV: string } }).env.NODE_ENV).toBe('production');
   });
+
 });
