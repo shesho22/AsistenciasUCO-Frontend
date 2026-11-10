@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DeanManagementService } from '../../../core/services/dean-management.service';
@@ -53,6 +53,7 @@ type VistaDecano = 'LISTA' | 'REGISTRO';
       @if (vistaActual() === 'LISTA') {
         <!-- Header Bento -->
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
+          @if (!embebido()) {
           <div>
             <div class="flex items-center gap-2 mb-1">
               <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-accent-100 text-accent-900 border border-accent-200">
@@ -68,6 +69,7 @@ type VistaDecano = 'LISTA' | 'REGISTRO';
               Supervisa los coordinadores a cargo de los programas adscritos a la facultad, su carga de docentes y grupos.
             </p>
           </div>
+          }
 
           <div class="flex items-center gap-3" data-testid="acciones-encabezado">
             <app-button variant="primary" size="md" (clicked)="abrirModalSeleccionarCoordinador()">
@@ -456,6 +458,8 @@ type VistaDecano = 'LISTA' | 'REGISTRO';
   `,
 })
 export class DeanCoordinadoresComponent implements OnInit {
+  /** CULM-001: dentro de una pestaña, el título lo pone el cascarón. */
+  readonly embebido = input(false);
   private deanService = inject(DeanManagementService);
   private catalogService = inject(CatalogService);
   private toast = inject(ToastService);

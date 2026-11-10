@@ -59,9 +59,17 @@ describe('DeanAreasComponent', () => {
     expect(text).not.toContain('Espacios Físicos');
   });
 
-  it('vuelve al resumen de la facultad', () => {
-    component.volverAFacultad();
-    expect(routerSpy.navigate).toHaveBeenCalledWith(['/app/decano/facultad']);
+  it('CULM-001: ya no ofrece volver al resumen (las pestañas de Mi facultad lo reemplazan)', () => {
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Resumen de Facultad');
+  });
+
+  it('CULM-001: embebido en una pestaña oculta el título y conserva el contador y la lista', () => {
+    expect((fixture.nativeElement as HTMLElement).querySelector('h1')).not.toBeNull();
+    fixture.componentRef.setInput('embebido', true);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('h1')).toBeNull();
+    expect(el.textContent).toContain('2 Áreas');
   });
 });
 

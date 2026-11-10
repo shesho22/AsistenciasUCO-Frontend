@@ -1,5 +1,5 @@
 import { DecimalPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, input, signal } from '@angular/core';
 import { DeanIndicatorsService } from '../../../core/services/dean-indicators.service';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { ToastService } from '../../../shared/components/toast/toast.component';
@@ -13,24 +13,13 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
   template: `
     <section class="space-y-6">
       <header>
-        <h1 class="text-2xl font-semibold text-neutral-900">Indicadores de la facultad</h1>
+        @if (!embebido()) {
+          <h1 class="text-2xl font-semibold text-neutral-900">Indicadores de la facultad</h1>
+        }
         @if (service.kpis(); as k) {
           <p class="text-sm text-neutral-600">{{ k.nombreFacultad }} · {{ k.nombrePeriodoAcademico ?? 'Sin período' }}</p>
         }
       </header>
-
-      @if (service.kpis(); as k) {
-        <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <article class="rounded-xl border border-neutral-100 bg-white p-4"><p class="text-xs text-neutral-500">Programas</p><p class="text-2xl font-semibold">{{ k.totalProgramas }}</p></article>
-          <article class="rounded-xl border border-neutral-100 bg-white p-4"><p class="text-xs text-neutral-500">Estudiantes con matrícula activa</p><p class="text-2xl font-semibold">{{ k.totalEstudiantes }}</p></article>
-          <article class="rounded-xl border border-neutral-100 bg-white p-4"><p class="text-xs text-neutral-500">En riesgo</p><p class="text-2xl font-semibold">{{ k.estudiantesRiesgo }}</p></article>
-          <article class="rounded-xl border border-neutral-100 bg-white p-4"><p class="text-xs text-neutral-500">En pérdida</p><p class="text-2xl font-semibold">{{ k.estudiantesPerdida }}</p></article>
-          <article class="rounded-xl border border-neutral-100 bg-white p-4"><p class="text-xs text-neutral-500">Retención por asistencia (período vigente)</p><p class="text-2xl font-semibold">{{ formatoPorcentaje(k.tasaRetencion) }}</p></article>
-          <article class="rounded-xl border border-neutral-100 bg-white p-4"><p class="text-xs text-neutral-500">Ausentismo</p><p class="text-2xl font-semibold">{{ formatoPorcentaje(k.porcentajeAusentismo) }}</p></article>
-          <article class="rounded-xl border border-neutral-100 bg-white p-4"><p class="text-xs text-neutral-500">Asistencia</p><p class="text-2xl font-semibold">{{ formatoPorcentaje(k.porcentajeAsistencia) }}</p></article>
-          <article class="rounded-xl border border-neutral-100 bg-white p-4"><p class="text-xs text-neutral-500">Aforo de grupos activos ({{ k.matriculadosActivos }} / {{ k.cupoTotal }})</p><p class="text-2xl font-semibold">{{ formatoPorcentaje(k.tasaAforo) }}</p></article>
-        </div>
-      }
 
       <div class="rounded-xl border border-neutral-100 bg-white p-4">
         <h2 class="text-lg font-semibold">Ausentismo por programa</h2>
@@ -54,6 +43,19 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
           </ul>
         }
       </div>
+
+      @if (service.kpis(); as k) {
+        <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <article class="rounded-xl border border-neutral-100 bg-white p-4"><p class="text-xs text-neutral-500">Programas</p><p class="text-2xl font-semibold">{{ k.totalProgramas }}</p></article>
+          <article class="rounded-xl border border-neutral-100 bg-white p-4"><p class="text-xs text-neutral-500">Estudiantes con matrícula activa</p><p class="text-2xl font-semibold">{{ k.totalEstudiantes }}</p></article>
+          <article class="rounded-xl border border-neutral-100 bg-white p-4"><p class="text-xs text-neutral-500">En riesgo</p><p class="text-2xl font-semibold">{{ k.estudiantesRiesgo }}</p></article>
+          <article class="rounded-xl border border-neutral-100 bg-white p-4"><p class="text-xs text-neutral-500">En pérdida</p><p class="text-2xl font-semibold">{{ k.estudiantesPerdida }}</p></article>
+          <article class="rounded-xl border border-neutral-100 bg-white p-4"><p class="text-xs text-neutral-500">Retención por asistencia (período vigente)</p><p class="text-2xl font-semibold">{{ formatoPorcentaje(k.tasaRetencion) }}</p></article>
+          <article class="rounded-xl border border-neutral-100 bg-white p-4"><p class="text-xs text-neutral-500">Ausentismo</p><p class="text-2xl font-semibold">{{ formatoPorcentaje(k.porcentajeAusentismo) }}</p></article>
+          <article class="rounded-xl border border-neutral-100 bg-white p-4"><p class="text-xs text-neutral-500">Asistencia</p><p class="text-2xl font-semibold">{{ formatoPorcentaje(k.porcentajeAsistencia) }}</p></article>
+          <article class="rounded-xl border border-neutral-100 bg-white p-4"><p class="text-xs text-neutral-500">Aforo de grupos activos ({{ k.matriculadosActivos }} / {{ k.cupoTotal }})</p><p class="text-2xl font-semibold">{{ formatoPorcentaje(k.tasaAforo) }}</p></article>
+        </div>
+      }
 
       <div class="rounded-xl border border-neutral-100 bg-white p-4">
         <h2 class="mb-3 text-lg font-semibold">Aforo de grupos</h2>
@@ -105,6 +107,8 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
   `,
 })
 export class DeanIndicatorsComponent implements OnInit {
+  /** CULM-001: dentro de una pestaña, el título lo pone el cascarón. */
+  readonly embebido = input(false);
   readonly service = inject(DeanIndicatorsService);
   private readonly toast = inject(ToastService);
 

@@ -1,7 +1,6 @@
-import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
 import { AdminManagementService } from '../../../core/services/admin-management.service';
 import { BadgeComponent } from '../../../shared/components/badge/badge.component';
 
@@ -15,6 +14,7 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
     <div class="space-y-6 animate-fade-in">
       <!-- Header Bento -->
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
+        @if (!embebido()) {
         <div>
           <div class="flex items-center gap-2 mb-1">
             <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-accent-100 text-accent-900 border border-accent-200">
@@ -30,15 +30,9 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
             Supervisión de las áreas temáticas adscritas a la facultad.
           </p>
         </div>
+        }
 
         <div class="flex items-center gap-2.5">
-          <button
-            type="button"
-            (click)="volverAFacultad()"
-            class="px-3.5 py-2 rounded-xl bg-warm-50 hover:bg-warm-100 text-xs font-semibold text-warm-700 border border-warm-200 transition-colors"
-          >
-            ← Resumen de Facultad
-          </button>
           <span class="px-3.5 py-2 rounded-xl bg-warm-100 text-xs font-bold text-warm-800 border border-warm-200">
             {{ areasTotal() }} Áreas
           </span>
@@ -115,8 +109,9 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
   `,
 })
 export class DeanAreasComponent implements OnInit {
+  /** CULM-001: dentro de una pestaña, el título lo pone el cascarón. */
+  readonly embebido = input(false);
   private adminService = inject(AdminManagementService);
-  private router = inject(Router);
 
   areas = this.adminService.areas;
 
@@ -140,8 +135,5 @@ export class DeanAreasComponent implements OnInit {
     this.adminService.cargarAreas().subscribe({ error: () => this.errorAreas.set(true) });
   }
 
-  volverAFacultad(): void {
-    void this.router.navigate(['/app/decano/facultad']);
-  }
 }
 

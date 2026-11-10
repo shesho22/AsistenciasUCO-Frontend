@@ -467,9 +467,9 @@ export class AuthService implements OnDestroy {
       case 'ADMIN':
         return '/app/admin/decanos';
       case 'DECANO':
-        return '/app/decano/coordinadores';
+        return '/app/decano/mi-facultad/coordinadores';
       case 'COORDINADOR':
-        return '/app/coordinador/docentes';
+        return '/app/coordinador/programa/docentes';
       case 'DOCENTE':
         return '/app/docente/grupos';
       case 'ESTUDIANTE':
@@ -691,10 +691,10 @@ export class AuthService implements OnDestroy {
         void this.router.navigate(['/app/admin/decanos']);
         break;
       case 'DECANO':
-        void this.router.navigate(['/app/decano/coordinadores']);
+        void this.router.navigate(['/app/decano/mi-facultad/coordinadores']);
         break;
       case 'COORDINADOR':
-        void this.router.navigate(['/app/coordinador/docentes']);
+        void this.router.navigate(['/app/coordinador/programa/docentes']);
         break;
       case 'DOCENTE':
         void this.router.navigate(['/app/docente/grupos']);

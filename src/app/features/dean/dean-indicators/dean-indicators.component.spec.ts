@@ -58,6 +58,20 @@ describe('DeanIndicatorsComponent', () => {
     expect(t).toContain('18 h de falta sobre 120 h dictadas');
   });
 
+  it('CULM-001 la comparativa por programa (por horas) va antes que las tarjetas de indicadores', () => {
+    const t = texto();
+    expect(t.indexOf('Ausentismo por programa')).toBeGreaterThan(-1);
+    expect(t.indexOf('Ausentismo por programa')).toBeLessThan(t.indexOf('Estudiantes con matrícula activa'));
+  });
+
+  it('CULM-001 embebido en una pestaña oculta el título y conserva el subtítulo de la facultad', () => {
+    expect((fixture.nativeElement as HTMLElement).querySelector('h1')).not.toBeNull();
+    fixture.componentRef.setInput('embebido', true);
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).querySelector('h1')).toBeNull();
+    expect(texto()).toContain('Ingenieria');
+  });
+
   it('T-FE-02 muestra exactamente las cifras recibidas (sin calcular nada en el cliente)', () => {
     const t = texto();
     expect(t).toContain('50%');       // retención

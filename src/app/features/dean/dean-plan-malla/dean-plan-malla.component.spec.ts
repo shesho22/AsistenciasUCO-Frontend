@@ -198,6 +198,6 @@ describe('DeanPlanMallaComponent (HU108, B2NM)', () => {
     expect(component.selectedPlan()).toBeNull();
 
     component.volverAProgramas();
-    expect(routerSpy.navigate).toHaveBeenCalledWith(['/app/decano/programas']);
+    expect(routerSpy.navigate).toHaveBeenCalledWith(['/app/decano/mi-facultad/programas']);
   });
 });

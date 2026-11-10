@@ -46,7 +46,7 @@ import { CoordinadorItem } from '../../../../core/models/role-management.model';
             <h2 class="font-serif text-xl sm:text-2xl font-bold text-warm-900">Programas Académicos de la Facultad</h2>
             <p class="text-xs text-warm-500">Supervisión de coordinadores responsables y carga académica adscrita</p>
           </div>
-          <a routerLink="/app/decano/coordinadores">
+          <a routerLink="/app/decano/mi-facultad/coordinadores">
             <app-button variant="secondary" size="sm">Gestionar Todos →</app-button>
           </a>
         </div>
@@ -74,7 +74,7 @@ import { CoordinadorItem } from '../../../../core/models/role-management.model';
               </div>
 
               <div card-footer class="mt-4 pt-3 border-t border-warm-100 flex items-center justify-end">
-                <a routerLink="/app/decano/coordinadores" class="w-full">
+                <a routerLink="/app/decano/mi-facultad/coordinadores" class="w-full">
                   <app-button variant="secondary" size="sm" [fullWidth]="true">
                     Administrar Coordinación
                   </app-button>

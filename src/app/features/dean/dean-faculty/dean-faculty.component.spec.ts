@@ -4,12 +4,11 @@ import {
   HttpTestingController,
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
-import { Router } from '@angular/router';
 import { DeanFacultyComponent } from './dean-faculty.component';
 import { environment } from '../../../../environments/environment';
 import { Course } from '../../../core/models/course.model';
 import { FacultadNodo } from '../../../core/models/facultad-decano.model';
-import { paginaApi, porUrl } from '../../../core/testing/pagina-api';
+import { grupoFacultadApi, paginaApi, porUrl } from '../../../core/testing/pagina-api';
 
 // LB-001B.1B (DB source of truth cleanup): AS-IS #14 (tabla de cursos), #15 (ficha resumen) y #17 (filtro de
 // búsqueda por docenteName). INT-05/AUTH-03/AUTH-04/DAT-06/UX-09: el decano solo consume rutas de lectura que su
@@ -169,24 +168,29 @@ describe('DeanFacultyComponent', () => {
     expect(text).not.toContain(MARCADOR_DOCENTE);
   });
 
-  it('filteredCourses() ya no busca coincidencias por docenteName', () => {
-    crear();
-    component.courses.set([course]);
-    component.searchGroup = 'marcador-docente';
-    fixture.detectChanges();
-
-    expect(component.filteredCourses()).toEqual([]);
+  // CULM-001: la cabecera de la facultad solo lleva tres cifras (grupos, planes y áreas); los accesos a otras
+  // pantallas son ahora las pestañas de Mi facultad.
+  it('CULM-001 muestra tres chips: grupos, planes y áreas, con los valores recibidos', () => {
+    crear({ '/decano/grupos': { body: paginaApi([grupoFacultadApi({ idGrupo: 'crs-1', estudiantesActivos: 32, capacidadMaximaPermitida: 35 })]) } });
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelectorAll('[aria-label="Cifras de la facultad"] li').length).toBe(3);
+    expect(el.querySelector('[data-testid="chip-grupos"]')?.textContent).toContain('1');
+    expect(el.querySelector('[data-testid="chip-grupos"]')?.textContent).toContain('32 inscritos / 35 cupos');
+    expect(el.querySelector('[data-testid="chip-planes"]')?.textContent).toContain('2');
+    expect(el.querySelector('[data-testid="chip-areas"]')?.textContent).toContain('1');
   });
 
-  // AUTH-02: el detalle del grupo carga sus sesiones desde /decano/sesiones; esta pantalla solo navega.
-  it('abrir el detalle de un grupo navega sin consultar la ruta de sesiones del docente', () => {
+  it('CULM-001 un error en una sección muestra «—» en su chip y no un cero', () => {
+    crear({ '/admin/areas': fallo(500) });
+    const chip = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="chip-areas"]');
+    expect(chip?.textContent).toContain('—');
+  });
+
+  it('CULM-001 ya no ofrece tarjetas de navegación a otros módulos', () => {
     crear();
-    const router = TestBed.inject(Router);
-    const navigate = spyOn(router, 'navigate').and.resolveTo(true);
-
-    component.abrirDetalleGrupo(course);
-
-    http.expectNone(`${environment.apiV2Url}/sesiones/grupo/crs-1`);
-    expect(navigate).toHaveBeenCalledWith(['/app/decano/grupos', 'crs-1']);
+    const text = (fixture.nativeElement as HTMLElement).textContent || '';
+    expect(text).not.toContain('Módulos de Supervisión');
+    expect(text).not.toContain('Ir a Grupos');
+    expect((fixture.nativeElement as HTMLElement).querySelectorAll('button').length).toBe(0);
   });
 });

@@ -169,7 +169,7 @@ describe('DeanGrupoDetalleComponent', () => {
     crear();
     http.expectOne(peticionSesiones).flush({ exitoso: true, totalElementos: 0, totalPaginas: 0, numeroPagina: 1, tamanoPagina: 50, elementos: [] });
     component.volverAGrupos();
-    expect(routerSpy.navigate).toHaveBeenCalledWith(['/app/decano/grupos']);
+    expect(routerSpy.navigate).toHaveBeenCalledWith(['/app/decano/directorio/grupos']);
   });
 
   it('B1-F-28 HU145: las sesiones canceladas del grupo muestran la etiqueta Cancelada', () => {

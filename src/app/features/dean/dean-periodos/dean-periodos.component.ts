@@ -39,7 +39,7 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
             (click)="volverAFacultad()"
             class="px-3.5 py-2 rounded-xl bg-warm-50 hover:bg-warm-100 text-xs font-semibold text-warm-700 border border-warm-200 transition-colors"
           >
-            ← Resumen de Facultad
+            ← Mi facultad
           </button>
           <span class="px-3.5 py-2 rounded-xl bg-warm-100 text-xs font-bold text-warm-800 border border-warm-200">
             {{ errorPeriodos() ? '—' : periodos().length }} Períodos
@@ -139,6 +139,6 @@ export class DeanPeriodosComponent implements OnInit {
   }
 
   volverAFacultad(): void {
-    void this.router.navigate(['/app/decano/facultad']);
+    void this.router.navigate(['/app/decano/mi-facultad']);
   }
 }

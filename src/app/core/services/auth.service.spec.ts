@@ -1313,10 +1313,10 @@ describe('AuthService', () => {
       expect(routerSpy.navigate).toHaveBeenCalledWith(['/app/admin/decanos']);
 
       service.navigateForRole('DECANO');
-      expect(routerSpy.navigate).toHaveBeenCalledWith(['/app/decano/coordinadores']);
+      expect(routerSpy.navigate).toHaveBeenCalledWith(['/app/decano/mi-facultad/coordinadores']);
 
       service.navigateForRole('COORDINADOR');
-      expect(routerSpy.navigate).toHaveBeenCalledWith(['/app/coordinador/docentes']);
+      expect(routerSpy.navigate).toHaveBeenCalledWith(['/app/coordinador/programa/docentes']);
 
       service.navigateForRole('DOCENTE');
       expect(routerSpy.navigate).toHaveBeenCalledWith(['/app/docente/grupos']);

@@ -271,6 +271,6 @@ export class DeanGrupoDetalleComponent implements OnInit, OnDestroy {
   }
 
   volverAGrupos(): void {
-    void this.router.navigate(['/app/decano/grupos']);
+    void this.router.navigate(['/app/decano/directorio/grupos']);
   }
 }
