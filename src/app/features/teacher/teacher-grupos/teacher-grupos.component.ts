@@ -8,10 +8,9 @@ import { AVISO_SESION_CANCELADA_POR_COORDINACION, AVISO_SESION_MANUAL_NOTIFICADA
 import { RealtimeService } from '../../../core/realtime/realtime.service';
 import { REALTIME_EVENT_TYPE, SesionCanceladaRealtimePayload } from '../../../core/realtime/model/realtime-event.model';
 import { marcarSesionCancelada } from '../../../core/models/sesion-estado.model';
-import { CourseService, GrupoCoordinadorPayload } from '../../../core/services/course.service';
+import { CourseService } from '../../../core/services/course.service';
 import { CatalogService } from '../../../core/services/catalog.service';
 import { CatalogoPrograma } from '../../../core/models/programa-academico.model';
-import { OfertaCreacionGruposDocenteApiDto } from '../../../core/api/models/oferta-creacion-grupos-docente-api-dto.model';
 import { SessionService } from '../../../core/services/session.service';
 import { GroupService } from '../../../core/services/group.service';
 import { StudentService } from '../../../core/services/student.service';
@@ -31,7 +30,6 @@ import { isUuid } from '../../../core/utils/uuid.util';
 import { TeacherGruposListComponent } from './components/teacher-grupos-list.component';
 import { SubPestanaHub, TeacherGrupoHubComponent } from './components/teacher-grupo-hub.component';
 import { TeacherSesionFormComponent } from './components/teacher-sesion-form.component';
-import { TeacherGrupoFormComponent } from './components/teacher-grupo-form.component';
 import { TeacherMatriculaModalComponent } from './components/modals/teacher-matricula-modal.component';
 import { TeacherSesionCancelarModalComponent } from './components/modals/teacher-sesion-cancelar-modal.component';
 import { TeacherSesionDetalleModalComponent } from './components/modals/teacher-sesion-detalle-modal.component';
@@ -40,7 +38,7 @@ import { getSessionNameError } from '../../../core/validation/session-name.util'
 import { environment } from '../../../../environments/environment';
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
 
-type VistaGrupos = 'LISTA' | 'HUB_GRUPO' | 'FORM_SESION' | 'FORM_GRUPO';
+type VistaGrupos = 'LISTA' | 'HUB_GRUPO' | 'FORM_SESION';
 
 @Component({
   selector: 'app-teacher-grupos',
@@ -51,7 +49,6 @@ type VistaGrupos = 'LISTA' | 'HUB_GRUPO' | 'FORM_SESION' | 'FORM_GRUPO';
     TeacherGruposListComponent,
     TeacherGrupoHubComponent,
     TeacherSesionFormComponent,
-    TeacherGrupoFormComponent,
     TeacherMatriculaModalComponent,
     TeacherSesionCancelarModalComponent,
     TeacherSesionDetalleModalComponent,
@@ -67,21 +64,9 @@ type VistaGrupos = 'LISTA' | 'HUB_GRUPO' | 'FORM_SESION' | 'FORM_GRUPO';
           [isLoading]="isLoading()"
           [sessionQrEnabled]="sessionQrEnabled"
           (irAsistencia)="irATomaAsistencia()"
-          (nuevoGrupo)="abrirNuevoGrupo()"
           (seleccionarGrupo)="tomarAsistenciaGrupo($event)"
           (matricular)="abrirModalMatriculaGrupo($event)"
           (tomarAsistencia)="tomarAsistenciaGrupo($event)"
-        />
-      }
-
-      <!-- 2. FORMULARIO NUEVO GRUPO (F3: el docente crea sus grupos) -->
-      @if (vistaActual() === 'FORM_GRUPO') {
-        <app-teacher-grupo-form
-          [oferta]="ofertaGrupos()"
-          [cargando]="cargandoOferta()"
-          [guardando]="guardandoGrupo()"
-          (guardar)="guardarNuevoGrupo($event)"
-          (cancelar)="volverALista()"
         />
       }
 
@@ -183,11 +168,6 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   tiposPrograma = signal<CatalogoPrograma[]>([]);
   isLoading = signal<boolean>(true);
 
-  // Nuevo grupo (F3)
-  ofertaGrupos = signal<OfertaCreacionGruposDocenteApiDto | null>(null);
-  cargandoOferta = signal<boolean>(false);
-  guardandoGrupo = signal<boolean>(false);
-
   // Hub del Grupo
   subPestanaHub = signal<SubPestanaHub>('HOY');
   estudiantesGrupo = signal<EstudianteGrupoItem[]>([]);
@@ -215,7 +195,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   /** HU051: estudiante cuyo retiro se está confirmando (null = modal cerrado). */
   estudianteARetirar = signal<{ idEstudiante: string; nombreCompleto?: string } | null>(null);
 
-  // Formularios (F3: el docente crea sus grupos con su horario inicial; los cambios posteriores los aprueba el coordinador)
+  // Formularios (DEC-065 (4): el docente no crea grupos; solo el coordinador)
   selectedCourse = signal<Course | null>(null);
 
   modoFormSesion: 'CREAR' | 'EDITAR' = 'CREAR';
@@ -297,43 +277,6 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
     if (curso) {
       this.verHubGrupo(curso);
     }
-  }
-
-  /** F3: abre el formulario de nuevo grupo con la oferta de asignaturas de los programas del docente. */
-  abrirNuevoGrupo(): void {
-    this.vistaActual.set('FORM_GRUPO');
-    this.ofertaGrupos.set(null);
-    this.cargandoOferta.set(true);
-    this.courseService.getOfertaCreacionGrupos().subscribe({
-      next: (res) => {
-        this.ofertaGrupos.set(res.datos ?? null);
-        this.cargandoOferta.set(false);
-      },
-      error: (err: unknown) => {
-        this.cargandoOferta.set(false);
-        this.toast.error(getApiErrorMessage(err) || 'No fue posible cargar tus asignaturas.');
-      },
-    });
-  }
-
-  guardarNuevoGrupo(payload: GrupoCoordinadorPayload): void {
-    this.guardandoGrupo.set(true);
-    this.courseService.crearGrupo(payload).subscribe({
-      next: (res) => {
-        this.guardandoGrupo.set(false);
-        if (res.exitoso) {
-          this.toast.success(res.mensajeUsuario || 'Grupo creado.');
-          this.volverALista();
-          this.cargarGrupos();
-        } else {
-          this.toast.error(res.mensajeUsuario || 'No fue posible crear el grupo.');
-        }
-      },
-      error: (err: unknown) => {
-        this.guardandoGrupo.set(false);
-        this.toast.error(getApiErrorMessage(err) || 'No fue posible crear el grupo.');
-      },
-    });
   }
 
   verHubGrupo(course: Course): void {
