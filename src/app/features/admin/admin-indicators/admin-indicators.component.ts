@@ -1,3 +1,4 @@
+import { KpiCardComponent } from '../../../shared/components/kpi-card/kpi-card.component';
 import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { Observable, finalize } from 'rxjs';
@@ -16,7 +17,7 @@ const MARGEN_IZQ = 44;
 @Component({
   selector: 'app-admin-indicators',
   standalone: true,
-  imports: [DecimalPipe],
+  imports: [KpiCardComponent, DecimalPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="space-y-6">
@@ -36,14 +37,14 @@ const MARGEN_IZQ = 44;
 
       @if (service.kpis(); as k) {
         <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <article class="rounded-2xl border border-warm-200 bg-white p-4 shadow-warm-sm"><p class="text-xs text-warm-600">Asistencia global</p><p class="text-2xl font-semibold">{{ formatoPorcentaje(k.porcentajeAsistencia) }}</p></article>
-          <article class="rounded-2xl border border-warm-200 bg-white p-4 shadow-warm-sm"><p class="text-xs text-warm-600">Ausentismo global</p><p class="text-2xl font-semibold">{{ formatoPorcentaje(k.porcentajeAusentismo) }}</p></article>
-          <article class="rounded-2xl border border-warm-200 bg-white p-4 shadow-warm-sm"><p class="text-xs text-warm-600">Cumplimiento de sesiones con asistencia registrada ({{ k.sesionesConRegistro }} / {{ k.sesionesVencidas }})</p><p class="text-2xl font-semibold">{{ formatoPorcentaje(k.porcentajeCumplimiento) }}</p></article>
-          <article class="rounded-2xl border border-warm-200 bg-white p-4 shadow-warm-sm"><p class="text-xs text-warm-600">Retención por asistencia (período vigente)</p><p class="text-2xl font-semibold">{{ formatoPorcentaje(k.tasaRetencion) }}</p></article>
-          <article class="rounded-2xl border border-warm-200 bg-white p-4 shadow-warm-sm"><p class="text-xs text-warm-600">Estudiantes con matrícula activa</p><p class="text-2xl font-semibold">{{ k.estudiantesConMatriculaActiva }}</p><p class="text-xs text-warm-600">{{ k.estudiantesRegistrados }} registrados</p></article>
-          <article class="rounded-2xl border border-warm-200 bg-white p-4 shadow-warm-sm"><p class="text-xs text-warm-600">Docentes con grupo activo</p><p class="text-2xl font-semibold">{{ k.docentesConGrupoActivo }}</p><p class="text-xs text-warm-600">{{ k.docentesRegistrados }} registrados</p></article>
-          <article class="rounded-2xl border border-warm-200 bg-white p-4 shadow-warm-sm"><p class="text-xs text-warm-600">Facultades</p><p class="text-2xl font-semibold">{{ k.totalFacultades }}</p></article>
-          <article class="rounded-2xl border border-warm-200 bg-white p-4 shadow-warm-sm"><p class="text-xs text-warm-600">Programas</p><p class="text-2xl font-semibold">{{ k.totalProgramas }}</p></article>
+          <app-kpi-card etiqueta="Asistencia global" [valor]="k.porcentajeAsistencia" unidad="%" />
+          <app-kpi-card etiqueta="Ausentismo global" [valor]="k.porcentajeAusentismo" unidad="%" [variacion]="variacionAusentismo()" sentido="menor-mejor" />
+          <app-kpi-card [etiqueta]="'Cumplimiento de sesiones con asistencia registrada (' + k.sesionesConRegistro + ' / ' + k.sesionesVencidas + ')'" [valor]="k.porcentajeCumplimiento" unidad="%" />
+          <app-kpi-card etiqueta="Retención por asistencia (período vigente)" [valor]="k.tasaRetencion" unidad="%" />
+          <app-kpi-card etiqueta="Estudiantes con matrícula activa" [valor]="k.estudiantesConMatriculaActiva" [descripcion]="'' + k.estudiantesRegistrados + ' registrados'" />
+          <app-kpi-card etiqueta="Docentes con grupo activo" [valor]="k.docentesConGrupoActivo" [descripcion]="'' + k.docentesRegistrados + ' registrados'" />
+          <app-kpi-card etiqueta="Facultades" [valor]="k.totalFacultades" />
+          <app-kpi-card etiqueta="Programas" [valor]="k.totalProgramas" />
         </div>
       }
 
@@ -115,6 +116,15 @@ export class AdminIndicatorsComponent implements OnInit {
   private readonly pendientes = signal(0);
   readonly cargando = computed(() => this.pendientes() > 0);
   readonly granularidad = signal<GranularidadTendencia>('SEMANA');
+  /** Variacion (pp) del ausentismo por horas entre los dos ultimos intervalos con dato; sin periodo previo se oculta. */
+  readonly variacionAusentismo = computed<number | null>(() => {
+    const valores = this.service
+      .tendencia()
+      .map((p) => p.porcentajeAusentismo)
+      .filter((v): v is number => v !== null);
+    if (valores.length < 2) return null;
+    return Math.round((valores[valores.length - 1] - valores[valores.length - 2]) * 100) / 100;
+  });
 
   ngOnInit(): void {
     this.cargar();

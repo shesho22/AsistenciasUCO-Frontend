@@ -1,3 +1,4 @@
+import { KpiCardComponent } from '../../../shared/components/kpi-card/kpi-card.component';
 import { SemaforoAsistenciaComponent } from '../../../shared/components/semaforo-asistencia/semaforo-asistencia.component';
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { CoordinatorProgramService } from '../../../core/services/coordinator-program.service';
@@ -12,7 +13,7 @@ import { CoordinatorFichaModalComponent } from './components/coordinator-ficha-m
 @Component({
   selector: 'app-coordinator-indicators',
   standalone: true,
-  imports: [PaginationComponent, CoordinatorFichaModalComponent, CoordinatorProgramSelectorComponent, SemaforoAsistenciaComponent],
+  imports: [KpiCardComponent, PaginationComponent, CoordinatorFichaModalComponent, CoordinatorProgramSelectorComponent, SemaforoAsistenciaComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="space-y-6">
@@ -26,14 +27,14 @@ import { CoordinatorFichaModalComponent } from './components/coordinator-ficha-m
 
       @if (service.kpis(); as k) {
         <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <article class="rounded-xl border border-neutral-100 bg-white p-4"><p class="text-xs text-neutral-500">Estudiantes</p><p class="text-2xl font-semibold">{{ k.totalEstudiantes }}</p></article>
-          <article class="rounded-xl border border-neutral-100 bg-white p-4"><p class="text-xs text-neutral-500">En riesgo</p><p class="text-2xl font-semibold">{{ k.estudiantesRiesgo }}</p></article>
-          <article class="rounded-xl border border-neutral-100 bg-white p-4"><p class="text-xs text-neutral-500">En pérdida</p><p class="text-2xl font-semibold">{{ k.estudiantesPerdida }}</p></article>
-          <article class="rounded-xl border border-neutral-100 bg-white p-4"><p class="text-xs text-neutral-500">Permanencia</p><p class="text-2xl font-semibold">{{ formatoPorcentaje(k.tasaPermanencia) }}</p></article>
-          <article class="rounded-xl border border-neutral-100 bg-white p-4"><p class="text-xs text-neutral-500">Sesiones ejecutadas</p><p class="text-2xl font-semibold">{{ k.sesionesEjecutadas }}</p></article>
-          <article class="rounded-xl border border-neutral-100 bg-white p-4"><p class="text-xs text-neutral-500">Vencidas sin registro</p><p class="text-2xl font-semibold">{{ k.sesionesVencidasSinRegistro }}</p></article>
-          <article class="rounded-xl border border-neutral-100 bg-white p-4"><p class="text-xs text-neutral-500">Cumplimiento</p><p class="text-2xl font-semibold">{{ formatoPorcentaje(k.porcentajeCumplimiento) }}</p></article>
-          <article class="rounded-xl border border-neutral-100 bg-white p-4"><p class="text-xs text-neutral-500">Progreso del calendario</p><p class="text-2xl font-semibold">{{ formatoPorcentaje(k.porcentajeProgresoCalendario) }}</p></article>
+          <app-kpi-card etiqueta="Estudiantes" [valor]="k.totalEstudiantes" />
+          <app-kpi-card etiqueta="En riesgo" [valor]="k.estudiantesRiesgo" />
+          <app-kpi-card etiqueta="En pérdida" [valor]="k.estudiantesPerdida" />
+          <app-kpi-card etiqueta="Permanencia" [valor]="k.tasaPermanencia" unidad="%" />
+          <app-kpi-card etiqueta="Sesiones ejecutadas" [valor]="k.sesionesEjecutadas" />
+          <app-kpi-card etiqueta="Vencidas sin registro" [valor]="k.sesionesVencidasSinRegistro" />
+          <app-kpi-card etiqueta="Cumplimiento" [valor]="k.porcentajeCumplimiento" unidad="%" />
+          <app-kpi-card etiqueta="Progreso del calendario" [valor]="k.porcentajeProgresoCalendario" unidad="%" />
         </div>
       }
 
