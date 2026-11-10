@@ -428,10 +428,16 @@ export class DashboardLayoutComponent {
       icon: 'asistencia',
     },
     {
-      label: 'Gestión de Docentes',
-      route: '/app/coordinador/docentes',
+      label: 'Asistencia',
+      route: '/app/coordinador/asistencia',
       roles: ['COORDINADOR'],
-      icon: 'docentes',
+      icon: 'asistencia',
+    },
+    {
+      label: 'Programa',
+      route: '/app/coordinador/programa',
+      roles: ['COORDINADOR'],
+      icon: 'grupos',
     },
     {
       label: 'Planes de Estudio',
@@ -440,46 +446,10 @@ export class DashboardLayoutComponent {
       icon: 'planes-estudio',
     },
     {
-      label: 'Períodos Académicos',
-      route: '/app/coordinador/periodos',
-      roles: ['COORDINADOR'],
-      icon: 'horarios',
-    },
-    {
-      label: 'Indicadores',
-      route: '/app/coordinador/indicadores',
-      roles: ['COORDINADOR'],
-      icon: 'estudiantes',
-    },
-    {
       label: 'Estudiantes del Programa',
       route: '/app/coordinador/estudiantes',
       roles: ['COORDINADOR'],
       icon: 'estudiantes',
-    },
-    {
-      label: 'Grupos y Horarios',
-      route: '/app/coordinador/grupos',
-      roles: ['COORDINADOR'],
-      icon: 'grupos',
-    },
-    {
-      label: 'Materias del Programa',
-      route: '/app/coordinador/materias',
-      roles: ['COORDINADOR'],
-      icon: 'materias',
-    },
-    {
-      label: 'Asistencias del Programa',
-      route: '/app/coordinador/asistencias',
-      roles: ['COORDINADOR'],
-      icon: 'grupos',
-    },
-    {
-      label: 'Consolidado de Asistencia',
-      route: '/app/coordinador/consolidado-asistencia',
-      roles: ['COORDINADOR'],
-      icon: 'asistencia',
     },
     {
       label: 'Revisiones de Cancelación',

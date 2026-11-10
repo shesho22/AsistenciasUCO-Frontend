@@ -4,6 +4,10 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { ActivatedRoute } from '@angular/router';
 import { ConsolidadoAsistenciaComponent, acumularOpciones } from './consolidado-asistencia.component';
 import { ConsolidadoGrupoItem } from '../../../core/models/consultas-transversales.model';
+import { BehaviorSubject, Subject } from 'rxjs';
+import { RealtimeService } from '../../../core/realtime/realtime.service';
+import { RealtimeEvent } from '../../../core/realtime/model/realtime-event.model';
+import { RealtimeConnectionState } from '../../../core/realtime/model/realtime-connection-state.model';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { environment } from '../../../../environments/environment';
 
@@ -20,6 +24,14 @@ describe('ConsolidadoAsistenciaComponent (HU061)', () => {
     estudiantesRiesgo: 2, estudiantesPerdida: 1, horasDictadas: 16, porcentajeExcusa: 0, porcentajeSinRegistro: 0,
   });
 
+  function realtimeFalso(): jasmine.SpyObj<RealtimeService> {
+    const rt = jasmine.createSpyObj<RealtimeService>('RealtimeService', ['startForGroup', 'stop', 'events'], {
+      connectionState$: new BehaviorSubject<RealtimeConnectionState>('DISCONNECTED').asObservable(),
+    });
+    rt.events.and.returnValue(new Subject<RealtimeEvent>().asObservable());
+    return rt;
+  }
+
   function crear(comoDecano: boolean): ComponentFixture<ConsolidadoAsistenciaComponent> {
     toast = jasmine.createSpyObj('ToastService', ['success', 'error']);
     TestBed.configureTestingModule({
@@ -28,6 +40,7 @@ describe('ConsolidadoAsistenciaComponent (HU061)', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: ToastService, useValue: toast },
+        { provide: RealtimeService, useValue: realtimeFalso() },
         { provide: ActivatedRoute, useValue: { snapshot: { data: comoDecano ? { comoDecano: true } : {} } } },
       ],
     });
@@ -128,6 +141,104 @@ describe('ConsolidadoAsistenciaComponent (HU061)', () => {
     fixture.detectChanges();
     expect(el.querySelector('[role="alert"]')).toBeNull();
     expect(el.textContent).toContain('Cálculo');
+  });
+
+  describe('CULM-001 cifra única de inasistencia, filas expandibles y modo embebido', () => {
+    const listar = (fixture: ComponentFixture<ConsolidadoAsistenciaComponent>, ruta: string, datos: ConsolidadoGrupoItem[]) => {
+      http.expectOne((r) => r.url === `${api}/${ruta}/consolidado-asistencia`).flush({ exitoso: true, datos, total: datos.length });
+      fixture.detectChanges();
+    };
+    const el = (f: ComponentFixture<ConsolidadoAsistenciaComponent>) => f.nativeElement as HTMLElement;
+    const paginaVacia = { elementos: [], numeroPagina: 1, tamanoPagina: 50, totalElementos: 0, totalPaginas: 0 };
+
+    it('muestra una sola cifra de inasistencia con su base: «3,46 % · 2,25 h de 65 h»', () => {
+      const fixture = crear(false);
+      listar(fixture, 'coordinador', [{ ...grupo('ASG-1', 'Cálculo', 'DOC-1'), porcentajeInasistencia: 3.46, horasDictadas: 65 }]);
+      expect(el(fixture).querySelector('[data-testid="inasistencia"]')?.textContent?.trim()).toBe('3,46 % · 2,25 h de 65 h');
+    });
+
+    it('sin horas dictadas la base es 0 h y no se inventa otra cifra', () => {
+      const fixture = crear(false);
+      listar(fixture, 'coordinador', [{ ...grupo('ASG-1', 'Cálculo', null), porcentajeInasistencia: 0, horasDictadas: 0 }]);
+      expect(el(fixture).querySelector('[data-testid="inasistencia"]')?.textContent?.trim()).toBe('0 % · 0 h de 0 h');
+    });
+
+    it('el decano expande una fila y ve las sesiones del grupo desde GET /decano/sesiones?idGrupo=', () => {
+      const fixture = crear(true);
+      listar(fixture, 'decano', [grupo('ASG-1', 'Cálculo', 'DOC-1')]);
+      const boton = el(fixture).querySelector('[data-testid="expandir-G-ASG-1"]') as HTMLButtonElement;
+      expect(boton.getAttribute('aria-expanded')).toBe('false');
+      expect(el(fixture).querySelector('[data-testid="sesiones-G-ASG-1"]')).toBeNull();
+
+      boton.click();
+      fixture.detectChanges();
+      const req = http.expectOne((r) => r.url === `${api}/decano/sesiones`);
+      expect(req.request.params.get('idGrupo')).toBe('G-ASG-1');
+      req.flush({
+        elementos: [{ id: 'S1', nombre: 'Sesión 1', codigo: 'S-01', numeroSemana: 1, fechaHoraInicio: '2026-08-03T07:00:00', fechaHoraFin: '2026-08-03T09:00:00', idGrupo: 'G-ASG-1', codigoGrupo: 1, nombreGrupo: 'Grupo 01', idAsignatura: 'ASG-1', nombreAsignatura: 'Cálculo' }],
+        numeroPagina: 1, tamanoPagina: 50, totalElementos: 1, totalPaginas: 1,
+      });
+      fixture.detectChanges();
+      expect(boton.getAttribute('aria-expanded')).toBe('true');
+      expect(el(fixture).querySelector('[data-testid="sesiones-G-ASG-1"]')?.textContent).toContain('S-01');
+
+      boton.click();
+      fixture.detectChanges();
+      expect(el(fixture).querySelector('[data-testid="sesiones-G-ASG-1"]')).toBeNull();
+      expect(boton.getAttribute('aria-expanded')).toBe('false');
+    });
+
+    it('el coordinador expande una fila y ve las sesiones de su grupo con la opción de cancelar', () => {
+      const fixture = crear(false);
+      listar(fixture, 'coordinador', [grupo('ASG-1', 'Cálculo', 'DOC-1')]);
+      (el(fixture).querySelector('[data-testid="expandir-G-ASG-1"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      http.expectOne((r) => r.url === `${api}/coordinador/grupos/G-ASG-1/sesiones`).flush({
+        exitoso: true, total: 1,
+        datos: [{ id: 'S1', idGrupo: 'G-ASG-1', codigoGrupo: 1, nombreGrupo: 'Grupo 01', nombre: 'Sesión 1', numero: 1, codigo: 'S-01', numeroSemana: 1, fechaHoraInicio: '2026-08-03T07:00:00', fechaHoraFin: '2026-08-03T09:00:00', estado: 'PROGRAMADA', cancelacion: null }],
+      });
+      fixture.detectChanges();
+      const detalle = el(fixture).querySelector('[data-testid="sesiones-G-ASG-1"]');
+      expect(detalle?.textContent).toContain('S-01');
+      expect(detalle?.querySelector('[data-testid="cancelar-sesion"]')).not.toBeNull();
+    });
+
+    it('solo una fila queda expandida: abrir otra cierra la anterior', () => {
+      const fixture = crear(true);
+      listar(fixture, 'decano', [grupo('ASG-1', 'Cálculo', 'DOC-1'), grupo('ASG-2', 'Álgebra', 'DOC-1')]);
+      (el(fixture).querySelector('[data-testid="expandir-G-ASG-1"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      http.expectOne((r) => r.url === `${api}/decano/sesiones`).flush(paginaVacia);
+      (el(fixture).querySelector('[data-testid="expandir-G-ASG-2"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      http.expectOne((r) => r.url === `${api}/decano/sesiones`).flush(paginaVacia);
+      fixture.detectChanges();
+      expect(el(fixture).querySelector('[data-testid="sesiones-G-ASG-1"]')).toBeNull();
+      expect(el(fixture).querySelector('[data-testid="sesiones-G-ASG-2"]')).not.toBeNull();
+    });
+
+    it('filtrar contrae la fila expandida', () => {
+      const fixture = crear(true);
+      listar(fixture, 'decano', [grupo('ASG-1', 'Cálculo', 'DOC-1')]);
+      (el(fixture).querySelector('[data-testid="expandir-G-ASG-1"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      http.expectOne((r) => r.url === `${api}/decano/sesiones`).flush(paginaVacia);
+      const component = fixture.componentInstance;
+      component.filtrar(component.idPeriodo, 'PER-1');
+      http.expectOne((r) => r.url === `${api}/decano/consolidado-asistencia`).flush({ exitoso: true, datos: [], total: 0 });
+      expect(component.expandido()).toBeNull();
+    });
+
+    it('embebido oculta el título de la pantalla y conserva el contador y la tabla', () => {
+      const fixture = crear(true);
+      listar(fixture, 'decano', [grupo('ASG-1', 'Cálculo', 'DOC-1')]);
+      expect(el(fixture).querySelector('h1')).not.toBeNull();
+      fixture.componentRef.setInput('embebido', true);
+      fixture.detectChanges();
+      expect(el(fixture).querySelector('h1')).toBeNull();
+      expect(el(fixture).textContent).toContain('1 Grupos');
+      expect(el(fixture).textContent).toContain('Cálculo');
+    });
   });
 
   it('acumularOpciones no repite, ignora ids nulos y ordena por nombre', () => {

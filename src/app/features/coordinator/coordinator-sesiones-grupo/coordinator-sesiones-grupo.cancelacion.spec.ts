@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { BehaviorSubject, Subject } from 'rxjs';
-import { CoordinatorAttendanceComponent } from './coordinator-attendance.component';
+import { CoordinatorSesionesGrupoComponent } from './coordinator-sesiones-grupo.component';
 import { RealtimeService } from '../../../core/realtime/realtime.service';
 import { RealtimeConnectionState } from '../../../core/realtime/model/realtime-connection-state.model';
 import { RealtimeEvent } from '../../../core/realtime/model/realtime-event.model';
@@ -29,9 +29,9 @@ function sesion(id: string, estado: 'PROGRAMADA' | 'CANCELADA'): SesionGrupoItem
   };
 }
 
-describe('CoordinatorAttendanceComponent - cancelación de sesiones manuales y avisos (DEC-064)', () => {
-  let fixture: ComponentFixture<CoordinatorAttendanceComponent>;
-  let component: CoordinatorAttendanceComponent;
+describe('CoordinatorSesionesGrupoComponent - cancelación de sesiones manuales y avisos (DEC-064)', () => {
+  let fixture: ComponentFixture<CoordinatorSesionesGrupoComponent>;
+  let component: CoordinatorSesionesGrupoComponent;
   let http: HttpTestingController;
   let toast: ToastService;
   let events$: Subject<RealtimeEvent>;
@@ -56,19 +56,16 @@ describe('CoordinatorAttendanceComponent - cancelación de sesiones manuales y a
     realtime.events.and.returnValue(events$.asObservable());
 
     await TestBed.configureTestingModule({
-      imports: [CoordinatorAttendanceComponent],
+      imports: [CoordinatorSesionesGrupoComponent],
       providers: [provideHttpClient(), provideHttpClientTesting(), { provide: RealtimeService, useValue: realtime }],
     }).compileComponents();
 
     http = TestBed.inject(HttpTestingController);
     toast = TestBed.inject(ToastService);
-    fixture = TestBed.createComponent(CoordinatorAttendanceComponent);
+    fixture = TestBed.createComponent(CoordinatorSesionesGrupoComponent);
     component = fixture.componentInstance;
+    fixture.componentRef.setInput('grupo', grupo);
     fixture.detectChanges();
-    http.expectOne(`${API}/coordinador/periodos-academicos`).flush({ exitoso: true, datos: [] });
-    http.match((r) => r.url.includes(`${API}/coordinador/grupos`) && !r.url.includes('/sesiones'))
-      .forEach((r) => r.flush({ exitoso: true, datos: [grupo], total: 1 }));
-    component.seleccionarGrupo(grupo);
     flushSesiones([sesion('a', 'PROGRAMADA'), sesion('b', 'CANCELADA')]);
     await refrescar();
   });

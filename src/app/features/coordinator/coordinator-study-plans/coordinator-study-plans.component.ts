@@ -142,7 +142,7 @@ export class CoordinatorStudyPlansComponent implements OnInit {
   }
 
   irAPeriodos(): void {
-    void this.router.navigate(['/app/coordinador/periodos']);
+    void this.router.navigate(['/app/coordinador/programa/periodos']);
   }
 
   toggleEstadoPlan(plan: PlanEstudioItem): void {

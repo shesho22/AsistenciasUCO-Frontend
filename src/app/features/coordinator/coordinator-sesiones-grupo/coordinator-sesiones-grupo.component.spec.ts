@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { CoordinatorAttendanceComponent } from './coordinator-attendance.component';
+import { CoordinatorSesionesGrupoComponent } from './coordinator-sesiones-grupo.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { environment } from '../../../../environments/environment';
 import {
@@ -73,79 +73,41 @@ const asistencias: AsistenciaSesionItem[] = [
   },
 ];
 
-describe('CoordinatorAttendanceComponent (HU064/HU060/HU061)', () => {
-  let fixture: ComponentFixture<CoordinatorAttendanceComponent>;
-  let component: CoordinatorAttendanceComponent;
+describe('CoordinatorSesionesGrupoComponent (HU060/HU061)', () => {
+  let fixture: ComponentFixture<CoordinatorSesionesGrupoComponent>;
+  let component: CoordinatorSesionesGrupoComponent;
   let http: HttpTestingController;
   let toastSpy: jasmine.SpyObj<ToastService>;
 
   beforeEach(() => {
     toastSpy = jasmine.createSpyObj('ToastService', ['success', 'error', 'info', 'warning']);
     TestBed.configureTestingModule({
-      imports: [CoordinatorAttendanceComponent],
+      imports: [CoordinatorSesionesGrupoComponent],
       providers: [provideHttpClient(), provideHttpClientTesting(), { provide: ToastService, useValue: toastSpy }],
     });
     http = TestBed.inject(HttpTestingController);
-    fixture = TestBed.createComponent(CoordinatorAttendanceComponent);
+    fixture = TestBed.createComponent(CoordinatorSesionesGrupoComponent);
     component = fixture.componentInstance;
+    fixture.componentRef.setInput('grupo', grupo);
     fixture.detectChanges();
 
-    http.expectOne(`${API}/coordinador/periodos-academicos`).flush({
-      exitoso: true,
-      datos: [{ id: 'per-1', codigo: '2026-1', nombre: '2026-1', fechaInicio: '2026-01-20', fechaFin: '2026-06-05', estado: 'ACTIVO' }],
-    });
-    const grupos = http.expectOne((r) => r.url === `${API}/coordinador/grupos`);
-    expect(grupos.request.params.get('pagina')).toBe('1');
-    expect(grupos.request.params.get('tamano')).toBe('10');
-    expect(grupos.request.params.has('idPeriodo')).toBeFalse();
-    expect(grupos.request.params.has('busqueda')).toBeFalse();
-    grupos.flush({ exitoso: true, datos: [grupo], total: 1 });
+    // CULM-001: al crearse con su grupo, el componente consulta de inmediato las sesiones de ese grupo.
+    const inicial = http.expectOne((r) => r.url === `${API}/coordinador/grupos/grp-1/sesiones`);
+    expect(inicial.request.params.has('desde')).toBeFalse();
+    inicial.flush({ exitoso: true, datos: [], total: 0 });
     fixture.detectChanges();
   });
 
   afterEach(() => http.verify());
 
-  it('HU064: lista los grupos del programa con asignatura, cupo y estado', () => {
-    const texto = fixture.nativeElement.textContent as string;
-    expect(component.totalGrupos()).toBe(1);
-    expect(component.periodos().length).toBe(1);
-    expect(texto).toContain('Cálculo');
-    expect(texto).toContain('20 / 30');
-    expect(texto).toContain('Habilitado');
+  it('CULM-001: no consulta periodos ni la lista de grupos (eso lo da el consolidado)', () => {
+    http.expectNone(`${API}/coordinador/periodos-academicos`);
+    http.expectNone((r) => r.url === `${API}/coordinador/grupos`);
+    expect(component.grupoSeleccionado()?.id).toBe('grp-1');
   });
 
-  it('HU064: filtra por período y búsqueda reiniciando la página', () => {
-    component.paginaGrupos.set(3);
-    component.busqueda.set(' calc ');
-    component.onPeriodoChange('per-1');
-
-    const req = http.expectOne((r) => r.url === `${API}/coordinador/grupos`);
-    expect(req.request.params.get('idPeriodo')).toBe('per-1');
-    expect(req.request.params.get('busqueda')).toBe('calc');
-    expect(req.request.params.get('pagina')).toBe('1');
-    req.flush({ exitoso: true, datos: [], total: 0 });
-    fixture.detectChanges();
-
-    expect(fixture.nativeElement.textContent).toContain('No hay grupos para los filtros seleccionados.');
-  });
-
-  it('HU064: paginación y tamaño de grupos recargan la consulta', () => {
-    component.onPaginaGrupos(2);
-    expect(http.expectOne((r) => r.url === `${API}/coordinador/grupos`).request.params.get('pagina')).toBe('2');
-    component.onTamanoGrupos(20);
-    const req = http.expectOne((r) => r.url === `${API}/coordinador/grupos`);
-    expect(req.request.params.get('tamano')).toBe('20');
-    expect(req.request.params.get('pagina')).toBe('1');
-  });
-
-  it('HU064: un error del backend limpia la lista y muestra el mensaje', () => {
-    component.buscarGrupos();
-    http
-      .expectOne((r) => r.url === `${API}/coordinador/grupos`)
-      .flush({ exitoso: false, mensajeUsuario: 'Sin permiso' }, { status: 403, statusText: 'Forbidden' });
-
-    expect(component.grupos()).toEqual([]);
-    expect(toastSpy.error).toHaveBeenCalled();
+  it('CULM-001: rotula las sesiones con el nombre del grupo y su asignatura', () => {
+    expect(fixture.nativeElement.textContent).toContain('Sesiones de Grupo 1 · Cálculo');
   });
 
   // Un fallo de carga no puede verse como una lista vacia: alerta accesible y Reintentar en cada nivel.
@@ -153,21 +115,6 @@ describe('CoordinatorAttendanceComponent (HU064/HU060/HU061)', () => {
     const el = () => fixture.nativeElement as HTMLElement;
     const alerta = () => el().querySelector('[role="alert"]');
     const hayReintentar = () => Array.from(el().querySelectorAll('button')).some((b) => /Reintentar/.test(b.textContent ?? ''));
-
-    it('grupos: un 500 muestra alerta con Reintentar y no "No hay grupos"; Reintentar recupera la lista', () => {
-      component.buscarGrupos();
-      http.expectOne((r) => r.url === `${API}/coordinador/grupos`).flush({}, { status: 500, statusText: 'Error' });
-      fixture.detectChanges();
-      expect(alerta()).not.toBeNull();
-      expect(hayReintentar()).toBeTrue();
-      expect(el().textContent).not.toContain('No hay grupos para los filtros seleccionados.');
-
-      (Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('button')).find((b) => /Reintentar/.test(b.textContent ?? '')) as HTMLButtonElement).click();
-      http.expectOne((r) => r.url === `${API}/coordinador/grupos`).flush({ exitoso: true, datos: [grupo], total: 1 });
-      fixture.detectChanges();
-      expect(alerta()).toBeNull();
-      expect(component.totalGrupos()).toBe(1);
-    });
 
     it('sesiones: un 500 muestra alerta con Reintentar y no "El grupo no tiene sesiones"; Reintentar recupera', () => {
       component.seleccionarGrupo(grupo);
@@ -333,10 +280,10 @@ describe('CoordinatorAttendanceComponent (HU064/HU060/HU061)', () => {
     });
   });
 
-  it('sin grupo o sesión seleccionados no consulta sesiones ni asistencias', () => {
-    component.onPaginaSesiones(2);
+  it('sin sesión seleccionada no consulta asistencias', () => {
     component.onPaginaAsistencias(2);
-    http.expectNone((r) => r.url.endsWith('/sesiones') || r.url.endsWith('/asistencias'));
+    component.onFiltroAsistio('ASISTIO');
+    http.expectNone((r) => r.url.endsWith('/asistencias'));
   });
 
   it('B1-F-26 HU060: la sesión cancelada se rotula como tal con su motivo', () => {

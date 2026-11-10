@@ -323,16 +323,31 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/admin/admin-estudiantes/admin-estudiantes.component').then((m) => m.AdminEstudiantesComponent),
       },
-      // Rutas Coordinador
+      // Rutas Coordinador (CULM-001: 12 pantallas -> 7). Programa agrupa por pestaña; Asistencia fusiona asistencias,
+      // consolidado e indicadores; Estudiantes, Planes de estudio y Revisiones se mantienen.
       {
-        path: 'coordinador/docentes',
+        path: 'coordinador/programa',
+        canActivate: [roleGuard],
+        data: { roles: ['COORDINADOR'] },
+        loadChildren: () => import('./features/coordinator/coordinator.routes').then((m) => m.PROGRAMA_ROUTES),
+      },
+      {
+        path: 'coordinador/asistencia',
         canActivate: [roleGuard],
         data: { roles: ['COORDINADOR'] },
         loadComponent: () =>
-          import('./features/coordinator/coordinator-docentes/coordinator-docentes.component').then(
-            (m) => m.CoordinatorDocentesComponent
+          import('./features/coordinator/coordinator-asistencia/coordinator-asistencia.component').then(
+            (m) => m.CoordinatorAsistenciaComponent
           ),
       },
+      // Rutas antiguas del coordinador: se conservan solo para no romper marcadores guardados.
+      { path: 'coordinador/grupos', redirectTo: 'coordinador/programa/grupos', pathMatch: 'full' },
+      { path: 'coordinador/materias', redirectTo: 'coordinador/programa/materias', pathMatch: 'full' },
+      { path: 'coordinador/docentes', redirectTo: 'coordinador/programa/docentes', pathMatch: 'full' },
+      { path: 'coordinador/periodos', redirectTo: 'coordinador/programa/periodos', pathMatch: 'full' },
+      { path: 'coordinador/asistencias', redirectTo: 'coordinador/asistencia', pathMatch: 'full' },
+      { path: 'coordinador/consolidado-asistencia', redirectTo: 'coordinador/asistencia', pathMatch: 'full' },
+      { path: 'coordinador/indicadores', redirectTo: 'coordinador/asistencia', pathMatch: 'full' },
       {
         path: 'coordinador/planes-estudio',
         canActivate: [roleGuard],
@@ -388,33 +403,6 @@ export const routes: Routes = [
           ).then((m) => m.CoordinatorSubjectFormPageComponent),
       },
       {
-        path: 'coordinador/periodos',
-        canActivate: [roleGuard],
-        data: { roles: ['COORDINADOR'] },
-        loadComponent: () =>
-          import('./features/coordinator/coordinator-periods/coordinator-periods.component').then(
-            (m) => m.CoordinatorPeriodsComponent
-          ),
-      },
-      {
-        path: 'coordinador/indicadores',
-        canActivate: [roleGuard],
-        data: { roles: ['COORDINADOR'] },
-        loadComponent: () =>
-          import(
-            './features/coordinator/coordinator-indicators/coordinator-indicators.component'
-          ).then((m) => m.CoordinatorIndicatorsComponent),
-      },
-      {
-        path: 'decano/indicadores',
-        canActivate: [roleGuard],
-        data: { roles: ['DECANO'] },
-        loadComponent: () =>
-          import('./features/dean/dean-indicators/dean-indicators.component').then(
-            (m) => m.DeanIndicatorsComponent
-          ),
-      },
-      {
         path: 'coordinador/estudiantes',
         canActivate: [roleGuard],
         data: { roles: ['COORDINADOR'] },
@@ -422,43 +410,6 @@ export const routes: Routes = [
           import(
             './features/coordinator/coordinator-students/coordinator-students.component'
           ).then((m) => m.CoordinatorStudentsComponent),
-      },
-      {
-        path: 'coordinador/grupos',
-        canActivate: [roleGuard],
-        data: { roles: ['COORDINADOR'] },
-        loadComponent: () =>
-          import(
-            './features/coordinator/coordinator-groups/coordinator-groups.component'
-          ).then((m) => m.CoordinatorGroupsComponent),
-      },
-      {
-        path: 'coordinador/materias',
-        canActivate: [roleGuard],
-        data: { roles: ['COORDINADOR'] },
-        loadComponent: () =>
-          import(
-            './features/coordinator/coordinator-subjects/coordinator-subjects.component'
-          ).then((m) => m.CoordinatorSubjectsComponent),
-      },
-      {
-        path: 'coordinador/asistencias',
-        canActivate: [roleGuard],
-        data: { roles: ['COORDINADOR'] },
-        loadComponent: () =>
-          import(
-            './features/coordinator/coordinator-attendance/coordinator-attendance.component'
-          ).then((m) => m.CoordinatorAttendanceComponent),
-      },
-      // HU061: consolidado de asistencia por cohorte, materia y docente (programa del coordinador)
-      {
-        path: 'coordinador/consolidado-asistencia',
-        canActivate: [roleGuard],
-        data: { roles: ['COORDINADOR'] },
-        loadComponent: () =>
-          import('./features/coordinator/coordinator-consolidado/consolidado-asistencia.component').then(
-            (m) => m.ConsolidadoAsistenciaComponent
-          ),
       },
       // CULM-001 C.1: revisiones de cancelación de matrícula por pérdida de inasistencia (coordinador)
       {

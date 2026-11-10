@@ -345,7 +345,7 @@ export class CoordinatorStudentsComponent implements OnInit {
   }
 
   irAMaterias(): void {
-    void this.router.navigate(['/app/coordinador/materias']);
+    void this.router.navigate(['/app/coordinador/programa/materias']);
   }
 
   private toDirectoryItem(item: EstudianteResumenApiDto): EstudianteDirectorioItem {

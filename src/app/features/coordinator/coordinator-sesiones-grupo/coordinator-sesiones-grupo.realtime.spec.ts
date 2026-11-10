@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { BehaviorSubject, Subject } from 'rxjs';
-import { CoordinatorAttendanceComponent } from './coordinator-attendance.component';
+import { CoordinatorSesionesGrupoComponent } from './coordinator-sesiones-grupo.component';
 import { RealtimeService } from '../../../core/realtime/realtime.service';
 import { RealtimeConnectionState } from '../../../core/realtime/model/realtime-connection-state.model';
 import { RealtimeEvent } from '../../../core/realtime/model/realtime-event.model';
@@ -26,9 +26,9 @@ const mockGrupo: GrupoProgramaItem = {
   finPeriodo: '2026-06-30',
 };
 
-describe('CoordinatorAttendanceComponent - Realtime SSE (C-F-51..C-F-53)', () => {
-  let fixture: ComponentFixture<CoordinatorAttendanceComponent>;
-  let component: CoordinatorAttendanceComponent;
+describe('CoordinatorSesionesGrupoComponent - Realtime SSE (C-F-51..C-F-53)', () => {
+  let fixture: ComponentFixture<CoordinatorSesionesGrupoComponent>;
+  let component: CoordinatorSesionesGrupoComponent;
   let http: HttpTestingController;
   let connectionState$: BehaviorSubject<RealtimeConnectionState>;
   let events$: Subject<RealtimeEvent>;
@@ -44,7 +44,7 @@ describe('CoordinatorAttendanceComponent - Realtime SSE (C-F-51..C-F-53)', () =>
     realtimeSpy.events.and.returnValue(events$.asObservable());
 
     await TestBed.configureTestingModule({
-      imports: [CoordinatorAttendanceComponent],
+      imports: [CoordinatorSesionesGrupoComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -53,25 +53,17 @@ describe('CoordinatorAttendanceComponent - Realtime SSE (C-F-51..C-F-53)', () =>
     }).compileComponents();
 
     http = TestBed.inject(HttpTestingController);
-    fixture = TestBed.createComponent(CoordinatorAttendanceComponent);
+    fixture = TestBed.createComponent(CoordinatorSesionesGrupoComponent);
     component = fixture.componentInstance;
+    fixture.componentRef.setInput('grupo', mockGrupo);
     fixture.detectChanges();
-
-    // Consume initial periodos and grupos requests
-    const reqPeriodos = http.expectOne(`${API}/coordinador/periodos-academicos`);
-    reqPeriodos.flush({ idResultado: 1, exitoso: true, mensajeUsuario: '', datos: [] });
-
-    const reqGrupos = http.match((r) => r.url.includes(`${API}/coordinador/grupos`));
-    reqGrupos.forEach((r) => r.flush({ idResultado: 1, exitoso: true, mensajeUsuario: '', datos: [mockGrupo], total: 1 }));
   });
 
   afterEach(() => {
     http.verify();
   });
 
-  it('C-F-51: al seleccionar un grupo, invoca realtimeService.startForGroup con el id del grupo', () => {
-    component.seleccionarGrupo(mockGrupo);
-
+  it('C-F-51: al abrirse con un grupo, invoca realtimeService.startForGroup con el id del grupo', () => {
     const sesReq = http.expectOne((r) => r.url.includes(`${API}/coordinador/grupos/${mockGrupo.id}/sesiones`));
     sesReq.flush({ idResultado: 1, exitoso: true, mensajeUsuario: '', datos: [] });
 
@@ -79,8 +71,6 @@ describe('CoordinatorAttendanceComponent - Realtime SSE (C-F-51..C-F-53)', () =>
   });
 
   it('C-F-52: en reconexión o evento SSE relevante recarga sesiones con la secuencia canónica (exactamente 3 cargas)', () => {
-    component.seleccionarGrupo(mockGrupo);
-
     // Carga 1: entrada al grupo
     const req1 = http.expectOne((r) => r.url.includes(`${API}/coordinador/grupos/${mockGrupo.id}/sesiones`));
     req1.flush({ idResultado: 1, exitoso: true, mensajeUsuario: '', datos: [] });
@@ -121,7 +111,6 @@ describe('CoordinatorAttendanceComponent - Realtime SSE (C-F-51..C-F-53)', () =>
   });
 
   it('C-F-53: al cambiar de grupo o destruir el componente invoca realtimeService.stop()', () => {
-    component.seleccionarGrupo(mockGrupo);
     const req1 = http.expectOne((r) => r.url.includes(`${API}/coordinador/grupos/${mockGrupo.id}/sesiones`));
     req1.flush({ idResultado: 1, exitoso: true, mensajeUsuario: '', datos: [] });
 
@@ -137,5 +126,43 @@ describe('CoordinatorAttendanceComponent - Realtime SSE (C-F-51..C-F-53)', () =>
     realtimeSpy.stop.calls.reset();
     fixture.destroy();
     expect(realtimeSpy.stop).toHaveBeenCalled();
+  });
+});
+
+describe('CoordinatorSesionesGrupoComponent - dueño del stream con varias filas abiertas (CULM-001)', () => {
+  let http: HttpTestingController;
+  let realtimeSpy: jasmine.SpyObj<RealtimeService>;
+
+  beforeEach(async () => {
+    realtimeSpy = jasmine.createSpyObj<RealtimeService>('RealtimeService', ['startForGroup', 'stop', 'events'], {
+      connectionState$: new BehaviorSubject<RealtimeConnectionState>('DISCONNECTED').asObservable(),
+    });
+    realtimeSpy.events.and.returnValue(new Subject<RealtimeEvent>().asObservable());
+    await TestBed.configureTestingModule({
+      imports: [CoordinatorSesionesGrupoComponent],
+      providers: [provideHttpClient(), provideHttpClientTesting(), { provide: RealtimeService, useValue: realtimeSpy }],
+    }).compileComponents();
+    http = TestBed.inject(HttpTestingController);
+  });
+
+  function abrir(id: string): ComponentFixture<CoordinatorSesionesGrupoComponent> {
+    const f = TestBed.createComponent(CoordinatorSesionesGrupoComponent);
+    f.componentRef.setInput('grupo', { id, nombre: id, nombreAsignatura: 'X' });
+    f.detectChanges();
+    http.expectOne((r) => r.url.includes(`/coordinador/grupos/${id}/sesiones`)).flush({ exitoso: true, datos: [], total: 0 });
+    return f;
+  }
+
+  it('destruir la fila anterior después de abrir otra no corta el stream de la nueva', () => {
+    const a = abrir('grp-a');
+    const b = abrir('grp-b');
+    realtimeSpy.stop.calls.reset();
+
+    a.destroy();
+    expect(realtimeSpy.stop).not.toHaveBeenCalled();
+
+    b.destroy();
+    expect(realtimeSpy.stop).toHaveBeenCalledTimes(1);
+    http.verify();
   });
 });

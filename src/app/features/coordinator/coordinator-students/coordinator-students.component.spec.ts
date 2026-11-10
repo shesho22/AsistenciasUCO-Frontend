@@ -149,7 +149,7 @@ describe('CoordinatorStudentsComponent', () => {
   it('irAMaterias navega hacia la ruta correspondiente', () => {
     const router = TestBed.inject(Router);
     component.irAMaterias();
-    expect(router.navigate).toHaveBeenCalledWith(['/app/coordinador/materias']);
+    expect(router.navigate).toHaveBeenCalledWith(['/app/coordinador/programa/materias']);
   });
 
   it('onSelectCourse asigna el curso seleccionado y cargarDatos actualiza directorio', () => {

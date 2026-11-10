@@ -93,7 +93,7 @@ describe('CoordinatorStudyPlansComponent', () => {
 
   it('navega a la vista independiente de períodos académicos', () => {
     component.irAPeriodos();
-    expect(routerSpy.navigate).toHaveBeenCalledWith(['/app/coordinador/periodos']);
+    expect(routerSpy.navigate).toHaveBeenCalledWith(['/app/coordinador/programa/periodos']);
   });
 
   it('permite alternar el estado de un plan de estudio con éxito', () => {

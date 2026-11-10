@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, input, output, signal } from '@angular/core';
 import { CoordinatorProgramService } from '../../../core/services/coordinator-program.service';
 import { CoordinatorProgramSelectorComponent } from '../shared/coordinator-program-selector.component';
 import { CoordinatorIndicatorsService } from '../../../core/services/coordinator-indicators.service';
@@ -15,19 +15,23 @@ import { CoordinatorFichaModalComponent } from './components/coordinator-ficha-m
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="space-y-6">
-      <header class="space-y-3">
-        <app-coordinator-program-selector (programaCambiado)="cambiarPrograma()" />
-        <h1 class="text-2xl font-semibold text-neutral-900">Indicadores del programa</h1>
-        @if (service.kpis(); as k) {
-          <p class="text-sm text-neutral-600">{{ k.nombrePrograma }} · {{ k.nombrePeriodoAcademico ?? 'Sin período' }}</p>
-        }
-      </header>
+      @if (parte() !== 'alertas') {
+        <header class="space-y-3">
+          <app-coordinator-program-selector (programaCambiado)="cambiarPrograma()" />
+          @if (!embebido()) {
+            <h1 class="text-2xl font-semibold text-neutral-900">Indicadores del programa</h1>
+          }
+          @if (service.kpis(); as k) {
+            <p class="text-sm text-neutral-600">{{ k.nombrePrograma }} · {{ k.nombrePeriodoAcademico ?? 'Sin período' }}</p>
+          }
+        </header>
+      }
 
-      @if (service.kpis(); as k) {
+      @if (parte() !== 'alertas' && service.kpis(); as k) {
         <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <article class="rounded-xl border border-neutral-100 bg-white p-4"><p class="text-xs text-neutral-500">Estudiantes</p><p class="text-2xl font-semibold">{{ k.totalEstudiantes }}</p></article>
-          <article class="rounded-xl border border-neutral-100 bg-white p-4"><p class="text-xs text-neutral-500">En riesgo</p><p class="text-2xl font-semibold">{{ k.estudiantesRiesgo }}</p></article>
-          <article class="rounded-xl border border-neutral-100 bg-white p-4"><p class="text-xs text-neutral-500">En pérdida</p><p class="text-2xl font-semibold">{{ k.estudiantesPerdida }}</p></article>
+          <article class="rounded-xl border border-neutral-100 bg-white p-4"><p class="text-xs text-neutral-500">Estudiantes en riesgo</p><p class="text-2xl font-semibold">{{ k.estudiantesRiesgo }}</p></article>
+          <article class="rounded-xl border border-neutral-100 bg-white p-4"><p class="text-xs text-neutral-500">Estudiantes en pérdida</p><p class="text-2xl font-semibold">{{ k.estudiantesPerdida }}</p></article>
           <article class="rounded-xl border border-neutral-100 bg-white p-4"><p class="text-xs text-neutral-500">Permanencia</p><p class="text-2xl font-semibold">{{ formatoPorcentaje(k.tasaPermanencia) }}</p></article>
           <article class="rounded-xl border border-neutral-100 bg-white p-4"><p class="text-xs text-neutral-500">Sesiones ejecutadas</p><p class="text-2xl font-semibold">{{ k.sesionesEjecutadas }}</p></article>
           <article class="rounded-xl border border-neutral-100 bg-white p-4"><p class="text-xs text-neutral-500">Vencidas sin registro</p><p class="text-2xl font-semibold">{{ k.sesionesVencidasSinRegistro }}</p></article>
@@ -36,6 +40,7 @@ import { CoordinatorFichaModalComponent } from './components/coordinator-ficha-m
         </div>
       }
 
+      @if (parte() !== 'kpis') {
       <div class="rounded-xl border border-neutral-100 bg-white p-4">
         <h2 class="mb-3 text-lg font-semibold">Alertas tempranas</h2>
         <div class="mb-3 flex flex-wrap gap-3">
@@ -82,6 +87,7 @@ import { CoordinatorFichaModalComponent } from './components/coordinator-ficha-m
       @if (estudianteFicha(); as e) {
         <app-coordinator-ficha-modal [idEstudiante]="e.idEstudiante" [nombre]="e.nombreCompleto" (cerrar)="cerrarFicha()" />
       }
+      }
     </section>
   `,
 })
@@ -89,6 +95,13 @@ export class CoordinatorIndicatorsComponent implements OnInit {
   readonly service = inject(CoordinatorIndicatorsService);
   private readonly toast = inject(ToastService);
   private readonly programa = inject(CoordinatorProgramService);
+
+  /** CULM-001: dentro de otra pantalla, el título lo pone el cascarón. */
+  readonly embebido = input(false);
+  /** Qué mostrar: las tarjetas (`kpis`), las alertas tempranas (`alertas`) o ambas (`todo`). */
+  readonly parte = input<'todo' | 'kpis' | 'alertas'>('todo');
+  /** Emite al elegir otro programa, para que la pantalla que lo aloja recargue lo que no es suyo. */
+  readonly programaCambiado = output<void>();
 
   readonly tamano = 10;
   readonly pagina = signal(1);
@@ -107,11 +120,16 @@ export class CoordinatorIndicatorsComponent implements OnInit {
   cambiarPrograma(): void {
     this.pagina.set(1);
     this.cargar();
+    this.programaCambiado.emit();
   }
 
   cargar(): void {
-    this.service.consultarKpis().subscribe({ error: (e) => this.toast.error(getApiErrorMessage(e)) });
-    this.cargarAlertas();
+    if (this.parte() !== 'alertas') {
+      this.service.consultarKpis().subscribe({ error: (e) => this.toast.error(getApiErrorMessage(e)) });
+    }
+    if (this.parte() !== 'kpis') {
+      this.cargarAlertas();
+    }
   }
 
   aplicarFiltros(): void {

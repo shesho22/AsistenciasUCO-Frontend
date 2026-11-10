@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -31,6 +31,7 @@ import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load
     <div class="space-y-6">
       <!-- Header Bento -->
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
+        @if (!embebido()) {
         <div>
           <div class="flex items-center gap-2 mb-1">
             <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-info-50 text-info-800 border border-info-200">
@@ -46,6 +47,7 @@ import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load
             Consulta todas las materias y grupos activos de la carrera, sus horarios y el listado de estudiantes inscritos por grupo.
           </p>
         </div>
+        }
 
         <div class="flex flex-wrap items-center gap-2">
           <a routerLink="/app/coordinador/estudiantes">
@@ -313,6 +315,8 @@ import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load
   `,
 })
 export class CoordinatorSubjectsComponent implements OnInit {
+  /** CULM-001: dentro de una pestaña, el título lo pone el cascarón. */
+  readonly embebido = input(false);
   private readonly coordinatorService = inject(CoordinatorManagementService);
   private readonly courseService = inject(CourseService);
   private readonly router = inject(Router);
