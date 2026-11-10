@@ -1,7 +1,8 @@
+import { ChangeDetectorRef } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { paginaApi, porUrl } from '../../../core/testing/pagina-api';
 import { provideHttpClient } from '@angular/common/http';
-import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@angular/common/http/testing';
 import { DeanCoordinadoresComponent } from './dean-coordinadores.component';
 import { DeanManagementService } from '../../../core/services/dean-management.service';
 import { CatalogService } from '../../../core/services/catalog.service';
@@ -43,6 +44,10 @@ describe('DeanCoordinadoresComponent', () => {
       totalGrupos: 12,
     },
   ];
+
+  const mockTiposPrograma = [{ id: 'tp-1', codigo: 'PRE', nombre: 'Pregrado' }];
+  const mockModalidades = [{ id: 'mo-1', codigo: 'PRES', nombre: 'Presencial' }];
+  const mockJornadas = [{ id: 'jo-1', codigo: 'DIU', nombre: 'Diurna' }];
 
   beforeEach(async () => {
     toastService = jasmine.createSpyObj('ToastService', ['success', 'error', 'info', 'warning']);
@@ -86,6 +91,10 @@ describe('DeanCoordinadoresComponent', () => {
         total: 1,
       })
     );
+
+    http.match(`${environment.apiUrl}/tipos-programa`).forEach((r) => r.flush(mockTiposPrograma));
+    http.match(`${environment.apiUrl}/modalidades-programa`).forEach((r) => r.flush(mockModalidades));
+    http.match(`${environment.apiUrl}/jornadas-programa`).forEach((r) => r.flush(mockJornadas));
 
     http.match(`${environment.apiUrl}/coordinador/planes-estudio`).forEach((r) => r.flush({ exitoso: true, datos: [] }));
     http.match(`${environment.apiUrl}/coordinador/periodos-academicos`).forEach((r) => r.flush({ exitoso: true, datos: [] }));
@@ -291,6 +300,7 @@ describe('DeanCoordinadoresComponent', () => {
   it('guardarCoordinador valida campos obligatorios antes de enviar', () => {
     flushInitialRequests();
     component.abrirFormularioRegistro();
+    component.modoPrograma.set('VINCULAR');
 
     // Sin documento
     component.formData.numeroIdentificacion = '';
@@ -323,6 +333,7 @@ describe('DeanCoordinadoresComponent', () => {
 
     // Con programa pero sin contraseña
     component.formData.programaAcademico = 'Ingeniería de Sistemas';
+    component.modoPrograma.set('VINCULAR');
     component.formData.password = '';
     component.guardarCoordinador();
     expect(toastService.warning).toHaveBeenCalledWith('El campo Contraseña Inicial IAM es obligatorio.');
@@ -341,6 +352,7 @@ describe('DeanCoordinadoresComponent', () => {
     component.formData.primerApellido = 'Henao';
     component.formData.correo = 'jorge.henao@uco.edu.co';
     component.formData.programaAcademico = 'Ingeniería de Sistemas';
+    component.modoPrograma.set('VINCULAR');
     component.formData.password = 'ClaveSegura2026!';
 
     component.guardarCoordinador();
@@ -370,6 +382,7 @@ describe('DeanCoordinadoresComponent', () => {
     component.formData.primerApellido = 'Henao';
     component.formData.correo = 'jorge.henao@uco.edu.co';
     component.formData.programaAcademico = 'Ingeniería de Sistemas';
+    component.modoPrograma.set('VINCULAR');
     component.formData.password = 'ClaveSegura2026!';
 
     component.guardarCoordinador();
@@ -419,6 +432,7 @@ describe('DeanCoordinadoresComponent', () => {
     component.formData.primerApellido = 'Valencia';
     component.formData.correo = 'coordinador231@uco.edu.co';
     component.formData.programaAcademico = 'Ingeniería de Sistemas';
+    component.modoPrograma.set('VINCULAR');
     component.formData.password = 'ClaveSegura2026!';
 
     component.guardarCoordinador();
@@ -494,15 +508,15 @@ describe('DeanCoordinadoresComponent', () => {
     expect(component.formData.primerNombre).toBe('Valeria');
     expect(component.formData.primerApellido).toBe('Restrepo');
     expect(component.formData.correo).toBe('valeria.restrepo@uco.edu.co');
-    expect(component.formData.programaAcademico).toBe('SIN_PROGRAMA');
+    expect(component.modoPrograma()).toBe('CREAR');
     expect(toastService.info).toHaveBeenCalled();
   });
 
-  it('guardarCoordinador permite aprovisionar coordinador con SIN_PROGRAMA cuando la facultad aún no tiene programas', () => {
+  it('guardarCoordinador permite registrar coordinador en modo "sin programa por ahora"', () => {
     flushInitialRequests();
     component.programasAcademicos.set([]);
     component.abrirFormularioRegistro();
-    expect(component.formData.programaAcademico).toBe('SIN_PROGRAMA');
+    component.modoPrograma.set('SIN');
 
     component.formData.numeroIdentificacion = '1017666777';
     component.formData.primerNombre = 'Elena';
@@ -567,5 +581,212 @@ describe('DeanCoordinadoresComponent', () => {
     const reqCoords = http.expectOne(porUrl(`${environment.apiUrl}/decano/coordinadores`));
     expect(reqCoords.request.method).toBe('GET');
     reqCoords.flush({ exitoso: true, elementos: mockCoordinadores });
+  });
+  describe('DEC-065: coordinador y programa en un solo formulario', () => {
+    function llenarDatosPersonales() {
+      component.formData.tipoIdentificacionId = 'tipo-1';
+      component.formData.numeroIdentificacion = '1017555444';
+      component.formData.primerNombre = 'Jorge';
+      component.formData.primerApellido = 'Henao';
+      component.formData.correo = 'jorge.henao@uco.edu.co';
+      component.formData.password = 'ClaveSegura2026!';
+    }
+
+    function responderExito(post: TestRequest) {
+      post.flush({
+        exitoso: true,
+        mensajeUsuario: 'Coordinador y programa registrados.',
+        datos: { idCoordinador: 'c-9', idPrograma: 'p-9', nombrePrograma: 'Derecho' },
+      });
+      http.expectOne(porUrl(`${environment.apiUrl}/decano/coordinadores`)).flush({ exitoso: true, elementos: mockCoordinadores });
+    }
+
+    beforeEach(() => {
+      flushInitialRequests();
+      component.abrirFormularioRegistro();
+      fixture.detectChanges();
+    });
+
+    it('carga los catálogos de tipo, modalidad y jornada y arranca en modo crear', () => {
+      expect(component.tiposPrograma()).toEqual(mockTiposPrograma);
+      expect(component.modalidades()).toEqual(mockModalidades);
+      expect(component.jornadas()).toEqual(mockJornadas);
+      expect(component.modoPrograma()).toBe('CREAR');
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('[data-testid="programa-crear"]')).toBeTruthy();
+      expect(el.textContent).not.toContain('SIN_PROGRAMA');
+      expect(el.textContent).not.toContain('Aprovisionar para nuevo programa');
+    });
+
+    it('avisa con el mensaje del backend si falla la carga de cada catálogo', () => {
+      const otro = TestBed.createComponent(DeanCoordinadoresComponent).componentInstance;
+      toastService.warning.calls.reset();
+      otro.cargarCatalogosPrograma();
+      for (const ruta of ['tipos-programa', 'modalidades-programa', 'jornadas-programa']) {
+        http
+          .expectOne(`${environment.apiUrl}/${ruta}`)
+          .flush({ code: 'ERR', message: `Catálogo ${ruta} no disponible.`, correlationId: 'c' }, { status: 500, statusText: 'err' });
+      }
+      expect(toastService.warning).toHaveBeenCalledWith('Catálogo tipos-programa no disponible.');
+      expect(toastService.warning).toHaveBeenCalledWith('Catálogo modalidades-programa no disponible.');
+      expect(toastService.warning).toHaveBeenCalledWith('Catálogo jornadas-programa no disponible.');
+    });
+
+    it('cada modo muestra su sección', () => {
+      const el = fixture.nativeElement as HTMLElement;
+      component.modoPrograma.set('VINCULAR');
+      fixture.detectChanges();
+      expect(el.querySelector('[data-testid="programa-vincular"]')).toBeTruthy();
+      expect(el.querySelector('[data-testid="programa-crear"]')).toBeNull();
+      component.modoPrograma.set('SIN');
+      fixture.detectChanges();
+      expect(el.querySelector('[data-testid="programa-sin"]')).toBeTruthy();
+    });
+
+    it('errorPrograma valida cada modo', () => {
+      expect(component.errorPrograma()).toBe('El nombre del programa es obligatorio.');
+      component.programaNuevo.nombre = 'x'.repeat(51);
+      expect(component.errorPrograma()).toContain('no puede superar 50');
+      component.programaNuevo.nombre = 'Derecho';
+      expect(component.errorPrograma()).toBe('Seleccione el tipo de programa.');
+      component.programaNuevo.idTipoPrograma = 'tp-1';
+      expect(component.errorPrograma()).toBeNull();
+      component.modoPrograma.set('VINCULAR');
+      expect(component.errorPrograma()).toBe('Seleccione el programa existente.');
+      component.formData.programaAcademico = 'Ingeniería de Sistemas';
+      expect(component.errorPrograma()).toBeNull();
+      component.modoPrograma.set('SIN');
+      expect(component.errorPrograma()).toBeNull();
+    });
+
+    it('errorCampo de programa solo reporta en el modo que corresponde tras intentar guardar', () => {
+      component.intentoGuardar.set(true);
+      expect(component.errorCampo('programaNuevoNombre')).toBe('El nombre del programa es obligatorio.');
+      expect(component.errorCampo('programaNuevoTipo')).toBe('Seleccione el tipo de programa.');
+      expect(component.errorCampo('programaAcademico')).toBe('');
+      component.modoPrograma.set('VINCULAR');
+      expect(component.errorCampo('programaAcademico')).toBe('Seleccione el programa existente.');
+      expect(component.errorCampo('programaNuevoNombre')).toBe('');
+      expect(component.errorCampo('programaNuevoTipo')).toBe('');
+      component.modoPrograma.set('SIN');
+      expect(component.errorCampo('programaAcademico')).toBe('');
+    });
+
+    it('Guardar queda deshabilitado mientras el formulario sea inválido o haya una petición en curso', () => {
+      const boton = () => fixture.nativeElement.querySelector('button[type="submit"]') as HTMLButtonElement;
+      expect(component.formularioValido()).toBeFalse();
+      fixture.detectChanges();
+      expect(boton().disabled).toBeTrue();
+
+      llenarDatosPersonales();
+      component.programaNuevo = { nombre: 'Derecho', idTipoPrograma: 'tp-1', idModalidad: '', idJornada: '' };
+      expect(component.formularioValido()).toBeTrue();
+      fixture.componentRef.injector.get(ChangeDetectorRef).markForCheck();
+      fixture.detectChanges();
+      expect(boton().disabled).toBeFalse();
+
+      component.isSubmitting.set(true);
+      fixture.detectChanges();
+      expect(boton().disabled).toBeTrue();
+    });
+
+    it('formularioValido exige cada dato personal y una contraseña que cumpla la política', () => {
+      component.modoPrograma.set('SIN');
+      llenarDatosPersonales();
+      expect(component.formularioValido()).toBeTrue();
+      const rotos: Array<() => void> = [
+        () => (component.formData.tipoIdentificacionId = ''),
+        () => (component.formData.numeroIdentificacion = 'abc'),
+        () => (component.formData.primerNombre = ' '),
+        () => (component.formData.primerApellido = ''),
+        () => (component.formData.correo = 'no-es-correo'),
+        () => (component.formData.password = ''),
+        () => (component.formData.password = '123'),
+      ];
+      for (const romper of rotos) {
+        llenarDatosPersonales();
+        romper();
+        expect(component.formularioValido()).toBeFalse();
+      }
+    });
+
+    it('modo CREAR envía programaNuevo con modalidad y jornada e idPrograma nulo', () => {
+      llenarDatosPersonales();
+      component.programaNuevo = { nombre: ' Derecho ', idTipoPrograma: 'tp-1', idModalidad: 'mo-1', idJornada: 'jo-1' };
+      component.guardarCoordinador();
+      const post = http.expectOne(`${environment.apiUrl}/decano/coordinadores`);
+      expect(post.request.body.idPrograma).toBeNull();
+      expect(post.request.body.programaNuevo).toEqual({ nombre: 'Derecho', idTipoPrograma: 'tp-1', idModalidad: 'mo-1', idJornada: 'jo-1' });
+      responderExito(post);
+      expect(toastService.success).toHaveBeenCalledWith('Coordinador y programa registrados.');
+      expect(component.vistaActual()).toBe('LISTA');
+    });
+
+    it('modo CREAR omite modalidad y jornada cuando no se definen', () => {
+      llenarDatosPersonales();
+      component.programaNuevo = { nombre: 'Derecho', idTipoPrograma: 'tp-1', idModalidad: '', idJornada: '' };
+      component.guardarCoordinador();
+      const post = http.expectOne(`${environment.apiUrl}/decano/coordinadores`);
+      expect(post.request.body.programaNuevo).toEqual({ nombre: 'Derecho', idTipoPrograma: 'tp-1' });
+      responderExito(post);
+    });
+
+    it('modo VINCULAR envía idPrograma y programaNuevo nulo', () => {
+      llenarDatosPersonales();
+      component.modoPrograma.set('VINCULAR');
+      component.formData.programaAcademico = 'Ingeniería de Sistemas';
+      component.guardarCoordinador();
+      const post = http.expectOne(`${environment.apiUrl}/decano/coordinadores`);
+      expect(post.request.body.idPrograma).toBe('7d0f6a52-0000-4000-8000-000000000001');
+      expect(post.request.body.programaNuevo).toBeNull();
+      responderExito(post);
+    });
+
+    it('modo VINCULAR con un programa que no está en el catálogo envía idPrograma nulo', () => {
+      llenarDatosPersonales();
+      component.modoPrograma.set('VINCULAR');
+      component.formData.programaAcademico = 'Programa desconocido';
+      component.guardarCoordinador();
+      const post = http.expectOne(`${environment.apiUrl}/decano/coordinadores`);
+      expect(post.request.body.idPrograma).toBeNull();
+      responderExito(post);
+    });
+
+    it('modo SIN envía ambos nulos', () => {
+      llenarDatosPersonales();
+      component.modoPrograma.set('SIN');
+      component.guardarCoordinador();
+      const post = http.expectOne(`${environment.apiUrl}/decano/coordinadores`);
+      expect(post.request.body.idPrograma).toBeNull();
+      expect(post.request.body.programaNuevo).toBeNull();
+      responderExito(post);
+    });
+
+    it('no envía nada si el programa es inválido y avisa el motivo', () => {
+      llenarDatosPersonales();
+      component.programaNuevo.nombre = '';
+      component.guardarCoordinador();
+      expect(toastService.warning).toHaveBeenCalledWith('El nombre del programa es obligatorio.');
+      http.expectNone(`${environment.apiUrl}/decano/coordinadores`);
+    });
+
+    for (const caso of [
+      { status: 400, message: 'El nombre del programa no es válido.' },
+      { status: 404, message: 'El tipo de programa indicado no existe.' },
+      { status: 409, message: 'Ya existe un programa con ese nombre.' },
+      { status: 500, message: 'Error interno del servidor.' },
+    ]) {
+      it(`ante ${caso.status} muestra el mensaje del backend sin cerrar el formulario`, () => {
+        llenarDatosPersonales();
+        component.programaNuevo = { nombre: 'Derecho', idTipoPrograma: 'tp-1', idModalidad: '', idJornada: '' };
+        component.guardarCoordinador();
+        http
+          .expectOne(`${environment.apiUrl}/decano/coordinadores`)
+          .flush({ code: 'ERR', message: caso.message, correlationId: 'c' }, { status: caso.status, statusText: 'err' });
+        expect(toastService.error).toHaveBeenCalledWith(caso.message);
+        expect(component.vistaActual()).toBe('REGISTRO');
+        expect(component.isSubmitting()).toBeFalse();
+      });
+    }
   });
 });
