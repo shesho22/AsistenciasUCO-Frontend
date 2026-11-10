@@ -215,11 +215,6 @@ export class OverviewTeacherComponent {
   proximaClase = input<ProximaClaseInfo | null>(null);
   isLoading = input<boolean>(false);
 
-  /** `HH:mm`: el backend entrega `LocalTime` con segundos. */
-  hora(valor: string | null | undefined): string {
-    return (valor ?? '').replace(/^(\d{2}:\d{2}):\d{2}(?:\.\d+)?$/, '$1');
-  }
-
   /** Codigo y grupo; sin codigo solo el grupo (nunca el literal "undefined"). */
   subtituloCurso(course: Course): string {
     return [course.code, course.section].filter((parte) => !!parte && parte !== '-').join(' • ');
