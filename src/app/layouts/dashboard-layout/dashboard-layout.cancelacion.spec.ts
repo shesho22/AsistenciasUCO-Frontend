@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { signal } from '@angular/core';
-import { of } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
 import { DashboardLayoutComponent } from './dashboard-layout.component';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../shared/components/toast/toast.component';
@@ -19,7 +19,7 @@ describe('DashboardLayoutComponent - Cancelación por Inasistencia C.1 (C-F-58..
   let revisionServiceSpy: jasmine.SpyObj<RevisionCancelacionService>;
   let mockUserSignal: ReturnType<typeof signal>;
 
-  function setup(role: UserRole, cancelacionEnabled: boolean): void {
+  function setup(role: UserRole, cancelacionEnabled: boolean, conteo$: Observable<number> = of(5)): void {
     (environment.features as any).cancelacionInasistenciaEnabled = cancelacionEnabled;
 
     mockUserSignal = signal({
@@ -44,7 +44,7 @@ describe('DashboardLayoutComponent - Cancelación por Inasistencia C.1 (C-F-58..
     alertaServiceSpy.contarNoLeidas.and.returnValue(of(2));
 
     revisionServiceSpy = jasmine.createSpyObj('RevisionCancelacionService', ['contarPendientes']);
-    revisionServiceSpy.contarPendientes.and.returnValue(of(5));
+    revisionServiceSpy.contarPendientes.and.returnValue(conteo$);
 
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
@@ -60,6 +60,7 @@ describe('DashboardLayoutComponent - Cancelación por Inasistencia C.1 (C-F-58..
 
     fixture = TestBed.createComponent(DashboardLayoutComponent);
     component = fixture.componentInstance;
+    fixture.detectChanges();
     fixture.detectChanges();
   }
 
@@ -109,5 +110,36 @@ describe('DashboardLayoutComponent - Cancelación por Inasistencia C.1 (C-F-58..
     items = component.filteredNavItems();
     expect(items.find((i) => i.route === '/app/decano/revisiones-cancelacion')).toBeUndefined();
     expect(revisionServiceSpy.contarPendientes).not.toHaveBeenCalled();
+  });
+
+  it('DEC-065: el docente consulta sus pendientes y los muestra como contador junto a Mis Grupos', () => {
+    setup('DOCENTE', true);
+    expect(revisionServiceSpy.contarPendientes).toHaveBeenCalledWith('DOCENTE');
+    const enlace = fixture.nativeElement.querySelector('a[href="/app/docente/grupos"]') as HTMLElement;
+    expect(enlace.querySelector('[data-testid="menu-contador"]')?.textContent?.trim()).toBe('5');
+    const otros = Array.from(fixture.nativeElement.querySelectorAll('a[href="/app/docente/reclamos"] [data-testid="menu-contador"]'));
+    expect(otros.length).toBe(0);
+  });
+
+  it('el contador del docente queda oculto si la consulta falla', () => {
+    setup('DOCENTE', true, throwError(() => new Error('falla')));
+    expect(component.revisionesPendientesCount()).toBe(0);
+    expect(fixture.nativeElement.querySelector('[data-testid="menu-contador"]')).toBeNull();
+  });
+
+  it('el coordinador y el estudiante muestran su contador; el decano no muestra ninguno', () => {
+    setup('COORDINADOR', true);
+    expect(fixture.nativeElement.querySelector('a[href="/app/coordinador/revisiones-cancelacion"] [data-testid="menu-contador"]')?.textContent?.trim()).toBe('5');
+    setup('ESTUDIANTE', true);
+    expect(fixture.nativeElement.querySelector('a[href="/app/estudiante/alertas"] [data-testid="menu-contador"]')?.textContent?.trim()).toBe('3');
+    setup('DECANO', true);
+    expect(fixture.nativeElement.querySelector('[data-testid="menu-contador"]')).toBeNull();
+  });
+
+  it('un solo pendiente se anuncia en singular para lectores de pantalla', () => {
+    setup('COORDINADOR', true);
+    component.revisionesPendientesCount.set(1);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[data-testid="menu-contador"]')?.getAttribute('aria-label')).toBe('1 pendiente');
   });
 });

@@ -19,4 +19,14 @@ describe('OverviewTeacherComponent (F-DOC-S02)', () => {
     expect(texto).toContain('IS-101 • Grupo 001');
     expect(fixture.componentInstance.subtituloCurso(curso({ code: '-' }))).toBe('Grupo 001');
   });
+
+  it('DEC-065: muestra el KPI de revisiones pendientes de decisión con enlace a los grupos', () => {
+    TestBed.configureTestingModule({ imports: [OverviewTeacherComponent], providers: [provideRouter([])] });
+    const fixture = TestBed.createComponent(OverviewTeacherComponent);
+    fixture.detectChanges();
+    const kpi = (fixture.nativeElement as HTMLElement).querySelector('app-revisiones-pendientes-kpi');
+    expect(kpi).toBeTruthy();
+    expect(kpi?.textContent).toContain('Revisiones pendientes de decisión');
+    expect(kpi?.querySelector('a')?.getAttribute('href')).toBe('/app/docente/grupos');
+  });
 });
