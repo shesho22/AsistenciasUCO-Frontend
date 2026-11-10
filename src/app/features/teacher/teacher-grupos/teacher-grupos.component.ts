@@ -4,10 +4,10 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AttendanceService } from '../../../core/services/attendance.service';
 import { StudentAttendance } from '../../../core/models/attendance.model';
-import { AVISO_SESION_CANCELADA_POR_COORDINACION, AVISO_SESION_MANUAL_NOTIFICADA } from '../../../core/models/sesion-manual.util';
+import { AVISO_SOLICITUD_SESION_REGISTRADA, mensajeSolicitudAprobada, mensajeSolicitudRechazadaOCancelada } from '../../../core/models/sesion-manual.util';
 import { RealtimeService } from '../../../core/realtime/realtime.service';
-import { REALTIME_EVENT_TYPE, SesionCanceladaRealtimePayload } from '../../../core/realtime/model/realtime-event.model';
-import { marcarSesionCancelada } from '../../../core/models/sesion-estado.model';
+import { REALTIME_EVENT_TYPE, SesionCanceladaRealtimePayload, SesionManualCreadaRealtimePayload } from '../../../core/realtime/model/realtime-event.model';
+import { estaPendienteAprobacion, marcarSesionAprobada, marcarSesionCancelada } from '../../../core/models/sesion-estado.model';
 import { CourseService } from '../../../core/services/course.service';
 import { CatalogService } from '../../../core/services/catalog.service';
 import { CatalogoPrograma } from '../../../core/models/programa-academico.model';
@@ -157,6 +157,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   private timeZone = inject(SessionTimeZoneService);
   private realtime = inject(RealtimeService);
   private cancelacionesSub: Subscription | null = null;
+  private aprobacionesSub: Subscription | null = null;
 
   // QR (HU175, CULM-001 B.2) y cancelación (HU047, B.1) tienen contrato.
   readonly sessionQrEnabled = environment.features.sessionQrEnabled;
@@ -497,8 +498,8 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
         .subscribe({
           next: (res) => {
             if (res.exitoso) {
-              // DEC-064: la sesión creada a mano se notifica a estudiantes y coordinador.
-              this.toast.success(`${res.mensaje || 'Sesión programada con éxito.'} ${AVISO_SESION_MANUAL_NOTIFICADA}`);
+              // DEC-065 (2): la sesión queda como solicitud pendiente; el mensaje lo entrega el backend.
+              this.toast.success(res.mensajeUsuario || res.mensaje || AVISO_SOLICITUD_SESION_REGISTRADA);
               this.cargarSesiones(course.id);
               this.volverASesiones();
             }
@@ -555,14 +556,28 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
       .subscribe((evento) => {
         const { grupo, sesion, tipo } = evento.payload;
         if (grupo !== grupoId) return;
+        const nombre = this.sessions().find((s) => s.id === sesion)?.title;
         this.sessions.update((prev) =>
           marcarSesionCancelada(prev, sesion, { tipo, motivo: null, nombreFestivo: null, fechaCancelacionUtc: null })
         );
-        if (tipo === 'COORDINADOR') this.toast.info(AVISO_SESION_CANCELADA_POR_COORDINACION);
+        if (tipo === 'COORDINADOR') this.toast.info(mensajeSolicitudRechazadaOCancelada(nombre));
+      });
+    // DEC-065 (2): la aprobación del coordinador llega como SESION_MANUAL_CREADA de una sesión que estaba pendiente.
+    this.aprobacionesSub = this.realtime
+      .listenType<SesionManualCreadaRealtimePayload>(REALTIME_EVENT_TYPE.SESION_MANUAL_CREADA)
+      .subscribe((evento) => {
+        const { grupo, sesion } = evento.payload;
+        if (grupo !== grupoId) return;
+        const previa = this.sessions().find((s) => s.id === sesion);
+        if (!previa || !estaPendienteAprobacion(previa)) return;
+        this.sessions.update((prev) => marcarSesionAprobada(prev, sesion));
+        this.toast.success(mensajeSolicitudAprobada(previa.title));
       });
   }
 
   private detenerEscuchaCancelaciones(): void {
+    this.aprobacionesSub?.unsubscribe();
+    this.aprobacionesSub = null;
     if (!this.cancelacionesSub) return;
     this.cancelacionesSub.unsubscribe();
     this.cancelacionesSub = null;

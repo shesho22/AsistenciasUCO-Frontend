@@ -272,4 +272,37 @@ describe('TeacherGrupoHubComponent', () => {
       expect((q('[data-testid="hub-grupo-tabs"]') as HTMLElement).className).toContain('overflow-x-auto');
     });
   });
+
+  describe('sesión de hoy pendiente de aprobación (DEC-065 (2))', () => {
+    const ahora = new Date('2026-11-10T10:00:00Z');
+    const base: ClassSession = {
+      id: 'ses-p', courseId: 'crs-1', sessionNumber: 1, title: 'Refuerzo', date: '2026-11-10', startTime: '05:00', endTime: '07:00',
+      records: [], fechaHoraInicio: '2026-11-10T09:00:00Z', fechaHoraFin: '2026-11-10T12:00:00Z', estadoTemporal: 'CONFIRMADA',
+    };
+    const abrir = (sesion: ClassSession) => {
+      fixture.componentRef.setInput('selectedCourse', course);
+      fixture.componentRef.setInput('sessionQrEnabled', true);
+      fixture.componentRef.setInput('ahora', ahora);
+      fixture.componentRef.setInput('sessions', [sesion]);
+      fixture.detectChanges();
+    };
+    const el = () => fixture.nativeElement as HTMLElement;
+
+    it('deshabilita Tomar asistencia y QR / PIN y explica la causa', () => {
+      abrir({ ...base, estadoSolicitud: 'PENDIENTE', pendienteAprobacion: true });
+
+      expect(el().querySelector<HTMLButtonElement>('[data-testid="hub-tomar-asistencia"]')?.disabled).toBeTrue();
+      expect(el().querySelector<HTMLButtonElement>('[data-testid="hub-hoy-qr"]')?.disabled).toBeTrue();
+      expect(el().querySelector('[data-testid="hub-hoy-pendiente"]')?.textContent).toContain('coordinación apruebe');
+      expect(el().querySelector('[data-testid="sesion-pendiente-badge"]')).not.toBeNull();
+    });
+
+    it('una sesión sin solicitud mantiene las acciones habilitadas y sin texto de pendiente', () => {
+      abrir({ ...base, estadoSolicitud: null, pendienteAprobacion: false });
+
+      expect(el().querySelector<HTMLButtonElement>('[data-testid="hub-tomar-asistencia"]')?.disabled).toBeFalse();
+      expect(el().querySelector<HTMLButtonElement>('[data-testid="hub-hoy-qr"]')?.disabled).toBeFalse();
+      expect(el().querySelector('[data-testid="hub-hoy-pendiente"]')).toBeNull();
+    });
+  });
 });

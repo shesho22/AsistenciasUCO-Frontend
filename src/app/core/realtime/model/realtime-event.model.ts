@@ -20,6 +20,8 @@ export const REALTIME_EVENT_TYPE = {
   SESION_CANCELADA: 'SESION_CANCELADA',
   // CULM-001 / DEC-064: sesión creada manualmente por el docente (audiencia: estudiantes del grupo y coordinador)
   SESION_MANUAL_CREADA: 'SESION_MANUAL_CREADA',
+  // DEC-065 (2): solicitud de sesión extraordinaria creada por el docente (audiencia: coordinador y docente del grupo)
+  SESION_SOLICITUD_CREADA: 'SESION_SOLICITUD_CREADA',
   TOMA_ABIERTA: 'TOMA_ABIERTA',
   TOMA_CERRADA: 'TOMA_CERRADA',
   ASISTENCIA_QR_ROTADO: 'ASISTENCIA_QR_ROTADO',
@@ -59,6 +61,14 @@ export interface SesionManualCreadaRealtimePayload {
   sesion: string;
   fechaHoraInicio: string | null;
   docente: string;
+}
+
+/** DEC-065 (2): `fechaHoraInicio` es ISO con `Z` si el horario está confirmado; `docente` es el nombre completo. */
+export interface SesionSolicitudCreadaRealtimePayload {
+  grupo: string;
+  sesion: string;
+  docente: string;
+  fechaHoraInicio: string | null;
 }
 
 export type {

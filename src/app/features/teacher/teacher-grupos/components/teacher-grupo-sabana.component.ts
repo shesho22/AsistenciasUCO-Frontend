@@ -15,7 +15,7 @@ import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { EstudianteGrupoItem, idEstudianteDe } from '../../../../core/models/estudiante-grupo-item.model';
 import { ClassSession } from '../../../../core/models/attendance.model';
-import { estaCancelada } from '../../../../core/models/sesion-estado.model';
+import { estaCancelada, estaPendienteAprobacion, estaRechazada } from '../../../../core/models/sesion-estado.model';
 import { SessionTimeZoneService } from '../../../../core/services/session-timezone.service';
 import { TeacherAttendanceSummaryService } from '../../../../core/services/teacher-attendance-summary.service';
 import { ResumenAsistenciaEstudiante } from '../../../../core/models/indicadores-asistencia.model';
@@ -117,8 +117,12 @@ import { REALTIME_EVENT_TYPE } from '../../../../core/realtime/model/realtime-ev
                     } @else {
                       <div class="text-xs text-warm-500 font-normal truncate">{{ displayDate(ses) | slice:5 }}</div>
                     }
-                    @if (esCancelada(ses)) {
+                    @if (esRechazada(ses)) {
+                      <div class="text-xs font-semibold text-danger-800" data-testid="sabana-rechazada">Rechazada</div>
+                    } @else if (esCancelada(ses)) {
                       <div class="text-xs font-semibold text-warning-800">Cancelada</div>
+                    } @else if (esPendiente(ses)) {
+                      <div class="text-xs font-semibold text-warning-800" data-testid="sabana-pendiente">Pendiente de aprobación</div>
                     }
                     <span
                       class="inline-block w-1.5 h-1.5 rounded-full mt-0.5 bg-success-500"
@@ -249,6 +253,8 @@ export class TeacherGrupoSabanaComponent implements OnDestroy {
   sessions = input<ClassSession[]>([]);
   cargando = input<boolean>(false);
   protected esCancelada = estaCancelada;
+  protected esPendiente = estaPendienteAprobacion;
+  protected esRechazada = estaRechazada;
 
   protected readonly tamano = 50;
   protected readonly pagina = signal(1);

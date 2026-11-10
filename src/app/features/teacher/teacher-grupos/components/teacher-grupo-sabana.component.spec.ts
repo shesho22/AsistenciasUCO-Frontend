@@ -75,4 +75,21 @@ describe('TeacherGrupoSabanaComponent', () => {
       expect(celda.textContent?.trim()).toBe('—');
     });
   });
+
+  describe('solicitud de sesión (DEC-065 (2))', () => {
+    const el = () => fixture.nativeElement as HTMLElement;
+
+    it('rotula la columna de una sesión pendiente', () => {
+      fixture.componentRef.setInput('sessions', [{ ...session, estadoSolicitud: 'PENDIENTE', pendienteAprobacion: true }]);
+      fixture.detectChanges();
+      expect(el().querySelector('[data-testid="sabana-pendiente"]')?.textContent).toContain('Pendiente de aprobación');
+    });
+
+    it('rotula la columna de una sesión rechazada como Rechazada y no como Cancelada', () => {
+      fixture.componentRef.setInput('sessions', [{ ...session, estado: 'CANCELADA', estadoSolicitud: 'RECHAZADA' }]);
+      fixture.detectChanges();
+      expect(el().querySelector('[data-testid="sabana-rechazada"]')?.textContent).toContain('Rechazada');
+      expect(el().textContent).not.toContain('Cancelada');
+    });
+  });
 });
