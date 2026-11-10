@@ -1,6 +1,7 @@
 import { Component, ChangeDetectionStrategy, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { RevisionesPendientesKpiComponent } from '../../../../shared/components/revisiones-pendientes-kpi/revisiones-pendientes-kpi.component';
 import { CardComponent } from '../../../../shared/components/card/card.component';
 import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
@@ -10,12 +11,17 @@ import { DocenteItem, PlanEstudioItem } from '../../../../core/models/role-manag
   selector: 'app-overview-coordinator',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, RouterLink, CardComponent, BadgeComponent, ButtonComponent],
+  imports: [RevisionesPendientesKpiComponent, CommonModule, RouterLink, CardComponent, BadgeComponent, ButtonComponent],
   host: {
     class: 'block w-full',
   },
   template: `
     <div class="space-y-6">
+      <!-- Revisiones de cancelación por inasistencia: conteo global con enlace directo (DEC-065) -->
+      <div class="max-w-sm">
+        <app-revisiones-pendientes-kpi rol="COORDINADOR" />
+      </div>
+
       <!-- KPIs Coordinador -->
       <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px]">
