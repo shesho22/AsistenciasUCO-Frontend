@@ -1,3 +1,4 @@
+import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -16,7 +17,7 @@ import { resolveSessionInstant } from '../../../core/time/session-timezone.util'
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full' },
-  imports: [CommonModule, FormsModule, PaginationComponent, SesionEstadoBadgeComponent],
+  imports: [EmptyStateComponent, CommonModule, FormsModule, PaginationComponent, SesionEstadoBadgeComponent],
   template: `
     <div class="space-y-6 animate-fade-in">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
@@ -44,7 +45,11 @@ import { resolveSessionInstant } from '../../../core/time/session-timezone.util'
         </div>
 
         @if (sesiones().length === 0 && !cargando()) {
-          <p class="text-sm text-warm-500 text-center py-6">No hay sesiones programadas en el rango seleccionado.</p>
+          <app-empty-state
+            variant="search"
+            title="No hay sesiones programadas en el rango seleccionado."
+            causa="Amplía el rango de fechas para ver más sesiones de la facultad."
+          />
         } @else {
           <p class="text-xs text-warm-500" data-testid="zona-horaria-cronograma">
             @if (sinZona()) {

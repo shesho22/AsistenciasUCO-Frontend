@@ -1,3 +1,4 @@
+import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 import { Component, ChangeDetectionStrategy, input, output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
@@ -10,7 +11,7 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
   selector: 'app-teacher-grupo-sesiones',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, ButtonComponent, SesionEstadoBadgeComponent],
+  imports: [EmptyStateComponent, CommonModule, ButtonComponent, SesionEstadoBadgeComponent],
   template: `
     <div class="bg-white rounded-b-2xl border-x border-b border-warm-200 shadow-warm-sm overflow-hidden space-y-4 p-5">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-warm-100">
@@ -33,9 +34,10 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
           }
         </div>
       } @else if (sessions().length === 0) {
-        <div class="p-12 text-center text-warm-400">
-          <p class="text-sm">No hay sesiones registradas para este grupo.</p>
-        </div>
+        <app-empty-state
+          title="No hay sesiones registradas para este grupo."
+          causa="Programa la primera sesión para comenzar a registrar asistencia."
+        />
       } @else {
         <div class="divide-y divide-warm-100">
           @for (sesion of sessions(); track sesion.id) {

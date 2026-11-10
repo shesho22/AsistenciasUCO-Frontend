@@ -1,3 +1,4 @@
+import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 import { SemaforoAsistenciaComponent } from '../../../../shared/components/semaforo-asistencia/semaforo-asistencia.component';
 import { Component, ChangeDetectionStrategy, computed, input, output, signal, inject, effect, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -25,7 +26,7 @@ import { ToastService } from '../../../../shared/components/toast/toast.componen
   selector: 'app-student-course-detail',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, BadgeComponent, ButtonComponent, MotivosJustificacionComponent, SesionEstadoBadgeComponent, AttendanceStatusBadgeComponent, PaginationComponent, SemaforoAsistenciaComponent],
+  imports: [EmptyStateComponent, CommonModule, BadgeComponent, ButtonComponent, MotivosJustificacionComponent, SesionEstadoBadgeComponent, AttendanceStatusBadgeComponent, PaginationComponent, SemaforoAsistenciaComponent],
   template: `
     @if (materia()) {
       <div class="space-y-6">
@@ -146,8 +147,11 @@ import { ToastService } from '../../../../shared/components/toast/toast.componen
               }
             </div>
           } @else if (sesiones().length === 0) {
-            <div class="p-12 text-center text-warm-400" data-testid="sesiones-vacio">
-              <p class="text-sm">No hay sesiones registradas para este grupo.</p>
+            <div data-testid="sesiones-vacio">
+              <app-empty-state
+                title="No hay sesiones registradas para este grupo."
+                causa="Tu docente aún no ha programado sesiones; aparecerán aquí cuando lo haga."
+              />
             </div>
           } @else {
             <div class="divide-y divide-warm-100">

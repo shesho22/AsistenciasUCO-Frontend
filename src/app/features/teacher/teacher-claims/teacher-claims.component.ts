@@ -1,3 +1,4 @@
+import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { Component, OnDestroy, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subscription, finalize } from 'rxjs';
@@ -28,6 +29,7 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    EmptyStateComponent,
     CommonModule,
     FormsModule,
     CardComponent,
@@ -128,8 +130,11 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <h3 class="text-base font-semibold text-warm-900">No hay reclamos en esta categoría</h3>
-            <p class="text-xs text-warm-500 mt-1">Todas las solicitudes de asistencia se encuentran al día.</p>
+            <app-empty-state
+              title="No hay reclamos en esta categoría"
+              description="Todas las solicitudes de asistencia se encuentran al día."
+              causa="Cambia de pestaña para revisar los reclamos en otros estados."
+            />
           </div>
         } @else {
           <div class="grid grid-cols-1 md:grid-cols-2 gap-5">

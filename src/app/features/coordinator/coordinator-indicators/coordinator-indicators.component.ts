@@ -1,3 +1,4 @@
+import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { KpiCardComponent } from '../../../shared/components/kpi-card/kpi-card.component';
 import { SemaforoAsistenciaComponent } from '../../../shared/components/semaforo-asistencia/semaforo-asistencia.component';
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
@@ -13,7 +14,7 @@ import { CoordinatorFichaModalComponent } from './components/coordinator-ficha-m
 @Component({
   selector: 'app-coordinator-indicators',
   standalone: true,
-  imports: [KpiCardComponent, PaginationComponent, CoordinatorFichaModalComponent, CoordinatorProgramSelectorComponent, SemaforoAsistenciaComponent],
+  imports: [EmptyStateComponent, KpiCardComponent, PaginationComponent, CoordinatorFichaModalComponent, CoordinatorProgramSelectorComponent, SemaforoAsistenciaComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="space-y-6">
@@ -52,7 +53,11 @@ import { CoordinatorFichaModalComponent } from './components/coordinator-ficha-m
         </div>
 
         @if (service.alertas().length === 0) {
-          <p class="py-6 text-center text-sm text-neutral-500">No hay estudiantes con alerta en este período.</p>
+          <app-empty-state
+            variant="info"
+            title="No hay estudiantes con alerta en este período."
+            causa="Ningún estudiante del programa supera el umbral de advertencia con los filtros actuales."
+          />
         } @else {
           <table class="w-full text-left text-sm">
             <thead class="text-xs uppercase text-neutral-500">

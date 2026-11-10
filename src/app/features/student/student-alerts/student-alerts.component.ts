@@ -1,3 +1,4 @@
+import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { FechaHoraCortaPipe } from '../../../shared/pipes/fecha-hora.pipes';
 import { SemaforoAsistenciaComponent } from '../../../shared/components/semaforo-asistencia/semaforo-asistencia.component';
 import { Component, OnInit, ChangeDetectionStrategy, signal, inject } from '@angular/core';
@@ -11,7 +12,7 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
 @Component({
   selector: 'app-student-alerts',
   standalone: true,
-  imports: [FechaHoraCortaPipe, CommonModule, FormsModule, BadgeComponent, SemaforoAsistenciaComponent],
+  imports: [EmptyStateComponent, FechaHoraCortaPipe, CommonModule, FormsModule, BadgeComponent, SemaforoAsistenciaComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="space-y-6 animate-fade-in max-w-4xl mx-auto">
@@ -40,15 +41,12 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
           Cargando alertas…
         </div>
       } @else if (alertas().length === 0) {
-        <div class="bg-white p-12 rounded-2xl border border-warm-200 text-center space-y-2">
-          <div class="w-12 h-12 rounded-full bg-success-50 text-success-700 flex items-center justify-center mx-auto text-xl">
-            ✓
-          </div>
-          <p class="text-base font-serif font-bold text-warm-900">¡Excelente! No tienes alertas vigentes</p>
-          <p class="text-xs text-warm-500 max-w-md mx-auto">
-            Tu asistencia académica se encuentra dentro de los límites institucionales en todas tus asignaturas.
-          </p>
-        </div>
+        <app-empty-state
+          variant="info"
+          title="¡Excelente! No tienes alertas vigentes"
+          description="Tu asistencia académica se encuentra dentro de los límites institucionales en todas tus asignaturas."
+          causa="Las alertas aparecen al superar el umbral de advertencia de inasistencia."
+        />
       } @else {
         <div class="space-y-4">
           @for (alerta of alertas(); track alerta.id) {

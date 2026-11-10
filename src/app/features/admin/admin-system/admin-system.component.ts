@@ -1,3 +1,4 @@
+import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { FechaHoraCortaPipe } from '../../../shared/pipes/fecha-hora.pipes';
 import {
   Component,
@@ -33,6 +34,7 @@ type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    EmptyStateComponent,
     FechaHoraCortaPipe,
     CommonModule,
     FormsModule,
@@ -399,8 +401,12 @@ type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
                     </tr>
                   } @empty {
                     <tr>
-                      <td colspan="8" class="px-5 py-8 text-center text-sm text-warm-600">
-                        El historial de cierres no está disponible en esta pantalla. Tras ejecutar un cierre, consulte su resultado en Trazabilidad y Auditoría.
+                      <td colspan="8" class="px-5 py-4">
+                        <app-empty-state
+                          title="Aún no hay cierres masivos"
+                          description="El historial de cierres no está disponible en esta pantalla. Tras ejecutar un cierre, consulte su resultado en Trazabilidad y Auditoría."
+                          causa="Se llena cuando se ejecuta el primer cierre masivo de un período."
+                        />
                       </td>
                     </tr>
                   }
