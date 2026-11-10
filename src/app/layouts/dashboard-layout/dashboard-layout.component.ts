@@ -455,7 +455,7 @@ export class DashboardLayoutComponent {
         }
         return true;
       })
-      .filter((item) => !item.externo || this.externos.disponible(item.externo))
+      .filter((item) => !item.externo || this.externos.habilitado(item.externo))
       .filter((item) => item.roles.some((role) => roles.includes(role)));
   });
 

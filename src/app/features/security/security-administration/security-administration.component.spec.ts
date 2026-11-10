@@ -281,7 +281,7 @@ describe('SecurityAdministrationComponent', () => {
       }
     }
 
-    it('si el BFF no responde, el mensaje no expone puertos ni URLs y el menu oculta la entrada', async () => {
+    it('si el BFF no responde, el mensaje no expone puertos ni URLs y el estado queda registrado para la pantalla', async () => {
       fetchSpy.and.rejectWith(new Error('network'));
 
       await finishInitialLoad();
@@ -299,6 +299,24 @@ describe('SecurityAdministrationComponent', () => {
 
       sinDireccionesLocales(component.message());
       expect(TestBed.inject(ComponentesExternosService).disponible('seguridad')).toBeFalse();
+    });
+
+    it('DEC-065 (5): el estado error se presenta con empty-state, causa, detalle y reintento que recupera', async () => {
+      fetchSpy.and.returnValue(Promise.resolve(response(503)));
+      await finishInitialLoad();
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('app-empty-state')).not.toBeNull();
+      expect(el.querySelector('[data-testid="empty-causa"]')?.textContent).toContain('El componente de seguridad no respondió');
+      expect(el.textContent).toContain('HTTP 503');
+
+      fetchSpy.and.returnValue(Promise.resolve(response(200)));
+      el.querySelector<HTMLButtonElement>('[data-testid="empty-accion"]')?.click();
+      await fixture.whenStable();
+      fixture.detectChanges();
+      expect(component.state()).toBe('ready');
+      expect(el.querySelector('app-empty-state')).toBeNull();
+      expect(TestBed.inject(ComponentesExternosService).disponible('seguridad')).toBeTrue();
     });
 
     it('al cargar correctamente el componente queda disponible para el menu', async () => {
