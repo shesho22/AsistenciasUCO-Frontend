@@ -1,6 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TeacherGrupoHubComponent } from './teacher-grupo-hub.component';
 import { Course } from '../../../../core/models/course.model';
+import { ClassSession } from '../../../../core/models/attendance.model';
 
 // LB-001B.1B (DB source of truth cleanup, PLAN.md AS-IS #13): retiro de la lectura de
 // Course.docenteName sintetizado en la ficha del hub.
@@ -26,6 +29,7 @@ describe('TeacherGrupoHubComponent', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [TeacherGrupoHubComponent],
+      providers: [provideHttpClient(), provideHttpClientTesting()],
     });
     fixture = TestBed.createComponent(TeacherGrupoHubComponent);
   });
@@ -112,17 +116,14 @@ describe('TeacherGrupoHubComponent', () => {
   });
 
   describe('UX densidad: una accion primaria y un menu', () => {
-    it('la ficha ofrece "Tomar Asistencia Hoy" como unica accion visible y emite irAsistencia', () => {
-      const irAsistencia = jasmine.createSpy('irAsistencia');
-      fixture.componentInstance.irAsistencia.subscribe(irAsistencia);
+    it('la ficha del grupo solo conserva el menu de acciones; la accion primaria vive en el modo Hoy', () => {
       fixture.componentRef.setInput('selectedCourse', course);
       fixture.componentRef.setInput('sessionQrEnabled', true);
       fixture.detectChanges();
       const ficha = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="hub-acciones"]') as HTMLElement;
       const visibles = Array.from(ficha.querySelectorAll('button')).filter((b) => !b.hasAttribute('role'));
-      expect(visibles.length).toBe(2);
-      (ficha.querySelector('[data-testid="hub-tomar-asistencia"]') as HTMLButtonElement).click();
-      expect(irAsistencia).toHaveBeenCalledOnceWith(course);
+      expect(visibles.length).toBe(1);
+      expect(ficha.querySelector('[data-testid="hub-tomar-asistencia"]')).toBeNull();
     });
 
     it('"QR / PIN Matricula" y "Proyectar Auto-Registro" del menu emiten matricular y proyectarQr', () => {
@@ -147,6 +148,128 @@ describe('TeacherGrupoHubComponent', () => {
       fixture.componentRef.setInput('selectedCourse', course);
       fixture.detectChanges();
       expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Grupo Activo');
+    });
+  });
+
+  describe('F3-DOC-03 modos Hoy y Grupo, y conteo unico de sesiones', () => {
+    const AHORA = new Date('2026-09-14T15:00:00Z');
+    const sesion = (id: string, n: number, inicio: string, fin: string, extra: Partial<ClassSession> = {}): ClassSession => ({
+      id, courseId: 'crs-1', sessionNumber: n, title: `Sesion ${n}`, date: '2026-09-14', startTime: '08:00', endTime: '10:00',
+      records: [], fechaHoraInicio: inicio, fechaHoraFin: fin, ...extra,
+    });
+    const enCurso = sesion('ses-hoy', 3, '2026-09-14T14:00:00Z', '2026-09-14T16:00:00Z');
+    const pasada = sesion('ses-1', 1, '2026-09-07T13:00:00Z', '2026-09-07T15:00:00Z');
+    const cancelada = sesion('ses-2', 2, '2026-09-08T13:00:00Z', '2026-09-08T15:00:00Z', { estado: 'CANCELADA' });
+    const proxima = sesion('ses-4', 4, '2026-09-21T13:00:00Z', '2026-09-21T15:00:00Z');
+
+    const el = (): HTMLElement => fixture.nativeElement as HTMLElement;
+    const q = (sel: string): HTMLElement | null => el().querySelector(sel);
+
+    function abrir(sesiones: ClassSession[] = [pasada, cancelada, enCurso, proxima]): void {
+      fixture.componentRef.setInput('selectedCourse', course);
+      fixture.componentRef.setInput('sessions', sesiones);
+      fixture.componentRef.setInput('ahora', AHORA);
+      fixture.detectChanges();
+    }
+
+    it('abre en el modo Hoy y no muestra las pestañas del grupo', () => {
+      abrir();
+      expect(q('[data-testid="hub-hoy"]')).not.toBeNull();
+      expect(q('[data-testid="hub-grupo-tabs"]')).toBeNull();
+      expect(q('[data-testid="hub-modo-hoy"]')?.getAttribute('aria-selected')).toBe('true');
+      expect(q('[data-testid="hub-modo-grupo"]')?.getAttribute('aria-selected')).toBe('false');
+    });
+
+    it('Hoy muestra la sesion en curso con "Tomar asistencia" como accion primaria que emite esa sesion', () => {
+      const tomar = jasmine.createSpy('tomarAsistenciaSesion');
+      fixture.componentInstance.tomarAsistenciaSesion.subscribe(tomar);
+      abrir();
+      expect(q('[data-testid="hub-hoy"]')?.textContent).toContain('Sesión en curso');
+      expect(q('[data-testid="hub-hoy"]')?.textContent).toContain('Sesion 3');
+      (q('[data-testid="hub-tomar-asistencia"]') as HTMLButtonElement).click();
+      expect(tomar).toHaveBeenCalledOnceWith(enCurso);
+      expect(el().querySelectorAll('[data-testid="hub-tomar-asistencia"]').length).toBe(1);
+    });
+
+    it('sin sesion en curso Hoy muestra la proxima sesion', () => {
+      abrir([pasada, proxima]);
+      expect(q('[data-testid="hub-hoy"]')?.textContent).toContain('Próxima sesión');
+      expect(q('[data-testid="hub-hoy"]')?.textContent).toContain('Sesion 4');
+    });
+
+    it('Hoy muestra el estado de la sesion y el QR solo si el QR esta habilitado', () => {
+      const proyectar = jasmine.createSpy('proyectarSesion');
+      fixture.componentInstance.proyectarSesion.subscribe(proyectar);
+      abrir();
+      expect(q('[data-testid="hub-hoy-estado"]')?.textContent).toContain('En curso');
+      expect(q('[data-testid="hub-hoy-qr"]')).toBeNull();
+
+      fixture.componentRef.setInput('sessionQrEnabled', true);
+      fixture.detectChanges();
+      (q('[data-testid="hub-hoy-qr"]') as HTMLButtonElement).click();
+      expect(proyectar).toHaveBeenCalledOnceWith(enCurso);
+    });
+
+    it('sin sesiones vigentes Hoy lo dice con un estado vacio y "Tomar asistencia" abre la toma del grupo', () => {
+      const irAsistencia = jasmine.createSpy('irAsistencia');
+      fixture.componentInstance.irAsistencia.subscribe(irAsistencia);
+      abrir([pasada, cancelada]);
+      expect(q('[data-testid="hub-hoy"] app-empty-state')).not.toBeNull();
+      (q('[data-testid="hub-tomar-asistencia"]') as HTMLButtonElement).click();
+      expect(irAsistencia).toHaveBeenCalledOnceWith(course);
+    });
+
+    it('el modo Grupo ofrece planilla, cronograma, reclamos y matricula, sin pestaña de horario', () => {
+      abrir();
+      (q('[data-testid="hub-modo-grupo"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(fixture.componentInstance.subPestanaHub()).toBe('SABANA');
+      const tabs = Array.from(el().querySelectorAll('[data-testid="hub-grupo-tabs"] [role="tab"]')).map((t) => t.textContent!.replace(/\s+/g, ' ').trim());
+      expect(tabs.length).toBe(4);
+      expect(tabs[0]).toContain('Planilla');
+      expect(tabs[1]).toContain('Cronograma');
+      expect(tabs[2]).toContain('Reclamos');
+      expect(tabs[3]).toContain('Matrícula');
+      expect(q('[data-testid="hub-hoy"]')).toBeNull();
+      expect(el().querySelector('app-teacher-grupo-horarios')).toBeNull();
+    });
+
+    it('cambiar de pestaña del grupo y volver a Hoy', () => {
+      abrir();
+      (q('[data-testid="hub-modo-grupo"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      (q('[data-testid="hub-tab-sesiones"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(fixture.componentInstance.subPestanaHub()).toBe('SESIONES');
+      expect(el().querySelector('app-teacher-grupo-sesiones')).not.toBeNull();
+
+      (q('[data-testid="hub-modo-hoy"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(fixture.componentInstance.subPestanaHub()).toBe('HOY');
+      expect(q('[data-testid="hub-hoy"]')).not.toBeNull();
+    });
+
+    it('el conteo de sesiones es uno solo y trae su definicion', () => {
+      abrir();
+      const conteo = q('[data-testid="hub-conteo-sesiones"]') as HTMLElement;
+      expect(conteo.textContent!.replace(/\s+/g, ' ').trim()).toContain('4 programadas · 1 ejecutada · 1 cancelada');
+      expect(conteo.getAttribute('title')).toContain('Programadas:');
+      expect(el().textContent!.match(/programada/g)?.length).toBe(1);
+    });
+
+    it('las pestañas del grupo ya no muestran el total de sesiones como badge', () => {
+      abrir();
+      fixture.componentInstance.subPestanaHub.set('SESIONES');
+      fixture.detectChanges();
+      const tab = q('[data-testid="hub-tab-sesiones"]') as HTMLElement;
+      expect(tab.textContent).not.toMatch(/\d/);
+    });
+
+    it('la barra de modos tiene scroll horizontal propio para movil', () => {
+      abrir();
+      fixture.componentInstance.subPestanaHub.set('SABANA');
+      fixture.detectChanges();
+      expect((q('[data-testid="hub-grupo-tabs"]') as HTMLElement).className).toContain('overflow-x-auto');
     });
   });
 });

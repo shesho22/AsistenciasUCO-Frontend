@@ -39,9 +39,9 @@ describe('AdminConfiguracionComponent', () => {
     return el.querySelector('[role="tab"][aria-selected="true"]')?.id ?? null;
   }
 
-  it('expone las ocho secciones de configuracion en el orden esperado', () => {
+  it('expone las siete secciones (instituciones vive en Estructura y mensajes es una vista propia) de configuracion en el orden esperado', () => {
     expect(TABS_CONFIGURACION.map((t) => t.id)).toEqual([
-      'parametros', 'catalogos', 'estados', 'mensajes', 'festivos', 'correo', 'areas', 'instituciones',
+      'parametros', 'catalogos', 'estados', 'festivos', 'correo', 'areas', 'periodos',
     ]);
   });
 
@@ -86,13 +86,13 @@ describe('AdminConfiguracionComponent', () => {
       harness.detectChanges();
       return router.url;
     };
-    expect(await tecla('ArrowRight')).toBe('/app/admin/configuracion/mensajes');
+    expect(await tecla('ArrowRight')).toBe('/app/admin/configuracion/festivos');
     expect(await tecla('ArrowLeft')).toBe('/app/admin/configuracion/estados');
     expect(await tecla('Home')).toBe('/app/admin/configuracion/parametros');
-    expect(await tecla('ArrowLeft')).toBe('/app/admin/configuracion/instituciones');
+    expect(await tecla('ArrowLeft')).toBe('/app/admin/configuracion/periodos');
     expect(await tecla('ArrowRight')).toBe('/app/admin/configuracion/parametros');
-    expect(await tecla('End')).toBe('/app/admin/configuracion/instituciones');
-    expect(await tecla('a')).toBe('/app/admin/configuracion/instituciones');
+    expect(await tecla('End')).toBe('/app/admin/configuracion/periodos');
+    expect(await tecla('a')).toBe('/app/admin/configuracion/periodos');
   });
 
   it('una ruta hija sin dato de pestaña cae en Parametros del sistema', async () => {
@@ -136,5 +136,10 @@ describe('CONFIGURACION_ROUTES', () => {
     for (const r of hijas().filter((x) => x.loadComponent)) {
       expect(await (r.loadComponent as () => Promise<unknown>)()).toBeTruthy();
     }
+  });
+
+  it('instituciones y mensajes ya no son pestañas: redirigen a su vista propia', () => {
+    expect(hijas().find((r) => r.path === 'instituciones')?.redirectTo).toBe('/app/admin/estructura/instituciones');
+    expect(hijas().find((r) => r.path === 'mensajes')?.redirectTo).toBe('/app/admin/mensajes');
   });
 });

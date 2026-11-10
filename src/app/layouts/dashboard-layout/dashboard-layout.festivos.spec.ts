@@ -35,7 +35,7 @@ describe('DashboardLayoutComponent menú de festivos (CULM-001 B.1)', () => {
 
   const SUELTAS = [
     '/app/admin/instituciones', '/app/admin/catalogos', '/app/admin/estados', '/app/admin/festivos',
-    '/app/admin/areas', '/app/admin/mensajes', '/app/admin/correos',
+    '/app/admin/areas', '/app/admin/correos',
   ];
 
   it('el administrador ve una sola entrada "Configuración" hacia /app/admin/configuracion', () => {

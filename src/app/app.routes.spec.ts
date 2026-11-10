@@ -189,11 +189,9 @@ describe('application routes', () => {
     const antiguas: Array<[string, string]> = [
       ['admin/catalogos', 'catalogos'],
       ['admin/estados', 'estados'],
-      ['admin/mensajes', 'mensajes'],
       ['admin/festivos', 'festivos'],
       ['admin/correos', 'correo'],
       ['admin/areas', 'areas'],
-      ['admin/instituciones', 'instituciones'],
     ];
     for (const [ruta, tab] of antiguas) {
       it(`${ruta} redirige a /app/admin/configuracion/${tab}`, () => {
@@ -211,6 +209,74 @@ describe('application routes', () => {
 
     it('admin/sistema se conserva para las operaciones (auditoria y cierre masivo)', () => {
       expect(appChildren().some((route) => route.path === 'admin/sistema')).toBeTrue();
+    });
+  });
+
+  describe('UX admin/estudiante: vistas con pestañas y rutas antiguas redirigidas', () => {
+    const appChildren = () => routes.find((route) => route.path === 'app')?.children ?? [];
+    const ruta = (path: string) => appChildren().find((r) => r.path === path);
+
+    for (const path of ['admin/personas', 'admin/estructura']) {
+      it(`${path} exige sesion, solo ADMINISTRADOR y carga sus hijas de forma diferida`, () => {
+        const r = ruta(path);
+        expect(r?.canActivate?.length).toBeGreaterThan(0);
+        const roles = r?.data?.['roles'] as string[];
+        expect(roles).toContain('ADMINISTRADOR');
+        for (const rol of ['DOCENTE', 'ESTUDIANTE', 'COORDINADOR', 'DECANO']) expect(roles).not.toContain(rol);
+        expect(r?.loadChildren).toBeDefined();
+        expect(r?.loadComponent).toBeUndefined();
+      });
+    }
+
+    it('estudiante/mis-materias exige sesion, solo ESTUDIANTE y carga sus hijas de forma diferida', () => {
+      const r = ruta('estudiante/mis-materias');
+      expect(r?.canActivate?.length).toBeGreaterThan(0);
+      expect(r?.data?.['roles']).toEqual(['ESTUDIANTE']);
+      expect(r?.loadChildren).toBeDefined();
+    });
+
+    const redirecciones: Array<[string, string]> = [
+      ['admin/estudiantes', 'admin/personas/estudiantes'],
+      ['admin/docentes', 'admin/personas/docentes'],
+      ['admin/decanos', 'admin/personas/decanos'],
+      ['admin/asignaturas', 'admin/personas/asignaturas'],
+      ['admin/facultades', 'admin/estructura/facultades'],
+      ['admin/instituciones', 'admin/estructura/instituciones'],
+      ['admin/configuracion/mensajes', 'admin/mensajes'],
+      ['estudiante/materias', 'estudiante/mis-materias/materias'],
+      ['estudiante/horarios', 'estudiante/mis-materias/horarios'],
+      ['estudiante/oferta', 'estudiante/mis-materias/oferta'],
+    ];
+    for (const [antigua, nueva] of redirecciones) {
+      if (antigua === 'admin/configuracion/mensajes') continue;
+      it(`${antigua} redirige a /app/${nueva}`, () => {
+        const r = ruta(antigua);
+        expect(r?.loadComponent).toBeUndefined();
+        expect(r?.redirectTo).toBe(nueva);
+        expect(r?.pathMatch).toBe('full');
+      });
+    }
+
+    it('admin/mensajes y admin/seguridad son rutas propias solo del administrador (el menu las oculta si no hay componente externo)', () => {
+      for (const path of ['admin/mensajes', 'admin/seguridad']) {
+        const r = ruta(path);
+        expect(r?.loadComponent).toBeDefined();
+        expect(r?.canActivate?.length).toBeGreaterThan(0);
+        expect(r?.data?.['roles']).toContain('ADMINISTRADOR');
+      }
+    });
+
+    it('se conservan indicadores, periodos y sistema como pantallas del administrador', () => {
+      for (const path of ['admin/indicadores', 'admin/periodos', 'admin/sistema']) {
+        expect(ruta(path)?.loadComponent).toBeDefined();
+      }
+    });
+
+    it('se conservan alertas y reclamos del estudiante', () => {
+      for (const path of ['estudiante/alertas', 'estudiante/reclamos']) {
+        expect(ruta(path)?.loadComponent).toBeDefined();
+        expect(ruta(path)?.data?.['roles']).toEqual(['ESTUDIANTE']);
+      }
     });
   });
 });

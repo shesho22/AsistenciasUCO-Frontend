@@ -6,11 +6,10 @@ export type TabConfiguracion =
   | 'parametros'
   | 'catalogos'
   | 'estados'
-  | 'mensajes'
   | 'festivos'
   | 'correo'
   | 'areas'
-  | 'instituciones';
+  | 'periodos';
 
 export interface TabConfiguracionItem {
   id: TabConfiguracion;
@@ -22,11 +21,10 @@ export const TABS_CONFIGURACION: readonly TabConfiguracionItem[] = [
   { id: 'parametros', etiqueta: 'Parámetros del sistema' },
   { id: 'catalogos', etiqueta: 'Catálogos' },
   { id: 'estados', etiqueta: 'Estados' },
-  { id: 'mensajes', etiqueta: 'Mensajes' },
   { id: 'festivos', etiqueta: 'Festivos' },
   { id: 'correo', etiqueta: 'Correo y notificaciones' },
   { id: 'areas', etiqueta: 'Áreas' },
-  { id: 'instituciones', etiqueta: 'Instituciones' },
+  { id: 'periodos', etiqueta: 'Períodos' },
 ];
 
 const TAB_POR_DEFECTO: TabConfiguracion = 'parametros';
@@ -45,7 +43,7 @@ const TAB_POR_DEFECTO: TabConfiguracion = 'parametros';
     <div class="space-y-5 min-w-0">
       <div>
         <h1 class="text-2xl font-serif font-bold text-warm-900">Configuración</h1>
-        <p class="text-sm text-warm-600">Variables, catálogos y pre-registros del sistema en un solo lugar.</p>
+        <p class="text-sm text-warm-600">Variables, catálogos, festivos, correo, áreas y períodos del sistema en un solo lugar.</p>
       </div>
 
       <app-tabs-nav
