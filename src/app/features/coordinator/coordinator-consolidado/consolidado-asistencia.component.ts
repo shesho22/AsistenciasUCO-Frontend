@@ -1,3 +1,4 @@
+import { SemaforoAsistenciaComponent } from '../../../shared/components/semaforo-asistencia/semaforo-asistencia.component';
 import { Component, OnInit, inject, signal, ChangeDetectionStrategy, WritableSignal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -38,7 +39,7 @@ export function acumularOpciones(opciones: Opcion[], filas: ConsolidadoGrupoItem
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full' },
-  imports: [CommonModule, FormsModule, PaginationComponent, ErrorCargaComponent],
+  imports: [CommonModule, FormsModule, PaginationComponent, ErrorCargaComponent, SemaforoAsistenciaComponent],
   template: `
     <div class="space-y-6 animate-fade-in">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
@@ -119,8 +120,9 @@ export function acumularOpciones(opciones: Opcion[], filas: ConsolidadoGrupoItem
                     <td class="py-2 pr-3 text-right text-warm-700">{{ g.estudiantesActivos }}</td>
                     <td class="py-2 pr-3 text-right text-warm-700">{{ g.sesionesEjecutadas }}</td>
                     <td class="py-2 pr-3 text-right font-semibold text-warm-900">{{ g.porcentajeAsistencia | number: '1.0-2' }}%</td>
-                    <td class="py-2 pr-3 text-right" [class]="g.porcentajeInasistencia >= 15 ? 'text-danger-700 font-semibold' : 'text-warm-700'">
+                    <td class="py-2 pr-3 text-right" class="text-warm-700">
                       {{ g.porcentajeInasistencia | number: '1.0-2' }}%
+                      <app-semaforo-asistencia [porcentaje]="g.porcentajeInasistencia" [compacto]="true" />
                     </td>
                     <td class="py-2 pr-3 text-right text-warm-700">{{ g.porcentajeExcusa | number: '1.0-2' }}%</td>
                     <td class="py-2 pr-3 text-right text-warm-700">{{ g.porcentajeSinRegistro | number: '1.0-2' }}%</td>

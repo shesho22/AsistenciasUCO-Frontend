@@ -1,3 +1,4 @@
+import { SemaforoAsistenciaComponent } from '../../../shared/components/semaforo-asistencia/semaforo-asistencia.component';
 import { Component, OnInit, ChangeDetectionStrategy, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -9,7 +10,7 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
 @Component({
   selector: 'app-student-alerts',
   standalone: true,
-  imports: [CommonModule, FormsModule, BadgeComponent],
+  imports: [CommonModule, FormsModule, BadgeComponent, SemaforoAsistenciaComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="space-y-6 animate-fade-in max-w-4xl mx-auto">
@@ -74,6 +75,7 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
 
                 <div class="text-xs font-bold" [class.text-danger-700]="alerta.tipo === 'PERDIDA'" [class.text-warning-800]="alerta.tipo !== 'PERDIDA'">
                   Inasistencia acumulada: {{ alerta.porcentajeActual ?? alerta.porcentajeCruce ?? 0 }}%
+                  <app-semaforo-asistencia [porcentaje]="alerta.porcentajeActual ?? alerta.porcentajeCruce ?? 0" [umbralPerdida]="alerta.umbralPerdida" />
                 </div>
               </div>
 

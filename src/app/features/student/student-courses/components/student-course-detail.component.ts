@@ -1,3 +1,4 @@
+import { SemaforoAsistenciaComponent } from '../../../../shared/components/semaforo-asistencia/semaforo-asistencia.component';
 import { Component, ChangeDetectionStrategy, computed, input, output, signal, inject, effect, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
@@ -24,7 +25,7 @@ import { ToastService } from '../../../../shared/components/toast/toast.componen
   selector: 'app-student-course-detail',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, BadgeComponent, ButtonComponent, MotivosJustificacionComponent, SesionEstadoBadgeComponent, AttendanceStatusBadgeComponent, PaginationComponent],
+  imports: [CommonModule, BadgeComponent, ButtonComponent, MotivosJustificacionComponent, SesionEstadoBadgeComponent, AttendanceStatusBadgeComponent, PaginationComponent, SemaforoAsistenciaComponent],
   template: `
     @if (materia()) {
       <div class="space-y-6">
@@ -95,6 +96,7 @@ import { ToastService } from '../../../../shared/components/toast/toast.componen
               <div>
                 <span class="text-xs text-warm-500 font-medium">Inasistencia (por horas)</span>
                 <p class="text-3xl font-serif font-bold text-primary-800 my-1" data-testid="detalle-porcentaje-inasistencia">{{ ind.porcentajeInasistencia }}%</p>
+                <app-semaforo-asistencia [porcentaje]="ind.porcentajeInasistencia" [umbralAdvertencia]="ind.umbralAdvertencia" [umbralPerdida]="ind.umbralPerdida" />
                 <app-attendance-status-badge [codigoPermanencia]="ind.codigoPermanencia" />
               </div>
               <div class="text-xs text-warm-500 space-y-0.5 border-t border-warm-200/80 pt-2">

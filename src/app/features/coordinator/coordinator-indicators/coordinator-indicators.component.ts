@@ -1,3 +1,4 @@
+import { SemaforoAsistenciaComponent } from '../../../shared/components/semaforo-asistencia/semaforo-asistencia.component';
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { CoordinatorProgramService } from '../../../core/services/coordinator-program.service';
 import { CoordinatorProgramSelectorComponent } from '../shared/coordinator-program-selector.component';
@@ -11,7 +12,7 @@ import { CoordinatorFichaModalComponent } from './components/coordinator-ficha-m
 @Component({
   selector: 'app-coordinator-indicators',
   standalone: true,
-  imports: [PaginationComponent, CoordinatorFichaModalComponent, CoordinatorProgramSelectorComponent],
+  imports: [PaginationComponent, CoordinatorFichaModalComponent, CoordinatorProgramSelectorComponent, SemaforoAsistenciaComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="space-y-6">
@@ -63,7 +64,7 @@ import { CoordinatorFichaModalComponent } from './components/coordinator-ficha-m
                   <td>{{ formatoPorcentaje(a.porcentajeInasistencia) }}</td>
                   <td>{{ a.faltasSinJustaCausa }}</td>
                   <td>{{ a.codigoPermanencia }}</td>
-                  <td>{{ a.semaforo }}</td>
+                  <td>{{ a.semaforo }} <app-semaforo-asistencia [porcentaje]="a.porcentajeInasistencia" [compacto]="true" /></td>
                   <td><button type="button" class="text-info-700 hover:underline" (click)="abrirFicha(a)">Ficha</button></td>
                 </tr>
               }
