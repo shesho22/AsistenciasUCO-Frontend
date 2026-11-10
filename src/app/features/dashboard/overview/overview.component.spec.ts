@@ -9,6 +9,8 @@ import { AdminManagementService } from '../../../core/services/admin-management.
 import { DeanManagementService } from '../../../core/services/dean-management.service';
 import { DeanIndicatorsService } from '../../../core/services/dean-indicators.service';
 import { CoordinatorIndicatorsService } from '../../../core/services/coordinator-indicators.service';
+import { CoordinadorSesionesService } from '../../../core/services/coordinador-sesiones.service';
+import { CoordinatorProgramService } from '../../../core/services/coordinator-program.service';
 import { AdminIndicatorsService } from '../../../core/services/admin-indicators.service';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { StudentManagementService } from '../../../core/services/student-management.service';
@@ -37,6 +39,8 @@ describe('OverviewComponent', () => {
   let deanIndicatorsSpy: jasmine.SpyObj<DeanIndicatorsService>;
   let adminIndicatorsSpy: jasmine.SpyObj<AdminIndicatorsService>;
   let coordinatorIndicatorsSpy: jasmine.SpyObj<CoordinatorIndicatorsService>;
+  let coordinadorSesionesSpy: jasmine.SpyObj<CoordinadorSesionesService>;
+  let coordinatorProgramSpy: jasmine.SpyObj<CoordinatorProgramService>;
   let deanServiceSpy: jasmine.SpyObj<DeanManagementService>;
   let coordinatorServiceSpy: jasmine.SpyObj<CoordinatorManagementService>;
   let studentServiceSpy: jasmine.SpyObj<StudentManagementService>;
@@ -194,6 +198,12 @@ describe('OverviewComponent', () => {
     coordinatorIndicatorsSpy = jasmine.createSpyObj('CoordinatorIndicatorsService', ['consultarKpis']);
     coordinatorIndicatorsSpy.consultarKpis.and.returnValue(of({ exitoso: true, datos: { estudiantesRiesgo: 3 } as any }));
 
+    coordinadorSesionesSpy = jasmine.createSpyObj('CoordinadorSesionesService', ['contarPendientes']);
+    coordinadorSesionesSpy.contarPendientes.and.returnValue(of(4));
+    coordinatorProgramSpy = jasmine.createSpyObj('CoordinatorProgramService', ['cargar', 'programaId']);
+    coordinatorProgramSpy.cargar.and.returnValue(of([]));
+    coordinatorProgramSpy.programaId.and.returnValue('prog-1');
+
     coordinatorServiceSpy = jasmine.createSpyObj('CoordinatorManagementService', [
       'getPlanesEstudio',
       'getDocentes',
@@ -230,6 +240,8 @@ describe('OverviewComponent', () => {
         { provide: AdminIndicatorsService, useValue: adminIndicatorsSpy },
         { provide: CoordinatorManagementService, useValue: coordinatorServiceSpy },
         { provide: CoordinatorIndicatorsService, useValue: coordinatorIndicatorsSpy },
+        { provide: CoordinadorSesionesService, useValue: coordinadorSesionesSpy },
+        { provide: CoordinatorProgramService, useValue: coordinatorProgramSpy },
         { provide: StudentManagementService, useValue: studentServiceSpy },
         { provide: AttendanceClaimService, useValue: claimServiceSpy },
       ],
@@ -430,6 +442,26 @@ describe('OverviewComponent', () => {
     expect(component.totalGruposPrograma()).toBe(3);
     expect(component.totalEstudiantesPrograma()).toBe(1);
     expect(component.isLoading()).toBeFalse();
+  });
+
+  it('DEC-065 (2): el coordinador ve las solicitudes de sesión pendientes de su programa con enlace a Asistencia', () => {
+    createComponentWithRole('COORDINADOR');
+    fixture.detectChanges();
+
+    expect(coordinadorSesionesSpy.contarPendientes).toHaveBeenCalledWith('prog-1');
+    expect(component.solicitudesSesionPendientes()).toBe(4);
+    const tarjeta: HTMLAnchorElement | null = fixture.nativeElement.querySelector('[data-testid="solicitudes-sesion-pendientes"]');
+    expect(tarjeta?.getAttribute('href')).toBe('/app/coordinador/asistencia');
+    expect(fixture.nativeElement.querySelector('[data-testid="solicitudes-sesion-valor"]').textContent.trim()).toBe('4');
+  });
+
+  it('DEC-065 (2): si el conteo falla la tarjeta muestra «Sin datos», no un cero', () => {
+    coordinadorSesionesSpy.contarPendientes.and.returnValue(throwError(() => new Error('500')));
+    createComponentWithRole('COORDINADOR');
+    fixture.detectChanges();
+
+    expect(component.solicitudesSesionPendientes()).toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="solicitudes-sesion-valor"]').textContent.trim()).toBe('Sin datos');
   });
 
   it('debe manejar error al cargar docentes para rol COORDINADOR', () => {
