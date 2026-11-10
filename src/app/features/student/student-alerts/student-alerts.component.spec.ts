@@ -79,4 +79,34 @@ describe('StudentAlertsComponent (CULM-001 C.1 §4.3, §4.8)', () => {
     fixture.detectChanges();
     expect(serviceMock.consultar).toHaveBeenCalledWith(jasmine.objectContaining({ grupoId: 'grp-2' }));
   });
+
+  describe('"Ver detalle de la materia" (CERT-CULM001)', () => {
+    const MIS_MATERIAS = '/app/estudiante/mis-materias/materias';
+
+    it('abre la pestaña Materias de Mis materias con la materia y el grupo de la alerta', () => {
+      (fixture.nativeElement.querySelector('[data-testid="btn-ver-materia-alt-1"]') as HTMLButtonElement).click();
+
+      expect(routerSpy.navigate).toHaveBeenCalledOnceWith([MIS_MATERIAS], { queryParams: { materia: 'asig-1', grupo: 'grp-1' } });
+    });
+
+    it('nunca navega a la ruta inexistente /app/estudiante/materias/{id}', () => {
+      component.verMateria(mockAlerta);
+
+      const [comandos] = routerSpy.navigate.calls.mostRecent().args;
+      expect(comandos).toEqual([MIS_MATERIAS]);
+      expect(comandos.join('/')).not.toContain('estudiante/materias/');
+    });
+
+    it('usa los identificadores planos de la alerta y, sin grupo, envía solo la materia', () => {
+      component.verMateria({ ...mockAlerta, asignatura: undefined, grupo: undefined, idAsignatura: 'asig-9' });
+
+      expect(routerSpy.navigate).toHaveBeenCalledOnceWith([MIS_MATERIAS], { queryParams: { materia: 'asig-9' } });
+    });
+
+    it('sin asignatura abre la lista de materias, sin parámetros', () => {
+      component.verMateria({ ...mockAlerta, asignatura: undefined, idAsignatura: undefined });
+
+      expect(routerSpy.navigate).toHaveBeenCalledOnceWith([MIS_MATERIAS]);
+    });
+  });
 });

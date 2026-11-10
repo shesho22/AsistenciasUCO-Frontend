@@ -671,6 +671,36 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     ];
     return of(okResponse(oferta, undefined, oferta.length)).pipe(delay(250));
   }
+  // HU018: plan de estudios del estudiante por semestres (misma forma que el backend; los totales ya vienen calculados).
+  if (url.endsWith('/estudiante/plan-estudio') && method === 'GET') {
+    const asignatura = (codigo: string, nombre: string, creditos: number, extra: Record<string, unknown> = {}) => ({
+      idAsignatura: mockUuid(`asignatura-plan:${codigo}`), codigo, nombre, creditos, tipoAsignatura: 'ESPECIFICA',
+      codigoCaracter: 'OBL', nombreCaracter: 'Obligatoria', cursando: false, idGrupoCursando: null, nombreGrupoCursando: null,
+      ...extra,
+    });
+    const semestre = (numero: number, asignaturas: ReturnType<typeof asignatura>[]) => ({
+      idSemestrePlanEstudio: mockUuid(`semestre-plan:${numero}`), numeroSemestre: numero, totalAsignaturas: asignaturas.length,
+      totalCreditos: asignaturas.reduce((suma, a) => suma + a.creditos, 0), asignaturas,
+    });
+    const semestres = [
+      semestre(1, [
+        asignatura('MAT101', 'Cálculo Diferencial', 4, { tipoAsignatura: 'BASICA' }),
+        asignatura('HUM101', 'Humanismo y Sociedad', 2, { tipoAsignatura: 'INSTITUCIONAL', codigoCaracter: 'OPT', nombreCaracter: 'Optativa' }),
+      ]),
+      semestre(2, []),
+      semestre(3, [
+        asignatura('MAT301', 'Matemática Avanzada III', 3, {
+          cursando: true, idGrupoCursando: mockUuid('grupo-plan:MAT301'), nombreGrupoCursando: 'Grupo 1',
+        }),
+      ]),
+    ];
+    const plan = {
+      idPlanEstudio: mockUuid('plan-estudio:mock'), inp: 2024, idPrograma: mockUuid('programa:mock'),
+      nombrePrograma: 'Ingeniería de Sistemas', totalSemestres: 3, totalAsignaturas: 3, totalCreditos: 9,
+      asignaturasCursando: 1, creditosCursando: 3, semestres,
+    };
+    return of(okResponse([plan], undefined, 1)).pipe(delay(250));
+  }
   if (url.includes('/docente/grupos/') && url.endsWith('/retiro') && method === 'POST') {
     // HU051: el retiro devuelve ApiDataResponse<Void>; el padrón se recarga desde su propio endpoint.
     return of(okResponse(null, 'El estudiante fue retirado del grupo.')).pipe(delay(250));

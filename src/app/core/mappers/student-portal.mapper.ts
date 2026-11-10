@@ -40,8 +40,12 @@ const ESTADOS_ASISTENCIA: readonly EstadoAsistenciaSesionEstudiante[] = [
   'NO_DISPONIBLE',
 ];
 
-/** Estados con los que el estudiante puede pedir revision; `NO_DISPONIBLE` jamas habilita un reclamo. */
-const ESTADOS_RECLAMABLES = new Set<EstadoAsistenciaSesionEstudiante>(['AUSENTE', 'RETARDO']);
+/**
+ * Estados con los que el estudiante puede pedir revision; `NO_DISPONIBLE` jamas habilita un reclamo.
+ * `PARCIAL` (SUPUESTO-B-15, CERT-CULM001): sesion con varias tomas en la que alguna quedo ausente y otra presente;
+ * el reclamo es por la toma ausente.
+ */
+const ESTADOS_RECLAMABLES = new Set<EstadoAsistenciaSesionEstudiante>(['AUSENTE', 'RETARDO', 'PARCIAL']);
 
 /** Nombres de estado de solicitud que entrega el catalogo de la DB (`pendiente`, `aceptada`, `rechazada`, `retirada`). */
 const SOLICITUD_POR_NOMBRE: Record<string, EstadoSolicitudRevision> = {
@@ -58,6 +62,11 @@ function texto(value: unknown): string | null {
   if (typeof value !== 'string') return null;
   const trimmed = value.trim();
   return trimmed ? trimmed : null;
+}
+
+/** Cantidad (horas o sesiones) que entrega el backend; lo que no es un número finito y no negativo queda en `null`. */
+function cantidadNoNegativa(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null;
 }
 
 function hashColor(seed: string): HorarioItem['colorCategory'] {
@@ -141,6 +150,8 @@ export class StudentPortalMapper {
       indicadores: dto.indicadores ?? null,
       estado: null,
       estadoMatricula: dto.estadoMatricula ?? null,
+      horasProgramadas: cantidadNoNegativa(dto.horasProgramadas),
+      sesionesProgramadas: cantidadNoNegativa(dto.sesionesProgramadas),
     };
   }
 

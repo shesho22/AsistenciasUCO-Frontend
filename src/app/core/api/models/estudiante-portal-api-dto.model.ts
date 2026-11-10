@@ -20,6 +20,12 @@ export interface MateriaEstudianteApiDto {
   /** B2: caracter de la asignatura (OBL/OPT) cuando el backend lo informa. */
   codigoCaracter?: string | null;
   nombreCaracter?: string | null;
+  /**
+   * Carga horaria total del grupo: horas y sesiones de todas las sesiones no canceladas, dictadas o por dictar. Las
+   * calcula el backend; `null` o ausente = no se conoce (nunca se sustituye por cero).
+   */
+  horasProgramadas?: number | null;
+  sesionesProgramadas?: number | null;
 }
 
 /** `HorarioEstudianteDTO`. `dia` y las horas llegan como texto (`LocalTime`: `HH:mm` o `HH:mm:ss`). */
@@ -42,8 +48,9 @@ export interface HorarioEstudianteApiDto {
  *
  * Campos de asistencia (contrato LB-004D, backend `SesionMateriaEstudianteDTO`), todos derivados en el servidor
  * para el estudiante autenticado:
- * - `estadoAsistencia`: `PRESENTE | AUSENTE | JUSTIFICADA | NO_DISPONIBLE`. `NO_DISPONIBLE` = sin registro o con una
- *   combinacion que la DB no define; nunca equivale a ausencia. La DB no distingue retardo, asi que no llega `RETARDO`.
+ * - `estadoAsistencia`: `PRESENTE | AUSENTE | JUSTIFICADA | PARCIAL | NO_DISPONIBLE`. `NO_DISPONIBLE` = sin registro o con
+ *   una combinacion que la DB no define; nunca equivale a ausencia. La DB no distingue retardo, asi que no llega `RETARDO`.
+ *   `PARCIAL` (SUPUESTO-B-15) = sesion con varias tomas en la que alguna quedo ausente y otra presente; es reclamable.
  * - `estadoSolicitudRevision`: nombre del estado de la solicitud de revision existente (`pendiente`, `aceptada`,
  *   `rechazada`, `DESCONOCIDO`) o `null`.
  * - `reclamable`: pista de presentacion (ausencia confirmada y sin solicitud previa). La autorizacion definitiva

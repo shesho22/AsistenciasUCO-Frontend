@@ -354,6 +354,24 @@ describe('mockBackendInterceptor', () => {
     expect('estadoSolicitud' in oferta.datos[0]).toBeFalse();
   }));
 
+  it('HU018 simula el plan de estudios del estudiante con totales coherentes y un semestre vacío', fakeAsync(() => {
+    auth.setMockMode(true);
+    let planes: any;
+    httpClient.get(`${environment.apiUrl}/estudiante/plan-estudio`).subscribe((r) => (planes = r));
+    tick(300);
+
+    expect(planes.total).toBe(1);
+    const plan = planes.datos[0];
+    expect(plan.semestres.map((s: any) => s.numeroSemestre)).toEqual([1, 2, 3]);
+    expect(plan.semestres[1].asignaturas).toEqual([]);
+    const asignaturas = plan.semestres.flatMap((s: any) => s.asignaturas);
+    expect(plan.totalAsignaturas).toBe(asignaturas.length);
+    expect(plan.totalCreditos).toBe(asignaturas.reduce((suma: number, a: any) => suma + a.creditos, 0));
+    expect(plan.asignaturasCursando).toBe(asignaturas.filter((a: any) => a.cursando).length);
+    expect(plan.creditosCursando).toBe(3);
+    expect(plan.totalSemestres).toBe(3);
+  }));
+
   it('B2NM el mock responde páginas, asociables, carácter y programas del grupo con la forma del backend', fakeAsync(() => {
     auth.setMockMode(true);
     const api = environment.apiUrl;

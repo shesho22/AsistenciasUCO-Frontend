@@ -18,6 +18,28 @@ const programasMock: ProgramaInstitucionDto[] = [
   { id: 'prog-2', codigo: 'IND', nombre: 'Ingeniería Industrial', idFacultad: 'fac-1', nombreFacultad: 'Ingeniería' },
 ];
 
+/** Error con el contrato del golden path, igual al que envía el backend (code, message, details[].field). */
+function errorApi(
+  status: number,
+  code: string,
+  message: string,
+  details?: { field: string; code: string; message: string }[]
+): HttpErrorResponse {
+  return new HttpErrorResponse({
+    status,
+    error: {
+      timestamp: '2026-11-10T00:00:00Z',
+      status,
+      error: status === 409 ? 'Conflict' : 'Bad Request',
+      code,
+      message,
+      path: '/api/v1/admin/estudiantes/admision',
+      correlationId: null,
+      ...(details ? { details } : {}),
+    },
+  });
+}
+
 describe('AdmisionEstudianteModalComponent (HU156)', () => {
   let fixture: ComponentFixture<AdmisionEstudianteModalComponent>;
   let component: AdmisionEstudianteModalComponent;
@@ -107,7 +129,7 @@ describe('AdmisionEstudianteModalComponent (HU156)', () => {
 
     expect(adminService.admitirEstudiante).toHaveBeenCalledWith({
       tipoIdentificacionId: 't-cc',
-      numeroIdentificacion: '1017000222',
+      numeroIdentificacion: 1017000222,
       primerNombre: 'Carlos',
       segundoNombre: 'Andrés',
       primerApellido: 'Pérez',
@@ -146,14 +168,7 @@ describe('AdmisionEstudianteModalComponent (HU156)', () => {
   });
 
   it('maneja error 400 ADS_006 requiriendo contraseña inicial', () => {
-    const errorResponse = new HttpErrorResponse({
-      status: 400,
-      error: {
-        exitoso: false,
-        codigo: 'ADS_006',
-        mensajeUsuario: 'Indica una contraseña inicial para el estudiante nuevo.',
-      },
-    });
+    const errorResponse = errorApi(400, 'ADS_006', 'Indica una contraseña inicial para el estudiante nuevo.');
     adminService.admitirEstudiante.and.returnValue(throwError(() => errorResponse));
 
     component.numeroIdentificacion.set('1017000444');
@@ -169,17 +184,10 @@ describe('AdmisionEstudianteModalComponent (HU156)', () => {
   });
 
   it('maneja error 400 con details mapeando errores a los campos respectivos', () => {
-    const errorResponse = new HttpErrorResponse({
-      status: 400,
-      error: {
-        exitoso: false,
-        mensajeUsuario: 'Errores de validación en la solicitud.',
-        details: [
-          { campo: 'correo', codigo: 'ADS_005', mensaje: 'El correo debe ser institucional.' },
-          { campo: 'primerNombre', codigo: 'VAL_001', mensaje: 'El primer nombre es obligatorio.' },
-        ],
-      },
-    });
+    const errorResponse = errorApi(400, 'VALIDATION_ERROR', 'Errores de validación en la solicitud.', [
+      { field: 'correo', code: 'ADS_005', message: 'El correo debe ser institucional.' },
+      { field: 'primerNombre', code: 'VAL_001', message: 'El primer nombre es obligatorio.' },
+    ]);
     adminService.admitirEstudiante.and.returnValue(throwError(() => errorResponse));
 
     component.numeroIdentificacion.set('1017000555');
@@ -195,14 +203,7 @@ describe('AdmisionEstudianteModalComponent (HU156)', () => {
   });
 
   it('maneja error 409 de unicidad o ya admitido sin cerrar el modal', () => {
-    const errorResponse = new HttpErrorResponse({
-      status: 409,
-      error: {
-        exitoso: false,
-        codigo: 'ADS_002',
-        mensajeUsuario: 'El estudiante ya está admitido en este programa.',
-      },
-    });
+    const errorResponse = errorApi(409, 'ADS_002', 'El estudiante ya está admitido en este programa.');
     adminService.admitirEstudiante.and.returnValue(throwError(() => errorResponse));
 
     component.numeroIdentificacion.set('1017000111');
@@ -223,5 +224,114 @@ describe('AdmisionEstudianteModalComponent (HU156)', () => {
     component.onCancelar();
 
     expect(cancelado).toBeTrue();
+  });
+
+  // CERT-CULM001 (HU156): hallazgos de la certificación en pantalla del 2026-11-09.
+  it('envía el documento como entero, que es lo que espera el backend', () => {
+    adminService.admitirEstudiante.and.returnValue(throwError(() => errorApi(409, 'ADS_002', 'Ya admitido.')));
+    component.numeroIdentificacion.set(' 970000301 ');
+    component.primerNombre.set('QA');
+    component.primerApellido.set('Admision');
+    component.correo.set('qa.estudiante.admision@uco.edu.co');
+    component.idPrograma.set('prog-1');
+
+    component.onGuardar();
+
+    const enviado = adminService.admitirEstudiante.calls.mostRecent().args[0];
+    expect(enviado.numeroIdentificacion).toBe(970000301);
+    expect(typeof enviado.numeroIdentificacion).toBe('number');
+  });
+
+  it('no deja guardar con un documento que no es un entero válido', () => {
+    component.primerNombre.set('QA');
+    component.primerApellido.set('Admision');
+    component.correo.set('qa@uco.edu.co');
+    component.idPrograma.set('prog-1');
+    for (const invalido of ['abc', '12a4', '0123', '99999999999', '2147483648']) {
+      component.numeroIdentificacion.set(invalido);
+      expect(component.esValido()).withContext(invalido).toBeFalse();
+    }
+    component.numeroIdentificacion.set('2147483647');
+    expect(component.esValido()).toBeTrue();
+  });
+
+  it('muestra el error del documento que devuelve la API en el campo', () => {
+    adminService.admitirEstudiante.and.returnValue(
+      throwError(() =>
+        errorApi(400, 'INVALID_REQUEST', 'La solicitud no es válida.', [
+          { field: 'numeroIdentificacion', code: 'FIELD_INVALID_TYPE', message: 'El numero de identificacion debe contener un numero entero valido.' },
+        ])
+      )
+    );
+    component.numeroIdentificacion.set('1017000666');
+    component.primerNombre.set('QA');
+    component.primerApellido.set('Admision');
+    component.correo.set('qa@uco.edu.co');
+    component.idPrograma.set('prog-1');
+
+    component.onGuardar();
+
+    expect(component.erroresCampos()['numeroIdentificacion']).toContain('entero');
+    expect(component.errorGeneral()).toBeNull();
+  });
+
+  it('si los detalles no son de campos del formulario, muestra el mensaje general', () => {
+    adminService.admitirEstudiante.and.returnValue(
+      throwError(() =>
+        errorApi(400, 'INVALID_REQUEST', 'La solicitud no es válida.', [
+          { field: 'body', code: 'FIELD_REQUIRED', message: 'Falta el cuerpo.' },
+        ])
+      )
+    );
+    component.numeroIdentificacion.set('1017000777');
+    component.primerNombre.set('QA');
+    component.primerApellido.set('Admision');
+    component.correo.set('qa@uco.edu.co');
+    component.idPrograma.set('prog-1');
+
+    component.onGuardar();
+
+    expect(component.erroresCampos()).toEqual({});
+    expect(component.errorGeneral()).toBeTruthy();
+  });
+
+  it('ERR_PASSWORD_REQUERIDO abre el campo de la clave inicial y deja el mensaje junto a él (recertificación)', () => {
+    adminService.admitirEstudiante.and.returnValue(
+      throwError(() => errorApi(400, 'ERR_PASSWORD_REQUERIDO', 'La clave es obligatoria.'))
+    );
+    component.numeroIdentificacion.set('970000301');
+    component.primerNombre.set('QA');
+    component.primerApellido.set('Admision');
+    component.correo.set('qa.estudiante.admision@uco.edu.co');
+    component.idPrograma.set('prog-1');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('input[type="password"]')).toBeNull();
+
+    component.onGuardar();
+    fixture.detectChanges();
+
+    expect(component.mostrarPassword()).toBeTrue();
+    expect(component.erroresCampos()['password']).toBe('La clave es obligatoria.');
+    expect(component.errorGeneral()).toBeNull();
+    expect(fixture.nativeElement.querySelector('input[type="password"]')).not.toBeNull();
+    // Con el campo abierto y vacío el botón queda deshabilitado hasta que se escriba la clave.
+    expect(component.esValido()).toBeFalse();
+    component.password.set('ClaveTemporal-2026');
+    expect(component.esValido()).toBeTrue();
+  });
+
+  it('explica por qué no se puede admitir cuando el documento no es un número válido', () => {
+    const aviso = () => fixture.nativeElement.querySelector('[data-testid="documento-invalido"]') as HTMLElement | null;
+    fixture.detectChanges();
+    expect(aviso()).toBeNull();
+
+    component.numeroIdentificacion.set('12a4');
+    fixture.detectChanges();
+    expect(component.documentoInvalido()).toBeTrue();
+    expect(aviso()!.textContent).toContain('solo números');
+
+    component.numeroIdentificacion.set('1017000111');
+    fixture.detectChanges();
+    expect(aviso()).toBeNull();
   });
 });

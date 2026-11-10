@@ -3,12 +3,13 @@ import { TabsRutaShellComponent, TabsRutaShellConfig } from '../../../shared/com
 
 const SHELL: TabsRutaShellConfig = {
   titulo: 'Mis materias',
-  descripcion: 'Tus materias, tus horarios y la oferta de grupos en un solo lugar.',
+  descripcion: 'Tus materias, tus horarios, la oferta de grupos y tu plan de estudios en un solo lugar.',
   base: '/app/estudiante/mis-materias',
   tabs: [
     { id: 'materias', etiqueta: 'Materias' },
     { id: 'horarios', etiqueta: 'Horarios' },
     { id: 'oferta', etiqueta: 'Oferta de grupos' },
+    { id: 'plan', etiqueta: 'Plan de estudios' },
   ],
   porDefecto: 'materias',
 };
@@ -38,6 +39,13 @@ export const MIS_MATERIAS_ROUTES: Routes = [
         data: { tab: 'oferta' },
         loadComponent: () =>
           import('../student-group-offer/student-group-offer.component').then((m) => m.StudentGroupOfferComponent),
+      },
+      {
+        // Estructura curricular por semestres de los planes activos del estudiante.
+        path: 'plan',
+        data: { tab: 'plan' },
+        loadComponent: () =>
+          import('../student-study-plan/student-study-plan.component').then((m) => m.StudentStudyPlanComponent),
       },
     ],
   },

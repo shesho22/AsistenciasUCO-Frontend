@@ -225,7 +225,11 @@ import { ToastService } from '../../../../shared/components/toast/toast.componen
                     @if (sesion.estado === 'CANCELADA') {
                       <app-sesion-estado-badge [estado]="sesion.estado" [cancelacion]="sesion.cancelacion" />
                     } @else if (sesion.estadoAsistencia !== 'NO_DISPONIBLE') {
-                      <app-badge [variant]="getAsistenciaBadgeVariant(sesion.estadoAsistencia)" size="md">
+                      <app-badge
+                        [variant]="getAsistenciaBadgeVariant(sesion.estadoAsistencia)"
+                        size="md"
+                        [attr.title]="sesion.estadoAsistencia === 'PARCIAL' ? 'Sesión con varias tomas: en al menos una quedaste ausente.' : null"
+                      >
                         {{ sesion.estadoAsistencia }}
                       </app-badge>
                     } @else {

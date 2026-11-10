@@ -9,6 +9,9 @@ import { AlertaInasistenciaService } from '../../../core/services/alerta-inasist
 import { AlertaInasistencia } from '../../../core/models/alerta-inasistencia.model';
 import { BadgeComponent } from '../../../shared/components/badge/badge.component';
 
+/** Pestaña "Materias" de "Mis materias": ahí vive el detalle de cada materia. */
+const RUTA_MIS_MATERIAS = '/app/estudiante/mis-materias/materias';
+
 @Component({
   selector: 'app-student-alerts',
   standalone: true,
@@ -147,14 +150,19 @@ export class StudentAlertsComponent implements OnInit {
     this.cargar();
   }
 
+  /**
+   * Abre el detalle de la materia de la alerta. El detalle vive dentro de la pestaña "Materias" de "Mis materias", que lo
+   * abre al recibir `materia` (y `grupo`, si la alerta lo trae). CERT-CULM001: antes se navegaba a
+   * `/app/estudiante/materias/{id}`, una ruta que no existe y terminaba en 404.
+   */
   verMateria(alerta: AlertaInasistencia): void {
     const idAsig = alerta.asignatura?.id || alerta.idAsignatura;
     const idGrp = alerta.grupo?.id || alerta.idGrupo;
     if (idAsig) {
-      const qp = idGrp ? { grupoId: idGrp } : undefined;
-      void this.router.navigate(['/app/estudiante/materias', idAsig], { queryParams: qp });
+      const queryParams = idGrp ? { materia: idAsig, grupo: idGrp } : { materia: idAsig };
+      void this.router.navigate([RUTA_MIS_MATERIAS], { queryParams });
     } else {
-      void this.router.navigate(['/app/estudiante/materias']);
+      void this.router.navigate([RUTA_MIS_MATERIAS]);
     }
   }
 }

@@ -20,16 +20,35 @@ import {
   ProgramaInstitucionDto,
 } from '../../../core/models/role-management.model';
 import { TipoIdentificacionApiDto } from '../../../core/api/models/tipo-identificacion-api-dto.model';
-import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
+import { getApiErrorCode, getApiErrorMessage, getApiFieldErrors } from '../../../core/api/errors/api-error.util';
 
 const CLASE_INPUT =
   'w-full bg-white text-warm-900 border border-warm-300 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500';
 
-interface ApiErrorDetail {
-  campo?: string;
-  codigo?: string;
-  mensaje?: string;
+/** Mayor valor de un INT de Java/SQL Server: el backend recibe el documento como entero. */
+const MAXIMO_DOCUMENTO = 2_147_483_647;
+
+/** CERT-CULM001 (HU156): el documento es un entero positivo sin ceros a la izquierda que cabe en un INT. */
+function esDocumentoEntero(valor: string): boolean {
+  const texto = valor.trim();
+  return /^[1-9]\d*$/.test(texto) && texto.length <= 10 && Number(texto) <= MAXIMO_DOCUMENTO;
 }
+
+/** Campos del formulario que pueden mostrar el error de `details[].field` debajo de su input. */
+/** Códigos con los que el backend pide la clave inicial de una persona nueva. */
+const CODIGOS_CLAVE_REQUERIDA = new Set(['ADS_006', 'ERR_PASSWORD_REQUERIDO']);
+
+const CAMPOS_FORMULARIO = new Set([
+  'tipoIdentificacionId',
+  'numeroIdentificacion',
+  'primerNombre',
+  'segundoNombre',
+  'primerApellido',
+  'segundoApellido',
+  'correo',
+  'password',
+  'idPrograma',
+]);
 
 /**
  * HU156: modal de admisión individual de estudiantes por el Administrador Institucional.
@@ -91,6 +110,10 @@ interface ApiErrorDetail {
             />
             @if (erroresCampos()['numeroIdentificacion']) {
               <p class="text-xs text-danger-600 mt-1">{{ erroresCampos()['numeroIdentificacion'] }}</p>
+            } @else if (documentoInvalido()) {
+              <p class="text-xs text-danger-600 mt-1" data-testid="documento-invalido">
+                Escribe solo números, sin puntos, espacios ni ceros al inicio (máximo 2147483647).
+              </p>
             }
           </div>
 
@@ -312,10 +335,17 @@ export class AdmisionEstudianteModalComponent implements OnInit {
   readonly errorGeneral = signal<string | null>(null);
   readonly erroresCampos = signal<Record<string, string>>({});
 
+  /** El documento tiene texto pero no es un entero válido: se explica por qué el botón está deshabilitado. */
+  readonly documentoInvalido = computed(
+    () => this.numeroIdentificacion().trim().length > 0 && !esDocumentoEntero(this.numeroIdentificacion())
+  );
+
   readonly esValido = computed(() => {
     return (
       this.tipoIdentificacionId().trim().length > 0 &&
-      this.numeroIdentificacion().trim().length > 0 &&
+      // CERT-CULM001 (HU156): el documento viaja como entero (INT en el backend), asi que solo se aceptan digitos sin
+      // ceros a la izquierda y hasta 2147483647.
+      esDocumentoEntero(this.numeroIdentificacion()) &&
       this.primerNombre().trim().length > 0 &&
       this.primerApellido().trim().length > 0 &&
       this.correo().trim().length > 0 &&
@@ -374,7 +404,9 @@ export class AdmisionEstudianteModalComponent implements OnInit {
 
     const payload: AdmisionEstudianteRequest = {
       tipoIdentificacionId: this.tipoIdentificacionId(),
-      numeroIdentificacion: this.numeroIdentificacion().trim(),
+      // CERT-CULM001 (HU156): el backend espera un entero (AdmitirEstudianteRequest.numeroIdentificacion: Integer);
+      // como texto respondia 400 FIELD_INVALID_TYPE y la admision fallaba siempre.
+      numeroIdentificacion: Number.parseInt(this.numeroIdentificacion().trim(), 10),
       primerNombre: this.primerNombre().trim(),
       segundoNombre: this.segundoNombre().trim() || undefined,
       primerApellido: this.primerApellido().trim(),
@@ -404,32 +436,37 @@ export class AdmisionEstudianteModalComponent implements OnInit {
     });
   }
 
+  /**
+   * CERT-CULM001 (HU156): la API responde con el contrato de errores del golden path ({@code code}, {@code message},
+   * {@code details[].field/message}); antes se leian {@code codigo}, {@code mensajeUsuario} y {@code details[].campo},
+   * asi que el formulario nunca mostraba el error ni pedia la clave inicial (ADS_006).
+   *
+   * <p>La clave inicial la piden dos codigos: {@code ERR_PASSWORD_REQUERIDO} (la regla del backend, antes de llegar a la
+   * BD, cuando la persona es nueva) y {@code ADS_006} (la BD). Con cualquiera de los dos se abre el campo de la clave
+   * y el mensaje queda junto a el.</p>
+   */
   private procesarError(err: unknown): void {
-    const errorObj = (err as { error?: { codigo?: string; mensajeUsuario?: string; details?: ApiErrorDetail[] }; status?: number }) ?? {};
-    const backendData = errorObj.error;
-    const codigo = backendData?.codigo;
+    const codigo = getApiErrorCode(err);
+    const mensaje = getApiErrorMessage(err);
 
-    if (codigo === 'ADS_006') {
+    if (codigo !== null && CODIGOS_CLAVE_REQUERIDA.has(codigo)) {
       this.mostrarPassword.set(true);
       this.erroresCampos.update((m) => ({
         ...m,
-        password: backendData?.mensajeUsuario || 'Indica una contraseña inicial para el estudiante nuevo.',
+        password: mensaje || 'Indica una contraseña inicial para el estudiante nuevo.',
       }));
       return;
     }
 
-    if (Array.isArray(backendData?.details) && backendData.details.length > 0) {
-      const mapa: Record<string, string> = {};
-      for (const d of backendData.details) {
-        if (d.campo) {
-          mapa[d.campo] = d.mensaje || 'Campo inválido.';
-        }
+    const mapa: Record<string, string> = {};
+    for (const detalle of getApiFieldErrors(err)) {
+      if (CAMPOS_FORMULARIO.has(detalle.field)) {
+        mapa[detalle.field] = detalle.message || 'Campo inválido.';
       }
-      this.erroresCampos.set(mapa);
     }
-
-    const mensaje = getApiErrorMessage(err);
-    if (!Array.isArray(backendData?.details) || backendData.details.length === 0) {
+    this.erroresCampos.set(mapa);
+    // Sin errores de campos del formulario, el mensaje va arriba para que el usuario siempre vea qué pasó.
+    if (Object.keys(mapa).length === 0) {
       this.errorGeneral.set(mensaje);
     }
   }

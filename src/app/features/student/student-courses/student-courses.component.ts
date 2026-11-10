@@ -17,6 +17,7 @@ import { SessionTimeZoneService } from '../../../core/services/session-timezone.
 import { validateSoporteFile } from '../../../core/files/soporte-file.validator';
 import {
   ConfiguracionReclamosDTO,
+  EstadoAsistenciaSesion,
   MateriaEstudianteItem,
   SesionMateriaDetalle,
   CategoriaJustificacion,
@@ -145,6 +146,9 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
   /** Token QR que trae el login (`?t=<TOKEN>`); F-EST-012. */
   tokenPrecargado = signal<string>('');
 
+  /** Materia (y grupo) que pide abrir el enlace de "Mis Alertas"; se consume al cargar las materias. */
+  private enlaceMateria: { materia: string; grupo: string | null } | null = null;
+
   // Drill-down sesiones
   selectedMateria = signal<MateriaEstudianteItem | null>(null);
   sesiones = signal<SesionMateriaDetalle[]>([]);
@@ -210,6 +214,25 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
       }
       this.abrirModalMatriculaGrupo();
     }
+    // CERT-CULM001: "Mis Alertas" enlaza aquí con `?materia=<idAsignatura>&grupo=<idGrupo>` para abrir ese detalle.
+    const paramMateria = this.route.snapshot.queryParamMap.get('materia');
+    if (paramMateria && isUuid(paramMateria)) {
+      const paramGrupo = this.route.snapshot.queryParamMap.get('grupo');
+      this.enlaceMateria = { materia: paramMateria, grupo: paramGrupo && isUuid(paramGrupo) ? paramGrupo : null };
+    }
+  }
+
+  /**
+   * Abre el detalle de la materia pedida por el enlace, una sola vez y cuando ya llegaron las materias. Solo busca entre
+   * las materias del propio estudiante: un identificador ajeno o desconocido deja la lista como está.
+   */
+  private abrirMateriaDelEnlace(): void {
+    const enlace = this.enlaceMateria;
+    this.enlaceMateria = null;
+    if (!enlace) return;
+    const candidatas = this.materias().filter((materia) => materia.id === enlace.materia);
+    const materia = candidatas.find((candidata) => candidata.idGrupo === enlace.grupo) ?? candidatas[0];
+    if (materia) this.verDetalleCompleto(materia);
   }
 
   cargarConfiguracionReclamos(): void {
@@ -238,6 +261,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
       next: (res) => {
         this.materias.set(res.datos || []);
         this.isLoading.set(false);
+        this.abrirMateriaDelEnlace();
       },
       error: (err) => {
         this.materias.set([]);
@@ -502,8 +526,11 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
     const currentUser = this.authService.currentUser();
 
     if (!sesion || !materia || !event.justificacion.trim()) return;
-    const estadoOriginal = sesion.estadoAsistencia;
-    if (!sesion.reclamable || estadoOriginal === 'NO_DISPONIBLE' || estadoOriginal === 'PARCIAL') return;
+    const estadoSesion = sesion.estadoAsistencia;
+    if (!sesion.reclamable || estadoSesion === 'NO_DISPONIBLE') return;
+    // SUPUESTO-B-15 (CERT-CULM001): una sesion PARCIAL se reclama por su toma ausente. Este estado no viaja al backend,
+    // que decide con sus propios registros; solo alimenta el modelo local de la solicitud.
+    const estadoOriginal: EstadoAsistenciaSesion = estadoSesion === 'PARCIAL' ? 'AUSENTE' : estadoSesion;
     // Sin doble envio: ni mientras sube el soporte (aun no hay fileId) ni mientras otra radicacion esta en curso.
     if (this.enviandoReclamo() || this.subiendoSoporte()) return;
 

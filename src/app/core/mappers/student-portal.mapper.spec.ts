@@ -75,6 +75,28 @@ describe('StudentPortalMapper', () => {
       expect(StudentPortalMapper.toMaterias(undefined)).toEqual([]);
       expect(StudentPortalMapper.toMaterias(null)).toEqual([]);
     });
+
+    it('mapea las horas y sesiones programadas del grupo que entrega el backend', () => {
+      const materia = StudentPortalMapper.toMateria({ ...dto, horasProgramadas: 8.97, sesionesProgramadas: 5 })!;
+      expect(materia.horasProgramadas).toBe(8.97);
+      expect(materia.sesionesProgramadas).toBe(5);
+
+      const sinSesiones = StudentPortalMapper.toMateria({ ...dto, horasProgramadas: 0, sesionesProgramadas: 0 })!;
+      expect(sinSesiones.horasProgramadas).toBe(0);
+      expect(sinSesiones.sesionesProgramadas).toBe(0);
+    });
+
+    it('sin carga horaria o con un valor inválido deja null, nunca un cero inventado', () => {
+      const ausente = StudentPortalMapper.toMateria(dto)!;
+      expect(ausente.horasProgramadas).toBeNull();
+      expect(ausente.sesionesProgramadas).toBeNull();
+
+      for (const invalido of [null, -1, Number.NaN, Number.POSITIVE_INFINITY, '8' as unknown as number]) {
+        const materia = StudentPortalMapper.toMateria({ ...dto, horasProgramadas: invalido, sesionesProgramadas: invalido })!;
+        expect(materia.horasProgramadas).withContext(String(invalido)).toBeNull();
+        expect(materia.sesionesProgramadas).withContext(String(invalido)).toBeNull();
+      }
+    });
   });
 
   describe('horarios (HorarioEstudianteDTO real)', () => {
@@ -308,11 +330,15 @@ describe('StudentPortalMapper', () => {
       expect(s.reclamable).toBeFalse();
     });
 
-    it('reclamable exige la pista del backend, un estado AUSENTE/RETARDO y ninguna solicitud previa', () => {
+    it('reclamable exige la pista del backend, un estado AUSENTE/RETARDO/PARCIAL y ninguna solicitud previa', () => {
       const sesion = (parcial: Partial<SesionMateriaEstudianteApiDto>) =>
         StudentPortalMapper.toSesion({ ...dto, ...parcial }, ASIGNATURA, formato)!;
       expect(sesion({ estadoAsistencia: 'AUSENTE', reclamable: true }).reclamable).toBeTrue();
       expect(sesion({ estadoAsistencia: 'RETARDO', reclamable: true }).reclamable).toBeTrue();
+      // SUPUESTO-B-15 (CERT-CULM001): varias tomas con alguna ausente.
+      expect(sesion({ estadoAsistencia: 'PARCIAL', reclamable: true }).estadoAsistencia).toBe('PARCIAL');
+      expect(sesion({ estadoAsistencia: 'PARCIAL', reclamable: true }).reclamable).toBeTrue();
+      expect(sesion({ estadoAsistencia: 'PARCIAL', reclamable: false }).reclamable).toBeFalse();
       expect(sesion({ estadoAsistencia: 'AUSENTE', reclamable: false }).reclamable).toBeFalse();
       expect(sesion({ estadoAsistencia: 'AUSENTE' }).reclamable).toBeFalse();
       expect(sesion({ estadoAsistencia: 'PRESENTE', reclamable: true }).reclamable).toBeFalse();
