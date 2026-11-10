@@ -97,7 +97,12 @@ export class RevisionCancelacionService {
     );
   }
 
-  contarPendientes(rol: 'COORDINADOR' | 'DECANO' | string): Observable<number> {
+  contarPendientes(rol: 'DOCENTE' | 'COORDINADOR' | 'DECANO'): Observable<number> {
+    if (rol === 'DOCENTE') {
+      return this.consultarDocente({ soloPendientes: true, tamano: 1 }).pipe(
+        map((res) => Number(res.totalElementos ?? 0))
+      );
+    }
     if (rol === 'DECANO') {
       return this.consultarDecano({ soloPendientes: true, tamano: 1 }).pipe(
         map((res) => Number(res.totalElementos ?? 0))

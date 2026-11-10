@@ -98,8 +98,9 @@ describe('TeacherGruposComponent', () => {
     );
 
     realtimeEvents$ = new Subject();
-    realtime = jasmine.createSpyObj<RealtimeService>('RealtimeService', ['listenType', 'startForGroup', 'stop']);
+    realtime = jasmine.createSpyObj<RealtimeService>('RealtimeService', ['listenType', 'startForGroup', 'stop', 'events']);
     realtime.listenType.and.returnValue(realtimeEvents$.asObservable() as never);
+    realtime.events.and.returnValue(new Subject<RealtimeEvent>().asObservable());
 
     TestBed.configureTestingModule({
       imports: [TeacherGruposComponent],

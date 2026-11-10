@@ -143,6 +143,37 @@ describe('RevisionCancelacionService (CULM-001 C.1)', () => {
     reqDec.flush(mockPage);
   });
 
+  it('consultarDocente() hace GET /docente/revisiones-cancelacion con grupo y paginación', () => {
+    service.consultarDocente({ soloPendientes: true, grupoId: 'grp-1', pagina: 1, tamano: 20 }).subscribe((res) => {
+      expect(res.elementos.length).toBe(1);
+    });
+    const req = httpMock.expectOne((r) => r.url === `${environment.apiUrl}/docente/revisiones-cancelacion`);
+    expect(req.request.method).toBe('GET');
+    expect(req.request.params.get('soloPendientes')).toBe('true');
+    expect(req.request.params.get('grupoId')).toBe('grp-1');
+    expect(req.request.params.get('pagina')).toBe('1');
+    expect(req.request.params.get('tamano')).toBe('20');
+    req.flush(mockPage);
+  });
+
+  it('contarPendientes("DOCENTE") usa soloPendientes y tamano=1 y devuelve totalElementos', () => {
+    let total = -1;
+    service.contarPendientes('DOCENTE').subscribe((t) => (total = t));
+    const req = httpMock.expectOne((r) => r.url === `${environment.apiUrl}/docente/revisiones-cancelacion`);
+    expect(req.request.params.get('soloPendientes')).toBe('true');
+    expect(req.request.params.get('tamano')).toBe('1');
+    req.flush({ ...mockPage, totalElementos: 4 });
+    expect(total).toBe(4);
+  });
+
+  it('contarPendientes("DOCENTE") devuelve 0 si el total no viene informado', () => {
+    let total = -1;
+    service.contarPendientes('DOCENTE').subscribe((t) => (total = t));
+    const req = httpMock.expectOne((r) => r.url === `${environment.apiUrl}/docente/revisiones-cancelacion`);
+    req.flush({ ...mockPage, totalElementos: undefined });
+    expect(total).toBe(0);
+  });
+
   it('C-F-11 propaga errores 409 con el mensaje del backend', () => {
     let errorCapturado: unknown;
     service.resolverCoordinador('rev-1', { decision: 'APROBAR', motivo: 'Aprobado' }).subscribe({

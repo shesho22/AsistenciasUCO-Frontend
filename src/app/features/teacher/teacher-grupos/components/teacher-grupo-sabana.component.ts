@@ -248,6 +248,8 @@ export class TeacherGrupoSabanaComponent implements OnDestroy {
   estudiantes = input<EstudianteGrupoItem[]>([]);
   sessions = input<ClassSession[]>([]);
   cargando = input<boolean>(false);
+  /** Contador que cambia cuando otra vista (tarjeta de decisiones) pide recargar el resumen. */
+  refresco = input<number>(0);
   protected esCancelada = estaCancelada;
 
   protected readonly tamano = 50;
@@ -282,6 +284,14 @@ export class TeacherGrupoSabanaComponent implements OnDestroy {
       });
     });
   }
+
+  private readonly recargarPorRefresco = effect(() => {
+    const version = this.refresco();
+    untracked(() => {
+      const grupo = this.grupoId();
+      if (version > 0 && grupo) this.cargarResumen(grupo);
+    });
+  });
 
   private iniciarRealtime(grupo: string): void {
     if (!this.realtime) return;
@@ -336,10 +346,8 @@ export class TeacherGrupoSabanaComponent implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    // El canal del grupo lo cierra la tarjeta de decisiones del hub: esta planilla solo comparte la conexión.
     this.subRealtime?.unsubscribe();
-    if (this.realtime) {
-      this.realtime.stop();
-    }
   }
 
   /** El resumen (horas, % de inasistencia y semaforo) lo calcula el backend; el cliente no recalcula nada. */
