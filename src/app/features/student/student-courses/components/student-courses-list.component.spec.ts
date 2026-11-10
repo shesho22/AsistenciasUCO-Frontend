@@ -141,3 +141,72 @@ describe('StudentCoursesListComponent: busqueda de materias (HU007, CERT-CULM001
     expect(fixture.nativeElement.querySelector('[data-testid="sin-coincidencias"]')).toBeNull();
   });
 });
+
+describe('StudentCoursesListComponent: barra de horas de la materia (HU019)', () => {
+  function render(materia: ReturnType<typeof crearMateria>) {
+    const fixture = TestBed.createComponent(StudentCoursesListComponent);
+    fixture.componentRef.setInput('isLoading', false);
+    fixture.componentRef.setInput('materias', [materia]);
+    fixture.detectChanges();
+    return fixture;
+  }
+  const el = (fixture: ReturnType<typeof render>, testid: string) =>
+    fixture.nativeElement.querySelector(`[data-testid="${testid}"]`) as HTMLElement | null;
+  const ancho = (fixture: ReturnType<typeof render>, testid: string) => Number.parseFloat(el(fixture, testid)!.style.width);
+
+  it('muestra las horas asistidas, dictadas y programadas con una barra proporcional', () => {
+    // 16 h asistidas de 20 h dictadas; el grupo tiene 40 h programadas.
+    const fixture = render(crearMateria({ creditos: 3, indicadores: indicadores(), horasProgramadas: 40, sesionesProgramadas: 20 }));
+
+    const leyenda = el(fixture, 'leyenda-horas')!.textContent!.replace(/\s+/g, ' ');
+    expect(leyenda).toContain('16 h asistidas');
+    expect(leyenda).toContain('20 h dictadas a la fecha');
+    expect(leyenda).toContain('40 h programadas');
+    expect(ancho(fixture, 'tramo-dictadas')).toBe(50);
+    expect(ancho(fixture, 'tramo-asistidas')).toBe(40);
+    expect(el(fixture, 'avance-curso')!.textContent).toContain('50% del curso dictado');
+    // Los créditos siguen en la misma tarjeta.
+    expect(el(fixture, 'materia-creditos-caracter')!.textContent).toContain('3 créditos');
+  });
+
+  it('la barra tiene texto alternativo con los tres valores y no depende del color', () => {
+    const fixture = render(crearMateria({ indicadores: indicadores({ horasAsistidas: 0.33, horasDictadas: 4.97 }), horasProgramadas: 8.97 }));
+
+    const barra = el(fixture, 'barra-horas-tramos')!;
+    expect(barra.getAttribute('role')).toBe('img');
+    expect(barra.getAttribute('aria-label')).toBe('Asististe a 0.33 h de 4.97 h dictadas. El grupo tiene 8.97 h programadas.');
+    expect(el(fixture, 'avance-curso')!.textContent).toContain('55% del curso dictado');
+    expect(el(fixture, 'leyenda-horas')!.querySelectorAll('li').length).toBe(3);
+  });
+
+  it('los tramos nunca pasan de 100 % ni el asistido sobresale del dictado', () => {
+    const fixture = render(crearMateria({ indicadores: indicadores({ horasAsistidas: 30, horasDictadas: 25 }), horasProgramadas: 20 }));
+
+    expect(ancho(fixture, 'tramo-dictadas')).toBe(100);
+    expect(ancho(fixture, 'tramo-asistidas')).toBe(100);
+    expect(el(fixture, 'avance-curso')!.textContent).toContain('100% del curso dictado');
+
+    const parcial = render(crearMateria({ indicadores: indicadores({ horasAsistidas: 12, horasDictadas: 10 }), horasProgramadas: 40 }));
+    expect(ancho(parcial, 'tramo-dictadas')).toBe(25);
+    expect(ancho(parcial, 'tramo-asistidas')).toBe(25);
+  });
+
+  it('sin horas programadas no dibuja la barra y lo dice; con cero explica que no hay sesiones', () => {
+    const sinDato = render(crearMateria({ indicadores: indicadores() }));
+    expect(el(sinDato, 'barra-horas-tramos')).toBeNull();
+    expect(el(sinDato, 'avance-curso')).toBeNull();
+    expect(el(sinDato, 'horas-programadas-no-disponible')!.textContent).toContain('no disponible');
+
+    const sinSesiones = render(crearMateria({ indicadores: indicadores({ horasAsistidas: 0, horasDictadas: 0 }), horasProgramadas: 0 }));
+    expect(el(sinSesiones, 'barra-horas-tramos')).toBeNull();
+    expect(el(sinSesiones, 'horas-sin-sesiones')!.textContent).toContain('aún no tiene sesiones programadas');
+    expect(sinSesiones.nativeElement.textContent).not.toContain('NaN');
+  });
+
+  it('sin indicadores no muestra el bloque de horas', () => {
+    const fixture = render(crearMateria({ horasProgramadas: 40 }));
+
+    expect(el(fixture, 'barra-horas')).toBeNull();
+    expect(el(fixture, 'asistencia-no-disponible')).not.toBeNull();
+  });
+});

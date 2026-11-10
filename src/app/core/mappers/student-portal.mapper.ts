@@ -64,6 +64,11 @@ function texto(value: unknown): string | null {
   return trimmed ? trimmed : null;
 }
 
+/** Cantidad (horas o sesiones) que entrega el backend; lo que no es un número finito y no negativo queda en `null`. */
+function cantidadNoNegativa(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null;
+}
+
 function hashColor(seed: string): HorarioItem['colorCategory'] {
   let hash = 0;
   for (let i = 0; i < seed.length; i++) {
@@ -145,6 +150,8 @@ export class StudentPortalMapper {
       indicadores: dto.indicadores ?? null,
       estado: null,
       estadoMatricula: dto.estadoMatricula ?? null,
+      horasProgramadas: cantidadNoNegativa(dto.horasProgramadas),
+      sesionesProgramadas: cantidadNoNegativa(dto.sesionesProgramadas),
     };
   }
 

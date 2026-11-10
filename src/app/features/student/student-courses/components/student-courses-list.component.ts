@@ -13,6 +13,30 @@ function normalizar(texto: string): string {
   return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 }
 
+/** Parte de `total` que representa `valor`, entre 0 y 100. */
+function porcentajeAcotado(valor: number, total: number): number {
+  if (!Number.isFinite(valor) || !Number.isFinite(total) || total <= 0) {
+    return 0;
+  }
+  return Math.min(100, Math.max(0, (valor / total) * 100));
+}
+
+/** Lo que dibuja la barra de horas de una tarjeta. */
+interface BarraHoras {
+  /** Hay horas programadas (> 0): se dibuja la barra. Si no, se explica por qué no. */
+  conBarra: boolean;
+  asistidas: number;
+  dictadas: number;
+  /** `null` = el backend no las informa; 0 = el grupo aún no tiene sesiones. */
+  programadas: number | null;
+  anchoAsistidas: number;
+  anchoDictadas: number;
+  /** Porcentaje del curso ya dictado, en entero. */
+  porcentajeAvance: number;
+  /** Texto alternativo de la barra. */
+  descripcion: string;
+}
+
 @Component({
   selector: 'app-student-courses-list',
   standalone: true,
@@ -199,6 +223,47 @@ function normalizar(texto: string): string {
                   </div>
                 }
 
+                <!-- HU019: horas asistidas, dictadas a la fecha y programadas del grupo (los tres valores los entrega el backend) -->
+                @if (barraHoras(materia); as barra) {
+                  <div class="space-y-1.5" data-testid="barra-horas">
+                    <div class="flex items-center justify-between gap-2 text-xs">
+                      <span class="font-semibold text-warm-800">Horas de la materia</span>
+                      @if (barra.conBarra) {
+                        <span class="text-warm-500" data-testid="avance-curso">{{ barra.porcentajeAvance }}% del curso dictado</span>
+                      }
+                    </div>
+                    @if (barra.conBarra) {
+                      <div
+                        class="relative h-2.5 w-full rounded-full bg-warm-200 overflow-hidden"
+                        role="img"
+                        [attr.aria-label]="barra.descripcion"
+                        data-testid="barra-horas-tramos"
+                      >
+                        <div class="absolute inset-y-0 left-0 bg-primary-300" data-testid="tramo-dictadas" [style.width.%]="barra.anchoDictadas"></div>
+                        <div class="absolute inset-y-0 left-0 bg-primary-700" data-testid="tramo-asistidas" [style.width.%]="barra.anchoAsistidas"></div>
+                      </div>
+                      <ul class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-warm-600" data-testid="leyenda-horas">
+                        <li class="flex items-center gap-1.5">
+                          <span class="inline-block w-2.5 h-2.5 rounded-full bg-primary-700" aria-hidden="true"></span>
+                          {{ barra.asistidas }} h asistidas
+                        </li>
+                        <li class="flex items-center gap-1.5">
+                          <span class="inline-block w-2.5 h-2.5 rounded-full bg-primary-300" aria-hidden="true"></span>
+                          {{ barra.dictadas }} h dictadas a la fecha
+                        </li>
+                        <li class="flex items-center gap-1.5">
+                          <span class="inline-block w-2.5 h-2.5 rounded-full bg-warm-200 border border-warm-300" aria-hidden="true"></span>
+                          {{ barra.programadas }} h programadas
+                        </li>
+                      </ul>
+                    } @else if (barra.programadas === 0) {
+                      <p class="text-xs text-warm-500" data-testid="horas-sin-sesiones">El grupo aún no tiene sesiones programadas.</p>
+                    } @else {
+                      <p class="text-xs text-warm-500" data-testid="horas-programadas-no-disponible">Horas programadas: no disponible</p>
+                    }
+                  </div>
+                }
+
                 <div class="flex items-center justify-between pt-2 border-t border-warm-100">
                   <span class="text-xs text-warm-500">{{ materia.horario ?? 'Horario no informado' }}</span>
                   <div class="flex items-center gap-2">
@@ -269,6 +334,35 @@ export class StudentCoursesListComponent {
     const inicio = (this.paginaEfectiva() - 1) * this.tamano();
     return this.materiasFiltradas().slice(inicio, inicio + this.tamano());
   });
+
+  /**
+   * Barra de horas de una materia. Las horas las entrega el backend (asistidas y dictadas en `indicadores`, programadas
+   * en `horasProgramadas`); aquí solo se convierten en el ancho de cada tramo. Sin indicadores no hay barra (`null`).
+   */
+  barraHoras(materia: MateriaEstudianteItem): BarraHoras | null {
+    const indicadores = materia.indicadores;
+    if (!indicadores) {
+      return null;
+    }
+    const asistidas = indicadores.horasAsistidas;
+    const dictadas = indicadores.horasDictadas;
+    const programadas = materia.horasProgramadas ?? null;
+    if (programadas === null || programadas <= 0) {
+      return { conBarra: false, asistidas, dictadas, programadas, anchoAsistidas: 0, anchoDictadas: 0, porcentajeAvance: 0, descripcion: '' };
+    }
+    const anchoDictadas = porcentajeAcotado(dictadas, programadas);
+    return {
+      conBarra: true,
+      asistidas,
+      dictadas,
+      programadas,
+      anchoDictadas,
+      // Lo asistido es parte de lo dictado: el tramo nunca sobresale del de las horas dictadas.
+      anchoAsistidas: Math.min(porcentajeAcotado(asistidas, programadas), anchoDictadas),
+      porcentajeAvance: Math.round(anchoDictadas),
+      descripcion: `Asististe a ${asistidas} h de ${dictadas} h dictadas. El grupo tiene ${programadas} h programadas.`,
+    };
+  }
 
   /** Cada búsqueda vuelve a la página 1 para no quedar en una página vacía. */
   buscar(texto: string): void {
