@@ -1,7 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, NavigationEnd, Router, RouterOutlet } from '@angular/router';
-import { filter, map, startWith } from 'rxjs';
+import { ChangeDetectionStrategy, Component, computed } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
+import { TabsNavComponent, pestanaEnRuta } from '../../../shared/components/tabs/tabs-nav.component';
 
 export type TabConfiguracion =
   | 'parametros'
@@ -41,7 +40,7 @@ const TAB_POR_DEFECTO: TabConfiguracion = 'parametros';
   selector: 'app-admin-configuracion',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet],
+  imports: [RouterOutlet, TabsNavComponent],
   template: `
     <div class="space-y-5 min-w-0">
       <div>
@@ -49,32 +48,13 @@ const TAB_POR_DEFECTO: TabConfiguracion = 'parametros';
         <p class="text-sm text-warm-600">Variables, catálogos y pre-registros del sistema en un solo lugar.</p>
       </div>
 
-      <div
-        class="flex border-b border-warm-200 gap-1 overflow-x-auto max-w-full"
-        role="tablist"
-        aria-label="Secciones de configuración"
-      >
-        @for (tab of tabs; track tab.id) {
-          <button
-            type="button"
-            role="tab"
-            [id]="'tab-' + tab.id"
-            aria-controls="panel-configuracion"
-            [attr.aria-selected]="tabActiva() === tab.id"
-            [attr.tabindex]="tabActiva() === tab.id ? 0 : -1"
-            (keydown)="onTabKeydown($event)"
-            (click)="seleccionar(tab.id)"
-            [class]="
-              tabActiva() === tab.id
-                ? 'border-primary-700 text-primary-800 font-bold border-b-2'
-                : 'text-warm-500 hover:text-warm-700'
-            "
-            class="min-h-[44px] px-4 py-3 text-sm whitespace-nowrap shrink-0 transition-colors"
-          >
-            {{ tab.etiqueta }}
-          </button>
-        }
-      </div>
+      <app-tabs-nav
+        [tabs]="tabs"
+        [activa]="tabActiva()"
+        [base]="['/app/admin/configuracion']"
+        etiqueta="Secciones de configuración"
+        idPanel="panel-configuracion"
+      />
 
       <div role="tabpanel" id="panel-configuracion" [attr.aria-labelledby]="'tab-' + tabActiva()" class="min-w-0">
         <router-outlet />
@@ -83,48 +63,13 @@ const TAB_POR_DEFECTO: TabConfiguracion = 'parametros';
   `,
 })
 export class AdminConfiguracionComponent {
-  private readonly router = inject(Router);
-  private readonly route = inject(ActivatedRoute);
-
   readonly tabs = TABS_CONFIGURACION;
 
-  private readonly tabEnRuta = toSignal(
-    this.router.events.pipe(
-      filter((evento) => evento instanceof NavigationEnd),
-      startWith(null),
-      map(() => {
-        let hoja = this.route;
-        while (hoja.firstChild) hoja = hoja.firstChild;
-        // El snapshot aún no existe mientras se construye el cascarón; NavigationEnd lo actualiza enseguida.
-        const datos = (hoja.snapshot as ActivatedRoute['snapshot'] | undefined)?.data;
-        return (datos?.['tab'] as string | undefined) ?? null;
-      })
-    ),
-    { initialValue: null as string | null }
-  );
+  private readonly tabEnRuta = pestanaEnRuta();
 
   /** Pestaña activa: la de la ruta hija si es conocida; si no, Parámetros del sistema. */
   readonly tabActiva = computed<TabConfiguracion>(() => {
     const id = this.tabEnRuta();
     return this.tabs.find((t) => t.id === id)?.id ?? TAB_POR_DEFECTO;
   });
-
-  seleccionar(id: TabConfiguracion): void {
-    void this.router.navigate(['/app/admin/configuracion', id]);
-  }
-
-  onTabKeydown(event: KeyboardEvent): void {
-    const actual = this.tabs.findIndex((t) => t.id === this.tabActiva());
-    const ultimo = this.tabs.length - 1;
-    let destino = actual;
-    if (event.key === 'ArrowRight') destino = actual === ultimo ? 0 : actual + 1;
-    else if (event.key === 'ArrowLeft') destino = actual === 0 ? ultimo : actual - 1;
-    else if (event.key === 'Home') destino = 0;
-    else if (event.key === 'End') destino = ultimo;
-    else return;
-    event.preventDefault();
-    const id = this.tabs[destino].id;
-    this.seleccionar(id);
-    queueMicrotask(() => document.getElementById('tab-' + id)?.focus());
-  }
 }
