@@ -245,6 +245,9 @@ const CAMPOS_FORMULARIO = new Set([
             @if (erroresCampos()['idPrograma']) {
               <p class="text-xs text-danger-600 mt-1">{{ erroresCampos()['idPrograma'] }}</p>
             }
+            <p class="text-xs text-warm-600 mt-1" data-testid="aviso-admitido-sin-grupo">
+              {{ avisoSinGrupo }}
+            </p>
           </div>
 
           <!-- Contraseña Inicial (Condicional o requerida ante ADS_006) -->
@@ -308,6 +311,13 @@ export class AdmisionEstudianteModalComponent implements OnInit {
   private readonly toast = inject(ToastService);
 
   readonly isOpen = input(true);
+  /**
+   * HU156: la admisión vincula al estudiante con un programa, no con un grupo. La lista de Personas → Estudiantes se
+   * arma por grupos, así que el admitido no aparece ahí hasta que se inscriba en uno (decisión de John, 2026-11-11).
+   */
+  readonly avisoSinGrupo =
+    'Aparecerá en la lista de estudiantes cuando esté inscrito en un grupo.';
+
   readonly cerrar = output<void>();
   readonly admitido = output<AdmisionEstudianteDto>();
 
@@ -421,10 +431,10 @@ export class AdmisionEstudianteModalComponent implements OnInit {
         this.guardando.set(false);
         const dto = res.datos;
         if (dto.estadoCuenta === 'ACTIVA') {
-          this.toast.success('Estudiante admitido exitosamente.');
+          this.toast.success(`Estudiante admitido exitosamente. ${this.avisoSinGrupo}`);
         } else {
           this.toast.warning(
-            `Estudiante admitido. La cuenta de acceso quedó en estado ${dto.estadoCuenta}.`
+            `Estudiante admitido. La cuenta de acceso quedó en estado ${dto.estadoCuenta}. ${this.avisoSinGrupo}`
           );
         }
         this.admitido.emit(dto);
