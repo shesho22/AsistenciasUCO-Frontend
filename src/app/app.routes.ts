@@ -31,22 +31,6 @@ export const routes: Routes = [
           ),
       },
       {
-        // HU177: paginas publicas de recuperacion de contrasena. La primera pide el enlace; la segunda es el destino del
-        // enlace del correo (el token llega en el fragmento) y define la contrasena nueva.
-        path: 'recuperar-clave',
-        loadComponent: () =>
-          import('./features/auth/recover-password/recover-password.component').then(
-            (m) => m.RecoverPasswordComponent
-          ),
-      },
-      {
-        path: 'restablecer-clave',
-        loadComponent: () =>
-          import('./features/auth/reset-password/reset-password.component').then(
-            (m) => m.ResetPasswordComponent
-          ),
-      },
-      {
         // HU176B: matricula publica por QR (token en `?t=`, que la pagina borra de la URL) o por PIN. Sin authGuard: el
         // estudiante aun puede no tener cuenta. El backend exige red del campus y limita los intentos.
         path: 'matricula/qr',

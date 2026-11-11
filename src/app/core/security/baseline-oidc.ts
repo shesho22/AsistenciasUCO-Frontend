@@ -163,7 +163,7 @@ export function clearPending(): void {
  * verificacion de correo (IDENT-001) todavia puede no tener cuenta. En ellas no se intenta la re-autenticacion silenciosa
  * del arranque: esa redireccion a la pagina del IdP (prompt=none) saca al usuario de la ruta y rompe el flujo.
  */
-export const PUBLIC_ROUTE_PREFIXES = ['/matricula/', '/verificar-correo', '/recuperar-clave', '/restablecer-clave'] as const;
+export const PUBLIC_ROUTE_PREFIXES = ['/matricula/', '/verificar-correo'] as const;
 
 export function isPublicRoute(pathname: string): boolean {
   return PUBLIC_ROUTE_PREFIXES.some((prefijo) => pathname === prefijo.replace(/\/$/, '') || pathname.startsWith(prefijo));
