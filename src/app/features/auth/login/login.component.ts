@@ -1,7 +1,6 @@
 import { Component, signal, computed, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { ButtonComponent } from '../../../shared/components/button/button.component';
 import { CardComponent } from '../../../shared/components/card/card.component';
@@ -13,7 +12,6 @@ import { CardComponent } from '../../../shared/components/card/card.component';
   imports: [
     CommonModule,
     FormsModule,
-    RouterLink,
     ButtonComponent,
     CardComponent,
   ],
@@ -149,16 +147,30 @@ import { CardComponent } from '../../../shared/components/card/card.component';
         </form>
         }
 
-        <!-- HU177: abre la pagina publica donde se pide el enlace para definir una contraseña nueva. -->
+        <!-- HU177: solo el acceso; la recuperación real depende del proveedor de identidad (pendiente de implementación). -->
         @if (!configError()) {
           <div class="mt-4 text-center">
-            <a
-              routerLink="/recuperar-clave"
+            <button
+              type="button"
+              (click)="alternarAvisoRecuperacion()"
+              [attr.aria-expanded]="avisoRecuperacion()"
+              aria-controls="aviso-recuperacion"
               class="text-xs font-semibold text-primary-700 hover:text-primary-800 hover:underline underline-offset-2 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
               data-testid="olvide-contrasena"
             >
               ¿Olvidaste tu contraseña?
-            </a>
+            </button>
+            @if (avisoRecuperacion()) {
+              <p
+                id="aviso-recuperacion"
+                role="status"
+                class="mt-2 p-3 rounded-xl bg-warm-50 border border-warm-200 text-xs text-warm-700 leading-relaxed"
+                data-testid="aviso-recuperacion"
+              >
+                La recuperación de contraseña por correo aún no está habilitada. Mientras tanto, pide el restablecimiento
+                al administrador de la plataforma en tu universidad.
+              </p>
+            }
           </div>
         }
       </app-card>
@@ -182,8 +194,15 @@ export class LoginComponent {
     () => this.configError() || this.errorMessage() || this.authService.authError() || ''
   );
 
+  /** HU177 (pendiente de implementación): el botón solo informa; no llama al backend ni al proveedor de identidad. */
+  readonly avisoRecuperacion = signal<boolean>(false);
+
   toggleShowPassword(): void {
     this.showPassword.update((v) => !v);
+  }
+
+  alternarAvisoRecuperacion(): void {
+    this.avisoRecuperacion.update((v) => !v);
   }
 
   async onSubmit(): Promise<void> {

@@ -1,6 +1,5 @@
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
 import { LoginComponent } from './login.component';
 import { AuthService } from '../../../core/services/auth.service';
 import { User } from '../../../core/models/user.model';
@@ -33,7 +32,7 @@ describe('LoginComponent', () => {
 
     await TestBed.configureTestingModule({
       imports: [LoginComponent],
-      providers: [{ provide: AuthService, useValue: authServiceSpy }, provideRouter([])],
+      providers: [{ provide: AuthService, useValue: authServiceSpy }],
     }).compileComponents();
 
     fixture = TestBed.createComponent(LoginComponent);
@@ -99,16 +98,27 @@ describe('LoginComponent', () => {
     expect(component.errorMessage()).toContain('Credenciales inválidas');
   });
 
-  describe('HU177 ¿Olvidaste tu contraseña?', () => {
-    const boton = () => fixture.nativeElement.querySelector('[data-testid="olvide-contrasena"]') as HTMLAnchorElement | null;
+  describe('HU177 ¿Olvidaste tu contraseña? (pendiente de implementación)', () => {
+    const boton = () => fixture.nativeElement.querySelector('[data-testid="olvide-contrasena"]') as HTMLButtonElement | null;
+    const aviso = () => fixture.nativeElement.querySelector('[data-testid="aviso-recuperacion"]') as HTMLElement | null;
 
-    it('es un enlace a la página pública de recuperación y no inicia sesión', () => {
-      expect(boton()!.tagName).toBe('A');
+    it('muestra el botón y al pulsarlo solo informa, sin iniciar sesión ni llamar al proveedor', () => {
       expect(boton()!.textContent).toContain('¿Olvidaste tu contraseña?');
-      expect(boton()!.getAttribute('href')).toBe('/recuperar-clave');
-      expect(fixture.nativeElement.querySelector('[data-testid="aviso-recuperacion"]')).toBeNull();
+      expect(boton()!.type).toBe('button');
+      expect(boton()!.getAttribute('aria-expanded')).toBe('false');
+      expect(aviso()).toBeNull();
+
+      boton()!.click();
+      fixture.detectChanges();
+
+      expect(aviso()!.textContent).toContain('aún no está habilitada');
+      expect(boton()!.getAttribute('aria-expanded')).toBe('true');
       expect(authServiceSpy.loginWithCredentials).not.toHaveBeenCalled();
       expect(authServiceSpy.startBaselineLogin).not.toHaveBeenCalled();
+
+      boton()!.click();
+      fixture.detectChanges();
+      expect(aviso()).toBeNull();
     });
 
     it('también aparece en el modo baseline', async () => {
