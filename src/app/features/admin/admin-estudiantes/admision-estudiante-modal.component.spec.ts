@@ -139,7 +139,15 @@ describe('AdmisionEstudianteModalComponent (HU156)', () => {
       idPrograma: 'prog-1',
     });
     expect(resultado as unknown).toEqual(admitidoDto);
-    expect(toastService.success).toHaveBeenCalledWith('Estudiante admitido exitosamente.');
+    expect(toastService.success).toHaveBeenCalledWith(
+      'Estudiante admitido exitosamente. Aparecerá en la lista de estudiantes cuando esté inscrito en un grupo.'
+    );
+  });
+
+  it('HU156: el formulario avisa que el admitido aparece en la lista cuando tenga grupo', () => {
+    fixture.detectChanges();
+    const aviso = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="aviso-admitido-sin-grupo"]');
+    expect(aviso?.textContent?.trim()).toBe('Aparecerá en la lista de estudiantes cuando esté inscrito en un grupo.');
   });
 
   it('cuando estadoCuenta es PENDIENTE_SINCRONIZACION muestra aviso de estado al usuario', () => {
@@ -164,7 +172,10 @@ describe('AdmisionEstudianteModalComponent (HU156)', () => {
     component.onGuardar();
 
     expect(resultado as unknown).toEqual(admitidoDto);
-    expect(toastService.warning).toHaveBeenCalled();
+    expect(toastService.warning).toHaveBeenCalledWith(
+      'Estudiante admitido. La cuenta de acceso quedó en estado PENDIENTE_SINCRONIZACION. ' +
+        'Aparecerá en la lista de estudiantes cuando esté inscrito en un grupo.'
+    );
   });
 
   it('maneja error 400 ADS_006 requiriendo contraseña inicial', () => {
