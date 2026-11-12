@@ -11,6 +11,7 @@
     "test:docker-runtime": "node scripts/verify-docker-runtime.mjs",
     "coverage:realtime:check": "node scripts/check-realtime-coverage.mjs",
     "e2e:realtime:smoke": "node scripts/realtime-smoke.mjs",
+    "lint": "eslint \"src/**/*.{ts,html}\"",
     "lint:tokens": "node scripts/check-design-tokens.mjs && node scripts/check-a11y-controles.mjs",
     "check:retiro-solicitudes": "node scripts/check-retiro-solicitudes.mjs",
     "check:registro-individual": "node scripts/check-registro-individual-retirado.mjs",
@@ -43,13 +44,17 @@
     "@angular-devkit/build-angular": "^18.1.0",
     "@angular/cli": "^18.1.0",
     "@angular/compiler-cli": "^18.1.0",
+    "@eslint/js": "9.39.5",
     "@types/jasmine": "~5.1.0",
+    "angular-eslint": "18.4.3",
+    "eslint": "9.39.5",
     "jasmine-core": "~5.1.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
-    "typescript": "~5.5.2"
+    "typescript": "~5.5.2",
+    "typescript-eslint": "8.72.2"
   }
 }

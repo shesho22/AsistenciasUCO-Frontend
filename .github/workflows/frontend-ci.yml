@@ -11,29 +11,57 @@ on:
       - main
   workflow_dispatch:
 
+# Minimo por defecto; cada job declara lo que necesita (VAL oleada 2).
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TRIVY_VERSION: v0.74.0
+
 jobs:
   build-test-verify:
     runs-on: ubuntu-22.04
     permissions:
       contents: read
+      security-events: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
       - name: Setup Node.js 20
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '20'
           cache: 'npm'
 
       - name: Setup Chrome
-        uses: browser-actions/setup-chrome@v1
+        uses: browser-actions/setup-chrome@c785b87e244131f27c9f19c1a33e2ead956ab7ce # v1.7.3
         id: setup-chrome
 
       - name: Install dependencies
         run: npm ci
+
+      # EST-11 (VAL oleada 2): ESLint con angular-eslint. Los errores bloquean; la deuda existente
+      # quedo en "warn" (ver eslint.config.js y docs/work-items/VAL-oleada2-cumplimiento).
+      - name: Lint (ESLint)
+        run: npm run lint
+
+      # EST-10 (VAL oleada 2): inventario de npm audit de runtime como evidencia. El bloqueo de
+      # dependencias vulnerables con correccion lo hace la compuerta Trivy (HIGH/CRITICAL, ignore-unfixed).
+      - name: npm audit (runtime dependencies, report)
+        shell: bash
+        run: |
+          set -uo pipefail
+          npm audit --omit=dev --json > npm-audit-runtime.json
+          rc=$?
+          node -e "const r=require('./npm-audit-runtime.json');const v=(r.metadata&&r.metadata.vulnerabilities)||{};console.log('npm audit (runtime):',JSON.stringify(v));"
+          echo "npm audit exit code: ${rc} (reporte; la compuerta es Trivy)"
 
       - name: Unit tests (headless, with coverage)
         run: npm run test:ci
@@ -44,15 +72,13 @@ jobs:
         run: npm run coverage:realtime:check
 
       - name: Cache Trivy CLI
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ${{ runner.temp }}/trivy-bin
-          key: trivy-cli-${{ runner.os }}-${{ runner.arch }}-v0.72.0
+          key: trivy-cli-${{ runner.os }}-${{ runner.arch }}-${{ env.TRIVY_VERSION }}
 
       - name: Install Trivy CLI (pinned release, checksum verified)
         shell: bash
-        env:
-          TRIVY_VERSION: v0.72.0
         run: |
           set -euo pipefail
           trivy_bin_dir="${RUNNER_TEMP}/trivy-bin"
@@ -82,13 +108,15 @@ jobs:
           fi
           echo "$trivy_bin_dir" >> "$GITHUB_PATH"
 
-      - name: Trivy filesystem inventory
-        uses: aquasecurity/trivy-action@v0.36.0
+      # TRI-03 (VAL oleada 2, decision E): inventario SARIF completo (no bloquea, va a Code Scanning)
+      # y compuerta que bloquea HIGH/CRITICAL con correccion disponible. Excepciones en .trivyignore.
+      - name: Trivy filesystem inventory (SARIF)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           scan-type: fs
           scan-ref: .
           scanners: vuln,misconfig,secret
-          version: 'v0.72.0'
+          version: ${{ env.TRIVY_VERSION }}
           cache: true
           skip-setup-trivy: true
           format: sarif
@@ -96,6 +124,25 @@ jobs:
           severity: HIGH,CRITICAL
           exit-code: 0
           ignore-unfixed: false
+          skip-dirs: node_modules,dist,coverage
+          trivyignores: .trivyignore
+
+      - name: Trivy filesystem gate (blocks HIGH/CRITICAL with fix available)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,misconfig,secret
+          version: ${{ env.TRIVY_VERSION }}
+          cache: true
+          skip-setup-trivy: true
+          format: table
+          output: ''
+          severity: HIGH,CRITICAL
+          exit-code: 1
+          ignore-unfixed: true
+          skip-dirs: node_modules,dist,coverage
+          trivyignores: .trivyignore
 
       - name: SonarCloud Configuration Preflight
         shell: bash
@@ -118,9 +165,10 @@ jobs:
             exit 1
           }
 
-      # Escaneo y Quality Gate en SonarQube Cloud
+      # Escaneo y Quality Gate en SonarQube Cloud. sonarcloud-github-action esta deprecada y solo
+      # redirige a sonarqube-scan-action por etiqueta mutable; se usa la accion oficial fijada por SHA.
       - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@v5.0.0
+        uses: SonarSource/sonarqube-scan-action@e805d875275f728fac1885b413934be6d7c63f65 # v8.4.1
         with:
           # qualitygate.wait: el paso falla si el Quality Gate de SonarCloud esta en ERROR (VAL EST-04).
           args: >
@@ -129,12 +177,11 @@ jobs:
             -Dsonar.qualitygate.wait=true
             -Dsonar.qualitygate.timeout=300
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
       - name: Upload coverage report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: coverage
           path: coverage/
@@ -149,13 +196,13 @@ jobs:
       - name: Validate runtime env.js and Compose security wiring
         run: npm run test:docker-runtime -- asistencias-uco-frontend-ci
 
-      - name: Trivy image inventory
-        uses: aquasecurity/trivy-action@v0.36.0
+      - name: Trivy image inventory (SARIF)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           scan-type: image
           image-ref: asistencias-uco-frontend-ci
           scanners: vuln,misconfig,secret
-          version: 'v0.72.0'
+          version: ${{ env.TRIVY_VERSION }}
           cache: true
           skip-setup-trivy: true
           format: sarif
@@ -163,11 +210,148 @@ jobs:
           severity: HIGH,CRITICAL
           exit-code: 0
           ignore-unfixed: false
+          trivyignores: .trivyignore
 
-      - name: Upload Trivy inventories
+      - name: Trivy image gate (blocks HIGH/CRITICAL with fix available)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: image
+          image-ref: asistencias-uco-frontend-ci
+          scanners: vuln,misconfig,secret
+          version: ${{ env.TRIVY_VERSION }}
+          cache: true
+          skip-setup-trivy: true
+          format: table
+          output: ''
+          severity: HIGH,CRITICAL
+          exit-code: 1
+          ignore-unfixed: true
+          trivyignores: .trivyignore
+
+      - name: Publish Trivy filesystem findings to Code Scanning
+        if: always() && hashFiles('frontend-trivy-fs.sarif') != ''
+        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        with:
+          sarif_file: frontend-trivy-fs.sarif
+          category: trivy-frontend-filesystem
+
+      - name: Publish Trivy image findings to Code Scanning
+        if: always() && hashFiles('frontend-trivy-image.sarif') != ''
+        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        with:
+          sarif_file: frontend-trivy-image.sarif
+          category: trivy-frontend-image
+
+      - name: Upload Trivy inventories and npm audit report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: frontend-trivy-inventories
-          path: frontend-trivy-*.sarif
+          path: |
+            frontend-trivy-*.sarif
+            npm-audit-runtime.json
           if-no-files-found: ignore
+
+  # EST-07 (VAL oleada 2): analisis semantico de seguridad del TypeScript.
+  codeql:
+    name: CodeQL JavaScript/TypeScript Analysis
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        with:
+          languages: javascript-typescript
+          build-mode: none
+
+      - name: Analyze with CodeQL
+        uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        with:
+          category: /language:javascript-typescript
+
+  # EST-08 (VAL oleada 2): bloquea dependencias nuevas con vulnerabilidades high o critical.
+  # Requiere Dependency Graph habilitado en el repositorio.
+  dependency-review:
+    name: Dependency Review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Review dependency changes
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: high
+
+  # SEC-05 / SEC-08 (VAL oleada 2): gitleaks bloquea secretos nuevos. Solo escanea los commits que
+  # trae el PR (o el push), no el historial completo: el historial ya contiene valores viejos que
+  # quedaron invalidados con la rotacion de credenciales (ver docs/work-items/VAL-oleada2-cumplimiento).
+  # Se usa el binario oficial con SHA-256 fijado (gitleaks-action exige licencia para cuentas de organizacion).
+  gitleaks:
+    name: Gitleaks Secret Scan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository (full history for the commit range)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Install gitleaks (pinned release, checksum verified)
+        shell: bash
+        env:
+          GITLEAKS_VERSION: 8.30.1
+          GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+        run: |
+          set -euo pipefail
+          archive="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl --fail --location --silent --show-error --retry 2 --retry-all-errors --connect-timeout 20 --max-time 120 \
+            --output "${RUNNER_TEMP}/${archive}" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${archive}"
+          printf '%s  %s\n' "$GITLEAKS_SHA256" "${RUNNER_TEMP}/${archive}" | sha256sum --check --status
+          mkdir -p "${RUNNER_TEMP}/gitleaks-bin"
+          tar -xzf "${RUNNER_TEMP}/${archive}" -C "${RUNNER_TEMP}/gitleaks-bin" gitleaks
+          echo "${RUNNER_TEMP}/gitleaks-bin" >> "$GITHUB_PATH"
+
+      - name: Scan commits introduced by this change
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_AFTER: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          zero='0000000000000000000000000000000000000000'
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            range="${PR_BASE_SHA}..${PR_HEAD_SHA}"
+          elif [ "$EVENT_NAME" = "push" ] && [ -n "${PUSH_BEFORE:-}" ] && [ "$PUSH_BEFORE" != "$zero" ] \
+               && git cat-file -e "${PUSH_BEFORE}^{commit}" 2>/dev/null; then
+            range="${PUSH_BEFORE}..${PUSH_AFTER}"
+          else
+            range="-1 ${PUSH_AFTER}"
+          fi
+          echo "Gitleaks commit range: ${range}"
+          gitleaks git . \
+            --config .github/gitleaks.toml \
+            --log-opts="${range}" \
+            --redact \
+            --no-banner \
+            --verbose \
+            --exit-code 1

@@ -379,7 +379,8 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const validacion = validateSoporteFile(file);
+    // PAR-05: el tope sale del parametro ARCHIVO/TAMANIO_MAXIMO_BYTES (GET /configuracion/reclamos); 5 MB solo es respaldo.
+    const validacion = validateSoporteFile(file, this.configuracionReclamos()?.tamanioMaximoBytes);
     if (!validacion.valid) {
       this.errorSoporte.set(validacion.message ?? 'El archivo no es válido.');
       this.toast.error(validacion.message ?? 'El archivo no es válido.');
