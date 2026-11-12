@@ -119,5 +119,27 @@ export const environment = {
       return String((window as any)['env']?.['MESSAGEUCOLAB_ENVIRONMENT_NAME'] || 'Develop');
     },
   },
+  /**
+   * Administración de parámetros: micro frontend del equipo del Catálogo de Parámetros
+   * (`parametros-administration.js`), cargado en tiempo de ejecución. Es la única administración de parámetros de la UI.
+   */
+  parametros: {
+    /** URL del módulo ESM (mismo origen; el proxy o el servidor web la reenvían al frontend del Catálogo). */
+    get uiUrl(): string {
+      return String(
+        (window as any)['env']?.['CATALOGO_PARAMETROS_UI_URL'] || '/parametros-ui/parametros-administration.js'
+      ).trim();
+    },
+    /** Base de la API del Catálogo, relativa al origen de la SPA para que viaje la cookie de sesión. */
+    get apiBaseUrl(): string {
+      return String((window as any)['env']?.['CATALOGO_PARAMETROS_API_BASE_URL'] || '/catalogo-parametros/api/v1')
+        .trim()
+        .replace(/\/+$/, '');
+    },
+    /** UUID de la aplicación AsistenciasUCO en el Catálogo. Sin valor por defecto: se configura en env.js. */
+    get applicationId(): string {
+      return String((window as any)['env']?.['CATALOGO_PARAMETROS_APPLICATION_ID'] || '').trim();
+    },
+  },
 };
 
