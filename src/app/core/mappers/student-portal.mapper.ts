@@ -2,14 +2,18 @@ import {
   HorarioEstudianteApiDto,
   MateriaEstudianteApiDto,
   SesionMateriaEstudianteApiDto,
+  TomaSesionEstudianteApiDto,
 } from '../api/models/estudiante-portal-api-dto.model';
 import {
   DiaSemana,
   EstadoAsistenciaSesionEstudiante,
   EstadoSolicitudRevision,
+  EstadoTomaEstudiante,
   HorarioItem,
   MateriaEstudianteItem,
+  ResultadoAprobacionReclamo,
   SesionMateriaDetalle,
+  TomaSesionEstudiante,
 } from '../models/role-management.model';
 import { normalizeRfc3339ToUtc } from '../time/session-timezone.util';
 import { isUuid } from '../utils/uuid.util';
@@ -51,9 +55,13 @@ const ESTADOS_RECLAMABLES = new Set<EstadoAsistenciaSesionEstudiante>(['AUSENTE'
 const SOLICITUD_POR_NOMBRE: Record<string, EstadoSolicitudRevision> = {
   pendiente: 'PENDIENTE',
   aceptada: 'APROBADA',
+  aprobada: 'APROBADA',
   rechazada: 'RECHAZADA',
   retirada: 'RETIRADA',
 };
+
+const ESTADOS_TOMA: readonly EstadoTomaEstudiante[] = ['PRESENTE', 'AUSENTE', 'JUSTIFICADA', 'SIN_REGISTRO'];
+const RESULTADOS_APROBACION: readonly ResultadoAprobacionReclamo[] = ['PRESENTE', 'JUSTIFICADA'];
 
 const NAIVE_LOCAL_DATE_TIME = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})(?::\d{2}(?:\.\d{1,9})?)?$/;
 const HAS_OFFSET = /(Z|[+-]\d{2}:\d{2})$/;
@@ -236,6 +244,7 @@ export class StudentPortalMapper {
     const solicitudRevision = estadoSolicitud(dto.estadoSolicitudRevision);
     const cancelada = dto.estado === 'CANCELADA';
     const limite = StudentPortalMapper.presentarInstante(dto.fechaLimiteJustificacionUtc, format);
+    const tomas = (dto.tomas ?? []).map((t) => StudentPortalMapper.toToma(t, format)).filter((t): t is TomaSesionEstudiante => t !== null);
 
     return {
       id: dto.id,
@@ -255,7 +264,38 @@ export class StudentPortalMapper {
       fechaLimiteJustificacionUtc: limite?.utc,
       fechaLimiteJustificacionLocal: limite ? `${limite.date} ${limite.time}` : undefined,
       plazoJustificacionVigente: typeof dto.plazoJustificacionVigente === 'boolean' ? dto.plazoJustificacionVigente : undefined,
-      reclamable: !cancelada && dto.reclamable === true && ESTADOS_RECLAMABLES.has(estado) && solicitudRevision === null,
+      // Con tomas, la sesión es reclamable si alguna toma lo es (la solicitud previa de otra toma no la bloquea).
+      reclamable:
+        !cancelada &&
+        dto.reclamable === true &&
+        (tomas.length > 0
+          ? tomas.some((t) => t.reclamable)
+          : ESTADOS_RECLAMABLES.has(estado) && solicitudRevision === null),
+      minutosSesion: cantidadNoNegativa(dto.minutosSesion),
+      minutosAsistidos: cantidadNoNegativa(dto.minutosAsistidos),
+      minutosFalta: cantidadNoNegativa(dto.minutosFalta),
+      minutosExcusa: cantidadNoNegativa(dto.minutosExcusa),
+      minutosSinRegistro: cantidadNoNegativa(dto.minutosSinRegistro),
+      tomas,
+    };
+  }
+
+  /** Una toma sin identificador válido se descarta; el estado desconocido queda `SIN_REGISTRO` y nunca es reclamable. */
+  private static toToma(dto: TomaSesionEstudianteApiDto, format: InstantFormatter): TomaSesionEstudiante | null {
+    if (!dto || !isUuid(dto.idToma)) return null;
+    const punto = StudentPortalMapper.presentarInstante(dto.fechaPuntoControlUtc, format);
+    const estado = ESTADOS_TOMA.find((valor) => valor === dto.estado) ?? 'SIN_REGISTRO';
+    const solicitud = estadoSolicitud(dto.estadoSolicitudRevision);
+    return {
+      idToma: dto.idToma,
+      numero: dto.numero,
+      fechaPuntoControlUtc: punto?.utc,
+      horaPuntoControl: punto?.time ?? NO_INFORMADO,
+      estado,
+      reclamable: dto.reclamable === true && estado !== 'PRESENTE',
+      idSolicitudRevision: texto(dto.idSolicitudRevision),
+      estadoSolicitudRevision: solicitud === 'DESCONOCIDA' ? null : solicitud,
+      resultadoAprobacion: RESULTADOS_APROBACION.find((valor) => valor === dto.resultadoAprobacion) ?? null,
     };
   }
 

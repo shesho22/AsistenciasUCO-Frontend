@@ -183,14 +183,55 @@ describe('StudentCoursesComponent — soporte y radicación (LB-004D FE-01..FE-0
     expect(component.enviandoReclamo()).toBeFalse();
   });
 
-  it('SUPUESTO-B-15 (CERT-CULM001): una sesion PARCIAL reclamable se radica por su toma ausente', () => {
+  const tomaAusente = {
+    idToma: 'd1d2d3d4-0000-4000-8000-0000000000a2', numero: 2, horaPuntoControl: '09:00', estado: 'AUSENTE' as const,
+    reclamable: true, idSolicitudRevision: null, estadoSolicitudRevision: null, resultadoAprobacion: null,
+  };
+
+  it('PC: una sesion PARCIAL sin tomas se radica por sesion y no inventa un estado original', () => {
     claims.crearReclamo.and.returnValue(of({ exitoso: true, mensajeUsuario: 'ok' }) as never);
     component.sesionReclamar.set(crearSesion({ id: 's-2', estadoAsistencia: 'PARCIAL', reclamable: true }));
     component.enviarReclamo({ categoria: 'Otro', justificacion: 'llegue tarde a la segunda toma' });
 
     expect(claims.crearReclamo).toHaveBeenCalledTimes(1);
     expect(claims.crearReclamo.calls.mostRecent().args[0].sesionId).toBe('s-2');
-    expect(claims.crearReclamo.calls.mostRecent().args[0].estadoOriginal).toBe('AUSENTE');
+    expect(claims.crearReclamo.calls.mostRecent().args[0].idToma).toBeNull();
+    expect(claims.crearReclamo.calls.mostRecent().args[0].estadoOriginal).toBeUndefined();
+  });
+
+  it('PC: reclamar una toma abre el formulario con esa toma y radica con su tomaId', () => {
+    claims.crearReclamo.and.returnValue(of({ exitoso: true, mensajeUsuario: 'ok' }) as never);
+    const sesion = crearSesion({ id: 's-2', estadoAsistencia: 'PARCIAL', reclamable: true, tomas: [tomaAusente] });
+    component.iniciarReclamoToma({ sesion, toma: tomaAusente });
+    expect(component.vistaActual()).toBe('RECLAMO');
+    expect(component.tomaReclamar()?.idToma).toBe(tomaAusente.idToma);
+
+    component.enviarReclamo({ categoria: 'Otro', justificacion: 'llegue tarde a la segunda toma' });
+    const solicitud = claims.crearReclamo.calls.mostRecent().args[0];
+    expect(solicitud.sesionId).toBe('s-2');
+    expect(solicitud.idToma).toBe(tomaAusente.idToma);
+    expect(solicitud.numeroToma).toBe(2);
+    expect(solicitud.estadoOriginal).toBe('AUSENTE');
+  });
+
+  it('PC: una toma no reclamable no abre el formulario', () => {
+    const sesion = crearSesion({ id: 's-2', estadoAsistencia: 'PARCIAL', reclamable: true });
+    component.iniciarReclamoToma({ sesion, toma: { ...tomaAusente, reclamable: false } });
+    expect(component.vistaActual()).not.toBe('RECLAMO');
+    expect(component.tomaReclamar()).toBeNull();
+  });
+
+  it('PC: ERR_TOMA_NO_RECLAMABLE y ERR_RECLAMO_TOMA_DUPLICADO muestran el mensaje del backend junto al formulario y refrescan la sesión', () => {
+    const sesion = crearSesion({ id: 's-2', estadoAsistencia: 'PARCIAL', reclamable: true, tomas: [tomaAusente] });
+    for (const codigo of ['ERR_TOMA_NO_RECLAMABLE', 'ERR_RECLAMO_TOMA_DUPLICADO']) {
+      claims.crearReclamo.and.returnValue(throwError(() => apiHttpError(409, 'La toma ya no se puede reclamar.', codigo)) as never);
+      claims.getSesionesPorMateria.calls.reset();
+      component.iniciarReclamoToma({ sesion, toma: tomaAusente });
+      component.enviarReclamo({ categoria: 'Otro', justificacion: 'motivo' });
+      expect(component.errorEnvio()).toBe('La toma ya no se puede reclamar.');
+      expect(component.vistaActual()).toBe('RECLAMO');
+      expect(claims.getSesionesPorMateria).toHaveBeenCalled();
+    }
   });
 
   it('una sesion NO_DISPONIBLE nunca se radica aunque llegue marcada como reclamable', () => {

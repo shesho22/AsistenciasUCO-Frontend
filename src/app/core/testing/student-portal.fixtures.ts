@@ -40,6 +40,7 @@ export function crearSesion(overrides: Partial<SesionMateriaDetalle> = {}): Sesi
     estadoAsistencia: 'NO_DISPONIBLE',
     solicitudRevision: null,
     reclamable: false,
+    tomas: [],
     ...overrides,
   };
 }

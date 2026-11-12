@@ -36,9 +36,9 @@ import { TAMANO_PAGINA_TOMA, cargarTodasLasPaginas } from './toma-paginas.util';
         </button>
       </div>
 
-      @if (!ventanaAbierta()) {
-        <p class="text-xs text-warm-600" data-testid="faltantes-ventana-cerrada">
-          La ventana de la sesión está cerrada: ya no se puede marcar asistencia desde aquí.
+      @if (!esEditable()) {
+        <p class="text-xs text-warm-600" data-testid="faltantes-no-editable">
+          Esta toma ya no se puede corregir: la lista es solo de consulta. Las correcciones se hacen por reclamo.
         </p>
       }
       @if (error()) {
@@ -121,7 +121,8 @@ export class TomaFaltantesComponent {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly tomaId = input.required<string>();
-  readonly ventanaAbierta = input<boolean>(true);
+  /** El backend decide si la toma se puede corregir (`esEditable` del listado de tomas). */
+  readonly esEditable = input<boolean>(true);
   /** El contenedor lo incrementa cuando la toma cambió en el backend: fuerza una nueva consulta. */
   readonly version = input<number>(0);
   /** Se emite tras una marcacion exitosa para que el contenedor refresque conteos. */
@@ -141,9 +142,9 @@ export class TomaFaltantesComponent {
       : this.faltantes().filter((f) => f.nombreCompleto.toLowerCase().includes(consulta));
   });
 
-  /** SES_008: el backend cerró la ventana (ERR_SESION_CERRADA) aunque la pantalla aún la viera abierta. */
+  /** El backend cerró la ventana (ERR_SESION_CERRADA) o la toma (TOM_012) aunque la pantalla aún la viera editable. */
   private readonly cerradaPorBackend = signal(false);
-  protected readonly puedeMarcar = computed(() => this.ventanaAbierta() && !this.cerradaPorBackend() && !this.enviando());
+  protected readonly puedeMarcar = computed(() => this.esEditable() && !this.cerradaPorBackend() && !this.enviando());
 
   constructor() {
     effect(() => {
@@ -197,7 +198,11 @@ export class TomaFaltantesComponent {
           this.cargar();
         },
         error: (err: unknown) => {
-          if (getApiErrorCode(err) === 'ERR_SESION_CERRADA') this.cerradaPorBackend.set(true);
+          const codigo = getApiErrorCode(err);
+          if (codigo === 'ERR_SESION_CERRADA' || codigo === 'TOM_012') {
+            this.cerradaPorBackend.set(true);
+            this.actualizado.emit();
+          }
           this.error.set(getApiErrorMessage(err));
         },
       });

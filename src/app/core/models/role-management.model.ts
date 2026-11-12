@@ -162,6 +162,26 @@ export type EstadoAsistenciaSesion ='PRESENTE' | 'AUSENTE' | 'RETARDO' | 'JUSTIF
 /** `RETIRADA`: el estudiante retiró su solicitud mientras estaba pendiente (CULM-001 A.2-7). */
 export type EstadoSolicitudRevision = 'PENDIENTE' | 'APROBADA' | 'RECHAZADA' | 'RETIRADA';
 
+/** Resultado con el que el docente aprobó un reclamo: el estudiante sí estuvo presente o la ausencia queda justificada. */
+export type ResultadoAprobacionReclamo = 'PRESENTE' | 'JUSTIFICADA';
+
+/** Estado de una toma para el estudiante (`SIN_REGISTRO` = el docente no registró nada para él en esa toma). */
+export type EstadoTomaEstudiante = 'PRESENTE' | 'AUSENTE' | 'JUSTIFICADA' | 'SIN_REGISTRO';
+
+/** Toma de una sesión vista por el estudiante (`tomas[]` de `SesionMateriaEstudianteDTO`); `reclamable` lo decide el backend. */
+export interface TomaSesionEstudiante {
+  idToma: string;
+  numero: number;
+  /** Punto de control (instante UTC con Z) y su hora presentada en la zona del usuario (`HH:mm`). */
+  fechaPuntoControlUtc?: string;
+  horaPuntoControl: string;
+  estado: EstadoTomaEstudiante;
+  reclamable: boolean;
+  idSolicitudRevision: string | null;
+  estadoSolicitudRevision: EstadoSolicitudRevision | null;
+  resultadoAprobacion: ResultadoAprobacionReclamo | null;
+}
+
 export interface CategoriaReclamoItem {
   codigo: string;
   nombre: string;
@@ -231,6 +251,14 @@ export interface SesionMateriaDetalle {
   /** El backend ya tiene una solicitud de revision para la asistencia de esta sesion (estado informado). */
   solicitudRevision: EstadoSolicitudRevision | 'DESCONOCIDA' | null;
   reclamable: boolean;
+  /** Minutos calculados por el backend (`null`/ausente = sin cabecera de asistencia); el cliente no los recalcula. */
+  minutosSesion?: number | null;
+  minutosAsistidos?: number | null;
+  minutosFalta?: number | null;
+  minutosExcusa?: number | null;
+  minutosSinRegistro?: number | null;
+  /** Tomas de la sesión con su estado y, si ya hubo reclamo, el estado del reclamo. Vacío si la sesión no tiene tomas. */
+  tomas: TomaSesionEstudiante[];
   /** CULM-001 B.1: una sesion cancelada no cuenta, no es reclamable y se muestra rotulada. */
   estado?: EstadoSesion;
   cancelacion?: CancelacionSesion | null;
@@ -281,6 +309,11 @@ export interface SolicitudRevisionItem {
   justificacionSolicitud: string;
   justificacionRespuesta?: string;
   fechaRespuesta?: string;
+  /** Reclamo por toma: toma reclamada, su punto de control y el resultado de la aprobación. Ausentes en un reclamo por sesión. */
+  idToma?: string | null;
+  numeroToma?: number | null;
+  fechaPuntoControlUtc?: string | null;
+  resultadoAprobacion?: ResultadoAprobacionReclamo | null;
 }
 
 /** Causal de inasistencia registrada por el docente para la sesión reclamada (HU036). */
@@ -294,6 +327,10 @@ export interface CausalInasistenciaItem {
 export interface DetalleReclamoDocenteItem extends SolicitudRevisionItem {
   causalInasistencia: CausalInasistenciaItem | null;
   nombreEstado: string;
+  /** Estado actual de la toma reclamada (`null`/ausente si el reclamo es de la sesión) y minutos de la sesión del estudiante. */
+  estadoToma?: EstadoTomaEstudiante | null;
+  minutosSesion?: number | null;
+  minutosAsistidos?: number | null;
 }
 
 export interface PlanEstudioItem {

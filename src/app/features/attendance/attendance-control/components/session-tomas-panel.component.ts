@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
+import { SessionTimeZoneService } from '../../../../core/services/session-timezone.service';
 import { TomaAsistencia, TomasSesion } from '../../../../core/models/toma-asistencia.model';
 import { detalleCancelacion, estaCancelada } from '../../../../core/models/sesion-estado.model';
 import { NotificacionToma, TomaAsistenciasComponent } from './toma-asistencias.component';
@@ -73,7 +74,7 @@ const RESUMEN = 'resumen';
                 [class]="clasesTab(activa() === t.idToma)"
               >
                 Toma {{ t.numero }}
-                <span class="text-xs font-normal text-warm-600">· {{ t.modo === 'QR' ? 'QR' : 'Manual' }} · {{ t.estado === 'ABIERTA' ? 'Abierta' : 'Cerrada' }}</span>
+                <span class="text-xs font-normal text-warm-600">· {{ horaDe(t) }} · {{ t.modo === 'QR' ? 'QR' : 'Manual' }} · {{ t.estado === 'ABIERTA' ? 'Abierta' : 'Cerrada' }}</span>
                 @if ((sinGuardar()[t.idToma] ?? 0) > 0) {
                   <span class="ml-1 text-warning-800" [attr.data-testid]="'tab-sin-guardar-' + t.idToma">
                     <span aria-hidden="true">●</span><span class="sr-only">Cambios sin guardar</span>
@@ -95,6 +96,15 @@ const RESUMEN = 'resumen';
               Resumen de la sesión
             </button>
           </div>
+        }
+
+        @if (datos.tomas.length > 0) {
+          <p class="text-xs text-warm-600" data-testid="linea-puntos-control">
+            Puntos de control:
+            @for (t of datos.tomas; track t.idToma; let ultima = $last) {
+              Toma {{ t.numero }} a las {{ horaDe(t) }}{{ ultima ? '.' : ' ·' }}
+            }
+          </p>
         }
 
         @for (t of datos.tomas; track t.idToma) {
@@ -121,7 +131,7 @@ const RESUMEN = 'resumen';
 
         @if (activa() === resumenId) {
           <div role="tabpanel" id="panel-resumen" aria-labelledby="tab-resumen" data-testid="tabpanel-resumen">
-            <app-resumen-sesion-tomas [tomas]="datos.tomas" [horasSesion]="datos.horasSesion" />
+            <app-resumen-sesion-tomas [tomas]="datos.tomas" [sesionId]="datos.idSesion" />
           </div>
         }
       } @else {
@@ -140,6 +150,7 @@ export class SessionTomasPanelComponent {
   readonly actualizado = output<void>();
   readonly notificacion = output<NotificacionToma>();
 
+  private readonly zona = inject(SessionTimeZoneService);
   protected readonly resumenId = RESUMEN;
   private readonly seleccion = signal<string | null>(null);
   protected readonly sinGuardar = signal<Readonly<Record<string, number | undefined>>>({});
@@ -179,6 +190,10 @@ export class SessionTomasPanelComponent {
         this.tomasPrevias = cantidad;
       });
     });
+  }
+
+  protected horaDe(toma: TomaAsistencia): string {
+    return this.zona.formatTemporal(toma.fechaPuntoControlUtc, 'time');
   }
 
   protected seleccionar(id: string): void {

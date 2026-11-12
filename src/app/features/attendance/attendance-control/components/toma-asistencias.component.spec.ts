@@ -10,6 +10,7 @@ function toma(parcial: Partial<TomaAsistencia> = {}): TomaAsistencia {
   return {
     idToma: 't-1', idSesion: 's-1', idGrupo: 'g-1', numero: 1, modo: 'MANUAL', estado: 'ABIERTA',
     esImplicita: false, fechaAperturaUtc: '2026-11-10T13:00:00Z', fechaCierreUtc: null, horasToma: 1,
+    fechaPuntoControlUtc: '2026-11-10T13:00:00Z', ordenPuntoControl: 1, minutosTramoAnterior: 0, minutosTramoSiguiente: 60, esEditable: true, editableHastaUtc: null,
     totalRegistros: 3, totalPresentes: 1, totalAusentes: 1, totalExcusas: 0, tieneQrActivo: false, ...parcial,
   };
 }
@@ -101,13 +102,16 @@ describe('TomaAsistenciasComponent (CULM-001 UX toma)', () => {
     expect(texto('hora-a')).not.toBe('');
   });
 
-  it('B2-F-06 la cabecera de la toma muestra numero, modo, estado, horas y conteos', () => {
-    crear({ toma: toma({ modo: 'QR', horasToma: 0.5, totalPresentes: 8, totalAusentes: 1, totalExcusas: 1 }) });
+  it('B2-F-06 la cabecera de la toma muestra numero, modo, estado, punto de control y conteos', () => {
+    crear({ toma: toma({ modo: 'QR', minutosTramoAnterior: 20, minutosTramoSiguiente: 40, totalPresentes: 8, totalAusentes: 1, totalExcusas: 1 }) });
     const cabecera = texto('toma-t-1');
     expect(cabecera).toContain('Toma 1');
     expect(cabecera).toContain('Código QR');
     expect(cabecera).toContain('Abierta');
-    expect(cabecera).toContain('0.5 h');
+    expect(cabecera).toMatch(/Punto de control: \d{2}:\d{2}/);
+    expect(cabecera).toContain('20 min antes');
+    expect(cabecera).toContain('40 min después');
+    expect(cabecera).not.toContain(' h ·');
     expect(cabecera).toContain('8 presentes');
     expect(cabecera).toContain('1 ausentes');
     expect(cabecera).toContain('1 excusas');
@@ -273,21 +277,54 @@ describe('TomaAsistenciasComponent (CULM-001 UX toma)', () => {
     expect(texto('indicador-sin-guardar')).toContain('Todo guardado');
   });
 
-  it('con la ventana cerrada los controles se deshabilitan y se explica por que', () => {
-    crear({ ventanaAbierta: false });
+  it('una toma cerrada que ya no es editable deshabilita los controles y explica que se corrige por reclamo', () => {
+    crear({ toma: toma({ estado: 'CERRADA', esEditable: false }) });
     expect(boton('marcar-todos-presentes').disabled).toBeTrue();
     expect(itemMenu('marcar-faltantes')!.disabled).toBeTrue();
     expect(boton('estado-c-AN').disabled).toBeTrue();
     expect(boton('guardar-toma').disabled).toBeTrue();
-    expect(el('toma-ventana-cerrada')).not.toBeNull();
+    expect(texto('toma-aviso-edicion')).toBe(
+      'Esta toma ya no se puede corregir porque se abrió la toma siguiente. Las correcciones se hacen por reclamo.'
+    );
   });
 
-  it('si la ventana se cierra con cambios sin guardar, los descarta y avisa', () => {
+  it('una toma cerrada editable con plazo informa hasta cuándo se puede corregir y deja marcar', () => {
+    crear({ toma: toma({ estado: 'CERRADA', esEditable: true, editableHastaUtc: '2026-11-10T15:30:00Z' }) });
+    expect(boton('estado-c-AN').disabled).toBeFalse();
+    expect(texto('toma-aviso-edicion')).toMatch(/^Puedes corregirla hasta las \d{2}:\d{2}\.$/);
+  });
+
+  it('una toma cerrada editable sin plazo explica que se puede corregir hasta abrir la siguiente', () => {
+    crear({ toma: toma({ estado: 'CERRADA', esEditable: true, editableHastaUtc: null }) });
+    expect(texto('toma-aviso-edicion')).toBe('Puedes corregirla hasta que abras la siguiente toma.');
+  });
+
+  it('una toma abierta editable no muestra aviso de edición', () => {
+    crear();
+    expect(el('toma-aviso-edicion')).toBeNull();
+  });
+
+  it('TOM_012: descarta los cambios, muestra el mensaje del backend y pide recargar las tomas', () => {
+    const mensaje = 'La toma ya no se puede corregir porque se abrió la siguiente.';
+    tomas.registrarAsistencias.and.returnValue(throwError(() => apiHttpError(409, mensaje, 'TOM_012')));
+    crear({ toma: toma({ estado: 'CERRADA', esEditable: true }) });
+    let actualizado = 0;
+    const avisos: string[] = [];
+    fixture.componentInstance.actualizado.subscribe(() => actualizado++);
+    fixture.componentInstance.notificacion.subscribe((n) => avisos.push(`${n.tipo}:${n.texto}`));
+    clic('estado-c-AN');
+    clic('guardar-toma');
+    expect(avisos).toEqual([`error:${mensaje}`]);
+    expect(actualizado).toBe(1);
+    expect(texto('indicador-sin-guardar')).toContain('Todo guardado');
+  });
+
+  it('si la toma deja de ser editable con cambios sin guardar, los descarta y avisa', () => {
     crear();
     const avisos: string[] = [];
     fixture.componentInstance.notificacion.subscribe((n) => avisos.push(n.tipo));
     clic('estado-c-AN');
-    fixture.componentRef.setInput('ventanaAbierta', false);
+    fixture.componentRef.setInput('toma', toma({ estado: 'CERRADA', esEditable: false }));
     fixture.detectChanges();
     expect(texto('indicador-sin-guardar')).toContain('Todo guardado');
     expect(avisos).toEqual(['warning']);

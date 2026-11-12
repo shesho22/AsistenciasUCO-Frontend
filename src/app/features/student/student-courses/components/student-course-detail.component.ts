@@ -11,11 +11,15 @@ import {
   MateriaEstudianteItem,
   SesionMateriaDetalle,
   EstadoAsistenciaSesionEstudiante,
+  EstadoTomaEstudiante,
+  TomaSesionEstudiante,
 } from '../../../../core/models/role-management.model';
 import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
 import { CategoriaJustificacionItem } from '../../../../core/models/consultas-transversales.model';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 import { ordenarSesionesCronologicamente } from '../../../../core/utils/sesiones-orden.util';
+import { detalleExcusaSesion, etiquetaEstadoSesion } from '../../../../core/utils/estado-sesion-estudiante.util';
+import { etiquetaResultadoAprobacion } from '../../../../core/utils/reclamo-estado.util';
 import { MotivosJustificacionComponent } from './motivos-justificacion.component';
 import { RealtimeService } from '../../../../core/realtime/realtime.service';
 import { onRealtimeReconnect } from '../../../../core/realtime/realtime-reconnect-trigger';
@@ -218,6 +222,38 @@ import { ToastService } from '../../../../shared/components/toast/toast.componen
                         <strong class="text-primary-800">Respuesta del docente:</strong> "{{ sesion.respuestaDocente }}"
                       </div>
                     }
+
+                    @if (sesion.estado !== 'CANCELADA' && sesion.tomas.length > 0) {
+                      <details class="mt-1 text-xs" [attr.data-testid]="'tomas-' + sesion.id" [open]="tomasAbiertas(sesion)">
+                        <summary class="cursor-pointer min-h-[36px] inline-flex items-center font-semibold text-primary-800">
+                          Tomas ({{ sesion.tomas.length }})
+                        </summary>
+                        <ul class="mt-1 space-y-1.5">
+                          @for (toma of sesion.tomas; track toma.idToma) {
+                            <li
+                              class="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-warm-200 bg-warm-50 px-2.5 py-1.5"
+                              [attr.data-testid]="'toma-' + toma.idToma"
+                            >
+                              <span class="font-semibold text-warm-900">Toma {{ toma.numero }} · {{ toma.horaPuntoControl }}</span>
+                              <span [class]="clasesEstadoToma(toma.estado)" class="font-medium" data-testid="toma-estado">{{ etiquetaEstadoToma(toma.estado) }}</span>
+                              @if (toma.estadoSolicitudRevision; as solicitud) {
+                                <span [class]="getReclamoStatusClasses(solicitud)" class="font-bold px-2 py-0.5 rounded-md border" data-testid="toma-reclamo">
+                                  {{ etiquetaReclamoToma(toma) }}
+                                </span>
+                              } @else if (toma.reclamable && sesion.plazoJustificacionVigente !== false && materia()?.estadoMatricula !== 'CI') {
+                                <button
+                                  type="button"
+                                  data-testid="btn-reclamar-toma"
+                                  [attr.aria-label]="'Reclamar la toma ' + toma.numero + ' de la sesión ' + sesion.numeroSesion"
+                                  (click)="startClaimToma.emit({ sesion, toma })"
+                                  class="inline-flex items-center justify-center min-h-[36px] px-3 py-1 text-xs font-semibold rounded-lg border border-primary-300 bg-primary-50 text-primary-900 hover:bg-primary-100"
+                                >Reclamar esta toma</button>
+                              }
+                            </li>
+                          }
+                        </ul>
+                      </details>
+                    }
                   </div>
 
                   <!-- Estado y Botón de Reclamación / Retiro -->
@@ -228,10 +264,14 @@ import { ToastService } from '../../../../shared/components/toast/toast.componen
                       <app-badge
                         [variant]="getAsistenciaBadgeVariant(sesion.estadoAsistencia)"
                         size="md"
-                        [attr.title]="sesion.estadoAsistencia === 'PARCIAL' ? 'Sesión con varias tomas: en al menos una quedaste ausente.' : null"
+                        [attr.title]="sesion.estadoAsistencia === 'PARCIAL' ? 'Asististe a una parte de la clase: en alguna toma quedaste ausente.' : null"
+                        [attr.data-testid]="'estado-' + sesion.id"
                       >
-                        {{ sesion.estadoAsistencia }}
+                        {{ etiquetaEstado(sesion) }}
                       </app-badge>
+                      @if (detalleExcusa(sesion); as excusa) {
+                        <span class="text-xs text-warm-600" data-testid="sesion-excusa">· {{ excusa }}</span>
+                      }
                     } @else {
                       <span
                         class="text-xs font-medium px-2.5 py-1 rounded-lg border border-warm-200 bg-warm-50 text-warm-500"
@@ -261,12 +301,12 @@ import { ToastService } from '../../../../shared/components/toast/toast.componen
                           Retirar
                         </button>
                       }
-                    } @else if (sesion.solicitudRevision) {
+                    } @else if (sesion.tomas.length === 0 && sesion.solicitudRevision) {
                       <span
                         class="text-xs font-bold px-2.5 py-1 rounded-lg border border-warm-200 bg-warm-50 text-warm-700"
                         data-testid="solicitud-existente"
                       >Solicitud de revisión: {{ etiquetaSolicitud(sesion.solicitudRevision) }}</span>
-                    } @else if (sesion.reclamable && sesion.estado !== 'CANCELADA' && sesion.plazoJustificacionVigente === false) {
+                    } @else if (sesion.tomas.length === 0 && sesion.reclamable && sesion.estado !== 'CANCELADA' && sesion.plazoJustificacionVigente === false) {
                       <button
                         type="button"
                         aria-disabled="true"
@@ -275,7 +315,7 @@ import { ToastService } from '../../../../shared/components/toast/toast.componen
                         class="inline-flex items-center justify-center min-h-[36px] px-3 py-1.5 text-xs font-medium rounded-xl border border-warm-200 bg-warm-100 text-warm-500 cursor-not-allowed"
                         data-testid="radicar-bloqueado"
                       >Radicar Reclamo</button>
-                    } @else if (sesion.reclamable && sesion.estado !== 'CANCELADA' && materia()?.estadoMatricula !== 'CI') {
+                    } @else if (sesion.tomas.length === 0 && sesion.reclamable && sesion.estado !== 'CANCELADA' && materia()?.estadoMatricula !== 'CI') {
                       <app-button
                         variant="primary"
                         size="sm"
@@ -404,6 +444,8 @@ export class StudentCourseDetailComponent implements OnDestroy {
   retry = output<void>();
   back = output<void>();
   startClaim = output<SesionMateriaDetalle>();
+  /** Reclamo de una toma concreta (`tomaId` viaja en la radicación). */
+  startClaimToma = output<{ sesion: SesionMateriaDetalle; toma: TomaSesionEstudiante }>();
   withdrawClaim = output<SesionMateriaDetalle>();
 
   getBadgeVariant(estado: MateriaEstudianteItem['estado'] | undefined): BadgeVariant {
@@ -426,6 +468,64 @@ export class StudentCourseDetailComponent implements OnDestroy {
       return fecha ? `Plazo vencido · venció el ${fecha}` : 'Sin plazo';
     }
     return fecha ? `Justificable hasta ${fecha}` : null;
+  }
+
+  /** "Presente", "Ausente", "Justificada" o "Parcial: X de Y minutos" (lo calcula el backend). */
+  etiquetaEstado(sesion: SesionMateriaDetalle): string {
+    return etiquetaEstadoSesion(sesion.estadoAsistencia, sesion);
+  }
+
+  detalleExcusa(sesion: SesionMateriaDetalle): string {
+    return detalleExcusaSesion(sesion);
+  }
+
+  /** Las tomas se despliegan solas cuando hay algo que reclamar o la asistencia es parcial. */
+  tomasAbiertas(sesion: SesionMateriaDetalle): boolean {
+    return sesion.estadoAsistencia === 'PARCIAL' || sesion.tomas.some((t) => t.reclamable);
+  }
+
+  etiquetaEstadoToma(estado: EstadoTomaEstudiante): string {
+    switch (estado) {
+      case 'PRESENTE':
+        return 'Presente';
+      case 'AUSENTE':
+        return 'Ausente';
+      case 'JUSTIFICADA':
+        return 'Justificada';
+      default:
+        return 'Sin registro';
+    }
+  }
+
+  clasesEstadoToma(estado: EstadoTomaEstudiante): string {
+    switch (estado) {
+      case 'PRESENTE':
+        return 'text-success-800';
+      case 'AUSENTE':
+        return 'text-danger-700';
+      case 'JUSTIFICADA':
+        return 'text-info-700';
+      default:
+        return 'text-warm-600';
+    }
+  }
+
+  /** "Reclamo pendiente", "Reclamo rechazado" o "Reclamo aprobado: estuvo presente / ausencia justificada". */
+  etiquetaReclamoToma(toma: TomaSesionEstudiante): string {
+    if (toma.estadoSolicitudRevision === 'APROBADA') {
+      const resultado = etiquetaResultadoAprobacion(toma.resultadoAprobacion);
+      return resultado ? resultado.replace('Aprobado', 'Reclamo aprobado') : 'Reclamo aprobado';
+    }
+    switch (toma.estadoSolicitudRevision) {
+      case 'PENDIENTE':
+        return 'Reclamo pendiente';
+      case 'RECHAZADA':
+        return 'Reclamo rechazado';
+      case 'RETIRADA':
+        return 'Reclamo retirado';
+      default:
+        return 'Reclamo en trámite';
+    }
   }
 
   etiquetaSolicitud(estado: NonNullable<SesionMateriaDetalle['solicitudRevision']>): string {

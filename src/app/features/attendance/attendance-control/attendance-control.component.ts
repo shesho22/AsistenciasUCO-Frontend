@@ -56,7 +56,7 @@ import { GroupInfoModalComponent } from './components/group-info-modal.component
 import { GroupClaimsModalComponent } from './components/group-claims-modal.component';
 import { TeacherMatriculaModalComponent } from '../../teacher/teacher-grupos/components/modals/teacher-matricula-modal.component';
 import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
-import { type EstadoCargaReclamos, SolicitudRevisionItem } from '../../../core/models/role-management.model';
+import { type EstadoCargaReclamos, ResultadoAprobacionReclamo, SolicitudRevisionItem } from '../../../core/models/role-management.model';
 import { isUuid } from '../../../core/utils/uuid.util';
 import { EstudianteGrupoApiDto } from '../../../core/api/models/estudiante-grupo-api-dto.model';
 import { AsistenciaConsultadaApiDto } from '../../../core/api/models/asistencia-consultada-api-dto.model';
@@ -608,11 +608,11 @@ export class AttendanceControlComponent {
   /** SES-04: una decisión en curso bloquea otra hasta la respuesta real del backend. */
   private resolviendoReclamo = false;
 
-  resolverReclamoGrupo(event: { id: string; accion: 'APROBADA' | 'RECHAZADA' }): void {
+  resolverReclamoGrupo(event: { id: string; accion: 'APROBADA' | 'RECHAZADA'; resultado?: ResultadoAprobacionReclamo }): void {
     if (this.resolviendoReclamo) return;
     this.resolviendoReclamo = true;
     this.attendanceClaimService
-      .resolverReclamo(event.id, event.accion, `Decisión registrada desde el control de asistencia (${event.accion})`)
+      .resolverReclamo(event.id, event.accion, `Decisión registrada desde el control de asistencia (${event.accion})`, event.resultado)
       .pipe(finalize(() => (this.resolviendoReclamo = false)))
       .subscribe({
         next: (res) => {

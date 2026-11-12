@@ -15,8 +15,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
       <div class="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 space-y-4">
         <h3 class="font-serif font-bold text-lg text-warm-900">Cerrar la toma {{ numeroToma() }}</h3>
         <p class="text-sm text-warm-700">
-          Al cerrar la toma, los estudiantes no marcados quedan ausentes. Después podrás marcar presentes a quienes
-          falten mientras la ventana de la sesión siga abierta.
+          Al cerrar la toma, quienes no estén marcados quedan ausentes. Podrás corregirla hasta que abras la siguiente toma.
         </p>
         <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
           <button

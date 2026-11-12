@@ -22,6 +22,7 @@ import {
   SesionMateriaDetalle,
   CategoriaJustificacion,
   SoporteAdjuntoItem,
+  TomaSesionEstudiante,
 } from '../../../core/models/role-management.model';
 
 // Subcomponentes Desacoplados
@@ -80,6 +81,7 @@ type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO';
           (retry)="reintentarSesiones()"
           (back)="volverALista()"
           (startClaim)="iniciarReclamo($event)"
+          (startClaimToma)="iniciarReclamoToma($event)"
           (withdrawClaim)="retirarReclamo($event)"
         />
       }
@@ -89,6 +91,7 @@ type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO';
         <app-student-claim-form
           [materia]="selectedMateria()"
           [sesion]="sesionReclamar()"
+          [toma]="tomaReclamar()"
           [categorias]="categoriasJustificacion()"
           [configuracion]="configuracionReclamos()"
           [archivo]="archivoAdjunto()"
@@ -157,6 +160,8 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
 
   // Radicación reclamo
   sesionReclamar = signal<SesionMateriaDetalle | null>(null);
+  /** Toma que se reclama; `null` si el reclamo es de la sesión completa (sesión sin tomas). */
+  tomaReclamar = signal<TomaSesionEstudiante | null>(null);
   /** HU005/HU016: motivos de justificación del catálogo de solo consulta. */
   categoriasJustificacion = signal<CategoriaJustificacionItem[]>([]);
   /** CULM-001 D.2: Configuración del backend para límites y tipos permitidos de reclamos. */
@@ -326,6 +331,17 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
     if (!sesion.reclamable || sesion.estadoAsistencia === 'NO_DISPONIBLE') return;
     this.errorEnvio.set(null);
     this.sesionReclamar.set(sesion);
+    this.tomaReclamar.set(null);
+    this.limpiarSoporte();
+    this.vistaActual.set('RECLAMO');
+  }
+
+  /** Reclamo de una toma: solo si el backend la marcó reclamable. */
+  iniciarReclamoToma(evento: { sesion: SesionMateriaDetalle; toma: TomaSesionEstudiante }): void {
+    if (!evento.toma.reclamable) return;
+    this.errorEnvio.set(null);
+    this.sesionReclamar.set(evento.sesion);
+    this.tomaReclamar.set(evento.toma);
     this.limpiarSoporte();
     this.vistaActual.set('RECLAMO');
   }
@@ -333,6 +349,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
   volverADetalle(): void {
     this.vistaActual.set('DETALLE');
     this.sesionReclamar.set(null);
+    this.tomaReclamar.set(null);
     this.limpiarSoporte();
   }
 
@@ -527,10 +544,13 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
 
     if (!sesion || !materia || !event.justificacion.trim()) return;
     const estadoSesion = sesion.estadoAsistencia;
-    if (!sesion.reclamable || estadoSesion === 'NO_DISPONIBLE') return;
-    // SUPUESTO-B-15 (CERT-CULM001): una sesion PARCIAL se reclama por su toma ausente. Este estado no viaja al backend,
-    // que decide con sus propios registros; solo alimenta el modelo local de la solicitud.
-    const estadoOriginal: EstadoAsistenciaSesion = estadoSesion === 'PARCIAL' ? 'AUSENTE' : estadoSesion;
+    const toma = this.tomaReclamar();
+    if (!sesion.reclamable || estadoSesion === 'NO_DISPONIBLE' || (toma && !toma.reclamable)) return;
+    // Una sesion PARCIAL se reclama por su toma ausente (`tomaId`); el estado de la sesion no viaja al backend, que decide
+    // con sus propios registros. Para un reclamo por toma el estado original es el de la toma.
+    const estadoOriginal: EstadoAsistenciaSesion | undefined = toma
+      ? toma.estado === 'AUSENTE' ? 'AUSENTE' : undefined
+      : estadoSesion === 'PARCIAL' ? undefined : estadoSesion;
     // Sin doble envio: ni mientras sube el soporte (aun no hay fileId) ni mientras otra radicacion esta en curso.
     if (this.enviandoReclamo() || this.subiendoSoporte()) return;
 
@@ -547,6 +567,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
         categoria: event.categoria,
         justificacion,
         soporteId: soporte?.fileId,
+        tomaId: toma?.idToma,
       })
     );
 
@@ -566,6 +587,8 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
           sesionNumero: sesion.numeroSesion,
           fechaSesion: sesion.fecha,
           estadoOriginal,
+          idToma: toma?.idToma ?? null,
+          numeroToma: toma?.numero ?? null,
           categoria: event.categoria,
           soporteAdjunto: soporte,
           soporteArchivoIds: soporteArchivoIds.length > 0 ? soporteArchivoIds : undefined,
@@ -595,7 +618,14 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
             this.toast.error('El soporte adjunto ya no está disponible. Adjúntalo nuevamente.');
             return;
           }
-          if (getApiErrorCode(err) === 'ERR_PLAZO_JUSTIFICACION_VENCIDO') {
+          const codigo = getApiErrorCode(err);
+          if (codigo === 'ERR_TOMA_NO_RECLAMABLE' || codigo === 'ERR_RECLAMO_TOMA_DUPLICADO') {
+            // La toma cambió o ya tiene reclamo: se muestra el mensaje del backend y se refresca el estado real.
+            this.errorEnvio.set(getApiErrorMessage(err));
+            this.cargarSesiones(materia);
+            return;
+          }
+          if (codigo === 'ERR_PLAZO_JUSTIFICACION_VENCIDO') {
             // El backend entrega el texto institucional (con la fecha limite): se muestra junto al boton, que sigue activo.
             this.errorEnvio.set(getApiErrorMessage(err));
             return;

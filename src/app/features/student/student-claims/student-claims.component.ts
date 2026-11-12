@@ -9,7 +9,8 @@ import { BadgeComponent, BadgeVariant } from '../../../shared/components/badge/b
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { getApiErrorMessage, getApiSuccessMessage } from '../../../core/api/errors/api-error.util';
-import { etiquetaEstadoReclamo, varianteEstadoReclamo } from '../../../core/utils/reclamo-estado.util';
+import { etiquetaEstadoReclamo, etiquetaResultadoAprobacion, varianteEstadoReclamo } from '../../../core/utils/reclamo-estado.util';
+import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
 import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load-error.util';
 import { ButtonComponent } from '../../../shared/components/button/button.component';
 
@@ -98,6 +99,12 @@ type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
                     }
                   </div>
                 </div>
+                @if (textoToma(reclamo); as toma) {
+                  <p class="text-xs font-semibold text-warm-800" data-testid="reclamo-toma">{{ toma }}</p>
+                }
+                @if (textoResultado(reclamo); as resultado) {
+                  <p class="text-xs font-bold text-success-800" data-testid="reclamo-resultado">{{ resultado }}</p>
+                }
                 <p class="text-xs text-warm-500">Radicada el {{ reclamo.fechaSolicitud | date: 'dd/MM/yyyy' }}</p>
                 <div>
                   <span class="text-xs font-bold uppercase tracking-wider text-warm-700">Mi justificación</span>
@@ -138,6 +145,7 @@ type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
 export class StudentClaimsComponent implements OnInit, OnDestroy {
   private readonly claimService = inject(AttendanceClaimService);
   private readonly toast = inject(ToastService);
+  private readonly zona = inject(SessionTimeZoneService);
   private listaSub?: Subscription;
 
   readonly reclamos = signal<SolicitudRevisionItem[]>([]);
@@ -150,6 +158,18 @@ export class StudentClaimsComponent implements OnInit, OnDestroy {
   readonly descargando = signal(false);
   /** id del reclamo que se está retirando (evita el doble envío). */
   readonly retirando = signal<string | null>(null);
+
+  /** "Toma N · HH:mm" cuando el reclamo es de una toma; `null` si es de la sesión. */
+  textoToma(reclamo: SolicitudRevisionItem): string | null {
+    if (reclamo.numeroToma == null) return null;
+    const hora = reclamo.fechaPuntoControlUtc ? this.zona.formatTemporal(reclamo.fechaPuntoControlUtc, 'time') : null;
+    return hora ? `Toma ${reclamo.numeroToma} · ${hora}` : `Toma ${reclamo.numeroToma}`;
+  }
+
+  /** "Aprobado: estuvo presente" o "Aprobado: ausencia justificada" solo en un reclamo aprobado con resultado. */
+  textoResultado(reclamo: SolicitudRevisionItem): string | null {
+    return reclamo.estadoSolicitud === 'APROBADA' ? etiquetaResultadoAprobacion(reclamo.resultadoAprobacion) : null;
+  }
 
   ngOnInit(): void {
     this.cargar();

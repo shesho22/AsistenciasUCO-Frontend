@@ -41,7 +41,8 @@ Control centralizado de sesiones y registro de asistencia en aula.
   - `AttendanceEnrollmentModalComponent`: Matrícula individual manual.
   - `AttendanceNewSessionModalComponent`: Creación de sesiones extraordinarias o reposición.
   - `AttendanceProjectionModalComponent`: Proyección de clase / QR en proyector.
-  - `GroupClaimsModalComponent`: Gestión de reclamos y justificaciones médicas/laborales.
+  - `GroupClaimsModalComponent`: Gestión de reclamos y justificaciones médicas/laborales. Un reclamo por toma muestra "Reclamo de la toma N" y se aprueba con "Estuvo presente" (solo con toma) o "Ausencia justificada"; el resultado viaja en `PATCH /docente/reclamos/{id}` (`resultado`).
+  - **Tomas por puntos de control (PC, 2026-11-12):** `SessionTomasPanelComponent` (línea de tiempo con la hora de cada toma, tope `maximoTomas` = 20), `TomaAsistenciasComponent` (cabecera "Punto de control: HH:mm" y minutos del tramo; edición según `esEditable`/`editableHastaUtc` del backend, aviso de hasta cuándo se puede corregir y manejo del 409 `TOM_012`), `TomaFaltantesComponent` (solo lectura si la toma no es editable), `TomaCierreDialogComponent` y `ResumenSesionTomasComponent` (columna "Asistencia" con los minutos y el estado que calcula `GET /sesiones/{id}/tomas/resumen`; el frontend no calcula horas).
   - `GroupInfoModalComponent`: Sabana de asistencia e información general de estudiantes.
   - `TeacherMatriculaModalComponent`: Proyección de QR y PIN temporal de matrícula.
 
@@ -73,7 +74,7 @@ Control centralizado de sesiones y registro de asistencia en aula.
   - **Componente:** `StudentCoursesComponent`
   - **Subcomponentes:**
     - `StudentCoursesListComponent`: Tarjetas de asignaturas inscritas, con buscador por nombre, código, grupo o docente sin distinguir tildes (HU007, CERT-CULM001).
-    - `StudentCourseDetailComponent`: Detalle de asistencias acumuladas y porcentaje de inasistencia (alerta de 20%). Una sesión con varias tomas y alguna ausente se ve `PARCIAL` y se puede reclamar (SUPUESTO-B-15). Incluye `MotivosJustificacionComponent` (HU016: motivos para justificar una inasistencia, del catálogo `GET /categorias-justificacion`).
+    - `StudentCourseDetailComponent`: Detalle de asistencias acumuladas y porcentaje de inasistencia (alerta de 20%). El estado de cada sesión sale de `estadoAsistencia` (Presente, Ausente, Justificada, "Parcial: X de Y minutos", No disponible); un desplegable "Tomas" lista cada toma con su hora y estado, y cada toma con `reclamable = true` tiene el botón "Reclamar esta toma" (el reclamo viaja con `tomaId`); si la toma ya tiene reclamo se ve su estado y resultado. Una sesión sin tomas conserva el reclamo por sesión. Incluye `MotivosJustificacionComponent` (HU016: motivos para justificar una inasistencia, del catálogo `GET /categorias-justificacion`).
     - `StudentClaimFormComponent`: Radicación de reclamos e incapacidades. La categoría sale del catálogo de solo consulta y muestra su descripción (HU005).
     - `StudentCourseEnrollFormComponent`: Matrícula por código.
   - **Modales:**
@@ -81,7 +82,7 @@ Control centralizado de sesiones y registro de asistencia en aula.
     - `StudentMatriculaCodigoModalComponent`: Auto-matrícula vía código/PIN de aula.
 - **Mis Reclamos (HU010/HU011, consulta):**
   - **Ruta:** `/app/estudiante/reclamos` (menú ESTUDIANTE "Mis Reclamos")
-  - **Componente:** `StudentClaimsComponent` (`features/student/student-claims`): solicitudes propias con estado, respuesta del docente y soporte; filtro por estado y paginación del servidor; descarga del soporte por `GET /archivos/{fileId}`.
+  - **Componente:** `StudentClaimsComponent` (`features/student/student-claims`): solicitudes propias con estado, respuesta del docente y soporte; filtro por estado y paginación del servidor; descarga del soporte por `GET /archivos/{fileId}`. Si el reclamo es de una toma muestra "Toma N · HH:mm" y, al aprobarse, "Aprobado: estuvo presente" o "Aprobado: ausencia justificada".
 - **Oferta de Grupos (HU008):**
   - **Ruta:** `/app/estudiante/oferta` (menú ESTUDIANTE "Oferta de Grupos")
   - **Componente:** `StudentGroupOfferComponent` (`features/student/student-group-offer`): grupos de su programa y transversales con cupos y horario. Solo consulta (HU008): para matricularse se usa el QR o PIN del docente o la matrícula manual.

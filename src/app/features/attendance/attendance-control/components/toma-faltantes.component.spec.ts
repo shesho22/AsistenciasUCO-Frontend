@@ -20,10 +20,10 @@ describe('TomaFaltantesComponent (CULM-001 B.2)', () => {
   const el = (id: string) => (fixture.nativeElement as HTMLElement).querySelector(`[data-testid="${id}"]`) as HTMLElement | null;
   const boton = (id: string) => el(id) as HTMLButtonElement;
 
-  function crear(ventanaAbierta = true) {
+  function crear(esEditable = true) {
     fixture = TestBed.createComponent(TomaFaltantesComponent);
     fixture.componentRef.setInput('tomaId', 't-1');
-    fixture.componentRef.setInput('ventanaAbierta', ventanaAbierta);
+    fixture.componentRef.setInput('esEditable', esEditable);
     fixture.detectChanges(); // ejecuta el efecto de carga
     fixture.detectChanges(); // pinta la respuesta
   }
@@ -103,6 +103,24 @@ describe('TomaFaltantesComponent (CULM-001 B.2)', () => {
     expect(el('faltantes-error')!.textContent!.trim()).toBe('La ventana de la sesion ya cerro.');
     expect(boton('marcar-presente-a').disabled).toBeTrue();
     expect(boton('marcar-seleccionados').disabled).toBeTrue();
+  });
+
+  it('TOM_012: si la toma ya no se puede corregir, muestra el mensaje del backend, deshabilita la marcación y pide recargar', () => {
+    const mensaje = 'La toma ya no se puede corregir porque se abrió la siguiente.';
+    tomas.registrarAsistencias.and.returnValue(throwError(() => apiHttpError(409, mensaje, 'TOM_012')));
+    crear();
+    let actualizado = 0;
+    fixture.componentInstance.actualizado.subscribe(() => actualizado++);
+    boton('marcar-presente-a').click();
+    fixture.detectChanges();
+    expect(el('faltantes-error')!.textContent!.trim()).toBe(mensaje);
+    expect(boton('marcar-presente-a').disabled).toBeTrue();
+    expect(actualizado).toBe(1);
+  });
+
+  it('una toma no editable es solo de consulta y lo explica', () => {
+    crear(false);
+    expect(el('faltantes-no-editable')).not.toBeNull();
   });
 
   it('UX-toma el contenedor recarga los pendientes incrementando la version', () => {

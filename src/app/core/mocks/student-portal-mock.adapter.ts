@@ -2,6 +2,7 @@ import {
   HorarioEstudianteApiDto,
   MateriaEstudianteApiDto,
   SesionMateriaEstudianteApiDto,
+  TomaSesionEstudianteApiDto,
 } from '../api/models/estudiante-portal-api-dto.model';
 import { HorarioItem } from '../models/role-management.model';
 import { MockMateriaEstudiante, MockSesionMateria } from './role-management.mock';
@@ -53,6 +54,25 @@ export function mockHorariosToDto(horarios: HorarioItem[]): HorarioEstudianteApi
   }));
 }
 
+/** Tomas mock (puntos de control en el minuto 0 y a mitad de la clase): el estado de cada toma sigue al de la sesion. */
+function mockTomasDto(sesionId: string, estado: string, fecha: string, inicio: string, fin: string): TomaSesionEstudianteApiDto[] {
+  if (estado !== 'PRESENTE' && estado !== 'AUSENTE' && estado !== 'JUSTIFICADA') return [];
+  const [hi, mi] = inicio.split(':').map(Number);
+  const [hf, mf] = fin.split(':').map(Number);
+  const medio = Math.floor((hi * 60 + mi + hf * 60 + mf) / 2);
+  const hora = (min: number) => `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
+  return [inicio, hora(medio)].map((h, i) => ({
+    idToma: mockUuid(`toma:${sesionId}:${i + 1}`),
+    numero: i + 1,
+    fechaPuntoControlUtc: `${fecha}T${h}:00Z`,
+    estado,
+    reclamable: estado === 'AUSENTE',
+    idSolicitudRevision: null,
+    estadoSolicitudRevision: null,
+    resultadoAprobacion: null,
+  }));
+}
+
 /** Sesion mock -> `SesionMateriaEstudianteDTO` (el mock si conoce RETARDO, que el backend real no distingue). */
 export function mockSesionesToDto(
   sesiones: MockSesionMateria[],
@@ -63,6 +83,8 @@ export function mockSesionesToDto(
     const horas = /^(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})/.exec(s.horario);
     const inicio = horas?.[1] ?? '08:00';
     const fin = horas?.[2] ?? '10:00';
+    const tomas = mockTomasDto(s.id, s.estadoAsistencia, s.fecha, inicio, fin);
+    const minutos = (Number(fin.slice(0, 2)) - Number(inicio.slice(0, 2))) * 60 + Number(fin.slice(3)) - Number(inicio.slice(3));
     return {
       id: mockUuid(`sesion:${s.id}`),
       nombre: s.tema,
@@ -77,6 +99,12 @@ export function mockSesionesToDto(
       estadoAsistencia: s.estadoAsistencia,
       estadoSolicitudRevision: null,
       reclamable: s.estadoAsistencia === 'AUSENTE' || s.estadoAsistencia === 'RETARDO',
+      minutosSesion: tomas.length > 0 ? minutos : null,
+      minutosAsistidos: tomas.length > 0 ? (s.estadoAsistencia === 'PRESENTE' ? minutos : 0) : null,
+      minutosFalta: tomas.length > 0 ? (s.estadoAsistencia === 'AUSENTE' ? minutos : 0) : null,
+      minutosExcusa: tomas.length > 0 ? (s.estadoAsistencia === 'JUSTIFICADA' ? minutos : 0) : null,
+      minutosSinRegistro: tomas.length > 0 ? 0 : null,
+      tomas,
     };
   });
 }
