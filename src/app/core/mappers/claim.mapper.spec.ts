@@ -50,6 +50,20 @@ describe('ClaimMapper.fromReclamoDocente (LB-004D)', () => {
     expect(item.soporteAdjunto?.urlSimulada).toBeUndefined();
   });
 
+  it('PC: el reclamo de una toma trae idToma, numeroToma y fechaPuntoControlUtc; el de la sesión los deja en null', () => {
+    const conToma = ClaimMapper.fromReclamoDocente({
+      ...base, idToma: 'toma-3', numeroToma: 3, fechaPuntoControlUtc: '2026-10-19T14:45:00.1234567Z',
+    }, formatter);
+    expect(conToma.idToma).toBe('toma-3');
+    expect(conToma.numeroToma).toBe(3);
+    expect(conToma.fechaPuntoControlUtc).toBe('2026-10-19T14:45:00.1234567Z');
+
+    const deSesion = ClaimMapper.fromReclamoDocente(base, formatter);
+    expect(deSesion.idToma).toBeNull();
+    expect(deSesion.numeroToma).toBeNull();
+    expect(deSesion.fechaPuntoControlUtc).toBeNull();
+  });
+
   it('toDTO tolera estadoOriginal ausente', () => {
     const dto = ClaimMapper.toDTO(ClaimMapper.fromReclamoDocente(base, formatter));
     expect(dto.estado_original).toBe('');
