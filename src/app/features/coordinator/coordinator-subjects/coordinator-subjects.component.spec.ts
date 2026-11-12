@@ -160,6 +160,16 @@ describe('CoordinatorSubjectsComponent', () => {
       expect(component.filteredAsignaturas().map((a) => a.planEstudioId)).toEqual(['plan-2']);
     });
 
+    it('EST-03 (S2871): ordena los caracteres con localeCompare en español, también con tildes', () => {
+      component.asignaturasCurriculares.set([
+        fila('plan-1', { nombreCaracter: 'Optativa' }),
+        fila('plan-1', { nombreCaracter: 'Ética' }),
+        fila('plan-1', { nombreCaracter: 'Álgebra' }),
+      ] as any);
+
+      expect(component.caracteresDisponibles()).toEqual(['Álgebra', 'Ética', 'Optativa']);
+    });
+
     it('Ver Malla navega al plan de la fila', () => {
       const navSpy = spyOn(router, 'navigate').and.returnValue(Promise.resolve(true));
       const botones = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('button')).filter((b) => b.textContent?.includes('Ver Malla'));

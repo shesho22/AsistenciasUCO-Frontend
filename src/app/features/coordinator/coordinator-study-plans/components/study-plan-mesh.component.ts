@@ -235,7 +235,7 @@ export class StudyPlanMeshComponent {
 
   /** Caracteres presentes en la malla cargada (Obligatoria, Optativa). */
   caracteresDisponibles = computed(() =>
-    [...new Set(this.asignaturas().map((a) => a.nombreCaracter).filter((n): n is string => !!n))].sort()
+    [...new Set(this.asignaturas().map((a) => a.nombreCaracter).filter((n): n is string => !!n))].sort((a, b) => a.localeCompare(b, 'es'))
   );
 
   filteredAsignaturas = computed(() => {

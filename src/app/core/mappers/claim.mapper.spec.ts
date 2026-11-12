@@ -92,6 +92,12 @@ describe('ClaimMapper.fromReclamoDocente (LB-004D)', () => {
     expect(item.soporteAdjunto?.fileId).toBe('f-1');
     expect(item.categoria).toEqual({ codigo: 'MED', nombre: 'Médico / Salud' });
   });
+
+  it('EST-03 (S3923): la categoría como string se conserva tal cual y sin categoría se arma desde código y nombre', () => {
+    expect(ClaimMapper.fromReclamoDocente({ ...base, categoria: 'MED' }, formatter).categoria).toBe('MED' as any);
+    const desdeCodigo = ClaimMapper.fromReclamoDocente({ ...base, categoria: undefined, codigoCategoria: 'LAB', nombreCategoria: 'Laboral' } as any, formatter);
+    expect(desdeCodigo.categoria).toEqual({ codigo: 'LAB', nombre: 'Laboral' });
+  });
 });
 
 describe('ClaimMapper: reclamo por toma (puntos de control)', () => {
