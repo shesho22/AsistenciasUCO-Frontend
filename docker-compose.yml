@@ -17,3 +17,12 @@ services:
       SECURITY_BASELINE_APPLICATION_ID: ${SECURITY_BASELINE_APPLICATION_ID:-a0b42637-39f8-4ddd-bec2-0781ba08e779}
       SECURITY_BASELINE_ISSUER_URL: ${SECURITY_BASELINE_ISSUER_URL:-http://keycloak.localhost:19090/realms/security-baseline}
       SECURITY_BASELINE_CLIENT_ID: ${SECURITY_BASELINE_CLIENT_ID:-asistencias-uco-spa}
+      # Catálogo de Parámetros (micro frontend parametros-administration.js); el UUID no es secreto.
+      CATALOGO_PARAMETROS_APPLICATION_ID: ${CATALOGO_PARAMETROS_APPLICATION_ID:-}
+      # Destinos del servidor web para los componentes externos (nginx/templates/default.conf.template).
+      MESSAGEUCOLAB_UPSTREAM: ${MESSAGEUCOLAB_UPSTREAM:-http://host.docker.internal:8000}
+      CATALOGO_PARAMETROS_UPSTREAM: ${CATALOGO_PARAMETROS_UPSTREAM:-http://host.docker.internal:8081}
+      CATALOGO_PARAMETROS_UI_UPSTREAM: ${CATALOGO_PARAMETROS_UI_UPSTREAM:-http://host.docker.internal:4201}
+    # host.docker.internal también en Linux (Docker Desktop ya lo define).
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
