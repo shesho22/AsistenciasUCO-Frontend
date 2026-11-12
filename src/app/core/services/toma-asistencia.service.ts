@@ -12,6 +12,7 @@ import {
   ModoToma,
   PaginaApi,
   RegistroTomaRequest,
+  ResumenTomasEstudiante,
   TomaAsistencia,
   TomasSesion,
 } from '../models/toma-asistencia.model';
@@ -31,6 +32,11 @@ export class TomaAsistenciaService {
 
   consultarTomas(sesionId: string): Observable<ApiDataResponse<TomasSesion>> {
     return this.http.get<ApiDataResponse<TomasSesion>>(`${this.api}/sesiones/${sesionId}/tomas`);
+  }
+
+  /** Minutos y estado por estudiante de la sesión; el cálculo es del backend. */
+  consultarResumenSesion(sesionId: string): Observable<ApiDataResponse<ResumenTomasEstudiante[]>> {
+    return this.http.get<ApiDataResponse<ResumenTomasEstudiante[]>>(`${this.api}/sesiones/${sesionId}/tomas/resumen`);
   }
 
   cerrarToma(tomaId: string, marcarAusentes: boolean | null): Observable<ApiDataResponse<CierreToma>> {

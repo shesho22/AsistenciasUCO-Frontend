@@ -374,3 +374,68 @@ describe('StudentPortalMapper', () => {
     });
   });
 });
+
+describe('StudentPortalMapper: puntos de control (minutos y tomas)', () => {
+  const formato = (utc: string) => ({ date: utc.slice(0, 10), time: utc.slice(11, 16) });
+  const ASIG = 'a1a2a3a4-0000-4000-8000-000000000001';
+  const TOMA_1 = 'b1b2b3b4-0000-4000-8000-000000000001';
+  const TOMA_2 = 'b1b2b3b4-0000-4000-8000-000000000002';
+  const dto: SesionMateriaEstudianteApiDto = {
+    id: 'd1d2d3d4-0000-4000-8000-000000000001', nombre: 'Introducción', numero: 1, numeroSemana: 1,
+    idGrupo: 'c1c2c3c4-0000-4000-8000-000000000001', codigoGrupo: 'G1', nombreGrupo: 'Grupo 001',
+    fechaHoraInicio: '2026-10-19T13:00:00Z', fechaHoraFin: '2026-10-19T15:00:00Z',
+    estadoAsistencia: 'PARCIAL', reclamable: true,
+    minutosSesion: 120, minutosAsistidos: 40, minutosFalta: 80, minutosExcusa: 0, minutosSinRegistro: 0,
+    tomas: [
+      { idToma: TOMA_1, numero: 1, fechaPuntoControlUtc: '2026-10-19T13:00:00Z', estado: 'PRESENTE', reclamable: false,
+        idSolicitudRevision: null, estadoSolicitudRevision: null, resultadoAprobacion: null },
+      { idToma: TOMA_2, numero: 2, fechaPuntoControlUtc: '2026-10-19T13:40:00Z', estado: 'AUSENTE', reclamable: true,
+        idSolicitudRevision: null, estadoSolicitudRevision: null, resultadoAprobacion: null },
+    ],
+  };
+
+  it('mapea los minutos que entrega el backend y las tomas con su hora presentada', () => {
+    const s = StudentPortalMapper.toSesion(dto, ASIG, formato)!;
+    expect(s.minutosSesion).toBe(120);
+    expect(s.minutosAsistidos).toBe(40);
+    expect(s.minutosFalta).toBe(80);
+    expect(s.tomas.map((t) => [t.numero, t.horaPuntoControl, t.estado, t.reclamable])).toEqual([
+      [1, '13:00', 'PRESENTE', false],
+      [2, '13:40', 'AUSENTE', true],
+    ]);
+    expect(s.reclamable).toBeTrue();
+  });
+
+  it('sin tomas ni minutos (backend anterior o sesión cancelada) deja tomas vacías y minutos null', () => {
+    const s = StudentPortalMapper.toSesion({ ...dto, minutosSesion: null, minutosAsistidos: undefined, tomas: undefined }, ASIG, formato)!;
+    expect(s.tomas).toEqual([]);
+    expect(s.minutosSesion).toBeNull();
+    expect(s.minutosAsistidos).toBeNull();
+  });
+
+  it('con tomas, la sesión es reclamable solo si alguna toma lo es, aunque otra tenga solicitud', () => {
+    const conSolicitud = { ...dto.tomas![1], reclamable: false, idSolicitudRevision: 'sol-1', estadoSolicitudRevision: 'PENDIENTE' };
+    const s = StudentPortalMapper.toSesion({ ...dto, estadoSolicitudRevision: 'pendiente', tomas: [dto.tomas![0], conSolicitud] }, ASIG, formato)!;
+    expect(s.reclamable).toBeFalse();
+    const otra = StudentPortalMapper.toSesion({ ...dto, estadoSolicitudRevision: 'pendiente' }, ASIG, formato)!;
+    expect(otra.reclamable).toBeTrue();
+  });
+
+  it('el estado y el resultado de la solicitud de una toma se normalizan; lo desconocido no se inventa', () => {
+    const toma = (parcial: object) =>
+      StudentPortalMapper.toSesion({ ...dto, tomas: [{ ...dto.tomas![1], ...parcial }] }, ASIG, formato)!.tomas[0];
+    const aprobada = toma({ reclamable: false, idSolicitudRevision: 'sol-1', estadoSolicitudRevision: 'APROBADA', resultadoAprobacion: 'PRESENTE' });
+    expect(aprobada.estadoSolicitudRevision).toBe('APROBADA');
+    expect(aprobada.resultadoAprobacion).toBe('PRESENTE');
+    expect(aprobada.idSolicitudRevision).toBe('sol-1');
+    expect(toma({ estadoSolicitudRevision: 'RARO' }).estadoSolicitudRevision).toBeNull();
+    expect(toma({ resultadoAprobacion: 'OTRO' }).resultadoAprobacion).toBeNull();
+    expect(toma({ estado: 'RARO' }).estado).toBe('SIN_REGISTRO');
+  });
+
+  it('una toma presente nunca es reclamable y una toma sin UUID válido se descarta', () => {
+    const s = StudentPortalMapper.toSesion({ ...dto, tomas: [{ ...dto.tomas![0], reclamable: true }, { ...dto.tomas![1], idToma: 'no-uuid' }] }, ASIG, formato)!;
+    expect(s.tomas.length).toBe(1);
+    expect(s.tomas[0].reclamable).toBeFalse();
+  });
+});

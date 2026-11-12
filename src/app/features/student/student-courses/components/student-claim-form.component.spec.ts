@@ -372,3 +372,25 @@ describe('StudentClaimFormComponent', () => {
     });
   });
 });
+
+describe('StudentClaimFormComponent: reclamo por toma', () => {
+  it('muestra "Sesión #n · Toma N (HH:mm)" en lugar del estado actual', () => {
+    TestBed.configureTestingModule({ imports: [StudentClaimFormComponent] });
+    const fixture = TestBed.createComponent(StudentClaimFormComponent);
+    fixture.componentRef.setInput('materia', { id: 'm-1', nombre: 'Matemáticas', docente: 'Prof. X' });
+    fixture.componentRef.setInput('sesion', { id: 's-1', numeroSesion: 3, fecha: '2026-10-19', horario: '08:00', estadoAsistencia: 'PARCIAL', tema: 'Álgebra' });
+    fixture.componentRef.setInput('categorias', CATEGORIAS);
+    fixture.detectChanges();
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.textContent).toContain('Estado Actual');
+    expect(host.querySelector('[data-testid="claim-toma"]')).toBeNull();
+
+    fixture.componentRef.setInput('toma', {
+      idToma: 'toma-2', numero: 2, horaPuntoControl: '09:00', estado: 'AUSENTE', reclamable: true,
+      idSolicitudRevision: null, estadoSolicitudRevision: null, resultadoAprobacion: null,
+    });
+    fixture.detectChanges();
+    expect(host.querySelector('[data-testid="claim-sesion"]')!.textContent!.replace(/\s+/g, ' ')).toContain('Sesión #3 · Toma 2 (09:00)');
+    expect(host.textContent).not.toContain('Estado Actual');
+  });
+});

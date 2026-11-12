@@ -51,3 +51,38 @@ describe('GroupClaimsModalComponent APP-05 states', () => {
     expect(fixture.nativeElement.querySelector('[data-testid="group-claims-count"]').textContent.trim()).toBe('0 Registros');
   });
 });
+
+describe('GroupClaimsModalComponent: resolución por toma', () => {
+  let fixture: ComponentFixture<GroupClaimsModalComponent>;
+  const reclamo = (parcial: object) => ({
+    id: 'rec-12345678', estudianteNombre: 'Ana', justificacionSolicitud: 'Cita', fechaSolicitud: '2026-10-19', estadoSolicitud: 'PENDIENTE', ...parcial,
+  });
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({ imports: [GroupClaimsModalComponent] }).compileComponents();
+    fixture = TestBed.createComponent(GroupClaimsModalComponent);
+    fixture.componentRef.setInput('isOpen', true);
+    fixture.componentRef.setInput('estadoCarga', 'LOADED');
+  });
+
+  it('con toma ofrece "Estuvo presente" y "Ausencia justificada" con su resultado', () => {
+    fixture.componentRef.setInput('reclamos', [reclamo({ idToma: 'toma-2', numeroToma: 2 })]);
+    fixture.detectChanges();
+    const emitidos: unknown[] = [];
+    fixture.componentInstance.resolver.subscribe((e) => emitidos.push(e));
+    expect(fixture.nativeElement.querySelector('[data-testid="grupo-reclamo-toma"]').textContent).toContain('toma 2');
+    fixture.nativeElement.querySelector('[data-testid="aprobar-presente"]').click();
+    fixture.nativeElement.querySelector('[data-testid="aprobar-justificada"]').click();
+    expect(emitidos).toEqual([
+      { id: 'rec-12345678', accion: 'APROBADA', resultado: 'PRESENTE' },
+      { id: 'rec-12345678', accion: 'APROBADA', resultado: 'JUSTIFICADA' },
+    ]);
+  });
+
+  it('sin toma oculta "Estuvo presente"', () => {
+    fixture.componentRef.setInput('reclamos', [reclamo({})]);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[data-testid="aprobar-presente"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="aprobar-justificada"]')).not.toBeNull();
+  });
+});

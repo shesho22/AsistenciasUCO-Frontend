@@ -30,7 +30,9 @@ export function huellaRadicacion(partes: {
   categoria: string | { codigo?: string; nombre?: string };
   justificacion: string;
   soporteId?: string;
+  /** Reclamo por toma: una toma distinta es una radicación distinta. */
+  tomaId?: string;
 }): string {
   const cat = typeof partes.categoria === 'object' ? (partes.categoria?.codigo || partes.categoria?.nombre || '') : partes.categoria;
-  return JSON.stringify([partes.sesionId, cat, partes.justificacion, partes.soporteId ?? null]);
+  return JSON.stringify([partes.sesionId, cat, partes.justificacion, partes.soporteId ?? null, partes.tomaId ?? null]);
 }

@@ -85,3 +85,20 @@ describe('TomaAsistenciaService (CULM-001 B.2, CONTRACT 3.2.5)', () => {
     });
   }
 });
+
+describe('TomaAsistenciaService: resumen de la sesión (puntos de control)', () => {
+  it('consultarResumenSesion hace GET /sesiones/{id}/tomas/resumen', () => {
+    TestBed.configureTestingModule({
+      providers: [TomaAsistenciaService, provideHttpClient(), provideHttpClientTesting()],
+    });
+    const service = TestBed.inject(TomaAsistenciaService);
+    const http = TestBed.inject(HttpTestingController);
+    let datos: unknown;
+    service.consultarResumenSesion('ses-1').subscribe((r) => (datos = r.datos));
+    const req = http.expectOne(`${environment.apiUrl}/sesiones/ses-1/tomas/resumen`);
+    expect(req.request.method).toBe('GET');
+    req.flush({ exitoso: true, datos: [{ estudianteId: 'e-1', estado: 'PARCIAL', minutosAsistidos: 40, minutosSesion: 120 }] });
+    expect(datos).toEqual([{ estudianteId: 'e-1', estado: 'PARCIAL', minutosAsistidos: 40, minutosSesion: 120 }]);
+    http.verify();
+  });
+});

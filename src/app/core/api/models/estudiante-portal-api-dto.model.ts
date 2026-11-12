@@ -42,6 +42,21 @@ export interface HorarioEstudianteApiDto {
   docente: string;
 }
 
+/** Elemento de `tomas[]` de `SesionMateriaEstudianteDTO`. */
+export interface TomaSesionEstudianteApiDto {
+  idToma: string;
+  numero: number;
+  fechaPuntoControlUtc?: string | null;
+  /** `PRESENTE | AUSENTE | JUSTIFICADA | SIN_REGISTRO`. */
+  estado?: string | null;
+  reclamable?: boolean | null;
+  idSolicitudRevision?: string | null;
+  /** `PENDIENTE | APROBADA | RECHAZADA` o `null`. */
+  estadoSolicitudRevision?: string | null;
+  /** `PRESENTE | JUSTIFICADA` o `null`. */
+  resultadoAprobacion?: string | null;
+}
+
 /**
  * `SesionMateriaEstudianteDTO`. Las fechas son `LocalDateTime` del backend: persisten en UTC pero el wire format
  * actual no incluye zona (BACKEND_GOLDEN_PATH_CONTRACT §I); si algun despliegue las emite con offset, se respeta.
@@ -83,6 +98,13 @@ export interface SesionMateriaEstudianteApiDto {
   /** CULM-001 B.2: horas de la sesion (y de sus tomas) calculadas por el backend. */
   horasSesion?: number | null;
   totalTomas?: number | null;
+  /** Puntos de control: minutos por clase de tramo (`null` sin cabecera de asistencia o con la sesión cancelada). */
+  minutosSesion?: number | null;
+  minutosAsistidos?: number | null;
+  minutosFalta?: number | null;
+  minutosExcusa?: number | null;
+  minutosSinRegistro?: number | null;
+  tomas?: TomaSesionEstudianteApiDto[] | null;
   /** CULM-001 D.1 (HU026B): limite UTC para justificar (`null` si no hay plazo calculable) e indicador del backend. */
   fechaLimiteJustificacionUtc?: string | null;
   plazoJustificacionVigente?: boolean | null;

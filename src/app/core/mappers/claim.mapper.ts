@@ -4,6 +4,8 @@ import {
   EstadoAsistenciaSesion,
   EstadoSolicitudRevision,
   CategoriaJustificacion,
+  EstadoTomaEstudiante,
+  ResultadoAprobacionReclamo,
   SoporteAdjuntoItem,
 } from '../models/role-management.model';
 
@@ -84,6 +86,12 @@ export interface ReclamoDocenteApi {
     fechaSubidaUtc?: string | null;
     url?: string | null;
   }> | null;
+  /** Reclamo por toma (puntos de control); `null`/ausentes si el reclamo es de la sesión. */
+  idToma?: string | null;
+  numeroToma?: number | null;
+  fechaPuntoControlUtc?: string | null;
+  /** `PRESENTE | JUSTIFICADA` o `null` mientras no esté aprobado. */
+  resultadoAprobacion?: string | null;
 }
 
 /**
@@ -95,7 +103,11 @@ export type ReclamoEstudianteApi = Omit<ReclamoDocenteApi, 'estudianteId' | 'est
 /** `datos` de GET /docente/reclamos/{id} (HU036): el elemento del listado más causal y estado legible. */
 export interface DetalleReclamoDocenteApi extends ReclamoDocenteApi {
   codigoEstado?: string | null;
-  nombreEstado?: string | null;
+    nombreEstado?: string | null;
+  /** `PRESENTE | AUSENTE | JUSTIFICADA | SIN_REGISTRO`; `null` si el reclamo es de la sesión. */
+  estadoToma?: string | null;
+  minutosSesion?: number | null;
+  minutosAsistidos?: number | null;
   causalInasistencia?: {
     codigo: string;
     nombre: string;
@@ -105,6 +117,15 @@ export interface DetalleReclamoDocenteApi extends ReclamoDocenteApi {
 
 /** Formatea un instante UTC ISO en la zona IANA del usuario; devuelve la fecha local 'yyyy-MM-dd'. */
 export type InstantDateFormatter = (isoInstant: string) => string;
+
+/** Solo se aceptan los valores que define el contrato; cualquier otro queda en `null`. */
+function resultadoAprobacion(valor: string | null | undefined): ResultadoAprobacionReclamo | null {
+  return valor === 'PRESENTE' || valor === 'JUSTIFICADA' ? valor : null;
+}
+
+function estadoToma(valor: string | null | undefined): EstadoTomaEstudiante | null {
+  return valor === 'PRESENTE' || valor === 'AUSENTE' || valor === 'JUSTIFICADA' || valor === 'SIN_REGISTRO' ? valor : null;
+}
 
 /**
  * Mapper para Serialización y Deserialización de Solicitudes y Reclamos de Asistencia.
@@ -176,6 +197,10 @@ export class ClaimMapper {
       soportes: soportesMapeados,
       justificacionSolicitud: dto.justificacionSolicitud,
       justificacionRespuesta: dto.justificacionRespuesta ?? undefined,
+      idToma: dto.idToma ?? null,
+      numeroToma: dto.numeroToma ?? null,
+      fechaPuntoControlUtc: dto.fechaPuntoControlUtc ?? null,
+      resultadoAprobacion: resultadoAprobacion(dto.resultadoAprobacion),
     };
   }
 
@@ -190,6 +215,9 @@ export class ClaimMapper {
     return {
       ...ClaimMapper.fromReclamoDocente(dto, formatDate),
       nombreEstado: dto.nombreEstado ?? '',
+      estadoToma: estadoToma(dto.estadoToma),
+      minutosSesion: dto.minutosSesion ?? null,
+      minutosAsistidos: dto.minutosAsistidos ?? null,
       causalInasistencia: causal
         ? { codigo: causal.codigo, nombre: causal.nombre, asistio: causal.asistio ?? null }
         : null,

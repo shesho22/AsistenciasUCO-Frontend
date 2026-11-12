@@ -2,14 +2,22 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { ResumenSesionTomasComponent } from './resumen-sesion-tomas.component';
 import { TomaAsistenciaService } from '../../../../core/services/toma-asistencia.service';
-import { AsistenciaToma, TomaAsistencia } from '../../../../core/models/toma-asistencia.model';
+import { AsistenciaToma, ResumenTomasEstudiante, TomaAsistencia } from '../../../../core/models/toma-asistencia.model';
 import { apiHttpError } from '../../../../core/testing/api-error.fixture';
 
 function toma(id: string, numero: number, horasToma: number): TomaAsistencia {
   return {
     idToma: id, idSesion: 's-1', idGrupo: 'g-1', numero, modo: 'MANUAL', estado: 'CERRADA',
     esImplicita: false, fechaAperturaUtc: '2026-11-10T13:00:00Z', fechaCierreUtc: '2026-11-10T14:00:00Z', horasToma,
+    fechaPuntoControlUtc: '2026-11-10T13:00:00Z', ordenPuntoControl: numero, minutosTramoAnterior: 0, minutosTramoSiguiente: 60, esEditable: true, editableHastaUtc: null,
     totalRegistros: 2, totalPresentes: 1, totalAusentes: 1, totalExcusas: 0, tieneQrActivo: false,
+  };
+}
+
+function resumenEst(id: string, parcial: Partial<ResumenTomasEstudiante> = {}): ResumenTomasEstudiante {
+  return {
+    estudianteId: id, nombreCompleto: `Estudiante ${id}`, minutosSesion: 120, minutosAsistidos: 120, minutosFalta: 0,
+    minutosExcusa: 0, minutosSinRegistro: 0, estado: 'PRESENTE', tomasAusentes: 0, ...parcial,
   };
 }
 
@@ -28,16 +36,24 @@ describe('ResumenSesionTomasComponent (CULM-001 UX toma)', () => {
   const el = (id: string) => (fixture.nativeElement as HTMLElement).querySelector(`[data-testid="${id}"]`) as HTMLElement | null;
   const texto = (id: string) => (el(id)?.textContent ?? '').replace(/\s+/g, ' ').trim();
 
-  function crear(tomas: TomaAsistencia[] = [toma('t-1', 1, 1), toma('t-2', 2, 0.5)], horasSesion = 1.5) {
+  function crear(tomas: TomaAsistencia[] = [toma('t-1', 1, 1), toma('t-2', 2, 0.5)]) {
     fixture = TestBed.createComponent(ResumenSesionTomasComponent);
     fixture.componentRef.setInput('tomas', tomas);
-    fixture.componentRef.setInput('horasSesion', horasSesion);
+    fixture.componentRef.setInput('sesionId', 's-1');
     fixture.detectChanges();
     fixture.detectChanges();
   }
 
   beforeEach(() => {
-    service = jasmine.createSpyObj<TomaAsistenciaService>('TomaAsistenciaService', ['consultarAsistencias']);
+    service = jasmine.createSpyObj<TomaAsistenciaService>('TomaAsistenciaService', ['consultarAsistencias', 'consultarResumenSesion']);
+    service.consultarResumenSesion.and.returnValue(of({
+      exitoso: true,
+      datos: [
+        resumenEst('a'),
+        resumenEst('b', { minutosAsistidos: 40, minutosFalta: 80, estado: 'PARCIAL', tomasAusentes: 1 }),
+        resumenEst('c', { minutosAsistidos: 20, minutosExcusa: 100, estado: 'PARCIAL' }),
+      ],
+    }));
     service.consultarAsistencias.and.callFake(((tomaId: string) =>
       of(tomaId === 't-1'
         ? pagina([fila('a', 'AN'), fila('b', 'SJC'), fila('c', 'EX')])
@@ -70,11 +86,35 @@ describe('ResumenSesionTomasComponent (CULM-001 UX toma)', () => {
     expect(el('celda-c-t-2')!.textContent).toContain('Sin registro');
   });
 
-  it('suma las horas asistidas de cada estudiante sobre las horas de la sesion', () => {
+  it('muestra los minutos y el estado que calcula el backend, sin recalcular horas', () => {
     crear();
-    expect(texto('horas-a')).toContain('1.5 de 1.5 h');
-    expect(texto('horas-b')).toContain('0.5 de 1.5 h');
-    expect(texto('horas-c')).toContain('0 de 1.5 h');
+    expect(service.consultarResumenSesion).toHaveBeenCalledWith('s-1');
+    expect(texto('asistencia-a')).toBe('Presente · 120 de 120 min');
+    expect(texto('asistencia-b')).toBe('Parcial: 40 de 120 minutos');
+    expect(texto('asistencia-c')).toContain('Parcial: 20 de 120 minutos');
+    expect(texto('asistencia-c')).toContain('100 min justificados');
+  });
+
+  it('los otros estados se muestran como Ausente, Justificada o No disponible', () => {
+    service.consultarResumenSesion.and.returnValue(of({
+      exitoso: true,
+      datos: [
+        resumenEst('a', { minutosAsistidos: 0, minutosFalta: 120, estado: 'AUSENTE' }),
+        resumenEst('b', { minutosAsistidos: 0, minutosExcusa: 120, estado: 'JUSTIFICADA' }),
+        resumenEst('c', { minutosAsistidos: 0, minutosSinRegistro: 120, estado: 'NO_DISPONIBLE' }),
+      ],
+    }));
+    crear();
+    expect(texto('asistencia-a')).toBe('Ausente');
+    expect(texto('asistencia-b')).toContain('Justificada');
+    expect(texto('asistencia-c')).toBe('No disponible');
+  });
+
+  it('la cabecera de cada toma muestra su numero y su hora de punto de control', () => {
+    crear();
+    expect(texto('columna-t-1')).toMatch(/Toma 1 · \d{2}:\d{2}/);
+    expect(texto('columna-t-2')).toMatch(/Toma 2 · \d{2}:\d{2}/);
+    expect(texto('columna-t-1')).not.toContain(' h');
   });
 
   it('muestra la leyenda de los cuatro estados', () => {
@@ -108,6 +148,12 @@ describe('ResumenSesionTomasComponent (CULM-001 UX toma)', () => {
     fixture.componentRef.setInput('tomas', [toma('t-1', 1, 1), toma('t-2', 2, 0.5), toma('t-3', 3, 0.5)]);
     fixture.detectChanges();
     expect(service.consultarAsistencias).toHaveBeenCalledTimes(3);
+  });
+
+  it('un error del resumen de minutos muestra el mensaje del backend', () => {
+    service.consultarResumenSesion.and.returnValue(throwError(() => apiHttpError(403, 'No es titular.', 'SEC_002')));
+    crear();
+    expect(texto('resumen-error')).toContain('No es titular.');
   });
 
   it('un error muestra el mensaje del backend', () => {
