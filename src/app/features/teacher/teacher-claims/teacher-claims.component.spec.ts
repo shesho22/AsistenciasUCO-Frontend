@@ -172,6 +172,22 @@ describe('TeacherClaimsComponent', () => {
       fixture.detectChanges();
     }
 
+    it('la tarjeta de la bandeja muestra Toma N · HH:mm si el reclamo es de una toma y nada si es de la sesión completa', () => {
+      const deToma: SolicitudRevisionItem = { ...mockReclamos[0], id: 'rec-toma', idToma: 'toma-2', numeroToma: 2, fechaPuntoControlUtc: '2026-09-10T14:00:00Z' };
+      const deSesion: SolicitudRevisionItem = { ...mockReclamos[0], id: 'rec-sesion', idToma: null, numeroToma: null, fechaPuntoControlUtc: null };
+      claimServiceSpy.getReclamosDocente.and.returnValue(of({ exitoso: true, datos: [deToma, deSesion], total: 2 }));
+      component.cargarReclamos();
+      fixture.detectChanges();
+
+      const tarjetas = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('[data-testid="tarjeta-toma"]'));
+      expect(tarjetas.length).toBe(1);
+      expect((tarjetas[0].textContent ?? '').replace(/\s+/g, ' ').trim()).toMatch(/^Toma 2 · \d{2}:\d{2}$/);
+      // Misma hora local que el detalle (que agrega el estado actual de la toma)
+      expect(component.textoTomaReclamada({ ...mockDetalle, ...deToma, estadoToma: 'AUSENTE' } as DetalleReclamoDocenteItem))
+        .toBe((component.textoTomaTarjeta(deToma) ?? '') + ' · Ausente');
+      expect(component.textoTomaTarjeta(deSesion)).toBeNull();
+    });
+
     it('muestra la toma reclamada con su hora y estado, y los minutos de la sesión', () => {
       abrir(detalleToma);
       expect(texto('detalle-toma')).toMatch(/^Toma 2 · \d{2}:\d{2} · Ausente$/);

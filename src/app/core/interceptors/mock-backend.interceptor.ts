@@ -81,6 +81,20 @@ function vinculoMock(a: { id: string; codigo: string; nombre: string; creditos: 
   };
 }
 
+/** Numero y punto de control (UTC) de una toma del mock, buscados en las sesiones de las materias del estudiante; nulos sin toma. */
+function datosTomaMock(idToma: string | null | undefined): { numeroToma: number | null; fechaPuntoControlUtc: string | null } {
+  if (idToma) {
+    for (const [clave, sesiones] of Object.entries(mockStore.sesionesMaterias)) {
+      const materia = mockStore.materiasEstudiante.find((m) => m.id === clave);
+      for (const sesion of mockSesionesToDto(sesiones, materia)) {
+        const toma = (sesion.tomas ?? []).find((t) => t.idToma === idToma);
+        if (toma) return { numeroToma: toma.numero, fechaPuntoControlUtc: toma.fechaPuntoControlUtc ?? null };
+      }
+    }
+  }
+  return { numeroToma: null, fechaPuntoControlUtc: null };
+}
+
 export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   // AuthService es la fuente reactiva de verdad y se consulta por petición,
   // incluyendo cambios de modo sin recargar la aplicación.
@@ -619,7 +633,8 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     return of(okResponse(mockFileRes, 'Archivo subido correctamente.')).pipe(delay(300));
   }
   if (url.endsWith('/docente/reclamos') && method === 'GET') {
-    return of(okResponse(mockStore.solicitudesRevision)).pipe(delay(250));
+    // PC (puntos de control): la bandeja trae la toma reclamada (numero y punto de control), como el backend real.
+    return of(okResponse(mockStore.solicitudesRevision.map((r) => ({ ...r, ...datosTomaMock(r.idToma) })))).pipe(delay(250));
   }
   if (url.endsWith('/estudiante/reclamos') && method === 'GET') {
     // HU010/HU011: misma forma que el backend (lista con `total`), filtrada por estado y paginada.
@@ -640,6 +655,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
       estado: 'RADICADA' as const,
       estadoSolicitud: 'PENDIENTE' as const,
       idToma: body?.tomaId ?? null,
+      ...datosTomaMock(body?.tomaId ?? null),
       resultadoAprobacion: null,
     };
     mockStore.solicitudesRevision = [nuevoReclamo, ...mockStore.solicitudesRevision];
