@@ -201,6 +201,9 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
                       <div class="flex items-center justify-between text-warm-600">
                         <span>Sesión #{{ reclamo.sesionNumero }} ({{ reclamo.fechaSesion }})</span>
                       </div>
+                      @if (textoTomaTarjeta(reclamo); as toma) {
+                        <div class="font-semibold text-warm-900" data-testid="tarjeta-toma">{{ toma }}</div>
+                      }
                     </div>
 
                     <p class="text-xs text-warm-700 line-clamp-2 italic mt-2">
@@ -610,9 +613,16 @@ export class TeacherClaimsComponent implements OnInit, OnDestroy {
   /** "Toma N · HH:mm · estado actual" cuando el reclamo es de una toma; `null` si es de la sesión. */
   textoTomaReclamada(reclamo: DetalleReclamoDocenteItem | null): string | null {
     if (!reclamo || reclamo.numeroToma == null) return null;
-    const hora = reclamo.fechaPuntoControlUtc ? this.zona.formatTemporal(reclamo.fechaPuntoControlUtc, 'time') : null;
     const estado = reclamo.estadoToma ? ETIQUETA_ESTADO_TOMA_RECLAMO[reclamo.estadoToma] : null;
-    return ['Toma ' + reclamo.numeroToma, hora, estado].filter((parte) => !!parte).join(' · ');
+    return [this.textoTomaTarjeta(reclamo), estado].filter((parte) => !!parte).join(' · ');
+  }
+
+  /** Toma N · HH:mm (hora local, igual que el detalle) en la tarjeta de la bandeja; 
+ull si el reclamo es de la sesión completa. */
+  textoTomaTarjeta(reclamo: Pick<SolicitudRevisionItem, 'numeroToma' | 'fechaPuntoControlUtc'> | null): string | null {
+    if (!reclamo || reclamo.numeroToma == null) return null;
+    const hora = reclamo.fechaPuntoControlUtc ? this.zona.formatTemporal(reclamo.fechaPuntoControlUtc, 'time') : null;
+    return ['Toma ' + reclamo.numeroToma, hora].filter((parte) => !!parte).join(' · ');
   }
 
   /** "Asistencia de la sesión: X de Y min" (cálculo del backend). */
