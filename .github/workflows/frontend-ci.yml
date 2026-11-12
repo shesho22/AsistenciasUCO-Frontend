@@ -58,8 +58,8 @@ jobs:
         shell: bash
         run: |
           set -uo pipefail
-          npm audit --omit=dev --json > npm-audit-runtime.json
-          rc=$?
+          rc=0
+          npm audit --omit=dev --json > npm-audit-runtime.json || rc=$?
           node -e "const r=require('./npm-audit-runtime.json');const v=(r.metadata&&r.metadata.vulnerabilities)||{};console.log('npm audit (runtime):',JSON.stringify(v));"
           echo "npm audit exit code: ${rc} (reporte; la compuerta es Trivy)"
 
