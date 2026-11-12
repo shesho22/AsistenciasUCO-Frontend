@@ -24,8 +24,8 @@ describe('ComponentesExternosService (F3-ADM-07)', () => {
     expect(servicio.disponible('mensajes')).toBeFalse();
   });
 
-  it('sin proveedor configurado se comporta como legacy', () => {
-    expect(crear().disponible('seguridad')).toBeFalse();
+  it('sin proveedor configurado se comporta como baseline (SEG-12)', () => {
+    expect(crear().disponible('seguridad')).toBeTrue();
   });
 
   it('con el proveedor baseline ambos componentes estan disponibles', () => {

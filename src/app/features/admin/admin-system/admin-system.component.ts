@@ -491,7 +491,7 @@ export class AdminSystemComponent implements OnInit {
     for (const p of this.parametros()) {
       if (p.grupo) set.add(p.grupo);
     }
-    return Array.from(set).sort();
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'es'));
   });
 
   ngOnInit(): void {

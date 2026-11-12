@@ -362,7 +362,7 @@ export class CoordinatorSubjectsComponent implements OnInit {
 
   /** Caracteres presentes en el catálogo cargado (Obligatoria, Optativa). */
   caracteresDisponibles = computed(() =>
-    [...new Set(this.asignaturasCurriculares().map((a) => a.nombreCaracter ?? a.componente).filter(Boolean))].sort()
+    [...new Set(this.asignaturasCurriculares().map((a) => a.nombreCaracter ?? a.componente).filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b), 'es'))
   );
 
   /** B2NM: la misma asignatura aparece una vez por plan donde está vinculada. */

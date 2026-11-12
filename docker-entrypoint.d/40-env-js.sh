@@ -10,7 +10,7 @@ if [ -f "$template" ]; then
   KEYCLOAK_REALM="${KEYCLOAK_REALM:-asistencias-uco}"
   KEYCLOAK_CLIENT_ID="${KEYCLOAK_CLIENT_ID:-asistencias-uco-frontend}"
   USE_MOCKS="${USE_MOCKS:-false}"
-  SECURITY_PROVIDER="${SECURITY_PROVIDER:-legacy}"
+  SECURITY_PROVIDER="${SECURITY_PROVIDER:-baseline}"
   # Un valor desconocido NO se convierte en legacy: el contenedor no arranca (fail-closed).
   case "$SECURITY_PROVIDER" in
     legacy|baseline) ;;

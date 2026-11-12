@@ -103,4 +103,4 @@ Contrato completo de cada vertical en el `CONTRACT.md` del work item homónimo d
 
 ## Configuración
 
-Docker publica el frontend en `http://localhost:4200`. `API_URL`, `KEYCLOAK_URL`, `KEYCLOAK_REALM`, `KEYCLOAK_CLIENT_ID` y `USE_MOCKS` generan `assets/env.js` en runtime. El client público es `asistencias-uco-frontend`; el client `asistencias-api` continúa siendo la fuente de roles del JWT.
+Docker publica el frontend en `http://localhost:4200`. `API_URL`, `KEYCLOAK_URL`, `KEYCLOAK_REALM`, `KEYCLOAK_CLIENT_ID` y `USE_MOCKS` generan `assets/env.js` en runtime. `SECURITY_PROVIDER` también, con defecto `baseline` (igual que el backend); para usar el flujo legacy (password grant) en desarrollo hay que fijar `SECURITY_PROVIDER` en `legacy` de forma explícita en `env.js` o en el entorno del contenedor. El client público es `asistencias-uco-frontend`; el client `asistencias-api` continúa siendo la fuente de roles del JWT.

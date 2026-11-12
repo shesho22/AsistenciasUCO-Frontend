@@ -123,6 +123,13 @@ describe('AdminSystemComponent', () => {
     expect(el.querySelector('[role="tablist"]')).not.toBeNull();
   });
 
+  it('EST-03 (S2871): gruposDisponibles queda ordenado con localeCompare en español y sin repetidos', () => {
+    const grupos = component.gruposDisponibles();
+    expect(grupos.length).toBeGreaterThan(0);
+    expect(new Set(grupos).size).toBe(grupos.length);
+    expect(grupos).toEqual([...grupos].sort((a, b) => a.localeCompare(b, 'es')));
+  });
+
   it('tabActiva alterna correctamente entre pestañas', () => {
     expect(component.tabActiva()).toBe('PARAMETROS');
     component.tabActiva.set('AUDITORIA');

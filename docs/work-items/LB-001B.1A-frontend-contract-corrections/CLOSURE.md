@@ -11,7 +11,7 @@ Estado: **CERRADO — DoD cumplido**. Evidencia completa en `VALIDATION.md`.
 - **DR-007** — El control de asistencia y la tabla asociada solo operan sobre matrícula con `codigoEstado === 'A'`.
 - **DR-008** — Ruta `/app/asistencia` ahora declara únicamente `roles: ['DOCENTE']`; se retiraron los enlaces visibles de "Auditoría de Asistencias" para DECANO/ADMIN en `overview-hero.component.ts`.
 - **TD-031** — `auth.interceptor.ts` reemplaza el mecanismo de cola por flag/`BehaviorSubject` por un `refreshInFlight$` compartido (`shareReplay`); un único refresh en vuelo, reintento con token nuevo tras éxito, expiración de sesión solo tras fallo definitivo. `error.interceptor.ts` deja de manejar 401 (evita expiración duplicada/prematura) y conserva el toast de 403 sin refrescar.
-- **TD-032** — Se eliminaron los fallbacks de contraseña productiva por defecto (`'Test1234!'`) en `register.component.ts` y `student.service.ts`; ambos exigen contraseña válida antes de invocar backend. Verificado por búsqueda estática (0 coincidencias fuera de specs).
+- **TD-032** — Se eliminaron los fallbacks de contraseña productiva por defecto (valor retirado; ver historial) en `register.component.ts` y `student.service.ts`; ambos exigen contraseña válida antes de invocar backend. Verificado por búsqueda estática (0 coincidencias fuera de specs).
 - **TD-033** — Fallo de carga de sesiones y estados realtime terminales (`UNAUTHORIZED`/`ERROR`) muestran feedback observable (toast) sin duplicados; se distingue explícitamente de una lista vacía válida.
 
 ## Qué queda (deuda técnica y fases futuras, no cubiertas aquí)

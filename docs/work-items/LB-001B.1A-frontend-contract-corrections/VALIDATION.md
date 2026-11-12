@@ -20,8 +20,8 @@ Resultado: **el diff corresponde al alcance declarado**. Detalle por archivo:
 | `src/app/features/dashboard/overview/components/overview-hero.component.ts` | DR-008 | Se retiran los enlaces visibles "Auditoría de Asistencias" para roles DECANO/ADMIN (ya no aplican). |
 | `src/app/core/interceptors/auth.interceptor.ts`, `.spec.ts` (nuevo) | TD-031 | Reemplaza `BehaviorSubject`/flag por `refreshInFlight$` compartido con `shareReplay`; refresco único, reintento tras éxito, expiración tras fallo definitivo. |
 | `src/app/core/interceptors/error.interceptor.ts` | TD-031 | Retira el manejo de 401 (ahora exclusivo de `auth.interceptor.ts`) para evitar expiración duplicada/prematura; conserva el toast de 403. |
-| `src/app/core/services/student.service.ts`, `.spec.ts` (nuevo), `src/app/core/validation/request-form-validation.util.spec.ts` (nuevo) | TD-032 | Elimina fallback `'Test1234!'`; valida contraseña con `getPasswordValidationError` y rechaza vacío antes de llamar backend. |
-| `src/app/features/auth/register/register.component.ts`, `.spec.ts` (nuevo) | TD-032 | Elimina default `password = 'Test1234!'` y `effectivePassword` fallback. |
+| `src/app/core/services/student.service.ts`, `.spec.ts` (nuevo), `src/app/core/validation/request-form-validation.util.spec.ts` (nuevo) | TD-032 | Elimina fallback la contraseña por defecto (valor retirado; ver historial); valida contraseña con `getPasswordValidationError` y rechaza vacío antes de llamar backend. |
+| `src/app/features/auth/register/register.component.ts`, `.spec.ts` (nuevo) | TD-032 | Elimina default la asignación `password` por defecto (valor retirado; ver historial) y `effectivePassword` fallback. |
 | `src/app/features/attendance/attendance-control/attendance-realtime-sync.service.ts`, `.spec.ts` | TD-033 | Feedback de estados terminales `UNAUTHORIZED`/`ERROR` sin duplicados. |
 | `src/app/features/attendance/attendance-control/attendance-control.component.spec.ts`, `attendance-control.workflows.spec.ts` (nuevo), `attendance-control-table.component.spec.ts` (nuevo) | TD-033, DR-007, DR-002, DR-005 | Cobertura de fallo de carga de sesiones (toast) vs. lista vacía válida; filtro `codigoEstado === 'A'`. |
 | `src/app/shared/components/toast/toast.component.ts`, `.spec.ts` (nuevo) | TD-033 (soporte) | Agrega `{ allowSignalWrites: true }` al `effect()` que gestiona el auto-dismiss, requerido por los nuevos flujos de feedback de error que escriben señales desde ese efecto. |
@@ -70,7 +70,7 @@ Resultado: **exit code 0**. `Application bundle generation complete. [11.854 sec
 Los tres comandos anteriores equivalen a `npm run verify` (`test:ci && coverage:realtime:check && build -- --configuration=production`), ejecutados de forma descompuesta para capturar evidencia independiente de cada etapa.
 
 ### 2.4 Búsqueda de fallbacks/literales de contraseña productivos
-Comando: `grep -rn "Test1234" src --include="*.ts" | grep -v "\.spec\.ts"`.
+Comando: `grep -rn "<contraseña por defecto retirada>" src --include="*.ts" | grep -v "\.spec\.ts"`.
 
 Resultado: **0 coincidencias** fuera de archivos de test (exit code 1 de grep = sin matches). Confirma TD-032.
 

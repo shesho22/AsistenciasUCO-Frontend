@@ -16,6 +16,20 @@ describe('environment.features (CULM-001 B.1)', () => {
     localStorage.removeItem('USE_MOCKS');
   });
 
+  it('SEG-12: sin SECURITY_PROVIDER el proveedor por defecto es baseline, no legacy', () => {
+    (window as any)['env'] = {};
+    expect(environment.security.provider).toBe('baseline');
+    (window as any)['env'] = { SECURITY_PROVIDER: '  ' };
+    expect(environment.security.provider).toBe('baseline');
+  });
+
+  it('SEG-12: legacy solo se activa si se fija explícito y un valor desconocido sigue siendo invalid', () => {
+    (window as any)['env'] = { SECURITY_PROVIDER: 'legacy' };
+    expect(environment.security.provider).toBe('legacy');
+    (window as any)['env'] = { SECURITY_PROVIDER: 'otro' };
+    expect(environment.security.provider).toBe('invalid');
+  });
+
   it('F-ADM-016: las banderas muertas (sessionsEnabled, attendanceEnabled) fueron retiradas', () => {
     const features = environment.features as any;
     expect(features.sessionsEnabled).toBeUndefined();
