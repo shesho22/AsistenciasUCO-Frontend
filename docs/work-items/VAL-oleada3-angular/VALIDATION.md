@@ -154,3 +154,14 @@ reformateo del decorador, `CommonModule` sin uso, `withXhr()` en specs). Resoluc
 | :--- | :--- |
 | `npm run lint` | 0 errores (460 advertencias) |
 | `npm run verify` | OK: 2914 de 2914 pruebas; cobertura 93.72% statements, 80.69% branches, 94.74% lines; realtime 95.26% / 86.81%; checks de fuente y build de producción (mismos avisos: NG8113 en 5 componentes, presupuesto inicial 558.03 kB) |
+
+## Merge de develop después de #102 (mensajes) y #103 (E2E)
+
+- **Conflicto:** solo en `package-lock.json`. Se conservó el lock de Angular 22 y `npm install` agregó `@playwright/test` 1.64.1, con 46 líneas.
+- **Versiones:** Angular sigue en 22.2.4.
+- **`package.json`:** se combinó sin conflicto. Agrega los scripts `e2e` y `check:mensajes-ui`.
+- **Resultados sobre Angular 22:**
+  - lint: 0 errores;
+  - `e2e:typecheck`: OK;
+  - `npm run verify`: 2919 de 2919 pruebas y build de producción OK. El aviso de presupuesto del bundle sigue: 566 kB contra 500 kB;
+  - `npm run e2e`: 21 de 21 en verde.

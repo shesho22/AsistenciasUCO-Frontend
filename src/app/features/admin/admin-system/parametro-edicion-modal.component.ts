@@ -13,6 +13,7 @@ import { ParametroAdminDto } from '../../../core/models/role-management.model';
 import { AdminManagementService } from '../../../core/services/admin-management.service';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
+import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
 @Component({
     selector: 'app-parametro-edicion-modal',
@@ -283,7 +284,7 @@ export class ParametroEdicionModalComponent {
     this.adminService.actualizarParametro(p.id, payload).subscribe({
       next: (res) => {
         this.isGuardando.set(false);
-        this.toast.success(res?.mensajeUsuario || 'Parámetro actualizado exitosamente.');
+        this.toast.success(res?.mensajeUsuario || mensajeUi('UI_PARAMETRO_EDICION_MODAL_001'));
         this.guardado.emit();
         this.cerrar.emit();
       },

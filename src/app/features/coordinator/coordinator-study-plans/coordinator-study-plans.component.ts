@@ -6,6 +6,7 @@ import { PlanEstudioItem } from '../../../core/models/role-management.model';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { StudyPlansListComponent } from './components/study-plans-list.component';
+import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
 @Component({
     selector: 'app-coordinator-study-plans',
@@ -148,7 +149,7 @@ export class CoordinatorStudyPlansComponent implements OnInit {
     this.coordService.toggleEstadoPlanEstudio(plan.id).subscribe({
       next: (res) => {
         if (res.exitoso) {
-          this.toast.success(res.mensajeUsuario || 'Estado del plan de estudio actualizado.');
+          this.toast.success(res.mensajeUsuario || mensajeUi('UI_COORDINATOR_STUDY_PLANS_001'));
           this.cargarPlanes();
         }
       },

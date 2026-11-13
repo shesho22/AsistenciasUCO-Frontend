@@ -15,6 +15,7 @@ import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load
 import { franjaNueva, validarFranjas } from '../../../core/validation/franjas.util';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { FranjasEditorComponent } from '../../../shared/components/franjas-editor/franjas-editor.component';
+import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
 interface GrupoForm {
   idAsignatura: string;
@@ -211,7 +212,7 @@ export class CoordinatorGroupsComponent implements OnInit {
       error: (err: unknown) => {
         this.cargando.set(false);
         this.errorCarga.set(classifyLoadError(err));
-        this.toast.error(getApiErrorMessage(err) || 'No fue posible cargar los grupos.');
+        this.toast.error(getApiErrorMessage(err) || mensajeUi('UI_COORDINATOR_GROUPS_001'));
       },
     });
   }
@@ -317,16 +318,16 @@ export class CoordinatorGroupsComponent implements OnInit {
       next: (res) => {
         this.guardando.set(false);
         if (res.exitoso) {
-          this.toast.success(res.mensajeUsuario || 'Grupo guardado.');
+          this.toast.success(res.mensajeUsuario || mensajeUi('UI_COORDINATOR_GROUPS_002'));
           this.volver();
           this.cargarGrupos();
         } else {
-          this.toast.error(res.mensajeUsuario || 'No fue posible guardar el grupo.');
+          this.toast.error(res.mensajeUsuario || mensajeUi('UI_COORDINATOR_GROUPS_003'));
         }
       },
       error: (err: unknown) => {
         this.guardando.set(false);
-        this.toast.error(getApiErrorMessage(err) || 'No fue posible guardar el grupo.');
+        this.toast.error(getApiErrorMessage(err) || mensajeUi('UI_COORDINATOR_GROUPS_003'));
       },
     });
   }

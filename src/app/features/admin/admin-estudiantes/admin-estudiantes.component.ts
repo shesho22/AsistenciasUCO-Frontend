@@ -17,6 +17,7 @@ import { HistorialEstudianteComponent } from '../../../shared/components/histori
 import { AdmisionEstudianteModalComponent } from './admision-estudiante-modal.component';
 import { CorreccionIdentidadModalComponent } from '../../../shared/components/correccion-identidad-modal/correccion-identidad-modal.component';
 import { FiltroEstado, ListadoPaginado, estadoComoFiltro } from '../../../shared/utils/listado-paginado';
+import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
 interface OpcionFacultad {
   id: string;
@@ -356,10 +357,10 @@ export class AdminEstudiantesComponent implements OnInit {
         if (r.datos?.sincronizacionIdentidad === 'PENDIENTE') {
           this.toast.warning(
             r.datos.mensajeUsuario ??
-              'Los datos se corrigieron; la cuenta de acceso queda pendiente de sincronizar.'
+              mensajeUi('UI_ADMIN_DECANOS_001')
           );
         } else {
-          this.toast.success('Los datos del estudiante fueron corregidos.');
+          this.toast.success(mensajeUi('UI_ADMIN_ESTUDIANTES_001'));
         }
         this.listado.cargar();
       },

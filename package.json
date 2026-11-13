@@ -11,12 +11,17 @@
     "test:docker-runtime": "node scripts/verify-docker-runtime.mjs",
     "coverage:realtime:check": "node scripts/check-realtime-coverage.mjs",
     "e2e:realtime:smoke": "node scripts/realtime-smoke.mjs",
+    "e2e": "npm run e2e:build && npm run e2e:run",
+    "e2e:build": "ng build --configuration=production",
+    "e2e:run": "playwright test",
+    "e2e:typecheck": "tsc -p e2e/tsconfig.json",
     "lint": "eslint \"src/**/*.{ts,html}\"",
     "lint:tokens": "node scripts/check-design-tokens.mjs && node scripts/check-a11y-controles.mjs",
     "check:retiro-solicitudes": "node scripts/check-retiro-solicitudes.mjs",
     "check:registro-individual": "node scripts/check-registro-individual-retirado.mjs",
     "check:hu-en-ui": "node scripts/check-hu-en-ui.mjs",
-    "verify": "npm run lint:tokens && npm run test:ci && npm run coverage:realtime:check && npm run check:retiro-solicitudes && npm run check:registro-individual && npm run check:hu-en-ui && npm run build -- --configuration=production"
+    "check:mensajes-ui": "node scripts/check-mensajes-ui.mjs",
+    "verify": "npm run lint:tokens && npm run test:ci && npm run coverage:realtime:check && npm run check:retiro-solicitudes && npm run check:registro-individual && npm run check:hu-en-ui && npm run check:mensajes-ui && npm run build -- --configuration=production"
   },
   "private": true,
   "dependencies": {
@@ -46,6 +51,7 @@
     "@angular/cli": "22.2.4",
     "@angular/compiler-cli": "22.2.4",
     "@eslint/js": "9.39.5",
+    "@playwright/test": "1.64.1",
     "@types/jasmine": "~5.1.0",
     "angular-eslint": "22.6.0",
     "eslint": "9.39.5",

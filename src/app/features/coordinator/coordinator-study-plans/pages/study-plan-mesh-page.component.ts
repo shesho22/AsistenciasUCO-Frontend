@@ -8,6 +8,7 @@ import { getApiErrorMessage } from '../../../../core/api/errors/api-error.util';
 import { StudyPlanMeshComponent } from '../components/study-plan-mesh.component';
 import { ConfirmDialogComponent } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { AssociateSubjectDialogComponent } from '../components/associate-subject-dialog.component';
+import { mensajeUi } from '../../../../core/messages/mensajes-ui';
 
 /** Catálogo dbo.Semestre (1 a 10); la DB responde PLA_003 si se intenta superar. */
 const MAX_SEMESTRES = 10;
@@ -144,7 +145,7 @@ export class CoordinatorStudyPlanMeshPageComponent implements OnInit {
     this.coordService.agregarSemestrePlan(plan.id).subscribe({
       next: (res) => {
         if (res.exitoso) {
-          this.toast.success(`Semestre ${nuevoTotal} agregado al plan.`);
+          this.toast.success(mensajeUi('UI_STUDY_PLAN_MESH_PAGE_003', { semestre: nuevoTotal }));
           this.planes.update((prev) =>
             prev.map((p) => (p.id === plan.id ? { ...p, totalSemestres: nuevoTotal } : p))
           );
@@ -179,7 +180,7 @@ export class CoordinatorStudyPlanMeshPageComponent implements OnInit {
     this.coordService.eliminarSemestrePlan(plan.id, ultimoSem).subscribe({
       next: (res) => {
         if (res.exitoso) {
-          this.toast.success(`Semestre ${ultimoSem} vacío eliminado.`);
+          this.toast.success(mensajeUi('UI_STUDY_PLAN_MESH_PAGE_004', { semestre: ultimoSem }));
           this.planes.update((prev) =>
             prev.map((p) => (p.id === plan.id ? { ...p, totalSemestres: nuevoTotal } : p))
           );
@@ -200,7 +201,7 @@ export class CoordinatorStudyPlanMeshPageComponent implements OnInit {
   /** F-COO-005: la asignatura quedó asociada; se recarga la malla y los totales del plan. */
   alAsociar(): void {
     this.dialogoAsociarAbierto.set(false);
-    this.toast.success('Asignatura asociada al plan.');
+    this.toast.success(mensajeUi('UI_STUDY_PLAN_MESH_PAGE_001'));
     this.recargarMalla();
   }
 
@@ -218,7 +219,7 @@ export class CoordinatorStudyPlanMeshPageComponent implements OnInit {
     this.aviso.set(null);
     this.coordService.desvincularAsignaturaPlan(id, asig.id).subscribe({
       next: (res) => {
-        this.toast.success(res.mensajeUsuario || 'Asignatura quitada del plan.');
+        this.toast.success(res.mensajeUsuario || mensajeUi('UI_STUDY_PLAN_MESH_PAGE_002'));
         this.recargarMalla();
       },
       error: (err) => this.mostrarRechazo(getApiErrorMessage(err)),

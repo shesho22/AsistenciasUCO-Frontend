@@ -22,6 +22,7 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
 import { getApiErrorCode, getApiErrorMessage, getApiErrorResponse } from '../../../core/api/errors/api-error.util';
 import { etiquetaEstadoReclamo, etiquetaResultadoAprobacion, varianteEstadoReclamo } from '../../../core/utils/reclamo-estado.util';
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
+import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
 const ETIQUETA_ESTADO_TOMA_RECLAMO: Readonly<Record<EstadoTomaEstudiante, string>> = {
   PRESENTE: 'Presente',
@@ -649,7 +650,7 @@ ull si el reclamo es de la sesión completa. */
       .subscribe({
         next: (res) => {
           if (res.exitoso) {
-            this.toast.success(res.mensajeUsuario || 'Reclamo procesado.');
+            this.toast.success(res.mensajeUsuario || mensajeUi('UI_TEACHER_CLAIMS_001'));
             this.cargarReclamos();
             this.volverABandeja();
           }
@@ -687,7 +688,7 @@ ull si el reclamo es de la sesión completa. */
    */
   descargarSoporte(adjunto: SoporteAdjuntoItem): void {
     if (!adjunto.fileId) {
-      this.toast.warning('Este soporte no contiene un fileId descargable en el contrato actual.');
+      this.toast.warning(mensajeUi('UI_TEACHER_CLAIMS_002'));
       return;
     }
     if (this.descargandoSoporte()) return;
@@ -703,7 +704,7 @@ ull si el reclamo es de la sesión completa. */
           anchor.download = adjunto.nombre.replace(/[\\/:*?"<>|\r\n]/g, '_');
           anchor.click();
           URL.revokeObjectURL(url);
-          this.toast.success(`Soporte "${adjunto.nombre}" descargado.`);
+          this.toast.success(mensajeUi('UI_SOPORTE_DESCARGADO', { nombre: adjunto.nombre }));
         },
         error: (error) => this.toast.error(this.mensajeErrorDescarga(error)),
       });

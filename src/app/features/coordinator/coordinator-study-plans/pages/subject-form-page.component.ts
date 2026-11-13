@@ -8,6 +8,7 @@ import { ConsultasTransversalesService } from '../../../../core/services/consult
 import { ToastService } from '../../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../../core/api/errors/api-error.util';
 import { SubjectFormComponent } from '../components/subject-form.component';
+import { mensajeUi } from '../../../../core/messages/mensajes-ui';
 
 @Component({
     selector: 'app-coordinator-subject-form-page',
@@ -120,7 +121,7 @@ export class CoordinatorSubjectFormPageComponent implements OnInit {
       this.coordService.crearAsignaturaPlan(id, event.datos).subscribe({
         next: (res) => {
           if (res.exitoso) {
-            this.toast.success(res.mensajeUsuario || 'Asignatura registrada en el plan.');
+            this.toast.success(res.mensajeUsuario || mensajeUi('UI_SUBJECT_FORM_PAGE_001'));
             this.volverAMalla();
           }
         },
@@ -132,7 +133,7 @@ export class CoordinatorSubjectFormPageComponent implements OnInit {
       this.coordService.actualizarAsignaturaPlan(id, asigId, event.datos).subscribe({
         next: (res) => {
           if (res.exitoso) {
-            this.toast.success(res.mensajeUsuario || 'Asignatura modificada.');
+            this.toast.success(res.mensajeUsuario || mensajeUi('UI_SUBJECT_FORM_PAGE_002'));
             this.volverAMalla();
           }
         },
