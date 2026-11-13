@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, ElementRef, afterRender, inject, input } from '@angular/core';
+import { Component, ChangeDetectionStrategy, ElementRef, afterEveryRender, inject, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 let fieldIdCounter = 0;
@@ -55,7 +55,7 @@ export class FormFieldComponent {
 
   constructor() {
     // Asocia la etiqueta y el error al control proyectado (F-COO-010, F-ADM-S23): sin esto el label no nombra al input.
-    afterRender(() => this.vincularControl());
+    afterEveryRender(() => this.vincularControl());
   }
 
   private vincularControl(): void {

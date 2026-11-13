@@ -1,5 +1,5 @@
 // @ts-check
-// EST-11 (VAL oleada 2): configuracion minima de ESLint con angular-eslint 18 (Angular 18).
+// EST-11 (VAL oleada 2): configuracion minima de ESLint con angular-eslint (misma version mayor que Angular, EST-10).
 // Las reglas recomendadas que hoy tienen hallazgos en el codigo existente quedan en "warn" para que
 // el linter entre a CI sin romper el build; se suben a "error" a medida que se limpien.
 const eslint = require('@eslint/js');
@@ -28,6 +28,9 @@ module.exports = tseslint.config(
       '@angular-eslint/no-output-native': 'warn',
       '@angular-eslint/no-input-rename': 'warn',
       'prefer-const': 'warn',
+      // Regla nueva en angular-eslint 20 (recomendada): 24 servicios usan inyeccion por constructor.
+      // Queda en warn para no mezclar el salto de Angular con un refactor; se migra con ng generate @angular/core:inject.
+      '@angular-eslint/prefer-inject': 'warn',
     },
   },
   {
