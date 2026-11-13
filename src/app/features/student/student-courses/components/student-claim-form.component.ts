@@ -1,7 +1,7 @@
 import { Component, ChangeDetectionStrategy, computed, effect, input, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { SOPORTE_ACCEPT } from '../../../../core/files/soporte-file.validator';
+import { SOPORTE_ACCEPT, SOPORTE_MAX_BYTES, describirTamano } from '../../../../core/files/soporte-file.validator';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { FormFieldComponent } from '../../../../shared/components/form-field/form-field.component';
 import {
@@ -112,7 +112,7 @@ import { CategoriaJustificacionItem } from '../../../../core/models/consultas-tr
             <!-- Carga de Archivos Adjuntos / Soportes Documentales -->
             <div class="space-y-2">
               <label class="block text-xs font-semibold uppercase tracking-wider text-warm-700">
-                Soportes Documentales (máx. <span data-testid="limite-maximo-soportes">{{ maximoSoportes() }}</span> archivos · {{ tiposPermitidosTexto() }} · Máx. {{ tamanioMaximoMb() }} MB · límite <span data-testid="limite-por-minuto">{{ limiteSubidasPorMinuto() }}</span>/min)
+                Soportes Documentales (máx. <span data-testid="limite-maximo-soportes">{{ maximoSoportes() }}</span> archivos · {{ tiposPermitidosTexto() }} · Máx. {{ tamanioMaximoTexto() }} · límite <span data-testid="limite-por-minuto">{{ limiteSubidasPorMinuto() }}</span>/min)
               </label>
 
               @if (errorSoporte()) {
@@ -275,7 +275,8 @@ export class StudentClaimFormComponent {
   justificacion = signal<string>('');
 
   readonly maximoSoportes = computed(() => this.configuracion()?.maximoSoportes ?? 3);
-  readonly tamanioMaximoMb = computed(() => Math.round((this.configuracion()?.tamanioMaximoBytes ?? 5242880) / (1024 * 1024)));
+  /** PAR-05: limite del parametro ARCHIVO/TAMANIO_MAXIMO_BYTES (respaldo 5 MB), en MB, KB o bytes sin redondear. */
+  readonly tamanioMaximoTexto = computed(() => describirTamano(this.configuracion()?.tamanioMaximoBytes || SOPORTE_MAX_BYTES));
   readonly limiteSubidasPorMinuto = computed(() => this.configuracion()?.limiteSubidasPorMinuto ?? 10);
   readonly tiposPermitidos = computed(() => this.configuracion()?.tiposPermitidos ?? ['application/pdf', 'image/jpeg', 'image/png']);
   readonly tiposPermitidosTexto = computed(() => {

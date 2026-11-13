@@ -71,7 +71,7 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
           </div>
         </div>
 
-        <!-- KPI 3: Alumnos en Riesgo (>20% inasistencia) -->
+        <!-- KPI 3: Alumnos en riesgo o con pérdida según codigoPermanencia del backend (umbrales parametrizados) -->
         <div class="bg-white p-5 rounded-2xl border border-warm-200/80 shadow-warm-sm flex flex-col justify-between">
           <div class="flex items-center justify-between">
             <span class="text-xs font-semibold text-warm-500 uppercase tracking-wider">Alerta Inasistencia</span>

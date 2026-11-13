@@ -25,3 +25,29 @@ if [ -f "$template" ]; then
   export API_URL KEYCLOAK_URL KEYCLOAK_REALM KEYCLOAK_CLIENT_ID USE_MOCKS SECURITY_PROVIDER SECURITY_BASELINE_URL SECURITY_BASELINE_UI_URL SECURITY_BASELINE_APPLICATION_ID SECURITY_BASELINE_ISSUER_URL SECURITY_BASELINE_CLIENT_ID
   envsubst '${API_URL} ${KEYCLOAK_URL} ${KEYCLOAK_REALM} ${KEYCLOAK_CLIENT_ID} ${USE_MOCKS} ${SECURITY_PROVIDER} ${SECURITY_BASELINE_URL} ${SECURITY_BASELINE_UI_URL} ${SECURITY_BASELINE_APPLICATION_ID} ${SECURITY_BASELINE_ISSUER_URL} ${SECURITY_BASELINE_CLIENT_ID}' < "$template" > "$target"
 fi
+
+# ----------------------------------------------------------------------------
+# CSP y HSTS (CF-04). Los origenes permitidos en connect-src salen de las mismas
+# variables que env.js (API, IdP/Keycloak, Security Baseline); no hay lista fija.
+# ----------------------------------------------------------------------------
+origin_of() {
+  # scheme://host[:port] de una URL; vacio si no es http(s)
+  printf '%s' "$1" | sed -n -E 's#^(https?://[^/?\#]+).*#\1#p'
+}
+
+csp_connect="'self'"
+for raw in "${API_URL:-}" "${KEYCLOAK_URL:-}" "${SECURITY_BASELINE_URL:-}" "${SECURITY_BASELINE_ISSUER_URL:-}" ${CSP_EXTRA_CONNECT_SRC:-}; do
+  o="$(origin_of "$raw")"
+  [ -n "$o" ] && csp_connect="$csp_connect $o"
+done
+
+# Origenes de los que el SPA navega o embebe (silent-check-sso usa iframe del propio origen).
+csp_policy="default-src 'self'; script-src 'self'; script-src-attr 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src $csp_connect; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+
+{
+  printf 'add_header Content-Security-Policy "%s" always;\n' "$csp_policy"
+  # HSTS solo cuando el despliegue esta detras de TLS (ENABLE_HSTS=true); por HTTP no tiene efecto util.
+  if [ "${ENABLE_HSTS:-false}" = "true" ]; then
+    printf 'add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;\n'
+  fi
+} > /etc/nginx/snippets/csp.conf

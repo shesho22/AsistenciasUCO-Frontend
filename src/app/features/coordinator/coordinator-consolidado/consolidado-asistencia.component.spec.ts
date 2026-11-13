@@ -32,7 +32,10 @@ describe('ConsolidadoAsistenciaComponent (HU061)', () => {
     return rt;
   }
 
-  function crear(comoDecano: boolean): ComponentFixture<ConsolidadoAsistenciaComponent> {
+  function crear(
+    comoDecano: boolean,
+    umbrales: { umbralAdvertencia: number; umbralPerdida: number } | null = { umbralAdvertencia: 15, umbralPerdida: 20 }
+  ): ComponentFixture<ConsolidadoAsistenciaComponent> {
     toast = jasmine.createSpyObj('ToastService', ['success', 'error']);
     TestBed.configureTestingModule({
       imports: [ConsolidadoAsistenciaComponent],
@@ -51,10 +54,42 @@ describe('ConsolidadoAsistenciaComponent (HU061)', () => {
       exitoso: true,
       datos: [{ id: 'PER-1', codigo: '2026-2', nombre: '2026-2', fechaInicio: '2026-07-01', fechaFin: '2026-12-01', estado: 'ACTIVO' }],
     });
+    // PAR-06: los umbrales del semaforo salen de los KPI del rol (parametros ASISTENCIA/UMBRAL_ALERTA_*).
+    const kpis = http.expectOne((r) => r.url === `${api}/${comoDecano ? 'decano' : 'coordinador'}/indicadores`);
+    if (umbrales) {
+      kpis.flush({ exitoso: true, datos: umbrales });
+    } else {
+      kpis.flush({}, { status: 500, statusText: 'Error' });
+    }
     return fixture;
   }
 
   afterEach(() => http?.verify());
+
+  it('PAR-06 colorea la inasistencia con el umbral parametrizado de los KPI, no con un 15 fijo', () => {
+    const fixture = crear(false, { umbralAdvertencia: 5, umbralPerdida: 30 });
+    http
+      .expectOne((r) => r.url === `${api}/coordinador/consolidado-asistencia`)
+      .flush({ exitoso: true, datos: [grupo('ASG-1', 'Cálculo', 'DOC-1')], total: 1 });
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.umbralAdvertencia()).toBe(5);
+    expect(fixture.componentInstance.umbralPerdida()).toBe(30);
+    const celda = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="inasistencia"]');
+    expect(celda?.className).toContain('text-danger-700');
+  });
+
+  it('PAR-06 conserva los umbrales de respaldo (15/20) si los KPI no responden', () => {
+    const fixture = crear(true, null);
+    http.expectOne((r) => r.url === `${api}/decano/consolidado-asistencia`)
+      .flush({ exitoso: true, datos: [grupo('ASG-1', 'Cálculo', 'DOC-1')], total: 1 });
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.umbralAdvertencia()).toBe(15);
+    expect(fixture.componentInstance.umbralPerdida()).toBe(20);
+    const celda = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="inasistencia"]');
+    expect(celda?.className).not.toContain('text-danger-700');
+  });
 
   it('el coordinador consulta su ruta y ve las métricas por grupo', () => {
     const fixture = crear(false);
