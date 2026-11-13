@@ -37,6 +37,10 @@ ng-serve-*.log
 src/assets/env.js
 connect.lock
 /coverage
+# Pruebas E2E (Playwright, PRU-06)
+/playwright-report
+/test-results
+/blob-report
 /libpeerconnection.log
 testem.log
 /typings
