@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, computed, effect, input, output, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { SOPORTE_ACCEPT, SOPORTE_MAX_BYTES, describirTamano } from '../../../../core/files/soporte-file.validator';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
@@ -17,7 +17,7 @@ import { CategoriaJustificacionItem } from '../../../../core/models/consultas-tr
 @Component({
     selector: 'app-student-claim-form',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CommonModule, FormsModule, ButtonComponent, FormFieldComponent],
+    imports: [FormsModule, ButtonComponent, FormFieldComponent],
     template: `
     @if (sesion() && materia()) {
       <div class="space-y-6">

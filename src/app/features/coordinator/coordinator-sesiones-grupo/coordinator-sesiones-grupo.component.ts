@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy, inject, input, signal, computed, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
@@ -45,7 +45,7 @@ export interface GrupoSesionesRef {
     selector: 'app-coordinator-sesiones-grupo',
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: { class: 'block w-full' },
-    imports: [CommonModule, FormsModule, BadgeComponent, PaginationComponent, SesionEstadoBadgeComponent, ErrorCargaComponent, CoordinatorCancelarSesionModalComponent],
+    imports: [FormsModule, BadgeComponent, PaginationComponent, SesionEstadoBadgeComponent, ErrorCargaComponent, CoordinatorCancelarSesionModalComponent],
     template: `
     <div class="space-y-4">
       <!-- HU060: sesiones del grupo con registro de asistencia -->

@@ -1,6 +1,6 @@
 import { Component, OnDestroy, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { Subscription, finalize } from 'rxjs';
-import { CommonModule } from '@angular/common';
+
 import { ActivatedRoute, Router } from '@angular/router';
 import { StudentManagementService } from '../../../core/services/student-management.service';
 import { MatriculaQrService } from '../../../core/services/matricula-qr.service';
@@ -46,12 +46,11 @@ type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO';
     selector: 'app-student-courses',
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [
-        CommonModule,
-        StudentCoursesListComponent,
-        StudentCourseDetailComponent,
-        StudentClaimFormComponent,
-        StudentMatriculaCodigoModalComponent,
-    ],
+    StudentCoursesListComponent,
+    StudentCourseDetailComponent,
+    StudentClaimFormComponent,
+    StudentMatriculaCodigoModalComponent
+],
     template: `
     <div class="space-y-6 animate-fade-in">
       <!-- 1. Vista: Lista Principal de Materias -->

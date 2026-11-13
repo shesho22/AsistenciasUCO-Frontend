@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy, input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { DeanFacultadService, planesDeLaEstructura } from '../../../core/services/dean-facultad.service';
@@ -20,7 +20,7 @@ const TAMANO_CREDITOS = 100;
     selector: 'app-dean-programas',
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: { class: 'block w-full' },
-    imports: [CommonModule, FormsModule, BadgeComponent, PaginationComponent, DeanProgramasGestionComponent, DeanProgramasCreditosComponent],
+    imports: [FormsModule, BadgeComponent, PaginationComponent, DeanProgramasGestionComponent, DeanProgramasCreditosComponent],
     template: `
     <div class="space-y-6 animate-fade-in">
       <!-- Header Bento -->

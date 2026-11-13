@@ -1,6 +1,6 @@
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { Component, OnDestroy, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { Subscription, finalize } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
@@ -38,16 +38,15 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
     selector: 'app-teacher-claims',
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [
-        EmptyStateComponent,
-        CommonModule,
-        FormsModule,
-        CardComponent,
-        BadgeComponent,
-        ButtonComponent,
-        FormFieldComponent,
-        AvatarComponent,
-        PaginationComponent,
-    ],
+    EmptyStateComponent,
+    FormsModule,
+    CardComponent,
+    BadgeComponent,
+    ButtonComponent,
+    FormFieldComponent,
+    AvatarComponent,
+    PaginationComponent
+],
     template: `
     <div class="space-y-6 animate-fade-in">
       <!-- 1. VISTA: BANDEJA GENERAL DE RECLAMOS -->

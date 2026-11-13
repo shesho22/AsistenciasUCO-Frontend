@@ -1,6 +1,6 @@
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { Component, OnInit, OnDestroy, inject, input, signal, computed, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { DeanFacultadService } from '../../../core/services/dean-facultad.service';
@@ -33,7 +33,7 @@ function adaptarGrupoACurso(dto: any): Course {
     selector: 'app-dean-grupo-detalle',
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: { class: 'block w-full' },
-    imports: [EmptyStateComponent, CommonModule, SesionEstadoBadgeComponent],
+    imports: [EmptyStateComponent, SesionEstadoBadgeComponent],
     template: `
     <div class="space-y-6 animate-fade-in">
       <!-- Barra de Retorno -->

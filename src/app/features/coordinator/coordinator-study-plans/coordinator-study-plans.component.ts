@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { Router } from '@angular/router';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { PlanEstudioItem } from '../../../core/models/role-management.model';
@@ -11,7 +11,7 @@ import { StudyPlansListComponent } from './components/study-plans-list.component
     selector: 'app-coordinator-study-plans',
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: { class: 'block w-full' },
-    imports: [CommonModule, StudyPlansListComponent],
+    imports: [StudyPlansListComponent],
     template: `
     <div class="space-y-6 animate-fade-in">
       <!-- Header Bento -->

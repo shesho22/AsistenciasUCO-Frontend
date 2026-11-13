@@ -1,11 +1,11 @@
 import { Component, ChangeDetectionStrategy, input, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 
 export type CardPadding = 'none' | 'sm' | 'md' | 'lg';
 
 @Component({
     selector: 'app-card',
-    imports: [CommonModule],
+    imports: [],
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: {
         class: 'flex flex-col h-full w-full',

@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, signal, computed, effect, untracked, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule, Location } from '@angular/common';
+import { Location } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { User, UserRole } from '../../core/models/user.model';
@@ -16,14 +16,13 @@ import { PerfilInstitucionalStore, TEXTO_SIN_REGISTRAR } from './perfil-instituc
     // APP-06: un solo estado de perfil institucional por pantalla, compartido con <app-profile-links>.
     providers: [PerfilInstitucionalStore],
     imports: [
-        CommonModule,
-        RouterLink,
-        CardComponent,
-        BadgeComponent,
-        ButtonComponent,
-        AvatarComponent,
-        ProfileLinksComponent,
-    ],
+    RouterLink,
+    CardComponent,
+    BadgeComponent,
+    ButtonComponent,
+    AvatarComponent,
+    ProfileLinksComponent
+],
     template: `
     <div class="space-y-6 animate-fade-in">
       <!-- Barra Superior de Navegación "Atrás" -->

@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy, input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { AdminManagementService } from '../../../core/services/admin-management.service';
 import { BadgeComponent } from '../../../shared/components/badge/badge.component';
@@ -8,7 +8,7 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
     selector: 'app-dean-areas',
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: { class: 'block w-full' },
-    imports: [CommonModule, FormsModule, BadgeComponent],
+    imports: [FormsModule, BadgeComponent],
     template: `
     <div class="space-y-6 animate-fade-in">
       <!-- Header Bento -->

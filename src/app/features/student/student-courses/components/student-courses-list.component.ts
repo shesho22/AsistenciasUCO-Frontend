@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, computed, input, output, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { AttendanceStatusBadgeComponent } from '../../../../shared/components/attendance-status-badge/attendance-status-badge.component';
 import { CardComponent } from '../../../../shared/components/card/card.component';
 import { BadgeComponent, BadgeVariant } from '../../../../shared/components/badge/badge.component';
@@ -40,7 +40,7 @@ interface BarraHoras {
 @Component({
     selector: 'app-student-courses-list',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CommonModule, CardComponent, BadgeComponent, ButtonComponent, AttendanceStatusBadgeComponent, PaginationComponent],
+    imports: [CardComponent, BadgeComponent, ButtonComponent, AttendanceStatusBadgeComponent, PaginationComponent],
     template: `
     <div class="space-y-6">
       <!-- Header Bento -->

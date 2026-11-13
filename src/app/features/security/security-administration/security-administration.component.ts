@@ -9,7 +9,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { AuthService } from '../../../core/services/auth.service';
 import { ComponentesExternosService } from '../../../core/services/componentes-externos.service';
 import { hasAnyRole } from '../../../core/models/user.model';
@@ -67,7 +67,7 @@ type ViewState = 'loading' | 'ready' | 'error' | 'unauthorized' | 'forbidden';
 
 @Component({
     selector: 'app-security-administration',
-    imports: [CommonModule],
+    imports: [],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
     <section class="rounded-2xl border border-warm-200 bg-white p-6 shadow-warm-sm">

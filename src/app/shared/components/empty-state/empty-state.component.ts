@@ -1,11 +1,11 @@
 import { Component, ChangeDetectionStrategy, input, output, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 
 export type EmptyStateVariant = 'neutral' | 'search' | 'info' | 'error';
 
 @Component({
     selector: 'app-empty-state',
-    imports: [CommonModule],
+    imports: [],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
     <div

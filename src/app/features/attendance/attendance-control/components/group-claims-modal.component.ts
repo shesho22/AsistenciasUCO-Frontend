@@ -1,5 +1,5 @@
 ﻿import { Component, ChangeDetectionStrategy, input, output, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
@@ -11,7 +11,7 @@ import { etiquetaEstadoReclamo, etiquetaResultadoAprobacion } from '../../../../
 @Component({
     selector: 'app-group-claims-modal',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CommonModule, FormsModule, ModalComponent, ButtonComponent, BadgeComponent],
+    imports: [FormsModule, ModalComponent, ButtonComponent, BadgeComponent],
     template: `
     <app-modal
       [isOpen]="isOpen()"

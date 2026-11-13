@@ -8,7 +8,7 @@ import {
   output,
   ChangeDetectionStrategy,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { ButtonComponent } from '../button/button.component';
 import { BadgeComponent } from '../badge/badge.component';
@@ -33,7 +33,7 @@ export interface UserPickerItem {
 @Component({
     selector: 'app-user-picker-modal',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CommonModule, FormsModule, ButtonComponent, BadgeComponent],
+    imports: [FormsModule, ButtonComponent, BadgeComponent],
     template: `
     @if (isOpen()) {
       <div

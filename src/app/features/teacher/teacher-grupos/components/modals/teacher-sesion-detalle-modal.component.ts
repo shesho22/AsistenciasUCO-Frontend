@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, input, output, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ModalComponent } from '../../../../../shared/components/modal/modal.component';
 import { ButtonComponent } from '../../../../../shared/components/button/button.component';
 import { ClassSession } from '../../../../../core/models/attendance.model';
@@ -8,7 +8,7 @@ import { SessionTimeZoneService } from '../../../../../core/services/session-tim
 @Component({
     selector: 'app-teacher-sesion-detalle-modal',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CommonModule, ModalComponent, ButtonComponent],
+    imports: [ModalComponent, ButtonComponent],
     template: `
     <app-modal
       [isOpen]="isOpen()"

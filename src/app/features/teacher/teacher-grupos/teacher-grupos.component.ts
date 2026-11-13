@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AttendanceService } from '../../../core/services/attendance.service';
@@ -46,16 +46,15 @@ type VistaGrupos = 'LISTA' | 'HUB_GRUPO' | 'FORM_SESION' | 'FORM_GRUPO';
     selector: 'app-teacher-grupos',
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [
-        CommonModule,
-        TeacherGruposListComponent,
-        TeacherGrupoHubComponent,
-        TeacherSesionFormComponent,
-        TeacherGrupoFormComponent,
-        TeacherMatriculaModalComponent,
-        TeacherSesionCancelarModalComponent,
-        TeacherSesionDetalleModalComponent,
-        TeacherRetiroEstudianteModalComponent,
-    ],
+    TeacherGruposListComponent,
+    TeacherGrupoHubComponent,
+    TeacherSesionFormComponent,
+    TeacherGrupoFormComponent,
+    TeacherMatriculaModalComponent,
+    TeacherSesionCancelarModalComponent,
+    TeacherSesionDetalleModalComponent,
+    TeacherRetiroEstudianteModalComponent
+],
     template: `
     <div class="space-y-6 animate-fade-in">
       <!-- 1. VISTA LISTA PRINCIPAL -->

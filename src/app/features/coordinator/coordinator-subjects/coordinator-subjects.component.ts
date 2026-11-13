@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy, input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
@@ -20,13 +20,13 @@ import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load
     selector: 'app-coordinator-subjects',
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [
-        CommonModule,
-        FormsModule,
-        RouterLink,
-        BadgeComponent,
-        ButtonComponent,
-        AvatarComponent, ErrorCargaComponent
-    ],
+    FormsModule,
+    RouterLink,
+    BadgeComponent,
+    ButtonComponent,
+    AvatarComponent,
+    ErrorCargaComponent
+],
     template: `
     <div class="space-y-6">
       <!-- Header Bento -->

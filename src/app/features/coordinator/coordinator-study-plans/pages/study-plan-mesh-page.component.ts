@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, input, signal, computed, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ActivatedRoute, Router } from '@angular/router';
 import { CoordinatorManagementService } from '../../../../core/services/coordinator-management.service';
 import { PlanEstudioItem, AsignaturaPlanItem } from '../../../../core/models/role-management.model';
@@ -16,7 +16,7 @@ const MAX_SEMESTRES = 10;
     selector: 'app-coordinator-study-plan-mesh-page',
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: { class: 'block w-full' },
-    imports: [CommonModule, StudyPlanMeshComponent, AssociateSubjectDialogComponent, ConfirmDialogComponent],
+    imports: [StudyPlanMeshComponent, AssociateSubjectDialogComponent, ConfirmDialogComponent],
     template: `
     <div class="space-y-6 animate-fade-in">
       @if (aviso(); as mensaje) {

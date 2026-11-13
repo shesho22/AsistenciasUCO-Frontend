@@ -1,6 +1,6 @@
 import { CifraConBaseComponent } from '../../../../shared/components/cifra-con-base/cifra-con-base.component';
 import { Component, ChangeDetectionStrategy, computed, input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { RouterLink } from '@angular/router';
 import { CardComponent } from '../../../../shared/components/card/card.component';
 import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
@@ -10,7 +10,7 @@ import { DecanoItem } from '../../../../core/models/role-management.model';
 @Component({
     selector: 'app-overview-admin',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CifraConBaseComponent, CommonModule, RouterLink, CardComponent, BadgeComponent, ButtonComponent],
+    imports: [CifraConBaseComponent, RouterLink, CardComponent, BadgeComponent, ButtonComponent],
     host: {
         class: 'block w-full',
     },

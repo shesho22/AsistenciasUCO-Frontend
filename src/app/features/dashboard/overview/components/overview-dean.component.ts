@@ -1,6 +1,6 @@
 import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 import { Component, ChangeDetectionStrategy, input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { RouterLink } from '@angular/router';
 import { CardComponent } from '../../../../shared/components/card/card.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
@@ -9,7 +9,7 @@ import { CoordinadorItem } from '../../../../core/models/role-management.model';
 @Component({
     selector: 'app-overview-dean',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [EmptyStateComponent, CommonModule, RouterLink, CardComponent, ButtonComponent],
+    imports: [EmptyStateComponent, RouterLink, CardComponent, ButtonComponent],
     host: {
         class: 'block w-full',
     },

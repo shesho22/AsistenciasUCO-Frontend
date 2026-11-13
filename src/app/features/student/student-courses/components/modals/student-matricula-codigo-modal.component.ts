@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, effect, input, output, signal, untracked } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { ButtonComponent } from '../../../../../shared/components/button/button.component';
 import { ModalComponent } from '../../../../../shared/components/modal/modal.component';
@@ -7,7 +7,7 @@ import { ModalComponent } from '../../../../../shared/components/modal/modal.com
 @Component({
     selector: 'app-student-matricula-codigo-modal',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CommonModule, FormsModule, ButtonComponent, ModalComponent],
+    imports: [FormsModule, ButtonComponent, ModalComponent],
     template: `
     <app-modal [isOpen]="isOpen()" title="Matricúlate a un Grupo" (closed)="closed.emit()">
       <div class="space-y-5">

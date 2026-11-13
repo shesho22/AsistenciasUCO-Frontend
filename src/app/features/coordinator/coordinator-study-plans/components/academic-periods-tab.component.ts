@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, input, output, signal, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { PeriodoAcademicoItem } from '../../../../core/models/role-management.model';
 import { CardComponent } from '../../../../shared/components/card/card.component';
@@ -11,7 +11,7 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
 @Component({
     selector: 'app-academic-periods-tab',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CommonModule, FormsModule, CardComponent, BadgeComponent, ButtonComponent, FormFieldComponent, PaginationComponent],
+    imports: [FormsModule, CardComponent, BadgeComponent, ButtonComponent, FormFieldComponent, PaginationComponent],
     template: `
     <div class="space-y-6">
       <div class="flex items-center justify-between bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm">

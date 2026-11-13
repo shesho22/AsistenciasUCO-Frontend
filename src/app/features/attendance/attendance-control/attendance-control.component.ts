@@ -2,7 +2,7 @@ import type { NuevaSesionSolicitud } from './components/attendance-new-session-m
 import type { MatriculaEstudianteSolicitud } from './components/attendance-enrollment-modal.component';
 import { Component, DestroyRef, signal, computed, effect, inject, ChangeDetectionStrategy } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { CommonModule } from '@angular/common';
+
 import { Subscription, finalize, forkJoin, map, of } from 'rxjs';
 import { StudentService } from '../../../core/services/student.service';
 import { StudentRegistrationConfigService } from '../../../core/services/student-registration-config.service';
@@ -91,21 +91,20 @@ type StudentEnrollmentField =
     selector: 'app-attendance-control',
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [
-        CommonModule,
-        ToastComponent,
-        AttendanceControlHeaderComponent,
-        AttendanceControlTableComponent,
-        AttendanceEnrollmentModalComponent,
-        AttendanceNewSessionModalComponent,
-        SessionTomasPanelComponent,
-        TomaModoSelectorComponent,
-        TomaCierreDialogComponent,
-        TomaQrProyeccionComponent,
-        GroupSessionsOverviewComponent,
-        GroupInfoModalComponent,
-        GroupClaimsModalComponent,
-        TeacherMatriculaModalComponent,
-    ],
+    ToastComponent,
+    AttendanceControlHeaderComponent,
+    AttendanceControlTableComponent,
+    AttendanceEnrollmentModalComponent,
+    AttendanceNewSessionModalComponent,
+    SessionTomasPanelComponent,
+    TomaModoSelectorComponent,
+    TomaCierreDialogComponent,
+    TomaQrProyeccionComponent,
+    GroupSessionsOverviewComponent,
+    GroupInfoModalComponent,
+    GroupClaimsModalComponent,
+    TeacherMatriculaModalComponent
+],
     template: `
     <div class="flex flex-col gap-6 animate-fade-in max-w-7xl mx-auto pb-12 relative">
       <!-- 1. Encabezado y Selectores de Curso / Sesión -->

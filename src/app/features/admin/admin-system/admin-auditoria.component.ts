@@ -1,6 +1,6 @@
 import { FechaHoraCortaPipe } from '../../../shared/pipes/fecha-hora.pipes';
 import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { ConsultasTransversalesService } from '../../../core/services/consultas-transversales.service';
 import { EventoAuditoriaItem } from '../../../core/models/consultas-transversales.model';
@@ -44,7 +44,7 @@ export function rangoUtc(desde: string, hasta: string): { desde: string; hasta: 
 @Component({
     selector: 'app-admin-auditoria',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [FechaHoraCortaPipe, CommonModule, FormsModule, BadgeComponent, PaginationComponent, ErrorCargaComponent],
+    imports: [FechaHoraCortaPipe, FormsModule, BadgeComponent, PaginationComponent, ErrorCargaComponent],
     template: `
     <div class="space-y-4">
       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 bg-white p-4 rounded-2xl border border-warm-200 shadow-warm-sm">

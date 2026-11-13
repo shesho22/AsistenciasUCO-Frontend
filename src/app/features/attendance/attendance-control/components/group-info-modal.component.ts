@@ -1,6 +1,6 @@
 import { EstudianteGrupoItem } from '../../../../core/models/estudiante-grupo-item.model';
 import { Component, ChangeDetectionStrategy, input, output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
@@ -9,7 +9,7 @@ import { Course } from '../../../../core/models/course.model';
 @Component({
     selector: 'app-group-info-modal',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CommonModule, ModalComponent, ButtonComponent, BadgeComponent],
+    imports: [ModalComponent, ButtonComponent, BadgeComponent],
     template: `
     <app-modal
       [isOpen]="isOpen()"

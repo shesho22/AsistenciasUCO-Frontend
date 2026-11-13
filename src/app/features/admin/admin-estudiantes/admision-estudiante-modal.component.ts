@@ -8,7 +8,7 @@ import {
   output,
   signal,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { CatalogService } from '../../../core/services/catalog.service';
 import { AdminManagementService } from '../../../core/services/admin-management.service';
@@ -58,7 +58,7 @@ const CAMPOS_FORMULARIO = new Set([
 @Component({
     selector: 'app-admision-estudiante-modal',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CommonModule, FormsModule, ModalComponent],
+    imports: [FormsModule, ModalComponent],
     template: `
     <app-modal [isOpen]="isOpen()" title="Admitir nuevo estudiante" (closed)="onCancelar()">
       <div class="space-y-4 max-h-[75vh] overflow-y-auto pr-1">

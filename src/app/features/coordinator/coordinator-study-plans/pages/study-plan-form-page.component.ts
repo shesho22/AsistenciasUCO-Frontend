@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, input, signal, computed, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ActivatedRoute, Router } from '@angular/router';
 import { CoordinatorManagementService } from '../../../../core/services/coordinator-management.service';
 import { PlanEstudioItem } from '../../../../core/models/role-management.model';
@@ -11,7 +11,7 @@ import { StudyPlanFormComponent } from '../components/study-plan-form.component'
     selector: 'app-coordinator-study-plan-form-page',
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: { class: 'block w-full' },
-    imports: [CommonModule, StudyPlanFormComponent],
+    imports: [StudyPlanFormComponent],
     template: `
     <div class="space-y-6 animate-fade-in">
       @if (modo() === 'CREAR' || selectedPlan()) {

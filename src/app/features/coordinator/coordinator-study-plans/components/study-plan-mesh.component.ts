@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, input, output, signal, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { PlanEstudioItem, AsignaturaPlanItem } from '../../../../core/models/role-management.model';
 import { BadgeComponent, BadgeVariant } from '../../../../shared/components/badge/badge.component';
@@ -9,7 +9,7 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
 @Component({
     selector: 'app-study-plan-mesh',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CommonModule, FormsModule, BadgeComponent, ButtonComponent, PaginationComponent],
+    imports: [FormsModule, BadgeComponent, ButtonComponent, PaginationComponent],
     template: `
     <div class="space-y-6">
       <div class="flex items-center justify-between bg-white p-4 rounded-2xl border border-warm-200 shadow-warm-sm">

@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, computed, input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FichaUnificadaEstudiante, MatriculaHistorial } from '../../../core/models/consultas-transversales.model';
 import { BadgeComponent, BadgeVariant } from '../badge/badge.component';
 
@@ -16,7 +16,7 @@ const VARIANTE_PERMANENCIA: Record<string, BadgeVariant> = {
 @Component({
     selector: 'app-historial-estudiante',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CommonModule, BadgeComponent],
+    imports: [BadgeComponent],
     template: `
     @if (ficha(); as f) {
       <div class="space-y-4">

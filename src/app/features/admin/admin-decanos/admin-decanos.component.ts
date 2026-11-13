@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { AdminManagementService } from '../../../core/services/admin-management.service';
 import { CatalogService, TipoIdentificacionItem, FacultadItem } from '../../../core/services/catalog.service';
@@ -28,18 +28,17 @@ type VistaAdmin = 'LISTA' | 'REGISTRO';
     selector: 'app-admin-decanos',
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [
-        ActionMenuComponent,
-        CommonModule,
-        FormsModule,
-        CardComponent,
-        BadgeComponent,
-        ButtonComponent,
-        FormFieldComponent,
-        UserPickerModalComponent,
-        AccountAccessStatusComponent,
-        CorreccionIdentidadModalComponent,
-        CargaMasivaUsuariosComponent,
-    ],
+    ActionMenuComponent,
+    FormsModule,
+    CardComponent,
+    BadgeComponent,
+    ButtonComponent,
+    FormFieldComponent,
+    UserPickerModalComponent,
+    AccountAccessStatusComponent,
+    CorreccionIdentidadModalComponent,
+    CargaMasivaUsuariosComponent
+],
     template: `
     <div class="space-y-6 animate-fade-in">
       <!-- 1. VISTA: LISTA DE DECANOS -->

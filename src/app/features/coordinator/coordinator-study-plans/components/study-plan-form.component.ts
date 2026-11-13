@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, input, output, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { PlanEstudioItem } from '../../../../core/models/role-management.model';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
@@ -8,7 +8,7 @@ import { FormFieldComponent } from '../../../../shared/components/form-field/for
 @Component({
     selector: 'app-study-plan-form',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CommonModule, FormsModule, ButtonComponent, FormFieldComponent],
+    imports: [FormsModule, ButtonComponent, FormFieldComponent],
     template: `
     <div class="space-y-6">
       <div class="flex items-center justify-between bg-white p-4 rounded-2xl border border-warm-200 shadow-warm-sm">

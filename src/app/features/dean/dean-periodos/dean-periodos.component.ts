@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
@@ -11,7 +11,7 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
     selector: 'app-dean-periodos',
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: { class: 'block w-full' },
-    imports: [CommonModule, FormsModule, BadgeComponent],
+    imports: [FormsModule, BadgeComponent],
     template: `
     <div class="space-y-6 animate-fade-in">
       <!-- Header Bento -->

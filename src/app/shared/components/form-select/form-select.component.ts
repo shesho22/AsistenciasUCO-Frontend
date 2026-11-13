@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, input, output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 
 export interface SelectOption {
   value: string;
@@ -9,7 +9,7 @@ export interface SelectOption {
 
 @Component({
     selector: 'app-form-select',
-    imports: [CommonModule],
+    imports: [],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
     <div class="relative w-full">

@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, input, output, signal, effect, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
@@ -23,7 +23,7 @@ export interface NuevaSesionSolicitud {
 @Component({
     selector: 'app-attendance-new-session-modal',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CommonModule, FormsModule, ModalComponent, ButtonComponent, FormFieldComponent],
+    imports: [FormsModule, ModalComponent, ButtonComponent, FormFieldComponent],
     template: `
     <app-modal
       [isOpen]="isOpen()"

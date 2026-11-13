@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, input, output, signal, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { PlanEstudioItem } from '../../../../core/models/role-management.model';
 import { CardComponent } from '../../../../shared/components/card/card.component';
 import { BadgeComponent, BadgeVariant } from '../../../../shared/components/badge/badge.component';
@@ -10,7 +10,7 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
 @Component({
     selector: 'app-study-plans-list',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CommonModule, CardComponent, BadgeComponent, ButtonComponent, PaginationComponent, ActionMenuComponent],
+    imports: [CardComponent, BadgeComponent, ButtonComponent, PaginationComponent, ActionMenuComponent],
     template: `
     <div class="space-y-6">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, input, output, signal, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { FormFieldComponent } from '../../../../../shared/components/form-field/form-field.component';
@@ -25,7 +25,7 @@ const MOTIVO_MAXIMO = 500;
 @Component({
     selector: 'app-teacher-retiro-estudiante-modal',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CommonModule, FormsModule, FormFieldComponent, ButtonComponent],
+    imports: [FormsModule, FormFieldComponent, ButtonComponent],
     template: `
     @if (isOpen() && estudiante()) {
       <div class="fixed inset-0 bg-warm-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">

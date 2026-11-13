@@ -1,6 +1,6 @@
 import { CancelacionSesion, detalleCancelacion } from '../../../../core/models/sesion-estado.model';
 import { Component, ChangeDetectionStrategy, input, output, signal, computed, HostListener } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { CardComponent } from '../../../../shared/components/card/card.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
@@ -14,7 +14,7 @@ import {
 @Component({
     selector: 'app-attendance-control-table',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CommonModule, FormsModule, CardComponent, ButtonComponent, AvatarComponent],
+    imports: [FormsModule, CardComponent, ButtonComponent, AvatarComponent],
     host: {
         class: 'block w-full'
     },

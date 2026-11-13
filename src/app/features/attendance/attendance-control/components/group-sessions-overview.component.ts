@@ -1,6 +1,6 @@
 import { ResumenAsistenciaEstudiante } from '../../../../core/models/indicadores-asistencia.model';
 import { Component, ChangeDetectionStrategy, input, output, computed, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { Course } from '../../../../core/models/course.model';
 import { ClassSession } from '../../../../core/models/attendance.model';
@@ -14,7 +14,7 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
 @Component({
     selector: 'app-group-sessions-overview',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CommonModule, ButtonComponent, SesionEstadoBadgeComponent, ActionMenuComponent, EmptyStateComponent],
+    imports: [ButtonComponent, SesionEstadoBadgeComponent, ActionMenuComponent, EmptyStateComponent],
     host: {
         class: 'block w-full'
     },

@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { EmailVerificationService } from '../../../core/services/email-verification.service';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
@@ -16,7 +16,7 @@ export type VerifyEmailState = 'VERIFICANDO' | 'EXITO' | 'ERROR';
 @Component({
     selector: 'app-verify-email',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CommonModule, RouterLink],
+    imports: [RouterLink],
     template: `
     <section class="w-full max-w-md mx-auto bg-white border border-warm-200 rounded-2xl shadow-warm-sm p-6 space-y-4 text-center">
       <h1 class="text-lg font-bold text-warm-900">Verificación de correo</h1>

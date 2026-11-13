@@ -8,7 +8,7 @@ import {
   computed,
   inject,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { RevisionCancelacionService } from '../../../core/services/revision-cancelacion.service';
 import { MarcaRevisionDocente } from '../../../core/models/revision-cancelacion.model';
@@ -17,7 +17,7 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
 
 @Component({
     selector: 'app-revision-decision-modal',
-    imports: [CommonModule, FormsModule],
+    imports: [FormsModule],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
     @if (isOpen()) {

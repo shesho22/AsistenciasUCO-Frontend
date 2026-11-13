@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, input, output, signal, computed, effect, Injectable, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
@@ -48,7 +48,7 @@ export class ToastService {
 
 @Component({
     selector: 'app-toast',
-    imports: [CommonModule],
+    imports: [],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
     @if (visible() || isExiting()) {

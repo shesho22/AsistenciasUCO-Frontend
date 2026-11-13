@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, computed, input, output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
 import { ActionMenuComponent, ActionMenuItem } from '../../../../shared/components/action-menu/action-menu.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
@@ -10,7 +10,7 @@ import { ClassSession } from '../../../../core/models/attendance.model';
 @Component({
     selector: 'app-attendance-control-header',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CommonModule, BadgeComponent, ButtonComponent, FormSelectComponent, ActionMenuComponent],
+    imports: [BadgeComponent, ButtonComponent, FormSelectComponent, ActionMenuComponent],
     host: {
         class: 'block w-full'
     },

@@ -8,7 +8,7 @@ import {
   DestroyRef,
   InjectionToken,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
@@ -94,7 +94,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
 @Component({
     selector: 'app-admin-email-management',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CommonModule, FormsModule, IconComponent, PaginationComponent],
+    imports: [FormsModule, IconComponent, PaginationComponent],
     template: `
     <div class="space-y-6">
       <!-- ================= HEADER & BREADCRUMB ================= -->

@@ -1,5 +1,5 @@
 import { Component, signal, computed, inject, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../core/services/auth.service';
 import { ButtonComponent } from '../../../shared/components/button/button.component';
@@ -9,11 +9,10 @@ import { CardComponent } from '../../../shared/components/card/card.component';
     selector: 'app-login',
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [
-        CommonModule,
-        FormsModule,
-        ButtonComponent,
-        CardComponent,
-    ],
+    FormsModule,
+    ButtonComponent,
+    CardComponent
+],
     template: `
     <div class="w-full max-w-md mx-auto animate-fade-in space-y-4">
       <app-card [glass]="true" padding="lg">

@@ -1,7 +1,7 @@
 import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 import { SemaforoAsistenciaComponent } from '../../../../shared/components/semaforo-asistencia/semaforo-asistencia.component';
 import { Component, ChangeDetectionStrategy, computed, input, output, signal, inject, effect, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { Subscription } from 'rxjs';
 import { AttendanceStatusBadgeComponent } from '../../../../shared/components/attendance-status-badge/attendance-status-badge.component';
 import { SesionEstadoBadgeComponent } from '../../../../shared/components/sesion-estado-badge/sesion-estado-badge.component';
@@ -29,7 +29,7 @@ import { ToastService } from '../../../../shared/components/toast/toast.componen
 @Component({
     selector: 'app-student-course-detail',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [EmptyStateComponent, CommonModule, BadgeComponent, ButtonComponent, MotivosJustificacionComponent, SesionEstadoBadgeComponent, AttendanceStatusBadgeComponent, PaginationComponent, SemaforoAsistenciaComponent],
+    imports: [EmptyStateComponent, BadgeComponent, ButtonComponent, MotivosJustificacionComponent, SesionEstadoBadgeComponent, AttendanceStatusBadgeComponent, PaginationComponent, SemaforoAsistenciaComponent],
     template: `
     @if (materia()) {
       <div class="space-y-6">

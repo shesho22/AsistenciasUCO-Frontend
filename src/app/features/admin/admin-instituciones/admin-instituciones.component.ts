@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { AdminManagementService } from '../../../core/services/admin-management.service';
 import { InstitucionItem } from '../../../core/models/role-management.model';
 import { CardComponent } from '../../../shared/components/card/card.component';
@@ -14,7 +14,7 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 @Component({
     selector: 'app-admin-instituciones',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CommonModule, CardComponent, BadgeComponent],
+    imports: [CardComponent, BadgeComponent],
     template: `
     <div class="space-y-6 animate-fade-in">
       <!-- Encabezado -->

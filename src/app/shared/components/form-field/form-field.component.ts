@@ -1,11 +1,11 @@
 import { Component, ChangeDetectionStrategy, ElementRef, afterEveryRender, inject, input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 
 let fieldIdCounter = 0;
 
 @Component({
     selector: 'app-form-field',
-    imports: [CommonModule],
+    imports: [],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
     <div class="flex flex-col gap-1.5 w-full">

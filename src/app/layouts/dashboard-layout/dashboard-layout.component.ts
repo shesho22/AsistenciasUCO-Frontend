@@ -1,5 +1,5 @@
 import { Component, signal, inject, computed, effect, ChangeDetectionStrategy, ElementRef, viewChild, DestroyRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { UserRole, effectiveRoles } from '../../core/models/user.model';
@@ -25,7 +25,7 @@ interface NavItem {
     selector: 'app-dashboard-layout',
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: { '(document:keydown.escape)': 'cerrarMenuConEscape()' },
-    imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, AvatarComponent, BadgeComponent, ToastComponent, IconComponent],
+    imports: [RouterOutlet, RouterLink, RouterLinkActive, AvatarComponent, BadgeComponent, ToastComponent, IconComponent],
     template: `
     <app-toast
       [visible]="toastState().visible"

@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, input, signal, computed, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ActivatedRoute, Router } from '@angular/router';
 import { CoordinatorManagementService } from '../../../../core/services/coordinator-management.service';
 import { PlanEstudioItem, AsignaturaPlanItem, AreaConocimientoItem, CaracterAsignatura } from '../../../../core/models/role-management.model';
@@ -13,7 +13,7 @@ import { SubjectFormComponent } from '../components/subject-form.component';
     selector: 'app-coordinator-subject-form-page',
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: { class: 'block w-full' },
-    imports: [CommonModule, SubjectFormComponent],
+    imports: [SubjectFormComponent],
     template: `
     <div class="space-y-6 animate-fade-in">
       @if (selectedPlan(); as plan) {

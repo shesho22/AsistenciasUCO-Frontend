@@ -11,13 +11,13 @@ import {
   output,
   viewChild,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 
 let modalIdCounter = 0;
 
 @Component({
     selector: 'app-modal',
-    imports: [CommonModule],
+    imports: [],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
     @if (isOpen()) {

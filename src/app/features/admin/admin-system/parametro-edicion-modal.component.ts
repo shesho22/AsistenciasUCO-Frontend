@@ -7,7 +7,7 @@ import {
   computed,
   inject,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { ParametroAdminDto } from '../../../core/models/role-management.model';
 import { AdminManagementService } from '../../../core/services/admin-management.service';
@@ -17,7 +17,7 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 @Component({
     selector: 'app-parametro-edicion-modal',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CommonModule, FormsModule],
+    imports: [FormsModule],
     template: `
     @if (isOpen() && parametro()) {
       <div

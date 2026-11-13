@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { RouterLink } from '@angular/router';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { UserRole } from '../../../../core/models/user.model';
@@ -7,7 +7,7 @@ import { UserRole } from '../../../../core/models/user.model';
 @Component({
     selector: 'app-overview-hero',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CommonModule, RouterLink, ButtonComponent],
+    imports: [RouterLink, ButtonComponent],
     host: {
         class: 'block w-full',
     },

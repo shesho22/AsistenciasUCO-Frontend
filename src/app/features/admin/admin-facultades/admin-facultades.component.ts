@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { AdminManagementService } from '../../../core/services/admin-management.service';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
@@ -21,7 +21,7 @@ type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
 @Component({
     selector: 'app-admin-facultades',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CommonModule, FormsModule, PaginationComponent, ActionMenuComponent],
+    imports: [FormsModule, PaginationComponent, ActionMenuComponent],
     template: `
     <div class="space-y-6 animate-fade-in">
       <!-- ================= HEADER & BREADCRUMB ================= -->

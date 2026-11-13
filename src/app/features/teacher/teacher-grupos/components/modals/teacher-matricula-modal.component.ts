@@ -1,6 +1,6 @@
 import { HoraCortaPipe } from '../../../../../shared/pipes/fecha-hora.pipes';
 import { Component, ChangeDetectionStrategy, Injector, input, output, inject, signal, computed, effect, untracked } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { Subscription } from 'rxjs';
 import { ButtonComponent } from '../../../../../shared/components/button/button.component';
 import { ActionMenuItem } from '../../../../../shared/components/action-menu/action-menu.component';
@@ -28,7 +28,7 @@ import {
 @Component({
     selector: 'app-teacher-matricula-modal',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [HoraCortaPipe, CommonModule, ButtonComponent, QrProyeccionComponent],
+    imports: [HoraCortaPipe, ButtonComponent, QrProyeccionComponent],
     template: `
     @if (isOpen() && curso()) {
       @if (ventana(); as v) {

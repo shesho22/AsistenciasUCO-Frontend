@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy, input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { Router } from '@angular/router';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { PeriodoAcademicoItem } from '../../../core/models/role-management.model';
@@ -11,7 +11,7 @@ import { AcademicPeriodsTabComponent } from '../coordinator-study-plans/componen
     selector: 'app-coordinator-periods',
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: { class: 'block w-full' },
-    imports: [CommonModule, AcademicPeriodsTabComponent],
+    imports: [AcademicPeriodsTabComponent],
     template: `
     <div class="space-y-6 animate-fade-in">
       <!-- Header Bento -->

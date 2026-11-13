@@ -1,6 +1,6 @@
 import { RangoHorarioPipe } from '../../../shared/pipes/fecha-hora.pipes';
 import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
 import { HorarioDocenteItem, DiaSemana } from '../../../core/models/role-management.model';
 import { CardComponent } from '../../../shared/components/card/card.component';
@@ -12,7 +12,7 @@ import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load
 @Component({
     selector: 'app-teacher-schedule',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [RangoHorarioPipe, CommonModule, CardComponent, ButtonComponent],
+    imports: [RangoHorarioPipe, CardComponent, ButtonComponent],
     template: `
     <div class="space-y-6 animate-fade-in">
       <!-- Header Bento -->

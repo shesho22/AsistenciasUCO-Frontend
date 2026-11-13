@@ -7,7 +7,7 @@ import {
   DestroyRef,
   ChangeDetectionStrategy,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { timer } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../../core/services/auth.service';
@@ -51,14 +51,13 @@ import { OverviewStudentComponent } from './components/overview-student.componen
     selector: 'app-overview',
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [
-        CommonModule,
-        OverviewHeroComponent,
-        OverviewAdminComponent,
-        OverviewDeanComponent,
-        OverviewCoordinatorComponent,
-        OverviewTeacherComponent,
-        OverviewStudentComponent,
-    ],
+    OverviewHeroComponent,
+    OverviewAdminComponent,
+    OverviewDeanComponent,
+    OverviewCoordinatorComponent,
+    OverviewTeacherComponent,
+    OverviewStudentComponent
+],
     template: `
     <div class="flex flex-col gap-6 animate-fade-in">
       <!-- 1. Hero Banner Adaptativo -->

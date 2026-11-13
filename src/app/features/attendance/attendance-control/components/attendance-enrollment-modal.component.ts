@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, computed, effect, input, output, signal, inject, untracked, WritableSignal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
@@ -32,7 +32,7 @@ export interface MatriculaEstudianteSolicitud {
 @Component({
     selector: 'app-attendance-enrollment-modal',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CommonModule, FormsModule, ModalComponent, ButtonComponent, FormFieldComponent, FormSelectComponent],
+    imports: [FormsModule, ModalComponent, ButtonComponent, FormFieldComponent, FormSelectComponent],
     template: `
     <app-modal
       [isOpen]="isOpen()"

@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy, input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { DeanManagementService } from '../../../core/services/dean-management.service';
 import { CatalogService, TipoIdentificacionItem } from '../../../core/services/catalog.service';
@@ -32,20 +32,19 @@ type VistaDecano = 'LISTA' | 'REGISTRO';
     selector: 'app-dean-coordinadores',
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [
-        ActionMenuComponent,
-        CommonModule,
-        FormsModule,
-        CardComponent,
-        BadgeComponent,
-        ButtonComponent,
-        FormFieldComponent,
-        UserPickerModalComponent,
-        AccountAccessStatusComponent,
-        PaginationComponent,
-        DeanCoordinadorEditModalComponent,
-        DeanCoordinadorEstadoModalComponent,
-        CargaMasivaUsuariosComponent,
-    ],
+    ActionMenuComponent,
+    FormsModule,
+    CardComponent,
+    BadgeComponent,
+    ButtonComponent,
+    FormFieldComponent,
+    UserPickerModalComponent,
+    AccountAccessStatusComponent,
+    PaginationComponent,
+    DeanCoordinadorEditModalComponent,
+    DeanCoordinadorEstadoModalComponent,
+    CargaMasivaUsuariosComponent
+],
     template: `
     <div class="space-y-6 animate-fade-in">
       <!-- 1. VISTA: LISTA DE COORDINADORES -->

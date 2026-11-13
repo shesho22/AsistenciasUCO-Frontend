@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, input, output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
 import { type EstadoCargaReclamos, SolicitudRevisionItem } from '../../../../core/models/role-management.model';
 import { etiquetaEstadoReclamo, varianteEstadoReclamo } from '../../../../core/utils/reclamo-estado.util';
@@ -7,7 +7,7 @@ import { etiquetaEstadoReclamo, varianteEstadoReclamo } from '../../../../core/u
 @Component({
     selector: 'app-teacher-grupo-reclamos',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CommonModule, BadgeComponent],
+    imports: [BadgeComponent],
     template: `
     <div class="bg-white rounded-b-2xl border-x border-b border-warm-200 shadow-warm-sm p-6 space-y-5">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-warm-100">

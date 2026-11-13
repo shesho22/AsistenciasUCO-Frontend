@@ -1,5 +1,5 @@
 import { Component, OnInit, DestroyRef, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
@@ -26,16 +26,15 @@ type PestanaModulo = 'DIRECTORIO';
     selector: 'app-coordinator-students',
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [
-        CommonModule,
-        FormsModule,
-        BadgeComponent,
-        ButtonComponent,
-        AvatarComponent,
-        PaginationComponent,
-        CoordinatorFichaModalComponent,
-        CoordinatorProgramSelectorComponent,
-        ErrorCargaComponent,
-    ],
+    FormsModule,
+    BadgeComponent,
+    ButtonComponent,
+    AvatarComponent,
+    PaginationComponent,
+    CoordinatorFichaModalComponent,
+    CoordinatorProgramSelectorComponent,
+    ErrorCargaComponent
+],
     template: `
     <div class="space-y-6">
       <app-coordinator-program-selector (programaCambiado)="alCambiarPrograma()" />

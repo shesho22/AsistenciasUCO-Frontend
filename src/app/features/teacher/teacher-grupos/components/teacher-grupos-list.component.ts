@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, input, output, signal, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { CardComponent } from '../../../../shared/components/card/card.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
@@ -11,7 +11,7 @@ import { CatalogoPrograma } from '../../../../core/models/programa-academico.mod
 @Component({
     selector: 'app-teacher-grupos-list',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CommonModule, FormsModule, CardComponent, ButtonComponent, BadgeComponent, EmptyStateComponent],
+    imports: [FormsModule, CardComponent, ButtonComponent, BadgeComponent, EmptyStateComponent],
     template: `
     <div class="space-y-6 animate-fade-in">
       <!-- Header Bento -->

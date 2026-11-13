@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, input, output, model, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { FormFieldComponent } from '../../../../shared/components/form-field/form-field.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
@@ -22,7 +22,7 @@ export interface SesionFormValue {
 @Component({
     selector: 'app-teacher-sesion-form',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CommonModule, FormsModule, FormFieldComponent, ButtonComponent],
+    imports: [FormsModule, FormFieldComponent, ButtonComponent],
     template: `
     <div class="space-y-4">
       <div class="flex items-center justify-between bg-white p-4 rounded-2xl border border-warm-200 shadow-warm-sm">

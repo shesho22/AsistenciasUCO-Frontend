@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, computed, inject, input, output, model } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ActionMenuComponent, ActionMenuItem } from '../../../../shared/components/action-menu/action-menu.component';
 import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 import { SesionEstadoBadgeComponent } from '../../../../shared/components/sesion-estado-badge/sesion-estado-badge.component';
@@ -34,15 +34,14 @@ const PESTANAS_GRUPO: readonly PestanaGrupo[] = [
     selector: 'app-teacher-grupo-hub',
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [
-        CommonModule,
-        ActionMenuComponent,
-        EmptyStateComponent,
-        SesionEstadoBadgeComponent,
-        TeacherGrupoSesionesComponent,
-        TeacherGrupoEstudiantesComponent,
-        TeacherGrupoReclamosComponent,
-        TeacherGrupoSabanaComponent,
-    ],
+    ActionMenuComponent,
+    EmptyStateComponent,
+    SesionEstadoBadgeComponent,
+    TeacherGrupoSesionesComponent,
+    TeacherGrupoEstudiantesComponent,
+    TeacherGrupoReclamosComponent,
+    TeacherGrupoSabanaComponent
+],
     template: `
     @if (selectedCourse()) {
       <div class="space-y-4">

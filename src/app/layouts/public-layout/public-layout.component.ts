@@ -1,11 +1,11 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { RouterOutlet } from '@angular/router';
 
 @Component({
     selector: 'app-public-layout',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CommonModule, RouterOutlet],
+    imports: [RouterOutlet],
     template: `
     <div class="min-h-dvh flex flex-col md:flex-row bg-warm-50">
       <!-- Left Panel: Branding & Aurora Graphic Banner (Desktop Only) -->

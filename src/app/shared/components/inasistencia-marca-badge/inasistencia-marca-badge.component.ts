@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, input, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { BadgeComponent, BadgeVariant } from '../badge/badge.component';
 import { MarcaInasistencia } from '../../../core/models/revision-cancelacion.model';
 
@@ -10,7 +10,7 @@ interface MarcaDisplay {
 
 @Component({
     selector: 'app-inasistencia-marca-badge',
-    imports: [CommonModule, BadgeComponent],
+    imports: [BadgeComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
     @if (display(); as d) {

@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, computed, input, output, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { Course } from '../../../../core/models/course.model';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 import { EstudianteGrupoItem } from '../../../../core/models/estudiante-grupo-item.model';
@@ -7,7 +7,7 @@ import { EstudianteGrupoItem } from '../../../../core/models/estudiante-grupo-it
 @Component({
     selector: 'app-teacher-grupo-estudiantes',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CommonModule, PaginationComponent],
+    imports: [PaginationComponent],
     template: `
     <div class="bg-white rounded-b-2xl border-x border-b border-warm-200 shadow-warm-sm p-6 space-y-5">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-warm-100">
