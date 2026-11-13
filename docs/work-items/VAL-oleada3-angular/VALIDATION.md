@@ -165,3 +165,4 @@ reformateo del decorador, `CommonModule` sin uso, `withXhr()` en specs). Resoluc
   - `e2e:typecheck`: OK;
   - `npm run verify`: 2919 de 2919 pruebas y build de producción OK. El aviso de presupuesto del bundle sigue: 566 kB contra 500 kB;
   - `npm run e2e`: 21 de 21 en verde.
+- **Corrección de CI:** el job `E2E Playwright`, que llegó con #103, usaba Node 20. Angular 22 exige Node ^22.22.3, así que el job pasa a usar `22.23.4`, igual que `build-test-verify`.
