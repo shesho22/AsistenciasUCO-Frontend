@@ -3,7 +3,11 @@ import {
   EstadoSesion,
   detalleCancelacion,
   estaCancelada,
+  estaPendienteAprobacion,
+  estaRechazada,
+  marcarSesionAprobada,
   marcarSesionCancelada,
+  SolicitudSesionInfo,
 } from './sesion-estado.model';
 
 interface Fila {
@@ -68,5 +72,41 @@ describe('sesion-estado.model (CULM-001 B.1)', () => {
     const lista: Fila[] = [{ id: 'a', estado: 'PROGRAMADA', cancelacion: null }];
 
     expect(marcarSesionCancelada(lista, 'zzz', docente)).toBe(lista);
+  });
+});
+
+describe('solicitud de sesión extraordinaria (DEC-065 (2))', () => {
+  type Fila = { id: string } & SolicitudSesionInfo;
+
+  it('estaPendienteAprobacion reconoce el indicador, el estado PENDIENTE y rechaza el resto', () => {
+    expect(estaPendienteAprobacion({ pendienteAprobacion: true })).toBeTrue();
+    expect(estaPendienteAprobacion({ estadoSolicitud: 'PENDIENTE' })).toBeTrue();
+    expect(estaPendienteAprobacion({ estadoSolicitud: 'APROBADA', pendienteAprobacion: false })).toBeFalse();
+    expect(estaPendienteAprobacion({ estadoSolicitud: null })).toBeFalse();
+    expect(estaPendienteAprobacion(null)).toBeFalse();
+    expect(estaPendienteAprobacion(undefined)).toBeFalse();
+  });
+
+  it('estaRechazada solo es verdadera para RECHAZADA', () => {
+    expect(estaRechazada({ estadoSolicitud: 'RECHAZADA' })).toBeTrue();
+    expect(estaRechazada({ estadoSolicitud: 'PENDIENTE' })).toBeFalse();
+    expect(estaRechazada(null)).toBeFalse();
+  });
+
+  it('marcarSesionAprobada cambia solo la sesión pendiente y no muta la lista', () => {
+    const lista: Fila[] = [{ id: 'a', estadoSolicitud: 'PENDIENTE', pendienteAprobacion: true }, { id: 'b' }];
+
+    const nueva = marcarSesionAprobada(lista, 'a');
+
+    expect(nueva[0]).toEqual({ id: 'a', estadoSolicitud: 'APROBADA', pendienteAprobacion: false });
+    expect(nueva[1]).toBe(lista[1]);
+    expect(lista[0].estadoSolicitud).toBe('PENDIENTE');
+  });
+
+  it('marcarSesionAprobada devuelve la misma lista si la sesión no existe o no está pendiente', () => {
+    const lista: Fila[] = [{ id: 'a', estadoSolicitud: 'APROBADA' }];
+
+    expect(marcarSesionAprobada(lista, 'zzz')).toBe(lista);
+    expect(marcarSesionAprobada(lista, 'a')).toBe(lista);
   });
 });

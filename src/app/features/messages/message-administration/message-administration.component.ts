@@ -14,6 +14,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { ComponentesExternosService } from '../../../core/services/componentes-externos.service';
 import { hasAnyRole } from '../../../core/models/user.model';
 import { environment } from '../../../../environments/environment';
+import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { readDesignToken } from '../../../shared/utils/design-tokens';
 
 export type MessageAdminMount = (element: Element, options?: MessageAdminOptions) => MessageAdminHandle;
@@ -32,6 +33,7 @@ const ROUTE = '/app/admin/mensajes';
   selector: 'app-message-administration',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [EmptyStateComponent],
   template: `
     <section class="rounded-2xl border border-warm-200 bg-white p-6 shadow-warm-sm">
       <div class="mb-5">
@@ -47,7 +49,18 @@ const ROUTE = '/app/admin/mensajes';
         <p class="rounded-xl bg-warm-50 p-4 text-sm text-warm-700" role="status">Cargando la administración de mensajes…</p>
       }
 
-      @if (state() === 'unauthorized' || state() === 'forbidden' || state() === 'error') {
+      @if (state() === 'error') {
+        <app-empty-state
+          variant="error"
+          title="Administración de mensajes no disponible"
+          causa="El componente de mensajes no respondió."
+          [description]="message()"
+          accionTexto="Reintentar"
+          (accion)="load()"
+        />
+      }
+
+      @if (state() === 'unauthorized' || state() === 'forbidden') {
         <div class="rounded-xl border border-danger-200 bg-danger-50 p-4 text-sm text-danger-800" role="alert">
           <p>{{ message() }}</p>
           <div class="mt-3 flex gap-2">
@@ -55,8 +68,6 @@ const ROUTE = '/app/admin/mensajes';
               <button type="button" class="rounded-lg bg-primary-700 px-3 py-2 font-semibold text-white" (click)="signIn()">
                 Iniciar sesión institucional
               </button>
-            }
-            @if (state() !== 'forbidden') {
               <button type="button" class="rounded-lg border border-danger-300 px-3 py-2 font-semibold" (click)="load()">
                 Reintentar
               </button>
@@ -131,7 +142,7 @@ export class MessageAdministrationComponent implements AfterViewInit, OnDestroy 
   }
 
   private fail(state: Exclude<ViewState, 'loading' | 'ready'>, message: string): void {
-    // Solo un fallo de montaje (servicio externo que no responde) oculta la entrada del menu.
+    // El fallo se informa a la pantalla (empty-state con reintento); la entrada del menu no se retira (DEC-065).
     if (state === 'error') this.externos.marcarNoDisponible('mensajes');
     this.state.set(state);
     this.message.set(message);

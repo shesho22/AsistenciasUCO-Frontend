@@ -14,15 +14,17 @@ test.describe('Administrador', () => {
     await expect(main.getByRole('heading', { name: 'Segundo Semestre Académico 2026' })).toBeVisible();
 
     await main.getByRole('button', { name: '+ Nuevo Período Académico' }).click();
-    await expect(main.getByRole('heading', { name: 'Apertura de Nuevo Período' })).toBeVisible();
-    await main.getByLabel('Código del Período *').fill('2027-2');
-    await main.getByLabel('Fecha de Inicio *').fill('2027-08-01');
-    await main.getByLabel('Fecha de Fin *').fill('2027-12-10');
-    await main.getByRole('button', { name: 'Guardar Período' }).click();
+    // PR #91: el alta se hace en el diálogo "Nuevo período académico" (academic-period-form-modal).
+    const dialogo = page.getByRole('dialog', { name: 'Nuevo período académico' });
+    await expect(dialogo).toBeVisible();
+    await dialogo.getByLabel(/Nombre del período/).fill('2027-2');
+    await dialogo.getByLabel(/Fecha de inicio/).fill('2027-08-01');
+    await dialogo.getByLabel(/Fecha de fin/).fill('2027-12-10');
+    await dialogo.getByRole('button', { name: 'Crear período' }).click();
 
     await expect(main.getByText('4 Períodos')).toBeVisible();
     await expect(main.getByText('2027-2', { exact: false }).first()).toBeVisible();
-    await expect(main.getByRole('heading', { name: 'Apertura de Nuevo Período' })).toBeHidden();
+    await expect(dialogo).toBeHidden();
   });
 });
 

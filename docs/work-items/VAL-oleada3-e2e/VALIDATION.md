@@ -46,3 +46,16 @@ El mock no simula estas rutas o datos; quedan para la corrida contra el stack re
 
 Observación (no se corrige aquí): en la pestaña Indicadores del decano el modo mock registra en consola `NG0600`
 (escritura de una señal durante la detección de cambios). No es una excepción no controlada y no afecta la prueba.
+
+## Merge de `develop` tras el PR #91 (2026-11-13)
+
+Se unió `origin/develop` (con `feat/mejoras-revision-manual`, PR #91) por merge; sin conflictos de texto.
+`npm run e2e` sobre el resultado: 20 de 21 pasaron. Falló "Administrador › gestiona periodos academicos": #91
+cambió el alta del período a un diálogo (`academic-period-form-modal`, título "Nuevo período académico", campos
+"Nombre del período", "Fecha de inicio", "Fecha de fin" y botón "Crear período"). La prueba ahora busca el
+diálogo por rol y nombre y llena esos campos; el resto de pantallas que usa la suite no cambiaron de forma visible.
+
+| Prueba | Resultado |
+| :--- | :--- |
+| `npm run e2e:typecheck` | 0 errores |
+| `npm run e2e` (build de producción + Playwright con backend simulado) | 21 de 21 pasaron |
