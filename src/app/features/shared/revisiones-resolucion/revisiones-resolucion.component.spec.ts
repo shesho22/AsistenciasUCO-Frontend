@@ -53,7 +53,6 @@ describe('RevisionesResolucionComponent (CULM-001 C.1 §4.5, §4.8)', () => {
       'consultarCoordinador',
       'resolverCoordinador',
       'consultarDecano',
-      'resolverDecano',
     ]);
     serviceMock.consultarCoordinador.and.returnValue(
       of({ exitoso: true, elementos: [mockRevision, mockEscalada], numeroPagina: 1, tamanoPagina: 20, totalElementos: 2, totalPaginas: 1 })
@@ -87,11 +86,15 @@ describe('RevisionesResolucionComponent (CULM-001 C.1 §4.5, §4.8)', () => {
     expect(serviceMock.consultarDecano).toHaveBeenCalled();
   });
 
-  it('C-F-38 muestra etiqueta "Escalada a decanatura" en revisiones escaladas', () => {
+  // DEC-065 (1): se retira el escalamiento al decano; el coordinador decide y no hay etiqueta de escalada.
+  it('C-F-38 (DEC-065) ya no muestra etiqueta de escalada a decanatura ni la opción de escalar', () => {
     inicializar('COORDINADOR');
-    const badgeEscalada = fixture.nativeElement.querySelector('[data-testid="badge-escalada"]') as HTMLElement;
-    expect(badgeEscalada).toBeTruthy();
-    expect(badgeEscalada.textContent).toContain('Escalada a decanatura');
+    const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(fixture.nativeElement.querySelector('[data-testid="badge-escalada"]')).toBeNull();
+    expect(texto).not.toContain('Escalada a decanatura');
+    component.abrirModalResolucion(mockRevision, 'APROBAR');
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Escalar a decanatura');
   });
 
   it('C-F-39 abre modal de resolución y requiere confirmación al aprobar', () => {
@@ -130,5 +133,143 @@ describe('RevisionesResolucionComponent (CULM-001 C.1 §4.5, §4.8)', () => {
     expect(intervalSpy).not.toHaveBeenCalled();
     // 1 carga al entrar
     expect(serviceMock.consultarCoordinador).toHaveBeenCalledTimes(1);
+  });
+  it('cada fila del coordinador muestra semáforo con porcentaje y límite, y el motivo del docente destacado', () => {
+    inicializar('COORDINADOR');
+    expect(fixture.nativeElement.querySelector('app-semaforo-asistencia')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('[data-testid="rev-porcentaje"]').textContent).toContain('22.5');
+    expect(fixture.nativeElement.querySelector('[data-testid="rev-porcentaje"]').textContent).toContain('límite 20');
+    expect(fixture.nativeElement.querySelector('[data-testid="rev-motivo-docente"]').textContent).toContain('Ausencias constantes');
+  });
+
+  it('Aprobar y Rechazar abren el modal con la decisión fija y la resolución usa esa decisión', () => {
+    serviceMock.resolverCoordinador.and.returnValue(of({ exitoso: true, datos: mockRevision, mensajeUsuario: 'Listo.' }));
+    inicializar('COORDINADOR');
+    (fixture.nativeElement.querySelector('[data-testid="rev-rechazar"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[data-testid="modal-titulo"]').textContent).toContain('Rechazar propuesta');
+    expect(component.decisionModal()).toBe('RECHAZAR');
+    component.motivoModal.set('  Plazo especial  ');
+    component.onSubmitResolucion(new Event('submit'));
+    expect(serviceMock.resolverCoordinador).toHaveBeenCalledWith('rev-1', { decision: 'RECHAZAR', motivo: 'Plazo especial' });
+    expect(component.modalAbierto()).toBeFalse();
+
+    (fixture.nativeElement.querySelector('[data-testid="rev-aprobar"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[data-testid="modal-titulo"]').textContent).toContain('Aprobar cancelación');
+  });
+
+  it('no emite la resolución sin motivo ni sin revisión seleccionada', () => {
+    inicializar('COORDINADOR');
+    component.abrirModalResolucion(mockRevision);
+    component.onSubmitResolucion(new Event('submit'));
+    expect(serviceMock.resolverCoordinador).not.toHaveBeenCalled();
+    component.motivoModal.set('Motivo');
+    component.revisionSeleccionada.set(null);
+    component.onSubmitResolucion(new Event('submit'));
+    expect(serviceMock.resolverCoordinador).not.toHaveBeenCalled();
+  });
+
+  it('onMotivoInput actualiza el motivo del modal', () => {
+    inicializar('COORDINADOR');
+    component.abrirModalResolucion(mockRevision);
+    fixture.detectChanges();
+    const area = fixture.nativeElement.querySelector('#motivo-resolucion') as HTMLTextAreaElement;
+    area.value = 'Escrito';
+    area.dispatchEvent(new Event('input'));
+    expect(component.motivoModal()).toBe('Escrito');
+  });
+
+  it('muestra el mensaje del backend cuando falla la resolución (409) y mantiene el modal', () => {
+    serviceMock.resolverCoordinador.and.returnValue(throwError(() => apiHttpError(409, 'El estudiante ya no supera el límite de inasistencia.')));
+    inicializar('COORDINADOR');
+    component.abrirModalResolucion(mockRevision);
+    component.ejecutarResolucion('rev-1', 'APROBAR', 'Motivo');
+    fixture.detectChanges();
+    expect(component.modalError()).toBe('El estudiante ya no supera el límite de inasistencia.');
+    expect(component.modalAbierto()).toBeTrue();
+    expect(component.enviandoResolucion()).toBeFalse();
+  });
+
+  it('una revisión ya resuelta no ofrece acciones', () => {
+    serviceMock.consultarCoordinador.and.returnValue(
+      of({ exitoso: true, elementos: [{ ...mockRevision, requiereAccionResolutor: false }], numeroPagina: 1, tamanoPagina: 20, totalElementos: 1, totalPaginas: 1 })
+    );
+    inicializar('COORDINADOR');
+    expect(fixture.nativeElement.querySelector('[data-testid="rev-aprobar"]')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Resuelta');
+  });
+
+  it('sin pendientes explica la causa y "Ver también las resueltas" quita el filtro', () => {
+    serviceMock.consultarCoordinador.and.returnValue(of({ exitoso: true, elementos: [], numeroPagina: 1, tamanoPagina: 20, totalElementos: 0, totalPaginas: 1 }));
+    inicializar('COORDINADOR');
+    expect(fixture.nativeElement.textContent).toContain('No tienes revisiones de cancelación por resolver');
+    expect(fixture.nativeElement.textContent).toContain('Ver también las resueltas');
+    serviceMock.consultarCoordinador.calls.reset();
+    component['alAccionVacio']();
+    expect(component.filtroSoloPendientes()).toBeFalse();
+    expect(serviceMock.consultarCoordinador).toHaveBeenCalledWith(jasmine.objectContaining({ soloPendientes: false }));
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('No se encontraron registros de revisión');
+  });
+
+  it('si la consulta falla (500) muestra el mensaje del backend y lista vacía', () => {
+    serviceMock.consultarCoordinador.and.returnValue(throwError(() => apiHttpError(500, 'No se pudo consultar las revisiones.')));
+    inicializar('COORDINADOR');
+    expect(fixture.nativeElement.querySelector('[role="alert"]').textContent).toContain('No se pudo consultar las revisiones.');
+    expect(component.totalElementos()).toBe(0);
+  });
+
+  it('cambiar el filtro de pendientes y la página recarga', () => {
+    inicializar('COORDINADOR');
+    component.onTogglePendientes(false);
+    component.onCambiarPagina(2);
+    expect(serviceMock.consultarCoordinador).toHaveBeenCalledWith({ pagina: 2, tamano: 20, soloPendientes: false });
+  });
+
+  describe('DEC-065 el decano consulta sin resolver', () => {
+    it('muestra el título de consulta, el filtro por estado y ningún botón de resolver', () => {
+      inicializar('DECANO');
+      expect(fixture.nativeElement.querySelector('h1').textContent).toContain('Revisiones de cancelación de la facultad (consulta)');
+      expect(fixture.nativeElement.querySelector('[data-testid="filtro-estado"]')).toBeTruthy();
+      expect(fixture.nativeElement.querySelector('[data-testid="filtro-pendientes"]')).toBeNull();
+      expect(fixture.nativeElement.querySelector('[data-testid="rev-aprobar"]')).toBeNull();
+      expect(fixture.nativeElement.querySelector('[data-testid="rev-rechazar"]')).toBeNull();
+      expect(fixture.nativeElement.textContent).not.toContain('Resolver');
+      expect(serviceMock.consultarCoordinador).not.toHaveBeenCalled();
+    });
+
+    it('filtra por estado y lo envía al backend; sin estado no envía el parámetro', () => {
+      inicializar('DECANO');
+      expect(serviceMock.consultarDecano).toHaveBeenCalledWith({ pagina: 1, tamano: 20 });
+      component.onCambiarEstado('APROBADA');
+      expect(serviceMock.consultarDecano).toHaveBeenCalledWith({ pagina: 1, tamano: 20, estado: 'APROBADA' });
+    });
+
+    it('no abre el modal ni resuelve aunque se invoque', () => {
+      inicializar('DECANO');
+      component.abrirModalResolucion(mockRevision, 'APROBAR');
+      component.ejecutarResolucion('rev-1', 'APROBAR', 'Motivo');
+      expect(component.modalAbierto()).toBeFalse();
+      expect(serviceMock.resolverCoordinador).not.toHaveBeenCalled();
+    });
+
+    it('vacío sin filtro y con filtro: descripciones y acción para ver todos los estados', () => {
+      serviceMock.consultarDecano.and.returnValue(of({ exitoso: true, elementos: [], numeroPagina: 1, tamanoPagina: 20, totalElementos: 0, totalPaginas: 1 }));
+      inicializar('DECANO');
+      expect(fixture.nativeElement.textContent).toContain('Aún no hay revisiones de cancelación en los grupos de tu facultad');
+      component.onCambiarEstado('RECHAZADA');
+      fixture.detectChanges();
+      expect(fixture.nativeElement.textContent).toContain('Ninguna revisión de tu facultad está en ese estado');
+      expect(fixture.nativeElement.textContent).toContain('Ver todos los estados');
+      component['alAccionVacio']();
+      expect(component.filtroEstado()).toBe('');
+    });
+
+    it('un 403 muestra el mensaje del backend', () => {
+      serviceMock.consultarDecano.and.returnValue(throwError(() => apiHttpError(403, 'No tienes permiso para esta consulta.')));
+      inicializar('DECANO');
+      expect(fixture.nativeElement.querySelector('[role="alert"]').textContent).toContain('No tienes permiso para esta consulta.');
+    });
   });
 });

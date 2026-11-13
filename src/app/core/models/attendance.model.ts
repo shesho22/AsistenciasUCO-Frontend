@@ -1,4 +1,4 @@
-import { CancelacionSesion, EstadoSesion } from './sesion-estado.model';
+import { CancelacionSesion, EstadoSesion, EstadoSolicitudSesion } from './sesion-estado.model';
 
 export type AttendanceStatus = 'AN' | 'SJC' | 'EX';
 
@@ -35,4 +35,7 @@ export interface ClassSession {
   /** CULM-001 B.1: estado de la sesión y detalle de la cancelación (docente o festivo). */
   estado?: EstadoSesion;
   cancelacion?: CancelacionSesion | null;
+  /** DEC-065 (2): solicitud de sesión extraordinaria pendiente de aval del coordinador. */
+  estadoSolicitud?: EstadoSolicitudSesion | null;
+  pendienteAprobacion?: boolean;
 }

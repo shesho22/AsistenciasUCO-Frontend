@@ -172,7 +172,7 @@ describe('MessageAdministrationComponent', () => {
   });
 
   describe('F3-ADM-07: estado explicativo sin exponer rutas internas y aviso al menu', () => {
-    it('si el montaje falla, el texto no menciona el proxy interno y el menu oculta la entrada', async () => {
+    it('si el montaje falla, el texto no menciona el proxy interno y el estado queda registrado para la pantalla', async () => {
       mountSpy.and.throwError('boom');
 
       await createComponent();
@@ -181,6 +181,22 @@ describe('MessageAdministrationComponent', () => {
       expect(texto).not.toContain('/messageucolab');
       expect(texto).not.toContain('localhost');
       expect(TestBed.inject(ComponentesExternosService).disponible('mensajes')).toBeFalse();
+    });
+
+    it('DEC-065 (5): el estado error se presenta con empty-state, causa, detalle y reintento que recupera', async () => {
+      mountSpy.and.throwError('boom');
+      await createComponent();
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('app-empty-state')).not.toBeNull();
+      expect(el.querySelector('[data-testid="empty-causa"]')?.textContent).toContain('El componente de mensajes no respondió');
+      expect(el.textContent).toContain('No se pudo cargar la administración de mensajes');
+
+      mountSpy.and.returnValue({ unmount: unmountSpy });
+      el.querySelector<HTMLButtonElement>('[data-testid="empty-accion"]')?.click();
+      fixture.detectChanges();
+      expect(component.state()).toBe('ready');
+      expect(el.querySelector('app-empty-state')).toBeNull();
+      expect(TestBed.inject(ComponentesExternosService).disponible('mensajes')).toBeTrue();
     });
 
     it('al montar correctamente el componente queda disponible para el menu', async () => {

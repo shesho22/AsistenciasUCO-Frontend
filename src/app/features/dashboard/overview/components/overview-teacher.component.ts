@@ -2,6 +2,7 @@ import { RangoHorarioPipe } from '../../../../shared/pipes/fecha-hora.pipes';
 import { Component, ChangeDetectionStrategy, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { RevisionesPendientesKpiComponent } from '../../../../shared/components/revisiones-pendientes-kpi/revisiones-pendientes-kpi.component';
 import { CardComponent } from '../../../../shared/components/card/card.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { Course } from '../../../../core/models/course.model';
@@ -11,12 +12,17 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
   selector: 'app-overview-teacher',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RangoHorarioPipe, CommonModule, RouterLink, CardComponent, ButtonComponent],
+  imports: [RevisionesPendientesKpiComponent, RangoHorarioPipe, CommonModule, RouterLink, CardComponent, ButtonComponent],
   host: {
     class: 'block w-full',
   },
   template: `
     <div class="space-y-6">
+      <!-- Revisiones de cancelación por inasistencia: conteo global con enlace directo (DEC-065) -->
+      <div class="max-w-sm">
+        <app-revisiones-pendientes-kpi rol="DOCENTE" />
+      </div>
+
       <!-- KPIs Docente -->
       <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px]">

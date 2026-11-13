@@ -18,11 +18,12 @@ import {
   RealtimeEvent,
   SesionCanceladaRealtimePayload,
   SesionManualCreadaRealtimePayload,
+  SesionSolicitudCreadaRealtimePayload,
 } from '../../../core/realtime/model/realtime-event.model';
 import { CoordinadorSesionesService } from '../../../core/services/coordinador-sesiones.service';
 import { MotivoCancelacionCoordinador } from '../../../core/models/coordinador-sesion-cancelacion.model';
-import { estaCancelada } from '../../../core/models/sesion-estado.model';
-import { mensajeSesionManualCreada } from '../../../core/models/sesion-manual.util';
+import { estaCancelada, estaPendienteAprobacion } from '../../../core/models/sesion-estado.model';
+import { mensajeSesionManualCreada, mensajeSolicitudNueva } from '../../../core/models/sesion-manual.util';
 import { CoordinatorCancelarSesionModalComponent } from './coordinator-cancelar-sesion-modal.component';
 import { ErrorCargaComponent } from '../../../shared/components/error-carga/error-carga.component';
 import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load-error.util';
@@ -91,7 +92,13 @@ export interface GrupoSesionesRef {
                     <tr class="border-b border-warm-50" [class.bg-primary-50]="sesionSeleccionada()?.id === s.id" [attr.data-testid]="'sesion-fila-' + s.id">
                       <td class="py-2 pr-3 font-semibold text-warm-900">
                         {{ s.nombre }} <span class="text-warm-400 font-mono">{{ s.codigo }}</span>
-                        <app-sesion-estado-badge class="block font-normal" [estado]="s.estado" [cancelacion]="s.cancelacion" />
+                        <app-sesion-estado-badge
+                          class="block font-normal"
+                          [estado]="s.estado"
+                          [cancelacion]="s.cancelacion"
+                          [estadoSolicitud]="s.estadoSolicitud"
+                          [pendienteAprobacion]="s.pendienteAprobacion"
+                        />
                       </td>
                       <td class="py-2 pr-3 text-warm-700">{{ s.numeroSemana ?? '—' }}</td>
                       <td class="py-2 pr-3 text-warm-600 text-xs">{{ horario(s) }}</td>
@@ -99,7 +106,7 @@ export interface GrupoSesionesRef {
                         <button type="button" class="text-xs font-semibold text-primary-700 hover:underline" (click)="seleccionarSesion(s)">
                           Ver asistencia
                         </button>
-                        @if (!esCancelada(s)) {
+                        @if (!esCancelada(s) && !esPendiente(s)) {
                           <button
                             type="button"
                             data-testid="cancelar-sesion"
@@ -235,6 +242,7 @@ export class CoordinatorSesionesGrupoComponent implements OnInit, OnDestroy {
   errorCancelar = signal<string | null>(null);
   enviandoCancelacion = signal(false);
   readonly esCancelada = estaCancelada;
+  readonly esPendiente = estaPendienteAprobacion;
 
   asistencias = signal<AsistenciaSesionItem[]>([]);
   totalAsistencias = signal(0);
@@ -304,6 +312,13 @@ export class CoordinatorSesionesGrupoComponent implements OnInit, OnDestroy {
           this.toast.info(
             mensajeSesionManualCreada(payload, this.timeZone.formatTemporal(payload.fechaHoraInicio))
           );
+          this.cargarSesiones();
+          return;
+        }
+        if (tipo === REALTIME_EVENT_TYPE.SESION_SOLICITUD_CREADA) {
+          const payload = evt.payload as SesionSolicitudCreadaRealtimePayload;
+          if (payload?.grupo !== grupoId) return;
+          this.toast.info(mensajeSolicitudNueva(payload.docente));
           this.cargarSesiones();
           return;
         }

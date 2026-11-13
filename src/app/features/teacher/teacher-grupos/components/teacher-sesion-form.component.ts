@@ -8,6 +8,7 @@ import {
   SESSION_NAME_MAX_LENGTH,
   getSessionNameError,
 } from '../../../../core/validation/session-name.util';
+import { AVISO_SOLICITUD_SESION_REGISTRADA } from '../../../../core/models/sesion-manual.util';
 import { SessionTimeZoneService } from '../../../../core/services/session-timezone.service';
 
 /** Valores editables del formulario de programacion de sesion. */
@@ -39,18 +40,23 @@ export interface SesionFormValue {
         </button>
 
         <span class="text-xs font-bold text-warning-800 bg-warning-50 border border-warning-200 px-3 py-1 rounded-full">
-          {{ modo() === 'CREAR' ? 'Programar sesión' : 'Modificar sesión' }}
+          {{ modo() === 'CREAR' ? 'Solicitud de sesión' : 'Modificar sesión' }}
         </span>
       </div>
 
       <div class="bg-white p-6 sm:p-8 rounded-2xl border border-warm-200 shadow-warm-sm max-w-2xl mx-auto space-y-6">
         <div>
           <h2 class="font-serif font-bold text-2xl text-warm-900">
-            {{ modo() === 'CREAR' ? 'Programar Sesión' : 'Modificar Sesión' }}
+            {{ modo() === 'CREAR' ? 'Solicitar sesión extraordinaria' : 'Modificar Sesión' }}
           </h2>
           <p class="text-sm text-warm-600 mt-1">
             Establece el título, la fecha y el horario de este bloque de clase.
           </p>
+          @if (modo() === 'CREAR') {
+            <p class="text-sm text-warning-800 bg-warning-50 border border-warning-200 rounded-xl px-3 py-2 mt-3" data-testid="nota-solicitud-sesion">
+              {{ notaSolicitud }}
+            </p>
+          }
           <p class="text-[11px] text-primary-800 mt-2">
             Zona horaria activa: <strong>{{ timeZone.zone() }}</strong>. Los cambios de horario se validan como instantes reales.
           </p>
@@ -110,7 +116,7 @@ export interface SesionFormValue {
             <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
             </svg>
-            {{ modo() === 'CREAR' ? 'Programar Sesión' : 'Guardar Horario' }}
+            {{ modo() === 'CREAR' ? 'Enviar solicitud' : 'Guardar Horario' }}
           </app-button>
         </div>
       </div>
@@ -129,6 +135,7 @@ export class TeacherSesionFormComponent {
     sessionNumber: 1,
   });
 
+  readonly notaSolicitud = AVISO_SOLICITUD_SESION_REGISTRADA;
   readonly nombreLengthMessage = SESSION_NAME_LENGTH_MESSAGE;
 
   nombreInvalido(): boolean {

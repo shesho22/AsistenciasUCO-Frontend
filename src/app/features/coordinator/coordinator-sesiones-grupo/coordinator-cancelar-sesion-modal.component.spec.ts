@@ -110,4 +110,21 @@ describe('CoordinatorCancelarSesionModalComponent (DEC-064)', () => {
     expect(select().value).toBe('');
     expect(confirmar().disabled).toBeTrue();
   });
+
+  it('DEC-065 (2): se reutiliza para rechazar una solicitud con título, nota y botón propios', async () => {
+    fixture.componentRef.setInput('titulo', 'Rechazar solicitud Taller');
+    fixture.componentRef.setInput('nota', 'La sesión queda rechazada.');
+    fixture.componentRef.setInput('textoConfirmar', 'Rechazar solicitud');
+    await refrescar();
+
+    expect(el().textContent).toContain('Rechazar solicitud Taller');
+    expect(el().textContent).toContain('La sesión queda rechazada.');
+    expect(el().textContent).not.toContain('Solo se pueden cancelar sesiones creadas manualmente');
+    expect(confirmar().textContent).toContain('Rechazar solicitud');
+
+    fixture.componentRef.setInput('enviando', true);
+    fixture.componentRef.setInput('textoEnviando', 'Rechazando…');
+    await refrescar();
+    expect(confirmar().textContent).toContain('Rechazando…');
+  });
 });
