@@ -29,8 +29,11 @@
  * ============================================================================
  */
 
-/* Tipografia: la carga de la fuente y sus variables viven juntas aqui. */
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&display=swap');
+/* Tipografia: fuentes autoalojadas (@fontsource-variable), sin origenes de terceros. */
+@import '@fontsource-variable/fraunces/opsz.css';
+@import '@fontsource-variable/fraunces/opsz-italic.css';
+@import '@fontsource-variable/plus-jakarta-sans/wght.css';
+@import '@fontsource-variable/plus-jakarta-sans/wght-italic.css';
 @import "tailwindcss";
 
 @theme {
@@ -40,8 +43,8 @@
   --color-black: #000000;
 
   /* Tipografias */
-  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-  --font-serif: 'Fraunces', Georgia, serif;
+  --font-sans: 'Plus Jakarta Sans Variable', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-serif: 'Fraunces Variable', 'Fraunces', Georgia, serif;
 
   /* Bosque Esmeralda (Primary) */
   --color-primary-50: #ecfdf5;

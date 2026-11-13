@@ -35,4 +35,14 @@ Causa: el paso "Trivy image gate" falla porque la imagen final (base `nginxinc/n
 
 Correccion: en el `Dockerfile`, etapa final, `RUN apk upgrade --no-cache` como root antes de `USER 101`. No se agrego ninguna excepcion a `.trivyignore`. La linea se puede quitar cuando se suba a una base ya parcheada.
 
-Evidencia: el escaneo previo al cambio dio 13 hallazgos (exit 1). La reconstruccion y el reescaneo posterior al cambio quedan por confirmar (ver reporte del agente).
+Evidencia: antes del cambio, 13 hallazgos HIGH/CRITICAL (exit 1). Despues: la etapa final con `apk upgrade --no-cache` (musl 1.2.6-r3, zlib 1.4-r0, brotli-libs 1.2.1-r0, curl 8.23.0-r0, libexpat 2.10.0-r0, libxslt 1.1.43-r4) se reescaneo con `aquasec/trivy:0.74.0` (vuln,misconfig,secret, HIGH/CRITICAL, ignore-unfixed): 0 hallazgos, exit 0. `npm run test:docker-runtime`: `DOCKER_RUNTIME_ENV_PASS` y `COMPOSE_SECURITY_WIRING_PASS`. Nota: por falta de RAM local el `ng build` dentro de Docker no termino, asi que el reescaneo se hizo sobre la misma etapa final usando el `dist` local; la capa de paquetes del SO es identica a la de CI.
+
+## CF: fuentes locales
+
+El escaneo de URL de Cloudflare mostro un error de seguridad en consola al cargar una fuente desde fonts.gstatic.com. Las fuentes dejan de cargarse de Google y se sirven desde el propio origen.
+
+- `src/styles.css`: se elimina el `@import` de fonts.googleapis.com y se importan `@fontsource-variable/fraunces` (`opsz.css`, `opsz-italic.css`) y `@fontsource-variable/plus-jakarta-sans` (`wght.css`, `wght-italic.css`), ambos fijados en 5.3.0 (sin dependencias propias). Ejes cubiertos: Fraunces opsz + wght (100-900) normal/cursiva; Plus Jakarta Sans wght 200-800 normal/cursiva.
+- Los nombres de familia de fontsource terminan en "Variable"; `--font-sans` y `--font-serif` listan primero `'Plus Jakarta Sans Variable'` / `'Fraunces Variable'` y conservan el nombre antiguo como respaldo. No hay otros usos de los nombres en el codigo.
+- `docker-entrypoint.d/40-env-js.sh`: la CSP queda con `style-src 'self' 'unsafe-inline'` y `font-src 'self' data:` (sin origenes de Google).
+- Comprobado: `ng build --configuration=production` correcto, `dist` contiene 14 archivos woff2 y ninguna referencia a googleapis/gstatic.
+- `npm audit --omit=dev`: los 5 avisos altos son de paquetes Angular ya existentes; los paquetes de fuentes no anaden ninguno.
