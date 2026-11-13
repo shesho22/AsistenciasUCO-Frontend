@@ -30,13 +30,17 @@ COPY nginx/security-headers.conf /etc/nginx/snippets/security-headers.conf
 COPY --from=build /app/dist/gestio-asistencia-frontend/browser /usr/share/nginx/html
 COPY docker-entrypoint.d/40-env-js.sh /docker-entrypoint.d/40-env-js.sh
 # El entrypoint (usuario nginx) escribe assets/env.js y snippets/csp.conf en el arranque.
-RUN chmod +x /docker-entrypoint.d/40-env-js.sh     && mkdir -p /etc/nginx/snippets     && printf "add_header Content-Security-Policy \"default-src 'self'\" always;
-" > /etc/nginx/snippets/csp.conf     && chown -R 101:0 /etc/nginx/snippets /usr/share/nginx/html/assets     && chmod -R g+w /etc/nginx/snippets /usr/share/nginx/html/assets
+RUN chmod +x /docker-entrypoint.d/40-env-js.sh \
+    && mkdir -p /etc/nginx/snippets \
+    && printf '%s\n' "add_header Content-Security-Policy \"default-src 'self'\" always;" > /etc/nginx/snippets/csp.conf \
+    && chown -R 101:0 /etc/nginx/snippets /usr/share/nginx/html/assets \
+    && chmod -R g+w /etc/nginx/snippets /usr/share/nginx/html/assets
 USER 101
 
 # Puerto interno sin privilegios (el contenedor no puede enlazar el 80)
 EXPOSE 8080
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3     CMD wget -q --spider http://127.0.0.1:8080/healthz || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD wget -q --spider http://127.0.0.1:8080/healthz || exit 1
 
 CMD ["nginx", "-g", "daemon off;"]
