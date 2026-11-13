@@ -1,10 +1,11 @@
-import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, inject, signal, viewChild, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { PeriodoAcademicoItem } from '../../../core/models/role-management.model';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { PeriodoFormDatos } from '../../coordinator/coordinator-study-plans/components/academic-period-form-modal.component';
 import { AcademicPeriodsTabComponent } from '../../coordinator/coordinator-study-plans/components/academic-periods-tab.component';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
@@ -43,6 +44,8 @@ import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
       <app-academic-periods-tab
         [periodos]="periodos()"
+        [guardando]="guardando()"
+        [errorGuardado]="errorGuardado()"
         (savePeriodo)="guardarPeriodo($event)"
         (deletePeriodo)="eliminarPeriodo($event)"
       />
@@ -63,7 +66,11 @@ export class AdminPeriodosComponent implements OnInit {
   private coordService = inject(CoordinatorManagementService);
   private toast = inject(ToastService);
 
+  private readonly tab = viewChild(AcademicPeriodsTabComponent);
+
   periodos = signal<PeriodoAcademicoItem[]>(this.coordService.periodos());
+  guardando = signal(false);
+  errorGuardado = signal('');
   /** Período pendiente de confirmación en el diálogo de eliminación (HU098). */
   periodoPorEliminar = signal<PeriodoAcademicoItem | null>(null);
 
@@ -78,19 +85,28 @@ export class AdminPeriodosComponent implements OnInit {
     });
   }
 
-  guardarPeriodo(event: { modo: 'CREAR' | 'EDITAR'; id?: string; datos: Partial<PeriodoAcademicoItem> }): void {
+  guardarPeriodo(event: { modo: 'CREAR' | 'EDITAR'; id?: string; datos: PeriodoFormDatos }): void {
+    this.guardando.set(true);
+    this.errorGuardado.set('');
     const peticion =
       event.modo === 'CREAR'
         ? this.coordService.crearPeriodoAcademico(event.datos)
         : this.coordService.actualizarPeriodoAcademico(event.id ?? '', event.datos);
     peticion.subscribe({
       next: (res) => {
+        this.guardando.set(false);
         if (res.exitoso) {
+          this.tab()?.cerrarFormulario();
           this.toast.success(res.mensajeUsuario || mensajeUi('UI_ADMIN_PERIODOS_001'));
           this.cargarPeriodos();
+        } else {
+          this.errorGuardado.set(res.mensajeUsuario || res.mensajeTecnico || mensajeUi('UI_ADMIN_PERIODOS_003'));
         }
       },
-      error: (err) => this.toast.error(getApiErrorMessage(err)),
+      error: (err) => {
+        this.guardando.set(false);
+        this.errorGuardado.set(getApiErrorMessage(err));
+      },
     });
   }
 

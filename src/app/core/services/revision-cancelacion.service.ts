@@ -89,17 +89,10 @@ export class RevisionCancelacionService {
     );
   }
 
-  resolverDecano(id: string, payload: DecisionResolutorPayload): Observable<ApiDataResponse<RevisionCancelacion>> {
-    if (!this.http) return EMPTY;
-    return this.http.patch<ApiDataResponse<RevisionCancelacion>>(
-      `${this.api}/decano/revisiones-cancelacion/${id}`,
-      payload
-    );
-  }
-
-  contarPendientes(rol: 'COORDINADOR' | 'DECANO' | string): Observable<number> {
-    if (rol === 'DECANO') {
-      return this.consultarDecano({ soloPendientes: true, tamano: 1 }).pipe(
+  /** Revisiones que el rol debe atender (el decano solo consulta, no tiene pendientes propios). */
+  contarPendientes(rol: 'DOCENTE' | 'COORDINADOR'): Observable<number> {
+    if (rol === 'DOCENTE') {
+      return this.consultarDocente({ soloPendientes: true, tamano: 1 }).pipe(
         map((res) => Number(res.totalElementos ?? 0))
       );
     }

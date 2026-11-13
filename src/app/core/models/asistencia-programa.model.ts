@@ -1,4 +1,4 @@
-import { CancelacionSesion, EstadoSesion } from './sesion-estado.model';
+import { CancelacionSesion, EstadoSesion, EstadoSolicitudSesion } from './sesion-estado.model';
 
 /** HU064/HU060/HU061: consultas de solo lectura del coordinador sobre su programa. */
 export interface GrupoProgramaItem {
@@ -35,6 +35,9 @@ export interface SesionGrupoItem {
   /** CULM-001 B.1 (aditivo): estado de la sesion y detalle de la cancelacion. */
   estado?: EstadoSesion;
   cancelacion?: CancelacionSesion | null;
+  /** DEC-065 (2): solicitud de sesión extraordinaria (null = sesión programada o manual anterior). */
+  estadoSolicitud?: EstadoSolicitudSesion | null;
+  pendienteAprobacion?: boolean;
 }
 
 export interface AsistenciaSesionItem {

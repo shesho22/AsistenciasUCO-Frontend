@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { ClassSession } from '../../../../core/models/attendance.model';
 import { SesionEstadoBadgeComponent } from '../../../../shared/components/sesion-estado-badge/sesion-estado-badge.component';
-import { estaCancelada } from '../../../../core/models/sesion-estado.model';
+import { estaCancelada, estaPendienteAprobacion, TEXTO_SESION_PENDIENTE } from '../../../../core/models/sesion-estado.model';
 import { SessionTimeZoneService } from '../../../../core/services/session-timezone.service';
 
 @Component({
@@ -23,7 +23,7 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
           <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          + Programar Sesión Extraordinaria
+          + Solicitar sesión extraordinaria
         </app-button>
       </div>
 
@@ -36,7 +36,7 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
       } @else if (sessions().length === 0) {
         <app-empty-state
           title="No hay sesiones registradas para este grupo."
-          causa="Programa la primera sesión para comenzar a registrar asistencia."
+          causa="Solicita la primera sesión extraordinaria o espera las sesiones del horario del grupo."
         />
       } @else {
         <div class="divide-y divide-warm-100">
@@ -65,7 +65,15 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
                 <h4 class="font-bold text-sm text-warm-900 leading-snug" [class.line-through]="esCancelada(sesion)">
                   {{ sesion.title }}
                 </h4>
-                <app-sesion-estado-badge [estado]="sesion.estado" [cancelacion]="sesion.cancelacion" />
+                <app-sesion-estado-badge
+                  [estado]="sesion.estado"
+                  [cancelacion]="sesion.cancelacion"
+                  [estadoSolicitud]="sesion.estadoSolicitud"
+                  [pendienteAprobacion]="sesion.pendienteAprobacion"
+                />
+                @if (esPendiente(sesion)) {
+                  <p class="text-xs text-warning-800" data-testid="sesion-pendiente-texto">{{ textoPendiente }}</p>
+                }
               </div>
 
               <!-- Botones de Acción sobre la Sesión -->
@@ -73,7 +81,7 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
                 <button
                   type="button"
                   (click)="tomarAsistencia.emit(sesion)"
-                  [disabled]="esCancelada(sesion)"
+                  [disabled]="esCancelada(sesion) || esPendiente(sesion)"
                   class="text-xs font-bold text-white bg-primary-800 hover:bg-primary-900 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] px-3 py-1.5 rounded-lg transition-colors inline-flex items-center gap-1.5 shadow-xs"
                   title="Tomar o registrar asistencia de esta sesión"
                 >
@@ -87,7 +95,7 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
                   <button
                     type="button"
                     (click)="proyectar.emit(sesion)"
-                    [disabled]="esCancelada(sesion)"
+                    [disabled]="esCancelada(sesion) || esPendiente(sesion)"
                     class="text-xs font-bold text-primary-800 hover:text-primary-950 bg-accent-100 hover:bg-accent-200 border border-accent-300 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] px-3 py-1.5 rounded-lg transition-colors inline-flex items-center gap-1.5"
                     title="Proyectar QR/PIN específico de esta sesión"
                   >
@@ -154,6 +162,8 @@ export class TeacherGrupoSesionesComponent {
   cancelEnabled = input<boolean>(false);
 
   protected esCancelada = estaCancelada;
+  protected esPendiente = estaPendienteAprobacion;
+  protected readonly textoPendiente = TEXTO_SESION_PENDIENTE;
 
   programarExtraordinaria = output<void>();
   tomarAsistencia = output<ClassSession>();

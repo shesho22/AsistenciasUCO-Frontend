@@ -18,7 +18,12 @@ if [ -f "$template" ]; then
   esac
   SECURITY_BASELINE_URL="${SECURITY_BASELINE_URL:-http://localhost:18080}"
   SECURITY_BASELINE_UI_URL="${SECURITY_BASELINE_UI_URL:-http://localhost:5175}"
-  SECURITY_BASELINE_APPLICATION_ID="${SECURITY_BASELINE_APPLICATION_ID:-a0b42637-39f8-4ddd-bec2-0781ba08e779}"
+  # SEC-12: sin id real por defecto. En modo baseline es obligatorio (el contenedor no arranca sin el; fail-closed).
+  SECURITY_BASELINE_APPLICATION_ID="${SECURITY_BASELINE_APPLICATION_ID:-}"
+  if [ "$SECURITY_PROVIDER" = "baseline" ] && [ -z "$SECURITY_BASELINE_APPLICATION_ID" ]; then
+    echo "SECURITY_BASELINE_APPLICATION_ID es obligatorio con SECURITY_PROVIDER=baseline (id de la aplicacion en el PDP; ver .env.example)" >&2
+    exit 1
+  fi
   SECURITY_BASELINE_ISSUER_URL="${SECURITY_BASELINE_ISSUER_URL:-http://keycloak.localhost:19090/realms/security-baseline}"
   SECURITY_BASELINE_CLIENT_ID="${SECURITY_BASELINE_CLIENT_ID:-asistencias-uco-spa}"
 

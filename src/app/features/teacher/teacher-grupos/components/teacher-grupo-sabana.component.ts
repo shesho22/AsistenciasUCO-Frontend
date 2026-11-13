@@ -15,7 +15,7 @@ import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { EstudianteGrupoItem, idEstudianteDe } from '../../../../core/models/estudiante-grupo-item.model';
 import { ClassSession } from '../../../../core/models/attendance.model';
-import { estaCancelada } from '../../../../core/models/sesion-estado.model';
+import { estaCancelada, estaPendienteAprobacion, estaRechazada } from '../../../../core/models/sesion-estado.model';
 import { SessionTimeZoneService } from '../../../../core/services/session-timezone.service';
 import { TeacherAttendanceSummaryService } from '../../../../core/services/teacher-attendance-summary.service';
 import { ResumenAsistenciaEstudiante } from '../../../../core/models/indicadores-asistencia.model';
@@ -117,8 +117,12 @@ import { REALTIME_EVENT_TYPE } from '../../../../core/realtime/model/realtime-ev
                     } @else {
                       <div class="text-xs text-warm-500 font-normal truncate">{{ displayDate(ses) | slice:5 }}</div>
                     }
-                    @if (esCancelada(ses)) {
+                    @if (esRechazada(ses)) {
+                      <div class="text-xs font-semibold text-danger-800" data-testid="sabana-rechazada">Rechazada</div>
+                    } @else if (esCancelada(ses)) {
                       <div class="text-xs font-semibold text-warning-800">Cancelada</div>
+                    } @else if (esPendiente(ses)) {
+                      <div class="text-xs font-semibold text-warning-800" data-testid="sabana-pendiente">Pendiente de aprobación</div>
                     }
                     <span
                       class="inline-block w-1.5 h-1.5 rounded-full mt-0.5 bg-success-500"
@@ -248,7 +252,11 @@ export class TeacherGrupoSabanaComponent implements OnDestroy {
   estudiantes = input<EstudianteGrupoItem[]>([]);
   sessions = input<ClassSession[]>([]);
   cargando = input<boolean>(false);
+  /** Contador que cambia cuando otra vista (tarjeta de decisiones) pide recargar el resumen. */
+  refresco = input<number>(0);
   protected esCancelada = estaCancelada;
+  protected esPendiente = estaPendienteAprobacion;
+  protected esRechazada = estaRechazada;
 
   protected readonly tamano = 50;
   protected readonly pagina = signal(1);
@@ -282,6 +290,14 @@ export class TeacherGrupoSabanaComponent implements OnDestroy {
       });
     });
   }
+
+  private readonly recargarPorRefresco = effect(() => {
+    const version = this.refresco();
+    untracked(() => {
+      const grupo = this.grupoId();
+      if (version > 0 && grupo) this.cargarResumen(grupo);
+    });
+  });
 
   private iniciarRealtime(grupo: string): void {
     if (!this.realtime) return;
@@ -336,10 +352,8 @@ export class TeacherGrupoSabanaComponent implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    // El canal del grupo lo cierra la tarjeta de decisiones del hub: esta planilla solo comparte la conexión.
     this.subRealtime?.unsubscribe();
-    if (this.realtime) {
-      this.realtime.stop();
-    }
   }
 
   /** El resumen (horas, % de inasistencia y semaforo) lo calcula el backend; el cliente no recalcula nada. */

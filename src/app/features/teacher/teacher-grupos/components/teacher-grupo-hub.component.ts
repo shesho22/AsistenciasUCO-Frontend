@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, computed, inject, input, output, model } from '@angular/core';
+import { Component, ChangeDetectionStrategy, computed, inject, input, output, model, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActionMenuComponent, ActionMenuItem } from '../../../../shared/components/action-menu/action-menu.component';
 import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
@@ -6,6 +6,7 @@ import { SesionEstadoBadgeComponent } from '../../../../shared/components/sesion
 import { Course } from '../../../../core/models/course.model';
 import { ClassSession } from '../../../../core/models/attendance.model';
 import { DEFINICION_CONTEO_SESIONES, resumirSesiones, sesionDeHoy } from '../../../../core/models/sesiones-resumen.util';
+import { estaPendienteAprobacion, TEXTO_SESION_PENDIENTE } from '../../../../core/models/sesion-estado.model';
 import { SessionTimeZoneService } from '../../../../core/services/session-timezone.service';
 import { TeacherGrupoSesionesComponent } from './teacher-grupo-sesiones.component';
 import { TeacherGrupoEstudiantesComponent } from './teacher-grupo-estudiantes.component';
@@ -13,6 +14,7 @@ import { TeacherGrupoReclamosComponent } from './teacher-grupo-reclamos.componen
 import { EstudianteGrupoItem } from '../../../../core/models/estudiante-grupo-item.model';
 import { SolicitudRevisionItem, type EstadoCargaReclamos } from '../../../../core/models/role-management.model';
 import { TeacherGrupoSabanaComponent } from './teacher-grupo-sabana.component';
+import { TeacherGrupoDecisionesComponent } from './teacher-grupo-decisiones.component';
 
 /** `HOY` es el modo operativo del día; el resto son las pestañas del modo `Grupo`. */
 export type SubPestanaHub = 'HOY' | 'SABANA' | 'SESIONES' | 'RECLAMOS' | 'ESTUDIANTES';
@@ -43,6 +45,7 @@ const PESTANAS_GRUPO: readonly PestanaGrupo[] = [
     TeacherGrupoEstudiantesComponent,
     TeacherGrupoReclamosComponent,
     TeacherGrupoSabanaComponent,
+    TeacherGrupoDecisionesComponent,
   ],
   template: `
     @if (selectedCourse()) {
@@ -118,6 +121,13 @@ const PESTANAS_GRUPO: readonly PestanaGrupo[] = [
           >Grupo</button>
         </div>
 
+        <!-- Decisiones por inasistencia: visibles en Hoy y en Grupo, a un clic del docente (DEC-065) -->
+        <app-teacher-grupo-decisiones
+          [grupoId]="selectedCourse()?.id ?? ''"
+          [mostrarVacio]="subPestanaHub() === 'SABANA'"
+          (decisionRegistrada)="marcarRefresco()"
+        />
+
         @if (modo() === 'HOY') {
           <!-- MODO HOY: la sesion en curso o la proxima, con una unica accion primaria -->
           <section class="bg-white p-5 sm:p-6 rounded-2xl border border-warm-200 shadow-warm-sm space-y-4" data-testid="hub-hoy" aria-label="Sesión de hoy">
@@ -137,15 +147,24 @@ const PESTANAS_GRUPO: readonly PestanaGrupo[] = [
                     [class]="h.tipo === 'EN_CURSO' ? 'bg-success-50 text-success-800 border-success-200' : 'bg-warm-100 text-warm-700 border-warm-200'">
                     {{ h.tipo === 'EN_CURSO' ? 'En curso' : 'Programada' }}
                   </span>
-                  <app-sesion-estado-badge [estado]="h.sesion.estado" [cancelacion]="h.sesion.cancelacion" />
+                  <app-sesion-estado-badge
+                    [estado]="h.sesion.estado"
+                    [cancelacion]="h.sesion.cancelacion"
+                    [estadoSolicitud]="h.sesion.estadoSolicitud"
+                    [pendienteAprobacion]="h.sesion.pendienteAprobacion"
+                  />
                 </p>
+                @if (esPendiente(h.sesion)) {
+                  <p class="text-xs text-warning-800" data-testid="hub-hoy-pendiente">{{ textoPendiente }}</p>
+                }
               </div>
               <div class="flex flex-wrap items-center gap-2.5">
                 <button
                   type="button"
                   data-testid="hub-tomar-asistencia"
+                  [disabled]="esPendiente(h.sesion)"
                   (click)="tomarAsistenciaSesion.emit(h.sesion)"
-                  class="text-sm font-bold text-white bg-primary-800 hover:bg-primary-900 px-5 min-h-[44px] rounded-xl transition-colors inline-flex items-center gap-1.5 shadow-sm"
+                  class="text-sm font-bold text-white bg-primary-800 hover:bg-primary-900 disabled:opacity-50 disabled:cursor-not-allowed px-5 min-h-[44px] rounded-xl transition-colors inline-flex items-center gap-1.5 shadow-sm"
                 >
                   <svg class="w-4 h-4 text-primary-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -156,8 +175,9 @@ const PESTANAS_GRUPO: readonly PestanaGrupo[] = [
                   <button
                     type="button"
                     data-testid="hub-hoy-qr"
+                    [disabled]="esPendiente(h.sesion)"
                     (click)="proyectarSesion.emit(h.sesion)"
-                    class="text-sm font-semibold text-primary-800 bg-accent-100 hover:bg-accent-200 border border-accent-300 px-4 min-h-[44px] rounded-xl transition-colors"
+                    class="text-sm font-semibold text-primary-800 bg-accent-100 hover:bg-accent-200 border border-accent-300 disabled:opacity-50 disabled:cursor-not-allowed px-4 min-h-[44px] rounded-xl transition-colors"
                   >
                     Proyectar QR / PIN
                   </button>
@@ -166,7 +186,7 @@ const PESTANAS_GRUPO: readonly PestanaGrupo[] = [
             } @else {
               <app-empty-state
                 title="No hay sesiones vigentes"
-                description="No quedan sesiones por dictar en este grupo. Puedes programar una extraordinaria desde el cronograma del grupo."
+                description="No quedan sesiones por dictar en este grupo. Puedes solicitar una extraordinaria desde el cronograma del grupo."
               />
               <div>
                 <button
@@ -218,6 +238,7 @@ const PESTANAS_GRUPO: readonly PestanaGrupo[] = [
               [estudiantes]="estudiantes()"
               [sessions]="sessions()"
               [cargando]="cargandoEstudiantes() || loadingSessions()"
+              [refresco]="refrescoPlanilla()"
             />
           }
 
@@ -295,11 +316,20 @@ export class TeacherGrupoHubComponent {
   protected readonly modo = computed<'HOY' | 'GRUPO'>(() => (this.subPestanaHub() === 'HOY' ? 'HOY' : 'GRUPO'));
 
   /** Un solo conteo de sesiones del grupo; la definición viaja en el `title` de la cifra. */
+  protected readonly esPendiente = estaPendienteAprobacion;
+  protected readonly textoPendiente = TEXTO_SESION_PENDIENTE;
   protected readonly resumen = computed(() => resumirSesiones(this.sessions(), this.ahora() ?? new Date()));
   protected readonly hoy = computed(() => sesionDeHoy(this.sessions(), this.ahora() ?? new Date()));
 
   protected irAGrupo(): void {
     if (this.subPestanaHub() === 'HOY') this.subPestanaHub.set('SABANA');
+  }
+
+  /** Cambia cuando el docente registra una decisión: la planilla vuelve a cargar su resumen. */
+  protected readonly refrescoPlanilla = signal(0);
+
+  protected marcarRefresco(): void {
+    this.refrescoPlanilla.update((version) => version + 1);
   }
 
   reintentarReclamos = output<void>();
