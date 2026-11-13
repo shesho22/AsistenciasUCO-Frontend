@@ -25,6 +25,7 @@ import {
 import { finalize } from 'rxjs';
 import { IdentidadEsperada, UltimaPeticion, advertirRegistroNoListado } from '../../../core/utils/registro-confirmado.util';
 import { CargaMasivaUsuariosComponent } from '../../../shared/components/carga-masiva-usuarios/carga-masiva-usuarios.component';
+import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
 type VistaDecano = 'LISTA' | 'REGISTRO';
 
@@ -681,9 +682,9 @@ export class DeanCoordinadoresComponent implements OnInit {
   private notificarResultado(res: ApiResponse<ResultadoGestionCoordinador>): void {
     const mensaje = res.datos?.mensajeUsuario ?? res.mensajeUsuario;
     if (res.datos?.sincronizacionIdentidad === 'PENDIENTE') {
-      this.toast.warning(mensaje ?? 'El cambio se guardó. La cuenta de acceso se sincronizará pronto.');
+      this.toast.warning(mensaje ?? mensajeUi('UI_DEAN_COORDINADORES_001'));
     } else {
-      this.toast.success(mensaje ?? 'Cambio guardado.');
+      this.toast.success(mensaje ?? mensajeUi('UI_DEAN_COORDINADORES_002'));
     }
   }
 
@@ -758,7 +759,7 @@ export class DeanCoordinadoresComponent implements OnInit {
     }
     this.intentoGuardar.set(true);
     if (!this.formData.tipoIdentificacionId) {
-      this.toast.warning('El campo Tipo de Documento es obligatorio.');
+      this.toast.warning(mensajeUi('UI_ADMIN_DECANOS_004'));
       return;
     }
 
@@ -771,27 +772,27 @@ export class DeanCoordinadoresComponent implements OnInit {
     const pn = (this.formData.primerNombre || '').trim();
     const pa = (this.formData.primerApellido || '').trim();
     if (!pn) {
-      this.toast.warning('El campo Primer Nombre es obligatorio.');
+      this.toast.warning(mensajeUi('UI_ADMIN_DECANOS_005'));
       return;
     }
     if (!pa) {
-      this.toast.warning('El campo Primer Apellido es obligatorio.');
+      this.toast.warning(mensajeUi('UI_ADMIN_DECANOS_006'));
       return;
     }
 
     const emailResult = validateInstitutionalEmail(this.formData.correo);
     if (!emailResult.valid) {
-      this.toast.warning(emailResult.error || 'Correo institucional inválido.');
+      this.toast.warning(emailResult.error || mensajeUi('UI_ADMIN_DECANOS_007'));
       return;
     }
 
     if (!this.formData.programaAcademico || !this.formData.programaAcademico.trim()) {
-      this.toast.warning('El campo Programa Académico es obligatorio.');
+      this.toast.warning(mensajeUi('UI_DEAN_COORDINADORES_003'));
       return;
     }
 
     if (!this.formData.password || !this.formData.password.trim()) {
-      this.toast.warning('El campo Contraseña Inicial IAM es obligatorio.');
+      this.toast.warning(mensajeUi('UI_DEAN_COORDINADORES_004'));
       return;
     }
 
@@ -830,7 +831,7 @@ export class DeanCoordinadoresComponent implements OnInit {
     this.deanService.createCoordinador(payload).pipe(finalize(() => this.isSubmitting.set(false))).subscribe({
       next: (res) => {
         if (res.exitoso) {
-          this.toast.success(res.mensajeUsuario || 'Coordinador registrado exitosamente.');
+          this.toast.success(res.mensajeUsuario || mensajeUi('UI_DEAN_COORDINADORES_005'));
           this.ultimaCuentaRegistrada.set(payload.correo);
           this.cargarCoordinadores({ numeroIdentificacion: payload.numeroIdentificacion, correo: payload.correo });
           this.volverALista();
@@ -861,7 +862,7 @@ export class DeanCoordinadoresComponent implements OnInit {
     );
 
     if (yaExiste) {
-      this.toast.info(`El profesional ${user.nombres} ${user.apellidos} ya coordina un programa académico.`);
+      this.toast.info(mensajeUi('UI_DEAN_COORDINADORES_006', { nombres: user.nombres, apellidos: user.apellidos }));
       return;
     }
 
@@ -880,6 +881,6 @@ export class DeanCoordinadoresComponent implements OnInit {
     this.formData.correo = user.correo || '';
     this.formData.programaAcademico = 'SIN_PROGRAMA';
     this.formData.idPrograma = null;
-    this.toast.info(`Datos de ${user.nombres} ${user.apellidos} precargados. Confirme el programa y guarde.`);
+    this.toast.info(mensajeUi('UI_DEAN_COORDINADORES_007', { nombres: user.nombres, apellidos: user.apellidos }));
   }
 }

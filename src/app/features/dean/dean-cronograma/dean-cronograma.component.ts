@@ -10,6 +10,7 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
 import { resolveSessionInstant } from '../../../core/time/session-timezone.util';
+import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
 /** HU145: cronograma de las sesiones de clase programadas en la facultad, por rango de fechas. Solo lectura. */
 @Component({
@@ -136,7 +137,7 @@ export class DeanCronogramaComponent implements OnInit {
 
   filtrar(): void {
     if (this.desde() && this.hasta() && this.desde() > this.hasta()) {
-      this.toast.error('La fecha desde no puede ser posterior a la fecha hasta.');
+      this.toast.error(mensajeUi('UI_COORDINATOR_SESIONES_GRUPO_002'));
       return;
     }
     this.pagina.set(1);

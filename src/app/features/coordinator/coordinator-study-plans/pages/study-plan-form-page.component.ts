@@ -6,6 +6,7 @@ import { PlanEstudioItem } from '../../../../core/models/role-management.model';
 import { ToastService } from '../../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../../core/api/errors/api-error.util';
 import { StudyPlanFormComponent } from '../components/study-plan-form.component';
+import { mensajeUi } from '../../../../core/messages/mensajes-ui';
 
 @Component({
   selector: 'app-coordinator-study-plan-form-page',
@@ -66,7 +67,7 @@ export class CoordinatorStudyPlanFormPageComponent implements OnInit {
       this.coordService.crearPlanEstudio(datos).subscribe({
         next: (res) => {
           if (res.exitoso) {
-            this.toast.success(res.mensajeUsuario || 'Plan de estudio registrado.');
+            this.toast.success(res.mensajeUsuario || mensajeUi('UI_STUDY_PLAN_FORM_PAGE_001'));
             this.volver();
           }
         },
@@ -78,7 +79,7 @@ export class CoordinatorStudyPlanFormPageComponent implements OnInit {
       this.coordService.actualizarPlanEstudio(id, datos).subscribe({
         next: (res) => {
           if (res.exitoso) {
-            this.toast.success(res.mensajeUsuario || 'Plan de estudio modificado.');
+            this.toast.success(res.mensajeUsuario || mensajeUi('UI_STUDY_PLAN_FORM_PAGE_002'));
             this.volver();
           }
         },

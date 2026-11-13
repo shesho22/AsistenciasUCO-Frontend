@@ -39,6 +39,7 @@ import { StudentCoursesListComponent } from './components/student-courses-list.c
 import { StudentCourseDetailComponent } from './components/student-course-detail.component';
 import { StudentClaimFormComponent } from './components/student-claim-form.component';
 import { StudentMatriculaCodigoModalComponent } from './components/modals/student-matricula-codigo-modal.component';
+import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
 type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO';
 
@@ -383,7 +384,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
     const validacion = validateSoporteFile(file, this.configuracionReclamos()?.tamanioMaximoBytes);
     if (!validacion.valid) {
       this.errorSoporte.set(validacion.message ?? 'El archivo no es válido.');
-      this.toast.error(validacion.message ?? 'El archivo no es válido.');
+      this.toast.error(validacion.message ?? mensajeUi('UI_STUDENT_COURSES_001'));
       return;
     }
 
@@ -426,7 +427,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
             );
             const primerListo = this.archivosAdjuntos().find((a) => a.estado === 'LISTO');
             this.archivoAdjunto.set(primerListo ?? null);
-            this.toast.success(getApiSuccessMessage(res, `Archivo "${file.name}" cargado y analizado correctamente.`));
+            this.toast.success(getApiSuccessMessage(res, mensajeUi('UI_STUDENT_COURSES_006', { nombre: file.name })));
           } else {
             this.archivosAdjuntos.update((actuales) =>
               actuales.map((item) =>
@@ -497,7 +498,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
     this.claimService.eliminarReclamo(sesion.reclamoId).subscribe({
       next: (res) => {
         if (res.exitoso) {
-          this.toast.success(getApiSuccessMessage(res, 'Solicitud retirada.'));
+          this.toast.success(getApiSuccessMessage(res, mensajeUi('UI_STUDENT_CLAIMS_002')));
           this.cargarSesiones(materia);
         }
       },
@@ -602,7 +603,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
         next: (res) => {
           if (res.exitoso) {
             this.intentoRadicacion.reiniciar();
-            this.toast.success(getApiSuccessMessage(res, 'Reclamo enviado.'));
+            this.toast.success(getApiSuccessMessage(res, mensajeUi('UI_STUDENT_COURSES_002')));
             this.volverADetalle();
             this.cargarSesiones(materia);
           }
@@ -616,7 +617,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
             // El soporte ya no esta disponible para radicar (inexistente, ajeno o ya usado): hay que volver a adjuntarlo.
             this.archivoAdjunto.set(null);
             this.errorSoporte.set('El soporte adjunto ya no está disponible. Adjúntalo nuevamente para radicar.');
-            this.toast.error('El soporte adjunto ya no está disponible. Adjúntalo nuevamente.');
+            this.toast.error(mensajeUi('UI_STUDENT_COURSES_003'));
             return;
           }
           const codigo = getApiErrorCode(err);
@@ -657,7 +658,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
     } else {
       const pin = String(dato || '').trim();
       if (!/^[0-9]{6}$/.test(pin)) {
-        this.toast.error('Ingresa el PIN de 6 dígitos que proyecta tu docente.');
+        this.toast.error(mensajeUi('UI_STUDENT_COURSES_004'));
         return;
       }
       credencial = { pin };
@@ -667,7 +668,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
     this.matriculaQrService.matricularAutenticado(credencial).subscribe({
       next: (resultado) => {
         this.procesandoMatriculaGrupo.set(false);
-        this.toast.success(getApiSuccessMessage(resultado, '¡Matrícula confirmada exitosamente en el grupo!'));
+        this.toast.success(getApiSuccessMessage(resultado, mensajeUi('UI_STUDENT_COURSES_005')));
         this.cerrarModalMatriculaGrupo();
         this.cargarMaterias();
       },

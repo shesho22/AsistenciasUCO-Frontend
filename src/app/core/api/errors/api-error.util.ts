@@ -1,9 +1,10 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ApiErrorResponse } from '../models/api-error-response.model';
 import { ApiFieldError } from '../models/api-field-error.model';
+import { mensajeUi } from '../../messages/mensajes-ui';
 
-const DEFAULT_ERROR_MESSAGE =
-  'No fue posible completar la operación. Intente nuevamente.';
+// VAL-oleada3 MSG-06: los textos de respaldo salen del catálogo de mensajes del frontend.
+const DEFAULT_ERROR_MESSAGE = mensajeUi('API_ERROR_DEFAULT');
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -80,24 +81,15 @@ export const API_ERROR_CODE = {
 } as const;
 
 const CODE_MESSAGES: Record<string, string> = {
-  [API_ERROR_CODE.UNAUTHORIZED]:
-    'Su sesión institucional ha caducado. Por favor inicie sesión nuevamente.',
-  [API_ERROR_CODE.FORBIDDEN]:
-    'No tiene los permisos institucionales requeridos para realizar esta acción.',
-  [API_ERROR_CODE.VALIDATION_ERROR]:
-    'Los datos enviados no son válidos. Verifique los campos del formulario.',
-  [API_ERROR_CODE.INVALID_REQUEST]:
-    'La solicitud no pudo ser interpretada. Verifique los datos e intente nuevamente.',
-  [API_ERROR_CODE.RESOURCE_NOT_FOUND]:
-    'El recurso solicitado no fue encontrado en el sistema.',
-  [API_ERROR_CODE.CONFLICT]:
-    'Existe un conflicto con el estado actual de los datos. Actualice e intente nuevamente.',
-  [API_ERROR_CODE.FEATURE_UNAVAILABLE]:
-    'Esta funcionalidad no está disponible por el momento.',
-  [API_ERROR_CODE.INTERNAL_ERROR]:
-    'Ocurrió un error en el servidor al procesar la solicitud. Por favor intente más tarde.',
-  [API_ERROR_CODE.NETWORK_ERROR]:
-    'No fue posible conectar con el servidor. Verifique su conexión de red.',
+  [API_ERROR_CODE.UNAUTHORIZED]: mensajeUi('API_ERROR_UNAUTHORIZED'),
+  [API_ERROR_CODE.FORBIDDEN]: mensajeUi('API_ERROR_FORBIDDEN'),
+  [API_ERROR_CODE.VALIDATION_ERROR]: mensajeUi('API_ERROR_VALIDATION_ERROR'),
+  [API_ERROR_CODE.INVALID_REQUEST]: mensajeUi('API_ERROR_INVALID_REQUEST'),
+  [API_ERROR_CODE.RESOURCE_NOT_FOUND]: mensajeUi('API_ERROR_RESOURCE_NOT_FOUND'),
+  [API_ERROR_CODE.CONFLICT]: mensajeUi('API_ERROR_CONFLICT'),
+  [API_ERROR_CODE.FEATURE_UNAVAILABLE]: mensajeUi('API_ERROR_FEATURE_UNAVAILABLE'),
+  [API_ERROR_CODE.INTERNAL_ERROR]: mensajeUi('API_ERROR_INTERNAL_ERROR'),
+  [API_ERROR_CODE.NETWORK_ERROR]: mensajeUi('API_ERROR_NETWORK_ERROR'),
 };
 
 /** Códigos de negocio cuyo `message` ya es el texto institucional listo para mostrar. */
@@ -151,7 +143,7 @@ export function getApiErrorMessage(error: unknown): string {
       const issues = details
         .map((d) => `Campo '${d.field}': ${d.message}`)
         .join('. ');
-      return `Error en datos del formulario: ${issues}.`;
+      return mensajeUi('API_ERROR_CAMPOS_FORMULARIO', { detalles: issues });
     }
   }
 

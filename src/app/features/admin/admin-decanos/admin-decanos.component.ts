@@ -21,6 +21,7 @@ import { CorreccionIdentidadService } from '../../../core/services/correccion-id
 import { CorregirIdentidadPayload, IdentidadActual } from '../../../core/models/correccion-identidad.model';
 import { CorreccionIdentidadModalComponent } from '../../../shared/components/correccion-identidad-modal/correccion-identidad-modal.component';
 import { CargaMasivaUsuariosComponent } from '../../../shared/components/carga-masiva-usuarios/carga-masiva-usuarios.component';
+import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
 type VistaAdmin = 'LISTA' | 'REGISTRO';
 
@@ -497,9 +498,9 @@ export class AdminDecanosComponent implements OnInit {
         this.guardandoCorreccion.set(false);
         this.decanoACorregir.set(null);
         if (r.datos?.sincronizacionIdentidad === 'PENDIENTE') {
-          this.toast.warning(r.datos.mensajeUsuario ?? 'Los datos se corrigieron; la cuenta de acceso queda pendiente de sincronizar.');
+          this.toast.warning(r.datos.mensajeUsuario ?? mensajeUi('UI_ADMIN_DECANOS_001'));
         } else {
-          this.toast.success('Los datos del decano fueron corregidos.');
+          this.toast.success(mensajeUi('UI_ADMIN_DECANOS_002'));
         }
         this.cargarDecanos();
       },
@@ -587,7 +588,7 @@ export class AdminDecanosComponent implements OnInit {
         if (res.exitoso && res.datos) {
           const updated = this.decanos().map((d) => (d.id === decano.id ? res.datos! : d));
           this.decanos.set(updated);
-          this.toast.success(res.mensajeUsuario || 'Estado actualizado.');
+          this.toast.success(res.mensajeUsuario || mensajeUi('UI_ADMIN_DECANOS_003'));
         }
       },
       error: (err) => this.toast.error(getApiErrorMessage(err)),
@@ -631,7 +632,7 @@ export class AdminDecanosComponent implements OnInit {
       return;
     }
     if (!this.formData.tipoIdentificacionId) {
-      this.toast.warning('El campo Tipo de Documento es obligatorio.');
+      this.toast.warning(mensajeUi('UI_ADMIN_DECANOS_004'));
       return;
     }
 
@@ -644,23 +645,23 @@ export class AdminDecanosComponent implements OnInit {
     const pn = (this.formData.primerNombre || '').trim();
     const pa = (this.formData.primerApellido || '').trim();
     if (!pn) {
-      this.toast.warning('El campo Primer Nombre es obligatorio.');
+      this.toast.warning(mensajeUi('UI_ADMIN_DECANOS_005'));
       return;
     }
     if (!pa) {
-      this.toast.warning('El campo Primer Apellido es obligatorio.');
+      this.toast.warning(mensajeUi('UI_ADMIN_DECANOS_006'));
       return;
     }
 
     const emailResult = validateInstitutionalEmail(this.formData.correo);
     if (!emailResult.valid) {
-      this.toast.warning(emailResult.error || 'Correo institucional inválido.');
+      this.toast.warning(emailResult.error || mensajeUi('UI_ADMIN_DECANOS_007'));
       return;
     }
 
     const pwd = (this.formData.password || '').trim();
     if (!pwd) {
-      this.toast.warning('La contraseña inicial de acceso es obligatoria.');
+      this.toast.warning(mensajeUi('UI_ADMIN_DECANOS_008'));
       return;
     }
 
@@ -686,7 +687,7 @@ export class AdminDecanosComponent implements OnInit {
     this.adminService.createDecano(payload).pipe(finalize(() => this.isSubmitting.set(false))).subscribe({
       next: (res) => {
         if (res.exitoso) {
-          this.toast.success(res.mensajeUsuario || 'Decano registrado exitosamente.');
+          this.toast.success(res.mensajeUsuario || mensajeUi('UI_ADMIN_DECANOS_009'));
           this.ultimaCuentaRegistrada.set(payload.correo);
           this.cargarDecanos({ numeroIdentificacion: String(payload.numeroIdentificacion), correo: payload.correo });
           this.cargarFacultades();
@@ -717,7 +718,7 @@ export class AdminDecanosComponent implements OnInit {
     );
 
     if (yaExiste) {
-      this.toast.info(`El profesional ${user.nombres} ${user.apellidos} ya está nombrado como Decano.`);
+      this.toast.info(mensajeUi('UI_ADMIN_DECANOS_010', { nombres: user.nombres, apellidos: user.apellidos }));
       return;
     }
 
@@ -735,6 +736,6 @@ export class AdminDecanosComponent implements OnInit {
     this.formData.segundoApellido = user.segundoApellido || '';
     this.formData.correo = user.correo || '';
     this.formData.password = '';
-    this.toast.info(`Datos de ${user.nombres} ${user.apellidos} precargados. Defina la contraseña y guarde para confirmar.`);
+    this.toast.info(mensajeUi('UI_ADMIN_DECANOS_011', { nombres: user.nombres, apellidos: user.apellidos }));
   }
 }

@@ -13,6 +13,7 @@ import { etiquetaEstadoReclamo, etiquetaResultadoAprobacion, varianteEstadoRecla
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
 import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load-error.util';
 import { ButtonComponent } from '../../../shared/components/button/button.component';
+import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
 type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
 
@@ -226,7 +227,7 @@ export class StudentClaimsComponent implements OnInit, OnDestroy {
   descargarSoporte(reclamo: SolicitudRevisionItem): void {
     const soporte = reclamo.soporteAdjunto;
     if (!soporte?.fileId) {
-      this.toast.warning('Esta solicitud no tiene un soporte descargable.');
+      this.toast.warning(mensajeUi('UI_STUDENT_CLAIMS_001'));
       return;
     }
     if (this.descargando()) return;
@@ -242,7 +243,7 @@ export class StudentClaimsComponent implements OnInit, OnDestroy {
           anchor.download = soporte.nombre.replace(/[\\/:*?"<>|\r\n]/g, '_');
           anchor.click();
           URL.revokeObjectURL(url);
-          this.toast.success(`Soporte "${soporte.nombre}" descargado.`);
+          this.toast.success(mensajeUi('UI_SOPORTE_DESCARGADO', { nombre: soporte.nombre }));
         },
         error: (error: unknown) => this.toast.error(getApiErrorMessage(error)),
       });
@@ -265,7 +266,7 @@ export class StudentClaimsComponent implements OnInit, OnDestroy {
       .pipe(finalize(() => this.retirando.set(null)))
       .subscribe({
         next: (res) => {
-          this.toast.success(getApiSuccessMessage(res, 'Solicitud retirada.'));
+          this.toast.success(getApiSuccessMessage(res, mensajeUi('UI_STUDENT_CLAIMS_002')));
           this.cargar();
         },
         error: (error: unknown) => this.toast.error(getApiErrorMessage(error)),

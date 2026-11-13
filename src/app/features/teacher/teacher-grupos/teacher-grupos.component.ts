@@ -39,6 +39,7 @@ import { TeacherRetiroEstudianteModalComponent } from './components/modals/teach
 import { getSessionNameError } from '../../../core/validation/session-name.util';
 import { environment } from '../../../../environments/environment';
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
+import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
 type VistaGrupos = 'LISTA' | 'HUB_GRUPO' | 'FORM_SESION' | 'FORM_GRUPO';
 
@@ -282,7 +283,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
       },
       error: (err: unknown) => {
         this.isLoading.set(false);
-        this.toast.error(getApiErrorMessage(err) || 'Error al cargar grupos.');
+        this.toast.error(getApiErrorMessage(err) || mensajeUi('UI_TEACHER_GRUPOS_001'));
       },
     });
   }
@@ -311,7 +312,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
       },
       error: (err: unknown) => {
         this.cargandoOferta.set(false);
-        this.toast.error(getApiErrorMessage(err) || 'No fue posible cargar tus asignaturas.');
+        this.toast.error(getApiErrorMessage(err) || mensajeUi('UI_TEACHER_GRUPOS_002'));
       },
     });
   }
@@ -322,16 +323,16 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
       next: (res) => {
         this.guardandoGrupo.set(false);
         if (res.exitoso) {
-          this.toast.success(res.mensajeUsuario || 'Grupo creado.');
+          this.toast.success(res.mensajeUsuario || mensajeUi('UI_TEACHER_GRUPOS_003'));
           this.volverALista();
           this.cargarGrupos();
         } else {
-          this.toast.error(res.mensajeUsuario || 'No fue posible crear el grupo.');
+          this.toast.error(res.mensajeUsuario || mensajeUi('UI_TEACHER_GRUPOS_004'));
         }
       },
       error: (err: unknown) => {
         this.guardandoGrupo.set(false);
-        this.toast.error(getApiErrorMessage(err) || 'No fue posible crear el grupo.');
+        this.toast.error(getApiErrorMessage(err) || mensajeUi('UI_TEACHER_GRUPOS_004'));
       },
     });
   }
@@ -522,11 +523,11 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
       return;
     }
     if (!this.sesionForm.date) {
-      this.toast.warning('El campo Fecha de la Sesión es obligatorio.');
+      this.toast.warning(mensajeUi('UI_TEACHER_GRUPOS_005'));
       return;
     }
     if (!this.sesionForm.startTime || !this.sesionForm.endTime) {
-      this.toast.warning('Los campos Hora Inicio y Hora Fin de la sesión son obligatorios.');
+      this.toast.warning(mensajeUi('UI_TEACHER_GRUPOS_006'));
       return;
     }
     if (this.modoFormSesion === 'EDITAR' && this.sesionFormTimeZone !== this.timeZone.zone()) {
@@ -540,7 +541,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
         };
       }
       this.sesionFormTimeZone = this.timeZone.zone();
-      this.toast.warning('La zona horaria activa cambió mientras editabas. Se recargó el horario original; revisa los datos antes de guardar.');
+      this.toast.warning(mensajeUi('UI_TEACHER_GRUPOS_007'));
       return;
     }
     if (this.modoFormSesion === 'CREAR') {
@@ -555,7 +556,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
           next: (res) => {
             if (res.exitoso) {
               // DEC-064: la sesión creada a mano se notifica a estudiantes y coordinador.
-              this.toast.success(`${res.mensaje || 'Sesión programada con éxito.'} ${AVISO_SESION_MANUAL_NOTIFICADA}`);
+              this.toast.success(`${res.mensaje || mensajeUi('UI_TEACHER_GRUPOS_010')} ${AVISO_SESION_MANUAL_NOTIFICADA}`);
               this.cargarSesiones(course.id);
               this.volverASesiones();
             }
@@ -575,7 +576,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
           next: (res) => {
             // PUT devuelve ApiDataResponse<Void>: solo `exitoso`; el listado se recarga por HTTP.
             if (res.exitoso) {
-              this.toast.success('Sesión actualizada.');
+              this.toast.success(mensajeUi('UI_TEACHER_GRUPOS_008'));
               this.cargarSesiones(course.id);
               this.volverASesiones();
             }
@@ -588,7 +589,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   abrirModalRetiro(estudiante: EstudianteGrupoItem): void {
     const idEstudiante = estudiante?.idEstudiante ?? estudiante?.studentId;
     if (!idEstudiante) {
-      this.toast.warning('No se pudo identificar al estudiante a retirar.');
+      this.toast.warning(mensajeUi('UI_TEACHER_GRUPOS_009'));
       return;
     }
     this.estudianteARetirar.set({ idEstudiante, nombreCompleto: estudiante?.nombreCompleto ?? estudiante?.studentName });
@@ -656,7 +657,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
         }
         const notificados = res.datos?.estudiantesNotificados;
         this.toast.success(
-          notificados ? `Sesión cancelada. Estudiantes notificados: ${notificados}.` : 'Sesión cancelada.'
+          notificados ? mensajeUi('UI_TEACHER_GRUPOS_011', { notificados }) : mensajeUi('UI_COORDINATOR_SESIONES_GRUPO_001')
         );
         this.cerrarModalCancelar();
       },

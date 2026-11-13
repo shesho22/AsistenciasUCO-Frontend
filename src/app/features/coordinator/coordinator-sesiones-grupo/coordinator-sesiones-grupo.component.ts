@@ -26,6 +26,7 @@ import { mensajeSesionManualCreada } from '../../../core/models/sesion-manual.ut
 import { CoordinatorCancelarSesionModalComponent } from './coordinator-cancelar-sesion-modal.component';
 import { ErrorCargaComponent } from '../../../shared/components/error-carga/error-carga.component';
 import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load-error.util';
+import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
 type FiltroAsistio = 'TODOS' | 'ASISTIO' | 'NO_ASISTIO';
 
@@ -361,7 +362,7 @@ export class CoordinatorSesionesGrupoComponent implements OnInit, OnDestroy {
     this.sesionesService.cancelarSesion(sesion.id, request).subscribe({
       next: (res) => {
         this.enviandoCancelacion.set(false);
-        this.toast.success(getApiSuccessMessage(res, 'Sesión cancelada.'));
+        this.toast.success(getApiSuccessMessage(res, mensajeUi('UI_COORDINATOR_SESIONES_GRUPO_001')));
         this.cerrarCancelar();
         this.cargarSesiones();
       },
@@ -382,7 +383,7 @@ export class CoordinatorSesionesGrupoComponent implements OnInit, OnDestroy {
 
   filtrarSesiones(): void {
     if (this.desde() && this.hasta() && this.desde() > this.hasta()) {
-      this.toast.error('La fecha desde no puede ser posterior a la fecha hasta.');
+      this.toast.error(mensajeUi('UI_COORDINATOR_SESIONES_GRUPO_002'));
       return;
     }
     this.paginaSesiones.set(1);
