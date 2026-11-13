@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { BehaviorSubject, Subject } from 'rxjs';
@@ -33,7 +33,7 @@ describe('DeanGrupoDetalleComponent - Realtime SSE (C-F-54..C-F-56)', () => {
     await TestBed.configureTestingModule({
       imports: [DeanGrupoDetalleComponent],
       providers: [
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         { provide: RealtimeService, useValue: realtimeSpy },
         {

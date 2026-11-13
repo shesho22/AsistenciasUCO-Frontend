@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Router } from '@angular/router';
 import { CoordinatorStudyPlansComponent } from './coordinator-study-plans.component';
@@ -38,7 +38,7 @@ describe('CoordinatorStudyPlansComponent', () => {
     TestBed.configureTestingModule({
       imports: [CoordinatorStudyPlansComponent],
       providers: [
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         { provide: Router, useValue: routerSpy },
         { provide: ToastService, useValue: toastSpy },

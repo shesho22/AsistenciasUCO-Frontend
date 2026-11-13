@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { CoordinadorSesionesService } from './coordinador-sesiones.service';
 import { environment } from '../../../environments/environment';
@@ -10,7 +10,7 @@ describe('CoordinadorSesionesService (DEC-064)', () => {
   const base = `${environment.apiUrl}/coordinador/sesiones`;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    TestBed.configureTestingModule({ providers: [provideHttpClient(withXhr()), provideHttpClientTesting()] });
     service = TestBed.inject(CoordinadorSesionesService);
     http = TestBed.inject(HttpTestingController);
   });

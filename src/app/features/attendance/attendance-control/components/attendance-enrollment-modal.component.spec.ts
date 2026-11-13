@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { environment } from '../../../../../environments/environment';
 import { of, throwError } from 'rxjs';
@@ -20,7 +20,7 @@ describe('AttendanceEnrollmentModalComponent', () => {
       imports: [AttendanceEnrollmentModalComponent],
       providers: [
         { provide: StudentService, useValue: studentServiceSpy },
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
       ],
     }).compileComponents();

@@ -278,11 +278,11 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
             <div class="flex items-center gap-2">
               @if (selectedReclamo()?.categoria) {
                 <span class="px-3 py-1 rounded-xl text-xs font-semibold bg-warning-50 text-warning-900 border border-warning-200">
-                  {{ categoriaTexto(selectedReclamo()?.categoria) }}
+                  {{ categoriaTexto($safeNavigationMigration(selectedReclamo()?.categoria)) }}
                 </span>
               }
               <app-badge [variant]="getReclamoBadgeVariant(selectedReclamo()!.estadoSolicitud)" size="md">
-                Estado: {{ etiquetaEstado(selectedReclamo()?.estadoSolicitud) }}
+                Estado: {{ etiquetaEstado($safeNavigationMigration(selectedReclamo()?.estadoSolicitud)) }}
               </app-badge>
             </div>
           </div>

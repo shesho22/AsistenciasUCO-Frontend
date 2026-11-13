@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { CoordinatorSesionesGrupoComponent } from './coordinator-sesiones-grupo.component';
@@ -57,7 +57,7 @@ describe('CoordinatorSesionesGrupoComponent - cancelación de sesiones manuales 
 
     await TestBed.configureTestingModule({
       imports: [CoordinatorSesionesGrupoComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting(), { provide: RealtimeService, useValue: realtime }],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting(), { provide: RealtimeService, useValue: realtime }],
     }).compileComponents();
 
     http = TestBed.inject(HttpTestingController);

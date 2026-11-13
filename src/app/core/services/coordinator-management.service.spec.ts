@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import {
   CoordinatorManagementService,
@@ -56,7 +56,7 @@ describe('CoordinatorManagementService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [CoordinatorManagementService, provideHttpClient(), provideHttpClientTesting()],
+      providers: [CoordinatorManagementService, provideHttpClient(withXhr()), provideHttpClientTesting()],
     });
     service = TestBed.inject(CoordinatorManagementService);
     http = TestBed.inject(HttpTestingController);
@@ -82,7 +82,7 @@ describe('CoordinatorManagementService', () => {
   it('instanciar el servicio NO emite peticiones /coordinador/** (un estudiante no debe provocar 403)', () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      providers: [CoordinatorManagementService, provideHttpClient(), provideHttpClientTesting()],
+      providers: [CoordinatorManagementService, provideHttpClient(withXhr()), provideHttpClientTesting()],
     });
     const fresco = TestBed.inject(CoordinatorManagementService);
     const httpFresco = TestBed.inject(HttpTestingController);
@@ -96,7 +96,7 @@ describe('CoordinatorManagementService', () => {
   it('cargarDatosAcademicosBase tolera un error HTTP sin romper al llamador', () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      providers: [CoordinatorManagementService, provideHttpClient(), provideHttpClientTesting()],
+      providers: [CoordinatorManagementService, provideHttpClient(withXhr()), provideHttpClientTesting()],
     });
     const fresco = TestBed.inject(CoordinatorManagementService);
     const httpFresco = TestBed.inject(HttpTestingController);
@@ -708,7 +708,7 @@ describe('CoordinatorManagementService', () => {
 
 describe('CoordinatorManagementService (CULM-001 A.1: sin solicitudes ni matrícula de grupo)', () => {
   it('F-RED-04 no expone los métodos retirados', () => {
-    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    TestBed.configureTestingModule({ providers: [provideHttpClient(withXhr()), provideHttpClientTesting()] });
     const service = TestBed.inject(CoordinatorManagementService);
     for (const metodo of ['getSolicitudesMatricula', 'crearSolicitudMatricula', 'resolverSolicitudMatricula', 'matricularEstudianteGrupo', 'retirarEstudianteGrupo']) {
       expect(metodo in service).withContext(metodo).toBeFalse();

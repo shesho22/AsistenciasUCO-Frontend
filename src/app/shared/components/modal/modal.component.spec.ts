@@ -1,10 +1,11 @@
-import { ApplicationRef, Component, signal } from '@angular/core';
+import { ApplicationRef, Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { ModalComponent } from './modal.component';
 
 @Component({
     imports: [ModalComponent],
+    changeDetection: ChangeDetectionStrategy.Eager,
     template: `
     <button id="disparador" type="button">Abrir</button>
     <app-modal [isOpen]="abierto()" title="Prueba" (closed)="abierto.set(false)">

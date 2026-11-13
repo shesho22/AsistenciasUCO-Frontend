@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import {
   HttpTestingController,
   provideHttpClientTesting,
@@ -14,7 +14,7 @@ describe('StudentService', () => {
   beforeEach(() => {
     localStorage.setItem('USE_MOCKS', 'false');
     TestBed.configureTestingModule({
-      providers: [StudentService, provideHttpClient(), provideHttpClientTesting()],
+      providers: [StudentService, provideHttpClient(withXhr()), provideHttpClientTesting()],
     });
     service = TestBed.inject(StudentService);
     http = TestBed.inject(HttpTestingController);

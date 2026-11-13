@@ -3,6 +3,7 @@ import {
   HttpClient,
   provideHttpClient,
   withInterceptors,
+  withXhr
 } from '@angular/common/http';
 import {
   HttpTestingController,
@@ -48,7 +49,7 @@ describe('authInterceptor 401 recovery', () => {
 
     TestBed.configureTestingModule({
       providers: [
-        provideHttpClient(
+        provideHttpClient(withXhr(), 
           withInterceptors([authInterceptor, errorInterceptor])
         ),
         provideHttpClientTesting(),

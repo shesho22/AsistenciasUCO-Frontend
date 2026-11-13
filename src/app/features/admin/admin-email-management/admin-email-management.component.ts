@@ -703,7 +703,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
 
                 <div class="p-4 rounded-xl bg-warm-50 border border-warm-200">
                   <span class="text-[10px] font-bold text-warm-500 uppercase block mb-1">Último envío</span>
-                  <span class="text-sm font-mono font-bold text-warm-900 block" data-testid="canal-ultimo-envio">{{ timeZone.formatTemporal(canalEstado()?.ultimoEnvioUtc) }}</span>
+                  <span class="text-sm font-mono font-bold text-warm-900 block" data-testid="canal-ultimo-envio">{{ timeZone.formatTemporal($safeNavigationMigration(canalEstado()?.ultimoEnvioUtc)) }}</span>
                 </div>
 
                 <div class="p-4 rounded-xl bg-warm-50 border border-warm-200">

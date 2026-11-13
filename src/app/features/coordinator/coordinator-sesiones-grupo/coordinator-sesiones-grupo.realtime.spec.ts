@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { CoordinatorSesionesGrupoComponent } from './coordinator-sesiones-grupo.component';
@@ -46,7 +46,7 @@ describe('CoordinatorSesionesGrupoComponent - Realtime SSE (C-F-51..C-F-53)', ()
     await TestBed.configureTestingModule({
       imports: [CoordinatorSesionesGrupoComponent],
       providers: [
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         { provide: RealtimeService, useValue: realtimeSpy },
       ],
@@ -140,7 +140,7 @@ describe('CoordinatorSesionesGrupoComponent - dueño del stream con varias filas
     realtimeSpy.events.and.returnValue(new Subject<RealtimeEvent>().asObservable());
     await TestBed.configureTestingModule({
       imports: [CoordinatorSesionesGrupoComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting(), { provide: RealtimeService, useValue: realtimeSpy }],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting(), { provide: RealtimeService, useValue: realtimeSpy }],
     }).compileComponents();
     http = TestBed.inject(HttpTestingController);
   });

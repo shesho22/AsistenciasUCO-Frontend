@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { CorreccionIdentidadService } from './correccion-identidad.service';
 import { environment } from '../../../environments/environment';
@@ -11,7 +11,7 @@ describe('CorreccionIdentidadService (HU159)', () => {
   const payload = { primerNombre: 'Ana', segundoNombre: '', primerApellido: 'Gomez', segundoApellido: '', motivo: 'Digitación' };
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    TestBed.configureTestingModule({ providers: [provideHttpClient(withXhr()), provideHttpClientTesting()] });
     service = TestBed.inject(CorreccionIdentidadService);
     http = TestBed.inject(HttpTestingController);
   });

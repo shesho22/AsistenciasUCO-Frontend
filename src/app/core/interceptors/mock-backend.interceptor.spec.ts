@@ -1,5 +1,5 @@
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
-import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http';
+import { HttpClient, provideHttpClient, withInterceptors, withXhr } from '@angular/common/http';
 import { HttpErrorResponse } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Router } from '@angular/router';
@@ -17,7 +17,7 @@ describe('mockBackendInterceptor', () => {
     TestBed.configureTestingModule({
       providers: [
         { provide: Router, useValue: jasmine.createSpyObj<Router>('Router', ['navigate']) },
-        provideHttpClient(withInterceptors([mockBackendInterceptor])),
+        provideHttpClient(withXhr(), withInterceptors([mockBackendInterceptor])),
         provideHttpClientTesting(),
       ],
     });

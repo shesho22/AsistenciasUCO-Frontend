@@ -1,11 +1,12 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, Routes, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { AdminConfiguracionComponent, TABS_CONFIGURACION } from './admin-configuracion.component';
 import { CONFIGURACION_ROUTES } from './admin-configuracion.routes';
 
-@Component({ selector: 'app-pestana-falsa', standalone: true, template: '<p id="pestana-falsa">falsa</p>' })
+@Component({ selector: 'app-pestana-falsa', standalone: true, changeDetection: ChangeDetectionStrategy.Eager,
+ template: '<p id="pestana-falsa">falsa</p>' })
 class PestanaFalsaComponent {}
 
 /** Misma estructura que CONFIGURACION_ROUTES, con pantallas falsas para no tocar HTTP. */

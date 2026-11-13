@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { HasRoleDirective } from './has-role.directive';
@@ -8,6 +8,7 @@ import { signal } from '@angular/core';
 
 @Component({
     imports: [HasRoleDirective],
+    changeDetection: ChangeDetectionStrategy.Eager,
     template: `
     <div *appHasRole="'DOCENTE'" id="docente-single">Docente Contenido</div>
     <div *appHasRole="['ADMINISTRADOR', 'DECANO']" id="multi-role">Admin o Decano</div>

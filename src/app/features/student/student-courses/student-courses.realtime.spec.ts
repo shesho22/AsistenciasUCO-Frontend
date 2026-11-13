@@ -11,7 +11,7 @@ import { RealtimeConnectionState } from '../../../core/realtime/model/realtime-c
 import { RealtimeEvent } from '../../../core/realtime/model/realtime-event.model';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { crearMateria } from '../../../core/testing/student-portal.fixtures';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 describe('StudentCoursesComponent - avisos en tiempo real (DEC-064)', () => {
@@ -44,7 +44,7 @@ describe('StudentCoursesComponent - avisos en tiempo real (DEC-064)', () => {
     TestBed.configureTestingModule({
       imports: [StudentCoursesComponent],
       providers: [
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         { provide: AttendanceClaimService, useValue: claims },
         { provide: ToastService, useValue: toast },

@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TeacherGrupoHubComponent } from './teacher-grupo-hub.component';
 import { Course } from '../../../../core/models/course.model';
@@ -29,7 +29,7 @@ describe('TeacherGrupoHubComponent', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [TeacherGrupoHubComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting()],
     });
     fixture = TestBed.createComponent(TeacherGrupoHubComponent);
   });

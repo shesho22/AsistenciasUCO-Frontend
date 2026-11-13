@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ActivatedRoute } from '@angular/router';
 import { DeanDocentesComponent } from './dean-docentes.component';
@@ -26,7 +26,7 @@ describe('DeanDocentesComponent (HU128)', () => {
     TestBed.configureTestingModule({
       imports: [DeanDocentesComponent],
       providers: [
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         { provide: ToastService, useValue: toastSpy },
         { provide: ActivatedRoute, useValue: { snapshot: { data: {} } } },
@@ -97,7 +97,7 @@ describe('DeanDocentesComponent sin estructura', () => {
     TestBed.configureTestingModule({
       imports: [DeanDocentesComponent],
       providers: [
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         { provide: ToastService, useValue: jasmine.createSpyObj('ToastService', ['error']) },
         { provide: ActivatedRoute, useValue: { snapshot: { data: {} } } },
@@ -123,7 +123,7 @@ describe('DeanDocentesComponent (HU136, administrador)', () => {
     TestBed.configureTestingModule({
       imports: [DeanDocentesComponent],
       providers: [
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         { provide: ToastService, useValue: jasmine.createSpyObj('ToastService', ['error']) },
         { provide: ActivatedRoute, useValue: { snapshot: { data: { comoAdministrador: true } } } },
@@ -198,7 +198,7 @@ describe('DeanDocentesComponent estados de error de carga', () => {
     TestBed.configureTestingModule({
       imports: [DeanDocentesComponent],
       providers: [
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         { provide: ToastService, useValue: jasmine.createSpyObj('ToastService', ['success', 'error', 'info', 'warning']) },
         { provide: ActivatedRoute, useValue: { snapshot: { data: {} } } },

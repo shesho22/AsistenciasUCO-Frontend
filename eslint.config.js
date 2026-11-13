@@ -31,6 +31,10 @@ module.exports = tseslint.config(
       // Regla nueva en angular-eslint 20 (recomendada): 24 servicios usan inyeccion por constructor.
       // Queda en warn para no mezclar el salto de Angular con un refactor; se migra con ng generate @angular/core:inject.
       '@angular-eslint/prefer-inject': 'warn',
+      // Regla nueva en angular-eslint 22: Angular 22 cambia el valor por defecto a OnPush y la migracion oficial
+      // marco ChangeDetectionStrategy.Eager en 10 componentes anfitriones de pruebas (*.spec.ts) para conservar
+      // el comportamiento previo. Queda en warn; se revisan uno a uno al pasarlos a OnPush.
+      '@angular-eslint/prefer-on-push-component-change-detection': 'warn',
     },
   },
   {

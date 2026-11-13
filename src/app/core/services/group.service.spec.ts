@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import {
   HttpTestingController,
   provideHttpClientTesting,
@@ -13,7 +13,7 @@ describe('GroupService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [GroupService, provideHttpClient(), provideHttpClientTesting()],
+      providers: [GroupService, provideHttpClient(withXhr()), provideHttpClientTesting()],
     });
     service = TestBed.inject(GroupService);
     http = TestBed.inject(HttpTestingController);

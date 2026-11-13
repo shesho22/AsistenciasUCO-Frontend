@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
-import { HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse, withXhr } from '@angular/common/http';
 import { Subject, of, throwError } from 'rxjs';
 import { StudentCoursesComponent } from './student-courses.component';
 import { apiHttpError } from '../../../core/testing/api-error.fixture';
@@ -69,7 +69,7 @@ describe('StudentCoursesComponent — soporte y radicación (LB-004D FE-01..FE-0
     TestBed.configureTestingModule({
       imports: [StudentCoursesComponent],
       providers: [
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         { provide: AttendanceClaimService, useValue: claims },
         { provide: ToastService, useValue: toast },
@@ -656,7 +656,7 @@ describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', 
     await TestBed.configureTestingModule({
       imports: [StudentCoursesComponent],
       providers: [
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         { provide: ToastService, useValue: toast },
         { provide: AuthService, useValue: { currentUser: () => ({ id: 'u-1', name: 'Ana', email: 'ana@uco.edu.co' }) } },
@@ -913,7 +913,7 @@ describe('StudentCoursesComponent — enlace desde Mis Alertas (CERT-CULM001)', 
     await TestBed.configureTestingModule({
       imports: [StudentCoursesComponent],
       providers: [
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         { provide: ToastService, useValue: jasmine.createSpyObj<ToastService>('ToastService', ['success', 'error', 'warning', 'info']) },
         { provide: AuthService, useValue: { currentUser: () => ({ id: 'u-1', name: 'Ana', email: 'ana@uco.edu.co' }) } },

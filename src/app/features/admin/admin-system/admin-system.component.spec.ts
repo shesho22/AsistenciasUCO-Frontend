@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { of } from 'rxjs';
 import { signal } from '@angular/core';
@@ -99,7 +99,7 @@ describe('AdminSystemComponent', () => {
         { provide: AdminManagementService, useValue: adminServiceSpy },
         { provide: CoordinatorManagementService, useValue: coordServiceSpy },
         { provide: ToastService, useValue: toastServiceSpy },
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
       ],
     }).compileComponents();

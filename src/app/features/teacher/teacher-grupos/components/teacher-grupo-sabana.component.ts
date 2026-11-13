@@ -205,7 +205,7 @@ import { REALTIME_EVENT_TYPE } from '../../../../core/realtime/model/realtime-ev
                         <button
                           type="button"
                           [attr.data-testid]="'btn-decidir-' + idDe(est)"
-                          (click)="abrirModalDecision(est, r?.marca)"
+                          (click)="abrirModalDecision(est, $safeNavigationMigration(r?.marca))"
                           class="min-h-[36px] px-2.5 py-1 bg-primary-700 hover:bg-primary-800 text-white rounded-lg text-xs font-semibold shadow-xs transition-colors"
                         >
                           Decidir

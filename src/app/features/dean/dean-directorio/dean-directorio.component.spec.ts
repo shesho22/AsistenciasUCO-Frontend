@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Router, provideRouter, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
@@ -62,7 +62,7 @@ describe('DeanDirectorioComponent (CULM-001)', () => {
     toast = jasmine.createSpyObj('ToastService', ['success', 'error', 'info', 'warning']);
     TestBed.configureTestingModule({
       imports: [DeanDirectorioComponent],
-      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting(), { provide: ToastService, useValue: toast }],
+      providers: [provideRouter([]), provideHttpClient(withXhr()), provideHttpClientTesting(), { provide: ToastService, useValue: toast }],
     });
     http = TestBed.inject(HttpTestingController);
     router = TestBed.inject(Router);
@@ -439,7 +439,7 @@ describe('DeanDirectorioComponent estados de error de carga (docentes)', () => {
       imports: [DeanDirectorioComponent],
       providers: [
         provideRouter([]),
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         { provide: ToastService, useValue: jasmine.createSpyObj('ToastService', ['success', 'error', 'info', 'warning']) },
       ],
@@ -472,7 +472,7 @@ describe('DeanDirectorioComponent enlazado a la URL (CULM-001)', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([{ path: 'directorio/:entidad', component: DeanDirectorioComponent }], withComponentInputBinding()),
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         { provide: ToastService, useValue: jasmine.createSpyObj('ToastService', ['success', 'error', 'info', 'warning']) },
       ],

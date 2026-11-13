@@ -1,9 +1,10 @@
-import { ApplicationRef, Component, signal } from '@angular/core';
+import { ApplicationRef, Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { FormFieldComponent } from './form-field.component';
 
 @Component({
     imports: [FormFieldComponent],
+    changeDetection: ChangeDetectionStrategy.Eager,
     template: `
     <app-form-field label="Nombre" [errorMessage]="error()">
       <input type="text" />
