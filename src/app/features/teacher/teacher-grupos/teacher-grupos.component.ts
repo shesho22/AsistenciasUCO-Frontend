@@ -1,17 +1,16 @@
 import { Component, OnInit, OnDestroy, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AttendanceService } from '../../../core/services/attendance.service';
 import { StudentAttendance } from '../../../core/models/attendance.model';
-import { AVISO_SESION_CANCELADA_POR_COORDINACION, AVISO_SESION_MANUAL_NOTIFICADA } from '../../../core/models/sesion-manual.util';
+import { AVISO_SOLICITUD_SESION_REGISTRADA, mensajeSolicitudAprobada, mensajeSolicitudRechazadaOCancelada } from '../../../core/models/sesion-manual.util';
 import { RealtimeService } from '../../../core/realtime/realtime.service';
-import { REALTIME_EVENT_TYPE, SesionCanceladaRealtimePayload } from '../../../core/realtime/model/realtime-event.model';
-import { marcarSesionCancelada } from '../../../core/models/sesion-estado.model';
-import { CourseService, GrupoCoordinadorPayload } from '../../../core/services/course.service';
+import { REALTIME_EVENT_TYPE, SesionCanceladaRealtimePayload, SesionManualCreadaRealtimePayload } from '../../../core/realtime/model/realtime-event.model';
+import { estaPendienteAprobacion, marcarSesionAprobada, marcarSesionCancelada } from '../../../core/models/sesion-estado.model';
+import { CourseService } from '../../../core/services/course.service';
 import { CatalogService } from '../../../core/services/catalog.service';
 import { CatalogoPrograma } from '../../../core/models/programa-academico.model';
-import { OfertaCreacionGruposDocenteApiDto } from '../../../core/api/models/oferta-creacion-grupos-docente-api-dto.model';
 import { SessionService } from '../../../core/services/session.service';
 import { GroupService } from '../../../core/services/group.service';
 import { StudentService } from '../../../core/services/student.service';
@@ -31,7 +30,6 @@ import { isUuid } from '../../../core/utils/uuid.util';
 import { TeacherGruposListComponent } from './components/teacher-grupos-list.component';
 import { SubPestanaHub, TeacherGrupoHubComponent } from './components/teacher-grupo-hub.component';
 import { TeacherSesionFormComponent } from './components/teacher-sesion-form.component';
-import { TeacherGrupoFormComponent } from './components/teacher-grupo-form.component';
 import { TeacherMatriculaModalComponent } from './components/modals/teacher-matricula-modal.component';
 import { TeacherSesionCancelarModalComponent } from './components/modals/teacher-sesion-cancelar-modal.component';
 import { TeacherSesionDetalleModalComponent } from './components/modals/teacher-sesion-detalle-modal.component';
@@ -39,25 +37,23 @@ import { TeacherRetiroEstudianteModalComponent } from './components/modals/teach
 import { getSessionNameError } from '../../../core/validation/session-name.util';
 import { environment } from '../../../../environments/environment';
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
+import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
-type VistaGrupos = 'LISTA' | 'HUB_GRUPO' | 'FORM_SESION' | 'FORM_GRUPO';
+type VistaGrupos = 'LISTA' | 'HUB_GRUPO' | 'FORM_SESION';
 
 @Component({
-  selector: 'app-teacher-grupos',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    CommonModule,
+    selector: 'app-teacher-grupos',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [
     TeacherGruposListComponent,
     TeacherGrupoHubComponent,
     TeacherSesionFormComponent,
-    TeacherGrupoFormComponent,
     TeacherMatriculaModalComponent,
     TeacherSesionCancelarModalComponent,
     TeacherSesionDetalleModalComponent,
-    TeacherRetiroEstudianteModalComponent,
-  ],
-  template: `
+    TeacherRetiroEstudianteModalComponent
+],
+    template: `
     <div class="space-y-6 animate-fade-in">
       <!-- 1. VISTA LISTA PRINCIPAL -->
       @if (vistaActual() === 'LISTA') {
@@ -67,21 +63,9 @@ type VistaGrupos = 'LISTA' | 'HUB_GRUPO' | 'FORM_SESION' | 'FORM_GRUPO';
           [isLoading]="isLoading()"
           [sessionQrEnabled]="sessionQrEnabled"
           (irAsistencia)="irATomaAsistencia()"
-          (nuevoGrupo)="abrirNuevoGrupo()"
           (seleccionarGrupo)="tomarAsistenciaGrupo($event)"
           (matricular)="abrirModalMatriculaGrupo($event)"
           (tomarAsistencia)="tomarAsistenciaGrupo($event)"
-        />
-      }
-
-      <!-- 2. FORMULARIO NUEVO GRUPO (F3: el docente crea sus grupos) -->
-      @if (vistaActual() === 'FORM_GRUPO') {
-        <app-teacher-grupo-form
-          [oferta]="ofertaGrupos()"
-          [cargando]="cargandoOferta()"
-          [guardando]="guardandoGrupo()"
-          (guardar)="guardarNuevoGrupo($event)"
-          (cancelar)="volverALista()"
         />
       }
 
@@ -156,7 +140,7 @@ type VistaGrupos = 'LISTA' | 'HUB_GRUPO' | 'FORM_SESION' | 'FORM_GRUPO';
         (closed)="cerrarDetalleSesionModal()"
       />
     </div>
-  `,
+  `
 })
 export class TeacherGruposComponent implements OnInit, OnDestroy {
   private courseService = inject(CourseService);
@@ -172,6 +156,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   private timeZone = inject(SessionTimeZoneService);
   private realtime = inject(RealtimeService);
   private cancelacionesSub: Subscription | null = null;
+  private aprobacionesSub: Subscription | null = null;
 
   // QR (HU175, CULM-001 B.2) y cancelación (HU047, B.1) tienen contrato.
   readonly sessionQrEnabled = environment.features.sessionQrEnabled;
@@ -182,11 +167,6 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   /** HU058: opciones del filtro "Nivel formativo" (catálogo real de tipos de programa). */
   tiposPrograma = signal<CatalogoPrograma[]>([]);
   isLoading = signal<boolean>(true);
-
-  // Nuevo grupo (F3)
-  ofertaGrupos = signal<OfertaCreacionGruposDocenteApiDto | null>(null);
-  cargandoOferta = signal<boolean>(false);
-  guardandoGrupo = signal<boolean>(false);
 
   // Hub del Grupo
   subPestanaHub = signal<SubPestanaHub>('HOY');
@@ -215,7 +195,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   /** HU051: estudiante cuyo retiro se está confirmando (null = modal cerrado). */
   estudianteARetirar = signal<{ idEstudiante: string; nombreCompleto?: string } | null>(null);
 
-  // Formularios (F3: el docente crea sus grupos con su horario inicial; los cambios posteriores los aprueba el coordinador)
+  // Formularios (DEC-065 (4): el docente no crea grupos; solo el coordinador)
   selectedCourse = signal<Course | null>(null);
 
   modoFormSesion: 'CREAR' | 'EDITAR' = 'CREAR';
@@ -282,7 +262,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
       },
       error: (err: unknown) => {
         this.isLoading.set(false);
-        this.toast.error(getApiErrorMessage(err) || 'Error al cargar grupos.');
+        this.toast.error(getApiErrorMessage(err) || mensajeUi('UI_TEACHER_GRUPOS_001'));
       },
     });
   }
@@ -297,43 +277,6 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
     if (curso) {
       this.verHubGrupo(curso);
     }
-  }
-
-  /** F3: abre el formulario de nuevo grupo con la oferta de asignaturas de los programas del docente. */
-  abrirNuevoGrupo(): void {
-    this.vistaActual.set('FORM_GRUPO');
-    this.ofertaGrupos.set(null);
-    this.cargandoOferta.set(true);
-    this.courseService.getOfertaCreacionGrupos().subscribe({
-      next: (res) => {
-        this.ofertaGrupos.set(res.datos ?? null);
-        this.cargandoOferta.set(false);
-      },
-      error: (err: unknown) => {
-        this.cargandoOferta.set(false);
-        this.toast.error(getApiErrorMessage(err) || 'No fue posible cargar tus asignaturas.');
-      },
-    });
-  }
-
-  guardarNuevoGrupo(payload: GrupoCoordinadorPayload): void {
-    this.guardandoGrupo.set(true);
-    this.courseService.crearGrupo(payload).subscribe({
-      next: (res) => {
-        this.guardandoGrupo.set(false);
-        if (res.exitoso) {
-          this.toast.success(res.mensajeUsuario || 'Grupo creado.');
-          this.volverALista();
-          this.cargarGrupos();
-        } else {
-          this.toast.error(res.mensajeUsuario || 'No fue posible crear el grupo.');
-        }
-      },
-      error: (err: unknown) => {
-        this.guardandoGrupo.set(false);
-        this.toast.error(getApiErrorMessage(err) || 'No fue posible crear el grupo.');
-      },
-    });
   }
 
   verHubGrupo(course: Course): void {
@@ -522,11 +465,11 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
       return;
     }
     if (!this.sesionForm.date) {
-      this.toast.warning('El campo Fecha de la Sesión es obligatorio.');
+      this.toast.warning(mensajeUi('UI_TEACHER_GRUPOS_005'));
       return;
     }
     if (!this.sesionForm.startTime || !this.sesionForm.endTime) {
-      this.toast.warning('Los campos Hora Inicio y Hora Fin de la sesión son obligatorios.');
+      this.toast.warning(mensajeUi('UI_TEACHER_GRUPOS_006'));
       return;
     }
     if (this.modoFormSesion === 'EDITAR' && this.sesionFormTimeZone !== this.timeZone.zone()) {
@@ -540,7 +483,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
         };
       }
       this.sesionFormTimeZone = this.timeZone.zone();
-      this.toast.warning('La zona horaria activa cambió mientras editabas. Se recargó el horario original; revisa los datos antes de guardar.');
+      this.toast.warning(mensajeUi('UI_TEACHER_GRUPOS_007'));
       return;
     }
     if (this.modoFormSesion === 'CREAR') {
@@ -554,8 +497,8 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
         .subscribe({
           next: (res) => {
             if (res.exitoso) {
-              // DEC-064: la sesión creada a mano se notifica a estudiantes y coordinador.
-              this.toast.success(`${res.mensaje || 'Sesión programada con éxito.'} ${AVISO_SESION_MANUAL_NOTIFICADA}`);
+              // DEC-065 (2): la sesión queda como solicitud pendiente; el mensaje lo entrega el backend.
+              this.toast.success(res.mensajeUsuario || res.mensaje || AVISO_SOLICITUD_SESION_REGISTRADA);
               this.cargarSesiones(course.id);
               this.volverASesiones();
             }
@@ -575,7 +518,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
           next: (res) => {
             // PUT devuelve ApiDataResponse<Void>: solo `exitoso`; el listado se recarga por HTTP.
             if (res.exitoso) {
-              this.toast.success('Sesión actualizada.');
+              this.toast.success(mensajeUi('UI_TEACHER_GRUPOS_008'));
               this.cargarSesiones(course.id);
               this.volverASesiones();
             }
@@ -588,7 +531,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   abrirModalRetiro(estudiante: EstudianteGrupoItem): void {
     const idEstudiante = estudiante?.idEstudiante ?? estudiante?.studentId;
     if (!idEstudiante) {
-      this.toast.warning('No se pudo identificar al estudiante a retirar.');
+      this.toast.warning(mensajeUi('UI_TEACHER_GRUPOS_009'));
       return;
     }
     this.estudianteARetirar.set({ idEstudiante, nombreCompleto: estudiante?.nombreCompleto ?? estudiante?.studentName });
@@ -612,14 +555,28 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
       .subscribe((evento) => {
         const { grupo, sesion, tipo } = evento.payload;
         if (grupo !== grupoId) return;
+        const nombre = this.sessions().find((s) => s.id === sesion)?.title;
         this.sessions.update((prev) =>
           marcarSesionCancelada(prev, sesion, { tipo, motivo: null, nombreFestivo: null, fechaCancelacionUtc: null })
         );
-        if (tipo === 'COORDINADOR') this.toast.info(AVISO_SESION_CANCELADA_POR_COORDINACION);
+        if (tipo === 'COORDINADOR') this.toast.info(mensajeSolicitudRechazadaOCancelada(nombre));
+      });
+    // DEC-065 (2): la aprobación del coordinador llega como SESION_MANUAL_CREADA de una sesión que estaba pendiente.
+    this.aprobacionesSub = this.realtime
+      .listenType<SesionManualCreadaRealtimePayload>(REALTIME_EVENT_TYPE.SESION_MANUAL_CREADA)
+      .subscribe((evento) => {
+        const { grupo, sesion } = evento.payload;
+        if (grupo !== grupoId) return;
+        const previa = this.sessions().find((s) => s.id === sesion);
+        if (!previa || !estaPendienteAprobacion(previa)) return;
+        this.sessions.update((prev) => marcarSesionAprobada(prev, sesion));
+        this.toast.success(mensajeSolicitudAprobada(previa.title));
       });
   }
 
   private detenerEscuchaCancelaciones(): void {
+    this.aprobacionesSub?.unsubscribe();
+    this.aprobacionesSub = null;
     if (!this.cancelacionesSub) return;
     this.cancelacionesSub.unsubscribe();
     this.cancelacionesSub = null;
@@ -656,7 +613,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
         }
         const notificados = res.datos?.estudiantesNotificados;
         this.toast.success(
-          notificados ? `Sesión cancelada. Estudiantes notificados: ${notificados}.` : 'Sesión cancelada.'
+          notificados ? mensajeUi('UI_TEACHER_GRUPOS_011', { notificados }) : mensajeUi('UI_COORDINATOR_SESIONES_GRUPO_001')
         );
         this.cerrarModalCancelar();
       },

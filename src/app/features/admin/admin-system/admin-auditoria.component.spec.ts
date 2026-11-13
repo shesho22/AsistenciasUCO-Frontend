@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { AdminAuditoriaComponent, DIAS_AUDITORIA_MAXIMO, fechaLocal, rangoUtc } from './admin-auditoria.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
@@ -22,7 +22,7 @@ describe('AdminAuditoriaComponent (HU172)', () => {
     toast = jasmine.createSpyObj('ToastService', ['success', 'error']);
     TestBed.configureTestingModule({
       imports: [AdminAuditoriaComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting(), { provide: ToastService, useValue: toast }],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting(), { provide: ToastService, useValue: toast }],
     });
     http = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(AdminAuditoriaComponent);
@@ -212,7 +212,7 @@ describe('AdminAuditoriaComponent estados de error de carga', () => {
     TestBed.configureTestingModule({
       imports: [AdminAuditoriaComponent],
       providers: [
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         { provide: ToastService, useValue: jasmine.createSpyObj('ToastService', ['success', 'error']) },
       ],

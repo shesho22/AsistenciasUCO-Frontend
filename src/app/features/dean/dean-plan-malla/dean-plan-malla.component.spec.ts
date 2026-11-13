@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { DeanPlanMallaComponent } from './dean-plan-malla.component';
@@ -54,7 +54,7 @@ describe('DeanPlanMallaComponent (HU108, B2NM)', () => {
     TestBed.configureTestingModule({
       imports: [DeanPlanMallaComponent],
       providers: [
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         { provide: Router, useValue: routerSpy },
         { provide: ActivatedRoute, useValue: { snapshot: { paramMap: convertToParamMap({ planId }) } } },

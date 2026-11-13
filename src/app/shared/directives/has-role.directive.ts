@@ -12,13 +12,13 @@ import { UserRole, hasAnyRole } from '../../core/models/user.model';
 /**
  * Directiva estructural de control de visibilidad por rol (RBAC decorativo).
  *
- * IMPORTANTE: Esta directiva es SOLO ergonómica (UX). NO proporciona seguridad.
- * La validación real de permisos ocurre exclusivamente en el backend (Spring Boot)
+ * IMPORTANTE: Esta directiva es SOLO ergonÃ³mica (UX). NO proporciona seguridad.
+ * La validaciÃ³n real de permisos ocurre exclusivamente en el backend (Spring Boot)
  * y en la base de datos (SQL Server). El frontend puede ser inspeccionado y
- * manipulado por el usuario — ver AGENTS.md §3.3.
+ * manipulado por el usuario â€” ver AGENTS.md Â§3.3.
  *
  * Uso:
- *   <button *appHasRole="['DOCENTE', 'ADMINISTRADOR']">Acción restringida</button>
+ *   <button *appHasRole="['DOCENTE', 'ADMINISTRADOR']">AcciÃ³n restringida</button>
  *   <div *appHasRole="'DECANO'">Solo para decanos</div>
  */
 @Directive({

@@ -1,17 +1,16 @@
 import { Component, ChangeDetectionStrategy, input, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 
 export type CardPadding = 'none' | 'sm' | 'md' | 'lg';
 
 @Component({
-  selector: 'app-card',
-  standalone: true,
-  imports: [CommonModule],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  host: {
-    class: 'flex flex-col h-full w-full',
-  },
-  template: `
+    selector: 'app-card',
+    imports: [],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    host: {
+        class: 'flex flex-col h-full w-full',
+    },
+    template: `
     <div [class]="cardClasses()">
       @if (title() || subtitle() || hasHeaderSlot()) {
         <div class="flex items-center justify-between pb-4 mb-4 border-b border-warm-200/80 shrink-0">
@@ -35,7 +34,7 @@ export type CardPadding = 'none' | 'sm' | 'md' | 'lg';
         <ng-content select="[card-footer]"></ng-content>
       </div>
     </div>
-  `,
+  `
 })
 export class CardComponent {
   title = input<string>('');

@@ -8,7 +8,7 @@ import {
   computed,
   inject,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { RevisionCancelacionService } from '../../../core/services/revision-cancelacion.service';
 import { MarcaRevisionDocente } from '../../../core/models/revision-cancelacion.model';
@@ -16,11 +16,10 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 
 @Component({
-  selector: 'app-revision-decision-modal',
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
+    selector: 'app-revision-decision-modal',
+    imports: [FormsModule],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    template: `
     @if (isOpen()) {
       <div
         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-warm-950/60 backdrop-blur-xs animate-fade-in"
@@ -146,7 +145,7 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
         </div>
       </div>
     }
-  `,
+  `
 })
 export class RevisionDecisionModalComponent {
   private readonly service = inject(RevisionCancelacionService, { optional: true });
@@ -181,7 +180,7 @@ export class RevisionDecisionModalComponent {
       resultado.push({
         valor: 'PROPONER',
         etiqueta: 'Proponer cancelación por inasistencia',
-        descripcion: 'Escala a coordinación/decanatura para cancelar la matrícula.',
+        descripcion: 'Remite el caso al coordinador del programa, quien decide la cancelación.',
       });
     }
     return resultado;

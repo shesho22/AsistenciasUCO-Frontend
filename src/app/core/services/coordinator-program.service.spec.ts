@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { CoordinatorProgramService } from './coordinator-program.service';
 import { environment } from '../../../environments/environment';
@@ -11,7 +11,7 @@ describe('CoordinatorProgramService (S4, B2NM)', () => {
   let http: HttpTestingController;
 
   function crear(): CoordinatorProgramService {
-    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    TestBed.configureTestingModule({ providers: [provideHttpClient(withXhr()), provideHttpClientTesting()] });
     http = TestBed.inject(HttpTestingController);
     return TestBed.inject(CoordinatorProgramService);
   }
@@ -116,5 +116,29 @@ describe('CoordinatorProgramService (S4, B2NM)', () => {
     http.expectOne(porUrl(url)).flush({ message: 'No autorizado' }, { status: 403, statusText: 'Forbidden' });
     expect(status).toBe(403);
     expect(service.cargado()).toBeFalse();
+  });
+
+  it('DEC-065 (2): dos pantallas que piden los programas a la vez comparten una sola consulta', () => {
+    const service = crear();
+    let a: unknown[] = [];
+    let b: unknown[] = [];
+    service.cargar().subscribe((p) => (a = p));
+    service.cargar().subscribe((p) => (b = p));
+
+    http.expectOne(porUrl(url)).flush(paginaApi([plan('p-1', 'Sistemas')]));
+
+    expect(a.length).toBe(1);
+    expect(b.length).toBe(1);
+    expect(service.cargado()).toBeTrue();
+  });
+
+  it('DEC-065 (2): tras un error la siguiente carga vuelve a consultar', () => {
+    const service = crear();
+    service.cargar().subscribe({ error: () => undefined });
+    http.expectOne(porUrl(url)).flush({ message: 'x' }, { status: 500, statusText: 'Server Error' });
+
+    service.cargar().subscribe();
+    http.expectOne(porUrl(url)).flush(paginaApi([plan('p-1', 'Sistemas')]));
+    expect(service.cargado()).toBeTrue();
   });
 });

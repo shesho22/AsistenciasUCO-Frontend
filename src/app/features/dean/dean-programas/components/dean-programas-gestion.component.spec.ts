@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { paginaApi, porUrl } from '../../../../core/testing/pagina-api';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@angular/common/http/testing';
 import { DeanProgramasGestionComponent } from './dean-programas-gestion.component';
 import { environment } from '../../../../../environments/environment';
@@ -41,7 +41,7 @@ describe('DeanProgramasGestionComponent', () => {
   }
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ imports: [DeanProgramasGestionComponent], providers: [provideHttpClient(), provideHttpClientTesting()] });
+    TestBed.configureTestingModule({ imports: [DeanProgramasGestionComponent], providers: [provideHttpClient(withXhr()), provideHttpClientTesting()] });
     http = TestBed.inject(HttpTestingController);
     toast = TestBed.inject(ToastService);
     iniciar();

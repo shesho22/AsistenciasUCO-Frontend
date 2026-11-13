@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, input, signal, computed, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ActivatedRoute, Router } from '@angular/router';
 import { CoordinatorManagementService } from '../../../../core/services/coordinator-management.service';
 import { PlanEstudioItem, AsignaturaPlanItem, AreaConocimientoItem, CaracterAsignatura } from '../../../../core/models/role-management.model';
@@ -8,14 +8,14 @@ import { ConsultasTransversalesService } from '../../../../core/services/consult
 import { ToastService } from '../../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../../core/api/errors/api-error.util';
 import { SubjectFormComponent } from '../components/subject-form.component';
+import { mensajeUi } from '../../../../core/messages/mensajes-ui';
 
 @Component({
-  selector: 'app-coordinator-subject-form-page',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'block w-full' },
-  imports: [CommonModule, SubjectFormComponent],
-  template: `
+    selector: 'app-coordinator-subject-form-page',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    host: { class: 'block w-full' },
+    imports: [SubjectFormComponent],
+    template: `
     <div class="space-y-6 animate-fade-in">
       @if (selectedPlan(); as plan) {
         @if (modo() === 'CREAR' || selectedAsignatura()) {
@@ -40,7 +40,7 @@ import { SubjectFormComponent } from '../components/subject-form.component';
         </div>
       }
     </div>
-  `,
+  `
 })
 export class CoordinatorSubjectFormPageComponent implements OnInit {
   private coordService = inject(CoordinatorManagementService);
@@ -121,7 +121,7 @@ export class CoordinatorSubjectFormPageComponent implements OnInit {
       this.coordService.crearAsignaturaPlan(id, event.datos).subscribe({
         next: (res) => {
           if (res.exitoso) {
-            this.toast.success(res.mensajeUsuario || 'Asignatura registrada en el plan.');
+            this.toast.success(res.mensajeUsuario || mensajeUi('UI_SUBJECT_FORM_PAGE_001'));
             this.volverAMalla();
           }
         },
@@ -133,7 +133,7 @@ export class CoordinatorSubjectFormPageComponent implements OnInit {
       this.coordService.actualizarAsignaturaPlan(id, asigId, event.datos).subscribe({
         next: (res) => {
           if (res.exitoso) {
-            this.toast.success(res.mensajeUsuario || 'Asignatura modificada.');
+            this.toast.success(res.mensajeUsuario || mensajeUi('UI_SUBJECT_FORM_PAGE_002'));
             this.volverAMalla();
           }
         },

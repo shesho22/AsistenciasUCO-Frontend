@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, input, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { BadgeComponent, BadgeVariant } from '../badge/badge.component';
 import { MarcaInasistencia } from '../../../core/models/revision-cancelacion.model';
 
@@ -9,17 +9,16 @@ interface MarcaDisplay {
 }
 
 @Component({
-  selector: 'app-inasistencia-marca-badge',
-  standalone: true,
-  imports: [CommonModule, BadgeComponent],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
+    selector: 'app-inasistencia-marca-badge',
+    imports: [BadgeComponent],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    template: `
     @if (display(); as d) {
       <app-badge [variant]="d.variant" [dot]="true">
         {{ d.texto }}
       </app-badge>
     }
-  `,
+  `
 })
 export class InasistenciaMarcaBadgeComponent {
   marca = input<MarcaInasistencia | null>(null);

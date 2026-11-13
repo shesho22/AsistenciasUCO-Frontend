@@ -6,11 +6,10 @@ import { CatalogoSoloConsultaComponent } from '../../../shared/components/catalo
 
 /** HU154: consulta del catálogo de tipos de programa. Regla de John (2026-11-04): catálogo de solo consulta. */
 @Component({
-  selector: 'app-admin-catalogs',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CatalogoSoloConsultaComponent],
-  template: `
+    selector: 'app-admin-catalogs',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CatalogoSoloConsultaComponent],
+    template: `
     <app-catalogo-solo-consulta
       titulo="Tipos de Programa"
       descripcion="Modalidades formativas disponibles para los programas académicos."
@@ -18,7 +17,7 @@ import { CatalogoSoloConsultaComponent } from '../../../shared/components/catalo
       [filas]="tipos()"
       [cargando]="cargando()"
     />
-  `,
+  `
 })
 export class AdminCatalogsComponent implements OnInit {
   private readonly adminService = inject(AdminManagementService);

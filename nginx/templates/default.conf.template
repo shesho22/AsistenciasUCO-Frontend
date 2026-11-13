@@ -1,24 +1,43 @@
-# Plantilla del servidor web de producción. La imagen oficial de nginx la procesa con envsubst al arrancar
+# Plantilla del servidor web de producción. La imagen de nginx la procesa con envsubst al arrancar
 # (/etc/nginx/templates -> /etc/nginx/conf.d/default.conf) y solo sustituye las variables de entorno definidas, así que
 # las variables propias de nginx ($uri, $host...) quedan intactas. Los destinos tienen valor por defecto en el Dockerfile.
 #
+# Politica de seguridad del frontend (TRI-08 / CF-04).
+# - server_tokens off: no expone la version de nginx.
+# - Cada location que usa add_header debe volver a incluir los encabezados de seguridad,
+#   porque nginx NO hereda add_header del nivel superior cuando el location define alguno.
+# - csp.conf lo genera docker-entrypoint.d/40-env-js.sh a partir de las URL configuradas.
+#
 # Los micro frontends externos (MessageUcoLab y Catálogo de Parámetros) llaman a rutas relativas de este mismo origen
-# para que el navegador envíe la cookie de sesión de Seguridad; aquí se reenvían a cada componente (mismo arreglo que
-# proxy.conf.js de ng serve). Se quita Origin en las APIs porque cada componente solo admite en CORS su propio frontend.
+# para que el navegador envíe la cookie de sesión de Seguridad y para que la CSP ('self') los admita; aquí se reenvían a
+# cada componente (mismo arreglo que proxy.conf.js de ng serve). Se quita Origin en las APIs porque cada componente solo
+# admite en CORS su propio frontend.
+server_tokens off;
+
 server {
-    listen 80;
+    listen 8080;
     server_name _;
 
     root /usr/share/nginx/html;
     index index.html;
 
+    location = /healthz {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+
     location = /assets/env.js {
         add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0";
+        include /etc/nginx/snippets/security-headers.conf;
+        include /etc/nginx/snippets/csp.conf;
         expires off;
     }
 
     # API de MessageUcoLab (administración de mensajes, paquete minifront-mensajes).
     location /messageucolab/ {
+        include /etc/nginx/snippets/security-headers.conf;
+        include /etc/nginx/snippets/csp.conf;
         proxy_pass ${MESSAGEUCOLAB_UPSTREAM};
         proxy_http_version 1.1;
         proxy_set_header Connection "";
@@ -31,6 +50,8 @@ server {
 
     # API del Catálogo de Parámetros; incluye los eventos SSE (.../administracion/events), que no deben acumularse.
     location /catalogo-parametros/ {
+        include /etc/nginx/snippets/security-headers.conf;
+        include /etc/nginx/snippets/csp.conf;
         proxy_pass ${CATALOGO_PARAMETROS_UPSTREAM};
         proxy_http_version 1.1;
         proxy_set_header Connection "";
@@ -44,12 +65,16 @@ server {
 
     # Módulo ESM público del micro frontend de parámetros (parametros-administration.js).
     location /parametros-ui/ {
+        include /etc/nginx/snippets/security-headers.conf;
+        include /etc/nginx/snippets/csp.conf;
         proxy_pass ${CATALOGO_PARAMETROS_UI_UPSTREAM};
         proxy_http_version 1.1;
         proxy_set_header Connection "";
     }
 
     location / {
+        include /etc/nginx/snippets/security-headers.conf;
+        include /etc/nginx/snippets/csp.conf;
         try_files $uri $uri/ /index.html;
     }
 }

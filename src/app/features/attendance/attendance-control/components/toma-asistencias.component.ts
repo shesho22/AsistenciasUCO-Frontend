@@ -72,13 +72,12 @@ const OPCIONES_ESTADO: readonly EstadoRegistroToma[] = ['AN', 'SJC', 'EX'];
  * en la misma toma. Los estados, el origen y la hora vienen del backend; lo marcado y no guardado es local.
  */
 @Component({
-  selector: 'app-toma-asistencias',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ConfirmDialogComponent, AvatarComponent, TomaFaltantesComponent, ActionMenuComponent, FiltrosPlegablesComponent],
-  // La barra queda fija bajo la barra superior de escritorio (4 rem) y al tope en móvil, sin sumar CSS global.
-  styles: ['.barra-fija { top: 0; } @media (min-width: 768px) { .barra-fija { top: 4rem; } }'],
-  template: `
+    selector: 'app-toma-asistencias',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [ConfirmDialogComponent, AvatarComponent, TomaFaltantesComponent, ActionMenuComponent, FiltrosPlegablesComponent],
+    // La barra queda fija bajo la barra superior de escritorio (4 rem) y al tope en móvil, sin sumar CSS global.
+    styles: ['.barra-fija { top: 0; } @media (min-width: 768px) { .barra-fija { top: 4rem; } }'],
+    template: `
     <div class="space-y-4" [attr.data-testid]="'toma-' + toma().idToma">
       <!-- Cabecera de la toma -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3" data-testid="toma-cabecera">
@@ -268,7 +267,7 @@ const OPCIONES_ESTADO: readonly EstadoRegistroToma[] = ['AN', 'SJC', 'EX'];
       (confirmed)="aplicarMasiva()"
       (cancelled)="confirmacion.set(null)"
     />
-  `,
+  `
 })
 export class TomaAsistenciasComponent {
   private readonly tomas = inject(TomaAsistenciaService);

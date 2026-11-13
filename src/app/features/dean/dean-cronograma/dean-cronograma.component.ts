@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy, input } from '@angular/core';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { DeanFacultadService } from '../../../core/services/dean-facultad.service';
 import { SesionEstadoBadgeComponent } from '../../../shared/components/sesion-estado-badge/sesion-estado-badge.component';
@@ -10,15 +10,15 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
 import { resolveSessionInstant } from '../../../core/time/session-timezone.util';
+import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
 /** HU145: cronograma de las sesiones de clase programadas en la facultad, por rango de fechas. Solo lectura. */
 @Component({
-  selector: 'app-dean-cronograma',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'block w-full' },
-  imports: [EmptyStateComponent, CommonModule, FormsModule, PaginationComponent, SesionEstadoBadgeComponent],
-  template: `
+    selector: 'app-dean-cronograma',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    host: { class: 'block w-full' },
+    imports: [EmptyStateComponent, FormsModule, PaginationComponent, SesionEstadoBadgeComponent],
+    template: `
     <div class="space-y-6 animate-fade-in">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
         @if (!embebido()) {
@@ -94,7 +94,7 @@ import { resolveSessionInstant } from '../../../core/time/session-timezone.util'
         ></app-pagination>
       </section>
     </div>
-  `,
+  `
 })
 export class DeanCronogramaComponent implements OnInit {
   /** CULM-001: dentro de una pestaña, el título lo pone el cascarón. */
@@ -136,7 +136,7 @@ export class DeanCronogramaComponent implements OnInit {
 
   filtrar(): void {
     if (this.desde() && this.hasta() && this.desde() > this.hasta()) {
-      this.toast.error('La fecha desde no puede ser posterior a la fecha hasta.');
+      this.toast.error(mensajeUi('UI_COORDINATOR_SESIONES_GRUPO_002'));
       return;
     }
     this.pagina.set(1);

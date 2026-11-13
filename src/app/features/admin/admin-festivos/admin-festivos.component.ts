@@ -31,11 +31,10 @@ const ANIO_VALIDO = /^\d{4}$/;
  * sesiones en festivo que conservaron asistencia. No hay edición manual de festivos ni polling.
  */
 @Component({
-  selector: 'app-admin-festivos',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PaginationComponent, ModalComponent],
-  template: `
+    selector: 'app-admin-festivos',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [PaginationComponent, ModalComponent],
+    template: `
     <div class="space-y-6 animate-fade-in">
       <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
@@ -345,7 +344,7 @@ const ANIO_VALIDO = /^\d{4}$/;
         </button>
       </div>
     </app-modal>
-  `,
+  `
 })
 export class AdminFestivosComponent implements OnInit {
   private readonly service = inject(AdminFestivosService);

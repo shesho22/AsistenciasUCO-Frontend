@@ -10,14 +10,13 @@ import { MateriaEstudianteItem } from '../../../../core/models/role-management.m
 import { ProximaClaseInfo } from '../utils/proxima-clase.util';
 
 @Component({
-  selector: 'app-overview-student',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RangoHorarioPipe, CommonModule, RouterLink, CardComponent, BadgeComponent, ButtonComponent, AttendanceStatusBadgeComponent],
-  host: {
-    class: 'block w-full',
-  },
-  template: `
+    selector: 'app-overview-student',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [RangoHorarioPipe, CommonModule, RouterLink, CardComponent, BadgeComponent, ButtonComponent, AttendanceStatusBadgeComponent],
+    host: {
+        class: 'block w-full',
+    },
+    template: `
     <div class="space-y-6">
       <!-- KPIs Estudiante -->
       <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -47,7 +46,7 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
           }
         </div>
         <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px]"
-             [ngClass]="{'border-primary-300 bg-primary-50/30 ring-1 ring-primary-400/20': proximaClase()?.enCurso, 'border-primary-200/60': proximaClase() && !proximaClase()?.enCurso}">
+             [ngClass]="{'border-primary-300 bg-primary-50/30 ring-1 ring-primary-400/20': $safeNavigationMigration(proximaClase()?.enCurso), 'border-primary-200/60': proximaClase() && !proximaClase()?.enCurso}">
           <div class="flex items-center justify-between">
             <span class="text-xs text-warm-500 font-medium">Próxima Clase</span>
             @if (proximaClase()?.enCurso) {
@@ -219,7 +218,7 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
         </a>
       </section>
     </div>
-  `,
+  `
 })
 export class OverviewStudentComponent {
   materias = input<MateriaEstudianteItem[]>([]);

@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { MatriculaQrService } from './matricula-qr.service';
 import { environment } from '../../../environments/environment';
@@ -20,7 +20,7 @@ describe('MatriculaQrService (HU176B)', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [MatriculaQrService, provideHttpClient(), provideHttpClientTesting()],
+      providers: [MatriculaQrService, provideHttpClient(withXhr()), provideHttpClientTesting()],
     });
     service = TestBed.inject(MatriculaQrService);
     http = TestBed.inject(HttpTestingController);

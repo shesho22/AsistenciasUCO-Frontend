@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import { DeanEstructuraComponent } from './dean-estructura.component';
@@ -59,7 +59,7 @@ describe('DeanEstructuraComponent (HU109/HU119)', () => {
     toastSpy = jasmine.createSpyObj('ToastService', ['success', 'error', 'info', 'warning']);
     TestBed.configureTestingModule({
       imports: [DeanEstructuraComponent],
-      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting(), { provide: ToastService, useValue: toastSpy }],
+      providers: [provideRouter([]), provideHttpClient(withXhr()), provideHttpClientTesting(), { provide: ToastService, useValue: toastSpy }],
     });
     http = TestBed.inject(HttpTestingController);
   });

@@ -14,6 +14,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { ComponentesExternosService } from '../../../core/services/componentes-externos.service';
 import { hasAnyRole } from '../../../core/models/user.model';
 import { environment } from '../../../../environments/environment';
+import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { readDesignToken } from '../../../shared/utils/design-tokens';
 
 interface SecurityUiOptions {
@@ -67,8 +68,7 @@ type ViewState = 'loading' | 'ready' | 'error' | 'unauthorized' | 'forbidden';
 
 @Component({
   selector: 'app-security-administration',
-  standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, EmptyStateComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="rounded-2xl border border-warm-200 bg-white p-6 shadow-warm-sm">
@@ -86,7 +86,18 @@ type ViewState = 'loading' | 'ready' | 'error' | 'unauthorized' | 'forbidden';
         </p>
       }
 
-      @if (state() === 'unauthorized' || state() === 'forbidden' || state() === 'error') {
+      @if (state() === 'error') {
+        <app-empty-state
+          variant="error"
+          title="Administración de seguridad no disponible"
+          causa="El componente de seguridad no respondió."
+          [description]="message()"
+          accionTexto="Reintentar"
+          (accion)="load()"
+        />
+      }
+
+      @if (state() === 'unauthorized' || state() === 'forbidden') {
         <div class="rounded-xl border border-danger-200 bg-danger-50 p-4 text-sm text-danger-800" role="alert">
           <p>{{ message() }}</p>
           <div class="mt-3 flex gap-2">
@@ -205,7 +216,7 @@ export class SecurityAdministrationComponent implements AfterViewInit, OnDestroy
   }
 
   private fail(state: Exclude<ViewState, 'loading' | 'ready'>, message: string): void {
-    // Solo un fallo de conectividad (servicio externo que no responde) oculta la entrada del menu.
+    // El fallo se informa a la pantalla (empty-state con reintento); la entrada del menu no se retira (DEC-065).
     if (state === 'error') this.externos.marcarNoDisponible('seguridad');
     this.state.set(state);
     this.message.set(message);

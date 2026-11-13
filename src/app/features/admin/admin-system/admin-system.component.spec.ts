@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { of } from 'rxjs';
 import { signal } from '@angular/core';
@@ -56,7 +56,7 @@ describe('AdminSystemComponent', () => {
         { provide: ToastService, useValue: toastServiceSpy },
         // El micro frontend del Catálogo no se descarga en estas pruebas: su montaje se prueba en su propio spec.
         { provide: PARAMETROS_ADMIN_LOADER, useValue: () => new Promise(() => undefined) },
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
       ],
     }).compileComponents();

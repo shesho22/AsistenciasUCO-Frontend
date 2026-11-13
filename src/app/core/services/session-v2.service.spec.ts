@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { environment } from '../../../environments/environment';
 import { SessionV2Service } from './session-v2.service';
@@ -12,7 +12,7 @@ describe('SessionV2Service', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [SessionV2Service, SessionTimeZoneService, provideHttpClient(), provideHttpClientTesting()],
+      providers: [SessionV2Service, SessionTimeZoneService, provideHttpClient(withXhr()), provideHttpClientTesting()],
     });
     service = TestBed.inject(SessionV2Service);
     http = TestBed.inject(HttpTestingController);
@@ -89,6 +89,23 @@ describe('SessionV2Service', () => {
       fechaHoraFin: '2026-07-16T03:00:00.7654321Z',
     });
     request.flush({ exitoso: true, datos: null });
+  });
+
+  it('DEC-065 (2) mapea estadoSolicitud y pendienteAprobacion; sin ellos asume null y false', () => {
+    let result: any;
+    service.getSessionsByGroup('grupo-1').subscribe((response) => (result = response));
+    const base = {
+      grupo: 'grupo-1', numero: 1, codigo: 'S', numeroSemana: 1, codigoGrupo: 'G1', nombreGrupo: 'Grupo',
+      fechaHoraInicio: '2026-07-16T01:00:00Z', fechaHoraFin: '2026-07-16T03:00:00Z',
+      estadoTemporal: 'CONFIRMADA', procedenciaTemporal: 'UTC_V2',
+    };
+    http.expectOne(`${environment.apiV2Url}/sesiones/grupo/grupo-1`).flush({ exitoso: true, total: 2, datos: [
+      { ...base, sesion: 'a', nombre: 'A', estadoSolicitud: 'PENDIENTE', pendienteAprobacion: true },
+      { ...base, sesion: 'b', nombre: 'B' },
+    ] });
+
+    expect(result.datos[0]).toEqual(jasmine.objectContaining({ estadoSolicitud: 'PENDIENTE', pendienteAprobacion: true }));
+    expect(result.datos[1]).toEqual(jasmine.objectContaining({ estadoSolicitud: null, pendienteAprobacion: false }));
   });
 
   it('B1-F-23 mapea estado y cancelación de la sesión v2; sin ellos asume PROGRAMADA sin cancelación', () => {

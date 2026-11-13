@@ -68,13 +68,15 @@ export const environment = {
   security: {
     /**
      * Selector de proveedor de seguridad: solo configuración de runtime (env.js), NUNCA estado del navegador
-     * (localStorage/sessionStorage) ni una afirmación de autoridad. Un valor desconocido NO se convierte en
+     * (localStorage/sessionStorage) ni una afirmación de autoridad. Sin valor el defecto es 'baseline'; para usar
+     * legacy en desarrollo hay que fijar SECURITY_PROVIDER='legacy' en env.js. Un valor desconocido NO se convierte en
      * legacy: devuelve 'invalid' y la aplicación queda sin autenticación (fail-closed).
      */
     get provider(): 'legacy' | 'baseline' | 'invalid' {
       const raw = (window as any)['env']?.['SECURITY_PROVIDER'];
       if (raw === undefined || raw === null || String(raw).trim() === '') {
-        return 'legacy';
+        // VAL SEG-12: por defecto baseline (igual que el backend y docker-compose). Legacy debe fijarse explicito en env.js.
+        return 'baseline';
       }
       const normalized = String(raw).trim().toLowerCase();
       return normalized === 'legacy' || normalized === 'baseline' ? normalized : 'invalid';
@@ -92,7 +94,8 @@ export const environment = {
     /** Identificador estable de la aplicación AsistenciasUCO en el PDP. */
     get applicationId(): string {
       const explicit = (window as any)['env']?.['SECURITY_BASELINE_APPLICATION_ID'];
-      return String(explicit || 'a0b42637-39f8-4ddd-bec2-0781ba08e779');
+      // SEC-12: sin id real por defecto; lo entrega env.js (entrypoint del contenedor o archivo local).
+      return String(explicit || '');
     },
     /** Emisor OIDC central (realm security-baseline). */
     get baselineIssuerUrl(): string {

@@ -38,4 +38,19 @@ describe('StudyPlanMeshComponent (certificación F3)', () => {
     expect(fixture.componentInstance.creditosMalla()).toBe(7);
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('Créditos: 7');
   });
+
+  it('EST-03 (S2871): los caracteres disponibles se ordenan con localeCompare en español, sin repetidos', () => {
+    TestBed.configureTestingModule({ imports: [StudyPlanMeshComponent] });
+    const fixture = TestBed.createComponent(StudyPlanMeshComponent);
+    fixture.componentRef.setInput('plan', plan);
+    fixture.componentRef.setInput('asignaturas', [
+      { ...asignatura('A-1', 3), nombreCaracter: 'Optativa' },
+      { ...asignatura('A-2', 3), nombreCaracter: 'Ética' },
+      { ...asignatura('A-3', 3), nombreCaracter: 'Álgebra' },
+      { ...asignatura('A-4', 3), nombreCaracter: 'Optativa' },
+    ]);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.caracteresDisponibles()).toEqual(['Álgebra', 'Ética', 'Optativa']);
+  });
 });

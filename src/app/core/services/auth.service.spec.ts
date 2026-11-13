@@ -68,6 +68,8 @@ describe('AuthService', () => {
   let fetchSpy: jasmine.Spy;
 
   beforeEach(() => {
+    // SEG-12: el defecto ahora es baseline; estas pruebas ejercen el flujo legacy, asi que lo fijan explicito (como en env.js).
+    window.env = { ...(window.env || {}), SECURITY_PROVIDER: 'legacy' };
     localStorage.clear();
     sessionStorage.clear();
     routerSpy = jasmine.createSpyObj<Router>('Router', ['navigate']);
@@ -756,9 +758,9 @@ describe('AuthService', () => {
       expect(service.isAuthenticated()).toBeFalse();
     });
 
-    it('un valor ausente o vacío equivale al legacy explícito por defecto', () => {
+    it('un valor ausente o vacío equivale a baseline por defecto (SEG-12)', () => {
       window.env = { ...(window.env || {}), SECURITY_PROVIDER: '' };
-      expect(environment.security.provider).toBe('legacy');
+      expect(environment.security.provider).toBe('baseline');
     });
 
     it('el proveedor no se puede elegir desde localStorage', () => {

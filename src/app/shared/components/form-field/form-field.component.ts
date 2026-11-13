@@ -1,14 +1,13 @@
-import { Component, ChangeDetectionStrategy, ElementRef, afterRender, inject, input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, ChangeDetectionStrategy, ElementRef, afterEveryRender, inject, input } from '@angular/core';
+
 
 let fieldIdCounter = 0;
 
 @Component({
-  selector: 'app-form-field',
-  standalone: true,
-  imports: [CommonModule],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
+    selector: 'app-form-field',
+    imports: [],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    template: `
     <div class="flex flex-col gap-1.5 w-full">
       @if (label()) {
         <label
@@ -42,7 +41,7 @@ let fieldIdCounter = 0;
         </p>
       }
     </div>
-  `,
+  `
 })
 export class FormFieldComponent {
   label = input<string>('');
@@ -56,7 +55,7 @@ export class FormFieldComponent {
 
   constructor() {
     // Asocia la etiqueta y el error al control proyectado (F-COO-010, F-ADM-S23): sin esto el label no nombra al input.
-    afterRender(() => this.vincularControl());
+    afterEveryRender(() => this.vincularControl());
   }
 
   private vincularControl(): void {

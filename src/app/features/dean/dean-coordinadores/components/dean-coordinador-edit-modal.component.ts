@@ -16,11 +16,10 @@ const MAX_CORREO = 100;
  * La validación de negocio la hace el backend.
  */
 @Component({
-  selector: 'app-dean-coordinador-edit-modal',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ModalComponent, FormFieldComponent, CorreccionDocumentoComponent],
-  template: `
+    selector: 'app-dean-coordinador-edit-modal',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, ModalComponent, FormFieldComponent, CorreccionDocumentoComponent],
+    template: `
     <app-modal [isOpen]="true" title="Editar coordinador" (closed)="cancelar.emit()">
       <div class="space-y-4">
         <app-correccion-documento
@@ -108,7 +107,7 @@ const MAX_CORREO = 100;
         </button>
       </div>
     </app-modal>
-  `,
+  `
 })
 export class DeanCoordinadorEditModalComponent {
   coordinador = input.required<CoordinadorItem>();

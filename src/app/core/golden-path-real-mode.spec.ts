@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { environment } from '../../environments/environment';
 import { CourseService } from './services/course.service';
@@ -20,7 +20,7 @@ describe('Golden Path en modo REAL (USE_MOCKS=false)', () => {
   beforeEach(() => {
     localStorage.removeItem('USE_MOCKS');
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting()],
     });
     http = TestBed.inject(HttpTestingController);
   });

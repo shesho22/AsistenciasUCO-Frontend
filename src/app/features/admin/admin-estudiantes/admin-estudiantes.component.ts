@@ -1,5 +1,5 @@
 import { Component, ElementRef, OnInit, computed, inject, signal, viewChild, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { ConsultasTransversalesService } from '../../../core/services/consultas-transversales.service';
 import { AdminManagementService } from '../../../core/services/admin-management.service';
@@ -17,6 +17,7 @@ import { HistorialEstudianteComponent } from '../../../shared/components/histori
 import { AdmisionEstudianteModalComponent } from './admision-estudiante-modal.component';
 import { CorreccionIdentidadModalComponent } from '../../../shared/components/correccion-identidad-modal/correccion-identidad-modal.component';
 import { FiltroEstado, ListadoPaginado, estadoComoFiltro } from '../../../shared/utils/listado-paginado';
+import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
 interface OpcionFacultad {
   id: string;
@@ -29,12 +30,10 @@ interface OpcionFacultad {
  * HU156: admisión de estudiantes en programas institucionales y corrección de datos de identidad con auditoría.
  */
 @Component({
-  selector: 'app-admin-estudiantes',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'block w-full' },
-  imports: [
-    CommonModule,
+    selector: 'app-admin-estudiantes',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    host: { class: 'block w-full' },
+    imports: [
     FormsModule,
     BadgeComponent,
     PaginationComponent,
@@ -42,9 +41,9 @@ interface OpcionFacultad {
     AdmisionEstudianteModalComponent,
     CorreccionIdentidadModalComponent,
     ErrorCargaComponent,
-    FiltrosPlegablesComponent,
-  ],
-  template: `
+    FiltrosPlegablesComponent
+],
+    template: `
     <div class="space-y-6 animate-fade-in">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
         <div>
@@ -219,7 +218,7 @@ interface OpcionFacultad {
         />
       }
     </div>
-  `,
+  `
 })
 export class AdminEstudiantesComponent implements OnInit {
   private readonly service = inject(ConsultasTransversalesService);
@@ -358,10 +357,10 @@ export class AdminEstudiantesComponent implements OnInit {
         if (r.datos?.sincronizacionIdentidad === 'PENDIENTE') {
           this.toast.warning(
             r.datos.mensajeUsuario ??
-              'Los datos se corrigieron; la cuenta de acceso queda pendiente de sincronizar.'
+              mensajeUi('UI_ADMIN_DECANOS_001')
           );
         } else {
-          this.toast.success('Los datos del estudiante fueron corregidos.');
+          this.toast.success(mensajeUi('UI_ADMIN_ESTUDIANTES_001'));
         }
         this.listado.cargar();
       },

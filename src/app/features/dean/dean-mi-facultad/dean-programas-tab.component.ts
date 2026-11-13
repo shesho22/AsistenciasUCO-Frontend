@@ -9,17 +9,16 @@ import { DeanProgramasComponent } from '../dean-programas/dean-programas.compone
  * y los créditos de los programas. Solo compone componentes existentes.
  */
 @Component({
-  selector: 'app-dean-programas-tab',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'block w-full' },
-  imports: [DeanFacultyComponent, DeanEstructuraComponent, DeanProgramasComponent],
-  template: `
+    selector: 'app-dean-programas-tab',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    host: { class: 'block w-full' },
+    imports: [DeanFacultyComponent, DeanEstructuraComponent, DeanProgramasComponent],
+    template: `
     <div class="space-y-4 min-w-0">
       <app-dean-faculty />
       <app-dean-estructura [embebido]="true" />
       <app-dean-programas [embebido]="true" />
     </div>
-  `,
+  `
 })
 export class DeanProgramasTabComponent {}

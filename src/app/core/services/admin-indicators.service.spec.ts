@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { AdminIndicatorsService } from './admin-indicators.service';
 import { environment } from '../../../environments/environment';
@@ -24,7 +24,7 @@ describe('AdminIndicatorsService', () => {
   const punto: PuntoTendencia = { inicioIntervalo: '2026-03-02', finIntervalo: '2026-03-08', sesionesEjecutadas: 20, faltasSinJustaCausa: 3, porcentajeAusentismo: 15, horasDictadasEstudiante: 100, horasFalta: 15 };
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    TestBed.configureTestingModule({ providers: [provideHttpClient(withXhr()), provideHttpClientTesting()] });
     service = TestBed.inject(AdminIndicatorsService);
     http = TestBed.inject(HttpTestingController);
   });

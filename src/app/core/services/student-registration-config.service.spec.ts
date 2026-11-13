@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { StudentRegistrationConfigService } from './student-registration-config.service';
 import { environment } from '../../../environments/environment';
@@ -12,7 +12,7 @@ describe('StudentRegistrationConfigService (IDENT-001)', () => {
   beforeEach(() => {
     localStorage.setItem('USE_MOCKS', 'false');
     TestBed.configureTestingModule({
-      providers: [StudentRegistrationConfigService, provideHttpClient(), provideHttpClientTesting()],
+      providers: [StudentRegistrationConfigService, provideHttpClient(withXhr()), provideHttpClientTesting()],
     });
     service = TestBed.inject(StudentRegistrationConfigService);
     http = TestBed.inject(HttpTestingController);

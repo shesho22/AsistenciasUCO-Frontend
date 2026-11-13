@@ -6,12 +6,11 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
  * informa y ofrece volver al inicio. El código llega por `data.codigo` de la ruta.
  */
 @Component({
-  selector: 'app-ruta-no-disponible',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink],
-  host: { class: 'block w-full' },
-  template: `
+    selector: 'app-ruta-no-disponible',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [RouterLink],
+    host: { class: 'block w-full' },
+    template: `
     <section class="bg-white p-8 sm:p-12 rounded-2xl border border-warm-200 shadow-warm-sm text-center space-y-4" role="alert">
       <p class="text-5xl font-serif font-bold text-primary-800" data-testid="codigo-ruta">{{ codigo }}</p>
       <h1 class="font-serif font-bold text-2xl text-warm-900" data-testid="titulo-ruta">{{ titulo }}</h1>
@@ -23,7 +22,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
         Volver al inicio
       </a>
     </section>
-  `,
+  `
 })
 export class RutaNoDisponibleComponent {
   private readonly route = inject(ActivatedRoute);

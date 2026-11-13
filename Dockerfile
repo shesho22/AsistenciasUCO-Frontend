@@ -1,7 +1,9 @@
 # ==========================================================
 # Etapa 1: Construcción de la aplicación Angular (Build Stage)
 # ==========================================================
-FROM node:20-alpine AS build
+# EST-10 (VAL oleada 3): Angular 22 exige Node ^22.22.3 || ^24.15.0. Version fija y digest del indice
+# multi-arquitectura (misma version que el CI). Para actualizar: docker buildx imagetools inspect node:<tag>
+FROM node:22.23.4-alpine@sha256:0e1754758c2df4cfa3e68d59e2e1b7374bb7fd9ea6328eaaacf15cc934af8202 AS build
 
 WORKDIR /app
 
@@ -20,20 +22,36 @@ RUN npm run build -- --configuration=production
 # ==========================================================
 # Etapa 2: Servidor Nginx para producción (Production Stage)
 # ==========================================================
-FROM nginx:alpine
+# Imagen sin privilegios (usuario nginx, UID 101), version fija y digest del indice multi-arquitectura.
+# Para actualizar: docker buildx imagetools inspect nginxinc/nginx-unprivileged:<tag>
+FROM nginxinc/nginx-unprivileged:1.30.6-alpine@sha256:f5116ed4606f3eb015dd4a8e28cb9b351476dc0ad4bc6e9f93b19cec130cdf03
 
-# La plantilla se procesa con envsubst al arrancar (20-envsubst-on-templates.sh de la imagen oficial).
-# Destinos de los componentes externos: solo esquema://host:puerto, sin ruta (nginx conserva la URI original).
+USER root
+# Parches de seguridad del SO: brotli, curl, expat, libxslt, musl y zlib tienen fix publicado en Alpine
+# posterior al digest base (Trivy HIGH/CRITICAL con fix). Se quita al subir a una base ya parcheada.
+RUN apk upgrade --no-cache
+# La plantilla se procesa con envsubst al arrancar (20-envsubst-on-templates.sh, tambien presente en la imagen sin
+# privilegios) y genera /etc/nginx/conf.d/default.conf. Destinos de los componentes externos: solo
+# esquema://host:puerto, sin ruta (nginx conserva la URI original).
 ENV MESSAGEUCOLAB_UPSTREAM=http://host.docker.internal:8000 \
     CATALOGO_PARAMETROS_UPSTREAM=http://host.docker.internal:8081 \
     CATALOGO_PARAMETROS_UI_UPSTREAM=http://host.docker.internal:4201
 COPY nginx/templates/ /etc/nginx/templates/
+COPY nginx/security-headers.conf /etc/nginx/snippets/security-headers.conf
 COPY --from=build /app/dist/gestio-asistencia-frontend/browser /usr/share/nginx/html
 COPY docker-entrypoint.d/40-env-js.sh /docker-entrypoint.d/40-env-js.sh
-RUN chmod +x /docker-entrypoint.d/40-env-js.sh
+# El entrypoint (usuario nginx) escribe assets/env.js y snippets/csp.conf en el arranque.
+RUN chmod +x /docker-entrypoint.d/40-env-js.sh \
+    && mkdir -p /etc/nginx/snippets \
+    && printf '%s\n' "add_header Content-Security-Policy \"default-src 'self'\" always;" > /etc/nginx/snippets/csp.conf \
+    && chown -R 101:0 /etc/nginx/snippets /usr/share/nginx/html/assets \
+    && chmod -R g+w /etc/nginx/snippets /usr/share/nginx/html/assets
+USER 101
 
-# Exponer el puerto HTTP estándar
-EXPOSE 80
+# Puerto interno sin privilegios (el contenedor no puede enlazar el 80)
+EXPOSE 8080
 
-# Iniciar servidor Nginx
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD wget -q --spider http://127.0.0.1:8080/healthz || exit 1
+
 CMD ["nginx", "-g", "daemon off;"]

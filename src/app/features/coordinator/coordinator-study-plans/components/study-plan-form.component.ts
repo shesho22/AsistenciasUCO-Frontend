@@ -1,16 +1,15 @@
 import { Component, ChangeDetectionStrategy, input, output, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { PlanEstudioItem } from '../../../../core/models/role-management.model';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { FormFieldComponent } from '../../../../shared/components/form-field/form-field.component';
 
 @Component({
-  selector: 'app-study-plan-form',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, ButtonComponent, FormFieldComponent],
-  template: `
+    selector: 'app-study-plan-form',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, ButtonComponent, FormFieldComponent],
+    template: `
     <div class="space-y-6">
       <div class="flex items-center justify-between bg-white p-4 rounded-2xl border border-warm-200 shadow-warm-sm">
         <button
@@ -146,7 +145,7 @@ import { FormFieldComponent } from '../../../../shared/components/form-field/for
         </div>
       </div>
     </div>
-  `,
+  `
 })
 export class StudyPlanFormComponent implements OnInit {
   modo = input<'CREAR' | 'EDITAR'>('CREAR');

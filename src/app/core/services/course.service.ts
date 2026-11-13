@@ -9,7 +9,6 @@ import { GrupoApiDto } from '../api/models/grupo-api-dto.model';
 import { GrupoFacultadApiDto } from '../api/models/grupo-facultad-api-dto.model';
 import { obtenerTodasLasPaginas } from '../api/pagination.util';
 import { HorarioDocenteApiDto } from '../api/models/horario-docente-api-dto.model';
-import { OfertaCreacionGruposDocenteApiDto } from '../api/models/oferta-creacion-grupos-docente-api-dto.model';
 import { Course, FranjaHorario } from '../models/course.model';
 import { MOCK_COURSES } from '../mocks/course.mock';
 
@@ -269,32 +268,6 @@ export class CourseService {
           datos: res.datos || [],
         }))
       );
-  }
-
-  /**
-   * F3: datos del formulario "Nuevo grupo" del docente (GET /docente/oferta-creacion-grupos): su propio idDocente y las
-   * asignaturas de los programas con los que tiene vínculo activo.
-   */
-  getOfertaCreacionGrupos(): Observable<ApiResponse<OfertaCreacionGruposDocenteApiDto>> {
-    if (environment.useMocks) {
-      return of({
-        idTransaccion: 'mock-tx-oferta-creacion-grupos',
-        exitoso: true,
-        datos: {
-          idDocente: 'mock-docente-1',
-          asignaturas: [
-            {
-              idAsignatura: 'E2F3A4B5-0000-0000-0000-000000000001',
-              codigoAsignatura: 'SIS401',
-              nombreAsignatura: 'Arquitectura de Software',
-              programas: ['Ingeniería de Sistemas'],
-            },
-          ],
-        },
-      }).pipe(delay(150));
-    }
-
-    return this.http.get<ApiResponse<OfertaCreacionGruposDocenteApiDto>>(`${environment.apiUrl}/docente/oferta-creacion-grupos`);
   }
 
   /**

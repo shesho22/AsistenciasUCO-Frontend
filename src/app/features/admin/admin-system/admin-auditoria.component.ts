@@ -1,6 +1,6 @@
 import { FechaHoraCortaPipe } from '../../../shared/pipes/fecha-hora.pipes';
 import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { ConsultasTransversalesService } from '../../../core/services/consultas-transversales.service';
 import { EventoAuditoriaItem } from '../../../core/models/consultas-transversales.model';
@@ -9,6 +9,7 @@ import { ErrorCargaComponent } from '../../../shared/components/error-carga/erro
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { ListadoPaginado } from '../../../shared/utils/listado-paginado';
+import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
 /** Rango por defecto (últimos 7 días, contando hoy) y máximo permitido por el backend. */
 export const DIAS_AUDITORIA_POR_DEFECTO = 7;
@@ -42,11 +43,10 @@ export function rangoUtc(desde: string, hasta: string): { desde: string; hasta: 
  * últimos 7 días; el rango máximo es de 90 días y la consulta es paginada en el servidor.
  */
 @Component({
-  selector: 'app-admin-auditoria',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FechaHoraCortaPipe, CommonModule, FormsModule, BadgeComponent, PaginationComponent, ErrorCargaComponent],
-  template: `
+    selector: 'app-admin-auditoria',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FechaHoraCortaPipe, FormsModule, BadgeComponent, PaginationComponent, ErrorCargaComponent],
+    template: `
     <div class="space-y-4">
       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 bg-white p-4 rounded-2xl border border-warm-200 shadow-warm-sm">
         <label class="text-xs font-semibold text-warm-600">
@@ -234,7 +234,7 @@ export function rangoUtc(desde: string, hasta: string): { desde: string; hasta: 
         </div>
       }
     </div>
-  `,
+  `
 })
 export class AdminAuditoriaComponent implements OnInit {
   private readonly service = inject(ConsultasTransversalesService);
@@ -300,7 +300,7 @@ export class AdminAuditoriaComponent implements OnInit {
     if (!id || id === '—') return;
     try {
       await navigator.clipboard.writeText(id);
-      this.toast.success('ID de correlación copiado al portapapeles.');
+      this.toast.success(mensajeUi('UI_ADMIN_AUDITORIA_001'));
     } catch {
       // fallback
     }

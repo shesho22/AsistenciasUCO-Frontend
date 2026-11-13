@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy, input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { EMPTY, forkJoin, of } from 'rxjs';
 import { catchError, expand, map, reduce, switchMap } from 'rxjs/operators';
@@ -15,6 +15,7 @@ import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load
 import { franjaNueva, validarFranjas } from '../../../core/validation/franjas.util';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { FranjasEditorComponent } from '../../../shared/components/franjas-editor/franjas-editor.component';
+import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
 interface GrupoForm {
   idAsignatura: string;
@@ -32,12 +33,11 @@ interface GrupoForm {
  * el cruce del docente con otro grupo a la misma hora (HOR_002); aquí solo se anticipan las validaciones de formato.
  */
 @Component({
-  selector: 'app-coordinator-groups',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'block w-full' },
-  imports: [CommonModule, FormsModule, FranjasEditorComponent, PaginationComponent, ErrorCargaComponent],
-  template: `
+    selector: 'app-coordinator-groups',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    host: { class: 'block w-full' },
+    imports: [FormsModule, FranjasEditorComponent, PaginationComponent, ErrorCargaComponent],
+    template: `
     <div class="space-y-6 animate-fade-in">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
         @if (!embebido()) {
@@ -166,7 +166,7 @@ interface GrupoForm {
         </form>
       }
     </div>
-  `,
+  `
 })
 export class CoordinatorGroupsComponent implements OnInit {
   /** CULM-001: dentro de una pestaña, el título lo pone el cascarón. */
@@ -212,7 +212,7 @@ export class CoordinatorGroupsComponent implements OnInit {
       error: (err: unknown) => {
         this.cargando.set(false);
         this.errorCarga.set(classifyLoadError(err));
-        this.toast.error(getApiErrorMessage(err) || 'No fue posible cargar los grupos.');
+        this.toast.error(getApiErrorMessage(err) || mensajeUi('UI_COORDINATOR_GROUPS_001'));
       },
     });
   }
@@ -318,16 +318,16 @@ export class CoordinatorGroupsComponent implements OnInit {
       next: (res) => {
         this.guardando.set(false);
         if (res.exitoso) {
-          this.toast.success(res.mensajeUsuario || 'Grupo guardado.');
+          this.toast.success(res.mensajeUsuario || mensajeUi('UI_COORDINATOR_GROUPS_002'));
           this.volver();
           this.cargarGrupos();
         } else {
-          this.toast.error(res.mensajeUsuario || 'No fue posible guardar el grupo.');
+          this.toast.error(res.mensajeUsuario || mensajeUi('UI_COORDINATOR_GROUPS_003'));
         }
       },
       error: (err: unknown) => {
         this.guardando.set(false);
-        this.toast.error(getApiErrorMessage(err) || 'No fue posible guardar el grupo.');
+        this.toast.error(getApiErrorMessage(err) || mensajeUi('UI_COORDINATOR_GROUPS_003'));
       },
     });
   }

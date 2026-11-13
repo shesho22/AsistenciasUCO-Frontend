@@ -7,7 +7,7 @@ import {
   output,
   signal,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { HttpErrorResponse } from '@angular/common/http';
 import { CargaMasivaService } from '../../../core/services/carga-masiva.service';
 import {
@@ -28,11 +28,10 @@ export type PasoCargaMasiva =
   | 'RESULTADO';
 
 @Component({
-  selector: 'app-carga-masiva-usuarios',
-  standalone: true,
-  imports: [CommonModule],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
+    selector: 'app-carga-masiva-usuarios',
+    imports: [],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    template: `
     <div role="dialog" aria-labelledby="carga-masiva-titulo" class="bg-white rounded-2xl border border-warm-200/80 shadow-warm-sm p-4 sm:p-6 space-y-6 animate-fade-in">
       <!-- Encabezado con título y botón de cancelar/cerrar -->
       <div class="flex items-center justify-between pb-4 border-b border-warm-100">
@@ -441,7 +440,7 @@ export type PasoCargaMasiva =
         </div>
       }
     </div>
-  `,
+  `
 })
 export class CargaMasivaUsuariosComponent {
   destino = input.required<DestinoCargaMasiva>();

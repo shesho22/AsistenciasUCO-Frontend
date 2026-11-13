@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { provideHttpClient, withInterceptors, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { StudentClaimsComponent } from './student-claims.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
@@ -48,7 +48,7 @@ describe('StudentClaimsComponent (HU010/HU011: consulta del estudiante)', () => 
     toastSpy = jasmine.createSpyObj('ToastService', ['success', 'error', 'info', 'warning']);
     TestBed.configureTestingModule({
       imports: [StudentClaimsComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting(), { provide: ToastService, useValue: toastSpy }],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting(), { provide: ToastService, useValue: toastSpy }],
     });
     http = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(StudentClaimsComponent);
@@ -239,7 +239,7 @@ describe('AttendanceClaimService.getReclamosEstudiante (modo mock)', () => {
   });
 
   it('SC-08 el interceptor mock responde la lista del estudiante con la forma del backend', (done) => {
-    TestBed.configureTestingModule({ providers: [provideHttpClient(withInterceptors([mockBackendInterceptor]))] });
+    TestBed.configureTestingModule({ providers: [provideHttpClient(withXhr(), withInterceptors([mockBackendInterceptor]))] });
     TestBed.inject(AuthService).setMockMode(true);
 
     TestBed.inject(AttendanceClaimService)

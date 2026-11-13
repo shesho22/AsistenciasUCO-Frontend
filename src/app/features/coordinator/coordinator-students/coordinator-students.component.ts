@@ -1,5 +1,5 @@
 import { Component, OnInit, DestroyRef, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
@@ -23,11 +23,9 @@ import { CoordinatorFichaModalComponent } from '../coordinator-indicators/compon
 type PestanaModulo = 'DIRECTORIO';
 
 @Component({
-  selector: 'app-coordinator-students',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    CommonModule,
+    selector: 'app-coordinator-students',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [
     FormsModule,
     BadgeComponent,
     ButtonComponent,
@@ -35,9 +33,9 @@ type PestanaModulo = 'DIRECTORIO';
     PaginationComponent,
     CoordinatorFichaModalComponent,
     CoordinatorProgramSelectorComponent,
-    ErrorCargaComponent,
-  ],
-  template: `
+    ErrorCargaComponent
+],
+    template: `
     <div class="space-y-6">
       <app-coordinator-program-selector (programaCambiado)="alCambiarPrograma()" />
       <!-- Header Bento -->
@@ -195,7 +193,7 @@ type PestanaModulo = 'DIRECTORIO';
         (pageSizeChange)="onPageSizeDirectorioChange($event)"
       ></app-pagination>
     </div>
-  `,
+  `
 })
 export class CoordinatorStudentsComponent implements OnInit {
   abrirFicha(estudiante: EstudianteDirectorioItem): void {

@@ -1,5 +1,5 @@
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { EmailVerificationService } from './email-verification.service';
 import { environment } from '../../../environments/environment';
@@ -11,7 +11,7 @@ describe('EmailVerificationService (IDENT-001)', () => {
   beforeEach(() => {
     localStorage.setItem('USE_MOCKS', 'false');
     TestBed.configureTestingModule({
-      providers: [EmailVerificationService, provideHttpClient(), provideHttpClientTesting()],
+      providers: [EmailVerificationService, provideHttpClient(withXhr()), provideHttpClientTesting()],
     });
     service = TestBed.inject(EmailVerificationService);
     http = TestBed.inject(HttpTestingController);

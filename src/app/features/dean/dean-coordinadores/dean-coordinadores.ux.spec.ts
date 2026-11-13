@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { paginaApi, porUrl } from '../../../core/testing/pagina-api';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { DeanCoordinadoresComponent } from './dean-coordinadores.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
@@ -35,7 +35,9 @@ describe('DeanCoordinadoresComponent UX (F-DEC-004, F-DEC-007, F-DEC-S04, F-COO-
     } else {
       req.flush(paginaApi(coordinadores));
     }
-    http.match(() => true).forEach((r) => r.flush({ exitoso: true, datos: [] }));
+    http
+      .match(() => true)
+      .forEach((r) => r.flush(/\/(tipos-programa|modalidades-programa|jornadas-programa)$/.test(r.request.url) ? [] : { exitoso: true, datos: [] }));
     fixture.detectChanges();
   }
 
@@ -43,7 +45,7 @@ describe('DeanCoordinadoresComponent UX (F-DEC-004, F-DEC-007, F-DEC-S04, F-COO-
     toast = jasmine.createSpyObj('ToastService', ['success', 'error', 'info', 'warning']);
     TestBed.configureTestingModule({
       imports: [DeanCoordinadoresComponent],
-      providers: [{ provide: ToastService, useValue: toast }, provideHttpClient(), provideHttpClientTesting()],
+      providers: [{ provide: ToastService, useValue: toast }, provideHttpClient(withXhr()), provideHttpClientTesting()],
     });
     http = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(DeanCoordinadoresComponent);
@@ -83,7 +85,8 @@ describe('DeanCoordinadoresComponent UX (F-DEC-004, F-DEC-007, F-DEC-S04, F-COO-
     const guardar = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('button')).find((b) =>
       b.textContent?.includes('Guardar Coordinador'),
     ) as HTMLButtonElement;
-    expect(guardar.disabled).toBeFalse();
+    // DEC-065: Guardar permanece deshabilitado mientras el formulario sea inválido; la validación por campo sigue disponible al intentar guardar.
+    expect(guardar.disabled).toBeTrue();
     component.guardarCoordinador();
     fixture.detectChanges();
     const alertas = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('p[role="alert"]')).map((a) => a.textContent);

@@ -167,7 +167,7 @@ export class ClaimMapper {
 
     let categoria: CategoriaJustificacion | undefined;
     if (dto.categoria) {
-      categoria = typeof dto.categoria === 'object' ? dto.categoria : dto.categoria;
+      categoria = dto.categoria;
     } else if (dto.codigoCategoria || dto.nombreCategoria) {
       categoria = {
         codigo: dto.codigoCategoria ?? '',

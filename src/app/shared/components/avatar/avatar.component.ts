@@ -1,12 +1,11 @@
 import { Component, ChangeDetectionStrategy, input, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 
 @Component({
-  selector: 'app-avatar',
-  standalone: true,
-  imports: [CommonModule],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
+    selector: 'app-avatar',
+    imports: [],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    template: `
     <div
       [class]="containerClasses()"
       [style.backgroundColor]="bgColor()"
@@ -17,7 +16,7 @@ import { CommonModule } from '@angular/common';
         {{ letter() }}
       </span>
     </div>
-  `,
+  `
 })
 export class AvatarComponent {
   readonly name = input<string>('Usuario UCO');

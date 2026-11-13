@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { CoordinatorIndicatorsComponent } from './coordinator-indicators.component';
 import { environment } from '../../../../environments/environment';
@@ -34,7 +34,7 @@ describe('CoordinatorIndicatorsComponent', () => {
   /** S4: antes de pedir cifras se cargan los programas del coordinador (derivados de sus planes). */
   function crear(planes: unknown[]): void {
     try { sessionStorage.removeItem('coordinador.programaId'); } catch { /* sin almacenamiento de sesión */ }
-    TestBed.configureTestingModule({ imports: [CoordinatorIndicatorsComponent], providers: [provideHttpClient(), provideHttpClientTesting()] });
+    TestBed.configureTestingModule({ imports: [CoordinatorIndicatorsComponent], providers: [provideHttpClient(withXhr()), provideHttpClientTesting()] });
     http = TestBed.inject(HttpTestingController);
     toast = TestBed.inject(ToastService);
     fixture = TestBed.createComponent(CoordinatorIndicatorsComponent);
@@ -142,7 +142,7 @@ describe('CoordinatorIndicatorsComponent (S4: coordinador de varios programas)',
 
   beforeEach(() => {
     try { sessionStorage.removeItem('coordinador.programaId'); } catch { /* sin almacenamiento de sesión */ }
-    TestBed.configureTestingModule({ imports: [CoordinatorIndicatorsComponent], providers: [provideHttpClient(), provideHttpClientTesting()] });
+    TestBed.configureTestingModule({ imports: [CoordinatorIndicatorsComponent], providers: [provideHttpClient(withXhr()), provideHttpClientTesting()] });
     http = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(CoordinatorIndicatorsComponent);
     fixture.detectChanges();
@@ -214,7 +214,7 @@ describe('CoordinatorIndicatorsComponent (CULM-001: rótulos por persona y parte
 
   function crear(entradas: Record<string, unknown>): void {
     try { sessionStorage.removeItem('coordinador.programaId'); } catch { /* sin almacenamiento de sesión */ }
-    TestBed.configureTestingModule({ imports: [CoordinatorIndicatorsComponent], providers: [provideHttpClient(), provideHttpClientTesting()] });
+    TestBed.configureTestingModule({ imports: [CoordinatorIndicatorsComponent], providers: [provideHttpClient(withXhr()), provideHttpClientTesting()] });
     http = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(CoordinatorIndicatorsComponent);
     for (const [nombre, valor] of Object.entries(entradas)) fixture.componentRef.setInput(nombre, valor);

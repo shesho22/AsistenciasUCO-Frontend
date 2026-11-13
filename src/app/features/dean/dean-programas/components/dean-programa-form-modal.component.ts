@@ -13,11 +13,10 @@ const NOMBRE_MAXIMO = 50;
 
 /** Alta (programa = null) y edición de un programa académico (HU076, HU077). */
 @Component({
-  selector: 'app-dean-programa-form-modal',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ModalComponent, FormFieldComponent],
-  template: `
+    selector: 'app-dean-programa-form-modal',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, ModalComponent, FormFieldComponent],
+    template: `
     <app-modal [isOpen]="true" [title]="esEdicion() ? 'Editar programa académico' : 'Nuevo programa académico'" (closed)="cancelar()">
       <form class="space-y-4" (ngSubmit)="enviar()">
         <app-form-field label="Nombre del programa" [required]="true" [errorMessage]="errorNombre()">
@@ -82,7 +81,7 @@ const NOMBRE_MAXIMO = 50;
         </div>
       </form>
     </app-modal>
-  `,
+  `
 })
 export class DeanProgramaFormModalComponent implements OnInit {
   readonly programa = input<ProgramaAcademico | null>(null);

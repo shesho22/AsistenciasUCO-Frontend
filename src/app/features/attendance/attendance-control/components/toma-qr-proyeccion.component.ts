@@ -34,11 +34,10 @@ const ESTADOS_SIN_CANAL: readonly RealtimeConnectionState[] = ['RECONNECTING', '
  * cada QR, y "Proxima rotacion" es una hora fija derivada de `fechaRotacionUtc + rotacionSegundos`.
  */
 @Component({
-  selector: 'app-toma-qr-proyeccion',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [QrProyeccionComponent],
-  template: `
+    selector: 'app-toma-qr-proyeccion',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [QrProyeccionComponent],
+    template: `
     <app-qr-proyeccion
       etiqueta="Asistencia por código QR"
       [titulo]="tituloCompleto()"
@@ -77,7 +76,7 @@ const ESTADOS_SIN_CANAL: readonly RealtimeConnectionState[] = ['RECONNECTING', '
       <p class="text-3xl font-serif font-bold text-primary-700" data-testid="qr-presentes">Presentes: {{ presentes() }}</p>
       <p detalles>Válido solo con la red Wi-Fi del campus UCO.</p>
     </app-qr-proyeccion>
-  `,
+  `
 })
 export class TomaQrProyeccionComponent {
   private readonly realtime = inject(RealtimeService);

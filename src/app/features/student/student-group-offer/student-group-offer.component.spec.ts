@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { StudentGroupOfferComponent } from './student-group-offer.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
@@ -42,7 +42,7 @@ describe('StudentGroupOfferComponent (HU008: oferta de grupos)', () => {
     toastSpy = jasmine.createSpyObj('ToastService', ['success', 'error', 'info', 'warning']);
     TestBed.configureTestingModule({
       imports: [StudentGroupOfferComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting(), { provide: ToastService, useValue: toastSpy }],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting(), { provide: ToastService, useValue: toastSpy }],
     });
     fixture = TestBed.createComponent(StudentGroupOfferComponent);
     component = fixture.componentInstance;

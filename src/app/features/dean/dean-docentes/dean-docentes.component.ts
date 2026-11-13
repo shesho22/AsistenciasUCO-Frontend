@@ -31,12 +31,11 @@ interface OpcionFacultad {
  * opcional por facultad y por programa. Solo lectura.
  */
 @Component({
-  selector: 'app-dean-docentes',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'block w-full' },
-  imports: [CommonModule, FormsModule, BadgeComponent, PaginationComponent, ErrorCargaComponent],
-  template: `
+    selector: 'app-dean-docentes',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    host: { class: 'block w-full' },
+    imports: [CommonModule, FormsModule, BadgeComponent, PaginationComponent, ErrorCargaComponent],
+    template: `
     <div class="space-y-6 animate-fade-in">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
         <div>
@@ -162,7 +161,7 @@ interface OpcionFacultad {
         ></app-pagination>
       </section>
     </div>
-  `,
+  `
 })
 export class DeanDocentesComponent implements OnInit {
   private readonly service = inject(ConsultasTransversalesService);

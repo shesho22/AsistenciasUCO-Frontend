@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, input, output, signal, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { PlanEstudioItem, AsignaturaPlanItem } from '../../../../core/models/role-management.model';
 import { BadgeComponent, BadgeVariant } from '../../../../shared/components/badge/badge.component';
@@ -7,11 +7,10 @@ import { ButtonComponent } from '../../../../shared/components/button/button.com
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 
 @Component({
-  selector: 'app-study-plan-mesh',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, BadgeComponent, ButtonComponent, PaginationComponent],
-  template: `
+    selector: 'app-study-plan-mesh',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, BadgeComponent, ButtonComponent, PaginationComponent],
+    template: `
     <div class="space-y-6">
       <div class="flex items-center justify-between bg-white p-4 rounded-2xl border border-warm-200 shadow-warm-sm">
         <button
@@ -204,7 +203,7 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
         }
       }
     </div>
-  `,
+  `
 })
 export class StudyPlanMeshComponent {
   plan = input.required<PlanEstudioItem>();
@@ -235,7 +234,7 @@ export class StudyPlanMeshComponent {
 
   /** Caracteres presentes en la malla cargada (Obligatoria, Optativa). */
   caracteresDisponibles = computed(() =>
-    [...new Set(this.asignaturas().map((a) => a.nombreCaracter).filter((n): n is string => !!n))].sort()
+    [...new Set(this.asignaturas().map((a) => a.nombreCaracter).filter((n): n is string => !!n))].sort((a, b) => a.localeCompare(b, 'es'))
   );
 
   filteredAsignaturas = computed(() => {

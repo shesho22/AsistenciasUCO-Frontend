@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http';
+import { HttpClient, provideHttpClient, withInterceptors, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
 import {
@@ -25,7 +25,7 @@ describe('roleScopeInterceptor', () => {
     usuario.set(null);
     TestBed.configureTestingModule({
       providers: [
-        provideHttpClient(withInterceptors([roleScopeInterceptor])),
+        provideHttpClient(withXhr(), withInterceptors([roleScopeInterceptor])),
         provideHttpClientTesting(),
         { provide: AuthService, useValue: { currentUser: usuario } },
       ],

@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { StudentStudyPlanComponent } from './student-study-plan.component';
 import { environment } from '../../../../environments/environment';
@@ -55,7 +55,7 @@ describe('StudentStudyPlanComponent (plan de estudios del estudiante)', () => {
   function crear(): void {
     TestBed.configureTestingModule({
       imports: [StudentStudyPlanComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting()],
     });
     fixture = TestBed.createComponent(StudentStudyPlanComponent);
     component = fixture.componentInstance;

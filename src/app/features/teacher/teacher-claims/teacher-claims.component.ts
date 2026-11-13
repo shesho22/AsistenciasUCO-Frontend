@@ -1,6 +1,6 @@
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { Component, OnDestroy, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { Subscription, finalize } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
@@ -22,6 +22,7 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
 import { getApiErrorCode, getApiErrorMessage, getApiErrorResponse } from '../../../core/api/errors/api-error.util';
 import { etiquetaEstadoReclamo, etiquetaResultadoAprobacion, varianteEstadoReclamo } from '../../../core/utils/reclamo-estado.util';
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
+import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
 const ETIQUETA_ESTADO_TOMA_RECLAMO: Readonly<Record<EstadoTomaEstudiante, string>> = {
   PRESENTE: 'Presente',
@@ -35,21 +36,19 @@ type EstadoFiltroReclamos = 'TODOS' | 'P' | 'A' | 'R';
 type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'NETWORK_ERROR' | 'SERVER_ERROR';
 
 @Component({
-  selector: 'app-teacher-claims',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
+    selector: 'app-teacher-claims',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [
     EmptyStateComponent,
-    CommonModule,
     FormsModule,
     CardComponent,
     BadgeComponent,
     ButtonComponent,
     FormFieldComponent,
     AvatarComponent,
-    PaginationComponent,
-  ],
-  template: `
+    PaginationComponent
+],
+    template: `
     <div class="space-y-6 animate-fade-in">
       <!-- 1. VISTA: BANDEJA GENERAL DE RECLAMOS -->
       @if (vistaActual() === 'BANDEJA') {
@@ -201,6 +200,9 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
                       <div class="flex items-center justify-between text-warm-600">
                         <span>Sesión #{{ reclamo.sesionNumero }} ({{ reclamo.fechaSesion }})</span>
                       </div>
+                      @if (textoTomaTarjeta(reclamo); as toma) {
+                        <div class="font-semibold text-warm-900" data-testid="tarjeta-toma">{{ toma }}</div>
+                      }
                     </div>
 
                     <p class="text-xs text-warm-700 line-clamp-2 italic mt-2">
@@ -277,11 +279,11 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
             <div class="flex items-center gap-2">
               @if (selectedReclamo()?.categoria) {
                 <span class="px-3 py-1 rounded-xl text-xs font-semibold bg-warning-50 text-warning-900 border border-warning-200">
-                  {{ categoriaTexto(selectedReclamo()?.categoria) }}
+                  {{ categoriaTexto($safeNavigationMigration(selectedReclamo()?.categoria)) }}
                 </span>
               }
               <app-badge [variant]="getReclamoBadgeVariant(selectedReclamo()!.estadoSolicitud)" size="md">
-                Estado: {{ etiquetaEstado(selectedReclamo()?.estadoSolicitud) }}
+                Estado: {{ etiquetaEstado($safeNavigationMigration(selectedReclamo()?.estadoSolicitud)) }}
               </app-badge>
             </div>
           </div>
@@ -446,7 +448,7 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
         </div>
       }
     </div>
-  `,
+  `
 })
 export class TeacherClaimsComponent implements OnInit, OnDestroy {
   private claimService = inject(AttendanceClaimService);
@@ -610,9 +612,16 @@ export class TeacherClaimsComponent implements OnInit, OnDestroy {
   /** "Toma N · HH:mm · estado actual" cuando el reclamo es de una toma; `null` si es de la sesión. */
   textoTomaReclamada(reclamo: DetalleReclamoDocenteItem | null): string | null {
     if (!reclamo || reclamo.numeroToma == null) return null;
-    const hora = reclamo.fechaPuntoControlUtc ? this.zona.formatTemporal(reclamo.fechaPuntoControlUtc, 'time') : null;
     const estado = reclamo.estadoToma ? ETIQUETA_ESTADO_TOMA_RECLAMO[reclamo.estadoToma] : null;
-    return ['Toma ' + reclamo.numeroToma, hora, estado].filter((parte) => !!parte).join(' · ');
+    return [this.textoTomaTarjeta(reclamo), estado].filter((parte) => !!parte).join(' · ');
+  }
+
+  /** Toma N · HH:mm (hora local, igual que el detalle) en la tarjeta de la bandeja; 
+ull si el reclamo es de la sesión completa. */
+  textoTomaTarjeta(reclamo: Pick<SolicitudRevisionItem, 'numeroToma' | 'fechaPuntoControlUtc'> | null): string | null {
+    if (!reclamo || reclamo.numeroToma == null) return null;
+    const hora = reclamo.fechaPuntoControlUtc ? this.zona.formatTemporal(reclamo.fechaPuntoControlUtc, 'time') : null;
+    return ['Toma ' + reclamo.numeroToma, hora].filter((parte) => !!parte).join(' · ');
   }
 
   /** "Asistencia de la sesión: X de Y min" (cálculo del backend). */
@@ -641,7 +650,7 @@ export class TeacherClaimsComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (res) => {
           if (res.exitoso) {
-            this.toast.success(res.mensajeUsuario || 'Reclamo procesado.');
+            this.toast.success(res.mensajeUsuario || mensajeUi('UI_TEACHER_CLAIMS_001'));
             this.cargarReclamos();
             this.volverABandeja();
           }
@@ -679,7 +688,7 @@ export class TeacherClaimsComponent implements OnInit, OnDestroy {
    */
   descargarSoporte(adjunto: SoporteAdjuntoItem): void {
     if (!adjunto.fileId) {
-      this.toast.warning('Este soporte no contiene un fileId descargable en el contrato actual.');
+      this.toast.warning(mensajeUi('UI_TEACHER_CLAIMS_002'));
       return;
     }
     if (this.descargandoSoporte()) return;
@@ -695,7 +704,7 @@ export class TeacherClaimsComponent implements OnInit, OnDestroy {
           anchor.download = adjunto.nombre.replace(/[\\/:*?"<>|\r\n]/g, '_');
           anchor.click();
           URL.revokeObjectURL(url);
-          this.toast.success(`Soporte "${adjunto.nombre}" descargado.`);
+          this.toast.success(mensajeUi('UI_SOPORTE_DESCARGADO', { nombre: adjunto.nombre }));
         },
         error: (error) => this.toast.error(this.mensajeErrorDescarga(error)),
       });

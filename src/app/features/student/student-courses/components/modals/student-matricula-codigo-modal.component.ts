@@ -1,15 +1,14 @@
 import { Component, ChangeDetectionStrategy, effect, input, output, signal, untracked } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { ButtonComponent } from '../../../../../shared/components/button/button.component';
 import { ModalComponent } from '../../../../../shared/components/modal/modal.component';
 
 @Component({
-  selector: 'app-student-matricula-codigo-modal',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, ButtonComponent, ModalComponent],
-  template: `
+    selector: 'app-student-matricula-codigo-modal',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, ButtonComponent, ModalComponent],
+    template: `
     <app-modal [isOpen]="isOpen()" title="Matricúlate a un Grupo" (closed)="closed.emit()">
       <div class="space-y-5">
         <p class="text-sm text-warm-600 text-center">
@@ -59,7 +58,7 @@ import { ModalComponent } from '../../../../../shared/components/modal/modal.com
         </button>
       </div>
     </app-modal>
-  `,
+  `
 })
 export class StudentMatriculaCodigoModalComponent {
   isOpen = input<boolean>(false);

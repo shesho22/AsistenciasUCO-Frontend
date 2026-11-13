@@ -160,4 +160,15 @@ describe('TeacherGrupoSabanaComponent — Cancelación por inasistencia y recarg
     fixture.detectChanges();
     expect(intervalSpy).not.toHaveBeenCalled();
   });
+  it('recarga el resumen cuando la tarjeta de decisiones sube el contador de refresco', () => {
+    expect(summaryServiceSpy.consultarResumen).toHaveBeenCalledTimes(1);
+    fixture.componentRef.setInput('refresco', 1);
+    fixture.detectChanges();
+    expect(summaryServiceSpy.consultarResumen).toHaveBeenCalledTimes(2);
+  });
+
+  it('comparte el canal del grupo: al destruirse no lo cierra (lo cierra la tarjeta de decisiones del hub)', () => {
+    fixture.destroy();
+    expect(realtimeSpy.stop).not.toHaveBeenCalled();
+  });
 });

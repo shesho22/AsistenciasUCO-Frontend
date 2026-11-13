@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { provideHttpClient, withInterceptors, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { CoordinatorSesionesGrupoComponent } from './coordinator-sesiones-grupo.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
@@ -83,7 +83,7 @@ describe('CoordinatorSesionesGrupoComponent (HU060/HU061)', () => {
     toastSpy = jasmine.createSpyObj('ToastService', ['success', 'error', 'info', 'warning']);
     TestBed.configureTestingModule({
       imports: [CoordinatorSesionesGrupoComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting(), { provide: ToastService, useValue: toastSpy }],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting(), { provide: ToastService, useValue: toastSpy }],
     });
     http = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(CoordinatorSesionesGrupoComponent);
@@ -320,7 +320,7 @@ describe('Mock backend de consultas del coordinador (HU064/HU060/HU061)', () => 
 
   it('responde grupos, sesiones y asistencias filtradas en modo mock', (done) => {
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(withInterceptors([mockBackendInterceptor]))],
+      providers: [provideHttpClient(withXhr(), withInterceptors([mockBackendInterceptor]))],
     });
     TestBed.inject(AuthService).setMockMode(true);
     const service = TestBed.inject(CoordinatorManagementService);

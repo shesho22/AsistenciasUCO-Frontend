@@ -1,5 +1,6 @@
 import {
   SOPORTE_MAX_BYTES,
+  describirTamano,
   validateSoporteFile,
 } from './soporte-file.validator';
 
@@ -8,6 +9,26 @@ function file(name: string, size: number, type: string): Pick<File, 'name' | 'si
 }
 
 describe('validateSoporteFile (LB-004D FE-01/FE-02)', () => {
+  it('PAR-05 aplica el tamano maximo parametrizado (tamanioMaximoBytes de /configuracion/reclamos)', () => {
+    const limite = 512 * 1024;
+    expect(validateSoporteFile(file('a.pdf', limite, 'application/pdf'), limite).valid).toBeTrue();
+    const result = validateSoporteFile(file('a.pdf', limite + 1, 'application/pdf'), limite);
+    expect(result.code).toBe('TOO_LARGE');
+    expect(result.message).toContain('512 KB');
+  });
+
+  it('PAR-05 usa el respaldo de 5 MB si el parametro falta o supera el techo del servidor', () => {
+    expect(validateSoporteFile(file('a.pdf', SOPORTE_MAX_BYTES, 'application/pdf'), null).valid).toBeTrue();
+    expect(validateSoporteFile(file('a.pdf', SOPORTE_MAX_BYTES + 1, 'application/pdf'), SOPORTE_MAX_BYTES * 2).code).toBe('TOO_LARGE');
+    expect(validateSoporteFile(file('a.pdf', SOPORTE_MAX_BYTES + 1, 'application/pdf'), 0).message).toContain('5 MB');
+  });
+
+  it('describirTamano expresa el limite en MB, KB o bytes', () => {
+    expect(describirTamano(5 * 1024 * 1024)).toBe('5 MB');
+    expect(describirTamano(256 * 1024)).toBe('256 KB');
+    expect(describirTamano(300001)).toBe('300001 bytes');
+  });
+
   it('acepta PDF, PNG y JPEG con su content-type', () => {
     expect(validateSoporteFile(file('a.pdf', 10, 'application/pdf')).valid).toBeTrue();
     expect(validateSoporteFile(file('a.png', 10, 'image/png')).valid).toBeTrue();

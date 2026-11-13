@@ -38,6 +38,7 @@ import {
   MOCK_REPORTES_CIERRE,
   MOCK_INSTITUCIONES,
 } from './role-management.mock';
+import { mockUuid } from './student-portal-mock.adapter';
 
 /**
  * Almacén mutable en memoria exclusivo para el entorno de desarrollo y pruebas locales.
@@ -52,7 +53,10 @@ class MockDataStore {
   horariosDocente: HorarioDocenteItem[] = JSON.parse(JSON.stringify(MOCK_HORARIOS_DOCENTE));
   materiasEstudiante: MockMateriaEstudiante[] = JSON.parse(JSON.stringify(MOCK_MATERIAS_ESTUDIANTE));
   sesionesMaterias: Record<string, MockSesionMateria[]> = JSON.parse(JSON.stringify(MOCK_SESIONES_MATERIAS));
-  solicitudesRevision: SolicitudRevisionItem[] = JSON.parse(JSON.stringify(MOCK_SOLICITUDES_REVISION));
+  // REC-001 es un reclamo de la toma 2 (a mitad de clase) de la sesion SES-001-03; el resto son reclamos de la sesion completa.
+  solicitudesRevision: SolicitudRevisionItem[] = (JSON.parse(JSON.stringify(MOCK_SOLICITUDES_REVISION)) as SolicitudRevisionItem[]).map((r) =>
+    r.id === 'REC-001' ? { ...r, idToma: mockUuid('toma:SES-001-03:2') } : r
+  );
   planesEstudio: PlanEstudioItem[] = JSON.parse(JSON.stringify(MOCK_PLANES_ESTUDIO));
   asignaturasPlan: Record<string, AsignaturaPlanItem[]> = JSON.parse(JSON.stringify(MOCK_ASIGNATURAS_PLAN));
   estudiantesDirectorio: EstudianteDirectorioItem[] = JSON.parse(JSON.stringify(MOCK_ESTUDIANTES_DIRECTORIO));

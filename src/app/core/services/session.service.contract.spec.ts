@@ -1,4 +1,4 @@
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import {
   HttpTestingController,
   provideHttpClientTesting,
@@ -14,7 +14,7 @@ describe('SessionService contract operations', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [SessionService, provideHttpClient(), provideHttpClientTesting()],
+      providers: [SessionService, provideHttpClient(withXhr()), provideHttpClientTesting()],
     });
     service = TestBed.inject(SessionService);
     http = TestBed.inject(HttpTestingController);

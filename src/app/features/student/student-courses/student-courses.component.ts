@@ -1,6 +1,6 @@
 import { Component, OnDestroy, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { Subscription, finalize } from 'rxjs';
-import { CommonModule } from '@angular/common';
+
 import { ActivatedRoute, Router } from '@angular/router';
 import { StudentManagementService } from '../../../core/services/student-management.service';
 import { MatriculaQrService } from '../../../core/services/matricula-qr.service';
@@ -39,21 +39,20 @@ import { StudentCoursesListComponent } from './components/student-courses-list.c
 import { StudentCourseDetailComponent } from './components/student-course-detail.component';
 import { StudentClaimFormComponent } from './components/student-claim-form.component';
 import { StudentMatriculaCodigoModalComponent } from './components/modals/student-matricula-codigo-modal.component';
+import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
 type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO';
 
 @Component({
-  selector: 'app-student-courses',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    CommonModule,
+    selector: 'app-student-courses',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [
     StudentCoursesListComponent,
     StudentCourseDetailComponent,
     StudentClaimFormComponent,
-    StudentMatriculaCodigoModalComponent,
-  ],
-  template: `
+    StudentMatriculaCodigoModalComponent
+],
+    template: `
     <div class="space-y-6 animate-fade-in">
       <!-- 1. Vista: Lista Principal de Materias -->
       @if (vistaActual() === 'LISTA') {
@@ -119,7 +118,7 @@ type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO';
         (closed)="cerrarModalMatriculaGrupo()"
       />
     </div>
-  `,
+  `
 })
 export class StudentCoursesComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
@@ -379,10 +378,11 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const validacion = validateSoporteFile(file);
+    // PAR-05: el tope sale del parametro ARCHIVO/TAMANIO_MAXIMO_BYTES (GET /configuracion/reclamos); 5 MB solo es respaldo.
+    const validacion = validateSoporteFile(file, this.configuracionReclamos()?.tamanioMaximoBytes);
     if (!validacion.valid) {
       this.errorSoporte.set(validacion.message ?? 'El archivo no es válido.');
-      this.toast.error(validacion.message ?? 'El archivo no es válido.');
+      this.toast.error(validacion.message ?? mensajeUi('UI_STUDENT_COURSES_001'));
       return;
     }
 
@@ -425,7 +425,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
             );
             const primerListo = this.archivosAdjuntos().find((a) => a.estado === 'LISTO');
             this.archivoAdjunto.set(primerListo ?? null);
-            this.toast.success(getApiSuccessMessage(res, `Archivo "${file.name}" cargado y analizado correctamente.`));
+            this.toast.success(getApiSuccessMessage(res, mensajeUi('UI_STUDENT_COURSES_006', { nombre: file.name })));
           } else {
             this.archivosAdjuntos.update((actuales) =>
               actuales.map((item) =>
@@ -496,7 +496,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
     this.claimService.eliminarReclamo(sesion.reclamoId).subscribe({
       next: (res) => {
         if (res.exitoso) {
-          this.toast.success(getApiSuccessMessage(res, 'Solicitud retirada.'));
+          this.toast.success(getApiSuccessMessage(res, mensajeUi('UI_STUDENT_CLAIMS_002')));
           this.cargarSesiones(materia);
         }
       },
@@ -601,7 +601,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
         next: (res) => {
           if (res.exitoso) {
             this.intentoRadicacion.reiniciar();
-            this.toast.success(getApiSuccessMessage(res, 'Reclamo enviado.'));
+            this.toast.success(getApiSuccessMessage(res, mensajeUi('UI_STUDENT_COURSES_002')));
             this.volverADetalle();
             this.cargarSesiones(materia);
           }
@@ -615,7 +615,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
             // El soporte ya no esta disponible para radicar (inexistente, ajeno o ya usado): hay que volver a adjuntarlo.
             this.archivoAdjunto.set(null);
             this.errorSoporte.set('El soporte adjunto ya no está disponible. Adjúntalo nuevamente para radicar.');
-            this.toast.error('El soporte adjunto ya no está disponible. Adjúntalo nuevamente.');
+            this.toast.error(mensajeUi('UI_STUDENT_COURSES_003'));
             return;
           }
           const codigo = getApiErrorCode(err);
@@ -656,7 +656,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
     } else {
       const pin = String(dato || '').trim();
       if (!/^[0-9]{6}$/.test(pin)) {
-        this.toast.error('Ingresa el PIN de 6 dígitos que proyecta tu docente.');
+        this.toast.error(mensajeUi('UI_STUDENT_COURSES_004'));
         return;
       }
       credencial = { pin };
@@ -666,7 +666,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
     this.matriculaQrService.matricularAutenticado(credencial).subscribe({
       next: (resultado) => {
         this.procesandoMatriculaGrupo.set(false);
-        this.toast.success(getApiSuccessMessage(resultado, '¡Matrícula confirmada exitosamente en el grupo!'));
+        this.toast.success(getApiSuccessMessage(resultado, mensajeUi('UI_STUDENT_COURSES_005')));
         this.cerrarModalMatriculaGrupo();
         this.cargarMaterias();
       },

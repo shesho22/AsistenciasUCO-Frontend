@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal, input } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { EMPTY, catchError, debounceTime, switchMap, tap } from 'rxjs';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
@@ -28,6 +28,7 @@ import { CoordinatorDocenteFormModalComponent } from './components/coordinator-d
 import { CoordinatorDocenteEditModalComponent } from './components/coordinator-docente-edit-modal.component';
 import { CoordinatorDocenteFichaModalComponent } from './components/coordinator-docente-ficha-modal.component';
 import { CargaMasivaUsuariosComponent } from '../../../shared/components/carga-masiva-usuarios/carga-masiva-usuarios.component';
+import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
 type FiltroEstado = 'TODOS' | 'ACTIVO' | 'INACTIVO';
 
@@ -35,11 +36,9 @@ const DEBOUNCE_MS = 300;
 const MIN_CARACTERES_CANDIDATOS = 3;
 
 @Component({
-  selector: 'app-coordinator-docentes',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    CommonModule,
+    selector: 'app-coordinator-docentes',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [
     FormsModule,
     CardComponent,
     BadgeComponent,
@@ -50,9 +49,9 @@ const MIN_CARACTERES_CANDIDATOS = 3;
     CoordinatorDocenteEditModalComponent,
     CoordinatorDocenteFichaModalComponent,
     CargaMasivaUsuariosComponent,
-    ErrorCargaComponent,
-  ],
-  template: `
+    ErrorCargaComponent
+],
+    template: `
     <div class="space-y-6 animate-fade-in">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
         @if (!embebido()) {
@@ -270,7 +269,7 @@ const MIN_CARACTERES_CANDIDATOS = 3;
         />
       }
     </div>
-  `,
+  `
 })
 export class CoordinatorDocentesComponent implements OnInit {
   /** CULM-001: dentro de una pestaña, el título lo pone el cascarón. */
@@ -441,7 +440,7 @@ export class CoordinatorDocentesComponent implements OnInit {
     this.docentePendienteEstado.set(null);
     this.coordService.cambiarEstadoDocente(docente.idDocente, !docente.estaActivo).subscribe({
       next: (res) => {
-        this.toast.success(res.mensajeUsuario || 'Estado del docente actualizado.');
+        this.toast.success(res.mensajeUsuario || mensajeUi('UI_COORDINATOR_DOCENTES_001'));
         this.recarga.update((n) => n + 1);
       },
       error: (error: unknown) => this.toast.error(getApiErrorMessage(error)),
@@ -464,7 +463,7 @@ export class CoordinatorDocentesComponent implements OnInit {
     }
     this.coordService.actualizarDocente(docente.idDocente, payload).subscribe({
       next: (res) => {
-        this.toast.success(res.mensajeUsuario || 'Docente actualizado.');
+        this.toast.success(res.mensajeUsuario || mensajeUi('UI_COORDINATOR_DOCENTES_002'));
         this.docenteEnEdicion.set(null);
         this.recarga.update((n) => n + 1);
       },
@@ -489,7 +488,7 @@ export class CoordinatorDocentesComponent implements OnInit {
   private vincular(payload: VincularDocentePayload): void {
     this.coordService.vincularDocente(payload).subscribe({
       next: (res) => {
-        this.toast.success(res.mensajeUsuario || 'Docente vinculado al programa.');
+        this.toast.success(res.mensajeUsuario || mensajeUi('UI_COORDINATOR_DOCENTES_003'));
         if ('correo' in payload) {
           this.ultimaCuentaRegistrada.set(payload.correo);
         }

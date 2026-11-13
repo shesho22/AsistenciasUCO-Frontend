@@ -1,9 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { AdminPeriodosComponent } from './admin-periodos.component';
 import { environment } from '../../../../environments/environment';
 import { PeriodoAcademicoItem } from '../../../core/models/role-management.model';
+import { By } from '@angular/platform-browser';
+import { AcademicPeriodsTabComponent } from '../../coordinator/coordinator-study-plans/components/academic-periods-tab.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 
 describe('AdminPeriodosComponent', () => {
@@ -28,7 +30,7 @@ describe('AdminPeriodosComponent', () => {
     toastSpy = jasmine.createSpyObj('ToastService', ['success', 'error', 'info', 'warning']);
     TestBed.configureTestingModule({
       imports: [AdminPeriodosComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting(), { provide: ToastService, useValue: toastSpy }],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting(), { provide: ToastService, useValue: toastSpy }],
     });
 
     http = TestBed.inject(HttpTestingController);
@@ -68,11 +70,42 @@ describe('AdminPeriodosComponent', () => {
     http.expectOne(`${environment.apiUrl}/coordinador/periodos-academicos`).flush({ exitoso: true, datos: mockPeriodos });
   });
 
-  it('muestra el error del backend al guardar sin recargar', () => {
-    component.guardarPeriodo({ modo: 'CREAR', datos: { nombre: '2026-2' } });
-    http.expectOne(`${environment.apiUrl}/admin/periodos-academicos`).flush({ exitoso: false }, { status: 409, statusText: 'Conflict' });
-    expect(toastSpy.error).toHaveBeenCalled();
+  it('DEC-065: el dialogo permanece abierto y muestra el mensaje del backend si guardar falla', () => {
+    const tab = fixture.debugElement.query(By.directive(AcademicPeriodsTabComponent)).componentInstance as AcademicPeriodsTabComponent;
+    tab.abrirCrear();
+    component.guardarPeriodo({ modo: 'CREAR', datos: { nombre: '2026-2', fechaInicio: '2026-01-01', fechaFin: '2026-06-01' } });
+    expect(component.guardando()).toBeTrue();
+    http
+      .expectOne(`${environment.apiUrl}/admin/periodos-academicos`)
+      .flush({ exitoso: false, message: 'Ya existe un periodo con ese nombre.' }, { status: 409, statusText: 'Conflict' });
+    expect(component.guardando()).toBeFalse();
+    expect(component.errorGuardado()).toBe('Ya existe un periodo con ese nombre.');
+    expect(tab.mostrarModal()).toBeTrue();
     http.expectNone(`${environment.apiUrl}/coordinador/periodos-academicos`);
+  });
+
+  it('DEC-065: respuesta exitoso=false sin excepcion HTTP deja el dialogo abierto con el mensaje', () => {
+    const tab = fixture.debugElement.query(By.directive(AcademicPeriodsTabComponent)).componentInstance as AcademicPeriodsTabComponent;
+    tab.abrirCrear();
+    component.guardarPeriodo({ modo: 'CREAR', datos: { nombre: '2026-2', fechaInicio: '2026-01-01', fechaFin: '2026-06-01' } });
+    http.expectOne(`${environment.apiUrl}/admin/periodos-academicos`).flush({ exitoso: false, mensajeUsuario: 'Dato invalido.' });
+    expect(component.errorGuardado()).toBe('Dato invalido.');
+    expect(tab.mostrarModal()).toBeTrue();
+
+    component.guardarPeriodo({ modo: 'CREAR', datos: { nombre: '2026-2', fechaInicio: '2026-01-01', fechaFin: '2026-06-01' } });
+    http.expectOne(`${environment.apiUrl}/admin/periodos-academicos`).flush({ exitoso: false });
+    expect(component.errorGuardado()).toBe('No se pudo guardar el período académico.');
+  });
+
+  it('DEC-065: cierra el dialogo y recarga solo tras la respuesta exitosa', () => {
+    const tab = fixture.debugElement.query(By.directive(AcademicPeriodsTabComponent)).componentInstance as AcademicPeriodsTabComponent;
+    tab.abrirCrear();
+    component.guardarPeriodo({ modo: 'CREAR', datos: { nombre: '2027-1', fechaInicio: '2027-01-01', fechaFin: '2027-06-01' } });
+    expect(tab.mostrarModal()).toBeTrue();
+    http.expectOne(`${environment.apiUrl}/admin/periodos-academicos`).flush({ exitoso: true, datos: null });
+    expect(tab.mostrarModal()).toBeFalse();
+    expect(toastSpy.success).toHaveBeenCalledWith('Período académico guardado.');
+    http.expectOne(`${environment.apiUrl}/coordinador/periodos-academicos`).flush({ exitoso: true, datos: mockPeriodos });
   });
 
   it('HU098: elimina tras confirmar en el dialogo, no elimina si cancela y muestra el rechazo si tiene grupos', () => {

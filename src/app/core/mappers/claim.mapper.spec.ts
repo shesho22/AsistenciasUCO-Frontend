@@ -50,6 +50,20 @@ describe('ClaimMapper.fromReclamoDocente (LB-004D)', () => {
     expect(item.soporteAdjunto?.urlSimulada).toBeUndefined();
   });
 
+  it('PC: el reclamo de una toma trae idToma, numeroToma y fechaPuntoControlUtc; el de la sesión los deja en null', () => {
+    const conToma = ClaimMapper.fromReclamoDocente({
+      ...base, idToma: 'toma-3', numeroToma: 3, fechaPuntoControlUtc: '2026-10-19T14:45:00.1234567Z',
+    }, formatter);
+    expect(conToma.idToma).toBe('toma-3');
+    expect(conToma.numeroToma).toBe(3);
+    expect(conToma.fechaPuntoControlUtc).toBe('2026-10-19T14:45:00.1234567Z');
+
+    const deSesion = ClaimMapper.fromReclamoDocente(base, formatter);
+    expect(deSesion.idToma).toBeNull();
+    expect(deSesion.numeroToma).toBeNull();
+    expect(deSesion.fechaPuntoControlUtc).toBeNull();
+  });
+
   it('toDTO tolera estadoOriginal ausente', () => {
     const dto = ClaimMapper.toDTO(ClaimMapper.fromReclamoDocente(base, formatter));
     expect(dto.estado_original).toBe('');
@@ -77,6 +91,12 @@ describe('ClaimMapper.fromReclamoDocente (LB-004D)', () => {
     expect(item.soportes?.[1].fileId).toBe('f-2');
     expect(item.soporteAdjunto?.fileId).toBe('f-1');
     expect(item.categoria).toEqual({ codigo: 'MED', nombre: 'Médico / Salud' });
+  });
+
+  it('EST-03 (S3923): la categoría como string se conserva tal cual y sin categoría se arma desde código y nombre', () => {
+    expect(ClaimMapper.fromReclamoDocente({ ...base, categoria: 'MED' }, formatter).categoria).toBe('MED' as any);
+    const desdeCodigo = ClaimMapper.fromReclamoDocente({ ...base, categoria: undefined, codigoCategoria: 'LAB', nombreCategoria: 'Laboral' } as any, formatter);
+    expect(desdeCodigo.categoria).toEqual({ codigo: 'LAB', nombre: 'Laboral' });
   });
 });
 

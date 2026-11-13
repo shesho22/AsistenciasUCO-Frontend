@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { DeanManagementService } from './dean-management.service';
 import { paginaApi } from '../testing/pagina-api';
@@ -12,7 +12,7 @@ describe('DeanManagementService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [DeanManagementService, provideHttpClient(), provideHttpClientTesting()],
+      providers: [DeanManagementService, provideHttpClient(withXhr()), provideHttpClientTesting()],
     });
     service = TestBed.inject(DeanManagementService);
     http = TestBed.inject(HttpTestingController);

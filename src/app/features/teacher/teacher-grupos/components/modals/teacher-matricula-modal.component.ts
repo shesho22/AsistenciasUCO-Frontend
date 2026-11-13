@@ -1,6 +1,6 @@
 import { HoraCortaPipe } from '../../../../../shared/pipes/fecha-hora.pipes';
 import { Component, ChangeDetectionStrategy, Injector, input, output, inject, signal, computed, effect, untracked } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { Subscription } from 'rxjs';
 import { ButtonComponent } from '../../../../../shared/components/button/button.component';
 import { ActionMenuItem } from '../../../../../shared/components/action-menu/action-menu.component';
@@ -18,6 +18,7 @@ import {
   MatriculaQrRotadoPayload,
   VentanaMatricula,
 } from '../../../../../core/models/matricula-qr.model';
+import { mensajeUi } from '../../../../../core/messages/mensajes-ui';
 
 /**
  * HU176B: ventana de matricula por QR/PIN rotativo. El QR, el PIN y la URL los genera el backend (nunca el cliente ni un
@@ -26,11 +27,10 @@ import {
  * claro no se guarda. La hora de fin de la ventana se muestra como hora absoluta, sin cuenta regresiva.
  */
 @Component({
-  selector: 'app-teacher-matricula-modal',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [HoraCortaPipe, CommonModule, ButtonComponent, QrProyeccionComponent],
-  template: `
+    selector: 'app-teacher-matricula-modal',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [HoraCortaPipe, ButtonComponent, QrProyeccionComponent],
+    template: `
     @if (isOpen() && curso()) {
       @if (ventana(); as v) {
         <app-qr-proyeccion
@@ -126,7 +126,7 @@ import {
       </div>
       }
     }
-  `,
+  `
 })
 export class TeacherMatriculaModalComponent {
   private readonly toast = inject(ToastService);
@@ -235,7 +235,7 @@ export class TeacherMatriculaModalComponent {
     }
     this.matriculaQr.cerrarVentana(grupoId).subscribe({
       next: () => {
-        this.toast.success('La matrícula por código quedó cerrada.');
+        this.toast.success(mensajeUi('UI_TEACHER_MATRICULA_MODAL_001'));
         this.closed.emit();
       },
       error: (err: unknown) => this.toast.error(getApiErrorMessage(err)),
@@ -261,7 +261,7 @@ export class TeacherMatriculaModalComponent {
     const pin = this.ventana()?.pin;
     if (pin) {
       void navigator.clipboard?.writeText(pin);
-      this.toast.success('PIN de matrícula copiado al portapapeles.');
+      this.toast.success(mensajeUi('UI_TEACHER_MATRICULA_MODAL_002'));
     }
   }
 
@@ -269,7 +269,7 @@ export class TeacherMatriculaModalComponent {
     const url = this.ventana()?.urlMatricula;
     if (url) {
       void navigator.clipboard?.writeText(url);
-      this.toast.success('Enlace de matrícula copiado al portapapeles.');
+      this.toast.success(mensajeUi('UI_TEACHER_MATRICULA_MODAL_003'));
     }
   }
 

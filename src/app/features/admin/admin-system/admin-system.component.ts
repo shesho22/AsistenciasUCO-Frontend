@@ -10,7 +10,6 @@ import {
   DestroyRef,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AdminManagementService } from '../../../core/services/admin-management.service';
@@ -20,17 +19,16 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { AdminAuditoriaComponent } from './admin-auditoria.component';
 import { ParametrosAdministrationComponent } from '../../parametros/parametros-administration/parametros-administration.component';
+import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
 type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
 
 @Component({
   selector: 'app-admin-system',
-  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     EmptyStateComponent,
     FechaHoraCortaPipe,
-    CommonModule,
     FormsModule,
     RouterLink,
     AdminAuditoriaComponent,
@@ -327,7 +325,7 @@ export class AdminSystemComponent implements OnInit {
     const codigoPeriodo = periodoObj ? periodoObj.codigo : this.periodoSeleccionadoCierre;
 
     if (!idPeriodo) {
-      this.toast.error('Debe seleccionar un período válido para ejecutar el cierre.');
+      this.toast.error(mensajeUi('UI_ADMIN_SYSTEM_001'));
       return;
     }
 

@@ -62,4 +62,41 @@ describe('SesionEstadoBadgeComponent (CULM-001 B.1)', () => {
     expect(el().querySelector('[data-testid="sesion-cancelada-badge"]')).not.toBeNull();
     expect(el().querySelector('[data-testid="sesion-cancelada-detalle"]')).toBeNull();
   });
+
+  it('DEC-065 (2) pendiente de aprobación muestra la insignia ámbar y no "Cancelada"', () => {
+    fixture.componentRef.setInput('estadoSolicitud', 'PENDIENTE');
+    fixture.componentRef.setInput('pendienteAprobacion', true);
+    fixture.detectChanges();
+
+    const badge = el().querySelector('[data-testid="sesion-pendiente-badge"]') as HTMLElement;
+    expect(badge.textContent).toContain('Pendiente de aprobación');
+    expect(badge.innerHTML).toContain('warning');
+    expect(el().querySelector('[data-testid="sesion-cancelada-badge"]')).toBeNull();
+  });
+
+  it('DEC-065 (2) pendienteAprobacion=true basta aunque falte el estado de la solicitud', () => {
+    fixture.componentRef.setInput('pendienteAprobacion', true);
+    fixture.detectChanges();
+    expect(el().querySelector('[data-testid="sesion-pendiente-badge"]')).not.toBeNull();
+  });
+
+  it('DEC-065 (2) rechazada muestra la insignia roja y conserva el detalle de la cancelación', () => {
+    fixture.componentRef.setInput('estado', 'CANCELADA');
+    fixture.componentRef.setInput('estadoSolicitud', 'RECHAZADA');
+    fixture.componentRef.setInput('cancelacion', { tipo: 'COORDINADOR', motivo: 'Sin cupo de aula', nombreFestivo: null, fechaCancelacionUtc: null });
+    fixture.detectChanges();
+
+    const badge = el().querySelector('[data-testid="sesion-rechazada-badge"]') as HTMLElement;
+    expect(badge.textContent).toContain('Rechazada');
+    expect(badge.innerHTML).toContain('danger');
+    expect(el().querySelector('[data-testid="sesion-cancelada-badge"]')).toBeNull();
+    expect(el().querySelector('[data-testid="sesion-cancelada-detalle"]')?.textContent).toContain('Sin cupo de aula');
+  });
+
+  it('DEC-065 (2) una sesión aprobada o sin solicitud no pinta insignia de solicitud', () => {
+    fixture.componentRef.setInput('estadoSolicitud', 'APROBADA');
+    fixture.componentRef.setInput('pendienteAprobacion', false);
+    fixture.detectChanges();
+    expect(el().textContent?.trim()).toBe('');
+  });
 });

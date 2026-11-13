@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy, input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
@@ -17,17 +17,17 @@ import { ErrorCargaComponent } from '../../../shared/components/error-carga/erro
 import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load-error.util';
 
 @Component({
-  selector: 'app-coordinator-subjects',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    CommonModule,
+    selector: 'app-coordinator-subjects',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [
     FormsModule,
     RouterLink,
     BadgeComponent,
     ButtonComponent,
-    AvatarComponent, ErrorCargaComponent],
-  template: `
+    AvatarComponent,
+    ErrorCargaComponent
+],
+    template: `
     <div class="space-y-6">
       <!-- Header Bento -->
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
@@ -312,7 +312,7 @@ import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load
         }
       </div>
     </div>
-  `,
+  `
 })
 export class CoordinatorSubjectsComponent implements OnInit {
   /** CULM-001: dentro de una pestaña, el título lo pone el cascarón. */
@@ -362,7 +362,7 @@ export class CoordinatorSubjectsComponent implements OnInit {
 
   /** Caracteres presentes en el catálogo cargado (Obligatoria, Optativa). */
   caracteresDisponibles = computed(() =>
-    [...new Set(this.asignaturasCurriculares().map((a) => a.nombreCaracter ?? a.componente).filter(Boolean))].sort()
+    [...new Set(this.asignaturasCurriculares().map((a) => a.nombreCaracter ?? a.componente).filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b), 'es'))
   );
 
   /** B2NM: la misma asignatura aparece una vez por plan donde está vinculada. */

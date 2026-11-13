@@ -8,7 +8,7 @@ import {
   DestroyRef,
   InjectionToken,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
@@ -24,6 +24,7 @@ import { getBackendUserMessage } from '../../../core/api/errors/api-error.util';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { IconComponent } from '../../../shared/components/icon/icon.component';
+import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
 /**
  * Token de desacoplamiento para delegar la consola de correos al micro-frontend
@@ -92,11 +93,10 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
 };
 
 @Component({
-  selector: 'app-admin-email-management',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, IconComponent, PaginationComponent],
-  template: `
+    selector: 'app-admin-email-management',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, IconComponent, PaginationComponent],
+    template: `
     <div class="space-y-6">
       <!-- ================= HEADER & BREADCRUMB ================= -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -704,7 +704,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
 
                 <div class="p-4 rounded-xl bg-warm-50 border border-warm-200">
                   <span class="text-[10px] font-bold text-warm-500 uppercase block mb-1">Último envío</span>
-                  <span class="text-sm font-mono font-bold text-warm-900 block" data-testid="canal-ultimo-envio">{{ timeZone.formatTemporal(canalEstado()?.ultimoEnvioUtc) }}</span>
+                  <span class="text-sm font-mono font-bold text-warm-900 block" data-testid="canal-ultimo-envio">{{ timeZone.formatTemporal($safeNavigationMigration(canalEstado()?.ultimoEnvioUtc)) }}</span>
                 </div>
 
                 <div class="p-4 rounded-xl bg-warm-50 border border-warm-200">
@@ -792,7 +792,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
         }
       }
     </div>
-  `,
+  `
 })
 export class AdminEmailManagementComponent implements OnInit {
   private readonly notificationService = inject(AdminEmailNotificationService);
@@ -925,7 +925,7 @@ export class AdminEmailManagementComponent implements OnInit {
         },
         error: (err: unknown) => {
           this.cargando.set(false);
-          this.toast.error(getBackendUserMessage(err, 'No fue posible cargar el catálogo de plantillas.'));
+          this.toast.error(getBackendUserMessage(err, mensajeUi('UI_ADMIN_EMAIL_MANAGEMENT_001')));
         },
       });
   }
@@ -956,7 +956,7 @@ export class AdminEmailManagementComponent implements OnInit {
       this.asuntoEditado.set(tpl.asuntoActivo || '');
       this.cuerpoEditado.set(tpl.cuerpoActivo || '');
       this.vistaPrevia.set(null);
-      this.toast.info('Texto restaurado a la versión activa.');
+      this.toast.info(mensajeUi('UI_ADMIN_EMAIL_MANAGEMENT_002'));
     }
   }
 
@@ -978,7 +978,7 @@ export class AdminEmailManagementComponent implements OnInit {
         },
         error: (err: unknown) => {
           this.generandoPreview.set(false);
-          this.toast.error(getBackendUserMessage(err, 'No fue posible generar la vista previa institucional.'));
+          this.toast.error(getBackendUserMessage(err, mensajeUi('UI_ADMIN_EMAIL_MANAGEMENT_003')));
         },
       });
   }
@@ -1005,19 +1005,19 @@ export class AdminEmailManagementComponent implements OnInit {
             .subscribe({
               next: () => {
                 this.guardando.set(false);
-                this.toast.success(`Versión v${nuevaVersion.version} guardada y activada con éxito.`);
+                this.toast.success(mensajeUi('UI_ADMIN_EMAIL_MANAGEMENT_010', { version: nuevaVersion.version }));
                 this.cargarPlantillas();
               },
               error: (err: unknown) => {
                 this.guardando.set(false);
-                this.toast.warning(`Versión v${nuevaVersion.version} guardada pero pendiente de activación.`);
+                this.toast.warning(mensajeUi('UI_ADMIN_EMAIL_MANAGEMENT_011', { version: nuevaVersion.version }));
                 this.cargarPlantillas();
               },
             });
         },
         error: (err: unknown) => {
           this.guardando.set(false);
-          this.toast.error(getBackendUserMessage(err, 'Error al guardar la nueva versión de la plantilla.'));
+          this.toast.error(getBackendUserMessage(err, mensajeUi('UI_ADMIN_EMAIL_MANAGEMENT_004')));
         },
       });
   }
@@ -1028,11 +1028,11 @@ export class AdminEmailManagementComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
-          this.toast.success(`Versión v${version} activada como la plantilla oficial.`);
+          this.toast.success(mensajeUi('UI_ADMIN_EMAIL_MANAGEMENT_012', { version }));
           this.cargarPlantillas();
         },
         error: (err: unknown) => {
-          this.toast.error(getBackendUserMessage(err, `Error al activar la versión v${version}.`));
+          this.toast.error(getBackendUserMessage(err, mensajeUi('UI_ADMIN_EMAIL_MANAGEMENT_013', { version })));
         },
       });
   }
@@ -1071,7 +1071,7 @@ export class AdminEmailManagementComponent implements OnInit {
           }
         },
         error: (err: unknown) => {
-          this.toast.error(getBackendUserMessage(err, 'No fue posible consultar la cola outbox.'));
+          this.toast.error(getBackendUserMessage(err, mensajeUi('UI_ADMIN_EMAIL_MANAGEMENT_005')));
         },
       });
   }
@@ -1107,12 +1107,12 @@ export class AdminEmailManagementComponent implements OnInit {
       .subscribe({
         next: () => {
           this.reintentandoId.set(null);
-          this.toast.success('Notificación reprogramada para reintento inmediato.');
+          this.toast.success(mensajeUi('UI_ADMIN_EMAIL_MANAGEMENT_006'));
           this.cargarCola();
         },
         error: (err: unknown) => {
           this.reintentandoId.set(null);
-          this.toast.error(getBackendUserMessage(err, 'Error al solicitar el reintento de la notificación.'));
+          this.toast.error(getBackendUserMessage(err, mensajeUi('UI_ADMIN_EMAIL_MANAGEMENT_007')));
         },
       });
   }
@@ -1160,7 +1160,7 @@ export class AdminEmailManagementComponent implements OnInit {
           this.canalEstado.set(estado);
         },
         error: (err: unknown) => {
-          this.toast.error(getBackendUserMessage(err, 'No se pudo obtener el diagnóstico del canal SMTP.'));
+          this.toast.error(getBackendUserMessage(err, mensajeUi('UI_ADMIN_EMAIL_MANAGEMENT_008')));
         },
       });
   }
@@ -1184,7 +1184,7 @@ export class AdminEmailManagementComponent implements OnInit {
             exitoso: res.exitoso,
             mensaje: res.mensajeUsuario || 'Correo de prueba despachado con éxito al canal SMTP.',
           });
-          this.toast.success(res.mensajeUsuario || 'Correo de prueba enviado con éxito.');
+          this.toast.success(res.mensajeUsuario || mensajeUi('UI_ADMIN_EMAIL_MANAGEMENT_009'));
           this.cargarEstadoCanal();
           this.cargarCola();
         },

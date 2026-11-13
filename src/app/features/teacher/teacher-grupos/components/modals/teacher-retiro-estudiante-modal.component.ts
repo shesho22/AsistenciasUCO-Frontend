@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, input, output, signal, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { FormFieldComponent } from '../../../../../shared/components/form-field/form-field.component';
@@ -7,6 +7,7 @@ import { ButtonComponent } from '../../../../../shared/components/button/button.
 import { ToastService } from '../../../../../shared/components/toast/toast.component';
 import { GroupService } from '../../../../../core/services/group.service';
 import { getApiErrorMessage } from '../../../../../core/api/errors/api-error.util';
+import { mensajeUi } from '../../../../../core/messages/mensajes-ui';
 
 /** Estudiante del padrón que se retira (forma de `EstudianteGrupoApiDto`). */
 export interface EstudianteARetirar {
@@ -23,11 +24,10 @@ const MOTIVO_MAXIMO = 500;
  * muestran en el propio modal.
  */
 @Component({
-  selector: 'app-teacher-retiro-estudiante-modal',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, FormFieldComponent, ButtonComponent],
-  template: `
+    selector: 'app-teacher-retiro-estudiante-modal',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, FormFieldComponent, ButtonComponent],
+    template: `
     @if (isOpen() && estudiante()) {
       <div class="fixed inset-0 bg-warm-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
         <div class="bg-white rounded-2xl border border-warm-200 shadow-warm-xl max-w-md w-full overflow-hidden animate-scale-up">
@@ -80,7 +80,7 @@ const MOTIVO_MAXIMO = 500;
         </div>
       </div>
     }
-  `,
+  `
 })
 export class TeacherRetiroEstudianteModalComponent {
   private readonly groupService = inject(GroupService);
@@ -119,7 +119,9 @@ export class TeacherRetiroEstudianteModalComponent {
       .pipe(finalize(() => this.enviando.set(false)))
       .subscribe({
         next: () => {
-          this.toast.success(`${estudiante.nombreCompleto || 'El estudiante'} fue retirado del grupo.`);
+          this.toast.success(estudiante.nombreCompleto
+            ? mensajeUi('UI_TEACHER_RETIRO_ESTUDIANTE_MODAL_001', { nombre: estudiante.nombreCompleto })
+            : mensajeUi('UI_TEACHER_RETIRO_ESTUDIANTE_MODAL_002'));
           this.motivo.set('');
           this.retirado.emit(estudiante.idEstudiante);
         },

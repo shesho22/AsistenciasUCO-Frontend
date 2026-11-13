@@ -17,12 +17,11 @@ export interface PestanasShellData {
  * (`titulo`, `descripcion`, `tabs`, `base`), así decano y coordinador no repiten cascarones.
  */
 @Component({
-  selector: 'app-pestanas-shell',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'block w-full' },
-  imports: [RouterOutlet, TabsNavComponent],
-  template: `
+    selector: 'app-pestanas-shell',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    host: { class: 'block w-full' },
+    imports: [RouterOutlet, TabsNavComponent],
+    template: `
     <div class="space-y-4 min-w-0">
       <div>
         <h1 class="font-serif font-bold text-2xl sm:text-3xl text-warm-900 tracking-tight">{{ datos.titulo }}</h1>
@@ -43,7 +42,7 @@ export interface PestanasShellData {
         <router-outlet />
       </div>
     </div>
-  `,
+  `
 })
 export class PestanasShellComponent {
   readonly datos = inject(ActivatedRoute).snapshot.data as PestanasShellData;
