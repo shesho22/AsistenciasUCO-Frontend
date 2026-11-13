@@ -252,6 +252,50 @@ jobs:
             npm-audit-runtime.json
           if-no-files-found: ignore
 
+  # PRU-06 (VAL oleada 3): E2E por rol con Playwright (Chromium headless) sobre el build de produccion con el backend
+  # simulado (USE_MOCKS); no necesita backend ni Keycloak. Ver docs/work-items/VAL-oleada3-e2e.
+  e2e:
+    name: E2E Playwright (Chromium, backend simulado)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check E2E sources
+        run: npm run e2e:typecheck
+
+      - name: Install Playwright Chromium (with system dependencies)
+        run: npx playwright install --with-deps chromium
+
+      - name: Production build
+        run: npm run e2e:build
+
+      - name: Run E2E suite (headless)
+        run: npx playwright test --trace off
+
+      - name: Upload Playwright HTML report
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
+          if-no-files-found: ignore
+
   # EST-07 (VAL oleada 2): analisis semantico de seguridad del TypeScript.
   codeql:
     name: CodeQL JavaScript/TypeScript Analysis
