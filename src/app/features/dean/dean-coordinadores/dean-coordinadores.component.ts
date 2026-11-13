@@ -1,8 +1,10 @@
 import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy, input } from '@angular/core';
-
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DeanManagementService } from '../../../core/services/dean-management.service';
 import { CatalogService, TipoIdentificacionItem } from '../../../core/services/catalog.service';
+import { DeanProgramasService } from '../../../core/services/dean-programas.service';
+import { CatalogoPrograma } from '../../../core/models/programa-academico.model';
 import { ActualizarCoordinadorPayload, CoordinadorItem, ResultadoGestionCoordinador } from '../../../core/models/role-management.model';
 import { ApiResponse } from '../../../core/models/api-response.model';
 import { DeanCoordinadorEditModalComponent } from './components/dean-coordinador-edit-modal.component';
@@ -10,6 +12,7 @@ import { DeanCoordinadorEstadoModalComponent } from './components/dean-coordinad
 import { CardComponent } from '../../../shared/components/card/card.component';
 import { BadgeComponent } from '../../../shared/components/badge/badge.component';
 import { ActionMenuComponent, ActionMenuItem } from '../../../shared/components/action-menu/action-menu.component';
+import { SelectorModoComponent, OpcionModo } from '../../../shared/components/selector-modo/selector-modo.component';
 import { ButtonComponent } from '../../../shared/components/button/button.component';
 import { FormFieldComponent } from '../../../shared/components/form-field/form-field.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
@@ -28,11 +31,17 @@ import { CargaMasivaUsuariosComponent } from '../../../shared/components/carga-m
 
 type VistaDecano = 'LISTA' | 'REGISTRO';
 
+/** Cómo se resuelve el programa del coordinador al registrarlo. */
+export type ModoPrograma = 'CREAR' | 'VINCULAR' | 'SIN';
+
+const NOMBRE_PROGRAMA_MAX = 50;
+
 @Component({
-    selector: 'app-dean-coordinadores',
-    changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [
+  selector: 'app-dean-coordinadores',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
     ActionMenuComponent,
+    CommonModule,
     FormsModule,
     CardComponent,
     BadgeComponent,
@@ -43,9 +52,10 @@ type VistaDecano = 'LISTA' | 'REGISTRO';
     PaginationComponent,
     DeanCoordinadorEditModalComponent,
     DeanCoordinadorEstadoModalComponent,
-    CargaMasivaUsuariosComponent
-],
-    template: `
+    CargaMasivaUsuariosComponent,
+    SelectorModoComponent,
+  ],
+  template: `
     <div class="space-y-6 animate-fade-in">
       <!-- 1. VISTA: LISTA DE COORDINADORES -->
       @if (vistaActual() === 'LISTA') {
@@ -363,21 +373,6 @@ type VistaDecano = 'LISTA' | 'REGISTRO';
               </div>
             </div>
 
-            <app-form-field label="Programa Académico" [required]="true" [errorMessage]="errorCampo('programaAcademico')">
-              <select
-                [(ngModel)]="formData.programaAcademico"
-                name="programaAcademico"
-                required
-                class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-              >
-                <option value="">-- Selecciona un Programa --</option>
-                <option value="SIN_PROGRAMA">Sin programa asignado (Aprovisionar para nuevo programa)</option>
-                @for (prog of programasAcademicos(); track prog.id) {
-                  <option [value]="prog.nombre">{{ prog.nombre }}</option>
-                }
-              </select>
-            </app-form-field>
-
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <app-form-field label="Correo Institucional UCO" [required]="true" [errorMessage]="errorCampo('correo')">
                 <input
@@ -402,21 +397,92 @@ type VistaDecano = 'LISTA' | 'REGISTRO';
               </app-form-field>
             </div>
 
-            <app-form-field label="Facultad">
-              <input
-                type="text"
-                [(ngModel)]="formData.facultad"
-                name="facultad"
-                readonly
-                class="w-full px-3.5 py-2.5 bg-warm-100 border border-warm-200 rounded-xl text-sm text-warm-600 cursor-not-allowed"
-              />
-            </app-form-field>
+            <fieldset class="space-y-4 p-4 rounded-2xl border border-warm-200 bg-warm-50/60" data-testid="seccion-programa">
+              <legend class="px-2 text-sm font-bold text-warm-800">Programa</legend>
+              <app-selector-modo etiqueta="Programa del coordinador" [opciones]="opcionesModoPrograma" [(valor)]="modoPrograma" />
+
+              @switch (modoPrograma()) {
+                @case ('CREAR') {
+                  <div class="space-y-4" data-testid="programa-crear">
+                    <app-form-field label="Nombre del programa" [required]="true" [errorMessage]="errorCampo('programaNuevoNombre')">
+                      <input
+                        type="text"
+                        [(ngModel)]="programaNuevo.nombre"
+                        name="programaNombre"
+                        maxlength="50"
+                        placeholder="ej. Ingeniería de Sistemas"
+                        class="w-full px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                      />
+                    </app-form-field>
+                    <app-form-field label="Tipo de programa" [required]="true" [errorMessage]="errorCampo('programaNuevoTipo')">
+                      <select
+                        [(ngModel)]="programaNuevo.idTipoPrograma"
+                        name="programaTipo"
+                        class="w-full px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                      >
+                        <option value="">-- Selecciona un tipo --</option>
+                        @for (t of tiposPrograma(); track t.id) {
+                          <option [value]="t.id">{{ t.nombre }}</option>
+                        }
+                      </select>
+                    </app-form-field>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <app-form-field label="Modalidad (Opcional)">
+                        <select
+                          [(ngModel)]="programaNuevo.idModalidad"
+                          name="programaModalidad"
+                          class="w-full px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                        >
+                          <option value="">Sin definir</option>
+                          @for (m of modalidades(); track m.id) {
+                            <option [value]="m.id">{{ m.nombre }}</option>
+                          }
+                        </select>
+                      </app-form-field>
+                      <app-form-field label="Jornada (Opcional)">
+                        <select
+                          [(ngModel)]="programaNuevo.idJornada"
+                          name="programaJornada"
+                          class="w-full px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                        >
+                          <option value="">Sin definir</option>
+                          @for (j of jornadas(); track j.id) {
+                            <option [value]="j.id">{{ j.nombre }}</option>
+                          }
+                        </select>
+                      </app-form-field>
+                    </div>
+                  </div>
+                }
+                @case ('VINCULAR') {
+                  <div data-testid="programa-vincular">
+                    <app-form-field label="Programa existente" [required]="true" [errorMessage]="errorCampo('programaAcademico')">
+                      <select
+                        [(ngModel)]="formData.programaAcademico"
+                        name="programaAcademico"
+                        class="w-full px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                      >
+                        <option value="">-- Selecciona un programa --</option>
+                        @for (prog of programasAcademicos(); track prog.id) {
+                          <option [value]="prog.nombre">{{ prog.nombre }}</option>
+                        }
+                      </select>
+                    </app-form-field>
+                  </div>
+                }
+                @case ('SIN') {
+                  <p class="text-xs text-warm-600" data-testid="programa-sin">
+                    El coordinador se registra sin programa. Podrás asignarlo más adelante.
+                  </p>
+                }
+              }
+            </fieldset>
 
             <div class="flex items-center justify-end gap-3 pt-5 border-t border-warm-100">
               <app-button variant="secondary" size="md" type="button" (clicked)="volverALista()">
                 Cancelar
               </app-button>
-              <app-button variant="primary" size="md" type="submit" [loading]="isSubmitting()">
+              <app-button variant="primary" size="md" type="submit" [loading]="isSubmitting()" [disabled]="!formularioValido() || isSubmitting()">
                 Guardar Coordinador
               </app-button>
             </div>
@@ -453,13 +519,14 @@ type VistaDecano = 'LISTA' | 'REGISTRO';
         />
       }
     </div>
-  `
+  `,
 })
 export class DeanCoordinadoresComponent implements OnInit {
   /** CULM-001: dentro de una pestaña, el título lo pone el cascarón. */
   readonly embebido = input(false);
   private deanService = inject(DeanManagementService);
   private catalogService = inject(CatalogService);
+  private programasService = inject(DeanProgramasService);
   private toast = inject(ToastService);
 
   isPickerModalOpen = signal<boolean>(false);
@@ -471,6 +538,17 @@ export class DeanCoordinadoresComponent implements OnInit {
   coordinadores = signal<CoordinadorItem[]>([]);
   tiposIdentificacion = signal<TipoIdentificacionItem[]>([]);
   programasAcademicos = signal<Array<{ id: string; nombre: string }>>([]);
+  tiposPrograma = signal<CatalogoPrograma[]>([]);
+  modalidades = signal<CatalogoPrograma[]>([]);
+  jornadas = signal<CatalogoPrograma[]>([]);
+
+  readonly opcionesModoPrograma: OpcionModo<ModoPrograma>[] = [
+    { valor: 'CREAR', etiqueta: 'Crear programa nuevo' },
+    { valor: 'VINCULAR', etiqueta: 'Vincular programa existente' },
+    { valor: 'SIN', etiqueta: 'Sin programa por ahora' },
+  ];
+  modoPrograma = signal<ModoPrograma>('CREAR');
+  programaNuevo = { nombre: '', idTipoPrograma: '', idModalidad: '', idJornada: '' };
   isLoading = signal<boolean>(true);
   isSubmitting = signal<boolean>(false);
   readonly mostrarCargaMasiva = signal<boolean>(false);
@@ -522,7 +600,7 @@ export class DeanCoordinadoresComponent implements OnInit {
     nombres: '',
     apellidos: '',
     correo: '',
-    facultad: 'Facultad de Ingeniería',
+    facultad: '',
     programaAcademico: '',
     estado: 'ACTIVO',
   };
@@ -562,7 +640,23 @@ export class DeanCoordinadoresComponent implements OnInit {
   ngOnInit(): void {
     this.cargarTiposIdentificacion();
     this.cargarProgramasAcademicos();
+    this.cargarCatalogosPrograma();
     this.cargarCoordinadores();
+  }
+
+  cargarCatalogosPrograma(): void {
+    this.programasService.getTiposPrograma().subscribe({
+      next: (lista) => this.tiposPrograma.set(lista),
+      error: (err) => this.toast.warning(getApiErrorMessage(err)),
+    });
+    this.programasService.getModalidades().subscribe({
+      next: (lista) => this.modalidades.set(lista),
+      error: (err) => this.toast.warning(getApiErrorMessage(err)),
+    });
+    this.programasService.getJornadas().subscribe({
+      next: (lista) => this.jornadas.set(lista),
+      error: (err) => this.toast.warning(getApiErrorMessage(err)),
+    });
   }
 
   cargarProgramasAcademicos(): void {
@@ -698,11 +792,13 @@ export class DeanCoordinadoresComponent implements OnInit {
       apellidos: '',
       correo: '',
       password: '',
-      facultad: 'Facultad de Ingeniería',
-      programaAcademico: this.programasAcademicos().length === 0 ? 'SIN_PROGRAMA' : '',
+      facultad: '',
+      programaAcademico: '',
       idPrograma: null,
       estado: 'ACTIVO',
     };
+    this.modoPrograma.set('CREAR');
+    this.programaNuevo = { nombre: '', idTipoPrograma: '', idModalidad: '', idJornada: '' };
     this.intentoGuardar.set(false);
     this.vistaActual.set('REGISTRO');
   }
@@ -736,7 +832,13 @@ export class DeanCoordinadoresComponent implements OnInit {
         return r.valid ? '' : r.error;
       }
       case 'programaAcademico':
-        return vacio(f.programaAcademico) ? 'Seleccione el programa académico.' : '';
+        return this.modoPrograma() === 'VINCULAR' && vacio(f.programaAcademico) ? 'Seleccione el programa existente.' : '';
+      case 'programaNuevoNombre': {
+        if (this.modoPrograma() !== 'CREAR') return '';
+        return this.errorNombreProgramaNuevo();
+      }
+      case 'programaNuevoTipo':
+        return this.modoPrograma() === 'CREAR' && !this.programaNuevo.idTipoPrograma ? 'Seleccione el tipo de programa.' : '';
       case 'correo': {
         const r = validateInstitutionalEmail(f.correo);
         return r.valid ? '' : r.error || 'Correo institucional inválido.';
@@ -747,6 +849,72 @@ export class DeanCoordinadoresComponent implements OnInit {
       }
       default:
         return '';
+    }
+  }
+
+  private errorNombreProgramaNuevo(): string {
+    const nombre = this.programaNuevo.nombre.trim();
+    if (!nombre) {
+      return 'El nombre del programa es obligatorio.';
+    }
+    return nombre.length > NOMBRE_PROGRAMA_MAX ? `El nombre del programa no puede superar ${NOMBRE_PROGRAMA_MAX} caracteres.` : '';
+  }
+
+  /** Primer problema de la sección Programa según el modo elegido; null si es válida. */
+  errorPrograma(): string | null {
+    switch (this.modoPrograma()) {
+      case 'CREAR':
+        return this.errorNombreProgramaNuevo() || (this.programaNuevo.idTipoPrograma ? null : 'Seleccione el tipo de programa.');
+      case 'VINCULAR':
+        return (this.formData.programaAcademico ?? '').trim() ? null : 'Seleccione el programa existente.';
+      default:
+        return null;
+    }
+  }
+
+  /** Habilita Guardar solo cuando datos personales, acceso y programa son válidos. */
+  formularioValido(): boolean {
+    const f = this.formData;
+    const documento = (f.numeroIdentificacion ?? '').trim();
+    const password = (f.password ?? '').trim();
+    return (
+      !!f.tipoIdentificacionId &&
+      parseIdentificationNumber(f.numeroIdentificacion).valid &&
+      !!(f.primerNombre ?? '').trim() &&
+      !!(f.primerApellido ?? '').trim() &&
+      validateInstitutionalEmail(f.correo).valid &&
+      !!password &&
+      !getPasswordValidationError(password, documento) &&
+      this.errorPrograma() === null
+    );
+  }
+
+  private programaParaPayload(): {
+    idPrograma: string | null;
+    programaNuevo: { nombre: string; idTipoPrograma: string; idModalidad?: string; idJornada?: string } | null;
+  } {
+    switch (this.modoPrograma()) {
+      case 'CREAR': {
+        const { idModalidad, idJornada } = this.programaNuevo;
+        return {
+          idPrograma: null,
+          programaNuevo: {
+            nombre: this.programaNuevo.nombre.trim(),
+            idTipoPrograma: this.programaNuevo.idTipoPrograma,
+            ...(idModalidad ? { idModalidad } : {}),
+            ...(idJornada ? { idJornada } : {}),
+          },
+        };
+      }
+      case 'VINCULAR': {
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        const progMatch = this.programasAcademicos().find(
+          (p) => p.nombre === this.formData.programaAcademico || p.id === this.formData.programaAcademico
+        );
+        return { idPrograma: progMatch && uuidRegex.test(progMatch.id) ? progMatch.id : null, programaNuevo: null };
+      }
+      default:
+        return { idPrograma: null, programaNuevo: null };
     }
   }
 
@@ -783,8 +951,9 @@ export class DeanCoordinadoresComponent implements OnInit {
       return;
     }
 
-    if (!this.formData.programaAcademico || !this.formData.programaAcademico.trim()) {
-      this.toast.warning('El campo Programa Académico es obligatorio.');
+    const errorPrograma = this.errorPrograma();
+    if (errorPrograma) {
+      this.toast.warning(errorPrograma);
       return;
     }
 
@@ -802,17 +971,6 @@ export class DeanCoordinadoresComponent implements OnInit {
     this.formData.nombres = [pn, (this.formData.segundoNombre || '').trim()].filter(Boolean).join(' ');
     this.formData.apellidos = [pa, (this.formData.segundoApellido || '').trim()].filter(Boolean).join(' ');
 
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    let idProgramaSeleccionado: string | null = null;
-    if (this.formData.programaAcademico === 'SIN_PROGRAMA') {
-      idProgramaSeleccionado = null;
-    } else {
-      const progMatch = this.programasAcademicos().find(
-        (p) => p.nombre === this.formData.programaAcademico || p.id === this.formData.programaAcademico
-      );
-      idProgramaSeleccionado = progMatch && uuidRegex.test(progMatch.id) ? progMatch.id : null;
-    }
-
     const payload = {
       numeroIdentificacion: this.formData.numeroIdentificacion.trim(),
       primerNombre: pn,
@@ -820,7 +978,7 @@ export class DeanCoordinadoresComponent implements OnInit {
       primerApellido: pa,
       segundoApellido: (this.formData.segundoApellido || '').trim(),
       correo: this.formData.correo.trim(),
-      idPrograma: idProgramaSeleccionado,
+      ...this.programaParaPayload(),
       password: (this.formData.password || '').trim() || undefined,
     };
 
@@ -876,8 +1034,6 @@ export class DeanCoordinadoresComponent implements OnInit {
     this.formData.primerApellido = user.primerApellido || user.apellidos.split(' ')[0] || '';
     this.formData.segundoApellido = user.segundoApellido || '';
     this.formData.correo = user.correo || '';
-    this.formData.programaAcademico = 'SIN_PROGRAMA';
-    this.formData.idPrograma = null;
-    this.toast.info(`Datos de ${user.nombres} ${user.apellidos} precargados. Confirme el programa y guarde.`);
+    this.toast.info(`Datos de ${user.nombres} ${user.apellidos} precargados. Defina el programa y guarde.`);
   }
 }

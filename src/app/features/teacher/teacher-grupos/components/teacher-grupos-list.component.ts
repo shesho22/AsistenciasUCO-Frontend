@@ -33,9 +33,6 @@ import { CatalogoPrograma } from '../../../../core/models/programa-academico.mod
         </div>
 
         <div class="flex flex-wrap items-center gap-2.5">
-          <app-button variant="primary" size="md" data-testid="nuevo-grupo" (clicked)="nuevoGrupo.emit()">
-            Nuevo grupo
-          </app-button>
           <app-button variant="secondary" size="md" (clicked)="irAsistencia.emit()">
             <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
@@ -192,7 +189,6 @@ export class TeacherGruposListComponent {
   sessionQrEnabled = input<boolean>(false);
 
   irAsistencia = output<void>();
-  nuevoGrupo = output<void>();
   seleccionarGrupo = output<Course>();
   matricular = output<Course>();
   proyectarQr = output<Course>();

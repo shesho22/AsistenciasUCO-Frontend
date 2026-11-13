@@ -4,6 +4,9 @@ import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TeacherGrupoHubComponent } from './teacher-grupo-hub.component';
 import { Course } from '../../../../core/models/course.model';
 import { ClassSession } from '../../../../core/models/attendance.model';
+import { RealtimeService } from '../../../../core/realtime/realtime.service';
+import { NEVER, of } from 'rxjs';
+import { RevisionCancelacionService } from '../../../../core/services/revision-cancelacion.service';
 
 // LB-001B.1B (DB source of truth cleanup, PLAN.md AS-IS #13): retiro de la lectura de
 // Course.docenteName sintetizado en la ficha del hub.
@@ -29,7 +32,11 @@ describe('TeacherGrupoHubComponent', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [TeacherGrupoHubComponent],
-      providers: [provideHttpClient(withXhr()), provideHttpClientTesting()],
+      providers: [
+        provideHttpClient(withXhr()),
+        provideHttpClientTesting(),
+        { provide: RealtimeService, useValue: { startForGroup: () => undefined, stop: () => undefined, events: () => NEVER, connectionState$: NEVER } },
+      ],
     });
     fixture = TestBed.createComponent(TeacherGrupoHubComponent);
   });
@@ -270,6 +277,90 @@ describe('TeacherGrupoHubComponent', () => {
       fixture.componentInstance.subPestanaHub.set('SABANA');
       fixture.detectChanges();
       expect((q('[data-testid="hub-grupo-tabs"]') as HTMLElement).className).toContain('overflow-x-auto');
+    });
+  });
+  describe('DEC-065 decisiones pendientes a un clic', () => {
+    const pendiente = {
+      id: 'rev-1',
+      estado: 'PENDIENTE_DOCENTE',
+      estudiante: { id: 'e1', nombreCompleto: 'Ana Pérez' },
+      porcentajeActual: 23,
+      umbralPerdida: 20,
+    };
+    const respuesta = (items: unknown[]) => ({
+      exitoso: true, elementos: items, numeroPagina: 1, tamanoPagina: 50, totalElementos: items.length, totalPaginas: 1,
+    });
+
+    function abrir(items: unknown[]): void {
+      const servicio = TestBed.inject(RevisionCancelacionService);
+      spyOn(servicio, 'consultarDocente').and.returnValue(of(respuesta(items)) as never);
+      fixture.componentRef.setInput('selectedCourse', course);
+      fixture.detectChanges();
+      fixture.detectChanges();
+    }
+    const el = () => fixture.nativeElement as HTMLElement;
+
+    it('en el modo Hoy muestra la tarjeta de Decisiones pendientes cuando hay revisiones', () => {
+      abrir([pendiente]);
+      expect(el().querySelector('[data-testid="hub-hoy"]')).toBeTruthy();
+      expect(el().querySelector('[data-testid="decisiones-tarjeta"]')?.textContent).toContain('Ana Pérez');
+    });
+
+    it('en el modo Hoy sin pendientes no muestra la tarjeta ni el estado vacío', () => {
+      abrir([]);
+      expect(el().querySelector('[data-testid="decisiones-tarjeta"]')).toBeNull();
+      expect(el().querySelector('[data-testid="decisiones-vacio"]')).toBeNull();
+    });
+
+    it('en la Planilla del modo Grupo sin pendientes muestra el estado vacío discreto', () => {
+      abrir([]);
+      fixture.componentRef.setInput('subPestanaHub', 'SABANA');
+      fixture.detectChanges();
+      expect(el().querySelector('[data-testid="decisiones-vacio"]')).toBeTruthy();
+    });
+
+    it('al registrar una decisión sube el contador de refresco de la planilla', () => {
+      abrir([pendiente]);
+      fixture.componentRef.setInput('subPestanaHub', 'SABANA');
+      fixture.detectChanges();
+      const hub = fixture.componentInstance as unknown as { refrescoPlanilla: () => number };
+      expect(hub.refrescoPlanilla()).toBe(0);
+      const tarjeta = fixture.debugElement.query((d) => d.name === 'app-teacher-grupo-decisiones');
+      tarjeta.componentInstance['decisionRegistrada'].emit();
+      expect(hub.refrescoPlanilla()).toBe(1);
+    });
+  });
+
+  describe('sesión de hoy pendiente de aprobación (DEC-065 (2))', () => {
+    const ahora = new Date('2026-11-10T10:00:00Z');
+    const base: ClassSession = {
+      id: 'ses-p', courseId: 'crs-1', sessionNumber: 1, title: 'Refuerzo', date: '2026-11-10', startTime: '05:00', endTime: '07:00',
+      records: [], fechaHoraInicio: '2026-11-10T09:00:00Z', fechaHoraFin: '2026-11-10T12:00:00Z', estadoTemporal: 'CONFIRMADA',
+    };
+    const abrir = (sesion: ClassSession) => {
+      fixture.componentRef.setInput('selectedCourse', course);
+      fixture.componentRef.setInput('sessionQrEnabled', true);
+      fixture.componentRef.setInput('ahora', ahora);
+      fixture.componentRef.setInput('sessions', [sesion]);
+      fixture.detectChanges();
+    };
+    const el = () => fixture.nativeElement as HTMLElement;
+
+    it('deshabilita Tomar asistencia y QR / PIN y explica la causa', () => {
+      abrir({ ...base, estadoSolicitud: 'PENDIENTE', pendienteAprobacion: true });
+
+      expect(el().querySelector<HTMLButtonElement>('[data-testid="hub-tomar-asistencia"]')?.disabled).toBeTrue();
+      expect(el().querySelector<HTMLButtonElement>('[data-testid="hub-hoy-qr"]')?.disabled).toBeTrue();
+      expect(el().querySelector('[data-testid="hub-hoy-pendiente"]')?.textContent).toContain('coordinación apruebe');
+      expect(el().querySelector('[data-testid="sesion-pendiente-badge"]')).not.toBeNull();
+    });
+
+    it('una sesión sin solicitud mantiene las acciones habilitadas y sin texto de pendiente', () => {
+      abrir({ ...base, estadoSolicitud: null, pendienteAprobacion: false });
+
+      expect(el().querySelector<HTMLButtonElement>('[data-testid="hub-tomar-asistencia"]')?.disabled).toBeFalse();
+      expect(el().querySelector<HTMLButtonElement>('[data-testid="hub-hoy-qr"]')?.disabled).toBeFalse();
+      expect(el().querySelector('[data-testid="hub-hoy-pendiente"]')).toBeNull();
     });
   });
 });

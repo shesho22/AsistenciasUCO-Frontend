@@ -133,3 +133,24 @@ las dos ramas hay que correr `npm run e2e` sobre Angular 22.
    `$safeNavigationMigration()` en 6 plantillas, NG8113 en 5 componentes, `allowSignalWrites` obsoleto (7 archivos) en
    `effect()`, presupuesto inicial de 500 kB.
 4. Opcional: `migrate-karma-to-vitest` (Karma está deprecado en Angular 22) y retirar `@lucide/angular` (sin uso).
+
+## Merge de `develop` tras el PR #91 (2026-11-13)
+
+Se unió `origin/develop` (con `feat/mejoras-revision-manual`, PR #91) por merge, sin rebase. 17 archivos en
+conflicto: en todos, lo que esta rama había cambiado era solo salida de las migraciones (quitar `standalone: true`,
+reformateo del decorador, `CommonModule` sin uso, `withXhr()` en specs). Resolución:
+
+- Se tomó la versión de `develop` de cada archivo en conflicto y se volvieron a aplicar las migraciones sobre el
+  código de #91: `standalone: true` retirado en los 21 archivos que trajo o tocó #91; `ng update @angular/core
+  --migrate-only` con `http-xhr-backend` (`withXhr()` en 5 specs nuevos o cambiados), `change-detection-eager`
+  (1 anfitrión de prueba, `selector-modo.component.spec.ts`), `safe-optional-chaining` (1 plantilla,
+  `overview-teacher`) y `strict-safe-navigation-narrow` (sin cambios). #91 no trae `*ngIf`/`*ngFor` ni `afterRender`.
+- `teacher-grupo-form.component.ts`: #91 lo borró (retiró la creación de grupo del docente); se acepta el borrado.
+- `teacher-grupos.component.spec.ts`: versión de #91 más el arreglo de Angular 19 (`connectionState$` en el mock de
+  `RealtimeService`).
+- #91 no cambia dependencias: se conservan `package.json` y `package-lock.json` de esta rama (Angular 22.2.4).
+
+| Prueba | Resultado |
+| :--- | :--- |
+| `npm run lint` | 0 errores (460 advertencias) |
+| `npm run verify` | OK: 2914 de 2914 pruebas; cobertura 93.72% statements, 80.69% branches, 94.74% lines; realtime 95.26% / 86.81%; checks de fuente y build de producción (mismos avisos: NG8113 en 5 componentes, presupuesto inicial 558.03 kB) |

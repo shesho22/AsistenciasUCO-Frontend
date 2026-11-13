@@ -180,7 +180,7 @@ export class RevisionDecisionModalComponent {
       resultado.push({
         valor: 'PROPONER',
         etiqueta: 'Proponer cancelación por inasistencia',
-        descripcion: 'Escala a coordinación/decanatura para cancelar la matrícula.',
+        descripcion: 'Remite el caso al coordinador del programa, quien decide la cancelación.',
       });
     }
     return resultado;

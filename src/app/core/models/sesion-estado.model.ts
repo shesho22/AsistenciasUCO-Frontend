@@ -1,6 +1,12 @@
 /** Estado de una sesión de clase (CULM-001 B.1, `EstadoSesion` del backend). */
 export type EstadoSesion = 'PROGRAMADA' | 'CANCELADA';
 
+/**
+ * DEC-065 (2): estado de la solicitud de una sesión extraordinaria. `null` = sesión programada o manual anterior
+ * (no requirió aval).
+ */
+export type EstadoSolicitudSesion = 'PENDIENTE' | 'APROBADA' | 'RECHAZADA';
+
 export type TipoCancelacionSesion = 'DOCENTE' | 'FESTIVO' | 'COORDINADOR';
 
 /** Detalle de la cancelación; `null` en la sesión cuando no está cancelada. */
@@ -53,4 +59,32 @@ export function marcarSesionCancelada<T extends { id: string; estado?: EstadoSes
   const indice = lista.findIndex((s) => s.id === sesionId);
   if (indice < 0 || estaCancelada(lista[indice])) return lista;
   return lista.map((s, i) => (i === indice ? { ...s, estado: 'CANCELADA' as const, cancelacion } : s));
+}
+
+/** Campos de solicitud que entregan las listas de sesiones del docente y del coordinador. */
+export interface SolicitudSesionInfo {
+  estadoSolicitud?: EstadoSolicitudSesion | null;
+  pendienteAprobacion?: boolean | null;
+}
+
+/** DEC-065 (2): la sesión espera el aval del coordinador; no admite toma de asistencia ni ventana QR/PIN. */
+export function estaPendienteAprobacion(sesion: SolicitudSesionInfo | null | undefined): boolean {
+  return sesion?.pendienteAprobacion === true || sesion?.estadoSolicitud === 'PENDIENTE';
+}
+
+export function estaRechazada(sesion: SolicitudSesionInfo | null | undefined): boolean {
+  return sesion?.estadoSolicitud === 'RECHAZADA';
+}
+
+export const TEXTO_SESION_PENDIENTE = 'Disponible cuando la coordinación apruebe la sesión.';
+
+/** Marca la sesión como aprobada sin mutar la lista; solo cambia una sesión que estaba pendiente. */
+export function marcarSesionAprobada<T extends { id: string } & SolicitudSesionInfo>(
+  sesiones: readonly T[],
+  sesionId: string
+): T[] {
+  const lista = sesiones as T[];
+  const indice = lista.findIndex((s) => s.id === sesionId);
+  if (indice < 0 || !estaPendienteAprobacion(lista[indice])) return lista;
+  return lista.map((s, i) => (i === indice ? { ...s, estadoSolicitud: 'APROBADA' as const, pendienteAprobacion: false } : s));
 }

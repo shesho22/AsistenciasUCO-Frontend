@@ -119,6 +119,13 @@ interface NavItem {
               @if (!isCollapsed()) {
                 <span class="truncate">{{ item.label }}</span>
               }
+              @if (contadorDe(item); as pendientes) {
+                <span
+                  data-testid="menu-contador"
+                  class="ml-auto min-w-[1.25rem] rounded-full bg-warning-100 px-1.5 py-0.5 text-center text-[11px] font-bold text-warning-800"
+                  [attr.aria-label]="pendientes + (pendientes === 1 ? ' pendiente' : ' pendientes')"
+                >{{ pendientes }}</span>
+              }
             </a>
           }
         </nav>
@@ -265,18 +272,18 @@ export class DashboardLayoutComponent {
           next: (count) => this.alertasVigentesCount.set(count),
           error: () => this.alertasVigentesCount.set(0),
         });
+      } else if (role === 'DOCENTE') {
+        this.revisionService?.contarPendientes('DOCENTE').subscribe({
+          next: (count) => this.revisionesPendientesCount.set(count),
+          error: () => this.revisionesPendientesCount.set(0),
+        });
       } else if (role === 'COORDINADOR') {
         this.revisionService?.contarPendientes('COORDINADOR').subscribe({
           next: (count) => this.revisionesPendientesCount.set(count),
           error: () => this.revisionesPendientesCount.set(0),
         });
-      } else if (role === 'DECANO') {
-        this.revisionService?.contarPendientes('DECANO').subscribe({
-          next: (count) => this.revisionesPendientesCount.set(count),
-          error: () => this.revisionesPendientesCount.set(0),
-        });
       }
-    });
+    }, { allowSignalWrites: true });
   }
 
   private allNavItems: NavItem[] = [
@@ -454,9 +461,22 @@ export class DashboardLayoutComponent {
         }
         return true;
       })
-      .filter((item) => !item.externo || this.externos.disponible(item.externo))
+      .filter((item) => !item.externo || this.externos.habilitado(item.externo))
       .filter((item) => item.roles.some((role) => roles.includes(role)));
   });
+
+  /** Pendientes que se anuncian junto a la entrada del menú (alertas del estudiante, revisiones del docente y del coordinador). */
+  contadorDe(item: NavItem): number {
+    switch (item.route) {
+      case '/app/estudiante/alertas':
+        return this.alertasVigentesCount();
+      case '/app/docente/grupos':
+      case '/app/coordinador/revisiones-cancelacion':
+        return this.revisionesPendientesCount();
+      default:
+        return 0;
+    }
+  }
 
   toggleCollapsed(): void {
     this.isCollapsed.update((val) => !val);

@@ -1,18 +1,17 @@
 import { Component, ChangeDetectionStrategy, input, output, signal, computed } from '@angular/core';
-
-import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 import { PeriodoAcademicoItem } from '../../../../core/models/role-management.model';
 import { CardComponent } from '../../../../shared/components/card/card.component';
 import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
-import { FormFieldComponent } from '../../../../shared/components/form-field/form-field.component';
+import { AcademicPeriodFormModalComponent, PeriodoFormDatos } from './academic-period-form-modal.component';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 
 @Component({
-    selector: 'app-academic-periods-tab',
-    changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [FormsModule, CardComponent, BadgeComponent, ButtonComponent, FormFieldComponent, PaginationComponent],
-    template: `
+  selector: 'app-academic-periods-tab',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [CommonModule, CardComponent, BadgeComponent, ButtonComponent, PaginationComponent, AcademicPeriodFormModalComponent],
+  template: `
     <div class="space-y-6">
       <div class="flex items-center justify-between bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm">
         <div>
@@ -111,96 +110,36 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
         }
       }
 
-      <!-- Formulario Inline Período -->
       @if (mostrarModal()) {
-        <div class="bg-white p-6 rounded-2xl border border-primary-200 shadow-warm-md max-w-xl mx-auto space-y-4">
-          <div class="flex items-center justify-between">
-            <h4 class="font-serif font-bold text-base text-warm-900">
-              {{ modoModal() === 'CREAR' ? 'Apertura de Nuevo Período' : 'Modificación de Período' }}
-            </h4>
-            <button (click)="mostrarModal.set(false)" class="text-warm-400 hover:text-warm-700 text-xs font-bold">
-              ✕ Cerrar
-            </button>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <app-form-field label="Código del Período" [required]="true">
-              <input
-                type="text"
-                [(ngModel)]="periodoForm.codigo"
-                placeholder="Ej. 2027-1"
-                class="w-full px-3 py-2 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-              />
-            </app-form-field>
-
-            <p class="text-xs text-warm-500 self-center">
-              El estado (planeación, activo o cerrado) se calcula con las fechas del período.
-            </p>
-
-            <app-form-field label="Fecha de Inicio" [required]="true">
-              <input
-                type="date"
-                [(ngModel)]="periodoForm.fechaInicio"
-                class="w-full px-3 py-2 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-              />
-            </app-form-field>
-
-            <app-form-field label="Fecha de Fin" [required]="true">
-              <input
-                type="date"
-                [(ngModel)]="periodoForm.fechaFin"
-                class="w-full px-3 py-2 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-              />
-            </app-form-field>
-          </div>
-
-          <div class="flex items-center justify-end gap-3 pt-2">
-            <app-button variant="secondary" size="sm" (clicked)="mostrarModal.set(false)">
-              Cancelar
-            </app-button>
-            <app-button
-              variant="primary"
-              size="sm"
-              [disabled]="!periodoForm.codigo.trim() || !periodoForm.fechaInicio || !periodoForm.fechaFin"
-              (clicked)="guardar()"
-            >
-              Guardar Período
-            </app-button>
-          </div>
-        </div>
+        <app-academic-period-form-modal
+          [periodo]="periodoEditando()"
+          [guardando]="guardando()"
+          [error]="errorGuardado()"
+          (guardar)="guardar($event)"
+          (cerrar)="cerrarFormulario()"
+        />
       }
     </div>
-  `
+  `,
 })
 export class AcademicPeriodsTabComponent {
   periodos = input.required<PeriodoAcademicoItem[]>();
   /** HU096-HU098: decano y coordinador solo consultan; crear, editar y eliminar es del administrador. */
   soloLectura = input(false);
 
-  savePeriodo = output<{ modo: 'CREAR' | 'EDITAR'; id?: string; datos: any }>();
-  /** HU098: solicita eliminar el período; el backend lo rechaza si tiene grupos o sesiones. */
+  /** El padre marca la petición en curso y el mensaje del backend; el diálogo no se cierra hasta la respuesta. */
+  guardando = input(false);
+  errorGuardado = input('');
+
+  savePeriodo = output<{ modo: 'CREAR' | 'EDITAR'; id?: string; datos: PeriodoFormDatos }>();
+  /** Solicita eliminar el período; el backend lo rechaza si tiene grupos o sesiones. */
   deletePeriodo = output<PeriodoAcademicoItem>();
 
   currentPage = signal(1);
   pageSize = signal(6);
 
   mostrarModal = signal(false);
-  modoModal = signal<'CREAR' | 'EDITAR'>('CREAR');
-  selectedPeriodoId: string | null = null;
-
-  periodoForm: {
-    codigo: string;
-    nombre: string;
-    fechaInicio: string;
-    fechaFin: string;
-    estado: PeriodoAcademicoItem['estado'];
-  } = {
-    codigo: '',
-    nombre: '',
-    fechaInicio: '',
-    fechaFin: '',
-    estado: 'PLANEACION',
-  };
+  periodoEditando = signal<PeriodoAcademicoItem | null>(null);
 
   pagedPeriodos = computed(() => {
     const list = this.periodos();
@@ -209,42 +148,27 @@ export class AcademicPeriodsTabComponent {
   });
 
   abrirCrear(): void {
-    this.modoModal.set('CREAR');
-    this.selectedPeriodoId = null;
-    this.periodoForm = {
-      codigo: '2027-1',
-      nombre: 'Primer Semestre Académico 2027',
-      fechaInicio: '2027-02-01',
-      fechaFin: '2027-06-20',
-      estado: 'PLANEACION',
-    };
+    this.periodoEditando.set(null);
     this.mostrarModal.set(true);
   }
 
   abrirEditar(periodo: PeriodoAcademicoItem): void {
-    this.modoModal.set('EDITAR');
-    this.selectedPeriodoId = periodo.id;
-    this.periodoForm = {
-      codigo: periodo.codigo,
-      nombre: periodo.nombre,
-      fechaInicio: periodo.fechaInicio,
-      fechaFin: periodo.fechaFin,
-      estado: periodo.estado,
-    };
+    this.periodoEditando.set(periodo);
     this.mostrarModal.set(true);
   }
 
-  /** HU096/HU097: el código del período (p. ej. 2027-1) es su nombre único en la institución. */
-  guardar(): void {
+  /** El nombre del período (p. ej. 2027-1) es único en la institución. */
+  guardar(datos: PeriodoFormDatos): void {
+    const editando = this.periodoEditando();
     this.savePeriodo.emit({
-      modo: this.modoModal(),
-      id: this.selectedPeriodoId || undefined,
-      datos: {
-        nombre: this.periodoForm.codigo.trim(),
-        fechaInicio: this.periodoForm.fechaInicio,
-        fechaFin: this.periodoForm.fechaFin,
-      },
+      modo: editando ? 'EDITAR' : 'CREAR',
+      id: editando?.id,
+      datos,
     });
+  }
+
+  cerrarFormulario(): void {
     this.mostrarModal.set(false);
+    this.periodoEditando.set(null);
   }
 }

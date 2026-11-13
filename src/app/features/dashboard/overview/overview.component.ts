@@ -7,8 +7,8 @@ import {
   DestroyRef,
   ChangeDetectionStrategy,
 } from '@angular/core';
-
-import { timer } from 'rxjs';
+import { CommonModule } from '@angular/common';
+import { switchMap, timer } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../../core/services/auth.service';
 import { CourseService } from '../../../core/services/course.service';
@@ -16,6 +16,8 @@ import { AdminManagementService } from '../../../core/services/admin-management.
 import { DeanManagementService } from '../../../core/services/dean-management.service';
 import { DeanIndicatorsService } from '../../../core/services/dean-indicators.service';
 import { CoordinatorIndicatorsService } from '../../../core/services/coordinator-indicators.service';
+import { CoordinadorSesionesService } from '../../../core/services/coordinador-sesiones.service';
+import { CoordinatorProgramService } from '../../../core/services/coordinator-program.service';
 import { AdminIndicatorsService } from '../../../core/services/admin-indicators.service';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { StudentManagementService } from '../../../core/services/student-management.service';
@@ -48,17 +50,18 @@ import { OverviewTeacherComponent } from './components/overview-teacher.componen
 import { OverviewStudentComponent } from './components/overview-student.component';
 
 @Component({
-    selector: 'app-overview',
-    changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [
+  selector: 'app-overview',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    CommonModule,
     OverviewHeroComponent,
     OverviewAdminComponent,
     OverviewDeanComponent,
     OverviewCoordinatorComponent,
     OverviewTeacherComponent,
-    OverviewStudentComponent
-],
-    template: `
+    OverviewStudentComponent,
+  ],
+  template: `
     <div class="flex flex-col gap-6 animate-fade-in">
       <!-- 1. Hero Banner Adaptativo -->
       <app-overview-hero
@@ -103,6 +106,7 @@ import { OverviewStudentComponent } from './components/overview-student.componen
             [totalGrupos]="totalGruposPrograma()"
             [totalEstudiantes]="totalEstudiantesPrograma()"
             [estudiantesRiesgo]="estudiantesRiesgoPrograma()"
+            [solicitudesSesionPendientes]="solicitudesSesionPendientes()"
           />
         }
         @case ('DOCENTE') {
@@ -124,7 +128,7 @@ import { OverviewStudentComponent } from './components/overview-student.componen
         }
       }
     </div>
-  `
+  `,
 })
 export class OverviewComponent implements OnInit {
   private authService = inject(AuthService);
@@ -135,6 +139,8 @@ export class OverviewComponent implements OnInit {
   private adminIndicators = inject(AdminIndicatorsService);
   private coordinatorService = inject(CoordinatorManagementService);
   private coordinatorIndicators = inject(CoordinatorIndicatorsService);
+  private coordinadorSesiones = inject(CoordinadorSesionesService);
+  private coordinatorProgram = inject(CoordinatorProgramService);
   private studentService = inject(StudentManagementService);
   private claimService = inject(AttendanceClaimService);
   private destroyRef = inject(DestroyRef);
@@ -185,6 +191,8 @@ export class OverviewComponent implements OnInit {
     return this.docentes().reduce((acc, d) => acc + (d.totalGruposAsignados || 0), 0);
   });
   totalEstudiantesPrograma = signal<number>(0);
+  /** DEC-065 (2): solicitudes de sesión extraordinaria pendientes de aval; `null` = sin dato. */
+  solicitudesSesionPendientes = signal<number | null>(null);
 
   // Datos Estudiante
   materias = signal<MateriaEstudianteItem[]>([]);
@@ -261,6 +269,13 @@ export class OverviewComponent implements OnInit {
           next: (res) => this.estudiantesRiesgoPrograma.set(res.datos?.estudiantesRiesgo ?? null),
           error: () => this.estudiantesRiesgoPrograma.set(null),
         });
+        this.coordinatorProgram
+          .cargar()
+          .pipe(switchMap(() => this.coordinadorSesiones.contarPendientes(this.coordinatorProgram.programaId())))
+          .subscribe({
+            next: (n) => this.solicitudesSesionPendientes.set(n),
+            error: () => this.solicitudesSesionPendientes.set(null),
+          });
         this.coordinatorService.getDocentes().subscribe({
           next: (res) => {
             if (res.exitoso && res.datos) {

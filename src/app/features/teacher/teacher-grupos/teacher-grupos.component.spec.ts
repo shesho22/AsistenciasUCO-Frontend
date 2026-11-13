@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { convertToParamMap, Router } from '@angular/router';
 import { of, Subject, throwError } from 'rxjs';
+import { filter } from 'rxjs/operators';
 import { TeacherGruposComponent } from './teacher-grupos.component';
 import { CourseService } from '../../../core/services/course.service';
 import { AttendanceService } from '../../../core/services/attendance.service';
@@ -16,7 +17,7 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
 import { apiHttpError } from '../../../core/testing/api-error.fixture';
 import { HttpErrorResponse } from '@angular/common/http';
 import { RealtimeService } from '../../../core/realtime/realtime.service';
-import { RealtimeEvent, SesionCanceladaRealtimePayload } from '../../../core/realtime/model/realtime-event.model';
+import { RealtimeEvent, SesionCanceladaRealtimePayload, SesionManualCreadaRealtimePayload } from '../../../core/realtime/model/realtime-event.model';
 
 // LB-001B.1B (DB source of truth cleanup): AS-IS #20 (docenteName hardcodeado y enviado en
 // el payload de crearGrupo/actualizarGrupo), #21 (selección de sesión activa por status) y
@@ -31,7 +32,7 @@ describe('TeacherGruposComponent', () => {
   let claimService: jasmine.SpyObj<AttendanceClaimService>;
   let router: jasmine.SpyObj<Router>;
   let attendanceService: jasmine.SpyObj<AttendanceService>;
-  let realtimeEvents$: Subject<RealtimeEvent<SesionCanceladaRealtimePayload>>;
+  let realtimeEvents$: Subject<RealtimeEvent<SesionCanceladaRealtimePayload | SesionManualCreadaRealtimePayload>>;
   let realtime: jasmine.SpyObj<RealtimeService>;
 
   const course: Course = {
@@ -53,7 +54,6 @@ describe('TeacherGruposComponent', () => {
       'getAsignaturasDocente',
       'crearGrupo',
       'actualizarGrupo',
-      'getOfertaCreacionGrupos',
     ]);
     sessionService = jasmine.createSpyObj<SessionService>('SessionService', [
       'getSessionsByGroup',
@@ -100,10 +100,11 @@ describe('TeacherGruposComponent', () => {
     realtimeEvents$ = new Subject();
     // Angular 19 ejecuta los effect() de componente durante la deteccion de cambios: la sabana del hub ya
     // arranca su tiempo real en estas pruebas y lee connectionState$ (antes el effect quedaba en microtarea).
-    realtime = jasmine.createSpyObj<RealtimeService>('RealtimeService', ['listenType', 'startForGroup', 'stop'], {
+    realtime = jasmine.createSpyObj<RealtimeService>('RealtimeService', ['listenType', 'startForGroup', 'stop', 'events'], {
       connectionState$: of('CONNECTED'),
     });
-    realtime.listenType.and.returnValue(realtimeEvents$.asObservable() as never);
+    realtime.listenType.and.callFake(((tipo: string) => realtimeEvents$.pipe(filter((e) => e.type === tipo))) as never);
+    realtime.events.and.returnValue(new Subject<RealtimeEvent>().asObservable());
 
     TestBed.configureTestingModule({
       imports: [TeacherGruposComponent],
@@ -303,28 +304,35 @@ describe('TeacherGruposComponent', () => {
     expect(sessionService.createSession).toHaveBeenCalled();
   });
 
-  it('DEC-064: tras crear la sesión informa que se notificó a estudiantes y coordinador', () => {
+  it('DEC-065 (2): tras solicitar la sesión muestra el mensajeUsuario del backend tal cual', () => {
     const toastSuccess = spyOn(TestBed.inject(ToastService), 'success');
-    sessionService.createSession.and.returnValue(of({ exitoso: true, mensaje: 'Sesión creada' } as any));
+    sessionService.createSession.and.returnValue(of({ exitoso: true, mensaje: 'x', mensajeUsuario: 'Solicitud enviada; queda pendiente de aprobación.' } as any));
     component.verHubGrupo(course);
     component.abrirCrearSesionExtraordinaria();
     component.sesionForm = { title: 'Sesión de repaso', date: '2026-09-15', startTime: '08:00', endTime: '10:00', sessionNumber: 1 };
 
     component.guardarSesion();
 
-    expect(toastSuccess).toHaveBeenCalledOnceWith('Sesión creada Se notificó a los estudiantes y al coordinador del programa.');
+    expect(toastSuccess).toHaveBeenCalledOnceWith('Solicitud enviada; queda pendiente de aprobación.');
   });
 
-  it('DEC-064: sin mensaje del backend usa el texto de respaldo más el aviso de notificación', () => {
+  it('DEC-065 (2): sin mensajeUsuario usa mensaje y, sin ninguno, el aviso de solicitud pendiente', () => {
     const toastSuccess = spyOn(TestBed.inject(ToastService), 'success');
-    sessionService.createSession.and.returnValue(of({ exitoso: true } as any));
+    sessionService.createSession.and.returnValues(
+      of({ exitoso: true, mensaje: 'Sesión creada' } as any),
+      of({ exitoso: true } as any)
+    );
     component.verHubGrupo(course);
     component.abrirCrearSesionExtraordinaria();
     component.sesionForm = { title: 'Sesión de repaso', date: '2026-09-15', startTime: '08:00', endTime: '10:00', sessionNumber: 1 };
 
     component.guardarSesion();
+    component.guardarSesion();
 
-    expect(toastSuccess).toHaveBeenCalledOnceWith('Sesión programada con éxito. Se notificó a los estudiantes y al coordinador del programa.');
+    expect(toastSuccess.calls.allArgs()).toEqual([
+      ['Sesión creada'],
+      ['La sesión queda pendiente hasta que el coordinador del programa la apruebe.'],
+    ]);
   });
 
   it('A2-F-09 un 400 SES_017 al crear una sesión muestra el message del backend, sin texto local', () => {
@@ -449,50 +457,6 @@ describe('TeacherGruposComponent', () => {
     component.onEstudianteRetirado();
     expect(studentService.getStudentsByGroup).not.toHaveBeenCalled();
   });
-  it('F3 abre el formulario de nuevo grupo y carga la oferta de asignaturas del docente', () => {
-    courseService.getOfertaCreacionGrupos.and.returnValue(
-      of({ exitoso: true, datos: { idDocente: 'doc-1', asignaturas: [] } } as any)
-    );
-
-    component.abrirNuevoGrupo();
-
-    expect(component.vistaActual()).toBe('FORM_GRUPO');
-    expect(component.ofertaGrupos()?.idDocente).toBe('doc-1');
-    expect(component.cargandoOferta()).toBeFalse();
-  });
-
-  it('F3 guardarNuevoGrupo crea el grupo, vuelve a la lista y recarga los grupos', () => {
-    courseService.crearGrupo.and.returnValue(
-      of({ exitoso: true, mensajeUsuario: 'Grupo registrado(a) exitosamente.', datos: { id: 'g1', mensajeUsuario: 'ok' } } as any)
-    );
-    component.vistaActual.set('FORM_GRUPO');
-    courseService.getTeacherCourses.calls.reset();
-
-    component.guardarNuevoGrupo({ idAsignatura: 'asig-1', codigo: 2, nombre: 'Grupo 2', idDocente: 'doc-1' });
-
-    expect(courseService.crearGrupo).toHaveBeenCalledWith({
-      idAsignatura: 'asig-1',
-      codigo: 2,
-      nombre: 'Grupo 2',
-      idDocente: 'doc-1',
-    });
-    expect(component.vistaActual()).toBe('LISTA');
-    expect(component.guardandoGrupo()).toBeFalse();
-    expect(courseService.getTeacherCourses).toHaveBeenCalledTimes(1);
-  });
-
-  it('F3 guardarNuevoGrupo se queda en el formulario si el backend rechaza el grupo', () => {
-    courseService.crearGrupo.and.returnValue(
-      of({ exitoso: false, mensajeUsuario: 'No tiene autorización sobre el recurso solicitado.' } as any)
-    );
-    component.vistaActual.set('FORM_GRUPO');
-
-    component.guardarNuevoGrupo({ idAsignatura: 'asig-1', codigo: 2, nombre: 'Grupo 2', idDocente: 'otro' });
-
-    expect(component.vistaActual()).toBe('FORM_GRUPO');
-    expect(component.guardandoGrupo()).toBeFalse();
-  });
-
   describe('APP-05 reclamos por grupo', () => {
     const GROUP_A = '3f0c1d2e-0000-4000-8000-000000000001';
     const GROUP_B = '3f0c1d2e-0000-4000-8000-000000000002';
@@ -660,7 +624,7 @@ describe('TeacherGruposComponent', () => {
       expect(sessionService.getSessionsByGroup).not.toHaveBeenCalled();
     });
 
-    it('DEC-064: SESION_CANCELADA de tipo COORDINADOR marca la sesión y avisa "Sesión cancelada por coordinación"', () => {
+    it('DEC-065 (2): SESION_CANCELADA de tipo COORDINADOR marca la sesión y avisa que la coordinación la rechazó o canceló', () => {
       const toastInfo = spyOn(TestBed.inject(ToastService), 'info');
       abrirHub();
 
@@ -671,7 +635,70 @@ describe('TeacherGruposComponent', () => {
 
       expect(component.sessions()[0].estado).toBe('CANCELADA');
       expect(component.sessions()[0].cancelacion?.tipo).toBe('COORDINADOR');
-      expect(toastInfo).toHaveBeenCalledOnceWith('Sesión cancelada por coordinación');
+      expect(toastInfo).toHaveBeenCalledOnceWith('La coordinación rechazó o canceló la sesión S1.');
+    });
+
+    it('DEC-065 (2): si la sesión no está en la lista, el aviso de coordinación es genérico', () => {
+      const toastInfo = spyOn(TestBed.inject(ToastService), 'info');
+      abrirHub();
+
+      realtimeEvents$.next({
+        eventId: 'e', type: 'SESION_CANCELADA', occurredAt: '2026-11-10T14:00:00Z', correlationId: null,
+        payload: { grupo: 'crs-1', sesion: 'ses-desconocida', tipo: 'COORDINADOR', fechaHoraInicioUtc: null },
+      });
+
+      expect(toastInfo).toHaveBeenCalledOnceWith('La coordinación rechazó o canceló una sesión del grupo.');
+    });
+
+    it('DEC-065 (2): SESION_MANUAL_CREADA de una sesión pendiente la marca APROBADA y avisa al docente', () => {
+      const toastSuccess = spyOn(TestBed.inject(ToastService), 'success');
+      sessionService.getSessionsByGroup.and.returnValue(of({
+        exitoso: true, total: 1,
+        datos: [{ ...sesion, title: 'Refuerzo', estadoSolicitud: 'PENDIENTE', pendienteAprobacion: true }],
+      } as any));
+      component.verHubGrupo({ id: 'crs-1' } as any);
+      toastSuccess.calls.reset();
+
+      realtimeEvents$.next({
+        eventId: 'e', type: 'SESION_MANUAL_CREADA', occurredAt: '2026-11-10T14:00:00Z', correlationId: null,
+        payload: { grupo: 'crs-1', sesion: 'ses-1', fechaHoraInicio: null, docente: 'Ana' },
+      });
+
+      expect(component.sessions()[0].estadoSolicitud).toBe('APROBADA');
+      expect(component.sessions()[0].pendienteAprobacion).toBeFalse();
+      expect(toastSuccess).toHaveBeenCalledOnceWith('La coordinación aprobó la sesión extraordinaria Refuerzo.');
+    });
+
+    it('DEC-065 (2): SESION_MANUAL_CREADA de otro grupo, desconocida o no pendiente no cambia nada ni avisa', () => {
+      const toastSuccess = spyOn(TestBed.inject(ToastService), 'success');
+      abrirHub();
+      toastSuccess.calls.reset();
+      const manual = (grupo: string, ses: string) => ({
+        eventId: 'e', type: 'SESION_MANUAL_CREADA', occurredAt: '2026-11-10T14:00:00Z', correlationId: null,
+        payload: { grupo, sesion: ses, fechaHoraInicio: null, docente: 'Ana' },
+      });
+
+      realtimeEvents$.next(manual('otro-grupo', 'ses-1'));
+      realtimeEvents$.next(manual('crs-1', 'ses-desconocida'));
+      realtimeEvents$.next(manual('crs-1', 'ses-1'));
+
+      expect(component.sessions()[0].estadoSolicitud).toBeUndefined();
+      expect(toastSuccess).not.toHaveBeenCalled();
+    });
+
+    it('DEC-065 (2): al volver a la lista deja de escuchar las aprobaciones', () => {
+      sessionService.getSessionsByGroup.and.returnValue(of({
+        exitoso: true, total: 1, datos: [{ ...sesion, estadoSolicitud: 'PENDIENTE', pendienteAprobacion: true }],
+      } as any));
+      component.verHubGrupo({ id: 'crs-1' } as any);
+      component.volverALista();
+
+      realtimeEvents$.next({
+        eventId: 'e', type: 'SESION_MANUAL_CREADA', occurredAt: '2026-11-10T14:00:00Z', correlationId: null,
+        payload: { grupo: 'crs-1', sesion: 'ses-1', fechaHoraInicio: null, docente: 'Ana' },
+      });
+
+      expect(component.sessions()[0].estadoSolicitud).toBe('PENDIENTE');
     });
 
     it('DEC-064: la cancelación del propio docente no muestra el aviso de coordinación', () => {

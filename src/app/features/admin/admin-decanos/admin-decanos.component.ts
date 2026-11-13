@@ -1,12 +1,13 @@
 import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
-
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminManagementService } from '../../../core/services/admin-management.service';
 import { CatalogService, TipoIdentificacionItem, FacultadItem } from '../../../core/services/catalog.service';
-import { DecanoItem } from '../../../core/models/role-management.model';
+import { DecanoItem, InstitucionItem } from '../../../core/models/role-management.model';
 import { CardComponent } from '../../../shared/components/card/card.component';
 import { BadgeComponent } from '../../../shared/components/badge/badge.component';
 import { ActionMenuComponent, ActionMenuItem } from '../../../shared/components/action-menu/action-menu.component';
+import { SelectorModoComponent, OpcionModo } from '../../../shared/components/selector-modo/selector-modo.component';
 import { ButtonComponent } from '../../../shared/components/button/button.component';
 import { FormFieldComponent } from '../../../shared/components/form-field/form-field.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
@@ -24,11 +25,18 @@ import { CargaMasivaUsuariosComponent } from '../../../shared/components/carga-m
 
 type VistaAdmin = 'LISTA' | 'REGISTRO';
 
+/** Cómo se resuelve la facultad del decano al registrarlo. */
+export type ModoFacultad = 'CREAR' | 'VINCULAR' | 'SIN';
+
+const NOMBRE_FACULTAD_MIN = 3;
+const NOMBRE_FACULTAD_MAX = 50;
+
 @Component({
-    selector: 'app-admin-decanos',
-    changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [
+  selector: 'app-admin-decanos',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
     ActionMenuComponent,
+    CommonModule,
     FormsModule,
     CardComponent,
     BadgeComponent,
@@ -37,9 +45,10 @@ type VistaAdmin = 'LISTA' | 'REGISTRO';
     UserPickerModalComponent,
     AccountAccessStatusComponent,
     CorreccionIdentidadModalComponent,
-    CargaMasivaUsuariosComponent
-],
-    template: `
+    CargaMasivaUsuariosComponent,
+    SelectorModoComponent,
+  ],
+  template: `
     <div class="space-y-6 animate-fade-in">
       <!-- 1. VISTA: LISTA DE DECANOS -->
       @if (vistaActual() === 'LISTA') {
@@ -223,7 +232,7 @@ type VistaAdmin = 'LISTA' | 'REGISTRO';
               Registrar Nuevo Decano
             </h2>
             <p class="text-sm text-warm-600 mt-1">
-              Ingresa los datos personales para dar de alta la autoridad académica institucional. La facultad se asigna posteriormente desde el módulo de Gestión de Facultades.
+              Ingresa los datos personales para dar de alta la autoridad académica institucional y define su facultad en el mismo paso.
             </p>
           </div>
 
@@ -356,11 +365,77 @@ type VistaAdmin = 'LISTA' | 'REGISTRO';
               />
             </app-form-field>
 
+            <fieldset class="space-y-4 p-4 rounded-2xl border border-warm-200 bg-warm-50/60" data-testid="seccion-facultad">
+              <legend class="px-2 text-sm font-bold text-warm-800">Facultad</legend>
+              <app-selector-modo etiqueta="Facultad del decano" [opciones]="opcionesModoFacultad" [(valor)]="modoFacultad" />
+
+              @switch (modoFacultad()) {
+                @case ('CREAR') {
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" data-testid="facultad-crear">
+                    <app-form-field label="Nombre de la facultad" [required]="true" [helperText]="'Entre 3 y 50 caracteres.'" [errorMessage]="errorNombreFacultad()">
+                      <input
+                        type="text"
+                        [(ngModel)]="facultadNueva.nombre"
+                        name="facultadNombre"
+                        maxlength="50"
+                        placeholder="ej. Facultad de Ingeniería"
+                        class="w-full px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                      />
+                    </app-form-field>
+                    <app-form-field label="Código (Opcional)">
+                      <input
+                        type="text"
+                        [(ngModel)]="facultadNueva.codigo"
+                        name="facultadCodigo"
+                        placeholder="ej. ING"
+                        class="w-full px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                      />
+                    </app-form-field>
+                    <div class="sm:col-span-2">
+                      <app-form-field label="Institución" [required]="true">
+                        <select
+                          [(ngModel)]="facultadNueva.idInstitucion"
+                          name="facultadInstitucion"
+                          class="w-full px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                        >
+                          <option value="">-- Selecciona una institución --</option>
+                          @for (inst of instituciones(); track inst.id) {
+                            <option [value]="inst.id">{{ inst.nombre }}</option>
+                          }
+                        </select>
+                      </app-form-field>
+                    </div>
+                  </div>
+                }
+                @case ('VINCULAR') {
+                  <div data-testid="facultad-vincular">
+                    <app-form-field label="Facultad existente" [required]="true">
+                      <select
+                        [(ngModel)]="idFacultadExistente"
+                        name="facultadExistente"
+                        class="w-full px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                      >
+                        <option value="">-- Selecciona una facultad --</option>
+                        @for (fac of facultades(); track fac.id) {
+                          <option [value]="fac.id">{{ fac.nombre }}</option>
+                        }
+                      </select>
+                    </app-form-field>
+                  </div>
+                }
+                @case ('SIN') {
+                  <p class="text-xs text-warm-600" data-testid="facultad-sin">
+                    El decano se registra sin facultad. Podrás asociarla más adelante.
+                  </p>
+                }
+              }
+            </fieldset>
+
             <div class="flex items-center justify-end gap-3 pt-5 border-t border-warm-100">
               <app-button variant="secondary" size="md" type="button" (clicked)="volverALista()">
                 Cancelar
               </app-button>
-              <app-button variant="primary" size="md" type="submit" [loading]="isSubmitting()" [disabled]="!formData.primerNombre || !formData.primerApellido || !formData.correo || !formData.numeroIdentificacion">
+              <app-button variant="primary" size="md" type="submit" [loading]="isSubmitting()" [disabled]="!formularioValido() || isSubmitting()">
                 Guardar Decano
               </app-button>
             </div>
@@ -390,7 +465,7 @@ type VistaAdmin = 'LISTA' | 'REGISTRO';
         />
       }
     </div>
-  `
+  `,
 })
 export class AdminDecanosComponent implements OnInit {
   private adminService = inject(AdminManagementService);
@@ -411,6 +486,16 @@ export class AdminDecanosComponent implements OnInit {
   decanos = signal<DecanoItem[]>([]);
   tiposIdentificacion = signal<TipoIdentificacionItem[]>([]);
   facultades = signal<FacultadItem[]>([]);
+  readonly instituciones = this.adminService.instituciones;
+
+  readonly opcionesModoFacultad: OpcionModo<ModoFacultad>[] = [
+    { valor: 'CREAR', etiqueta: 'Crear facultad nueva' },
+    { valor: 'VINCULAR', etiqueta: 'Vincular facultad existente' },
+    { valor: 'SIN', etiqueta: 'Sin facultad por ahora' },
+  ];
+  modoFacultad = signal<ModoFacultad>('CREAR');
+  facultadNueva = { nombre: '', codigo: '', idInstitucion: '' };
+  idFacultadExistente = '';
   isLoading = signal<boolean>(true);
   isSubmitting = signal<boolean>(false);
   readonly mostrarCargaMasiva = signal<boolean>(false);
@@ -520,7 +605,21 @@ export class AdminDecanosComponent implements OnInit {
   ngOnInit(): void {
     this.cargarTiposIdentificacion();
     this.cargarFacultades();
+    this.cargarInstituciones();
     this.cargarDecanos();
+  }
+
+  cargarInstituciones(): void {
+    this.adminService.getInstituciones().subscribe({
+      next: (res) => this.preseleccionarInstitucion(res.datos ?? []),
+      error: (err) => this.toast.warning(getApiErrorMessage(err)),
+    });
+  }
+
+  private preseleccionarInstitucion(lista: InstitucionItem[]): void {
+    if (lista.length === 1 && !this.facultadNueva.idInstitucion) {
+      this.facultadNueva.idInstitucion = lista[0].id;
+    }
   }
 
   cargarFacultades(): void {
@@ -611,6 +710,10 @@ export class AdminDecanosComponent implements OnInit {
       estado: 'ACTIVO',
       password: '',
     };
+    this.modoFacultad.set('CREAR');
+    this.facultadNueva = { nombre: '', codigo: '', idInstitucion: '' };
+    this.idFacultadExistente = '';
+    this.preseleccionarInstitucion(this.instituciones());
     this.vistaActual.set('REGISTRO');
   }
 
@@ -622,6 +725,68 @@ export class AdminDecanosComponent implements OnInit {
 
   volverALista(): void {
     this.vistaActual.set('LISTA');
+  }
+
+  /** Mensaje del nombre de facultad nueva; vacío si es válido o aún no se escribió. */
+  errorNombreFacultad(): string {
+    const nombre = this.facultadNueva.nombre.trim();
+    if (!nombre) {
+      return '';
+    }
+    return nombre.length < NOMBRE_FACULTAD_MIN || nombre.length > NOMBRE_FACULTAD_MAX
+      ? 'El nombre de la facultad debe tener entre 3 y 50 caracteres.'
+      : '';
+  }
+
+  /** Primer problema de la sección Facultad según el modo elegido; null si es válida. */
+  errorFacultad(): string | null {
+    switch (this.modoFacultad()) {
+      case 'CREAR': {
+        const nombre = this.facultadNueva.nombre.trim();
+        if (nombre.length < NOMBRE_FACULTAD_MIN || nombre.length > NOMBRE_FACULTAD_MAX) {
+          return 'El nombre de la facultad es obligatorio y debe tener entre 3 y 50 caracteres.';
+        }
+        return this.facultadNueva.idInstitucion ? null : 'Seleccione la institución de la facultad.';
+      }
+      case 'VINCULAR':
+        return this.idFacultadExistente ? null : 'Seleccione la facultad existente.';
+      default:
+        return null;
+    }
+  }
+
+  /** Habilita Guardar solo cuando datos personales, acceso y facultad son válidos. */
+  formularioValido(): boolean {
+    const f = this.formData;
+    return (
+      !!f.tipoIdentificacionId &&
+      parseIdentificationNumber(f.numeroIdentificacion).valid &&
+      !!(f.primerNombre || '').trim() &&
+      !!(f.primerApellido || '').trim() &&
+      validateInstitutionalEmail(f.correo).valid &&
+      !!(f.password || '').trim() &&
+      this.errorFacultad() === null
+    );
+  }
+
+  private facultadParaPayload(): { idFacultad: string | null; facultadNueva: { nombre: string; codigo?: string; idInstitucion: string } | null } {
+    switch (this.modoFacultad()) {
+      case 'CREAR': {
+        const codigo = this.facultadNueva.codigo.trim();
+        return {
+          idFacultad: null,
+          facultadNueva: {
+            nombre: this.facultadNueva.nombre.trim(),
+            ...(codigo ? { codigo } : {}),
+            idInstitucion: this.facultadNueva.idInstitucion,
+          },
+        };
+      }
+      case 'VINCULAR':
+        return { idFacultad: this.idFacultadExistente, facultadNueva: null };
+      default:
+        return { idFacultad: null, facultadNueva: null };
+    }
   }
 
   guardarDecano(): void {
@@ -662,8 +827,11 @@ export class AdminDecanosComponent implements OnInit {
       return;
     }
 
-    this.formData.idFacultad = null;
-    this.formData.facultad = 'Sin Facultad Asignada';
+    const errorFacultad = this.errorFacultad();
+    if (errorFacultad) {
+      this.toast.warning(errorFacultad);
+      return;
+    }
 
     this.formData.nombres = [pn, (this.formData.segundoNombre || '').trim()].filter(Boolean).join(' ');
     this.formData.apellidos = [pa, (this.formData.segundoApellido || '').trim()].filter(Boolean).join(' ');
@@ -677,7 +845,7 @@ export class AdminDecanosComponent implements OnInit {
       segundoApellido: (this.formData.segundoApellido || '').trim(),
       correo: this.formData.correo.trim(),
       password: pwd,
-      idFacultad: null,
+      ...this.facultadParaPayload(),
     };
 
     this.isSubmitting.set(true);

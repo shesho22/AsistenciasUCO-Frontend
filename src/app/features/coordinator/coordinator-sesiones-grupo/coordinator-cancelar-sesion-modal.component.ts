@@ -7,14 +7,14 @@ import { ModalComponent } from '../../../shared/components/modal/modal.component
  * motivo del catálogo y una observación opcional (≤ 250). El error del backend se muestra tal cual.
  */
 @Component({
-    selector: 'app-coordinator-cancelar-sesion-modal',
-    changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [ModalComponent],
-    template: `
-    <app-modal [isOpen]="isOpen()" [title]="'Cancelar sesión ' + nombreSesion()" (closed)="closed.emit()">
+  selector: 'app-coordinator-cancelar-sesion-modal',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ModalComponent],
+  template: `
+    <app-modal [isOpen]="isOpen()" [title]="tituloVisible()" (closed)="closed.emit()">
       <div class="space-y-4" data-testid="cancelar-sesion-coordinador">
         <p class="text-xs text-warm-600">
-          Solo se pueden cancelar sesiones creadas manualmente por el docente. Se notificará a los estudiantes del grupo.
+          {{ nota() ?? notaCancelacion }}
         </p>
 
         <label class="flex flex-col gap-1 text-xs font-semibold text-warm-700">
@@ -66,17 +66,25 @@ import { ModalComponent } from '../../../shared/components/modal/modal.component
           (click)="confirmar()"
           class="min-h-[44px] text-xs px-4 rounded-xl font-bold text-white bg-danger-700 hover:bg-danger-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
-          {{ enviando() ? 'Cancelando…' : 'Confirmar cancelación' }}
+          {{ enviando() ? textoEnviando() : textoConfirmar() }}
         </button>
       </div>
     </app-modal>
-  `
+  `,
 })
 export class CoordinatorCancelarSesionModalComponent {
   readonly max = OBSERVACION_CANCELACION_MAX;
 
   readonly isOpen = input<boolean>(false);
   readonly nombreSesion = input<string>('');
+  /** DEC-065 (2): permite reutilizar el diálogo para rechazar una solicitud (título, nota y textos del botón). */
+  readonly titulo = input<string | null>(null);
+  readonly nota = input<string | null>(null);
+  readonly textoConfirmar = input<string>('Confirmar cancelación');
+  readonly textoEnviando = input<string>('Cancelando…');
+  protected readonly notaCancelacion =
+    'Solo se pueden cancelar sesiones creadas manualmente por el docente. Se notificará a los estudiantes del grupo.';
+  protected readonly tituloVisible = computed(() => this.titulo() ?? 'Cancelar sesión ' + this.nombreSesion());
   readonly motivos = input<MotivoCancelacionCoordinador[]>([]);
   /** Error de la carga del catálogo, entregado por el backend. */
   readonly errorMotivos = input<string | null>(null);

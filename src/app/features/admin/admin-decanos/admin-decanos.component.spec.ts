@@ -1,7 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { ChangeDetectorRef } from '@angular/core';
 import { of } from 'rxjs';
+import { TestRequest } from '@angular/common/http/testing';
 import { AdminDecanosComponent } from './admin-decanos.component';
 import { AdminManagementService } from '../../../core/services/admin-management.service';
 import { ToastService } from '../../../shared/components/toast/toast.component';
@@ -66,6 +68,8 @@ describe('AdminDecanosComponent', () => {
     { id: 'fac-2', codigo: 'SAL', nombre: 'Facultad de Ciencias de la Salud', estado: 'ACTIVO' as const },
   ];
 
+  const mockInstituciones = [{ id: 'inst-1', nombre: 'Universidad Católica de Oriente' }];
+
   beforeEach(() => {
     const toastSpy = jasmine.createSpyObj('ToastService', ['success', 'error', 'info', 'warning']);
 
@@ -99,6 +103,9 @@ describe('AdminDecanosComponent', () => {
     const reqFac = http.expectOne(`${environment.apiUrl}/admin/facultades`);
     reqFac.flush({ exitoso: true, datos: mockFacultades });
 
+    const reqInst = http.expectOne(`${environment.apiUrl}/admin/instituciones`);
+    reqInst.flush({ exitoso: true, datos: mockInstituciones });
+
     const reqDec = http.expectOne(`${environment.apiUrl}/admin/decanos`);
     reqDec.flush({ exitoso: true, datos: mockDecanos });
   }
@@ -124,6 +131,8 @@ describe('AdminDecanosComponent', () => {
     const reqFac = http.expectOne(`${environment.apiUrl}/admin/facultades`);
     reqFac.error(new ProgressEvent('Network error'));
 
+    http.expectOne(`${environment.apiUrl}/admin/instituciones`).error(new ProgressEvent('Network error'));
+
     const reqDec = http.expectOne(`${environment.apiUrl}/admin/decanos`);
     reqDec.error(new ProgressEvent('Network error'));
 
@@ -131,6 +140,7 @@ describe('AdminDecanosComponent', () => {
     expect(console.warn).toHaveBeenCalledWith('Usando catálogo local de facultades.');
     // F-ADM-010: el mensaje ya no es un texto fijo; sin respuesta HTTP se usa el mensaje semántico de red.
     expect(toastService.error).toHaveBeenCalledWith('No fue posible conectar con el servidor. Verifique su conexión de red.');
+    expect(toastService.warning).toHaveBeenCalledWith('No fue posible conectar con el servidor. Verifique su conexión de red.');
     expect(component.isLoading()).toBeFalse();
   });
 
@@ -322,7 +332,8 @@ describe('AdminDecanosComponent', () => {
       component.formData.primerApellido = 'Mora';
       component.formData.correo = 'ana.mora@uco.edu.co';
       component.formData.password = '';
-      component.guardarDecano();
+      component.modoFacultad.set('SIN');
+component.guardarDecano();
       expect(toastService.warning).toHaveBeenCalledWith('La contraseña inicial de acceso es obligatoria.');
     });
 
@@ -333,7 +344,8 @@ describe('AdminDecanosComponent', () => {
       component.formData.primerApellido = 'Mora';
       component.formData.correo = 'ana.mora@uco.edu.co';
       component.formData.password = 'Pass123!';
-      component.guardarDecano();
+      component.modoFacultad.set('SIN');
+component.guardarDecano();
       // No debe advertir por longitud de 12 caracteres en cliente:
       expect(toastService.warning).not.toHaveBeenCalledWith('La contraseña inicial debe tener mínimo 12 caracteres según las políticas de Keycloak.');
       const req = http.expectOne(`${environment.apiUrl}/admin/decanos`);
@@ -375,7 +387,8 @@ describe('AdminDecanosComponent', () => {
       component.formData.correo = 'carlos.zapata@uco.edu.co';
       component.formData.password = 'ClaveSegura2026#';
 
-      component.guardarDecano();
+      component.modoFacultad.set('SIN');
+component.guardarDecano();
 
       const reqPost = http.expectOne(`${environment.apiUrl}/admin/decanos`);
       expect(reqPost.request.method).toBe('POST');
@@ -402,7 +415,8 @@ describe('AdminDecanosComponent', () => {
       component.formData.correo = 'carlos.zapata@uco.edu.co';
       component.formData.password = 'ClaveSegura2026#';
 
-      component.guardarDecano();
+      component.modoFacultad.set('SIN');
+component.guardarDecano();
       http.expectOne(`${environment.apiUrl}/admin/decanos`).flush({ exitoso: true, mensajeUsuario: 'Decano registrado exitosamente.' });
       http.expectOne(`${environment.apiUrl}/admin/decanos`).flush({ exitoso: true, datos: mockDecanos });
       http.expectOne(`${environment.apiUrl}/admin/facultades`).flush({ exitoso: true, datos: mockFacultades });
@@ -432,7 +446,8 @@ describe('AdminDecanosComponent', () => {
     component.formData.correo = 'carlos.zapata@uco.edu.co';
     component.formData.password = 'ClaveSegura2026#';
 
-    component.guardarDecano();
+    component.modoFacultad.set('SIN');
+component.guardarDecano();
     component.guardarDecano();
 
     const posts = http.match(`${environment.apiUrl}/admin/decanos`);
@@ -472,7 +487,8 @@ describe('AdminDecanosComponent', () => {
       component.formData.correo = 'carlos.zapata@uco.edu.co';
       component.formData.password = 'ClaveSegura2026#';
 
-      component.guardarDecano();
+      component.modoFacultad.set('SIN');
+component.guardarDecano();
 
       const reqPost = http.expectOne(`${environment.apiUrl}/admin/decanos`);
       reqPost.flush({ message: 'Error de servidor' }, { status: 500, statusText: 'Server Error' });
@@ -621,5 +637,200 @@ describe('AdminDecanosComponent', () => {
       fixture.detectChanges();
       expect(component.vistaActual()).toBe('REGISTRO');
     });
+  });
+  describe('DEC-065: decano y facultad en un solo formulario', () => {
+    function llenarDatosPersonales() {
+      component.formData.tipoIdentificacionId = 'tipo-1';
+      component.formData.numeroIdentificacion = '1020304050';
+      component.formData.primerNombre = 'Carlos';
+      component.formData.primerApellido = 'Zapata';
+      component.formData.correo = 'carlos.zapata@uco.edu.co';
+      component.formData.password = 'ClaveSegura2026#';
+    }
+
+    function responderExito(post: TestRequest) {
+      post.flush({ exitoso: true, mensajeUsuario: 'Decano y facultad registrados.' });
+      http.expectOne(`${environment.apiUrl}/admin/decanos`).flush({ exitoso: true, datos: mockDecanos });
+      http.expectOne(`${environment.apiUrl}/admin/facultades`).flush({ exitoso: true, datos: mockFacultades });
+    }
+
+    beforeEach(() => {
+      fixture.detectChanges();
+      satisfyInitRequests();
+      component.abrirFormularioRegistro();
+      fixture.detectChanges();
+    });
+
+    it('por defecto crea facultad nueva, preselecciona la única institución y retira el texto antiguo', () => {
+      expect(component.modoFacultad()).toBe('CREAR');
+      expect(component.facultadNueva.idInstitucion).toBe('inst-1');
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('[data-testid="facultad-crear"]')).toBeTruthy();
+      expect(el.textContent).not.toContain('La facultad se asigna posteriormente');
+    });
+
+    it('no preselecciona institución cuando hay varias y conserva la ya elegida', () => {
+      component.cargarInstituciones();
+      http.expectOne(`${environment.apiUrl}/admin/instituciones`).flush({
+        exitoso: true,
+        datos: [
+          { id: 'inst-1', nombre: 'A' },
+          { id: 'inst-2', nombre: 'B' },
+        ],
+      });
+      component.facultadNueva.idInstitucion = '';
+      component.abrirFormularioRegistro();
+      expect(component.facultadNueva.idInstitucion).toBe('');
+      component.facultadNueva.idInstitucion = 'inst-2';
+      component['preseleccionarInstitucion']([{ id: 'inst-1', nombre: 'A' }]);
+      expect(component.facultadNueva.idInstitucion).toBe('inst-2');
+    });
+
+    it('cada modo muestra su sección', () => {
+      const el = fixture.nativeElement as HTMLElement;
+      component.modoFacultad.set('VINCULAR');
+      fixture.detectChanges();
+      expect(el.querySelector('[data-testid="facultad-vincular"]')).toBeTruthy();
+      expect(el.querySelector('[data-testid="facultad-crear"]')).toBeNull();
+      component.modoFacultad.set('SIN');
+      fixture.detectChanges();
+      expect(el.querySelector('[data-testid="facultad-sin"]')).toBeTruthy();
+    });
+
+    it('errorNombreFacultad solo avisa con texto escrito fuera de 3 a 50 caracteres', () => {
+      component.facultadNueva.nombre = '';
+      expect(component.errorNombreFacultad()).toBe('');
+      component.facultadNueva.nombre = 'ab';
+      expect(component.errorNombreFacultad()).toContain('entre 3 y 50');
+      component.facultadNueva.nombre = 'x'.repeat(51);
+      expect(component.errorNombreFacultad()).toContain('entre 3 y 50');
+      component.facultadNueva.nombre = 'Facultad de Derecho';
+      expect(component.errorNombreFacultad()).toBe('');
+    });
+
+    it('errorFacultad valida cada modo', () => {
+      component.facultadNueva.nombre = '';
+      expect(component.errorFacultad()).toContain('obligatorio');
+      component.facultadNueva.nombre = 'x'.repeat(51);
+      expect(component.errorFacultad()).toContain('obligatorio');
+      component.facultadNueva.nombre = 'Derecho';
+      component.facultadNueva.idInstitucion = '';
+      expect(component.errorFacultad()).toBe('Seleccione la institución de la facultad.');
+      component.facultadNueva.idInstitucion = 'inst-1';
+      expect(component.errorFacultad()).toBeNull();
+      component.modoFacultad.set('VINCULAR');
+      expect(component.errorFacultad()).toBe('Seleccione la facultad existente.');
+      component.idFacultadExistente = 'fac-1';
+      expect(component.errorFacultad()).toBeNull();
+      component.modoFacultad.set('SIN');
+      expect(component.errorFacultad()).toBeNull();
+    });
+
+    it('Guardar queda deshabilitado mientras el formulario sea inválido o haya una petición en curso', () => {
+      const boton = () => fixture.nativeElement.querySelector('button[type="submit"]') as HTMLButtonElement;
+      expect(component.formularioValido()).toBeFalse();
+      fixture.detectChanges();
+      expect(boton().disabled).toBeTrue();
+
+      llenarDatosPersonales();
+      component.facultadNueva.nombre = 'Facultad de Derecho';
+      expect(component.formularioValido()).toBeTrue();
+      fixture.componentRef.injector.get(ChangeDetectorRef).markForCheck();
+      fixture.detectChanges();
+      expect(boton().disabled).toBeFalse();
+
+      component.isSubmitting.set(true);
+      fixture.detectChanges();
+      expect(boton().disabled).toBeTrue();
+    });
+
+    it('formularioValido exige cada dato personal', () => {
+      llenarDatosPersonales();
+      component.modoFacultad.set('SIN');
+      expect(component.formularioValido()).toBeTrue();
+      const rotos: Array<() => void> = [
+        () => (component.formData.tipoIdentificacionId = ''),
+        () => (component.formData.numeroIdentificacion = 'abc'),
+        () => (component.formData.primerNombre = ' '),
+        () => (component.formData.primerApellido = ''),
+        () => (component.formData.correo = 'no-es-correo'),
+        () => (component.formData.password = ''),
+      ];
+      for (const romper of rotos) {
+        llenarDatosPersonales();
+        romper();
+        expect(component.formularioValido()).toBeFalse();
+      }
+    });
+
+    it('modo CREAR envía facultadNueva con código e idFacultad nulo', () => {
+      llenarDatosPersonales();
+      component.facultadNueva = { nombre: '  Facultad de Derecho ', codigo: ' DER ', idInstitucion: 'inst-1' };
+      component.guardarDecano();
+
+      const post = http.expectOne(`${environment.apiUrl}/admin/decanos`);
+      expect(post.request.body.idFacultad).toBeNull();
+      expect(post.request.body.facultadNueva).toEqual({ nombre: 'Facultad de Derecho', codigo: 'DER', idInstitucion: 'inst-1' });
+      responderExito(post);
+      expect(toastService.success).toHaveBeenCalledWith('Decano y facultad registrados.');
+      expect(component.vistaActual()).toBe('LISTA');
+    });
+
+    it('modo CREAR omite el código cuando está vacío', () => {
+      llenarDatosPersonales();
+      component.facultadNueva = { nombre: 'Derecho', codigo: '  ', idInstitucion: 'inst-1' };
+      component.guardarDecano();
+      const post = http.expectOne(`${environment.apiUrl}/admin/decanos`);
+      expect(post.request.body.facultadNueva).toEqual({ nombre: 'Derecho', idInstitucion: 'inst-1' });
+      responderExito(post);
+    });
+
+    it('modo VINCULAR envía idFacultad y facultadNueva nulo', () => {
+      llenarDatosPersonales();
+      component.modoFacultad.set('VINCULAR');
+      component.idFacultadExistente = 'fac-2';
+      component.guardarDecano();
+      const post = http.expectOne(`${environment.apiUrl}/admin/decanos`);
+      expect(post.request.body.idFacultad).toBe('fac-2');
+      expect(post.request.body.facultadNueva).toBeNull();
+      responderExito(post);
+    });
+
+    it('modo SIN envía ambos nulos', () => {
+      llenarDatosPersonales();
+      component.modoFacultad.set('SIN');
+      component.guardarDecano();
+      const post = http.expectOne(`${environment.apiUrl}/admin/decanos`);
+      expect(post.request.body.idFacultad).toBeNull();
+      expect(post.request.body.facultadNueva).toBeNull();
+      responderExito(post);
+    });
+
+    it('no envía nada si la facultad es inválida y avisa el motivo', () => {
+      llenarDatosPersonales();
+      component.facultadNueva.nombre = '';
+      component.guardarDecano();
+      expect(toastService.warning).toHaveBeenCalledWith('El nombre de la facultad es obligatorio y debe tener entre 3 y 50 caracteres.');
+      http.expectNone(`${environment.apiUrl}/admin/decanos`);
+    });
+
+    for (const caso of [
+      { status: 400, message: 'El nombre de la facultad no es válido.' },
+      { status: 404, message: 'La institución indicada no existe.' },
+      { status: 409, message: 'Ya existe una facultad con ese nombre.' },
+      { status: 500, message: 'Error interno del servidor.' },
+    ]) {
+      it(`ante ${caso.status} muestra el mensaje del backend sin cerrar el formulario`, () => {
+        llenarDatosPersonales();
+        component.facultadNueva.nombre = 'Derecho';
+        component.guardarDecano();
+        http
+          .expectOne(`${environment.apiUrl}/admin/decanos`)
+          .flush({ code: 'ERR', message: caso.message, correlationId: 'c' }, { status: caso.status, statusText: 'err' });
+        expect(toastService.error).toHaveBeenCalledWith(caso.message);
+        expect(component.vistaActual()).toBe('REGISTRO');
+        expect(component.isSubmitting()).toBeFalse();
+      });
+    }
   });
 });
