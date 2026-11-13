@@ -16,11 +16,10 @@ import { CommonModule } from '@angular/common';
 let modalIdCounter = 0;
 
 @Component({
-  selector: 'app-modal',
-  standalone: true,
-  imports: [CommonModule],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
+    selector: 'app-modal',
+    imports: [CommonModule],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    template: `
     @if (isOpen()) {
       <div
         class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
@@ -70,7 +69,7 @@ let modalIdCounter = 0;
         </div>
       </div>
     }
-  `,
+  `
 })
 export class ModalComponent {
   isOpen = input<boolean>(false);

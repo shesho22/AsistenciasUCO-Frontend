@@ -43,17 +43,16 @@ import { StudentMatriculaCodigoModalComponent } from './components/modals/studen
 type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO';
 
 @Component({
-  selector: 'app-student-courses',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    CommonModule,
-    StudentCoursesListComponent,
-    StudentCourseDetailComponent,
-    StudentClaimFormComponent,
-    StudentMatriculaCodigoModalComponent,
-  ],
-  template: `
+    selector: 'app-student-courses',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [
+        CommonModule,
+        StudentCoursesListComponent,
+        StudentCourseDetailComponent,
+        StudentClaimFormComponent,
+        StudentMatriculaCodigoModalComponent,
+    ],
+    template: `
     <div class="space-y-6 animate-fade-in">
       <!-- 1. Vista: Lista Principal de Materias -->
       @if (vistaActual() === 'LISTA') {
@@ -119,7 +118,7 @@ type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO';
         (closed)="cerrarModalMatriculaGrupo()"
       />
     </div>
-  `,
+  `
 })
 export class StudentCoursesComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);

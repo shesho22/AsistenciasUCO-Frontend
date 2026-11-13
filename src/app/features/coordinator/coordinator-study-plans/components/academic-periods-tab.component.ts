@@ -9,11 +9,10 @@ import { FormFieldComponent } from '../../../../shared/components/form-field/for
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 
 @Component({
-  selector: 'app-academic-periods-tab',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, CardComponent, BadgeComponent, ButtonComponent, FormFieldComponent, PaginationComponent],
-  template: `
+    selector: 'app-academic-periods-tab',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CommonModule, FormsModule, CardComponent, BadgeComponent, ButtonComponent, FormFieldComponent, PaginationComponent],
+    template: `
     <div class="space-y-6">
       <div class="flex items-center justify-between bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm">
         <div>
@@ -171,7 +170,7 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
         </div>
       }
     </div>
-  `,
+  `
 })
 export class AcademicPeriodsTabComponent {
   periodos = input.required<PeriodoAcademicoItem[]>();

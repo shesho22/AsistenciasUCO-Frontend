@@ -9,17 +9,16 @@ interface MarcaDisplay {
 }
 
 @Component({
-  selector: 'app-inasistencia-marca-badge',
-  standalone: true,
-  imports: [CommonModule, BadgeComponent],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
+    selector: 'app-inasistencia-marca-badge',
+    imports: [CommonModule, BadgeComponent],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    template: `
     @if (display(); as d) {
       <app-badge [variant]="d.variant" [dot]="true">
         {{ d.texto }}
       </app-badge>
     }
-  `,
+  `
 })
 export class InasistenciaMarcaBadgeComponent {
   marca = input<MarcaInasistencia | null>(null);

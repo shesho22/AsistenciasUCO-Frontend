@@ -31,11 +31,10 @@ export interface UserPickerItem {
 }
 
 @Component({
-  selector: 'app-user-picker-modal',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, ButtonComponent, BadgeComponent],
-  template: `
+    selector: 'app-user-picker-modal',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CommonModule, FormsModule, ButtonComponent, BadgeComponent],
+    template: `
     @if (isOpen()) {
       <div
         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-warm-900/60 backdrop-blur-xs animate-fade-in"
@@ -191,7 +190,7 @@ export interface UserPickerItem {
         </div>
       </div>
     }
-  `,
+  `
 })
 export class UserPickerModalComponent implements OnInit {
   private teacherService = inject(TeacherService);

@@ -7,13 +7,12 @@ import { User } from '../../core/models/user.model';
 import { signal } from '@angular/core';
 
 @Component({
-  standalone: true,
-  imports: [HasRoleDirective],
-  template: `
+    imports: [HasRoleDirective],
+    template: `
     <div *appHasRole="'DOCENTE'" id="docente-single">Docente Contenido</div>
     <div *appHasRole="['ADMINISTRADOR', 'DECANO']" id="multi-role">Admin o Decano</div>
     <div *appHasRole="'ESTUDIANTE'" id="estudiante-single">Estudiante Contenido</div>
-  `,
+  `
 })
 class TestHostComponent {}
 
@@ -36,7 +35,7 @@ describe('HasRoleDirective', () => {
     fixture.detectChanges();
   });
 
-  it('no muestra ningún elemento si no hay usuario autenticado', () => {
+  it('no muestra ningÃºn elemento si no hay usuario autenticado', () => {
     expect(fixture.debugElement.query(By.css('#docente-single'))).toBeNull();
     expect(fixture.debugElement.query(By.css('#multi-role'))).toBeNull();
     expect(fixture.debugElement.query(By.css('#estudiante-single'))).toBeNull();
@@ -59,14 +58,14 @@ describe('HasRoleDirective', () => {
     expect(fixture.debugElement.query(By.css('#estudiante-single'))).toBeNull();
   });
 
-  it('muestra elemento si el rol del usuario está dentro de la lista de roles permitidos', () => {
+  it('muestra elemento si el rol del usuario estÃ¡ dentro de la lista de roles permitidos', () => {
     mockCurrentUser.set({
       id: '456',
       name: 'Decano Y',
       email: 'decano@uco.edu.co',
       role: 'DECANO',
       institutionName: 'UCO',
-      department: 'Ingeniería',
+      department: 'IngenierÃ­a',
       status: 'active',
     });
     fixture.detectChanges();

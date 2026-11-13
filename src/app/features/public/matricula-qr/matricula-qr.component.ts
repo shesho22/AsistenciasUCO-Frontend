@@ -22,11 +22,10 @@ const PIN_SEIS_DIGITOS = /^[0-9]{6}$/;
  * por red fuera del campus y el codigo vencido. Con cuenta existente se inicia sesion y se matricula con el PIN.
  */
 @Component({
-  selector: 'app-matricula-qr',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, RouterLink],
-  template: `
+    selector: 'app-matricula-qr',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CommonModule, FormsModule, RouterLink],
+    template: `
     <section class="w-full max-w-md mx-auto bg-white border border-warm-200 rounded-2xl shadow-warm-sm p-6 space-y-5">
       <h1 class="text-lg font-bold text-warm-900 text-center">Matrícula en el grupo</h1>
 
@@ -146,7 +145,7 @@ const PIN_SEIS_DIGITOS = /^[0-9]{6}$/;
         }
       }
     </section>
-  `,
+  `
 })
 export class MatriculaQrComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);

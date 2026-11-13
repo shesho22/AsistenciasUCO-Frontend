@@ -22,12 +22,11 @@ interface NavItem {
 }
 
 @Component({
-  selector: 'app-dashboard-layout',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '(document:keydown.escape)': 'cerrarMenuConEscape()' },
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, AvatarComponent, BadgeComponent, ToastComponent, IconComponent],
-  template: `
+    selector: 'app-dashboard-layout',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    host: { '(document:keydown.escape)': 'cerrarMenuConEscape()' },
+    imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, AvatarComponent, BadgeComponent, ToastComponent, IconComponent],
+    template: `
     <app-toast
       [visible]="toastState().visible"
       [message]="toastState().message"
@@ -215,7 +214,7 @@ interface NavItem {
         </div>
       </main>
     </div>
-  `,
+  `
 })
 export class DashboardLayoutComponent {
   private authService = inject(AuthService);

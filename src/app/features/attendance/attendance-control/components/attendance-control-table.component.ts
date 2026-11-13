@@ -12,14 +12,13 @@ import {
 } from '../../../../core/utils/session-attendance-window.util';
 
 @Component({
-  selector: 'app-attendance-control-table',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, CardComponent, ButtonComponent, AvatarComponent],
-  host: {
-    class: 'block w-full'
-  },
-  template: `
+    selector: 'app-attendance-control-table',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CommonModule, FormsModule, CardComponent, ButtonComponent, AvatarComponent],
+    host: {
+        class: 'block w-full'
+    },
+    template: `
     <div class="space-y-4">
       @if (windowMessage()) {
         <div
@@ -262,7 +261,7 @@ import {
         </div>
       }
     </div>
-  `,
+  `
 })
 export class AttendanceControlTableComponent {
   students = input<StudentAttendance[]>([]);

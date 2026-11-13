@@ -13,12 +13,11 @@ import { AssociateSubjectDialogComponent } from '../components/associate-subject
 const MAX_SEMESTRES = 10;
 
 @Component({
-  selector: 'app-coordinator-study-plan-mesh-page',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'block w-full' },
-  imports: [CommonModule, StudyPlanMeshComponent, AssociateSubjectDialogComponent, ConfirmDialogComponent],
-  template: `
+    selector: 'app-coordinator-study-plan-mesh-page',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    host: { class: 'block w-full' },
+    imports: [CommonModule, StudyPlanMeshComponent, AssociateSubjectDialogComponent, ConfirmDialogComponent],
+    template: `
     <div class="space-y-6 animate-fade-in">
       @if (aviso(); as mensaje) {
         <div
@@ -69,7 +68,7 @@ const MAX_SEMESTRES = 10;
         </div>
       }
     </div>
-  `,
+  `
 })
 export class CoordinatorStudyPlanMeshPageComponent implements OnInit {
   private coordService = inject(CoordinatorManagementService);

@@ -8,12 +8,11 @@ import { getApiErrorMessage } from '../../../../core/api/errors/api-error.util';
 import { StudyPlanFormComponent } from '../components/study-plan-form.component';
 
 @Component({
-  selector: 'app-coordinator-study-plan-form-page',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'block w-full' },
-  imports: [CommonModule, StudyPlanFormComponent],
-  template: `
+    selector: 'app-coordinator-study-plan-form-page',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    host: { class: 'block w-full' },
+    imports: [CommonModule, StudyPlanFormComponent],
+    template: `
     <div class="space-y-6 animate-fade-in">
       @if (modo() === 'CREAR' || selectedPlan()) {
         <app-study-plan-form
@@ -28,7 +27,7 @@ import { StudyPlanFormComponent } from '../components/study-plan-form.component'
         </div>
       }
     </div>
-  `,
+  `
 })
 export class CoordinatorStudyPlanFormPageComponent implements OnInit {
   private coordService = inject(CoordinatorManagementService);

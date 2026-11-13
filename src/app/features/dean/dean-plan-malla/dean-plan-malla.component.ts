@@ -12,12 +12,11 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 
 @Component({
-  selector: 'app-dean-plan-malla',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'block w-full' },
-  imports: [CommonModule, FormsModule, BadgeComponent, PaginationComponent],
-  template: `
+    selector: 'app-dean-plan-malla',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    host: { class: 'block w-full' },
+    imports: [CommonModule, FormsModule, BadgeComponent, PaginationComponent],
+    template: `
     <div class="space-y-6 animate-fade-in">
       <!-- Barra de Retorno -->
       <div class="flex items-center justify-between bg-white p-4 rounded-2xl border border-warm-200 shadow-warm-sm">
@@ -167,7 +166,7 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
         }
       }
     </div>
-  `,
+  `
 })
 export class DeanPlanMallaComponent implements OnInit {
   private deanService = inject(DeanFacultadService);

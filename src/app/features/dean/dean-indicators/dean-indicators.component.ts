@@ -7,11 +7,10 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 
 @Component({
-  selector: 'app-dean-indicators',
-  standalone: true,
-  imports: [KpiCardComponent, DecimalPipe, PaginationComponent],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
+    selector: 'app-dean-indicators',
+    imports: [KpiCardComponent, DecimalPipe, PaginationComponent],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    template: `
     <section class="space-y-6">
       <header>
         @if (!embebido()) {
@@ -106,7 +105,7 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
         />
       </div>
     </section>
-  `,
+  `
 })
 export class DeanIndicatorsComponent implements OnInit {
   /** CULM-001: dentro de una pestaña, el título lo pone el cascarón. */

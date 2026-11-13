@@ -15,11 +15,10 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 
 @Component({
-  selector: 'app-parametro-edicion-modal',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule],
-  template: `
+    selector: 'app-parametro-edicion-modal',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CommonModule, FormsModule],
+    template: `
     @if (isOpen() && parametro()) {
       <div
         class="fixed inset-0 z-50 overflow-y-auto bg-warm-900/60 backdrop-blur-xs flex items-center justify-center p-4"
@@ -196,7 +195,7 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
         </div>
       </div>
     }
-  `,
+  `
 })
 export class ParametroEdicionModalComponent {
   private adminService = inject(AdminManagementService);

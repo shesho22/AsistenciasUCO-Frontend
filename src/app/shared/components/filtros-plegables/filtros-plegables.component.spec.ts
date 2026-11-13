@@ -3,15 +3,14 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FiltrosPlegablesComponent } from './filtros-plegables.component';
 
 @Component({
-  standalone: true,
-  imports: [FiltrosPlegablesComponent],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
+    imports: [FiltrosPlegablesComponent],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    template: `
     <app-filtros-plegables [activos]="activos()" [(abierto)]="abierto" etiqueta="Filtros">
       <input buscar data-testid="buscar" />
       <button data-testid="filtro-uno">Uno</button>
     </app-filtros-plegables>
-  `,
+  `
 })
 class HostComponent {
   readonly activos = signal(0);

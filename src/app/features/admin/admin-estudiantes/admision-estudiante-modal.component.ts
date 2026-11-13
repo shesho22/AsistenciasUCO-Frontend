@@ -56,11 +56,10 @@ const CAMPOS_FORMULARIO = new Set([
  * Maneja asignación de credenciales (ADS_006), validación de unicidad (ADS_002, ADS_004) y advertencia de estado de cuenta.
  */
 @Component({
-  selector: 'app-admision-estudiante-modal',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, ModalComponent],
-  template: `
+    selector: 'app-admision-estudiante-modal',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CommonModule, FormsModule, ModalComponent],
+    template: `
     <app-modal [isOpen]="isOpen()" title="Admitir nuevo estudiante" (closed)="onCancelar()">
       <div class="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
         <p class="text-xs text-warm-600">
@@ -303,7 +302,7 @@ const CAMPOS_FORMULARIO = new Set([
         </button>
       </div>
     </app-modal>
-  `,
+  `
 })
 export class AdmisionEstudianteModalComponent implements OnInit {
   private readonly catalog = inject(CatalogService);

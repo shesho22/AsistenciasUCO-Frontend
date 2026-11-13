@@ -9,12 +9,11 @@ import { ConsolidadoAsistenciaComponent } from '../coordinator-consolidado/conso
  * las alertas tempranas por estudiante. Solo reorganiza componentes existentes; no cambia contratos ni reglas.
  */
 @Component({
-  selector: 'app-coordinator-asistencia',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'block w-full' },
-  imports: [CoordinatorIndicatorsComponent, ConsolidadoAsistenciaComponent],
-  template: `
+    selector: 'app-coordinator-asistencia',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    host: { class: 'block w-full' },
+    imports: [CoordinatorIndicatorsComponent, ConsolidadoAsistenciaComponent],
+    template: `
     <div class="space-y-5 min-w-0">
       <div>
         <h1 class="font-serif font-bold text-2xl sm:text-3xl text-warm-900 tracking-tight">Asistencia del programa</h1>
@@ -42,7 +41,7 @@ import { ConsolidadoAsistenciaComponent } from '../coordinator-consolidado/conso
         }
       </details>
     </div>
-  `,
+  `
 })
 export class CoordinatorAsistenciaComponent {
   readonly alertasAbiertas = signal(false);

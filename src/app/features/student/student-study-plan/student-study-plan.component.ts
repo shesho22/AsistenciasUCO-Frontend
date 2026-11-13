@@ -22,11 +22,10 @@ const TIPOS_ASIGNATURA: Record<string, string> = {
  * "Cursando" los entrega el backend, que resuelve al estudiante desde su sesión.
  */
 @Component({
-  selector: 'app-student-study-plan',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CardComponent, BadgeComponent, ButtonComponent],
-  template: `
+    selector: 'app-student-study-plan',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CardComponent, BadgeComponent, ButtonComponent],
+    template: `
     <div class="space-y-6 animate-fade-in">
       <div>
         <h1 class="font-serif text-2xl sm:text-3xl font-bold text-warm-900">Plan de estudios</h1>
@@ -143,7 +142,7 @@ const TIPOS_ASIGNATURA: Record<string, string> = {
         }
       }
     </div>
-  `,
+  `
 })
 export class StudentStudyPlanComponent implements OnInit {
   private readonly planService = inject(PlanEstudioEstudianteService);

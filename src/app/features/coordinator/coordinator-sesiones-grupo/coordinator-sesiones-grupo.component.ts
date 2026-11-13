@@ -42,12 +42,11 @@ export interface GrupoSesionesRef {
  * coordinador (CULM-001); el listado de grupos (HU064) lo da el consolidado. El backend limita los datos al programa.
  */
 @Component({
-  selector: 'app-coordinator-sesiones-grupo',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'block w-full' },
-  imports: [CommonModule, FormsModule, BadgeComponent, PaginationComponent, SesionEstadoBadgeComponent, ErrorCargaComponent, CoordinatorCancelarSesionModalComponent],
-  template: `
+    selector: 'app-coordinator-sesiones-grupo',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    host: { class: 'block w-full' },
+    imports: [CommonModule, FormsModule, BadgeComponent, PaginationComponent, SesionEstadoBadgeComponent, ErrorCargaComponent, CoordinatorCancelarSesionModalComponent],
+    template: `
     <div class="space-y-4">
       <!-- HU060: sesiones del grupo con registro de asistencia -->
       @if (grupoSeleccionado(); as grupoActual) {
@@ -199,7 +198,7 @@ export interface GrupoSesionesRef {
         (closed)="cerrarCancelar()"
       />
     </div>
-  `,
+  `
 })
 export class CoordinatorSesionesGrupoComponent implements OnInit, OnDestroy {
   /**

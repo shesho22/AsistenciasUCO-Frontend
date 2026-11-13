@@ -12,11 +12,10 @@ import { FranjasEditorComponent } from '../../../../shared/components/franjas-ed
  * reciente. Los cambios posteriores del horario los hace el coordinador; el docente los solicita (F6).
  */
 @Component({
-  selector: 'app-teacher-grupo-form',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, FranjasEditorComponent],
-  template: `
+    selector: 'app-teacher-grupo-form',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, FranjasEditorComponent],
+    template: `
     <form class="bg-white p-6 rounded-2xl border border-warm-200 shadow-warm-sm space-y-5 max-w-3xl" (ngSubmit)="enviar()">
       <div>
         <h2 class="font-serif font-bold text-xl text-warm-900">Nuevo grupo</h2>
@@ -66,7 +65,7 @@ import { FranjasEditorComponent } from '../../../../shared/components/franjas-ed
         </button>
       </div>
     </form>
-  `,
+  `
 })
 export class TeacherGrupoFormComponent {
   readonly oferta = input<OfertaCreacionGruposDocenteApiDto | null>(null);

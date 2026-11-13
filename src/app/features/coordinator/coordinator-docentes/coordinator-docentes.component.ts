@@ -35,24 +35,23 @@ const DEBOUNCE_MS = 300;
 const MIN_CARACTERES_CANDIDATOS = 3;
 
 @Component({
-  selector: 'app-coordinator-docentes',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    CommonModule,
-    FormsModule,
-    CardComponent,
-    BadgeComponent,
-    ButtonComponent,
-    PaginationComponent,
-    AccountAccessStatusComponent,
-    CoordinatorDocenteFormModalComponent,
-    CoordinatorDocenteEditModalComponent,
-    CoordinatorDocenteFichaModalComponent,
-    CargaMasivaUsuariosComponent,
-    ErrorCargaComponent,
-  ],
-  template: `
+    selector: 'app-coordinator-docentes',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [
+        CommonModule,
+        FormsModule,
+        CardComponent,
+        BadgeComponent,
+        ButtonComponent,
+        PaginationComponent,
+        AccountAccessStatusComponent,
+        CoordinatorDocenteFormModalComponent,
+        CoordinatorDocenteEditModalComponent,
+        CoordinatorDocenteFichaModalComponent,
+        CargaMasivaUsuariosComponent,
+        ErrorCargaComponent,
+    ],
+    template: `
     <div class="space-y-6 animate-fade-in">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
         @if (!embebido()) {
@@ -270,7 +269,7 @@ const MIN_CARACTERES_CANDIDATOS = 3;
         />
       }
     </div>
-  `,
+  `
 })
 export class CoordinatorDocentesComponent implements OnInit {
   /** CULM-001: dentro de una pestaña, el título lo pone el cascarón. */

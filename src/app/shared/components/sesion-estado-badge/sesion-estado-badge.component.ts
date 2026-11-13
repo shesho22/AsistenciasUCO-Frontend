@@ -12,11 +12,10 @@ import {
  * backend (`estado`, `cancelacion`); una sesión programada (o sin estado) no pinta nada.
  */
 @Component({
-  selector: 'app-sesion-estado-badge',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [BadgeComponent],
-  template: `
+    selector: 'app-sesion-estado-badge',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [BadgeComponent],
+    template: `
     @if (cancelada()) {
       <span class="inline-flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0">
         <span data-testid="sesion-cancelada-badge">
@@ -27,7 +26,7 @@ import {
         }
       </span>
     }
-  `,
+  `
 })
 export class SesionEstadoBadgeComponent {
   readonly estado = input<EstadoSesion | null | undefined>(undefined);

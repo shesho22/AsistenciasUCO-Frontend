@@ -7,11 +7,10 @@ import { ButtonComponent } from '../button/button.component';
  * reintentar puede cambiar el resultado: no ante un identificador inválido, una autorización denegada ni una funcionalidad no implementada (501).
  */
 @Component({
-  selector: 'app-error-carga',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ButtonComponent],
-  template: `
+    selector: 'app-error-carga',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [ButtonComponent],
+    template: `
     <div class="bg-danger-50 border border-danger-200 rounded-2xl p-6 text-center space-y-3" role="alert" data-testid="error-carga">
       <p class="text-sm font-bold text-danger-800">{{ error().titulo }}</p>
       <p class="text-xs text-danger-900">{{ error().mensaje }}</p>
@@ -19,7 +18,7 @@ import { ButtonComponent } from '../button/button.component';
         <app-button variant="secondary" size="sm" (clicked)="reintentar.emit()">Reintentar</app-button>
       }
     </div>
-  `,
+  `
 })
 export class ErrorCargaComponent {
   readonly error = input.required<LoadErrorState>();

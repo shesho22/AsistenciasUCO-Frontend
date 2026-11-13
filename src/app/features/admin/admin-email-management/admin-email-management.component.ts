@@ -92,11 +92,10 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
 };
 
 @Component({
-  selector: 'app-admin-email-management',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, IconComponent, PaginationComponent],
-  template: `
+    selector: 'app-admin-email-management',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CommonModule, FormsModule, IconComponent, PaginationComponent],
+    template: `
     <div class="space-y-6">
       <!-- ================= HEADER & BREADCRUMB ================= -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -792,7 +791,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
         }
       }
     </div>
-  `,
+  `
 })
 export class AdminEmailManagementComponent implements OnInit {
   private readonly notificationService = inject(AdminEmailNotificationService);

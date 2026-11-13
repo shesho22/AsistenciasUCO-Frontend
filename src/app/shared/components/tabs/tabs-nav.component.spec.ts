@@ -14,13 +14,12 @@ const TABS: readonly TabItem[] = [
 class HijaFalsaComponent {}
 
 @Component({
-  selector: 'app-cascaron-falso',
-  standalone: true,
-  imports: [TabsNavComponent, RouterOutlet],
-  template: `
+    selector: 'app-cascaron-falso',
+    imports: [TabsNavComponent, RouterOutlet],
+    template: `
     <app-tabs-nav [tabs]="tabs" [activa]="activa()" [base]="['/x']" etiqueta="Secciones de prueba" idPanel="panel-x" />
     <div role="tabpanel" id="panel-x"><router-outlet /></div>
-  `,
+  `
 })
 class CascaronFalsoComponent {
   readonly tabs = TABS;
@@ -29,10 +28,9 @@ class CascaronFalsoComponent {
 }
 
 @Component({
-  selector: 'app-aislado',
-  standalone: true,
-  imports: [TabsNavComponent],
-  template: `<app-tabs-nav [tabs]="tabs" [activa]="activa()" [base]="['/aislado']" />`,
+    selector: 'app-aislado',
+    imports: [TabsNavComponent],
+    template: `<app-tabs-nav [tabs]="tabs" [activa]="activa()" [base]="['/aislado']" />`
 })
 class AisladoComponent {
   readonly tabs = TABS;

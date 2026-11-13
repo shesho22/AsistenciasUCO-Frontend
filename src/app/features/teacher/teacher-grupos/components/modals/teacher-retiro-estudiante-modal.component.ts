@@ -23,11 +23,10 @@ const MOTIVO_MAXIMO = 500;
  * muestran en el propio modal.
  */
 @Component({
-  selector: 'app-teacher-retiro-estudiante-modal',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, FormFieldComponent, ButtonComponent],
-  template: `
+    selector: 'app-teacher-retiro-estudiante-modal',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CommonModule, FormsModule, FormFieldComponent, ButtonComponent],
+    template: `
     @if (isOpen() && estudiante()) {
       <div class="fixed inset-0 bg-warm-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
         <div class="bg-white rounded-2xl border border-warm-200 shadow-warm-xl max-w-md w-full overflow-hidden animate-scale-up">
@@ -80,7 +79,7 @@ const MOTIVO_MAXIMO = 500;
         </div>
       </div>
     }
-  `,
+  `
 })
 export class TeacherRetiroEstudianteModalComponent {
   private readonly groupService = inject(GroupService);

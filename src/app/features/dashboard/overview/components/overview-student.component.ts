@@ -10,14 +10,13 @@ import { MateriaEstudianteItem } from '../../../../core/models/role-management.m
 import { ProximaClaseInfo } from '../utils/proxima-clase.util';
 
 @Component({
-  selector: 'app-overview-student',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RangoHorarioPipe, CommonModule, RouterLink, CardComponent, BadgeComponent, ButtonComponent, AttendanceStatusBadgeComponent],
-  host: {
-    class: 'block w-full',
-  },
-  template: `
+    selector: 'app-overview-student',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [RangoHorarioPipe, CommonModule, RouterLink, CardComponent, BadgeComponent, ButtonComponent, AttendanceStatusBadgeComponent],
+    host: {
+        class: 'block w-full',
+    },
+    template: `
     <div class="space-y-6">
       <!-- KPIs Estudiante -->
       <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -219,7 +218,7 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
         </a>
       </section>
     </div>
-  `,
+  `
 })
 export class OverviewStudentComponent {
   materias = input<MateriaEstudianteItem[]>([]);

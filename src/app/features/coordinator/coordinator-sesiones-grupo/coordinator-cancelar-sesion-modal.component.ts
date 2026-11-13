@@ -7,11 +7,10 @@ import { ModalComponent } from '../../../shared/components/modal/modal.component
  * motivo del catálogo y una observación opcional (≤ 250). El error del backend se muestra tal cual.
  */
 @Component({
-  selector: 'app-coordinator-cancelar-sesion-modal',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ModalComponent],
-  template: `
+    selector: 'app-coordinator-cancelar-sesion-modal',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [ModalComponent],
+    template: `
     <app-modal [isOpen]="isOpen()" [title]="'Cancelar sesión ' + nombreSesion()" (closed)="closed.emit()">
       <div class="space-y-4" data-testid="cancelar-sesion-coordinador">
         <p class="text-xs text-warm-600">
@@ -71,7 +70,7 @@ import { ModalComponent } from '../../../shared/components/modal/modal.component
         </button>
       </div>
     </app-modal>
-  `,
+  `
 })
 export class CoordinatorCancelarSesionModalComponent {
   readonly max = OBSERVACION_CANCELACION_MAX;

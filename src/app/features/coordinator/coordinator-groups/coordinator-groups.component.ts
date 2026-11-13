@@ -32,12 +32,11 @@ interface GrupoForm {
  * el cruce del docente con otro grupo a la misma hora (HOR_002); aquí solo se anticipan las validaciones de formato.
  */
 @Component({
-  selector: 'app-coordinator-groups',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'block w-full' },
-  imports: [CommonModule, FormsModule, FranjasEditorComponent, PaginationComponent, ErrorCargaComponent],
-  template: `
+    selector: 'app-coordinator-groups',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    host: { class: 'block w-full' },
+    imports: [CommonModule, FormsModule, FranjasEditorComponent, PaginationComponent, ErrorCargaComponent],
+    template: `
     <div class="space-y-6 animate-fade-in">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
         @if (!embebido()) {
@@ -166,7 +165,7 @@ interface GrupoForm {
         </form>
       }
     </div>
-  `,
+  `
 })
 export class CoordinatorGroupsComponent implements OnInit {
   /** CULM-001: dentro de una pestaña, el título lo pone el cascarón. */

@@ -7,14 +7,13 @@ import { ButtonComponent } from '../../../../shared/components/button/button.com
 import { CoordinadorItem } from '../../../../core/models/role-management.model';
 
 @Component({
-  selector: 'app-overview-dean',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [EmptyStateComponent, CommonModule, RouterLink, CardComponent, ButtonComponent],
-  host: {
-    class: 'block w-full',
-  },
-  template: `
+    selector: 'app-overview-dean',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [EmptyStateComponent, CommonModule, RouterLink, CardComponent, ButtonComponent],
+    host: {
+        class: 'block w-full',
+    },
+    template: `
     <div class="space-y-6">
       <!-- KPIs Decano -->
       <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -93,7 +92,7 @@ import { CoordinadorItem } from '../../../../core/models/role-management.model';
         </div>
       </section>
     </div>
-  `,
+  `
 })
 export class OverviewDeanComponent {
   coordinadores = input<CoordinadorItem[]>([]);

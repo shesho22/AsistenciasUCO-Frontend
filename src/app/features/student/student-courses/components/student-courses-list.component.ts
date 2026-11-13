@@ -38,11 +38,10 @@ interface BarraHoras {
 }
 
 @Component({
-  selector: 'app-student-courses-list',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, CardComponent, BadgeComponent, ButtonComponent, AttendanceStatusBadgeComponent, PaginationComponent],
-  template: `
+    selector: 'app-student-courses-list',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CommonModule, CardComponent, BadgeComponent, ButtonComponent, AttendanceStatusBadgeComponent, PaginationComponent],
+    template: `
     <div class="space-y-6">
       <!-- Header Bento -->
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
@@ -300,7 +299,7 @@ interface BarraHoras {
         />
       }
     </div>
-  `,
+  `
 })
 export class StudentCoursesListComponent {
   materias = input<MateriaEstudianteItem[]>([]);

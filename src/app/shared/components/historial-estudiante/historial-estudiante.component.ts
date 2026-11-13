@@ -14,11 +14,10 @@ const VARIANTE_PERMANENCIA: Record<string, BadgeVariant> = {
  * el resumen de asistencia). La usan la ficha del administrador y la del decano (limitada a su facultad).
  */
 @Component({
-  selector: 'app-historial-estudiante',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, BadgeComponent],
-  template: `
+    selector: 'app-historial-estudiante',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CommonModule, BadgeComponent],
+    template: `
     @if (ficha(); as f) {
       <div class="space-y-4">
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
@@ -95,7 +94,7 @@ const VARIANTE_PERMANENCIA: Record<string, BadgeVariant> = {
         }
       </div>
     }
-  `,
+  `
 })
 export class HistorialEstudianteComponent {
   readonly ficha = input<FichaUnificadaEstudiante | null>(null);

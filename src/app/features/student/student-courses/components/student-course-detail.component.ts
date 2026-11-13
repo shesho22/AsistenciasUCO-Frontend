@@ -27,11 +27,10 @@ import { REALTIME_EVENT_TYPE } from '../../../../core/realtime/model/realtime-ev
 import { ToastService } from '../../../../shared/components/toast/toast.component';
 
 @Component({
-  selector: 'app-student-course-detail',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [EmptyStateComponent, CommonModule, BadgeComponent, ButtonComponent, MotivosJustificacionComponent, SesionEstadoBadgeComponent, AttendanceStatusBadgeComponent, PaginationComponent, SemaforoAsistenciaComponent],
-  template: `
+    selector: 'app-student-course-detail',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [EmptyStateComponent, CommonModule, BadgeComponent, ButtonComponent, MotivosJustificacionComponent, SesionEstadoBadgeComponent, AttendanceStatusBadgeComponent, PaginationComponent, SemaforoAsistenciaComponent],
+    template: `
     @if (materia()) {
       <div class="space-y-6">
         <!-- Barra Superior de Navegación "Atrás" -->
@@ -345,7 +344,7 @@ import { ToastService } from '../../../../shared/components/toast/toast.componen
         </div>
       </div>
     }
-  `,
+  `
 })
 export class StudentCourseDetailComponent implements OnDestroy {
   private readonly realtime = inject(RealtimeService, { optional: true });

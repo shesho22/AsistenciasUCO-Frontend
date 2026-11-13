@@ -53,6 +53,8 @@ describe('CoordinatorDocentesComponent', () => {
     estaActivo: activo,
   });
 
+  // Angular 19+: toObservable() corre como effect de la vista y solo emite en la deteccion de cambios;
+  // por eso cada accion que cambia un filtro o la recarga va seguida de fixture.detectChanges() antes del tick.
   function crear(): void {
     fixture = TestBed.createComponent(CoordinatorDocentesComponent);
     component = fixture.componentInstance;
@@ -150,6 +152,7 @@ describe('CoordinatorDocentesComponent', () => {
     });
     const el = fixture.nativeElement as HTMLElement;
     (Array.from(el.querySelectorAll('button')).find((b) => /Reintentar/.test(b.textContent ?? '')) as HTMLButtonElement).click();
+    fixture.detectChanges();
     tick(300);
     fixture.detectChanges();
 
@@ -287,6 +290,7 @@ describe('CoordinatorDocentesComponent', () => {
     component.solicitarCambioEstado(fila('doc-2', 'Luisa', false));
 
     component.confirmarCambioEstado();
+    fixture.detectChanges();
     tick(300);
 
     expect(coordService.cambiarEstadoDocente).toHaveBeenCalledWith('doc-2', true);
@@ -328,6 +332,7 @@ describe('CoordinatorDocentesComponent', () => {
     coordService.getDocentesPrograma.calls.reset();
 
     component.confirmarCambioEstado();
+    fixture.detectChanges();
     tick(300);
 
     expect(toast.error).toHaveBeenCalledWith('El docente no está vinculado a este programa.');
@@ -555,12 +560,14 @@ describe('CoordinatorDocentesComponent', () => {
     coordService.getDocentesPrograma.calls.reset();
 
     (fixture.nativeElement.querySelector('[data-testid="chip-tipo-vinculacion"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
     tick(300);
     expect(component.filtroTipo()).toBe('tv-1');
     expect(component.pagina()).toBe(1);
     expect(coordService.getDocentesPrograma).toHaveBeenCalledWith(jasmine.objectContaining({ idTipoVinculacion: 'tv-1' }));
 
     component.alternarTipoVinculacion('tv-1');
+    fixture.detectChanges();
     tick(300);
     expect(component.filtroTipo()).toBe('');
     expect(coordService.getDocentesPrograma.calls.mostRecent().args[0].idTipoVinculacion).toBeUndefined();
@@ -571,6 +578,7 @@ describe('CoordinatorDocentesComponent', () => {
     tick(300);
     component.onPageChange(3);
     component.onTipoVinculacionChange('tv-1');
+    fixture.detectChanges();
     tick(300);
     expect(component.pagina()).toBe(1);
     expect(coordService.getDocentesPrograma.calls.mostRecent().args[0].idTipoVinculacion).toBe('tv-1');
@@ -583,12 +591,14 @@ describe('CoordinatorDocentesComponent', () => {
 
     component.solicitarCambioEstado(fila('doc-1', 'Roberto'));
     component.confirmarCambioEstado();
+    fixture.detectChanges();
     tick(300);
     expect(coordService.getResumenDocentes).toHaveBeenCalledTimes(2);
 
     coordService.getResumenDocentes.and.returnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
     component.solicitarCambioEstado(fila('doc-1', 'Roberto'));
     component.confirmarCambioEstado();
+    fixture.detectChanges();
     tick(300);
     expect(coordService.getResumenDocentes).toHaveBeenCalledTimes(3);
     expect(component.resumen()?.totalDocentes).toBe(3);
@@ -613,6 +623,7 @@ describe('CoordinatorDocentesComponent', () => {
     // Emitir cargaCompletada -> debe recargar directorio
     const llamadasPrevias = coordService.getDocentesPrograma.calls.count();
     component.onCargaMasivaCompletada();
+    fixture.detectChanges();
     tick(300);
     expect(coordService.getDocentesPrograma.calls.count()).toBe(llamadasPrevias + 1);
   }));

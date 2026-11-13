@@ -31,20 +31,19 @@ const PESTANAS_GRUPO: readonly PestanaGrupo[] = [
 ];
 
 @Component({
-  selector: 'app-teacher-grupo-hub',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    CommonModule,
-    ActionMenuComponent,
-    EmptyStateComponent,
-    SesionEstadoBadgeComponent,
-    TeacherGrupoSesionesComponent,
-    TeacherGrupoEstudiantesComponent,
-    TeacherGrupoReclamosComponent,
-    TeacherGrupoSabanaComponent,
-  ],
-  template: `
+    selector: 'app-teacher-grupo-hub',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [
+        CommonModule,
+        ActionMenuComponent,
+        EmptyStateComponent,
+        SesionEstadoBadgeComponent,
+        TeacherGrupoSesionesComponent,
+        TeacherGrupoEstudiantesComponent,
+        TeacherGrupoReclamosComponent,
+        TeacherGrupoSabanaComponent,
+    ],
+    template: `
     @if (selectedCourse()) {
       <div class="space-y-4">
         <!-- Barra Superior de Retorno -->
@@ -256,7 +255,7 @@ const PESTANAS_GRUPO: readonly PestanaGrupo[] = [
         }
       </div>
     }
-  `,
+  `
 })
 export class TeacherGrupoHubComponent {
   protected readonly timeZone = inject(SessionTimeZoneService);

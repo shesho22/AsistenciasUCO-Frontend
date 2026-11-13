@@ -10,12 +10,11 @@ import { getApiErrorMessage } from '../../../../core/api/errors/api-error.util';
 import { SubjectFormComponent } from '../components/subject-form.component';
 
 @Component({
-  selector: 'app-coordinator-subject-form-page',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'block w-full' },
-  imports: [CommonModule, SubjectFormComponent],
-  template: `
+    selector: 'app-coordinator-subject-form-page',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    host: { class: 'block w-full' },
+    imports: [CommonModule, SubjectFormComponent],
+    template: `
     <div class="space-y-6 animate-fade-in">
       @if (selectedPlan(); as plan) {
         @if (modo() === 'CREAR' || selectedAsignatura()) {
@@ -40,7 +39,7 @@ import { SubjectFormComponent } from '../components/subject-form.component';
         </div>
       }
     </div>
-  `,
+  `
 })
 export class CoordinatorSubjectFormPageComponent implements OnInit {
   private coordService = inject(CoordinatorManagementService);

@@ -19,11 +19,10 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 
 @Component({
-  selector: 'app-revisiones-resolucion',
-  standalone: true,
-  imports: [EmptyStateComponent, CommonModule, FormsModule, BadgeComponent],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
+    selector: 'app-revisiones-resolucion',
+    imports: [EmptyStateComponent, CommonModule, FormsModule, BadgeComponent],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    template: `
     <div class="space-y-6 animate-fade-in">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200 shadow-warm-sm">
         <div>
@@ -272,7 +271,7 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
         </div>
       }
     </div>
-  `,
+  `
 })
 export class RevisionesResolucionComponent implements OnInit {
   private readonly service = inject(RevisionCancelacionService);

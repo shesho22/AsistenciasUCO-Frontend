@@ -12,12 +12,11 @@ import { AcademicPeriodsTabComponent } from '../../coordinator/coordinator-study
  * crea, modifica y elimina. Decano y coordinador lo consultan en sus portales.
  */
 @Component({
-  selector: 'app-admin-periodos',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'block w-full' },
-  imports: [CommonModule, AcademicPeriodsTabComponent, ConfirmDialogComponent],
-  template: `
+    selector: 'app-admin-periodos',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    host: { class: 'block w-full' },
+    imports: [CommonModule, AcademicPeriodsTabComponent, ConfirmDialogComponent],
+    template: `
     <div class="space-y-6 animate-fade-in">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
         <div>
@@ -56,7 +55,7 @@ import { AcademicPeriodsTabComponent } from '../../coordinator/coordinator-study
         (cancelled)="cancelarEliminacion()"
       />
     </div>
-  `,
+  `
 })
 export class AdminPeriodosComponent implements OnInit {
   private coordService = inject(CoordinatorManagementService);

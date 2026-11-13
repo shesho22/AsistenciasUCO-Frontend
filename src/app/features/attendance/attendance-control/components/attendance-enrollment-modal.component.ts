@@ -30,11 +30,10 @@ export interface MatriculaEstudianteSolicitud {
 }
 
 @Component({
-  selector: 'app-attendance-enrollment-modal',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, ModalComponent, ButtonComponent, FormFieldComponent, FormSelectComponent],
-  template: `
+    selector: 'app-attendance-enrollment-modal',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CommonModule, FormsModule, ModalComponent, ButtonComponent, FormFieldComponent, FormSelectComponent],
+    template: `
     <app-modal
       [isOpen]="isOpen()"
       title="Matricular Estudiante en Grupo"
@@ -340,7 +339,7 @@ export interface MatriculaEstudianteSolicitud {
         </div>
       </form>
     </app-modal>
-  `,
+  `
 })
 export class AttendanceEnrollmentModalComponent {
   private studentService = inject(StudentService);

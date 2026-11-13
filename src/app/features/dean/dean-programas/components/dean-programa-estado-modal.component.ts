@@ -4,11 +4,10 @@ import { ProgramaAcademico } from '../../../../core/models/programa-academico.mo
 
 /** Confirmación de activación o desactivación de un programa (HU078). El error lo redacta el backend. */
 @Component({
-  selector: 'app-dean-programa-estado-modal',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ModalComponent],
-  template: `
+    selector: 'app-dean-programa-estado-modal',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [ModalComponent],
+    template: `
     <app-modal [isOpen]="true" [title]="estadoDestino() ? 'Activar programa' : 'Desactivar programa'" (closed)="cancelar()">
       <div class="space-y-4">
         <p class="text-sm text-warm-700">
@@ -28,7 +27,7 @@ import { ProgramaAcademico } from '../../../../core/models/programa-academico.mo
         </div>
       </div>
     </app-modal>
-  `,
+  `
 })
 export class DeanProgramaEstadoModalComponent {
   readonly programa = input.required<ProgramaAcademico>();

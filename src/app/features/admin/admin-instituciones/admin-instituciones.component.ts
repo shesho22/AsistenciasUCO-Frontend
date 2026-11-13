@@ -12,11 +12,10 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
  * Los datos institucionales son un catálogo canónico gestionado por el sistema.
  */
 @Component({
-  selector: 'app-admin-instituciones',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, CardComponent, BadgeComponent],
-  template: `
+    selector: 'app-admin-instituciones',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CommonModule, CardComponent, BadgeComponent],
+    template: `
     <div class="space-y-6 animate-fade-in">
       <!-- Encabezado -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -92,7 +91,7 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
         }
       </app-card>
     </div>
-  `,
+  `
 })
 export class AdminInstitucionesComponent implements OnInit {
   private readonly adminService = inject(AdminManagementService);

@@ -19,11 +19,10 @@ const CLASE_CONTROL =
  * No valida reglas de negocio: el backend es la autoridad y sus mensajes se muestran tal cual.
  */
 @Component({
-  selector: 'app-coordinator-docente-form-modal',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule],
-  template: `
+    selector: 'app-coordinator-docente-form-modal',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule],
+    template: `
     <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-warm-900/60 backdrop-blur-xs">
       <div class="bg-white rounded-3xl shadow-warm-2xl border border-warm-200/80 w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
         <div class="px-6 py-5 border-b border-warm-100 flex items-start justify-between bg-warm-50/50">
@@ -136,7 +135,7 @@ const CLASE_CONTROL =
         </div>
       </div>
     </div>
-  `,
+  `
 })
 export class CoordinatorDocenteFormModalComponent {
   readonly tiposIdentificacion = input.required<TipoIdentificacionItem[]>();

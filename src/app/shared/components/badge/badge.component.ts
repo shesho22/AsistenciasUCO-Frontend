@@ -4,18 +4,17 @@ import { CommonModule } from '@angular/common';
 export type BadgeVariant = 'success' | 'warning' | 'danger' | 'info' | 'neutral';
 
 @Component({
-  selector: 'app-badge',
-  standalone: true,
-  imports: [CommonModule],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
+    selector: 'app-badge',
+    imports: [CommonModule],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    template: `
     <span [class]="badgeClasses()">
       @if (dot()) {
         <span [class]="dotClasses()"></span>
       }
       <ng-content></ng-content>
     </span>
-  `,
+  `
 })
 export class BadgeComponent {
   variant = input<BadgeVariant>('neutral');

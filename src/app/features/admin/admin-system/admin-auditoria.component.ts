@@ -42,11 +42,10 @@ export function rangoUtc(desde: string, hasta: string): { desde: string; hasta: 
  * últimos 7 días; el rango máximo es de 90 días y la consulta es paginada en el servidor.
  */
 @Component({
-  selector: 'app-admin-auditoria',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FechaHoraCortaPipe, CommonModule, FormsModule, BadgeComponent, PaginationComponent, ErrorCargaComponent],
-  template: `
+    selector: 'app-admin-auditoria',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FechaHoraCortaPipe, CommonModule, FormsModule, BadgeComponent, PaginationComponent, ErrorCargaComponent],
+    template: `
     <div class="space-y-4">
       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 bg-white p-4 rounded-2xl border border-warm-200 shadow-warm-sm">
         <label class="text-xs font-semibold text-warm-600">
@@ -234,7 +233,7 @@ export function rangoUtc(desde: string, hasta: string): { desde: string; hasta: 
         </div>
       }
     </div>
-  `,
+  `
 })
 export class AdminAuditoriaComponent implements OnInit {
   private readonly service = inject(ConsultasTransversalesService);

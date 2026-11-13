@@ -66,11 +66,10 @@ export const SECURITY_UI_LOADER = new InjectionToken<SecurityUiModuleLoader>('SE
 type ViewState = 'loading' | 'ready' | 'error' | 'unauthorized' | 'forbidden';
 
 @Component({
-  selector: 'app-security-administration',
-  standalone: true,
-  imports: [CommonModule],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
+    selector: 'app-security-administration',
+    imports: [CommonModule],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    template: `
     <section class="rounded-2xl border border-warm-200 bg-white p-6 shadow-warm-sm">
       <div class="mb-5">
         <p class="text-xs font-bold uppercase tracking-wider text-primary-700">Security Baseline</p>
@@ -104,7 +103,7 @@ type ViewState = 'loading' | 'ready' | 'error' | 'unauthorized' | 'forbidden';
 
       <div #mountPoint class="mt-4 max-w-full overflow-x-auto" [hidden]="state() !== 'ready'"></div>
     </section>
-  `,
+  `
 })
 export class SecurityAdministrationComponent implements AfterViewInit, OnDestroy {
   @ViewChild('mountPoint', { static: true }) private readonly mountPoint?: ElementRef<HTMLElement>;

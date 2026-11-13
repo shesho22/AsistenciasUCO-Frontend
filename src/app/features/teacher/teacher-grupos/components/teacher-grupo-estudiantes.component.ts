@@ -5,11 +5,10 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
 import { EstudianteGrupoItem } from '../../../../core/models/estudiante-grupo-item.model';
 
 @Component({
-  selector: 'app-teacher-grupo-estudiantes',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, PaginationComponent],
-  template: `
+    selector: 'app-teacher-grupo-estudiantes',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CommonModule, PaginationComponent],
+    template: `
     <div class="bg-white rounded-b-2xl border-x border-b border-warm-200 shadow-warm-sm p-6 space-y-5">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-warm-100">
         <div>
@@ -73,7 +72,7 @@ import { EstudianteGrupoItem } from '../../../../core/models/estudiante-grupo-it
         />
       }
     </div>
-  `,
+  `
 })
 export class TeacherGrupoEstudiantesComponent {
   estudiantes = input<EstudianteGrupoItem[]>([]);

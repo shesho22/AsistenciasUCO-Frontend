@@ -17,11 +17,10 @@ const ETIQUETA_ROL: Record<RolVinculo, string> = {
  * APP-06: lee el `PerfilInstitucionalStore` que provee `ProfileComponent`, el mismo que alimenta el resumen.
  */
 @Component({
-  selector: 'app-profile-links',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [BadgeComponent],
-  template: `
+    selector: 'app-profile-links',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [BadgeComponent],
+    template: `
     <div class="bg-white p-6 sm:p-7 rounded-2xl border border-warm-200 shadow-warm-sm space-y-4" data-testid="perfil-institucional">
       <div class="border-b border-warm-100 pb-3">
         <h3 class="font-serif font-bold text-lg text-warm-900">Expediente y vínculos institucionales</h3>
@@ -87,7 +86,7 @@ const ETIQUETA_ROL: Record<RolVinculo, string> = {
         }
       }
     </div>
-  `,
+  `
 })
 export class ProfileLinksComponent implements OnInit {
   private readonly store = inject(PerfilInstitucionalStore);

@@ -3,16 +3,15 @@ import { TestBed } from '@angular/core/testing';
 import { FormFieldComponent } from './form-field.component';
 
 @Component({
-  standalone: true,
-  imports: [FormFieldComponent],
-  template: `
+    imports: [FormFieldComponent],
+    template: `
     <app-form-field label="Nombre" [errorMessage]="error()">
       <input type="text" />
     </app-form-field>
     <app-form-field label="Propio">
       <input id="propio" type="text" />
     </app-form-field>
-  `,
+  `
 })
 class HostComponent {
   error = signal('');

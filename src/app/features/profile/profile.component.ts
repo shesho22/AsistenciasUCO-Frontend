@@ -11,21 +11,20 @@ import { ProfileLinksComponent } from './components/profile-links.component';
 import { PerfilInstitucionalStore, TEXTO_SIN_REGISTRAR } from './perfil-institucional.store';
 
 @Component({
-  selector: 'app-profile',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  // APP-06: un solo estado de perfil institucional por pantalla, compartido con <app-profile-links>.
-  providers: [PerfilInstitucionalStore],
-  imports: [
-    CommonModule,
-    RouterLink,
-    CardComponent,
-    BadgeComponent,
-    ButtonComponent,
-    AvatarComponent,
-    ProfileLinksComponent,
-  ],
-  template: `
+    selector: 'app-profile',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    // APP-06: un solo estado de perfil institucional por pantalla, compartido con <app-profile-links>.
+    providers: [PerfilInstitucionalStore],
+    imports: [
+        CommonModule,
+        RouterLink,
+        CardComponent,
+        BadgeComponent,
+        ButtonComponent,
+        AvatarComponent,
+        ProfileLinksComponent,
+    ],
+    template: `
     <div class="space-y-6 animate-fade-in">
       <!-- Barra Superior de Navegación "Atrás" -->
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm">
@@ -204,7 +203,7 @@ import { PerfilInstitucionalStore, TEXTO_SIN_REGISTRAR } from './perfil-instituc
         </div>
       </div>
     </div>
-  `,
+  `
 })
 export class ProfileComponent implements OnInit {
   private authService = inject(AuthService);

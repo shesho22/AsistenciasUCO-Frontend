@@ -3,10 +3,9 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { QrProyeccionComponent } from './qr-proyeccion.component';
 
 @Component({
-  standalone: true,
-  imports: [QrProyeccionComponent],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
+    imports: [QrProyeccionComponent],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    template: `
     <app-qr-proyeccion
       qrPngBase64="AAAA"
       pin="482 913"
@@ -18,7 +17,7 @@ import { QrProyeccionComponent } from './qr-proyeccion.component';
       <p detalles data-testid="detalle-proyectado">Solo con la red Wi-Fi del campus</p>
       <p data-testid="contenido-proyectado">Presentes: 3</p>
     </app-qr-proyeccion>
-  `,
+  `
 })
 class HostComponent {
   cerrados = 0;

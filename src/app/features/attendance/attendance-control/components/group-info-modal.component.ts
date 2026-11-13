@@ -7,11 +7,10 @@ import { BadgeComponent } from '../../../../shared/components/badge/badge.compon
 import { Course } from '../../../../core/models/course.model';
 
 @Component({
-  selector: 'app-group-info-modal',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, ModalComponent, ButtonComponent, BadgeComponent],
-  template: `
+    selector: 'app-group-info-modal',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CommonModule, ModalComponent, ButtonComponent, BadgeComponent],
+    template: `
     <app-modal
       [isOpen]="isOpen()"
       title="Información del Grupo & Alumnos"
@@ -122,7 +121,7 @@ import { Course } from '../../../../core/models/course.model';
         </div>
       </div>
     </app-modal>
-  `,
+  `
 })
 export class GroupInfoModalComponent {
   isOpen = input<boolean>(false);

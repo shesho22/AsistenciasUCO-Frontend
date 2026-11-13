@@ -23,21 +23,20 @@ import { CoordinatorFichaModalComponent } from '../coordinator-indicators/compon
 type PestanaModulo = 'DIRECTORIO';
 
 @Component({
-  selector: 'app-coordinator-students',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    CommonModule,
-    FormsModule,
-    BadgeComponent,
-    ButtonComponent,
-    AvatarComponent,
-    PaginationComponent,
-    CoordinatorFichaModalComponent,
-    CoordinatorProgramSelectorComponent,
-    ErrorCargaComponent,
-  ],
-  template: `
+    selector: 'app-coordinator-students',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [
+        CommonModule,
+        FormsModule,
+        BadgeComponent,
+        ButtonComponent,
+        AvatarComponent,
+        PaginationComponent,
+        CoordinatorFichaModalComponent,
+        CoordinatorProgramSelectorComponent,
+        ErrorCargaComponent,
+    ],
+    template: `
     <div class="space-y-6">
       <app-coordinator-program-selector (programaCambiado)="alCambiarPrograma()" />
       <!-- Header Bento -->
@@ -195,7 +194,7 @@ type PestanaModulo = 'DIRECTORIO';
         (pageSizeChange)="onPageSizeDirectorioChange($event)"
       ></app-pagination>
     </div>
-  `,
+  `
 })
 export class CoordinatorStudentsComponent implements OnInit {
   abrirFicha(estudiante: EstudianteDirectorioItem): void {

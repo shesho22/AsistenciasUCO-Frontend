@@ -20,11 +20,10 @@ export interface SesionFormValue {
 }
 
 @Component({
-  selector: 'app-teacher-sesion-form',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, FormFieldComponent, ButtonComponent],
-  template: `
+    selector: 'app-teacher-sesion-form',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CommonModule, FormsModule, FormFieldComponent, ButtonComponent],
+    template: `
     <div class="space-y-4">
       <div class="flex items-center justify-between bg-white p-4 rounded-2xl border border-warm-200 shadow-warm-sm">
         <button
@@ -115,7 +114,7 @@ export interface SesionFormValue {
         </div>
       </div>
     </div>
-  `,
+  `
 })
 export class TeacherSesionFormComponent {
   readonly timeZone = inject(SessionTimeZoneService);

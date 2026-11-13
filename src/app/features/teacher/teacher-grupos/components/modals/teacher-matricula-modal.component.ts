@@ -26,11 +26,10 @@ import {
  * claro no se guarda. La hora de fin de la ventana se muestra como hora absoluta, sin cuenta regresiva.
  */
 @Component({
-  selector: 'app-teacher-matricula-modal',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [HoraCortaPipe, CommonModule, ButtonComponent, QrProyeccionComponent],
-  template: `
+    selector: 'app-teacher-matricula-modal',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [HoraCortaPipe, CommonModule, ButtonComponent, QrProyeccionComponent],
+    template: `
     @if (isOpen() && curso()) {
       @if (ventana(); as v) {
         <app-qr-proyeccion
@@ -126,7 +125,7 @@ import {
       </div>
       }
     }
-  `,
+  `
 })
 export class TeacherMatriculaModalComponent {
   private readonly toast = inject(ToastService);

@@ -2,11 +2,10 @@ import { Component, ChangeDetectionStrategy, input, output, computed } from '@an
 import { CommonModule } from '@angular/common';
 
 @Component({
-  selector: 'app-pagination',
-  standalone: true,
-  imports: [CommonModule],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
+    selector: 'app-pagination',
+    imports: [CommonModule],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    template: `
     @if (totalItems() > 0) {
       <nav aria-label="Paginación" class="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 bg-white border border-warm-200 rounded-2xl shadow-warm-sm text-xs text-warm-600">
         <!-- Resumen de Conteo -->
@@ -111,7 +110,7 @@ import { CommonModule } from '@angular/common';
         </div>
       </nav>
     }
-  `,
+  `
 })
 export class PaginationComponent {
   readonly totalItems = input<number>(0);

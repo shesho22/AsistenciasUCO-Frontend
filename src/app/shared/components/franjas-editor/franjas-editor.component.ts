@@ -8,11 +8,10 @@ import { DIAS_SEMANA, franjaNueva } from '../../../core/validation/franjas.util'
  * del coordinador y el del docente; la validación vive en `validarFranjas` y las reglas de negocio las aplica la DB.
  */
 @Component({
-  selector: 'app-franjas-editor',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule],
-  template: `
+    selector: 'app-franjas-editor',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule],
+    template: `
     <div class="space-y-2">
       <div class="flex items-center justify-between">
         <h3 class="text-sm font-semibold text-warm-800">Horario semanal</h3>
@@ -36,7 +35,7 @@ import { DIAS_SEMANA, franjaNueva } from '../../../core/validation/franjas.util'
         </div>
       }
     </div>
-  `,
+  `
 })
 export class FranjasEditorComponent {
   readonly dias = DIAS_SEMANA;

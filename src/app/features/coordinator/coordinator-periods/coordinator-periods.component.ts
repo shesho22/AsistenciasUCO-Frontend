@@ -8,12 +8,11 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { AcademicPeriodsTabComponent } from '../coordinator-study-plans/components/academic-periods-tab.component';
 
 @Component({
-  selector: 'app-coordinator-periods',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'block w-full' },
-  imports: [CommonModule, AcademicPeriodsTabComponent],
-  template: `
+    selector: 'app-coordinator-periods',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    host: { class: 'block w-full' },
+    imports: [CommonModule, AcademicPeriodsTabComponent],
+    template: `
     <div class="space-y-6 animate-fade-in">
       <!-- Header Bento -->
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
@@ -99,7 +98,7 @@ import { AcademicPeriodsTabComponent } from '../coordinator-study-plans/componen
         [soloLectura]="true"
       />
     </div>
-  `,
+  `
 })
 export class CoordinatorPeriodsComponent implements OnInit {
   /** CULM-001: dentro de una pestaña, el título lo pone el cascarón. */

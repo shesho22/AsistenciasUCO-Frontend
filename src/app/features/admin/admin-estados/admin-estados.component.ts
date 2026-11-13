@@ -18,11 +18,10 @@ export function filasDe(estados: EstadoSistemaItem[], catalogo: EstadoSistemaIte
  * consulta; se muestran los estados de los reclamos de asistencia y los del estudiante en el grupo (no los técnicos de envío).
  */
 @Component({
-  selector: 'app-admin-estados',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CatalogoSoloConsultaComponent],
-  template: `
+    selector: 'app-admin-estados',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CatalogoSoloConsultaComponent],
+    template: `
     <div class="space-y-8 animate-fade-in">
       <div>
         <div class="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1">Administración Institucional</div>
@@ -48,7 +47,7 @@ export function filasDe(estados: EstadoSistemaItem[], catalogo: EstadoSistemaIte
         [cargando]="cargando()"
       />
     </div>
-  `,
+  `
 })
 export class AdminEstadosComponent implements OnInit {
   private readonly service = inject(ConsultasTransversalesService);

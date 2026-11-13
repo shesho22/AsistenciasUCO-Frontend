@@ -17,17 +17,17 @@ import { ErrorCargaComponent } from '../../../shared/components/error-carga/erro
 import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load-error.util';
 
 @Component({
-  selector: 'app-coordinator-subjects',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    CommonModule,
-    FormsModule,
-    RouterLink,
-    BadgeComponent,
-    ButtonComponent,
-    AvatarComponent, ErrorCargaComponent],
-  template: `
+    selector: 'app-coordinator-subjects',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [
+        CommonModule,
+        FormsModule,
+        RouterLink,
+        BadgeComponent,
+        ButtonComponent,
+        AvatarComponent, ErrorCargaComponent
+    ],
+    template: `
     <div class="space-y-6">
       <!-- Header Bento -->
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
@@ -312,7 +312,7 @@ import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load
         }
       </div>
     </div>
-  `,
+  `
 })
 export class CoordinatorSubjectsComponent implements OnInit {
   /** CULM-001: dentro de una pestaña, el título lo pone el cascarón. */

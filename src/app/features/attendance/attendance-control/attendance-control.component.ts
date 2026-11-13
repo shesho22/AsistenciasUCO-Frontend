@@ -88,26 +88,25 @@ type StudentEnrollmentField =
   | 'password';
 
 @Component({
-  selector: 'app-attendance-control',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    CommonModule,
-    ToastComponent,
-    AttendanceControlHeaderComponent,
-    AttendanceControlTableComponent,
-    AttendanceEnrollmentModalComponent,
-    AttendanceNewSessionModalComponent,
-    SessionTomasPanelComponent,
-    TomaModoSelectorComponent,
-    TomaCierreDialogComponent,
-    TomaQrProyeccionComponent,
-    GroupSessionsOverviewComponent,
-    GroupInfoModalComponent,
-    GroupClaimsModalComponent,
-    TeacherMatriculaModalComponent,
-  ],
-  template: `
+    selector: 'app-attendance-control',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [
+        CommonModule,
+        ToastComponent,
+        AttendanceControlHeaderComponent,
+        AttendanceControlTableComponent,
+        AttendanceEnrollmentModalComponent,
+        AttendanceNewSessionModalComponent,
+        SessionTomasPanelComponent,
+        TomaModoSelectorComponent,
+        TomaCierreDialogComponent,
+        TomaQrProyeccionComponent,
+        GroupSessionsOverviewComponent,
+        GroupInfoModalComponent,
+        GroupClaimsModalComponent,
+        TeacherMatriculaModalComponent,
+    ],
+    template: `
     <div class="flex flex-col gap-6 animate-fade-in max-w-7xl mx-auto pb-12 relative">
       <!-- 1. Encabezado y Selectores de Curso / Sesión -->
       <app-attendance-control-header
@@ -273,7 +272,7 @@ type StudentEnrollmentField =
         (dismissed)="showToast.set(false)"
       />
     </div>
-  `,
+  `
 })
 export class AttendanceControlComponent {
   private courseService = inject(CourseService);

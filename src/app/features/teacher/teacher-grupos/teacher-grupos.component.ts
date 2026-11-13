@@ -43,21 +43,20 @@ import { SessionTimeZoneService } from '../../../core/services/session-timezone.
 type VistaGrupos = 'LISTA' | 'HUB_GRUPO' | 'FORM_SESION' | 'FORM_GRUPO';
 
 @Component({
-  selector: 'app-teacher-grupos',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    CommonModule,
-    TeacherGruposListComponent,
-    TeacherGrupoHubComponent,
-    TeacherSesionFormComponent,
-    TeacherGrupoFormComponent,
-    TeacherMatriculaModalComponent,
-    TeacherSesionCancelarModalComponent,
-    TeacherSesionDetalleModalComponent,
-    TeacherRetiroEstudianteModalComponent,
-  ],
-  template: `
+    selector: 'app-teacher-grupos',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [
+        CommonModule,
+        TeacherGruposListComponent,
+        TeacherGrupoHubComponent,
+        TeacherSesionFormComponent,
+        TeacherGrupoFormComponent,
+        TeacherMatriculaModalComponent,
+        TeacherSesionCancelarModalComponent,
+        TeacherSesionDetalleModalComponent,
+        TeacherRetiroEstudianteModalComponent,
+    ],
+    template: `
     <div class="space-y-6 animate-fade-in">
       <!-- 1. VISTA LISTA PRINCIPAL -->
       @if (vistaActual() === 'LISTA') {
@@ -156,7 +155,7 @@ type VistaGrupos = 'LISTA' | 'HUB_GRUPO' | 'FORM_SESION' | 'FORM_GRUPO';
         (closed)="cerrarDetalleSesionModal()"
       />
     </div>
-  `,
+  `
 })
 export class TeacherGruposComponent implements OnInit, OnDestroy {
   private courseService = inject(CourseService);

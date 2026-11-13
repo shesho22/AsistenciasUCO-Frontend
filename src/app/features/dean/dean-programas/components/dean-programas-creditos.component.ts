@@ -11,11 +11,10 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
  * también alimenta los créditos de las tarjetas) y las filtra y pagina en el navegador.
  */
 @Component({
-  selector: 'app-dean-programas-creditos',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, BadgeComponent, PaginationComponent],
-  template: `
+    selector: 'app-dean-programas-creditos',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CommonModule, FormsModule, BadgeComponent, PaginationComponent],
+    template: `
     <section class="bg-white p-6 rounded-2xl border border-warm-200 shadow-warm-sm space-y-4" aria-label="Programas y créditos">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
@@ -84,7 +83,7 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
         }
       }
     </section>
-  `,
+  `
 })
 export class DeanProgramasCreditosComponent {
   readonly filas = input<ProgramaCreditosItem[]>([]);

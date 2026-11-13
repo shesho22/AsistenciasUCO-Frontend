@@ -14,11 +14,10 @@ export type VerifyEmailState = 'VERIFICANDO' | 'EXITO' | 'ERROR';
  * resuelve preguntando al backend, que responde igual para cualquier token invalido.
  */
 @Component({
-  selector: 'app-verify-email',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, RouterLink],
-  template: `
+    selector: 'app-verify-email',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CommonModule, RouterLink],
+    template: `
     <section class="w-full max-w-md mx-auto bg-white border border-warm-200 rounded-2xl shadow-warm-sm p-6 space-y-4 text-center">
       <h1 class="text-lg font-bold text-warm-900">Verificación de correo</h1>
 
@@ -44,7 +43,7 @@ export type VerifyEmailState = 'VERIFICANDO' | 'EXITO' | 'ERROR';
         }
       }
     </section>
-  `,
+  `
 })
 export class VerifyEmailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);

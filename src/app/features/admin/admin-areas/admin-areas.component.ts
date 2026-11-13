@@ -12,11 +12,10 @@ import {
  * HU151 y HU152 (crear y modificar áreas) quedaron descartadas.
  */
 @Component({
-  selector: 'app-admin-areas',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CatalogoSoloConsultaComponent],
-  template: `
+    selector: 'app-admin-areas',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CatalogoSoloConsultaComponent],
+    template: `
     <app-catalogo-solo-consulta
       titulo="Áreas de Conocimiento"
       descripcion="Catálogo institucional de áreas de conocimiento asociadas a las asignaturas."
@@ -24,7 +23,7 @@ import {
       [filas]="filas()"
       [cargando]="cargando()"
     />
-  `,
+  `
 })
 export class AdminAreasComponent implements OnInit {
   private readonly adminService = inject(AdminManagementService);

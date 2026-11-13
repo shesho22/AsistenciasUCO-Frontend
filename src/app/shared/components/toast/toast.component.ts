@@ -47,11 +47,10 @@ export class ToastService {
 }
 
 @Component({
-  selector: 'app-toast',
-  standalone: true,
-  imports: [CommonModule],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
+    selector: 'app-toast',
+    imports: [CommonModule],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    template: `
     @if (visible() || isExiting()) {
       <div
         [class]="containerClasses()"
@@ -107,7 +106,7 @@ export class ToastService {
         </div>
       </div>
     }
-  `,
+  `
 })
 export class ToastComponent {
   visible = input<boolean>(false);

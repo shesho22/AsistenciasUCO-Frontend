@@ -22,12 +22,11 @@ interface OpcionFacultad {
  * filtro opcional por facultad.
  */
 @Component({
-  selector: 'app-dean-asignaturas',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'block w-full' },
-  imports: [CommonModule, FormsModule, BadgeComponent, PaginationComponent, ErrorCargaComponent],
-  template: `
+    selector: 'app-dean-asignaturas',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    host: { class: 'block w-full' },
+    imports: [CommonModule, FormsModule, BadgeComponent, PaginationComponent, ErrorCargaComponent],
+    template: `
     <div class="space-y-6 animate-fade-in">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
         <div>
@@ -131,7 +130,7 @@ interface OpcionFacultad {
         ></app-pagination>
       </section>
     </div>
-  `,
+  `
 })
 export class DeanAsignaturasComponent implements OnInit {
   private readonly service = inject(ConsultasTransversalesService);

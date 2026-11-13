@@ -30,12 +30,11 @@ function adaptarGrupoACurso(dto: any): Course {
 }
 
 @Component({
-  selector: 'app-dean-grupo-detalle',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'block w-full' },
-  imports: [EmptyStateComponent, CommonModule, SesionEstadoBadgeComponent],
-  template: `
+    selector: 'app-dean-grupo-detalle',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    host: { class: 'block w-full' },
+    imports: [EmptyStateComponent, CommonModule, SesionEstadoBadgeComponent],
+    template: `
     <div class="space-y-6 animate-fade-in">
       <!-- Barra de Retorno -->
       <div class="flex items-center justify-between bg-white p-4 rounded-2xl border border-warm-200 shadow-warm-sm">
@@ -155,7 +154,7 @@ function adaptarGrupoACurso(dto: any): Course {
         }
       </div>
     </div>
-  `,
+  `
 })
 export class DeanGrupoDetalleComponent implements OnInit, OnDestroy {
   private deanService = inject(DeanFacultadService);

@@ -9,11 +9,10 @@ import { Course } from '../../../../core/models/course.model';
 import { etiquetaEstadoReclamo, etiquetaResultadoAprobacion } from '../../../../core/utils/reclamo-estado.util';
 
 @Component({
-  selector: 'app-group-claims-modal',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, ModalComponent, ButtonComponent, BadgeComponent],
-  template: `
+    selector: 'app-group-claims-modal',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CommonModule, FormsModule, ModalComponent, ButtonComponent, BadgeComponent],
+    template: `
     <app-modal
       [isOpen]="isOpen()"
       title="Reclamos y Justificaciones del Grupo"
@@ -159,7 +158,7 @@ import { etiquetaEstadoReclamo, etiquetaResultadoAprobacion } from '../../../../
         </div>
       </div>
     </app-modal>
-  `,
+  `
 })
 export class GroupClaimsModalComponent {
   isOpen = input<boolean>(false);

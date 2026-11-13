@@ -5,14 +5,13 @@ import { ButtonComponent } from '../../../../shared/components/button/button.com
 import { UserRole } from '../../../../core/models/user.model';
 
 @Component({
-  selector: 'app-overview-hero',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, RouterLink, ButtonComponent],
-  host: {
-    class: 'block w-full',
-  },
-  template: `
+    selector: 'app-overview-hero',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CommonModule, RouterLink, ButtonComponent],
+    host: {
+        class: 'block w-full',
+    },
+    template: `
     <section class="bg-gradient-to-r from-primary-950 via-primary-900 to-primary-950 rounded-3xl p-6 sm:p-8 text-white relative overflow-hidden shadow-warm-md border border-primary-800">
       <div class="absolute right-0 top-0 bottom-0 w-1/2 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-accent-400/20 via-transparent to-transparent pointer-events-none"></div>
 
@@ -151,7 +150,7 @@ import { UserRole } from '../../../../core/models/user.model';
         </div>
       </div>
     </section>
-  `,
+  `
 })
 export class OverviewHeroComponent {
   userRole = input.required<UserRole>();

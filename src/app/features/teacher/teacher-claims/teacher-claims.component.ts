@@ -35,21 +35,20 @@ type EstadoFiltroReclamos = 'TODOS' | 'P' | 'A' | 'R';
 type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'NETWORK_ERROR' | 'SERVER_ERROR';
 
 @Component({
-  selector: 'app-teacher-claims',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    EmptyStateComponent,
-    CommonModule,
-    FormsModule,
-    CardComponent,
-    BadgeComponent,
-    ButtonComponent,
-    FormFieldComponent,
-    AvatarComponent,
-    PaginationComponent,
-  ],
-  template: `
+    selector: 'app-teacher-claims',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [
+        EmptyStateComponent,
+        CommonModule,
+        FormsModule,
+        CardComponent,
+        BadgeComponent,
+        ButtonComponent,
+        FormFieldComponent,
+        AvatarComponent,
+        PaginationComponent,
+    ],
+    template: `
     <div class="space-y-6 animate-fade-in">
       <!-- 1. VISTA: BANDEJA GENERAL DE RECLAMOS -->
       @if (vistaActual() === 'BANDEJA') {
@@ -449,7 +448,7 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
         </div>
       }
     </div>
-  `,
+  `
 })
 export class TeacherClaimsComponent implements OnInit, OnDestroy {
   private claimService = inject(AttendanceClaimService);

@@ -29,25 +29,24 @@ import { CargaMasivaUsuariosComponent } from '../../../shared/components/carga-m
 type VistaDecano = 'LISTA' | 'REGISTRO';
 
 @Component({
-  selector: 'app-dean-coordinadores',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    ActionMenuComponent,
-    CommonModule,
-    FormsModule,
-    CardComponent,
-    BadgeComponent,
-    ButtonComponent,
-    FormFieldComponent,
-    UserPickerModalComponent,
-    AccountAccessStatusComponent,
-    PaginationComponent,
-    DeanCoordinadorEditModalComponent,
-    DeanCoordinadorEstadoModalComponent,
-    CargaMasivaUsuariosComponent,
-  ],
-  template: `
+    selector: 'app-dean-coordinadores',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [
+        ActionMenuComponent,
+        CommonModule,
+        FormsModule,
+        CardComponent,
+        BadgeComponent,
+        ButtonComponent,
+        FormFieldComponent,
+        UserPickerModalComponent,
+        AccountAccessStatusComponent,
+        PaginationComponent,
+        DeanCoordinadorEditModalComponent,
+        DeanCoordinadorEstadoModalComponent,
+        CargaMasivaUsuariosComponent,
+    ],
+    template: `
     <div class="space-y-6 animate-fade-in">
       <!-- 1. VISTA: LISTA DE COORDINADORES -->
       @if (vistaActual() === 'LISTA') {
@@ -455,7 +454,7 @@ type VistaDecano = 'LISTA' | 'REGISTRO';
         />
       }
     </div>
-  `,
+  `
 })
 export class DeanCoordinadoresComponent implements OnInit {
   /** CULM-001: dentro de una pestaña, el título lo pone el cascarón. */

@@ -25,23 +25,22 @@ import { CargaMasivaUsuariosComponent } from '../../../shared/components/carga-m
 type VistaAdmin = 'LISTA' | 'REGISTRO';
 
 @Component({
-  selector: 'app-admin-decanos',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    ActionMenuComponent,
-    CommonModule,
-    FormsModule,
-    CardComponent,
-    BadgeComponent,
-    ButtonComponent,
-    FormFieldComponent,
-    UserPickerModalComponent,
-    AccountAccessStatusComponent,
-    CorreccionIdentidadModalComponent,
-    CargaMasivaUsuariosComponent,
-  ],
-  template: `
+    selector: 'app-admin-decanos',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [
+        ActionMenuComponent,
+        CommonModule,
+        FormsModule,
+        CardComponent,
+        BadgeComponent,
+        ButtonComponent,
+        FormFieldComponent,
+        UserPickerModalComponent,
+        AccountAccessStatusComponent,
+        CorreccionIdentidadModalComponent,
+        CargaMasivaUsuariosComponent,
+    ],
+    template: `
     <div class="space-y-6 animate-fade-in">
       <!-- 1. VISTA: LISTA DE DECANOS -->
       @if (vistaActual() === 'LISTA') {
@@ -392,7 +391,7 @@ type VistaAdmin = 'LISTA' | 'REGISTRO';
         />
       }
     </div>
-  `,
+  `
 })
 export class AdminDecanosComponent implements OnInit {
   private adminService = inject(AdminManagementService);

@@ -48,19 +48,18 @@ import { OverviewTeacherComponent } from './components/overview-teacher.componen
 import { OverviewStudentComponent } from './components/overview-student.component';
 
 @Component({
-  selector: 'app-overview',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    CommonModule,
-    OverviewHeroComponent,
-    OverviewAdminComponent,
-    OverviewDeanComponent,
-    OverviewCoordinatorComponent,
-    OverviewTeacherComponent,
-    OverviewStudentComponent,
-  ],
-  template: `
+    selector: 'app-overview',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [
+        CommonModule,
+        OverviewHeroComponent,
+        OverviewAdminComponent,
+        OverviewDeanComponent,
+        OverviewCoordinatorComponent,
+        OverviewTeacherComponent,
+        OverviewStudentComponent,
+    ],
+    template: `
     <div class="flex flex-col gap-6 animate-fade-in">
       <!-- 1. Hero Banner Adaptativo -->
       <app-overview-hero
@@ -126,7 +125,7 @@ import { OverviewStudentComponent } from './components/overview-student.componen
         }
       }
     </div>
-  `,
+  `
 })
 export class OverviewComponent implements OnInit {
   private authService = inject(AuthService);

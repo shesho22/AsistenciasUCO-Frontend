@@ -19,11 +19,10 @@ type VistaFacultad = 'LISTA' | 'FORM';
 type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
 
 @Component({
-  selector: 'app-admin-facultades',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, PaginationComponent, ActionMenuComponent],
-  template: `
+    selector: 'app-admin-facultades',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CommonModule, FormsModule, PaginationComponent, ActionMenuComponent],
+    template: `
     <div class="space-y-6 animate-fade-in">
       <!-- ================= HEADER & BREADCRUMB ================= -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -543,7 +542,7 @@ type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
         </div>
       }
     </div>
-  `,
+  `
 })
 export class AdminFacultadesComponent implements OnInit {
   private adminService = inject(AdminManagementService);

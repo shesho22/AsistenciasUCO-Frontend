@@ -8,11 +8,10 @@ import { ButtonComponent } from '../../../../shared/components/button/button.com
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 
 @Component({
-  selector: 'app-study-plans-list',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, CardComponent, BadgeComponent, ButtonComponent, PaginationComponent, ActionMenuComponent],
-  template: `
+    selector: 'app-study-plans-list',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CommonModule, CardComponent, BadgeComponent, ButtonComponent, PaginationComponent, ActionMenuComponent],
+    template: `
     <div class="space-y-6">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -108,7 +107,7 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
         }
       }
     </div>
-  `,
+  `
 })
 export class StudyPlansListComponent {
   planes = input.required<PlanEstudioItem[]>();

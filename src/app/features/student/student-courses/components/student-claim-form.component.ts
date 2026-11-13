@@ -15,11 +15,10 @@ import {
 import { CategoriaJustificacionItem } from '../../../../core/models/consultas-transversales.model';
 
 @Component({
-  selector: 'app-student-claim-form',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, ButtonComponent, FormFieldComponent],
-  template: `
+    selector: 'app-student-claim-form',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CommonModule, FormsModule, ButtonComponent, FormFieldComponent],
+    template: `
     @if (sesion() && materia()) {
       <div class="space-y-6">
         <!-- Barra Superior de Retorno -->
@@ -249,7 +248,7 @@ import { CategoriaJustificacionItem } from '../../../../core/models/consultas-tr
         </div>
       </div>
     }
-  `,
+  `
 })
 export class StudentClaimFormComponent {
   materia = input<MateriaEstudianteItem | null>(null);

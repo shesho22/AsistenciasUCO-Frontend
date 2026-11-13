@@ -16,11 +16,10 @@ const MARGEN = 20;
 const MARGEN_IZQ = 44;
 
 @Component({
-  selector: 'app-admin-indicators',
-  standalone: true,
-  imports: [CifraConBaseComponent, KpiCardComponent, DecimalPipe],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
+    selector: 'app-admin-indicators',
+    imports: [CifraConBaseComponent, KpiCardComponent, DecimalPipe],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    template: `
     <section class="space-y-6">
       <header class="flex flex-wrap items-start justify-between gap-3">
         <div>
@@ -103,7 +102,7 @@ const MARGEN_IZQ = 44;
         }
       </div>
     </section>
-  `,
+  `
 })
 export class AdminIndicatorsComponent implements OnInit {
   readonly service = inject(AdminIndicatorsService);

@@ -30,21 +30,20 @@ import { ParametroEdicionModalComponent } from './parametro-edicion-modal.compon
 type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
 
 @Component({
-  selector: 'app-admin-system',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    EmptyStateComponent,
-    FechaHoraCortaPipe,
-    CommonModule,
-    FormsModule,
-    RouterLink,
-    AdminAuditoriaComponent,
-    ConfirmDialogComponent,
-    PaginationComponent,
-    ParametroEdicionModalComponent,
-  ],
-  template: `
+    selector: 'app-admin-system',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [
+        EmptyStateComponent,
+        FechaHoraCortaPipe,
+        CommonModule,
+        FormsModule,
+        RouterLink,
+        AdminAuditoriaComponent,
+        ConfirmDialogComponent,
+        PaginationComponent,
+        ParametroEdicionModalComponent,
+    ],
+    template: `
     <div class="space-y-6">
      @if (modo === 'completo') {
       <!-- ================= HEADER & BREADCRUMB ================= -->
@@ -427,7 +426,7 @@ type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
         (cancelled)="cierrePendiente.set(false)"
       />
     </div>
-  `,
+  `
 })
 export class AdminSystemComponent implements OnInit {
   private adminService = inject(AdminManagementService);

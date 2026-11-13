@@ -4,15 +4,14 @@ import { By } from '@angular/platform-browser';
 import { ModalComponent } from './modal.component';
 
 @Component({
-  standalone: true,
-  imports: [ModalComponent],
-  template: `
+    imports: [ModalComponent],
+    template: `
     <button id="disparador" type="button">Abrir</button>
     <app-modal [isOpen]="abierto()" title="Prueba" (closed)="abierto.set(false)">
       <input id="campo" type="text" />
       <button modal-footer id="guardar" type="button">Guardar</button>
     </app-modal>
-  `,
+  `
 })
 class HostComponent {
   abierto = signal(false);

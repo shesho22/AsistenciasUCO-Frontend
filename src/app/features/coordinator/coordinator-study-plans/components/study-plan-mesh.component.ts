@@ -7,11 +7,10 @@ import { ButtonComponent } from '../../../../shared/components/button/button.com
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 
 @Component({
-  selector: 'app-study-plan-mesh',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, BadgeComponent, ButtonComponent, PaginationComponent],
-  template: `
+    selector: 'app-study-plan-mesh',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CommonModule, FormsModule, BadgeComponent, ButtonComponent, PaginationComponent],
+    template: `
     <div class="space-y-6">
       <div class="flex items-center justify-between bg-white p-4 rounded-2xl border border-warm-200 shadow-warm-sm">
         <button
@@ -204,7 +203,7 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
         }
       }
     </div>
-  `,
+  `
 })
 export class StudyPlanMeshComponent {
   plan = input.required<PlanEstudioItem>();

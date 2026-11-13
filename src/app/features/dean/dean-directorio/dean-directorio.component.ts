@@ -119,20 +119,19 @@ export function entidadValida(valor: string | null | undefined): EntidadDirector
  * de sesiones de un grupo conservan sus contratos (HU104/HU105/HU157 y HU145).
  */
 @Component({
-  selector: 'app-dean-directorio',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'block w-full' },
-  imports: [
-    FormsModule,
-    BadgeComponent,
-    ErrorCargaComponent,
-    FiltrosPlegablesComponent,
-    HistorialEstudianteComponent,
-    PaginationComponent,
-    TabsNavComponent,
-  ],
-  template: `
+    selector: 'app-dean-directorio',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    host: { class: 'block w-full' },
+    imports: [
+        FormsModule,
+        BadgeComponent,
+        ErrorCargaComponent,
+        FiltrosPlegablesComponent,
+        HistorialEstudianteComponent,
+        PaginationComponent,
+        TabsNavComponent,
+    ],
+    template: `
     <div class="space-y-4 min-w-0">
       <div>
         <h1 class="font-serif font-bold text-2xl sm:text-3xl text-warm-900 tracking-tight">Directorio de la facultad</h1>
@@ -310,7 +309,7 @@ export function entidadValida(valor: string | null | undefined): EntidadDirector
         </section>
       }
     </div>
-  `,
+  `
 })
 export class DeanDirectorioComponent implements OnInit, OnChanges {
   private readonly consultas = inject(ConsultasTransversalesService);

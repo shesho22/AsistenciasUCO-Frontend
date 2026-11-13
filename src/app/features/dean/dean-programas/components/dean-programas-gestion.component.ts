@@ -20,11 +20,10 @@ import { DeanProgramaEstadoModalComponent } from './dean-programa-estado-modal.c
  * alta, edición y cambio de estado. No hay actualización optimista: toda mutación recarga desde el backend.
  */
 @Component({
-  selector: 'app-dean-programas-gestion',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, BadgeComponent, PaginationComponent, DeanProgramaFormModalComponent, DeanProgramaEstadoModalComponent],
-  template: `
+    selector: 'app-dean-programas-gestion',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, BadgeComponent, PaginationComponent, DeanProgramaFormModalComponent, DeanProgramaEstadoModalComponent],
+    template: `
     <section class="space-y-4">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h2 class="font-serif font-bold text-xl text-warm-900">Programas de la facultad</h2>
@@ -132,7 +131,7 @@ import { DeanProgramaEstadoModalComponent } from './dean-programa-estado-modal.c
         (cerrar)="cerrarEstado()"
       />
     }
-  `,
+  `
 })
 export class DeanProgramasGestionComponent implements OnInit {
   readonly service = inject(DeanProgramasService);
