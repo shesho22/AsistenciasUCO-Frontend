@@ -9,7 +9,7 @@ import { AdminManagementService } from '../../../core/services/admin-management.
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { HttpTestingController } from '@angular/common/http/testing';
-import { ParametroAdminDto } from '../../../core/models/role-management.model';
+import { PARAMETROS_ADMIN_LOADER } from '../../parametros/parametros-administration/parametros-administration.contract';
 import { environment } from '../../../../environments/environment';
 
 describe('AdminSystemComponent', () => {
@@ -19,39 +19,6 @@ describe('AdminSystemComponent', () => {
   let coordServiceSpy: jasmine.SpyObj<CoordinatorManagementService>;
   let toastServiceSpy: jasmine.SpyObj<ToastService>;
 
-  const mockParametros: ParametroAdminDto[] = [
-    {
-      id: 'param-1',
-      grupo: 'ASISTENCIA',
-      clave: 'ASISTENCIA/TOLERANCIA_MINUTOS',
-      valor: '15',
-      tipoDato: 'INT',
-      esEditable: true,
-      valorMinimo: 0,
-      valorMaximo: 60,
-      etiqueta: 'Tolerancia de ingreso',
-      descripcion: 'Minutos permitidos antes de marcar retardo',
-      unidad: 'minutos',
-      categoriaVisual: 'Reglas de Asistencia',
-      orden: 1,
-      fechaModificacion: '2026-11-07T15:04:05.007Z',
-      fechaUltimoCambioUtc: '2026-11-07T15:04:05.007Z',
-      nombreUltimoActor: 'Admin TI',
-    },
-    {
-      id: 'param-2',
-      grupo: 'RED',
-      clave: 'RED/CIDRS_CAMPUS',
-      valor: '10.0.0.0/8',
-      tipoDato: 'STRING',
-      esEditable: false,
-      etiqueta: 'Segmentos de red campus',
-      descripcion: 'Redes institucionales autorizadas',
-      categoriaVisual: 'Infraestructura y Red',
-      orden: 2,
-    },
-  ];
-
   beforeEach(async () => {
     toastServiceSpy = jasmine.createSpyObj('ToastService', ['success', 'error', 'info', 'warning']);
 
@@ -59,21 +26,9 @@ describe('AdminSystemComponent', () => {
       'AdminManagementService',
       ['cargarParametros', 'ejecutarCierreMasivo'],
       {
-        parametros: signal(mockParametros).asReadonly(),
         reportesCierre: signal([]).asReadonly(),
       }
     );
-    adminServiceSpy.cargarParametros.and.returnValue(
-      of({
-        exitoso: true,
-        elementos: mockParametros,
-        numeroPagina: 1,
-        tamanoPagina: 20,
-        totalElementos: 2,
-        totalPaginas: 1,
-      } as any)
-    );
-
     const periodosSignal = signal([
       {
         id: 'per-1',
@@ -99,6 +54,8 @@ describe('AdminSystemComponent', () => {
         { provide: AdminManagementService, useValue: adminServiceSpy },
         { provide: CoordinatorManagementService, useValue: coordServiceSpy },
         { provide: ToastService, useValue: toastServiceSpy },
+        // El micro frontend del Catálogo no se descarga en estas pruebas: su montaje se prueba en su propio spec.
+        { provide: PARAMETROS_ADMIN_LOADER, useValue: () => new Promise(() => undefined) },
         provideHttpClient(withXhr()),
         provideHttpClientTesting(),
       ],
@@ -109,11 +66,18 @@ describe('AdminSystemComponent', () => {
     fixture.detectChanges();
   });
 
-  it('debe crearse e inicializar los parámetros', () => {
+  it('debe crearse y cargar los períodos sin consultar la lista propia de parámetros', () => {
     expect(component).toBeTruthy();
     expect(coordServiceSpy.cargarPeriodosAcademicosBase).toHaveBeenCalled();
-    expect(adminServiceSpy.cargarParametros).toHaveBeenCalled();
-    expect(component.parametros().length).toBe(2);
+    expect(adminServiceSpy.cargarParametros).not.toHaveBeenCalled();
+  });
+
+  it('INT-002: la pestaña de parámetros monta el micro frontend del Catálogo y ya no la lista ni el modal propios', () => {
+    const panel = (fixture.nativeElement as HTMLElement).querySelector('#panel-parametros') as HTMLElement;
+    expect(panel).not.toBeNull();
+    expect(panel.querySelector('app-parametros-administration')).not.toBeNull();
+    expect(panel.querySelector('app-parametro-edicion-modal')).toBeNull();
+    expect(panel.querySelector('[data-testid^="btn-editar-"]')).toBeNull();
   });
 
   it('en admin/sistema (sin dato de ruta) muestra el encabezado y las pestañas de operaciones', () => {
@@ -121,13 +85,6 @@ describe('AdminSystemComponent', () => {
     const el = fixture.nativeElement as HTMLElement;
     expect(el.querySelector('h1')).not.toBeNull();
     expect(el.querySelector('[role="tablist"]')).not.toBeNull();
-  });
-
-  it('EST-03 (S2871): gruposDisponibles queda ordenado con localeCompare en español y sin repetidos', () => {
-    const grupos = component.gruposDisponibles();
-    expect(grupos.length).toBeGreaterThan(0);
-    expect(new Set(grupos).size).toBe(grupos.length);
-    expect(grupos).toEqual([...grupos].sort((a, b) => a.localeCompare(b, 'es')));
   });
 
   it('tabActiva alterna correctamente entre pestañas', () => {
@@ -149,47 +106,6 @@ describe('AdminSystemComponent', () => {
     req.flush({ exitoso: true, datos: [], total: 0 });
     fixture.detectChanges();
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('No hay eventos de auditoría');
-  });
-
-  it('HU168: muestra parámetros agrupados por categoría, unidad, rango y último actor', () => {
-    const host = fixture.nativeElement as HTMLElement;
-    expect(host.textContent).toContain('Reglas de Asistencia');
-    expect(host.textContent).toContain('Tolerancia de ingreso');
-    expect(host.textContent).toContain('15');
-    expect(host.textContent).toContain('minutos');
-    expect(host.textContent).toContain('Admin TI');
-  });
-
-  it('HU168: muestra botón Editar solo si esEditable === true', () => {
-    const host = fixture.nativeElement as HTMLElement;
-    const btnEditar = host.querySelector('[data-testid="btn-editar-param-1"]') as HTMLButtonElement;
-    expect(btnEditar).toBeTruthy();
-
-    const btnEditarTecnico = host.querySelector('[data-testid="btn-editar-param-2"]');
-    expect(btnEditarTecnico).toBeNull();
-  });
-
-  it('HU168: al presionar Editar abre el modal con el parámetro seleccionado', () => {
-    const host = fixture.nativeElement as HTMLElement;
-    const btnEditar = host.querySelector('[data-testid="btn-editar-param-1"]') as HTMLButtonElement;
-    btnEditar.click();
-    fixture.detectChanges();
-
-    expect(component.parametroSeleccionadoEdicion()?.id).toBe('param-1');
-    expect(component.modalEdicionAbierto()).toBeTrue();
-  });
-
-  it('HU168: el switch alterna entre solo editables y técnicos', () => {
-    adminServiceSpy.cargarParametros.calls.reset();
-    component.toggleMostrarTecnicos(true);
-    expect(adminServiceSpy.cargarParametros).toHaveBeenCalledWith(
-      jasmine.objectContaining({ soloEditables: false })
-    );
-
-    component.toggleMostrarTecnicos(false);
-    expect(adminServiceSpy.cargarParametros).toHaveBeenCalledWith(
-      jasmine.objectContaining({ soloEditables: true })
-    );
   });
 
   describe('cierre masivo y accesibilidad (F-ADM-006, F-ADM-007, F-ADM-014, F-ADM-S14)', () => {
