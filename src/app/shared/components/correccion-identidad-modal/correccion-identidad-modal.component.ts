@@ -18,11 +18,10 @@ const CLASE_CONTROL =
  * valida la jerarquía, la unicidad del documento y deja la auditoría.
  */
 @Component({
-  selector: 'app-correccion-identidad-modal',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ModalComponent, CorreccionDocumentoComponent],
-  template: `
+    selector: 'app-correccion-identidad-modal',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, ModalComponent, CorreccionDocumentoComponent],
+    template: `
     <app-modal [isOpen]="true" [title]="titulo()" (closed)="cancelar.emit()">
       <div class="space-y-4">
         <p class="text-xs text-warm-600">
@@ -62,7 +61,7 @@ const CLASE_CONTROL =
         </button>
       </div>
     </app-modal>
-  `,
+  `
 })
 export class CorreccionIdentidadModalComponent implements OnInit {
   readonly titulo = input('Corregir datos de identidad');

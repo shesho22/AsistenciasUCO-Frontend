@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, computed, input, output, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { AttendanceStatusBadgeComponent } from '../../../../shared/components/attendance-status-badge/attendance-status-badge.component';
 import { CardComponent } from '../../../../shared/components/card/card.component';
 import { BadgeComponent, BadgeVariant } from '../../../../shared/components/badge/badge.component';
@@ -38,11 +38,10 @@ interface BarraHoras {
 }
 
 @Component({
-  selector: 'app-student-courses-list',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, CardComponent, BadgeComponent, ButtonComponent, AttendanceStatusBadgeComponent, PaginationComponent],
-  template: `
+    selector: 'app-student-courses-list',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CardComponent, BadgeComponent, ButtonComponent, AttendanceStatusBadgeComponent, PaginationComponent],
+    template: `
     <div class="space-y-6">
       <!-- Header Bento -->
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
@@ -300,7 +299,7 @@ interface BarraHoras {
         />
       }
     </div>
-  `,
+  `
 })
 export class StudentCoursesListComponent {
   materias = input<MateriaEstudianteItem[]>([]);

@@ -81,6 +81,20 @@ function vinculoMock(a: { id: string; codigo: string; nombre: string; creditos: 
   };
 }
 
+/** Numero y punto de control (UTC) de una toma del mock, buscados en las sesiones de las materias del estudiante; nulos sin toma. */
+function datosTomaMock(idToma: string | null | undefined): { numeroToma: number | null; fechaPuntoControlUtc: string | null } {
+  if (idToma) {
+    for (const [clave, sesiones] of Object.entries(mockStore.sesionesMaterias)) {
+      const materia = mockStore.materiasEstudiante.find((m) => m.id === clave);
+      for (const sesion of mockSesionesToDto(sesiones, materia)) {
+        const toma = (sesion.tomas ?? []).find((t) => t.idToma === idToma);
+        if (toma) return { numeroToma: toma.numero, fechaPuntoControlUtc: toma.fechaPuntoControlUtc ?? null };
+      }
+    }
+  }
+  return { numeroToma: null, fechaPuntoControlUtc: null };
+}
+
 export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   // AuthService es la fuente reactiva de verdad y se consulta por petición,
   // incluyendo cambios de modo sin recargar la aplicación.
@@ -258,7 +272,23 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
       mockStore.materiasEstudiante.find((m) => mockUuid(`asignatura:${m.id}`) === materiaId)?.id ?? materiaId;
     const materia = mockStore.materiasEstudiante.find((m) => m.id === clave);
     const sesiones = mockStore.sesionesMaterias[clave] || [];
-    return of(okResponse(mockSesionesToDto(sesiones, materia))).pipe(delay(200));
+    // Los reclamos por toma ya radicados en el mock se reflejan en la toma correspondiente.
+    const dtos = mockSesionesToDto(sesiones, materia).map((sesion) => ({
+      ...sesion,
+      tomas: (sesion.tomas ?? []).map((toma) => {
+        const reclamo = mockStore.solicitudesRevision.find((r) => r.idToma === toma.idToma);
+        return reclamo
+          ? {
+              ...toma,
+              reclamable: false,
+              idSolicitudRevision: reclamo.id,
+              estadoSolicitudRevision: reclamo.estadoSolicitud,
+              resultadoAprobacion: reclamo.resultadoAprobacion ?? null,
+            }
+          : toma;
+      }),
+    }));
+    return of(okResponse(dtos)).pipe(delay(200));
   }
   if (url.endsWith('/estudiante/matricular-grupo') && method === 'POST') {
     const body = req.body as any;
@@ -603,7 +633,8 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     return of(okResponse(mockFileRes, 'Archivo subido correctamente.')).pipe(delay(300));
   }
   if (url.endsWith('/docente/reclamos') && method === 'GET') {
-    return of(okResponse(mockStore.solicitudesRevision)).pipe(delay(250));
+    // PC (puntos de control): la bandeja trae la toma reclamada (numero y punto de control), como el backend real.
+    return of(okResponse(mockStore.solicitudesRevision.map((r) => ({ ...r, ...datosTomaMock(r.idToma) })))).pipe(delay(250));
   }
   if (url.endsWith('/estudiante/reclamos') && method === 'GET') {
     // HU010/HU011: misma forma que el backend (lista con `total`), filtrada por estado y paginada.
@@ -623,6 +654,9 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
       fechaRadicacion: new Date().toISOString().slice(0, 10),
       estado: 'RADICADA' as const,
       estadoSolicitud: 'PENDIENTE' as const,
+      idToma: body?.tomaId ?? null,
+      ...datosTomaMock(body?.tomaId ?? null),
+      resultadoAprobacion: null,
     };
     mockStore.solicitudesRevision = [nuevoReclamo, ...mockStore.solicitudesRevision];
     return of(okResponse(nuevoReclamo, 'Solicitud de revisión registrada correctamente.')).pipe(delay(300));
@@ -715,6 +749,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
         ? {
             ...r,
             estadoSolicitud: accion,
+            resultadoAprobacion: accion === 'APROBADA' ? (body?.resultado === 'PRESENTE' ? ('PRESENTE' as const) : ('JUSTIFICADA' as const)) : null,
             justificacionRespuesta: comentario,
             fechaRespuesta: new Date().toISOString().slice(0, 10),
           }
@@ -722,7 +757,9 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     );
     const actualizado = mockStore.solicitudesRevision.find((r) => r.id === id);
     const msg = accion === 'APROBADA'
-      ? 'Reclamo aprobado. Se ha actualizado la asistencia a "Justificada".'
+      ? body?.resultado === 'PRESENTE'
+        ? 'Reclamo aprobado. Se registró que el estudiante estuvo presente en la toma.'
+        : 'Reclamo aprobado. Se ha actualizado la asistencia a "Justificada".'
       : 'Reclamo rechazado con la justificación suministrada.';
     return of(okResponse(actualizado, msg)).pipe(delay(250));
   }

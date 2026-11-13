@@ -1,16 +1,15 @@
 import { Component, ChangeDetectionStrategy, input, output, signal, computed, effect, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormFieldComponent } from '../../../../../shared/components/form-field/form-field.component';
 import { ClassSession } from '../../../../../core/models/attendance.model';
 import { SessionTimeZoneService } from '../../../../../core/services/session-timezone.service';
 import { MOTIVO_CANCELACION_MAX, MOTIVO_CANCELACION_MIN } from '../../../../../core/models/sesion-estado.model';
 
 @Component({
-  selector: 'app-teacher-sesion-cancelar-modal',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormFieldComponent],
-  template: `
+    selector: 'app-teacher-sesion-cancelar-modal',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormFieldComponent],
+    template: `
     @if (isOpen() && sesion()) {
       <div class="fixed inset-0 bg-warm-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
         <div data-testid="cancelar-panel" class="bg-white rounded-2xl border border-warm-200 shadow-warm-xl max-w-md w-full max-h-[calc(100vh-2rem)] overflow-y-auto animate-scale-up" role="dialog" aria-modal="true">
@@ -89,7 +88,7 @@ import { MOTIVO_CANCELACION_MAX, MOTIVO_CANCELACION_MIN } from '../../../../../c
         </div>
       </div>
     }
-  `,
+  `
 })
 export class TeacherSesionCancelarModalComponent {
   readonly timeZone = inject(SessionTimeZoneService);

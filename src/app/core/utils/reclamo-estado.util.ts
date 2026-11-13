@@ -14,6 +14,18 @@ export function varianteEstadoReclamo(estado: EstadoSolicitudRevision | string |
   }
 }
 
+/** Con qué resultado se aprobó un reclamo; `null` si no aplica (pendiente, rechazado o aprobación sin resultado informado). */
+export function etiquetaResultadoAprobacion(resultado: string | null | undefined): string | null {
+  switch (resultado) {
+    case 'PRESENTE':
+      return 'Aprobado: estuvo presente';
+    case 'JUSTIFICADA':
+      return 'Aprobado: ausencia justificada';
+    default:
+      return null;
+  }
+}
+
 /** Texto legible de la insignia (nunca el codigo crudo del backend); un estado desconocido se muestra tal cual. */
 export function etiquetaEstadoReclamo(estado: EstadoSolicitudRevision | string | undefined): string {
   switch (estado) {

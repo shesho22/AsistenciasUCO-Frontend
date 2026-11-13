@@ -27,6 +27,7 @@ function toma(parcial: Partial<TomaAsistencia> = {}): TomaAsistencia {
   return {
     idToma: 'toma-1', idSesion: 'session-1', idGrupo: 'group-1', numero: 1, modo: 'MANUAL', estado: 'ABIERTA',
     esImplicita: false, fechaAperturaUtc: '2026-11-03T13:00:00Z', fechaCierreUtc: null, horasToma: 1,
+    fechaPuntoControlUtc: '2026-11-10T13:00:00Z', ordenPuntoControl: 1, minutosTramoAnterior: 0, minutosTramoSiguiente: 60, esEditable: true, editableHastaUtc: null,
     totalRegistros: 0, totalPresentes: 0, totalAusentes: 0, totalExcusas: 0, tieneQrActivo: false, ...parcial,
   };
 }

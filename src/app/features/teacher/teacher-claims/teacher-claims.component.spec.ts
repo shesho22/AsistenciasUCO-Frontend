@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Subject, of, throwError } from 'rxjs';
 import { TeacherClaimsComponent } from './teacher-claims.component';
@@ -154,9 +154,82 @@ describe('TeacherClaimsComponent', () => {
     component.abrirVistaResolucion(mockReclamos[0]);
     component.comentarioDocente = 'Soporte verificado.';
     component.confirmarResolucion('APROBADA');
-    expect(claimServiceSpy.resolverReclamo).toHaveBeenCalledWith('rec-1', 'APROBADA', 'Soporte verificado.');
+    expect(claimServiceSpy.resolverReclamo).toHaveBeenCalledWith('rec-1', 'APROBADA', 'Soporte verificado.', 'JUSTIFICADA');
     expect(toastSpy.success).toHaveBeenCalledWith('Reclamo aprobado.');
     expect(component.vistaActual()).toBe('BANDEJA');
+  });
+
+  describe('reclamo por toma (puntos de control)', () => {
+    const detalleToma: DetalleReclamoDocenteItem = {
+      ...mockDetalle, idToma: 'toma-2', numeroToma: 2, fechaPuntoControlUtc: '2026-09-10T14:00:00Z',
+      estadoToma: 'AUSENTE', minutosSesion: 120, minutosAsistidos: 40,
+    };
+    const texto = (id: string) => (fixture.nativeElement.querySelector(`[data-testid="${id}"]`)?.textContent ?? '').replace(/\s+/g, ' ').trim();
+
+    function abrir(detalle: DetalleReclamoDocenteItem) {
+      claimServiceSpy.getDetalleReclamoDocente.and.returnValue(of({ exitoso: true, datos: detalle }));
+      component.abrirVistaResolucion(mockReclamos[0]);
+      fixture.detectChanges();
+    }
+
+    it('la tarjeta de la bandeja muestra Toma N · HH:mm si el reclamo es de una toma y nada si es de la sesión completa', () => {
+      const deToma: SolicitudRevisionItem = { ...mockReclamos[0], id: 'rec-toma', idToma: 'toma-2', numeroToma: 2, fechaPuntoControlUtc: '2026-09-10T14:00:00Z' };
+      const deSesion: SolicitudRevisionItem = { ...mockReclamos[0], id: 'rec-sesion', idToma: null, numeroToma: null, fechaPuntoControlUtc: null };
+      claimServiceSpy.getReclamosDocente.and.returnValue(of({ exitoso: true, datos: [deToma, deSesion], total: 2 }));
+      component.cargarReclamos();
+      fixture.detectChanges();
+
+      const tarjetas = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('[data-testid="tarjeta-toma"]'));
+      expect(tarjetas.length).toBe(1);
+      expect((tarjetas[0].textContent ?? '').replace(/\s+/g, ' ').trim()).toMatch(/^Toma 2 · \d{2}:\d{2}$/);
+      // Misma hora local que el detalle (que agrega el estado actual de la toma)
+      expect(component.textoTomaReclamada({ ...mockDetalle, ...deToma, estadoToma: 'AUSENTE' } as DetalleReclamoDocenteItem))
+        .toBe((component.textoTomaTarjeta(deToma) ?? '') + ' · Ausente');
+      expect(component.textoTomaTarjeta(deSesion)).toBeNull();
+    });
+
+    it('muestra la toma reclamada con su hora y estado, y los minutos de la sesión', () => {
+      abrir(detalleToma);
+      expect(texto('detalle-toma')).toMatch(/^Toma 2 · \d{2}:\d{2} · Ausente$/);
+      expect(texto('detalle-minutos')).toBe('Asistencia de la sesión: 40 de 120 min');
+    });
+
+    it('ofrece "Estuvo presente" y "Ausencia justificada" y envía el resultado elegido', () => {
+      claimServiceSpy.resolverReclamo.and.returnValue(of({ exitoso: true, mensajeUsuario: 'Listo.' }));
+      abrir(detalleToma);
+      expect(fixture.nativeElement.querySelector('[data-testid="aprobar-presente"]')).not.toBeNull();
+      expect(fixture.nativeElement.querySelector('[data-testid="aprobar-justificada"]')).not.toBeNull();
+      component.comentarioDocente = 'Estuvo en clase.';
+      component.confirmarResolucion('APROBADA', 'PRESENTE');
+      expect(claimServiceSpy.resolverReclamo).toHaveBeenCalledWith('rec-1', 'APROBADA', 'Estuvo en clase.', 'PRESENTE');
+    });
+
+    it('en un reclamo de sesión (sin toma) oculta "Estuvo presente" y no permite aprobar como presente', () => {
+      abrir(mockDetalle);
+      expect(fixture.nativeElement.querySelector('[data-testid="aprobar-presente"]')).toBeNull();
+      expect(fixture.nativeElement.querySelector('[data-testid="aprobar-justificada"]')).not.toBeNull();
+      expect(texto('detalle-toma')).toBe('');
+      component.confirmarResolucion('APROBADA', 'PRESENTE');
+      expect(claimServiceSpy.resolverReclamo).not.toHaveBeenCalled();
+    });
+
+    it('muestra el mensaje del backend si rechaza la aprobación (409 sin toma)', () => {
+      claimServiceSpy.resolverReclamo.and.returnValue(throwError(() => new HttpErrorResponse({
+        status: 409,
+        error: {
+          timestamp: '2026-11-12T10:00:00Z', status: 409, error: 'Conflict', code: 'ERR_APROBACION_PRESENTE_SIN_TOMA',
+          message: 'Solo se puede aprobar como presente un reclamo de una toma.', path: '/api/v1/docente/reclamos/rec-1', correlationId: null,
+        },
+      })));
+      abrir(detalleToma);
+      component.confirmarResolucion('APROBADA', 'PRESENTE');
+      expect(toastSpy.error).toHaveBeenCalledWith('Solo se puede aprobar como presente un reclamo de una toma.');
+    });
+
+    it('un reclamo aprobado muestra el resultado de la aprobación', () => {
+      abrir({ ...detalleToma, estadoSolicitud: 'APROBADA', resultadoAprobacion: 'PRESENTE', justificacionRespuesta: 'Ok.' });
+      expect(texto('detalle-resultado')).toBe('Aprobado: estuvo presente');
+    });
   });
 
   it('confirmarResolucion rechaza el reclamo con feedback por defecto', () => {
@@ -164,7 +237,7 @@ describe('TeacherClaimsComponent', () => {
     component.abrirVistaResolucion(mockReclamos[0]);
     component.comentarioDocente = '';
     component.confirmarResolucion('RECHAZADA');
-    expect(claimServiceSpy.resolverReclamo).toHaveBeenCalledWith('rec-1', 'RECHAZADA', 'No cumple con los soportes requeridos.');
+    expect(claimServiceSpy.resolverReclamo).toHaveBeenCalledWith('rec-1', 'RECHAZADA', 'No cumple con los soportes requeridos.', undefined);
   });
 
   // SES-04: la decisión espera la respuesta real, no se envía dos veces y un conflicto no se muestra como éxito.
@@ -262,7 +335,7 @@ describe('TeacherClaimsComponent — bandeja paginada y detalle (HU035/HU036)', 
     toast = jasmine.createSpyObj<ToastService>('ToastService', ['success', 'error', 'warning', 'info']);
     await TestBed.configureTestingModule({
       imports: [TeacherClaimsComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting(), { provide: ToastService, useValue: toast }],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting(), { provide: ToastService, useValue: toast }],
     }).compileComponents();
     http = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(TeacherClaimsComponent);

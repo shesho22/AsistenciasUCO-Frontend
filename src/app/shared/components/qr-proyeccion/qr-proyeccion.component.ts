@@ -7,12 +7,11 @@ import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed,
  * es una animacion CSS cuya duracion informa el padre (`segundosRestantes`), sin temporizadores.
  */
 @Component({
-  selector: 'app-qr-proyeccion',
-  standalone: true,
-  imports: [ActionMenuComponent],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  styles: [
-    `
+    selector: 'app-qr-proyeccion',
+    imports: [ActionMenuComponent],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    styles: [
+        `
       @keyframes qr-barra-a {
         from {
           transform: scaleX(1);
@@ -35,8 +34,8 @@ import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed,
         animation-fill-mode: forwards;
       }
     `,
-  ],
-  template: `
+    ],
+    template: `
     <div
       class="fixed inset-0 z-50 text-warm-900 overflow-y-auto"
       [class]="ampliado() ? 'flex flex-col bg-warm-50' : 'flex items-center justify-center p-4 bg-warm-900/60 backdrop-blur-sm'"
@@ -157,7 +156,7 @@ import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed,
       </main>
      </div>
     </div>
-  `,
+  `
 })
 export class QrProyeccionComponent {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);

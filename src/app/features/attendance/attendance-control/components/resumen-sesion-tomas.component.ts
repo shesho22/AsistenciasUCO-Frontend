@@ -1,8 +1,9 @@
-import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
 import { forkJoin } from 'rxjs';
 import { TomaAsistenciaService } from '../../../../core/services/toma-asistencia.service';
-import { AsistenciaToma, TomaAsistencia } from '../../../../core/models/toma-asistencia.model';
+import { SessionTimeZoneService } from '../../../../core/services/session-timezone.service';
+import { AsistenciaToma, ResumenTomasEstudiante, TomaAsistencia } from '../../../../core/models/toma-asistencia.model';
+import { detalleExcusaSesion, etiquetaEstadoSesion } from '../../../../core/utils/estado-sesion-estudiante.util';
 import { getApiErrorMessage } from '../../../../core/api/errors/api-error.util';
 import { TAMANO_PAGINA_TOMA, cargarTodasLasPaginas } from './toma-paginas.util';
 import { ClaveEstadoToma, ETIQUETA_ESTADO_TOMA, claveEstadoToma } from './toma-estado';
@@ -11,21 +12,21 @@ interface FilaResumen {
   estudianteId: string;
   nombre: string;
   celdas: { tomaId: string; estado: ClaveEstadoToma }[];
-  horasAsistidas: number;
+  /** Minutos y estado de la sesión, calculados por el backend; `null` si aún no llegan. */
+  resumen: ResumenTomasEstudiante | null;
 }
 
 const CLAVES: readonly ClaveEstadoToma[] = ['AN', 'SJC', 'EX', 'SIN'];
 
 /**
  * Resumen de la sesión: matriz estudiante × toma con el estado de cada uno (Presente, Falta, Excusa, Sin registro)
- * y las horas asistidas. Refleja lo guardado en el backend (`GET /tomas/{id}/asistencias`); las horas de cada toma
- * (`horasToma`) y de la sesión (`horasSesion`) las entrega el backend.
+ * y la asistencia de la sesión. Refleja lo guardado en el backend: la matriz sale de `GET /tomas/{id}/asistencias` y los
+ * minutos y el estado de `GET /sesiones/{id}/tomas/resumen`. El cliente no calcula horas ni minutos.
  */
 @Component({
   selector: 'app-resumen-sesion-tomas',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DecimalPipe],
   template: `
     <section class="space-y-4" aria-label="Resumen de la sesión por toma" data-testid="resumen-sesion">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
@@ -69,11 +70,11 @@ const CLAVES: readonly ClaveEstadoToma[] = ['AN', 'SJC', 'EX', 'SIN'];
                 <th scope="col" class="py-3 px-3 sticky left-0 bg-warm-100 z-10 min-w-[8rem]">Estudiante</th>
                 @for (t of tomas(); track t.idToma) {
                   <th scope="col" class="py-3 px-3 text-center whitespace-nowrap" [attr.data-testid]="'columna-' + t.idToma">
-                    Toma {{ t.numero }}
-                    <span class="block font-normal text-warm-600">{{ t.modo === 'QR' ? 'QR' : 'Manual' }} · {{ t.horasToma | number: '1.0-2' }} h</span>
+                    Toma {{ t.numero }} · {{ horaDe(t) }}
+                    <span class="block font-normal text-warm-600">{{ t.modo === 'QR' ? 'QR' : 'Manual' }}</span>
                   </th>
                 }
-                <th scope="col" class="py-3 px-3 text-center whitespace-nowrap">Horas asistidas</th>
+                <th scope="col" class="py-3 px-3 text-center whitespace-nowrap">Asistencia</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-warm-100">
@@ -90,8 +91,15 @@ const CLAVES: readonly ClaveEstadoToma[] = ['AN', 'SJC', 'EX', 'SIN'];
                       <span class="sr-only">{{ etiqueta(c.estado) }}</span>
                     </td>
                   }
-                  <td class="py-2.5 px-3 text-center font-semibold whitespace-nowrap" [attr.data-testid]="'horas-' + f.estudianteId">
-                    {{ f.horasAsistidas | number: '1.0-2' }} de {{ horasSesion() | number: '1.0-2' }} h
+                  <td class="py-2.5 px-3 text-center font-semibold whitespace-nowrap" [attr.data-testid]="'asistencia-' + f.estudianteId">
+                    @if (f.resumen; as r) {
+                      {{ textoAsistencia(r) }}
+                      @if (detalleExcusa(r)) {
+                        <span class="block font-normal text-warm-600">{{ detalleExcusa(r) }}</span>
+                      }
+                    } @else {
+                      <span class="font-normal text-warm-600">—</span>
+                    }
                   </td>
                 </tr>
               }
@@ -104,23 +112,27 @@ const CLAVES: readonly ClaveEstadoToma[] = ['AN', 'SJC', 'EX', 'SIN'];
 })
 export class ResumenSesionTomasComponent {
   private readonly service = inject(TomaAsistenciaService);
+  private readonly zona = inject(SessionTimeZoneService);
 
   readonly tomas = input.required<TomaAsistencia[]>();
-  readonly horasSesion = input<number>(0);
+  readonly sesionId = input.required<string>();
 
   protected readonly claves = CLAVES;
   protected readonly busqueda = signal('');
   protected readonly cargando = signal(false);
   protected readonly error = signal<string | null>(null);
   private readonly porToma = signal<ReadonlyMap<string, AsistenciaToma[]>>(new Map());
+  private readonly resumenes = signal<ReadonlyMap<string, ResumenTomasEstudiante>>(new Map());
 
   protected readonly filas = computed<FilaResumen[]>(() => {
     const tomas = this.tomas();
     const datos = this.porToma();
+    const resumenes = this.resumenes();
     const nombres = new Map<string, string>();
     for (const t of tomas) {
       for (const r of datos.get(t.idToma) ?? []) nombres.set(r.estudianteId, r.nombreCompleto);
     }
+    for (const r of resumenes.values()) nombres.set(r.estudianteId, r.nombreCompleto);
     return [...nombres]
       .sort((a, b) => a[1].localeCompare(b[1], 'es'))
       .map(([estudianteId, nombre]) => {
@@ -128,11 +140,7 @@ export class ResumenSesionTomasComponent {
           const registro = datos.get(t.idToma)?.find((r) => r.estudianteId === estudianteId);
           return { tomaId: t.idToma, estado: claveEstadoToma(registro?.estado ?? null) };
         });
-        const horasAsistidas = tomas.reduce(
-          (suma, t, i) => (celdas[i].estado === 'AN' ? suma + t.horasToma : suma),
-          0
-        );
-        return { estudianteId, nombre, celdas, horasAsistidas };
+        return { estudianteId, nombre, celdas, resumen: resumenes.get(estudianteId) ?? null };
       });
   });
 
@@ -144,17 +152,23 @@ export class ResumenSesionTomasComponent {
   constructor() {
     effect((onCleanup) => {
       const tomas = this.tomas();
+      const sesionId = this.sesionId();
       if (tomas.length === 0) {
         this.porToma.set(new Map());
+        this.resumenes.set(new Map());
         return;
       }
       this.cargando.set(true);
-      const sub = forkJoin(
-        tomas.map((t) => cargarTodasLasPaginas((pagina) => this.service.consultarAsistencias(t.idToma, pagina, TAMANO_PAGINA_TOMA)))
-      ).subscribe({
-        next: (listas) => {
+      const sub = forkJoin([
+        forkJoin(
+          tomas.map((t) => cargarTodasLasPaginas((pagina) => this.service.consultarAsistencias(t.idToma, pagina, TAMANO_PAGINA_TOMA)))
+        ),
+        this.service.consultarResumenSesion(sesionId),
+      ]).subscribe({
+        next: ([listas, resumen]) => {
           this.error.set(null);
           this.porToma.set(new Map(tomas.map((t, i) => [t.idToma, listas[i]] as const)));
+          this.resumenes.set(new Map(resumen.datos.map((r) => [r.estudianteId, r] as const)));
           this.cargando.set(false);
         },
         error: (err: unknown) => {
@@ -168,6 +182,20 @@ export class ResumenSesionTomasComponent {
 
   protected valorDe(evento: Event): string {
     return (evento.target as HTMLInputElement).value;
+  }
+
+  protected horaDe(toma: TomaAsistencia): string {
+    return this.zona.formatTemporal(toma.fechaPuntoControlUtc, 'time');
+  }
+
+  /** "Presente", "Ausente", "Justificada" o "Parcial: X de Y minutos", según lo que calculó el backend. */
+  protected textoAsistencia(r: ResumenTomasEstudiante): string {
+    const base = etiquetaEstadoSesion(r.estado, r);
+    return r.estado === 'PRESENTE' ? `${base} · ${r.minutosAsistidos} de ${r.minutosSesion} min` : base;
+  }
+
+  protected detalleExcusa(r: ResumenTomasEstudiante): string {
+    return detalleExcusaSesion(r);
   }
 
   protected etiqueta(clave: ClaveEstadoToma): string {

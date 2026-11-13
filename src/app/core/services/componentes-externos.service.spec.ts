@@ -24,8 +24,8 @@ describe('ComponentesExternosService (F3-ADM-07)', () => {
     expect(servicio.disponible('mensajes')).toBeFalse();
   });
 
-  it('sin proveedor configurado se comporta como legacy', () => {
-    expect(crear().disponible('seguridad')).toBeFalse();
+  it('sin proveedor configurado se comporta como baseline (SEG-12)', () => {
+    expect(crear().disponible('seguridad')).toBeTrue();
   });
 
   it('con el proveedor baseline ambos componentes estan disponibles', () => {
@@ -49,5 +49,13 @@ describe('ComponentesExternosService (F3-ADM-07)', () => {
     servicio.marcarNoDisponible('mensajes');
     servicio.marcarNoDisponible('mensajes');
     expect(servicio.disponible('mensajes')).toBeFalse();
+  });
+
+  it('DEC-065 (5): habilitado depende solo del entorno y no cambia cuando el componente se marca caido', () => {
+    const baseline = crear('baseline');
+    baseline.marcarNoDisponible('seguridad');
+    expect(baseline.habilitado('seguridad')).toBeTrue();
+    expect(baseline.disponible('seguridad')).toBeFalse();
+    expect(crear('legacy').habilitado('mensajes')).toBeFalse();
   });
 });

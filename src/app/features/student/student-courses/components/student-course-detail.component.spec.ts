@@ -3,6 +3,7 @@ import { StudentCourseDetailComponent } from './student-course-detail.component'
 import {
   MateriaEstudianteItem,
   SesionMateriaDetalle,
+  TomaSesionEstudiante,
 } from '../../../../core/models/role-management.model';
 import { crearMateria, crearSesion } from '../../../../core/testing/student-portal.fixtures';
 
@@ -228,7 +229,7 @@ describe('StudentCourseDetailComponent', () => {
       fixture.componentRef.setInput('sesiones', [crearSesion({ id: 'pa', estadoAsistencia: 'PARCIAL', reclamable: true })]);
       fixture.detectChanges();
       expect(texto()).toContain('Radicar Reclamo');
-      expect(texto()).toContain('PARCIAL');
+      expect(texto()).toContain('Parcial');
 
       fixture.componentRef.setInput('sesiones', [crearSesion({ id: 'j', estadoAsistencia: 'JUSTIFICADA' })]);
       fixture.detectChanges();
@@ -380,5 +381,102 @@ describe('StudentCourseDetailComponent', () => {
       fixture.detectChanges();
       expect(numeros().length).toBe(5);
     });
+  });
+});
+
+describe('StudentCourseDetailComponent: puntos de control', () => {
+  let fixture: ComponentFixture<StudentCourseDetailComponent>;
+  const texto = () => (fixture.nativeElement.textContent as string).replace(/\s+/g, ' ');
+  const el = (id: string) => fixture.nativeElement.querySelector(`[data-testid="${id}"]`) as HTMLElement | null;
+  const toma = (numero: number, parcial: Partial<TomaSesionEstudiante> = {}): TomaSesionEstudiante => ({
+    idToma: `toma-${numero}`, numero, horaPuntoControl: numero === 1 ? '08:00' : '09:00', estado: 'AUSENTE', reclamable: true,
+    idSolicitudRevision: null, estadoSolicitudRevision: null, resultadoAprobacion: null, ...parcial,
+  });
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({ imports: [StudentCourseDetailComponent] }).compileComponents();
+    fixture = TestBed.createComponent(StudentCourseDetailComponent);
+    fixture.componentRef.setInput('materia', crearMateria());
+  });
+
+  it('muestra "Parcial: X de Y minutos" y los minutos justificados', () => {
+    fixture.componentRef.setInput('sesiones', [crearSesion({
+      id: 'p', estadoAsistencia: 'PARCIAL', minutosSesion: 120, minutosAsistidos: 20, minutosExcusa: 100,
+      tomas: [toma(1, { estado: 'PRESENTE', reclamable: false }), toma(2, { estado: 'JUSTIFICADA', reclamable: false })],
+    })]);
+    fixture.detectChanges();
+    expect(el('estado-p')!.textContent!.trim()).toBe('Parcial: 20 de 120 minutos');
+    expect(el('sesion-excusa')!.textContent).toContain('100 min justificados');
+  });
+
+  it('muestra Presente, Ausente y Justificada en español', () => {
+    fixture.componentRef.setInput('sesiones', [
+      crearSesion({ id: 'a', estadoAsistencia: 'PRESENTE' }),
+      crearSesion({ id: 'b', estadoAsistencia: 'AUSENTE' }),
+      crearSesion({ id: 'c', estadoAsistencia: 'JUSTIFICADA' }),
+    ]);
+    fixture.detectChanges();
+    expect(el('estado-a')!.textContent!.trim()).toBe('Presente');
+    expect(el('estado-b')!.textContent!.trim()).toBe('Ausente');
+    expect(el('estado-c')!.textContent!.trim()).toBe('Justificada');
+  });
+
+  it('lista las tomas con su hora y estado, y ofrece reclamar solo las reclamables', () => {
+    fixture.componentRef.setInput('sesiones', [crearSesion({
+      id: 'p', numeroSesion: 4, estadoAsistencia: 'PARCIAL', reclamable: true, minutosSesion: 120, minutosAsistidos: 60,
+      tomas: [toma(1, { estado: 'PRESENTE', reclamable: false }), toma(2)],
+    })]);
+    fixture.detectChanges();
+    expect(el('toma-toma-1')!.textContent).toMatch(/Toma 1 · 08:00\s*Presente/);
+    expect(el('toma-toma-2')!.textContent).toMatch(/Toma 2 · 09:00\s*Ausente/);
+    expect(el('toma-toma-1')!.querySelector('[data-testid="btn-reclamar-toma"]')).toBeNull();
+    const boton = el('toma-toma-2')!.querySelector('[data-testid="btn-reclamar-toma"]') as HTMLButtonElement;
+    expect(boton.textContent).toContain('Reclamar esta toma');
+    expect(boton.getAttribute('aria-label')).toBe('Reclamar la toma 2 de la sesión 4');
+    // El reclamo es por toma: no aparece el botón de reclamar la sesión completa.
+    expect(texto()).not.toContain('Radicar Reclamo');
+  });
+
+  it('el botón de una toma emite la sesión y la toma elegidas', () => {
+    const sesion = crearSesion({ id: 'p', estadoAsistencia: 'PARCIAL', reclamable: true, tomas: [toma(2)] });
+    fixture.componentRef.setInput('sesiones', [sesion]);
+    fixture.detectChanges();
+    const emitidos: unknown[] = [];
+    fixture.componentInstance.startClaimToma.subscribe((e) => emitidos.push(e));
+    (el('btn-reclamar-toma') as HTMLButtonElement).click();
+    expect(emitidos).toEqual([{ sesion, toma: sesion.tomas[0] }]);
+  });
+
+  it('una toma con reclamo muestra su estado y el resultado, sin botón', () => {
+    fixture.componentRef.setInput('sesiones', [crearSesion({
+      id: 'p', estadoAsistencia: 'PARCIAL', reclamable: false,
+      tomas: [
+        toma(1, { reclamable: false, idSolicitudRevision: 's-1', estadoSolicitudRevision: 'PENDIENTE' }),
+        toma(2, { reclamable: false, idSolicitudRevision: 's-2', estadoSolicitudRevision: 'APROBADA', resultadoAprobacion: 'PRESENTE' }),
+        toma(3, { reclamable: false, idSolicitudRevision: 's-3', estadoSolicitudRevision: 'APROBADA', resultadoAprobacion: 'JUSTIFICADA' }),
+        toma(4, { reclamable: false, idSolicitudRevision: 's-4', estadoSolicitudRevision: 'RECHAZADA' }),
+      ],
+    })]);
+    fixture.detectChanges();
+    const reclamo = (n: number) => el(`toma-toma-${n}`)!.querySelector('[data-testid="toma-reclamo"]')!.textContent!.trim();
+    expect(reclamo(1)).toBe('Reclamo pendiente');
+    expect(reclamo(2)).toBe('Reclamo aprobado: estuvo presente');
+    expect(reclamo(3)).toBe('Reclamo aprobado: ausencia justificada');
+    expect(reclamo(4)).toBe('Reclamo rechazado');
+    expect(el('btn-reclamar-toma')).toBeNull();
+  });
+
+  it('con el plazo vencido no se ofrece reclamar la toma', () => {
+    fixture.componentRef.setInput('sesiones', [crearSesion({
+      id: 'p', estadoAsistencia: 'PARCIAL', reclamable: true, plazoJustificacionVigente: false, tomas: [toma(2)],
+    })]);
+    fixture.detectChanges();
+    expect(el('btn-reclamar-toma')).toBeNull();
+  });
+
+  it('una sesión cancelada no muestra tomas', () => {
+    fixture.componentRef.setInput('sesiones', [crearSesion({ id: 'x', estado: 'CANCELADA', tomas: [toma(1)] })]);
+    fixture.detectChanges();
+    expect(el('tomas-x')).toBeNull();
   });
 });

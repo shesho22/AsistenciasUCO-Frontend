@@ -50,6 +50,20 @@ describe('ClaimMapper.fromReclamoDocente (LB-004D)', () => {
     expect(item.soporteAdjunto?.urlSimulada).toBeUndefined();
   });
 
+  it('PC: el reclamo de una toma trae idToma, numeroToma y fechaPuntoControlUtc; el de la sesión los deja en null', () => {
+    const conToma = ClaimMapper.fromReclamoDocente({
+      ...base, idToma: 'toma-3', numeroToma: 3, fechaPuntoControlUtc: '2026-10-19T14:45:00.1234567Z',
+    }, formatter);
+    expect(conToma.idToma).toBe('toma-3');
+    expect(conToma.numeroToma).toBe(3);
+    expect(conToma.fechaPuntoControlUtc).toBe('2026-10-19T14:45:00.1234567Z');
+
+    const deSesion = ClaimMapper.fromReclamoDocente(base, formatter);
+    expect(deSesion.idToma).toBeNull();
+    expect(deSesion.numeroToma).toBeNull();
+    expect(deSesion.fechaPuntoControlUtc).toBeNull();
+  });
+
   it('toDTO tolera estadoOriginal ausente', () => {
     const dto = ClaimMapper.toDTO(ClaimMapper.fromReclamoDocente(base, formatter));
     expect(dto.estado_original).toBe('');
@@ -77,5 +91,45 @@ describe('ClaimMapper.fromReclamoDocente (LB-004D)', () => {
     expect(item.soportes?.[1].fileId).toBe('f-2');
     expect(item.soporteAdjunto?.fileId).toBe('f-1');
     expect(item.categoria).toEqual({ codigo: 'MED', nombre: 'Médico / Salud' });
+  });
+
+  it('EST-03 (S3923): la categoría como string se conserva tal cual y sin categoría se arma desde código y nombre', () => {
+    expect(ClaimMapper.fromReclamoDocente({ ...base, categoria: 'MED' }, formatter).categoria).toBe('MED' as any);
+    const desdeCodigo = ClaimMapper.fromReclamoDocente({ ...base, categoria: undefined, codigoCategoria: 'LAB', nombreCategoria: 'Laboral' } as any, formatter);
+    expect(desdeCodigo.categoria).toEqual({ codigo: 'LAB', nombre: 'Laboral' });
+  });
+});
+
+describe('ClaimMapper: reclamo por toma (puntos de control)', () => {
+  const base: ReclamoDocenteApi = {
+    id: 'rec-1', fechaSolicitud: '2026-10-19', estadoSolicitud: 'APROBADA', justificacionSolicitud: 'Cita', estudianteId: 'est-1',
+    estudianteNombre: 'Ana Pérez', sesionId: 'ses-1', sesionNumero: 2, fechaSesionUtc: '2026-10-19T13:00:00Z', grupoCodigo: 7,
+    materiaId: 'm-1', materiaCodigo: 'MAT1', materiaNombre: 'Matemáticas', soporteAdjunto: null,
+    idToma: 'toma-2', numeroToma: 2, fechaPuntoControlUtc: '2026-10-19T13:40:00Z', resultadoAprobacion: 'PRESENTE',
+  };
+  const formatter = (instant: string) => instant.slice(0, 10);
+
+  it('conserva la toma reclamada y el resultado de la aprobación', () => {
+    const item = ClaimMapper.fromReclamoDocente(base, formatter);
+    expect(item.idToma).toBe('toma-2');
+    expect(item.numeroToma).toBe(2);
+    expect(item.fechaPuntoControlUtc).toBe('2026-10-19T13:40:00Z');
+    expect(item.resultadoAprobacion).toBe('PRESENTE');
+  });
+
+  it('un reclamo de sesión (sin toma) deja la toma y el resultado en null; un resultado desconocido no se acepta', () => {
+    const item = ClaimMapper.fromReclamoDocente({ ...base, idToma: undefined, numeroToma: null, fechaPuntoControlUtc: null, resultadoAprobacion: 'RARO' }, formatter);
+    expect(item.idToma).toBeNull();
+    expect(item.numeroToma).toBeNull();
+    expect(item.resultadoAprobacion).toBeNull();
+  });
+
+  it('el detalle del docente agrega el estado de la toma y los minutos de la sesión', () => {
+    const item = ClaimMapper.fromDetalleReclamoDocente({ ...base, estadoToma: 'AUSENTE', minutosSesion: 120, minutosAsistidos: 40 }, formatter);
+    expect(item.estadoToma).toBe('AUSENTE');
+    expect(item.minutosSesion).toBe(120);
+    expect(item.minutosAsistidos).toBe(40);
+    const sinToma = ClaimMapper.fromDetalleReclamoDocente({ ...base, estadoToma: null }, formatter);
+    expect(sinToma.estadoToma).toBeNull();
   });
 });

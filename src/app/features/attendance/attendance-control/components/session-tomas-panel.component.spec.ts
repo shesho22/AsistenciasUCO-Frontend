@@ -11,7 +11,8 @@ function toma(parcial: Partial<TomaAsistencia> = {}): TomaAsistencia {
   return {
     idToma: 't-1', idSesion: 's-1', idGrupo: 'g-1', numero: 1, modo: 'MANUAL', estado: 'CERRADA',
     esImplicita: false, fechaAperturaUtc: '2026-11-10T13:00:00Z', fechaCierreUtc: '2026-11-10T14:00:00Z',
-    horasToma: 1, totalRegistros: 10, totalPresentes: 8, totalAusentes: 1, totalExcusas: 1, tieneQrActivo: false,
+    horasToma: 1, fechaPuntoControlUtc: '2026-11-10T13:00:00Z', ordenPuntoControl: 1, minutosTramoAnterior: 0, minutosTramoSiguiente: 60, esEditable: true, editableHastaUtc: null,
+    totalRegistros: 10, totalPresentes: 8, totalAusentes: 1, totalExcusas: 1, tieneQrActivo: false,
     ...parcial,
   };
 }
@@ -46,8 +47,15 @@ describe('SessionTomasPanelComponent (CULM-001 B.2 + UX toma)', () => {
 
   beforeEach(() => {
     service = jasmine.createSpyObj<TomaAsistenciaService>('TomaAsistenciaService', [
-      'consultarAsistencias', 'consultarFaltantes', 'registrarAsistencias',
+      'consultarAsistencias', 'consultarFaltantes', 'registrarAsistencias', 'consultarResumenSesion',
     ]);
+    service.consultarResumenSesion.and.returnValue(of({
+      exitoso: true,
+      datos: [
+        { estudianteId: 'a', nombreCompleto: 'Alumno a', minutosSesion: 120, minutosAsistidos: 0, minutosFalta: 120, minutosExcusa: 0, minutosSinRegistro: 0, estado: 'AUSENTE', tomasAusentes: 2 },
+        { estudianteId: 'b', nombreCompleto: 'Alumno b', minutosSesion: 120, minutosAsistidos: 120, minutosFalta: 0, minutosExcusa: 0, minutosSinRegistro: 0, estado: 'PRESENTE', tomasAusentes: 0 },
+      ],
+    }));
     service.consultarAsistencias.and.returnValue(of(pagina([alumno('a', null), alumno('b', 'AN')])));
     service.consultarFaltantes.and.returnValue(of({ exitoso: true, elementos: [], numeroPagina: 1, tamanoPagina: 100, totalElementos: 0, totalPaginas: 1 }));
     TestBed.configureTestingModule({
@@ -148,10 +156,22 @@ describe('SessionTomasPanelComponent (CULM-001 B.2 + UX toma)', () => {
     expect(el('tabs-tomas')).toBeNull();
   });
 
-  it('UX-toma la ventana cerrada del backend bloquea la edicion de las tomas', () => {
-    render(tomasSesion({ tomas: [toma({ estado: 'ABIERTA' })], ventana: { aperturaUtc: null, cierreUtc: null, abierta: false } }));
-    expect(boton('guardar-toma').disabled).toBeTrue();
-    expect(el('toma-ventana-cerrada')).not.toBeNull();
+  it('UX-toma una toma que el backend marca como no editable bloquea la edicion', () => {
+    render(tomasSesion({ tomas: [toma({ estado: 'CERRADA', esEditable: false })] }));
+    expect(boton('marcar-todos-presentes').disabled).toBeTrue();
+    expect(el('toma-aviso-edicion')).not.toBeNull();
+  });
+
+  it('muestra la linea de tiempo de los puntos de control con la hora de cada toma', () => {
+    render(tomasSesion({ tomas: [toma(), toma({ idToma: 't-2', numero: 2 })] }));
+    expect(texto('linea-puntos-control')).toMatch(/Toma 1 a las \d{2}:\d{2} · Toma 2 a las \d{2}:\d{2}\./);
+  });
+
+  it('el tope de tomas usa el maximo informado por el backend', () => {
+    const tomas = Array.from({ length: 20 }, (_, i) => toma({ idToma: `t-${i + 1}`, numero: i + 1, estado: 'CERRADA' }));
+    render(tomasSesion({ tomas, maximoTomas: 20 }));
+    expect(boton('nueva-toma').disabled).toBeTrue();
+    expect(texto('nueva-toma-motivo')).toContain('máximo de 20 tomas');
   });
 
   it('UX-toma re-emite proyectar, cerrar, actualizado y notificaciones de la toma', () => {
@@ -275,7 +295,8 @@ describe('TomaCierreDialogComponent (CULM-001 B.2)', () => {
     fixture.componentInstance.confirmar.subscribe(confirmar);
     fixture.componentInstance.cancelar.subscribe(cancelar);
 
-    expect((fixture.nativeElement as HTMLElement).textContent).toContain('no marcados quedan ausentes');
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('no estén marcados quedan ausentes');
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('hasta que abras la siguiente toma');
     (fixture.nativeElement.querySelector('[data-testid="cierre-confirmar"]') as HTMLButtonElement).click();
     (fixture.nativeElement.querySelector('[data-testid="cierre-cancelar"]') as HTMLButtonElement).click();
     expect(confirmar).toHaveBeenCalledOnceWith(true);

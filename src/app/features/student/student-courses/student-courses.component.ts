@@ -1,6 +1,6 @@
 import { Component, OnDestroy, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { Subscription, finalize } from 'rxjs';
-import { CommonModule } from '@angular/common';
+
 import { ActivatedRoute, Router } from '@angular/router';
 import { StudentManagementService } from '../../../core/services/student-management.service';
 import { MatriculaQrService } from '../../../core/services/matricula-qr.service';
@@ -22,6 +22,7 @@ import {
   SesionMateriaDetalle,
   CategoriaJustificacion,
   SoporteAdjuntoItem,
+  TomaSesionEstudiante,
 } from '../../../core/models/role-management.model';
 
 // Subcomponentes Desacoplados
@@ -38,21 +39,20 @@ import { StudentCoursesListComponent } from './components/student-courses-list.c
 import { StudentCourseDetailComponent } from './components/student-course-detail.component';
 import { StudentClaimFormComponent } from './components/student-claim-form.component';
 import { StudentMatriculaCodigoModalComponent } from './components/modals/student-matricula-codigo-modal.component';
+import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
 type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO';
 
 @Component({
-  selector: 'app-student-courses',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    CommonModule,
+    selector: 'app-student-courses',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [
     StudentCoursesListComponent,
     StudentCourseDetailComponent,
     StudentClaimFormComponent,
-    StudentMatriculaCodigoModalComponent,
-  ],
-  template: `
+    StudentMatriculaCodigoModalComponent
+],
+    template: `
     <div class="space-y-6 animate-fade-in">
       <!-- 1. Vista: Lista Principal de Materias -->
       @if (vistaActual() === 'LISTA') {
@@ -80,6 +80,7 @@ type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO';
           (retry)="reintentarSesiones()"
           (back)="volverALista()"
           (startClaim)="iniciarReclamo($event)"
+          (startClaimToma)="iniciarReclamoToma($event)"
           (withdrawClaim)="retirarReclamo($event)"
         />
       }
@@ -89,6 +90,7 @@ type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO';
         <app-student-claim-form
           [materia]="selectedMateria()"
           [sesion]="sesionReclamar()"
+          [toma]="tomaReclamar()"
           [categorias]="categoriasJustificacion()"
           [configuracion]="configuracionReclamos()"
           [archivo]="archivoAdjunto()"
@@ -116,7 +118,7 @@ type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO';
         (closed)="cerrarModalMatriculaGrupo()"
       />
     </div>
-  `,
+  `
 })
 export class StudentCoursesComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
@@ -157,6 +159,8 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
 
   // Radicación reclamo
   sesionReclamar = signal<SesionMateriaDetalle | null>(null);
+  /** Toma que se reclama; `null` si el reclamo es de la sesión completa (sesión sin tomas). */
+  tomaReclamar = signal<TomaSesionEstudiante | null>(null);
   /** HU005/HU016: motivos de justificación del catálogo de solo consulta. */
   categoriasJustificacion = signal<CategoriaJustificacionItem[]>([]);
   /** CULM-001 D.2: Configuración del backend para límites y tipos permitidos de reclamos. */
@@ -326,6 +330,17 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
     if (!sesion.reclamable || sesion.estadoAsistencia === 'NO_DISPONIBLE') return;
     this.errorEnvio.set(null);
     this.sesionReclamar.set(sesion);
+    this.tomaReclamar.set(null);
+    this.limpiarSoporte();
+    this.vistaActual.set('RECLAMO');
+  }
+
+  /** Reclamo de una toma: solo si el backend la marcó reclamable. */
+  iniciarReclamoToma(evento: { sesion: SesionMateriaDetalle; toma: TomaSesionEstudiante }): void {
+    if (!evento.toma.reclamable) return;
+    this.errorEnvio.set(null);
+    this.sesionReclamar.set(evento.sesion);
+    this.tomaReclamar.set(evento.toma);
     this.limpiarSoporte();
     this.vistaActual.set('RECLAMO');
   }
@@ -333,6 +348,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
   volverADetalle(): void {
     this.vistaActual.set('DETALLE');
     this.sesionReclamar.set(null);
+    this.tomaReclamar.set(null);
     this.limpiarSoporte();
   }
 
@@ -362,10 +378,11 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const validacion = validateSoporteFile(file);
+    // PAR-05: el tope sale del parametro ARCHIVO/TAMANIO_MAXIMO_BYTES (GET /configuracion/reclamos); 5 MB solo es respaldo.
+    const validacion = validateSoporteFile(file, this.configuracionReclamos()?.tamanioMaximoBytes);
     if (!validacion.valid) {
       this.errorSoporte.set(validacion.message ?? 'El archivo no es válido.');
-      this.toast.error(validacion.message ?? 'El archivo no es válido.');
+      this.toast.error(validacion.message ?? mensajeUi('UI_STUDENT_COURSES_001'));
       return;
     }
 
@@ -408,7 +425,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
             );
             const primerListo = this.archivosAdjuntos().find((a) => a.estado === 'LISTO');
             this.archivoAdjunto.set(primerListo ?? null);
-            this.toast.success(getApiSuccessMessage(res, `Archivo "${file.name}" cargado y analizado correctamente.`));
+            this.toast.success(getApiSuccessMessage(res, mensajeUi('UI_STUDENT_COURSES_006', { nombre: file.name })));
           } else {
             this.archivosAdjuntos.update((actuales) =>
               actuales.map((item) =>
@@ -479,7 +496,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
     this.claimService.eliminarReclamo(sesion.reclamoId).subscribe({
       next: (res) => {
         if (res.exitoso) {
-          this.toast.success(getApiSuccessMessage(res, 'Solicitud retirada.'));
+          this.toast.success(getApiSuccessMessage(res, mensajeUi('UI_STUDENT_CLAIMS_002')));
           this.cargarSesiones(materia);
         }
       },
@@ -527,10 +544,13 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
 
     if (!sesion || !materia || !event.justificacion.trim()) return;
     const estadoSesion = sesion.estadoAsistencia;
-    if (!sesion.reclamable || estadoSesion === 'NO_DISPONIBLE') return;
-    // SUPUESTO-B-15 (CERT-CULM001): una sesion PARCIAL se reclama por su toma ausente. Este estado no viaja al backend,
-    // que decide con sus propios registros; solo alimenta el modelo local de la solicitud.
-    const estadoOriginal: EstadoAsistenciaSesion = estadoSesion === 'PARCIAL' ? 'AUSENTE' : estadoSesion;
+    const toma = this.tomaReclamar();
+    if (!sesion.reclamable || estadoSesion === 'NO_DISPONIBLE' || (toma && !toma.reclamable)) return;
+    // Una sesion PARCIAL se reclama por su toma ausente (`tomaId`); el estado de la sesion no viaja al backend, que decide
+    // con sus propios registros. Para un reclamo por toma el estado original es el de la toma.
+    const estadoOriginal: EstadoAsistenciaSesion | undefined = toma
+      ? toma.estado === 'AUSENTE' ? 'AUSENTE' : undefined
+      : estadoSesion === 'PARCIAL' ? undefined : estadoSesion;
     // Sin doble envio: ni mientras sube el soporte (aun no hay fileId) ni mientras otra radicacion esta en curso.
     if (this.enviandoReclamo() || this.subiendoSoporte()) return;
 
@@ -547,6 +567,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
         categoria: event.categoria,
         justificacion,
         soporteId: soporte?.fileId,
+        tomaId: toma?.idToma,
       })
     );
 
@@ -566,6 +587,8 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
           sesionNumero: sesion.numeroSesion,
           fechaSesion: sesion.fecha,
           estadoOriginal,
+          idToma: toma?.idToma ?? null,
+          numeroToma: toma?.numero ?? null,
           categoria: event.categoria,
           soporteAdjunto: soporte,
           soporteArchivoIds: soporteArchivoIds.length > 0 ? soporteArchivoIds : undefined,
@@ -578,7 +601,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
         next: (res) => {
           if (res.exitoso) {
             this.intentoRadicacion.reiniciar();
-            this.toast.success(getApiSuccessMessage(res, 'Reclamo enviado.'));
+            this.toast.success(getApiSuccessMessage(res, mensajeUi('UI_STUDENT_COURSES_002')));
             this.volverADetalle();
             this.cargarSesiones(materia);
           }
@@ -592,10 +615,17 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
             // El soporte ya no esta disponible para radicar (inexistente, ajeno o ya usado): hay que volver a adjuntarlo.
             this.archivoAdjunto.set(null);
             this.errorSoporte.set('El soporte adjunto ya no está disponible. Adjúntalo nuevamente para radicar.');
-            this.toast.error('El soporte adjunto ya no está disponible. Adjúntalo nuevamente.');
+            this.toast.error(mensajeUi('UI_STUDENT_COURSES_003'));
             return;
           }
-          if (getApiErrorCode(err) === 'ERR_PLAZO_JUSTIFICACION_VENCIDO') {
+          const codigo = getApiErrorCode(err);
+          if (codigo === 'ERR_TOMA_NO_RECLAMABLE' || codigo === 'ERR_RECLAMO_TOMA_DUPLICADO') {
+            // La toma cambió o ya tiene reclamo: se muestra el mensaje del backend y se refresca el estado real.
+            this.errorEnvio.set(getApiErrorMessage(err));
+            this.cargarSesiones(materia);
+            return;
+          }
+          if (codigo === 'ERR_PLAZO_JUSTIFICACION_VENCIDO') {
             // El backend entrega el texto institucional (con la fecha limite): se muestra junto al boton, que sigue activo.
             this.errorEnvio.set(getApiErrorMessage(err));
             return;
@@ -626,7 +656,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
     } else {
       const pin = String(dato || '').trim();
       if (!/^[0-9]{6}$/.test(pin)) {
-        this.toast.error('Ingresa el PIN de 6 dígitos que proyecta tu docente.');
+        this.toast.error(mensajeUi('UI_STUDENT_COURSES_004'));
         return;
       }
       credencial = { pin };
@@ -636,7 +666,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
     this.matriculaQrService.matricularAutenticado(credencial).subscribe({
       next: (resultado) => {
         this.procesandoMatriculaGrupo.set(false);
-        this.toast.success(getApiSuccessMessage(resultado, '¡Matrícula confirmada exitosamente en el grupo!'));
+        this.toast.success(getApiSuccessMessage(resultado, mensajeUi('UI_STUDENT_COURSES_005')));
         this.cerrarModalMatriculaGrupo();
         this.cargarMaterias();
       },

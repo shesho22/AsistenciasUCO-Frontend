@@ -1,7 +1,7 @@
 import { Component, ChangeDetectionStrategy, computed, effect, input, output, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
-import { SOPORTE_ACCEPT } from '../../../../core/files/soporte-file.validator';
+import { SOPORTE_ACCEPT, SOPORTE_MAX_BYTES, describirTamano } from '../../../../core/files/soporte-file.validator';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { FormFieldComponent } from '../../../../shared/components/form-field/form-field.component';
 import {
@@ -10,15 +10,15 @@ import {
   SesionMateriaDetalle,
   CategoriaJustificacion,
   SoporteAdjuntoItem,
+  TomaSesionEstudiante,
 } from '../../../../core/models/role-management.model';
 import { CategoriaJustificacionItem } from '../../../../core/models/consultas-transversales.model';
 
 @Component({
-  selector: 'app-student-claim-form',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, ButtonComponent, FormFieldComponent],
-  template: `
+    selector: 'app-student-claim-form',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, ButtonComponent, FormFieldComponent],
+    template: `
     @if (sesion() && materia()) {
       <div class="space-y-6">
         <!-- Barra Superior de Retorno -->
@@ -52,12 +52,14 @@ import { CategoriaJustificacionItem } from '../../../../core/models/consultas-tr
           <!-- Ficha de la Sesión Afectada -->
           <div class="p-4 rounded-xl bg-warning-50/70 border border-warning-200 text-xs space-y-2">
             <div class="flex items-center justify-between">
-              <span class="font-mono font-bold text-warning-900">
-                Sesión #{{ sesion()?.numeroSesion }} — {{ sesion()?.fecha }} ({{ sesion()?.horario }})
+              <span class="font-mono font-bold text-warning-900" data-testid="claim-sesion">
+                Sesión #{{ sesion()?.numeroSesion }}@if (toma(); as t) {<span data-testid="claim-toma"> · Toma {{ t.numero }} ({{ t.horaPuntoControl }})</span>} — {{ sesion()?.fecha }} ({{ sesion()?.horario }})
               </span>
-              <span class="px-2 py-0.5 rounded-full font-bold bg-white text-danger-700 border border-danger-200">
-                Estado Actual: {{ sesion()?.estadoAsistencia }}
-              </span>
+              @if (!toma()) {
+                <span class="px-2 py-0.5 rounded-full font-bold bg-white text-danger-700 border border-danger-200">
+                  Estado Actual: {{ sesion()?.estadoAsistencia }}
+                </span>
+              }
             </div>
             <p class="text-warning-950 font-medium">Tema: {{ sesion()?.tema }}</p>
             <p class="text-warning-800">Docente a cargo: {{ materia()?.docente ?? 'No informado' }}</p>
@@ -109,7 +111,7 @@ import { CategoriaJustificacionItem } from '../../../../core/models/consultas-tr
             <!-- Carga de Archivos Adjuntos / Soportes Documentales -->
             <div class="space-y-2">
               <label class="block text-xs font-semibold uppercase tracking-wider text-warm-700">
-                Soportes Documentales (máx. <span data-testid="limite-maximo-soportes">{{ maximoSoportes() }}</span> archivos · {{ tiposPermitidosTexto() }} · Máx. {{ tamanioMaximoMb() }} MB · límite <span data-testid="limite-por-minuto">{{ limiteSubidasPorMinuto() }}</span>/min)
+                Soportes Documentales (máx. <span data-testid="limite-maximo-soportes">{{ maximoSoportes() }}</span> archivos · {{ tiposPermitidosTexto() }} · Máx. {{ tamanioMaximoTexto() }} · límite <span data-testid="limite-por-minuto">{{ limiteSubidasPorMinuto() }}</span>/min)
               </label>
 
               @if (errorSoporte()) {
@@ -217,7 +219,7 @@ import { CategoriaJustificacionItem } from '../../../../core/models/consultas-tr
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <span>
-                Al enviar la solicitud, el docente evaluará los soportes radicados y, de considerarlo procedente, ajustará tu asistencia a <strong>"Asistencia Justificada"</strong>.
+                Al enviar la solicitud, el docente evaluará los soportes radicados y, de considerarlo procedente, @if (toma()) { marcará que estuviste presente en esa toma o <strong>justificará tu ausencia</strong>. } @else { ajustará tu asistencia a <strong>"Asistencia Justificada"</strong>. }
               </span>
             </div>
           </div>
@@ -246,11 +248,13 @@ import { CategoriaJustificacionItem } from '../../../../core/models/consultas-tr
         </div>
       </div>
     }
-  `,
+  `
 })
 export class StudentClaimFormComponent {
   materia = input<MateriaEstudianteItem | null>(null);
   sesion = input<SesionMateriaDetalle | null>(null);
+  /** Toma que se reclama (`null` = reclamo de la sesión completa). */
+  toma = input<TomaSesionEstudiante | null>(null);
   archivo = input<SoporteAdjuntoItem | null>(null);
   archivos = input<SoporteAdjuntoItem[]>([]);
   configuracion = input<ConfiguracionReclamosDTO | null>(null);
@@ -270,7 +274,8 @@ export class StudentClaimFormComponent {
   justificacion = signal<string>('');
 
   readonly maximoSoportes = computed(() => this.configuracion()?.maximoSoportes ?? 3);
-  readonly tamanioMaximoMb = computed(() => Math.round((this.configuracion()?.tamanioMaximoBytes ?? 5242880) / (1024 * 1024)));
+  /** PAR-05: limite del parametro ARCHIVO/TAMANIO_MAXIMO_BYTES (respaldo 5 MB), en MB, KB o bytes sin redondear. */
+  readonly tamanioMaximoTexto = computed(() => describirTamano(this.configuracion()?.tamanioMaximoBytes || SOPORTE_MAX_BYTES));
   readonly limiteSubidasPorMinuto = computed(() => this.configuracion()?.limiteSubidasPorMinuto ?? 10);
   readonly tiposPermitidos = computed(() => this.configuracion()?.tiposPermitidos ?? ['application/pdf', 'image/jpeg', 'image/png']);
   readonly tiposPermitidosTexto = computed(() => {

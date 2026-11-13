@@ -1,19 +1,18 @@
 ﻿import { Component, ChangeDetectionStrategy, input, output, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { BadgeComponent, BadgeVariant } from '../../../../shared/components/badge/badge.component';
-import { type EstadoCargaReclamos, SolicitudRevisionItem } from '../../../../core/models/role-management.model';
+import { type EstadoCargaReclamos, ResultadoAprobacionReclamo, SolicitudRevisionItem } from '../../../../core/models/role-management.model';
 import { Course } from '../../../../core/models/course.model';
-import { etiquetaEstadoReclamo } from '../../../../core/utils/reclamo-estado.util';
+import { etiquetaEstadoReclamo, etiquetaResultadoAprobacion } from '../../../../core/utils/reclamo-estado.util';
 
 @Component({
-  selector: 'app-group-claims-modal',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, ModalComponent, ButtonComponent, BadgeComponent],
-  template: `
+    selector: 'app-group-claims-modal',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, ModalComponent, ButtonComponent, BadgeComponent],
+    template: `
     <app-modal
       [isOpen]="isOpen()"
       title="Reclamos y Justificaciones del Grupo"
@@ -72,6 +71,10 @@ import { etiquetaEstadoReclamo } from '../../../../core/utils/reclamo-estado.uti
                   </app-badge>
                 </div>
 
+                @if (rec.numeroToma != null) {
+                  <p class="text-[11px] font-semibold text-warm-800" data-testid="grupo-reclamo-toma">Reclamo de la toma {{ rec.numeroToma }}</p>
+                }
+
                 <p class="text-xs text-warm-700 italic bg-white p-2.5 rounded-lg border border-warm-100">
                   "{{ rec.justificacionSolicitud }}"
                 </p>
@@ -91,16 +94,30 @@ import { etiquetaEstadoReclamo } from '../../../../core/utils/reclamo-estado.uti
                     >
                       Rechazar
                     </button>
+                    @if (rec.idToma) {
+                      <button
+                        type="button"
+                        data-testid="aprobar-presente"
+                        (click)="resolver.emit({ id: rec.id, accion: 'APROBADA', resultado: 'PRESENTE' })"
+                        class="text-[11px] font-bold text-primary-800 hover:text-primary-950 bg-primary-50 hover:bg-primary-100 border border-primary-300 px-2.5 py-1 rounded-lg transition-colors shadow-2xs"
+                      >
+                        Estuvo presente
+                      </button>
+                    }
                     <button
                       type="button"
-                      (click)="resolver.emit({ id: rec.id, accion: 'APROBADA' })"
+                      data-testid="aprobar-justificada"
+                      (click)="resolver.emit({ id: rec.id, accion: 'APROBADA', resultado: 'JUSTIFICADA' })"
                       class="text-[11px] font-bold text-primary-800 hover:text-primary-950 bg-primary-50 hover:bg-primary-100 border border-primary-300 px-2.5 py-1 rounded-lg transition-colors shadow-2xs"
                     >
-                      Aprobar Excusa
+                      Ausencia justificada
                     </button>
                   </div>
                 } @else if (rec.justificacionRespuesta) {
                   <p class="text-[11px] text-warm-600 bg-warm-100/70 p-2 rounded-lg">
+                    @if (textoResultado(rec); as resultado) {
+                      <strong>{{ resultado }}.</strong>
+                    }
                     <strong>Respuesta:</strong> {{ rec.justificacionRespuesta }}
                   </p>
                 }
@@ -141,7 +158,7 @@ import { etiquetaEstadoReclamo } from '../../../../core/utils/reclamo-estado.uti
         </div>
       </div>
     </app-modal>
-  `,
+  `
 })
 export class GroupClaimsModalComponent {
   isOpen = input<boolean>(false);
@@ -150,11 +167,15 @@ export class GroupClaimsModalComponent {
   estadoCarga = input<EstadoCargaReclamos>('IDLE');
 
   closed = output<void>();
-  resolver = output<{ id: string; accion: 'APROBADA' | 'RECHAZADA' }>();
+  resolver = output<{ id: string; accion: 'APROBADA' | 'RECHAZADA'; resultado?: ResultadoAprobacionReclamo }>();
   irABandejaGeneral = output<void>();
   reintentar = output<void>();
 
   readonly etiquetaEstado = etiquetaEstadoReclamo;
+
+  textoResultado(rec: SolicitudRevisionItem): string | null {
+    return rec.estadoSolicitud === 'APROBADA' ? etiquetaResultadoAprobacion(rec.resultadoAprobacion) : null;
+  }
 
   getBadgeVariant(estado?: string): BadgeVariant {
     if (estado === 'APROBADA') return 'success';

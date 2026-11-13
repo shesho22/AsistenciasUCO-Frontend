@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TeacherRetiroEstudianteModalComponent } from './teacher-retiro-estudiante-modal.component';
 import { ToastService } from '../../../../../shared/components/toast/toast.component';
@@ -17,7 +17,7 @@ describe('TeacherRetiroEstudianteModalComponent (HU051)', () => {
     toastSpy = jasmine.createSpyObj('ToastService', ['success', 'error', 'info', 'warning']);
     TestBed.configureTestingModule({
       imports: [TeacherRetiroEstudianteModalComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting(), { provide: ToastService, useValue: toastSpy }],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting(), { provide: ToastService, useValue: toastSpy }],
     });
     http = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(TeacherRetiroEstudianteModalComponent);

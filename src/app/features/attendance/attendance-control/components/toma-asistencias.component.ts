@@ -72,13 +72,12 @@ const OPCIONES_ESTADO: readonly EstadoRegistroToma[] = ['AN', 'SJC', 'EX'];
  * en la misma toma. Los estados, el origen y la hora vienen del backend; lo marcado y no guardado es local.
  */
 @Component({
-  selector: 'app-toma-asistencias',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ConfirmDialogComponent, AvatarComponent, TomaFaltantesComponent, ActionMenuComponent, FiltrosPlegablesComponent],
-  // La barra queda fija bajo la barra superior de escritorio (4 rem) y al tope en móvil, sin sumar CSS global.
-  styles: ['.barra-fija { top: 0; } @media (min-width: 768px) { .barra-fija { top: 4rem; } }'],
-  template: `
+    selector: 'app-toma-asistencias',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [ConfirmDialogComponent, AvatarComponent, TomaFaltantesComponent, ActionMenuComponent, FiltrosPlegablesComponent],
+    // La barra queda fija bajo la barra superior de escritorio (4 rem) y al tope en móvil, sin sumar CSS global.
+    styles: ['.barra-fija { top: 0; } @media (min-width: 768px) { .barra-fija { top: 4rem; } }'],
+    template: `
     <div class="space-y-4" [attr.data-testid]="'toma-' + toma().idToma">
       <!-- Cabecera de la toma -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3" data-testid="toma-cabecera">
@@ -94,19 +93,22 @@ const OPCIONES_ESTADO: readonly EstadoRegistroToma[] = ['AN', 'SJC', 'EX'];
             </span>
           </p>
           <p class="text-xs text-warm-600">
-            {{ toma().horasToma }} h · {{ toma().totalPresentes }} presentes · {{ toma().totalAusentes }} ausentes ·
+            <span data-testid="toma-punto-control">Punto de control: {{ horaPuntoControl() }}</span> ·
+            {{ toma().minutosTramoAnterior }} min antes · {{ toma().minutosTramoSiguiente }} min después ·
+            {{ toma().totalPresentes }} presentes · {{ toma().totalAusentes }} ausentes ·
             {{ toma().totalExcusas }} excusas
           </p>
         </div>
       </div>
 
-      @if (!ventanaAbierta()) {
+      @if (avisoEdicion(); as aviso) {
         <p
-          class="text-xs font-medium text-warning-900 bg-warning-50 border border-warning-200 rounded-xl px-3.5 py-2.5"
+          class="text-xs font-medium rounded-xl px-3.5 py-2.5 border"
+          [class]="toma().esEditable ? 'text-info-700 bg-info-100 border-info-100' : 'text-warning-900 bg-warning-50 border-warning-200'"
           role="status"
-          data-testid="toma-ventana-cerrada"
+          data-testid="toma-aviso-edicion"
         >
-          La ventana de asistencia de la sesión está cerrada: la lista es solo de consulta.
+          {{ aviso }}
         </p>
       }
 
@@ -248,7 +250,7 @@ const OPCIONES_ESTADO: readonly EstadoRegistroToma[] = ['AN', 'SJC', 'EX'];
         <div data-testid="seccion-pendientes">
           <app-toma-faltantes
             [tomaId]="toma().idToma"
-            [ventanaAbierta]="ventanaAbierta()"
+            [esEditable]="toma().esEditable"
             [version]="version()"
             (actualizado)="actualizado.emit()"
           />
@@ -265,7 +267,7 @@ const OPCIONES_ESTADO: readonly EstadoRegistroToma[] = ['AN', 'SJC', 'EX'];
       (confirmed)="aplicarMasiva()"
       (cancelled)="confirmacion.set(null)"
     />
-  `,
+  `
 })
 export class TomaAsistenciasComponent {
   private readonly tomas = inject(TomaAsistenciaService);
@@ -297,7 +299,24 @@ export class TomaAsistenciasComponent {
   /** Se incrementa en cada recarga de la lista para refrescar también los pendientes de validar. */
   protected readonly version = signal(0);
 
-  protected readonly bloqueado = computed(() => !this.ventanaAbierta() || this.guardando());
+  /** El backend decide si la toma admite cambios (`esEditable`); el cliente no lo recalcula. */
+  protected readonly bloqueado = computed(() => !this.toma().esEditable || this.guardando());
+
+  protected readonly horaPuntoControl = computed(() => this.zona.formatTemporal(this.toma().fechaPuntoControlUtc, 'time'));
+
+  /** Explica hasta cuándo se puede corregir la toma, o por qué ya no. Una toma abierta no necesita aviso. */
+  protected readonly avisoEdicion = computed<string | null>(() => {
+    const toma = this.toma();
+    const hasta = toma.editableHastaUtc ? this.zona.formatTemporal(toma.editableHastaUtc, 'time') : null;
+    if (toma.esEditable) {
+      if (toma.estado !== 'CERRADA') return null;
+      return hasta ? `Puedes corregirla hasta las ${hasta}.` : 'Puedes corregirla hasta que abras la siguiente toma.';
+    }
+    if (hasta) return `El plazo para corregir esta toma terminó a las ${hasta}. Las correcciones se hacen por reclamo.`;
+    return toma.estado === 'CERRADA'
+      ? 'Esta toma ya no se puede corregir porque se abrió la toma siguiente. Las correcciones se hacen por reclamo.'
+      : 'Esta toma no admite cambios en este momento: la lista es solo de consulta.';
+  });
 
   /** Acciones secundarias de la toma (la barra fija conserva solo marcar todos presentes y Guardar). */
   protected readonly accionesMenu = computed<ActionMenuItem[]>(() => {
@@ -372,14 +391,14 @@ export class TomaAsistenciasComponent {
       untracked(() => this.sinGuardar.emit(cantidad));
     });
 
-    // Con la ventana cerrada lo marcado y no guardado no se puede enviar: se descarta, como en la toma ordinaria.
+    // Si la toma deja de ser editable, lo marcado y no guardado no se puede enviar: se descarta.
     effect(() => {
-      if (!this.ventanaAbierta() && untracked(() => this.locales().size) > 0) {
+      if (!this.toma().esEditable && untracked(() => this.locales().size) > 0) {
         untracked(() => {
           this.locales.set(new Map());
           this.notificacion.emit({
             tipo: 'warning',
-            texto: 'La ventana de asistencia se cerró. Los cambios no guardados se descartaron.',
+            texto: 'La toma ya no admite cambios. Los cambios no guardados se descartaron.',
           });
         });
       }
@@ -499,7 +518,8 @@ export class TomaAsistenciasComponent {
         },
         error: (err: unknown) => {
           this.notificacion.emit({ tipo: 'error', texto: getApiErrorMessage(err) || 'No fue posible guardar la asistencia.' });
-          if (isAttendanceWindowErrorCode(getApiErrorCode(err))) {
+          const codigo = getApiErrorCode(err);
+          if (isAttendanceWindowErrorCode(codigo) || codigo === 'TOM_012') {
             // El backend es la autoridad temporal: lo marcado vuelve al estado persistido.
             this.locales.set(new Map());
             this.actualizado.emit();

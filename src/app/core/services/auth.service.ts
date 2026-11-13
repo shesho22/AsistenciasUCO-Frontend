@@ -25,6 +25,7 @@ import {
   withBaselineTimeout,
 } from '../security/baseline-oidc';
 import { BrowserNavigator } from '../security/browser-navigator';
+import { esCodigoMensajeUi, mensajeUi } from '../messages/mensajes-ui';
 
 
 /** Compatibilidad del modo legacy: el refresh token solo existe en memoria y sessionStorage.
@@ -51,21 +52,6 @@ const VALID_INSTITUTIONAL_ROLES: readonly UserRole[] = [
   'DOCENTE',
   'ESTUDIANTE',
 ];
-
-/**
- * Fallbacks institucionales para mensajes de autenticación.
- * La única fuente de verdad en la nube es Azure App Configuration (messages:user:AUTH_*).
- */
-const AUTH_MESSAGES_FALLBACK: Record<string, string> = {
-  AUTH_FIELDS_REQUIRED: 'Por favor ingresa tu usuario y contraseña.',
-  AUTH_NETWORK_ERROR: 'No se pudo establecer conexión con el servidor de autenticación institucional.',
-  AUTH_GENERIC_ERROR: 'Usuario o contraseña incorrectos.',
-  AUTH_INVALID_CREDENTIALS: 'Credenciales inválidas. Verifica tu usuario y contraseña institucional.',
-  AUTH_INVALID_RESPONSE: 'Respuesta de autenticación inválida.',
-  AUTH_UNAUTHENTICATED: 'El servidor no aceptó la sesión institucional (401). Inicia sesión nuevamente.',
-  AUTH_FORBIDDEN: 'La sesión fue autenticada, pero no tiene permiso para acceder (403). Contacta al administrador.',
-  AUTH_NO_ROLE_ASSIGNED: 'Tu cuenta institucional no tiene un rol o identidad válidos asignados. Contacta al administrador del sistema.',
-};
 
 // Forma general de UUID (RFC 4122, cualquier versión/variante): valida que
 // idUsuario sea un identificador institucional real, no una versión concreta.
@@ -246,8 +232,9 @@ export class AuthService implements OnDestroy {
     }
   }
 
+  /** VAL-oleada3 MSG-06: los textos de autenticación salen del catálogo de mensajes del frontend (códigos AUTH_*). */
   private resolveAuthMessage(code: string): string {
-    return AUTH_MESSAGES_FALLBACK[code] || 'Error en la autenticación institucional.';
+    return code.startsWith('AUTH_') && esCodigoMensajeUi(code) ? mensajeUi(code) : mensajeUi('AUTH_ERROR_DESCONOCIDO');
   }
 
   /**

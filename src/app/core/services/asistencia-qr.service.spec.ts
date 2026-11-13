@@ -1,4 +1,4 @@
-import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { environment } from '../../../environments/environment';
@@ -11,7 +11,7 @@ describe('AsistenciaQrService (CULM-001 B.2, CONTRACT 3.2.6 y 3.2.7)', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [AsistenciaQrService, provideHttpClient(), provideHttpClientTesting()],
+      providers: [AsistenciaQrService, provideHttpClient(withXhr()), provideHttpClientTesting()],
     });
     service = TestBed.inject(AsistenciaQrService);
     http = TestBed.inject(HttpTestingController);

@@ -1,19 +1,19 @@
 import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { Router } from '@angular/router';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { PlanEstudioItem } from '../../../core/models/role-management.model';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { StudyPlansListComponent } from './components/study-plans-list.component';
+import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
 @Component({
-  selector: 'app-coordinator-study-plans',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'block w-full' },
-  imports: [CommonModule, StudyPlansListComponent],
-  template: `
+    selector: 'app-coordinator-study-plans',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    host: { class: 'block w-full' },
+    imports: [StudyPlansListComponent],
+    template: `
     <div class="space-y-6 animate-fade-in">
       <!-- Header Bento -->
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
@@ -101,7 +101,7 @@ import { StudyPlansListComponent } from './components/study-plans-list.component
         (viewMalla)="verMallaCurricular($event)"
       />
     </div>
-  `,
+  `
 })
 export class CoordinatorStudyPlansComponent implements OnInit {
   private coordService = inject(CoordinatorManagementService);
@@ -149,7 +149,7 @@ export class CoordinatorStudyPlansComponent implements OnInit {
     this.coordService.toggleEstadoPlanEstudio(plan.id).subscribe({
       next: (res) => {
         if (res.exitoso) {
-          this.toast.success(res.mensajeUsuario || 'Estado del plan de estudio actualizado.');
+          this.toast.success(res.mensajeUsuario || mensajeUi('UI_COORDINATOR_STUDY_PLANS_001'));
           this.cargarPlanes();
         }
       },

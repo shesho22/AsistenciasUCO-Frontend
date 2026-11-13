@@ -15,11 +15,10 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
  * Los rechazos del backend (ASI_003, PLA_004, PLA_006) se muestran con su mensaje y el diálogo sigue abierto.
  */
 @Component({
-  selector: 'app-associate-subject-dialog',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ModalComponent, ButtonComponent, PaginationComponent],
-  template: `
+    selector: 'app-associate-subject-dialog',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, ModalComponent, ButtonComponent, PaginationComponent],
+    template: `
     <app-modal [isOpen]="abierto()" title="Asociar asignatura existente" (closed)="cerrado.emit()">
       <div class="space-y-4">
         <p class="text-xs text-warm-600">
@@ -118,7 +117,7 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
         </app-button>
       </div>
     </app-modal>
-  `,
+  `
 })
 export class AssociateSubjectDialogComponent {
   private readonly service = inject(CoordinatorManagementService);

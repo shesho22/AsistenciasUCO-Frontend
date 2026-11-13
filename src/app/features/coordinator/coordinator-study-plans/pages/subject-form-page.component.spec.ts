@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { CoordinatorSubjectFormPageComponent } from './subject-form-page.component';
@@ -36,7 +36,7 @@ describe('CoordinatorSubjectFormPageComponent', () => {
     TestBed.configureTestingModule({
       imports: [CoordinatorSubjectFormPageComponent],
       providers: [
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         { provide: Router, useValue: routerSpy },
         { provide: ToastService, useValue: toastSpy },

@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { environment } from '../../../environments/environment';
 import { AttendanceClaimService, DEFAULT_CONFIGURACION_RECLAMOS, IdentificadorInvalidoError } from './attendance-claim.service';
@@ -12,7 +12,7 @@ describe('AttendanceClaimService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [AttendanceClaimService, provideHttpClient(), provideHttpClientTesting()],
+      providers: [AttendanceClaimService, provideHttpClient(withXhr()), provideHttpClientTesting()],
     });
     service = TestBed.inject(AttendanceClaimService);
     http = TestBed.inject(HttpTestingController);
@@ -683,5 +683,42 @@ describe('AttendanceClaimService', () => {
       });
       req.flush({ exitoso: true });
     });
+  });
+});
+
+describe('AttendanceClaimService: puntos de control', () => {
+  let service: AttendanceClaimService;
+  let http: HttpTestingController;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({ providers: [AttendanceClaimService, provideHttpClient(withXhr()), provideHttpClientTesting()] });
+    service = TestBed.inject(AttendanceClaimService);
+    http = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => http.verify());
+
+  it('crearReclamo con toma envía tomaId; sin toma no lo envía (reclamo por sesión)', () => {
+    service.crearReclamo({ sesionId: 'ses-1', idToma: 'toma-2', categoria: 'Otro', justificacionSolicitud: 'x' } as never).subscribe();
+    const conToma = http.expectOne(`${environment.apiUrl}/asistencias/revisiones`);
+    expect(conToma.request.body.tomaId).toBe('toma-2');
+    conToma.flush({ exitoso: true });
+
+    service.crearReclamo({ sesionId: 'ses-1', idToma: null, categoria: 'Otro', justificacionSolicitud: 'x' } as never).subscribe();
+    const sinToma = http.expectOne(`${environment.apiUrl}/asistencias/revisiones`);
+    expect('tomaId' in sinToma.request.body).toBeFalse();
+    sinToma.flush({ exitoso: true });
+  });
+
+  it('resolverReclamo envía resultado solo al aprobar', () => {
+    service.resolverReclamo('rec-1', 'APROBADA', 'Ok', 'PRESENTE').subscribe();
+    const aprobar = http.expectOne(`${environment.apiUrl}/docente/reclamos/rec-1`);
+    expect(aprobar.request.body).toEqual({ accion: 'APROBADA', respuestaDocente: 'Ok', respuesta: 'Ok', resultado: 'PRESENTE' });
+    aprobar.flush({ exitoso: true });
+
+    service.resolverReclamo('rec-2', 'RECHAZADA', 'No', 'PRESENTE').subscribe();
+    const rechazar = http.expectOne(`${environment.apiUrl}/docente/reclamos/rec-2`);
+    expect('resultado' in rechazar.request.body).toBeFalse();
+    rechazar.flush({ exitoso: true });
   });
 });

@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { of, throwError } from 'rxjs';
 import { ParametroEdicionModalComponent } from './parametro-edicion-modal.component';
@@ -39,7 +39,7 @@ describe('ParametroEdicionModalComponent (HU168)', () => {
     await TestBed.configureTestingModule({
       imports: [ParametroEdicionModalComponent],
       providers: [
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         { provide: AdminManagementService, useValue: adminServiceSpy },
         { provide: ToastService, useValue: toastServiceSpy },

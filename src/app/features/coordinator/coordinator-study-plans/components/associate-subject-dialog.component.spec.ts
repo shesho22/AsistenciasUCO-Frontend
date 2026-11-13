@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { AssociateSubjectDialogComponent } from './associate-subject-dialog.component';
 import { environment } from '../../../../../environments/environment';
@@ -24,7 +24,7 @@ describe('AssociateSubjectDialogComponent (F-COO-005, B2NM)', () => {
   const caracteres = { exitoso: true, datos: [{ codigo: 'OBL', nombre: 'Obligatoria', orden: 1 }, { codigo: 'OPT', nombre: 'Optativa', orden: 2 }] };
 
   function crear(abierto = true): void {
-    TestBed.configureTestingModule({ imports: [AssociateSubjectDialogComponent], providers: [provideHttpClient(), provideHttpClientTesting()] });
+    TestBed.configureTestingModule({ imports: [AssociateSubjectDialogComponent], providers: [provideHttpClient(withXhr()), provideHttpClientTesting()] });
     http = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(AssociateSubjectDialogComponent);
     component = fixture.componentInstance;

@@ -9,15 +9,15 @@ import { CorregirIdentidadPayload, IdentidadActual } from '../../../../core/mode
 import { CorreccionIdentidadModalComponent } from '../../../../shared/components/correccion-identidad-modal/correccion-identidad-modal.component';
 import { ToastService } from '../../../../shared/components/toast/toast.component';
 import { DialogoAccesibleDirective } from '../../../../shared/directives/dialogo-accesible.directive';
+import { mensajeUi } from '../../../../core/messages/mensajes-ui';
 
 let fichaEstudianteIdContador = 0;
 
 @Component({
-  selector: 'app-coordinator-ficha-modal',
-  standalone: true,
-  imports: [PaginationComponent, CorreccionIdentidadModalComponent, DialogoAccesibleDirective],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
+    selector: 'app-coordinator-ficha-modal',
+    imports: [PaginationComponent, CorreccionIdentidadModalComponent, DialogoAccesibleDirective],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    template: `
     <div
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 focus:outline-none"
       role="dialog"
@@ -107,7 +107,7 @@ let fichaEstudianteIdContador = 0;
         />
       </div>
     </div>
-  `,
+  `
 })
 export class CoordinatorFichaModalComponent implements OnInit {
   private readonly service = inject(CoordinatorIndicatorsService);
@@ -154,9 +154,9 @@ export class CoordinatorFichaModalComponent implements OnInit {
         this.guardandoCorreccion.set(false);
         this.corrigiendo.set(false);
         if (r.datos?.sincronizacionIdentidad === 'PENDIENTE') {
-          this.toast.warning(r.datos.mensajeUsuario ?? 'Los datos se corrigieron; la cuenta de acceso queda pendiente de sincronizar.');
+          this.toast.warning(r.datos.mensajeUsuario ?? mensajeUi('UI_ADMIN_DECANOS_001'));
         } else {
-          this.toast.success('Los datos del estudiante fueron corregidos.');
+          this.toast.success(mensajeUi('UI_ADMIN_ESTUDIANTES_001'));
         }
         this.cargarFicha();
       },

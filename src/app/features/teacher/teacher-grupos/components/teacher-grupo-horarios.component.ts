@@ -1,13 +1,12 @@
 import { Component, ChangeDetectionStrategy, input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { Course } from '../../../../core/models/course.model';
 
 @Component({
-  selector: 'app-teacher-grupo-horarios',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule],
-  template: `
+    selector: 'app-teacher-grupo-horarios',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [],
+    template: `
     <div class="bg-white rounded-b-2xl border-x border-b border-warm-200 shadow-warm-sm p-6 space-y-6">
       <div>
         <h3 class="font-serif font-bold text-lg text-warm-900">Distribución Horaria</h3>
@@ -40,7 +39,7 @@ import { Course } from '../../../../core/models/course.model';
         </div>
       </div>
     </div>
-  `,
+  `
 })
 export class TeacherGrupoHorariosComponent {
   curso = input<Course | null>(null);

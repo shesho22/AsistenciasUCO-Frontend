@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { of } from 'rxjs';
 import { signal } from '@angular/core';
@@ -99,7 +99,7 @@ describe('AdminSystemComponent', () => {
         { provide: AdminManagementService, useValue: adminServiceSpy },
         { provide: CoordinatorManagementService, useValue: coordServiceSpy },
         { provide: ToastService, useValue: toastServiceSpy },
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
       ],
     }).compileComponents();
@@ -121,6 +121,13 @@ describe('AdminSystemComponent', () => {
     const el = fixture.nativeElement as HTMLElement;
     expect(el.querySelector('h1')).not.toBeNull();
     expect(el.querySelector('[role="tablist"]')).not.toBeNull();
+  });
+
+  it('EST-03 (S2871): gruposDisponibles queda ordenado con localeCompare en español y sin repetidos', () => {
+    const grupos = component.gruposDisponibles();
+    expect(grupos.length).toBeGreaterThan(0);
+    expect(new Set(grupos).size).toBe(grupos.length);
+    expect(grupos).toEqual([...grupos].sort((a, b) => a.localeCompare(b, 'es')));
   });
 
   it('tabActiva alterna correctamente entre pestañas', () => {

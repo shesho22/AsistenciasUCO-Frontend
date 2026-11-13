@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, RouterOutlet, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
@@ -10,17 +10,18 @@ const TABS: readonly TabItem[] = [
   { id: 'tres', etiqueta: 'Tres' },
 ];
 
-@Component({ selector: 'app-hija-falsa', standalone: true, template: '<p id="hija">hija</p>' })
+@Component({ selector: 'app-hija-falsa', standalone: true, changeDetection: ChangeDetectionStrategy.Eager,
+ template: '<p id="hija">hija</p>' })
 class HijaFalsaComponent {}
 
 @Component({
-  selector: 'app-cascaron-falso',
-  standalone: true,
-  imports: [TabsNavComponent, RouterOutlet],
-  template: `
+    selector: 'app-cascaron-falso',
+    imports: [TabsNavComponent, RouterOutlet],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    template: `
     <app-tabs-nav [tabs]="tabs" [activa]="activa()" [base]="['/x']" etiqueta="Secciones de prueba" idPanel="panel-x" />
     <div role="tabpanel" id="panel-x"><router-outlet /></div>
-  `,
+  `
 })
 class CascaronFalsoComponent {
   readonly tabs = TABS;
@@ -29,10 +30,10 @@ class CascaronFalsoComponent {
 }
 
 @Component({
-  selector: 'app-aislado',
-  standalone: true,
-  imports: [TabsNavComponent],
-  template: `<app-tabs-nav [tabs]="tabs" [activa]="activa()" [base]="['/aislado']" />`,
+    selector: 'app-aislado',
+    imports: [TabsNavComponent],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    template: `<app-tabs-nav [tabs]="tabs" [activa]="activa()" [base]="['/aislado']" />`
 })
 class AisladoComponent {
   readonly tabs = TABS;

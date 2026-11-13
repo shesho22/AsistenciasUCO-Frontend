@@ -35,11 +35,10 @@ const TAB_POR_DEFECTO: TabConfiguracion = 'parametros';
  * abrirse. Las operaciones (auditoría y cierre masivo) permanecen en `admin/sistema`.
  */
 @Component({
-  selector: 'app-admin-configuracion',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, TabsNavComponent],
-  template: `
+    selector: 'app-admin-configuracion',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [RouterOutlet, TabsNavComponent],
+    template: `
     <div class="space-y-5 min-w-0">
       <div>
         <h1 class="text-2xl font-serif font-bold text-warm-900">Configuración</h1>
@@ -58,7 +57,7 @@ const TAB_POR_DEFECTO: TabConfiguracion = 'parametros';
         <router-outlet />
       </div>
     </div>
-  `,
+  `
 })
 export class AdminConfiguracionComponent {
   readonly tabs = TABS_CONFIGURACION;

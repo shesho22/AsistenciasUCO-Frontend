@@ -68,16 +68,20 @@ describe('DashboardLayoutComponent menu simplificado (CULM-001 UX)', () => {
     expect(rutas(c)).toContain('/app/admin/mensajes');
   });
 
-  it('si el componente externo informa que no responde, su entrada desaparece del menu sin afectar la otra', () => {
+  it('DEC-065 (5): con el proveedor baseline la entrada sigue en el menu aunque el componente externo este caido', () => {
     const c = crear('ADMINISTRADOR', 'baseline');
     const externos = TestBed.inject(ComponentesExternosService);
     externos.marcarNoDisponible('seguridad');
-    expect(rutas(c)).not.toContain('/app/admin/seguridad');
-    expect(rutas(c)).toContain('/app/admin/mensajes');
     externos.marcarNoDisponible('mensajes');
-    expect(rutas(c)).not.toContain('/app/admin/mensajes');
-    externos.marcarDisponible('seguridad');
+    expect(externos.disponible('seguridad')).toBeFalse();
     expect(rutas(c)).toContain('/app/admin/seguridad');
+    expect(rutas(c)).toContain('/app/admin/mensajes');
+  });
+
+  it('DEC-065 (5): con el proveedor legacy las entradas externas siguen ocultas', () => {
+    const c = crear('ADMINISTRADOR', 'legacy');
+    expect(rutas(c)).not.toContain('/app/admin/seguridad');
+    expect(rutas(c)).not.toContain('/app/admin/mensajes');
   });
 
   it('las entradas antiguas del administrador ya no estan en el menu', () => {

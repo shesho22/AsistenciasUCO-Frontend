@@ -1,6 +1,6 @@
 import { Type } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import { DeanCoordinadoresComponent } from './dean/dean-coordinadores/dean-coordinadores.component';
@@ -30,7 +30,7 @@ describe('Pantallas embebidas en pestañas (CULM-001)', () => {
     it(`${nombre}: muestra su título por defecto y lo oculta embebido`, () => {
       TestBed.configureTestingModule({
         imports: [componente],
-        providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
+        providers: [provideRouter([]), provideHttpClient(withXhr()), provideHttpClientTesting()],
       });
       const fixture = TestBed.createComponent(componente);
       fixture.detectChanges();
@@ -46,7 +46,7 @@ describe('Pantallas embebidas en pestañas (CULM-001)', () => {
   it('Programas del decano embebido oculta también los indicadores y el buscador de planes', () => {
     TestBed.configureTestingModule({
       imports: [DeanProgramasComponent],
-      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideRouter([]), provideHttpClient(withXhr()), provideHttpClientTesting()],
     });
     const fixture = TestBed.createComponent(DeanProgramasComponent);
     fixture.detectChanges();

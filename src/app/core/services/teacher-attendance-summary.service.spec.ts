@@ -1,4 +1,4 @@
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { environment } from '../../../environments/environment';
@@ -7,7 +7,7 @@ import { TeacherAttendanceSummaryService } from './teacher-attendance-summary.se
 describe('TeacherAttendanceSummaryService (CULM-001 B.2, CONTRACT 3.2.8)', () => {
   it('B2-F-14 consultarResumen hace GET /docente/grupos/{id}/resumen-asistencia?pagina=&tamano=', () => {
     TestBed.configureTestingModule({
-      providers: [TeacherAttendanceSummaryService, provideHttpClient(), provideHttpClientTesting()],
+      providers: [TeacherAttendanceSummaryService, provideHttpClient(withXhr()), provideHttpClientTesting()],
     });
     const service = TestBed.inject(TeacherAttendanceSummaryService);
     const http = TestBed.inject(HttpTestingController);

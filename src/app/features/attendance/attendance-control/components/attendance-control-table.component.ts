@@ -1,6 +1,6 @@
 import { CancelacionSesion, detalleCancelacion } from '../../../../core/models/sesion-estado.model';
 import { Component, ChangeDetectionStrategy, input, output, signal, computed, HostListener } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { CardComponent } from '../../../../shared/components/card/card.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
@@ -12,14 +12,13 @@ import {
 } from '../../../../core/utils/session-attendance-window.util';
 
 @Component({
-  selector: 'app-attendance-control-table',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, CardComponent, ButtonComponent, AvatarComponent],
-  host: {
-    class: 'block w-full'
-  },
-  template: `
+    selector: 'app-attendance-control-table',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, CardComponent, ButtonComponent, AvatarComponent],
+    host: {
+        class: 'block w-full'
+    },
+    template: `
     <div class="space-y-4">
       @if (windowMessage()) {
         <div
@@ -262,7 +261,7 @@ import {
         </div>
       }
     </div>
-  `,
+  `
 })
 export class AttendanceControlTableComponent {
   students = input<StudentAttendance[]>([]);

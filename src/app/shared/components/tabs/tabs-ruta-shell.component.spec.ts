@@ -1,10 +1,11 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, Routes, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { TabsRutaShellComponent, TabsRutaShellConfig } from './tabs-ruta-shell.component';
 
-@Component({ selector: 'app-hija-falsa', standalone: true, template: '<p id="hija-falsa">hija</p>' })
+@Component({ selector: 'app-hija-falsa', standalone: true, changeDetection: ChangeDetectionStrategy.Eager,
+ template: '<p id="hija-falsa">hija</p>' })
 class HijaFalsaComponent {}
 
 const CONFIG: TabsRutaShellConfig = {

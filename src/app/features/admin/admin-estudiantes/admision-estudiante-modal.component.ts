@@ -8,7 +8,7 @@ import {
   output,
   signal,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { CatalogService } from '../../../core/services/catalog.service';
 import { AdminManagementService } from '../../../core/services/admin-management.service';
@@ -21,6 +21,7 @@ import {
 } from '../../../core/models/role-management.model';
 import { TipoIdentificacionApiDto } from '../../../core/api/models/tipo-identificacion-api-dto.model';
 import { getApiErrorCode, getApiErrorMessage, getApiFieldErrors } from '../../../core/api/errors/api-error.util';
+import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
 const CLASE_INPUT =
   'w-full bg-white text-warm-900 border border-warm-300 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500';
@@ -56,11 +57,10 @@ const CAMPOS_FORMULARIO = new Set([
  * Maneja asignación de credenciales (ADS_006), validación de unicidad (ADS_002, ADS_004) y advertencia de estado de cuenta.
  */
 @Component({
-  selector: 'app-admision-estudiante-modal',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, ModalComponent],
-  template: `
+    selector: 'app-admision-estudiante-modal',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, ModalComponent],
+    template: `
     <app-modal [isOpen]="isOpen()" title="Admitir nuevo estudiante" (closed)="onCancelar()">
       <div class="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
         <p class="text-xs text-warm-600">
@@ -303,7 +303,7 @@ const CAMPOS_FORMULARIO = new Set([
         </button>
       </div>
     </app-modal>
-  `,
+  `
 })
 export class AdmisionEstudianteModalComponent implements OnInit {
   private readonly catalog = inject(CatalogService);
@@ -431,10 +431,10 @@ export class AdmisionEstudianteModalComponent implements OnInit {
         this.guardando.set(false);
         const dto = res.datos;
         if (dto.estadoCuenta === 'ACTIVA') {
-          this.toast.success(`Estudiante admitido exitosamente. ${this.avisoSinGrupo}`);
+          this.toast.success(mensajeUi('UI_ADMISION_ESTUDIANTE_MODAL_001', { aviso: this.avisoSinGrupo }));
         } else {
           this.toast.warning(
-            `Estudiante admitido. La cuenta de acceso quedó en estado ${dto.estadoCuenta}. ${this.avisoSinGrupo}`
+            mensajeUi('UI_ADMISION_ESTUDIANTE_MODAL_002', { estado: dto.estadoCuenta, aviso: this.avisoSinGrupo })
           );
         }
         this.admitido.emit(dto);

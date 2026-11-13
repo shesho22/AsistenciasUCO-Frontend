@@ -1,15 +1,14 @@
 import { Component, ChangeDetectionStrategy, input, output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
 import { type EstadoCargaReclamos, SolicitudRevisionItem } from '../../../../core/models/role-management.model';
 import { etiquetaEstadoReclamo, varianteEstadoReclamo } from '../../../../core/utils/reclamo-estado.util';
 
 @Component({
-  selector: 'app-teacher-grupo-reclamos',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, BadgeComponent],
-  template: `
+    selector: 'app-teacher-grupo-reclamos',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [BadgeComponent],
+    template: `
     <div class="bg-white rounded-b-2xl border-x border-b border-warm-200 shadow-warm-sm p-6 space-y-5">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-warm-100">
         <div>
@@ -51,6 +50,9 @@ import { etiquetaEstadoReclamo, varianteEstadoReclamo } from '../../../../core/u
                   {{ etiquetaEstado(rec.estadoSolicitud) }}
                 </app-badge>
               </div>
+              @if (rec.numeroToma != null) {
+                <p class="text-[11px] font-semibold text-warm-800" data-testid="grupo-reclamo-toma">Reclamo de la toma {{ rec.numeroToma }}</p>
+              }
               <p class="text-xs text-warm-700 italic">"{{ rec.justificacionSolicitud }}"</p>
               <div class="text-[11px] text-warm-500 flex items-center justify-between pt-1 border-t border-warm-200/60">
                 <span>Categoría: {{ rec.categoria || 'Médico / Salud' }}</span>
@@ -81,7 +83,7 @@ import { etiquetaEstadoReclamo, varianteEstadoReclamo } from '../../../../core/u
         <p class="p-8 text-center text-sm text-warm-500">Selecciona un grupo para consultar sus reclamos.</p>
       }
     </div>
-  `,
+  `
 })
 export class TeacherGrupoReclamosComponent {
   reclamos = input<SolicitudRevisionItem[]>([]);

@@ -2,7 +2,7 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
 import { FechaHoraCortaPipe } from '../../../shared/pipes/fecha-hora.pipes';
 import { SemaforoAsistenciaComponent } from '../../../shared/components/semaforo-asistencia/semaforo-asistencia.component';
 import { Component, OnInit, ChangeDetectionStrategy, signal, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AlertaInasistenciaService } from '../../../core/services/alerta-inasistencia.service';
@@ -13,11 +13,10 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
 const RUTA_MIS_MATERIAS = '/app/estudiante/mis-materias/materias';
 
 @Component({
-  selector: 'app-student-alerts',
-  standalone: true,
-  imports: [EmptyStateComponent, FechaHoraCortaPipe, CommonModule, FormsModule, BadgeComponent, SemaforoAsistenciaComponent],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
+    selector: 'app-student-alerts',
+    imports: [EmptyStateComponent, FechaHoraCortaPipe, FormsModule, BadgeComponent, SemaforoAsistenciaComponent],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    template: `
     <div class="space-y-6 animate-fade-in max-w-4xl mx-auto">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200 shadow-warm-sm">
         <div>
@@ -105,7 +104,7 @@ const RUTA_MIS_MATERIAS = '/app/estudiante/mis-materias/materias';
         </div>
       }
     </div>
-  `,
+  `
 })
 export class StudentAlertsComponent implements OnInit {
   private readonly alertaService = inject(AlertaInasistenciaService);

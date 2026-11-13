@@ -3,6 +3,7 @@ import { CanActivateFn, Router, ActivatedRouteSnapshot } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { UserRole, hasAnyRole } from '../models/user.model';
 import { ToastService } from '../../shared/components/toast/toast.component';
+import { mensajeUi } from '../messages/mensajes-ui';
 
 export const roleGuard: CanActivateFn = (route: ActivatedRouteSnapshot) => {
   const authService = inject(AuthService);
@@ -22,7 +23,7 @@ export const roleGuard: CanActivateFn = (route: ActivatedRouteSnapshot) => {
   }
 
   // La redirección ya no es silenciosa: se avisa que la sección no está permitida para su rol (F-DEC-S09).
-  toast.error('Acceso denegado: No cuenta con los permisos necesarios para acceder a esta sección.');
+  toast.error(mensajeUi('UI_ROLE_GUARD_001'));
 
   // F3-TRX-01: página 403 amigable dentro del layout (la sesión se conserva), no un rebote silencioso al inicio.
   return router.createUrlTree(['/app/acceso-denegado']);

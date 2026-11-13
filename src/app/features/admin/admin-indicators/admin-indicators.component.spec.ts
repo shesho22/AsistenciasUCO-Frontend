@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { AdminIndicatorsComponent } from './admin-indicators.component';
 import { environment } from '../../../../environments/environment';
@@ -47,7 +47,7 @@ describe('AdminIndicatorsComponent', () => {
   }
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ imports: [AdminIndicatorsComponent], providers: [provideHttpClient(), provideHttpClientTesting()] });
+    TestBed.configureTestingModule({ imports: [AdminIndicatorsComponent], providers: [provideHttpClient(withXhr()), provideHttpClientTesting()] });
     http = TestBed.inject(HttpTestingController);
     toast = TestBed.inject(ToastService);
     fixture = TestBed.createComponent(AdminIndicatorsComponent);

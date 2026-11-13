@@ -11,7 +11,7 @@ import {
   DestroyRef,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AdminManagementService } from '../../../core/services/admin-management.service';
@@ -26,25 +26,24 @@ import {
 } from '../../../core/models/role-management.model';
 import { AdminAuditoriaComponent } from './admin-auditoria.component';
 import { ParametroEdicionModalComponent } from './parametro-edicion-modal.component';
+import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
 type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
 
 @Component({
-  selector: 'app-admin-system',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
+    selector: 'app-admin-system',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [
     EmptyStateComponent,
     FechaHoraCortaPipe,
-    CommonModule,
     FormsModule,
     RouterLink,
     AdminAuditoriaComponent,
     ConfirmDialogComponent,
     PaginationComponent,
-    ParametroEdicionModalComponent,
-  ],
-  template: `
+    ParametroEdicionModalComponent
+],
+    template: `
     <div class="space-y-6">
      @if (modo === 'completo') {
       <!-- ================= HEADER & BREADCRUMB ================= -->
@@ -427,7 +426,7 @@ type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
         (cancelled)="cierrePendiente.set(false)"
       />
     </div>
-  `,
+  `
 })
 export class AdminSystemComponent implements OnInit {
   private adminService = inject(AdminManagementService);
@@ -491,7 +490,7 @@ export class AdminSystemComponent implements OnInit {
     for (const p of this.parametros()) {
       if (p.grupo) set.add(p.grupo);
     }
-    return Array.from(set).sort();
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'es'));
   });
 
   ngOnInit(): void {
@@ -604,7 +603,7 @@ export class AdminSystemComponent implements OnInit {
     const codigoPeriodo = periodoObj ? periodoObj.codigo : this.periodoSeleccionadoCierre;
 
     if (!idPeriodo) {
-      this.toast.error('Debe seleccionar un período válido para ejecutar el cierre.');
+      this.toast.error(mensajeUi('UI_ADMIN_SYSTEM_001'));
       return;
     }
 

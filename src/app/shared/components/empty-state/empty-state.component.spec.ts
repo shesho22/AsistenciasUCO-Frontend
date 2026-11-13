@@ -3,14 +3,13 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { EmptyStateComponent } from './empty-state.component';
 
 @Component({
-  standalone: true,
-  imports: [EmptyStateComponent],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
+    imports: [EmptyStateComponent],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    template: `
     <app-empty-state title="Sin sesiones" description="Crea la primera sesion." variant="info">
       <button empty-action data-testid="cta">Crear</button>
     </app-empty-state>
-  `,
+  `
 })
 class HostComponent {}
 

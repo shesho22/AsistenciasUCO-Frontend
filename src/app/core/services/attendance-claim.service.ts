@@ -16,6 +16,7 @@ import {
   ConfiguracionReclamosDTO,
   DetalleReclamoDocenteItem,
   EstadoSolicitudRevision,
+  ResultadoAprobacionReclamo,
   SesionMateriaDetalle,
   SolicitudRevisionItem,
   HorarioDocenteItem,
@@ -291,11 +292,14 @@ export class AttendanceClaimService {
       justificacion: string;
       soporteArchivoIds?: string[];
       soporteArchivoId?: string;
+      tomaId?: string;
     } = {
       sesionId: solicitud.sesionId,
       categoria: typeof solicitud.categoria === 'object' ? (solicitud.categoria?.nombre || solicitud.categoria?.codigo) : solicitud.categoria,
       justificacion: solicitud.justificacionSolicitud,
     };
+    // Reclamo por toma: sin `tomaId` el backend radica el reclamo de la sesión, como hasta ahora.
+    if (solicitud.idToma) payload.tomaId = solicitud.idToma;
     if (solicitud.soporteArchivoIds && solicitud.soporteArchivoIds.length > 0) {
       payload.soporteArchivoIds = solicitud.soporteArchivoIds;
     } else if (solicitud.soporteAdjunto?.fileId) {
@@ -313,15 +317,20 @@ export class AttendanceClaimService {
     return this.http.delete<ApiMessageResponse>(`${environment.apiUrl}/estudiante/reclamos/${id}`);
   }
 
+  /** `resultado` solo viaja con `APROBADA`: "PRESENTE" (reclamo con toma) o "JUSTIFICADA"; sin él el backend usa JUSTIFICADA. */
   resolverReclamo(
     id: string,
     accion: 'APROBADA' | 'RECHAZADA',
-    respuestaDocente: string = ''
+    respuestaDocente: string = '',
+    resultado?: ResultadoAprobacionReclamo
   ): Observable<ResolverReclamoResponse> {
-    return this.http.patch<ResolverReclamoResponse>(
-      `${environment.apiUrl}/docente/reclamos/${id}`,
-      { accion, respuestaDocente, respuesta: respuestaDocente }
-    );
+    const cuerpo: { accion: string; respuestaDocente: string; respuesta: string; resultado?: ResultadoAprobacionReclamo } = {
+      accion,
+      respuestaDocente,
+      respuesta: respuestaDocente,
+    };
+    if (accion === 'APROBADA' && resultado) cuerpo.resultado = resultado;
+    return this.http.patch<ResolverReclamoResponse>(`${environment.apiUrl}/docente/reclamos/${id}`, cuerpo);
   }
 
   getHorarioDocente(docenteId?: string): Observable<ApiResponse<HorarioDocenteItem[]>> {

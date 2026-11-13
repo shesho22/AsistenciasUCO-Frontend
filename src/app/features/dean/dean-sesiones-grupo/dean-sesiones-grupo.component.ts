@@ -14,11 +14,10 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
  * `GET /decano/sesiones?idGrupo=` (ámbito forzado en el backend); `GET /sesiones/grupo/{id}` es del docente titular.
  */
 @Component({
-  selector: 'app-dean-sesiones-grupo',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [SesionEstadoBadgeComponent, ErrorCargaComponent],
-  template: `
+    selector: 'app-dean-sesiones-grupo',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [SesionEstadoBadgeComponent, ErrorCargaComponent],
+    template: `
     <section class="bg-white p-4 rounded-xl border border-warm-200 space-y-3" aria-label="Sesiones del grupo">
       @if (error(); as e) {
         <app-error-carga [error]="e" (reintentar)="cargar()" />
@@ -59,7 +58,7 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
         </div>
       }
     </section>
-  `,
+  `
 })
 export class DeanSesionesGrupoComponent implements OnInit {
   private readonly service = inject(DeanFacultadService);

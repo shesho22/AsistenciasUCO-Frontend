@@ -2,21 +2,21 @@
 // reporter `lcovonly` (coverageReporter.reporters) además de html/
 // text-summary, de forma que scripts/check-realtime-coverage.mjs pueda leer
 // coverage/gestio-asistencia-frontend/lcov.info. Pasar un `karmaConfig`
-// personalizado a @angular-devkit/build-angular:karma le pide a ESTE archivo
+// personalizado a @angular/build:karma le pide a ESTE archivo
 // que declare frameworks/plugins/reporters completos (el builder no rellena
 // los suyos por defecto en ese caso), así que replica la config por defecto
-// de Angular 18 tal cual.
+// de Angular tal cual (desde Angular 20 el builder es @angular/build:karma, sobre
+// esbuild: ya no lleva el framework/plugin de @angular-devkit/build-angular).
 
 module.exports = function (config) {
   config.set({
     basePath: '',
-    frameworks: ['jasmine', '@angular-devkit/build-angular'],
+    frameworks: ['jasmine'],
     plugins: [
       require('karma-jasmine'),
       require('karma-chrome-launcher'),
       require('karma-jasmine-html-reporter'),
       require('karma-coverage'),
-      require('@angular-devkit/build-angular/plugins/karma'),
     ],
     client: {
       jasmine: {},

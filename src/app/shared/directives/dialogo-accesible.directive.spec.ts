@@ -1,11 +1,11 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { DialogoAccesibleDirective } from './dialogo-accesible.directive';
 
 @Component({
-  standalone: true,
-  imports: [DialogoAccesibleDirective],
-  template: `
+    imports: [DialogoAccesibleDirective],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    template: `
     <button id="disparador" type="button">Abrir</button>
     @if (abierto) {
       <div id="dialogo" role="dialog" aria-modal="true" appDialogoAccesible (cerrarSolicitado)="cierres = cierres + 1">
@@ -18,7 +18,7 @@ import { DialogoAccesibleDirective } from './dialogo-accesible.directive';
         }
       </div>
     }
-  `,
+  `
 })
 class AnfitrionComponent {
   abierto = false;

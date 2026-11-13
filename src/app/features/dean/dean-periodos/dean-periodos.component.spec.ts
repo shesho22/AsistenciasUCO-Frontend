@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Router } from '@angular/router';
 import { DeanPeriodosComponent } from './dean-periodos.component';
@@ -30,7 +30,7 @@ describe('DeanPeriodosComponent', () => {
     TestBed.configureTestingModule({
       imports: [DeanPeriodosComponent],
       providers: [
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         { provide: Router, useValue: routerSpy },
       ],
@@ -69,7 +69,7 @@ describe('DeanPeriodosComponent con errores HTTP', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [DeanPeriodosComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting(), { provide: Router, useValue: { navigate: () => Promise.resolve(true) } }],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting(), { provide: Router, useValue: { navigate: () => Promise.resolve(true) } }],
     });
     http = TestBed.inject(HttpTestingController);
   });

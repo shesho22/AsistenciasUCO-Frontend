@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, computed, effect, input, output, signal, inject, untracked, WritableSignal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
@@ -30,11 +30,10 @@ export interface MatriculaEstudianteSolicitud {
 }
 
 @Component({
-  selector: 'app-attendance-enrollment-modal',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, ModalComponent, ButtonComponent, FormFieldComponent, FormSelectComponent],
-  template: `
+    selector: 'app-attendance-enrollment-modal',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, ModalComponent, ButtonComponent, FormFieldComponent, FormSelectComponent],
+    template: `
     <app-modal
       [isOpen]="isOpen()"
       title="Matricular Estudiante en Grupo"
@@ -340,7 +339,7 @@ export interface MatriculaEstudianteSolicitud {
         </div>
       </form>
     </app-modal>
-  `,
+  `
 })
 export class AttendanceEnrollmentModalComponent {
   private studentService = inject(StudentService);

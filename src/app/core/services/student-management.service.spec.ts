@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { StudentManagementService } from './student-management.service';
 import { environment } from '../../../environments/environment';
@@ -11,7 +11,7 @@ describe('StudentManagementService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [StudentManagementService, provideHttpClient(), provideHttpClientTesting()],
+      providers: [StudentManagementService, provideHttpClient(withXhr()), provideHttpClientTesting()],
     });
     service = TestBed.inject(StudentManagementService);
     http = TestBed.inject(HttpTestingController);

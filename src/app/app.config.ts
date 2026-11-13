@@ -1,6 +1,6 @@
 import { ApplicationConfig, provideZoneChangeDetection, APP_INITIALIZER } from '@angular/core';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
-import { provideHttpClient, withInterceptors, withXsrfConfiguration } from '@angular/common/http';
+import { provideHttpClient, withInterceptors, withXsrfConfiguration, withXhr } from '@angular/common/http';
 import { routes } from './app.routes';
 import { correlationInterceptor } from './core/interceptors/correlation.interceptor';
 import { roleScopeInterceptor } from './core/interceptors/role-scope.interceptor';
@@ -19,7 +19,7 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes, withComponentInputBinding()),
-    provideHttpClient(
+    provideHttpClient(withXhr(), 
       withInterceptors([
         correlationInterceptor,
         // Corta en el cliente las lecturas a prefijos que el rol autenticado no puede usar (evita 403 evitables).

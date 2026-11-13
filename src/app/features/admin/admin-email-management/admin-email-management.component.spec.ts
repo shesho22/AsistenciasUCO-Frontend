@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
@@ -157,7 +157,7 @@ describe('AdminEmailManagementComponent', () => {
     await TestBed.configureTestingModule({
       imports: [AdminEmailManagementComponent],
       providers: [
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         provideRouter([]),
         { provide: AdminEmailNotificationService, useValue: notificationServiceSpy },
@@ -373,7 +373,7 @@ describe('AdminEmailManagementComponent', () => {
       await TestBed.configureTestingModule({
         imports: [AdminEmailManagementComponent],
         providers: [
-          provideHttpClient(),
+          provideHttpClient(withXhr()),
           provideHttpClientTesting(),
           provideRouter([]),
           { provide: AdminEmailNotificationService, useValue: notificationServiceSpy },

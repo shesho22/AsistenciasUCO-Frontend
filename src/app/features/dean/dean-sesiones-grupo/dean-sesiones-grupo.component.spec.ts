@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { DeanSesionesGrupoComponent } from './dean-sesiones-grupo.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
@@ -23,7 +23,7 @@ describe('DeanSesionesGrupoComponent (CULM-001)', () => {
     toast = jasmine.createSpyObj('ToastService', ['success', 'error', 'info', 'warning']);
     TestBed.configureTestingModule({
       imports: [DeanSesionesGrupoComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting(), { provide: ToastService, useValue: toast }],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting(), { provide: ToastService, useValue: toast }],
     });
     http = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(DeanSesionesGrupoComponent);

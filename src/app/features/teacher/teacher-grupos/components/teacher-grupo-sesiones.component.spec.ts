@@ -126,4 +126,41 @@ describe('TeacherGrupoSesionesComponent', () => {
       expect(boton('ses-1', 'Cancelar')?.className).toContain('min-h-[44px]');
     });
   });
+
+  describe('solicitud pendiente de aprobación (DEC-065 (2))', () => {
+    const pendiente: ClassSession = { ...sesion, id: 'ses-p', estadoSolicitud: 'PENDIENTE', pendienteAprobacion: true };
+    const rechazada: ClassSession = { ...sesion, id: 'ses-r', estado: 'CANCELADA', estadoSolicitud: 'RECHAZADA', pendienteAprobacion: false };
+    const fila = (id: string) => (fixture.nativeElement as HTMLElement).querySelector(`[data-testid="sesion-${id}"]`) as HTMLElement;
+    const boton = (id: string, etiqueta: string) =>
+      Array.from(fila(id).querySelectorAll('button')).find((b) => b.textContent?.includes(etiqueta));
+
+    beforeEach(() => {
+      fixture.componentRef.setInput('sessions', [pendiente, rechazada]);
+      fixture.componentRef.setInput('qrEnabled', true);
+      fixture.componentRef.setInput('cancelEnabled', true);
+      fixture.detectChanges();
+    });
+
+    it('muestra la insignia y el texto explicativo, y deshabilita Tomar Asistencia y QR / PIN', () => {
+      expect(fila('ses-p').querySelector('[data-testid="sesion-pendiente-badge"]')?.textContent).toContain('Pendiente de aprobación');
+      expect(fila('ses-p').querySelector('[data-testid="sesion-pendiente-texto"]')?.textContent).toContain('coordinación apruebe');
+      expect(boton('ses-p', 'Tomar Asistencia')?.disabled).toBeTrue();
+      expect(boton('ses-p', 'QR / PIN')?.disabled).toBeTrue();
+    });
+
+    it('conserva Ajustar Horario y Cancelar habilitados', () => {
+      expect(boton('ses-p', 'Ajustar Horario')?.disabled).toBeFalse();
+      expect(boton('ses-p', 'Cancelar')?.disabled).toBeFalse();
+    });
+
+    it('la sesión rechazada muestra la insignia roja y no ofrece Cancelar', () => {
+      expect(fila('ses-r').querySelector('[data-testid="sesion-rechazada-badge"]')?.textContent).toContain('Rechazada');
+      expect(boton('ses-r', 'Cancelar')).toBeUndefined();
+    });
+
+    it('el botón superior se titula "Solicitar sesión extraordinaria"', () => {
+      expect(text()).toContain('Solicitar sesión extraordinaria');
+      expect(text()).not.toContain('Programar Sesión Extraordinaria');
+    });
+  });
 });

@@ -1,5 +1,5 @@
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
-import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http';
+import { HttpClient, provideHttpClient, withInterceptors, withXhr } from '@angular/common/http';
 import { HttpErrorResponse } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Router } from '@angular/router';
@@ -17,7 +17,7 @@ describe('mockBackendInterceptor', () => {
     TestBed.configureTestingModule({
       providers: [
         { provide: Router, useValue: jasmine.createSpyObj<Router>('Router', ['navigate']) },
-        provideHttpClient(withInterceptors([mockBackendInterceptor])),
+        provideHttpClient(withXhr(), withInterceptors([mockBackendInterceptor])),
         provideHttpClientTesting(),
       ],
     });
@@ -314,6 +314,20 @@ describe('mockBackendInterceptor', () => {
     httpClient.post(`${environment.apiUrl}/asistencias/revisiones`, { sesionId: 'ses-1' }).subscribe((r) => (revision = r));
     tick(400);
     expect(revision?.exitoso).toBeTrue();
+  }));
+
+  it('PC: GET /docente/reclamos trae numero y punto de control de la toma reclamada y null en los de la sesión completa', fakeAsync(() => {
+    auth.setMockMode(true);
+    let res: any;
+    httpClient.get(`${environment.apiUrl}/docente/reclamos`).subscribe((r) => (res = r));
+    tick(300);
+    const porToma = res.datos.find((r: any) => r.id === 'REC-001');
+    expect(porToma.idToma).toBeTruthy();
+    expect(porToma.numeroToma).toBe(2);
+    expect(porToma.fechaPuntoControlUtc).toBe('2026-08-10T09:00:00Z');
+    const deSesion = res.datos.find((r: any) => r.id === 'REC-002');
+    expect(deSesion.numeroToma).toBeNull();
+    expect(deSesion.fechaPuntoControlUtc).toBeNull();
   }));
 
   it('A2-F-08 DELETE /estudiante/reclamos/{id} retira un reclamo pendiente y lo deja RETIRADA', fakeAsync(() => {

@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { provideHttpClient, withInterceptors, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { StudentClaimsComponent } from './student-claims.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
@@ -48,7 +48,7 @@ describe('StudentClaimsComponent (HU010/HU011: consulta del estudiante)', () => 
     toastSpy = jasmine.createSpyObj('ToastService', ['success', 'error', 'info', 'warning']);
     TestBed.configureTestingModule({
       imports: [StudentClaimsComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting(), { provide: ToastService, useValue: toastSpy }],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting(), { provide: ToastService, useValue: toastSpy }],
     });
     http = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(StudentClaimsComponent);
@@ -79,6 +79,28 @@ describe('StudentClaimsComponent (HU010/HU011: consulta del estudiante)', () => 
     expect(texto).toContain('Aprobada');
     expect(texto).toContain('incapacidad.pdf');
     expect(component.reclamos()[0].soporteAdjunto?.fileId).toBe('file-1');
+  });
+
+  it('PC: un reclamo por toma muestra la toma reclamada y el resultado de la aprobación', () => {
+    component.reclamos.set([
+      { ...component.reclamos()[1], id: 'sol-4', numeroToma: 2, fechaPuntoControlUtc: '2026-10-19T15:30:00Z', resultadoAprobacion: 'PRESENTE' },
+      { ...component.reclamos()[1], id: 'sol-5', numeroToma: 1, fechaPuntoControlUtc: null, resultadoAprobacion: 'JUSTIFICADA' },
+      { ...component.reclamos()[0], id: 'sol-6', numeroToma: 3, fechaPuntoControlUtc: null, resultadoAprobacion: null },
+    ]);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const tomas = Array.from(el.querySelectorAll('[data-testid="reclamo-toma"]')).map((n) => n.textContent!.trim());
+    expect(tomas[0]).toMatch(/^Toma 2 · \d{2}:\d{2}$/);
+    expect(tomas[1]).toBe('Toma 1');
+    expect(tomas[2]).toBe('Toma 3');
+    const resultados = Array.from(el.querySelectorAll('[data-testid="reclamo-resultado"]')).map((n) => n.textContent!.trim());
+    expect(resultados).toEqual(['Aprobado: estuvo presente', 'Aprobado: ausencia justificada']);
+  });
+
+  it('PC: un reclamo por sesión no muestra toma ni resultado', () => {
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[data-testid="reclamo-toma"]')).toBeNull();
+    expect(el.querySelector('[data-testid="reclamo-resultado"]')).toBeNull();
   });
 
   it('A2-F-07 un reclamo RETIRADA muestra la insignia "Retirada" y no ofrece retirarlo', () => {
@@ -217,7 +239,7 @@ describe('AttendanceClaimService.getReclamosEstudiante (modo mock)', () => {
   });
 
   it('SC-08 el interceptor mock responde la lista del estudiante con la forma del backend', (done) => {
-    TestBed.configureTestingModule({ providers: [provideHttpClient(withInterceptors([mockBackendInterceptor]))] });
+    TestBed.configureTestingModule({ providers: [provideHttpClient(withXhr(), withInterceptors([mockBackendInterceptor]))] });
     TestBed.inject(AuthService).setMockMode(true);
 
     TestBed.inject(AttendanceClaimService)

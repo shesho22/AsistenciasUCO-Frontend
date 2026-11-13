@@ -20,11 +20,10 @@ export interface TabsRutaShellConfig {
  * Sirve a Personas, Estructura (administrador) y Mis materias (estudiante).
  */
 @Component({
-  selector: 'app-tabs-ruta-shell',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, TabsRutaComponent],
-  template: `
+    selector: 'app-tabs-ruta-shell',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [RouterOutlet, TabsRutaComponent],
+    template: `
     <div class="space-y-5 min-w-0">
       <div>
         <p class="text-xs font-bold uppercase tracking-wider text-primary-700">{{ config.titulo }}</p>
@@ -41,7 +40,7 @@ export interface TabsRutaShellConfig {
         <router-outlet />
       </div>
     </div>
-  `,
+  `
 })
 export class TabsRutaShellComponent {
   private readonly router = inject(Router);

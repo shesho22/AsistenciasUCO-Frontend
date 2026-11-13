@@ -9,9 +9,11 @@ import { BadgeComponent, BadgeVariant } from '../../../shared/components/badge/b
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { getApiErrorMessage, getApiSuccessMessage } from '../../../core/api/errors/api-error.util';
-import { etiquetaEstadoReclamo, varianteEstadoReclamo } from '../../../core/utils/reclamo-estado.util';
+import { etiquetaEstadoReclamo, etiquetaResultadoAprobacion, varianteEstadoReclamo } from '../../../core/utils/reclamo-estado.util';
+import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
 import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load-error.util';
 import { ButtonComponent } from '../../../shared/components/button/button.component';
+import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
 type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
 
@@ -21,11 +23,10 @@ type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
  * descarga por el endpoint autenticado `GET /archivos/{fileId}` (regla PROPIETARIO de LB-004D).
  */
 @Component({
-  selector: 'app-student-claims',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [EmptyStateComponent, CommonModule, CardComponent, BadgeComponent, PaginationComponent, ButtonComponent],
-  template: `
+    selector: 'app-student-claims',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [EmptyStateComponent, CommonModule, CardComponent, BadgeComponent, PaginationComponent, ButtonComponent],
+    template: `
     <div class="space-y-6 animate-fade-in">
       <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
@@ -98,6 +99,12 @@ type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
                     }
                   </div>
                 </div>
+                @if (textoToma(reclamo); as toma) {
+                  <p class="text-xs font-semibold text-warm-800" data-testid="reclamo-toma">{{ toma }}</p>
+                }
+                @if (textoResultado(reclamo); as resultado) {
+                  <p class="text-xs font-bold text-success-800" data-testid="reclamo-resultado">{{ resultado }}</p>
+                }
                 <p class="text-xs text-warm-500">Radicada el {{ reclamo.fechaSolicitud | date: 'dd/MM/yyyy' }}</p>
                 <div>
                   <span class="text-xs font-bold uppercase tracking-wider text-warm-700">Mi justificación</span>
@@ -133,11 +140,12 @@ type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
         />
       }
     </div>
-  `,
+  `
 })
 export class StudentClaimsComponent implements OnInit, OnDestroy {
   private readonly claimService = inject(AttendanceClaimService);
   private readonly toast = inject(ToastService);
+  private readonly zona = inject(SessionTimeZoneService);
   private listaSub?: Subscription;
 
   readonly reclamos = signal<SolicitudRevisionItem[]>([]);
@@ -150,6 +158,18 @@ export class StudentClaimsComponent implements OnInit, OnDestroy {
   readonly descargando = signal(false);
   /** id del reclamo que se está retirando (evita el doble envío). */
   readonly retirando = signal<string | null>(null);
+
+  /** "Toma N · HH:mm" cuando el reclamo es de una toma; `null` si es de la sesión. */
+  textoToma(reclamo: SolicitudRevisionItem): string | null {
+    if (reclamo.numeroToma == null) return null;
+    const hora = reclamo.fechaPuntoControlUtc ? this.zona.formatTemporal(reclamo.fechaPuntoControlUtc, 'time') : null;
+    return hora ? `Toma ${reclamo.numeroToma} · ${hora}` : `Toma ${reclamo.numeroToma}`;
+  }
+
+  /** "Aprobado: estuvo presente" o "Aprobado: ausencia justificada" solo en un reclamo aprobado con resultado. */
+  textoResultado(reclamo: SolicitudRevisionItem): string | null {
+    return reclamo.estadoSolicitud === 'APROBADA' ? etiquetaResultadoAprobacion(reclamo.resultadoAprobacion) : null;
+  }
 
   ngOnInit(): void {
     this.cargar();
@@ -206,7 +226,7 @@ export class StudentClaimsComponent implements OnInit, OnDestroy {
   descargarSoporte(reclamo: SolicitudRevisionItem): void {
     const soporte = reclamo.soporteAdjunto;
     if (!soporte?.fileId) {
-      this.toast.warning('Esta solicitud no tiene un soporte descargable.');
+      this.toast.warning(mensajeUi('UI_STUDENT_CLAIMS_001'));
       return;
     }
     if (this.descargando()) return;
@@ -222,7 +242,7 @@ export class StudentClaimsComponent implements OnInit, OnDestroy {
           anchor.download = soporte.nombre.replace(/[\\/:*?"<>|\r\n]/g, '_');
           anchor.click();
           URL.revokeObjectURL(url);
-          this.toast.success(`Soporte "${soporte.nombre}" descargado.`);
+          this.toast.success(mensajeUi('UI_SOPORTE_DESCARGADO', { nombre: soporte.nombre }));
         },
         error: (error: unknown) => this.toast.error(getApiErrorMessage(error)),
       });
@@ -245,7 +265,7 @@ export class StudentClaimsComponent implements OnInit, OnDestroy {
       .pipe(finalize(() => this.retirando.set(null)))
       .subscribe({
         next: (res) => {
-          this.toast.success(getApiSuccessMessage(res, 'Solicitud retirada.'));
+          this.toast.success(getApiSuccessMessage(res, mensajeUi('UI_STUDENT_CLAIMS_002')));
           this.cargar();
         },
         error: (error: unknown) => this.toast.error(getApiErrorMessage(error)),

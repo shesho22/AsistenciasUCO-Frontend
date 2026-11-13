@@ -144,6 +144,8 @@ export class SessionV2Service {
       nombreGrupo: session.nombreGrupo,
       estado: session.estado ?? 'PROGRAMADA',
       cancelacion: session.cancelacion ?? null,
+      estadoSolicitud: session.estadoSolicitud ?? null,
+      pendienteAprobacion: session.pendienteAprobacion ?? false,
     };
   }
 }

@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { AccountAccessService } from './account-access.service';
 import { environment } from '../../../environments/environment';
@@ -10,7 +10,7 @@ describe('AccountAccessService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [AccountAccessService, provideHttpClient(), provideHttpClientTesting()],
+      providers: [AccountAccessService, provideHttpClient(withXhr()), provideHttpClientTesting()],
     });
     service = TestBed.inject(AccountAccessService);
     http = TestBed.inject(HttpTestingController);

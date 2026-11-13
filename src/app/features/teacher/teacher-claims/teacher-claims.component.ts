@@ -1,6 +1,6 @@
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { Component, OnDestroy, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { Subscription, finalize } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
@@ -8,6 +8,8 @@ import {
   DetalleReclamoDocenteItem,
   SolicitudRevisionItem,
   EstadoSolicitudRevision,
+  EstadoTomaEstudiante,
+  ResultadoAprobacionReclamo,
   SoporteAdjuntoItem,
 } from '../../../core/models/role-management.model';
 import { CardComponent } from '../../../shared/components/card/card.component';
@@ -18,28 +20,35 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
 import { AvatarComponent } from '../../../shared/components/avatar/avatar.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { getApiErrorCode, getApiErrorMessage, getApiErrorResponse } from '../../../core/api/errors/api-error.util';
-import { etiquetaEstadoReclamo, varianteEstadoReclamo } from '../../../core/utils/reclamo-estado.util';
+import { etiquetaEstadoReclamo, etiquetaResultadoAprobacion, varianteEstadoReclamo } from '../../../core/utils/reclamo-estado.util';
+import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
+import { mensajeUi } from '../../../core/messages/mensajes-ui';
+
+const ETIQUETA_ESTADO_TOMA_RECLAMO: Readonly<Record<EstadoTomaEstudiante, string>> = {
+  PRESENTE: 'Presente',
+  AUSENTE: 'Ausente',
+  JUSTIFICADA: 'Justificada',
+  SIN_REGISTRO: 'Sin registro',
+};
 
 type VistaDocenteReclamos = 'BANDEJA' | 'RESOLUCION';
 type EstadoFiltroReclamos = 'TODOS' | 'P' | 'A' | 'R';
 type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'NETWORK_ERROR' | 'SERVER_ERROR';
 
 @Component({
-  selector: 'app-teacher-claims',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
+    selector: 'app-teacher-claims',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [
     EmptyStateComponent,
-    CommonModule,
     FormsModule,
     CardComponent,
     BadgeComponent,
     ButtonComponent,
     FormFieldComponent,
     AvatarComponent,
-    PaginationComponent,
-  ],
-  template: `
+    PaginationComponent
+],
+    template: `
     <div class="space-y-6 animate-fade-in">
       <!-- 1. VISTA: BANDEJA GENERAL DE RECLAMOS -->
       @if (vistaActual() === 'BANDEJA') {
@@ -191,6 +200,9 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
                       <div class="flex items-center justify-between text-warm-600">
                         <span>Sesión #{{ reclamo.sesionNumero }} ({{ reclamo.fechaSesion }})</span>
                       </div>
+                      @if (textoTomaTarjeta(reclamo); as toma) {
+                        <div class="font-semibold text-warm-900" data-testid="tarjeta-toma">{{ toma }}</div>
+                      }
                     </div>
 
                     <p class="text-xs text-warm-700 line-clamp-2 italic mt-2">
@@ -267,11 +279,11 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
             <div class="flex items-center gap-2">
               @if (selectedReclamo()?.categoria) {
                 <span class="px-3 py-1 rounded-xl text-xs font-semibold bg-warning-50 text-warning-900 border border-warning-200">
-                  {{ categoriaTexto(selectedReclamo()?.categoria) }}
+                  {{ categoriaTexto($safeNavigationMigration(selectedReclamo()?.categoria)) }}
                 </span>
               }
               <app-badge [variant]="getReclamoBadgeVariant(selectedReclamo()!.estadoSolicitud)" size="md">
-                Estado: {{ etiquetaEstado(selectedReclamo()?.estadoSolicitud) }}
+                Estado: {{ etiquetaEstado($safeNavigationMigration(selectedReclamo()?.estadoSolicitud)) }}
               </app-badge>
             </div>
           </div>
@@ -297,6 +309,12 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
               <p class="text-xs text-warm-600">
                 Grupo: {{ selectedReclamo()?.grupo }} • Sesión #{{ selectedReclamo()?.sesionNumero }} ({{ selectedReclamo()?.fechaSesion }})
               </p>
+              @if (textoTomaReclamada(selectedReclamo()); as toma) {
+                <p class="text-xs font-bold text-warm-900" data-testid="detalle-toma">{{ toma }}</p>
+              }
+              @if (textoMinutosSesion(selectedReclamo()); as minutos) {
+                <p class="text-xs text-warm-600" data-testid="detalle-minutos">{{ minutos }}</p>
+              }
               @if (selectedReclamo()?.causalInasistencia; as causal) {
                 <p class="text-xs font-bold text-danger-700">
                   Registro original: {{ causal.nombre }}
@@ -389,33 +407,53 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
                   Rechazar Reclamo
                 </app-button>
 
+                @if (selectedReclamo()?.idToma) {
+                  <app-button
+                    variant="primary"
+                    size="md"
+                    data-testid="aprobar-presente"
+                    [disabled]="resolviendo()"
+                    (clicked)="confirmarResolucion('APROBADA', 'PRESENTE')"
+                  >
+                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Estuvo presente
+                  </app-button>
+                }
+
                 <app-button
-                  variant="primary"
+                  [variant]="selectedReclamo()?.idToma ? 'secondary' : 'primary'"
                   size="md"
+                  data-testid="aprobar-justificada"
                   [disabled]="resolviendo()"
-                  (clicked)="confirmarResolucion('APROBADA')"
+                  (clicked)="confirmarResolucion('APROBADA', 'JUSTIFICADA')"
                 >
                   <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                   </svg>
-                  Aceptar y Justificar Asistencia
+                  Ausencia justificada
                 </app-button>
               </div>
             </div>
           } @else {
             <div class="p-4 rounded-xl bg-primary-50/60 border border-primary-200 space-y-1 text-xs">
               <span class="font-bold text-primary-900 block">Resolución registrada@if (selectedReclamo()?.fechaRespuesta) { el {{ selectedReclamo()?.fechaRespuesta }}}:</span>
+              @if (textoResultado(selectedReclamo()); as resultado) {
+                <p class="font-bold text-success-800" data-testid="detalle-resultado">{{ resultado }}</p>
+              }
               <p class="text-primary-800 italic">"{{ selectedReclamo()?.justificacionRespuesta }}"</p>
             </div>
           }
         </div>
       }
     </div>
-  `,
+  `
 })
 export class TeacherClaimsComponent implements OnInit, OnDestroy {
   private claimService = inject(AttendanceClaimService);
   private toast = inject(ToastService);
+  private readonly zona = inject(SessionTimeZoneService);
 
   vistaActual = signal<VistaDocenteReclamos>('BANDEJA');
   reclamos = signal<SolicitudRevisionItem[]>([]);
@@ -571,20 +609,48 @@ export class TeacherClaimsComponent implements OnInit, OnDestroy {
     this.selectedReclamo.set(null);
   }
 
-  confirmarResolucion(accion: 'APROBADA' | 'RECHAZADA'): void {
+  /** "Toma N · HH:mm · estado actual" cuando el reclamo es de una toma; `null` si es de la sesión. */
+  textoTomaReclamada(reclamo: DetalleReclamoDocenteItem | null): string | null {
+    if (!reclamo || reclamo.numeroToma == null) return null;
+    const estado = reclamo.estadoToma ? ETIQUETA_ESTADO_TOMA_RECLAMO[reclamo.estadoToma] : null;
+    return [this.textoTomaTarjeta(reclamo), estado].filter((parte) => !!parte).join(' · ');
+  }
+
+  /** Toma N · HH:mm (hora local, igual que el detalle) en la tarjeta de la bandeja; 
+ull si el reclamo es de la sesión completa. */
+  textoTomaTarjeta(reclamo: Pick<SolicitudRevisionItem, 'numeroToma' | 'fechaPuntoControlUtc'> | null): string | null {
+    if (!reclamo || reclamo.numeroToma == null) return null;
+    const hora = reclamo.fechaPuntoControlUtc ? this.zona.formatTemporal(reclamo.fechaPuntoControlUtc, 'time') : null;
+    return ['Toma ' + reclamo.numeroToma, hora].filter((parte) => !!parte).join(' · ');
+  }
+
+  /** "Asistencia de la sesión: X de Y min" (cálculo del backend). */
+  textoMinutosSesion(reclamo: DetalleReclamoDocenteItem | null): string | null {
+    if (!reclamo || reclamo.minutosAsistidos == null || reclamo.minutosSesion == null) return null;
+    return `Asistencia de la sesión: ${reclamo.minutosAsistidos} de ${reclamo.minutosSesion} min`;
+  }
+
+  textoResultado(reclamo: DetalleReclamoDocenteItem | null): string | null {
+    return reclamo?.estadoSolicitud === 'APROBADA' ? etiquetaResultadoAprobacion(reclamo.resultadoAprobacion) : null;
+  }
+
+  /** `resultado` solo aplica al aprobar: "PRESENTE" (reclamo con toma) o "JUSTIFICADA". */
+  confirmarResolucion(accion: 'APROBADA' | 'RECHAZADA', resultado?: ResultadoAprobacionReclamo): void {
     const reclamo = this.selectedReclamo();
     if (!reclamo || this.resolviendo()) return;
+    if (resultado === 'PRESENTE' && !reclamo.idToma) return;
 
-    const feedback = this.comentarioDocente.trim() || (accion === 'APROBADA' ? 'Justificación válida y aceptada.' : 'No cumple con los soportes requeridos.');
+    const aprobacion = resultado === 'PRESENTE' ? 'Se confirmó que el estudiante estuvo presente en la toma.' : 'Justificación válida y aceptada.';
+    const feedback = this.comentarioDocente.trim() || (accion === 'APROBADA' ? aprobacion : 'No cumple con los soportes requeridos.');
 
     this.resolviendo.set(true);
     this.claimService
-      .resolverReclamo(reclamo.id, accion, feedback)
+      .resolverReclamo(reclamo.id, accion, feedback, accion === 'APROBADA' ? resultado ?? 'JUSTIFICADA' : undefined)
       .pipe(finalize(() => this.resolviendo.set(false)))
       .subscribe({
         next: (res) => {
           if (res.exitoso) {
-            this.toast.success(res.mensajeUsuario || 'Reclamo procesado.');
+            this.toast.success(res.mensajeUsuario || mensajeUi('UI_TEACHER_CLAIMS_001'));
             this.cargarReclamos();
             this.volverABandeja();
           }
@@ -622,7 +688,7 @@ export class TeacherClaimsComponent implements OnInit, OnDestroy {
    */
   descargarSoporte(adjunto: SoporteAdjuntoItem): void {
     if (!adjunto.fileId) {
-      this.toast.warning('Este soporte no contiene un fileId descargable en el contrato actual.');
+      this.toast.warning(mensajeUi('UI_TEACHER_CLAIMS_002'));
       return;
     }
     if (this.descargandoSoporte()) return;
@@ -638,7 +704,7 @@ export class TeacherClaimsComponent implements OnInit, OnDestroy {
           anchor.download = adjunto.nombre.replace(/[\\/:*?"<>|\r\n]/g, '_');
           anchor.click();
           URL.revokeObjectURL(url);
-          this.toast.success(`Soporte "${adjunto.nombre}" descargado.`);
+          this.toast.success(mensajeUi('UI_SOPORTE_DESCARGADO', { nombre: adjunto.nombre }));
         },
         error: (error) => this.toast.error(this.mensajeErrorDescarga(error)),
       });
