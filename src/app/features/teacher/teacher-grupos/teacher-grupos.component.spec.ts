@@ -98,7 +98,11 @@ describe('TeacherGruposComponent', () => {
     );
 
     realtimeEvents$ = new Subject();
-    realtime = jasmine.createSpyObj<RealtimeService>('RealtimeService', ['listenType', 'startForGroup', 'stop', 'events']);
+    // Angular 19 ejecuta los effect() de componente durante la deteccion de cambios: la sabana del hub ya
+    // arranca su tiempo real en estas pruebas y lee connectionState$ (antes el effect quedaba en microtarea).
+    realtime = jasmine.createSpyObj<RealtimeService>('RealtimeService', ['listenType', 'startForGroup', 'stop', 'events'], {
+      connectionState$: of('CONNECTED'),
+    });
     realtime.listenType.and.callFake(((tipo: string) => realtimeEvents$.pipe(filter((e) => e.type === tipo))) as never);
     realtime.events.and.returnValue(new Subject<RealtimeEvent>().asObservable());
 

@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ActivatedRoute } from '@angular/router';
 import { ConsolidadoAsistenciaComponent, acumularOpciones } from './consolidado-asistencia.component';
@@ -40,7 +40,7 @@ describe('ConsolidadoAsistenciaComponent (HU061)', () => {
     TestBed.configureTestingModule({
       imports: [ConsolidadoAsistenciaComponent],
       providers: [
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         { provide: ToastService, useValue: toast },
         { provide: RealtimeService, useValue: realtimeFalso() },

@@ -48,12 +48,11 @@ export function acumularOpciones(opciones: Opcion[], filas: ConsolidadoGrupoItem
  * fija el ámbito. Solo lectura.
  */
 @Component({
-  selector: 'app-consolidado-asistencia',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'block w-full' },
-  imports: [CommonModule, FormsModule, PaginationComponent, ErrorCargaComponent, DeanSesionesGrupoComponent, CoordinatorSesionesGrupoComponent, SemaforoAsistenciaComponent],
-  template: `
+    selector: 'app-consolidado-asistencia',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    host: { class: 'block w-full' },
+    imports: [CommonModule, FormsModule, PaginationComponent, ErrorCargaComponent, DeanSesionesGrupoComponent, CoordinatorSesionesGrupoComponent, SemaforoAsistenciaComponent],
+    template: `
     <div class="space-y-6 animate-fade-in">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
         @if (!embebido()) {
@@ -197,7 +196,7 @@ export function acumularOpciones(opciones: Opcion[], filas: ConsolidadoGrupoItem
         ></app-pagination>
       </section>
     </div>
-  `,
+  `
 })
 export class ConsolidadoAsistenciaComponent implements OnInit {
   /** CULM-001: dentro de una pestaña, el título lo pone el cascarón. */

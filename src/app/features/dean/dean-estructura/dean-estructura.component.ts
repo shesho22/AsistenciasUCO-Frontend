@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy, input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { RouterLink } from '@angular/router';
 import { DeanFacultadService } from '../../../core/services/dean-facultad.service';
 import { FacultadNodo } from '../../../core/models/facultad-decano.model';
@@ -12,12 +12,11 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
  * programa se puede plegar para ver sus planes.
  */
 @Component({
-  selector: 'app-dean-estructura',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'block w-full' },
-  imports: [CommonModule, RouterLink, BadgeComponent],
-  template: `
+    selector: 'app-dean-estructura',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    host: { class: 'block w-full' },
+    imports: [RouterLink, BadgeComponent],
+    template: `
     <div class="space-y-6 animate-fade-in">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
         @if (!embebido()) {
@@ -94,7 +93,7 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
         </section>
       }
     </div>
-  `,
+  `
 })
 export class DeanEstructuraComponent implements OnInit {
   /** CULM-001: dentro de una pestaña, el título lo pone el cascarón. */

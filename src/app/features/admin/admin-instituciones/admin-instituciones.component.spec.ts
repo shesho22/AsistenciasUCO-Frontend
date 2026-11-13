@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { AdminInstitucionesComponent } from './admin-instituciones.component';
 import { environment } from '../../../../environments/environment';
@@ -27,7 +27,7 @@ describe('AdminInstitucionesComponent (F-ADM-009)', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [AdminInstitucionesComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting()],
     });
 
     http = TestBed.inject(HttpTestingController);

@@ -1,6 +1,6 @@
 import { RangoHorarioPipe } from '../../../shared/pipes/fecha-hora.pipes';
 import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
 import { HorarioDocenteItem, DiaSemana } from '../../../core/models/role-management.model';
 import { CardComponent } from '../../../shared/components/card/card.component';
@@ -10,11 +10,10 @@ import { ButtonComponent } from '../../../shared/components/button/button.compon
 import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load-error.util';
 
 @Component({
-  selector: 'app-teacher-schedule',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RangoHorarioPipe, CommonModule, CardComponent, ButtonComponent],
-  template: `
+    selector: 'app-teacher-schedule',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [RangoHorarioPipe, CardComponent, ButtonComponent],
+    template: `
     <div class="space-y-6 animate-fade-in">
       <!-- Header Bento -->
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
@@ -109,7 +108,7 @@ import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load
         </div>
       }
     </div>
-  `,
+  `
 })
 export class TeacherScheduleComponent implements OnInit {
   private claimService = inject(AttendanceClaimService);

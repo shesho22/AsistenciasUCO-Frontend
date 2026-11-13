@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { environment } from '../../../environments/environment';
 import { SessionV2Service } from './session-v2.service';
@@ -12,7 +12,7 @@ describe('SessionV2Service', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [SessionV2Service, SessionTimeZoneService, provideHttpClient(), provideHttpClientTesting()],
+      providers: [SessionV2Service, SessionTimeZoneService, provideHttpClient(withXhr()), provideHttpClientTesting()],
     });
     service = TestBed.inject(SessionV2Service);
     http = TestBed.inject(HttpTestingController);

@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { DeanFacultadService } from './dean-facultad.service';
 import { environment } from '../../../environments/environment';
@@ -11,7 +11,7 @@ describe('DeanFacultadService (F-DEC-003 & §11.3 ApiPageResponse)', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting()],
     });
     service = TestBed.inject(DeanFacultadService);
     http = TestBed.inject(HttpTestingController);

@@ -14,11 +14,10 @@ const RESUMEN = 'resumen';
  * no el cliente.
  */
 @Component({
-  selector: 'app-session-tomas-panel',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TomaAsistenciasComponent, ResumenSesionTomasComponent],
-  template: `
+    selector: 'app-session-tomas-panel',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [TomaAsistenciasComponent, ResumenSesionTomasComponent],
+    template: `
     <section
       class="bg-white rounded-2xl border border-warm-200 shadow-warm-sm p-4 sm:p-5 space-y-4"
       data-testid="panel-tomas"
@@ -138,7 +137,7 @@ const RESUMEN = 'resumen';
         <div class="h-16 rounded-xl bg-warm-100 animate-pulse" data-testid="panel-tomas-cargando"></div>
       }
     </section>
-  `,
+  `
 })
 export class SessionTomasPanelComponent {
   readonly tomasSesion = input<TomasSesion | null>(null);

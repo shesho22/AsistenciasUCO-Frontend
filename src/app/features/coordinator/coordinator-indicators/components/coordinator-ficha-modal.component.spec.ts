@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { CoordinatorFichaModalComponent } from './coordinator-ficha-modal.component';
 import { environment } from '../../../../../environments/environment';
@@ -36,7 +36,7 @@ describe('CoordinatorFichaModalComponent', () => {
   }
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ imports: [CoordinatorFichaModalComponent], providers: [provideHttpClient(), provideHttpClientTesting()] });
+    TestBed.configureTestingModule({ imports: [CoordinatorFichaModalComponent], providers: [provideHttpClient(withXhr()), provideHttpClientTesting()] });
     http = TestBed.inject(HttpTestingController);
   });
 

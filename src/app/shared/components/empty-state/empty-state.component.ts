@@ -1,14 +1,13 @@
 import { Component, ChangeDetectionStrategy, input, output, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 
 export type EmptyStateVariant = 'neutral' | 'search' | 'info' | 'error';
 
 @Component({
-  selector: 'app-empty-state',
-  standalone: true,
-  imports: [CommonModule],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
+    selector: 'app-empty-state',
+    imports: [],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    template: `
     <div
       class="flex flex-col items-center justify-center p-8 sm:p-12 text-center rounded-2xl border border-dashed border-warm-300 bg-white/60 min-h-[220px]"
       role="status"
@@ -54,7 +53,7 @@ export type EmptyStateVariant = 'neutral' | 'search' | 'info' | 'error';
         <ng-content select="[empty-action]"></ng-content>
       </div>
     </div>
-  `,
+  `
 })
 export class EmptyStateComponent {
   title = input<string>('No se encontraron registros');

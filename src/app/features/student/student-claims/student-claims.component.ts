@@ -23,11 +23,10 @@ type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
  * descarga por el endpoint autenticado `GET /archivos/{fileId}` (regla PROPIETARIO de LB-004D).
  */
 @Component({
-  selector: 'app-student-claims',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [EmptyStateComponent, CommonModule, CardComponent, BadgeComponent, PaginationComponent, ButtonComponent],
-  template: `
+    selector: 'app-student-claims',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [EmptyStateComponent, CommonModule, CardComponent, BadgeComponent, PaginationComponent, ButtonComponent],
+    template: `
     <div class="space-y-6 animate-fade-in">
       <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
@@ -141,7 +140,7 @@ type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
         />
       }
     </div>
-  `,
+  `
 })
 export class StudentClaimsComponent implements OnInit, OnDestroy {
   private readonly claimService = inject(AttendanceClaimService);

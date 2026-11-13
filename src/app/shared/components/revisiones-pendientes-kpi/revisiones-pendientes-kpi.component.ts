@@ -29,7 +29,6 @@ const PRESENTACION: Record<'DOCENTE' | 'COORDINADOR', Presentacion> = {
 /** Conteo global de revisiones de cancelación que el rol debe atender, con enlace directo (una sola carga HTTP). */
 @Component({
   selector: 'app-revisiones-pendientes-kpi',
-  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink, KpiCardComponent],
   template: `

@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { PlanEstudioEstudianteService } from './plan-estudio-estudiante.service';
 import { BYPASS_GLOBAL_ERROR_TOAST } from '../interceptors/error.interceptor';
@@ -13,7 +13,7 @@ describe('PlanEstudioEstudianteService', () => {
   let http: HttpTestingController;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    TestBed.configureTestingModule({ providers: [provideHttpClient(withXhr()), provideHttpClientTesting()] });
     service = TestBed.inject(PlanEstudioEstudianteService);
     http = TestBed.inject(HttpTestingController);
   });

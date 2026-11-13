@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { Location } from '@angular/common';
 import { Router } from '@angular/router';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ProfileComponent } from './profile.component';
 import { AuthService } from '../../core/services/auth.service';
@@ -72,7 +72,7 @@ describe('ProfileComponent — identificación institucional (APP-06)', () => {
     await TestBed.configureTestingModule({
       imports: [ProfileComponent],
       providers: [
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         { provide: AuthService, useValue: auth },
         { provide: ToastService, useValue: toast },

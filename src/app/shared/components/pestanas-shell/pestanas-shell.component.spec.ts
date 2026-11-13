@@ -1,10 +1,11 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, Routes, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { PestanasShellComponent } from './pestanas-shell.component';
 
-@Component({ selector: 'app-contenido-falso', standalone: true, template: '<p id="contenido">contenido</p>' })
+@Component({ selector: 'app-contenido-falso', standalone: true, changeDetection: ChangeDetectionStrategy.Eager,
+ template: '<p id="contenido">contenido</p>' })
 class ContenidoFalsoComponent {}
 
 const RUTAS: Routes = [

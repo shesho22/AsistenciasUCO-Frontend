@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AttendanceService } from '../../../core/services/attendance.service';
@@ -42,20 +42,18 @@ import { mensajeUi } from '../../../core/messages/mensajes-ui';
 type VistaGrupos = 'LISTA' | 'HUB_GRUPO' | 'FORM_SESION';
 
 @Component({
-  selector: 'app-teacher-grupos',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    CommonModule,
+    selector: 'app-teacher-grupos',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [
     TeacherGruposListComponent,
     TeacherGrupoHubComponent,
     TeacherSesionFormComponent,
     TeacherMatriculaModalComponent,
     TeacherSesionCancelarModalComponent,
     TeacherSesionDetalleModalComponent,
-    TeacherRetiroEstudianteModalComponent,
-  ],
-  template: `
+    TeacherRetiroEstudianteModalComponent
+],
+    template: `
     <div class="space-y-6 animate-fade-in">
       <!-- 1. VISTA LISTA PRINCIPAL -->
       @if (vistaActual() === 'LISTA') {
@@ -142,7 +140,7 @@ type VistaGrupos = 'LISTA' | 'HUB_GRUPO' | 'FORM_SESION';
         (closed)="cerrarDetalleSesionModal()"
       />
     </div>
-  `,
+  `
 })
 export class TeacherGruposComponent implements OnInit, OnDestroy {
   private courseService = inject(CourseService);

@@ -7,7 +7,7 @@ import {
   computed,
   inject,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { ParametroAdminDto } from '../../../core/models/role-management.model';
 import { AdminManagementService } from '../../../core/services/admin-management.service';
@@ -16,11 +16,10 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
 @Component({
-  selector: 'app-parametro-edicion-modal',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule],
-  template: `
+    selector: 'app-parametro-edicion-modal',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule],
+    template: `
     @if (isOpen() && parametro()) {
       <div
         class="fixed inset-0 z-50 overflow-y-auto bg-warm-900/60 backdrop-blur-xs flex items-center justify-center p-4"
@@ -197,7 +196,7 @@ import { mensajeUi } from '../../../core/messages/mensajes-ui';
         </div>
       </div>
     }
-  `,
+  `
 })
 export class ParametroEdicionModalComponent {
   private adminService = inject(AdminManagementService);

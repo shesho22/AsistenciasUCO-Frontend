@@ -31,7 +31,6 @@ const ROUTE = '/app/admin/mensajes';
 
 @Component({
   selector: 'app-message-administration',
-  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [EmptyStateComponent],
   template: `

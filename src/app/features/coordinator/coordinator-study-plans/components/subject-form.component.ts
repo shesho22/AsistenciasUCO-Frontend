@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, computed, input, output, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { PlanEstudioItem, AsignaturaPlanItem, AreaConocimientoItem, CaracterAsignatura } from '../../../../core/models/role-management.model';
 import { ComponenteFormacionItem } from '../../../../core/models/consultas-transversales.model';
@@ -7,11 +7,10 @@ import { ButtonComponent } from '../../../../shared/components/button/button.com
 import { FormFieldComponent } from '../../../../shared/components/form-field/form-field.component';
 
 @Component({
-  selector: 'app-subject-form',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, ButtonComponent, FormFieldComponent],
-  template: `
+    selector: 'app-subject-form',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, ButtonComponent, FormFieldComponent],
+    template: `
     <div class="space-y-6">
       <div class="flex items-center justify-between bg-white p-4 rounded-2xl border border-warm-200 shadow-warm-sm">
         <button
@@ -154,7 +153,7 @@ import { FormFieldComponent } from '../../../../shared/components/form-field/for
         </div>
       </div>
     </div>
-  `,
+  `
 })
 export class SubjectFormComponent implements OnInit {
   plan = input.required<PlanEstudioItem>();

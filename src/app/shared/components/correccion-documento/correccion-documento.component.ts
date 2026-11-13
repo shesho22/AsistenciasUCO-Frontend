@@ -15,11 +15,10 @@ const CLASE_CONTROL =
  * cuando el documento cambia o cuando `motivoSiempre` lo pide. Emite su estado en cada cambio.
  */
 @Component({
-  selector: 'app-correccion-documento',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule],
-  template: `
+    selector: 'app-correccion-documento',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule],
+    template: `
     <div class="space-y-3" data-testid="correccion-documento">
       @if (permitir()) {
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -62,7 +61,7 @@ const CLASE_CONTROL =
         </label>
       }
     </div>
-  `,
+  `
 })
 export class CorreccionDocumentoComponent implements OnInit {
   private readonly catalog = inject(CatalogService);

@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Subject, of, throwError } from 'rxjs';
 import { TeacherGrupoDecisionesComponent } from './teacher-grupo-decisiones.component';
@@ -59,7 +59,7 @@ describe('TeacherGrupoDecisionesComponent', () => {
     TestBed.configureTestingModule({
       imports: [TeacherGrupoDecisionesComponent],
       providers: [
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         { provide: RevisionCancelacionService, useValue: servicio },
         { provide: RealtimeService, useValue: realtime },
@@ -187,7 +187,7 @@ describe('TeacherGrupoDecisionesComponent sin RealtimeService ni ToastService', 
     TestBed.configureTestingModule({
       imports: [TeacherGrupoDecisionesComponent],
       providers: [
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         { provide: RealtimeService, useValue: null },
         { provide: ToastService, useValue: null },

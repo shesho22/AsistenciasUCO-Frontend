@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { AdminFacultadesComponent } from './admin-facultades.component';
 import { AdminManagementService } from '../../../core/services/admin-management.service';
@@ -89,7 +89,7 @@ describe('AdminFacultadesComponent', () => {
     TestBed.configureTestingModule({
       imports: [AdminFacultadesComponent],
       providers: [
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         { provide: ToastService, useValue: toastSpy },
       ],

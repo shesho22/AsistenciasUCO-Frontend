@@ -9,7 +9,6 @@ import { DocenteItem, PlanEstudioItem } from '../../../../core/models/role-manag
 
 @Component({
   selector: 'app-overview-coordinator',
-  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RevisionesPendientesKpiComponent, CommonModule, RouterLink, CardComponent, BadgeComponent, ButtonComponent],
   host: {

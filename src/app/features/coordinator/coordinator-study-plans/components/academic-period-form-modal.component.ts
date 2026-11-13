@@ -16,7 +16,6 @@ export interface PeriodoFormDatos {
 /** Diálogo de alta y edición del período académico; permanece abierto hasta que el padre confirma la respuesta. */
 @Component({
   selector: 'app-academic-period-form-modal',
-  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormsModule, ModalComponent, FormFieldComponent],
   template: `

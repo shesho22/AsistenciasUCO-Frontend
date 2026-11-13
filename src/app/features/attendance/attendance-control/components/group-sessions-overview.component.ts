@@ -1,6 +1,6 @@
 import { ResumenAsistenciaEstudiante } from '../../../../core/models/indicadores-asistencia.model';
 import { Component, ChangeDetectionStrategy, input, output, computed, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { Course } from '../../../../core/models/course.model';
 import { ClassSession } from '../../../../core/models/attendance.model';
@@ -12,14 +12,13 @@ import { findActiveOrUpcomingSession } from '../../../../core/utils/session-sele
 import { SessionTimeZoneService } from '../../../../core/services/session-timezone.service';
 
 @Component({
-  selector: 'app-group-sessions-overview',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, ButtonComponent, SesionEstadoBadgeComponent, ActionMenuComponent, EmptyStateComponent],
-  host: {
-    class: 'block w-full'
-  },
-  template: `
+    selector: 'app-group-sessions-overview',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [ButtonComponent, SesionEstadoBadgeComponent, ActionMenuComponent, EmptyStateComponent],
+    host: {
+        class: 'block w-full'
+    },
+    template: `
     <div class="space-y-6 animate-fade-in">
       <!-- 1. BENTO GRID DE KPIs GLOBALES DEL GRUPO -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -240,7 +239,7 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
         }
       </div>
     </div>
-  `,
+  `
 })
 export class GroupSessionsOverviewComponent {
   readonly timeZone = inject(SessionTimeZoneService);

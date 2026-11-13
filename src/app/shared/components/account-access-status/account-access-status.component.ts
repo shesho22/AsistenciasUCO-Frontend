@@ -26,11 +26,10 @@ const VARIANTS: Record<AccountAccessState, BadgeVariant> = {
  * idempotente y se puede repetir. Una cuenta pendiente todavía no tiene acceso.
  */
 @Component({
-  selector: 'app-account-access-status',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [BadgeComponent, ButtonComponent],
-  template: `
+    selector: 'app-account-access-status',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [BadgeComponent, ButtonComponent],
+    template: `
     @if (correo(); as mail) {
       <section
         class="rounded-xl border border-warm-200 bg-white px-4 py-3 flex flex-col gap-2"
@@ -72,7 +71,7 @@ const VARIANTS: Record<AccountAccessState, BadgeVariant> = {
         }
       </section>
     }
-  `,
+  `
 })
 export class AccountAccessStatusComponent {
   /** Correo de la cuenta recién registrada; vacío oculta el panel. */

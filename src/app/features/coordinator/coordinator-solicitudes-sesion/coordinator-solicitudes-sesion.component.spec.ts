@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@angular/common/http/testing';
 import { CoordinatorSolicitudesSesionComponent } from './coordinator-solicitudes-sesion.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
@@ -38,7 +38,7 @@ describe('CoordinatorSolicitudesSesionComponent (DEC-065 (2))', () => {
     try { sessionStorage.removeItem('coordinador.programaId'); } catch { /* sin almacenamiento */ }
     TestBed.configureTestingModule({
       imports: [CoordinatorSolicitudesSesionComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting()],
     });
     http = TestBed.inject(HttpTestingController);
     toast = TestBed.inject(ToastService);

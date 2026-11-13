@@ -15,7 +15,6 @@ import { RevisionesPendientesKpiComponent } from '../../../shared/components/rev
  */
 @Component({
   selector: 'app-coordinator-asistencia',
-  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full' },
   imports: [CoordinatorIndicatorsComponent, ConsolidadoAsistenciaComponent, RevisionesPendientesKpiComponent, KpiCardComponent, CoordinatorSolicitudesSesionComponent],

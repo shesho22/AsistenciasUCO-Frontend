@@ -1,4 +1,4 @@
-import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { environment } from '../../../environments/environment';
@@ -11,7 +11,7 @@ describe('TomaAsistenciaService (CULM-001 B.2, CONTRACT 3.2.5)', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [TomaAsistenciaService, provideHttpClient(), provideHttpClientTesting()],
+      providers: [TomaAsistenciaService, provideHttpClient(withXhr()), provideHttpClientTesting()],
     });
     service = TestBed.inject(TomaAsistenciaService);
     http = TestBed.inject(HttpTestingController);
@@ -89,7 +89,7 @@ describe('TomaAsistenciaService (CULM-001 B.2, CONTRACT 3.2.5)', () => {
 describe('TomaAsistenciaService: resumen de la sesión (puntos de control)', () => {
   it('consultarResumenSesion hace GET /sesiones/{id}/tomas/resumen', () => {
     TestBed.configureTestingModule({
-      providers: [TomaAsistenciaService, provideHttpClient(), provideHttpClientTesting()],
+      providers: [TomaAsistenciaService, provideHttpClient(withXhr()), provideHttpClientTesting()],
     });
     const service = TestBed.inject(TomaAsistenciaService);
     const http = TestBed.inject(HttpTestingController);

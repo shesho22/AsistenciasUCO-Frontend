@@ -1,4 +1,4 @@
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { environment } from '../../../environments/environment';
@@ -11,7 +11,7 @@ describe('AdminFestivosService (CULM-001 B.1, pantalla 3.7)', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [AdminFestivosService, provideHttpClient(), provideHttpClientTesting()],
+      providers: [AdminFestivosService, provideHttpClient(withXhr()), provideHttpClientTesting()],
     });
     service = TestBed.inject(AdminFestivosService);
     http = TestBed.inject(HttpTestingController);

@@ -8,11 +8,10 @@ let confirmDialogCounter = 0;
  * window.confirm, que bloquea el hilo y no se puede estilizar ni probar.
  */
 @Component({
-  selector: 'app-confirm-dialog',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ModalComponent],
-  template: `
+    selector: 'app-confirm-dialog',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [ModalComponent],
+    template: `
     <app-modal
       [isOpen]="isOpen()"
       [title]="title()"
@@ -44,7 +43,7 @@ let confirmDialogCounter = 0;
         </button>
       </div>
     </app-modal>
-  `,
+  `
 })
 export class ConfirmDialogComponent {
   readonly isOpen = input<boolean>(false);

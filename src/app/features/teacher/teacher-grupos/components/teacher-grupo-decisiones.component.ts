@@ -34,7 +34,6 @@ import { RevisionDecisionModalComponent } from '../../revision-cancelacion/revis
  */
 @Component({
   selector: 'app-teacher-grupo-decisiones',
-  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [DecimalPipe, FechaCortaPipe, SemaforoAsistenciaComponent, EmptyStateComponent, RevisionDecisionModalComponent],
   template: `

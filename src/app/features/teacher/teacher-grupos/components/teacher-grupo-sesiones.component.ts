@@ -1,6 +1,6 @@
 import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 import { Component, ChangeDetectionStrategy, input, output, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { ClassSession } from '../../../../core/models/attendance.model';
 import { SesionEstadoBadgeComponent } from '../../../../shared/components/sesion-estado-badge/sesion-estado-badge.component';
@@ -8,11 +8,10 @@ import { estaCancelada, estaPendienteAprobacion, TEXTO_SESION_PENDIENTE } from '
 import { SessionTimeZoneService } from '../../../../core/services/session-timezone.service';
 
 @Component({
-  selector: 'app-teacher-grupo-sesiones',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [EmptyStateComponent, CommonModule, ButtonComponent, SesionEstadoBadgeComponent],
-  template: `
+    selector: 'app-teacher-grupo-sesiones',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [EmptyStateComponent, ButtonComponent, SesionEstadoBadgeComponent],
+    template: `
     <div class="bg-white rounded-b-2xl border-x border-b border-warm-200 shadow-warm-sm overflow-hidden space-y-4 p-5">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-warm-100">
         <div>
@@ -151,7 +150,7 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
         </div>
       }
     </div>
-  `,
+  `
 })
 export class TeacherGrupoSesionesComponent {
   readonly timeZone = inject(SessionTimeZoneService);

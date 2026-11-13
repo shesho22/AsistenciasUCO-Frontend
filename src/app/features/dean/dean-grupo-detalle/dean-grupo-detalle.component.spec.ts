@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { DeanGrupoDetalleComponent } from './dean-grupo-detalle.component';
@@ -77,7 +77,7 @@ describe('DeanGrupoDetalleComponent', () => {
     TestBed.configureTestingModule({
       imports: [DeanGrupoDetalleComponent],
       providers: [
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         { provide: Router, useValue: routerSpy },
         { provide: ToastService, useValue: toastSpy },

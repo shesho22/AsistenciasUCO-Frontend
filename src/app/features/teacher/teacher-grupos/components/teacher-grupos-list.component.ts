@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, input, output, signal, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { CardComponent } from '../../../../shared/components/card/card.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
@@ -9,11 +9,10 @@ import { Course } from '../../../../core/models/course.model';
 import { CatalogoPrograma } from '../../../../core/models/programa-academico.model';
 
 @Component({
-  selector: 'app-teacher-grupos-list',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, CardComponent, ButtonComponent, BadgeComponent, EmptyStateComponent],
-  template: `
+    selector: 'app-teacher-grupos-list',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, CardComponent, ButtonComponent, BadgeComponent, EmptyStateComponent],
+    template: `
     <div class="space-y-6 animate-fade-in">
       <!-- Header Bento -->
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
@@ -179,7 +178,7 @@ import { CatalogoPrograma } from '../../../../core/models/programa-academico.mod
         </div>
       }
     </div>
-  `,
+  `
 })
 export class TeacherGruposListComponent {
   courses = input<Course[]>([]);

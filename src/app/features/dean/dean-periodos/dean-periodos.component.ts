@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
@@ -8,12 +8,11 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 
 @Component({
-  selector: 'app-dean-periodos',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'block w-full' },
-  imports: [CommonModule, FormsModule, BadgeComponent],
-  template: `
+    selector: 'app-dean-periodos',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    host: { class: 'block w-full' },
+    imports: [FormsModule, BadgeComponent],
+    template: `
     <div class="space-y-6 animate-fade-in">
       <!-- Header Bento -->
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
@@ -104,7 +103,7 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
         </div>
       }
     </div>
-  `,
+  `
 })
 export class DeanPeriodosComponent implements OnInit {
   private coordService = inject(CoordinatorManagementService);

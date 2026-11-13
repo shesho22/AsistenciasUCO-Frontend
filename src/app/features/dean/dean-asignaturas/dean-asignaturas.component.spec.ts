@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ActivatedRoute } from '@angular/router';
 import { DeanAsignaturasComponent } from './dean-asignaturas.component';
@@ -22,7 +22,7 @@ function crear(comoAdministrador: boolean) {
   TestBed.configureTestingModule({
     imports: [DeanAsignaturasComponent],
     providers: [
-      provideHttpClient(),
+      provideHttpClient(withXhr()),
       provideHttpClientTesting(),
       { provide: ToastService, useValue: toast },
       { provide: ActivatedRoute, useValue: { snapshot: { data: comoAdministrador ? { comoAdministrador: true } : {} } } },

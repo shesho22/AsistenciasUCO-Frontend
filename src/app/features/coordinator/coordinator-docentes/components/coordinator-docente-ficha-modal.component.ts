@@ -29,11 +29,10 @@ const ESTADOS: Record<EstadoPeriodoHistorial, { etiqueta: string; variante: Badg
  * historial paginado de los grupos dictados en todos los periodos. Todo viene del servidor (sin filtrar en cliente).
  */
 @Component({
-  selector: 'app-coordinator-docente-ficha-modal',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CifraConBaseComponent, DatePipe, BadgeComponent, PaginationComponent, DialogoAccesibleDirective],
-  template: `
+    selector: 'app-coordinator-docente-ficha-modal',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CifraConBaseComponent, DatePipe, BadgeComponent, PaginationComponent, DialogoAccesibleDirective],
+    template: `
     <div
       class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-warm-950/40 backdrop-blur-xs focus:outline-none"
       role="dialog"
@@ -124,7 +123,7 @@ const ESTADOS: Record<EstadoPeriodoHistorial, { etiqueta: string; variante: Badg
         </div>
       </div>
     </div>
-  `,
+  `
 })
 export class CoordinatorDocenteFichaModalComponent implements OnInit {
   private readonly coordService = inject(CoordinatorManagementService);

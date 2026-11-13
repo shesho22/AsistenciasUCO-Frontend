@@ -43,7 +43,6 @@ export const ESTADOS_FILTRABLES: ReadonlyArray<{ codigo: EstadoRevisionCancelaci
  */
 @Component({
   selector: 'app-revisiones-resolucion',
-  standalone: true,
   imports: [
     EmptyStateComponent,
     DecimalPipe,

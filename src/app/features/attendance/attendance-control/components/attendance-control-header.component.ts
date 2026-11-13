@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, computed, input, output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
 import { ActionMenuComponent, ActionMenuItem } from '../../../../shared/components/action-menu/action-menu.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
@@ -8,14 +8,13 @@ import { Course } from '../../../../core/models/course.model';
 import { ClassSession } from '../../../../core/models/attendance.model';
 
 @Component({
-  selector: 'app-attendance-control-header',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, BadgeComponent, ButtonComponent, FormSelectComponent, ActionMenuComponent],
-  host: {
-    class: 'block w-full'
-  },
-  template: `
+    selector: 'app-attendance-control-header',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [BadgeComponent, ButtonComponent, FormSelectComponent, ActionMenuComponent],
+    host: {
+        class: 'block w-full'
+    },
+    template: `
     <div class="space-y-4">
       @if (!sessionsEnabled() || !attendanceEnabled()) {
         <p class="text-xs text-warm-600 bg-warm-100 border border-warm-200 rounded-xl px-4 py-2" role="status">
@@ -134,7 +133,7 @@ import { ClassSession } from '../../../../core/models/attendance.model';
         </div>
       }
     </div>
-  `,
+  `
 })
 export class AttendanceControlHeaderComponent {
   sessionsEnabled = input<boolean>(true);

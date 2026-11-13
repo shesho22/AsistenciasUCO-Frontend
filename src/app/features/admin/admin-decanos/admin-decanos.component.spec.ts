@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ChangeDetectorRef } from '@angular/core';
 import { of } from 'rxjs';
@@ -76,7 +76,7 @@ describe('AdminDecanosComponent', () => {
     TestBed.configureTestingModule({
       imports: [AdminDecanosComponent],
       providers: [
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         { provide: ToastService, useValue: toastSpy },
         { provide: TeacherService, useValue: { getAllTeachers: () => of([]) } },

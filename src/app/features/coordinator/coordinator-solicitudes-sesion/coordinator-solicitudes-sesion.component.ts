@@ -24,7 +24,6 @@ import { CoordinatorAprobarSolicitudModalComponent } from './coordinator-aprobar
  */
 @Component({
   selector: 'app-coordinator-solicitudes-sesion',
-  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full' },
   imports: [

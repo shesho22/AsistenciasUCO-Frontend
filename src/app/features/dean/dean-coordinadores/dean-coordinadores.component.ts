@@ -39,7 +39,6 @@ const NOMBRE_PROGRAMA_MAX = 50;
 
 @Component({
   selector: 'app-dean-coordinadores',
-  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ActionMenuComponent,

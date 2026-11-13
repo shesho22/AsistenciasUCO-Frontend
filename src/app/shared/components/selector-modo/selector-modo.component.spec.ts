@@ -1,12 +1,12 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { SelectorModoComponent, OpcionModo } from './selector-modo.component';
 
 type Modo = 'CREAR' | 'VINCULAR' | 'SIN';
 
 @Component({
-  standalone: true,
   imports: [SelectorModoComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `<app-selector-modo [opciones]="opciones" etiqueta="Facultad" [(valor)]="modo" />`,
 })
 class HostComponent {

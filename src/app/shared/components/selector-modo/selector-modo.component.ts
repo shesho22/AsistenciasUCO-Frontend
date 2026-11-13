@@ -8,7 +8,6 @@ export interface OpcionModo<T extends string = string> {
 /** Selector de modo en segmentos (radiogroup accesible) para formularios con alternativas excluyentes. */
 @Component({
   selector: 'app-selector-modo',
-  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div role="radiogroup" [attr.aria-label]="etiqueta()" class="inline-flex flex-wrap gap-1 p-1 bg-warm-100 border border-warm-200 rounded-xl">

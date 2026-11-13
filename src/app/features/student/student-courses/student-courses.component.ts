@@ -1,6 +1,6 @@
 import { Component, OnDestroy, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { Subscription, finalize } from 'rxjs';
-import { CommonModule } from '@angular/common';
+
 import { ActivatedRoute, Router } from '@angular/router';
 import { StudentManagementService } from '../../../core/services/student-management.service';
 import { MatriculaQrService } from '../../../core/services/matricula-qr.service';
@@ -44,17 +44,15 @@ import { mensajeUi } from '../../../core/messages/mensajes-ui';
 type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO';
 
 @Component({
-  selector: 'app-student-courses',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    CommonModule,
+    selector: 'app-student-courses',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [
     StudentCoursesListComponent,
     StudentCourseDetailComponent,
     StudentClaimFormComponent,
-    StudentMatriculaCodigoModalComponent,
-  ],
-  template: `
+    StudentMatriculaCodigoModalComponent
+],
+    template: `
     <div class="space-y-6 animate-fade-in">
       <!-- 1. Vista: Lista Principal de Materias -->
       @if (vistaActual() === 'LISTA') {
@@ -120,7 +118,7 @@ type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO';
         (closed)="cerrarModalMatriculaGrupo()"
       />
     </div>
-  `,
+  `
 })
 export class StudentCoursesComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);

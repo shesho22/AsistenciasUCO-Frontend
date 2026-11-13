@@ -1,5 +1,5 @@
 import { fakeAsync, TestBed, tick } from '@angular/core/testing';
-import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http';
+import { HttpClient, provideHttpClient, withInterceptors, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { correlationInterceptor } from './correlation.interceptor';
 import { authInterceptor } from './auth.interceptor';
@@ -36,7 +36,7 @@ describe('X-Correlation-Id (BACKEND_GOLDEN_PATH_CONTRACT §J)', () => {
     TestBed.configureTestingModule({
       providers: [
         // Mismo orden que app.config.ts: correlation → auth.
-        provideHttpClient(withInterceptors([correlationInterceptor, authInterceptor])),
+        provideHttpClient(withXhr(), withInterceptors([correlationInterceptor, authInterceptor])),
         provideHttpClientTesting(),
         { provide: AuthService, useValue: authService },
       ],

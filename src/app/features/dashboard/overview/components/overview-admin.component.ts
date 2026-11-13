@@ -1,6 +1,6 @@
 import { CifraConBaseComponent } from '../../../../shared/components/cifra-con-base/cifra-con-base.component';
 import { Component, ChangeDetectionStrategy, computed, input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { RouterLink } from '@angular/router';
 import { CardComponent } from '../../../../shared/components/card/card.component';
 import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
@@ -8,14 +8,13 @@ import { ButtonComponent } from '../../../../shared/components/button/button.com
 import { DecanoItem } from '../../../../core/models/role-management.model';
 
 @Component({
-  selector: 'app-overview-admin',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CifraConBaseComponent, CommonModule, RouterLink, CardComponent, BadgeComponent, ButtonComponent],
-  host: {
-    class: 'block w-full',
-  },
-  template: `
+    selector: 'app-overview-admin',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CifraConBaseComponent, RouterLink, CardComponent, BadgeComponent, ButtonComponent],
+    host: {
+        class: 'block w-full',
+    },
+    template: `
     <div class="space-y-6">
       <!-- KPIs Administrador -->
       <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -93,7 +92,7 @@ import { DecanoItem } from '../../../../core/models/role-management.model';
         </div>
       </section>
     </div>
-  `,
+  `
 })
 export class OverviewAdminComponent {
   decanos = input<DecanoItem[]>([]);

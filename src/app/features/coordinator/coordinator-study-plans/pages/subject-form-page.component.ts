@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, input, signal, computed, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ActivatedRoute, Router } from '@angular/router';
 import { CoordinatorManagementService } from '../../../../core/services/coordinator-management.service';
 import { PlanEstudioItem, AsignaturaPlanItem, AreaConocimientoItem, CaracterAsignatura } from '../../../../core/models/role-management.model';
@@ -11,12 +11,11 @@ import { SubjectFormComponent } from '../components/subject-form.component';
 import { mensajeUi } from '../../../../core/messages/mensajes-ui';
 
 @Component({
-  selector: 'app-coordinator-subject-form-page',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'block w-full' },
-  imports: [CommonModule, SubjectFormComponent],
-  template: `
+    selector: 'app-coordinator-subject-form-page',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    host: { class: 'block w-full' },
+    imports: [SubjectFormComponent],
+    template: `
     <div class="space-y-6 animate-fade-in">
       @if (selectedPlan(); as plan) {
         @if (modo() === 'CREAR' || selectedAsignatura()) {
@@ -41,7 +40,7 @@ import { mensajeUi } from '../../../../core/messages/mensajes-ui';
         </div>
       }
     </div>
-  `,
+  `
 })
 export class CoordinatorSubjectFormPageComponent implements OnInit {
   private coordService = inject(CoordinatorManagementService);

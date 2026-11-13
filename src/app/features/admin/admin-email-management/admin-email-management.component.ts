@@ -8,7 +8,7 @@ import {
   DestroyRef,
   InjectionToken,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
@@ -93,11 +93,10 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
 };
 
 @Component({
-  selector: 'app-admin-email-management',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, IconComponent, PaginationComponent],
-  template: `
+    selector: 'app-admin-email-management',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, IconComponent, PaginationComponent],
+    template: `
     <div class="space-y-6">
       <!-- ================= HEADER & BREADCRUMB ================= -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -705,7 +704,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
 
                 <div class="p-4 rounded-xl bg-warm-50 border border-warm-200">
                   <span class="text-[10px] font-bold text-warm-500 uppercase block mb-1">Último envío</span>
-                  <span class="text-sm font-mono font-bold text-warm-900 block" data-testid="canal-ultimo-envio">{{ timeZone.formatTemporal(canalEstado()?.ultimoEnvioUtc) }}</span>
+                  <span class="text-sm font-mono font-bold text-warm-900 block" data-testid="canal-ultimo-envio">{{ timeZone.formatTemporal($safeNavigationMigration(canalEstado()?.ultimoEnvioUtc)) }}</span>
                 </div>
 
                 <div class="p-4 rounded-xl bg-warm-50 border border-warm-200">
@@ -793,7 +792,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
         }
       }
     </div>
-  `,
+  `
 })
 export class AdminEmailManagementComponent implements OnInit {
   private readonly notificationService = inject(AdminEmailNotificationService);

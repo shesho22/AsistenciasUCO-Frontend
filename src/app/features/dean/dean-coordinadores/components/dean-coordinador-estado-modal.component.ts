@@ -7,11 +7,10 @@ import { CoordinadorItem } from '../../../../core/models/role-management.model';
  * desactivar a quien coordina un programa activo) la decide el backend y su mensaje se muestra tal cual.
  */
 @Component({
-  selector: 'app-dean-coordinador-estado-modal',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ModalComponent],
-  template: `
+    selector: 'app-dean-coordinador-estado-modal',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [ModalComponent],
+    template: `
     <app-modal [isOpen]="true" [title]="titulo()" (closed)="cancelar.emit()">
       <div class="space-y-3 text-sm text-warm-700">
         @if (activo()) {
@@ -48,7 +47,7 @@ import { CoordinadorItem } from '../../../../core/models/role-management.model';
         </button>
       </div>
     </app-modal>
-  `,
+  `
 })
 export class DeanCoordinadorEstadoModalComponent {
   coordinador = input.required<CoordinadorItem>();

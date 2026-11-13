@@ -9,7 +9,6 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
 
 @Component({
   selector: 'app-academic-periods-tab',
-  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, CardComponent, BadgeComponent, ButtonComponent, PaginationComponent, AcademicPeriodFormModalComponent],
   template: `

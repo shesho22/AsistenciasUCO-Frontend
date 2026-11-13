@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpClient, HttpParams, provideHttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams, provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TAMANO_PAGINA_MAXIMO, obtenerTodasLasPaginas, paramsSinVacios } from './pagination.util';
 import { paginaApi, porUrl } from '../testing/pagina-api';
@@ -10,7 +10,7 @@ describe('pagination.util', () => {
   const url = 'http://api.test/lista';
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    TestBed.configureTestingModule({ providers: [provideHttpClient(withXhr()), provideHttpClientTesting()] });
     http = TestBed.inject(HttpTestingController);
     cliente = TestBed.inject(HttpClient);
   });

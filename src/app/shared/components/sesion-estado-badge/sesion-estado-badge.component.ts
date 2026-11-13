@@ -16,7 +16,6 @@ import {
  */
 @Component({
   selector: 'app-sesion-estado-badge',
-  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [BadgeComponent],
   template: `

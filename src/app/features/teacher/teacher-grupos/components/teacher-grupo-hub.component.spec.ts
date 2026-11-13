@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TeacherGrupoHubComponent } from './teacher-grupo-hub.component';
 import { Course } from '../../../../core/models/course.model';
@@ -33,7 +33,7 @@ describe('TeacherGrupoHubComponent', () => {
     TestBed.configureTestingModule({
       imports: [TeacherGrupoHubComponent],
       providers: [
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         { provide: RealtimeService, useValue: { startForGroup: () => undefined, stop: () => undefined, events: () => NEVER, connectionState$: NEVER } },
       ],

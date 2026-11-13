@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ConsultasTransversalesService } from './consultas-transversales.service';
 import { environment } from '../../../environments/environment';
@@ -10,7 +10,7 @@ describe('ConsultasTransversalesService (HU112/HU128/HU143/HU157)', () => {
   const api = environment.apiUrl;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    TestBed.configureTestingModule({ providers: [provideHttpClient(withXhr()), provideHttpClientTesting()] });
     service = TestBed.inject(ConsultasTransversalesService);
     http = TestBed.inject(HttpTestingController);
   });

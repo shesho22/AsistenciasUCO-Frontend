@@ -34,7 +34,6 @@ const PESTANAS_GRUPO: readonly PestanaGrupo[] = [
 
 @Component({
   selector: 'app-teacher-grupo-hub',
-  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,

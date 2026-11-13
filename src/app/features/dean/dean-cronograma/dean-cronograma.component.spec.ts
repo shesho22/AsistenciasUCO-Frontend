@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { provideHttpClient, withInterceptors, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { DeanCronogramaComponent } from './dean-cronograma.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
@@ -20,7 +20,7 @@ describe('DeanCronogramaComponent (HU145)', () => {
     toastSpy = jasmine.createSpyObj('ToastService', ['success', 'error', 'info', 'warning']);
     TestBed.configureTestingModule({
       imports: [DeanCronogramaComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting(), { provide: ToastService, useValue: toastSpy }],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting(), { provide: ToastService, useValue: toastSpy }],
     });
     http = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(DeanCronogramaComponent);
@@ -159,7 +159,7 @@ describe('Mock backend de consultas del decano (HU104/HU105/HU109/HU119/HU145)',
 
   it('responde estudiantes filtrados, ficha, estructura y sesiones en modo mock', (done) => {
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(withInterceptors([mockBackendInterceptor]))],
+      providers: [provideHttpClient(withXhr(), withInterceptors([mockBackendInterceptor]))],
     });
     TestBed.inject(AuthService).setMockMode(true);
     const service = TestBed.inject(DeanFacultadService);

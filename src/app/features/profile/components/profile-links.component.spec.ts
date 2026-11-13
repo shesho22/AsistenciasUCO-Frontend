@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ProfileLinksComponent } from './profile-links.component';
 import { BYPASS_GLOBAL_ERROR_TOAST } from '../../../core/interceptors/error.interceptor';
@@ -34,7 +34,7 @@ describe('ProfileLinksComponent (HU006)', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [ProfileLinksComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting(), PerfilInstitucionalStore],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting(), PerfilInstitucionalStore],
     });
     fixture = TestBed.createComponent(ProfileLinksComponent);
     component = fixture.componentInstance;

@@ -2,7 +2,7 @@ import type { NuevaSesionSolicitud } from './components/attendance-new-session-m
 import type { MatriculaEstudianteSolicitud } from './components/attendance-enrollment-modal.component';
 import { Component, DestroyRef, signal, computed, effect, inject, ChangeDetectionStrategy } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { CommonModule } from '@angular/common';
+
 import { Subscription, finalize, forkJoin, map, of } from 'rxjs';
 import { StudentService } from '../../../core/services/student.service';
 import { StudentRegistrationConfigService } from '../../../core/services/student-registration-config.service';
@@ -88,11 +88,9 @@ type StudentEnrollmentField =
   | 'password';
 
 @Component({
-  selector: 'app-attendance-control',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    CommonModule,
+    selector: 'app-attendance-control',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [
     ToastComponent,
     AttendanceControlHeaderComponent,
     AttendanceControlTableComponent,
@@ -105,9 +103,9 @@ type StudentEnrollmentField =
     GroupSessionsOverviewComponent,
     GroupInfoModalComponent,
     GroupClaimsModalComponent,
-    TeacherMatriculaModalComponent,
-  ],
-  template: `
+    TeacherMatriculaModalComponent
+],
+    template: `
     <div class="flex flex-col gap-6 animate-fade-in max-w-7xl mx-auto pb-12 relative">
       <!-- 1. Encabezado y Selectores de Curso / Sesión -->
       <app-attendance-control-header
@@ -177,7 +175,7 @@ type StudentEnrollmentField =
             [sessionsEnabled]="sessionsEnabled"
             [attendanceEnabled]="attendanceEnabled"
             [attendanceWindowState]="attendanceWindowState()"
-            [cancelacion]="currentSession()?.cancelacion"
+            [cancelacion]="$safeNavigationMigration(currentSession()?.cancelacion)"
             (statusChange)="onStudentStatusChange($event)"
             (openExcuseModal)="openExcuseModal($event)"
             (saveAttendance)="saveAttendance()"
@@ -273,7 +271,7 @@ type StudentEnrollmentField =
         (dismissed)="showToast.set(false)"
       />
     </div>
-  `,
+  `
 })
 export class AttendanceControlComponent {
   private courseService = inject(CourseService);

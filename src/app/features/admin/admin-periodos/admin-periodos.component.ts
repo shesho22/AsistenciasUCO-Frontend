@@ -15,7 +15,6 @@ import { mensajeUi } from '../../../core/messages/mensajes-ui';
  */
 @Component({
   selector: 'app-admin-periodos',
-  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full' },
   imports: [CommonModule, AcademicPeriodsTabComponent, ConfirmDialogComponent],

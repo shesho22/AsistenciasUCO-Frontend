@@ -1,21 +1,19 @@
 import { Component, signal, computed, inject, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../core/services/auth.service';
 import { ButtonComponent } from '../../../shared/components/button/button.component';
 import { CardComponent } from '../../../shared/components/card/card.component';
 
 @Component({
-  selector: 'app-login',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    CommonModule,
+    selector: 'app-login',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [
     FormsModule,
     ButtonComponent,
-    CardComponent,
-  ],
-  template: `
+    CardComponent
+],
+    template: `
     <div class="w-full max-w-md mx-auto animate-fade-in space-y-4">
       <app-card [glass]="true" padding="lg">
         <!-- Encabezado Institucional -->
@@ -175,7 +173,7 @@ import { CardComponent } from '../../../shared/components/card/card.component';
         }
       </app-card>
     </div>
-  `,
+  `
 })
 export class LoginComponent {
   private authService = inject(AuthService);

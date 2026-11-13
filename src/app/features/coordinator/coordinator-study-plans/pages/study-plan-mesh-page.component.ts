@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, input, signal, computed, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ActivatedRoute, Router } from '@angular/router';
 import { CoordinatorManagementService } from '../../../../core/services/coordinator-management.service';
 import { PlanEstudioItem, AsignaturaPlanItem } from '../../../../core/models/role-management.model';
@@ -14,12 +14,11 @@ import { mensajeUi } from '../../../../core/messages/mensajes-ui';
 const MAX_SEMESTRES = 10;
 
 @Component({
-  selector: 'app-coordinator-study-plan-mesh-page',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'block w-full' },
-  imports: [CommonModule, StudyPlanMeshComponent, AssociateSubjectDialogComponent, ConfirmDialogComponent],
-  template: `
+    selector: 'app-coordinator-study-plan-mesh-page',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    host: { class: 'block w-full' },
+    imports: [StudyPlanMeshComponent, AssociateSubjectDialogComponent, ConfirmDialogComponent],
+    template: `
     <div class="space-y-6 animate-fade-in">
       @if (aviso(); as mensaje) {
         <div
@@ -70,7 +69,7 @@ const MAX_SEMESTRES = 10;
         </div>
       }
     </div>
-  `,
+  `
 })
 export class CoordinatorStudyPlanMeshPageComponent implements OnInit {
   private coordService = inject(CoordinatorManagementService);

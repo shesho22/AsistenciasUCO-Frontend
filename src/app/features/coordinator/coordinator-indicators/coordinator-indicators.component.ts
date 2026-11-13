@@ -12,11 +12,10 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
 import { CoordinatorFichaModalComponent } from './components/coordinator-ficha-modal.component';
 
 @Component({
-  selector: 'app-coordinator-indicators',
-  standalone: true,
-  imports: [EmptyStateComponent, KpiCardComponent, PaginationComponent, CoordinatorFichaModalComponent, CoordinatorProgramSelectorComponent, SemaforoAsistenciaComponent],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
+    selector: 'app-coordinator-indicators',
+    imports: [EmptyStateComponent, KpiCardComponent, PaginationComponent, CoordinatorFichaModalComponent, CoordinatorProgramSelectorComponent, SemaforoAsistenciaComponent],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    template: `
     <section class="space-y-6">
       @if (parte() !== 'alertas') {
         <header class="space-y-3">
@@ -96,7 +95,7 @@ import { CoordinatorFichaModalComponent } from './components/coordinator-ficha-m
       }
       }
     </section>
-  `,
+  `
 })
 export class CoordinatorIndicatorsComponent implements OnInit {
   readonly service = inject(CoordinatorIndicatorsService);

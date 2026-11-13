@@ -1,4 +1,4 @@
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import {
   HttpTestingController,
   provideHttpClientTesting,
@@ -16,7 +16,7 @@ describe('SessionService nombre 1..50 (no depende del rechazo del backend)', () 
   beforeEach(() => {
     localStorage.setItem('USE_MOCKS', 'false');
     TestBed.configureTestingModule({
-      providers: [SessionService, provideHttpClient(), provideHttpClientTesting()],
+      providers: [SessionService, provideHttpClient(withXhr()), provideHttpClientTesting()],
     });
     service = TestBed.inject(SessionService);
     http = TestBed.inject(HttpTestingController);

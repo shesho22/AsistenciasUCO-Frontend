@@ -8,7 +8,6 @@ import { ModalComponent } from '../../../shared/components/modal/modal.component
  */
 @Component({
   selector: 'app-coordinator-aprobar-solicitud-modal',
-  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ModalComponent],
   template: `

@@ -13,11 +13,10 @@ const CLASE_CONTROL =
  * documento se corrige si el parámetro lo permite; si cambia, exige motivo.
  */
 @Component({
-  selector: 'app-coordinator-docente-edit-modal',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, CorreccionDocumentoComponent],
-  template: `
+    selector: 'app-coordinator-docente-edit-modal',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [FormsModule, CorreccionDocumentoComponent],
+    template: `
     <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-warm-900/60 backdrop-blur-xs">
       <div class="bg-white rounded-3xl shadow-warm-2xl border border-warm-200/80 w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden">
         <div class="px-6 py-5 border-b border-warm-100 flex items-start justify-between bg-warm-50/50">
@@ -68,7 +67,7 @@ const CLASE_CONTROL =
         </form>
       </div>
     </div>
-  `,
+  `
 })
 export class CoordinatorDocenteEditModalComponent implements OnInit {
   readonly docente = input.required<DocentePrograma>();

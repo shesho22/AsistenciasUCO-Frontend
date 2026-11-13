@@ -34,7 +34,6 @@ const NOMBRE_FACULTAD_MAX = 50;
 
 @Component({
   selector: 'app-admin-decanos',
-  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ActionMenuComponent,

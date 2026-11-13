@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { paginaApi, porUrl } from '../../../core/testing/pagina-api';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Router } from '@angular/router';
 import { DeanProgramasComponent } from './dean-programas.component';
@@ -44,7 +44,7 @@ describe('DeanProgramasComponent', () => {
     TestBed.configureTestingModule({
       imports: [DeanProgramasComponent],
       providers: [
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         { provide: Router, useValue: routerSpy },
       ],
@@ -131,7 +131,7 @@ describe('DeanProgramasComponent sin estructura', () => {
   it('deja la lista de planes vacía si la estructura falla', () => {
     TestBed.configureTestingModule({
       imports: [DeanProgramasComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting(), { provide: Router, useValue: jasmine.createSpyObj('Router', ['navigate']) }],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting(), { provide: Router, useValue: jasmine.createSpyObj('Router', ['navigate']) }],
     });
     const http = TestBed.inject(HttpTestingController);
     const fixture = TestBed.createComponent(DeanProgramasComponent);
@@ -153,7 +153,7 @@ describe('DeanProgramasComponent con créditos no disponibles', () => {
   it('muestra «—» y no un total parcial', () => {
     TestBed.configureTestingModule({
       imports: [DeanProgramasComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting(), { provide: Router, useValue: jasmine.createSpyObj('Router', ['navigate']) }],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting(), { provide: Router, useValue: jasmine.createSpyObj('Router', ['navigate']) }],
     });
     const http = TestBed.inject(HttpTestingController);
     const fixture = TestBed.createComponent(DeanProgramasComponent);
@@ -179,7 +179,7 @@ describe('DeanProgramasComponent con más de una página de créditos', () => {
   it('acumula las páginas de la tabla unificada', () => {
     TestBed.configureTestingModule({
       imports: [DeanProgramasComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting(), { provide: Router, useValue: jasmine.createSpyObj('Router', ['navigate']) }],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting(), { provide: Router, useValue: jasmine.createSpyObj('Router', ['navigate']) }],
     });
     const http = TestBed.inject(HttpTestingController);
     const fixture = TestBed.createComponent(DeanProgramasComponent);
@@ -199,7 +199,7 @@ describe('DeanProgramasComponent mientras carga', () => {
   it('muestra el estado de carga en lugar de ceros y vacios engañosos', () => {
     TestBed.configureTestingModule({
       imports: [DeanProgramasComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting(), { provide: Router, useValue: jasmine.createSpyObj('Router', ['navigate']) }],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting(), { provide: Router, useValue: jasmine.createSpyObj('Router', ['navigate']) }],
     });
     const http = TestBed.inject(HttpTestingController);
     const fixture = TestBed.createComponent(DeanProgramasComponent);

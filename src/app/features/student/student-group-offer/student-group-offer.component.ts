@@ -17,11 +17,10 @@ const DEBOUNCE_MS = 300;
  * Es solo consulta de oferta y cupos: la matricula se hace con el QR o PIN del docente o por matricula manual del docente.
  */
 @Component({
-  selector: 'app-student-group-offer',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, CardComponent, BadgeComponent, PaginationComponent],
-  template: `
+    selector: 'app-student-group-offer',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [CommonModule, FormsModule, CardComponent, BadgeComponent, PaginationComponent],
+    template: `
     <div class="space-y-6 animate-fade-in">
       <div>
         <h1 class="font-serif text-2xl sm:text-3xl font-bold text-warm-900">Oferta de grupos</h1>
@@ -111,7 +110,7 @@ const DEBOUNCE_MS = 300;
         />
       }
     </div>
-  `,
+  `
 })
 export class StudentGroupOfferComponent implements OnInit {
   private readonly ofertaService = inject(OfertaAcademicaService);

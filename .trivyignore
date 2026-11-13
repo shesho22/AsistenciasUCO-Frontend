@@ -1,42 +1,9 @@
-# TRI-03 / TRI-06 (VAL oleada 2, 2026-11-12): excepciones de la compuerta Trivy del frontend.
-# Triage hecho con aquasec/trivy:0.74.0 (fs, HIGH/CRITICAL, ignore-unfixed) sobre el arbol rastreado.
-# Cada entrada lleva su motivo y vence (exp) el 2027-02-12: al vencer, Trivy vuelve a bloquear y hay
-# que revisar de nuevo. La correccion de fondo de todas las de Angular es subir a Angular >= 20.3.33
-# (o 19.2.23+ para parte de ellas), decision pendiente del equipo (EST-10). No se sube aqui.
-
-# --- Angular: solo SSR / hidratacion / HttpTransferCache. La app es CSR pura: no hay @angular/ssr,
-# --- provideClientHydration ni withHttpTransferCache en src/ (grep 2026-11-12). No aplica.
-CVE-2026-50170 exp:2027-02-12
-CVE-2026-54266 exp:2027-02-12
-CVE-2026-68945 exp:2027-02-12
-CVE-2026-54267 exp:2027-02-12
-CVE-2026-101896 exp:2027-02-12
-CVE-2026-111752 exp:2027-02-12
-
-# --- Angular i18n: XSS por atributos i18n o archivos de traduccion comprometidos. La app no usa i18n
-# --- (no hay atributos i18n, $localize ni @angular/localize en src/). No aplica.
-CVE-2026-32635 exp:2027-02-12
-CVE-2026-69151 exp:2027-02-12
-CVE-2026-27970 exp:2027-02-12
-
-# --- Angular DoS por formato controlado por el atacante (digitsInfo de DecimalPipe, formato de DatePipe).
-# --- Todos los formatos son literales del codigo; ninguno viene de datos de usuario. No aplica.
-CVE-2026-50171 exp:2027-02-12
-CVE-2026-54268 exp:2027-02-12
-
-# --- Angular compilador: XSS via atributos de animacion SVG, URL SVG o MathML, y <script> SVG con href.
-# --- Las plantillas no tienen <animate>, <set>, MathML ni enlaces href/xlink:href en SVG con datos
-# --- externos (unico [href] es un <a> con URL de atribucion fija del catalogo). No aplica.
-CVE-2025-66412 exp:2027-02-12
-CVE-2026-22610 exp:2027-02-12
-
-# --- Angular HttpClient: fuga del token XSRF hacia URLs relativas al protocolo (//host). La URL del API
-# --- se arma con API_URL absoluta (http/https) o con el host actual; nunca relativa al protocolo.
-# --- Mitigado por configuracion: API_URL no debe empezar por "//". Riesgo residual bajo; se corrige con
-# --- el salto de version de Angular.
-CVE-2025-66035 exp:2027-02-12
-
-# --- source-map-js 1.2.1 (transitiva de postcss/tailwind): DoS al procesar un source map malformado.
-# --- Solo corre en el build con mapas propios; no se empaqueta en el bundle servido por nginx.
-# --- Correccion: 1.2.2 (actualizacion del lockfile). No aplica al runtime.
-CVE-2026-93749 exp:2027-02-12
+# Excepciones de la compuerta Trivy del frontend (fs e imagen, HIGH/CRITICAL, ignore-unfixed).
+# Formato: una linea por hallazgo, con su motivo en comentario y vencimiento: <ID> exp:AAAA-MM-DD
+#
+# EST-10 (VAL oleada 3, 2026-11-13): sin excepciones vigentes. Las 14 de Angular 18 (CVE-2025-66035,
+# CVE-2025-66412, CVE-2026-22610, CVE-2026-27970, CVE-2026-32635, CVE-2026-50170, CVE-2026-50171,
+# CVE-2026-54266, CVE-2026-54267, CVE-2026-54268, CVE-2026-68945, CVE-2026-69151, CVE-2026-101896,
+# CVE-2026-111752) se retiraron al subir a Angular 22.2.4, y la de source-map-js (CVE-2026-93749) al quedar
+# 1.2.2 en el lockfile. Verificado con aquasec/trivy:0.74.0 sin archivo de excepciones: 0 hallazgos.
+# Detalle en docs/work-items/VAL-oleada3-angular/VALIDATION.md.

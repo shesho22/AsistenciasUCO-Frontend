@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, input, signal, computed, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ActivatedRoute, Router } from '@angular/router';
 import { CoordinatorManagementService } from '../../../../core/services/coordinator-management.service';
 import { PlanEstudioItem } from '../../../../core/models/role-management.model';
@@ -9,12 +9,11 @@ import { StudyPlanFormComponent } from '../components/study-plan-form.component'
 import { mensajeUi } from '../../../../core/messages/mensajes-ui';
 
 @Component({
-  selector: 'app-coordinator-study-plan-form-page',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'block w-full' },
-  imports: [CommonModule, StudyPlanFormComponent],
-  template: `
+    selector: 'app-coordinator-study-plan-form-page',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    host: { class: 'block w-full' },
+    imports: [StudyPlanFormComponent],
+    template: `
     <div class="space-y-6 animate-fade-in">
       @if (modo() === 'CREAR' || selectedPlan()) {
         <app-study-plan-form
@@ -29,7 +28,7 @@ import { mensajeUi } from '../../../../core/messages/mensajes-ui';
         </div>
       }
     </div>
-  `,
+  `
 })
 export class CoordinatorStudyPlanFormPageComponent implements OnInit {
   private coordService = inject(CoordinatorManagementService);

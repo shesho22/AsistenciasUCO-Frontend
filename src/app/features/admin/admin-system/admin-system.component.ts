@@ -11,7 +11,7 @@ import {
   DestroyRef,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AdminManagementService } from '../../../core/services/admin-management.service';
@@ -31,21 +31,19 @@ import { mensajeUi } from '../../../core/messages/mensajes-ui';
 type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
 
 @Component({
-  selector: 'app-admin-system',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
+    selector: 'app-admin-system',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [
     EmptyStateComponent,
     FechaHoraCortaPipe,
-    CommonModule,
     FormsModule,
     RouterLink,
     AdminAuditoriaComponent,
     ConfirmDialogComponent,
     PaginationComponent,
-    ParametroEdicionModalComponent,
-  ],
-  template: `
+    ParametroEdicionModalComponent
+],
+    template: `
     <div class="space-y-6">
      @if (modo === 'completo') {
       <!-- ================= HEADER & BREADCRUMB ================= -->
@@ -428,7 +426,7 @@ type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
         (cancelled)="cierrePendiente.set(false)"
       />
     </div>
-  `,
+  `
 })
 export class AdminSystemComponent implements OnInit {
   private adminService = inject(AdminManagementService);

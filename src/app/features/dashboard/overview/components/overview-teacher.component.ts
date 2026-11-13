@@ -10,7 +10,6 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
 
 @Component({
   selector: 'app-overview-teacher',
-  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RevisionesPendientesKpiComponent, RangoHorarioPipe, CommonModule, RouterLink, CardComponent, ButtonComponent],
   host: {
@@ -47,7 +46,7 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
           }
         </div>
         <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px]"
-             [ngClass]="{'border-primary-300 bg-primary-50/30 ring-1 ring-primary-400/20': proximaClase()?.enCurso, 'border-primary-200/60': proximaClase() && !proximaClase()?.enCurso}">
+             [ngClass]="{'border-primary-300 bg-primary-50/30 ring-1 ring-primary-400/20': $safeNavigationMigration(proximaClase()?.enCurso), 'border-primary-200/60': proximaClase() && !proximaClase()?.enCurso}">
           <div class="flex items-center justify-between">
             <span class="text-xs text-warm-500 font-medium">Próxima Clase</span>
             @if (proximaClase()?.enCurso) {

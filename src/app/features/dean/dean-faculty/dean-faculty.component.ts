@@ -10,12 +10,11 @@ import { PeriodoAcademicoItem, PlanEstudioItem } from '../../../core/models/role
 import { BadgeComponent } from '../../../shared/components/badge/badge.component';
 
 @Component({
-  selector: 'app-dean-faculty',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'block w-full' },
-  imports: [BadgeComponent, CifraConBaseComponent],
-  template: `
+    selector: 'app-dean-faculty',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    host: { class: 'block w-full' },
+    imports: [BadgeComponent, CifraConBaseComponent],
+    template: `
     <div class="space-y-4">
       <!-- CULM-001: cabecera compacta de la facultad con tres cifras (grupos, planes, áreas) -->
       <div class="bg-white p-4 sm:p-5 rounded-2xl border border-warm-200/80 shadow-warm-sm space-y-3" data-testid="cabecera-facultad">
@@ -51,7 +50,7 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
         </ul>
       </div>
     </div>
-  `,
+  `
 })
 export class DeanFacultyComponent implements OnInit {
   private courseService = inject(CourseService);

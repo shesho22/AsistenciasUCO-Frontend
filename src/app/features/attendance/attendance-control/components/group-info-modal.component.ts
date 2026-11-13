@@ -1,17 +1,16 @@
 import { EstudianteGrupoItem } from '../../../../core/models/estudiante-grupo-item.model';
 import { Component, ChangeDetectionStrategy, input, output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
 import { Course } from '../../../../core/models/course.model';
 
 @Component({
-  selector: 'app-group-info-modal',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, ModalComponent, ButtonComponent, BadgeComponent],
-  template: `
+    selector: 'app-group-info-modal',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [ModalComponent, ButtonComponent, BadgeComponent],
+    template: `
     <app-modal
       [isOpen]="isOpen()"
       title="Información del Grupo & Alumnos"
@@ -122,7 +121,7 @@ import { Course } from '../../../../core/models/course.model';
         </div>
       </div>
     </app-modal>
-  `,
+  `
 })
 export class GroupInfoModalComponent {
   isOpen = input<boolean>(false);

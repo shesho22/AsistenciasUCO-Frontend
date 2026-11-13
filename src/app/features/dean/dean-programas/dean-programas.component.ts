@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy, input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { DeanFacultadService, planesDeLaEstructura } from '../../../core/services/dean-facultad.service';
@@ -17,12 +17,11 @@ import { EMPTY, expand, reduce } from 'rxjs';
 const TAMANO_CREDITOS = 100;
 
 @Component({
-  selector: 'app-dean-programas',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'block w-full' },
-  imports: [CommonModule, FormsModule, BadgeComponent, PaginationComponent, DeanProgramasGestionComponent, DeanProgramasCreditosComponent],
-  template: `
+    selector: 'app-dean-programas',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    host: { class: 'block w-full' },
+    imports: [FormsModule, BadgeComponent, PaginationComponent, DeanProgramasGestionComponent, DeanProgramasCreditosComponent],
+    template: `
     <div class="space-y-6 animate-fade-in">
       <!-- Header Bento -->
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
@@ -187,7 +186,7 @@ const TAMANO_CREDITOS = 100;
       }
       }
     </div>
-  `,
+  `
 })
 export class DeanProgramasComponent implements OnInit {
   /** CULM-001: dentro de una pestaña, el título lo pone el cascarón. */

@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { DeanIndicatorsComponent } from './dean-indicators.component';
 import { environment } from '../../../../environments/environment';
@@ -38,7 +38,7 @@ describe('DeanIndicatorsComponent', () => {
   const texto = () => (fixture.nativeElement as HTMLElement).textContent ?? '';
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ imports: [DeanIndicatorsComponent], providers: [provideHttpClient(), provideHttpClientTesting()] });
+    TestBed.configureTestingModule({ imports: [DeanIndicatorsComponent], providers: [provideHttpClient(withXhr()), provideHttpClientTesting()] });
     http = TestBed.inject(HttpTestingController);
     toast = TestBed.inject(ToastService);
     fixture = TestBed.createComponent(DeanIndicatorsComponent);

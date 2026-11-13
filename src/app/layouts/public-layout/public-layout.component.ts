@@ -1,13 +1,12 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { RouterOutlet } from '@angular/router';
 
 @Component({
-  selector: 'app-public-layout',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, RouterOutlet],
-  template: `
+    selector: 'app-public-layout',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [RouterOutlet],
+    template: `
     <div class="min-h-dvh flex flex-col md:flex-row bg-warm-50">
       <!-- Left Panel: Branding & Aurora Graphic Banner (Desktop Only) -->
       <div class="hidden lg:flex lg:w-5/12 bg-primary-950 p-12 flex-col justify-between relative overflow-hidden text-white">
@@ -46,6 +45,6 @@ import { RouterOutlet } from '@angular/router';
         </div>
       </div>
     </div>
-  `,
+  `
 })
 export class PublicLayoutComponent {}

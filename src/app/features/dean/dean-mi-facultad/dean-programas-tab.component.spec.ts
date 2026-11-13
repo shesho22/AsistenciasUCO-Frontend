@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import { DeanProgramasTabComponent } from './dean-programas-tab.component';
@@ -11,7 +11,7 @@ describe('DeanProgramasTabComponent (CULM-001: Mi facultad / Programas)', () => 
   it('compone la cabecera de la facultad, el árbol de programas con planes y la gestión de programas, sin títulos repetidos', () => {
     TestBed.configureTestingModule({
       imports: [DeanProgramasTabComponent],
-      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideRouter([]), provideHttpClient(withXhr()), provideHttpClientTesting()],
     });
     const http = TestBed.inject(HttpTestingController);
     const fixture = TestBed.createComponent(DeanProgramasTabComponent);

@@ -14,11 +14,10 @@ import { mensajeUi } from '../../../../core/messages/mensajes-ui';
 let fichaEstudianteIdContador = 0;
 
 @Component({
-  selector: 'app-coordinator-ficha-modal',
-  standalone: true,
-  imports: [PaginationComponent, CorreccionIdentidadModalComponent, DialogoAccesibleDirective],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
+    selector: 'app-coordinator-ficha-modal',
+    imports: [PaginationComponent, CorreccionIdentidadModalComponent, DialogoAccesibleDirective],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    template: `
     <div
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 focus:outline-none"
       role="dialog"
@@ -108,7 +107,7 @@ let fichaEstudianteIdContador = 0;
         />
       </div>
     </div>
-  `,
+  `
 })
 export class CoordinatorFichaModalComponent implements OnInit {
   private readonly service = inject(CoordinatorIndicatorsService);

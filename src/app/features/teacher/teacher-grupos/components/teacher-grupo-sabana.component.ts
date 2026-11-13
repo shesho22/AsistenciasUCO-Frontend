@@ -30,18 +30,17 @@ import { onRealtimeReconnect } from '../../../../core/realtime/realtime-reconnec
 import { REALTIME_EVENT_TYPE } from '../../../../core/realtime/model/realtime-event.model';
 
 @Component({
-  selector: 'app-teacher-grupo-sabana',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    CommonModule,
-    AttendanceStatusBadgeComponent,
-    PaginationComponent,
-    InasistenciaMarcaBadgeComponent,
-    SemaforoAsistenciaComponent,
-    RevisionDecisionModalComponent,
-  ],
-  template: `
+    selector: 'app-teacher-grupo-sabana',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [
+        CommonModule,
+        AttendanceStatusBadgeComponent,
+        PaginationComponent,
+        InasistenciaMarcaBadgeComponent,
+        SemaforoAsistenciaComponent,
+        RevisionDecisionModalComponent,
+    ],
+    template: `
     <div class="bg-white rounded-b-2xl border-x border-b border-warm-200 shadow-warm-sm p-6 space-y-6">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-warm-100">
         <div>
@@ -210,7 +209,7 @@ import { REALTIME_EVENT_TYPE } from '../../../../core/realtime/model/realtime-ev
                         <button
                           type="button"
                           [attr.data-testid]="'btn-decidir-' + idDe(est)"
-                          (click)="abrirModalDecision(est, r?.marca)"
+                          (click)="abrirModalDecision(est, $safeNavigationMigration(r?.marca))"
                           class="min-h-[36px] px-2.5 py-1 bg-primary-700 hover:bg-primary-800 text-white rounded-lg text-xs font-semibold shadow-xs transition-colors"
                         >
                           Decidir
@@ -239,7 +238,7 @@ import { REALTIME_EVENT_TYPE } from '../../../../core/realtime/model/realtime-ev
         (decisionRegistrada)="onDecisionRegistrada()"
       />
     </div>
-  `,
+  `
 })
 export class TeacherGrupoSabanaComponent implements OnDestroy {
   readonly timeZone = inject(SessionTimeZoneService);

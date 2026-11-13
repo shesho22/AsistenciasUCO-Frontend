@@ -51,7 +51,6 @@ import { OverviewStudentComponent } from './components/overview-student.componen
 
 @Component({
   selector: 'app-overview',
-  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,

@@ -1,6 +1,6 @@
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { Component, OnDestroy, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { Subscription, finalize } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
@@ -36,21 +36,19 @@ type EstadoFiltroReclamos = 'TODOS' | 'P' | 'A' | 'R';
 type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'NETWORK_ERROR' | 'SERVER_ERROR';
 
 @Component({
-  selector: 'app-teacher-claims',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
+    selector: 'app-teacher-claims',
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [
     EmptyStateComponent,
-    CommonModule,
     FormsModule,
     CardComponent,
     BadgeComponent,
     ButtonComponent,
     FormFieldComponent,
     AvatarComponent,
-    PaginationComponent,
-  ],
-  template: `
+    PaginationComponent
+],
+    template: `
     <div class="space-y-6 animate-fade-in">
       <!-- 1. VISTA: BANDEJA GENERAL DE RECLAMOS -->
       @if (vistaActual() === 'BANDEJA') {
@@ -281,11 +279,11 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
             <div class="flex items-center gap-2">
               @if (selectedReclamo()?.categoria) {
                 <span class="px-3 py-1 rounded-xl text-xs font-semibold bg-warning-50 text-warning-900 border border-warning-200">
-                  {{ categoriaTexto(selectedReclamo()?.categoria) }}
+                  {{ categoriaTexto($safeNavigationMigration(selectedReclamo()?.categoria)) }}
                 </span>
               }
               <app-badge [variant]="getReclamoBadgeVariant(selectedReclamo()!.estadoSolicitud)" size="md">
-                Estado: {{ etiquetaEstado(selectedReclamo()?.estadoSolicitud) }}
+                Estado: {{ etiquetaEstado($safeNavigationMigration(selectedReclamo()?.estadoSolicitud)) }}
               </app-badge>
             </div>
           </div>
@@ -450,7 +448,7 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
         </div>
       }
     </div>
-  `,
+  `
 })
 export class TeacherClaimsComponent implements OnInit, OnDestroy {
   private claimService = inject(AttendanceClaimService);

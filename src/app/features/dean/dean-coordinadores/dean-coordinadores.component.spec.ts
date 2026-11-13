@@ -1,7 +1,7 @@
 import { ChangeDetectorRef } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { paginaApi, porUrl } from '../../../core/testing/pagina-api';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@angular/common/http/testing';
 import { DeanCoordinadoresComponent } from './dean-coordinadores.component';
 import { DeanManagementService } from '../../../core/services/dean-management.service';
@@ -58,7 +58,7 @@ describe('DeanCoordinadoresComponent', () => {
         DeanManagementService,
         CatalogService,
         { provide: ToastService, useValue: toastService },
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
       ],
     }).compileComponents();
