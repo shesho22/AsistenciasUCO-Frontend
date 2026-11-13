@@ -28,6 +28,7 @@ import { CoordinatorDocenteFormModalComponent } from './components/coordinator-d
 import { CoordinatorDocenteEditModalComponent } from './components/coordinator-docente-edit-modal.component';
 import { CoordinatorDocenteFichaModalComponent } from './components/coordinator-docente-ficha-modal.component';
 import { CargaMasivaUsuariosComponent } from '../../../shared/components/carga-masiva-usuarios/carga-masiva-usuarios.component';
+import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
 type FiltroEstado = 'TODOS' | 'ACTIVO' | 'INACTIVO';
 
@@ -441,7 +442,7 @@ export class CoordinatorDocentesComponent implements OnInit {
     this.docentePendienteEstado.set(null);
     this.coordService.cambiarEstadoDocente(docente.idDocente, !docente.estaActivo).subscribe({
       next: (res) => {
-        this.toast.success(res.mensajeUsuario || 'Estado del docente actualizado.');
+        this.toast.success(res.mensajeUsuario || mensajeUi('UI_COORDINATOR_DOCENTES_001'));
         this.recarga.update((n) => n + 1);
       },
       error: (error: unknown) => this.toast.error(getApiErrorMessage(error)),
@@ -464,7 +465,7 @@ export class CoordinatorDocentesComponent implements OnInit {
     }
     this.coordService.actualizarDocente(docente.idDocente, payload).subscribe({
       next: (res) => {
-        this.toast.success(res.mensajeUsuario || 'Docente actualizado.');
+        this.toast.success(res.mensajeUsuario || mensajeUi('UI_COORDINATOR_DOCENTES_002'));
         this.docenteEnEdicion.set(null);
         this.recarga.update((n) => n + 1);
       },
@@ -489,7 +490,7 @@ export class CoordinatorDocentesComponent implements OnInit {
   private vincular(payload: VincularDocentePayload): void {
     this.coordService.vincularDocente(payload).subscribe({
       next: (res) => {
-        this.toast.success(res.mensajeUsuario || 'Docente vinculado al programa.');
+        this.toast.success(res.mensajeUsuario || mensajeUi('UI_COORDINATOR_DOCENTES_003'));
         if ('correo' in payload) {
           this.ultimaCuentaRegistrada.set(payload.correo);
         }

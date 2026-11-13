@@ -7,6 +7,7 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { PeriodoFormDatos } from '../../coordinator/coordinator-study-plans/components/academic-period-form-modal.component';
 import { AcademicPeriodsTabComponent } from '../../coordinator/coordinator-study-plans/components/academic-periods-tab.component';
+import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
 /**
  * HU096/HU097/HU098: el período académico es único para toda la institución, por eso solo el administrador lo
@@ -96,10 +97,10 @@ export class AdminPeriodosComponent implements OnInit {
         this.guardando.set(false);
         if (res.exitoso) {
           this.tab()?.cerrarFormulario();
-          this.toast.success(res.mensajeUsuario || 'Período académico guardado.');
+          this.toast.success(res.mensajeUsuario || mensajeUi('UI_ADMIN_PERIODOS_001'));
           this.cargarPeriodos();
         } else {
-          this.errorGuardado.set(res.mensajeUsuario || res.mensajeTecnico || 'No se pudo guardar el período académico.');
+          this.errorGuardado.set(res.mensajeUsuario || res.mensajeTecnico || mensajeUi('UI_ADMIN_PERIODOS_003'));
         }
       },
       error: (err) => {
@@ -126,7 +127,7 @@ export class AdminPeriodosComponent implements OnInit {
     this.coordService.eliminarPeriodoAcademico(periodo.id).subscribe({
       next: (res) => {
         if (res.exitoso) {
-          this.toast.success(res.mensajeUsuario || `Período ${periodo.codigo} eliminado.`);
+          this.toast.success(res.mensajeUsuario || mensajeUi('UI_ADMIN_PERIODOS_002', { codigo: periodo.codigo }));
           this.cargarPeriodos();
         }
       },

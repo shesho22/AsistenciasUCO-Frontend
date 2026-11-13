@@ -9,6 +9,7 @@ import { ErrorCargaComponent } from '../../../shared/components/error-carga/erro
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { ListadoPaginado } from '../../../shared/utils/listado-paginado';
+import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
 /** Rango por defecto (últimos 7 días, contando hoy) y máximo permitido por el backend. */
 export const DIAS_AUDITORIA_POR_DEFECTO = 7;
@@ -300,7 +301,7 @@ export class AdminAuditoriaComponent implements OnInit {
     if (!id || id === '—') return;
     try {
       await navigator.clipboard.writeText(id);
-      this.toast.success('ID de correlación copiado al portapapeles.');
+      this.toast.success(mensajeUi('UI_ADMIN_AUDITORIA_001'));
     } catch {
       // fallback
     }

@@ -14,6 +14,7 @@ import {
 import { getBackendUserMessage } from '../../../core/api/errors/api-error.util';
 import { ActionMenuComponent, ActionMenuItem } from '../../../shared/components/action-menu/action-menu.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
+import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
 type VistaFacultad = 'LISTA' | 'FORM';
 type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
@@ -705,7 +706,7 @@ export class AdminFacultadesComponent implements OnInit {
         next: (res) => {
           this.guardando.set(false);
           if (res.exitoso) {
-            this.toast.success('Facultad actualizada correctamente.');
+            this.toast.success(mensajeUi('UI_ADMIN_FACULTADES_001'));
             this.vista.set('LISTA');
           } else {
             this.fallaGuardado(res.mensajeUsuario || 'No fue posible actualizar la facultad.');
@@ -727,7 +728,7 @@ export class AdminFacultadesComponent implements OnInit {
           next: (res) => {
             this.guardando.set(false);
             if (res.exitoso) {
-              this.toast.success('Facultad registrada exitosamente.');
+              this.toast.success(mensajeUi('UI_ADMIN_FACULTADES_002'));
               this.vista.set('LISTA');
             } else {
               this.fallaGuardado(res.mensajeUsuario || 'No fue posible registrar la facultad.');
@@ -770,14 +771,14 @@ export class AdminFacultadesComponent implements OnInit {
       next: (res) => {
         this.facultadCambiandoEstado.set(null);
         if (res.exitoso) {
-          this.toast.success(`Facultad ${activar ? 'activada' : 'desactivada'} correctamente.`);
+          this.toast.success(mensajeUi(activar ? 'UI_ADMIN_FACULTADES_006' : 'UI_ADMIN_FACULTADES_007'));
         } else {
-          this.toast.error(res.mensajeUsuario || 'No fue posible cambiar el estado de la facultad.');
+          this.toast.error(res.mensajeUsuario || mensajeUi('UI_ADMIN_FACULTADES_003'));
         }
       },
       error: (err) => {
         this.facultadCambiandoEstado.set(null);
-        this.toast.error(getBackendUserMessage(err, 'No fue posible cambiar el estado de la facultad.'));
+        this.toast.error(getBackendUserMessage(err, mensajeUi('UI_ADMIN_FACULTADES_003')));
       },
     });
   }
@@ -809,15 +810,15 @@ export class AdminFacultadesComponent implements OnInit {
       next: (res) => {
         this.guardandoDecano.set(false);
         if (res.exitoso) {
-          this.toast.success(`Decano(a) ${decanoNombre} asignado(a) exitosamente a ${fac.nombre}.`);
+          this.toast.success(mensajeUi('UI_ADMIN_FACULTADES_008', { decano: decanoNombre, facultad: fac.nombre }));
           this.cerrarModalDecano();
         } else {
-          this.toast.error(res.mensajeUsuario || 'No se pudo asignar el decano.');
+          this.toast.error(res.mensajeUsuario || mensajeUi('UI_ADMIN_FACULTADES_004'));
         }
       },
       error: (err) => {
         this.guardandoDecano.set(false);
-        this.toast.error(getBackendUserMessage(err, 'No se pudo asignar el decano en este momento.'));
+        this.toast.error(getBackendUserMessage(err, mensajeUi('UI_ADMIN_FACULTADES_005')));
       },
     });
   }

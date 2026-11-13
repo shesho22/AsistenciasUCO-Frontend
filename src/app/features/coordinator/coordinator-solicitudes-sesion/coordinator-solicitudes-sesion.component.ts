@@ -13,6 +13,7 @@ import { MotivoCancelacionCoordinador } from '../../../core/models/coordinador-s
 import { EstadoSolicitudSesion } from '../../../core/models/sesion-estado.model';
 import { formatearHace } from '../../../core/utils/tiempo-relativo.util';
 import { getApiErrorMessage, getApiSuccessMessage } from '../../../core/api/errors/api-error.util';
+import { mensajeUi } from '../../../core/messages/mensajes-ui';
 import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load-error.util';
 import { CoordinatorCancelarSesionModalComponent } from '../coordinator-sesiones-grupo/coordinator-cancelar-sesion-modal.component';
 import { CoordinatorAprobarSolicitudModalComponent } from './coordinator-aprobar-solicitud-modal.component';
@@ -271,7 +272,7 @@ export class CoordinatorSolicitudesSesionComponent implements OnInit {
   confirmarAprobacion(observacion: string | undefined): void {
     const solicitud = this.aAprobar();
     if (!solicitud || this.enviando()) return;
-    this.resolver(this.sesionesService.aprobar(solicitud.idSesion, observacion), 'Sesión aprobada.');
+    this.resolver(this.sesionesService.aprobar(solicitud.idSesion, observacion), mensajeUi('UI_COORDINATOR_SOLICITUDES_SESION_001'));
   }
 
   confirmarRechazo(request: { codigoMotivo: string; observacion?: string }): void {
@@ -279,7 +280,7 @@ export class CoordinatorSolicitudesSesionComponent implements OnInit {
     if (!solicitud || this.enviando()) return;
     this.resolver(
       this.sesionesService.rechazar(solicitud.idSesion, request.codigoMotivo, request.observacion),
-      'Solicitud rechazada.'
+      mensajeUi('UI_COORDINATOR_SOLICITUDES_SESION_002')
     );
   }
 

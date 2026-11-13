@@ -26,6 +26,7 @@ import {
 } from '../../../core/models/role-management.model';
 import { AdminAuditoriaComponent } from './admin-auditoria.component';
 import { ParametroEdicionModalComponent } from './parametro-edicion-modal.component';
+import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
 type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
 
@@ -604,7 +605,7 @@ export class AdminSystemComponent implements OnInit {
     const codigoPeriodo = periodoObj ? periodoObj.codigo : this.periodoSeleccionadoCierre;
 
     if (!idPeriodo) {
-      this.toast.error('Debe seleccionar un período válido para ejecutar el cierre.');
+      this.toast.error(mensajeUi('UI_ADMIN_SYSTEM_001'));
       return;
     }
 

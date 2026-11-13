@@ -9,6 +9,7 @@ import { CorregirIdentidadPayload, IdentidadActual } from '../../../../core/mode
 import { CorreccionIdentidadModalComponent } from '../../../../shared/components/correccion-identidad-modal/correccion-identidad-modal.component';
 import { ToastService } from '../../../../shared/components/toast/toast.component';
 import { DialogoAccesibleDirective } from '../../../../shared/directives/dialogo-accesible.directive';
+import { mensajeUi } from '../../../../core/messages/mensajes-ui';
 
 let fichaEstudianteIdContador = 0;
 
@@ -154,9 +155,9 @@ export class CoordinatorFichaModalComponent implements OnInit {
         this.guardandoCorreccion.set(false);
         this.corrigiendo.set(false);
         if (r.datos?.sincronizacionIdentidad === 'PENDIENTE') {
-          this.toast.warning(r.datos.mensajeUsuario ?? 'Los datos se corrigieron; la cuenta de acceso queda pendiente de sincronizar.');
+          this.toast.warning(r.datos.mensajeUsuario ?? mensajeUi('UI_ADMIN_DECANOS_001'));
         } else {
-          this.toast.success('Los datos del estudiante fueron corregidos.');
+          this.toast.success(mensajeUi('UI_ADMIN_ESTUDIANTES_001'));
         }
         this.cargarFicha();
       },

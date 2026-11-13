@@ -18,6 +18,7 @@ import {
   MatriculaQrRotadoPayload,
   VentanaMatricula,
 } from '../../../../../core/models/matricula-qr.model';
+import { mensajeUi } from '../../../../../core/messages/mensajes-ui';
 
 /**
  * HU176B: ventana de matricula por QR/PIN rotativo. El QR, el PIN y la URL los genera el backend (nunca el cliente ni un
@@ -235,7 +236,7 @@ export class TeacherMatriculaModalComponent {
     }
     this.matriculaQr.cerrarVentana(grupoId).subscribe({
       next: () => {
-        this.toast.success('La matrícula por código quedó cerrada.');
+        this.toast.success(mensajeUi('UI_TEACHER_MATRICULA_MODAL_001'));
         this.closed.emit();
       },
       error: (err: unknown) => this.toast.error(getApiErrorMessage(err)),
@@ -261,7 +262,7 @@ export class TeacherMatriculaModalComponent {
     const pin = this.ventana()?.pin;
     if (pin) {
       void navigator.clipboard?.writeText(pin);
-      this.toast.success('PIN de matrícula copiado al portapapeles.');
+      this.toast.success(mensajeUi('UI_TEACHER_MATRICULA_MODAL_002'));
     }
   }
 
@@ -269,7 +270,7 @@ export class TeacherMatriculaModalComponent {
     const url = this.ventana()?.urlMatricula;
     if (url) {
       void navigator.clipboard?.writeText(url);
-      this.toast.success('Enlace de matrícula copiado al portapapeles.');
+      this.toast.success(mensajeUi('UI_TEACHER_MATRICULA_MODAL_003'));
     }
   }
 

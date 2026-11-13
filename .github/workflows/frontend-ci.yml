@@ -52,6 +52,10 @@ jobs:
       - name: Lint (ESLint)
         run: npm run lint
 
+      # MSG-06 (VAL oleada 3): ningun toast con texto literal; los codigos de mensajeUi existen en el catalogo.
+      - name: Catalogo de mensajes del frontend
+        run: npm run check:mensajes-ui
+
       # EST-10 (VAL oleada 2): inventario de npm audit de runtime como evidencia. El bloqueo de
       # dependencias vulnerables con correccion lo hace la compuerta Trivy (HIGH/CRITICAL, ignore-unfixed).
       - name: npm audit (runtime dependencies, report)

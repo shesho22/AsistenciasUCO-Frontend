@@ -14,6 +14,7 @@ import {
 } from '../../../../core/models/programa-academico.model';
 import { DeanProgramaFormModalComponent } from './dean-programa-form-modal.component';
 import { DeanProgramaEstadoModalComponent } from './dean-programa-estado-modal.component';
+import { mensajeUi } from '../../../../core/messages/mensajes-ui';
 
 /**
  * Gestión de programas académicos del decano (HU076, HU077, HU078, HU108): tabla paginada en servidor con filtros,
@@ -227,7 +228,7 @@ export class DeanProgramasGestionComponent implements OnInit {
     operacion.subscribe({
       next: (res) => {
         this.guardando.set(false);
-        this.toast.success(res.mensajeUsuario || (enEdicion ? 'Programa actualizado.' : 'Programa creado.'));
+        this.toast.success(res.mensajeUsuario || (enEdicion ? mensajeUi('UI_DEAN_PROGRAMAS_GESTION_001') : mensajeUi('UI_DEAN_PROGRAMAS_GESTION_002')));
         this.cerrarFormulario();
         this.cargar();
         this.cargarCoordinadores();
@@ -258,7 +259,7 @@ export class DeanProgramasGestionComponent implements OnInit {
     }
     this.service.cambiarEstado(programa.id, estaActivo).subscribe({
       next: (res) => {
-        this.toast.success(res.mensajeUsuario || 'Estado del programa actualizado.');
+        this.toast.success(res.mensajeUsuario || mensajeUi('UI_DEAN_PROGRAMAS_GESTION_003'));
         this.cerrarEstado();
         this.cargar();
         this.cargarCoordinadores();

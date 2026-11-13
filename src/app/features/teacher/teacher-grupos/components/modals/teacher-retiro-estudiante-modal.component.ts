@@ -7,6 +7,7 @@ import { ButtonComponent } from '../../../../../shared/components/button/button.
 import { ToastService } from '../../../../../shared/components/toast/toast.component';
 import { GroupService } from '../../../../../core/services/group.service';
 import { getApiErrorMessage } from '../../../../../core/api/errors/api-error.util';
+import { mensajeUi } from '../../../../../core/messages/mensajes-ui';
 
 /** Estudiante del padrón que se retira (forma de `EstudianteGrupoApiDto`). */
 export interface EstudianteARetirar {
@@ -119,7 +120,9 @@ export class TeacherRetiroEstudianteModalComponent {
       .pipe(finalize(() => this.enviando.set(false)))
       .subscribe({
         next: () => {
-          this.toast.success(`${estudiante.nombreCompleto || 'El estudiante'} fue retirado del grupo.`);
+          this.toast.success(estudiante.nombreCompleto
+            ? mensajeUi('UI_TEACHER_RETIRO_ESTUDIANTE_MODAL_001', { nombre: estudiante.nombreCompleto })
+            : mensajeUi('UI_TEACHER_RETIRO_ESTUDIANTE_MODAL_002'));
           this.motivo.set('');
           this.retirado.emit(estudiante.idEstudiante);
         },

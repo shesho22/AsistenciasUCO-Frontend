@@ -18,13 +18,13 @@ import { nombreEstudianteRevision, porcentajeRevision } from '../../../../core/m
 import { RealtimeService } from '../../../../core/realtime/realtime.service';
 import { REALTIME_EVENT_TYPE } from '../../../../core/realtime/model/realtime-event.model';
 import { ToastService } from '../../../../shared/components/toast/toast.component';
+import { mensajeUi } from '../../../../core/messages/mensajes-ui';
 import { getApiErrorMessage } from '../../../../core/api/errors/api-error.util';
 import { SemaforoAsistenciaComponent } from '../../../../shared/components/semaforo-asistencia/semaforo-asistencia.component';
 import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 import { FechaCortaPipe } from '../../../../shared/pipes/fecha-hora.pipes';
 import { RevisionDecisionModalComponent } from '../../revision-cancelacion/revision-decision-modal.component';
 
-const MENSAJE_UMBRAL_CRUZADO = 'Un estudiante cruzó el umbral de cancelación: revisa Decisiones pendientes';
 
 /**
  * Decisiones pendientes del docente en un grupo (DEC-065): estudiantes que cruzaron el umbral de inasistencia
@@ -171,7 +171,7 @@ export class TeacherGrupoDecisionesComponent {
       if (!evt || !this.grupoId()) return;
       if (evt.type === REALTIME_EVENT_TYPE.REVISION_CANCELACION_CREADA) {
         this.cargar();
-        this.toast?.info(MENSAJE_UMBRAL_CRUZADO);
+        this.toast?.info(mensajeUi('UI_TEACHER_GRUPO_DECISIONES_001'));
       } else if (
         evt.type === REALTIME_EVENT_TYPE.REVISION_CANCELACION_DECIDIDA ||
         evt.type === REALTIME_EVENT_TYPE.REVISION_CANCELACION_RESUELTA ||
