@@ -94,7 +94,8 @@ export const environment = {
     /** Identificador estable de la aplicación AsistenciasUCO en el PDP. */
     get applicationId(): string {
       const explicit = (window as any)['env']?.['SECURITY_BASELINE_APPLICATION_ID'];
-      return String(explicit || 'a0b42637-39f8-4ddd-bec2-0781ba08e779');
+      // SEC-12: sin id real por defecto; lo entrega env.js (entrypoint del contenedor o archivo local).
+      return String(explicit || '');
     },
     /** Emisor OIDC central (realm security-baseline). */
     get baselineIssuerUrl(): string {
