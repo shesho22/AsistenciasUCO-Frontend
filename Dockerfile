@@ -32,8 +32,11 @@ USER root
 RUN apk upgrade --no-cache
 # La plantilla se procesa con envsubst al arrancar (20-envsubst-on-templates.sh, tambien presente en la imagen sin
 # privilegios) y genera /etc/nginx/conf.d/default.conf. Destinos de los componentes externos: solo
-# esquema://host:puerto, sin ruta (nginx conserva la URI original).
-ENV MESSAGEUCOLAB_UPSTREAM=http://host.docker.internal:8000 \
+# esquema://host:puerto, sin ruta (nginx conserva la URI original). Se resuelven en cada peticion con los DNS de
+# /etc/resolv.conf (NGINX_ENTRYPOINT_LOCAL_RESOLVERS -> NGINX_LOCAL_RESOLVERS): un destino que no resuelve da 502 en
+# su ruta y no impide que arranque el contenedor.
+ENV NGINX_ENTRYPOINT_LOCAL_RESOLVERS=1 \
+    MESSAGEUCOLAB_UPSTREAM=http://host.docker.internal:8000 \
     CATALOGO_PARAMETROS_UPSTREAM=http://host.docker.internal:8081 \
     CATALOGO_PARAMETROS_UI_UPSTREAM=http://host.docker.internal:4201
 COPY nginx/templates/ /etc/nginx/templates/
