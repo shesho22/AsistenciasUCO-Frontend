@@ -1,6 +1,6 @@
 # Gestió Asistencia UCO - Frontend
 
-Aplicativo web institucional desarrollado en **Angular 18+ (Standalone Components, Signals & Reactive Architecture)** para la gestión y control de asistencias, oferta académica, gobernanza curricular y auditoría de la **Universidad Católica de Oriente (UCO)**.
+Aplicativo web institucional desarrollado en **Angular 22 (Standalone Components, Signals & Reactive Architecture)** para la gestión y control de asistencias, oferta académica, gobernanza curricular y auditoría de la **Universidad Católica de Oriente (UCO)**.
 
 Diseñado para cumplir con la totalidad de las **174 Historias de Usuario (HU001 a HU174)** descritas en el plan de requerimientos oficial.
 
@@ -109,7 +109,7 @@ src/app/
 
 ## 🛠️ Tecnologías Utilizadas
 
-- **Framework**: Angular 18.1 (TypeScript 5.4, Standalone Components).
+- **Framework**: Angular 22.2.4 (TypeScript 6.0, Standalone Components, builder `@angular/build`).
 - **Gestión de Estado**: Signals (`signal`, `computed`, `effect`) nativas de Angular.
 - **Estilos y Maquetación**: TailwindCSS + Paleta Institucional UCO (tonos verdes `primary`, acentos dorados `accent` y neutros cálidos `warm`).
 - **Iconografía**: SVG puro embebido sin dependencias pesadas de terceros.
@@ -120,7 +120,7 @@ src/app/
 ## ⚙️ Configuración y Ejecución
 
 ### Prerrequisitos
-- **Node.js**: v18.19.0 o superior.
+- **Node.js**: v22.22.3+ o v24.15.0+ (lo exige Angular 22; el CI y el Dockerfile usan 22.23.4).
 - **npm**: v10.0.0 o superior.
 
 ### 1. Instalación de dependencias

@@ -46,6 +46,8 @@ Todas las de Angular se corrigen solo con un salto de versión mayor (19.2.x, 20
 
 Conteo real HIGH/CRITICAL con corrección disponible: 15 CVE (0 CRITICAL). Ninguno se ignora "porque sí": todos vencen el 2027-02-12 y la corrección de fondo es subir Angular (EST-10, decisión pendiente) y `source-map-js` a 1.2.2 en el lockfile.
 
+> Actualización 2026-11-13 (VAL oleada 3): Angular subió a 22.2.4 y `source-map-js` quedó en 1.2.2; las 15 excepciones se retiraron de `.trivyignore`. Ver `docs/work-items/VAL-oleada3-angular/VALIDATION.md`.
+
 ## Pendiente externo
 
 - Decidir y planear el salto de Angular 18 a una versión soportada (cierra las 14 de Angular de raíz).

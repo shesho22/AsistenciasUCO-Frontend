@@ -29,10 +29,12 @@ Node en el `Dockerfile` (etapa de build) y en el CI.
 ## Pasos (un commit por salto mayor)
 
 1. 18 → 19: `ng update @angular/core@19 @angular/cli@19`, `ng update angular-eslint@19`.
-2. 19 → 20: `ng update @angular/core@20 @angular/cli@20`, `ng update angular-eslint@20`.
+2. 19 → 20: `ng update @angular/core@20 @angular/cli@20`, `ng update angular-eslint@20` y la migración
+   opcional `use-application-builder` (builder `@angular/build`, también para Karma).
 3. 20 → 21: `ng update @angular/core@21 @angular/cli@21`, `ng update angular-eslint@21`.
-4. 21 → 22: `ng update @angular/core@22.2.4 @angular/cli@22.2.4`, `ng update angular-eslint@22`;
-   versiones fijas (sin `^`) en `package.json`; Node 22 en `Dockerfile` y CI.
+4. 21 → 22: `ng update @angular/core@22.2.4 @angular/cli@22.2.4`, angular-eslint 22.6.0;
+   versiones fijas (sin `^`) en `package.json`; Node 22.23.4 en `Dockerfile` y CI. Se retira `lucide-angular`
+   (sin uso, su peer no admite Angular 22).
 5. Quitar de `.trivyignore` las entradas que ya no aplican y correr Trivy con la misma configuración
    de la compuerta del CI.
 
@@ -40,9 +42,13 @@ En cada paso: `npm run lint` (0 errores) y `npm run verify` (Karma + umbrales de
 producción). El detalle de migraciones, arreglos manuales y resultados está en
 [VALIDATION.md](VALIDATION.md).
 
+## Estado
+
+Hecho: Angular 22.2.4 con `verify` y `lint` en verde y Trivy sin excepciones. Ver [VALIDATION.md](VALIDATION.md).
+
 ## Fuera de alcance
 
 - Build de la imagen Docker (pesado en el portátil): lo valida el CI (`docker build` + Trivy de imagen).
 - Suite E2E de Playwright: vive en la rama `fix/VAL-oleada3-e2e-playwright`, no en `develop`.
-- Migraciones opcionales de `ng update` (control flow, `use-application-builder`, etc.) que no son
-  necesarias para compilar ni para la seguridad; se listan en VALIDATION.md.
+- Migraciones opcionales de `ng update` que no se ejecutaron (`provide-initializer`, `router-current-navigation`,
+  `migrate-karma-to-vitest`): no son necesarias para compilar ni para la seguridad; se listan en VALIDATION.md.
