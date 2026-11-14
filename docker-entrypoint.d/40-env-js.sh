@@ -51,7 +51,11 @@ for raw in "${API_URL:-}" "${KEYCLOAK_URL:-}" "${SECURITY_BASELINE_URL:-}" "${SE
 done
 
 # Origenes de los que el SPA navega o embebe (silent-check-sso usa iframe del propio origen).
-csp_policy="default-src 'self'; script-src 'self'; script-src-attr 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src $csp_connect; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+# VAL CF-04 (2026-11-14): sin JavaScript en linea. `inlineCritical` esta apagado en angular.json, asi que el index ya no
+# lleva el `onload` del CSS critico y script-src-attr queda en 'none'. style-src conserva 'unsafe-inline' solo porque los
+# micro frontends externos (Security UI y minifront-mensajes) inyectan <style> en su shadow DOM sin soporte de nonce; con
+# un nonce el navegador ignoraria 'unsafe-inline' y los romperia. Quitarlo depende de esos equipos (ver VALIDATION.md).
+csp_policy="default-src 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src $csp_connect; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
 
 {
   printf 'add_header Content-Security-Policy "%s" always;\n' "$csp_policy"

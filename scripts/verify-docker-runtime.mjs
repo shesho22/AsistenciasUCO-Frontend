@@ -62,6 +62,27 @@ try {
   }
   assertRenderedEnv(envJs, 'contenedor Nginx');
 
+  // VAL CF-04: la CSP generada no permite JavaScript en linea y el index no trae manejadores de evento en linea.
+  const csp = runDocker(['exec', container, 'cat', '/etc/nginx/snippets/csp.conf']);
+  const politica = (/Content-Security-Policy "([^"]+)"/.exec(csp) ?? [])[1] ?? '';
+  const directivas = new Map(
+    politica.split(';').map((d) => d.trim()).filter(Boolean).map((d) => {
+      const [nombre, ...fuentes] = d.split(/\s+/);
+      return [nombre, fuentes];
+    }),
+  );
+  for (const nombre of ['script-src', 'script-src-attr', 'script-src-elem', 'default-src']) {
+    assert(!(directivas.get(nombre) ?? []).includes("'unsafe-inline'"), `CSP: ${nombre} permite 'unsafe-inline'.`);
+    assert(!(directivas.get(nombre) ?? []).includes("'unsafe-eval'"), `CSP: ${nombre} permite 'unsafe-eval'.`);
+  }
+  assert((directivas.get('script-src-attr') ?? []).join(' ') === "'none'", "CSP: script-src-attr debe ser 'none'.");
+  for (const [nombre, valor] of [['object-src', "'none'"], ['frame-ancestors', "'none'"], ['base-uri', "'self'"]]) {
+    assert((directivas.get(nombre) ?? []).join(' ') === valor, `CSP: ${nombre} debe ser ${valor}.`);
+  }
+  assert((directivas.get('connect-src') ?? []).includes('http://backend.test'), 'CSP: connect-src no incluye el origen del API.');
+  const index = runDocker(['exec', container, 'cat', '/usr/share/nginx/html/index.html']);
+  assert(!/<[^>]+\son[a-z]+\s*=/i.test(index), 'index.html trae un manejador de evento en linea (onload/onclick).');
+
   const compose = runDocker(['compose', '-f', 'docker-compose.yml', 'config'], {
     env: { ...process.env, ...values },
   });
@@ -80,6 +101,7 @@ try {
   assert(compose.includes('SECURITY_PROVIDER: baseline'), 'Compose no queda configurado en modo baseline.');
 
   console.log(`DOCKER_RUNTIME_ENV_PASS image=${image}`);
+  console.log('DOCKER_RUNTIME_CSP_PASS script-inline=none');
   console.log('COMPOSE_SECURITY_WIRING_PASS oauth=oidc keycloak=bff-pep-pdp security-ui');
 } catch (error) {
   console.error(`DOCKER_RUNTIME_ENV_FAIL: ${error.message}`);
