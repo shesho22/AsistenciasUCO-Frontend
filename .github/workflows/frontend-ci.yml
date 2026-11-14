@@ -62,6 +62,10 @@ jobs:
       - name: Catalogo de mensajes de la interfaz en MessageUcoLab
         run: npm run check:mensajes-ui-catalogo
 
+      # PRU-09 (VAL): la matriz HU -> pruebas del frontend (docs/testing) refleja las pruebas actuales.
+      - name: Matriz HU y pruebas
+        run: npm run check:matriz-hu
+
       # PRU-03 (VAL): los DTO y llamadas del frontend conforman el OpenAPI golden path (copia byte a byte con SHA-256).
       - name: Contrato OpenAPI del backend
         run: npm run check:openapi-contract
