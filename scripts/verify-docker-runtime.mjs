@@ -79,7 +79,14 @@ try {
   for (const [nombre, valor] of [['object-src', "'none'"], ['frame-ancestors', "'none'"], ['base-uri', "'self'"]]) {
     assert((directivas.get(nombre) ?? []).join(' ') === valor, `CSP: ${nombre} debe ser ${valor}.`);
   }
-  assert((directivas.get('connect-src') ?? []).includes('http://backend.test'), 'CSP: connect-src no incluye el origen del API.');
+  // Comparacion exacta de origenes (URL parseada), no de subcadenas: cada fuente de connect-src es un origen completo.
+  const origenApi = new URL(values.API_URL).origin;
+  const origenesConnect = new Set(
+    (directivas.get('connect-src') ?? [])
+      .filter((fuente) => /^https?:\/\//.test(fuente))
+      .map((fuente) => new URL(fuente).origin),
+  );
+  assert(origenesConnect.has(origenApi), `CSP: connect-src no incluye el origen del API (${origenApi}).`);
   const index = runDocker(['exec', container, 'cat', '/usr/share/nginx/html/index.html']);
   assert(!/<[^>]+\son[a-z]+\s*=/i.test(index), 'index.html trae un manejador de evento en linea (onload/onclick).');
 
