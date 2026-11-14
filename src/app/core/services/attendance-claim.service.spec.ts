@@ -263,6 +263,52 @@ describe('AttendanceClaimService', () => {
         expect(s.fechaLimiteJustificacionLocal).toBeUndefined();
       });
 
+      describe('VAL PRU-13: bordes exactos del plazo en UTC y en hora de Bogota', () => {
+        const cargarEn = (zonaIana: string, sesion: Record<string, unknown>): SesionMateriaDetalle => {
+          TestBed.inject(SessionTimeZoneService).setManualTimeZone(zonaIana);
+          let sesiones: SesionMateriaDetalle[] = [];
+          service.getSesionesPorMateria(ASIGNATURA).subscribe((res) => (sesiones = res.datos));
+          http.expectOne(`${environment.apiUrl}/estudiante/materias/${ASIGNATURA}/sesiones`).flush({
+            exitoso: true,
+            datos: [{ id: 'd1d2d3d4-0000-4000-8000-000000000001', ...base, ...sesion }],
+          });
+          return sesiones[0];
+        };
+
+        afterEach(() => jasmine.clock().uninstall());
+
+        const casos = [
+          // Ultimo minuto valido: 23:59:59 de Bogota (UTC-5) es 04:59:59Z del dia siguiente.
+          { zona: 'America/Bogota', utc: '2026-11-10T04:59:59Z', local: '2026-11-09 23:59' },
+          { zona: 'UTC', utc: '2026-11-10T04:59:59Z', local: '2026-11-10 04:59' },
+          // Primer minuto vencido: medianoche de Bogota; no se corre al dia anterior ni se trunca a 23:59.
+          { zona: 'America/Bogota', utc: '2026-11-10T05:00:00Z', local: '2026-11-10 00:00' },
+          { zona: 'UTC', utc: '2026-11-10T05:00:00Z', local: '2026-11-10 05:00' },
+        ];
+        for (const c of casos) {
+          it(`${c.utc} se presenta en ${c.zona} como ${c.local}`, () => {
+            const s = cargarEn(c.zona, { fechaLimiteJustificacionUtc: c.utc, plazoJustificacionVigente: true });
+            expect(s.fechaLimiteJustificacionUtc).toBe(c.utc);
+            expect(s.fechaLimiteJustificacionLocal).toBe(c.local);
+          });
+        }
+
+        it('en el ultimo segundo valido la vigencia es la del backend aunque el reloj local ya haya pasado el limite', () => {
+          jasmine.clock().install();
+          jasmine.clock().mockDate(new Date('2026-11-10T05:00:30Z'));
+          const s = cargarEn('America/Bogota', { fechaLimiteJustificacionUtc: '2026-11-10T04:59:59Z', plazoJustificacionVigente: true });
+          expect(s.plazoJustificacionVigente).toBeTrue();
+        });
+
+        it('en el primer minuto vencido la vigencia es la del backend aunque el reloj local siga antes del limite', () => {
+          jasmine.clock().install();
+          jasmine.clock().mockDate(new Date('2026-11-10T04:59:00Z'));
+          const s = cargarEn('America/Bogota', { fechaLimiteJustificacionUtc: '2026-11-10T04:59:59Z', plazoJustificacionVigente: false });
+          expect(s.plazoJustificacionVigente).toBeFalse();
+          expect(s.fechaLimiteJustificacionLocal).toBe('2026-11-09 23:59');
+        });
+      });
+
       it('envia pagina y tamano cuando se indican', () => {
         service.getSesionesPorMateria(ASIGNATURA, { pagina: 2, tamano: 25 }).subscribe();
         const req = http.expectOne((r) => r.url === `${environment.apiUrl}/estudiante/materias/${ASIGNATURA}/sesiones`);

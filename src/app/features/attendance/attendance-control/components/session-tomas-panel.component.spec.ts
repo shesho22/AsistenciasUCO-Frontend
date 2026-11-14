@@ -174,6 +174,30 @@ describe('SessionTomasPanelComponent (CULM-001 B.2 + UX toma)', () => {
     expect(texto('nueva-toma-motivo')).toContain('máximo de 20 tomas');
   });
 
+  describe('VAL PRU-11: borde del tope de tomas (MAXIMO_TOMAS_POR_SESION = 20)', () => {
+    const cerradas = (n: number) =>
+      Array.from({ length: n }, (_, i) => toma({ idToma: `t-${i + 1}`, numero: i + 1, estado: 'CERRADA' }));
+
+    it('con 19 de 20 tomas cerradas aun se puede abrir la toma 20', () => {
+      render(tomasSesion({ tomas: cerradas(19), maximoTomas: 20 }));
+      expect(boton('nueva-toma').disabled).toBeFalse();
+      expect(el('nueva-toma-motivo')).toBeNull();
+      expect(((fixture.nativeElement as HTMLElement).textContent ?? '').replace(/\s+/g, ' ')).toContain('19 de 20 tomas');
+    });
+
+    it('con 20 de 20 la toma 21 queda bloqueada con el motivo del tope', () => {
+      render(tomasSesion({ tomas: cerradas(20), maximoTomas: 20 }));
+      expect(boton('nueva-toma').disabled).toBeTrue();
+      expect(texto('nueva-toma-motivo')).toBe('Se alcanzó el máximo de 20 tomas por sesión.');
+    });
+
+    it('si el parametro baja por debajo de las tomas existentes (21 de 20) sigue bloqueada', () => {
+      render(tomasSesion({ tomas: cerradas(21), maximoTomas: 20 }));
+      expect(boton('nueva-toma').disabled).toBeTrue();
+      expect(texto('nueva-toma-motivo')).toContain('máximo de 20 tomas');
+    });
+  });
+
   it('UX-toma re-emite proyectar, cerrar, actualizado y notificaciones de la toma', () => {
     service.registrarAsistencias.and.returnValue(of({ exitoso: true, mensajeUsuario: 'Guardado.', datos: { idToma: 't-1', idSesion: 's-1', totalRegistros: 1 } }));
     render(tomasSesion({ tomas: [toma({ estado: 'ABIERTA', modo: 'QR' })] }));
