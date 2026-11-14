@@ -1,7 +1,8 @@
-import { ApplicationConfig, ErrorHandler, provideBrowserGlobalErrorListeners, provideZoneChangeDetection, APP_INITIALIZER } from '@angular/core';
+import { ApplicationConfig, EnvironmentInjector, ErrorHandler, provideBrowserGlobalErrorListeners, provideZoneChangeDetection, APP_INITIALIZER } from '@angular/core';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { provideHttpClient, withInterceptors, withXsrfConfiguration, withXhr } from '@angular/common/http';
 import { routes } from './app.routes';
+import { environment } from '../environments/environment';
 import { correlationInterceptor } from './core/interceptors/correlation.interceptor';
 import { roleScopeInterceptor } from './core/interceptors/role-scope.interceptor';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
@@ -11,7 +12,21 @@ import { AuthService } from './core/services/auth.service';
 import { REALTIME_TRANSPORT } from './core/realtime/contract/realtime-transport';
 import { FetchSseRealtimeTransport } from './core/realtime/adapter/sse/fetch-sse-realtime-transport';
 import { GlobalErrorHandler } from './core/errors/global-error-handler';
-import { CatalogoMensajesUiService } from './core/messages/catalogo-mensajes-ui.service';
+
+/**
+ * VAL MSG-06 / EST-10: el servicio y la tabla de codigos remotos solo se descargan si MessageUcoLab esta configurado;
+ * sin aplicacion y ambiente la SPA usa sus textos locales y el bundle inicial no los carga.
+ */
+export function iniciarCatalogoMensajesUi(injector: EnvironmentInjector) {
+  return () => {
+    if (!environment.messages.applicationId || !environment.messages.environmentId) {
+      return;
+    }
+    void import('./core/messages/catalogo-mensajes-ui.service')
+      .then((m) => injector.get(m.CatalogoMensajesUiService).iniciar())
+      .catch(() => undefined);
+  };
+}
 
 export function initializeKeycloak(authService: AuthService) {
   return () => authService.initKeycloak();
@@ -44,11 +59,9 @@ export const appConfig: ApplicationConfig = {
     // VAL MSG-06: los textos de la interfaz se leen de MessageUcoLab (sin bloquear el arranque).
     {
       provide: APP_INITIALIZER,
-      useFactory: (catalogo: CatalogoMensajesUiService) => () => {
-        catalogo.iniciar();
-      },
+      useFactory: iniciarCatalogoMensajesUi,
       multi: true,
-      deps: [CatalogoMensajesUiService],
+      deps: [EnvironmentInjector],
     },
     {
       provide: APP_INITIALIZER,

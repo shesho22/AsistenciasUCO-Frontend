@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
-import { computed } from '@angular/core';
+import { EnvironmentInjector, computed } from '@angular/core';
+import { iniciarCatalogoMensajesUi } from '../../app.config';
 import { CatalogoMensajesUiService, ClienteMensajesUi, fabricaClienteMensajesUi } from './catalogo-mensajes-ui.service';
 import { reiniciarCatalogoMensajesUi } from './catalogo-mensajes-ui';
 import { MENSAJES_UI, mensajeUi } from './mensajes-ui';
@@ -126,5 +127,23 @@ describe('CatalogoMensajesUiService (VAL MSG-06)', () => {
     crear.and.callThrough();
     const real = await fabricaClienteMensajesUi.crear({ apiBaseUrl: '/messageucolab', applicationId: 'a', environmentId: 'e' });
     expect(typeof real.get).toBe('function');
+  });
+
+  describe('iniciarCatalogoMensajesUi (APP_INITIALIZER, VAL EST-10)', () => {
+    it('sin aplicacion y ambiente no descarga ni inicia el servicio', async () => {
+      window.env = { ...envOriginal, MESSAGEUCOLAB_APPLICATION_ID: '', MESSAGEUCOLAB_ENVIRONMENT_ID: '' };
+      const iniciar = spyOn(CatalogoMensajesUiService.prototype, 'iniciar');
+      iniciarCatalogoMensajesUi(TestBed.inject(EnvironmentInjector))();
+      await asentar();
+      expect(iniciar).not.toHaveBeenCalled();
+    });
+
+    it('con aplicacion y ambiente carga el servicio en diferido y lo inicia', async () => {
+      window.env = { ...envOriginal, MESSAGEUCOLAB_APPLICATION_ID: 'a', MESSAGEUCOLAB_ENVIRONMENT_ID: 'e' };
+      const iniciar = spyOn(CatalogoMensajesUiService.prototype, 'iniciar').and.returnValue(true);
+      iniciarCatalogoMensajesUi(TestBed.inject(EnvironmentInjector))();
+      for (let i = 0; i < 20 && iniciar.calls.count() === 0; i++) await new Promise((r) => setTimeout(r, 0));
+      expect(iniciar).toHaveBeenCalledTimes(1);
+    });
   });
 });
