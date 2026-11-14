@@ -7,7 +7,6 @@ import { environment } from '../../../../environments/environment';
 import { HorarioDocenteApiDto } from '../../../core/api/models/horario-docente-api-dto.model';
 import { SesionFacultadItem } from '../../../core/models/facultad-decano.model';
 import { ToastService } from '../../../shared/components/toast/toast.component';
-import { grupoFacultadApi, paginaApi, porUrl } from '../../../core/testing/pagina-api';
 
 describe('DeanGrupoDetalleComponent', () => {
   let fixture: ComponentFixture<DeanGrupoDetalleComponent>;

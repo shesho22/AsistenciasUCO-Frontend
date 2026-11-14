@@ -246,10 +246,10 @@ export class LoginComponent {
     this.isLoading.set(true);
     try {
       await this.authService.loginWithCredentials(trimmedUsername, trimmedPassword);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error al iniciar sesión:', error);
       this.errorMessage.set(
-        error?.message || 'Error al autenticar. Verifica tu usuario y contraseña.'
+        (error instanceof Error && error.message) || 'Error al autenticar. Verifica tu usuario y contraseña.'
       );
     } finally {
       this.isLoading.set(false);

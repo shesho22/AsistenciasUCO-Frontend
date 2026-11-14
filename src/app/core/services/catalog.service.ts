@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, delay, map, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -23,7 +23,8 @@ export const MOCK_DOCUMENT_TYPES: TipoIdentificacionApiDto[] = [
   providedIn: 'root',
 })
 export class CatalogService {
-  constructor(private http: HttpClient) {}
+  private http = inject(HttpClient);
+
 
   getIdentityDocumentTypes(): Observable<TipoIdentificacionApiDto[]> {
     if (environment.useFrontendMocks) {

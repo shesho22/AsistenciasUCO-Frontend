@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { of, throwError } from 'rxjs';
+import { of } from 'rxjs';
 import { UserPickerModalComponent, UserPickerItem } from './user-picker-modal.component';
 import { TeacherService } from '../../../core/services/teacher.service';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';

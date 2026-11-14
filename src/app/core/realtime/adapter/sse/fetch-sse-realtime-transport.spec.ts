@@ -1,5 +1,4 @@
 import { TestBed } from '@angular/core/testing';
-import { NgZone } from '@angular/core';
 import { FetchEventSourceInit } from '@microsoft/fetch-event-source';
 import { FetchSseRealtimeTransport, SSE_STALE_TIMEOUT_MS } from './fetch-sse-realtime-transport';
 import { SSE_FETCH_EVENT_SOURCE, FetchEventSourceFn } from './sse-fetch-event-source.token';

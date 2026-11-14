@@ -10,14 +10,14 @@ const TABS: readonly TabItem[] = [
   { id: 'tres', etiqueta: 'Tres' },
 ];
 
-@Component({ selector: 'app-hija-falsa', standalone: true, changeDetection: ChangeDetectionStrategy.Eager,
+@Component({ selector: 'app-hija-falsa', standalone: true, changeDetection: ChangeDetectionStrategy.OnPush,
  template: '<p id="hija">hija</p>' })
 class HijaFalsaComponent {}
 
 @Component({
     selector: 'app-cascaron-falso',
     imports: [TabsNavComponent, RouterOutlet],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
     <app-tabs-nav [tabs]="tabs" [activa]="activa()" [base]="['/x']" etiqueta="Secciones de prueba" idPanel="panel-x" />
     <div role="tabpanel" id="panel-x"><router-outlet /></div>
@@ -32,7 +32,7 @@ class CascaronFalsoComponent {
 @Component({
     selector: 'app-aislado',
     imports: [TabsNavComponent],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `<app-tabs-nav [tabs]="tabs" [activa]="activa()" [base]="['/aislado']" />`
 })
 class AisladoComponent {

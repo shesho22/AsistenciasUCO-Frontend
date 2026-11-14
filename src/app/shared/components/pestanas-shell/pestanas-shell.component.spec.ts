@@ -4,7 +4,7 @@ import { Router, Routes, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { PestanasShellComponent } from './pestanas-shell.component';
 
-@Component({ selector: 'app-contenido-falso', standalone: true, changeDetection: ChangeDetectionStrategy.Eager,
+@Component({ selector: 'app-contenido-falso', standalone: true, changeDetection: ChangeDetectionStrategy.OnPush,
  template: '<p id="contenido">contenido</p>' })
 class ContenidoFalsoComponent {}
 

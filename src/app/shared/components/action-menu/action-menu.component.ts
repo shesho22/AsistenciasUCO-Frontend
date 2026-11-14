@@ -35,7 +35,7 @@ export interface ActionMenuItem {
         <span>{{ texto() }}</span>
       </button>
       @if (abierto()) {
-        <div role="menu" [attr.aria-label]="label()" [class]="clasePanel()" (keydown)="alTeclear($event)">
+        <div role="menu" tabindex="-1" [attr.aria-label]="label()" [class]="clasePanel()" (keydown)="alTeclear($event)">
           @for (item of items(); track item.id) {
             <button
               type="button"

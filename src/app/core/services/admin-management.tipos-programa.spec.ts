@@ -23,10 +23,6 @@ describe('AdminManagementService - tipos de programa (HU154, solo consulta)', ()
 
   afterEach(() => http.verify());
 
-  function cargarInicial(): void {
-    service.cargarTiposPrograma().subscribe();
-    http.expectOne(base).flush({ exitoso: true, datos: [pre, pos] });
-  }
 
   it('cargarTiposPrograma obtiene el catalogo completo y actualiza la señal', () => {
     let respuesta: any;

@@ -2,7 +2,7 @@ import { Component, OnInit, inject, signal, computed, effect, untracked, ChangeD
 import { Location } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
-import { User, UserRole } from '../../core/models/user.model';
+import { UserRole } from '../../core/models/user.model';
 import { CardComponent } from '../../shared/components/card/card.component';
 import { BadgeComponent, BadgeVariant } from '../../shared/components/badge/badge.component';
 import { ButtonComponent } from '../../shared/components/button/button.component';

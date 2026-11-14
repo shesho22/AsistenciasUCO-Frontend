@@ -1,12 +1,11 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of, delay, map, catchError, throwError } from 'rxjs';
+import { Observable, of, delay, map, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiResponse } from '../models/api-response.model';
 import { ApiMessageResponse } from '../api/models/api-message-response.model';
 import { ApiDataResponse, ApiVoidDataResponse } from '../api/models/api-data-response.model';
 import { SesionCancelada } from '../models/sesion-estado.model';
-import { getApiErrorMessage } from '../api/errors/api-error.util';
 import { ClassSession } from '../models/attendance.model';
 import { getSessionNameError } from '../validation/session-name.util';
 import { SessionV2Service, UpdateSessionV2Input } from './session-v2.service';
@@ -23,6 +22,9 @@ export interface UpdateSessionInput {
   providedIn: 'root',
 })
 export class SessionService {
+  private http = inject(HttpClient);
+  private sessionV2 = inject(SessionV2Service);
+
   private initialSessions: Record<string, ClassSession[]> = {
     'crs-1': [
       {
@@ -91,11 +93,6 @@ export class SessionService {
   };
 
   private sessionsByGroupSignal = signal<Record<string, ClassSession[]>>(this.initialSessions);
-
-  constructor(
-    private http: HttpClient,
-    private sessionV2: SessionV2Service
-  ) {}
 
   getSessionsByGroup(grupoId: string): Observable<ApiResponse<ClassSession[]>> {
     if (!environment.useMocks) {

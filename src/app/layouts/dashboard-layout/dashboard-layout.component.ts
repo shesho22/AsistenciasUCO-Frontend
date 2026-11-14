@@ -68,10 +68,14 @@ interface NavItem {
 
       <!-- Sidebar Overlay for Mobile -->
       @if (isMobileMenuOpen()) {
-        <div
-          class="md:hidden fixed inset-0 bg-warm-950/50 backdrop-blur-xs z-40"
+        <!-- Fondo del menu movil: boton sin tabulacion (Escape ya lo cierra desde el teclado, ver host). -->
+        <button
+          type="button"
+          tabindex="-1"
+          aria-label="Cerrar menú de navegación"
+          class="md:hidden fixed inset-0 bg-warm-950/50 backdrop-blur-xs z-40 cursor-default"
           (click)="isMobileMenuOpen.set(false)"
-        ></div>
+        ></button>
       }
 
       <!-- Sidebar Container -->

@@ -59,7 +59,7 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
                       <span class="font-semibold text-warm-900 block">{{ f.nombrePrograma }}</span>
                       <span class="text-xs text-warm-500">{{ f.nombreTipoPrograma || '—' }} · {{ f.nombreModalidad || '—' }} · {{ f.nombreJornada || '—' }}</span>
                     </td>
-                    <td class="py-2 pr-3 font-mono text-xs text-warm-700">{{ f.inpPlanEstudio != null ? 'INP-' + f.inpPlanEstudio : 'Sin plan' }}</td>
+                    <td class="py-2 pr-3 font-mono text-xs text-warm-700">{{ f.inpPlanEstudio !== null && f.inpPlanEstudio !== undefined ? 'INP-' + f.inpPlanEstudio : 'Sin plan' }}</td>
                     <td class="py-2 pr-3 text-right text-warm-700">{{ f.totalSemestres }}</td>
                     <td class="py-2 pr-3 text-right text-warm-700">{{ f.totalAsignaturas }}</td>
                     <td class="py-2 pr-3 text-right font-bold text-warm-900">{{ f.totalCreditos }}</td>

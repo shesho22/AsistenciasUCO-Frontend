@@ -1,19 +1,19 @@
-import { Component, ChangeDetectionStrategy } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { DialogoAccesibleDirective } from './dialogo-accesible.directive';
 
 @Component({
     imports: [DialogoAccesibleDirective],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
     <button id="disparador" type="button">Abrir</button>
-    @if (abierto) {
-      <div id="dialogo" role="dialog" aria-modal="true" appDialogoAccesible (cerrarSolicitado)="cierres = cierres + 1">
-        @if (!sinEnfocables) {
+    @if (abierto()) {
+      <div id="dialogo" role="dialog" aria-modal="true" appDialogoAccesible (cerrarSolicitado)="cierres.set(cierres() + 1)">
+        @if (!sinEnfocables()) {
           <button id="primero" type="button">Primero</button>
           <button id="ultimo" type="button">Ultimo</button>
         }
-        @if (anidado) {
+        @if (anidado()) {
           <div role="dialog" aria-modal="true" id="anidado"><button type="button">Interno</button></div>
         }
       </div>
@@ -21,10 +21,10 @@ import { DialogoAccesibleDirective } from './dialogo-accesible.directive';
   `
 })
 class AnfitrionComponent {
-  abierto = false;
-  anidado = false;
-  sinEnfocables = false;
-  cierres = 0;
+  readonly abierto = signal(false);
+  readonly anidado = signal(false);
+  readonly sinEnfocables = signal(false);
+  readonly cierres = signal(0);
 }
 
 describe('DialogoAccesibleDirective', () => {
@@ -43,7 +43,7 @@ describe('DialogoAccesibleDirective', () => {
   });
 
   function abrir(): void {
-    host.abierto = true;
+    host.abierto.set(true);
     fixture.detectChanges();
   }
 
@@ -56,13 +56,13 @@ describe('DialogoAccesibleDirective', () => {
   it('Escape solicita el cierre', () => {
     abrir();
     tecla('Escape');
-    expect(host.cierres).toBe(1);
+    expect(host.cierres()).toBe(1);
   });
 
   it('otras teclas no cierran', () => {
     abrir();
     tecla('a');
-    expect(host.cierres).toBe(0);
+    expect(host.cierres()).toBe(0);
   });
 
   it('Tab desde el último elemento vuelve al primero y Shift+Tab desde el primero va al último', () => {
@@ -97,7 +97,7 @@ describe('DialogoAccesibleDirective', () => {
   });
 
   it('un diálogo sin elementos enfocables retiene el foco en sí mismo al pulsar Tab', () => {
-    host.sinEnfocables = true;
+    host.sinEnfocables.set(true);
     abrir();
     const evento = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
     el('disparador').focus();
@@ -108,16 +108,16 @@ describe('DialogoAccesibleDirective', () => {
 
   it('al cerrarse devuelve el foco al elemento que lo abrió', () => {
     abrir();
-    host.abierto = false;
+    host.abierto.set(false);
     fixture.detectChanges();
     expect(document.activeElement).toBe(el('disparador'));
   });
 
   it('si hay un diálogo anidado abierto no gestiona Escape ni Tab', () => {
-    host.anidado = true;
+    host.anidado.set(true);
     abrir();
     tecla('Escape');
-    expect(host.cierres).toBe(0);
+    expect(host.cierres()).toBe(0);
     const evento = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
     el('disparador').focus();
     document.dispatchEvent(evento);

@@ -23,10 +23,6 @@ describe('AdminManagementService - áreas de conocimiento (HU150, solo consulta)
 
   afterEach(() => http.verify());
 
-  function cargarInicial(): void {
-    service.cargarAreas().subscribe();
-    http.expectOne(base).flush({ exitoso: true, datos: [pre, pos] });
-  }
 
   it('cargarAreas obtiene el catalogo completo y actualiza la señal', () => {
     let respuesta: any;

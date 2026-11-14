@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, defer, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -29,10 +29,9 @@ export interface UpdateSessionV2Input extends SessionLocalFormInput {
 
 @Injectable({ providedIn: 'root' })
 export class SessionV2Service {
-  constructor(
-    private readonly http: HttpClient,
-    private readonly timeZone: SessionTimeZoneService
-  ) {}
+  private readonly http = inject(HttpClient);
+  private readonly timeZone = inject(SessionTimeZoneService);
+
 
   getSession(sesionId: string): Observable<ApiDataResponse<ClassSession>> {
     return this.http

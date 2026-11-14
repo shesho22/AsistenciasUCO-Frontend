@@ -73,9 +73,9 @@ export interface ResolverReclamoResponse {
   providedIn: 'root',
 })
 export class AttendanceClaimService {
-  private readonly sessionTimeZone = inject(SessionTimeZoneService);
+  private http = inject(HttpClient);
 
-  constructor(private http: HttpClient) {}
+  private readonly sessionTimeZone = inject(SessionTimeZoneService);
 
   getConfiguracionReclamos(): Observable<ApiDataResponse<ConfiguracionReclamosDTO>> {
     return this.http
@@ -333,7 +333,7 @@ export class AttendanceClaimService {
     return this.http.patch<ResolverReclamoResponse>(`${environment.apiUrl}/docente/reclamos/${id}`, cuerpo);
   }
 
-  getHorarioDocente(docenteId?: string): Observable<ApiResponse<HorarioDocenteItem[]>> {
+  getHorarioDocente(_docenteId?: string): Observable<ApiResponse<HorarioDocenteItem[]>> {
     return this.http.get<ApiResponse<HorarioDocenteItem[]>>(`${environment.apiUrl}/docente/horarios`);
   }
 }

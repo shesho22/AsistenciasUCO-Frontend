@@ -4,7 +4,7 @@ import { Router, Routes, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { TabsRutaShellComponent, TabsRutaShellConfig } from './tabs-ruta-shell.component';
 
-@Component({ selector: 'app-hija-falsa', standalone: true, changeDetection: ChangeDetectionStrategy.Eager,
+@Component({ selector: 'app-hija-falsa', standalone: true, changeDetection: ChangeDetectionStrategy.OnPush,
  template: '<p id="hija-falsa">hija</p>' })
 class HijaFalsaComponent {}
 

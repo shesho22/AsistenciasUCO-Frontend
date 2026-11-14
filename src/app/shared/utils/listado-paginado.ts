@@ -50,7 +50,9 @@ export class ListadoPaginado<T> {
     this.cargando.set(true);
     this.error.set(null);
     this.consultar(this.pagina(), this.tamano()).subscribe({
-      next: (res: any) => {
+      next: (respuesta) => {
+        // Acepta las dos formas del contrato: ApiPageResponse (elementos/totalElementos) y ApiResponse legado (datos/total).
+        const res = respuesta as Partial<ApiPageResponse<T>> & { datos?: T[] | null; total?: number };
         const elementos = (res.elementos ?? res.datos ?? []) as T[];
         const total = Number(res.totalElementos ?? res.total ?? elementos.length);
         const totalPags = res.totalPaginas ?? Math.max(1, Math.ceil(total / this.tamano()));

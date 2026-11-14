@@ -97,7 +97,7 @@ export class AdminInstitucionesComponent implements OnInit {
   private readonly adminService = inject(AdminManagementService);
   private readonly toast = inject(ToastService);
 
-  readonly instituciones = signal<any[]>([]);
+  readonly instituciones = signal<InstitucionItem[]>([]);
   readonly cargando = signal(false);
 
   ngOnInit(): void {

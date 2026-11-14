@@ -120,6 +120,8 @@ function isValidUuid(value: unknown): value is string {
   providedIn: 'root',
 })
 export class AuthService implements OnDestroy {
+  private router = inject(Router);
+
   // ── Signals públicos ──────────────────────────────────────────────────────
   currentUser = signal<User | null>(null);
   token = signal<string | null>(null);
@@ -165,7 +167,7 @@ export class AuthService implements OnDestroy {
     this.mockModeSignal.set(enabled);
   }
 
-  constructor(private router: Router) {
+  constructor() {
     // Limpieza defensiva: eliminar claves residuales de versiones anteriores.
     this.purgeLegacyStorage();
     if (this.isBaselineMode()) {

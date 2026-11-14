@@ -6,7 +6,7 @@ type Modo = 'CREAR' | 'VINCULAR' | 'SIN';
 
 @Component({
   imports: [SelectorModoComponent],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<app-selector-modo [opciones]="opciones" etiqueta="Facultad" [(valor)]="modo" />`,
 })
 class HostComponent {

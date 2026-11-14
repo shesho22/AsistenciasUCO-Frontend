@@ -1,12 +1,12 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
-import { of, throwError } from 'rxjs';
+import { of } from 'rxjs';
 import { ProfileComponent } from './profile.component';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../shared/components/toast/toast.component';
 import { Location } from '@angular/common';
 import { Router } from '@angular/router';
-import { User, UserRole } from '../../core/models/user.model';
+import { User } from '../../core/models/user.model';
 import { PerfilService } from '../../core/services/perfil.service';
 
 describe('ProfileComponent', () => {

@@ -90,7 +90,7 @@ describe('TeacherGruposComponent', () => {
       of({ exitoso: true, datos: [], total: 0 } as any)
     );
 
-    let groupService = jasmine.createSpyObj<GroupService>('GroupService', [
+    const groupService = jasmine.createSpyObj<GroupService>('GroupService', [
       'getStudentsByGroup',
       'getAllGroups',
     ]);

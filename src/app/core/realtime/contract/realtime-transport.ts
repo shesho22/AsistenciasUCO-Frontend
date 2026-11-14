@@ -30,7 +30,6 @@ export const REALTIME_TRANSPORT = new InjectionToken<RealtimeTransport>(
     providedIn: 'root',
     factory: () => ({
       events$: EMPTY,
-      connectionState: undefined as any,
       connectionState$: of('DISCONNECTED' as RealtimeConnectionState),
       start: () => {},
       stop: () => {},

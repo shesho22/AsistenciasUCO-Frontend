@@ -78,10 +78,10 @@ const CAMPOS_FORMULARIO = new Set([
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <!-- Tipo y Número de Documento -->
           <div>
-            <label class="block text-xs font-semibold text-warm-700 mb-1">
+            <label for="adm-tipo-documento" class="block text-xs font-semibold text-warm-700 mb-1">
               Tipo de documento <span class="text-danger-600">*</span>
             </label>
-            <select
+            <select id="adm-tipo-documento"
               aria-label="Tipo de documento"
               [ngModel]="tipoIdentificacionId()"
               (ngModelChange)="tipoIdentificacionId.set($event)"
@@ -97,10 +97,10 @@ const CAMPOS_FORMULARIO = new Set([
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-warm-700 mb-1">
+            <label for="adm-numero-documento" class="block text-xs font-semibold text-warm-700 mb-1">
               Número de documento <span class="text-danger-600">*</span>
             </label>
-            <input
+            <input id="adm-numero-documento"
               type="text"
               inputmode="numeric"
               aria-label="Número de documento"
@@ -121,10 +121,10 @@ const CAMPOS_FORMULARIO = new Set([
 
           <!-- Nombres -->
           <div>
-            <label class="block text-xs font-semibold text-warm-700 mb-1">
+            <label for="adm-primer-nombre" class="block text-xs font-semibold text-warm-700 mb-1">
               Primer nombre <span class="text-danger-600">*</span>
             </label>
-            <input
+            <input id="adm-primer-nombre"
               type="text"
               aria-label="Primer nombre"
               maxlength="50"
@@ -139,8 +139,8 @@ const CAMPOS_FORMULARIO = new Set([
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-warm-700 mb-1">Segundo nombre</label>
-            <input
+            <label for="adm-segundo-nombre" class="block text-xs font-semibold text-warm-700 mb-1">Segundo nombre</label>
+            <input id="adm-segundo-nombre"
               type="text"
               aria-label="Segundo nombre"
               maxlength="50"
@@ -156,10 +156,10 @@ const CAMPOS_FORMULARIO = new Set([
 
           <!-- Apellidos -->
           <div>
-            <label class="block text-xs font-semibold text-warm-700 mb-1">
+            <label for="adm-primer-apellido" class="block text-xs font-semibold text-warm-700 mb-1">
               Primer apellido <span class="text-danger-600">*</span>
             </label>
-            <input
+            <input id="adm-primer-apellido"
               type="text"
               aria-label="Primer apellido"
               maxlength="50"
@@ -174,8 +174,8 @@ const CAMPOS_FORMULARIO = new Set([
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-warm-700 mb-1">Segundo apellido</label>
-            <input
+            <label for="adm-segundo-apellido" class="block text-xs font-semibold text-warm-700 mb-1">Segundo apellido</label>
+            <input id="adm-segundo-apellido"
               type="text"
               aria-label="Segundo apellido"
               maxlength="50"
@@ -191,10 +191,10 @@ const CAMPOS_FORMULARIO = new Set([
 
           <!-- Correo Institucional -->
           <div class="sm:col-span-2">
-            <label class="block text-xs font-semibold text-warm-700 mb-1">
+            <label for="adm-correo" class="block text-xs font-semibold text-warm-700 mb-1">
               Correo institucional <span class="text-danger-600">*</span>
             </label>
-            <input
+            <input id="adm-correo"
               type="email"
               aria-label="Correo institucional"
               maxlength="100"
@@ -210,11 +210,11 @@ const CAMPOS_FORMULARIO = new Set([
 
           <!-- Selección de Programa Académico con Búsqueda -->
           <div class="sm:col-span-2 space-y-1.5">
-            <label class="block text-xs font-semibold text-warm-700">
+            <label for="adm-programa" class="block text-xs font-semibold text-warm-700">
               Programa académico institucional <span class="text-danger-600">*</span>
             </label>
             <div class="flex gap-2">
-              <input
+              <input id="adm-programa"
                 type="search"
                 aria-label="Buscar programa"
                 [ngModel]="busquedaPrograma()"
@@ -257,12 +257,12 @@ const CAMPOS_FORMULARIO = new Set([
           @if (mostrarPassword()) {
             <div class="sm:col-span-2 p-3 bg-warm-50 border border-warm-200 rounded-xl space-y-2">
               <div class="flex items-center justify-between">
-                <label class="block text-xs font-semibold text-warm-800">
+                <label for="adm-contrasena" class="block text-xs font-semibold text-warm-800">
                   Contraseña inicial requerida <span class="text-danger-600">*</span>
                 </label>
                 <span class="text-xs text-warm-500">Mínimo 8 caracteres</span>
               </div>
-              <input
+              <input id="adm-contrasena"
                 type="password"
                 aria-label="Contraseña inicial"
                 [ngModel]="password()"

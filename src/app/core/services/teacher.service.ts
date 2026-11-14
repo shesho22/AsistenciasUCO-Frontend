@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map, switchMap, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -17,10 +17,9 @@ import { AuthService } from './auth.service';
   providedIn: 'root',
 })
 export class TeacherService {
-  constructor(
-    private http: HttpClient,
-    private authService: AuthService
-  ) {}
+  private http = inject(HttpClient);
+  private authService = inject(AuthService);
+
 
   getAllTeachers(): Observable<DocenteApiDto[]> {
     return this.http.get<DocenteApiDto[]>(`${environment.apiUrl}/docentes`);

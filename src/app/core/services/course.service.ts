@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, delay, map, forkJoin, catchError } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -16,11 +16,11 @@ import { MOCK_COURSES } from '../mocks/course.mock';
   providedIn: 'root',
 })
 export class CourseService {
+  private http = inject(HttpClient);
+
   private coursesSignal = signal<Course[]>([...MOCK_COURSES]);
 
-  constructor(private http: HttpClient) {}
-
-  getTeacherCourses(docenteId?: string): Observable<ApiResponse<Course[]>> {
+  getTeacherCourses(_docenteId?: string): Observable<ApiResponse<Course[]>> {
     return this.getCurrentTeacherCourses().pipe(
       map((res) => ({
         idTransaccion: 'tx-courses-teacher',

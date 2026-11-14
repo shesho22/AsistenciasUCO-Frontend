@@ -287,7 +287,7 @@ export class AdminSystemComponent implements OnInit {
   private actualizarPeriodoSeleccionado(): void {
     const lista = this.periodos();
     if (lista.length > 0) {
-      const vigente = lista.find((p: any) => p.esVigente === true);
+      const vigente = lista.find((p) => (p as { esVigente?: boolean }).esVigente === true);
       this.periodoSeleccionadoCierre = vigente ? vigente.id : lista[0].id;
     } else {
       this.periodoSeleccionadoCierre = '';

@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { AdminAuditoriaComponent, DIAS_AUDITORIA_MAXIMO, fechaLocal, rangoUtc } from './admin-auditoria.component';
+import { AdminAuditoriaComponent, DIAS_AUDITORIA_MAXIMO } from './admin-auditoria.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { environment } from '../../../../environments/environment';
 import {

@@ -110,9 +110,9 @@ import { CategoriaJustificacionItem } from '../../../../core/models/consultas-tr
 
             <!-- Carga de Archivos Adjuntos / Soportes Documentales -->
             <div class="space-y-2">
-              <label class="block text-xs font-semibold uppercase tracking-wider text-warm-700">
+              <p id="reclamo-soportes-titulo" class="block text-xs font-semibold uppercase tracking-wider text-warm-700">
                 Soportes Documentales (máx. <span data-testid="limite-maximo-soportes">{{ maximoSoportes() }}</span> archivos · {{ tiposPermitidosTexto() }} · Máx. {{ tamanioMaximoTexto() }} · límite <span data-testid="limite-por-minuto">{{ limiteSubidasPorMinuto() }}</span>/min)
-              </label>
+              </p>
 
               @if (errorSoporte()) {
                 <p class="text-xs font-medium text-danger-700" role="alert">{{ errorSoporte() }}</p>
