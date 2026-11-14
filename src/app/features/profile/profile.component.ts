@@ -216,7 +216,6 @@ export class ProfileComponent implements OnInit {
 
   currentRole = computed<UserRole>(() => {
     const role = this.user()?.role;
-    if (role === 'ADMIN') return 'ADMINISTRADOR';
     return (role || 'DOCENTE') as UserRole;
   });
 
@@ -280,7 +279,6 @@ export class ProfileComponent implements OnInit {
   getRoleBadgeVariant(role: UserRole): BadgeVariant {
     switch (role) {
       case 'ADMINISTRADOR':
-      case 'ADMIN':
         return 'danger';
       case 'DECANO':
         return 'info';

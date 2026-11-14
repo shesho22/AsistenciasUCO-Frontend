@@ -82,14 +82,6 @@ import { OverviewStudentComponent } from './components/overview-student.componen
             [porcentajeAsistencia]="porcentajeAsistenciaCampus()"
           />
         }
-        @case ('ADMIN') {
-          <app-overview-admin
-            [decanos]="decanos()"
-            [totalFacultades]="totalFacultadesAdmin()"
-            [totalProgramas]="totalProgramasAdmin()"
-            [porcentajeAsistencia]="porcentajeAsistenciaCampus()"
-          />
-        }
         @case ('DECANO') {
           <app-overview-dean
             [coordinadores]="coordinadores()"
@@ -211,7 +203,6 @@ export class OverviewComponent implements OnInit {
 
     switch (role) {
       case 'ADMINISTRADOR':
-      case 'ADMIN':
         this.adminIndicators.consultarKpis().subscribe({
           next: (res) => {
             this.totalProgramasAdmin.set(res.datos?.totalProgramas ?? null);

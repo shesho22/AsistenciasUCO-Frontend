@@ -36,9 +36,6 @@ import { UserRole } from '../../../../core/models/user.model';
             @case ('ADMINISTRADOR') {
               Panel de Control Institucional. Supervisa la estructura académica, decanaturas y auditoría del campus universitario.
             }
-            @case ('ADMIN') {
-              Panel de Control Institucional. Supervisa la estructura académica, decanaturas y auditoría del campus universitario.
-            }
             @case ('DECANO') {
               Decanatura — {{ department() }}. Gestiona los programas académicos, coordinadores asignados y el seguimiento de facultad.
             }
@@ -58,16 +55,6 @@ import { UserRole } from '../../../../core/models/user.model';
         <div class="pt-2 flex flex-wrap items-center gap-3">
           @switch (userRole()) {
             @case ('ADMINISTRADOR') {
-              <a routerLink="/app/admin/decanos">
-                <app-button variant="accent" size="md">
-                  <svg class="w-4 h-4 mr-1.5 text-warm-950 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                  </svg>
-                  Gestionar Decanaturas
-                </app-button>
-              </a>
-            }
-            @case ('ADMIN') {
               <a routerLink="/app/admin/decanos">
                 <app-button variant="accent" size="md">
                   <svg class="w-4 h-4 mr-1.5 text-warm-950 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -161,7 +161,7 @@ export class SecurityAdministrationComponent implements AfterViewInit, OnDestroy
     }
 
     const user = this.authService.currentUser();
-    if (!user || !hasAnyRole(user, ['ADMINISTRADOR', 'ADMIN'])) {
+    if (!user || !hasAnyRole(user, ['ADMINISTRADOR'])) {
       this.fail('forbidden', 'La ruta está reservada a ADMINISTRADOR. La interfaz no concede permisos por sí sola.');
       return;
     }

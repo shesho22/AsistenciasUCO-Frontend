@@ -121,13 +121,13 @@ describe('MessageAdministrationComponent', () => {
     expect(component.state()).toBe('forbidden');
   });
 
-  it('acepta el alias ADMIN como administrador', async () => {
+  it('VAL SEG-14: rechaza el alias retirado ADMIN (no equivale a ADMINISTRADOR)', async () => {
     authService.currentUser.set({ ...adminUser, role: 'ADMIN' as User['role'] });
 
     await createComponent();
 
-    expect(mountSpy).toHaveBeenCalledTimes(1);
-    expect(component.state()).toBe('ready');
+    expect(mountSpy).not.toHaveBeenCalled();
+    expect(component.state()).toBe('forbidden');
   });
 
   it('muestra el error y permite reintentar cuando el montaje falla', async () => {
