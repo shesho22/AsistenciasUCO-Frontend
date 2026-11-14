@@ -3,6 +3,7 @@ import { ConsultasTransversalesService } from '../../../core/services/consultas-
 import { EstadoSistemaItem } from '../../../core/models/consultas-transversales.model';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
+import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load-error.util';
 import {
   CatalogoSoloConsultaComponent,
   FilaCatalogo,
@@ -36,6 +37,8 @@ export function filasDe(estados: EstadoSistemaItem[], catalogo: EstadoSistemaIte
         vacio="No hay estados de solicitud registrados."
         [filas]="solicitudes()"
         [cargando]="cargando()"
+        [error]="error()"
+        (reintentar)="cargar()"
       />
       <app-catalogo-solo-consulta
         [seccion]="true"
@@ -45,6 +48,8 @@ export function filasDe(estados: EstadoSistemaItem[], catalogo: EstadoSistemaIte
         vacio="No hay estados de estudiante registrados."
         [filas]="estudianteGrupo()"
         [cargando]="cargando()"
+        [error]="error()"
+        (reintentar)="cargar()"
       />
     </div>
   `
@@ -55,10 +60,17 @@ export class AdminEstadosComponent implements OnInit {
 
   readonly estados = signal<EstadoSistemaItem[]>([]);
   readonly cargando = signal(true);
+  readonly error = signal<LoadErrorState | null>(null);
   readonly solicitudes = computed(() => filasDe(this.estados(), 'SOLICITUD'));
   readonly estudianteGrupo = computed(() => filasDe(this.estados(), 'ESTUDIANTE_GRUPO'));
 
   ngOnInit(): void {
+    this.cargar();
+  }
+
+  cargar(): void {
+    this.cargando.set(true);
+    this.error.set(null);
     this.service.getEstadosSistema().subscribe({
       next: (res) => {
         this.estados.set(res.datos ?? []);
@@ -66,6 +78,7 @@ export class AdminEstadosComponent implements OnInit {
       },
       error: (err) => {
         this.cargando.set(false);
+        this.error.set(classifyLoadError(err));
         this.toast.error(getApiErrorMessage(err));
       },
     });

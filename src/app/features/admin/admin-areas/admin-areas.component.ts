@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } 
 import { AdminManagementService } from '../../../core/services/admin-management.service';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
+import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load-error.util';
 import {
   CatalogoSoloConsultaComponent,
   FilaCatalogo,
@@ -22,6 +23,8 @@ import {
       vacio="No hay áreas de conocimiento registradas."
       [filas]="filas()"
       [cargando]="cargando()"
+      [error]="error()"
+      (reintentar)="cargar()"
     />
   `
 })
@@ -30,16 +33,24 @@ export class AdminAreasComponent implements OnInit {
   private readonly toast = inject(ToastService);
 
   readonly cargando = signal(true);
+  readonly error = signal<LoadErrorState | null>(null);
 
   readonly filas = computed<FilaCatalogo[]>(() =>
     this.adminService.areas().map((a) => ({ id: a.id, codigo: a.codigo, nombre: a.nombre, activo: a.activa }))
   );
 
   ngOnInit(): void {
+    this.cargar();
+  }
+
+  cargar(): void {
+    this.cargando.set(true);
+    this.error.set(null);
     this.adminService.cargarAreas().subscribe({
       next: () => this.cargando.set(false),
       error: (err) => {
         this.cargando.set(false);
+        this.error.set(classifyLoadError(err));
         this.toast.error(getApiErrorMessage(err));
       },
     });

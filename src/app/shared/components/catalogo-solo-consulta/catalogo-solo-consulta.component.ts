@@ -1,4 +1,6 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { LoadErrorState } from '../../../core/api/errors/load-error.util';
+import { ErrorCargaComponent } from '../error-carga/error-carga.component';
 
 /** Fila de un catálogo base: código, nombre y si está activo. */
 export interface FilaCatalogo {
@@ -16,6 +18,7 @@ export interface FilaCatalogo {
 @Component({
   selector: 'app-catalogo-solo-consulta',
   standalone: true,
+  imports: [ErrorCargaComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="space-y-6 animate-fade-in">
@@ -33,6 +36,9 @@ export interface FilaCatalogo {
         </div>
       }
 
+      @if (error(); as fallo) {
+        <app-error-carga [error]="fallo" (reintentar)="reintentar.emit()" />
+      } @else {
       <div class="bg-white rounded-2xl border border-warm-200 overflow-hidden">
         <table class="w-full text-sm">
           <thead class="bg-warm-50 text-xs uppercase text-warm-600">
@@ -68,6 +74,7 @@ export interface FilaCatalogo {
           </tbody>
         </table>
       </div>
+      }
     </div>
   `,
 })
@@ -82,4 +89,7 @@ export class CatalogoSoloConsultaComponent {
   seccion = input(false);
   /** Mientras llega la primera respuesta no se afirma que el catálogo está vacío (certificación F3, HU154). */
   cargando = input(false);
+  /** Fallo de la carga: se muestra en lugar de la tabla para no confundirlo con un catálogo vacío. */
+  error = input<LoadErrorState | null>(null);
+  readonly reintentar = output<void>();
 }

@@ -5,6 +5,7 @@ import { AdminCatalogsComponent } from './admin-catalogs.component';
 import { AdminManagementService } from '../../../core/services/admin-management.service';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { TipoProgramaItem } from '../../../core/models/role-management.model';
+import { apiHttpError } from '../../../core/testing/api-error.fixture';
 
 describe('AdminCatalogsComponent - tipos de programa (HU154, solo consulta)', () => {
   let fixture: ComponentFixture<AdminCatalogsComponent>;
@@ -74,5 +75,32 @@ describe('AdminCatalogsComponent - tipos de programa (HU154, solo consulta)', ()
     pendiente.next({ exitoso: true, datos: [] });
     f.detectChanges();
     expect(host.textContent).toContain('No hay tipos de programa registrados.');
+  });
+});
+
+describe('AdminCatalogsComponent ante un fallo de carga', () => {
+  it('muestra el error (no "No hay tipos") y permite reintentar', () => {
+    const service = Object.assign(jasmine.createSpyObj('AdminManagementService', ['cargarTiposPrograma']), {
+      tiposPrograma: signal<TipoProgramaItem[]>([]).asReadonly(),
+    });
+    service.cargarTiposPrograma.and.returnValue(throwError(() => apiHttpError(503, 'No disponible')));
+    TestBed.configureTestingModule({
+      imports: [AdminCatalogsComponent],
+      providers: [
+        { provide: AdminManagementService, useValue: service },
+        { provide: ToastService, useValue: jasmine.createSpyObj('ToastService', ['error']) },
+      ],
+    });
+    const fixture = TestBed.createComponent(AdminCatalogsComponent);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[data-testid="error-carga"]')).not.toBeNull();
+    expect(el.textContent).not.toContain('No hay tipos de programa registrados.');
+
+    service.cargarTiposPrograma.and.returnValue(of({ exitoso: true, datos: [] }));
+    (el.querySelector('[data-testid="error-carga"] button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(service.cargarTiposPrograma).toHaveBeenCalledTimes(2);
+    expect(el.querySelector('[data-testid="error-carga"]')).toBeNull();
   });
 });
