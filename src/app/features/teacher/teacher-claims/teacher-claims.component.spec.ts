@@ -232,12 +232,41 @@ describe('TeacherClaimsComponent', () => {
     });
   });
 
-  it('confirmarResolucion rechaza el reclamo con feedback por defecto', () => {
-    claimServiceSpy.resolverReclamo.and.returnValue(of({ exitoso: true, mensajeUsuario: 'Reclamo rechazado.' }));
+  // DEC-073: al rechazar, la respuesta es obligatoria (10 a 500) y la escribe el docente; ya no hay texto por defecto.
+  it('confirmarResolucion no rechaza sin respuesta y avisa que es obligatoria', () => {
     component.abrirVistaResolucion(mockReclamos[0]);
     component.comentarioDocente = '';
     component.confirmarResolucion('RECHAZADA');
+    expect(claimServiceSpy.resolverReclamo).not.toHaveBeenCalled();
+    expect(toastSpy.warning).toHaveBeenCalledWith('El campo Respuesta es obligatorio.');
+    expect(component.errorComentario()).toBe('El campo Respuesta es obligatorio.');
+  });
+
+  it('confirmarResolucion no rechaza con una respuesta de menos de 10 caracteres', () => {
+    component.abrirVistaResolucion(mockReclamos[0]);
+    component.comentarioDocente = '  corta  ';
+    component.confirmarResolucion('RECHAZADA');
+    expect(claimServiceSpy.resolverReclamo).not.toHaveBeenCalled();
+    expect(toastSpy.warning).toHaveBeenCalledWith('El campo Respuesta debe tener al menos 10 caracteres.');
+  });
+
+  it('confirmarResolucion rechaza con la respuesta escrita por el docente', () => {
+    claimServiceSpy.resolverReclamo.and.returnValue(of({ exitoso: true, mensajeUsuario: 'Reclamo rechazado.' }));
+    component.abrirVistaResolucion(mockReclamos[0]);
+    component.comentarioDocente = '  No cumple con los soportes requeridos.  ';
+    component.confirmarResolucion('RECHAZADA');
     expect(claimServiceSpy.resolverReclamo).toHaveBeenCalledWith('rec-1', 'RECHAZADA', 'No cumple con los soportes requeridos.', undefined);
+  });
+
+  it('confirmarResolucion no envía una respuesta de más de 500 caracteres ni con etiquetas HTML', () => {
+    component.abrirVistaResolucion(mockReclamos[0]);
+    component.comentarioDocente = 'x'.repeat(501);
+    component.confirmarResolucion('APROBADA');
+    component.comentarioDocente = '<b>aprobado</b>';
+    component.confirmarResolucion('APROBADA');
+    expect(claimServiceSpy.resolverReclamo).not.toHaveBeenCalled();
+    expect(toastSpy.warning).toHaveBeenCalledWith('El campo Respuesta no puede superar 500 caracteres.');
+    expect(toastSpy.warning).toHaveBeenCalledWith('El campo Respuesta no admite los caracteres < ni >.');
   });
 
   // SES-04: la decisión espera la respuesta real, no se envía dos veces y un conflicto no se muestra como éxito.
@@ -273,6 +302,7 @@ describe('TeacherClaimsComponent', () => {
       },
     })));
     component.abrirVistaResolucion(mockReclamos[0]);
+    component.comentarioDocente = 'No presentó el soporte médico.';
     const cargasAntes = claimServiceSpy.getReclamosDocente.calls.count();
 
     component.confirmarResolucion('RECHAZADA');

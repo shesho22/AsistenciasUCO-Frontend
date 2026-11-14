@@ -5,6 +5,7 @@ import { PlanEstudioItem, AsignaturaPlanItem, AreaConocimientoItem, CaracterAsig
 import { ComponenteFormacionItem } from '../../../../core/models/consultas-transversales.model';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { FormFieldComponent } from '../../../../shared/components/form-field/form-field.component';
+import { CREDITS_MAX, getCreditsError, getSafeTextError, NAME_MAX_LENGTH } from '../../../../core/validation/form-fields.util';
 
 @Component({
     selector: 'app-subject-form',
@@ -40,9 +41,10 @@ import { FormFieldComponent } from '../../../../shared/components/form-field/for
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <app-form-field label="Código de la Asignatura" [required]="true">
+          <app-form-field label="Código de la Asignatura" [required]="true" [errorMessage]="errorCodigo()">
             <input
               type="text"
+              [attr.maxlength]="maxTexto"
               [(ngModel)]="asigForm.codigo"
               placeholder="Ej. SIS-301"
               class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
@@ -62,9 +64,10 @@ import { FormFieldComponent } from '../../../../shared/components/form-field/for
           </app-form-field>
 
           <div class="sm:col-span-2">
-            <app-form-field label="Nombre de la Asignatura" [required]="true">
+            <app-form-field label="Nombre de la Asignatura" [required]="true" [errorMessage]="errorNombre()">
               <input
                 type="text"
+                [attr.maxlength]="maxTexto"
                 [(ngModel)]="asigForm.nombre"
                 placeholder="Ej. Bases de Datos Avanzadas"
                 class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
@@ -72,14 +75,15 @@ import { FormFieldComponent } from '../../../../shared/components/form-field/for
             </app-form-field>
           </div>
 
-          <app-form-field label="Créditos Académicos" [required]="true">
+          <app-form-field label="Créditos Académicos" [required]="true" [errorMessage]="errorCreditos()">
             <input
               type="number"
               aria-label="Créditos académicos"
               [(ngModel)]="asigForm.creditos"
               min="1"
+              [attr.max]="maxCreditos"
               step="1"
-              placeholder="Obligatorio, mayor que cero"
+              placeholder="Obligatorio, de 1 a 10"
               class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
             />
           </app-form-field>
@@ -212,7 +216,25 @@ export class SubjectFormComponent implements OnInit {
   }
 
 
-  /** Código, nombre, área, componente, créditos enteros mayores que cero y un semestre del plan. */
+  readonly maxTexto = NAME_MAX_LENGTH;
+  readonly maxCreditos = CREDITS_MAX;
+
+  /** DEC-073: código y nombre en texto seguro (sin < > ni comillas); vacío si es válido o aún no se escribió. */
+  errorCodigo(): string {
+    return getSafeTextError(this.asigForm.codigo, 'Código de la Asignatura') ?? '';
+  }
+
+  errorNombre(): string {
+    return getSafeTextError(this.asigForm.nombre, 'Nombre de la Asignatura') ?? '';
+  }
+
+  /** DEC-073: créditos enteros de 1 a 10; vacío mientras no se escriba. */
+  errorCreditos(): string {
+    const c = this.asigForm.creditos;
+    return c === null || `${c}`.trim() === '' ? '' : getCreditsError(c) ?? '';
+  }
+
+  /** Código, nombre, área, componente, créditos enteros de 1 a 10 y un semestre del plan. */
   formularioValido(): boolean {
     const f = this.asigForm;
     const creditos = Number(f.creditos);
@@ -224,7 +246,9 @@ export class SubjectFormComponent implements OnInit {
       !!f.codigoCaracter &&
       f.creditos !== null &&
       Number.isInteger(creditos) &&
-      creditos > 0 &&
+      getCreditsError(f.creditos) === null &&
+      !this.errorCodigo() &&
+      !this.errorNombre() &&
       this.semestresPlan().includes(Number(f.semestre))
     );
   }

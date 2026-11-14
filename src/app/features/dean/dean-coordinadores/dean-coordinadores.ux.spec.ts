@@ -1,3 +1,5 @@
+import { StudentRegistrationConfigService } from '../../../core/services/student-registration-config.service';
+import { of } from 'rxjs';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { paginaApi, porUrl } from '../../../core/testing/pagina-api';
 import { provideHttpClient, withXhr } from '@angular/common/http';
@@ -45,7 +47,7 @@ describe('DeanCoordinadoresComponent UX (F-DEC-004, F-DEC-007, F-DEC-S04, F-COO-
     toast = jasmine.createSpyObj('ToastService', ['success', 'error', 'info', 'warning']);
     TestBed.configureTestingModule({
       imports: [DeanCoordinadoresComponent],
-      providers: [{ provide: ToastService, useValue: toast }, provideHttpClient(withXhr()), provideHttpClientTesting()],
+      providers: [{ provide: ToastService, useValue: toast }, { provide: StudentRegistrationConfigService, useValue: { getEmailDomain: () => of('@uco.edu.co') } }, provideHttpClient(withXhr()), provideHttpClientTesting()],
     });
     http = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(DeanCoordinadoresComponent);

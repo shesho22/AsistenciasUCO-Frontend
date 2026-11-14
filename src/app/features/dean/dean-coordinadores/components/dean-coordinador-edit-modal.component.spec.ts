@@ -1,3 +1,4 @@
+import { StudentRegistrationConfigService } from '../../../../core/services/student-registration-config.service';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { CatalogService } from '../../../../core/services/catalog.service';
@@ -5,6 +6,7 @@ import { CorreccionIdentidadService } from '../../../../core/services/correccion
 import { DeanCoordinadorEditModalComponent } from './dean-coordinador-edit-modal.component';
 import { CoordinadorItem, ActualizarCoordinadorPayload } from '../../../../core/models/role-management.model';
 
+// DEC-073 (ver casos al final): un correo NUEVO debe ser institucional; el ya guardado no se revalida.
 describe('DeanCoordinadorEditModalComponent (HU121)', () => {
   let fixture: ComponentFixture<DeanCoordinadorEditModalComponent>;
   let component: DeanCoordinadorEditModalComponent;
@@ -55,6 +57,7 @@ describe('DeanCoordinadorEditModalComponent (HU121)', () => {
     await TestBed.configureTestingModule({
       imports: [DeanCoordinadorEditModalComponent],
       providers: [
+        { provide: StudentRegistrationConfigService, useValue: { getEmailDomain: () => of('@uco.edu.co') } },
         { provide: CorreccionIdentidadService, useValue: { permiteCorregirDocumento: () => of(false) } },
         { provide: CatalogService, useValue: { getTiposIdentificacion: () => of({ exitoso: true, datos: [] }) } },
       ],
@@ -157,5 +160,33 @@ describe('DeanCoordinadorEditModalComponent (HU121)', () => {
 
     component.documento.set({ valido: false, documento: null, motivo: '' });
     expect(component.esValido()).toBeFalse();
+  });
+
+  it('DEC-073: un correo nuevo que no es institucional deshabilita guardar y muestra el motivo', async () => {
+    await render();
+
+    escribir('correo', 'cramirez@gmail.com');
+    fixture.detectChanges();
+
+    expect(component.errorCorreoInstitucional()).toBe('El correo debe ser institucional y terminar en @uco.edu.co.');
+    expect(botonGuardar().disabled).toBeTrue();
+    expect(fixture.nativeElement.textContent).toContain('El correo debe ser institucional y terminar en @uco.edu.co.');
+  });
+
+  it('DEC-073: el correo ya guardado no se revalida, para que un registro antiguo pueda corregir sus nombres', async () => {
+    await render({ ...coordinador, correo: 'antiguo@gmail.com' });
+
+    expect(component.errorCorreoInstitucional()).toBe('');
+    expect(component.esValido()).toBeTrue();
+  });
+
+  it('DEC-073: un nombre con números deshabilita guardar y muestra el motivo', async () => {
+    await render();
+
+    escribir('primerNombre', 'Carl0s');
+    fixture.detectChanges();
+
+    expect(component.errorNombre('primerNombre')).toContain('solo admite letras');
+    expect(botonGuardar().disabled).toBeTrue();
   });
 });

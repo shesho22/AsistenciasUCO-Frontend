@@ -15,6 +15,8 @@ import { UserPickerModalComponent, UserPickerItem } from '../../../shared/compon
 import { AccountAccessStatusComponent } from '../../../shared/components/account-access-status/account-access-status.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { parseIdentificationNumber, validateInstitutionalEmail } from '../../../core/validation/request-form-validation.util';
+import { getPersonNameError, getPersonNamesError, getSafeTextError, getStaffEmailError, NAME_MAX_LENGTH } from '../../../core/validation/form-fields.util';
+import { StudentRegistrationConfigService } from '../../../core/services/student-registration-config.service';
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
 import { finalize } from 'rxjs';
 import { IdentidadEsperada, UltimaPeticion, advertirRegistroNoListado } from '../../../core/utils/registro-confirmado.util';
@@ -260,21 +262,23 @@ const NOMBRE_FACULTAD_MAX = 50;
 
           <form (ngSubmit)="guardarDecano()" class="space-y-4">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <app-form-field label="Primer Nombre" [required]="true">
+              <app-form-field [errorMessage]="errorNombrePersona('primerNombre')" label="Primer Nombre" [required]="true">
                 <input
                   type="text"
                   [(ngModel)]="formData.primerNombre"
                   name="primerNombre"
+                  [attr.maxlength]="maxNombre"
                   required
                   placeholder="ej. Juan"
                   class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                 />
               </app-form-field>
-              <app-form-field label="Segundo Nombre (Opcional)">
+              <app-form-field [errorMessage]="errorNombrePersona('segundoNombre')" label="Segundo Nombre (Opcional)">
                 <input
                   type="text"
                   [(ngModel)]="formData.segundoNombre"
                   name="segundoNombre"
+                  [attr.maxlength]="maxNombre"
                   placeholder="ej. Carlos"
                   class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                 />
@@ -282,21 +286,23 @@ const NOMBRE_FACULTAD_MAX = 50;
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <app-form-field label="Primer Apellido" [required]="true">
+              <app-form-field [errorMessage]="errorNombrePersona('primerApellido')" label="Primer Apellido" [required]="true">
                 <input
                   type="text"
                   [(ngModel)]="formData.primerApellido"
                   name="primerApellido"
+                  [attr.maxlength]="maxNombre"
                   required
                   placeholder="ej. Gómez"
                   class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                 />
               </app-form-field>
-              <app-form-field label="Segundo Apellido (Opcional)">
+              <app-form-field [errorMessage]="errorNombrePersona('segundoApellido')" label="Segundo Apellido (Opcional)">
                 <input
                   type="text"
                   [(ngModel)]="formData.segundoApellido"
                   name="segundoApellido"
+                  [attr.maxlength]="maxNombre"
                   placeholder="ej. Pérez"
                   class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                 />
@@ -355,11 +361,12 @@ const NOMBRE_FACULTAD_MAX = 50;
               </app-form-field>
             </div>
 
-            <app-form-field label="Correo Institucional UCO" [required]="true">
+            <app-form-field label="Correo Institucional UCO" [required]="true" [errorMessage]="errorCorreo()">
               <input
                 type="email"
                 [(ngModel)]="formData.correo"
                 name="correo"
+                maxlength="100"
                 placeholder="decano.facultad@uco.edu.co"
                 required
                 class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
@@ -474,6 +481,10 @@ export class AdminDecanosComponent implements OnInit {
   private toast = inject(ToastService);
   private sessionTimeZone = inject(SessionTimeZoneService);
   private correccionIdentidad = inject(CorreccionIdentidadService);
+  private registroConfig = inject(StudentRegistrationConfigService);
+  /** DEC-073: dominio institucional vigente para el correo del decano (llega del backend). */
+  readonly dominioCorreo = signal<string | null>(null);
+  readonly maxNombre = NAME_MAX_LENGTH;
 
   /** HU159: decano cuya identidad se corrige (null = modal cerrado). */
   decanoACorregir = signal<DecanoItem | null>(null);
@@ -608,6 +619,7 @@ export class AdminDecanosComponent implements OnInit {
     this.cargarFacultades();
     this.cargarInstituciones();
     this.cargarDecanos();
+    this.registroConfig.getEmailDomain().subscribe({ next: (d) => this.dominioCorreo.set(d), error: () => this.dominioCorreo.set(null) });
   }
 
   cargarInstituciones(): void {
@@ -736,7 +748,7 @@ export class AdminDecanosComponent implements OnInit {
     }
     return nombre.length < NOMBRE_FACULTAD_MIN || nombre.length > NOMBRE_FACULTAD_MAX
       ? mensajeUi('UI_ADMIN_DECANOS_012')
-      : '';
+      : getSafeTextError(nombre, 'Nombre de la Facultad') ?? '';
   }
 
   /** Primer problema de la sección Facultad según el modo elegido; null si es válida. */
@@ -747,6 +759,10 @@ export class AdminDecanosComponent implements OnInit {
         if (nombre.length < NOMBRE_FACULTAD_MIN || nombre.length > NOMBRE_FACULTAD_MAX) {
           return mensajeUi('UI_ADMIN_DECANOS_013');
         }
+        const formato = getSafeTextError(nombre, 'Nombre de la Facultad') ?? getSafeTextError(this.facultadNueva.codigo, 'Código de la Facultad');
+        if (formato) {
+          return formato;
+        }
         return this.facultadNueva.idInstitucion ? null : mensajeUi('UI_ADMIN_DECANOS_014');
       }
       case 'VINCULAR':
@@ -754,6 +770,17 @@ export class AdminDecanosComponent implements OnInit {
       default:
         return null;
     }
+  }
+
+  /** DEC-073: error de formato de un nombre o apellido (lo obligatorio se avisa al guardar). */
+  errorNombrePersona(campo: 'primerNombre' | 'segundoNombre' | 'primerApellido' | 'segundoApellido'): string {
+    const etiquetas = { primerNombre: 'Primer Nombre', segundoNombre: 'Segundo Nombre', primerApellido: 'Primer Apellido', segundoApellido: 'Segundo Apellido' };
+    return getPersonNameError(this.formData[campo], etiquetas[campo]) ?? '';
+  }
+
+  /** DEC-073: error del correo institucional del decano; vacío si aún no se escribió. */
+  errorCorreo(): string {
+    return (this.formData.correo || '').trim() ? getStaffEmailError(this.formData.correo, this.dominioCorreo()) ?? '' : '';
   }
 
   /** Habilita Guardar solo cuando datos personales, acceso y facultad son válidos. */
@@ -764,7 +791,8 @@ export class AdminDecanosComponent implements OnInit {
       parseIdentificationNumber(f.numeroIdentificacion).valid &&
       !!(f.primerNombre || '').trim() &&
       !!(f.primerApellido || '').trim() &&
-      validateInstitutionalEmail(f.correo).valid &&
+      getPersonNamesError(f) === null &&
+      getStaffEmailError(f.correo, this.dominioCorreo()) === null &&
       !!(f.password || '').trim() &&
       this.errorFacultad() === null
     );
@@ -816,9 +844,20 @@ export class AdminDecanosComponent implements OnInit {
       return;
     }
 
+    const nombresError = getPersonNamesError(this.formData);
+    if (nombresError) {
+      this.toast.warning(nombresError);
+      return;
+    }
+
     const emailResult = validateInstitutionalEmail(this.formData.correo);
     if (!emailResult.valid) {
       this.toast.warning(emailResult.error || mensajeUi('UI_ADMIN_DECANOS_007'));
+      return;
+    }
+    const correoError = getStaffEmailError(this.formData.correo, this.dominioCorreo());
+    if (correoError) {
+      this.toast.warning(correoError);
       return;
     }
 

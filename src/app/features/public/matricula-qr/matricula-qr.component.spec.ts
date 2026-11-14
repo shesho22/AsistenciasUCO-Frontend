@@ -153,6 +153,26 @@ describe('MatriculaQrComponent (HU176B, página pública)', () => {
     expect(q('matricula-exito')?.textContent).toContain('Ir a iniciar sesión');
   });
 
+  // DEC-073: nombres sin números ni signos y documento entero sin cero inicial.
+  it('DEC-073: no envía con nombres con números o signos ni con un documento que empieza en cero', async () => {
+    await crear({ t: TOKEN });
+    component.mostrarRegistro();
+    llenarFormulario();
+    expect(component.formularioCompleto()).toBeTrue();
+
+    component.segundoApellido.set('G0mez');
+    expect(component.errorNombres()).toBe('El campo Segundo Apellido solo admite letras, espacios, apóstrofo y guion (sin números ni otros signos).');
+    expect(component.formularioCompleto()).toBeFalse();
+
+    component.segundoApellido.set('');
+    component.numero.set('0123456');
+    expect(component.errorDocumento()).toBe('El campo Número de Identificación debe ser positivo y no comenzar con cero.');
+    expect(component.formularioCompleto()).toBeFalse();
+
+    component.registrar();
+    expect(servicio.registrar).not.toHaveBeenCalled();
+  });
+
   it('no envía el formulario si faltan datos obligatorios o la contraseña es corta', async () => {
     await crear({ t: TOKEN });
     component.mostrarRegistro();

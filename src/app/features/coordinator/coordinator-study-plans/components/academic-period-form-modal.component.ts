@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { PeriodoAcademicoItem } from '../../../../core/models/role-management.model';
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
 import { FormFieldComponent } from '../../../../shared/components/form-field/form-field.component';
+import { getSafeTextError } from '../../../../core/validation/form-fields.util';
 
 export const PERIODO_NOMBRE_MINIMO = 3;
 export const PERIODO_NOMBRE_MAXIMO = 50;
@@ -97,7 +98,9 @@ export class AcademicPeriodFormModalComponent implements OnInit {
     const largo = this.nombre().trim().length;
     if (largo === 0) return '';
     if (largo < PERIODO_NOMBRE_MINIMO) return `El nombre debe tener al menos ${PERIODO_NOMBRE_MINIMO} caracteres.`;
-    return largo > PERIODO_NOMBRE_MAXIMO ? `El nombre no puede superar ${PERIODO_NOMBRE_MAXIMO} caracteres.` : '';
+    if (largo > PERIODO_NOMBRE_MAXIMO) return `El nombre no puede superar ${PERIODO_NOMBRE_MAXIMO} caracteres.`;
+    // DEC-073: texto seguro (sin < > ni comillas).
+    return getSafeTextError(this.nombre(), 'Nombre del período', { maxLength: PERIODO_NOMBRE_MAXIMO }) ?? '';
   });
 
   readonly errorFechas = computed(() => {

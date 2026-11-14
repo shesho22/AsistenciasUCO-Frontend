@@ -23,6 +23,7 @@ import { getApiErrorCode, getApiErrorMessage, getApiErrorResponse } from '../../
 import { etiquetaEstadoReclamo, etiquetaResultadoAprobacion, varianteEstadoReclamo } from '../../../core/utils/reclamo-estado.util';
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
+import { CLAIM_RESPONSE_MAX, getClaimResponseError } from '../../../core/validation/form-fields.util';
 
 const ETIQUETA_ESTADO_TOMA_RECLAMO: Readonly<Record<EstadoTomaEstudiante, string>> = {
   PRESENTE: 'Presente',
@@ -385,13 +386,18 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
                 Resolución del Docente
               </span>
 
-              <app-form-field label="Observaciones o retroalimentación para el estudiante">
+              <app-form-field
+                label="Observaciones o retroalimentación para el estudiante (obligatoria al rechazar)"
+                [errorMessage]="errorComentario()"
+              >
                 <textarea
                   [(ngModel)]="comentarioDocente"
+                  [attr.maxlength]="maxComentario"
                   rows="4"
                   placeholder="Escribe un comentario explicativo sobre la aceptación o rechazo de la justificación..."
                   class="w-full p-3 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                 ></textarea>
+                <p class="mt-1 text-xs text-warm-500">{{ comentarioDocente.trim().length }} / {{ maxComentario }}</p>
               </app-form-field>
 
               <div class="flex flex-col sm:flex-row items-center justify-end gap-3 pt-2">
@@ -474,6 +480,15 @@ export class TeacherClaimsComponent implements OnInit, OnDestroy {
   /** SES-04: una decisión en curso bloquea otra (doble clic o decisión contradictoria) hasta la respuesta real. */
   resolviendo = signal<boolean>(false);
   comentarioDocente = '';
+  readonly maxComentario = CLAIM_RESPONSE_MAX;
+  /** DEC-073: el aviso de respuesta obligatoria aparece tras intentar rechazar. */
+  readonly intentoRechazo = signal(false);
+
+  /** DEC-073: error de la respuesta (máximo 500; al rechazar, obligatoria de 10 a 500); vacío si es válida. */
+  errorComentario(): string {
+    const accion = this.intentoRechazo() ? 'RECHAZADA' : 'APROBADA';
+    return getClaimResponseError(accion, this.comentarioDocente) ?? '';
+  }
 
   private listaSub?: Subscription;
   private pendientesSub?: Subscription;
@@ -640,8 +655,15 @@ ull si el reclamo es de la sesión completa. */
     if (!reclamo || this.resolviendo()) return;
     if (resultado === 'PRESENTE' && !reclamo.idToma) return;
 
+    // DEC-073: al rechazar la respuesta la escribe el docente (10 a 500); al aprobar es opcional y se usa un texto por defecto.
+    this.intentoRechazo.set(accion === 'RECHAZADA');
+    const errorRespuesta = getClaimResponseError(accion, this.comentarioDocente);
+    if (errorRespuesta) {
+      this.toast.warning(errorRespuesta);
+      return;
+    }
     const aprobacion = resultado === 'PRESENTE' ? 'Se confirmó que el estudiante estuvo presente en la toma.' : 'Justificación válida y aceptada.';
-    const feedback = this.comentarioDocente.trim() || (accion === 'APROBADA' ? aprobacion : 'No cumple con los soportes requeridos.');
+    const feedback = this.comentarioDocente.trim() || aprobacion;
 
     this.resolviendo.set(true);
     this.claimService

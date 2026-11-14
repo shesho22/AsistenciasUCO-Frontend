@@ -8,6 +8,7 @@ import { StudentService } from '../../../core/services/student.service';
 import { StudentRegistrationConfigService } from '../../../core/services/student-registration-config.service';
 import { EmailVerificationService } from '../../../core/services/email-verification.service';
 import { isInstitutionalEmail } from '../../../core/validation/institutional-email.util';
+import { getPersonNameError } from '../../../core/validation/form-fields.util';
 import { SessionService } from '../../../core/services/session.service';
 import { AttendanceService } from '../../../core/services/attendance.service';
 import { GroupService } from '../../../core/services/group.service';
@@ -1009,6 +1010,19 @@ export class AttendanceControlComponent {
     }
     if (!data.primerApellido?.trim()) {
       fieldErrors.primerApellido = 'El campo Primer Apellido es obligatorio.';
+    }
+    // DEC-073: formato de nombres y apellidos (letras, espacios, apóstrofo y guion), sin pisar el error de obligatorio.
+    const etiquetasNombre = {
+      primerNombre: 'Primer Nombre',
+      segundoNombre: 'Segundo Nombre',
+      primerApellido: 'Primer Apellido',
+      segundoApellido: 'Segundo Apellido',
+    } as const;
+    for (const campo of Object.keys(etiquetasNombre) as (keyof typeof etiquetasNombre)[]) {
+      const formato = getPersonNameError(data[campo], etiquetasNombre[campo]);
+      if (formato && !fieldErrors[campo]) {
+        fieldErrors[campo] = formato;
+      }
     }
     // A.2-15: un estudiante existente se matricula por documento; su correo y contraseña no se piden ni se envían.
     const esExistente = data.estudianteExistente === true;

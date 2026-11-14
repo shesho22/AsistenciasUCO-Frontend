@@ -1,3 +1,5 @@
+import { StudentRegistrationConfigService } from '../../../core/services/student-registration-config.service';
+import { of } from 'rxjs';
 import { ChangeDetectorRef } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { paginaApi, porUrl } from '../../../core/testing/pagina-api';
@@ -59,6 +61,8 @@ describe('DeanCoordinadoresComponent', () => {
         CatalogService,
         { provide: ToastService, useValue: toastService },
         provideHttpClient(withXhr()),
+        // DEC-073: el formulario consulta el dominio institucional; aquí se fija sin pasar por HttpTestingController.
+        { provide: StudentRegistrationConfigService, useValue: { getEmailDomain: () => of('@uco.edu.co') } },
         provideHttpClientTesting(),
       ],
     }).compileComponents();
@@ -295,6 +299,36 @@ describe('DeanCoordinadoresComponent', () => {
     const event = { target: { value: '1017-abc-999' } } as unknown as Event;
     component.onNumeroIdentificacionInput(event);
     expect(component.formData.numeroIdentificacion).toBe('1017999');
+  });
+
+  // DEC-073: formato de nombres, correo institucional y nombre del programa nuevo.
+  it('DEC-073: guardarCoordinador rechaza nombres con números y correos no institucionales', () => {
+    flushInitialRequests();
+    component.abrirFormularioRegistro();
+    component.modoPrograma.set('VINCULAR');
+    component.formData.tipoIdentificacionId = component.formData.tipoIdentificacionId || 'tipo-1';
+    component.formData.numeroIdentificacion = '1017123456';
+    component.formData.primerNombre = 'Jorge';
+    component.formData.primerApellido = 'Henao3';
+    component.guardarCoordinador();
+    expect(toastService.warning).toHaveBeenCalledWith(
+      'El campo Primer Apellido solo admite letras, espacios, apóstrofo y guion (sin números ni otros signos).'
+    );
+    expect(component.errorCampo('primerApellido')).toContain('solo admite letras');
+
+    component.formData.primerApellido = 'Henao';
+    component.formData.correo = 'jorge.henao@gmail.com';
+    component.guardarCoordinador();
+    expect(toastService.warning).toHaveBeenCalledWith('El correo debe ser institucional y terminar en @uco.edu.co.');
+    expect(component.errorCampo('correo')).toBe('El correo debe ser institucional y terminar en @uco.edu.co.');
+  });
+
+  it('DEC-073: el nombre del programa nuevo no admite < > ni comillas', () => {
+    flushInitialRequests();
+    component.abrirFormularioRegistro();
+    component.modoPrograma.set('CREAR');
+    component.programaNuevo.nombre = 'Programa "X"';
+    expect(component.errorPrograma()).toContain('solo admite');
   });
 
   it('guardarCoordinador valida campos obligatorios antes de enviar', () => {

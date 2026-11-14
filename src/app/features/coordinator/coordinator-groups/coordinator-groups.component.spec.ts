@@ -167,6 +167,19 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
     expect(courseService.getCoordinatorCourses).toHaveBeenCalledTimes(2);
   });
 
+  // DEC-073: el código es un entero positivo y el nombre, texto seguro.
+  it('DEC-073: valida código entero y nombre sin < > ni comillas antes de llamar al backend', () => {
+    component.abrirCrear();
+    Object.assign(component.form, { idAsignatura: 'a', idPeriodoAcademico: 'p', codigo: 1.5, nombre: 'G', idDocente: 'd' });
+    expect(component.validar()).toBe('El código del grupo debe ser un número entero mayor que cero.');
+
+    Object.assign(component.form, { codigo: 2, nombre: 'Grupo <b>A</b>' });
+    expect(component.validar()).toContain('solo admite');
+
+    Object.assign(component.form, { nombre: 'Grupo A (Noche) - 2027/1' });
+    expect(component.validar()).toBeNull();
+  });
+
   it('valida horas y franjas que se cruzan antes de llamar al backend', () => {
     component.abrirCrear();
     Object.assign(component.form, { idAsignatura: 'a', idPeriodoAcademico: 'p', codigo: 1, nombre: 'G', idDocente: 'd' });

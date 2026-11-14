@@ -25,6 +25,8 @@ import {
   validateInstitutionalEmail,
   getPasswordValidationError,
 } from '../../../core/validation/request-form-validation.util';
+import { getPersonNameError, getPersonNamesError, getSafeTextError, getStaffEmailError, NAME_MAX_LENGTH } from '../../../core/validation/form-fields.util';
+import { StudentRegistrationConfigService } from '../../../core/services/student-registration-config.service';
 import { finalize } from 'rxjs';
 import { IdentidadEsperada, UltimaPeticion, advertirRegistroNoListado } from '../../../core/utils/registro-confirmado.util';
 import { CargaMasivaUsuariosComponent } from '../../../shared/components/carga-masiva-usuarios/carga-masiva-usuarios.component';
@@ -305,16 +307,18 @@ const NOMBRE_PROGRAMA_MAX = 50;
                   type="text"
                   [(ngModel)]="formData.primerNombre"
                   name="primerNombre"
+                  [attr.maxlength]="maxNombre"
                   required
                   placeholder="ej. Andrés"
                   class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                 />
               </app-form-field>
-              <app-form-field label="Segundo Nombre (Opcional)">
+              <app-form-field label="Segundo Nombre (Opcional)" [errorMessage]="errorCampo('segundoNombre')">
                 <input
                   type="text"
                   [(ngModel)]="formData.segundoNombre"
                   name="segundoNombre"
+                  [attr.maxlength]="maxNombre"
                   placeholder="ej. Felipe"
                   class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                 />
@@ -327,16 +331,18 @@ const NOMBRE_PROGRAMA_MAX = 50;
                   type="text"
                   [(ngModel)]="formData.primerApellido"
                   name="primerApellido"
+                  [attr.maxlength]="maxNombre"
                   required
                   placeholder="ej. López"
                   class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                 />
               </app-form-field>
-              <app-form-field label="Segundo Apellido (Opcional)">
+              <app-form-field label="Segundo Apellido (Opcional)" [errorMessage]="errorCampo('segundoApellido')">
                 <input
                   type="text"
                   [(ngModel)]="formData.segundoApellido"
                   name="segundoApellido"
+                  [attr.maxlength]="maxNombre"
                   placeholder="ej. Martínez"
                   class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                 />
@@ -529,6 +535,10 @@ export class DeanCoordinadoresComponent implements OnInit {
   private catalogService = inject(CatalogService);
   private programasService = inject(DeanProgramasService);
   private toast = inject(ToastService);
+  private registroConfig = inject(StudentRegistrationConfigService);
+  /** DEC-073: dominio institucional vigente para el correo del coordinador (llega del backend). */
+  readonly dominioCorreo = signal<string | null>(null);
+  readonly maxNombre = NAME_MAX_LENGTH;
 
   isPickerModalOpen = signal<boolean>(false);
   /** Correo de la ultima cuenta registrada: el panel consulta su estado de acceso real. */
@@ -643,6 +653,7 @@ export class DeanCoordinadoresComponent implements OnInit {
     this.cargarProgramasAcademicos();
     this.cargarCatalogosPrograma();
     this.cargarCoordinadores();
+    this.registroConfig.getEmailDomain().subscribe({ next: (d) => this.dominioCorreo.set(d), error: () => this.dominioCorreo.set(null) });
   }
 
   cargarCatalogosPrograma(): void {
@@ -823,9 +834,13 @@ export class DeanCoordinadoresComponent implements OnInit {
     const vacio = (v: string | null | undefined) => !(v ?? '').toString().trim();
     switch (campo) {
       case 'primerNombre':
-        return vacio(f.primerNombre) ? 'El primer nombre es obligatorio.' : '';
+        return vacio(f.primerNombre) ? 'El primer nombre es obligatorio.' : getPersonNameError(f.primerNombre, 'Primer Nombre') ?? '';
+      case 'segundoNombre':
+        return getPersonNameError(f.segundoNombre, 'Segundo Nombre') ?? '';
       case 'primerApellido':
-        return vacio(f.primerApellido) ? 'El primer apellido es obligatorio.' : '';
+        return vacio(f.primerApellido) ? 'El primer apellido es obligatorio.' : getPersonNameError(f.primerApellido, 'Primer Apellido') ?? '';
+      case 'segundoApellido':
+        return getPersonNameError(f.segundoApellido, 'Segundo Apellido') ?? '';
       case 'tipoIdentificacionId':
         return vacio(f.tipoIdentificacionId) ? 'Seleccione el tipo de documento.' : '';
       case 'numeroIdentificacion': {
@@ -841,8 +856,7 @@ export class DeanCoordinadoresComponent implements OnInit {
       case 'programaNuevoTipo':
         return this.modoPrograma() === 'CREAR' && !this.programaNuevo.idTipoPrograma ? mensajeUi('UI_DEAN_COORDINADORES_009') : '';
       case 'correo': {
-        const r = validateInstitutionalEmail(f.correo);
-        return r.valid ? '' : r.error || 'Correo institucional inválido.';
+        return getStaffEmailError(f.correo, this.dominioCorreo()) ?? '';
       }
       case 'password': {
         if (vacio(f.password)) return 'La contraseña es obligatoria.';
@@ -858,7 +872,9 @@ export class DeanCoordinadoresComponent implements OnInit {
     if (!nombre) {
       return mensajeUi('UI_DEAN_COORDINADORES_010');
     }
-    return nombre.length > NOMBRE_PROGRAMA_MAX ? mensajeUi('UI_DEAN_COORDINADORES_011', { maximo: NOMBRE_PROGRAMA_MAX }) : '';
+    return nombre.length > NOMBRE_PROGRAMA_MAX
+      ? mensajeUi('UI_DEAN_COORDINADORES_011', { maximo: NOMBRE_PROGRAMA_MAX })
+      : getSafeTextError(nombre, 'Nombre del Programa') ?? '';
   }
 
   /** Primer problema de la sección Programa según el modo elegido; null si es válida. */
@@ -883,7 +899,8 @@ export class DeanCoordinadoresComponent implements OnInit {
       parseIdentificationNumber(f.numeroIdentificacion).valid &&
       !!(f.primerNombre ?? '').trim() &&
       !!(f.primerApellido ?? '').trim() &&
-      validateInstitutionalEmail(f.correo).valid &&
+      getPersonNamesError(f) === null &&
+      getStaffEmailError(f.correo, this.dominioCorreo()) === null &&
       !!password &&
       !getPasswordValidationError(password, documento) &&
       this.errorPrograma() === null
@@ -946,9 +963,20 @@ export class DeanCoordinadoresComponent implements OnInit {
       return;
     }
 
+    const nombresError = getPersonNamesError(this.formData);
+    if (nombresError) {
+      this.toast.warning(nombresError);
+      return;
+    }
+
     const emailResult = validateInstitutionalEmail(this.formData.correo);
     if (!emailResult.valid) {
       this.toast.warning(emailResult.error || mensajeUi('UI_ADMIN_DECANOS_007'));
+      return;
+    }
+    const correoError = getStaffEmailError(this.formData.correo, this.dominioCorreo());
+    if (correoError) {
+      this.toast.warning(correoError);
       return;
     }
 

@@ -10,6 +10,8 @@ import {
   CursoMatriculaQr,
   RegistroMatriculaQrPayload,
 } from '../../../core/models/matricula-qr.model';
+import { getPersonNameError } from '../../../core/validation/form-fields.util';
+import { parseIdentificationNumber } from '../../../core/validation/request-form-validation.util';
 
 export type MatriculaQrEstado = 'PIN' | 'VALIDANDO' | 'CURSO' | 'REGISTRO' | 'ENVIANDO' | 'EXITO' | 'EXITO_SESION' | 'ERROR';
 
@@ -88,15 +90,21 @@ const PIN_SEIS_DIGITOS = /^[0-9]{6}$/;
                 <option [value]="t.id">{{ t.nombre }}</option>
               }
             </select>
-            <input name="numero" inputmode="numeric" placeholder="Número de documento" [ngModel]="numero()" (ngModelChange)="numero.set($event)" class="w-full px-3 py-2 border border-warm-300 rounded-xl text-sm" />
+            <input name="numero" inputmode="numeric" maxlength="10" placeholder="Número de documento" [ngModel]="numero()" (ngModelChange)="numero.set($event)" class="w-full px-3 py-2 border border-warm-300 rounded-xl text-sm" />
             <div class="grid grid-cols-2 gap-2">
-              <input name="primerNombre" placeholder="Primer nombre" [ngModel]="primerNombre()" (ngModelChange)="primerNombre.set($event)" class="px-3 py-2 border border-warm-300 rounded-xl text-sm" />
-              <input name="segundoNombre" placeholder="Segundo nombre" [ngModel]="segundoNombre()" (ngModelChange)="segundoNombre.set($event)" class="px-3 py-2 border border-warm-300 rounded-xl text-sm" />
-              <input name="primerApellido" placeholder="Primer apellido" [ngModel]="primerApellido()" (ngModelChange)="primerApellido.set($event)" class="px-3 py-2 border border-warm-300 rounded-xl text-sm" />
-              <input name="segundoApellido" placeholder="Segundo apellido" [ngModel]="segundoApellido()" (ngModelChange)="segundoApellido.set($event)" class="px-3 py-2 border border-warm-300 rounded-xl text-sm" />
+              <input name="primerNombre" maxlength="50" placeholder="Primer nombre" [ngModel]="primerNombre()" (ngModelChange)="primerNombre.set($event)" class="px-3 py-2 border border-warm-300 rounded-xl text-sm" />
+              <input name="segundoNombre" maxlength="50" placeholder="Segundo nombre" [ngModel]="segundoNombre()" (ngModelChange)="segundoNombre.set($event)" class="px-3 py-2 border border-warm-300 rounded-xl text-sm" />
+              <input name="primerApellido" maxlength="50" placeholder="Primer apellido" [ngModel]="primerApellido()" (ngModelChange)="primerApellido.set($event)" class="px-3 py-2 border border-warm-300 rounded-xl text-sm" />
+              <input name="segundoApellido" maxlength="50" placeholder="Segundo apellido" [ngModel]="segundoApellido()" (ngModelChange)="segundoApellido.set($event)" class="px-3 py-2 border border-warm-300 rounded-xl text-sm" />
             </div>
-            <input name="correo" type="email" placeholder="Correo institucional" autocomplete="email" [ngModel]="correo()" (ngModelChange)="correo.set($event)" class="w-full px-3 py-2 border border-warm-300 rounded-xl text-sm" />
-            <input name="password" type="password" placeholder="Contraseña (mínimo 8 caracteres)" autocomplete="new-password" [ngModel]="password()" (ngModelChange)="password.set($event)" class="w-full px-3 py-2 border border-warm-300 rounded-xl text-sm" />
+            @if (errorNombres()) {
+              <p class="text-xs text-danger-600" role="alert">{{ errorNombres() }}</p>
+            }
+            @if (numero().trim() !== '' && errorDocumento()) {
+              <p class="text-xs text-danger-600" role="alert">{{ errorDocumento() }}</p>
+            }
+            <input name="correo" type="email" maxlength="100" placeholder="Correo institucional" autocomplete="email" [ngModel]="correo()" (ngModelChange)="correo.set($event)" class="w-full px-3 py-2 border border-warm-300 rounded-xl text-sm" />
+            <input name="password" type="password" maxlength="255" placeholder="Contraseña (mínimo 8 caracteres)" autocomplete="new-password" [ngModel]="password()" (ngModelChange)="password.set($event)" class="w-full px-3 py-2 border border-warm-300 rounded-xl text-sm" />
             @if (password() !== '' && !passwordLongitudValida()) {
               <p class="text-xs text-danger-700" role="alert" data-testid="matricula-password-corta">La contraseña debe tener al menos 8 caracteres.</p>
             }
@@ -210,10 +218,27 @@ export class MatriculaQrComponent implements OnInit {
     return this.password() === this.confirmarPassword();
   }
 
+  /** DEC-073: formato de nombres y apellidos (sin números ni signos); null si todos son válidos o están vacíos. */
+  errorNombres(): string | null {
+    return (
+      getPersonNameError(this.primerNombre(), 'Primer Nombre') ??
+      getPersonNameError(this.segundoNombre(), 'Segundo Nombre') ??
+      getPersonNameError(this.primerApellido(), 'Primer Apellido') ??
+      getPersonNameError(this.segundoApellido(), 'Segundo Apellido')
+    );
+  }
+
+  /** DEC-073: el documento es un entero de 6 a 10 dígitos sin cero inicial (viaja como número). */
+  errorDocumento(): string | null {
+    const r = parseIdentificationNumber(this.numero());
+    return r.valid ? null : r.error;
+  }
+
   formularioCompleto(): boolean {
     return (
       this.tipoId() !== '' &&
-      /^[0-9]{6,10}$/.test(this.numero().trim()) &&
+      this.errorDocumento() === null &&
+      this.errorNombres() === null &&
       this.primerNombre().trim() !== '' &&
       this.primerApellido().trim() !== '' &&
       this.correo().trim() !== '' &&

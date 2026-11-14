@@ -16,6 +16,7 @@ import { franjaNueva, validarFranjas } from '../../../core/validation/franjas.ut
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { FranjasEditorComponent } from '../../../shared/components/franjas-editor/franjas-editor.component';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
+import { getSafeTextError } from '../../../core/validation/form-fields.util';
 
 /** Cupo editable del grupo: vacío (no se cambia) o entero >= 1. El tope por estudiantes activos lo valida la DB. */
 export function cupoValidoOVacio(cupo: number | string | null | undefined): boolean {
@@ -140,7 +141,7 @@ interface GrupoForm {
               </label>
             }
             <label class="text-xs font-semibold text-warm-700">Código del grupo
-              <input name="codigo" type="number" min="1" [(ngModel)]="form.codigo" class="mt-1 w-full px-3 py-2 border border-warm-200 rounded-xl text-sm" />
+              <input name="codigo" type="number" min="1" step="1" [(ngModel)]="form.codigo" class="mt-1 w-full px-3 py-2 border border-warm-200 rounded-xl text-sm" />
             </label>
             <label class="text-xs font-semibold text-warm-700">Nombre del grupo
               <input name="nombre" type="text" maxlength="50" [(ngModel)]="form.nombre" class="mt-1 w-full px-3 py-2 border border-warm-200 rounded-xl text-sm" />
@@ -346,6 +347,14 @@ export class CoordinatorGroupsComponent implements OnInit {
     }
     if (!this.form.codigo || Number(this.form.codigo) < 1 || !this.form.nombre.trim()) {
       return 'El código y el nombre del grupo son obligatorios.';
+    }
+    // DEC-073: código entero positivo y nombre en texto seguro (sin < > ni comillas).
+    if (!Number.isInteger(Number(this.form.codigo))) {
+      return 'El código del grupo debe ser un número entero mayor que cero.';
+    }
+    const nombreError = getSafeTextError(this.form.nombre, 'Nombre del grupo');
+    if (nombreError) {
+      return nombreError;
     }
     if (!this.form.idDocente) {
       return 'Seleccione el docente titular.';

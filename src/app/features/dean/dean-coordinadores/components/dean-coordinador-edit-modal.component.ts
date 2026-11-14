@@ -1,10 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, effect, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
 import { FormFieldComponent } from '../../../../shared/components/form-field/form-field.component';
 import { ActualizarCoordinadorPayload, CoordinadorItem } from '../../../../core/models/role-management.model';
 import { CorreccionDocumentoComponent } from '../../../../shared/components/correccion-documento/correccion-documento.component';
 import { EstadoCorreccionDocumento } from '../../../../core/models/correccion-identidad.model';
+import { getPersonNameError, getPersonNamesError, getStaffEmailError } from '../../../../core/validation/form-fields.util';
+import { StudentRegistrationConfigService } from '../../../../core/services/student-registration-config.service';
 
 const FORMATO_CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_NOMBRE = 50;
@@ -30,7 +32,7 @@ const MAX_CORREO = 100;
         />
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <app-form-field label="Primer nombre" [required]="true">
+          <app-form-field label="Primer nombre" [required]="true" [errorMessage]="errorNombre('primerNombre')">
             <input
               type="text"
               name="primerNombre"
@@ -40,7 +42,7 @@ const MAX_CORREO = 100;
               class="w-full bg-white text-warm-900 border border-warm-300 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </app-form-field>
-          <app-form-field label="Segundo nombre">
+          <app-form-field label="Segundo nombre" [errorMessage]="errorNombre('segundoNombre')">
             <input
               type="text"
               name="segundoNombre"
@@ -50,7 +52,7 @@ const MAX_CORREO = 100;
               class="w-full bg-white text-warm-900 border border-warm-300 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </app-form-field>
-          <app-form-field label="Primer apellido" [required]="true">
+          <app-form-field label="Primer apellido" [required]="true" [errorMessage]="errorNombre('primerApellido')">
             <input
               type="text"
               name="primerApellido"
@@ -60,7 +62,7 @@ const MAX_CORREO = 100;
               class="w-full bg-white text-warm-900 border border-warm-300 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </app-form-field>
-          <app-form-field label="Segundo apellido">
+          <app-form-field label="Segundo apellido" [errorMessage]="errorNombre('segundoApellido')">
             <input
               type="text"
               name="segundoApellido"
@@ -83,6 +85,8 @@ const MAX_CORREO = 100;
           />
           @if (correoInvalido()) {
             <p class="mt-1 text-xs text-danger-600" role="alert">Ingresa un correo electrónico válido.</p>
+          } @else if (errorCorreoInstitucional()) {
+            <p class="mt-1 text-xs text-danger-600" role="alert">{{ errorCorreoInstitucional() }}</p>
           }
         </app-form-field>
       </div>
@@ -122,6 +126,21 @@ export class DeanCoordinadorEditModalComponent {
   /** HU159: documento corregido y motivo (por defecto, sin cambio). */
   documento = signal<EstadoCorreccionDocumento>({ valido: true, documento: null, motivo: '' });
 
+  /** DEC-073: dominio institucional vigente (llega del backend). */
+  private readonly dominioCorreo = signal<string | null>(null);
+
+  /**
+   * DEC-073: un correo NUEVO debe ser institucional; el que ya tenia el coordinador no se revalida (igual que la base de
+   * datos), para que un registro antiguo pueda corregir sus nombres.
+   */
+  errorCorreoInstitucional = computed(() => {
+    const valor = this.correo().trim();
+    if (!valor || valor.toLowerCase() === (this.coordinador().correo ?? '').trim().toLowerCase()) {
+      return '';
+    }
+    return getStaffEmailError(valor, this.dominioCorreo()) ?? '';
+  });
+
   correoInvalido = computed(() => {
     const valor = this.correo().trim();
     return valor.length > 0 && (!FORMATO_CORREO.test(valor) || valor.length > MAX_CORREO);
@@ -135,10 +154,27 @@ export class DeanCoordinadorEditModalComponent {
       this.primerApellido().trim().length <= MAX_NOMBRE &&
       this.correo().trim().length > 0 &&
       !this.correoInvalido() &&
+      !this.errorCorreoInstitucional() &&
+      getPersonNamesError({
+        primerNombre: this.primerNombre(),
+        segundoNombre: this.segundoNombre(),
+        primerApellido: this.primerApellido(),
+        segundoApellido: this.segundoApellido(),
+      }) === null &&
       this.documento().valido,
   );
 
+  /** DEC-073: error de formato de un nombre o apellido; vacío si es válido o está vacío. */
+  errorNombre(campo: 'primerNombre' | 'segundoNombre' | 'primerApellido' | 'segundoApellido'): string {
+    const etiquetas = { primerNombre: 'Primer Nombre', segundoNombre: 'Segundo Nombre', primerApellido: 'Primer Apellido', segundoApellido: 'Segundo Apellido' };
+    return getPersonNameError(this[campo](), etiquetas[campo]) ?? '';
+  }
+
   constructor() {
+    inject(StudentRegistrationConfigService).getEmailDomain().subscribe({
+      next: (d) => this.dominioCorreo.set(d),
+      error: () => this.dominioCorreo.set(null),
+    });
     effect(() => {
       const c = this.coordinador();
       const nombres = c.nombres?.trim().split(/\s+/).filter(Boolean) ?? [];
