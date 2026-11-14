@@ -249,4 +249,27 @@ describe('QrProyeccionComponent (CULM-001, estetica unificada de proyeccion)', (
     fixture.destroy();
     expect(spy).not.toHaveBeenCalled();
   });
+
+  describe('VAL F12-06: vigia de rotacion', () => {
+    it('sin margen no pinta el vigia', () => {
+      crear({ segundosRestantes: 30 });
+      expect(el('qr-vigia-rotacion')).toBeNull();
+    });
+
+    it('con margen dura segundosRestantes + margen y al terminar emite el ciclo vigente', () => {
+      crear({ segundosRestantes: 30, margenVigiaSegundos: 5, ciclo: 3 });
+      const emitidos: number[] = [];
+      fixture.componentInstance.rotacionVencida.subscribe((c) => emitidos.push(c));
+      const vigia = el('qr-vigia-rotacion')!;
+      expect(vigia.style.animationDuration).toBe('35s');
+      expect(vigia.getAttribute('aria-hidden')).toBe('true');
+      vigia.dispatchEvent(new Event('animationend'));
+      expect(emitidos).toEqual([3]);
+    });
+
+    it('sin segundos restantes no hay barra ni vigia', () => {
+      crear({ margenVigiaSegundos: 5 });
+      expect(el('qr-vigia-rotacion')).toBeNull();
+    });
+  });
 });

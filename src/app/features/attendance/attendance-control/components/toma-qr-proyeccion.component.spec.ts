@@ -216,6 +216,7 @@ describe('TomaQrProyeccionComponent (CULM-001 B.2, HU175)', () => {
   });
 
   it('B2-F-05 indica la perdida de conexion y mantiene Regenerar como accion manual', () => {
+    qrService.rotarQr.and.returnValue(of({ exitoso: true, mensajeUsuario: 'ok', datos: qr }) as never);
     estado$.next('RECONNECTING');
     fixture.detectChanges();
     expect(el('qr-conexion-perdida')).not.toBeNull();
@@ -223,6 +224,8 @@ describe('TomaQrProyeccionComponent (CULM-001 B.2, HU175)', () => {
     estado$.next('CONNECTED');
     fixture.detectChanges();
     expect(el('qr-conexion-perdida')).toBeNull();
+    // VAL F12-06: al volver el canal se resincroniza el QR una vez (los rotados durante el corte se perdieron).
+    expect(qrService.rotarQr).toHaveBeenCalledOnceWith('toma-1');
   });
 
   it('B2-F-05 Dejar de proyectar llama cerrarQr y emite; Cerrar toma emite sin llamar al backend', () => {
@@ -278,5 +281,71 @@ describe('TomaQrProyeccionComponent (CULM-001 B.2, HU175)', () => {
   it('UX densidad: el aviso de la red Wi-Fi esta dentro del panel Detalles', () => {
     const detalles = el('qr-detalles') as HTMLElement;
     expect(detalles.textContent).toContain('red Wi-Fi del campus UCO');
+  });
+
+  describe('VAL F12-06 / REA-04: resincroniza el QR cuando se pierde el evento de rotacion', () => {
+    const qrNuevo: QrToma = { ...qr, pin: '777888', qrPngBase64: 'BBBB', fechaRotacionUtc: '2026-11-10T13:01:00Z' };
+    const vigia = () => fixture.debugElement.nativeElement.querySelector('[data-testid="qr-vigia-rotacion"]') as HTMLElement;
+
+    beforeEach(() => {
+      qrService.rotarQr.and.returnValue(of({ exitoso: true, mensajeUsuario: 'ok', datos: qrNuevo }) as never);
+    });
+
+    it('al volver el canal SSE pide un QR vigente por HTTP y lo proyecta', () => {
+      estado$.next('RECONNECTING');
+      estado$.next('CONNECTED');
+      fixture.detectChanges();
+      expect(qrService.rotarQr).toHaveBeenCalledOnceWith('toma-1');
+      expect(texto('qr-pin')).toBe('777 888');
+    });
+
+    it('una conexion inicial (sin corte previo) no pide nada', () => {
+      estado$.next('CONNECTING' as RealtimeConnectionState);
+      estado$.next('CONNECTED');
+      expect(qrService.rotarQr).not.toHaveBeenCalled();
+    });
+
+    it('el vigia dura lo que falta para la rotacion mas el margen de 5 s', () => {
+      // AHORA es 13:00:10 y la rotacion es a las 13:01:00: faltan 50 s, mas 5 s de margen.
+      expect(vigia().style.animationDuration).toBe('55s');
+    });
+
+    it('si el vigia termina sin codigo nuevo en ese ciclo pide uno por HTTP', () => {
+      vigia().dispatchEvent(new Event('animationend'));
+      fixture.detectChanges();
+      expect(qrService.rotarQr).toHaveBeenCalledOnceWith('toma-1');
+      expect(texto('qr-pin')).toBe('777 888');
+    });
+
+    it('si el evento de rotacion llego antes, el fin del vigia anterior no pide nada', () => {
+      const cicloAnterior = 0;
+      events$.next(
+        evento(REALTIME_EVENT_TYPE.ASISTENCIA_QR_ROTADO, {
+          grupo: 'grp-1', sesion: 'ses-1', toma: 'toma-1', pin: '111222', urlAsistencia: qr.urlAsistencia,
+          qrPngBase64: 'CCCC', fechaRotacionUtc: '2026-11-10T13:01:00Z', fechaExpiracionUtc: qr.fechaExpiracionUtc,
+          rotacionSegundos: 60,
+        })
+      );
+      fixture.detectChanges();
+      (fixture.componentInstance as unknown as { alVencerRotacion(c: number): void }).alVencerRotacion(cicloAnterior);
+      expect(qrService.rotarQr).not.toHaveBeenCalled();
+    });
+
+    it('reconexion y vigia en el mismo ciclo piden un solo QR', () => {
+      qrService.rotarQr.and.returnValue(new Subject() as never);
+      estado$.next('ERROR');
+      estado$.next('CONNECTED');
+      vigia().dispatchEvent(new Event('animationend'));
+      expect(qrService.rotarQr).toHaveBeenCalledTimes(1);
+    });
+
+    it('si la resincronizacion falla muestra el error y no reintenta en ese ciclo', () => {
+      qrService.rotarQr.and.returnValue(throwError(() => apiHttpError(409, 'La toma ya no esta abierta.', 'AQR_005')));
+      vigia().dispatchEvent(new Event('animationend'));
+      vigia().dispatchEvent(new Event('animationend'));
+      fixture.detectChanges();
+      expect(qrService.rotarQr).toHaveBeenCalledTimes(1);
+      expect((fixture.nativeElement as HTMLElement).textContent).toContain('La toma ya no esta abierta.');
+    });
   });
 });
