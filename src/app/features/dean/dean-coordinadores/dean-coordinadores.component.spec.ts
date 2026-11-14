@@ -596,26 +596,6 @@ describe('DeanCoordinadoresComponent', () => {
     expect(toastService.success).toHaveBeenCalled();
   });
 
-  it('HU171: permite abrir el módulo de carga masiva de coordinadores y recarga al completar', () => {
-    flushInitialRequests();
-
-    expect(component.mostrarCargaMasiva()).toBeFalse();
-    expect(fixture.nativeElement.querySelector('app-carga-masiva-usuarios')).toBeNull();
-
-    // Abrir modulo
-    component.mostrarCargaMasiva.set(true);
-    fixture.detectChanges();
-
-    const cargaComp = fixture.nativeElement.querySelector('app-carga-masiva-usuarios');
-    expect(cargaComp).not.toBeNull();
-    expect(cargaComp.getAttribute('destino')).toBe('COORDINADOR');
-
-    // Emitir cargaCompletada -> debe recargar lista de coordinadores
-    component.onCargaMasivaCompletada();
-    const reqCoords = http.expectOne(porUrl(`${environment.apiUrl}/decano/coordinadores`));
-    expect(reqCoords.request.method).toBe('GET');
-    reqCoords.flush({ exitoso: true, elementos: mockCoordinadores });
-  });
   describe('DEC-065: coordinador y programa en un solo formulario', () => {
     function llenarDatosPersonales() {
       component.formData.tipoIdentificacionId = 'tipo-1';

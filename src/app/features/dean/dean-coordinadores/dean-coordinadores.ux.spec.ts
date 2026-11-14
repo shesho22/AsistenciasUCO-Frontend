@@ -112,16 +112,12 @@ describe('DeanCoordinadoresComponent UX (F-DEC-004, F-DEC-007, F-DEC-S04, F-COO-
       expect(cab.textContent).not.toContain('Carga Masiva');
     });
 
-    it('"Carga masiva CSV" y "Registrar nuevo" estan en el menu y ejecutan su accion', () => {
+    it('"Registrar nuevo" esta en el menu y abre el registro; ya no hay carga masiva (DEC-074)', () => {
       iniciar([coord(1)]);
       const el = fixture.nativeElement as HTMLElement;
       abrirMenu();
-      (el.querySelector('[data-testid="accion-carga-masiva"]') as HTMLButtonElement).click();
-      fixture.detectChanges();
-      expect(component.mostrarCargaMasiva()).toBeTrue();
-      component.mostrarCargaMasiva.set(false);
-      fixture.detectChanges();
-      abrirMenu();
+      // DEC-074: sin carga masiva por CSV; el personal se registra uno por uno.
+      expect(el.querySelector('[data-testid="accion-carga-masiva"]')).toBeNull();
       (el.querySelector('[data-testid="accion-registrar-nuevo"]') as HTMLButtonElement).click();
       fixture.detectChanges();
       expect(component.vistaActual()).toBe('REGISTRO');

@@ -29,7 +29,6 @@ import { getPersonNameError, getPersonNamesError, getSafeTextError, getStaffEmai
 import { StudentRegistrationConfigService } from '../../../core/services/student-registration-config.service';
 import { finalize } from 'rxjs';
 import { IdentidadEsperada, UltimaPeticion, advertirRegistroNoListado } from '../../../core/utils/registro-confirmado.util';
-import { CargaMasivaUsuariosComponent } from '../../../shared/components/carga-masiva-usuarios/carga-masiva-usuarios.component';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
 type VistaDecano = 'LISTA' | 'REGISTRO';
@@ -55,7 +54,6 @@ const NOMBRE_PROGRAMA_MAX = 50;
     PaginationComponent,
     DeanCoordinadorEditModalComponent,
     DeanCoordinadorEstadoModalComponent,
-    CargaMasivaUsuariosComponent,
     SelectorModoComponent,
   ],
   template: `
@@ -93,13 +91,6 @@ const NOMBRE_PROGRAMA_MAX = 50;
           </div>
         </div>
 
-        @if (mostrarCargaMasiva()) {
-          <app-carga-masiva-usuarios
-            destino="COORDINADOR"
-            (cargaCompletada)="onCargaMasivaCompletada()"
-            (cancelar)="mostrarCargaMasiva.set(false)"
-          />
-        }
 
         <!-- Estado de acceso de la ultima cuenta registrada (verificado por el backend, nunca por la SPA) -->
         <app-account-access-status [correo]="ultimaCuentaRegistrada()" />
@@ -562,17 +553,14 @@ export class DeanCoordinadoresComponent implements OnInit {
   programaNuevo = { nombre: '', idTipoPrograma: '', idModalidad: '', idJornada: '' };
   isLoading = signal<boolean>(true);
   isSubmitting = signal<boolean>(false);
-  readonly mostrarCargaMasiva = signal<boolean>(false);
 
   /** Acciones secundarias de la cabecera: se agrupan en "Mas" para dejar una sola accion primaria. */
   readonly accionesEncabezado: ActionMenuItem[] = [
     { id: 'registrar', label: 'Registrar nuevo', testid: 'accion-registrar-nuevo' },
-    { id: 'carga-masiva', label: 'Carga masiva CSV', testid: 'accion-carga-masiva' },
   ];
 
   alElegirAccion(id: string): void {
     if (id === 'registrar') this.abrirFormularioRegistro();
-    else if (id === 'carga-masiva') this.mostrarCargaMasiva.set(true);
   }
   private readonly searchQuerySig = signal('');
   private readonly selectedEstadoSig = signal('TODOS');
@@ -644,9 +632,6 @@ export class DeanCoordinadoresComponent implements OnInit {
     this.currentPage.set(1);
   }
 
-  onCargaMasivaCompletada(): void {
-    this.cargarCoordinadores();
-  }
 
   ngOnInit(): void {
     this.cargarTiposIdentificacion();

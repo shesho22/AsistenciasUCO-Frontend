@@ -23,7 +23,6 @@ import { IdentidadEsperada, UltimaPeticion, advertirRegistroNoListado } from '..
 import { CorreccionIdentidadService } from '../../../core/services/correccion-identidad.service';
 import { CorregirIdentidadPayload, IdentidadActual } from '../../../core/models/correccion-identidad.model';
 import { CorreccionIdentidadModalComponent } from '../../../shared/components/correccion-identidad-modal/correccion-identidad-modal.component';
-import { CargaMasivaUsuariosComponent } from '../../../shared/components/carga-masiva-usuarios/carga-masiva-usuarios.component';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
 type VistaAdmin = 'LISTA' | 'REGISTRO';
@@ -48,7 +47,6 @@ const NOMBRE_FACULTAD_MAX = 50;
     UserPickerModalComponent,
     AccountAccessStatusComponent,
     CorreccionIdentidadModalComponent,
-    CargaMasivaUsuariosComponent,
     SelectorModoComponent,
   ],
   template: `
@@ -84,13 +82,6 @@ const NOMBRE_FACULTAD_MAX = 50;
           </div>
         </div>
 
-        @if (mostrarCargaMasiva()) {
-          <app-carga-masiva-usuarios
-            destino="DECANO"
-            (cargaCompletada)="onCargaMasivaCompletada()"
-            (cancelar)="mostrarCargaMasiva.set(false)"
-          />
-        }
 
         <!-- Estado de acceso de la ultima cuenta registrada (verificado por el backend, nunca por la SPA) -->
         <app-account-access-status [correo]="ultimaCuentaRegistrada()" />
@@ -510,17 +501,14 @@ export class AdminDecanosComponent implements OnInit {
   idFacultadExistente = '';
   isLoading = signal<boolean>(true);
   isSubmitting = signal<boolean>(false);
-  readonly mostrarCargaMasiva = signal<boolean>(false);
 
   /** Acciones secundarias de la cabecera: se agrupan en "Mas" para dejar una sola accion primaria. */
   readonly accionesEncabezado: ActionMenuItem[] = [
     { id: 'registrar', label: 'Registrar nuevo', testid: 'accion-registrar-nuevo' },
-    { id: 'carga-masiva', label: 'Carga masiva CSV', testid: 'accion-carga-masiva' },
   ];
 
   alElegirAccion(id: string): void {
     if (id === 'registrar') this.abrirFormularioRegistro();
-    else if (id === 'carga-masiva') this.mostrarCargaMasiva.set(true);
   }
   searchQuery = '';
   selectedEstado = 'TODOS';
@@ -610,9 +598,6 @@ export class AdminDecanosComponent implements OnInit {
     this.errorCorreccion.set(null);
   }
 
-  onCargaMasivaCompletada(): void {
-    this.cargarDecanos();
-  }
 
   ngOnInit(): void {
     this.cargarTiposIdentificacion();
