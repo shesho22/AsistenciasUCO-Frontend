@@ -81,6 +81,7 @@ export const MENSAJES_UI = {
   UI_COORDINATOR_GROUPS_001: 'No fue posible cargar los grupos.',
   UI_COORDINATOR_GROUPS_002: 'Grupo guardado.',
   UI_COORDINATOR_GROUPS_003: 'No fue posible guardar el grupo.',
+  UI_COORDINATOR_GROUPS_004: 'El cupo máximo debe ser un número entero mayor o igual a 1, o dejarse vacío para no cambiarlo.',
   UI_COORDINATOR_SESIONES_GRUPO_001: 'Sesión cancelada.',
   UI_COORDINATOR_SESIONES_GRUPO_002: 'La fecha desde no puede ser posterior a la fecha hasta.',
   UI_COORDINATOR_SOLICITUDES_SESION_001: 'Sesión aprobada.',

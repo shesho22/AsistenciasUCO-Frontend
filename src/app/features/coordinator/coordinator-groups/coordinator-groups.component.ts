@@ -17,6 +17,13 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
 import { FranjasEditorComponent } from '../../../shared/components/franjas-editor/franjas-editor.component';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
+/** Cupo editable del grupo: vacío (no se cambia) o entero >= 1. El tope por estudiantes activos lo valida la DB. */
+export function cupoValidoOVacio(cupo: number | string | null | undefined): boolean {
+  if (cupo === null || cupo === undefined || cupo === '') return true;
+  const numero = Number(cupo);
+  return Number.isInteger(numero) && numero >= 1;
+}
+
 interface GrupoForm {
   idAsignatura: string;
   idPeriodoAcademico: string;
@@ -342,6 +349,10 @@ export class CoordinatorGroupsComponent implements OnInit {
     }
     if (!this.form.idDocente) {
       return 'Seleccione el docente titular.';
+    }
+    if (this.modo() === 'EDITAR' && !cupoValidoOVacio(this.form.cupoMaximo)) {
+      // usp_actualizar_grupo ignora un cupo <= 0 y deja el anterior: sin esta validación el guardado parecía exitoso.
+      return mensajeUi('UI_COORDINATOR_GROUPS_004');
     }
     return validarFranjas(this.form.franjas);
   }

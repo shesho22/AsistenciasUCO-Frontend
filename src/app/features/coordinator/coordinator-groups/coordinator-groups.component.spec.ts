@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
-import { CoordinatorGroupsComponent } from './coordinator-groups.component';
+import { CoordinatorGroupsComponent, cupoValidoOVacio } from './coordinator-groups.component';
+import { mensajeUi } from '../../../core/messages/mensajes-ui';
 import { CourseService } from '../../../core/services/course.service';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { ToastService } from '../../../shared/components/toast/toast.component';
@@ -206,6 +207,39 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
       cupoMaximo: 35,
     });
     expect(toast.success).toHaveBeenCalledWith('Grupo guardado.');
+  });
+
+  it('editar: un cupo 0, negativo o con decimales avisa con el mensaje del catálogo y no envía el PUT', () => {
+    // usp_actualizar_grupo ignora un cupo <= 0 y deja el anterior; sin esta validación el guardado parecía exitoso.
+    for (const cupo of [0, -3, 12.5]) {
+      component.abrirEditar(grupo);
+      component.form.cupoMaximo = cupo;
+      component.guardar();
+    }
+    expect(courseService.actualizarGrupo).not.toHaveBeenCalled();
+    expect(toast.warning).toHaveBeenCalledTimes(3);
+    expect(toast.warning).toHaveBeenCalledWith(mensajeUi('UI_COORDINATOR_GROUPS_004'));
+  });
+
+  it('editar: un cupo vacío se acepta y no se envía (el backend conserva el actual)', () => {
+    courseService.actualizarGrupo.and.returnValue(of({ exitoso: true, mensajeUsuario: '', datos: { id: 'g1', mensajeUsuario: '' } }));
+    component.abrirEditar(grupo);
+    component.form.cupoMaximo = null;
+
+    component.guardar();
+
+    expect(courseService.actualizarGrupo).toHaveBeenCalledWith('g1', jasmine.objectContaining({ cupoMaximo: undefined }));
+  });
+
+  it('cupoValidoOVacio acepta vacío o enteros >= 1', () => {
+    expect(cupoValidoOVacio(null)).toBeTrue();
+    expect(cupoValidoOVacio(undefined)).toBeTrue();
+    expect(cupoValidoOVacio('')).toBeTrue();
+    expect(cupoValidoOVacio(1)).toBeTrue();
+    expect(cupoValidoOVacio('40')).toBeTrue();
+    expect(cupoValidoOVacio(0)).toBeFalse();
+    expect(cupoValidoOVacio(-1)).toBeFalse();
+    expect(cupoValidoOVacio(2.5)).toBeFalse();
   });
 
   it('muestra el mensaje del backend cuando rechaza (p. ej. HOR_002) y conserva el formulario', () => {
