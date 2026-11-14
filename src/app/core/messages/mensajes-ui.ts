@@ -7,6 +7,8 @@
  * parámetros. `scripts/check-mensajes-ui.mjs` (en `npm run verify`) rechaza toasts con texto literal y códigos que no
  * estén aquí.
  */
+import { textoCatalogo, versionTextosCatalogo } from './catalogo-mensajes-ui';
+
 export const MENSAJES_UI = {
   // Autenticación institucional (antes AUTH_MESSAGES_FALLBACK en auth.service.ts).
   AUTH_ERROR_DESCONOCIDO: 'Error en la autenticación institucional.',
@@ -16,7 +18,7 @@ export const MENSAJES_UI = {
   AUTH_INVALID_CREDENTIALS: 'Credenciales inválidas. Verifica tu usuario y contraseña institucional.',
   AUTH_INVALID_RESPONSE: 'Respuesta de autenticación inválida.',
   AUTH_NETWORK_ERROR: 'No se pudo establecer conexión con el servidor de autenticación institucional.',
-  AUTH_NO_ROLE_ASSIGNED: 'Tu cuenta institucional no tiene un rol o identidad válidos asignados. Contacta al administrador del sistema.',
+  AUTH_NO_ROLE_ASSIGNED: 'Tu cuenta no tiene un rol o identidad institucional válidos. Contacta al administrador del sistema.',
   AUTH_UNAUTHENTICATED: 'El servidor no aceptó la sesión institucional (401). Inicia sesión nuevamente.',
   // Respaldo por código semántico del contrato de errores (api-error.util.ts).
   API_ERROR_CAMPOS_FORMULARIO: 'Error en datos del formulario: {detalles}.',
@@ -100,13 +102,13 @@ export const MENSAJES_UI = {
   UI_DEAN_PROGRAMAS_GESTION_001: 'Programa actualizado.',
   UI_DEAN_PROGRAMAS_GESTION_002: 'Programa creado.',
   UI_DEAN_PROGRAMAS_GESTION_003: 'Estado del programa actualizado.',
-  UI_ERROR_GLOBAL_001: 'Ocurrió un error inesperado en la aplicación. Si se repite, recarga la página y reporta el código de referencia.',
+  UI_ERROR_GLOBAL_001: 'Ocurrió un error inesperado. Si se repite, recarga la página y reporta el código de referencia.',
   UI_ERROR_REFERENCIA: 'Código de referencia: {id}',
   UI_ERROR_INTERCEPTOR_001: 'Acceso denegado: No cuenta con los permisos necesarios para realizar esta acción.',
   UI_PARAMETRO_EDICION_MODAL_001: 'Parámetro actualizado exitosamente.',
   UI_ROLE_GUARD_001: 'Acceso denegado: No cuenta con los permisos necesarios para acceder a esta sección.',
   // DEC-072: una sesión empieza y termina el mismo día (no cruza la medianoche).
-  UI_SESION_HORARIO_MISMO_DIA: 'La hora de fin debe ser posterior a la hora de inicio el mismo día; una sesión no puede pasar de la medianoche.',
+  UI_SESION_HORARIO_MISMO_DIA: 'La hora de fin debe ser posterior a la de inicio; una sesión no puede pasar de la medianoche.',
   // DEC-065 (2): solicitudes de sesión extraordinaria (antes en core/models/sesion-manual.util.ts).
   UI_SESION_SOLICITUD_APROBADA: 'La coordinación aprobó la sesión extraordinaria {nombre}.',
   UI_SESION_SOLICITUD_APROBADA_SIN_NOMBRE: 'La coordinación aprobó la sesión extraordinaria.',
@@ -139,7 +141,7 @@ export const MENSAJES_UI = {
   UI_TEACHER_GRUPOS_001: 'Error al cargar grupos.',
   UI_TEACHER_GRUPOS_005: 'El campo Fecha de la Sesión es obligatorio.',
   UI_TEACHER_GRUPOS_006: 'Los campos Hora Inicio y Hora Fin de la sesión son obligatorios.',
-  UI_TEACHER_GRUPOS_007: 'La zona horaria activa cambió mientras editabas. Se recargó el horario original; revisa los datos antes de guardar.',
+  UI_TEACHER_GRUPOS_007: 'La zona horaria cambió mientras editabas. Se recargó el horario original; revísalo antes de guardar.',
   UI_TEACHER_GRUPOS_008: 'Sesión actualizada.',
   UI_TEACHER_GRUPOS_009: 'No se pudo identificar al estudiante a retirar.',
   UI_TEACHER_GRUPOS_011: 'Sesión cancelada. Estudiantes notificados: {notificados}.',
@@ -154,9 +156,16 @@ export type CodigoMensajeUi = keyof typeof MENSAJES_UI;
 
 export type ParametrosMensajeUi = Readonly<Record<string, string | number | null | undefined>>;
 
-/** Texto del catálogo con sus marcadores `{nombre}` llenos; un marcador sin parámetro queda tal cual. */
+/**
+ * Texto con sus marcadores `{nombre}` llenos; un marcador sin parámetro queda tal cual.
+ *
+ * VAL MSG-06: el texto sale del catálogo de MessageUcoLab cuando ya llegó (`catalogo-mensajes-ui.ts`); mientras tanto,
+ * o si MessageUcoLab no responde, se usa el de este archivo como respaldo. Dentro de una plantilla o un `computed` el
+ * texto se actualiza solo cuando llega el del catálogo.
+ */
 export function mensajeUi(codigo: CodigoMensajeUi, parametros: ParametrosMensajeUi = {}): string {
-  return MENSAJES_UI[codigo].replace(/\{(\w+)\}/g, (marcador, nombre: string) => {
+  versionTextosCatalogo();
+  return (textoCatalogo(codigo) ?? MENSAJES_UI[codigo]).replace(/\{(\w+)\}/g, (marcador, nombre: string) => {
     const valor = parametros[nombre];
     return valor === null || valor === undefined ? marcador : String(valor);
   });

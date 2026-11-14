@@ -23,4 +23,30 @@ declare module 'minifront-mensajes' {
   }
 
   export function mount(element: Element, options?: MessageAdminOptions): MessageAdminHandle;
+
+  /** Cliente de mensajes para tiempo de ejecución (ruta pública; nunca lanza: si falla devuelve el respaldo). */
+  export interface MessageClientOptions {
+    apiBaseUrl?: string;
+    applicationId?: string;
+    environmentId?: string;
+    language?: string;
+    timeoutMs?: number;
+    cacheTtlMs?: number;
+    fallbacks?: Record<string, string | { title?: string; content?: string }>;
+    onError?: (error: unknown, code: string) => void;
+  }
+
+  export interface MessageClientResult {
+    code: string;
+    title: string;
+    content: string;
+    source: 'api' | 'cache' | 'fallback';
+    error?: unknown;
+  }
+
+  export interface MessageClient {
+    get(code: string, vars?: Record<string, string | number>): Promise<MessageClientResult>;
+  }
+
+  export function createMessageClient(options?: MessageClientOptions): MessageClient;
 }

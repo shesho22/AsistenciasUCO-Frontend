@@ -11,6 +11,7 @@ import { AuthService } from './core/services/auth.service';
 import { REALTIME_TRANSPORT } from './core/realtime/contract/realtime-transport';
 import { FetchSseRealtimeTransport } from './core/realtime/adapter/sse/fetch-sse-realtime-transport';
 import { GlobalErrorHandler } from './core/errors/global-error-handler';
+import { CatalogoMensajesUiService } from './core/messages/catalogo-mensajes-ui.service';
 
 export function initializeKeycloak(authService: AuthService) {
   return () => authService.initKeycloak();
@@ -40,6 +41,15 @@ export const appConfig: ApplicationConfig = {
       })
     ),
     { provide: REALTIME_TRANSPORT, useClass: FetchSseRealtimeTransport },
+    // VAL MSG-06: los textos de la interfaz se leen de MessageUcoLab (sin bloquear el arranque).
+    {
+      provide: APP_INITIALIZER,
+      useFactory: (catalogo: CatalogoMensajesUiService) => () => {
+        catalogo.iniciar();
+      },
+      multi: true,
+      deps: [CatalogoMensajesUiService],
+    },
     {
       provide: APP_INITIALIZER,
       useFactory: initializeKeycloak,

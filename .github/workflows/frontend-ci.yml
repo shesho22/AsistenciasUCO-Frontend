@@ -57,6 +57,11 @@ jobs:
       - name: Catalogo de mensajes del frontend
         run: npm run check:mensajes-ui
 
+      # MSG-06 / MSG-03 (VAL): cada texto de la interfaz tiene codigo remoto en MessageUcoLab, cumple sus limites de
+      # importacion y el archivo de importacion (docs/messages/mensajes-ui-messageucolab.psv) esta al dia.
+      - name: Catalogo de mensajes de la interfaz en MessageUcoLab
+        run: npm run check:mensajes-ui-catalogo
+
       # PRU-03 (VAL): los DTO y llamadas del frontend conforman el OpenAPI golden path (copia byte a byte con SHA-256).
       - name: Contrato OpenAPI del backend
         run: npm run check:openapi-contract
