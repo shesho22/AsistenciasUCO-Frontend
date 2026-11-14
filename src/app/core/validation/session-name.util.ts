@@ -1,3 +1,5 @@
+import { getSafeTextError } from './form-fields.util';
+
 /**
  * Sesion.nombre según BACKEND_GOLDEN_PATH_CONTRACT §C: string requerido,
  * minLength=1, maxLength=50. El frontend valida antes de enviar; no se
@@ -18,5 +20,6 @@ export function getSessionNameError(nombre: string | null | undefined): string |
   if (trimmed.length > SESSION_NAME_MAX_LENGTH) {
     return SESSION_NAME_LENGTH_MESSAGE;
   }
-  return null;
+  // DEC-073: texto seguro, la misma regla del backend (letras, números, espacios y . , - _ ( ) / # :).
+  return getSafeTextError(trimmed, 'Título de la Sesión', { maxLength: SESSION_NAME_MAX_LENGTH });
 }
