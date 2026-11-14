@@ -5,7 +5,7 @@ import { routes } from './app.routes';
 import { correlationInterceptor } from './core/interceptors/correlation.interceptor';
 import { roleScopeInterceptor } from './core/interceptors/role-scope.interceptor';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
-import { mockBackendInterceptor } from './core/interceptors/mock-backend.interceptor';
+import { mockBackendLazyInterceptor } from './core/interceptors/mock-backend-lazy.interceptor';
 import { errorInterceptor } from './core/interceptors/error.interceptor';
 import { AuthService } from './core/services/auth.service';
 import { REALTIME_TRANSPORT } from './core/realtime/contract/realtime-transport';
@@ -31,7 +31,7 @@ export const appConfig: ApplicationConfig = {
         authInterceptor,
         // Siempre está registrado, pero decide por petición si el modo mock está
         // activo. Así cambiar de modo en runtime no deja un pipeline inconsistente.
-        mockBackendInterceptor,
+        mockBackendLazyInterceptor,
         errorInterceptor,
       ]),
       withXsrfConfiguration({
