@@ -21,7 +21,8 @@
     "check:registro-individual": "node scripts/check-registro-individual-retirado.mjs",
     "check:hu-en-ui": "node scripts/check-hu-en-ui.mjs",
     "check:mensajes-ui": "node scripts/check-mensajes-ui.mjs",
-    "verify": "npm run lint:tokens && npm run test:ci && npm run coverage:realtime:check && npm run check:retiro-solicitudes && npm run check:registro-individual && npm run check:hu-en-ui && npm run check:mensajes-ui && npm run build -- --configuration=production"
+    "check:openapi-contract": "node scripts/check-openapi-contract.mjs",
+    "verify": "npm run lint:tokens && npm run test:ci && npm run coverage:realtime:check && npm run check:retiro-solicitudes && npm run check:registro-individual && npm run check:hu-en-ui && npm run check:mensajes-ui && npm run check:openapi-contract && npm run build -- --configuration=production"
   },
   "private": true,
   "dependencies": {

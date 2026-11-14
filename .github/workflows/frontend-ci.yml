@@ -48,14 +48,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # EST-11 (VAL oleada 2): ESLint con angular-eslint. Los errores bloquean; la deuda existente
-      # quedo en "warn" (ver eslint.config.js y docs/work-items/VAL-oleada2-cumplimiento).
+      # EST-11 (VAL): ESLint con angular-eslint. Los errores bloquean; solo no-explicit-any sigue en "warn"
+      # (siguiente lote, ver eslint.config.js y docs/work-items/VAL-oleada4-frontend-cierre).
       - name: Lint (ESLint)
         run: npm run lint
 
       # MSG-06 (VAL oleada 3): ningun toast con texto literal; los codigos de mensajeUi existen en el catalogo.
       - name: Catalogo de mensajes del frontend
         run: npm run check:mensajes-ui
+
+      # PRU-03 (VAL): los DTO y llamadas del frontend conforman el OpenAPI golden path (copia byte a byte con SHA-256).
+      - name: Contrato OpenAPI del backend
+        run: npm run check:openapi-contract
 
       # EST-10 (VAL oleada 2): inventario de npm audit de runtime como evidencia. El bloqueo de
       # dependencias vulnerables con correccion lo hace la compuerta Trivy (HIGH/CRITICAL, ignore-unfixed).
