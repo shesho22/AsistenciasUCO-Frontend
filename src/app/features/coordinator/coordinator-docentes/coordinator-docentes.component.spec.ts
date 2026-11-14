@@ -9,7 +9,6 @@ import { CatalogService } from '../../../core/services/catalog.service';
 import { CorreccionIdentidadService } from '../../../core/services/correccion-identidad.service';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { AccountAccessService } from '../../../core/services/account-access.service';
-import { CargaMasivaService } from '../../../core/services/carga-masiva.service';
 import { DocentePrograma, DocenteCandidato } from '../../../core/models/docente-programa.model';
 
 describe('CoordinatorDocentesComponent', () => {
@@ -114,14 +113,6 @@ describe('CoordinatorDocentesComponent', () => {
         { provide: CorreccionIdentidadService, useValue: { permiteCorregirDocumento: () => of(false) } },
         { provide: ToastService, useValue: toast },
         { provide: AccountAccessService, useValue: accountAccess },
-        {
-          provide: CargaMasivaService,
-          useValue: {
-            descargarPlantilla: () => of(new Blob()),
-            validarArchivo: () => of({ exitoso: true, datos: { totalFilas: 0, filasValidas: 0, filasYaExistentes: 0, filasConError: 0, filas: [] } }),
-            ejecutarCarga: () => of({ exitoso: true, datos: { totalFilas: 0, creadas: 0, yaExistentes: 0, conError: 0, cuentasPendientes: 0, filas: [] } }),
-          },
-        },
       ],
     });
   });
@@ -604,32 +595,9 @@ describe('CoordinatorDocentesComponent', () => {
     expect(component.resumen()?.totalDocentes).toBe(3);
   }));
 
-  it('HU171: permite abrir el módulo de carga masiva de docentes y recarga al completar', fakeAsync(() => {
+  it('DEC-074: no ofrece carga masiva por CSV; el docente se vincula uno por uno', () => {
     crear();
-    tick(300);
-    fixture.detectChanges();
-
-    expect(component.mostrarCargaMasiva()).toBeFalse();
+    expect(fixture.nativeElement.textContent).not.toContain('Carga masiva');
     expect(fixture.nativeElement.querySelector('app-carga-masiva-usuarios')).toBeNull();
-
-    // Abrir modulo
-    component.mostrarCargaMasiva.set(true);
-    fixture.detectChanges();
-
-    const cargaComp = fixture.nativeElement.querySelector('app-carga-masiva-usuarios');
-    expect(cargaComp).not.toBeNull();
-    expect(cargaComp.getAttribute('destino')).toBe('DOCENTE');
-
-    // Emitir cargaCompletada -> debe recargar directorio
-    const llamadasPrevias = coordService.getDocentesPrograma.calls.count();
-    component.onCargaMasivaCompletada();
-    fixture.detectChanges();
-    tick(300);
-    expect(coordService.getDocentesPrograma.calls.count()).toBe(llamadasPrevias + 1);
-  }));
-
-  it('no usa setInterval ni polling para refrescar', () => {
-    const fuente = CoordinatorDocentesComponent.toString();
-    expect(fuente).not.toContain('setInterval');
   });
 });

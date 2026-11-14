@@ -625,28 +625,6 @@ component.guardarDecano();
     expect(component.decanoACorregir()).toBeNull();
   });
 
-  it('HU171: permite abrir el módulo de carga masiva de decanos y recarga al completar', () => {
-    fixture.detectChanges();
-    satisfyInitRequests();
-
-    expect(component.mostrarCargaMasiva()).toBeFalse();
-    expect(fixture.nativeElement.querySelector('app-carga-masiva-usuarios')).toBeNull();
-
-    // Abrir modulo
-    component.mostrarCargaMasiva.set(true);
-    fixture.detectChanges();
-
-    const cargaComp = fixture.nativeElement.querySelector('app-carga-masiva-usuarios');
-    expect(cargaComp).not.toBeNull();
-    expect(cargaComp.getAttribute('destino')).toBe('DECANO');
-
-    // Emitir cargaCompletada -> debe recargar lista de decanos
-    component.onCargaMasivaCompletada();
-    const reqDec = http.expectOne(`${environment.apiUrl}/admin/decanos`);
-    expect(reqDec.request.method).toBe('GET');
-    reqDec.flush({ exitoso: true, datos: mockDecanos });
-  });
-
   describe('UX densidad: cabecera con una accion primaria', () => {
     function abrirMenu(): void {
       (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('[data-testid="action-menu-trigger"]')!.click();
@@ -663,18 +641,14 @@ component.guardarDecano();
       expect(cab.textContent).not.toContain('Carga Masiva');
     });
 
-    it('"Carga masiva CSV" y "Registrar nuevo" estan en el menu y ejecutan su accion', () => {
+    it('"Registrar nuevo" esta en el menu y abre el registro; ya no hay carga masiva (DEC-074)', () => {
       fixture.detectChanges();
       satisfyInitRequests();
       fixture.detectChanges();
       const el = fixture.nativeElement as HTMLElement;
       abrirMenu();
-      (el.querySelector('[data-testid="accion-carga-masiva"]') as HTMLButtonElement).click();
-      fixture.detectChanges();
-      expect(component.mostrarCargaMasiva()).toBeTrue();
-      component.mostrarCargaMasiva.set(false);
-      fixture.detectChanges();
-      abrirMenu();
+      // DEC-074: sin carga masiva por CSV; el personal se registra uno por uno.
+      expect(el.querySelector('[data-testid="accion-carga-masiva"]')).toBeNull();
       (el.querySelector('[data-testid="accion-registrar-nuevo"]') as HTMLButtonElement).click();
       fixture.detectChanges();
       expect(component.vistaActual()).toBe('REGISTRO');
