@@ -323,36 +323,29 @@ describe('CoordinatorManagementService', () => {
   });
 
   describe('Planes de Estudio y Asignaturas', () => {
-    it('crearPlanEstudio agrega el nuevo plan a la señal', () => {
-      const nuevoPlan: Partial<PlanEstudioItem> = {
-        codigo: 'MED-2026',
-        nombre: 'Medicina',
-        estado: 'VIGENTE',
-        totalAsignaturas: 60,
-      };
-
-      service.crearPlanEstudio(nuevoPlan).subscribe((res) => {
+    // Contrato del backend (GuardarPlanEstudioRequest): el cuerpo es solo { inp } y la respuesta ApiDataResponse<Void>.
+    // Las pruebas anteriores enviaban codigo/nombre/estado y esperaban el plan en `datos`, algo que el backend nunca hace
+    // (responde 400 FIELD_UNKNOWN); por eso crear y editar planes fallaba en pantalla (HU079/HU080).
+    it('HU079: crearPlanEstudio envía solo { inp } en el POST', () => {
+      service.crearPlanEstudio(2027).subscribe((res) => {
         expect(res.exitoso).toBeTrue();
       });
 
       const req = http.expectOne(`${environment.apiUrl}/coordinador/planes-estudio`);
       expect(req.request.method).toBe('POST');
-      req.flush({ exitoso: true, datos: { id: 'plan-2', ...nuevoPlan } });
-
-      expect(service.planes().length).toBe(2);
-      expect(service.planes()[0].id).toBe('plan-2');
+      expect(req.request.body).toEqual({ inp: 2027 });
+      req.flush({ exitoso: true, datos: null });
     });
 
-    it('actualizarPlanEstudio modifica el plan en la señal', () => {
-      service.actualizarPlanEstudio('plan-1', { nombre: 'Ingeniería de Software' }).subscribe((res) => {
+    it('HU080: actualizarPlanEstudio envía solo { inp } en el PUT del plan', () => {
+      service.actualizarPlanEstudio('plan-1', 2028).subscribe((res) => {
         expect(res.exitoso).toBeTrue();
       });
 
       const req = http.expectOne(`${environment.apiUrl}/coordinador/planes-estudio/plan-1`);
       expect(req.request.method).toBe('PUT');
-      req.flush({ exitoso: true, datos: { ...mockPlanes[0], nombre: 'Ingeniería de Software' } });
-
-      expect(service.planes().find((p) => p.id === 'plan-1')?.nombre).toBe('Ingeniería de Software');
+      expect(req.request.body).toEqual({ inp: 2028 });
+      req.flush({ exitoso: true, datos: null });
     });
 
     it('toggleEstadoPlanEstudio actualiza el estado en la señal', () => {

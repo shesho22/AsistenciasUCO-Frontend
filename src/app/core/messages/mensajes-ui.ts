@@ -121,6 +121,7 @@ export const MENSAJES_UI = {
   UI_STUDENT_COURSES_004: 'Ingresa el PIN de 6 dígitos que proyecta tu docente.',
   UI_STUDENT_COURSES_005: '¡Matrícula confirmada exitosamente en el grupo!',
   UI_STUDENT_COURSES_006: 'Archivo "{nombre}" cargado y analizado correctamente.',
+  UI_STUDY_PLAN_FORM_001: 'El INP del plan debe ser un número entero positivo (por ejemplo, el año de vigencia: 2027).',
   UI_STUDY_PLAN_FORM_PAGE_001: 'Plan de estudio registrado.',
   UI_STUDY_PLAN_FORM_PAGE_002: 'Plan de estudio modificado.',
   UI_STUDY_PLAN_MESH_PAGE_001: 'Asignatura asociada al plan.',

@@ -296,24 +296,18 @@ export class CoordinatorManagementService {
     );
   }
 
-  crearPlanEstudio(datos: Partial<PlanEstudioItem>): Observable<ApiResponse<PlanEstudioItem>> {
-    return this.http.post<ApiResponse<PlanEstudioItem>>(`${environment.apiUrl}/coordinador/planes-estudio`, datos).pipe(
-      tap((res) => {
-        if (res.exitoso && res.datos) {
-          this.planesSignal.update((prev) => [res.datos, ...prev]);
-        }
-      })
-    );
+  /**
+   * HU079. Contrato del backend (`GuardarPlanEstudioRequest`): el cuerpo es solo `{ inp }` (entero positivo, año de
+   * vigencia); el programa sale del coordinador autenticado. Cualquier otro campo responde 400 `FIELD_UNKNOWN`. La
+   * respuesta es `ApiDataResponse<Void>`: la lista se recarga al volver.
+   */
+  crearPlanEstudio(inp: number): Observable<ApiResponse<null>> {
+    return this.http.post<ApiResponse<null>>(`${environment.apiUrl}/coordinador/planes-estudio`, { inp });
   }
 
-  actualizarPlanEstudio(id: string, cambios: Partial<PlanEstudioItem>): Observable<ApiResponse<PlanEstudioItem>> {
-    return this.http.put<ApiResponse<PlanEstudioItem>>(`${environment.apiUrl}/coordinador/planes-estudio/${id}`, cambios).pipe(
-      tap((res) => {
-        if (res.exitoso && res.datos) {
-          this.planesSignal.update((prev) => prev.map((p) => (p.id === id ? res.datos : p)));
-        }
-      })
-    );
+  /** HU080. Mismo contrato que {@link crearPlanEstudio}: solo cambia el INP del plan. */
+  actualizarPlanEstudio(id: string, inp: number): Observable<ApiResponse<null>> {
+    return this.http.put<ApiResponse<null>>(`${environment.apiUrl}/coordinador/planes-estudio/${id}`, { inp });
   }
 
   /** HU081. El backend responde sin datos: la pantalla recarga la lista tras el exito. */
