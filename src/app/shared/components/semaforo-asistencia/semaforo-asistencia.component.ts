@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { NivelAsistencia, nivelAsistencia } from '../../../core/utils/nivel-asistencia';
+import { NivelAsistencia, nivelAsistencia, redondearPorcentaje } from '../../../core/utils/nivel-asistencia';
 
 interface Presentacion {
   texto: string;
@@ -58,6 +58,8 @@ export class SemaforoAsistenciaComponent {
     const nivel = nivelAsistencia(p, this.umbralAdvertencia(), this.umbralPerdida());
     if (nivel === null) return null;
     const pres = PRESENTACION[nivel];
-    return { nivel, ...pres, aria: `Inasistencia ${p} %: ${pres.descripcion}` };
+    // VAL PRU-14: el lector de pantalla anuncia el mismo valor redondeado con el que se decidio el nivel.
+    const valor = String(redondearPorcentaje(p as number)).replace('.', ',');
+    return { nivel, ...pres, aria: `Inasistencia ${valor} %: ${pres.descripcion}` };
   });
 }
