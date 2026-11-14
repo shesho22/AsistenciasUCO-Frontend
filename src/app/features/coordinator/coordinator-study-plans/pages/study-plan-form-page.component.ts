@@ -61,9 +61,10 @@ export class CoordinatorStudyPlanFormPageComponent implements OnInit {
     }
   }
 
-  guardarPlan(datos: Partial<PlanEstudioItem>): void {
+  /** HU079/HU080: el contrato del backend solo recibe el INP del plan (el programa sale del coordinador). */
+  guardarPlan(inp: number): void {
     if (this.modo() === 'CREAR') {
-      this.coordService.crearPlanEstudio(datos).subscribe({
+      this.coordService.crearPlanEstudio(inp).subscribe({
         next: (res) => {
           if (res.exitoso) {
             this.toast.success(res.mensajeUsuario || mensajeUi('UI_STUDY_PLAN_FORM_PAGE_001'));
@@ -75,7 +76,7 @@ export class CoordinatorStudyPlanFormPageComponent implements OnInit {
     } else {
       const id = this.effectivePlanId();
       if (!id) return;
-      this.coordService.actualizarPlanEstudio(id, datos).subscribe({
+      this.coordService.actualizarPlanEstudio(id, inp).subscribe({
         next: (res) => {
           if (res.exitoso) {
             this.toast.success(res.mensajeUsuario || mensajeUi('UI_STUDY_PLAN_FORM_PAGE_002'));

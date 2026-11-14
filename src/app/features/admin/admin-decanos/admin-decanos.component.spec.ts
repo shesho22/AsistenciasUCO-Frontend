@@ -1,3 +1,4 @@
+import { StudentRegistrationConfigService } from '../../../core/services/student-registration-config.service';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
@@ -77,6 +78,8 @@ describe('AdminDecanosComponent', () => {
       imports: [AdminDecanosComponent],
       providers: [
         provideHttpClient(withXhr()),
+        // DEC-073: el formulario consulta el dominio institucional; aquí se fija sin pasar por HttpTestingController.
+        { provide: StudentRegistrationConfigService, useValue: { getEmailDomain: () => of('@uco.edu.co') } },
         provideHttpClientTesting(),
         { provide: ToastService, useValue: toastSpy },
         { provide: TeacherService, useValue: { getAllTeachers: () => of([]) } },
@@ -323,6 +326,45 @@ describe('AdminDecanosComponent', () => {
       component.formData.correo = 'correo-no-valido';
       component.guardarDecano();
       expect(toastService.warning).toHaveBeenCalled();
+    });
+
+    // DEC-073: formato de nombres y correo institucional del personal.
+    it('DEC-073: rechaza nombres con números o signos antes de enviar', () => {
+      component.formData.tipoIdentificacionId = 'tipo-1';
+      component.formData.numeroIdentificacion = '1020304050';
+      component.formData.primerNombre = 'Ana2';
+      component.formData.primerApellido = 'Mora';
+      component.guardarDecano();
+      expect(toastService.warning).toHaveBeenCalledWith(
+        'El campo Primer Nombre solo admite letras, espacios, apóstrofo y guion (sin números ni otros signos).'
+      );
+      expect(component.errorNombrePersona('primerNombre')).toContain('solo admite letras');
+      component.formData.primerNombre = 'Ana';
+      component.formData.segundoApellido = '<b>x</b>';
+      component.guardarDecano();
+      expect(toastService.warning).toHaveBeenCalledWith(
+        'El campo Segundo Apellido solo admite letras, espacios, apóstrofo y guion (sin números ni otros signos).'
+      );
+      http.expectNone(() => true);
+    });
+
+    it('DEC-073: rechaza un correo que no es institucional', () => {
+      component.formData.tipoIdentificacionId = 'tipo-1';
+      component.formData.numeroIdentificacion = '1020304050';
+      component.formData.primerNombre = 'Ana';
+      component.formData.primerApellido = 'Mora';
+      component.formData.correo = 'ana.mora@gmail.com';
+      component.guardarDecano();
+      expect(toastService.warning).toHaveBeenCalledWith('El correo debe ser institucional y terminar en @uco.edu.co.');
+      expect(component.errorCorreo()).toBe('El correo debe ser institucional y terminar en @uco.edu.co.');
+      expect(component.formularioValido()).toBeFalse();
+    });
+
+    it('DEC-073: el nombre de la facultad nueva no admite < > ni comillas', () => {
+      component.modoFacultad.set('CREAR');
+      component.facultadNueva.nombre = 'Facultad <script>';
+      expect(component.errorNombreFacultad()).toContain('solo admite');
+      expect(component.errorFacultad()).toContain('solo admite');
     });
 
     it('valida contraseña obligatoria', () => {

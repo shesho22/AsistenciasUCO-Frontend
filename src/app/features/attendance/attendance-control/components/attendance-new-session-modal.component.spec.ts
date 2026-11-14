@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { AttendanceNewSessionModalComponent } from './attendance-new-session-modal.component';
+import { mensajeUi } from '../../../../core/messages/mensajes-ui';
 
 describe('AttendanceNewSessionModalComponent', () => {
   let fixture: ComponentFixture<AttendanceNewSessionModalComponent>;
@@ -49,6 +50,35 @@ describe('AttendanceNewSessionModalComponent', () => {
         endTime: '10:00',
       },
     ]);
+  });
+
+  it('DEC-072: con hora de fin anterior a la de inicio avisa, deshabilita Crear y no emite', () => {
+    const emitted: unknown[] = [];
+    fixture.componentInstance.submitted.subscribe((payload) => emitted.push(payload));
+
+    fixture.componentInstance.title.set('Test nueva clase');
+    fixture.componentInstance.date.set('2026-11-13');
+    fixture.componentInstance.startTime.set('20:30');
+    fixture.componentInstance.endTime.set('10:00');
+    fixture.detectChanges();
+
+    const alerta = fixture.nativeElement.querySelector('p[role="alert"]') as HTMLElement | null;
+    expect(alerta?.textContent).toContain(mensajeUi('UI_SESION_HORARIO_MISMO_DIA'));
+    expect(fixture.componentInstance.horarioInvalido()).toBeTrue();
+
+    fixture.componentInstance.onSubmit(new Event('submit'));
+    expect(emitted).toEqual([]);
+  });
+
+  it('DEC-072: con hora de fin igual a la de inicio tampoco permite crear', () => {
+    fixture.componentInstance.startTime.set('08:00');
+    fixture.componentInstance.endTime.set('08:00');
+    expect(fixture.componentInstance.horarioInvalido()).toBeTrue();
+  });
+
+  it('DEC-072: con el horario por defecto (08:00 - 10:00) no muestra el aviso', () => {
+    expect(fixture.componentInstance.horarioInvalido()).toBeFalse();
+    expect(fixture.nativeElement.querySelector('p[role="alert"]')).toBeNull();
   });
 });
 

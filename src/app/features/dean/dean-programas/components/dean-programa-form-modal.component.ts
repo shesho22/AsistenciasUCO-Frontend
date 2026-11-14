@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, OnInit, computed, input, output, si
 import { FormsModule } from '@angular/forms';
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
 import { FormFieldComponent } from '../../../../shared/components/form-field/form-field.component';
+import { getSafeTextError } from '../../../../core/validation/form-fields.util';
 import {
   CatalogoPrograma,
   CoordinadorOpcion,
@@ -115,17 +116,25 @@ export class DeanProgramaFormModalComponent implements OnInit {
 
   readonly valido = computed(() => {
     const nombre = this.nombre().trim();
-    return nombre.length > 0 && nombre.length <= NOMBRE_MAXIMO && !!this.idTipoPrograma() && !!this.idCoordinador();
+    return (
+      nombre.length > 0 &&
+      nombre.length <= NOMBRE_MAXIMO &&
+      getSafeTextError(nombre, 'Nombre del programa', { maxLength: NOMBRE_MAXIMO }) === null &&
+      !!this.idTipoPrograma() &&
+      !!this.idCoordinador()
+    );
   });
 
   /** Se activa al intentar guardar para mostrar bajo cada campo lo que falta (F-DEC-S03). */
   readonly intentado = signal(false);
 
   readonly errorNombre = computed(() => {
-    if (!this.intentado()) return '';
     const nombre = this.nombre().trim();
-    if (nombre.length === 0) return 'El nombre del programa es obligatorio.';
-    return nombre.length > NOMBRE_MAXIMO ? `El nombre no puede superar ${NOMBRE_MAXIMO} caracteres.` : '';
+    // DEC-073: el formato (texto seguro) se avisa mientras se escribe; lo obligatorio, al intentar guardar.
+    const formato = getSafeTextError(nombre, 'Nombre del programa', { maxLength: NOMBRE_MAXIMO });
+    if (formato) return formato;
+    if (!this.intentado()) return '';
+    return nombre.length === 0 ? 'El nombre del programa es obligatorio.' : '';
   });
   readonly errorTipo = computed(() => (this.intentado() && !this.idTipoPrograma() ? 'Seleccione el tipo de programa.' : ''));
   readonly errorCoordinador = computed(() => (this.intentado() && !this.idCoordinador() ? 'Seleccione el coordinador del programa.' : ''));

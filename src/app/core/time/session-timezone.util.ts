@@ -142,14 +142,6 @@ function formatPartsWithSeconds(
   };
 }
 
-function addCalendarDay(date: string): string {
-  const parsed = parseDate(date);
-  const value = new Date(0);
-  value.setUTCFullYear(parsed.year, parsed.month - 1, parsed.day + 1);
-  value.setUTCHours(0, 0, 0, 0);
-  return `${String(value.getUTCFullYear()).padStart(4, '0')}-${String(value.getUTCMonth() + 1).padStart(2, '0')}-${String(value.getUTCDate()).padStart(2, '0')}`;
-}
-
 function findLocalCandidates(date: string, time: string, timeZone: string): number[] {
   if (!validTimeZone(timeZone)) {
     throw new SessionTimeZoneError('INVALID_INPUT', `Zona IANA inválida: ${timeZone}`);
@@ -205,6 +197,14 @@ export function localDateTimeToExplicitInstant(
   return formatExplicitInstant(candidates[0], timeZone);
 }
 
+/**
+ * DEC-072: una sesión empieza y termina el mismo día local; no cruza la medianoche. Compara horas `HH:mm` de 24 h.
+ * Los formularios la usan para avisar antes de enviar; {@link localSessionToInstants} la vuelve a exigir.
+ */
+export function horarioDentroDelMismoDia(startTime: string, endTime: string): boolean {
+  return Boolean(startTime) && Boolean(endTime) && endTime > startTime;
+}
+
 export function localSessionToInstants(input: LocalSessionInput): LocalSessionInstants {
   if (input.startTime === input.endTime) {
     throw new SessionTimeZoneError(
@@ -212,9 +212,15 @@ export function localSessionToInstants(input: LocalSessionInput): LocalSessionIn
       'La hora de fin debe ser posterior a la hora de inicio; una sesión de 24 horas no se crea implícitamente.'
     );
   }
+  // Primero se validan formato y zona (INVALID_INPUT, DST); luego la regla del mismo día (DEC-072).
   const start = localDateTimeToExplicitInstant(input.date, input.startTime, input.timeZone);
-  const endDate = input.endTime <= input.startTime ? addCalendarDay(input.date) : input.date;
-  const end = localDateTimeToExplicitInstant(endDate, input.endTime, input.timeZone);
+  const end = localDateTimeToExplicitInstant(input.date, input.endTime, input.timeZone);
+  if (!horarioDentroDelMismoDia(input.startTime, input.endTime)) {
+    throw new SessionTimeZoneError(
+      'END_BEFORE_START',
+      'La hora de fin debe ser posterior a la hora de inicio el mismo día; una sesión no puede pasar de la medianoche.'
+    );
+  }
   if (Date.parse(end) <= Date.parse(start)) {
     throw new SessionTimeZoneError(
       'END_BEFORE_START',

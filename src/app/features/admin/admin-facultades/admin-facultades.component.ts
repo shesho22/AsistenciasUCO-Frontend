@@ -15,6 +15,7 @@ import { getBackendUserMessage } from '../../../core/api/errors/api-error.util';
 import { ActionMenuComponent, ActionMenuItem } from '../../../shared/components/action-menu/action-menu.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
+import { getSafeTextError } from '../../../core/validation/form-fields.util';
 
 type VistaFacultad = 'LISTA' | 'FORM';
 type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
@@ -602,7 +603,8 @@ export class AdminFacultadesComponent implements OnInit {
     if (this.nombreDuplicado()) return 'Ya existe una facultad con este nombre en la institución.';
     if (this.intentoGuardar() && nombre.length === 0) return 'El nombre de la facultad es obligatorio.';
     if (nombre.length > 0 && nombre.length < 3) return 'El nombre debe tener entre 3 y 50 caracteres.';
-    return '';
+    // DEC-073: texto seguro (sin < > ni comillas).
+    return getSafeTextError(nombre, 'Nombre de la Facultad') ?? '';
   }
 
   facultadesFiltradas = computed(() => {
@@ -695,7 +697,7 @@ export class AdminFacultadesComponent implements OnInit {
       this.errorGuardado.set('Seleccione el decano titular de la facultad.');
       return;
     }
-    if (!nombre || nombre.length < 3 || this.nombreDuplicado()) return;
+    if (!nombre || nombre.length < 3 || this.nombreDuplicado() || getSafeTextError(nombre, 'Nombre de la Facultad')) return;
 
     this.errorGuardado.set(null);
     this.guardando.set(true);

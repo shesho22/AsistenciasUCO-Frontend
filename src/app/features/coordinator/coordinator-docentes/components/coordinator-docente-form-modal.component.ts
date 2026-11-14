@@ -1,4 +1,7 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
+import { getPersonNamesError, getStaffEmailError } from '../../../../core/validation/form-fields.util';
+import { getPasswordValidationError, parseIdentificationNumber } from '../../../../core/validation/request-form-validation.util';
+import { StudentRegistrationConfigService } from '../../../../core/services/student-registration-config.service';
 import { FormsModule } from '@angular/forms';
 import { TipoIdentificacionItem } from '../../../../core/services/catalog.service';
 import {
@@ -152,6 +155,15 @@ export class CoordinatorDocenteFormModalComponent {
   readonly error = signal<string | null>(null);
   readonly busquedaCandidato = signal('');
   readonly candidatoSeleccionado = signal<DocenteCandidato | null>(null);
+  /** DEC-073: dominio institucional vigente para el correo del docente nuevo (llega del backend). */
+  private readonly dominioCorreo = signal<string | null>(null);
+
+  constructor() {
+    inject(StudentRegistrationConfigService).getEmailDomain().subscribe({
+      next: (d) => this.dominioCorreo.set(d),
+      error: () => this.dominioCorreo.set(null),
+    });
+  }
 
   form = {
     tipoIdentificacionId: '',
@@ -187,6 +199,18 @@ export class CoordinatorDocenteFormModalComponent {
       || !f.correo.trim() || !f.password || !f.idTipoVinculacion;
     if (faltantes) {
       this.error.set('Complete todos los campos obligatorios: documento, nombre, apellido, correo, contraseña y tipo de vinculación.');
+      return;
+    }
+    // DEC-073: formato de nombres, documento numerico, correo institucional y politica de contraseña antes de enviar.
+    const documento = parseIdentificationNumber(f.numeroIdentificacion);
+    const problema =
+      getPersonNamesError(f) ??
+      (documento.valid ? null : documento.error) ??
+      getStaffEmailError(f.correo, this.dominioCorreo()) ??
+      getPasswordValidationError(f.password, f.numeroIdentificacion) ??
+      null;
+    if (problema) {
+      this.error.set(problema);
       return;
     }
     this.error.set(null);

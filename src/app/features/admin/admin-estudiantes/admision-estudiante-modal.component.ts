@@ -22,6 +22,8 @@ import {
 import { TipoIdentificacionApiDto } from '../../../core/api/models/tipo-identificacion-api-dto.model';
 import { getApiErrorCode, getApiErrorMessage, getApiFieldErrors } from '../../../core/api/errors/api-error.util';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
+import { getPersonNameError, getPersonNamesError, getStaffEmailError } from '../../../core/validation/form-fields.util';
+import { StudentRegistrationConfigService } from '../../../core/services/student-registration-config.service';
 
 const CLASE_INPUT =
   'w-full bg-white text-warm-900 border border-warm-300 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500';
@@ -131,8 +133,8 @@ const CAMPOS_FORMULARIO = new Set([
               placeholder="Primer nombre"
               [class]="claseInput"
             />
-            @if (erroresCampos()['primerNombre']) {
-              <p class="text-xs text-danger-600 mt-1">{{ erroresCampos()['primerNombre'] }}</p>
+            @if (errorLocal('primerNombre') || erroresCampos()['primerNombre']) {
+              <p class="text-xs text-danger-600 mt-1">{{ errorLocal('primerNombre') || erroresCampos()['primerNombre'] }}</p>
             }
           </div>
 
@@ -147,8 +149,8 @@ const CAMPOS_FORMULARIO = new Set([
               placeholder="Opcional"
               [class]="claseInput"
             />
-            @if (erroresCampos()['segundoNombre']) {
-              <p class="text-xs text-danger-600 mt-1">{{ erroresCampos()['segundoNombre'] }}</p>
+            @if (errorLocal('segundoNombre') || erroresCampos()['segundoNombre']) {
+              <p class="text-xs text-danger-600 mt-1">{{ errorLocal('segundoNombre') || erroresCampos()['segundoNombre'] }}</p>
             }
           </div>
 
@@ -166,8 +168,8 @@ const CAMPOS_FORMULARIO = new Set([
               placeholder="Primer apellido"
               [class]="claseInput"
             />
-            @if (erroresCampos()['primerApellido']) {
-              <p class="text-xs text-danger-600 mt-1">{{ erroresCampos()['primerApellido'] }}</p>
+            @if (errorLocal('primerApellido') || erroresCampos()['primerApellido']) {
+              <p class="text-xs text-danger-600 mt-1">{{ errorLocal('primerApellido') || erroresCampos()['primerApellido'] }}</p>
             }
           </div>
 
@@ -182,8 +184,8 @@ const CAMPOS_FORMULARIO = new Set([
               placeholder="Opcional"
               [class]="claseInput"
             />
-            @if (erroresCampos()['segundoApellido']) {
-              <p class="text-xs text-danger-600 mt-1">{{ erroresCampos()['segundoApellido'] }}</p>
+            @if (errorLocal('segundoApellido') || erroresCampos()['segundoApellido']) {
+              <p class="text-xs text-danger-600 mt-1">{{ errorLocal('segundoApellido') || erroresCampos()['segundoApellido'] }}</p>
             }
           </div>
 
@@ -195,13 +197,14 @@ const CAMPOS_FORMULARIO = new Set([
             <input
               type="email"
               aria-label="Correo institucional"
+              maxlength="100"
               [ngModel]="correo()"
               (ngModelChange)="correo.set($event)"
               placeholder="ejemplo@uco.edu.co"
               [class]="claseInput"
             />
-            @if (erroresCampos()['correo']) {
-              <p class="text-xs text-danger-600 mt-1">{{ erroresCampos()['correo'] }}</p>
+            @if (errorLocal('correo') || erroresCampos()['correo']) {
+              <p class="text-xs text-danger-600 mt-1">{{ errorLocal('correo') || erroresCampos()['correo'] }}</p>
             }
           </div>
 
@@ -309,6 +312,9 @@ export class AdmisionEstudianteModalComponent implements OnInit {
   private readonly catalog = inject(CatalogService);
   private readonly admin = inject(AdminManagementService);
   private readonly toast = inject(ToastService);
+  /** DEC-073: dominio institucional vigente (llega del backend). */
+  private readonly dominioCorreo = signal<string | null>(null);
+  private readonly registroConfig = inject(StudentRegistrationConfigService);
 
   readonly isOpen = input(true);
   /**
@@ -359,12 +365,34 @@ export class AdmisionEstudianteModalComponent implements OnInit {
       this.primerNombre().trim().length > 0 &&
       this.primerApellido().trim().length > 0 &&
       this.correo().trim().length > 0 &&
+      this.errorNombres() === null &&
+      !this.errorLocal('correo') &&
       this.idPrograma().trim().length > 0 &&
       (!this.mostrarPassword() || this.password().trim().length > 0)
     );
   });
 
+  /** DEC-073: primer error de formato de nombres y apellidos. */
+  private readonly errorNombres = computed(() =>
+    getPersonNamesError({
+      primerNombre: this.primerNombre(),
+      segundoNombre: this.segundoNombre(),
+      primerApellido: this.primerApellido(),
+      segundoApellido: this.segundoApellido(),
+    })
+  );
+
+  /** DEC-073: error de formato de un campo antes de enviar; vacío si es válido o aún no se escribió. */
+  errorLocal(campo: 'primerNombre' | 'segundoNombre' | 'primerApellido' | 'segundoApellido' | 'correo'): string {
+    if (campo === 'correo') {
+      return this.correo().trim() ? getStaffEmailError(this.correo(), this.dominioCorreo()) ?? '' : '';
+    }
+    const etiquetas = { primerNombre: 'Primer Nombre', segundoNombre: 'Segundo Nombre', primerApellido: 'Primer Apellido', segundoApellido: 'Segundo Apellido' };
+    return getPersonNameError(this[campo](), etiquetas[campo]) ?? '';
+  }
+
   ngOnInit(): void {
+    this.registroConfig.getEmailDomain().subscribe({ next: (d) => this.dominioCorreo.set(d), error: () => this.dominioCorreo.set(null) });
     this.cargarTipos();
     this.buscarProgramas('');
   }

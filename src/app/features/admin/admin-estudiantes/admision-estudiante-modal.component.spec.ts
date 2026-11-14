@@ -1,3 +1,4 @@
+import { StudentRegistrationConfigService } from '../../../core/services/student-registration-config.service';
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -60,6 +61,7 @@ describe('AdmisionEstudianteModalComponent (HU156)', () => {
     TestBed.configureTestingModule({
       imports: [AdmisionEstudianteModalComponent],
       providers: [
+        { provide: StudentRegistrationConfigService, useValue: { getEmailDomain: () => of('@uco.edu.co') } },
         { provide: CatalogService, useValue: catalogService },
         { provide: AdminManagementService, useValue: adminService },
         { provide: ToastService, useValue: toastService },
@@ -204,13 +206,34 @@ describe('AdmisionEstudianteModalComponent (HU156)', () => {
     component.numeroIdentificacion.set('1017000555');
     component.primerNombre.set('Juan');
     component.primerApellido.set('Gómez');
-    component.correo.set('juan@gmail.com');
+    // El formato es válido en el cliente; el 400 simulado prueba el mapeo de los detalles del backend a cada campo.
+    component.correo.set('juan@uco.edu.co');
     component.idPrograma.set('prog-1');
 
     component.onGuardar();
 
     expect(component.erroresCampos()['correo']).toBe('El correo debe ser institucional.');
     expect(component.erroresCampos()['primerNombre']).toBe('El primer nombre es obligatorio.');
+  });
+
+  // DEC-073: el cliente avisa antes de enviar un correo no institucional o un nombre con números.
+  it('DEC-073: bloquea correo no institucional y nombres con números antes de enviar', () => {
+    component.numeroIdentificacion.set('1017000555');
+    component.primerNombre.set('Juan');
+    component.primerApellido.set('Gómez');
+    component.correo.set('juan@gmail.com');
+    component.idPrograma.set('prog-1');
+
+    expect(component.errorLocal('correo')).toBe('El correo debe ser institucional y terminar en @uco.edu.co.');
+    expect(component.esValido()).toBeFalse();
+
+    component.correo.set('juan@uco.edu.co');
+    component.segundoNombre.set('Pabl0');
+    expect(component.errorLocal('segundoNombre')).toContain('solo admite letras');
+    expect(component.esValido()).toBeFalse();
+
+    component.segundoNombre.set('Pablo');
+    expect(component.esValido()).toBeTrue();
   });
 
   it('maneja error 409 de unicidad o ya admitido sin cerrar el modal', () => {

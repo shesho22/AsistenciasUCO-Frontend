@@ -37,6 +37,7 @@ import { TeacherRetiroEstudianteModalComponent } from './components/modals/teach
 import { getSessionNameError } from '../../../core/validation/session-name.util';
 import { environment } from '../../../../environments/environment';
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
+import { horarioDentroDelMismoDia } from '../../../core/time/session-timezone.util';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
 type VistaGrupos = 'LISTA' | 'HUB_GRUPO' | 'FORM_SESION';
@@ -455,6 +456,16 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
     this.selectedSessionId = null;
   }
 
+  /** En edición, true si el horario del formulario es el de la sesión guardada (se conservan sus instantes). */
+  private horarioSesionSinCambios(): boolean {
+    if (this.modoFormSesion !== 'EDITAR') return false;
+    const original = this.sessions().find((session) => session.id === this.selectedSessionId);
+    return !!original
+      && this.timeZone.displaySessionDate(original) === this.sesionForm.date
+      && this.timeZone.displaySessionStartTime(original) === this.sesionForm.startTime
+      && this.timeZone.displaySessionEndTime(original) === this.sesionForm.endTime;
+  }
+
   guardarSesion(): void {
     const course = this.selectedCourse();
     if (!course) return;
@@ -484,6 +495,11 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
       }
       this.sesionFormTimeZone = this.timeZone.zone();
       this.toast.warning(mensajeUi('UI_TEACHER_GRUPOS_007'));
+      return;
+    }
+    if (!this.horarioSesionSinCambios() && !horarioDentroDelMismoDia(this.sesionForm.startTime, this.sesionForm.endTime)) {
+      // DEC-072: la sesión no cruza la medianoche. Una sesión ya guardada que la cruza se puede editar sin tocar su horario.
+      this.toast.warning(mensajeUi('UI_SESION_HORARIO_MISMO_DIA'));
       return;
     }
     if (this.modoFormSesion === 'CREAR') {

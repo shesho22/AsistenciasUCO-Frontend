@@ -49,23 +49,18 @@ describe('CoordinatorStudyPlanFormPageComponent', () => {
     http.verify();
   });
 
-  it('inicia en modo CREAR cuando no recibe planId y guarda el plan', () => {
+  // Contrato real (GuardarPlanEstudioRequest): cuerpo { inp } y respuesta ApiDataResponse<Void> (datos null).
+  it('HU079: inicia en modo CREAR y registra el plan enviando solo el INP', () => {
     expect(component.modo()).toBe('CREAR');
 
-    component.guardarPlan({
-      codigo: 'PLAN-2027',
-      nombre: 'Plan 2027',
-    });
+    component.guardarPlan(2027);
 
     const req = http.expectOne(`${environment.apiUrl}/coordinador/planes-estudio`);
     expect(req.request.method).toBe('POST');
-    req.flush({
-      exitoso: true,
-      mensajeUsuario: 'Plan creado.',
-      datos: { id: 'p-1', codigo: 'PLAN-2027', nombre: 'Plan 2027' },
-    });
+    expect(req.request.body).toEqual({ inp: 2027 });
+    req.flush({ exitoso: true, mensajeUsuario: 'Plan creado.', datos: null });
 
-    expect(toastSpy.success).toHaveBeenCalled();
+    expect(toastSpy.success).toHaveBeenCalledWith('Plan creado.');
     expect(routerSpy.navigate).toHaveBeenCalledWith(['/app/coordinador/planes-estudio']);
   });
 
@@ -79,26 +74,19 @@ describe('CoordinatorStudyPlanFormPageComponent', () => {
     fixture.detectChanges();
     expect(component.modo()).toBe('EDITAR');
 
-    component.guardarPlan({
-      nombre: 'Plan Actualizado',
-    });
+    component.guardarPlan(2028);
 
     const req = http.expectOne(`${environment.apiUrl}/coordinador/planes-estudio/plan-existente`);
     expect(req.request.method).toBe('PUT');
-    req.flush({
-      exitoso: true,
-      mensajeUsuario: 'Plan actualizado.',
-      datos: { id: 'plan-existente', codigo: 'PLAN-2027', nombre: 'Plan Actualizado' },
-    });
+    expect(req.request.body).toEqual({ inp: 2028 });
+    req.flush({ exitoso: true, mensajeUsuario: 'Plan actualizado.', datos: null });
 
     expect(toastSpy.success).toHaveBeenCalled();
     expect(routerSpy.navigate).toHaveBeenCalledWith(['/app/coordinador/planes-estudio']);
   });
 
   it('muestra toast error cuando la creación o actualización de plan falla', () => {
-    component.guardarPlan({
-      codigo: 'PLAN-FAIL',
-    });
+    component.guardarPlan(2030);
 
     const req = http.expectOne(`${environment.apiUrl}/coordinador/planes-estudio`);
     req.flush({ error: 'Fallo' }, { status: 500, statusText: 'Internal Error' });

@@ -81,6 +81,7 @@ export const MENSAJES_UI = {
   UI_COORDINATOR_GROUPS_001: 'No fue posible cargar los grupos.',
   UI_COORDINATOR_GROUPS_002: 'Grupo guardado.',
   UI_COORDINATOR_GROUPS_003: 'No fue posible guardar el grupo.',
+  UI_COORDINATOR_GROUPS_004: 'El cupo máximo debe ser un número entero mayor o igual a 1, o dejarse vacío para no cambiarlo.',
   UI_COORDINATOR_SESIONES_GRUPO_001: 'Sesión cancelada.',
   UI_COORDINATOR_SESIONES_GRUPO_002: 'La fecha desde no puede ser posterior a la fecha hasta.',
   UI_COORDINATOR_SOLICITUDES_SESION_001: 'Sesión aprobada.',
@@ -102,6 +103,8 @@ export const MENSAJES_UI = {
   UI_ERROR_INTERCEPTOR_001: 'Acceso denegado: No cuenta con los permisos necesarios para realizar esta acción.',
   UI_PARAMETRO_EDICION_MODAL_001: 'Parámetro actualizado exitosamente.',
   UI_ROLE_GUARD_001: 'Acceso denegado: No cuenta con los permisos necesarios para acceder a esta sección.',
+  // DEC-072: una sesión empieza y termina el mismo día (no cruza la medianoche).
+  UI_SESION_HORARIO_MISMO_DIA: 'La hora de fin debe ser posterior a la hora de inicio el mismo día; una sesión no puede pasar de la medianoche.',
   // DEC-065 (2): solicitudes de sesión extraordinaria (antes en core/models/sesion-manual.util.ts).
   UI_SESION_SOLICITUD_APROBADA: 'La coordinación aprobó la sesión extraordinaria {nombre}.',
   UI_SESION_SOLICITUD_APROBADA_SIN_NOMBRE: 'La coordinación aprobó la sesión extraordinaria.',
@@ -119,6 +122,7 @@ export const MENSAJES_UI = {
   UI_STUDENT_COURSES_004: 'Ingresa el PIN de 6 dígitos que proyecta tu docente.',
   UI_STUDENT_COURSES_005: '¡Matrícula confirmada exitosamente en el grupo!',
   UI_STUDENT_COURSES_006: 'Archivo "{nombre}" cargado y analizado correctamente.',
+  UI_STUDY_PLAN_FORM_001: 'El INP del plan debe ser un número entero positivo (por ejemplo, el año de vigencia: 2027).',
   UI_STUDY_PLAN_FORM_PAGE_001: 'Plan de estudio registrado.',
   UI_STUDY_PLAN_FORM_PAGE_002: 'Plan de estudio modificado.',
   UI_STUDY_PLAN_MESH_PAGE_001: 'Asignatura asociada al plan.',

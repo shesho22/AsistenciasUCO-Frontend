@@ -11,6 +11,8 @@ import {
   getSessionNameError,
 } from '../../../../core/validation/session-name.util';
 import { SessionTimeZoneService } from '../../../../core/services/session-timezone.service';
+import { horarioDentroDelMismoDia } from '../../../../core/time/session-timezone.util';
+import { mensajeUi } from '../../../../core/messages/mensajes-ui';
 
 /** Datos del formulario de programacion de sesion que emite el modal. */
 export interface NuevaSesionSolicitud {
@@ -94,6 +96,9 @@ export interface NuevaSesionSolicitud {
             />
           </app-form-field>
         </div>
+        @if (horarioInvalido()) {
+          <p class="text-xs text-danger-600" role="alert">{{ horarioMensaje }}</p>
+        }
 
         <div modal-footer class="flex items-center justify-end gap-2 w-full pt-2">
           <app-button
@@ -109,7 +114,7 @@ export interface NuevaSesionSolicitud {
             size="sm"
             type="submit"
             [loading]="isCreating()"
-            [disabled]="isCreating() || nombreInvalido() || !date()"
+            [disabled]="isCreating() || nombreInvalido() || !date() || horarioInvalido()"
             (clicked)="onSubmit($event)"
           >
             Crear Sesión
@@ -130,6 +135,12 @@ export class AttendanceNewSessionModalComponent {
   title = signal<string>('');
 
   readonly nombreLengthMessage = SESSION_NAME_LENGTH_MESSAGE;
+  readonly horarioMensaje = mensajeUi('UI_SESION_HORARIO_MISMO_DIA');
+
+  /** DEC-072: la sesión no cruza la medianoche; con fin menor o igual al inicio no se puede crear. */
+  horarioInvalido(): boolean {
+    return !horarioDentroDelMismoDia(this.startTime(), this.endTime());
+  }
 
   nombreInvalido(): boolean {
     return getSessionNameError(this.title()) !== null;
@@ -159,7 +170,7 @@ export class AttendanceNewSessionModalComponent {
     if (e) {
       e.preventDefault();
     }
-    if (this.nombreInvalido() || !this.date()) return;
+    if (this.nombreInvalido() || !this.date() || this.horarioInvalido()) return;
     this.submitted.emit({
       date: this.date(),
       startTime: this.startTime(),

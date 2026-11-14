@@ -1,10 +1,16 @@
-import { Component, ChangeDetectionStrategy, input, output, OnInit } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, output, signal, computed, effect, untracked } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { PlanEstudioItem } from '../../../../core/models/role-management.model';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { FormFieldComponent } from '../../../../shared/components/form-field/form-field.component';
+import { mensajeUi } from '../../../../core/messages/mensajes-ui';
 
+/**
+ * HU079/HU080: alta y edición del plan de estudio. El contrato del backend (`GuardarPlanEstudioRequest`) solo recibe el
+ * INP del plan (entero positivo, año de vigencia); el programa sale del coordinador autenticado y los semestres,
+ * asignaturas y créditos se configuran después en la malla curricular. Por eso el formulario pide solo el INP.
+ */
 @Component({
     selector: 'app-study-plan-form',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -34,98 +40,32 @@ import { FormFieldComponent } from '../../../../shared/components/form-field/for
             {{ modo() === 'CREAR' ? 'Registro de Nuevo Plan de Estudio' : 'Edición de Plan de Estudio' }}
           </h2>
           <p class="text-sm text-warm-600 mt-1">
-            Configura el código curricular, programa académico, facultad, duración en semestres y créditos totales.
+            El plan se registra para tu programa académico con su INP (año de vigencia). Los semestres, las asignaturas y
+            los créditos se configuran después en la malla curricular.
           </p>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <app-form-field label="Código del Plan" [required]="true">
-            <input
-              type="text"
-              [(ngModel)]="planForm.codigo"
-              placeholder="Ej. PLAN-SIS-2027"
-              class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-            />
-          </app-form-field>
+        @if (modo() === 'EDITAR' && plan()?.programa) {
+          <p class="text-sm text-warm-700">
+            Programa: <span class="font-semibold text-warm-900">{{ plan()!.programa }}</span>
+          </p>
+        }
 
-          <app-form-field label="Año de Vigencia" [required]="true">
-            <input
-              type="number"
-              [(ngModel)]="planForm.anioVigencia"
-              class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-            />
-          </app-form-field>
-
-          <div class="sm:col-span-2">
-            <app-form-field label="Nombre Completo del Plan" [required]="true">
-              <input
-                type="text"
-                [(ngModel)]="planForm.nombre"
-                placeholder="Ej. Plan Curricular Ingeniería de Sistemas 2027"
-                class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-              />
-            </app-form-field>
-          </div>
-
-          <app-form-field label="Programa Académico" [required]="true">
-            <input
-              type="text"
-              [(ngModel)]="planForm.programa"
-              class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-            />
-          </app-form-field>
-
-          <app-form-field label="Facultad" [required]="true">
-            <input
-              type="text"
-              [(ngModel)]="planForm.facultad"
-              class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-            />
-          </app-form-field>
-
-          <app-form-field label="Total de Semestres" [required]="true">
-            <input
-              type="number"
-              [(ngModel)]="planForm.totalSemestres"
-              min="1"
-              max="12"
-              class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-            />
-          </app-form-field>
-
-          <app-form-field label="Total de Créditos" [required]="true">
-            <input
-              type="number"
-              [(ngModel)]="planForm.totalCreditos"
-              min="20"
-              max="250"
-              class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-            />
-          </app-form-field>
-
-          <div class="sm:col-span-2">
-            <app-form-field label="Estado de Vigencia" [required]="true">
-              <select
-                [(ngModel)]="planForm.estado"
-                class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm font-semibold text-warm-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-              >
-                <option value="VIGENTE">VIGENTE (Activo para cohortes actuales)</option>
-                <option value="EN_TRANSICION">EN TRANSICIÓN (Fase de cierre progresivo)</option>
-                <option value="HISTORICO">HISTÓRICO (Solo consulta de egresados)</option>
-              </select>
-            </app-form-field>
-          </div>
-
-          <div class="sm:col-span-2">
-            <app-form-field label="Descripción del Enfoque Curricular">
-              <textarea
-                [(ngModel)]="planForm.descripcion"
-                rows="3"
-                class="w-full p-3 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-              ></textarea>
-            </app-form-field>
-          </div>
-        </div>
+        <app-form-field label="INP del plan (año de vigencia)" [required]="true">
+          <input
+            type="number"
+            name="inp"
+            min="1"
+            step="1"
+            [ngModel]="inp()"
+            (ngModelChange)="inp.set($event)"
+            placeholder="Ej. 2027"
+            class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+          />
+          @if (inpInvalido()) {
+            <p class="mt-1 text-xs text-danger-600" role="alert">{{ inpMensaje }}</p>
+          }
+        </app-form-field>
 
         <div class="flex items-center justify-end gap-3 pt-4 border-t border-warm-100">
           <app-button variant="secondary" size="md" (clicked)="cancel.emit()">
@@ -134,7 +74,7 @@ import { FormFieldComponent } from '../../../../shared/components/form-field/for
           <app-button
             variant="primary"
             size="md"
-            [disabled]="!planForm.codigo.trim() || !planForm.nombre.trim()"
+            [disabled]="!inpValido()"
             (clicked)="guardar()"
           >
             <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -147,53 +87,42 @@ import { FormFieldComponent } from '../../../../shared/components/form-field/for
     </div>
   `
 })
-export class StudyPlanFormComponent implements OnInit {
+export class StudyPlanFormComponent {
   modo = input<'CREAR' | 'EDITAR'>('CREAR');
   plan = input<PlanEstudioItem | null>(null);
 
-  save = output<Partial<PlanEstudioItem>>();
+  /** Emite el INP del plan, único dato que acepta el backend. */
+  save = output<number>();
   cancel = output<void>();
 
-  planForm: {
-    codigo: string;
-    nombre: string;
-    anioVigencia: number;
-    programa: string;
-    facultad: string;
-    totalSemestres: number;
-    totalCreditos: number;
-    estado: PlanEstudioItem['estado'];
-    descripcion: string;
-  } = {
-    codigo: '',
-    nombre: '',
-    anioVigencia: 2026,
-    programa: 'Ingeniería de Sistemas',
-    facultad: 'Facultad de Ingeniería',
-    totalSemestres: 10,
-    totalCreditos: 160,
-    estado: 'VIGENTE',
-    descripcion: '',
-  };
+  readonly inp = signal<number | string | null>(null);
+  readonly inpMensaje = mensajeUi('UI_STUDY_PLAN_FORM_001');
 
-  ngOnInit(): void {
-    const p = this.plan();
-    if (p && this.modo() === 'EDITAR') {
-      this.planForm = {
-        codigo: p.codigo,
-        nombre: p.nombre,
-        anioVigencia: p.anioVigencia,
-        programa: p.programa,
-        facultad: p.facultad,
-        totalSemestres: p.totalSemestres,
-        totalCreditos: p.totalCreditos ?? 0,
-        estado: p.estado,
-        descripcion: p.descripcion,
-      };
-    }
+  /** Entero positivo; el campo vacío todavía no se marca como error, solo deshabilita el envío. */
+  readonly inpValido = computed(() => {
+    const valor = this.inp();
+    if (valor === null || valor === '') return false;
+    const numero = Number(valor);
+    return Number.isInteger(numero) && numero > 0;
+  });
+
+  readonly inpInvalido = computed(() => {
+    const valor = this.inp();
+    return valor !== null && valor !== '' && !this.inpValido();
+  });
+
+  constructor() {
+    // En edición el plan puede llegar después de crear el formulario: se precarga una sola vez, sin pisar lo escrito.
+    effect(() => {
+      const p = this.plan();
+      if (p && this.modo() === 'EDITAR' && p.anioVigencia > 0 && untracked(this.inp) === null) {
+        this.inp.set(p.anioVigencia);
+      }
+    });
   }
 
   guardar(): void {
-    this.save.emit(this.planForm);
+    if (!this.inpValido()) return;
+    this.save.emit(Number(this.inp()));
   }
 }

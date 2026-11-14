@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ActualizarDocentePayload, DocentePrograma, TipoVinculacionItem } from '../../../../core/models/docente-programa.model';
 import { CorreccionDocumentoComponent } from '../../../../shared/components/correccion-documento/correccion-documento.component';
 import { EstadoCorreccionDocumento } from '../../../../core/models/correccion-identidad.model';
+import { getPersonNamesError } from '../../../../core/validation/form-fields.util';
 
 const CLASE_CONTROL =
   'w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20';
@@ -107,6 +108,12 @@ export class CoordinatorDocenteEditModalComponent implements OnInit {
     const primerApellido = f.primerApellido.trim();
     if (!primerNombre || !primerApellido) {
       this.error.set('El primer nombre y el primer apellido no pueden quedar vacíos.');
+      return;
+    }
+    // DEC-073: nombres y apellidos solo con letras, espacios, apóstrofo y guion.
+    const nombresError = getPersonNamesError(f);
+    if (nombresError) {
+      this.error.set(nombresError);
       return;
     }
 

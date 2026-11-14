@@ -1,3 +1,5 @@
+import { StudentRegistrationConfigService } from '../../../core/services/student-registration-config.service';
+import { of } from 'rxjs';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
@@ -29,7 +31,7 @@ describe('AdminEstudiantesComponent (HU157)', () => {
     toastSpy = jasmine.createSpyObj('ToastService', ['success', 'error', 'info', 'warning']);
     TestBed.configureTestingModule({
       imports: [AdminEstudiantesComponent],
-      providers: [provideHttpClient(withXhr()), provideHttpClientTesting(), { provide: ToastService, useValue: toastSpy }],
+      providers: [provideHttpClient(withXhr()), { provide: StudentRegistrationConfigService, useValue: { getEmailDomain: () => of('@uco.edu.co') } }, provideHttpClientTesting(), { provide: ToastService, useValue: toastSpy }],
     });
     http = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(AdminEstudiantesComponent);

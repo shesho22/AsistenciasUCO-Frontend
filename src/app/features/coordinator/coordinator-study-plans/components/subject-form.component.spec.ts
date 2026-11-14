@@ -97,10 +97,32 @@ describe('SubjectFormComponent (HU147 / P5)', () => {
     completar();
     expect(component.formularioValido()).toBeTrue();
 
-    for (const creditos of [null, 0, -2, 2.5]) {
+    for (const creditos of [null, 0, -2, 2.5, 11]) {
       component.asigForm.creditos = creditos;
       expect(component.formularioValido()).withContext(String(creditos)).toBeFalse();
     }
+  });
+
+  // DEC-073: créditos de 1 a 10; código y nombre en texto seguro.
+  it('DEC-073: muestra el error de créditos fuera de 1 a 10 y de código o nombre con < > o comillas', () => {
+    crear();
+    completar();
+    component.asigForm.creditos = 10;
+    expect(component.errorCreditos()).toBe('');
+    expect(component.formularioValido()).toBeTrue();
+
+    component.asigForm.creditos = 11;
+    expect(component.errorCreditos()).toBe('El campo Créditos debe estar entre 1 y 10.');
+
+    component.asigForm.creditos = 3;
+    component.asigForm.nombre = 'Bases "avanzadas"';
+    expect(component.errorNombre()).toContain('solo admite');
+    expect(component.formularioValido()).toBeFalse();
+
+    component.asigForm.nombre = 'Bases de Datos';
+    component.asigForm.codigo = '<SIS>';
+    expect(component.errorCodigo()).toContain('solo admite');
+    expect(component.formularioValido()).toBeFalse();
   });
 
   it('exige área, componente y un semestre que exista en el plan', () => {

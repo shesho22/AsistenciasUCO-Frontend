@@ -1,3 +1,5 @@
+import { of } from 'rxjs';
+import { StudentRegistrationConfigService } from '../../../../core/services/student-registration-config.service';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { CoordinatorDocenteFormModalComponent } from './coordinator-docente-form-modal.component';
 import { DocenteCandidato, TipoVinculacionItem, VincularDocenteExistentePayload, VincularDocenteNuevoPayload } from '../../../../core/models/docente-programa.model';
@@ -19,7 +21,7 @@ describe('CoordinatorDocenteFormModalComponent', () => {
   };
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ imports: [CoordinatorDocenteFormModalComponent] });
+    TestBed.configureTestingModule({ imports: [CoordinatorDocenteFormModalComponent], providers: [{ provide: StudentRegistrationConfigService, useValue: { getEmailDomain: () => of('@uco.edu.co') } }] });
     fixture = TestBed.createComponent(CoordinatorDocenteFormModalComponent);
     component = fixture.componentInstance;
     fixture.componentRef.setInput('tiposIdentificacion', tiposId);
@@ -82,6 +84,34 @@ describe('CoordinatorDocenteFormModalComponent', () => {
 
     expect(emitido?.segundoNombre).toBe('Luis');
     expect(emitido?.segundoApellido).toBe('Perez');
+  });
+
+  // DEC-073: formato de nombres, documento numérico, correo institucional y política de contraseña.
+  it('DEC-073: no emite con nombres con números, documento con letras, correo no institucional o contraseña débil', () => {
+    const emisiones: VincularDocenteNuevoPayload[] = [];
+    component.guardarNuevo.subscribe((p) => emisiones.push(p));
+
+    llenarNuevo();
+    component.form.primerNombre = 'J0rge';
+    component.enviarNuevo();
+    expect(component.error()).toBe('El campo Primer Nombre solo admite letras, espacios, apóstrofo y guion (sin números ni otros signos).');
+
+    llenarNuevo();
+    component.form.numeroIdentificacion = '0123456';
+    component.enviarNuevo();
+    expect(component.error()).toBe('El campo Número de Identificación debe ser positivo y no comenzar con cero.');
+
+    llenarNuevo();
+    component.form.correo = 'jorge.henao@gmail.com';
+    component.enviarNuevo();
+    expect(component.error()).toBe('El correo debe ser institucional y terminar en @uco.edu.co.');
+
+    llenarNuevo();
+    component.form.password = 'clave';
+    component.enviarNuevo();
+    expect(component.error()).toContain('Contraseña');
+
+    expect(emisiones).toEqual([]);
   });
 
   it('no emite si faltan campos obligatorios y deja el motivo en pantalla', () => {
