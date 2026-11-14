@@ -56,7 +56,7 @@ describe('SessionService contract operations', () => {
       date: '2026-09-22',
       startTime: '08:00',
       endTime: '10:00',
-    } as any).subscribe((value) => (response = value));
+    } as never).subscribe((value) => (response = value));
 
     const request = http.expectOne(`${environment.apiV2Url}/sesiones`);
     expect(request.request.method).toBe('POST');

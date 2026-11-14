@@ -77,17 +77,17 @@ describe('TeacherGruposComponent', () => {
     );
 
     courseService.getTeacherCourses.and.returnValue(
-      of({ exitoso: true, datos: [course] } as any)
+      of<never>({ exitoso: true, datos: [course] } as never)
     );
     courseService.getAsignaturasDocente.and.returnValue(
-      of({ exitoso: true, datos: [] } as any)
+      of<never>({ exitoso: true, datos: [] } as never)
     );
     claimService.getReclamosDocentePorGrupo.and.returnValue(of([]) as never);
     studentService.getStudentsByGroup.and.returnValue(
-      of({ exitoso: true, datos: [] } as any)
+      of<never>({ exitoso: true, datos: [] } as never)
     );
     sessionService.getSessionsByGroup.and.returnValue(
-      of({ exitoso: true, datos: [], total: 0 } as any)
+      of<never>({ exitoso: true, datos: [], total: 0 } as never)
     );
 
     const groupService = jasmine.createSpyObj<GroupService>('GroupService', [
@@ -95,7 +95,7 @@ describe('TeacherGruposComponent', () => {
       'getAllGroups',
     ]);
     groupService.getAllGroups.and.returnValue(
-      of({ exitoso: true, total: 1, datos: [{ id: 'crs-1', capacidadMaximaPermitida: 35 }] } as any)
+      of<never>({ exitoso: true, total: 1, datos: [{ id: 'crs-1', capacidadMaximaPermitida: 35 }] } as never)
     );
 
     realtimeEvents$ = new Subject();
@@ -134,7 +134,7 @@ describe('TeacherGruposComponent', () => {
 
   it('muestra un grupo asignado sin horario ni código, sin inventar datos', () => {
     courseService.getTeacherCourses.and.returnValue(
-      of({
+      of<never>({
         exitoso: true,
         datos: [
           {
@@ -146,7 +146,7 @@ describe('TeacherGruposComponent', () => {
             colorCategory: 'emerald',
           },
         ],
-      } as any)
+      } as never)
     );
 
     component.cargarGrupos();
@@ -204,22 +204,22 @@ describe('TeacherGruposComponent', () => {
   });
 
   it('F3-DOC-01: la sábana recibe el estado por sesión desde GET /grupos/{id}/asistencias', () => {
-    sessionService.getSessionsByGroup.and.returnValue(of({
+    sessionService.getSessionsByGroup.and.returnValue(of<never>({
       exitoso: true,
       total: 2,
       datos: [
         { id: 'ses-1', courseId: 'crs-1', sessionNumber: 1, title: 'S1', date: '2026-09-10', startTime: '08:00', endTime: '10:00', records: [] },
         { id: 'ses-2', courseId: 'crs-1', sessionNumber: 2, title: 'S2', date: '2026-09-17', startTime: '08:00', endTime: '10:00', records: [] },
       ],
-    } as any));
-    attendanceService.getAttendancesByGroup.and.returnValue(of({
+    } as never));
+    attendanceService.getAttendancesByGroup.and.returnValue(of<never>({
       exitoso: true,
       total: 2,
       datos: [
         { asistencia: 'a1', estudiante: 'est-1', grupo: 'crs-1', sesion: 'ses-1', presente: true, estado: 'AN', observacion: null },
         { asistencia: 'a2', estudiante: 'est-1', grupo: 'crs-1', sesion: 'ses-2', presente: false, estado: 'EX', observacion: null },
       ],
-    } as any));
+    } as never));
 
     studentService.getStudentsByGroup.and.returnValue(
       of({ exitoso: true, datos: [{ idEstudiante: 'est-1', nombreCompleto: 'Ana Gomez', documento: '1001', codigoEstado: 'A' }] }) as never
@@ -234,11 +234,11 @@ describe('TeacherGruposComponent', () => {
   });
 
   it('F3-DOC-01: si falla la consulta de asistencias las sesiones se muestran igual sin estados', () => {
-    sessionService.getSessionsByGroup.and.returnValue(of({
+    sessionService.getSessionsByGroup.and.returnValue(of<never>({
       exitoso: true,
       total: 1,
       datos: [{ id: 'ses-1', courseId: 'crs-1', sessionNumber: 1, title: 'S1', date: '2026-09-10', startTime: '08:00', endTime: '10:00', records: [] }],
-    } as any));
+    } as never));
     attendanceService.getAttendancesByGroup.and.returnValue(throwError(() => new Error('x')));
 
     component.verHubGrupo(course);
@@ -260,13 +260,13 @@ describe('TeacherGruposComponent', () => {
     };
     component.verHubGrupo(course);
     studentService.getStudentsByGroup.and.returnValue(
-      of({
+      of<never>({
         exitoso: true,
         datos: [
           { id: 'student-2', studentName: 'Estudiante Dos', studentCode: '002' },
           { id: 'student-3', studentName: 'Estudiante Tres', studentCode: '003' },
         ],
-      } as any)
+      } as never)
     );
 
     component.abrirDetalleSesionModal(sesionConcluida);
@@ -289,7 +289,7 @@ describe('TeacherGruposComponent', () => {
   });
 
   it('guardarSesion crea una nueva sesión cuando modoFormSesion es CREAR', () => {
-    sessionService.createSession.and.returnValue(of({ exitoso: true, mensaje: 'Sesión creada' } as any));
+    sessionService.createSession.and.returnValue(of<never>({ exitoso: true, mensaje: 'Sesión creada' } as never));
     component.verHubGrupo(course);
     component.abrirCrearSesionExtraordinaria();
     component.sesionForm = {
@@ -307,7 +307,7 @@ describe('TeacherGruposComponent', () => {
 
   it('DEC-065 (2): tras solicitar la sesión muestra el mensajeUsuario del backend tal cual', () => {
     const toastSuccess = spyOn(TestBed.inject(ToastService), 'success');
-    sessionService.createSession.and.returnValue(of({ exitoso: true, mensaje: 'x', mensajeUsuario: 'Solicitud enviada; queda pendiente de aprobación.' } as any));
+    sessionService.createSession.and.returnValue(of<never>({ exitoso: true, mensaje: 'x', mensajeUsuario: 'Solicitud enviada; queda pendiente de aprobación.' } as never));
     component.verHubGrupo(course);
     component.abrirCrearSesionExtraordinaria();
     component.sesionForm = { title: 'Sesión de repaso', date: '2026-09-15', startTime: '08:00', endTime: '10:00', sessionNumber: 1 };
@@ -320,8 +320,8 @@ describe('TeacherGruposComponent', () => {
   it('DEC-065 (2): sin mensajeUsuario usa mensaje y, sin ninguno, el aviso de solicitud pendiente', () => {
     const toastSuccess = spyOn(TestBed.inject(ToastService), 'success');
     sessionService.createSession.and.returnValues(
-      of({ exitoso: true, mensaje: 'Sesión creada' } as any),
-      of({ exitoso: true } as any)
+      of<never>({ exitoso: true, mensaje: 'Sesión creada' } as never),
+      of<never>({ exitoso: true } as never)
     );
     component.verHubGrupo(course);
     component.abrirCrearSesionExtraordinaria();
@@ -438,7 +438,7 @@ describe('TeacherGruposComponent', () => {
 
   it('permite cancelar sesión con la bandera activa (B.1)', () => {
     sessionService.cancelarSesion.and.returnValue(
-      of({ exitoso: true, datos: { idSesion: 'ses-cancelar', idGrupo: 'crs-1', estado: 'CANCELADA', cancelacion: null, estudiantesNotificados: 0 } } as any)
+      of<never>({ exitoso: true, datos: { idSesion: 'ses-cancelar', idGrupo: 'crs-1', estado: 'CANCELADA', cancelacion: null, estudiantesNotificados: 0 } } as never)
     );
     component.verHubGrupo(course);
     const sesion: ClassSession = {
@@ -491,7 +491,7 @@ describe('TeacherGruposComponent', () => {
   describe('APP-05 reclamos por grupo', () => {
     const GROUP_A = '3f0c1d2e-0000-4000-8000-000000000001';
     const GROUP_B = '3f0c1d2e-0000-4000-8000-000000000002';
-    const claim = (id: string, grupoId: string) => ({ id, grupoId } as any);
+    const claim = (id: string, grupoId: string) => ({ id, grupoId } as never);
 
     it('solicita el UUID seleccionado y no retiene filas de otro grupo', () => {
       claimService.getReclamosDocentePorGrupo.and.returnValue(of([
@@ -586,7 +586,7 @@ describe('TeacherGruposComponent', () => {
     };
 
     function abrirHub(): void {
-      sessionService.getSessionsByGroup.and.returnValue(of({ exitoso: true, datos: [sesion], total: 1 } as any));
+      sessionService.getSessionsByGroup.and.returnValue(of<never>({ exitoso: true, datos: [sesion], total: 1 } as never));
       component.verHubGrupo(course);
       sessionService.getSessionsByGroup.calls.reset();
     }
@@ -599,7 +599,7 @@ describe('TeacherGruposComponent', () => {
     }
 
     it('B1-F-20 al cancelar con éxito actualiza la sesión con la respuesta, cierra el modal y no recarga por HTTP', () => {
-      sessionService.cancelarSesion.and.returnValue(of(respuesta as any));
+      sessionService.cancelarSesion.and.returnValue(of<never>(respuesta as never));
       abrirHub();
       component.abrirModalCancelarSesion(sesion);
 
@@ -683,11 +683,11 @@ describe('TeacherGruposComponent', () => {
 
     it('DEC-065 (2): SESION_MANUAL_CREADA de una sesión pendiente la marca APROBADA y avisa al docente', () => {
       const toastSuccess = spyOn(TestBed.inject(ToastService), 'success');
-      sessionService.getSessionsByGroup.and.returnValue(of({
+      sessionService.getSessionsByGroup.and.returnValue(of<never>({
         exitoso: true, total: 1,
         datos: [{ ...sesion, title: 'Refuerzo', estadoSolicitud: 'PENDIENTE', pendienteAprobacion: true }],
-      } as any));
-      component.verHubGrupo({ id: 'crs-1' } as any);
+      } as never));
+      component.verHubGrupo({ id: 'crs-1' } as never);
       toastSuccess.calls.reset();
 
       realtimeEvents$.next({
@@ -718,10 +718,10 @@ describe('TeacherGruposComponent', () => {
     });
 
     it('DEC-065 (2): al volver a la lista deja de escuchar las aprobaciones', () => {
-      sessionService.getSessionsByGroup.and.returnValue(of({
+      sessionService.getSessionsByGroup.and.returnValue(of<never>({
         exitoso: true, total: 1, datos: [{ ...sesion, estadoSolicitud: 'PENDIENTE', pendienteAprobacion: true }],
-      } as any));
-      component.verHubGrupo({ id: 'crs-1' } as any);
+      } as never));
+      component.verHubGrupo({ id: 'crs-1' } as never);
       component.volverALista();
 
       realtimeEvents$.next({
@@ -761,7 +761,7 @@ describe('TeacherGruposComponent', () => {
 
     it('B1-F-22 no usa polling para refrescar la lista', () => {
       const spy = spyOn(window, 'setInterval').and.callThrough();
-      sessionService.cancelarSesion.and.returnValue(of(respuesta as any));
+      sessionService.cancelarSesion.and.returnValue(of<never>(respuesta as never));
       abrirHub();
       realtimeEvents$.next(eventoCancelada('crs-1', 'ses-1'));
       component.abrirModalCancelarSesion(sesion);

@@ -39,16 +39,16 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
     toast = jasmine.createSpyObj('ToastService', ['success', 'error', 'warning']);
 
     courseService.getCoordinatorCourses.and.returnValue(of({ exitoso: true, datos: [grupo] }));
-    coordinatorService.getPlanesEstudio.and.returnValue(of({ exitoso: true, datos: [{ id: 'plan-1' } as any, { id: 'plan-2' } as any] }));
+    coordinatorService.getPlanesEstudio.and.returnValue(of({ exitoso: true, datos: [{ id: 'plan-1' } as never, { id: 'plan-2' } as never] }));
     coordinatorService.getAsignaturasPorPlan.and.callFake((planId: string) =>
       planId === 'plan-1'
-        ? of({ exitoso: true, datos: [{ id: 'asig-1', codigo: 'IS-1', nombre: 'Arquitectura de Software' } as any] })
+        ? of({ exitoso: true, datos: [{ id: 'asig-1', codigo: 'IS-1', nombre: 'Arquitectura de Software' } as never] })
         : throwError(() => new Error('plan sin acceso'))
     );
     coordinatorService.getDocentesPrograma.and.returnValue(
-      of({ exitoso: true, datos: [{ idDocente: 'doc-1', nombreCompleto: 'Ana Pérez' } as any] })
+      of({ exitoso: true, datos: [{ idDocente: 'doc-1', nombreCompleto: 'Ana Pérez' } as never] })
     );
-    coordinatorService.getPeriodosAcademicos.and.returnValue(of({ exitoso: true, datos: [{ id: 'per-1', nombre: '2026-2' } as any] }));
+    coordinatorService.getPeriodosAcademicos.and.returnValue(of({ exitoso: true, datos: [{ id: 'per-1', nombre: '2026-2' } as never] }));
 
     await TestBed.configureTestingModule({
       imports: [CoordinatorGroupsComponent],
@@ -208,7 +208,7 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
     component.abrirEditar(grupo);
     expect(component.modo()).toBe('EDITAR');
     expect(component.form).toEqual(jasmine.objectContaining({ codigo: 1, nombre: 'Grupo 1', idDocente: 'doc-1', cupoMaximo: 35 }));
-    expect(component.form.franjas).not.toBe(grupo.franjas as any);
+    expect(component.form.franjas).not.toBe(grupo.franjas as never);
 
     component.guardar();
 
@@ -273,7 +273,7 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
   });
 
   it('F-COO-009: el selector de docentes trae todas las paginas del directorio (mas de 100)', () => {
-    const docente = (n: number) => ({ idDocente: `doc-${n}`, nombreCompleto: `Docente ${n}` }) as any;
+    const docente = (n: number) => ({ idDocente: `doc-${n}`, nombreCompleto: `Docente ${n}` }) as never;
     const pagina1 = Array.from({ length: 100 }, (_, i) => docente(i + 1));
     const pagina2 = Array.from({ length: 20 }, (_, i) => docente(i + 101));
     coordinatorService.getDocentesPrograma.calls.reset();

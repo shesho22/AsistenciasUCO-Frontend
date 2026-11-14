@@ -23,7 +23,7 @@ describe('SecurityAdministrationComponent', () => {
   let securityUiLoader: jasmine.SpyObj<SecurityUiModuleLoader>;
   let mountSpy: jasmine.Spy;
   let unmountSpy: jasmine.Spy;
-  let originalRuntimeEnv: unknown;
+  let originalRuntimeEnv!: unknown;
 
   const adminUser: User = {
     id: 'admin-1',
@@ -346,7 +346,7 @@ describe('SecurityAdministrationComponent', () => {
  */
 describe('SecurityAdministrationComponent: process para el bundle de Security UI', () => {
   const global = globalThis as { process?: unknown };
-  let procesoOriginal: unknown;
+  let procesoOriginal!: unknown;
   let teniaProceso: boolean;
 
   beforeEach(() => {

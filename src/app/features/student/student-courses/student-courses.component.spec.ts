@@ -525,7 +525,7 @@ describe('StudentCoursesComponent', () => {
     component.iniciarReclamo(mockSesiones[0]);
     expect(component.vistaActual()).toBe('RECLAMO');
     expect(component.sesionReclamar()?.id).toBe('ses-1');
-    claimServiceSpy.crearReclamo.and.returnValue(of({ exitoso: true, mensajeUsuario: 'Reclamo radicado.' } as any));
+    claimServiceSpy.crearReclamo.and.returnValue(of<never>({ exitoso: true, mensajeUsuario: 'Reclamo radicado.' } as never));
     component.enviarReclamo({ categoria: 'Médico / Salud', justificacion: 'Estuve incapacitado por gripa fuerte.' });
     expect(claimServiceSpy.crearReclamo).toHaveBeenCalled();
     expect(toastSpy.success).toHaveBeenCalledWith('Reclamo radicado.');

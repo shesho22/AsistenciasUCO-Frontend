@@ -90,7 +90,7 @@ describe('AttendanceControlComponent contract corrections', () => {
       'descargarPlanillaExcel',
     ]);
     groupService.getAllGroups.and.returnValue(
-      of({ exitoso: true, total: 1, datos: [{ id: 'group-1', capacidadMaximaPermitida: 40 }] } as any)
+      of<never>({ exitoso: true, total: 1, datos: [{ id: 'group-1', capacidadMaximaPermitida: 40 }] } as never)
     );
     groupService.descargarPlanillaExcel.and.returnValue(
       of(new Blob(['test-excel'], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }))
@@ -115,16 +115,16 @@ describe('AttendanceControlComponent contract corrections', () => {
     realtimeAlerts$ = new Subject<RealtimeConnectionState>();
     realtimeSync = jasmine.createSpyObj<AttendanceRealtimeSyncService>(
       'AttendanceRealtimeSyncService',
-      ['watch', 'watchCancelaciones', 'watchTomas', 'connectGroup', 'disconnect', 'connectionAlerts'] as any
+      ['watch', 'watchCancelaciones', 'watchTomas', 'connectGroup', 'disconnect', 'connectionAlerts'] as never
     ) as typeof realtimeSync;
     realtimeSync.watch.and.returnValue(NEVER);
-    (realtimeSync as any).watchCancelaciones.and.returnValue(NEVER);
-    (realtimeSync as any).watchTomas.and.returnValue(NEVER);
+    realtimeSync['watchCancelaciones'].and.returnValue(NEVER);
+    realtimeSync['watchTomas'].and.returnValue(NEVER);
     realtimeSync.connectionAlerts.and.returnValue(realtimeAlerts$.asObservable());
 
     catalogService.getIdentityDocumentTypes.and.returnValue(of([]));
     courseService.getCurrentTeacherCourses.and.returnValue(
-      of({
+      of<never>({
         exitoso: true,
         datos: [
           {
@@ -139,10 +139,10 @@ describe('AttendanceControlComponent contract corrections', () => {
             colorCategory: 'emerald',
           },
         ],
-      } as any)
+      } as never)
     );
     sessionService.getSessionsByGroup.and.returnValue(
-      of({
+      of<never>({
         exitoso: true,
         datos: [
           {
@@ -157,7 +157,7 @@ describe('AttendanceControlComponent contract corrections', () => {
             ...sesionActivaV2(),
           },
         ],
-      } as any)
+      } as never)
     );
     attendanceService.saveBatchAttendance.and.returnValue(
       of({ exitoso: true, mensaje: 'ok' })
@@ -387,7 +387,7 @@ describe('AttendanceControlComponent contract corrections', () => {
 
   it('mantiene una lista vacía válida sin mostrar error', () => {
     sessionService.getSessionsByGroup.and.returnValue(
-      of({ exitoso: true, datos: [], total: 0 } as any)
+      of<never>({ exitoso: true, datos: [], total: 0 } as never)
     );
     const component = createComponent();
 
@@ -414,7 +414,7 @@ describe('AttendanceControlComponent contract corrections', () => {
       })
     );
     sessionService.getSessionsByGroup.and.returnValue(
-      of({
+      of<never>({
         exitoso: true,
         total: 2,
         datos: [1, 2].map((n) => ({
@@ -428,13 +428,13 @@ describe('AttendanceControlComponent contract corrections', () => {
           records: [],
           ...sesionActivaV2(),
         })),
-      } as any)
+      } as never)
     );
     const component = createComponent();
 
     expect(component.courseOptions()).toEqual([
       { value: grupoId, label: 'Arquitectura de Software (Grupo 001 - Arq Software)' },
-    ] as any);
+    ] as never);
     expect(component.selectedCourseId()).toBe(grupoId);
     expect(sessionService.getSessionsByGroup).toHaveBeenCalledWith(grupoId);
     expect(component.sessions().length).toBe(2);
@@ -455,7 +455,7 @@ describe('AttendanceControlComponent contract corrections', () => {
   // solo con la sesión activa derivada de sus instantes v2. Los bloqueos están en attendance-control.ses01.spec.ts.
   it('permite marcar EX con la sesión activa confirmada, sin capturar causa', () => {
     sessionService.getSessionsByGroup.and.returnValue(
-      of({
+      of<never>({
         exitoso: true,
         datos: [
           {
@@ -470,7 +470,7 @@ describe('AttendanceControlComponent contract corrections', () => {
             ...sesionActivaV2(),
           },
         ],
-      } as any)
+      } as never)
     );
     const component = createComponent([activeStudent], []);
 
@@ -611,7 +611,7 @@ describe('AttendanceControlComponent contract corrections', () => {
   describe('APP-05 dialogo de reclamos por grupo', () => {
     const GROUP_A = '3f0c1d2e-0000-4000-8000-000000000001';
     const GROUP_B = '3f0c1d2e-0000-4000-8000-000000000002';
-    const claim = (id: string, grupoId: string) => ({ id, grupoId, estadoSolicitud: 'PENDIENTE' } as any);
+    const claim = (id: string, grupoId: string) => ({ id, grupoId, estadoSolicitud: 'PENDIENTE' } as never);
 
     it('consulta por UUID aunque la bandera legacy este desactivada y conserva solo el grupo exacto', () => {
       const component = createComponent([activeStudent], []);
@@ -652,7 +652,7 @@ describe('AttendanceControlComponent contract corrections', () => {
 
   it('resolverReclamoGrupo procesa respuesta exitosa y actualiza toast', () => {
     attendanceClaimService.resolverReclamo.and.returnValue(
-      of({ exitoso: true, mensajeUsuario: 'Reclamo aprobado.' } as any)
+      of<never>({ exitoso: true, mensajeUsuario: 'Reclamo aprobado.' } as never)
     );
     const component = createComponent([activeStudent], []);
 
@@ -683,14 +683,14 @@ describe('AttendanceControlComponent contract corrections', () => {
     expect(component.toastType()).toBe('success');
     expect(attendanceService.getAttendancesByGroup.calls.count()).toBeGreaterThan(cargasAntes);
 
-    attendanceClaimService.resolverReclamo.and.returnValue(of({ exitoso: true, mensajeUsuario: 'ok' } as any));
+    attendanceClaimService.resolverReclamo.and.returnValue(of<never>({ exitoso: true, mensajeUsuario: 'ok' } as never));
     component.resolverReclamoGrupo({ id: 'rec-2', accion: 'RECHAZADA' });
     expect(attendanceClaimService.resolverReclamo).toHaveBeenCalledTimes(2);
   });
 
   it('onCreateSessionSubmit crea sesión exitosamente y actualiza lista', () => {
     sessionService.createSession.and.returnValue(
-      of({ exitoso: true, mensaje: 'Sesión creada.', datos: { id: 'ses-nueva' } } as any)
+      of<never>({ exitoso: true, mensaje: 'Sesión creada.', datos: { id: 'ses-nueva' } } as never)
     );
     const component = createComponent([activeStudent], []);
 

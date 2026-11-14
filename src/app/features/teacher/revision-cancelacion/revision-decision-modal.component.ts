@@ -15,6 +15,13 @@ import { MarcaRevisionDocente } from '../../../core/models/revision-cancelacion.
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 
+/** Lo que el modal lee de la revision: su id, las acciones permitidas o la revision anidada de una marca. */
+export interface RevisionDecisionEntrada {
+  id?: string;
+  accionesPermitidas?: readonly string[] | null;
+  revision?: { id?: string } | null;
+}
+
 @Component({
     selector: 'app-revision-decision-modal',
     imports: [FormsModule],
@@ -152,7 +159,8 @@ export class RevisionDecisionModalComponent {
   private readonly toast = inject(ToastService, { optional: true });
 
   isOpen = model<boolean>(false);
-  revision = input<MarcaRevisionDocente | any>(null);
+  /** La revision a decidir, o la marca que la contiene (`marca.revision`). */
+  revision = input<RevisionDecisionEntrada | MarcaRevisionDocente | null>(null);
   estudianteNombre = input<string>('');
 
   decisionRegistrada = output<void>();
@@ -166,7 +174,7 @@ export class RevisionDecisionModalComponent {
 
   opciones = computed(() => {
     const rev = this.revision();
-    const permitidas: string[] = rev?.accionesPermitidas ?? ['MANTENER', 'PROPONER'];
+    const permitidas: readonly string[] = rev?.accionesPermitidas ?? ['MANTENER', 'PROPONER'];
     const resultado: Array<{ valor: string; etiqueta: string; descripcion: string }> = [];
 
     if (permitidas.includes('MANTENER')) {
@@ -235,7 +243,7 @@ export class RevisionDecisionModalComponent {
         motivo: this.motivo().trim(),
       })
       .subscribe({
-        next: (res: any) => {
+        next: (res) => {
           this.enviando.set(false);
           if (res?.mensajeUsuario && this.toast) {
             this.toast.success(res.mensajeUsuario);
@@ -245,10 +253,8 @@ export class RevisionDecisionModalComponent {
         },
         error: (err: unknown) => {
           this.enviando.set(false);
-          const errorMsg =
-            (err as any)?.error?.message ||
-            (err as any)?.error?.mensajeUsuario ||
-            getApiErrorMessage(err);
+          const cuerpo = (err as { error?: { message?: string; mensajeUsuario?: string } } | null)?.error;
+          const errorMsg = cuerpo?.message || cuerpo?.mensajeUsuario || getApiErrorMessage(err);
           this.errorMensaje.set(errorMsg);
         },
       });

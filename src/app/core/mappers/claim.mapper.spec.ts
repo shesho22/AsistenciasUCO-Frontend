@@ -94,8 +94,8 @@ describe('ClaimMapper.fromReclamoDocente (LB-004D)', () => {
   });
 
   it('EST-03 (S3923): la categoría como string se conserva tal cual y sin categoría se arma desde código y nombre', () => {
-    expect(ClaimMapper.fromReclamoDocente({ ...base, categoria: 'MED' }, formatter).categoria).toBe('MED' as any);
-    const desdeCodigo = ClaimMapper.fromReclamoDocente({ ...base, categoria: undefined, codigoCategoria: 'LAB', nombreCategoria: 'Laboral' } as any, formatter);
+    expect(ClaimMapper.fromReclamoDocente({ ...base, categoria: 'MED' }, formatter).categoria).toBe('MED' as never);
+    const desdeCodigo = ClaimMapper.fromReclamoDocente({ ...base, categoria: undefined, codigoCategoria: 'LAB', nombreCategoria: 'Laboral' } as never, formatter);
     expect(desdeCodigo.categoria).toEqual({ codigo: 'LAB', nombre: 'Laboral' });
   });
 });

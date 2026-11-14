@@ -11,29 +11,29 @@ describe('environment.features (CULM-001 B.1)', () => {
 
   it('F-ADM-016: useFrontendMocks ignora localStorage y no usa localStorage como fuente de verdad', () => {
     localStorage.setItem('USE_MOCKS', 'true');
-    (window as any)['env'] = { USE_MOCKS: 'false' };
+    window.env = { USE_MOCKS: 'false' };
     expect(environment.useFrontendMocks).toBeFalse();
     localStorage.removeItem('USE_MOCKS');
   });
 
   it('SEG-12: sin SECURITY_PROVIDER el proveedor por defecto es baseline, no legacy', () => {
-    (window as any)['env'] = {};
+    window.env = {};
     expect(environment.security.provider).toBe('baseline');
-    (window as any)['env'] = { SECURITY_PROVIDER: '  ' };
+    window.env = { SECURITY_PROVIDER: '  ' };
     expect(environment.security.provider).toBe('baseline');
   });
 
   it('SEG-12: legacy solo se activa si se fija explícito y un valor desconocido sigue siendo invalid', () => {
-    (window as any)['env'] = { SECURITY_PROVIDER: 'legacy' };
+    window.env = { SECURITY_PROVIDER: 'legacy' };
     expect(environment.security.provider).toBe('legacy');
-    (window as any)['env'] = { SECURITY_PROVIDER: 'otro' };
+    window.env = { SECURITY_PROVIDER: 'otro' };
     expect(environment.security.provider).toBe('invalid');
   });
 
   it('F-ADM-016: las banderas muertas (sessionsEnabled, attendanceEnabled) fueron retiradas', () => {
-    const features = environment.features as any;
-    expect(features.sessionsEnabled).toBeUndefined();
-    expect(features.attendanceEnabled).toBeUndefined();
-    expect(features.teacherClaimsEnabled).toBeUndefined();
+    const features = environment.features as unknown as Record<string, unknown>;
+    expect(features['sessionsEnabled']).toBeUndefined();
+    expect(features['attendanceEnabled']).toBeUndefined();
+    expect(features['teacherClaimsEnabled']).toBeUndefined();
   });
 });

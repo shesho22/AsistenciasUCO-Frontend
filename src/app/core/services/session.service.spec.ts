@@ -156,8 +156,8 @@ describe('SessionService', () => {
   });
 
   it('los mocks de sesiones (rama useMocks) no inventan topic/room/tipo/status', fakeAsync(() => {
-    const prevEnv = (window as any)['env'];
-    (window as any)['env'] = { USE_MOCKS: 'true' };
+    const prevEnv = (window as never)['env'];
+    window.env = { USE_MOCKS: 'true' };
     let sessions: any[] = [];
     service
       .getSessionsByGroup('crs-1')
@@ -172,7 +172,7 @@ describe('SessionService', () => {
       expect(session.tipo).toBeUndefined();
       expect(session.status).toBeUndefined();
     }
-    (window as any)['env'] = prevEnv;
+    window.env = prevEnv;
   }));
 
   it('closeSession y cancelarSesion funcionan en modo HTTP', () => {

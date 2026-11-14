@@ -47,7 +47,7 @@ function okPageResponse<T>(
       tamanoPagina: tamano,
       totalElementos: total,
       totalPaginas: Math.max(1, Math.ceil(total / tamano)),
-    } as any,
+    } as ApiPageResponse<T>,
   });
 }
 
@@ -111,14 +111,14 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     return of(okResponse(mockStore.decanos)).pipe(delay(250));
   }
   if (url.endsWith('/admin/decanos') && method === 'POST') {
-    const body = req.body as any;
+    const body = req.body as Partial<(typeof mockStore.decanos)[number]>;
     const nuevo = {
       ...body,
       id: `DEC-${mockStore.decanos.length + 1}`,
       fechaAsignacion: new Date().toISOString().slice(0, 10),
       estado: 'ACTIVO',
     };
-    mockStore.decanos = [nuevo, ...mockStore.decanos];
+    mockStore.decanos = [nuevo as (typeof mockStore.decanos)[number], ...mockStore.decanos];
     mockStore.registrarAuditoria({
       modulo: 'USUARIOS',
       accion: 'CREAR',
@@ -148,14 +148,14 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     return of(okResponse(mockStore.facultades)).pipe(delay(200));
   }
   if (url.endsWith('/admin/facultades') && method === 'POST') {
-    const body = req.body as any;
+    const body = req.body as Partial<(typeof mockStore.facultades)[number]>;
     const nueva = { ...body, id: `FAC-${mockStore.facultades.length + 1}`, estado: 'ACTIVO' };
-    mockStore.facultades = [nueva, ...mockStore.facultades];
+    mockStore.facultades = [nueva as (typeof mockStore.facultades)[number], ...mockStore.facultades];
     return of(okResponse(nueva, 'Facultad registrada exitosamente.')).pipe(delay(250));
   }
   if (url.includes('/admin/facultades/') && method === 'PUT') {
     const id = url.split('/').pop()!;
-    const body = req.body as any;
+    const body = req.body as Partial<(typeof mockStore.facultades)[number]>;
     mockStore.facultades = mockStore.facultades.map((f) => (f.id === id ? { ...f, ...body } : f));
     const actualizada = mockStore.facultades.find((f) => f.id === id);
     return of(okResponse(actualizada, 'Facultad actualizada.')).pipe(delay(250));
@@ -181,15 +181,15 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   }
   if (url.includes('/admin/parametros/') && method === 'PATCH') {
     const id = url.split('/').pop()!;
-    const body = req.body as any;
+    const body = req.body as { valor?: string };
     mockStore.parametros = mockStore.parametros.map((p) =>
-      p.id === id ? { ...p, valor: body.valor, ultimaModificacion: new Date().toISOString().slice(0, 16) } : p
+      p.id === id ? { ...p, valor: body.valor as string, ultimaModificacion: new Date().toISOString().slice(0, 16) } : p
     );
     const param = mockStore.parametros.find((p) => p.id === id);
     return of(okResponse(param, 'Parámetro actualizado.')).pipe(delay(150));
   }
   if (url.endsWith('/admin/cierre-masivo') && method === 'POST') {
-    const body = req.body as any;
+    const body = req.body as { idPeriodoAcademico?: string } | null;
     const nuevoReporte = {
       id: `REP-CIE-${mockStore.reportesCierre.length + 1}`,
       periodoCodigo: body?.idPeriodoAcademico || '2026-2',
@@ -220,7 +220,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     })).pipe(delay(250));
   }
   if (url.endsWith('/decano/coordinadores') && method === 'POST') {
-    const body = req.body as any;
+    const body = req.body as Partial<(typeof mockStore.coordinadores)[number]>;
     const nuevo = {
       ...body,
       id: `COORD-${mockStore.coordinadores.length + 1}`,
@@ -228,7 +228,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
       totalGrupos: 0,
       estado: 'ACTIVO',
     };
-    mockStore.coordinadores = [nuevo, ...mockStore.coordinadores];
+    mockStore.coordinadores = [nuevo as (typeof mockStore.coordinadores)[number], ...mockStore.coordinadores];
     return of(okResponse(nuevo, 'Coordinador registrado exitosamente.')).pipe(delay(300));
   }
   if (url.includes('/decano/coordinadores/') && url.endsWith('/estado') && method === 'PATCH') {
@@ -242,16 +242,16 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   }
   if (url.includes('/decano/coordinadores/') && method === 'PUT') {
     const id = url.split('/').pop()!;
-    const body = req.body as any;
+    const body = req.body as Partial<(typeof mockStore.coordinadores)[number]>;
     mockStore.coordinadores = mockStore.coordinadores.map((c) => (c.id === id ? { ...c, ...body } : c));
     return of(okResponse({ idCoordinador: id, sincronizacionIdentidad: 'OK', mensajeUsuario: null }, 'Datos del coordinador actualizados con éxito.')).pipe(delay(250));
   }
   if (url.includes('/decano/coordinadores/') && url.endsWith('/facultad') && method === 'PATCH') {
     const segments = url.split('/');
     const id = segments[segments.length - 2];
-    const body = req.body as any;
+    const body = req.body as { nuevaFacultad?: string };
     mockStore.coordinadores = mockStore.coordinadores.map((c) =>
-      c.id === id ? { ...c, facultad: body.nuevaFacultad } : c
+      c.id === id ? { ...c, facultad: body.nuevaFacultad as string } : c
     );
     const coord = mockStore.coordinadores.find((c) => c.id === id);
     return of(okResponse(coord, `Coordinador reasignado a la ${body.nuevaFacultad}.`)).pipe(delay(250));
@@ -291,7 +291,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     return of(okResponse(dtos)).pipe(delay(200));
   }
   if (url.endsWith('/estudiante/matricular-grupo') && method === 'POST') {
-    const body = req.body as any;
+    const body = req.body as { codigo?: string } | null;
     return of(okResponse({ grupoId: body?.codigo }, '¡Te has matriculado exitosamente en el grupo!')).pipe(delay(250));
   }
   // ================= COORDINADOR: DOCENTES =================
@@ -299,9 +299,9 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     return of(okResponse(mockStore.docentes)).pipe(delay(250));
   }
   if (url.endsWith('/coordinador/docentes') && method === 'POST') {
-    const body = req.body as any;
+    const body = req.body as Partial<(typeof mockStore.docentes)[number]>;
     const nuevo = { ...body, id: `DOC-${mockStore.docentes.length + 1}`, totalGruposAsignados: 0, estado: 'ACTIVO' };
-    mockStore.docentes = [nuevo, ...mockStore.docentes];
+    mockStore.docentes = [nuevo as (typeof mockStore.docentes)[number], ...mockStore.docentes];
     return of(okResponse(nuevo, 'Docente registrado en el programa exitosamente.')).pipe(delay(300));
   }
   // HU095: consolidado del directorio docente (activos, inactivos y por tipo de vinculacion).
@@ -389,8 +389,8 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     return of(okPagina(estudiantes, req)).pipe(delay(200));
   }
   if (url.endsWith('/coordinador/planes-estudio') && method === 'POST') {
-    const body = req.body as any;
-    const nuevo: PlanEstudioItem = {
+    const body = req.body as Partial<PlanEstudioItem>;
+    const nuevo = {
       ...body,
       id: `PLAN-${mockStore.planesEstudio.length + 1}`,
       estado: 'VIGENTE',
@@ -399,13 +399,13 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
       anioVigencia: body.anioVigencia || new Date().getFullYear(),
       totalCreditos: body.totalCreditos || 160,
       descripcion: body.descripcion || '',
-    };
+    } as PlanEstudioItem;
     mockStore.planesEstudio = [nuevo, ...mockStore.planesEstudio];
     return of(okResponse(nuevo, `Plan de estudio ${nuevo.codigo} creado exitosamente.`)).pipe(delay(300));
   }
   if (url.includes('/coordinador/planes-estudio/') && method === 'PUT') {
     const id = url.split('/').pop()!;
-    const body = req.body as any;
+    const body = req.body as Partial<PlanEstudioItem>;
     mockStore.planesEstudio = mockStore.planesEstudio.map((p) => (p.id === id ? { ...p, ...body } : p));
     const actualizado = mockStore.planesEstudio.find((p) => p.id === id);
     return of(okResponse(actualizado, 'Plan de estudio modificado con éxito.')).pipe(delay(250));
@@ -603,14 +603,14 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     return of(okResponse(mockStore.periodosAcademicos)).pipe(delay(200));
   }
   if (url.endsWith('/admin/periodos-academicos') && method === 'POST') {
-    const body = req.body as any;
+    const body = req.body as Partial<(typeof mockStore.periodosAcademicos)[number]>;
     const nuevo = { ...body, id: `PER-${mockStore.periodosAcademicos.length + 1}` };
-    mockStore.periodosAcademicos = [nuevo, ...mockStore.periodosAcademicos];
+    mockStore.periodosAcademicos = [nuevo as (typeof mockStore.periodosAcademicos)[number], ...mockStore.periodosAcademicos];
     return of(okResponse(nuevo, `Período académico ${nuevo.codigo} creado exitosamente.`)).pipe(delay(250));
   }
   if (url.includes('/admin/periodos-academicos/') && method === 'PUT') {
     const id = url.split('/').pop()!;
-    const body = req.body as any;
+    const body = req.body as Partial<(typeof mockStore.periodosAcademicos)[number]>;
     mockStore.periodosAcademicos = mockStore.periodosAcademicos.map((p) => (p.id === id ? { ...p, ...body } : p));
     const actualizado = mockStore.periodosAcademicos.find((p) => p.id === id);
     return of(okResponse(actualizado, 'Parámetros del período académico actualizados.')).pipe(delay(250));
@@ -647,7 +647,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     );
   }
   if (url.endsWith('/asistencias/revisiones') && method === 'POST') {
-    const body = req.body as any;
+    const body = req.body as Partial<(typeof mockStore.solicitudesRevision)[number]> & { tomaId?: string };
     const nuevoReclamo = {
       ...body,
       id: `REC-${mockStore.solicitudesRevision.length + 1}`,
@@ -658,7 +658,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
       ...datosTomaMock(body?.tomaId ?? null),
       resultadoAprobacion: null,
     };
-    mockStore.solicitudesRevision = [nuevoReclamo, ...mockStore.solicitudesRevision];
+    mockStore.solicitudesRevision = [nuevoReclamo as (typeof mockStore.solicitudesRevision)[number], ...mockStore.solicitudesRevision];
     return of(okResponse(nuevoReclamo, 'Solicitud de revisión registrada correctamente.')).pipe(delay(300));
   }
   if (url.includes('/estudiante/reclamos/') && method === 'DELETE') {
@@ -741,7 +741,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   }
   if (url.includes('/docente/reclamos/') && method === 'PATCH') {
     const id = url.split('/').pop()!;
-    const body = req.body as any;
+    const body = req.body as { accion?: string; respuestaDocente?: string; respuesta?: string; resultado?: string } | null;
     const accion = body?.accion === 'APROBADA' ? 'APROBADA' : 'RECHAZADA';
     const comentario = body?.respuestaDocente || body?.respuesta || '';
     mockStore.solicitudesRevision = mockStore.solicitudesRevision.map((r) =>

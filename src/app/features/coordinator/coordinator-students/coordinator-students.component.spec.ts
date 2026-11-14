@@ -40,17 +40,17 @@ describe('CoordinatorStudentsComponent', () => {
     courseService = jasmine.createSpyObj<CourseService>('CourseService', ['getTeacherCourses']);
 
     coordinatorService.getEstudiantesDirectorio.and.returnValue(
-      of({ exitoso: true, datos: [] } as any)
+      of<never>({ exitoso: true, datos: [] } as never)
     );
     coordinatorService.getEstudiantesDirectorioPagina.and.returnValue(
       of({ items: [], totalItems: 0, totalPages: 0, page: 0, size: 6 })
     );
     coordinatorService.getEstudiantesPorGrupo.and.returnValue(
-      of({ exitoso: true, datos: [] } as any)
+      of<never>({ exitoso: true, datos: [] } as never)
     );
 
     courseService.getTeacherCourses.and.returnValue(
-      of({ exitoso: true, datos: [course] } as any)
+      of<never>({ exitoso: true, datos: [course] } as never)
     );
 
     const routerSpy = jasmine.createSpyObj('Router', ['navigate']);

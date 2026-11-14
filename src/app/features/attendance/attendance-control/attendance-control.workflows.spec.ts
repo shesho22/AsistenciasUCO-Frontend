@@ -79,10 +79,10 @@ describe('AttendanceControlComponent public workflows', () => {
     ]);
 
     courseService.getCurrentTeacherCourses.and.returnValue(
-      of({ exitoso: true, datos: [course] } as any)
+      of<never>({ exitoso: true, datos: [course] } as never)
     );
     sessionService.getSessionsByGroup.and.returnValue(
-      of({ exitoso: true, datos: [session], total: 1 } as any)
+      of<never>({ exitoso: true, datos: [session], total: 1 } as never)
     );
     groupService.getStudentsByGroup.and.returnValue(of({
       exitoso: true,
@@ -107,8 +107,8 @@ describe('AttendanceControlComponent public workflows', () => {
       of({ exitoso: true, mensajeUsuario: 'Matriculada' })
     );
     realtime.watch.and.returnValue(NEVER);
-    (realtime as any).watchCancelaciones.and.returnValue(NEVER);
-    (realtime as any).watchTomas.and.returnValue(NEVER);
+    realtime['watchCancelaciones'].and.returnValue(NEVER);
+    realtime['watchTomas'].and.returnValue(NEVER);
     realtime.connectionAlerts.and.returnValue(NEVER);
     registrationConfig = jasmine.createSpyObj('StudentRegistrationConfigService', ['getEmailDomain']);
     registrationConfig.getEmailDomain.and.returnValue(of('@uco.edu.co'));
@@ -174,7 +174,7 @@ describe('AttendanceControlComponent public workflows', () => {
       of({ exitoso: true, mensaje: 'Creada' })
     );
     sessionService.getSessionsByGroup.and.returnValue(
-      of({ exitoso: true, datos: [session, created], total: 2 } as any)
+      of<never>({ exitoso: true, datos: [session, created], total: 2 } as never)
     );
 
     component.openNewSessionModal();
@@ -447,11 +447,11 @@ describe('AttendanceControlComponent public workflows', () => {
 
   it('openExcuseModal marca EX con la sesión activa confirmada (SES-01)', () => {
     sessionService.getSessionsByGroup.and.returnValue(
-      of({
+      of<never>({
         exitoso: true,
         datos: [{ ...session }],
         total: 1,
-      } as any)
+      } as never)
     );
     const component = createComponent();
 
@@ -462,11 +462,11 @@ describe('AttendanceControlComponent public workflows', () => {
 
   it('markAllPresent/saveAttendance guardan con la sesión activa confirmada (SES-01)', () => {
     sessionService.getSessionsByGroup.and.returnValue(
-      of({
+      of<never>({
         exitoso: true,
         datos: [{ ...session }],
         total: 1,
-      } as any)
+      } as never)
     );
     const component = createComponent();
 

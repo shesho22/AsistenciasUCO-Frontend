@@ -571,7 +571,7 @@ describe('AttendanceClaimService', () => {
     });
 
     it('falla cerrado si una fila no incluye el UUID grupoId requerido por el DTO', () => {
-      let resultado: unknown;
+      let resultado!: SolicitudRevisionItem[];
       let error: unknown;
       service.getReclamosDocentePorGrupo(GROUP_A).subscribe({
         next: (items) => (resultado = items),
@@ -587,7 +587,7 @@ describe('AttendanceClaimService', () => {
     });
 
     it('falla cerrado si el total cambia mientras se recorren las páginas', () => {
-      let resultado: unknown;
+      let resultado!: SolicitudRevisionItem[];
       let error: unknown;
       service.getReclamosDocentePorGrupo(GROUP_A).subscribe({
         next: (items) => (resultado = items),
@@ -609,7 +609,7 @@ describe('AttendanceClaimService', () => {
 
     it('propaga 403, 501 y fallo de conexión sin convertirlos en lista vacía', () => {
       for (const status of [403, 501]) {
-        let resultado: unknown;
+        let resultado!: SolicitudRevisionItem[];
         let error: { status?: number } | undefined;
         service.getReclamosDocentePorGrupo(GROUP_A).subscribe({
           next: (items) => (resultado = items),
@@ -623,7 +623,7 @@ describe('AttendanceClaimService', () => {
         expect(error?.status).toBe(status);
       }
 
-      let resultado: unknown;
+      let resultado!: SolicitudRevisionItem[];
       let error: { status?: number } | undefined;
       service.getReclamosDocentePorGrupo(GROUP_A).subscribe({
         next: (items) => (resultado = items),

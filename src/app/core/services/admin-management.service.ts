@@ -19,6 +19,54 @@ import {
 } from '../models/role-management.model';
 import { CorregirIdentidadPayload, ResultadoCorreccionIdentidad } from '../models/correccion-identidad.model';
 
+/** DecanoItemDTO del backend (o una fila ya normalizada): la pantalla trabaja con `DecanoItem`. */
+interface DecanoApiDto {
+  id: string;
+  idUsuario?: string;
+  tipoIdentificacion?: string;
+  tipoIdentificacionId?: string;
+  numeroIdentificacion?: string | number | null;
+  nombreCompleto?: string | null;
+  nombres?: string;
+  apellidos?: string;
+  correo?: string;
+  idFacultad?: string | null;
+  nombreFacultad?: string;
+  facultad?: string;
+  telefono?: string;
+  fechaAsignacion?: string;
+  estado?: DecanoItem['estado'];
+  estaActivoDecano?: boolean | null;
+  estaActivo?: boolean | null;
+}
+
+/** FacultadItemDTO del backend (HU109-HU111, HU117). */
+interface FacultadApiDto {
+  id: string;
+  codigo?: string;
+  nombreFacultad?: string;
+  nombre?: string;
+  idDecano?: string;
+  decanoId?: string;
+  nombreCompletoDecano?: string;
+  decanoNombre?: string;
+  estaActivaFacultad?: boolean | null;
+  totalProgramas?: unknown;
+  totalEstudiantes?: unknown;
+}
+
+/** Página de parámetros: `ApiPageResponse` o, en despliegues anteriores, `ApiResponse` con `datos` y `total`. */
+interface ParametrosPaginaApiDto {
+  exitoso?: boolean;
+  elementos?: ParametroAdminDto[];
+  datos?: ParametroAdminDto[];
+  numeroPagina?: number;
+  tamanoPagina?: number;
+  totalElementos?: number;
+  total?: number;
+  totalPaginas?: number;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -57,11 +105,11 @@ export class AdminManagementService {
 
   // ================= DECANOS =================
   getDecanos(): Observable<ApiResponse<DecanoItem[]>> {
-    return this.http.get<ApiResponse<any[]>>(`${environment.apiUrl}/admin/decanos`).pipe(
+    return this.http.get<ApiResponse<DecanoApiDto[]>>(`${environment.apiUrl}/admin/decanos`).pipe(
       map((res) => {
         if (res && res.exitoso && Array.isArray(res.datos)) {
           // Deduplicar decanos por ID para que cada autoridad aparezca una única vez en el catálogo
-          const decanosMap = new Map<string, any>();
+          const decanosMap = new Map<string, DecanoApiDto>();
           for (const item of res.datos) {
             if (item.id && !decanosMap.has(item.id)) {
               decanosMap.set(item.id, item);
@@ -79,7 +127,7 @@ export class AdminManagementService {
   }
 
   /** Lleva el DecanoItemDTO del backend (o una fila ya normalizada) al modelo de presentación. */
-  private normalizarDecano(raw: any): DecanoItem {
+  private normalizarDecano(raw: DecanoApiDto): DecanoItem {
     const nombreCompleto = (raw.nombreCompleto || '').trim();
     let nombres = raw.nombres || '';
     let apellidos = raw.apellidos || '';
@@ -123,16 +171,22 @@ export class AdminManagementService {
   /** A.2-8: cambia el estado del decano; `datos` llega como DecanoItemDTO y se normaliza para la tarjeta. */
   toggleDecanoStatus(id: string): Observable<ApiResponse<DecanoItem | null>> {
     return this.http
-      .patch<ApiResponse<any | null>>(`${environment.apiUrl}/admin/decanos/${id}/toggle`, {})
-      .pipe(map((res) => (res?.exitoso && res.datos ? { ...res, datos: this.normalizarDecano(res.datos) } : res)));
+      .patch<ApiResponse<DecanoApiDto | null>>(`${environment.apiUrl}/admin/decanos/${id}/toggle`, {})
+      .pipe(
+        map((res) =>
+          res?.exitoso && res.datos
+            ? { ...res, datos: this.normalizarDecano(res.datos) }
+            : (res as unknown as ApiResponse<DecanoItem | null>)
+        )
+      );
   }
 
   // ================= FACULTADES Y ÁREAS =================
   cargarFacultades(): Observable<ApiResponse<FacultadItem[]>> {
-    return this.http.get<ApiResponse<any[]>>(`${environment.apiUrl}/admin/facultades`).pipe(
+    return this.http.get<ApiResponse<FacultadApiDto[]>>(`${environment.apiUrl}/admin/facultades`).pipe(
       map((res) => {
         if (res.exitoso && Array.isArray(res.datos)) {
-          const items: FacultadItem[] = res.datos.map((dto: any) => ({
+          const items: FacultadItem[] = res.datos.map((dto) => ({
             id: dto.id,
             codigo: dto.codigo || (dto.nombreFacultad ? dto.nombreFacultad.substring(0, 4).toUpperCase() : 'FAC'),
             nombre: dto.nombreFacultad || dto.nombre || '',
@@ -150,15 +204,15 @@ export class AdminManagementService {
     );
   }
 
-  crearFacultad(item: { nombre: string; idDecano: string; idInstitucion?: string; codigo?: string }): Observable<ApiResponse<any>> {
-    return this.http.post<ApiResponse<any>>(`${environment.apiUrl}/admin/facultades`, {
+  crearFacultad(item: { nombre: string; idDecano: string; idInstitucion?: string; codigo?: string }): Observable<ApiResponse<FacultadApiDto>> {
+    return this.http.post<ApiResponse<FacultadApiDto>>(`${environment.apiUrl}/admin/facultades`, {
       nombre: item.nombre,
       idDecano: item.idDecano,
       idInstitucion: item.idInstitucion,
     }).pipe(
       tap((res) => {
         if (res.exitoso && res.datos) {
-          const dto: any = res.datos;
+          const dto = res.datos;
           const decanoObj = this._decanos().find((d) => d.id === (dto.idDecano || item.idDecano));
           const nuevoItem: FacultadItem = {
             id: dto.id,
@@ -182,22 +236,22 @@ export class AdminManagementService {
     cambios: { nombre?: string; idDecano?: string }
   ): Observable<ApiResponse<FacultadItem>> {
     return this.http
-      .put<ApiResponse<any>>(`${environment.apiUrl}/admin/facultades/${id}`, cambios)
+      .put<ApiResponse<FacultadApiDto>>(`${environment.apiUrl}/admin/facultades/${id}`, cambios)
       .pipe(map((res) => this.aplicarFacultadRespuesta(id, res)));
   }
 
   /** HU111: recibe el estado deseado (idempotente); la señal solo cambia con la respuesta exitosa. */
   cambiarEstadoFacultad(id: string, activa: boolean): Observable<ApiResponse<FacultadItem>> {
     return this.http
-      .patch<ApiResponse<any>>(`${environment.apiUrl}/admin/facultades/${id}/estado`, { activa })
+      .patch<ApiResponse<FacultadApiDto>>(`${environment.apiUrl}/admin/facultades/${id}/estado`, { activa })
       .pipe(map((res) => this.aplicarFacultadRespuesta(id, res)));
   }
 
-  private aplicarFacultadRespuesta(id: string, res: ApiResponse<any>): ApiResponse<FacultadItem> {
+  private aplicarFacultadRespuesta(id: string, res: ApiResponse<FacultadApiDto>): ApiResponse<FacultadItem> {
     if (!res.exitoso || !res.datos) {
       return { ...res, datos: undefined as unknown as FacultadItem };
     }
-    const dto: any = res.datos;
+    const dto = res.datos;
     const actual = this._facultades().find((f) => f.id === id);
     const item: FacultadItem = {
       ...actual,
@@ -250,8 +304,8 @@ export class AdminManagementService {
     if (filtro?.pagina) params = params.set('pagina', String(filtro.pagina));
     if (filtro?.tamano) params = params.set('tamano', String(filtro.tamano));
 
-    return this.http.get<any>(`${environment.apiUrl}/admin/parametros`, { params }).pipe(
-      map((res: any) => {
+    return this.http.get<ParametrosPaginaApiDto | null>(`${environment.apiUrl}/admin/parametros`, { params }).pipe(
+      map((res) => {
         const elementos: ParametroAdminDto[] = res?.elementos ?? res?.datos ?? [];
         this._parametros.set(elementos);
         return {

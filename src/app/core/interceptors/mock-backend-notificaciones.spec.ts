@@ -26,7 +26,7 @@ describe('mockBackendInterceptor - notificaciones', () => {
   afterEach(() => localStorage.removeItem('USE_MOCKS'));
 
   function respuesta<T>(llamada: () => ReturnType<HttpClient['get']>): T {
-    let resultado: unknown;
+    let resultado!: unknown;
     llamada().subscribe((value) => (resultado = value));
     tick(1000);
     return resultado as T;

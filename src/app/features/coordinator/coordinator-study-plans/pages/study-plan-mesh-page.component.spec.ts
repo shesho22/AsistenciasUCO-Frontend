@@ -219,7 +219,7 @@ describe('CoordinatorStudyPlanMeshPageComponent', () => {
   });
 
   it('eliminarSemestreVacio avisa sin llamar al backend si el último semestre tiene asignaturas (codigoSemestre)', () => {
-    component.asignaturas.set([{ id: 'a-10', codigoSemestre: 'S10' } as any]);
+    component.asignaturas.set([{ id: 'a-10', codigoSemestre: 'S10' } as never]);
     component.eliminarSemestreVacio();
 
     http.expectNone(`${environment.apiUrl}/coordinador/planes-estudio/PLAN-SIS-2024/semestres/10`);

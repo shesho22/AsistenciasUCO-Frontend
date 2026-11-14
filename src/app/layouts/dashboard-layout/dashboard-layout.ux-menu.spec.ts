@@ -8,7 +8,7 @@ import { ToastService } from '../../shared/components/toast/toast.component';
 import { UserRole } from '../../core/models/user.model';
 
 describe('DashboardLayoutComponent menu simplificado (CULM-001 UX)', () => {
-  let original: unknown;
+  let original!: unknown;
 
   beforeEach(() => {
     original = (window as unknown as { env?: unknown }).env;

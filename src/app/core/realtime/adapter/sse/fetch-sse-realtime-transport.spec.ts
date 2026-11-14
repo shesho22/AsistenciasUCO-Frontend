@@ -426,7 +426,7 @@ describe('FetchSseRealtimeTransport', () => {
         event: 'ASISTENCIAS_SESION_ACTUALIZADAS',
         data: JSON.stringify(validEvent()),
         retry: undefined,
-      } as any);
+      } as never);
 
       expect(events.length).toBe(1);
     });

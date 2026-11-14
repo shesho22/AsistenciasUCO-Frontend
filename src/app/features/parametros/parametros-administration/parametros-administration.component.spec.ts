@@ -46,7 +46,7 @@ describe('ParametrosAdministrationComponent', () => {
   let mountSpy: jasmine.Spy;
   let unmountSpy: jasmine.Spy;
   let ready: Deferred<void>;
-  let originalRuntimeEnv: unknown;
+  let originalRuntimeEnv!: unknown;
 
   const adminUser: User = {
     id: 'admin-1',

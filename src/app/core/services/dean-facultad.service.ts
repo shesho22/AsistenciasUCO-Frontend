@@ -18,6 +18,28 @@ export type Filtro = Record<string, string | number | boolean | null | undefined
  * HU104/HU105/HU108/HU109/HU119/HU145: consultas de solo lectura del decano sobre su facultad. El backend limita los
  * datos a la facultad del decano autenticado; los errores se propagan para que la UI muestre el mensaje.
  */
+/** Detalle de un grupo de la facultad (GET /decano/grupos/{id}); acepta los nombres del contrato y los legados. */
+export interface GrupoDetalleDecanoApiDto {
+  id?: string;
+  codigo?: string;
+  code?: string;
+  nombreAsignatura?: string;
+  nombreMateria?: string;
+  name?: string;
+  nombre?: string;
+  seccion?: string;
+  section?: string;
+  horario?: string;
+  schedule?: string;
+  aula?: string;
+  room?: string;
+  estudiantesActivos?: number;
+  totalEstudiantes?: number;
+  enrolledStudentsCount?: number;
+  capacidadMaximaPermitida?: number;
+  cupoMaximo?: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class DeanFacultadService {
   private readonly http = inject(HttpClient);
@@ -39,8 +61,8 @@ export class DeanFacultadService {
     return this.http.get<ApiResponse<FichaEstudianteFacultad>>(`${this.base}/estudiantes/${idEstudiante}`);
   }
 
-  getGrupoDetalle(grupoId: string): Observable<ApiResponse<any>> {
-    return this.http.get<ApiResponse<any>>(`${this.base}/grupos/${grupoId}`);
+  getGrupoDetalle(grupoId: string): Observable<ApiResponse<GrupoDetalleDecanoApiDto>> {
+    return this.http.get<ApiResponse<GrupoDetalleDecanoApiDto>>(`${this.base}/grupos/${grupoId}`);
   }
 
   getEstructura(): Observable<ApiResponse<FacultadNodo[]>> {
