@@ -1,7 +1,8 @@
-import { HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import {
   getApiSuccessMessage,
   getApiCorrelationId,
+  getErrorCorrelationId,
   getApiErrorCode,
   getApiErrorMessage,
   getApiErrorResponse,
@@ -181,5 +182,33 @@ describe('getApiSuccessMessage', () => {
     expect(getApiSuccessMessage({ exitoso: true }, 'r')).toBe('r');
     expect(getApiSuccessMessage(null, 'r')).toBe('r');
     expect(getApiSuccessMessage({ mensajeUsuario: '  ' }, 'r')).toBe('r');
+  });
+});
+
+describe('getErrorCorrelationId (VAL OBS-14)', () => {
+  const cuerpo = (correlationId: unknown) => ({
+    timestamp: '2026-11-14T10:00:00Z', status: 500, error: 'x', code: 'INTERNAL_ERROR', message: 'm', path: '/p', correlationId,
+  });
+
+  it('prefiere el correlationId del envelope', () => {
+    const error = new HttpErrorResponse({ status: 500, error: cuerpo('corr-cuerpo-01'), headers: undefined });
+    expect(getErrorCorrelationId(error)).toBe('corr-cuerpo-01');
+  });
+
+  it('sin envelope usa la cabecera X-Correlation-Id', () => {
+    const error = new HttpErrorResponse({
+      status: 403,
+      error: null,
+      headers: new HttpHeaders({ 'X-Correlation-Id': 'corr-cabecera-02' }),
+    });
+    expect(getErrorCorrelationId(error)).toBe('corr-cabecera-02');
+  });
+
+  it('descarta identificadores con forma insegura o ausentes', () => {
+    const inseguro = new HttpErrorResponse({ status: 500, headers: new HttpHeaders({ 'X-Correlation-Id': '<script>x</script>' }) });
+    expect(getErrorCorrelationId(inseguro)).toBeNull();
+    expect(getErrorCorrelationId(new HttpErrorResponse({ status: 500 }))).toBeNull();
+    expect(getErrorCorrelationId(new Error('x'))).toBeNull();
+    expect(getErrorCorrelationId(null)).toBeNull();
   });
 });

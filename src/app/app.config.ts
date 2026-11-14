@@ -1,4 +1,4 @@
-import { ApplicationConfig, provideZoneChangeDetection, APP_INITIALIZER } from '@angular/core';
+import { ApplicationConfig, ErrorHandler, provideBrowserGlobalErrorListeners, provideZoneChangeDetection, APP_INITIALIZER } from '@angular/core';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { provideHttpClient, withInterceptors, withXsrfConfiguration, withXhr } from '@angular/common/http';
 import { routes } from './app.routes';
@@ -10,6 +10,7 @@ import { errorInterceptor } from './core/interceptors/error.interceptor';
 import { AuthService } from './core/services/auth.service';
 import { REALTIME_TRANSPORT } from './core/realtime/contract/realtime-transport';
 import { FetchSseRealtimeTransport } from './core/realtime/adapter/sse/fetch-sse-realtime-transport';
+import { GlobalErrorHandler } from './core/errors/global-error-handler';
 
 export function initializeKeycloak(authService: AuthService) {
   return () => authService.initKeycloak();
@@ -18,6 +19,9 @@ export function initializeKeycloak(authService: AuthService) {
 export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
+    // VAL OBS-14: errores no capturados (incluidos los de ventana y promesas) pasan por el manejador global.
+    provideBrowserGlobalErrorListeners(),
+    { provide: ErrorHandler, useClass: GlobalErrorHandler },
     provideRouter(routes, withComponentInputBinding()),
     provideHttpClient(withXhr(), 
       withInterceptors([

@@ -100,6 +100,8 @@ export const MENSAJES_UI = {
   UI_DEAN_PROGRAMAS_GESTION_001: 'Programa actualizado.',
   UI_DEAN_PROGRAMAS_GESTION_002: 'Programa creado.',
   UI_DEAN_PROGRAMAS_GESTION_003: 'Estado del programa actualizado.',
+  UI_ERROR_GLOBAL_001: 'Ocurrió un error inesperado en la aplicación. Si se repite, recarga la página y reporta el código de referencia.',
+  UI_ERROR_REFERENCIA: 'Código de referencia: {id}',
   UI_ERROR_INTERCEPTOR_001: 'Acceso denegado: No cuenta con los permisos necesarios para realizar esta acción.',
   UI_PARAMETRO_EDICION_MODAL_001: 'Parámetro actualizado exitosamente.',
   UI_ROLE_GUARD_001: 'Acceso denegado: No cuenta con los permisos necesarios para acceder a esta sección.',

@@ -31,6 +31,8 @@ interface NavItem {
       [visible]="toastState().visible"
       [message]="toastState().message"
       [type]="toastState().type"
+      [reference]="toastState().reference"
+      [duration]="toastState().reference ? 8000 : 3500"
       (dismissed)="toastService.dismiss()"
     ></app-toast>
     <a
