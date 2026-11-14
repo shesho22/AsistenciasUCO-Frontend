@@ -85,4 +85,17 @@ describe('GroupClaimsModalComponent: resolución por toma', () => {
     expect(fixture.nativeElement.querySelector('[data-testid="aprobar-presente"]')).toBeNull();
     expect(fixture.nativeElement.querySelector('[data-testid="aprobar-justificada"]')).not.toBeNull();
   });
+
+  it('muestra la toma reclamada con su hora local y sin hora cuando el backend no la informa', () => {
+    fixture.componentRef.setInput('reclamos', [
+      reclamo({ id: 'rec-a', idToma: 'toma-2', numeroToma: 2, fechaPuntoControlUtc: '2026-09-10T14:00:00Z' }),
+      reclamo({ id: 'rec-b', idToma: 'toma-3', numeroToma: 3, fechaPuntoControlUtc: null }),
+    ]);
+    fixture.detectChanges();
+    const textos = Array.from<HTMLElement>(fixture.nativeElement.querySelectorAll('[data-testid="grupo-reclamo-toma"]')).map((p) =>
+      (p.textContent ?? '').replace(/\s+/g, ' ').trim()
+    );
+    expect(textos[0]).toMatch(/^Reclamo de la toma 2 · \d{2}:\d{2}$/);
+    expect(textos[1]).toBe('Reclamo de la toma 3');
+  });
 });

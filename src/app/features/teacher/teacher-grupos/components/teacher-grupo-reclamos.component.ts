@@ -1,8 +1,9 @@
-import { Component, ChangeDetectionStrategy, input, output } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, input, output } from '@angular/core';
 
 import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
 import { type EstadoCargaReclamos, SolicitudRevisionItem } from '../../../../core/models/role-management.model';
 import { etiquetaEstadoReclamo, varianteEstadoReclamo } from '../../../../core/utils/reclamo-estado.util';
+import { SessionTimeZoneService } from '../../../../core/services/session-timezone.service';
 
 @Component({
     selector: 'app-teacher-grupo-reclamos',
@@ -51,7 +52,7 @@ import { etiquetaEstadoReclamo, varianteEstadoReclamo } from '../../../../core/u
                 </app-badge>
               </div>
               @if (rec.numeroToma != null) {
-                <p class="text-[11px] font-semibold text-warm-800" data-testid="grupo-reclamo-toma">Reclamo de la toma {{ rec.numeroToma }}</p>
+                <p class="text-[11px] font-semibold text-warm-800" data-testid="grupo-reclamo-toma">{{ textoToma(rec) }}</p>
               }
               <p class="text-xs text-warm-700 italic">"{{ rec.justificacionSolicitud }}"</p>
               <div class="text-[11px] text-warm-500 flex items-center justify-between pt-1 border-t border-warm-200/60">
@@ -86,6 +87,8 @@ import { etiquetaEstadoReclamo, varianteEstadoReclamo } from '../../../../core/u
   `
 })
 export class TeacherGrupoReclamosComponent {
+  private readonly zona = inject(SessionTimeZoneService);
+
   reclamos = input<SolicitudRevisionItem[]>([]);
   /** Valor LOADED conserva el uso anterior del componente standalone; el hub envía el estado HTTP real. */
   estadoCarga = input<EstadoCargaReclamos>('LOADED');
@@ -95,4 +98,10 @@ export class TeacherGrupoReclamosComponent {
   /** Una solicitud retirada por el estudiante se ve neutra: no es pendiente, rechazada ni resuelta. */
   readonly varianteEstado = varianteEstadoReclamo;
   readonly etiquetaEstado = etiquetaEstadoReclamo;
+
+  /** "Reclamo de la toma N · HH:mm" (hora local del punto de control; UTC solo en el contrato). */
+  textoToma(rec: Pick<SolicitudRevisionItem, 'numeroToma' | 'fechaPuntoControlUtc'>): string {
+    const hora = rec.fechaPuntoControlUtc ? this.zona.formatTemporal(rec.fechaPuntoControlUtc, 'time') : null;
+    return ['Reclamo de la toma ' + rec.numeroToma, hora].filter((parte) => !!parte).join(' · ');
+  }
 }

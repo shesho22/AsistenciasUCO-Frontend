@@ -1,4 +1,4 @@
-﻿import { Component, ChangeDetectionStrategy, input, output, signal } from '@angular/core';
+﻿import { Component, ChangeDetectionStrategy, inject, input, output, signal } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
@@ -7,6 +7,7 @@ import { BadgeComponent, BadgeVariant } from '../../../../shared/components/badg
 import { type EstadoCargaReclamos, ResultadoAprobacionReclamo, SolicitudRevisionItem } from '../../../../core/models/role-management.model';
 import { Course } from '../../../../core/models/course.model';
 import { etiquetaEstadoReclamo, etiquetaResultadoAprobacion } from '../../../../core/utils/reclamo-estado.util';
+import { SessionTimeZoneService } from '../../../../core/services/session-timezone.service';
 
 @Component({
     selector: 'app-group-claims-modal',
@@ -72,7 +73,7 @@ import { etiquetaEstadoReclamo, etiquetaResultadoAprobacion } from '../../../../
                 </div>
 
                 @if (rec.numeroToma != null) {
-                  <p class="text-[11px] font-semibold text-warm-800" data-testid="grupo-reclamo-toma">Reclamo de la toma {{ rec.numeroToma }}</p>
+                  <p class="text-[11px] font-semibold text-warm-800" data-testid="grupo-reclamo-toma">{{ textoToma(rec) }}</p>
                 }
 
                 <p class="text-xs text-warm-700 italic bg-white p-2.5 rounded-lg border border-warm-100">
@@ -161,6 +162,8 @@ import { etiquetaEstadoReclamo, etiquetaResultadoAprobacion } from '../../../../
   `
 })
 export class GroupClaimsModalComponent {
+  private readonly zona = inject(SessionTimeZoneService);
+
   isOpen = input<boolean>(false);
   course = input<Course | null | undefined>(null);
   reclamos = input<SolicitudRevisionItem[]>([]);
@@ -175,6 +178,12 @@ export class GroupClaimsModalComponent {
 
   textoResultado(rec: SolicitudRevisionItem): string | null {
     return rec.estadoSolicitud === 'APROBADA' ? etiquetaResultadoAprobacion(rec.resultadoAprobacion) : null;
+  }
+
+  /** "Reclamo de la toma N · HH:mm" (hora local del punto de control; UTC solo en el contrato). */
+  textoToma(rec: Pick<SolicitudRevisionItem, 'numeroToma' | 'fechaPuntoControlUtc'>): string {
+    const hora = rec.fechaPuntoControlUtc ? this.zona.formatTemporal(rec.fechaPuntoControlUtc, 'time') : null;
+    return ['Reclamo de la toma ' + rec.numeroToma, hora].filter((parte) => !!parte).join(' · ');
   }
 
   getBadgeVariant(estado?: string): BadgeVariant {
