@@ -1,6 +1,7 @@
 import {
   SessionTimeZoneError,
   formatInstantInTimeZone,
+  horarioDentroDelMismoDia,
   localDateTimeToExplicitInstant,
   localSessionToInstants,
   normalizeRfc3339ToUtc,
@@ -24,16 +25,37 @@ describe('session-timezone.util', () => {
       .toEqual({ date: '2026-07-16', time: '03:00' });
   });
 
-  it('permite cruzar medianoche y compara instantes, no strings de hora', () => {
+  it('DEC-072: inicio y fin quedan el mismo día local con su offset real', () => {
     expect(localSessionToInstants({
       date: '2026-07-15',
-      startTime: '23:30',
-      endTime: '01:30',
+      startTime: '20:30',
+      endTime: '22:00',
       timeZone: 'America/Bogota',
     })).toEqual({
-      fechaHoraInicio: '2026-07-15T23:30:00-05:00',
-      fechaHoraFin: '2026-07-16T01:30:00-05:00',
+      fechaHoraInicio: '2026-07-15T20:30:00-05:00',
+      fechaHoraFin: '2026-07-15T22:00:00-05:00',
     });
+  });
+
+  it('DEC-072: rechaza una hora de fin anterior a la de inicio en lugar de pasarla al día siguiente', () => {
+    // Antes de DEC-072 (2026-11-13) 23:30 → 01:30 se convertía en una sesión que terminaba el día siguiente.
+    let error: unknown;
+    try {
+      localSessionToInstants({ date: '2026-07-15', startTime: '23:30', endTime: '01:30', timeZone: 'America/Bogota' });
+    } catch (e) {
+      error = e;
+    }
+    expect(error instanceof SessionTimeZoneError).toBeTrue();
+    expect((error as SessionTimeZoneError).code).toBe('END_BEFORE_START');
+    expect((error as Error).message).toMatch(/medianoche/);
+  });
+
+  it('DEC-072: horarioDentroDelMismoDia exige fin estrictamente posterior y ambos valores', () => {
+    expect(horarioDentroDelMismoDia('08:00', '10:00')).toBeTrue();
+    expect(horarioDentroDelMismoDia('20:30', '10:00')).toBeFalse();
+    expect(horarioDentroDelMismoDia('08:00', '08:00')).toBeFalse();
+    expect(horarioDentroDelMismoDia('', '10:00')).toBeFalse();
+    expect(horarioDentroDelMismoDia('08:00', '')).toBeFalse();
   });
 
   it('rechaza inicio y fin iguales en lugar de convertirlos silenciosamente en 24 horas', () => {

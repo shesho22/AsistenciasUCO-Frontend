@@ -102,6 +102,8 @@ export const MENSAJES_UI = {
   UI_ERROR_INTERCEPTOR_001: 'Acceso denegado: No cuenta con los permisos necesarios para realizar esta acción.',
   UI_PARAMETRO_EDICION_MODAL_001: 'Parámetro actualizado exitosamente.',
   UI_ROLE_GUARD_001: 'Acceso denegado: No cuenta con los permisos necesarios para acceder a esta sección.',
+  // DEC-072: una sesión empieza y termina el mismo día (no cruza la medianoche).
+  UI_SESION_HORARIO_MISMO_DIA: 'La hora de fin debe ser posterior a la hora de inicio el mismo día; una sesión no puede pasar de la medianoche.',
   // DEC-065 (2): solicitudes de sesión extraordinaria (antes en core/models/sesion-manual.util.ts).
   UI_SESION_SOLICITUD_APROBADA: 'La coordinación aprobó la sesión extraordinaria {nombre}.',
   UI_SESION_SOLICITUD_APROBADA_SIN_NOMBRE: 'La coordinación aprobó la sesión extraordinaria.',

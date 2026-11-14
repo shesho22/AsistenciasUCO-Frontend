@@ -14,6 +14,7 @@ import { TeacherAttendanceSummaryService } from '../../../core/services/teacher-
 import { Course } from '../../../core/models/course.model';
 import { ClassSession } from '../../../core/models/attendance.model';
 import { ToastService } from '../../../shared/components/toast/toast.component';
+import { mensajeUi } from '../../../core/messages/mensajes-ui';
 import { apiHttpError } from '../../../core/testing/api-error.fixture';
 import { HttpErrorResponse } from '@angular/common/http';
 import { RealtimeService } from '../../../core/realtime/realtime.service';
@@ -373,8 +374,9 @@ describe('TeacherGruposComponent', () => {
     expect(sessionService.createSession).not.toHaveBeenCalled();
   });
 
-  it('guardarSesion permite una sesión que cruza medianoche y delega la conversión UTC V2', () => {
-    sessionService.createSession.and.returnValue(of({ exitoso: true, mensaje: 'Sesión creada' } as any));
+  it('DEC-072: guardarSesion no crea una sesión cuya hora de fin es anterior a la de inicio (no cruza medianoche)', () => {
+    // Antes de DEC-072 (2026-11-13) 23:30 → 01:30 se enviaba y quedaba como sesión que terminaba al día siguiente.
+    const toastWarning = spyOn(TestBed.inject(ToastService), 'warning');
     component.verHubGrupo(course);
     component.abrirCrearSesionExtraordinaria();
     component.sesionForm = {
@@ -387,12 +389,41 @@ describe('TeacherGruposComponent', () => {
 
     component.guardarSesion();
 
-    expect(sessionService.createSession).toHaveBeenCalledWith('crs-1', {
-      title: 'Sesión nocturna',
-      date: '2026-09-15',
-      startTime: '23:30',
-      endTime: '01:30',
-    });
+    expect(sessionService.createSession).not.toHaveBeenCalled();
+    expect(toastWarning).toHaveBeenCalledOnceWith(mensajeUi('UI_SESION_HORARIO_MISMO_DIA'));
+  });
+
+  it('DEC-072: una sesión ya guardada que cruza medianoche se puede editar sin tocar su horario', () => {
+    sessionService.updateSession.and.returnValue(of({ exitoso: true, datos: null }));
+    const legado = {
+      id: 'ses-noche', courseId: 'crs-1', sessionNumber: 3, title: 'Nocturna',
+      date: '2026-09-15', startTime: '22:30', endTime: '00:35', records: [],
+    };
+    component.verHubGrupo(course);
+    component.sessions.set([legado]);
+    component.abrirEditarSesion(legado);
+    component.sesionForm = { ...component.sesionForm, title: 'Nocturna renombrada' };
+
+    component.guardarSesion();
+
+    expect(sessionService.updateSession).toHaveBeenCalledTimes(1);
+  });
+
+  it('DEC-072: al editar, cambiar el horario a uno que cruza medianoche avisa y no guarda', () => {
+    const toastWarning = spyOn(TestBed.inject(ToastService), 'warning');
+    const sesion = {
+      id: 'ses-1', courseId: 'crs-1', sessionNumber: 1, title: 'Editada',
+      date: '2026-09-10', startTime: '08:00', endTime: '10:00', records: [],
+    };
+    component.verHubGrupo(course);
+    component.sessions.set([sesion]);
+    component.abrirEditarSesion(sesion);
+    component.sesionForm = { ...component.sesionForm, startTime: '20:30', endTime: '10:00' };
+
+    component.guardarSesion();
+
+    expect(sessionService.updateSession).not.toHaveBeenCalled();
+    expect(toastWarning).toHaveBeenCalledOnceWith(mensajeUi('UI_SESION_HORARIO_MISMO_DIA'));
   });
 
   it('permite abrir y cerrar modal de matrícula de grupo', () => {
