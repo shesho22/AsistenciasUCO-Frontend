@@ -4,6 +4,8 @@ import { CoordinatorManagementService } from '../../../core/services/coordinator
 import { PeriodoAcademicoItem } from '../../../core/models/role-management.model';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
+import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load-error.util';
+import { ErrorCargaComponent } from '../../../shared/components/error-carga/error-carga.component';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { PeriodoFormDatos } from '../../coordinator/coordinator-study-plans/components/academic-period-form-modal.component';
 import { AcademicPeriodsTabComponent } from '../../coordinator/coordinator-study-plans/components/academic-periods-tab.component';
@@ -17,7 +19,7 @@ import { mensajeUi } from '../../../core/messages/mensajes-ui';
   selector: 'app-admin-periodos',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full' },
-  imports: [CommonModule, AcademicPeriodsTabComponent, ConfirmDialogComponent],
+  imports: [CommonModule, AcademicPeriodsTabComponent, ConfirmDialogComponent, ErrorCargaComponent],
   template: `
     <div class="space-y-6 animate-fade-in">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
@@ -41,13 +43,17 @@ import { mensajeUi } from '../../../core/messages/mensajes-ui';
         </span>
       </div>
 
-      <app-academic-periods-tab
-        [periodos]="periodos()"
-        [guardando]="guardando()"
-        [errorGuardado]="errorGuardado()"
-        (savePeriodo)="guardarPeriodo($event)"
-        (deletePeriodo)="eliminarPeriodo($event)"
-      />
+      @if (errorCarga(); as fallo) {
+        <app-error-carga [error]="fallo" (reintentar)="cargarPeriodos()" />
+      } @else {
+        <app-academic-periods-tab
+          [periodos]="periodos()"
+          [guardando]="guardando()"
+          [errorGuardado]="errorGuardado()"
+          (savePeriodo)="guardarPeriodo($event)"
+          (deletePeriodo)="eliminarPeriodo($event)"
+        />
+      }
 
       <app-confirm-dialog
         [isOpen]="periodoPorEliminar() !== null"
@@ -69,6 +75,8 @@ export class AdminPeriodosComponent implements OnInit {
 
   periodos = signal<PeriodoAcademicoItem[]>(this.coordService.periodos());
   guardando = signal(false);
+  /** Fallo de la última carga de períodos: se muestra en lugar de la tabla para no confundirlo con una lista vacía. */
+  errorCarga = signal<LoadErrorState | null>(null);
   errorGuardado = signal('');
   /** Período pendiente de confirmación en el diálogo de eliminación (HU098). */
   periodoPorEliminar = signal<PeriodoAcademicoItem | null>(null);
@@ -78,9 +86,13 @@ export class AdminPeriodosComponent implements OnInit {
   }
 
   cargarPeriodos(): void {
+    this.errorCarga.set(null);
     this.coordService.getPeriodosAcademicos().subscribe({
       next: (res) => this.periodos.set(res.datos || []),
-      error: (err) => this.toast.error(getApiErrorMessage(err)),
+      error: (err) => {
+        this.errorCarga.set(classifyLoadError(err));
+        this.toast.error(getApiErrorMessage(err));
+      },
     });
   }
 

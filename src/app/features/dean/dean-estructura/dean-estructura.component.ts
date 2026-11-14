@@ -6,6 +6,8 @@ import { FacultadNodo } from '../../../core/models/facultad-decano.model';
 import { BadgeComponent } from '../../../shared/components/badge/badge.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
+import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load-error.util';
+import { ErrorCargaComponent } from '../../../shared/components/error-carga/error-carga.component';
 
 /**
  * HU109 (organigrama de la facultad) y HU119 (árbol Facultad → Programa → Plan de estudio). Solo lectura; cada
@@ -15,7 +17,7 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
     selector: 'app-dean-estructura',
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: { class: 'block w-full' },
-    imports: [RouterLink, BadgeComponent],
+    imports: [RouterLink, BadgeComponent, ErrorCargaComponent],
     template: `
     <div class="space-y-6 animate-fade-in">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
@@ -35,7 +37,9 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
         </span>
       </div>
 
-      @if (facultades().length === 0 && !cargando()) {
+      @if (error(); as fallo) {
+        <app-error-carga [error]="fallo" (reintentar)="cargar()" />
+      } @else if (facultades().length === 0 && !cargando()) {
         <div class="bg-white rounded-2xl border border-warm-200 p-10 text-center text-sm text-warm-500">No hay una facultad asociada a tu usuario.</div>
       }
 
@@ -103,6 +107,7 @@ export class DeanEstructuraComponent implements OnInit {
 
   facultades = signal<FacultadNodo[]>([]);
   cargando = signal(false);
+  error = signal<LoadErrorState | null>(null);
   abiertos = signal<Set<string>>(new Set());
 
   totalProgramas = computed(() => this.facultades().reduce((n, f) => n + f.programas.length, 0));
@@ -111,7 +116,12 @@ export class DeanEstructuraComponent implements OnInit {
   );
 
   ngOnInit(): void {
+    this.cargar();
+  }
+
+  cargar(): void {
     this.cargando.set(true);
+    this.error.set(null);
     this.service.getEstructura().subscribe({
       next: (res) => {
         const facultades = res.datos ?? [];
@@ -122,6 +132,7 @@ export class DeanEstructuraComponent implements OnInit {
       error: (error: unknown) => {
         this.facultades.set([]);
         this.cargando.set(false);
+        this.error.set(classifyLoadError(error));
         this.toast.error(getApiErrorMessage(error));
       },
     });

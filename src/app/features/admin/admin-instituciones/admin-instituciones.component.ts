@@ -6,6 +6,8 @@ import { CardComponent } from '../../../shared/components/card/card.component';
 import { BadgeComponent } from '../../../shared/components/badge/badge.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
+import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load-error.util';
+import { ErrorCargaComponent } from '../../../shared/components/error-carga/error-carga.component';
 
 /**
  * F-ADM-009: Pantalla de solo lectura de instituciones registradas.
@@ -14,7 +16,7 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 @Component({
     selector: 'app-admin-instituciones',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CardComponent, BadgeComponent],
+    imports: [CardComponent, BadgeComponent, ErrorCargaComponent],
     template: `
     <div class="space-y-6 animate-fade-in">
       <!-- Encabezado -->
@@ -35,6 +37,10 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
         @if (cargando()) {
           <div class="p-8 text-center text-sm text-warm-500" role="status">
             Cargando instituciones...
+          </div>
+        } @else if (error(); as fallo) {
+          <div class="p-6">
+            <app-error-carga [error]="fallo" (reintentar)="cargar()" />
           </div>
         } @else if (instituciones().length === 0) {
           <div class="p-12 text-center text-warm-600">
@@ -99,6 +105,7 @@ export class AdminInstitucionesComponent implements OnInit {
 
   readonly instituciones = signal<any[]>([]);
   readonly cargando = signal(false);
+  readonly error = signal<LoadErrorState | null>(null);
 
   ngOnInit(): void {
     this.cargar();
@@ -106,6 +113,7 @@ export class AdminInstitucionesComponent implements OnInit {
 
   cargar(): void {
     this.cargando.set(true);
+    this.error.set(null);
     this.adminService.getInstituciones().subscribe({
       next: (res) => {
         this.instituciones.set(res.datos ?? []);
@@ -114,6 +122,7 @@ export class AdminInstitucionesComponent implements OnInit {
       error: (err: unknown) => {
         this.instituciones.set([]);
         this.cargando.set(false);
+        this.error.set(classifyLoadError(err));
         this.toast.error(getApiErrorMessage(err));
       },
     });

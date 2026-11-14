@@ -8,6 +8,8 @@ import { SesionFacultadItem } from '../../../core/models/facultad-decano.model';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
+import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load-error.util';
+import { ErrorCargaComponent } from '../../../shared/components/error-carga/error-carga.component';
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
 import { resolveSessionInstant } from '../../../core/time/session-timezone.util';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
@@ -17,7 +19,7 @@ import { mensajeUi } from '../../../core/messages/mensajes-ui';
     selector: 'app-dean-cronograma',
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: { class: 'block w-full' },
-    imports: [EmptyStateComponent, FormsModule, PaginationComponent, SesionEstadoBadgeComponent],
+    imports: [EmptyStateComponent, ErrorCargaComponent, FormsModule, PaginationComponent, SesionEstadoBadgeComponent],
     template: `
     <div class="space-y-6 animate-fade-in">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
@@ -46,7 +48,9 @@ import { mensajeUi } from '../../../core/messages/mensajes-ui';
           <button type="button" class="px-3 py-1.5 rounded-lg bg-primary-600 text-white font-semibold" (click)="filtrar()">Filtrar</button>
         </div>
 
-        @if (sesiones().length === 0 && !cargando()) {
+        @if (error(); as fallo) {
+          <app-error-carga [error]="fallo" (reintentar)="cargar()" />
+        } @else if (sesiones().length === 0 && !cargando()) {
           <app-empty-state
             variant="search"
             title="No hay sesiones programadas en el rango seleccionado."
@@ -114,6 +118,7 @@ export class DeanCronogramaComponent implements OnInit {
   pagina = signal(1);
   tamano = signal(20);
   cargando = signal(false);
+  error = signal<LoadErrorState | null>(null);
   desde = signal('');
   hasta = signal('');
 
@@ -154,8 +159,9 @@ export class DeanCronogramaComponent implements OnInit {
     this.cargar();
   }
 
-  private cargar(): void {
+  cargar(): void {
     this.cargando.set(true);
+    this.error.set(null);
     this.service
       .getSesiones({ desde: this.desde(), hasta: this.hasta(), pagina: this.pagina(), tamano: this.tamano() })
       .subscribe({
@@ -170,6 +176,7 @@ export class DeanCronogramaComponent implements OnInit {
           this.total.set(0);
           this.totalPaginas.set(0);
           this.cargando.set(false);
+          this.error.set(classifyLoadError(error));
           this.toast.error(getApiErrorMessage(error));
         },
       });
