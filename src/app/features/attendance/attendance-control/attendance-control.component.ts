@@ -449,7 +449,7 @@ export class AttendanceControlComponent {
     this.cierrePendiente.set(false);
     if (!toma) return;
     this.tomaService.cerrarToma(toma.idToma, marcarAusentes).subscribe({
-      next: (res) => {
+      next: () => {
         this.dejarDeProyectar();
         this.cargarTomas(toma.idSesion);
         this.recargarSesionActual();
@@ -702,7 +702,6 @@ export class AttendanceControlComponent {
               const currentCourse = this.selectedCourseId();
               const currentSession = this.selectedSessionId();
               const currentVista = this.vistaActual();
-              const targetVista = querySessionId ? 'DETALLE' : 'OVERVIEW';
 
               if (queryCourseId !== currentCourse) {
                 this.onCourseSelect(queryCourseId, querySessionId || undefined);

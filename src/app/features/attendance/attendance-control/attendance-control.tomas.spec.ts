@@ -175,6 +175,15 @@ describe('AttendanceControlComponent tomas (CULM-001 B.2)', () => {
     expect(qrService.abrirQr).not.toHaveBeenCalled();
   });
 
+  it('VAL PRU-11 si el backend rechaza la toma 21 (TOM_004, tope alcanzado) muestra su mensaje y no pide QR', () => {
+    const c = entrar();
+    const mensaje = 'Se alcanzó el máximo de tomas permitidas para esta sesión.';
+    tomaService.abrirToma.and.returnValue(throwError(() => apiHttpError(409, mensaje, 'TOM_004')));
+    c.onModoElegido('QR');
+    expect(c.toastMessage()).toBe(mensaje);
+    expect(qrService.abrirQr).not.toHaveBeenCalled();
+  });
+
   it('B2-F-10 con una toma abierta la lista y el Guardar viven en la toma; guardar envia el lote a /tomas/{id}/asistencias y no al lote legado', () => {
     tomaService.consultarTomas.and.returnValue(of({ exitoso: true, datos: tomasSesion([toma()]) }));
     tomaService.registrarAsistencias.and.returnValue(of({ exitoso: true, datos: { idToma: 'toma-1', idSesion: 'session-1', totalRegistros: 1 } }));

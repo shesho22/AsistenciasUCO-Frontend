@@ -23,29 +23,35 @@ module.exports = tseslint.config(
       '@angular-eslint/component-selector': ['error', { type: 'element', prefix: 'app', style: 'kebab-case' }],
       // Deuda existente al 2026-11-12 (conteo en docs/work-items/VAL-oleada2-cumplimiento/VALIDATION.md).
       '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/no-unused-vars': 'warn',
-      '@typescript-eslint/no-this-alias': 'warn',
-      '@angular-eslint/no-output-native': 'warn',
-      '@angular-eslint/no-input-rename': 'warn',
-      'prefer-const': 'warn',
-      // Regla nueva en angular-eslint 20 (recomendada): 24 servicios usan inyeccion por constructor.
-      // Queda en warn para no mezclar el salto de Angular con un refactor; se migra con ng generate @angular/core:inject.
-      '@angular-eslint/prefer-inject': 'warn',
-      // Regla nueva en angular-eslint 22: Angular 22 cambia el valor por defecto a OnPush y la migracion oficial
-      // marco ChangeDetectionStrategy.Eager en 10 componentes anfitriones de pruebas (*.spec.ts) para conservar
-      // el comportamiento previo. Queda en warn; se revisan uno a uno al pasarlos a OnPush.
-      '@angular-eslint/prefer-on-push-component-change-detection': 'warn',
+      // EST-11 (2026-11-14): sin hallazgos; un parametro o variable intencionalmente sin uso se marca con prefijo `_`.
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+          ignoreRestSiblings: true,
+        },
+      ],
+      // EST-11 (2026-11-14): lote limpiado y subido a error. inject() con la migracion oficial
+      // (ng generate @angular/core:inject) y los anfitriones de prueba ya en OnPush.
+      '@typescript-eslint/no-this-alias': 'error',
+      '@angular-eslint/no-output-native': 'error',
+      '@angular-eslint/no-input-rename': 'error',
+      'prefer-const': 'error',
+      '@angular-eslint/prefer-inject': 'error',
+      '@angular-eslint/prefer-on-push-component-change-detection': 'error',
     },
   },
   {
     files: ['**/*.html'],
     extends: [...angular.configs.templateRecommended, ...angular.configs.templateAccessibility],
     rules: {
-      // Deuda existente al 2026-11-12: accesibilidad y comparaciones en plantillas.
-      '@angular-eslint/template/label-has-associated-control': 'warn',
-      '@angular-eslint/template/eqeqeq': 'warn',
-      '@angular-eslint/template/click-events-have-key-events': 'warn',
-      '@angular-eslint/template/interactive-supports-focus': 'warn',
+      // EST-11 (2026-11-14): accesibilidad y comparaciones en plantillas sin hallazgos; en error.
+      '@angular-eslint/template/label-has-associated-control': 'error',
+      '@angular-eslint/template/eqeqeq': 'error',
+      '@angular-eslint/template/click-events-have-key-events': 'error',
+      '@angular-eslint/template/interactive-supports-focus': 'error',
     },
   },
 );

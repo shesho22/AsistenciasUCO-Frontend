@@ -2,6 +2,14 @@ import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@ang
 
 import { AdminManagementService } from '../../../core/services/admin-management.service';
 import { InstitucionItem } from '../../../core/models/role-management.model';
+
+/** Institución tal como la pinta la tabla: los campos opcionales que algunos despliegues del backend aún envían. */
+type InstitucionVista = InstitucionItem & {
+  rector?: string | null;
+  activa?: boolean;
+  correoContacto?: string | null;
+  totalFacultades?: number | null;
+};
 import { CardComponent } from '../../../shared/components/card/card.component';
 import { BadgeComponent } from '../../../shared/components/badge/badge.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
@@ -97,7 +105,7 @@ export class AdminInstitucionesComponent implements OnInit {
   private readonly adminService = inject(AdminManagementService);
   private readonly toast = inject(ToastService);
 
-  readonly instituciones = signal<any[]>([]);
+  readonly instituciones = signal<InstitucionVista[]>([]);
   readonly cargando = signal(false);
 
   ngOnInit(): void {

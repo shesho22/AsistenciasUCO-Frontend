@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -23,6 +23,8 @@ import { CorregirIdentidadPayload, ResultadoCorreccionIdentidad } from '../model
   providedIn: 'root',
 })
 export class AdminManagementService {
+  private http = inject(HttpClient);
+
   // Decanos
   private _decanos = signal<DecanoItem[]>([]);
   decanos = this._decanos.asReadonly();
@@ -52,8 +54,6 @@ export class AdminManagementService {
   // Reportes Cierre Masivo
   private _reportesCierre = signal<CierrePeriodoReporte[]>([]);
   reportesCierre = this._reportesCierre.asReadonly();
-
-  constructor(private http: HttpClient) {}
 
   // ================= DECANOS =================
   getDecanos(): Observable<ApiResponse<DecanoItem[]>> {

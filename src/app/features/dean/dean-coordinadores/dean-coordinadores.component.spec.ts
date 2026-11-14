@@ -15,8 +15,6 @@ import { CoordinadorItem } from '../../../core/models/role-management.model';
 describe('DeanCoordinadoresComponent', () => {
   let fixture: ComponentFixture<DeanCoordinadoresComponent>;
   let component: DeanCoordinadoresComponent;
-  let deanService: DeanManagementService;
-  let catalogService: CatalogService;
   let toastService: jasmine.SpyObj<ToastService>;
   let http: HttpTestingController;
 
@@ -68,8 +66,6 @@ describe('DeanCoordinadoresComponent', () => {
     }).compileComponents();
 
     http = TestBed.inject(HttpTestingController);
-    deanService = TestBed.inject(DeanManagementService);
-    catalogService = TestBed.inject(CatalogService);
     fixture = TestBed.createComponent(DeanCoordinadoresComponent);
     component = fixture.componentInstance;
   });

@@ -3,7 +3,6 @@ import { Component, OnInit, OnDestroy, inject, signal, computed, ChangeDetection
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AttendanceService } from '../../../core/services/attendance.service';
-import { StudentAttendance } from '../../../core/models/attendance.model';
 import { AVISO_SOLICITUD_SESION_REGISTRADA, mensajeSolicitudAprobada, mensajeSolicitudRechazadaOCancelada } from '../../../core/models/sesion-manual.util';
 import { RealtimeService } from '../../../core/realtime/realtime.service';
 import { REALTIME_EVENT_TYPE, SesionCanceladaRealtimePayload, SesionManualCreadaRealtimePayload } from '../../../core/realtime/model/realtime-event.model';
@@ -422,7 +421,6 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   }
 
   abrirCrearSesionExtraordinaria(): void {
-    const course = this.selectedCourse();
     this.modoFormSesion = 'CREAR';
     this.selectedSessionId = null;
     this.sesionForm = {

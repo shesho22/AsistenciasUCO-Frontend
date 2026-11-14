@@ -4,7 +4,7 @@ import { FormFieldComponent } from './form-field.component';
 
 @Component({
     imports: [FormFieldComponent],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
     <app-form-field label="Nombre" [errorMessage]="error()">
       <input type="text" />

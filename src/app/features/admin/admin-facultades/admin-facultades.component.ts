@@ -5,10 +5,7 @@ import { AdminManagementService } from '../../../core/services/admin-management.
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import {
-  DecanoItem,
-  InstitucionItem,
   FacultadItem,
-  PlanEstudioItem,
   AsignaturaPlanItem,
 } from '../../../core/models/role-management.model';
 import { getBackendUserMessage } from '../../../core/api/errors/api-error.util';

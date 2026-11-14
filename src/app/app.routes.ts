@@ -103,7 +103,7 @@ export const routes: Routes = [
         // Estructura institucional: pestañas facultades e instituciones (/app/admin/estructura/:pestaña).
         path: 'admin/estructura',
         canActivate: [roleGuard],
-        data: { roles: ['ADMINISTRADOR', 'ADMIN'] },
+        data: { roles: ['ADMINISTRADOR'] },
         loadChildren: () =>
           import('./features/admin/admin-estructura/admin-estructura.routes').then((m) => m.ESTRUCTURA_ROUTES),
       },
@@ -111,7 +111,7 @@ export const routes: Routes = [
         // Personas: estudiantes, docentes, decanos y asignaturas (/app/admin/personas/:pestaña).
         path: 'admin/personas',
         canActivate: [roleGuard],
-        data: { roles: ['ADMINISTRADOR', 'ADMIN'] },
+        data: { roles: ['ADMINISTRADOR'] },
         loadChildren: () =>
           import('./features/admin/admin-personas/admin-personas.routes').then((m) => m.PERSONAS_ROUTES),
       },
@@ -121,7 +121,7 @@ export const routes: Routes = [
         // /app/admin/configuracion/:pestaña; sin pestaña abre parámetros. Las rutas hijas viven en su propio archivo diferido.
         path: 'admin/configuracion',
         canActivate: [roleGuard],
-        data: { roles: ['ADMINISTRADOR', 'ADMIN'] },
+        data: { roles: ['ADMINISTRADOR'] },
         loadChildren: () =>
           import('./features/admin/admin-configuracion/admin-configuracion.routes').then((m) => m.CONFIGURACION_ROUTES),
       },
@@ -130,7 +130,7 @@ export const routes: Routes = [
       {
         path: 'admin/indicadores',
         canActivate: [roleGuard],
-        data: { roles: ['ADMINISTRADOR', 'ADMIN'] },
+        data: { roles: ['ADMINISTRADOR'] },
         loadComponent: () =>
           import('./features/admin/admin-indicators/admin-indicators.component').then(
             (m) => m.AdminIndicatorsComponent
@@ -140,7 +140,7 @@ export const routes: Routes = [
         // HU096-HU098: el período es único por institución; solo el administrador lo gestiona.
         path: 'admin/periodos',
         canActivate: [roleGuard],
-        data: { roles: ['ADMINISTRADOR', 'ADMIN'] },
+        data: { roles: ['ADMINISTRADOR'] },
         loadComponent: () =>
           import('./features/admin/admin-periodos/admin-periodos.component').then(
             (m) => m.AdminPeriodosComponent
@@ -152,7 +152,7 @@ export const routes: Routes = [
       {
         path: 'admin/sistema',
         canActivate: [roleGuard],
-        data: { roles: ['ADMINISTRADOR', 'ADMIN'] },
+        data: { roles: ['ADMINISTRADOR'] },
         loadComponent: () =>
           import('./features/admin/admin-system/admin-system.component').then(
             (m) => m.AdminSystemComponent
@@ -161,7 +161,7 @@ export const routes: Routes = [
       {
         path: 'admin/seguridad',
         canActivate: [roleGuard],
-        data: { roles: ['ADMINISTRADOR', 'ADMIN'] },
+        data: { roles: ['ADMINISTRADOR'] },
         loadComponent: () =>
           import('./features/security/security-administration/security-administration.component').then(
             (m) => m.SecurityAdministrationComponent
@@ -171,7 +171,7 @@ export const routes: Routes = [
         // Vista propia: depende del micro frontend de MessageUcoLab; el menú la oculta si el componente externo no está.
         path: 'admin/mensajes',
         canActivate: [roleGuard],
-        data: { roles: ['ADMINISTRADOR', 'ADMIN'] },
+        data: { roles: ['ADMINISTRADOR'] },
         loadComponent: () =>
           import('./features/messages/message-administration/message-administration.component').then(
             (m) => m.MessageAdministrationComponent

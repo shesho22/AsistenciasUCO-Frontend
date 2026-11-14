@@ -1,4 +1,4 @@
-﻿import { Component, ChangeDetectionStrategy, input, output, signal } from '@angular/core';
+﻿import { Component, ChangeDetectionStrategy, input, output } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
@@ -71,7 +71,7 @@ import { etiquetaEstadoReclamo, etiquetaResultadoAprobacion } from '../../../../
                   </app-badge>
                 </div>
 
-                @if (rec.numeroToma != null) {
+                @if (rec.numeroToma !== null && rec.numeroToma !== undefined) {
                   <p class="text-[11px] font-semibold text-warm-800" data-testid="grupo-reclamo-toma">Reclamo de la toma {{ rec.numeroToma }}</p>
                 }
 

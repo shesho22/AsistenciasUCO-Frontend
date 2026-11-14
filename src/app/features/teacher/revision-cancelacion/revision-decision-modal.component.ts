@@ -83,10 +83,10 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
           } @else {
             <form (submit)="onSubmit($event)" class="p-6 space-y-4">
               <div class="space-y-2">
-                <label class="block text-xs font-bold text-warm-700 uppercase tracking-wider">
+                <p id="revision-decision-accion" class="block text-xs font-bold text-warm-700 uppercase tracking-wider">
                   Acción a tomar
-                </label>
-                <div class="space-y-2">
+                </p>
+                <div class="space-y-2" role="radiogroup" aria-labelledby="revision-decision-accion">
                   @for (opcion of opciones(); track opcion.valor) {
                     <label
                       class="flex items-center gap-3 p-3 rounded-xl border border-warm-200 hover:bg-warm-50 cursor-pointer transition-colors"

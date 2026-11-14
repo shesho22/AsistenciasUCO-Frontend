@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable, filter } from 'rxjs';
 import { REALTIME_TRANSPORT, RealtimeTransport } from './contract/realtime-transport';
 import { RealtimeEvent, RealtimeEventType } from './model/realtime-event.model';
@@ -11,9 +11,11 @@ import { RealtimeConnectionState } from './model/realtime-connection-state.model
  */
 @Injectable({ providedIn: 'root' })
 export class RealtimeService {
+  private readonly transport = inject<RealtimeTransport>(REALTIME_TRANSPORT);
+
   readonly connectionState$: Observable<RealtimeConnectionState>;
 
-  constructor(@Inject(REALTIME_TRANSPORT) private readonly transport: RealtimeTransport) {
+  constructor() {
     this.connectionState$ = this.transport.connectionState$;
   }
 

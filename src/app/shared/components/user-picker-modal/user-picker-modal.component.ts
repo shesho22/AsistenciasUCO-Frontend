@@ -38,11 +38,13 @@ export interface UserPickerItem {
     @if (isOpen()) {
       <div
         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-warm-900/60 backdrop-blur-xs animate-fade-in"
+        tabindex="-1"
         (click)="onBackdropClick($event)"
+        (keydown.escape)="cancelar()"
       >
+        <!-- onBackdropClick solo cierra si el clic cae en el fondo (target === currentTarget). -->
         <div
           class="bg-white rounded-3xl shadow-warm-2xl border border-warm-200/80 w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-scale-up"
-          (click)="$event.stopPropagation()"
         >
           <!-- Header del Modal -->
           <div class="px-6 py-5 border-b border-warm-100 flex items-center justify-between bg-warm-50/50">

@@ -6,7 +6,6 @@ import { ChangeDetectorRef } from '@angular/core';
 import { of } from 'rxjs';
 import { TestRequest } from '@angular/common/http/testing';
 import { AdminDecanosComponent } from './admin-decanos.component';
-import { AdminManagementService } from '../../../core/services/admin-management.service';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { TeacherService } from '../../../core/services/teacher.service';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
@@ -16,7 +15,6 @@ import { UserPickerItem } from '../../../shared/components/user-picker-modal/use
 describe('AdminDecanosComponent', () => {
   let fixture: ComponentFixture<AdminDecanosComponent>;
   let component: AdminDecanosComponent;
-  let adminService: AdminManagementService;
   let toastService: jasmine.SpyObj<ToastService>;
   let http: HttpTestingController;
 
@@ -87,7 +85,6 @@ describe('AdminDecanosComponent', () => {
       ],
     });
 
-    adminService = TestBed.inject(AdminManagementService);
     toastService = TestBed.inject(ToastService) as jasmine.SpyObj<ToastService>;
     http = TestBed.inject(HttpTestingController);
 

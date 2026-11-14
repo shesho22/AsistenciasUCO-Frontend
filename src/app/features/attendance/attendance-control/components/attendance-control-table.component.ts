@@ -105,7 +105,9 @@ import {
         <div class="block sm:hidden space-y-2.5">
           @for (student of filteredStudents(); track student.studentId; let idx = $index) {
             <div
+              tabindex="-1"
               (click)="activeFocusedIndex.set(idx)"
+              (keydown.enter)="activeFocusedIndex.set(idx)"
               [class]="mobileCardClasses(idx)"
             >
               <div class="flex items-center justify-between gap-3">

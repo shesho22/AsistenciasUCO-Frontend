@@ -542,8 +542,8 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
             <div class="bg-white border border-warm-200 rounded-2xl p-4 shadow-warm-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
               <div class="flex flex-wrap items-center gap-3">
                 <div>
-                  <label class="text-[10px] font-bold text-warm-500 uppercase block mb-1">Estado</label>
-                  <select aria-label="Filtrar la cola de correos por estado"
+                  <label for="cola-filtro-estado" class="text-[10px] font-bold text-warm-500 uppercase block mb-1">Estado</label>
+                  <select id="cola-filtro-estado" aria-label="Filtrar la cola de correos por estado"
                     [ngModel]="filtroEstado()"
                     (ngModelChange)="cambiarFiltroEstado($event)"
                     class="text-xs font-semibold py-1.5 px-3 bg-warm-50 border border-warm-300 rounded-lg text-warm-800 focus:outline-none focus:ring-1 focus:ring-primary-500"
@@ -558,8 +558,8 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
                 </div>
 
                 <div>
-                  <label class="text-[10px] font-bold text-warm-500 uppercase block mb-1">Tipo de Evento</label>
-                  <select aria-label="Filtrar la cola de correos por tipo"
+                  <label for="cola-filtro-tipo" class="text-[10px] font-bold text-warm-500 uppercase block mb-1">Tipo de Evento</label>
+                  <select id="cola-filtro-tipo" aria-label="Filtrar la cola de correos por tipo"
                     [ngModel]="filtroTipo()"
                     (ngModelChange)="cambiarFiltroTipo($event)"
                     class="text-xs font-semibold py-1.5 px-3 bg-warm-50 border border-warm-300 rounded-lg text-warm-800 focus:outline-none focus:ring-1 focus:ring-primary-500"
@@ -1008,7 +1008,7 @@ export class AdminEmailManagementComponent implements OnInit {
                 this.toast.success(mensajeUi('UI_ADMIN_EMAIL_MANAGEMENT_010', { version: nuevaVersion.version }));
                 this.cargarPlantillas();
               },
-              error: (err: unknown) => {
+              error: () => {
                 this.guardando.set(false);
                 this.toast.warning(mensajeUi('UI_ADMIN_EMAIL_MANAGEMENT_011', { version: nuevaVersion.version }));
                 this.cargarPlantillas();

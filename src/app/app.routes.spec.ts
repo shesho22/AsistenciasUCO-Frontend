@@ -17,7 +17,7 @@ describe('application routes', () => {
     const attendanceRoute = appRoute?.children?.find((route) => route.path === 'asistencia');
     const roles = attendanceRoute?.data?.['roles'] as string[];
 
-    for (const role of ['DECANO', 'ADMIN', 'ADMINISTRADOR', 'COORDINADOR', 'ESTUDIANTE']) {
+    for (const role of ['DECANO', 'ADMINISTRADOR', 'COORDINADOR', 'ESTUDIANTE']) {
       expect(roles).not.toContain(role);
     }
   });

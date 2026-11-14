@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, catchError, forkJoin, map, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -15,7 +15,8 @@ import { HorarioItem, MateriaEstudianteItem } from '../models/role-management.mo
   providedIn: 'root',
 })
 export class StudentManagementService {
-  constructor(private http: HttpClient) {}
+  private http = inject(HttpClient);
+
 
   /** `GET /estudiante/horarios` (`HorarioEstudianteDTO`) adaptado al modelo de UI; las filas invalidas se descartan. */
   getHorarios(): Observable<ApiResponse<HorarioItem[]>> {

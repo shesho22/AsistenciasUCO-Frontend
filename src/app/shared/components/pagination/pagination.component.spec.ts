@@ -24,7 +24,7 @@ describe('PaginationComponent', () => {
     fixture.componentRef.setInput('currentPage', 2);
     fixture.detectChanges();
 
-    expect(component.totalPages()).toBe(5);
+    expect(component.paginasTotales()).toBe(5);
     expect(component.startIndex()).toBe(10);
     expect(component.endIndex()).toBe(20);
   });

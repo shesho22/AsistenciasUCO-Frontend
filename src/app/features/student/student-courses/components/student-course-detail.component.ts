@@ -403,7 +403,7 @@ export class StudentCourseDetailComponent implements OnDestroy {
           } else if (evt.type === REALTIME_EVENT_TYPE.ALERTA_INASISTENCIA) {
             if (this.toast) {
               const msg =
-                (evt.payload as any)?.mensaje ||
+                (evt.payload as { mensaje?: string } | null | undefined)?.mensaje ||
                 'Se ha generado una alerta sobre tu porcentaje de inasistencia.';
               this.toast.warning(msg);
             }

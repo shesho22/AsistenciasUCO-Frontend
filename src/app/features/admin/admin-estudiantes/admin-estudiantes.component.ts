@@ -295,7 +295,7 @@ export class AdminEstudiantesComponent implements OnInit {
     this.modalAdmisionAbierto.set(false);
   }
 
-  onEstudianteAdmitido(dto: AdmisionEstudianteDto): void {
+  onEstudianteAdmitido(_dto: AdmisionEstudianteDto): void {
     this.modalAdmisionAbierto.set(false);
     this.listado.cargar();
   }

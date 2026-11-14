@@ -3,7 +3,6 @@ import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { AdminManagementService } from './admin-management.service';
 import { environment } from '../../../environments/environment';
-import { FacultadItem } from '../models/role-management.model';
 
 describe('AdminManagementService', () => {
   let service: AdminManagementService;

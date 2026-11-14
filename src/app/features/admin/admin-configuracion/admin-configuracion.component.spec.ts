@@ -5,7 +5,7 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { AdminConfiguracionComponent, TABS_CONFIGURACION } from './admin-configuracion.component';
 import { CONFIGURACION_ROUTES } from './admin-configuracion.routes';
 
-@Component({ selector: 'app-pestana-falsa', standalone: true, changeDetection: ChangeDetectionStrategy.Eager,
+@Component({ selector: 'app-pestana-falsa', standalone: true, changeDetection: ChangeDetectionStrategy.OnPush,
  template: '<p id="pestana-falsa">falsa</p>' })
 class PestanaFalsaComponent {}
 

@@ -2,7 +2,7 @@ import { Component, OnInit, inject, signal, computed, effect, untracked, ChangeD
 import { Location } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
-import { User, UserRole } from '../../core/models/user.model';
+import { UserRole } from '../../core/models/user.model';
 import { CardComponent } from '../../shared/components/card/card.component';
 import { BadgeComponent, BadgeVariant } from '../../shared/components/badge/badge.component';
 import { ButtonComponent } from '../../shared/components/button/button.component';
@@ -216,7 +216,6 @@ export class ProfileComponent implements OnInit {
 
   currentRole = computed<UserRole>(() => {
     const role = this.user()?.role;
-    if (role === 'ADMIN') return 'ADMINISTRADOR';
     return (role || 'DOCENTE') as UserRole;
   });
 
@@ -280,7 +279,6 @@ export class ProfileComponent implements OnInit {
   getRoleBadgeVariant(role: UserRole): BadgeVariant {
     switch (role) {
       case 'ADMINISTRADOR':
-      case 'ADMIN':
         return 'danger';
       case 'DECANO':
         return 'info';

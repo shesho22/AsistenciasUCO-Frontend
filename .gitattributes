@@ -1,3 +1,6 @@
 # Scripts que se ejecutan dentro de contenedores Linux: siempre LF.
 *.sh text eol=lf
 Dockerfile text eol=lf
+
+# VAL PRU-03: copia WORM del contrato OpenAPI; su SHA-256 se verifica byte a byte, asi que nunca se convierte el fin de linea.
+docs/contracts/external/backend/openapi-golden-path.yaml -text

@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, delay, map, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -16,7 +16,8 @@ export interface EmailVerificationResultDto {
  */
 @Injectable({ providedIn: 'root' })
 export class EmailVerificationService {
-  constructor(private readonly http: HttpClient) {}
+  private readonly http = inject(HttpClient);
+
 
   /** @returns el mensaje institucional de exito que debe mostrarse al estudiante. */
   verifyEmail(token: string): Observable<string> {

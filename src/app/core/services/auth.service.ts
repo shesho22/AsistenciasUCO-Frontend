@@ -120,6 +120,8 @@ function isValidUuid(value: unknown): value is string {
   providedIn: 'root',
 })
 export class AuthService implements OnDestroy {
+  private router = inject(Router);
+
   // ── Signals públicos ──────────────────────────────────────────────────────
   currentUser = signal<User | null>(null);
   token = signal<string | null>(null);
@@ -165,7 +167,7 @@ export class AuthService implements OnDestroy {
     this.mockModeSignal.set(enabled);
   }
 
-  constructor(private router: Router) {
+  constructor() {
     // Limpieza defensiva: eliminar claves residuales de versiones anteriores.
     this.purgeLegacyStorage();
     if (this.isBaselineMode()) {
@@ -451,7 +453,6 @@ export class AuthService implements OnDestroy {
   private homePathForRole(role: UserRole): string {
     switch (role) {
       case 'ADMINISTRADOR':
-      case 'ADMIN':
         return '/app/admin/decanos';
       case 'DECANO':
         return '/app/decano/mi-facultad/coordinadores';
@@ -674,7 +675,6 @@ export class AuthService implements OnDestroy {
   navigateForRole(role: UserRole): void {
     switch (role) {
       case 'ADMINISTRADOR':
-      case 'ADMIN':
         void this.router.navigate(['/app/admin/decanos']);
         break;
       case 'DECANO':
@@ -911,7 +911,6 @@ export class AuthService implements OnDestroy {
   private getDepartmentForRole(role: UserRole): string {
     switch (role) {
       case 'ADMINISTRADOR':
-      case 'ADMIN':
         return 'Administración Institucional';
       case 'DECANO':
         return 'Facultad de Ingeniería';

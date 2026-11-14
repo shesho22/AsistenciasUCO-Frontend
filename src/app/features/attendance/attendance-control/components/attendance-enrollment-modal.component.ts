@@ -505,7 +505,7 @@ export class AttendanceEnrollmentModalComponent {
           }
         },
         error: (error: unknown) => {
-          const status = (error as any)?.status;
+          const status = (error as { status?: number } | null)?.status;
           const code = getApiErrorCode(error);
           if (status === 404 || code === API_ERROR_CODE.RESOURCE_NOT_FOUND) {
             // Estudiante no encontrado (404): abrir formulario de nuevo registro

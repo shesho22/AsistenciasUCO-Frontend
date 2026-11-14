@@ -1,5 +1,5 @@
 import { HttpClient, HttpContext } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable, delay, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiListResponse } from '../api/models/api-list-response.model';
@@ -13,7 +13,8 @@ import { BYPASS_GLOBAL_ERROR_TOAST } from '../interceptors/error.interceptor';
   providedIn: 'root',
 })
 export class GroupService {
-  constructor(private http: HttpClient) {}
+  private http = inject(HttpClient);
+
 
   /**
    * HU051: el docente titular retira a un estudiante de su grupo (la matrícula pasa a inactiva y se libera el cupo).

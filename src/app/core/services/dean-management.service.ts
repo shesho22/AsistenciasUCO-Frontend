@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -19,7 +19,8 @@ interface CoordinadoresPageDto {
   providedIn: 'root',
 })
 export class DeanManagementService {
-  constructor(private http: HttpClient) {}
+  private http = inject(HttpClient);
+
 
   getCoordinadores(): Observable<ApiResponse<CoordinadorItem[]>> {
     // CULM-001 D.9-a: GET /decano/coordinadores es ApiPageResponse { elementos, totalElementos, ... }.

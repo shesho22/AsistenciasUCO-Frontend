@@ -1,4 +1,4 @@
-import { Inject, Injectable, NgZone } from '@angular/core';
+import { Injectable, NgZone, inject } from '@angular/core';
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
 import { EventSourceMessage, EventStreamContentType } from '@microsoft/fetch-event-source';
 import { environment } from '../../../../../environments/environment';
@@ -51,6 +51,10 @@ function isAbortError(err: unknown): boolean {
  */
 @Injectable()
 export class FetchSseRealtimeTransport implements RealtimeTransport {
+  private authService = inject(AuthService);
+  private ngZone = inject(NgZone);
+  private fetchEventSourceFn = inject<FetchEventSourceFn>(SSE_FETCH_EVENT_SOURCE);
+
   private readonly eventsSubject = new Subject<RealtimeEvent>();
   private readonly stateSubject = new BehaviorSubject<RealtimeConnectionState>(
     'DISCONNECTED'
@@ -115,12 +119,6 @@ export class FetchSseRealtimeTransport implements RealtimeTransport {
     // la pausa de backoff (MV001-R02).
     this.forceReconnectCurrentScope('online');
   };
-
-  constructor(
-    private authService: AuthService,
-    private ngZone: NgZone,
-    @Inject(SSE_FETCH_EVENT_SOURCE) private fetchEventSourceFn: FetchEventSourceFn
-  ) {}
 
   start(scope: RealtimeSubscriptionScope): void {
     if (this.running && this.activeGroupId === scope.grupoId) {
@@ -396,15 +394,14 @@ export class FetchSseRealtimeTransport implements RealtimeTransport {
 
   private pause(ms: number): Promise<void> {
     return new Promise((resolve) => {
-      const timer = Number.isFinite(ms) ? setTimeout(done, ms) : undefined;
-      const self = this;
-      function done(): void {
+      const done = (): void => {
         clearTimeout(timer);
-        if (self.wake === done) {
-          self.wake = null;
+        if (this.wake === done) {
+          this.wake = null;
         }
         resolve();
-      }
+      };
+      const timer = Number.isFinite(ms) ? setTimeout(done, ms) : undefined;
       this.wake = done;
     });
   }

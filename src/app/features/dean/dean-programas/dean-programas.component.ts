@@ -276,8 +276,8 @@ export class DeanProgramasComponent implements OnInit {
     let pagina = 1;
     pedir(pagina)
       .pipe(
-        expand((res) => (pagina * TAMANO_CREDITOS < Number(res.totalElementos ?? (res as any).total ?? 0) ? pedir(++pagina) : EMPTY)),
-        reduce((filas: ProgramaCreditosItem[], res) => [...filas, ...(res.elementos ?? (res as any).datos ?? [])], [])
+        expand((res) => (pagina * TAMANO_CREDITOS < Number(res.totalElementos ?? (res as { total?: number }).total ?? 0) ? pedir(++pagina) : EMPTY)),
+        reduce((filas: ProgramaCreditosItem[], res) => [...filas, ...(res.elementos ?? (res as { datos?: typeof res.elementos }).datos ?? [])], [])
       )
       .subscribe({
         next: (filas) => this.creditos.set(filas),

@@ -8,7 +8,7 @@ import { signal } from '@angular/core';
 
 @Component({
     imports: [HasRoleDirective],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
     <div *appHasRole="'DOCENTE'" id="docente-single">Docente Contenido</div>
     <div *appHasRole="['ADMINISTRADOR', 'DECANO']" id="multi-role">Admin o Decano</div>

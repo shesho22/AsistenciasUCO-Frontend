@@ -128,8 +128,8 @@ describe('roleScopeInterceptor', () => {
   describe('matriz rol x prefijo (espejo de SecurityConfig)', () => {
     const esperado: Record<string, UserRole[]> = {
       admin: ['ADMINISTRADOR'],
-      decano: ['DECANO', 'ADMINISTRADOR'],
-      coordinador: ['COORDINADOR', 'ADMINISTRADOR'],
+      decano: ['DECANO'],
+      coordinador: ['COORDINADOR'],
       docente: ['DOCENTE'],
       docentes: ['COORDINADOR', 'ADMINISTRADOR'],
       estudiante: ['ESTUDIANTE'],
@@ -149,9 +149,6 @@ describe('roleScopeInterceptor', () => {
       }
     }
 
-    it('ADMIN (alias legado) se trata como ADMINISTRADOR', () => {
-      expect(rolPuedeLeer('ADMIN', 'admin')).toBeTrue();
-    });
   });
 
   describe('excepciones de lectura (espejo de SecurityConfig)', () => {
@@ -174,6 +171,49 @@ describe('roleScopeInterceptor', () => {
       }
       expect(rolPuedeLeerRuta('ADMINISTRADOR', 'admin', 'facultades')).toBeTrue();
     });
+
+    // VAL SEG-14: SecurityConfig da al ADMINISTRADOR solo la lista exacta de periodos; el resto de /coordinador y todo
+    // /decano son exclusivos de su rol (CULM-001 A.2-3, DEC-022 §2).
+    it('ADMINISTRADOR solo lee coordinador/periodos-academicos (exacta) y nada de /decano', () => {
+      expect(rolPuedeLeerRuta('ADMINISTRADOR', 'coordinador', 'periodos-academicos')).toBeTrue();
+      expect(rolPuedeLeerRuta('ADMINISTRADOR', 'coordinador', 'periodos-academicos/p-1')).toBeFalse();
+      expect(rolPuedeLeerRuta('ADMINISTRADOR', 'coordinador', 'planes-estudio')).toBeFalse();
+      expect(rolPuedeLeerRuta('ADMINISTRADOR', 'coordinador', 'asignaturas')).toBeFalse();
+      expect(rolPuedeLeerRuta('ADMINISTRADOR', 'coordinador', null)).toBeFalse();
+      expect(rolPuedeLeerRuta('ADMINISTRADOR', 'decano', 'programas')).toBeFalse();
+    });
+
+    it('asignaturas-asociables es solo del COORDINADOR; el DECANO conserva el resto de la malla', () => {
+      expect(rolPuedeLeerRuta('DECANO', 'coordinador', 'planes-estudio/p-1/asignaturas-asociables')).toBeFalse();
+      expect(rolPuedeLeerRuta('COORDINADOR', 'coordinador', 'planes-estudio/p-1/asignaturas-asociables')).toBeTrue();
+      expect(rolPuedeLeerRuta('DECANO', 'coordinador', 'planes-estudio/p-1/malla')).toBeTrue();
+      expect(rolPuedeLeerRuta('DECANO', 'coordinador', 'periodos-academicos/p-1')).toBeTrue();
+      expect(rolPuedeLeerRuta('DECANO', 'coordinador', 'asignaturas/a-1')).toBeTrue();
+      expect(rolPuedeLeerRuta('DECANO', 'coordinador', 'planes-estudios')).toBeFalse();
+    });
+  });
+
+  it('un Administrador recibe 403 local en /decano y /coordinador, salvo la lista de periodos', async () => {
+    como('ADMINISTRADOR');
+    http.get(`${environment.apiUrl}/coordinador/periodos-academicos?pagina=1`).subscribe();
+    ctrl.expectOne(`${environment.apiUrl}/coordinador/periodos-academicos?pagina=1`).flush({});
+    for (const ruta of ['decano/programas', 'coordinador/planes-estudio', 'coordinador/docentes', 'coordinador/periodos-academicos/p-1']) {
+      expect(await estado(`${environment.apiUrl}/${ruta}`)).toBe(403);
+    }
+    ctrl.expectNone(() => true);
+  });
+
+  it('un Decano recibe 403 local en asignaturas-asociables (solo COORDINADOR)', async () => {
+    como('DECANO');
+    expect(await estado(`${environment.apiUrl}/coordinador/planes-estudio/p-1/asignaturas-asociables`)).toBe(403);
+    ctrl.expectNone(() => true);
+  });
+
+  it('una barra final no cambia la decision', async () => {
+    como('ADMINISTRADOR');
+    http.get(`${environment.apiUrl}/coordinador/periodos-academicos/`).subscribe();
+    ctrl.expectOne(`${environment.apiUrl}/coordinador/periodos-academicos/`).flush({});
+    expect(await estado(`${environment.apiUrl}/decano/`)).toBe(403);
   });
 
   it('rolPuedeLeer con varios roles permite el prefijo si alguno lo puede usar', () => {

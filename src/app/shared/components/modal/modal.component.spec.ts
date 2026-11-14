@@ -5,7 +5,7 @@ import { ModalComponent } from './modal.component';
 
 @Component({
     imports: [ModalComponent],
-    changeDetection: ChangeDetectionStrategy.Eager,
+    changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
     <button id="disparador" type="button">Abrir</button>
     <app-modal [isOpen]="abierto()" title="Prueba" (closed)="abierto.set(false)">

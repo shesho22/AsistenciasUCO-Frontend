@@ -381,9 +381,9 @@ describe('OverviewComponent', () => {
 
 
 
-  it('debe manejar error al cargar decanos para rol ADMIN', () => {
+  it('debe manejar error al cargar decanos para rol ADMINISTRADOR', () => {
     adminServiceSpy.getDecanos.and.returnValue(throwError(() => new Error('Error')));
-    createComponentWithRole('ADMIN');
+    createComponentWithRole('ADMINISTRADOR');
     expect(component.isLoading()).toBeFalse();
   });
 

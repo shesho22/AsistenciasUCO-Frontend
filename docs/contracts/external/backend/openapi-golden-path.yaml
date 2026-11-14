@@ -1,0 +1,1732 @@
+openapi: 3.1.2
+jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
+info:
+  title: AsistenciasUCO — Golden Path API
+  version: 1.7.0
+  description: |
+    Contrato canónico LB-001C.1 para el Golden Path del backend AsistenciasUCO.
+    Sigue el estilo PRAGMATIC_RESOURCE_PLUS_BUSINESS_COMMAND. HTTP/DB es la fuente
+    de verdad; SSE solo notifica cambios best-effort. No incluye endpoints legacy ni
+    administrativos. Fuera del Golden Path solo publica, por decisión contract-first de
+    MAINT-001, el directorio paginado GET /api/v1/estudiantes en su comportamiento AS-IS.
+    1.1.0 (MAINT-003F): agrega el contrato UTC v2 de sesiones (/api/v2/sesiones, UTC-D01..D09)
+    sin modificar ninguna operación ni schema v1; v1 conserva su wire ISO local sin offset.
+    1.2.0 (CULM-001 A, DEC-027/DEC-032): DOCENTE se agrega a x-roles de GET /api/v1/estudiantes.
+    1.3.0 (CULM-001 B, DEC-032): Sesion/SesionV2 + estado, cancelacion; lote escribe en la toma
+    vigente; 409 ERR_SESION_CANCELADA.
+    1.4.0 (CULM-001-B2NM, DEC-032): solo descripciones; ambito por EstudiantePrograma y 403 de ambito.
+    1.5.0 (CULM-001 C.1, DEC-022 §1): GET /api/v1/realtime/stream se abre a los cinco roles con ambito por grupo; solo cambia la descripcion.
+    1.6.0 (CULM-001-D D.9-c, F-TRX-016/F-TRX-019, DEC-044 (11)): GET /api/v1/realtime/stream declara 406 (Accept incompatible) y abre con el
+    comentario SSE ": conectado"; se publica POST /api/v1/realtime/emit (solo ADMINISTRADOR, cuerpo validado). GET /api/v1/realtime/status
+    tambien es solo ADMINISTRADOR (diagnostico del canal, fuera de este contrato). Sin cambios en schemas existentes.
+    1.7.0 (DEC-065 (2), HU030/HU047): Sesion y SesionV2 agregan estadoSolicitud (PENDIENTE|APROBADA|RECHAZADA; null si la sesion no nacio como
+    solicitud) y pendienteAprobacion (boolean). Cambio aditivo: una sesion creada por el docente queda pendiente del aval del coordinador.
+servers:
+  - url: /
+    description: Servidor que publica esta especificación
+tags:
+  - name: Docencia
+    description: Consultas scopeadas al docente autenticado.
+  - name: Grupos
+    description: Subrecursos de grupos académicos.
+  - name: Estudiantes
+    description: Directorio institucional paginado de estudiantes.
+  - name: Sesiones
+    description: Creación, lectura por grupo y actualización compatible de sesiones.
+  - name: Asistencias
+    description: Consulta y registro batch de asistencias.
+  - name: Realtime
+    description: Señales SSE; no son fuente de verdad ni canal durable.
+paths:
+  /api/v1/docente/horarios:
+    get:
+      tags: [Docencia]
+      summary: Consultar horarios del docente autenticado
+      operationId: consultarHorariosDocente
+      description: Devuelve la lista completa AS-IS, sin paginación.
+      x-roles: [DOCENTE]
+      x-idempotency: YES
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: Horarios del docente.
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HorarioDocenteListResponse'
+              examples:
+                horario:
+                  value:
+                    exitoso: true
+                    datos:
+                      - id: 8f8863e0-f0c5-49da-bbe3-65f189223e33
+                        idDocente: 134c0e2e-af9d-45f7-8863-028b547f34cf
+                        idGrupo: e38345e1-8b26-45ae-9ee0-07cf7ee535ad
+                        codigoMateria: EST-301
+                        nombreMateria: Estadística III
+                        seccion: '01'
+                        dia: MIÉRCOLES
+                        horaInicio: '08:00:00'
+                        horaFin: '10:00:00'
+                        totalEstudiantes: 24
+                    total: 1
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/v1/sesiones/grupo/{grupoId}:
+    get:
+      tags: [Sesiones]
+      summary: Consultar sesiones de un grupo
+      operationId: consultarSesionesGrupo
+      description: |
+        Devuelve la lista completa sin paginación ni orden público garantizado. El docente
+        debe tener titularidad sobre el grupo.
+      x-roles: [DOCENTE]
+      x-idempotency: YES
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/GrupoIdPath'
+        - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: Sesiones del grupo.
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SesionListResponse'
+              examples:
+                sesion:
+                  value:
+                    exitoso: true
+                    datos:
+                      - sesion: 94ea3dc1-847a-4d4f-9222-d8bba0c6427c
+                        grupo: e38345e1-8b26-45ae-9ee0-07cf7ee535ad
+                        nombre: Distribuciones continuas
+                        numero: 5
+                        codigo: SES-005
+                        numeroSemana: 3
+                        codigoGrupo: EST3-01
+                        nombreGrupo: Estadística III - 01
+                        fechaHoraInicio: '2026-09-24T13:00:00'
+                        fechaHoraFin: '2026-09-24T15:00:00'
+                        estado: PROGRAMADA
+                        cancelacion: null
+                    total: 1
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/v1/grupos/{grupoId}/estudiantes:
+    get:
+      tags: [Grupos]
+      summary: Consultar estudiantes de un grupo
+      operationId: consultarEstudiantesGrupo
+      description: |
+        Devuelve todos los estudiantes del grupo para el DOCENTE titular y el ADMINISTRADOR de la
+        institucion; para el COORDINADOR, solo los estudiantes con EstudiantePrograma en sus programas.
+        El backend no filtra por codigoEstado. Un grupo fuera de ambito devuelve 403.
+      x-roles: [DOCENTE, COORDINADOR, ADMINISTRADOR]
+      x-idempotency: YES
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/GrupoIdPath'
+        - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: Estudiantes del grupo.
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstudianteGrupoListResponse'
+              examples:
+                estudiante:
+                  value:
+                    exitoso: true
+                    datos:
+                      - id: fa28ac03-7986-49ab-8944-b162713b63f1
+                        idEstudiante: 3403376f-88de-44ee-bad3-bae038f49831
+                        documento: '1000000001'
+                        nombreCompleto: Ana Ejemplo
+                        correo: ana.ejemplo@example.edu
+                        codigoEstado: ACT
+                        nombreEstado: Activo
+                    total: 1
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/v1/estudiantes:
+    get:
+      tags: [Estudiantes]
+      summary: Consultar directorio paginado de estudiantes
+      operationId: consultarEstudiantes
+      description: |
+        Directorio institucional general (distinto del portal propio /api/v1/estudiante/**).
+        Devuelve identidades distintas de estudiante desde uv_estudiante_identidad + uv_usuario;
+        los filtros académicos usan EXISTS sobre uv_estudiante, de modo que un estudiante
+        inscrito en varios grupos aparece una sola vez. Orden fijo: primerApellido,
+        primerNombre, numeroIdentificacion, id. DOCENTE solo ve a los estudiantes de sus
+        grupos (ámbito en usp_consultar_directorio_estudiantes_paginado); no se abre a
+        ESTUDIANTE. Todos los filtros son opcionales y se combinan con AND. Respuesta sin
+        envoltorio exitoso/datos.
+      x-roles: [DOCENTE, COORDINADOR, ADMINISTRADOR]
+      x-idempotency: YES
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: tipoIdentificacionId
+          in: query
+          required: false
+          description: Igualdad exacta sobre el tipo de identificación del usuario.
+          schema:
+            type: string
+            format: uuid
+        - name: numeroIdentificacion
+          in: query
+          required: false
+          description: Igualdad exacta; debe ser positivo.
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+        - name: nombre
+          in: query
+          required: false
+          description: |
+            Coincidencia parcial, sin distinguir mayúsculas, sobre nombreCompleto. Debe cumplir
+            el formato de nombre de persona (sin dígitos ni caracteres de control); espacios
+            normalizados; máximo 100 caracteres.
+          schema:
+            type: string
+            maxLength: 100
+        - name: correo
+          in: query
+          required: false
+          description: |
+            Debe ser un correo electrónico válido (máximo 100 caracteres); se busca por
+            coincidencia parcial sin distinguir mayúsculas.
+          schema:
+            type: string
+            maxLength: 100
+        - name: institucionId
+          in: query
+          required: false
+          description: Algún contexto académico del estudiante pertenece a la institución.
+          schema:
+            type: string
+            format: uuid
+        - name: facultadId
+          in: query
+          required: false
+          description: Algún contexto académico del estudiante pertenece a la facultad.
+          schema:
+            type: string
+            format: uuid
+        - name: programaId
+          in: query
+          required: false
+          description: El estudiante tiene vínculo `EstudiantePrograma` con el programa.
+          schema:
+            type: string
+            format: uuid
+        - name: grupoId
+          in: query
+          required: false
+          description: El estudiante está inscrito en el grupo.
+          schema:
+            type: string
+            format: uuid
+        - name: activo
+          in: query
+          required: false
+          description: Estado activo del usuario asociado.
+          schema:
+            type: boolean
+        - name: page
+          in: query
+          required: false
+          description: |
+            Página 0-based. Además, page*size no puede superar 2147483647; si lo supera
+            responde 400 VALIDATION_ERROR. Una página posterior a la última responde 200 con
+            items vacío y los totales reales.
+          schema:
+            type: integer
+            format: int32
+            minimum: 0
+            default: 0
+        - name: size
+          in: query
+          required: false
+          description: Tamaño de página; fuera de 1..100 responde 400 VALIDATION_ERROR.
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 100
+            default: 20
+        - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: Página de estudiantes.
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstudiantePagina'
+              examples:
+                pagina:
+                  value:
+                    items:
+                      - id: 3403376f-88de-44ee-bad3-bae038f49831
+                        idUsuario: 8b1f3c2e-5d4a-4f6b-9c7d-2e1a0b9c8d7e
+                        tipoIdentificacionId: 0f9e8d7c-6b5a-4c3d-8e2f-1a0b9c8d7e6f
+                        numeroIdentificacion: 1000000001
+                        primerApellido: Ejemplo
+                        segundoApellido: ''
+                        primerNombre: Ana
+                        segundoNombre: ''
+                        nombreCompleto: Ana Ejemplo
+                        correo: ana.ejemplo@example.edu
+                        estaActivoUsuario: true
+                    totalItems: 11
+                    totalPages: 3
+                    page: 0
+                    size: 5
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/v1/grupos/{grupoId}/asistencias:
+    get:
+      tags: [Asistencias]
+      summary: Consultar asistencias de un grupo
+      operationId: consultarAsistenciasGrupo
+      description: |
+        Devuelve únicamente registros persistidos. La ausencia de una fila no significa AN.
+        La lista es completa, sin paginación ni orden público garantizado.
+        CULM-001 B: una fila por estudiante y sesión con el estado consolidado de las tomas de la
+        sesión (SJC si alguna toma es SJC; si no, EX si alguna es EX; si no, AN). El esquema no cambia.
+        CULM-001-B2NM: devuelve todos los registros para el DOCENTE titular y el ADMINISTRADOR de la
+        institucion; para el COORDINADOR, solo los de estudiantes con EstudiantePrograma en sus
+        programas. Un grupo fuera de ambito devuelve 403.
+      x-roles: [DOCENTE, COORDINADOR, ADMINISTRADOR]
+      x-idempotency: YES
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/GrupoIdPath'
+        - $ref: '#/components/parameters/SesionIdQuery'
+        - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: Asistencias persistidas.
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsistenciaListResponse'
+              examples:
+                sinRegistros:
+                  summary: Estudiante sin asistencia registrada
+                  description: No aparece una fila sintética; datos queda vacío.
+                  value:
+                    exitoso: true
+                    datos: []
+                    total: 0
+                an:
+                  summary: Ausencia no justificada
+                  value:
+                    exitoso: true
+                    datos:
+                      - asistencia: 23407ee7-e9c2-4db4-8ba4-465632ff899b
+                        estudiante: 3403376f-88de-44ee-bad3-bae038f49831
+                        grupo: e38345e1-8b26-45ae-9ee0-07cf7ee535ad
+                        sesion: 94ea3dc1-847a-4d4f-9222-d8bba0c6427c
+                        presente: false
+                        estado: AN
+                    total: 1
+                sjc:
+                  summary: Ausencia justificada
+                  value:
+                    exitoso: true
+                    datos:
+                      - asistencia: 73f4c809-0937-4f2a-b6b0-80402e046829
+                        estudiante: 3403376f-88de-44ee-bad3-bae038f49831
+                        grupo: e38345e1-8b26-45ae-9ee0-07cf7ee535ad
+                        sesion: 94ea3dc1-847a-4d4f-9222-d8bba0c6427c
+                        presente: false
+                        estado: SJC
+                        observacion: Justificación académica registrada
+                    total: 1
+                ex:
+                  summary: Excusa
+                  value:
+                    exitoso: true
+                    datos:
+                      - asistencia: fd57c079-e531-4b3b-84fc-bb812d529b36
+                        estudiante: 3403376f-88de-44ee-bad3-bae038f49831
+                        grupo: e38345e1-8b26-45ae-9ee0-07cf7ee535ad
+                        sesion: 94ea3dc1-847a-4d4f-9222-d8bba0c6427c
+                        presente: false
+                        estado: EX
+                        observacion: Excusa médica registrada
+                    total: 1
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/v1/asistencias/lote:
+    post:
+      tags: [Asistencias]
+      summary: Registrar asistencias de una sesión en lote
+      operationId: registrarAsistenciasLote
+      description: |
+        Business command batch. La operación es atómica: ante error no persiste registros
+        parciales ni publica el evento. Partial success no existe. Idempotencia y tamaño máximo
+        no están definidos; no se soporta Idempotency-Key.
+
+        SES-01: solo se acepta con la sesión activa, `fechaHoraInicioUtc <= ahora < fechaHoraFinUtc`,
+        con el reloj del servidor y procedencia temporal confirmada (UTC-D06). Sin tolerancia
+        posterior al cierre. Fuera de la ventana responde 409 sin modificar filas; la DB repite la
+        validación dentro de la transacción del lote. Las correcciones posteriores al cierre solo se
+        realizan por el flujo formal de reclamos.
+
+        CULM-001 B: con varias tomas, el lote escribe en la toma abierta o, si no hay, en la última.
+        Una sesión cancelada responde 409 `ERR_SESION_CANCELADA` sin modificar filas.
+      x-roles: [DOCENTE]
+      x-idempotency: NOT_DEFINED
+      x-atomicity: ALL_OR_NOTHING
+      x-partial-success: false
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistrarAsistenciasSesionRequest'
+            examples:
+              lote:
+                value:
+                  sesionId: 94ea3dc1-847a-4d4f-9222-d8bba0c6427c
+                  registros:
+                    - estudianteId: 3403376f-88de-44ee-bad3-bae038f49831
+                      estado: AN
+                    - estudianteId: bd17a17d-df86-455b-ac20-a826f21a6c31
+                      estado: SJC
+                    - estudianteId: f182fb5a-175d-44e5-8423-f83fd28c86ce
+                      estado: EX
+      responses:
+        '201':
+          description: Lote registrado y señal realtime publicada best-effort.
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiMessageResponse'
+              example:
+                exitoso: true
+                mensaje: Asistencias de sesion registradas correctamente.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/SesionFueraDeVentana'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/v1/realtime/stream:
+    get:
+      tags: [Realtime]
+      summary: Suscribirse a cambios de asistencia por grupo
+      operationId: suscribirseCambiosGrupo
+      description: |
+        Stream SSE best-effort y efímero. Acceso por ámbito, resuelto una vez al suscribirse (403 sin ámbito): el docente titular, el
+        estudiante con matrícula activa, el coordinador o el decano con ámbito sobre el grupo y el administrador de la institución.
+        Cada tipo de evento se entrega solo a las audiencias que su política autoriza. Cada evento de negocio usa id=eventId,
+        event=type y data=RealtimeEventResponse. HTTP es la fuente de verdad: al recibir una
+        señal o reconectar, el cliente vuelve a consultar asistencias. Sin replay,
+        Last-Event-ID, durabilidad, exactly-once, orden global ni distribución multi-instancia.
+        El heartbeat es un comentario SSE cada 25 s y solo expresa liveness. Al abrirse el stream se envia de inmediato el comentario
+        SSE ": conectado" (sin esperar el primer heartbeat). El grupoId es un GUID sin distinguir mayusculas; los eventos del grupo
+        se entregan en el formato canonico. Un Accept que no admite text/event-stream responde 406 (no 500) con ApiErrorResponse JSON.
+      x-roles: [AUTHENTICATED]
+      x-idempotency: NA
+      x-event-data-schema: '#/components/schemas/RealtimeEventResponse'
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/GrupoIdQuery'
+        - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: Stream SSE abierto.
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: Flujo de frames SSE; data serializa RealtimeEventResponse.
+              example: |-
+                id: 852355ea-7f39-4a64-9e12-c7fbe508e131
+                event: ASISTENCIAS_SESION_ACTUALIZADAS
+                data: {"eventId":"852355ea-7f39-4a64-9e12-c7fbe508e131","type":"ASISTENCIAS_SESION_ACTUALIZADAS","occurredAt":"2026-09-24T18:05:30Z","correlationId":"43ecb554-7527-45f5-8107-8ef896f63455","payload":{"grupo":"e38345e1-8b26-45ae-9ee0-07cf7ee535ad","sesion":"94ea3dc1-847a-4d4f-9222-d8bba0c6427c","totalRegistros":3}}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '406':
+          $ref: '#/components/responses/NotAcceptable'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/v1/realtime/emit:
+    post:
+      tags: [Realtime]
+      summary: Emitir un evento realtime de diagnostico
+      operationId: emitirEventoRealtime
+      description: |
+        Utilidad diagnostica restringida al ADMINISTRADOR (403 para cualquier otro rol); no sustituye la publicacion desde los casos de
+        uso y no es una API de negocio. El cuerpo se valida: tipo del catalogo de eventos, audiencia obligatoria y autorizada por la
+        politica de audiencia para ese tipo, y payload como objeto JSON. Un cuerpo vacio, un tipo desconocido, una audiencia ausente o no
+        autorizada o un payload que no es objeto responde 400 VALIDATION_ERROR. GET /api/v1/realtime/status (diagnostico del canal, fuera de
+        este contrato) tambien es solo ADMINISTRADOR.
+      x-roles: [ADMINISTRADOR]
+      x-idempotency: NOT_DEFINED
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmitirEventoRealtimeRequest'
+            example:
+              tipo: SESION_CANCELADA
+              audiencia: ESTUDIANTE_GRUPO
+              payload:
+                grupo: e38345e1-8b26-45ae-9ee0-07cf7ee535ad
+      responses:
+        '200':
+          description: Evento emitido a los suscriptores activos.
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmitirEventoRealtimeResponse'
+              example:
+                exitoso: true
+                datos:
+                  mensajeUsuario: Evento reactivo emitido a 2 suscriptores.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/v1/sesiones:
+    post:
+      tags: [Sesiones]
+      summary: Crear una sesión
+      operationId: crearSesion
+      description: |
+        Crea una sesión para un grupo. El actor se toma del JWT, nunca del body. Las fechas
+        conservan el wire AS-IS ISO local sin offset; la persistencia las interpreta como UTC.
+      x-roles: [DOCENTE]
+      x-idempotency: NOT_DEFINED
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CrearSesionRequest'
+            example:
+              grupo: e38345e1-8b26-45ae-9ee0-07cf7ee535ad
+              nombre: Distribuciones continuas
+              fechaHoraInicio: '2026-09-24T13:00:00'
+              fechaHoraFin: '2026-09-24T15:00:00'
+      responses:
+        '201':
+          description: Sesión creada.
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiMessageResponse'
+              example:
+                exitoso: true
+                mensaje: Sesion creada correctamente.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/v1/sesiones/{sesionId}:
+    patch:
+      tags: [Sesiones]
+      summary: Actualizar los datos editables de una sesión
+      operationId: actualizarSesion
+      description: |
+        Modifica la subrepresentación mutable de la Sesión: nombre, fechaHoraInicio y
+        fechaHoraFin. No reemplaza id, numero, codigo, numeroSemana ni grupo. El documento de
+        parche es application/json con el mismo esquema que el PUT legacy: los tres atributos
+        mutables son obligatorios (no hay merge campo a campo ni semántica null nueva). Comparte
+        caso de uso, autorización y errores con el PUT legacy. El actor se toma del JWT.
+      x-roles: [DOCENTE]
+      x-idempotency: NOT_DEFINED
+      x-current-style: PATCH
+      x-target-style: PATCH
+      x-status: MATCH
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/SesionIdPath'
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActualizarSesionRequest'
+            example:
+              nombre: Distribuciones continuas — revisión
+              fechaHoraInicio: '2026-09-24T13:00:00'
+              fechaHoraFin: '2026-09-24T15:30:00'
+      responses:
+        '200':
+          description: Sesión actualizada.
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiVoidResponse'
+              example:
+                exitoso: true
+                datos: null
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    put:
+      tags: [Sesiones]
+      summary: Actualizar los datos editables de una sesión (legacy)
+      operationId: actualizarSesionLegacy
+      deprecated: true
+      description: |
+        Endpoint de compatibilidad; los consumidores deben migrar a PATCH sobre el mismo path.
+        Mismo caso de uso, request, response, seguridad y errores que PATCH. No es precedente para
+        nuevos PUT y no se retira hasta evidenciar 0 consumidores.
+      x-roles: [DOCENTE]
+      x-idempotency: NOT_DEFINED
+      x-current-style: LEGACY_CRUD
+      x-target-style: PATCH
+      x-status: DEPRECATED_MIGRATION_IN_PROGRESS
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/SesionIdPath'
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActualizarSesionRequest'
+            example:
+              nombre: Distribuciones continuas — revisión
+              fechaHoraInicio: '2026-09-24T13:00:00'
+              fechaHoraFin: '2026-09-24T15:30:00'
+      responses:
+        '200':
+          description: Sesión actualizada.
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiVoidResponse'
+              example:
+                exitoso: true
+                datos: null
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/v2/sesiones:
+    post:
+      tags: [Sesiones]
+      summary: Crear una sesión con instantes UTC confirmados (v2)
+      operationId: crearSesionV2
+      description: |
+        Contrato UTC v2 (MAINT-003F, decisiones UTC-D01..D05 y D08). fechaHoraInicio y fechaHoraFin
+        son obligatorios en RFC 3339 con offset explícito (perfil UTC-D02) y se normalizan una sola vez
+        al instante UTC; la DB registra procedenciaTemporal = UTC_V2 en el mismo INSERT que las horas.
+        La regla fin > inicio se evalúa sobre instantes UTC. El actor se toma del JWT: docente o
+        usuarioEjecutor en el body son FIELD_UNKNOWN. Errores de entrada: 400 VALIDATION_ERROR con
+        detalle por campo (FIELD_REQUIRED, FIELD_INVALID_FORMAT, FIELD_UNKNOWN). Con
+        app.sesiones.v2.enabled=false la ruta responde 404.
+      x-roles: [DOCENTE]
+      x-idempotency: NOT_DEFINED
+      x-contract-version: v2
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CrearSesionV2Request'
+            example:
+              grupo: e38345e1-8b26-45ae-9ee0-07cf7ee535ad
+              nombre: Distribuciones continuas
+              fechaHoraInicio: '2026-07-15T20:00:00-05:00'
+              fechaHoraFin: '2026-07-15T22:00:00-05:00'
+      responses:
+        '201':
+          description: Sesión creada con procedencia UTC_V2.
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiMessageResponse'
+              example:
+                exitoso: true
+                mensaje: Sesion creada correctamente.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/v2/sesiones/{sesionId}:
+    get:
+      tags: [Sesiones]
+      summary: Consultar una sesión con estado temporal (v2)
+      operationId: consultarSesionV2
+      description: |
+        UTC-D07. Sesión CONFIRMADA (procedencia UTC_V2, UTC_GENERADOR o UTC_OWNER): horas como
+        instante UTC con sufijo Z. Sesión INDETERMINADA (procedencia NULL: histórica o escrita por v1):
+        fechaHoraInicio, fechaHoraFin y procedenciaTemporal en null; conserva identificación y datos no
+        temporales. Exige DOCENTE titular del grupo de la sesión (403 si es de otro docente, 404 si no
+        existe).
+      x-roles: [DOCENTE]
+      x-idempotency: YES
+      x-contract-version: v2
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/SesionIdPath'
+        - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: Sesión v2.
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SesionV2DataResponse'
+              examples:
+                confirmada:
+                  value:
+                    exitoso: true
+                    datos:
+                      sesion: 94ea3dc1-847a-4d4f-9222-d8bba0c6427c
+                      grupo: e38345e1-8b26-45ae-9ee0-07cf7ee535ad
+                      nombre: Distribuciones continuas
+                      numero: 3
+                      codigo: SES-03
+                      numeroSemana: 3
+                      codigoGrupo: '1'
+                      nombreGrupo: Estadística III
+                      fechaHoraInicio: '2026-07-16T01:00:00Z'
+                      fechaHoraFin: '2026-07-16T03:00:00Z'
+                      estadoTemporal: CONFIRMADA
+                      procedenciaTemporal: UTC_V2
+                      estado: PROGRAMADA
+                      cancelacion: null
+                indeterminada:
+                  value:
+                    exitoso: true
+                    datos:
+                      sesion: 94ea3dc1-847a-4d4f-9222-d8bba0c6427c
+                      grupo: e38345e1-8b26-45ae-9ee0-07cf7ee535ad
+                      nombre: Distribuciones continuas
+                      numero: 3
+                      codigo: SES-03
+                      numeroSemana: 3
+                      codigoGrupo: '1'
+                      nombreGrupo: Estadística III
+                      fechaHoraInicio: null
+                      fechaHoraFin: null
+                      estadoTemporal: INDETERMINADA
+                      procedenciaTemporal: null
+                      estado: PROGRAMADA
+                      cancelacion: null
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    patch:
+      tags: [Sesiones]
+      summary: Reemplazar nombre e instantes de una sesión (v2)
+      operationId: actualizarSesionV2
+      description: |
+        Reemplazo completo de nombre, fechaHoraInicio y fechaHoraFin (sin merge campo a campo). Mismo
+        perfil UTC-D02 que POST; la DB escribe horas y procedenciaTemporal = UTC_V2 en el mismo UPDATE.
+        No existe PUT v2 (UTC-D09): un PUT responde 405. El actor se toma del JWT.
+      x-roles: [DOCENTE]
+      x-idempotency: NOT_DEFINED
+      x-contract-version: v2
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/SesionIdPath'
+        - $ref: '#/components/parameters/CorrelationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActualizarSesionV2Request'
+            example:
+              nombre: Distribuciones continuas — revisión
+              fechaHoraInicio: '2026-07-16T03:00:00+02:00'
+              fechaHoraFin: '2026-07-16T05:30:00+02:00'
+      responses:
+        '200':
+          description: Sesión actualizada con procedencia UTC_V2.
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiVoidResponse'
+              example:
+                exitoso: true
+                datos: null
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/v2/sesiones/grupo/{grupoId}:
+    get:
+      tags: [Sesiones]
+      summary: Consultar las sesiones de un grupo con estado temporal (v2)
+      operationId: consultarSesionesPorGrupoV2
+      description: |
+        Todas las sesiones del grupo (no se ocultan históricos), en el mismo orden que v1. Cada fila
+        decide su estado temporal: CONFIRMADA con instantes Z o INDETERMINADA con horas null. Exige
+        DOCENTE titular del grupo.
+      x-roles: [DOCENTE]
+      x-idempotency: YES
+      x-contract-version: v2
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/GrupoIdPath'
+        - $ref: '#/components/parameters/CorrelationId'
+      responses:
+        '200':
+          description: Sesiones v2 del grupo.
+          headers:
+            X-Correlation-Id:
+              $ref: '#/components/headers/CorrelationId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SesionV2ListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT institucional enviado exclusivamente en Authorization Bearer.
+  headers:
+    CorrelationId:
+      description: UUID de correlación efectivo de la respuesta.
+      schema:
+        type: string
+        format: uuid
+  parameters:
+    CorrelationId:
+      name: X-Correlation-Id
+      in: header
+      required: false
+      description: |
+        UUID canónico opcional. Si falta o es inválido, el backend genera uno y devuelve el
+        valor efectivo en X-Correlation-Id; no responde 400 por este header.
+      schema:
+        type: string
+        format: uuid
+    GrupoIdPath:
+      name: grupoId
+      in: path
+      required: true
+      description: Identificador del grupo.
+      schema:
+        type: string
+        format: uuid
+    SesionIdPath:
+      name: sesionId
+      in: path
+      required: true
+      description: Identificador de la sesión.
+      schema:
+        type: string
+        format: uuid
+    GrupoIdQuery:
+      name: grupoId
+      in: query
+      required: true
+      description: Grupo autorizado que filtra el stream SSE.
+      schema:
+        type: string
+        format: uuid
+    SesionIdQuery:
+      name: sesionId
+      in: query
+      required: false
+      description: Filtro opcional por sesión.
+      schema:
+        type: string
+        format: uuid
+  responses:
+    BadRequest:
+      description: Request, binding, UUID, campo o regla de validación inválidos.
+      headers:
+        X-Correlation-Id:
+          $ref: '#/components/headers/CorrelationId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiErrorResponse'
+          examples:
+            validacion:
+              value:
+                timestamp: '2026-09-24T18:10:00Z'
+                status: 400
+                error: Bad Request
+                code: VALIDATION_ERROR
+                message: La solicitud contiene campos inválidos.
+                path: /api/v1/asistencias/lote
+                correlationId: 43ecb554-7527-45f5-8107-8ef896f63455
+                details:
+                  - field: registros[0].estado
+                    code: FIELD_INVALID_VALUE
+                    message: El estado de asistencia no es válido.
+    Unauthorized:
+      description: Bearer ausente o inválido.
+      headers:
+        X-Correlation-Id:
+          $ref: '#/components/headers/CorrelationId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiErrorResponse'
+          example:
+            timestamp: '2026-09-24T18:10:00Z'
+            status: 401
+            error: Unauthorized
+            code: UNAUTHORIZED
+            message: Autenticación requerida.
+            path: /api/v1/docente/horarios
+            correlationId: 43ecb554-7527-45f5-8107-8ef896f63455
+    Forbidden:
+      description: Rol insuficiente o titularidad institucional ajena.
+      headers:
+        X-Correlation-Id:
+          $ref: '#/components/headers/CorrelationId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiErrorResponse'
+          example:
+            timestamp: '2026-09-24T18:10:00Z'
+            status: 403
+            error: Forbidden
+            code: FORBIDDEN
+            message: No tiene permisos para realizar esta operación.
+            path: /api/v1/grupos/e38345e1-8b26-45ae-9ee0-07cf7ee535ad/asistencias
+            correlationId: 43ecb554-7527-45f5-8107-8ef896f63455
+    NotAcceptable:
+      description: El Accept del cliente no admite el formato que produce la operacion (text/event-stream en el stream SSE).
+      headers:
+        X-Correlation-Id:
+          $ref: '#/components/headers/CorrelationId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiErrorResponse'
+          example:
+            timestamp: '2026-11-08T18:10:00Z'
+            status: 406
+            error: Not Acceptable
+            code: INVALID_REQUEST
+            message: El formato de respuesta solicitado no esta disponible para este recurso.
+            path: /api/v1/realtime/stream
+            correlationId: 43ecb554-7527-45f5-8107-8ef896f63455
+    NotFound:
+      description: Sesión requerida por la operación no existe.
+      headers:
+        X-Correlation-Id:
+          $ref: '#/components/headers/CorrelationId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiErrorResponse'
+          example:
+            timestamp: '2026-09-24T18:10:00Z'
+            status: 404
+            error: Not Found
+            code: RESOURCE_NOT_FOUND
+            message: El recurso solicitado no existe.
+            path: /api/v1/asistencias/lote
+            correlationId: 43ecb554-7527-45f5-8107-8ef896f63455
+    SesionFueraDeVentana:
+      description: |
+        SES-01: la sesión no está activa para el registro ordinario de asistencia. `code` distingue
+        `ERR_SESION_NO_INICIADA` (antes del inicio), `ERR_SESION_CERRADA` (en el fin exacto o después)
+        y `ERR_SESION_HORARIO_INDETERMINADO` (procedencia temporal no confirmada). CULM-001 B agrega
+        `ERR_SESION_CANCELADA` (la sesión está cancelada). No se modificó ninguna fila.
+      headers:
+        X-Correlation-Id:
+          $ref: '#/components/headers/CorrelationId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiErrorResponse'
+          examples:
+            cerrada:
+              value:
+                timestamp: '2026-11-03T17:00:00Z'
+                status: 409
+                error: Conflict
+                code: ERR_SESION_CERRADA
+                message: La sesion ya finalizo; la asistencia solo puede modificarse mediante un reclamo.
+                path: /api/v1/asistencias/lote
+                correlationId: 43ecb554-7527-45f5-8107-8ef896f63455
+            cancelada:
+              value:
+                timestamp: '2026-11-03T17:00:00Z'
+                status: 409
+                error: Conflict
+                code: ERR_SESION_CANCELADA
+                message: La sesion esta cancelada; no admite registro de asistencia.
+                path: /api/v1/asistencias/lote
+                correlationId: 43ecb554-7527-45f5-8107-8ef896f63455
+    InternalError:
+      description: Error interno seguro; no expone DBCODE, SQL, stack trace ni detalles del IdP.
+      headers:
+        X-Correlation-Id:
+          $ref: '#/components/headers/CorrelationId'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiErrorResponse'
+          example:
+            timestamp: '2026-09-24T18:10:00Z'
+            status: 500
+            error: Internal Server Error
+            code: INTERNAL_ERROR
+            message: Ocurrió un error interno.
+            path: /api/v1/sesiones
+            correlationId: 43ecb554-7527-45f5-8107-8ef896f63455
+  schemas:
+    LocalSessionDateTime:
+      type: string
+      pattern: '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$'
+      description: |
+        Compatibilidad AS-IS: ISO local yyyy-MM-dd'T'HH:mm[:ss], sin Z/offset. La persistencia
+        tiene semántica UTC, pero el wire todavía no expresa zona. Una migración a RFC 3339 con
+        offset requiere fase contractual separada.
+      x-wire-format: ISO_LOCAL_DATE_TIME_WITHOUT_OFFSET
+      x-persistence-semantics: UTC
+      example: '2026-09-24T13:00:00'
+    HorarioDocente:
+      type: object
+      additionalProperties: false
+      required: [id, idDocente, idGrupo, codigoMateria, nombreMateria, seccion, dia, horaInicio, horaFin, totalEstudiantes]
+      properties:
+        id:
+          type: string
+          format: uuid
+        idDocente:
+          type: string
+          format: uuid
+        idGrupo:
+          type: string
+          format: uuid
+        codigoMateria:
+          type: string
+        nombreMateria:
+          type: string
+        seccion:
+          type: string
+        dia:
+          type: string
+        horaInicio:
+          type: string
+          format: time
+          description: Hora local académica.
+        horaFin:
+          type: string
+          format: time
+          description: Hora local académica.
+        totalEstudiantes:
+          type: integer
+          format: int32
+          minimum: 0
+    Sesion:
+      type: object
+      additionalProperties: false
+      required: [sesion, grupo, nombre, numero, codigo, numeroSemana, codigoGrupo, nombreGrupo, fechaHoraInicio, fechaHoraFin, estado, cancelacion, estadoSolicitud, pendienteAprobacion]
+      properties:
+        sesion:
+          type: string
+          format: uuid
+        grupo:
+          type: string
+          format: uuid
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 50
+        numero:
+          type: integer
+          format: int32
+        codigo:
+          type: string
+        numeroSemana:
+          type: integer
+          format: int32
+        codigoGrupo:
+          type: string
+        nombreGrupo:
+          type: string
+        fechaHoraInicio:
+          $ref: '#/components/schemas/LocalSessionDateTime'
+        fechaHoraFin:
+          $ref: '#/components/schemas/LocalSessionDateTime'
+        estado:
+          type: string
+          enum: [PROGRAMADA, CANCELADA]
+          description: CULM-001 B. CANCELADA si y solo si cancelacion no es null.
+        cancelacion:
+          $ref: '#/components/schemas/CancelacionSesion'
+        estadoSolicitud:
+          type: [string, 'null']
+          enum: [PENDIENTE, APROBADA, RECHAZADA, null]
+          description: DEC-065 (2). Estado de la solicitud de sesion extraordinaria; null si la sesion no nacio como solicitud.
+        pendienteAprobacion:
+          type: boolean
+          description: DEC-065 (2). true mientras la solicitud espera el aval del coordinador; una sesion pendiente no admite tomas ni asistencia.
+    EstudianteGrupo:
+      type: object
+      additionalProperties: false
+      required: [id, idEstudiante, documento, nombreCompleto, correo, codigoEstado, nombreEstado]
+      properties:
+        id:
+          type: string
+          format: uuid
+        idEstudiante:
+          type: string
+          format: uuid
+        documento:
+          type: string
+        nombreCompleto:
+          type: string
+        correo:
+          type: string
+          format: email
+        codigoEstado:
+          type: string
+        nombreEstado:
+          type: string
+    Asistencia:
+      type: object
+      additionalProperties: false
+      required: [asistencia, estudiante, grupo, sesion, presente, estado]
+      properties:
+        asistencia:
+          type: string
+          format: uuid
+        estudiante:
+          type: string
+          format: uuid
+        grupo:
+          type: string
+          format: uuid
+        sesion:
+          type: string
+          format: uuid
+        presente:
+          type: boolean
+        estado:
+          $ref: '#/components/schemas/AttendanceStatus'
+        observacion:
+          type: string
+    AttendanceStatus:
+      type: string
+      enum: [AN, SJC, EX]
+      description: Enum cerrado. Un valor desconocido falla cerrado.
+    RegistrarAsistenciasSesionRequest:
+      type: object
+      additionalProperties: false
+      required: [sesionId, registros]
+      properties:
+        sesionId:
+          type: string
+          format: uuid
+        registros:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/RegistroAsistenciaRequest'
+    RegistroAsistenciaRequest:
+      type: object
+      additionalProperties: false
+      required: [estudianteId, estado]
+      properties:
+        estudianteId:
+          type: string
+          format: uuid
+        estado:
+          $ref: '#/components/schemas/AttendanceStatus'
+    CrearSesionRequest:
+      type: object
+      additionalProperties: false
+      required: [grupo, nombre, fechaHoraInicio, fechaHoraFin]
+      properties:
+        grupo:
+          type: string
+          format: uuid
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 50
+        fechaHoraInicio:
+          $ref: '#/components/schemas/LocalSessionDateTime'
+        fechaHoraFin:
+          $ref: '#/components/schemas/LocalSessionDateTime'
+    ActualizarSesionRequest:
+      type: object
+      additionalProperties: false
+      required: [nombre, fechaHoraInicio, fechaHoraFin]
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 50
+        fechaHoraInicio:
+          $ref: '#/components/schemas/LocalSessionDateTime'
+        fechaHoraFin:
+          $ref: '#/components/schemas/LocalSessionDateTime'
+    RealtimeEventResponse:
+      type: object
+      additionalProperties: false
+      required: [eventId, type, occurredAt, payload]
+      properties:
+        eventId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          const: ASISTENCIAS_SESION_ACTUALIZADAS
+        occurredAt:
+          type: string
+          format: date-time
+          description: Instant UTC serializado con sufijo Z.
+        correlationId:
+          type: string
+          format: uuid
+          description: Correlación de la petición que publicó el evento; puede estar ausente.
+        payload:
+          $ref: '#/components/schemas/AsistenciasSesionActualizadasPayload'
+    AsistenciasSesionActualizadasPayload:
+      type: object
+      additionalProperties: false
+      required: [grupo, sesion, totalRegistros]
+      properties:
+        grupo:
+          type: string
+          format: uuid
+        sesion:
+          type: string
+          format: uuid
+        totalRegistros:
+          type: integer
+          format: int32
+          minimum: 0
+    ApiMessageResponse:
+      type: object
+      additionalProperties: false
+      required: [exitoso, mensaje]
+      properties:
+        exitoso:
+          type: boolean
+          const: true
+        mensaje:
+          type: string
+    EmitirEventoRealtimeRequest:
+      type: object
+      additionalProperties: false
+      required: [tipo, audiencia, payload]
+      properties:
+        tipo:
+          type: string
+          description: Tipo del catalogo de eventos realtime (igualdad exacta), por ejemplo SESION_CANCELADA o PARAMETER_UPDATED.
+        audiencia:
+          type: string
+          description: Audiencia autorizada por la politica para el tipo (DOCENTE_TITULAR, ESTUDIANTE_GRUPO, AMBITO_GRUPO, DESTINATARIO o ADMINISTRADOR).
+        payload:
+          type: object
+          additionalProperties: true
+          description: Objeto JSON con los datos del evento.
+    EmitirEventoRealtimeResponse:
+      type: object
+      additionalProperties: false
+      required: [exitoso, datos]
+      properties:
+        exitoso:
+          type: boolean
+          const: true
+        datos:
+          type: object
+          additionalProperties: false
+          required: [mensajeUsuario]
+          properties:
+            mensajeUsuario:
+              type: string
+    ApiVoidResponse:
+      type: object
+      additionalProperties: false
+      required: [exitoso, datos]
+      properties:
+        exitoso:
+          type: boolean
+          const: true
+        datos:
+          type: 'null'
+    HorarioDocenteListResponse:
+      type: object
+      additionalProperties: false
+      required: [exitoso, datos, total]
+      properties:
+        exitoso:
+          type: boolean
+          const: true
+        datos:
+          type: array
+          items:
+            $ref: '#/components/schemas/HorarioDocente'
+        total:
+          type: integer
+          minimum: 0
+    SesionListResponse:
+      type: object
+      additionalProperties: false
+      required: [exitoso, datos, total]
+      properties:
+        exitoso:
+          type: boolean
+          const: true
+        datos:
+          type: array
+          items:
+            $ref: '#/components/schemas/Sesion'
+        total:
+          type: integer
+          minimum: 0
+    EstudianteGrupoListResponse:
+      type: object
+      additionalProperties: false
+      required: [exitoso, datos, total]
+      properties:
+        exitoso:
+          type: boolean
+          const: true
+        datos:
+          type: array
+          items:
+            $ref: '#/components/schemas/EstudianteGrupo'
+        total:
+          type: integer
+          minimum: 0
+    AsistenciaListResponse:
+      type: object
+      additionalProperties: false
+      required: [exitoso, datos, total]
+      properties:
+        exitoso:
+          type: boolean
+          const: true
+        datos:
+          type: array
+          items:
+            $ref: '#/components/schemas/Asistencia'
+        total:
+          type: integer
+          minimum: 0
+    EstudianteResumen:
+      type: object
+      additionalProperties: false
+      description: Identidad de estudiante; todas las columnas de origen son NOT NULL.
+      required: [id, idUsuario, tipoIdentificacionId, numeroIdentificacion, primerApellido, segundoApellido, primerNombre, segundoNombre, nombreCompleto, correo, estaActivoUsuario]
+      properties:
+        id:
+          type: string
+          format: uuid
+        idUsuario:
+          type: string
+          format: uuid
+        tipoIdentificacionId:
+          type: string
+          format: uuid
+        numeroIdentificacion:
+          type: integer
+          format: int32
+        primerApellido:
+          type: string
+        segundoApellido:
+          type: string
+          description: Puede ser cadena vacía.
+        primerNombre:
+          type: string
+        segundoNombre:
+          type: string
+          description: Puede ser cadena vacía.
+        nombreCompleto:
+          type: string
+        correo:
+          type: string
+        estaActivoUsuario:
+          type: boolean
+    EstudiantePagina:
+      type: object
+      additionalProperties: false
+      required: [items, totalItems, totalPages, page, size]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/EstudianteResumen'
+        totalItems:
+          type: integer
+          format: int64
+          minimum: 0
+        totalPages:
+          type: integer
+          format: int32
+          minimum: 0
+        page:
+          type: integer
+          format: int32
+          minimum: 0
+        size:
+          type: integer
+          format: int32
+          minimum: 0
+    ApiFieldError:
+      type: object
+      additionalProperties: false
+      required: [field, code, message]
+      properties:
+        field:
+          type: string
+        code:
+          type: string
+          enum:
+            - FIELD_REQUIRED
+            - FIELD_INVALID_FORMAT
+            - FIELD_INVALID_LENGTH
+            - FIELD_OUT_OF_RANGE
+            - FIELD_INVALID_TYPE
+            - FIELD_INVALID_UUID
+            - FIELD_UNKNOWN
+            - FIELD_INVALID_VALUE
+        message:
+          type: string
+    ApiErrorResponse:
+      type: object
+      additionalProperties: false
+      required: [timestamp, status, error, code, message, path, correlationId]
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+          format: int32
+        error:
+          type: string
+        code:
+          type: string
+          description: Código machine-readable; nunca DBCODE.
+        message:
+          type: string
+          description: Mensaje humano; no debe dirigir lógica del cliente.
+        path:
+          type: string
+        correlationId:
+          type: string
+          format: uuid
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/ApiFieldError'
+    UtcInstant:
+      type: string
+      format: date-time
+      pattern: '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,7})?(Z|[+-]\d{2}:\d{2})$'
+      description: |
+        Perfil UTC-D02: RFC 3339 con segundos obligatorios, 0 a 7 decimales (DATETIME2(7), nunca se
+        redondea), T y Z mayúsculas y offset Z o ±HH:mm; sin espacios. Además del patrón léxico se valida
+        el calendario, el rango del offset y que el instante UTC resultante quepa en DATETIME2. Un valor
+        sin offset, con +HH, con ±HH:mm:ss o con 8-9 decimales es FIELD_INVALID_FORMAT.
+      x-wire-format: RFC3339_UTC_D02
+      x-persistence-semantics: UTC
+      example: '2026-07-15T20:00:00-05:00'
+    UtcInstantResponse:
+      type: [string, 'null']
+      format: date-time
+      pattern: '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,7})?Z$'
+      description: |
+        Instante UTC con sufijo Z leído del DATETIME2 confirmado; null cuando estadoTemporal es
+        INDETERMINADA. El cliente decide la zona de visualización (IANA), nunca el servidor.
+      x-wire-format: RFC3339_UTC_Z
+      example: '2026-07-16T01:00:00Z'
+    CrearSesionV2Request:
+      type: object
+      additionalProperties: false
+      required: [grupo, nombre, fechaHoraInicio, fechaHoraFin]
+      properties:
+        grupo:
+          type: string
+          format: uuid
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 50
+        fechaHoraInicio:
+          $ref: '#/components/schemas/UtcInstant'
+        fechaHoraFin:
+          $ref: '#/components/schemas/UtcInstant'
+    ActualizarSesionV2Request:
+      type: object
+      additionalProperties: false
+      required: [nombre, fechaHoraInicio, fechaHoraFin]
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 50
+        fechaHoraInicio:
+          $ref: '#/components/schemas/UtcInstant'
+        fechaHoraFin:
+          $ref: '#/components/schemas/UtcInstant'
+    SesionV2:
+      type: object
+      additionalProperties: false
+      required: [sesion, grupo, nombre, numero, codigo, numeroSemana, codigoGrupo, nombreGrupo, fechaHoraInicio, fechaHoraFin, estadoTemporal, procedenciaTemporal, estado, cancelacion, estadoSolicitud, pendienteAprobacion]
+      properties:
+        sesion:
+          type: string
+          format: uuid
+        grupo:
+          type: string
+          format: uuid
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 50
+        numero:
+          type: integer
+          format: int32
+        codigo:
+          type: string
+        numeroSemana:
+          type: integer
+          format: int32
+        codigoGrupo:
+          type: string
+        nombreGrupo:
+          type: string
+        fechaHoraInicio:
+          $ref: '#/components/schemas/UtcInstantResponse'
+        fechaHoraFin:
+          $ref: '#/components/schemas/UtcInstantResponse'
+        estadoTemporal:
+          type: string
+          enum: [CONFIRMADA, INDETERMINADA]
+        procedenciaTemporal:
+          type: [string, 'null']
+          enum: [UTC_V2, UTC_GENERADOR, UTC_OWNER, null]
+          description: Origen confirmado de las horas; null en sesiones INDETERMINADAS.
+        estado:
+          type: string
+          enum: [PROGRAMADA, CANCELADA]
+          description: CULM-001 B. CANCELADA si y solo si cancelacion no es null.
+        cancelacion:
+          $ref: '#/components/schemas/CancelacionSesion'
+        estadoSolicitud:
+          type: [string, 'null']
+          enum: [PENDIENTE, APROBADA, RECHAZADA, null]
+          description: DEC-065 (2). Estado de la solicitud de sesion extraordinaria; null si la sesion no nacio como solicitud.
+        pendienteAprobacion:
+          type: boolean
+          description: DEC-065 (2). true mientras la solicitud espera el aval del coordinador; una sesion pendiente no admite tomas ni asistencia.
+    CancelacionSesion:
+      type: [object, 'null']
+      additionalProperties: false
+      description: |
+        CULM-001 B. Cancelación de la sesión; null cuando está PROGRAMADA. Una sesión cancelada
+        no admite registro de asistencia.
+      required: [tipo, motivo, nombreFestivo, fechaCancelacionUtc]
+      properties:
+        tipo:
+          type: string
+          enum: [DOCENTE, FESTIVO]
+        motivo:
+          type: string
+        nombreFestivo:
+          type: [string, 'null']
+          description: Nombre del festivo cuando la cancelación es del sistema; null si la cancela el docente.
+        fechaCancelacionUtc:
+          $ref: '#/components/schemas/UtcInstantResponse'
+    SesionV2DataResponse:
+      type: object
+      additionalProperties: false
+      required: [exitoso, datos]
+      properties:
+        exitoso:
+          type: boolean
+          const: true
+        datos:
+          $ref: '#/components/schemas/SesionV2'
+    SesionV2ListResponse:
+      type: object
+      additionalProperties: false
+      required: [exitoso, datos, total]
+      properties:
+        exitoso:
+          type: boolean
+          const: true
+        datos:
+          type: array
+          items:
+            $ref: '#/components/schemas/SesionV2'
+        total:
+          type: integer
+          minimum: 0

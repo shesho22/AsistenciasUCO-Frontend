@@ -137,6 +137,8 @@ export interface DirectorioEstudiantesQuery {
   providedIn: 'root',
 })
 export class CoordinatorManagementService {
+  private http = inject(HttpClient);
+
   private docentesSignal = signal<DocentePrograma[]>([]);
   public docentes = this.docentesSignal.asReadonly();
 
@@ -155,8 +157,6 @@ export class CoordinatorManagementService {
   public estudiantes = this.estudiantesSignal.asReadonly();
 
   private readonly programaService = inject(CoordinatorProgramService);
-
-  constructor(private http: HttpClient) {}
 
   /** S4: el programa seleccionado por el coordinador (nulo mientras no se conozcan sus programas). */
   private programaIdActual(): string | null {

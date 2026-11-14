@@ -13,7 +13,6 @@ const API = environment.apiUrl;
 
 describe('DeanGrupoDetalleComponent - Realtime SSE (C-F-54..C-F-56)', () => {
   let fixture: ComponentFixture<DeanGrupoDetalleComponent>;
-  let component: DeanGrupoDetalleComponent;
   let http: HttpTestingController;
   let connectionState$: BehaviorSubject<RealtimeConnectionState>;
   let events$: Subject<RealtimeEvent>;
@@ -49,7 +48,6 @@ describe('DeanGrupoDetalleComponent - Realtime SSE (C-F-54..C-F-56)', () => {
 
     http = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(DeanGrupoDetalleComponent);
-    component = fixture.componentInstance;
   });
 
   afterEach(() => {

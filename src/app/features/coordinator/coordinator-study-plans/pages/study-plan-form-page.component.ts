@@ -20,7 +20,7 @@ import { mensajeUi } from '../../../../core/messages/mensajes-ui';
           [modo]="modo()"
           [plan]="selectedPlan()"
           (save)="guardarPlan($event)"
-          (cancel)="volver()"
+          (cancelar)="volver()"
         />
       } @else {
         <div class="bg-white rounded-2xl border border-warm-200 p-12 text-center shadow-warm-sm">

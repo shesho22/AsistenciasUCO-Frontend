@@ -474,6 +474,26 @@ describe('StudentCourseDetailComponent: puntos de control', () => {
     expect(el('btn-reclamar-toma')).toBeNull();
   });
 
+  it('VAL PRU-13 en el ultimo minuto valido (23:59 de Bogota) se ofrece reclamar la toma y se muestra el limite', () => {
+    fixture.componentRef.setInput('sesiones', [crearSesion({
+      id: 'p', estadoAsistencia: 'PARCIAL', reclamable: true, plazoJustificacionVigente: true,
+      fechaLimiteJustificacionUtc: '2026-11-10T04:59:59Z', fechaLimiteJustificacionLocal: '2026-11-09 23:59', tomas: [toma(2)],
+    })]);
+    fixture.detectChanges();
+    expect(el('btn-reclamar-toma')).not.toBeNull();
+    expect(el('sesion-plazo')!.textContent).toContain('Justificable hasta 2026-11-09 23:59');
+  });
+
+  it('VAL PRU-13 en el primer minuto vencido no se ofrece reclamar la toma y se informa el vencimiento', () => {
+    fixture.componentRef.setInput('sesiones', [crearSesion({
+      id: 'p', estadoAsistencia: 'PARCIAL', reclamable: true, plazoJustificacionVigente: false,
+      fechaLimiteJustificacionUtc: '2026-11-10T04:59:59Z', fechaLimiteJustificacionLocal: '2026-11-09 23:59', tomas: [toma(2)],
+    })]);
+    fixture.detectChanges();
+    expect(el('btn-reclamar-toma')).toBeNull();
+    expect(el('sesion-plazo')!.textContent).toContain('Plazo vencido · venció el 2026-11-09 23:59');
+  });
+
   it('una sesión cancelada no muestra tomas', () => {
     fixture.componentRef.setInput('sesiones', [crearSesion({ id: 'x', estado: 'CANCELADA', tomas: [toma(1)] })]);
     fixture.detectChanges();

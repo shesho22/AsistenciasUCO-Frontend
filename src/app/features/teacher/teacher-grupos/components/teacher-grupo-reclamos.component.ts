@@ -50,7 +50,7 @@ import { etiquetaEstadoReclamo, varianteEstadoReclamo } from '../../../../core/u
                   {{ etiquetaEstado(rec.estadoSolicitud) }}
                 </app-badge>
               </div>
-              @if (rec.numeroToma != null) {
+              @if (rec.numeroToma !== null && rec.numeroToma !== undefined) {
                 <p class="text-[11px] font-semibold text-warm-800" data-testid="grupo-reclamo-toma">Reclamo de la toma {{ rec.numeroToma }}</p>
               }
               <p class="text-xs text-warm-700 italic">"{{ rec.justificacionSolicitud }}"</p>

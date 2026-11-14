@@ -31,6 +31,8 @@ interface NavItem {
       [visible]="toastState().visible"
       [message]="toastState().message"
       [type]="toastState().type"
+      [reference]="toastState().reference"
+      [duration]="toastState().reference ? 8000 : 3500"
       (dismissed)="toastService.dismiss()"
     ></app-toast>
     <a
@@ -66,10 +68,14 @@ interface NavItem {
 
       <!-- Sidebar Overlay for Mobile -->
       @if (isMobileMenuOpen()) {
-        <div
-          class="md:hidden fixed inset-0 bg-warm-950/50 backdrop-blur-xs z-40"
+        <!-- Fondo del menu movil: boton sin tabulacion (Escape ya lo cierra desde el teclado, ver host). -->
+        <button
+          type="button"
+          tabindex="-1"
+          aria-label="Cerrar menú de navegación"
+          class="md:hidden fixed inset-0 bg-warm-950/50 backdrop-blur-xs z-40 cursor-default"
           (click)="isMobileMenuOpen.set(false)"
-        ></div>
+        ></button>
       }
 
       <!-- Sidebar Container -->
@@ -240,7 +246,6 @@ export class DashboardLayoutComponent {
 
   currentRole = computed<UserRole>(() => {
     const role = this.user()?.role;
-    if (role === 'ADMIN') return 'ADMINISTRADOR';
     return (role || 'DOCENTE') as UserRole;
   });
 
@@ -290,44 +295,44 @@ export class DashboardLayoutComponent {
     {
       label: 'Panel Principal',
       route: '/app/dashboard',
-      roles: ['ADMINISTRADOR', 'DECANO', 'COORDINADOR', 'DOCENTE', 'ESTUDIANTE', 'ADMIN'],
+      roles: ['ADMINISTRADOR', 'DECANO', 'COORDINADOR', 'DOCENTE', 'ESTUDIANTE'],
       icon: 'dashboard',
     },
     {
       label: 'Personas',
       route: '/app/admin/personas',
-      roles: ['ADMINISTRADOR', 'ADMIN'],
+      roles: ['ADMINISTRADOR'],
       icon: 'estudiantes',
     },
     {
       label: 'Estructura',
       route: '/app/admin/estructura',
-      roles: ['ADMINISTRADOR', 'ADMIN'],
+      roles: ['ADMINISTRADOR'],
       icon: 'facultad',
     },
     {
       label: 'Configuración',
       route: '/app/admin/configuracion',
-      roles: ['ADMINISTRADOR', 'ADMIN'],
+      roles: ['ADMINISTRADOR'],
       icon: 'catalogos',
     },
     {
       label: 'Sistema & Auditoría',
       route: '/app/admin/sistema',
-      roles: ['ADMINISTRADOR', 'ADMIN'],
+      roles: ['ADMINISTRADOR'],
       icon: 'sistema',
     },
     {
       label: 'Indicadores',
       route: '/app/admin/indicadores',
-      roles: ['ADMINISTRADOR', 'ADMIN'],
+      roles: ['ADMINISTRADOR'],
       icon: 'estudiantes',
     },
     {
       // Depende del componente externo de seguridad: se oculta si no esta disponible (F3-ADM-07).
       label: 'Seguridad UCO',
       route: '/app/admin/seguridad',
-      roles: ['ADMINISTRADOR', 'ADMIN'],
+      roles: ['ADMINISTRADOR'],
       icon: 'sistema',
       externo: 'seguridad',
     },
@@ -335,7 +340,7 @@ export class DashboardLayoutComponent {
       // Depende del micro frontend de MessageUcoLab: se oculta si no esta disponible (F3-ADM-07).
       label: 'Mensajes',
       route: '/app/admin/mensajes',
-      roles: ['ADMINISTRADOR', 'ADMIN'],
+      roles: ['ADMINISTRADOR'],
       icon: 'catalogos',
       externo: 'mensajes',
     },
@@ -520,7 +525,6 @@ export class DashboardLayoutComponent {
   getRoleBadgeVariant(role: UserRole): 'success' | 'warning' | 'danger' | 'info' | 'neutral' {
     switch (role) {
       case 'ADMINISTRADOR':
-      case 'ADMIN':
         return 'danger';
       case 'DECANO':
         return 'warning';

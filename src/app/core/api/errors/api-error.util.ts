@@ -190,6 +190,20 @@ export function getApiCorrelationId(error: unknown): string | undefined {
   return getApiErrorResponse(error)?.correlationId ?? undefined;
 }
 
+const CORRELATION_ID_SEGURO = /^[A-Za-z0-9._-]{8,128}$/;
+
+/**
+ * VAL OBS-14: id de correlación de un error HTTP para mostrarlo al usuario. Prefiere `ApiErrorResponse.correlationId`
+ * y, si la respuesta no trae envelope (p. ej. un 403 o 503 del borde), la cabecera `X-Correlation-Id` que el backend
+ * devuelve (OBS-02). Solo acepta identificadores con forma segura (sin espacios ni marcado).
+ */
+export function getErrorCorrelationId(error: unknown): string | null {
+  const delCuerpo = getApiCorrelationId(error);
+  const deCabecera = error instanceof HttpErrorResponse ? error.headers?.get('X-Correlation-Id') : null;
+  const id = (delCuerpo ?? deCabecera ?? '').trim();
+  return CORRELATION_ID_SEGURO.test(id) ? id : null;
+}
+
 /**
  * Texto del backend para mostrar al usuario ante un error de operación. Acepta el HttpErrorResponse real y, por
  * compatibilidad, objetos con la forma `{ error: { message | mensajeUsuario } }`. Nunca usa `mensajeTecnico` ni

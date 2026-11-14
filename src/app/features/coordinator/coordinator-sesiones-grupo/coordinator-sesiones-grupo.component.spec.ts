@@ -113,8 +113,6 @@ describe('CoordinatorSesionesGrupoComponent (HU060/HU061)', () => {
   // Un fallo de carga no puede verse como una lista vacia: alerta accesible y Reintentar en cada nivel.
   describe('errores de carga distinguibles del vacio', () => {
     const el = () => fixture.nativeElement as HTMLElement;
-    const alerta = () => el().querySelector('[role="alert"]');
-    const hayReintentar = () => Array.from(el().querySelectorAll('button')).some((b) => /Reintentar/.test(b.textContent ?? ''));
 
     it('sesiones: un 500 muestra alerta con Reintentar y no "El grupo no tiene sesiones"; Reintentar recupera', () => {
       component.seleccionarGrupo(grupo);

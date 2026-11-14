@@ -235,7 +235,7 @@ export class ConsolidadoAsistenciaComponent implements OnInit {
         },
         this.comoDecano
       );
-      return consulta.pipe(tap((res) => this.recordarOpciones(res.elementos ?? (res as any).datos ?? [])));
+      return consulta.pipe(tap((res) => this.recordarOpciones(res.elementos ?? (res as { datos?: typeof res.elementos }).datos ?? [])));
     },
     (mensaje) => this.toast.error(mensaje)
   );

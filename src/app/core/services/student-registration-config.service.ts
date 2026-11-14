@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map, of, shareReplay } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -18,9 +18,9 @@ const MOCK_EMAIL_DOMAIN = '@uco.edu.co';
  */
 @Injectable({ providedIn: 'root' })
 export class StudentRegistrationConfigService {
-  private cached$: Observable<string> | null = null;
+  private readonly http = inject(HttpClient);
 
-  constructor(private readonly http: HttpClient) {}
+  private cached$: Observable<string> | null = null;
 
   getEmailDomain(): Observable<string> {
     if (environment.useFrontendMocks) {

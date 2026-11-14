@@ -40,4 +40,21 @@ describe('SemaforoAsistenciaComponent', () => {
     expect(chip()?.getAttribute('aria-label')).toContain('pérdida');
     expect(chip()?.querySelector('[data-testid="semaforo-texto"]')).toBeNull();
   });
+
+  describe('VAL PRU-14: presentacion del borde del umbral', () => {
+    const casos: Array<{ porcentaje: number; nivel: string; texto: string; aria: string }> = [
+      { porcentaje: 19.99, nivel: 'ambar', texto: 'Advertencia', aria: 'Inasistencia 19,99 %: advertencia' },
+      { porcentaje: 19.995, nivel: 'rojo', texto: 'Pérdida', aria: 'Inasistencia 20 %: pérdida de la asignatura' },
+      { porcentaje: 20, nivel: 'rojo', texto: 'Pérdida', aria: 'Inasistencia 20 %: pérdida de la asignatura' },
+      { porcentaje: 20.01, nivel: 'rojo', texto: 'Pérdida', aria: 'Inasistencia 20,01 %: pérdida de la asignatura' },
+    ];
+    for (const c of casos) {
+      it(`${c.porcentaje} % se presenta como ${c.texto} y anuncia el valor redondeado`, () => {
+        crear({ porcentaje: c.porcentaje });
+        expect(chip()?.getAttribute('data-nivel')).toBe(c.nivel);
+        expect(chip()?.textContent).toContain(c.texto);
+        expect(chip()?.getAttribute('aria-label')).toBe(c.aria);
+      });
+    }
+  });
 });

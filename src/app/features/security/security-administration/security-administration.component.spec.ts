@@ -131,8 +131,17 @@ describe('SecurityAdministrationComponent', () => {
     expect(securityUiLoader.load).not.toHaveBeenCalled();
   });
 
-  it('permite ADMIN y monta Security UI con las opciones del contrato', async () => {
-    authService.currentUser.set({ ...adminUser, role: 'ADMIN' });
+  it('VAL SEG-14: rechaza el alias retirado ADMIN (no equivale a ADMINISTRADOR)', async () => {
+    authService.currentUser.set({ ...adminUser, role: 'ADMIN' as User['role'] });
+
+    await finishInitialLoad();
+
+    expect(component.state()).toBe('forbidden');
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('permite ADMINISTRADOR y monta Security UI con las opciones del contrato', async () => {
+    authService.currentUser.set({ ...adminUser, role: 'ADMINISTRADOR' });
 
     await finishInitialLoad();
 

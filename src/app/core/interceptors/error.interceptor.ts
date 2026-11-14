@@ -1,8 +1,8 @@
 import { HttpInterceptorFn, HttpContextToken } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { catchError, throwError } from 'rxjs';
-import { ToastService } from '../../shared/components/toast/toast.component';
-import { API_ERROR_CODE, getApiErrorCode, getApiErrorMessage } from '../api/errors/api-error.util';
+import { ToastService } from '../../shared/components/toast/toast.service';
+import { API_ERROR_CODE, getApiErrorCode, getApiErrorMessage, getErrorCorrelationId } from '../api/errors/api-error.util';
 import { mensajeUi } from '../messages/mensajes-ui';
 
 /**
@@ -23,10 +23,11 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
       // por el texto del mensaje.
       if (getApiErrorCode(error) === API_ERROR_CODE.FORBIDDEN) {
         if (!bypassGlobalToast) {
-          toastService.error(mensajeUi('UI_ERROR_INTERCEPTOR_001'));
+          toastService.error(mensajeUi('UI_ERROR_INTERCEPTOR_001'), getErrorCorrelationId(error));
         }
       } else if (error?.status >= 500 && !bypassGlobalToast) {
-        toastService.error(getApiErrorMessage(error));
+        // VAL OBS-14: el usuario ve el id de correlación para citarlo al reportar el fallo.
+        toastService.error(getApiErrorMessage(error), getErrorCorrelationId(error));
       }
 
       return throwError(() => error);

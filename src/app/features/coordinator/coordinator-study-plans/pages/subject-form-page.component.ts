@@ -27,7 +27,7 @@ import { mensajeUi } from '../../../../core/messages/mensajes-ui';
             [areas]="areas()"
             [caracteres]="caracteres()"
             (save)="guardarAsignatura($event)"
-            (cancel)="volverAMalla()"
+            (cancelar)="volverAMalla()"
           />
         } @else {
           <div class="bg-white rounded-2xl border border-warm-200 p-12 text-center shadow-warm-sm">

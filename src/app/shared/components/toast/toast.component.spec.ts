@@ -74,3 +74,40 @@ describe('ToastComponent accesibilidad (F-TRX-014)', () => {
     expect(el.getAttribute('aria-live')).toBe('polite');
   });
 });
+
+describe('VAL OBS-14: referencia del error en el toast', () => {
+  it('ToastService.error guarda la referencia solo cuando se informa', () => {
+    const service = TestBed.inject(ToastService);
+    service.error('fallo', 'corr-0001-abcd');
+    expect(service.currentToast()).toEqual({ visible: true, message: 'fallo', type: 'error', reference: 'corr-0001-abcd' });
+    service.error('fallo');
+    expect(service.currentToast().reference).toBeUndefined();
+  });
+
+  it('muestra el código de referencia en un toast de error y no en los demás tipos', () => {
+    const fixture = TestBed.createComponent(ToastComponent);
+    fixture.componentRef.setInput('visible', true);
+    fixture.componentRef.setInput('type', 'error');
+    fixture.componentRef.setInput('message', 'fallo');
+    fixture.componentRef.setInput('reference', 'corr-0001-abcd');
+    fixture.componentRef.setInput('duration', 60_000);
+    fixture.detectChanges();
+    const ref = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="toast-referencia"]');
+    expect(ref?.textContent?.trim()).toBe('Código de referencia: corr-0001-abcd');
+
+    fixture.componentRef.setInput('type', 'success');
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="toast-referencia"]')).toBeNull();
+    fixture.destroy();
+  });
+
+  it('sin referencia no pinta la línea', () => {
+    const fixture = TestBed.createComponent(ToastComponent);
+    fixture.componentRef.setInput('visible', true);
+    fixture.componentRef.setInput('type', 'error');
+    fixture.componentRef.setInput('duration', 60_000);
+    fixture.detectChanges();
+    expect(fixture.componentInstance.referenciaTexto()).toBeNull();
+    fixture.destroy();
+  });
+});

@@ -88,7 +88,7 @@ import { Component, ChangeDetectionStrategy, input, output, computed } from '@an
           <button
             type="button"
             (click)="goToPage(currentPage() + 1)"
-            [disabled]="currentPage() >= totalPages()"
+            [disabled]="currentPage() >= paginasTotales()"
             aria-label="Página siguiente"
             class="min-h-[44px] min-w-[44px] px-2.5 justify-center rounded-lg border border-warm-200 text-warm-600 hover:text-warm-900 hover:bg-warm-100 disabled:opacity-40 disabled:pointer-events-none transition-colors inline-flex items-center gap-1"
           >
@@ -99,8 +99,8 @@ import { Component, ChangeDetectionStrategy, input, output, computed } from '@an
           <!-- Botón Última Página -->
           <button
             type="button"
-            (click)="goToPage(totalPages())"
-            [disabled]="currentPage() >= totalPages()"
+            (click)="goToPage(paginasTotales())"
+            [disabled]="currentPage() >= paginasTotales()"
             class="min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded-lg border border-warm-200 text-warm-500 hover:text-warm-900 hover:bg-warm-100 disabled:opacity-40 disabled:pointer-events-none transition-colors"
             title="Última página"
             aria-label="Última página"
@@ -118,13 +118,14 @@ export class PaginationComponent {
   readonly currentPage = input<number>(1);
   readonly showPageSizeSelector = input<boolean>(true);
   readonly pageSizeOptions = input<number[]>([5, 10, 20, 50]);
-  readonly totalPagesInput = input<number | undefined>(undefined, { alias: 'totalPages' });
+  /** Total de paginas informado por el backend; sin el, se calcula con totalItems y pageSize. */
+  readonly totalPages = input<number | undefined>(undefined);
 
   readonly pageChange = output<number>();
   readonly pageSizeChange = output<number>();
 
-  readonly totalPages = computed(() => {
-    const fromInput = this.totalPagesInput();
+  readonly paginasTotales = computed(() => {
+    const fromInput = this.totalPages();
     if (fromInput !== undefined && fromInput !== null) {
       return Math.max(1, fromInput);
     }
@@ -140,7 +141,7 @@ export class PaginationComponent {
   });
 
   readonly visiblePages = computed(() => {
-    const total = this.totalPages();
+    const total = this.paginasTotales();
     const current = this.currentPage();
     const delta = 1;
 
@@ -171,7 +172,7 @@ export class PaginationComponent {
   });
 
   goToPage(page: number): void {
-    if (page >= 1 && page <= this.totalPages() && page !== this.currentPage()) {
+    if (page >= 1 && page <= this.paginasTotales() && page !== this.currentPage()) {
       this.pageChange.emit(page);
     }
   }

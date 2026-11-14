@@ -162,7 +162,7 @@ export const ESTADOS_FILTRABLES: ReadonlyArray<{ codigo: EstadoRevisionCancelaci
                         <app-semaforo-asistencia [porcentaje]="porcentaje(rev)" [umbralPerdida]="rev.umbralPerdida" />
                         <span class="text-xs text-warm-600" data-testid="rev-porcentaje">
                           {{ porcentaje(rev) | number: '1.1-2' }} %
-                          @if (rev.umbralPerdida != null) { (límite {{ rev.umbralPerdida }} %) }
+                          @if (rev.umbralPerdida !== null && rev.umbralPerdida !== undefined) { (límite {{ rev.umbralPerdida }} %) }
                         </span>
                         @if (rev.fechaCreacionUtc) {
                           <span class="text-xs text-warm-500">Cruzó el umbral el {{ rev.fechaCreacionUtc | fechaCorta }}</span>

@@ -1,4 +1,4 @@
-export type UserRole = 'ADMINISTRADOR' | 'DECANO' | 'COORDINADOR' | 'DOCENTE' | 'ESTUDIANTE' | 'ADMIN';
+export type UserRole = 'ADMINISTRADOR' | 'DECANO' | 'COORDINADOR' | 'DOCENTE' | 'ESTUDIANTE';
 
 export interface User {
   id: string;
@@ -23,14 +23,16 @@ export interface User {
 }
 
 
-/** Roles efectivos del usuario normalizados (`ADMIN` → `ADMINISTRADOR`); siempre incluye el rol principal. */
+/**
+ * Roles efectivos del usuario sin duplicados; siempre incluye el rol principal. VAL SEG-14: el alias `ADMIN` se
+ * retiró; los roles son exactamente los del catálogo de acceso del backend.
+ */
 export function effectiveRoles(user: Pick<User, 'role' | 'roles'>): UserRole[] {
-  const normalize = (role: UserRole): UserRole => (role === 'ADMIN' ? 'ADMINISTRADOR' : role);
-  return Array.from(new Set([user.role, ...(user.roles ?? [])].map(normalize)));
+  return Array.from(new Set([user.role, ...(user.roles ?? [])]));
 }
 
 /** Verdadero si algún rol efectivo del usuario está entre los permitidos (ergonomía de UI, no seguridad). */
 export function hasAnyRole(user: Pick<User, 'role' | 'roles'>, allowed: readonly UserRole[]): boolean {
   const roles = effectiveRoles(user);
-  return allowed.some((role) => roles.includes(role === 'ADMIN' ? 'ADMINISTRADOR' : role));
+  return allowed.some((role) => roles.includes(role));
 }

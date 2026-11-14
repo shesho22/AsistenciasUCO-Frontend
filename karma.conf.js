@@ -33,6 +33,17 @@ module.exports = function (config) {
         { type: 'text-summary' },
         { type: 'lcovonly', file: 'lcov.info' },
       ],
+      // VAL PRU-08: umbral global; una caida de cobertura fuera de realtime tambien rompe test:ci y el CI.
+      // Base 2026-11-14: sentencias 94,1 %, ramas 81,7 %, funciones 94,4 %, lineas 95,1 %. Realtime mantiene su
+      // compuerta propia (90/80) en scripts/check-realtime-coverage.mjs.
+      check: {
+        global: {
+          statements: 90,
+          branches: 78,
+          functions: 90,
+          lines: 90,
+        },
+      },
     },
     reporters: ['progress', 'kjhtml'],
     port: 9876,

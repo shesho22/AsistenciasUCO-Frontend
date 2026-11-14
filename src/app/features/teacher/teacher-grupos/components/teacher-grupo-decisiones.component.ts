@@ -68,7 +68,7 @@ import { RevisionDecisionModalComponent } from '../../revision-cancelacion/revis
                   <app-semaforo-asistencia [porcentaje]="porcentaje(rev)" [umbralPerdida]="rev.umbralPerdida" />
                   <span>
                     {{ porcentaje(rev) | number: '1.1-2' }} % de inasistencia
-                    @if (rev.umbralPerdida != null) { (límite {{ rev.umbralPerdida }} %) }
+                    @if (rev.umbralPerdida !== null && rev.umbralPerdida !== undefined) { (límite {{ rev.umbralPerdida }} %) }
                   </span>
                   @if (rev.fechaCreacionUtc) {
                     <span data-testid="decision-fecha">· Cruzó el umbral el {{ rev.fechaCreacionUtc | fechaCorta }}</span>

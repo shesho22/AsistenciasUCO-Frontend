@@ -1,50 +1,10 @@
-import { Component, ChangeDetectionStrategy, input, output, signal, computed, effect, Injectable, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, output, signal, computed, effect } from '@angular/core';
+import type { ToastType } from './toast.service';
+import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
 
-export type ToastType = 'success' | 'error' | 'info' | 'warning';
-
-export interface ToastData {
-  visible: boolean;
-  message: string;
-  type: ToastType;
-}
-
-@Injectable({
-  providedIn: 'root',
-})
-export class ToastService {
-  private state = signal<ToastData>({
-    visible: false,
-    message: '',
-    type: 'success',
-  });
-
-  currentToast = this.state.asReadonly();
-
-  show(message: string, type: ToastType = 'success'): void {
-    this.state.set({ visible: true, message, type });
-  }
-
-  success(message: string): void {
-    this.show(message, 'success');
-  }
-
-  error(message: string): void {
-    this.show(message, 'error');
-  }
-
-  info(message: string): void {
-    this.show(message, 'info');
-  }
-
-  warning(message: string): void {
-    this.show(message, 'warning');
-  }
-
-  dismiss(): void {
-    this.state.update((s) => ({ ...s, visible: false }));
-  }
-}
+export { ToastService } from './toast.service';
+export type { ToastData, ToastType } from './toast.service';
 
 @Component({
     selector: 'app-toast',
@@ -91,6 +51,9 @@ export class ToastService {
 
           <div class="flex-1 text-xs font-semibold text-warm-100 pr-2 leading-tight">
             {{ message() }}
+            @if (referenciaTexto(); as texto) {
+              <p class="mt-1 font-mono text-[11px] font-normal text-warm-300 select-text" data-testid="toast-referencia">{{ texto }}</p>
+            }
           </div>
 
           <button
@@ -113,6 +76,8 @@ export class ToastComponent {
   message = input<string>('');
   type = input<ToastType>('success');
   duration = input<number>(3500);
+  /** VAL OBS-14: referencia del error (correlationId); solo se muestra en los toasts de error. */
+  reference = input<string | null | undefined>(null);
 
   dismissed = output<void>();
 
@@ -151,6 +116,11 @@ export class ToastComponent {
       this.timerId = null;
     }
   }
+
+  readonly referenciaTexto = computed(() => {
+    const id = this.reference();
+    return this.type() === 'error' && id ? mensajeUi('UI_ERROR_REFERENCIA', { id }) : null;
+  });
 
   readonly containerClasses = computed(() => {
     const base = 'fixed top-16 right-6 z-50 flex flex-col gap-2 p-3.5 bg-warm-950 text-white rounded-2xl shadow-warm-lg border border-primary-800/80 max-w-xs sm:max-w-sm w-full select-none';

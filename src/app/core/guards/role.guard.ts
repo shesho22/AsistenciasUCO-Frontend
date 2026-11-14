@@ -2,7 +2,7 @@ import { inject } from '@angular/core';
 import { CanActivateFn, Router, ActivatedRouteSnapshot } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { UserRole, hasAnyRole } from '../models/user.model';
-import { ToastService } from '../../shared/components/toast/toast.component';
+import { ToastService } from '../../shared/components/toast/toast.service';
 import { mensajeUi } from '../messages/mensajes-ui';
 
 export const roleGuard: CanActivateFn = (route: ActivatedRouteSnapshot) => {
