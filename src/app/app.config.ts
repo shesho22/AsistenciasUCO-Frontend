@@ -14,12 +14,13 @@ import { FetchSseRealtimeTransport } from './core/realtime/adapter/sse/fetch-sse
 import { GlobalErrorHandler } from './core/errors/global-error-handler';
 
 /**
- * VAL MSG-06 / EST-10: el servicio y la tabla de codigos remotos solo se descargan si MessageUcoLab esta configurado;
- * sin aplicacion y ambiente la SPA usa sus textos locales y el bundle inicial no los carga.
+ * VAL MSG-06 / EST-10 / INT-003: el servicio y la tabla de codigos remotos solo se descargan si los textos del catalogo
+ * estan encendidos (`MENSAJES_UI_DESDE_CATALOGO=true`); apagados, la SPA usa sus textos locales y el bundle inicial no
+ * los carga.
  */
 export function iniciarCatalogoMensajesUi(injector: EnvironmentInjector) {
   return () => {
-    if (!environment.messages.applicationId || !environment.messages.environmentId) {
+    if (!environment.messages.textosDesdeCatalogo) {
       return;
     }
     void import('./core/messages/catalogo-mensajes-ui.service')
@@ -56,7 +57,7 @@ export const appConfig: ApplicationConfig = {
       })
     ),
     { provide: REALTIME_TRANSPORT, useClass: FetchSseRealtimeTransport },
-    // VAL MSG-06: los textos de la interfaz se leen de MessageUcoLab (sin bloquear el arranque).
+    // VAL MSG-06 / INT-003: los textos de la interfaz se leen del catalogo a traves del Backend (sin bloquear el arranque).
     {
       provide: APP_INITIALIZER,
       useFactory: iniciarCatalogoMensajesUi,
