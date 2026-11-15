@@ -37,4 +37,5 @@ Lo que quedaba del frontend en la lista de chequeo de validación tras VAL-olead
 1. Importar `mensajes-ui-messageucolab.xlsx` (generado desde el `.psv` con la plantilla oficial) en la aplicación
    "Asistencias UCO" de MessageUcoLab, ambiente Develop, desde la administración de mensajes.
 2. Poner `MESSAGEUCOLAB_APPLICATION_ID` y `MESSAGEUCOLAB_ENVIRONMENT_ID` (los mismos del backend) en el `.env` del
-   frontend o en `public/assets/env.js` del laboratorio.
+   frontend (contenedor) o, con `ng serve`, en `src/assets/env.js` (ignorado por git; tiene prioridad sobre
+   `public/assets/env.js`).

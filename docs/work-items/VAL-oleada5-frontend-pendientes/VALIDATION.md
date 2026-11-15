@@ -30,10 +30,32 @@ commits de esta rama.
 | Pruebas nuevas tras esa corrida | `catalogo-mensajes-ui` (17 casos, incluido el inicializador diferido): en verde. |
 | E2E | Playwright 1.64.1 con el Chrome del sistema sobre el build de producción: 21 passed. |
 
+## Prueba en vivo contra MessageUcoLab (2026-11-14)
+
+Laboratorio local: MessageUcoLab detrás de Kong (`localhost:8000`), aplicación "Asistencias UCO" `c05f384e…`, ambiente
+Develop `9732b9aa…`; backend en modo baseline y SPA en `ng serve`.
+
+| Paso | Resultado |
+|---|---|
+| Importación del Excel (validar y confirmar por la API de importación, usuario administrador del laboratorio) | 135 filas, 0 con error; `confirm` 200 con `count: 135`. |
+| Ruta pública `GET /v1/public/messages/MSG_UI001…MSG_UI135` | 135/135 en 200 (en lotes por el límite de 120 por minuto). |
+| SPA: nombre de facultad corto en "Registrar Nuevo Decano" | Pide `MSG_UI033` (UI_ADMIN_DECANOS_012) → 200 y muestra el texto. |
+| SPA: 403 de una consulta al cargar la pantalla | Pide `MSG_UI092` y `MSG_UI091` (textos de error del interceptor) → 200; un pedido por código y carga. |
+
+Hallazgos que se corrigieron en esta rama:
+
+- Once llamadas a `mensajeUi()` se evaluaban al importar el módulo (`api-error.util.ts`: los diez textos `API_ERROR_*`;
+  `sesion-manual.util.ts`: el aviso de solicitud registrada). Corrían antes de iniciar el catálogo y nunca tomaban el
+  texto de MessageUcoLab. Ahora se leen al usarse. Dos campos de componente (`horarioMensaje`, `inpMensaje`) pasaron a
+  `computed` para actualizarse cuando llega el texto. Caso nuevo en `catalogo-mensajes-ui.service.spec.ts`.
+- En el laboratorio, `ng serve` publica `src/assets/env.js` (ignorado por git) por encima de `public/assets/env.js`: los
+  dos UUID van en ese archivo.
+- La plantilla `plantilla-mensajes.xlsx` traía 9 filas de ejemplo (SIG014–015, VCE001–007) que `write_xlsx` conserva; el
+  Excel de la interfaz se generó desde una copia de la plantilla con solo los encabezados, para no pisar esos mensajes.
+
 ## Limitaciones
 
-- No se probó contra MessageUcoLab en vivo (Docker Desktop apagado en esta PC). La integración usa la ruta pública
-  documentada y verificada en MSG-001 (H-29: `GET /public/messages/{code}` con `X-Application-Id`/`X-Environment-Id`).
-- La importación del Excel en MessageUcoLab y los dos UUID en el `.env` del frontend son pasos manuales (ver PLAN.md).
+- Los textos importados son los mismos de `mensajes-ui.ts`; para ver un cambio hay que editar un texto en la
+  administración de Mensajes y recargar la SPA (el cliente lo guarda en caché por sesión).
 - El bus distribuido del SSE sigue siendo del backend; la resincronización evita que el aula quede sin QR mientras tanto.
 - CF-04 conserva `style-src 'unsafe-inline'` (ver PLAN.md).
