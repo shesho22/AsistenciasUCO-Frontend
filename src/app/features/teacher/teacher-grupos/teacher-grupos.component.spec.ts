@@ -9,6 +9,7 @@ import { SessionService } from '../../../core/services/session.service';
 import { StudentService } from '../../../core/services/student.service';
 import { GroupService } from '../../../core/services/group.service';
 import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
+import { SolicitudRevisionItem } from '../../../core/models/role-management.model';
 import { CatalogService } from '../../../core/services/catalog.service';
 import { TeacherAttendanceSummaryService } from '../../../core/services/teacher-attendance-summary.service';
 import { Course } from '../../../core/models/course.model';
@@ -507,8 +508,8 @@ describe('TeacherGruposComponent', () => {
     });
 
     it('descarta la respuesta pendiente del grupo anterior al cambiar rápidamente', () => {
-      const anterior = new Subject<any[]>();
-      const actual = new Subject<any[]>();
+      const anterior = new Subject<SolicitudRevisionItem[]>();
+      const actual = new Subject<SolicitudRevisionItem[]>();
       claimService.getReclamosDocentePorGrupo.and.returnValues(anterior.asObservable() as never, actual.asObservable() as never);
 
       component.verHubGrupo({ ...course, id: GROUP_A });
@@ -523,7 +524,7 @@ describe('TeacherGruposComponent', () => {
     });
 
     it('no duplica una consulta activa del mismo grupo', () => {
-      const pendiente = new Subject<any[]>();
+      const pendiente = new Subject<SolicitudRevisionItem[]>();
       claimService.getReclamosDocentePorGrupo.and.returnValue(pendiente.asObservable() as never);
       const grupo = { ...course, id: GROUP_A };
 

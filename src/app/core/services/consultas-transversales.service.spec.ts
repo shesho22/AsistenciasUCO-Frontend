@@ -1,3 +1,4 @@
+import { ObservedValueOf } from 'rxjs';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
@@ -18,7 +19,7 @@ describe('ConsultasTransversalesService (HU112/HU128/HU143/HU157)', () => {
   afterEach(() => http.verify());
 
   it('HU112: pide los programas y créditos del decano con la paginación y consume ApiPageResponse', () => {
-    let response: any;
+    let response!: ObservedValueOf<ReturnType<typeof service.getProgramasCreditos>>;
     service.getProgramasCreditos({ pagina: 1, tamano: 100 }).subscribe((r) => (response = r));
     const req = http.expectOne((r) => r.url === `${api}/decano/programas-creditos`);
     expect(req.request.params.get('pagina')).toBe('1');
@@ -30,7 +31,7 @@ describe('ConsultasTransversalesService (HU112/HU128/HU143/HU157)', () => {
   });
 
   it('HU128: envía el programa y omite los filtros vacíos retornando ApiPageResponse', () => {
-    let response: any;
+    let response!: ObservedValueOf<ReturnType<typeof service.getDocentesFacultad>>;
     service.getDocentesFacultad({ busqueda: '  ', idPrograma: 'p-1', estaActivo: null, pagina: 2, tamano: 10 }).subscribe((r) => (response = r));
     const req = http.expectOne((r) => r.url === `${api}/decano/docentes`);
     expect(req.request.params.get('idPrograma')).toBe('p-1');
@@ -42,7 +43,7 @@ describe('ConsultasTransversalesService (HU112/HU128/HU143/HU157)', () => {
   });
 
   it('HU143: el decano y el administrador usan su propia ruta retornando ApiPageResponse', () => {
-    let responseDecano: any;
+    let responseDecano!: ObservedValueOf<ReturnType<typeof service.buscarAsignaturas>>;
     service.buscarAsignaturas({ busqueda: 'CAL', pagina: 1, tamano: 10 }).subscribe((r) => (responseDecano = r));
     http.expectOne((r) => r.url === `${api}/decano/asignaturas` && r.params.get('busqueda') === 'CAL').flush({
       exitoso: true,
@@ -54,7 +55,7 @@ describe('ConsultasTransversalesService (HU112/HU128/HU143/HU157)', () => {
     });
     expect(responseDecano.elementos.length).toBe(1);
 
-    let responseAdmin: any;
+    let responseAdmin!: ObservedValueOf<ReturnType<typeof service.buscarAsignaturas>>;
     service.buscarAsignaturas({ idFacultad: 'f-1', estaActiva: false, pagina: 1, tamano: 10 }, true).subscribe((r) => (responseAdmin = r));
     const req = http.expectOne((r) => r.url === `${api}/admin/asignaturas`);
     expect(req.request.params.get('idFacultad')).toBe('f-1');
@@ -64,7 +65,7 @@ describe('ConsultasTransversalesService (HU112/HU128/HU143/HU157)', () => {
   });
 
   it('HU157: buscador del administrador e historial por rol retornando ApiPageResponse', () => {
-    let responseEstudiantes: any;
+    let responseEstudiantes!: ObservedValueOf<ReturnType<typeof service.buscarEstudiantes>>;
     service.buscarEstudiantes({ busqueda: '101', pagina: 1, tamano: 10 }).subscribe((r) => (responseEstudiantes = r));
     http.expectOne((r) => r.url === `${api}/admin/estudiantes`).flush({
       exitoso: true,
@@ -84,7 +85,7 @@ describe('ConsultasTransversalesService (HU112/HU128/HU143/HU157)', () => {
   });
 
   it('HU061: el coordinador y el decano consultan el consolidado por su propia ruta con los filtros', () => {
-    let responseConsolidado: any;
+    let responseConsolidado!: ObservedValueOf<ReturnType<typeof service.getConsolidadoAsistencia>>;
     service.getConsolidadoAsistencia({ idPeriodoAcademico: 'per-1', idDocente: null, pagina: 1, tamano: 10 }).subscribe((r) => (responseConsolidado = r));
     const req = http.expectOne((r) => r.url === `${api}/coordinador/consolidado-asistencia`);
     expect(req.request.params.get('idPeriodoAcademico')).toBe('per-1');
@@ -97,7 +98,7 @@ describe('ConsultasTransversalesService (HU112/HU128/HU143/HU157)', () => {
   });
 
   it('HU172: la auditoría envía el rango, la acción y el filtro de asistencia retornando ApiPageResponse', () => {
-    let responseAuditoria: any;
+    let responseAuditoria!: ObservedValueOf<ReturnType<typeof service.getAuditoria>>;
     service
       .getAuditoria({ desde: '2026-11-01T05:00:00.000Z', hasta: '2026-11-04T05:00:00.000Z', accion: 'CREAR_SESION', soloAsistencia: false, pagina: 2, tamano: 25 })
       .subscribe((r) => (responseAuditoria = r));
@@ -119,7 +120,7 @@ describe('ConsultasTransversalesService (HU112/HU128/HU143/HU157)', () => {
         pagina: 1,
         tamano: 20,
       })
-      .subscribe((res: any) => {
+      .subscribe((res) => {
         expect(res.elementos.length).toBe(1);
         expect(res.elementos[0].idCorrelacion).toBe('corr-1234');
       });
@@ -168,7 +169,7 @@ describe('ConsultasTransversalesService (HU112/HU128/HU143/HU157)', () => {
   });
 
   it('HU136: consulta los docentes de la institución del administrador con facultad y programa retornando ApiPageResponse', () => {
-    let response: any;
+    let response!: ObservedValueOf<ReturnType<typeof service.getDocentesInstitucion>>;
     service.getDocentesInstitucion({ busqueda: 'ana', idFacultad: 'f-1', idPrograma: 'p-1', pagina: 1, tamano: 20 }).subscribe((r) => (response = r));
     const req = http.expectOne((r) => r.url === `${api}/admin/docentes`);
     expect(req.request.params.get('idFacultad')).toBe('f-1');

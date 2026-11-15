@@ -1,3 +1,4 @@
+import { ObservedValueOf } from 'rxjs';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
@@ -26,7 +27,7 @@ describe('SessionV2Service', () => {
   });
 
   it('consulta por grupo en /api/v2 y no transforma una sesión indeterminada', () => {
-    let result: any;
+    let result!: ObservedValueOf<ReturnType<typeof service.getSessionsByGroup>>;
     service.getSessionsByGroup('grupo-1').subscribe((response) => (result = response));
     const request = http.expectOne(`${environment.apiV2Url}/sesiones/grupo/grupo-1`);
     expect(request.request.method).toBe('GET');
@@ -92,7 +93,7 @@ describe('SessionV2Service', () => {
   });
 
   it('DEC-065 (2) mapea estadoSolicitud y pendienteAprobacion; sin ellos asume null y false', () => {
-    let result: any;
+    let result!: ObservedValueOf<ReturnType<typeof service.getSessionsByGroup>>;
     service.getSessionsByGroup('grupo-1').subscribe((response) => (result = response));
     const base = {
       grupo: 'grupo-1', numero: 1, codigo: 'S', numeroSemana: 1, codigoGrupo: 'G1', nombreGrupo: 'Grupo',
@@ -109,7 +110,7 @@ describe('SessionV2Service', () => {
   });
 
   it('B1-F-23 mapea estado y cancelación de la sesión v2; sin ellos asume PROGRAMADA sin cancelación', () => {
-    let result: any;
+    let result!: ObservedValueOf<ReturnType<typeof service.getSessionsByGroup>>;
     service.getSessionsByGroup('grupo-1').subscribe((response) => (result = response));
     const base = {
       grupo: 'grupo-1', numero: 1, codigo: 'S', numeroSemana: 1, codigoGrupo: 'G1', nombreGrupo: 'Grupo',

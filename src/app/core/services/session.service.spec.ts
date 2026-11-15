@@ -1,3 +1,4 @@
+import { ObservedValueOf } from 'rxjs';
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { provideHttpClient, withXhr } from '@angular/common/http';
 import {
@@ -158,7 +159,7 @@ describe('SessionService', () => {
   it('los mocks de sesiones (rama useMocks) no inventan topic/room/tipo/status', fakeAsync(() => {
     const prevEnv = (window as never)['env'];
     window.env = { USE_MOCKS: 'true' };
-    let sessions: any[] = [];
+    let sessions: ObservedValueOf<ReturnType<typeof service.getSessionsByGroup>>['datos'] = [];
     service
       .getSessionsByGroup('crs-1')
       .subscribe((response) => (sessions = response.datos));
@@ -167,10 +168,12 @@ describe('SessionService', () => {
 
     expect(sessions.length).toBeGreaterThan(0);
     for (const session of sessions) {
-      expect(session.topic).toBeUndefined();
-      expect(session.room).toBeUndefined();
-      expect(session.tipo).toBeUndefined();
-      expect(session.status).toBeUndefined();
+      // Campos que ClassSession no declara: se leen sobre el objeto crudo para probar que el mock no los agrega.
+      const crudo = session as unknown as Record<string, unknown>;
+      expect(crudo['topic']).toBeUndefined();
+      expect(crudo['room']).toBeUndefined();
+      expect(crudo['tipo']).toBeUndefined();
+      expect(crudo['status']).toBeUndefined();
     }
     window.env = prevEnv;
   }));

@@ -1,3 +1,4 @@
+import { ObservedValueOf } from 'rxjs';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { TeacherAttendanceSummaryService } from '../../../core/services/teacher-attendance-summary.service';
 import { TomaAsistenciaService } from '../../../core/services/toma-asistencia.service';
@@ -665,7 +666,7 @@ describe('AttendanceControlComponent contract corrections', () => {
   });
 
   it('SES-04: resolverReclamoGrupo ignora clics repetidos y, tras aprobar, recarga la asistencia de la sesión', () => {
-    const respuesta = new Subject<any>();
+    const respuesta = new Subject<ObservedValueOf<ReturnType<AttendanceClaimService['resolverReclamo']>>>();
     attendanceClaimService.resolverReclamo.and.returnValue(respuesta.asObservable());
     const component = createComponent([activeStudent], []);
     const cargasAntes = attendanceService.getAttendancesByGroup.calls.count();

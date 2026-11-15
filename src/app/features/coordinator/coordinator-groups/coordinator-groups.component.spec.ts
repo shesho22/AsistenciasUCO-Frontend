@@ -277,7 +277,7 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
     const pagina1 = Array.from({ length: 100 }, (_, i) => docente(i + 1));
     const pagina2 = Array.from({ length: 20 }, (_, i) => docente(i + 101));
     coordinatorService.getDocentesPrograma.calls.reset();
-    coordinatorService.getDocentesPrograma.and.callFake((filtro: any) =>
+    coordinatorService.getDocentesPrograma.and.callFake((filtro) =>
       of({ exitoso: true, total: 120, datos: filtro.pagina === 1 ? pagina1 : pagina2 })
     );
     component.cargarCatalogos();

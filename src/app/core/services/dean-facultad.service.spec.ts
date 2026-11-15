@@ -1,3 +1,4 @@
+import { ObservedValueOf } from 'rxjs';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
@@ -20,7 +21,7 @@ describe('DeanFacultadService (F-DEC-003 & §11.3 ApiPageResponse)', () => {
   afterEach(() => http.verify());
 
   it('getSesiones consume ApiPageResponse y soporta filtro por idGrupo', () => {
-    let resultado: any;
+    let resultado!: ObservedValueOf<ReturnType<typeof service.getSesiones>>;
     service.getSesiones({ pagina: 1, tamano: 10, idGrupo: 'grp-123' }).subscribe((res) => (resultado = res));
 
     const req = http.expectOne((r) => r.url === `${api}/sesiones`);
@@ -43,7 +44,7 @@ describe('DeanFacultadService (F-DEC-003 & §11.3 ApiPageResponse)', () => {
   });
 
   it('getGrupoDetalle consulta GET /decano/grupos/{grupoId}', () => {
-    let resultado: any;
+    let resultado!: ObservedValueOf<ReturnType<typeof service.getGrupoDetalle>>;
     service.getGrupoDetalle('grp-123').subscribe((res) => (resultado = res));
 
     const req = http.expectOne(`${api}/grupos/grp-123`);

@@ -1,3 +1,4 @@
+import { ObservedValueOf } from 'rxjs';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpErrorResponse, provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
@@ -256,7 +257,7 @@ describe('AdminFacultadesComponent', () => {
     inicializar();
     component.abrirModalVincularDecano(mockFacultades[0]);
     component.decanoSeleccionadoId = 'dec-2';
-    const pendiente = new Subject<any>();
+    const pendiente = new Subject<ObservedValueOf<ReturnType<AdminManagementService['actualizarFacultad']>>>();
     spyOn(adminService, 'actualizarFacultad').and.returnValue(pendiente);
 
     component.confirmarAsignacionDecano();
@@ -296,7 +297,7 @@ describe('AdminFacultadesComponent', () => {
     component.editarFacultad(mockFacultades[0]);
     component.formFacultad.nombre = 'Facultad de Ingeniería y Ciencias';
     component.formFacultad.idDecano = 'dec-1';
-    const pendiente = new Subject<any>();
+    const pendiente = new Subject<ObservedValueOf<ReturnType<AdminManagementService['actualizarFacultad']>>>();
     spyOn(adminService, 'actualizarFacultad').and.returnValue(pendiente);
 
     component.guardar();
@@ -343,7 +344,7 @@ describe('AdminFacultadesComponent', () => {
   it('alternar estado (HU111) envia el estado deseado y confirma solo tras la respuesta', () => {
     inicializar();
     const activa = mockFacultades[0]; // ACTIVO -> se pide inactivar
-    const pendiente = new Subject<any>();
+    const pendiente = new Subject<ObservedValueOf<ReturnType<AdminManagementService['cambiarEstadoFacultad']>>>();
     spyOn(adminService, 'cambiarEstadoFacultad').and.returnValue(pendiente);
 
     component.toggleEstadoFacultad(activa);
