@@ -4,7 +4,7 @@ services:
     image: asistencias-frontend:latest
     container_name: frontend_asistencias
     ports:
-      - "4200:80"
+      - "4200:8080"  # nginx-unprivileged escucha en 8080 (Dockerfile EXPOSE 8080)
     environment:
       API_URL: ${API_URL:-http://localhost:8080/api/v1}
       KEYCLOAK_URL: ${KEYCLOAK_URL:-http://127.0.0.1:8081}
