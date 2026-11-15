@@ -20,9 +20,8 @@ services:
       SECURITY_BASELINE_CLIENT_ID: ${SECURITY_BASELINE_CLIENT_ID:-asistencias-uco-spa}
       # Catálogo de Parámetros (micro frontend parametros-administration.js); el UUID no es secreto.
       CATALOGO_PARAMETROS_APPLICATION_ID: ${CATALOGO_PARAMETROS_APPLICATION_ID:-}
-      # MessageUcoLab: textos de la interfaz por la ruta publica (VAL MSG-06); los UUID no son secretos.
-      MESSAGEUCOLAB_APPLICATION_ID: ${MESSAGEUCOLAB_APPLICATION_ID:-}
-      MESSAGEUCOLAB_ENVIRONMENT_ID: ${MESSAGEUCOLAB_ENVIRONMENT_ID:-}
+      # INT-003: textos de la interfaz desde el catalogo, a traves del Backend (true solo con el proveedor messageucolab).
+      MENSAJES_UI_DESDE_CATALOGO: ${MENSAJES_UI_DESDE_CATALOGO:-false}
       # Destinos del servidor web para los componentes externos (nginx/templates/default.conf.template).
       MESSAGEUCOLAB_UPSTREAM: ${MESSAGEUCOLAB_UPSTREAM:-http://host.docker.internal:8000}
       CATALOGO_PARAMETROS_UPSTREAM: ${CATALOGO_PARAMETROS_UPSTREAM:-http://host.docker.internal:8081}

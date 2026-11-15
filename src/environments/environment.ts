@@ -129,14 +129,11 @@ export const environment = {
       return String(runtimeEnv()?.['MESSAGEUCOLAB_ENVIRONMENT_NAME'] || 'Develop');
     },
     /**
-     * VAL MSG-06: UUID de la aplicación y del ambiente para leer los textos de la interfaz por la ruta pública (sin
-     * sesión). Sin ellos la SPA usa sus textos de respaldo. No son secretos.
+     * INT-003 (MessageUcoLab 0.3.0, paso 12): los textos de la interfaz se leen del catálogo a través del Backend
+     * (`GET /public/mensajes-interfaz/{codigo}`, sin sesión). Apagado por defecto: la SPA usa sus textos de respaldo.
      */
-    get applicationId(): string {
-      return String(runtimeEnv()?.['MESSAGEUCOLAB_APPLICATION_ID'] || '').trim();
-    },
-    get environmentId(): string {
-      return String(runtimeEnv()?.['MESSAGEUCOLAB_ENVIRONMENT_ID'] || '').trim();
+    get textosDesdeCatalogo(): boolean {
+      return String(runtimeEnv()?.['MENSAJES_UI_DESDE_CATALOGO'] || '').trim().toLowerCase() === 'true';
     },
   },
   /**

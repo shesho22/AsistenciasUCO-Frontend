@@ -1,76 +1,62 @@
-import { Injectable } from '@angular/core';
+import { HttpClient, HttpContext } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { BYPASS_GLOBAL_ERROR_TOAST } from '../interceptors/error.interceptor';
 import { esCodigoMensajeUi } from './mensajes-ui';
 import { CODIGOS_REMOTOS_MENSAJES_UI } from './mensajes-ui-codigos-remotos';
 import { registrarSolicitudCatalogo, registrarTextoCatalogo } from './catalogo-mensajes-ui';
 
-/** Lo que la SPA usa del cliente de mensajes del minifront (`createMessageClient`). */
-export interface ClienteMensajesUi {
-  get(codigo: string): Promise<{ content: string; source: 'api' | 'cache' | 'fallback' }>;
+/** Respuesta de `GET /public/mensajes-interfaz/{codigo}` (`ApiDataResponse<MensajeInterfazResponse>`). */
+interface MensajeInterfazRespuesta {
+  exitoso: boolean;
+  datos: { codigo: string; contenido: string } | null;
 }
-
-export interface OpcionesClienteMensajesUi {
-  apiBaseUrl: string;
-  applicationId: string;
-  environmentId: string;
-  onError?: (error: unknown, codigo: string) => void;
-}
-
-/** Carga diferida del cliente oficial de MessageUcoLab; se exporta para sustituirla en las pruebas. */
-export const fabricaClienteMensajesUi = {
-  crear: async (opciones: OpcionesClienteMensajesUi): Promise<ClienteMensajesUi> => {
-    const { createMessageClient } = await import('minifront-mensajes');
-    return createMessageClient(opciones);
-  },
-};
 
 /**
- * VAL MSG-06: lleva los textos de la interfaz al catálogo de MessageUcoLab con el cliente oficial del minifront
- * (Guía de integración de MessageUcoLab, pasos 9.5 y 9.8): cada texto se pide por su código remoto en la ruta pública
- * (`GET /messageucolab/v1/public/messages/MSG_UI###`, sin sesión), solo cuando la interfaz lo necesita, y el cliente lo
- * guarda en caché. Si MessageUcoLab no responde, el cliente devuelve el respaldo y la SPA conserva el texto local.
+ * VAL MSG-06 / INT-003 (MessageUcoLab 0.3.0, paso 12): lleva los textos de la interfaz al catálogo de mensajes. Cada texto
+ * se pide al Backend por su código remoto (`GET /public/mensajes-interfaz/UI###`, sin sesión), solo cuando la interfaz lo
+ * necesita y una vez por sesión del navegador; el Backend lo lee de MessageUcoLab con su identidad de servicio y su
+ * caché. Si el Backend no lo tiene (404) o no responde, la SPA conserva el texto local, sin avisos al usuario.
  *
- * Sin `MESSAGEUCOLAB_APPLICATION_ID` y `MESSAGEUCOLAB_ENVIRONMENT_ID` en `env.js` no se pide nada (textos locales).
+ * Con `MENSAJES_UI_DESDE_CATALOGO` distinto de `true` en `env.js` no se pide nada (textos locales).
  */
 @Injectable({ providedIn: 'root' })
 export class CatalogoMensajesUiService {
-  private cliente: Promise<ClienteMensajesUi> | null = null;
+  private readonly http = inject(HttpClient);
   private readonly pedidos = new Set<string>();
 
-  /** Activa la lectura del catálogo si la aplicación y el ambiente de MessageUcoLab están configurados. */
+  /** Activa la lectura del catálogo si está encendida en `env.js`. */
   iniciar(): boolean {
-    const { apiBaseUrl, applicationId, environmentId } = environment.messages;
-    if (!applicationId || !environmentId) {
+    if (!environment.messages.textosDesdeCatalogo) {
       registrarSolicitudCatalogo(null);
       return false;
     }
-    registrarSolicitudCatalogo((codigo) => this.pedir(codigo, { apiBaseUrl, applicationId, environmentId }));
+    registrarSolicitudCatalogo((codigo) => this.pedir(codigo));
     return true;
   }
 
-  private pedir(codigo: string, opciones: OpcionesClienteMensajesUi): void {
+  private pedir(codigo: string): void {
     if (this.pedidos.has(codigo) || !esCodigoMensajeUi(codigo)) {
       return;
     }
     this.pedidos.add(codigo);
     const remoto = CODIGOS_REMOTOS_MENSAJES_UI[codigo];
-    void this.obtenerCliente(opciones)
-      .then((cliente) => cliente.get(remoto))
-      .then((mensaje) => {
-        if (mensaje.source !== 'fallback') {
-          registrarTextoCatalogo(codigo, mensaje.content);
+    const url = `${environment.apiUrl}/public/mensajes-interfaz/${encodeURIComponent(remoto)}`;
+    void firstValueFrom(
+      this.http.get<MensajeInterfazRespuesta>(url, {
+        // Un texto que el catálogo no tiene es normal (se usa el local): ningún aviso global por esta petición.
+        context: new HttpContext().set(BYPASS_GLOBAL_ERROR_TOAST, true),
+      })
+    )
+      .then((respuesta) => {
+        const contenido = respuesta?.datos?.contenido;
+        if (respuesta?.exitoso && typeof contenido === 'string') {
+          registrarTextoCatalogo(codigo, contenido);
         }
       })
       .catch(() => {
-        // Sin cliente (descarga fallida): se conserva el texto local; no se reintenta en esta sesión.
+        // Sin texto en el catálogo o Backend sin respuesta: se conserva el texto local; no se reintenta en esta sesión.
       });
-  }
-
-  private obtenerCliente(opciones: OpcionesClienteMensajesUi): Promise<ClienteMensajesUi> {
-    this.cliente ??= fabricaClienteMensajesUi.crear({
-      ...opciones,
-      onError: (error, codigo) => console.warn(`[MensajesUi] ${codigo}: se usa el texto local.`, error),
-    });
-    return this.cliente;
   }
 }
