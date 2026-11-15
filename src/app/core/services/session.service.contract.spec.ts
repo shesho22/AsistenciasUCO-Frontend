@@ -1,3 +1,5 @@
+import { HttpErrorResponse } from '@angular/common/http';
+import { ObservedValueOf } from 'rxjs';
 import { provideHttpClient, withXhr } from '@angular/common/http';
 import {
   HttpTestingController,
@@ -74,7 +76,7 @@ describe('SessionService contract operations', () => {
   });
 
   it('actualiza una sesión con el payload HTTP exacto del backend, sin campos UI ni fantasma', () => {
-    let response: any;
+    let response!: ObservedValueOf<ReturnType<typeof service.updateSession>>;
     service.updateSession('grupo-1', 'ses-1', {
       title: 'Sesión editada',
       date: '2026-09-23',
@@ -157,7 +159,7 @@ describe('SessionService contract operations', () => {
   });
 
   it('cierra la sesión con el endpoint contractual', () => {
-    let response: any;
+    let response!: ObservedValueOf<ReturnType<typeof service.closeSession>>;
     service.closeSession('ses-1').subscribe((value) => (response = value));
 
     const request = http.expectOne(`${environment.apiUrl}/sesiones/cierres`);
@@ -170,7 +172,7 @@ describe('SessionService contract operations', () => {
   });
 
   it('B1-F-01 cancela la sesión con PATCH {motivo} y devuelve la respuesta del backend sin transformarla', () => {
-    let response: any;
+    let response!: ObservedValueOf<ReturnType<typeof service.cancelarSesion>>;
     service.cancelarSesion('ses-1', 'Fuerza mayor del docente')
       .subscribe((value) => (response = value));
 
@@ -196,16 +198,16 @@ describe('SessionService contract operations', () => {
     };
     request.flush(body);
 
-    expect(response).toEqual(body);
+    expect<unknown>(response).toEqual(body);
   });
 
   it('B1-F-02 cancelarSesion usa HTTP aunque estén activos los mocks (ya no existe respuesta simulada)', () => {
     localStorage.setItem('USE_MOCKS', 'true');
     try {
-      let response: any;
+      let response!: ObservedValueOf<ReturnType<typeof service.cancelarSesion>>;
       service.cancelarSesion('ses-9', 'Motivo suficientemente largo').subscribe((value) => (response = value));
       http.expectOne(`${environment.apiUrl}/docente/sesiones/ses-9/cancelar`).flush({ exitoso: true, datos: {} });
-      expect(response).toEqual({ exitoso: true, datos: {} });
+      expect<unknown>(response).toEqual({ exitoso: true, datos: {} });
     } finally {
       localStorage.removeItem('USE_MOCKS');
     }
@@ -218,7 +220,7 @@ describe('SessionService contract operations', () => {
     [409, 'SES_016', 'La sesión ya terminó y tiene asistencia registrada; no se puede cancelar.'],
   ] as const) {
     it(`B1-F-03 propaga el error ${status} ${code} con el mensaje del backend (sin traducirlo)`, () => {
-      let error: any;
+      let error!: HttpErrorResponse;
       service.cancelarSesion('ses-1', 'Motivo de prueba largo').subscribe({ error: (e) => (error = e) });
 
       http.expectOne(`${environment.apiUrl}/docente/sesiones/ses-1/cancelar`).flush(

@@ -77,7 +77,7 @@ describe('AttendanceService', () => {
   });
 
   it('rechaza revisión si la justificación tiene menos de 5 caracteres', () => {
-    let error: any;
+    let error: Error | undefined;
     service
       .requestAttendanceRevision({
         sesionId: 'ses-1',

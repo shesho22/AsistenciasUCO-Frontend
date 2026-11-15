@@ -1,3 +1,4 @@
+import { ObservedValueOf } from 'rxjs';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
@@ -25,7 +26,7 @@ describe('AdminManagementService - áreas de conocimiento (HU150, solo consulta)
 
 
   it('cargarAreas obtiene el catalogo completo y actualiza la señal', () => {
-    let respuesta: any;
+    let respuesta!: ObservedValueOf<ReturnType<typeof service.cargarAreas>>;
     service.cargarAreas().subscribe((res) => (respuesta = res));
 
     const req = http.expectOne(base);

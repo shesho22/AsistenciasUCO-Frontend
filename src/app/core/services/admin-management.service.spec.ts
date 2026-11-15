@@ -1,3 +1,5 @@
+import { HttpErrorResponse } from '@angular/common/http';
+import { ObservedValueOf } from 'rxjs';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
@@ -101,7 +103,7 @@ describe('AdminManagementService', () => {
 
     it('envia PUT solo con los campos indicados y actualiza la señal con la respuesta del backend', () => {
       cargarFacultadBase();
-      let resultado: any;
+      let resultado!: ObservedValueOf<ReturnType<typeof service.actualizarFacultad>>;
 
       service.actualizarFacultad('fac-100', { nombre: 'Facultad Renombrada', idDecano: 'dec-2' })
         .subscribe((res) => (resultado = res));
@@ -144,7 +146,7 @@ describe('AdminManagementService', () => {
 
     it('un error HTTP no modifica la señal y se propaga al llamador', () => {
       cargarFacultadBase();
-      let error: any;
+      let error!: HttpErrorResponse;
 
       service.actualizarFacultad('fac-100', { nombre: 'Duplicada' }).subscribe({ error: (e) => (error = e) });
 
@@ -185,7 +187,7 @@ describe('AdminManagementService', () => {
 
     it('envia PATCH con el estado deseado y refleja la respuesta del backend', () => {
       cargarFacultadBase();
-      let resultado: any;
+      let resultado!: ObservedValueOf<ReturnType<typeof service.cambiarEstadoFacultad>>;
 
       service.cambiarEstadoFacultad('fac-200', false).subscribe((res) => (resultado = res));
 
@@ -211,7 +213,7 @@ describe('AdminManagementService', () => {
 
     it('un error HTTP deja el estado intacto y se propaga', () => {
       cargarFacultadBase();
-      let error: any;
+      let error!: HttpErrorResponse;
 
       service.cambiarEstadoFacultad('fac-200', true).subscribe({ error: (e) => (error = e) });
 
@@ -279,7 +281,7 @@ describe('AdminManagementService', () => {
     });
 
     it('si la facultad no estaba cargada usa valores por defecto y no altera la lista', () => {
-      let resultado: any;
+      let resultado!: ObservedValueOf<ReturnType<typeof service.actualizarFacultad>>;
       service.actualizarFacultad('fac-9', { nombre: 'Nueva' }).subscribe((r) => (resultado = r));
 
       http.expectOne(`${environment.apiUrl}/admin/facultades/fac-9`).flush({ exitoso: true, datos: {} });
@@ -485,7 +487,7 @@ describe('AdminManagementService', () => {
 
   describe('HU168: parámetros editables (D.3)', () => {
     it('cargarParametros envía filtros y paginación a GET /admin/parametros y actualiza la señal', () => {
-      service.cargarParametros({ grupo: 'ASISTENCIA', texto: 'inasistencia', soloEditables: true, pagina: 1, tamano: 20 }).subscribe((res: any) => {
+      service.cargarParametros({ grupo: 'ASISTENCIA', texto: 'inasistencia', soloEditables: true, pagina: 1, tamano: 20 }).subscribe((res) => {
         expect(res.elementos.length).toBe(1);
         expect(res.totalElementos).toBe(1);
       });
@@ -538,7 +540,7 @@ describe('AdminManagementService', () => {
         motivo: 'Ajuste reglamentario aprobado por consejo',
       };
 
-      service.actualizarParametro('param-1', payload).subscribe((res: any) => {
+      service.actualizarParametro('param-1', payload).subscribe((res) => {
         expect(res.exitoso).toBeTrue();
         expect(res.datos.valorNuevo).toBe('25');
       });

@@ -147,9 +147,9 @@ describe('DeanPlanMallaComponent (HU108, B2NM)', () => {
   // Certificación Fase 3: plan con 1 semestre registrado y la asignatura en S8; el selector solo ofrecía "Semestre 1".
   it('el selector de semestres cubre el semestre más alto de las asignaturas, sin inventar 10', () => {
     crear();
-    const unSemestre = estructura.map((f: any) => ({
+    const unSemestre = estructura.map((f) => ({
       ...f,
-      programas: f.programas.map((p: any) => ({ ...p, planes: p.planes.map((pl: any) => ({ ...pl, totalSemestres: 1 })) })),
+      programas: f.programas.map((p) => ({ ...p, planes: p.planes.map((pl) => ({ ...pl, totalSemestres: 1 })) })),
     }));
     http.expectOne(`${API}/decano/estructura`).flush({ exitoso: true, datos: unSemestre });
     http.expectOne(porUrl(urlMalla)).flush(paginaApi([vinculo('asig-8', 'SIS-801', 'Arquitectura', 3, 8, 'OBL')], 1, 9));

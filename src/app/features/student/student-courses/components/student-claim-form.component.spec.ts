@@ -306,7 +306,7 @@ describe('StudentClaimFormComponent', () => {
       ]);
       fixture.detectChanges();
 
-      const submitBtn = Array.from(fixture.nativeElement.querySelectorAll('button')).find((b: any) => b.textContent?.includes('Radicar Reclamo')) as HTMLButtonElement;
+      const submitBtn = Array.from<HTMLButtonElement>(fixture.nativeElement.querySelectorAll('button')).find((b) => b.textContent?.includes('Radicar Reclamo')) as HTMLButtonElement;
       expect(submitBtn.disabled).toBeTrue();
     });
 
@@ -322,7 +322,7 @@ describe('StudentClaimFormComponent', () => {
       ]);
       fixture.detectChanges();
 
-      const submitBtn = Array.from(fixture.nativeElement.querySelectorAll('button')).find((b: any) => b.textContent?.includes('Radicar Reclamo')) as HTMLButtonElement;
+      const submitBtn = Array.from<HTMLButtonElement>(fixture.nativeElement.querySelectorAll('button')).find((b) => b.textContent?.includes('Radicar Reclamo')) as HTMLButtonElement;
       expect(submitBtn.disabled).toBeFalse();
     });
 
@@ -336,7 +336,7 @@ describe('StudentClaimFormComponent', () => {
       ]);
       fixture.detectChanges();
 
-      const submitBtn = Array.from(fixture.nativeElement.querySelectorAll('button')).find((b: any) => b.textContent?.includes('Radicar Reclamo')) as HTMLButtonElement;
+      const submitBtn = Array.from<HTMLButtonElement>(fixture.nativeElement.querySelectorAll('button')).find((b) => b.textContent?.includes('Radicar Reclamo')) as HTMLButtonElement;
       expect(submitBtn.disabled).toBeTrue();
     });
 
@@ -352,7 +352,7 @@ describe('StudentClaimFormComponent', () => {
       ]);
       fixture.detectChanges();
 
-      const submitBtn = Array.from(fixture.nativeElement.querySelectorAll('button')).find((b: any) => b.textContent?.includes('Radicar Reclamo')) as HTMLButtonElement;
+      const submitBtn = Array.from<HTMLButtonElement>(fixture.nativeElement.querySelectorAll('button')).find((b) => b.textContent?.includes('Radicar Reclamo')) as HTMLButtonElement;
       expect(submitBtn.disabled).toBeTrue();
     });
 

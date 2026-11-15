@@ -1,3 +1,5 @@
+import { ObservedValueOf } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
@@ -58,7 +60,7 @@ describe('AttendanceClaimService', () => {
   });
 
   it('getReclamosDocente consulta la lista paginada y propaga el 501 sin enmascararlo', () => {
-    let reclamos: any[] = [];
+    let reclamos: NonNullable<ObservedValueOf<ReturnType<typeof service.getReclamosDocente>>['datos']> = [];
     service.getReclamosDocente({ pagina: 1, tamano: 10 }).subscribe((res) => (reclamos = res.datos || []));
 
     const request = http.expectOne(`${environment.apiUrl}/docente/reclamos?pagina=1&tamano=10`);
@@ -105,7 +107,7 @@ describe('AttendanceClaimService', () => {
 
     it('FE-04 getDetalleReclamoDocente consulta /docente/reclamos/{id} y adapta causal y estado', () => {
       TestBed.inject(SessionTimeZoneService).setManualTimeZone('America/Bogota');
-      let item: Record<string, any> | undefined;
+      let item: Record<string, unknown> | undefined;
       service.getDetalleReclamoDocente(ID).subscribe((res) => (item = res.datos as never));
 
       const req = http.expectOne(`${LISTA}/${ID}`);
@@ -134,7 +136,7 @@ describe('AttendanceClaimService', () => {
     });
 
     it('el detalle sin causal conserva causalInasistencia en null', () => {
-      let item: Record<string, any> | undefined;
+      let item: Record<string, unknown> | undefined;
       service.getDetalleReclamoDocente(ID).subscribe((res) => (item = res.datos as never));
       http.expectOne(`${LISTA}/${ID}`).flush({
         exitoso: true,
@@ -439,8 +441,8 @@ describe('AttendanceClaimService', () => {
     });
 
     function cargar(items: unknown[]) {
-      let result: { datos: Array<Record<string, any>> } | undefined;
-      service.getReclamosDocente({ pagina: 1, tamano: 10 }).subscribe((value) => (result = value as never));
+      let result: ObservedValueOf<ReturnType<typeof service.getReclamosDocente>> | undefined;
+      service.getReclamosDocente({ pagina: 1, tamano: 10 }).subscribe((value) => (result = value));
       http.expectOne((r) => r.url === `${environment.apiUrl}/docente/reclamos`).flush({ exitoso: true, datos: items, total: items.length });
       return result!.datos;
     }
@@ -455,11 +457,11 @@ describe('AttendanceClaimService', () => {
       expect(item['estadoSolicitud']).toBe('PENDIENTE');
       expect(item['fechaSesionUtc']).toBe('2026-10-19T15:30:45.1234567Z');
       expect(item['fechaSesion']).toBe('2026-10-19');
-      expect(item['soporteAdjunto']['fileId']).toBe('f-1');
-      expect(item['soporteAdjunto']['tamanioBytes']).toBe(2048);
-      expect(item['soporteAdjunto']['tamanioKb']).toBe(2);
-      expect(item['soporteAdjunto']['urlSimulada']).toBe('/api/v1/archivos/f-1');
-      expect(item['soporteAdjunto']['fechaSubidaUtc']).toBe('2026-10-19T15:00:00.0000000Z');
+      expect(item['soporteAdjunto']?.['fileId']).toBe('f-1');
+      expect(item['soporteAdjunto']?.['tamanioBytes']).toBe(2048);
+      expect(item['soporteAdjunto']?.['tamanioKb']).toBe(2);
+      expect(item['soporteAdjunto']?.['urlSimulada']).toBe('/api/v1/archivos/f-1');
+      expect(item['soporteAdjunto']?.['fechaSubidaUtc']).toBe('2026-10-19T15:00:00.0000000Z');
     });
 
     it('un reclamo sin soporte no fabrica adjunto', () => {
@@ -637,7 +639,7 @@ describe('AttendanceClaimService', () => {
 
   describe('PAG_001 propagación de mensaje en 400', () => {
     it('getReclamosDocente propaga el mensaje del backend en 400 PAG_001', () => {
-      let error: any;
+      let error!: HttpErrorResponse;
       service.getReclamosDocente({ pagina: 99, tamano: 10 }).subscribe({
         error: (e) => (error = e),
       });
@@ -653,7 +655,7 @@ describe('AttendanceClaimService', () => {
     });
 
     it('getReclamosEstudiante propaga el mensaje del backend en 400 PAG_001', () => {
-      let error: any;
+      let error!: HttpErrorResponse;
       service.getReclamosEstudiante({ pagina: 99, tamano: 10 }).subscribe({
         error: (e) => (error = e),
       });

@@ -59,8 +59,8 @@ describe('UserPickerModalComponent', () => {
   });
 
   it('seleccionar emite userSelected con el usuario elegido', () => {
-    let selected: any = null;
-    component.userSelected.subscribe((u: any) => (selected = u));
+    let selected = null as UserPickerItem | null;
+    component.userSelected.subscribe((u) => (selected = u));
 
     const item = component.usersList()[0];
     component.seleccionar(item);

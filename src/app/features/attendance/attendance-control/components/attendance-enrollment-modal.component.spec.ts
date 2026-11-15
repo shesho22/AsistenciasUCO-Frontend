@@ -3,7 +3,7 @@ import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { environment } from '../../../../../environments/environment';
 import { of, throwError } from 'rxjs';
-import { AttendanceEnrollmentModalComponent } from './attendance-enrollment-modal.component';
+import { AttendanceEnrollmentModalComponent, MatriculaEstudianteSolicitud } from './attendance-enrollment-modal.component';
 import { StudentService } from '../../../../core/services/student.service';
 import { EstudianteBusquedaApiDto } from '../../../../core/api/models/estudiante-busqueda-api-dto.model';
 import { apiHttpError } from '../../../../core/testing/api-error.fixture';
@@ -167,7 +167,7 @@ describe('AttendanceEnrollmentModalComponent', () => {
   });
 
   it('onSubmit emite submitted con los datos del alta de un estudiante nuevo', () => {
-    let payloadEmitido: any = null;
+    let payloadEmitido = null as MatriculaEstudianteSolicitud | null;
     component.submitted.subscribe((p) => (payloadEmitido = p));
 
     component.docType.set('tipo-cc');
@@ -182,9 +182,9 @@ describe('AttendanceEnrollmentModalComponent', () => {
     component.onSubmit(new Event('submit'));
 
     expect(payloadEmitido).toBeTruthy();
-    expect(payloadEmitido.primerNombre).toBe('Carlos');
-    expect(payloadEmitido.correo).toBe('carlos.ramirez@uco.edu.co');
-    expect(payloadEmitido.esNuevoEstudiante).toBeTrue();
+    expect(payloadEmitido?.primerNombre).toBe('Carlos');
+    expect(payloadEmitido?.correo).toBe('carlos.ramirez@uco.edu.co');
+    expect(payloadEmitido?.esNuevoEstudiante).toBeTrue();
   });
 
   it('onFieldInput actualiza el valor y limpia los errores de confirmPassword', () => {
@@ -234,7 +234,7 @@ describe('AttendanceEnrollmentModalComponent', () => {
   });
 
   it('onSubmit valida contraseñas al registrar nuevo estudiante', () => {
-    let payloadEmitido: any = null;
+    let payloadEmitido = null as MatriculaEstudianteSolicitud | null;
     component.submitted.subscribe((p) => (payloadEmitido = p));
 
     component.showRegistrationForm.set(true);
@@ -250,33 +250,33 @@ describe('AttendanceEnrollmentModalComponent', () => {
     component.onSubmit(event);
 
     expect(component.confirmPasswordError()).toBe('Debe confirmar la contraseña.');
-    expect(payloadEmitido.hasLocalConfirmError).toBeTrue();
+    expect(payloadEmitido?.hasLocalConfirmError).toBeTrue();
 
     // Contraseñas no coinciden
     component.confirmPassword.set('PassDistinta*');
     component.onSubmit(event);
     expect(component.confirmPasswordError()).toBe('Las contraseñas no coinciden.');
-    expect(payloadEmitido.hasLocalConfirmError).toBeTrue();
+    expect(payloadEmitido?.hasLocalConfirmError).toBeTrue();
 
     // Contraseñas coinciden
     component.confirmPassword.set('Pass1234*');
     component.onSubmit(event);
     expect(component.confirmPasswordError()).toBe('');
-    expect(payloadEmitido.hasLocalConfirmError).toBeFalse();
+    expect(payloadEmitido?.hasLocalConfirmError).toBeFalse();
   });
 
   it('IDENT-001: el payload distingue al estudiante nuevo del existente', () => {
-    let payloadEmitido: any = null;
+    let payloadEmitido = null as MatriculaEstudianteSolicitud | null;
     component.submitted.subscribe((p) => (payloadEmitido = p));
     const event = new Event('submit');
 
     component.showRegistrationForm.set(true);
     component.onSubmit(event);
-    expect(payloadEmitido.esNuevoEstudiante).toBeTrue();
+    expect(payloadEmitido?.esNuevoEstudiante).toBeTrue();
 
     component.showRegistrationForm.set(false);
     component.onSubmit(event);
-    expect(payloadEmitido.esNuevoEstudiante).toBeFalse();
+    expect(payloadEmitido?.esNuevoEstudiante).toBeFalse();
   });
 
   it('IDENT-001: muestra el dominio exigido y lo usa en el ejemplo del campo correo', () => {
