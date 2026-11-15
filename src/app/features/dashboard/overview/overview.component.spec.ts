@@ -188,15 +188,15 @@ describe('OverviewComponent', () => {
     deanServiceSpy.getCoordinadores.and.returnValue(of({ exitoso: true, datos: mockCoordinadores }));
 
     adminIndicatorsSpy = jasmine.createSpyObj('AdminIndicatorsService', ['consultarKpis']);
-    adminIndicatorsSpy.consultarKpis.and.returnValue(of({ exitoso: true, datos: { totalProgramas: 4, porcentajeAsistencia: 96.54 } as any }));
+    adminIndicatorsSpy.consultarKpis.and.returnValue(of({ exitoso: true, datos: { totalProgramas: 4, porcentajeAsistencia: 96.54 } as never }));
 
     deanIndicatorsSpy = jasmine.createSpyObj('DeanIndicatorsService', ['consultarKpis']);
     deanIndicatorsSpy.consultarKpis.and.returnValue(
-      of({ exitoso: true, datos: { porcentajeAsistencia: 82.86, gruposActivos: 5, nombrePeriodoAcademico: '2026-2' } as any })
+      of({ exitoso: true, datos: { porcentajeAsistencia: 82.86, gruposActivos: 5, nombrePeriodoAcademico: '2026-2' } as never })
     );
 
     coordinatorIndicatorsSpy = jasmine.createSpyObj('CoordinatorIndicatorsService', ['consultarKpis']);
-    coordinatorIndicatorsSpy.consultarKpis.and.returnValue(of({ exitoso: true, datos: { estudiantesRiesgo: 3 } as any }));
+    coordinatorIndicatorsSpy.consultarKpis.and.returnValue(of({ exitoso: true, datos: { estudiantesRiesgo: 3 } as never }));
 
     coordinadorSesionesSpy = jasmine.createSpyObj('CoordinadorSesionesService', ['contarPendientes']);
     coordinadorSesionesSpy.contarPendientes.and.returnValue(of(4));
@@ -212,7 +212,7 @@ describe('OverviewComponent', () => {
     coordinatorServiceSpy.getPlanesEstudio.and.returnValue(of({ exitoso: true, datos: mockPlanes }));
     coordinatorServiceSpy.getDocentes.and.returnValue(of({ exitoso: true, datos: mockDocentes }));
     coordinatorServiceSpy.getEstudiantesDirectorio.and.returnValue(
-      of({ exitoso: true, datos: [{ id: 'est-1' } as any] })
+      of({ exitoso: true, datos: [{ id: 'est-1' } as never] })
     );
 
     studentServiceSpy = jasmine.createSpyObj('StudentManagementService', ['getHorarios', 'getMaterias']);
@@ -225,7 +225,7 @@ describe('OverviewComponent', () => {
     ]);
     claimServiceSpy.getHorarioDocente.and.returnValue(of({ exitoso: true, datos: mockHorarioDocente }));
     claimServiceSpy.getReclamosDocente.and.returnValue(
-      of({ exitoso: true, datos: [{ id: 'r1', estadoSolicitud: 'PENDIENTE' } as any], total: 7 })
+      of({ exitoso: true, datos: [{ id: 'r1', estadoSolicitud: 'PENDIENTE' } as never], total: 7 })
     );
 
     await TestBed.configureTestingModule({
@@ -276,7 +276,7 @@ describe('OverviewComponent', () => {
   });
 
   it('cae a la longitud de datos si el servidor no informa total', () => {
-    claimServiceSpy.getReclamosDocente.and.returnValue(of({ exitoso: true, datos: [{ id: 'r1' } as any] }));
+    claimServiceSpy.getReclamosDocente.and.returnValue(of({ exitoso: true, datos: [{ id: 'r1' } as never] }));
     createComponentWithRole('DOCENTE');
     expect(component.pendingClaimsCount()).toBe(1);
   });
@@ -327,7 +327,7 @@ describe('OverviewComponent', () => {
         { id: 'd1', estaActivoDecano: true },
         { id: 'd2', estaActivoDecano: false },
         { id: 'd3', estaActivoDecano: false },
-      ] as any,
+      ] as never,
     }));
     createComponentWithRole('ADMINISTRADOR');
     const el = fixture.nativeElement as HTMLElement;
@@ -337,7 +337,7 @@ describe('OverviewComponent', () => {
   });
 
   it('F3-ADM-02: sin porcentajeAsistencia la tarjeta de campus muestra Sin datos, no 100%', () => {
-    adminIndicatorsSpy.consultarKpis.and.returnValue(of({ exitoso: true, datos: { totalProgramas: 4, porcentajeAsistencia: null } as any }));
+    adminIndicatorsSpy.consultarKpis.and.returnValue(of({ exitoso: true, datos: { totalProgramas: 4, porcentajeAsistencia: null } as never }));
     createComponentWithRole('ADMINISTRADOR');
     expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="asistencia-campus"]')!.textContent!.trim()).toBe('Sin datos');
   });
@@ -353,7 +353,7 @@ describe('OverviewComponent', () => {
 
   it('ADMIN: sin total (null) la tarjeta de programas muestra Sin datos, no 0 ni 1', () => {
 
-    adminIndicatorsSpy.consultarKpis.and.returnValue(of({ exitoso: true, datos: { totalProgramas: null } as any }));
+    adminIndicatorsSpy.consultarKpis.and.returnValue(of({ exitoso: true, datos: { totalProgramas: null } as never }));
 
     createComponentWithRole('ADMINISTRADOR');
 
@@ -410,7 +410,7 @@ describe('OverviewComponent', () => {
   });
 
   it('DECANO: sin porcentaje (null) la tarjeta muestra Sin datos, no 0%', () => {
-    deanIndicatorsSpy.consultarKpis.and.returnValue(of({ exitoso: true, datos: { porcentajeAsistencia: null } as any }));
+    deanIndicatorsSpy.consultarKpis.and.returnValue(of({ exitoso: true, datos: { porcentajeAsistencia: null } as never }));
     createComponentWithRole('DECANO');
     expect(component.porcentajeAsistenciaFacultad()).toBeNull();
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('Sin datos');

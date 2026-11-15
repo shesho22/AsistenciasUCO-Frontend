@@ -1,3 +1,4 @@
+import { mensajeUi } from '../messages/mensajes-ui';
 export type SessionTimeZoneErrorCode =
   | 'INVALID_INPUT'
   | 'INVALID_LOCAL_TIME'
@@ -218,7 +219,7 @@ export function localSessionToInstants(input: LocalSessionInput): LocalSessionIn
   if (!horarioDentroDelMismoDia(input.startTime, input.endTime)) {
     throw new SessionTimeZoneError(
       'END_BEFORE_START',
-      'La hora de fin debe ser posterior a la hora de inicio el mismo día; una sesión no puede pasar de la medianoche.'
+      mensajeUi('UI_SESION_HORARIO_MISMO_DIA')
     );
   }
   if (Date.parse(end) <= Date.parse(start)) {

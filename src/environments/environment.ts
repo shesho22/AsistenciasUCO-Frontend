@@ -128,6 +128,16 @@ export const environment = {
     get environmentName(): string {
       return String(runtimeEnv()?.['MESSAGEUCOLAB_ENVIRONMENT_NAME'] || 'Develop');
     },
+    /**
+     * VAL MSG-06: UUID de la aplicación y del ambiente para leer los textos de la interfaz por la ruta pública (sin
+     * sesión). Sin ellos la SPA usa sus textos de respaldo. No son secretos.
+     */
+    get applicationId(): string {
+      return String(runtimeEnv()?.['MESSAGEUCOLAB_APPLICATION_ID'] || '').trim();
+    },
+    get environmentId(): string {
+      return String(runtimeEnv()?.['MESSAGEUCOLAB_ENVIRONMENT_ID'] || '').trim();
+    },
   },
   /**
    * Administración de parámetros: micro frontend del equipo del Catálogo de Parámetros

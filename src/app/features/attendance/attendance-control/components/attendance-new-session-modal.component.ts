@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, input, output, signal, effect, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, output, signal, effect, inject, computed } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
@@ -97,7 +97,7 @@ export interface NuevaSesionSolicitud {
           </app-form-field>
         </div>
         @if (horarioInvalido()) {
-          <p class="text-xs text-danger-600" role="alert">{{ horarioMensaje }}</p>
+          <p class="text-xs text-danger-600" role="alert">{{ horarioMensaje() }}</p>
         }
 
         <div modal-footer class="flex items-center justify-end gap-2 w-full pt-2">
@@ -135,7 +135,7 @@ export class AttendanceNewSessionModalComponent {
   title = signal<string>('');
 
   readonly nombreLengthMessage = SESSION_NAME_LENGTH_MESSAGE;
-  readonly horarioMensaje = mensajeUi('UI_SESION_HORARIO_MISMO_DIA');
+  readonly horarioMensaje = computed(() => mensajeUi('UI_SESION_HORARIO_MISMO_DIA'));
 
   /** DEC-072: la sesión no cruza la medianoche; con fin menor o igual al inicio no se puede crear. */
   horarioInvalido(): boolean {

@@ -36,10 +36,10 @@ describe('CoordinatorSubjectsComponent', () => {
     courseService = jasmine.createSpyObj<CourseService>('CourseService', ['getCoordinatorCourses']);
 
     courseService.getCoordinatorCourses.and.returnValue(
-      of({ exitoso: true, datos: [course] } as any)
+      of<never>({ exitoso: true, datos: [course] } as never)
     );
     coordinatorService.getPlanesEstudio.and.returnValue(
-      of({
+      of<never>({
         exitoso: true,
         datos: [
           {
@@ -55,10 +55,10 @@ describe('CoordinatorSubjectsComponent', () => {
             descripcion: 'Plan vigente',
           },
         ],
-      } as any)
+      } as never)
     );
     coordinatorService.getAsignaturasPorPlan.and.returnValue(
-      of({
+      of<never>({
         exitoso: true,
         datos: [
           {
@@ -73,10 +73,10 @@ describe('CoordinatorSubjectsComponent', () => {
             componente: 'Obligatoria',
           },
         ],
-      } as any)
+      } as never)
     );
     coordinatorService.getEstudiantesPorGrupo.and.returnValue(
-      of({
+      of<never>({
         exitoso: true,
         datos: [
           {
@@ -89,7 +89,7 @@ describe('CoordinatorSubjectsComponent', () => {
             estadoMatricula: 'ACTIVO',
           },
         ],
-      } as any)
+      } as never)
     );
 
     await TestBed.configureTestingModule({
@@ -135,13 +135,13 @@ describe('CoordinatorSubjectsComponent', () => {
 
     beforeEach(() => {
       coordinatorService.getPlanesEstudio.and.returnValue(
-        of({ exitoso: true, datos: [{ id: 'plan-1' }, { id: 'plan-2' }] } as any)
+        of<never>({ exitoso: true, datos: [{ id: 'plan-1' }, { id: 'plan-2' }] } as never)
       );
       coordinatorService.getAsignaturasPorPlan.and.callFake(((planId: string) =>
         of({
           exitoso: true,
           datos: planId === 'plan-1' ? [fila('plan-1')] : [fila('plan-2', { nombreCaracter: 'Optativa', codigoCaracter: 'OPT', nombrePrograma: 'Ingeniería de Software' })],
-        })) as any);
+        })) as never);
       component.cargarDatos();
       fixture.detectChanges();
     });
@@ -165,7 +165,7 @@ describe('CoordinatorSubjectsComponent', () => {
         fila('plan-1', { nombreCaracter: 'Optativa' }),
         fila('plan-1', { nombreCaracter: 'Ética' }),
         fila('plan-1', { nombreCaracter: 'Álgebra' }),
-      ] as any);
+      ] as never);
 
       expect(component.caracteresDisponibles()).toEqual(['Álgebra', 'Ética', 'Optativa']);
     });

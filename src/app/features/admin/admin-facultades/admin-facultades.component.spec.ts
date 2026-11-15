@@ -387,7 +387,7 @@ describe('AdminFacultadesComponent', () => {
 
   it('no existe la accion de desvincular decano (decano es obligatorio)', () => {
     inicializar();
-    expect((component as any).desvincularDecano).toBeUndefined();
+    expect((component as unknown as Record<string, unknown>)['desvincularDecano']).toBeUndefined();
   });
 
   describe('rutas alternas de mensajes (HU110, HU111, HU117)', () => {
@@ -396,7 +396,7 @@ describe('AdminFacultadesComponent', () => {
       component.editarFacultad(mockFacultades[0]);
       component.formFacultad.nombre = 'Nombre Nuevo';
       spyOn(adminService, 'actualizarFacultad').and.returnValue(
-        of({ exitoso: false, mensajeUsuario: 'No se pudo actualizar por regla de negocio.', datos: null as any })
+        of({ exitoso: false, mensajeUsuario: 'No se pudo actualizar por regla de negocio.', datos: null as never })
       );
 
       component.guardar();
@@ -410,7 +410,7 @@ describe('AdminFacultadesComponent', () => {
       inicializar();
       component.editarFacultad(mockFacultades[0]);
       component.formFacultad.nombre = 'Nombre Nuevo';
-      spyOn(adminService, 'actualizarFacultad').and.returnValue(of({ exitoso: false, datos: null as any }));
+      spyOn(adminService, 'actualizarFacultad').and.returnValue(of({ exitoso: false, datos: null as never }));
 
       component.guardar();
 
@@ -436,12 +436,12 @@ describe('AdminFacultadesComponent', () => {
       inicializar();
       const spy = spyOn(adminService, 'cambiarEstadoFacultad');
 
-      spy.and.returnValue(of({ exitoso: false, mensajeUsuario: 'Estado no modificable.', datos: null as any }));
+      spy.and.returnValue(of({ exitoso: false, mensajeUsuario: 'Estado no modificable.', datos: null as never }));
       component.toggleEstadoFacultad(mockFacultades[0]);
       expect(toastService.error).toHaveBeenCalledWith('Estado no modificable.');
       expect(component.facultadCambiandoEstado()).toBeNull();
 
-      spy.and.returnValue(of({ exitoso: false, datos: null as any }));
+      spy.and.returnValue(of({ exitoso: false, datos: null as never }));
       component.toggleEstadoFacultad(mockFacultades[0]);
       expect(toastService.error).toHaveBeenCalledWith('No fue posible cambiar el estado de la facultad.');
     });
@@ -462,12 +462,12 @@ describe('AdminFacultadesComponent', () => {
       component.decanoSeleccionadoId = 'dec-2';
       const spy = spyOn(adminService, 'actualizarFacultad');
 
-      spy.and.returnValue(of({ exitoso: false, mensajeUsuario: 'Decano no asignable.', datos: null as any }));
+      spy.and.returnValue(of({ exitoso: false, mensajeUsuario: 'Decano no asignable.', datos: null as never }));
       component.confirmarAsignacionDecano();
       expect(toastService.error).toHaveBeenCalledWith('Decano no asignable.');
       expect(component.facultadParaDecano()).not.toBeNull();
 
-      spy.and.returnValue(of({ exitoso: false, datos: null as any }));
+      spy.and.returnValue(of({ exitoso: false, datos: null as never }));
       component.confirmarAsignacionDecano();
       expect(toastService.error).toHaveBeenCalledWith('No se pudo asignar el decano.');
     });

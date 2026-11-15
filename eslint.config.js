@@ -22,7 +22,8 @@ module.exports = tseslint.config(
       '@angular-eslint/directive-selector': ['error', { type: 'attribute', prefix: 'app', style: 'camelCase' }],
       '@angular-eslint/component-selector': ['error', { type: 'element', prefix: 'app', style: 'kebab-case' }],
       // Deuda existente al 2026-11-12 (conteo en docs/work-items/VAL-oleada2-cumplimiento/VALIDATION.md).
-      '@typescript-eslint/no-explicit-any': 'warn',
+      // EST-11 (2026-11-14): cero any en el codigo de la aplicacion (DTO tipados); en error.
+      '@typescript-eslint/no-explicit-any': 'error',
       // EST-11 (2026-11-14): sin hallazgos; un parametro o variable intencionalmente sin uso se marca con prefijo `_`.
       '@typescript-eslint/no-unused-vars': [
         'error',
@@ -41,6 +42,14 @@ module.exports = tseslint.config(
       'prefer-const': 'error',
       '@angular-eslint/prefer-inject': 'error',
       '@angular-eslint/prefer-on-push-component-change-detection': 'error',
+    },
+  },
+  {
+    // Pruebas: los dobles y las capturas de HttpClient sin tipo (sobre todo del backend simulado) quedan en warn; se
+    // bajaron de 265 a 123 y siguen en lotes. Nunca aplica al codigo de la aplicacion.
+    files: ['**/*.spec.ts'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'warn',
     },
   },
   {

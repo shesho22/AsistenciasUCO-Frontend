@@ -1,8 +1,10 @@
+import { GrupoDetalleDecanoApiDto } from '../../../core/services/dean-facultad.service';
+import { RealtimeEvent } from '../../../core/realtime/model/realtime-event.model';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { Component, OnInit, OnDestroy, inject, input, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
 import { DeanFacultadService } from '../../../core/services/dean-facultad.service';
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
 import { resolveSessionInstant } from '../../../core/time/session-timezone.util';
@@ -15,7 +17,7 @@ import { RealtimeService } from '../../../core/realtime/realtime.service';
 import { onRealtimeReconnect } from '../../../core/realtime/realtime-reconnect-trigger';
 import { REALTIME_EVENT_TYPE } from '../../../core/realtime/model/realtime-event.model';
 
-function adaptarGrupoACurso(dto: any): Course {
+function adaptarGrupoACurso(dto: GrupoDetalleDecanoApiDto): Course {
   return {
     id: dto.id ?? '',
     code: dto.codigo ?? dto.code ?? '',
@@ -203,10 +205,13 @@ export class DeanGrupoDetalleComponent implements OnInit, OnDestroy {
       })
     );
 
-    const events$ = this.realtime.events ? this.realtime.events() : (this.realtime as any).events$;
+    // Compatibilidad con dobles de prueba que solo exponen `events$`.
+    const events$: Observable<RealtimeEvent & { tipo?: string }> | undefined = this.realtime.events
+      ? this.realtime.events()
+      : (this.realtime as unknown as { events$?: Observable<RealtimeEvent> }).events$;
     if (events$) {
       sub.add(
-        events$.subscribe((evt: any) => {
+        events$.subscribe((evt) => {
           if (!evt) return;
           const tipo = evt.type || evt.tipo;
           if (

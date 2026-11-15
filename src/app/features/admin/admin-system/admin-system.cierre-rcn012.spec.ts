@@ -29,7 +29,7 @@ describe('AdminSystemComponent - Cierre Masivo RCN_012 (C-F-57)', () => {
       }
     );
     adminServiceSpy.cargarParametros.and.returnValue(
-      of({
+      of<never>({
         exitoso: true,
         datos: [],
         elementos: [],
@@ -37,7 +37,7 @@ describe('AdminSystemComponent - Cierre Masivo RCN_012 (C-F-57)', () => {
         tamanoPagina: 10,
         totalElementos: 0,
         totalPaginas: 0,
-      } as any)
+      } as never)
     );
 
     coordServiceSpy = jasmine.createSpyObj<CoordinatorManagementService>(

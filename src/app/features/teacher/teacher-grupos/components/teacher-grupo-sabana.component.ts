@@ -24,7 +24,8 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
 import { getApiErrorMessage } from '../../../../core/api/errors/api-error.util';
 import { SemaforoAsistenciaComponent } from '../../../../shared/components/semaforo-asistencia/semaforo-asistencia.component';
 import { InasistenciaMarcaBadgeComponent } from '../../../../shared/components/inasistencia-marca-badge/inasistencia-marca-badge.component';
-import { RevisionDecisionModalComponent } from '../../revision-cancelacion/revision-decision-modal.component';
+import { RevisionDecisionEntrada, RevisionDecisionModalComponent } from '../../revision-cancelacion/revision-decision-modal.component';
+import { MarcaRevisionDocente } from '../../../../core/models/revision-cancelacion.model';
 import { RealtimeService } from '../../../../core/realtime/realtime.service';
 import { onRealtimeReconnect } from '../../../../core/realtime/realtime-reconnect-trigger';
 import { REALTIME_EVENT_TYPE } from '../../../../core/realtime/model/realtime-event.model';
@@ -274,7 +275,7 @@ export class TeacherGrupoSabanaComponent implements OnDestroy {
   protected readonly hayResumen = computed(() => this.resumenes().size > 0);
 
   modalDecisionAbierto = signal<boolean>(false);
-  revisionSeleccionada = signal<any>(null);
+  revisionSeleccionada = signal<RevisionDecisionEntrada | MarcaRevisionDocente | null>(null);
   estudianteNombreModal = signal<string>('');
 
   constructor() {
@@ -337,9 +338,9 @@ export class TeacherGrupoSabanaComponent implements OnDestroy {
     this.subRealtime = sub;
   }
 
-  abrirModalDecision(est: EstudianteGrupoItem, marca: any): void {
+  abrirModalDecision(est: EstudianteGrupoItem, marca: MarcaRevisionDocente | null | undefined): void {
     this.estudianteNombreModal.set(est.studentName || est.nombreCompleto || 'Estudiante');
-    this.revisionSeleccionada.set(marca?.revision || marca);
+    this.revisionSeleccionada.set(marca?.revision || marca || null);
     this.modalDecisionAbierto.set(true);
   }
 

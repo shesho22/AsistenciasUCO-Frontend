@@ -69,7 +69,7 @@ describe('authInterceptor 401 recovery', () => {
       tokenValue = 'new-token';
       return true;
     });
-    let result: unknown;
+    let result!: object;
 
     client
       .get(`${environment.apiUrl}/probe`)

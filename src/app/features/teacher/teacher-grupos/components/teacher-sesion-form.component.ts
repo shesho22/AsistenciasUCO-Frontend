@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, input, output, model, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, output, model, inject, computed } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { FormFieldComponent } from '../../../../shared/components/form-field/form-field.component';
@@ -8,7 +8,7 @@ import {
   SESSION_NAME_MAX_LENGTH,
   getSessionNameError,
 } from '../../../../core/validation/session-name.util';
-import { AVISO_SOLICITUD_SESION_REGISTRADA } from '../../../../core/models/sesion-manual.util';
+import { avisoSolicitudSesionRegistrada } from '../../../../core/models/sesion-manual.util';
 import { SessionTimeZoneService } from '../../../../core/services/session-timezone.service';
 
 /** Valores editables del formulario de programacion de sesion. */
@@ -53,7 +53,7 @@ export interface SesionFormValue {
           </p>
           @if (modo() === 'CREAR') {
             <p class="text-sm text-warning-800 bg-warning-50 border border-warning-200 rounded-xl px-3 py-2 mt-3" data-testid="nota-solicitud-sesion">
-              {{ notaSolicitud }}
+              {{ notaSolicitud() }}
             </p>
           }
           <p class="text-[11px] text-primary-800 mt-2">
@@ -134,7 +134,7 @@ export class TeacherSesionFormComponent {
     sessionNumber: 1,
   });
 
-  readonly notaSolicitud = AVISO_SOLICITUD_SESION_REGISTRADA;
+  readonly notaSolicitud = computed(() => avisoSolicitudSesionRegistrada());
   readonly nombreLengthMessage = SESSION_NAME_LENGTH_MESSAGE;
 
   nombreInvalido(): boolean {

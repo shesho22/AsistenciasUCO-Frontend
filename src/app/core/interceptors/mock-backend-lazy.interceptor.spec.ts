@@ -28,7 +28,7 @@ describe('mockBackendLazyInterceptor (VAL EST-10)', () => {
 
   it('con el modo real la peticion pasa al backend y no descarga el simulador', () => {
     const cargar = spyOn(cargadorBackendSimulado, 'cargar').and.callThrough();
-    let respuesta: unknown;
+    let respuesta!: object;
     http.get('/api/v1/probe').subscribe((r) => (respuesta = r));
     ctrl.expectOne('/api/v1/probe').flush({ real: true });
     expect(respuesta).toEqual({ real: true });

@@ -222,7 +222,7 @@ describe('AttendanceRealtimeSyncService', () => {
 
   it('expone UNAUTHORIZED y ERROR una sola vez por estado terminal', () => {
     const received: RealtimeConnectionState[] = [];
-    (service as any)
+    (service as unknown as { connectionAlerts(): import('rxjs').Observable<RealtimeConnectionState> })
       .connectionAlerts()
       .subscribe((state: RealtimeConnectionState) => received.push(state));
 
@@ -238,7 +238,7 @@ describe('AttendanceRealtimeSyncService', () => {
 
   it('no convierte estados normales de conexión o reconexión en alertas', () => {
     const received: RealtimeConnectionState[] = [];
-    (service as any)
+    (service as unknown as { connectionAlerts(): import('rxjs').Observable<RealtimeConnectionState> })
       .connectionAlerts()
       .subscribe((state: RealtimeConnectionState) => received.push(state));
 

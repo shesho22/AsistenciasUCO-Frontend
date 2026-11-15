@@ -293,8 +293,8 @@ describe('AdminManagementService', () => {
   });
 
   it('el servicio ya no expone la desvinculacion de decano ni la asignacion optimista', () => {
-    expect((service as any).desvincularDecanoFacultad).toBeUndefined();
-    expect((service as any).asignarDecanoFacultad).toBeUndefined();
+    expect((service as unknown as Record<string, unknown>)['desvincularDecanoFacultad']).toBeUndefined();
+    expect((service as unknown as Record<string, unknown>)['asignarDecanoFacultad']).toBeUndefined();
   });
 
   it('getDecanos deduplica decanos por id y normaliza nombreCompleto', () => {
@@ -409,7 +409,7 @@ describe('AdminManagementService', () => {
       idFacultad: null,
     };
 
-    service.createDecano(payload as any).subscribe((res) => {
+    service.createDecano(payload as never).subscribe((res) => {
       expect(res.exitoso).toBeTrue();
     });
 

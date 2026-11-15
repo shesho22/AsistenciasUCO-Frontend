@@ -21,7 +21,7 @@ describe('roleGuard', () => {
 
   beforeEach(() => {
     router = jasmine.createSpyObj<Router>('Router', ['createUrlTree']);
-    router.createUrlTree.and.callFake((commands) => ({ commands } as any));
+    router.createUrlTree.and.callFake((commands) => ({ commands } as never));
     currentRole = 'DOCENTE';
     authService = {
       currentUser: () => user(currentRole),
@@ -41,7 +41,7 @@ describe('roleGuard', () => {
       data: { roles: ['DOCENTE'] },
     } as unknown as ActivatedRouteSnapshot;
 
-    return TestBed.runInInjectionContext(() => roleGuard(route, {} as any));
+    return TestBed.runInInjectionContext(() => roleGuard(route, {} as never));
   }
 
   it('permite DOCENTE en la ruta de asistencia', () => {
@@ -63,18 +63,19 @@ describe('roleGuard', () => {
       ],
     });
     const route = { data: { roles: ['DOCENTE'] } } as unknown as ActivatedRouteSnapshot;
-    TestBed.runInInjectionContext(() => roleGuard(route, {} as any));
+    TestBed.runInInjectionContext(() => roleGuard(route, {} as never));
     expect(router.createUrlTree).toHaveBeenCalledWith(['/login']);
   });
 
   it('permite acceso si no hay allowedRoles configurados', () => {
     const route = { data: {} } as unknown as ActivatedRouteSnapshot;
-    const res = TestBed.runInInjectionContext(() => roleGuard(route, {} as any));
+    const res = TestBed.runInInjectionContext(() => roleGuard(route, {} as never));
     expect(res).toBeTrue();
   });
 
   it('F3-TRX-01: toda ruta ajena al rol lleva a la página 403 dentro del layout, sea cual sea el rol', () => {
-    for (const rol of ['DECANO', 'COORDINADOR', 'ESTUDIANTE', 'ADMINISTRADOR', 'OTRO' as any]) {
+    // 'OTRO' simula un rol fuera del catalogo que llegara por error.
+    for (const rol of ['DECANO', 'COORDINADOR', 'ESTUDIANTE', 'ADMINISTRADOR', 'OTRO'] as User['role'][]) {
       router.createUrlTree.calls.reset();
       expect(runFor(rol)).not.toBeTrue();
       expect(router.createUrlTree).toHaveBeenCalledWith(['/app/acceso-denegado']);
@@ -88,7 +89,7 @@ describe('roleGuard', () => {
     TestBed.overrideProvider(AuthService, { useValue: authService });
     const route = { data: { roles: ['DOCENTE'] } } as unknown as ActivatedRouteSnapshot;
 
-    expect(TestBed.runInInjectionContext(() => roleGuard(route, {} as any))).toBeTrue();
+    expect(TestBed.runInInjectionContext(() => roleGuard(route, {} as never))).toBeTrue();
   });
 
   it('un rol solo en `roles` pero no efectivo para la ruta no concede acceso', () => {
@@ -98,7 +99,7 @@ describe('roleGuard', () => {
     TestBed.overrideProvider(AuthService, { useValue: authService });
     const route = { data: { roles: ['DOCENTE'] } } as unknown as ActivatedRouteSnapshot;
 
-    expect(TestBed.runInInjectionContext(() => roleGuard(route, {} as any))).not.toBeTrue();
+    expect(TestBed.runInInjectionContext(() => roleGuard(route, {} as never))).not.toBeTrue();
   });
 
   it('F-DEC-S09: al denegar el acceso avisa con un error visible y no avisa cuando permite', () => {

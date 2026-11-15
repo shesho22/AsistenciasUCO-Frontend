@@ -33,6 +33,13 @@ import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed,
         animation-timing-function: linear;
         animation-fill-mode: forwards;
       }
+      /* Vigia de rotacion (VAL F12-06): animacion invisible; su animationend avisa que el codigo debio renovarse. */
+      .qr-vigia-rotacion {
+        width: 0;
+        height: 0;
+        animation-timing-function: linear;
+        animation-fill-mode: forwards;
+      }
     `,
     ],
     template: `
@@ -132,6 +139,16 @@ import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed,
                   [style.animation-duration.s]="segundosRestantes()"
                 ></div>
               </div>
+              @if (margenVigiaSegundos() !== null) {
+                <div
+                  class="qr-vigia-rotacion"
+                  aria-hidden="true"
+                  data-testid="qr-vigia-rotacion"
+                  [style.animation-name]="nombreAnimacion()"
+                  [style.animation-duration.s]="(segundosRestantes() ?? 0) + (margenVigiaSegundos() ?? 0)"
+                  (animationend)="rotacionVencida.emit(ciclo())"
+                ></div>
+              }
               @if (proximaRotacion()) {
                 <p class="text-sm text-warm-700" data-testid="qr-proxima-rotacion">Próxima rotación: {{ proximaRotacion() }}</p>
               }
@@ -177,6 +194,11 @@ export class QrProyeccionComponent {
   readonly proximaRotacion = input<string | null>(null);
   /** Cambia con cada codigo nuevo para reiniciar la barra. */
   readonly ciclo = input<number>(0);
+  /**
+   * VAL F12-06: con un valor, un vigia CSS invisible dura `segundosRestantes + margen` y, al terminar, emite
+   * `rotacionVencida` con el ciclo vigente (el padre decide si el codigo nuevo no llego). `null` lo desactiva.
+   */
+  readonly margenVigiaSegundos = input<number | null>(null);
   readonly mostrarCerrar = input<boolean>(true);
   readonly etiquetaCerrar = input<string>('Ocultar');
   readonly testidQr = input<string>('qr-img');
@@ -189,6 +211,8 @@ export class QrProyeccionComponent {
 
   readonly cerrar = output<void>();
   readonly accionElegida = output<string>();
+  /** El vigia de rotacion termino sin que el padre cambiara de ciclo; lleva el ciclo en que termino. */
+  readonly rotacionVencida = output<number>();
 
   private readonly enPantallaCompleta = signal(false);
   private readonly maximizado = signal(false);

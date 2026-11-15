@@ -5,10 +5,16 @@ import { environment } from '../../../environments/environment';
 import { ApiResponse } from '../models/api-response.model';
 import { ActualizarCoordinadorPayload, CoordinadorItem, ResultadoGestionCoordinador } from '../models/role-management.model';
 
+/** Fila de GET /decano/coordinadores (CoordinadorItemDTO) o una ya normalizada. */
+type CoordinadorApiDto = Partial<Omit<CoordinadorItem, 'numeroIdentificacion'>> & {
+  numeroIdentificacion?: string | number | null;
+  nombreFacultad?: string;
+};
+
 /** `ApiPageResponse` de GET /decano/coordinadores. */
 interface CoordinadoresPageDto {
   exitoso?: boolean;
-  elementos?: Record<string, any>[];
+  elementos?: CoordinadorApiDto[];
   numeroPagina?: number;
   tamanoPagina?: number;
   totalElementos?: number;
@@ -27,12 +33,12 @@ export class DeanManagementService {
     const params = new HttpParams().set('pagina', 1).set('tamano', 100);
     return this.http.get<CoordinadoresPageDto>(`${environment.apiUrl}/decano/coordinadores`, { params }).pipe(
       map((page) => {
-        const res = { ...page, datos: page?.elementos } as unknown as ApiResponse<any[]>;
+        const res = { ...page, datos: page?.elementos } as unknown as ApiResponse<CoordinadorApiDto[]>;
         if (page && page.exitoso !== false && Array.isArray(page.elementos)) {
-          const coordMap = new Map<string, any>();
+          const coordMap = new Map<string, CoordinadorApiDto>();
           for (const item of page.elementos) {
-            if (item && item['id'] && !coordMap.has(item['id'])) {
-              coordMap.set(item['id'], item);
+            if (item && item.id && !coordMap.has(item.id)) {
+              coordMap.set(item.id, item);
             }
           }
 
@@ -58,7 +64,7 @@ export class DeanManagementService {
               'Sin Programa Asignado';
 
             return {
-              id: raw.id,
+              id: raw.id as string,
               idUsuario: raw.idUsuario,
               idPrograma: raw.idPrograma ?? null,
               tipoIdentificacion: raw.tipoIdentificacion || 'CC',

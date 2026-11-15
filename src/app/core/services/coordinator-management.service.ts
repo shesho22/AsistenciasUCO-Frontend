@@ -29,14 +29,44 @@ import {
 import { EstudiantePaginaApiDto } from '../api/models/estudiante-api-dto.model';
 import { AsistenciaSesionItem, GrupoProgramaItem, SesionGrupoItem } from '../models/asistencia-programa.model';
 
+/** Plan de estudio tal como llega del backend (HU081-HU083) o ya con la forma de la pantalla. */
+type PlanEstudioApiDto = Partial<PlanEstudioItem> & {
+  inp?: string | number | null;
+  nombrePrograma?: string;
+  estaActivoPlanEstudio?: boolean;
+  justificacionEstado?: string;
+};
+
+/** Estudiante del directorio del coordinador (O2-B2). */
+type EstudianteDirectorioApiDto = Partial<EstudianteDirectorioItem> & {
+  numeroIdentificacion?: string | number | null;
+  nombrePrograma?: string;
+};
+
+/** Periodo academico del backend (HU096-HU098): `nombre` como 2026-2 y `codigo` numerico. */
+type PeriodoAcademicoApiDto = Omit<Partial<PeriodoAcademicoItem>, 'codigo'> & {
+  codigo?: string | number;
+  idInstitucion?: string;
+};
+
+/** Fila de la malla (HU082/HU083, CULM-001 B2NM). */
+type AsignaturaPlanApiDto = Partial<AsignaturaPlanItem> & {
+  idAsignatura?: string;
+  idPlanEstudio?: string;
+  codigoSemestre?: string;
+  credito?: number;
+  nombreArea?: string;
+  nombreComponente?: string;
+};
+
 /**
  * HU081-HU083: el backend devuelve el plan con `inp`, `nombrePrograma`, `estaActivoPlanEstudio` y `totalSemestres`;
  * la pantalla trabaja con `PlanEstudioItem`. Los campos que ya vienen con la forma de la pantalla se conservan.
  */
-export function normalizarPlanEstudio(raw: any): PlanEstudioItem {
+export function normalizarPlanEstudio(raw: PlanEstudioApiDto | null | undefined): PlanEstudioItem {
   const inp = raw?.inp != null ? String(raw.inp) : '';
   return {
-    id: raw?.id,
+    id: raw?.id as string,
     codigo: raw?.codigo ?? (inp ? `INP-${inp}` : ''),
     nombre: raw?.nombre ?? (inp ? `Plan ${inp}` : 'Plan de estudio'),
     anioVigencia: raw?.anioVigencia ?? (Number(inp) || 0),
@@ -53,9 +83,9 @@ export function normalizarPlanEstudio(raw: any): PlanEstudioItem {
 }
 
 /** Estudiante del directorio del coordinador (`GET /coordinador/estudiantes`, elementos paginados, O2-B2). */
-export function normalizarEstudianteDirectorio(raw: any): EstudianteDirectorioItem {
+export function normalizarEstudianteDirectorio(raw: EstudianteDirectorioApiDto | null | undefined): EstudianteDirectorioItem {
   return {
-    id: raw?.id,
+    id: raw?.id as string,
     documento: raw?.numeroIdentificacion != null ? String(raw.numeroIdentificacion) : (raw?.documento ?? ''),
     codigo: raw?.codigo ?? '',
     nombreCompleto: raw?.nombreCompleto ?? '',
@@ -70,7 +100,10 @@ export function normalizarEstudianteDirectorio(raw: any): EstudianteDirectorioIt
  * HU096-HU098: el backend devuelve el período con `nombre` (p. ej. 2026-2), `codigo` numérico y fechas; la pantalla
  * muestra el nombre como código y calcula el estado con las fechas (sin columna de estado en la DB).
  */
-export function normalizarPeriodoAcademico(raw: any, hoy: Date = new Date()): PeriodoAcademicoItem {
+export function normalizarPeriodoAcademico(
+  raw: PeriodoAcademicoApiDto | null | undefined,
+  hoy: Date = new Date()
+): PeriodoAcademicoItem {
   const fechaInicio = String(raw?.fechaInicio ?? '');
   const fechaFin = String(raw?.fechaFin ?? '');
   const dia = hoy.toISOString().slice(0, 10);
@@ -78,7 +111,7 @@ export function normalizarPeriodoAcademico(raw: any, hoy: Date = new Date()): Pe
     fechaInicio && dia < fechaInicio ? 'PLANEACION' : fechaFin && dia > fechaFin ? 'CERRADO' : 'ACTIVO';
   const estado = raw?.estado ?? calculado;
   return {
-    id: raw?.id,
+    id: raw?.id as string,
     codigo: raw?.idInstitucion !== undefined ? String(raw?.nombre ?? '') : String(raw?.codigo ?? raw?.nombre ?? ''),
     nombre: raw?.idInstitucion !== undefined ? `Período ${raw?.nombre ?? ''}` : String(raw?.nombre ?? ''),
     fechaInicio,
@@ -93,19 +126,20 @@ export function normalizarPeriodoAcademico(raw: any, hoy: Date = new Date()): Pe
  * HU082/HU083: la malla agrupa por número de semestre. El backend envía `codigoSemestre` (p. ej. "S8"),
  * `credito`, `nombreArea` y `nombreComponente`; se adaptan a `AsignaturaPlanItem` conservando lo que ya venga.
  */
-export function normalizarAsignaturaPlan(raw: any): AsignaturaPlanItem {
+export function normalizarAsignaturaPlan(raw: AsignaturaPlanApiDto | null | undefined): AsignaturaPlanItem {
   const semestre = raw?.semestre ?? Number(String(raw?.codigoSemestre ?? '').replace(/\D/g, '') || 0);
   return {
     ...raw,
     // CULM-001 B2NM: la malla trae `idAsignatura` (la fila es el vínculo asignatura-plan).
-    id: raw?.id ?? raw?.idAsignatura,
-    planEstudioId: raw?.planEstudioId ?? raw?.idPlanEstudio,
+    id: (raw?.id ?? raw?.idAsignatura) as string,
+    planEstudioId: (raw?.planEstudioId ?? raw?.idPlanEstudio) as string,
     creditos: raw?.creditos ?? raw?.credito ?? 0,
     semestre,
     area: raw?.area ?? raw?.nombreArea ?? '',
     componente: raw?.componente ?? raw?.nombreComponente ?? '',
     horasSemanales: raw?.horasSemanales ?? 0,
-  };
+    // `codigo` y `nombre` viajan tal cual en la fila (el resto de campos ya tiene su respaldo arriba).
+  } as AsignaturaPlanItem;
 }
 
 /**

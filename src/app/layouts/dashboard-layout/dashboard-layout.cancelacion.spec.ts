@@ -20,7 +20,7 @@ describe('DashboardLayoutComponent - Cancelación por Inasistencia C.1 (C-F-58..
   let mockUserSignal: ReturnType<typeof signal>;
 
   function setup(role: UserRole, cancelacionEnabled: boolean, conteo$: Observable<number> = of(5)): void {
-    (environment.features as any).cancelacionInasistenciaEnabled = cancelacionEnabled;
+    environment.features['cancelacionInasistenciaEnabled'] = cancelacionEnabled;
 
     mockUserSignal = signal({
       id: 'usr-test',
@@ -65,7 +65,7 @@ describe('DashboardLayoutComponent - Cancelación por Inasistencia C.1 (C-F-58..
   }
 
   afterEach(() => {
-    (environment.features as any).cancelacionInasistenciaEnabled = true;
+    environment.features['cancelacionInasistenciaEnabled'] = true;
   });
 
   it('C-F-58: con cancelacionInasistenciaEnabled=true, muestra opciones correspondientes y consulta contadores', () => {

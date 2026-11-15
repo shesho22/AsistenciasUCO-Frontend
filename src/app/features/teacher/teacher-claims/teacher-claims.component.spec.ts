@@ -272,7 +272,7 @@ describe('TeacherClaimsComponent', () => {
   // SES-04: la decisión espera la respuesta real, no se envía dos veces y un conflicto no se muestra como éxito.
   it('SES-04: un segundo clic mientras se resuelve no envía otra decisión', () => {
     const respuesta = new Subject<{ exitoso: boolean; mensajeUsuario: string }>();
-    claimServiceSpy.resolverReclamo.and.returnValue(respuesta.asObservable() as any);
+    claimServiceSpy.resolverReclamo.and.returnValue(respuesta.asObservable() as never);
     component.abrirVistaResolucion(mockReclamos[0]);
 
     component.confirmarResolucion('APROBADA');
@@ -330,7 +330,7 @@ describe('TeacherClaimsComponent', () => {
     expect(component.getReclamoBadgeVariant('APROBADA')).toBe('success');
     expect(component.getReclamoBadgeVariant('RECHAZADA')).toBe('danger');
     expect(component.getReclamoBadgeVariant('PENDIENTE')).toBe('warning');
-    expect(component.getReclamoBadgeVariant('OTRO' as any)).toBe('neutral');
+    expect(component.getReclamoBadgeVariant('OTRO' as never)).toBe('neutral');
   });
 });
 

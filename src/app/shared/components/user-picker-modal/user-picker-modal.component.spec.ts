@@ -26,8 +26,8 @@ describe('UserPickerModalComponent', () => {
     teacherServiceSpy = jasmine.createSpyObj('TeacherService', ['getAllTeachers']);
     coordServiceSpy = jasmine.createSpyObj('CoordinatorManagementService', ['getDocentes']);
 
-    teacherServiceSpy.getAllTeachers.and.returnValue(of(mockTeachers as any));
-    coordServiceSpy.getDocentes.and.returnValue(of({ exitoso: true, datos: [] } as any));
+    teacherServiceSpy.getAllTeachers.and.returnValue(of<never>(mockTeachers as never));
+    coordServiceSpy.getDocentes.and.returnValue(of<never>({ exitoso: true, datos: [] } as never));
 
     await TestBed.configureTestingModule({
       imports: [UserPickerModalComponent],

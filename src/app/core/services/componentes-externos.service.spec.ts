@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { ComponentesExternosService } from './componentes-externos.service';
 
 describe('ComponentesExternosService (F3-ADM-07)', () => {
-  let original: unknown;
+  let original!: unknown;
 
   beforeEach(() => {
     original = (window as unknown as { env?: unknown }).env;

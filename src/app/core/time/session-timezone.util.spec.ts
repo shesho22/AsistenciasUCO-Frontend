@@ -39,7 +39,7 @@ describe('session-timezone.util', () => {
 
   it('DEC-072: rechaza una hora de fin anterior a la de inicio en lugar de pasarla al día siguiente', () => {
     // Antes de DEC-072 (2026-11-13) 23:30 → 01:30 se convertía en una sesión que terminaba el día siguiente.
-    let error: unknown;
+    let error!: unknown;
     try {
       localSessionToInstants({ date: '2026-07-15', startTime: '23:30', endTime: '01:30', timeZone: 'America/Bogota' });
     } catch (e) {

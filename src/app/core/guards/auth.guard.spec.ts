@@ -10,7 +10,7 @@ describe('authGuard', () => {
 
   beforeEach(() => {
     router = jasmine.createSpyObj('Router', ['createUrlTree']);
-    router.createUrlTree.and.callFake((commands, extras) => ({ commands, extras } as any));
+    router.createUrlTree.and.callFake((commands, extras) => ({ commands, extras } as never));
 
     authServiceSpy = jasmine.createSpyObj('AuthService', ['isAuthenticated']);
 

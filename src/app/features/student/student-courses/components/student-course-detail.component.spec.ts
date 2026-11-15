@@ -67,7 +67,7 @@ describe('StudentCourseDetailComponent', () => {
     expect(component.getBadgeVariant('Al día')).toBe('success');
     expect(component.getBadgeVariant('Riesgo')).toBe('warning');
     expect(component.getBadgeVariant('Crítico')).toBe('danger');
-    expect(component.getBadgeVariant('Desconocido' as any)).toBe('neutral');
+    expect(component.getBadgeVariant('Desconocido' as never)).toBe('neutral');
   });
 
   it('debe retornar variantes correctas en getAsistenciaBadgeVariant', () => {
@@ -75,7 +75,7 @@ describe('StudentCourseDetailComponent', () => {
     expect(component.getAsistenciaBadgeVariant('RETARDO')).toBe('warning');
     expect(component.getAsistenciaBadgeVariant('AUSENTE')).toBe('danger');
     expect(component.getAsistenciaBadgeVariant('JUSTIFICADA')).toBe('info');
-    expect(component.getAsistenciaBadgeVariant('OTRO' as any)).toBe('neutral');
+    expect(component.getAsistenciaBadgeVariant('OTRO' as never)).toBe('neutral');
   });
 
   it('debe retornar clases correctas en getReclamoStatusClasses', () => {

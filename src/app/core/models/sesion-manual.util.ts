@@ -16,7 +16,10 @@ export function mensajeSesionManualCreada(
 }
 
 export const AVISO_SESION_CANCELADA_POR_COORDINACION = 'Sesión cancelada por coordinación';
-export const AVISO_SOLICITUD_SESION_REGISTRADA = mensajeUi('UI_SESION_SOLICITUD_REGISTRADA');
+/** Aviso al docente cuando registra una solicitud de sesión manual (se lee al usarse: catálogo de MessageUcoLab). */
+export function avisoSolicitudSesionRegistrada(): string {
+  return mensajeUi('UI_SESION_SOLICITUD_REGISTRADA');
+}
 
 /** DEC-065 (2): aviso al docente cuando la coordinación aprueba su solicitud. */
 export function mensajeSolicitudAprobada(nombre: string | null | undefined): string {

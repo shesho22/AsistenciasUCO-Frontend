@@ -1,10 +1,10 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ApiErrorResponse } from '../models/api-error-response.model';
 import { ApiFieldError } from '../models/api-field-error.model';
-import { mensajeUi } from '../../messages/mensajes-ui';
+import { CodigoMensajeUi, mensajeUi } from '../../messages/mensajes-ui';
 
-// VAL-oleada3 MSG-06: los textos de respaldo salen del catálogo de mensajes del frontend.
-const DEFAULT_ERROR_MESSAGE = mensajeUi('API_ERROR_DEFAULT');
+// VAL-oleada3 MSG-06: los textos de respaldo salen del catálogo de mensajes del frontend. Se leen al usarse (no al
+// importar el módulo) para que tomen el texto de MessageUcoLab cuando ya llegó (VAL-oleada5).
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -80,16 +80,16 @@ export const API_ERROR_CODE = {
   UNKNOWN: 'UNKNOWN',
 } as const;
 
-const CODE_MESSAGES: Record<string, string> = {
-  [API_ERROR_CODE.UNAUTHORIZED]: mensajeUi('API_ERROR_UNAUTHORIZED'),
-  [API_ERROR_CODE.FORBIDDEN]: mensajeUi('API_ERROR_FORBIDDEN'),
-  [API_ERROR_CODE.VALIDATION_ERROR]: mensajeUi('API_ERROR_VALIDATION_ERROR'),
-  [API_ERROR_CODE.INVALID_REQUEST]: mensajeUi('API_ERROR_INVALID_REQUEST'),
-  [API_ERROR_CODE.RESOURCE_NOT_FOUND]: mensajeUi('API_ERROR_RESOURCE_NOT_FOUND'),
-  [API_ERROR_CODE.CONFLICT]: mensajeUi('API_ERROR_CONFLICT'),
-  [API_ERROR_CODE.FEATURE_UNAVAILABLE]: mensajeUi('API_ERROR_FEATURE_UNAVAILABLE'),
-  [API_ERROR_CODE.INTERNAL_ERROR]: mensajeUi('API_ERROR_INTERNAL_ERROR'),
-  [API_ERROR_CODE.NETWORK_ERROR]: mensajeUi('API_ERROR_NETWORK_ERROR'),
+const CODE_MESSAGES: Record<string, CodigoMensajeUi> = {
+  [API_ERROR_CODE.UNAUTHORIZED]: 'API_ERROR_UNAUTHORIZED',
+  [API_ERROR_CODE.FORBIDDEN]: 'API_ERROR_FORBIDDEN',
+  [API_ERROR_CODE.VALIDATION_ERROR]: 'API_ERROR_VALIDATION_ERROR',
+  [API_ERROR_CODE.INVALID_REQUEST]: 'API_ERROR_INVALID_REQUEST',
+  [API_ERROR_CODE.RESOURCE_NOT_FOUND]: 'API_ERROR_RESOURCE_NOT_FOUND',
+  [API_ERROR_CODE.CONFLICT]: 'API_ERROR_CONFLICT',
+  [API_ERROR_CODE.FEATURE_UNAVAILABLE]: 'API_ERROR_FEATURE_UNAVAILABLE',
+  [API_ERROR_CODE.INTERNAL_ERROR]: 'API_ERROR_INTERNAL_ERROR',
+  [API_ERROR_CODE.NETWORK_ERROR]: 'API_ERROR_NETWORK_ERROR',
 };
 
 /** Códigos de negocio cuyo `message` ya es el texto institucional listo para mostrar. */
@@ -164,7 +164,7 @@ export function getApiErrorMessage(error: unknown): string {
 
   const known = CODE_MESSAGES[code];
   if (known) {
-    return known;
+    return mensajeUi(known);
   }
 
   // Códigos de catálogo de feature (ERR_*): el backend define el mensaje.
@@ -172,7 +172,7 @@ export function getApiErrorMessage(error: unknown): string {
     return envelope.message.trim();
   }
 
-  return DEFAULT_ERROR_MESSAGE;
+  return mensajeUi('API_ERROR_DEFAULT');
 }
 
 export function getApiFieldError(

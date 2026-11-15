@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { RealtimeService } from '../../../../core/realtime/realtime.service';
+import { onRealtimeReconnect } from '../../../../core/realtime/realtime-reconnect-trigger';
 import { RealtimeConnectionState } from '../../../../core/realtime/model/realtime-connection-state.model';
 import {
   AsistenciaQrRegistradaPayload,
@@ -23,6 +24,9 @@ import { ATTENDANCE_NOW } from '../../../../core/utils/attendance-now.token';
 import { ActionMenuItem } from '../../../../shared/components/action-menu/action-menu.component';
 import { QrProyeccionComponent } from '../../../../shared/components/qr-proyeccion/qr-proyeccion.component';
 import { getApiErrorMessage } from '../../../../core/api/errors/api-error.util';
+
+/** Segundos de gracia tras la hora de rotacion antes de pedir el QR por HTTP (VAL F12-06). */
+export const MARGEN_RESINCRONIZACION_QR_SEGUNDOS = 5;
 
 const ESTADOS_SIN_CANAL: readonly RealtimeConnectionState[] = ['RECONNECTING', 'ERROR', 'UNAUTHORIZED'];
 
@@ -49,6 +53,8 @@ const ESTADOS_SIN_CANAL: readonly RealtimeConnectionState[] = ['RECONNECTING', '
       [segundosRestantes]="duracionBarra()"
       [proximaRotacion]="proximaRotacion()"
       [ciclo]="ciclo()"
+      [margenVigiaSegundos]="margenVigiaSegundos"
+      (rotacionVencida)="alVencerRotacion($event)"
       etiquetaCerrar="Dejar de proyectar"
       testidCerrar="qr-dejar"
       [cerrarConEscape]="false"
@@ -144,6 +150,13 @@ export class TomaQrProyeccionComponent {
 
   /** Alternar entre dos animaciones identicas reinicia la barra CSS con cada QR nuevo, sin temporizadores. */
   protected readonly ciclo = signal(0);
+  /**
+   * VAL F12-06 / REA-04: margen tras la hora de rotacion antes de resincronizar el QR por HTTP. Con dos replicas el
+   * evento ASISTENCIA_QR_ROTADO puede salir por otra instancia y no llegar a esta proyeccion.
+   */
+  protected readonly margenVigiaSegundos = MARGEN_RESINCRONIZACION_QR_SEGUNDOS;
+  /** Ciclo para el que ya se pidio una resincronizacion (una sola por codigo). */
+  private cicloResincronizado = -1;
   protected readonly tituloCompleto = computed(() => `${this.titulo()} · Toma ${this.toma().numero}`);
 
   protected readonly duracionBarra = computed(() => {
@@ -185,11 +198,30 @@ export class TomaQrProyeccionComponent {
           }
         });
 
+      // VAL F12-06 / REA-04: al volver el canal (quiza contra otra replica) los QR rotados en el corte se perdieron.
+      const reconexion = onRealtimeReconnect(this.realtime.connectionState$).subscribe(() => this.resincronizar());
       onCleanup(() => {
         rotado.unsubscribe();
         registrada.unsubscribe();
+        reconexion.unsubscribe();
       });
     });
+  }
+
+  /** El vigia termino sin codigo nuevo en ese ciclo: el evento de rotacion no llego. */
+  protected alVencerRotacion(ciclo: number): void {
+    if (ciclo === this.ciclo()) {
+      this.resincronizar();
+    }
+  }
+
+  /** Pide un QR vigente por HTTP (como "Regenerar codigo"), una sola vez por ciclo y nunca en paralelo. */
+  private resincronizar(): void {
+    if (this.regenerando() || this.cicloResincronizado === this.ciclo()) {
+      return;
+    }
+    this.cicloResincronizado = this.ciclo();
+    this.regenerar();
   }
 
   protected regenerar(): void {

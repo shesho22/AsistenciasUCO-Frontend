@@ -63,7 +63,7 @@ import { mensajeUi } from '../../../../core/messages/mensajes-ui';
             class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
           />
           @if (inpInvalido()) {
-            <p class="mt-1 text-xs text-danger-600" role="alert">{{ inpMensaje }}</p>
+            <p class="mt-1 text-xs text-danger-600" role="alert">{{ inpMensaje() }}</p>
           }
         </app-form-field>
 
@@ -96,7 +96,7 @@ export class StudyPlanFormComponent {
   cancelar = output<void>();
 
   readonly inp = signal<number | string | null>(null);
-  readonly inpMensaje = mensajeUi('UI_STUDY_PLAN_FORM_001');
+  readonly inpMensaje = computed(() => mensajeUi('UI_STUDY_PLAN_FORM_001'));
 
   /** Entero positivo; el campo vacío todavía no se marca como error, solo deshabilita el envío. */
   readonly inpValido = computed(() => {

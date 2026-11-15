@@ -63,9 +63,9 @@ describe('AttendanceControlComponent sesión cancelada (B.1)', () => {
     const emailVerification = jasmine.createSpyObj<EmailVerificationService>(
       'EmailVerificationService', ['resendVerification']);
 
-    courseService.getCurrentTeacherCourses.and.returnValue(of({ exitoso: true, datos: [course] } as any));
+    courseService.getCurrentTeacherCourses.and.returnValue(of<never>({ exitoso: true, datos: [course] } as never));
     sessionService.getSessionsByGroup.and.returnValue(
-      of({ exitoso: true, datos: [programada, cancelada], total: 2 } as any));
+      of({ exitoso: true, datos: [programada, cancelada], total: 2 } as never));
     groupService.getStudentsByGroup.and.returnValue(of({
       exitoso: true,
       datos: [{
@@ -78,12 +78,12 @@ describe('AttendanceControlComponent sesión cancelada (B.1)', () => {
     attendanceService.saveBatchAttendance.and.returnValue(of({ exitoso: true, mensaje: 'Guardada' }));
     realtime.watch.and.returnValue(NEVER);
     watchCancelaciones = realtime.watchCancelaciones.and.returnValue(cancelaciones$.asObservable());
-    (realtime as any).watchTomas.and.returnValue(NEVER);
+    realtime['watchTomas'].and.returnValue(NEVER);
     realtime.connectionAlerts.and.returnValue(NEVER);
-    claims.getReclamosDocente.and.returnValue(of({ exitoso: true, datos: [] }) as any);
+    claims.getReclamosDocente.and.returnValue(of({ exitoso: true, datos: [] }) as never);
     claims.getReclamosDocentePorGrupo.and.returnValue(of([]));
     registrationConfig.getEmailDomain.and.returnValue(of('@uco.edu.co'));
-    emailVerification.resendVerification.and.returnValue(of({ exitoso: true, datos: null }) as any);
+    emailVerification.resendVerification.and.returnValue(of({ exitoso: true, datos: null }) as never);
 
     TestBed.configureTestingModule({
       imports: [AttendanceControlComponent],
