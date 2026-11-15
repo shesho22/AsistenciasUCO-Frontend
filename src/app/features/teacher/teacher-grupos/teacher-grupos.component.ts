@@ -3,7 +3,7 @@ import { Component, OnInit, OnDestroy, inject, signal, computed, ChangeDetection
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AttendanceService } from '../../../core/services/attendance.service';
-import { AVISO_SOLICITUD_SESION_REGISTRADA, mensajeSolicitudAprobada, mensajeSolicitudRechazadaOCancelada } from '../../../core/models/sesion-manual.util';
+import { avisoSolicitudSesionRegistrada, mensajeSolicitudAprobada, mensajeSolicitudRechazadaOCancelada } from '../../../core/models/sesion-manual.util';
 import { RealtimeService } from '../../../core/realtime/realtime.service';
 import { REALTIME_EVENT_TYPE, SesionCanceladaRealtimePayload, SesionManualCreadaRealtimePayload } from '../../../core/realtime/model/realtime-event.model';
 import { estaPendienteAprobacion, marcarSesionAprobada, marcarSesionCancelada } from '../../../core/models/sesion-estado.model';
@@ -512,7 +512,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
           next: (res) => {
             if (res.exitoso) {
               // DEC-065 (2): la sesión queda como solicitud pendiente; el mensaje lo entrega el backend.
-              this.toast.success(res.mensajeUsuario || res.mensaje || AVISO_SOLICITUD_SESION_REGISTRADA);
+              this.toast.success(res.mensajeUsuario || res.mensaje || avisoSolicitudSesionRegistrada());
               this.cargarSesiones(course.id);
               this.volverASesiones();
             }

@@ -5,6 +5,9 @@ import { CatalogoMensajesUiService, ClienteMensajesUi, fabricaClienteMensajesUi 
 import { reiniciarCatalogoMensajesUi } from './catalogo-mensajes-ui';
 import { MENSAJES_UI, mensajeUi } from './mensajes-ui';
 import { CODIGOS_REMOTOS_MENSAJES_UI } from './mensajes-ui-codigos-remotos';
+import { HttpErrorResponse } from '@angular/common/http';
+import { getApiErrorMessage } from '../api/errors/api-error.util';
+import { avisoSolicitudSesionRegistrada } from '../models/sesion-manual.util';
 
 describe('CatalogoMensajesUiService (VAL MSG-06)', () => {
   const envOriginal = window.env;
@@ -121,6 +124,23 @@ describe('CatalogoMensajesUiService (VAL MSG-06)', () => {
     const aviso = spyOn(console, 'warn');
     opciones.onError(new Error('x'), 'MSG_UI012');
     expect(aviso).toHaveBeenCalledWith('[MensajesUi] MSG_UI012: se usa el texto local.', jasmine.any(Error));
+  });
+
+  it('los textos de error de la API y los avisos compartidos se leen al usarse y toman el del catalogo', async () => {
+    respuestas[CODIGOS_REMOTOS_MENSAJES_UI.API_ERROR_NETWORK_ERROR] = { content: 'Sin conexion con el servidor (catalogo).', source: 'api' };
+    respuestas[CODIGOS_REMOTOS_MENSAJES_UI.API_ERROR_DEFAULT] = { content: 'Fallo general desde el catalogo.', source: 'api' };
+    respuestas[CODIGOS_REMOTOS_MENSAJES_UI.UI_SESION_SOLICITUD_REGISTRADA] = { content: 'Solicitud registrada (catalogo).', source: 'api' };
+    configurar({ app: 'a', env: 'e' }).iniciar();
+    const sinRed = new HttpErrorResponse({ status: 0 });
+
+    expect(getApiErrorMessage(sinRed)).toBe(MENSAJES_UI.API_ERROR_NETWORK_ERROR);
+    expect(getApiErrorMessage('fallo sin forma')).toBe(MENSAJES_UI.API_ERROR_DEFAULT);
+    expect(avisoSolicitudSesionRegistrada()).toBe(MENSAJES_UI.UI_SESION_SOLICITUD_REGISTRADA);
+    await asentar();
+
+    expect(getApiErrorMessage(sinRed)).toBe('Sin conexion con el servidor (catalogo).');
+    expect(getApiErrorMessage('fallo sin forma')).toBe('Fallo general desde el catalogo.');
+    expect(avisoSolicitudSesionRegistrada()).toBe('Solicitud registrada (catalogo).');
   });
 
   it('la fabrica real carga el cliente del minifront', async () => {
