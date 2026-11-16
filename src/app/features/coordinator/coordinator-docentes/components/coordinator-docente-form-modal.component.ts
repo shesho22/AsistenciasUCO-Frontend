@@ -4,6 +4,7 @@ import { parseIdentificationNumber } from '../../../../core/validation/request-f
 import { StudentRegistrationConfigService } from '../../../../core/services/student-registration-config.service';
 import { FormsModule } from '@angular/forms';
 import { TipoIdentificacionItem } from '../../../../core/services/catalog.service';
+import { CambioDatoPersona, DatosPersonaComponent } from '../../../../shared/components/datos-persona/datos-persona.component';
 import {
   DocenteCandidato,
   TipoVinculacionItem,
@@ -24,7 +25,7 @@ const CLASE_CONTROL =
 @Component({
     selector: 'app-coordinator-docente-form-modal',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [FormsModule],
+    imports: [FormsModule, DatosPersonaComponent],
     template: `
     <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-warm-900/60 backdrop-blur-xs">
       <div class="bg-white rounded-3xl shadow-warm-2xl border border-warm-200/80 w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
@@ -56,38 +57,20 @@ const CLASE_CONTROL =
 
           @if (modo() === 'NUEVO') {
             <form (ngSubmit)="enviarNuevo()" class="space-y-4" autocomplete="off">
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <label class="block text-xs font-semibold text-warm-700">Primer nombre
-                  <input type="text" name="primerNombre" [(ngModel)]="form.primerNombre" maxlength="50" [class]="clase" />
-                </label>
-                <label class="block text-xs font-semibold text-warm-700">Segundo nombre (opcional)
-                  <input type="text" name="segundoNombre" [(ngModel)]="form.segundoNombre" maxlength="50" [class]="clase" />
-                </label>
-                <label class="block text-xs font-semibold text-warm-700">Primer apellido
-                  <input type="text" name="primerApellido" [(ngModel)]="form.primerApellido" maxlength="50" [class]="clase" />
-                </label>
-                <label class="block text-xs font-semibold text-warm-700">Segundo apellido (opcional)
-                  <input type="text" name="segundoApellido" [(ngModel)]="form.segundoApellido" maxlength="50" [class]="clase" />
-                </label>
-              </div>
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <label class="block text-xs font-semibold text-warm-700">Tipo de documento
-                  <select name="tipoIdentificacionId" [ngModel]="tipoIdentificacionEfectivo()" (ngModelChange)="form.tipoIdentificacionId = $event" [class]="clase">
-                    @for (tipo of tiposIdentificacion(); track tipo.id) {
-                      <option [value]="tipo.id">{{ tipo.tipoIdentificacion }} - {{ tipo.nombre }}</option>
-                    }
-                  </select>
-                </label>
-                <label class="block text-xs font-semibold text-warm-700 sm:col-span-2">Número de documento
-                  <input type="text" name="numeroIdentificacion" inputmode="numeric" maxlength="10" [(ngModel)]="form.numeroIdentificacion" (input)="onNumeroInput($event)" [class]="clase" />
-                </label>
-              </div>
-              <label class="block text-xs font-semibold text-warm-700">Correo institucional
-                <input type="email" name="correo" [(ngModel)]="form.correo" maxlength="100" placeholder="nombre.apellido&#64;uco.edu.co" [class]="clase" />
-              </label>
-              <p class="text-xs text-warm-600" data-testid="aviso-activacion-cuenta">
-                No se asigna contraseña. El docente recibirá en su correo institucional un enlace para activar la cuenta y definir su contraseña.
-              </p>
+              <app-datos-persona
+                [datos]="{
+                  tipoIdentificacionId: form.tipoIdentificacionId || tiposIdentificacion()[0]?.id || '',
+                  numeroIdentificacion: form.numeroIdentificacion,
+                  primerNombre: form.primerNombre,
+                  segundoNombre: form.segundoNombre,
+                  primerApellido: form.primerApellido,
+                  segundoApellido: form.segundoApellido,
+                  correo: form.correo
+                }"
+                [tiposIdentificacion]="tiposIdentificacion()"
+                aviso="No se asigna contraseña. El docente recibirá en su correo institucional un enlace para activar la cuenta y definir su contraseña."
+                (cambio)="alCambiarDato($event)"
+              />
               <label class="block text-xs font-semibold text-warm-700">Tipo de vinculación
                 <select name="idTipoVinculacion" [(ngModel)]="form.idTipoVinculacion" [class]="clase">
                   <option value="">Seleccione…</option>
@@ -184,10 +167,9 @@ export class CoordinatorDocenteFormModalComponent {
     this.candidatoSeleccionado.set(null);
   }
 
-  onNumeroInput(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    input.value = input.value.replace(/\D/g, '');
-    this.form.numeroIdentificacion = input.value;
+  /** Cambio de un dato personal desde el bloque compartido (el documento ya llega solo con digitos). */
+  alCambiarDato(cambio: CambioDatoPersona): void {
+    this.form[cambio.campo] = cambio.valor;
   }
 
   enviarNuevo(): void {

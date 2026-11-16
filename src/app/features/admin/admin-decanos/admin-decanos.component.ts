@@ -10,6 +10,7 @@ import { ActionMenuComponent, ActionMenuItem } from '../../../shared/components/
 import { SelectorModoComponent, OpcionModo } from '../../../shared/components/selector-modo/selector-modo.component';
 import { ButtonComponent } from '../../../shared/components/button/button.component';
 import { FormFieldComponent } from '../../../shared/components/form-field/form-field.component';
+import { CambioDatoPersona, DatosPersonaComponent } from '../../../shared/components/datos-persona/datos-persona.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { UserPickerModalComponent, UserPickerItem } from '../../../shared/components/user-picker-modal/user-picker-modal.component';
 import { AccountAccessStatusComponent } from '../../../shared/components/account-access-status/account-access-status.component';
@@ -44,6 +45,7 @@ const NOMBRE_FACULTAD_MAX = 50;
     BadgeComponent,
     ButtonComponent,
     FormFieldComponent,
+    DatosPersonaComponent,
     UserPickerModalComponent,
     AccountAccessStatusComponent,
     CorreccionIdentidadModalComponent,
@@ -186,12 +188,6 @@ const NOMBRE_FACULTAD_MAX = 50;
                         <span class="truncate">{{ decano.correo }}</span>
                       </div>
                     }
-                    <div class="flex items-center gap-2">
-                      <svg class="w-3.5 h-3.5 text-warm-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                      </svg>
-                      <span>{{ decano.telefono }}</span>
-                    </div>
                   </div>
                 </div>
               </app-card>
@@ -252,111 +248,28 @@ const NOMBRE_FACULTAD_MAX = 50;
           </div>
 
           <form (ngSubmit)="guardarDecano()" class="space-y-4">
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <app-form-field [errorMessage]="errorNombrePersona('primerNombre')" label="Primer Nombre" [required]="true">
-                <input
-                  type="text"
-                  [(ngModel)]="formData.primerNombre"
-                  name="primerNombre"
-                  [attr.maxlength]="maxNombre"
-                  required
-                  placeholder="ej. Juan"
-                  class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                />
-              </app-form-field>
-              <app-form-field [errorMessage]="errorNombrePersona('segundoNombre')" label="Segundo Nombre (Opcional)">
-                <input
-                  type="text"
-                  [(ngModel)]="formData.segundoNombre"
-                  name="segundoNombre"
-                  [attr.maxlength]="maxNombre"
-                  placeholder="ej. Carlos"
-                  class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                />
-              </app-form-field>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <app-form-field [errorMessage]="errorNombrePersona('primerApellido')" label="Primer Apellido" [required]="true">
-                <input
-                  type="text"
-                  [(ngModel)]="formData.primerApellido"
-                  name="primerApellido"
-                  [attr.maxlength]="maxNombre"
-                  required
-                  placeholder="ej. Gómez"
-                  class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                />
-              </app-form-field>
-              <app-form-field [errorMessage]="errorNombrePersona('segundoApellido')" label="Segundo Apellido (Opcional)">
-                <input
-                  type="text"
-                  [(ngModel)]="formData.segundoApellido"
-                  name="segundoApellido"
-                  [attr.maxlength]="maxNombre"
-                  placeholder="ej. Pérez"
-                  class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                />
-              </app-form-field>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <app-form-field label="Tipo de Documento" [required]="true">
-                <select
-                  [(ngModel)]="formData.tipoIdentificacionId"
-                  (change)="onTipoIdentificacionChange($event)"
-                  name="tipoIdentificacionId"
-                  required
-                  class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                >
-                  @for (tipo of tiposIdentificacion(); track tipo.id) {
-                    <option [value]="tipo.id">{{ tipo.tipoIdentificacion }} - {{ tipo.nombre }}</option>
-                  }
-                </select>
-              </app-form-field>
-              <div class="sm:col-span-2">
-                <app-form-field label="Número de Identificación" [required]="true">
-                  <input
-                    type="text"
-                    [(ngModel)]="formData.numeroIdentificacion"
-                    (input)="onNumeroIdentificacionInput($event)"
-                    name="numeroIdentificacion"
-                    required
-                    maxlength="15"
-                    placeholder="ej. 1017000001"
-                    class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                  />
-                </app-form-field>
-              </div>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <app-form-field label="Teléfono de Contacto (Opcional)">
-                <input
-                  type="text"
-                  [(ngModel)]="formData.telefono"
-                  name="telefono"
-                  placeholder="ej. +57 300 123 4567"
-                  class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                />
-              </app-form-field>
-              <div class="sm:col-span-1 flex items-start gap-2 rounded-xl border border-primary-100 bg-primary-50 px-3.5 py-2.5 text-xs text-primary-800" role="note">
-                <span aria-hidden="true">✉</span>
-                <span>No se asigna contraseña. La persona recibirá en su correo institucional un enlace para activar la cuenta y definir su contraseña.</span>
-              </div>
-            </div>
-
-            <app-form-field label="Correo Institucional UCO" [required]="true" [errorMessage]="errorCorreo()">
-              <input
-                type="email"
-                [(ngModel)]="formData.correo"
-                name="correo"
-                maxlength="100"
-                placeholder="decano.facultad@uco.edu.co"
-                required
-                class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-              />
-            </app-form-field>
+            <app-datos-persona
+              [datos]="{
+                tipoIdentificacionId: formData.tipoIdentificacionId ?? '',
+                numeroIdentificacion: formData.numeroIdentificacion,
+                primerNombre: formData.primerNombre ?? '',
+                segundoNombre: formData.segundoNombre ?? '',
+                primerApellido: formData.primerApellido ?? '',
+                segundoApellido: formData.segundoApellido ?? '',
+                correo: formData.correo
+              }"
+              [tiposIdentificacion]="tiposIdentificacion()"
+              [errores]="{
+                primerNombre: errorNombrePersona('primerNombre'),
+                segundoNombre: errorNombrePersona('segundoNombre'),
+                primerApellido: errorNombrePersona('primerApellido'),
+                segundoApellido: errorNombrePersona('segundoApellido'),
+                correo: errorCorreo()
+              }"
+              placeholderCorreo="decano.facultad@uco.edu.co"
+              aviso="No se asigna contraseña. La persona recibirá en su correo institucional un enlace para activar la cuenta y definir su contraseña."
+              (cambio)="alCambiarDato($event)"
+            />
 
             <fieldset class="space-y-4 p-4 rounded-2xl border border-warm-200 bg-warm-50/60" data-testid="seccion-facultad">
               <legend class="px-2 text-sm font-bold text-warm-800">Facultad</legend>
@@ -521,7 +434,6 @@ export class AdminDecanosComponent implements OnInit {
     correo: '',
     facultad: 'Sin Facultad Asignada',
     idFacultad: null,
-    telefono: '',
     fechaAsignacion: this.sessionTimeZone.currentDate(),
     estado: 'ACTIVO',
   };
@@ -637,13 +549,17 @@ export class AdminDecanosComponent implements OnInit {
     });
   }
 
-  onTipoIdentificacionChange(event: Event): void {
-    const select = event.target as HTMLSelectElement;
-    const selectedTipo = this.tiposIdentificacion().find((t) => t.id === select.value);
-    if (selectedTipo) {
-      this.formData.tipoIdentificacion = selectedTipo.tipoIdentificacion;
-      this.formData.tipoIdentificacionId = selectedTipo.id;
+  /** Cambio de un dato personal desde el bloque compartido (el documento ya llega solo con digitos). */
+  alCambiarDato(cambio: CambioDatoPersona): void {
+    if (cambio.campo === 'tipoIdentificacionId') {
+      const tipo = this.tiposIdentificacion().find((t) => t.id === cambio.valor);
+      if (tipo) {
+        this.formData.tipoIdentificacion = tipo.tipoIdentificacion;
+        this.formData.tipoIdentificacionId = tipo.id;
+      }
+      return;
     }
+    this.formData[cambio.campo] = cambio.valor;
   }
 
   cargarDecanos(identidadEsperada?: IdentidadEsperada): void {
@@ -696,7 +612,6 @@ export class AdminDecanosComponent implements OnInit {
       correo: '',
       facultad: 'Sin Facultad Asignada',
       idFacultad: null,
-      telefono: '',
       fechaAsignacion: this.sessionTimeZone.currentDate(),
       estado: 'ACTIVO',
     };
@@ -705,12 +620,6 @@ export class AdminDecanosComponent implements OnInit {
     this.idFacultadExistente = '';
     this.preseleccionarInstitucion(this.instituciones());
     this.vistaActual.set('REGISTRO');
-  }
-
-  onNumeroIdentificacionInput(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    input.value = input.value.replace(/\D/g, '');
-    this.formData.numeroIdentificacion = input.value;
   }
 
   volverALista(): void {
@@ -901,7 +810,7 @@ export class AdminDecanosComponent implements OnInit {
       this.tiposIdentificacion().find((t) => t.tipoIdentificacion === user.tipoIdentificacion)?.id ||
       (this.tiposIdentificacion().length > 0
         ? this.tiposIdentificacion()[0].id
-        : 'A1B2C3D4-0000-0000-0000-000000000001');
+        : '');
     this.formData.tipoIdentificacion = user.tipoIdentificacion || 'CC';
     this.formData.numeroIdentificacion = String(user.numeroIdentificacion || '');
     this.formData.primerNombre = user.primerNombre || user.nombres.split(' ')[0] || '';

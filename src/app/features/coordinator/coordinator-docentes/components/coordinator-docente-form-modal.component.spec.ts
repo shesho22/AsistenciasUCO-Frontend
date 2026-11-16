@@ -122,11 +122,18 @@ describe('CoordinatorDocenteFormModalComponent', () => {
     expect(emisiones.length).toBe(0);
   });
 
-  it('el número de documento solo admite dígitos', () => {
-    const input = document.createElement('input');
-    input.value = '12ab-34';
-    component.onNumeroInput({ target: input } as unknown as Event);
+  it('los datos personales se editan con el bloque compartido (el documento solo admite dígitos)', () => {
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelector('app-datos-persona')).not.toBeNull();
+    const documento = host.querySelector('input[name="numeroIdentificacion"]') as HTMLInputElement;
+    documento.value = '12ab-34';
+    documento.dispatchEvent(new Event('input'));
+    const nombre = host.querySelector('input[name="primerNombre"]') as HTMLInputElement;
+    nombre.value = 'Jorge';
+    nombre.dispatchEvent(new Event('input'));
+
     expect(component.form.numeroIdentificacion).toBe('1234');
+    expect(component.form.primerNombre).toBe('Jorge');
   });
 
   it('T-FE-04: el modo existente busca candidatos, selecciona uno y emite idDocente + tipo de vinculación', () => {
