@@ -23,7 +23,6 @@ import { EstudianteGrupoItem } from '../../../core/models/estudiante-grupo-item.
 import { ClassSession } from '../../../core/models/attendance.model';
 import { type EstadoCargaReclamos, SolicitudRevisionItem } from '../../../core/models/role-management.model';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
-import { isUuid } from '../../../core/utils/uuid.util';
 
 // Componentes Hijos Desacoplados
 import { TeacherGruposListComponent } from './components/teacher-grupos-list.component';
@@ -78,6 +77,15 @@ type VistaGrupos = 'LISTA' | 'HUB_GRUPO' | 'FORM_SESION';
           [estudiantes]="estudiantesGrupo()"
           [cargandoEstudiantes]="cargandoEstudiantes()"
           [reclamos]="reclamosGrupo()"
+          [totalReclamos]="totalReclamosGrupo()"
+          [paginaReclamos]="paginaReclamosGrupo()"
+          [tamanoReclamos]="tamanoReclamosGrupo"
+          [padronPagina]="padronPagina()"
+          [totalEstudiantes]="totalPadron()"
+          [paginaPadron]="paginaPadron()"
+          [tamanoPadron]="tamanoPadron()"
+          [busquedaPadron]="busquedaPadron()"
+          [cargandoPadron]="cargandoPadron()"
           [estadoCargaReclamos]="estadoCargaReclamos()"
           [sessionQrEnabled]="sessionQrEnabled"
           [sessionCancelEnabled]="sessionCancelEnabled"
@@ -95,6 +103,10 @@ type VistaGrupos = 'LISTA' | 'HUB_GRUPO' | 'FORM_SESION';
           (retirarEstudiante)="abrirModalRetiro($event)"
           (irReclamos)="irAGestionReclamos()"
           (reintentarReclamos)="reintentarCargaReclamosGrupo()"
+          (paginaReclamosChange)="cambiarPaginaReclamosGrupo($event)"
+          (paginaPadronChange)="cambiarPaginaPadron($event)"
+          (tamanoPadronChange)="cambiarTamanoPadron($event)"
+          (busquedaPadronChange)="cambiarBusquedaPadron($event)"
         />
       }
 
@@ -173,6 +185,18 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   estudiantesGrupo = signal<EstudianteGrupoItem[]>([]);
   cargandoEstudiantes = signal<boolean>(false);
   reclamosGrupo = signal<SolicitudRevisionItem[]>([]);
+  /** CIERRE-W1A: `reclamosGrupo` es la página vigente que filtra y pagina el servidor; el total es el del servidor. */
+  totalReclamosGrupo = signal<number>(0);
+  paginaReclamosGrupo = signal<number>(1);
+  readonly tamanoReclamosGrupo = 10;
+  /** CIERRE-W1A: página del padrón (pestaña Matrícula) y su búsqueda, resueltas por el servidor. */
+  padronPagina = signal<EstudianteGrupoItem[]>([]);
+  totalPadron = signal<number | null>(null);
+  paginaPadron = signal<number>(1);
+  tamanoPadron = signal<number>(12);
+  busquedaPadron = signal<string>('');
+  cargandoPadron = signal<boolean>(false);
+  private padronSubscription: Subscription | null = null;
   estadoCargaReclamos = signal<EstadoCargaReclamos>('IDLE');
   private reclamosGrupoSubscription: Subscription | null = null;
   private reclamosGrupoRequestId = 0;
@@ -247,6 +271,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.padronSubscription?.unsubscribe();
     this.cancelarCargaReclamosGrupo();
     this.detenerEscuchaCancelaciones();
   }
@@ -283,6 +308,9 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
     this.selectedCourse.set(course);
     this.vistaActual.set('HUB_GRUPO');
     this.subPestanaHub.set('HOY');
+    this.paginaPadron.set(1);
+    this.busquedaPadron.set('');
+    this.paginaReclamosGrupo.set(1);
     this.cargarSesiones(course.id);
     this.cargarEstudiantesGrupo(course.id);
     this.cargarAsistenciasGrupo(course.id);
@@ -322,8 +350,65 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
     });
   }
 
+  /** Pide al servidor la página vigente del padrón (con la búsqueda actual); solo muestra lo que llega. */
+  private cargarPadronPagina(courseId: string): void {
+    this.padronSubscription?.unsubscribe();
+    this.cargandoPadron.set(true);
+    this.padronSubscription = this.studentService
+      .getPadronGrupoPagina(courseId, {
+        pagina: this.paginaPadron(),
+        tamano: this.tamanoPadron(),
+        busqueda: this.busquedaPadron(),
+      })
+      .subscribe({
+        next: (res) => {
+          const total = res.totalElementos;
+          const ultimaPagina = Math.max(1, Math.ceil(total / this.tamanoPadron()));
+          if (res.elementos.length === 0 && total > 0 && this.paginaPadron() > ultimaPagina) {
+            this.paginaPadron.set(ultimaPagina);
+            this.cargarPadronPagina(courseId);
+            return;
+          }
+          this.padronPagina.set(res.elementos);
+          this.totalPadron.set(total);
+          this.cargandoPadron.set(false);
+        },
+        error: (err: unknown) => {
+          this.padronPagina.set([]);
+          this.totalPadron.set(null);
+          this.cargandoPadron.set(false);
+          this.toast.error(getApiErrorMessage(err));
+        },
+      });
+  }
+
+  cambiarPaginaPadron(pagina: number): void {
+    this.paginaPadron.set(pagina);
+    this.recargarPadron();
+  }
+
+  cambiarTamanoPadron(tamano: number): void {
+    this.tamanoPadron.set(tamano);
+    this.paginaPadron.set(1);
+    this.recargarPadron();
+  }
+
+  cambiarBusquedaPadron(texto: string): void {
+    this.busquedaPadron.set(texto);
+    this.paginaPadron.set(1);
+    this.recargarPadron();
+  }
+
+  private recargarPadron(): void {
+    const grupoId = this.selectedCourse()?.id;
+    if (grupoId) {
+      this.cargarPadronPagina(grupoId);
+    }
+  }
+
   cargarEstudiantesGrupo(courseId: string): void {
     this.cargandoEstudiantes.set(true);
+    this.cargarPadronPagina(courseId);
     this.studentService.getStudentsByGroup(courseId).subscribe({
       next: (res) => {
         this.estudiantesGrupo.set(res?.datos ?? []);
@@ -364,28 +449,42 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
       this.vistaActual() === 'HUB_GRUPO' &&
       this.selectedCourse()?.id.toLowerCase() === grupoNormalizado;
 
-    this.reclamosGrupoSubscription = this.claimService.getReclamosDocentePorGrupo(grupoId).subscribe({
-      next: (items) => {
-        if (!sigueSiendoLaCargaActual()) {
-          return;
-        }
-        if (!Array.isArray(items) || items.some((item) => !item || !isUuid(item.grupoId))) {
+    const pagina = this.paginaReclamosGrupo();
+    this.reclamosGrupoSubscription = this.claimService
+      .getReclamosDocentePorGrupo(grupoId, { pagina, tamano: this.tamanoReclamosGrupo })
+      .subscribe({
+        next: (res) => {
+          if (!sigueSiendoLaCargaActual()) {
+            return;
+          }
+          const total = res.total ?? res.datos.length;
+          const ultimaPagina = Math.max(1, Math.ceil(total / this.tamanoReclamosGrupo));
+          if (res.datos.length === 0 && total > 0 && pagina > ultimaPagina) {
+            this.paginaReclamosGrupo.set(ultimaPagina);
+            this.grupoReclamosActivo = null;
+            this.cargarReclamosGrupo(grupoId);
+            return;
+          }
+          this.reclamosGrupo.set(res.datos);
+          this.totalReclamosGrupo.set(total);
+          this.estadoCargaReclamos.set('LOADED');
+        },
+        error: (error: unknown) => {
+          if (!sigueSiendoLaCargaActual()) {
+            return;
+          }
           this.reclamosGrupo.set([]);
-          this.estadoCargaReclamos.set('SERVER_ERROR');
-          return;
-        }
+          this.totalReclamosGrupo.set(0);
+          this.estadoCargaReclamos.set(this.estadoReclamosDesdeError(error));
+        },
+      });
+  }
 
-        this.reclamosGrupo.set(items.filter((item) => item.grupoId!.toLowerCase() === grupoNormalizado));
-        this.estadoCargaReclamos.set('LOADED');
-      },
-      error: (error: unknown) => {
-        if (!sigueSiendoLaCargaActual()) {
-          return;
-        }
-        this.reclamosGrupo.set([]);
-        this.estadoCargaReclamos.set(this.estadoReclamosDesdeError(error));
-      },
-    });
+  /** La pestaña de reclamos del hub pide otra página: la resuelve el servidor. */
+  cambiarPaginaReclamosGrupo(pagina: number): void {
+    this.paginaReclamosGrupo.set(pagina);
+    this.grupoReclamosActivo = null;
+    this.cargarReclamosGrupo();
   }
 
   reintentarCargaReclamosGrupo(): void {
@@ -401,6 +500,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
     this.reclamosGrupoSubscription = null;
     this.grupoReclamosActivo = null;
     this.reclamosGrupo.set([]);
+    this.totalReclamosGrupo.set(0);
     this.estadoCargaReclamos.set('IDLE');
   }
 

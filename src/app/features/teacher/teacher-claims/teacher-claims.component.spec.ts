@@ -612,15 +612,96 @@ describe('TeacherClaimsComponent — bandeja paginada y detalle (HU035/HU036)', 
     expect(component.pagina()).toBe(1);
   });
 
-  it('la búsqueda local es reactiva sobre la página cargada', () => {
-    cargarInicial([fila(ID_1), fila(ID_2)], 2, 2);
-    const input = fixture.nativeElement.querySelector('input[type="text"]') as HTMLInputElement;
-    input.value = 'Estudiante 2';
-    input.dispatchEvent(new Event('input'));
-    fixture.detectChanges();
+  // CIERRE-W1A: la búsqueda la resuelve el servidor; la lista nunca se filtra en memoria.
+  describe('CIERRE-W1A búsqueda en el servidor', () => {
+    function escribir(texto: string): void {
+      const input = fixture.nativeElement.querySelector('input[type="text"]') as HTMLInputElement;
+      input.value = texto;
+      input.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+    }
 
-    expect(component.filteredReclamos().map((r) => r.id)).toEqual([ID_2]);
-    expect(fixture.nativeElement.textContent).not.toContain('Estudiante 1');
+    it('envía la búsqueda al servidor tras una espera corta, vuelve a la página 1 y muestra lo que devuelve', fakeAsync(() => {
+      cargarInicial([fila(ID_1), fila(ID_2)], 25, 7);
+      component.cambiarPagina(3);
+      http.expectOne((r) => r.url === LISTA && r.params.get('pagina') === '3').flush({ exitoso: true, datos: [fila(ID_1)], total: 25 });
+      http.expectOne((r) => r.url === LISTA && r.params.get('estado') === 'P').flush({ exitoso: true, datos: [], total: 7 });
+
+      escribir('Estudiante 2');
+      tick(299);
+      http.expectNone((r) => r.url === LISTA);
+      tick(1);
+
+      const req = http.expectOne((r) => r.url === LISTA && r.params.get('busqueda') === 'Estudiante 2');
+      expect(req.request.params.get('pagina')).toBe('1');
+      req.flush({ exitoso: true, datos: [fila(ID_2)], total: 1 });
+      http.expectOne((r) => r.url === LISTA && r.params.get('estado') === 'P').flush({ exitoso: true, datos: [], total: 7 });
+      fixture.detectChanges();
+
+      expect(component.pagina()).toBe(1);
+      expect(component.total()).toBe(1);
+      expect(component.reclamos().map((r) => r.id)).toEqual([ID_2]);
+    }));
+
+    it('varias teclas seguidas producen una sola petición', fakeAsync(() => {
+      cargarInicial([fila(ID_1)], 1, 1);
+
+      escribir('E');
+      tick(100);
+      escribir('Es');
+      tick(100);
+      escribir('Est');
+      tick(300);
+
+      const req = http.expectOne((r) => r.url === LISTA && r.params.get('busqueda') === 'Est');
+      req.flush({ exitoso: true, datos: [], total: 0 });
+      http.expectOne((r) => r.url === LISTA && r.params.get('estado') === 'P').flush({ exitoso: true, datos: [], total: 1 });
+      http.expectNone((r) => r.url === LISTA);
+    }));
+
+    it('una búsqueda sin coincidencias muestra el estado vacío del servidor y borrarla vuelve a la lista completa', fakeAsync(() => {
+      cargarInicial([fila(ID_1)], 1, 1);
+
+      escribir('zzz');
+      tick(300);
+      http.expectOne((r) => r.url === LISTA && r.params.get('busqueda') === 'zzz').flush({ exitoso: true, datos: [], total: 0 });
+      http.expectOne((r) => r.url === LISTA && r.params.get('estado') === 'P').flush({ exitoso: true, datos: [], total: 1 });
+      fixture.detectChanges();
+      expect(component.reclamos()).toEqual([]);
+      expect(fixture.nativeElement.textContent).toContain('No hay reclamos en esta categoría');
+
+      escribir('');
+      tick(300);
+      const todos = http.expectOne((r) => r.url === LISTA && !r.params.has('busqueda') && !r.params.has('estado'));
+      todos.flush({ exitoso: true, datos: [fila(ID_1)], total: 1 });
+      http.expectOne((r) => r.url === LISTA && r.params.get('estado') === 'P').flush({ exitoso: true, datos: [], total: 1 });
+      expect(component.reclamos().length).toBe(1);
+    }));
+
+    it('con el filtro Pendientes y una búsqueda activa el contador de pendientes se consulta aparte (no es el total filtrado)', fakeAsync(() => {
+      cargarInicial([fila(ID_1)], 1, 9);
+      component.cambiarEstado('P');
+      http.expectOne((r) => r.url === LISTA && r.params.get('estado') === 'P' && r.params.get('tamano') === '10')
+        .flush({ exitoso: true, datos: [fila(ID_1)], total: 9 });
+
+      escribir('ana');
+      tick(300);
+      http.expectOne((r) => r.url === LISTA && r.params.get('busqueda') === 'ana')
+        .flush({ exitoso: true, datos: [fila(ID_1)], total: 2 });
+      http.expectOne((r) => r.url === LISTA && r.params.get('tamano') === '1' && !r.params.has('busqueda'))
+        .flush({ exitoso: true, datos: [], total: 9 });
+
+      expect(component.totalPendientes()).toBe(9);
+      expect(component.total()).toBe(2);
+    }));
+  });
+
+  it('CIERRE-W1A el folio que se muestra es el del backend, no uno armado con el id', () => {
+    cargarInicial([fila(ID_1, { nombre: 'REC-3F0C1D2E' })], 1, 1);
+
+    const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(texto).toContain('REC-3F0C1D2E');
+    expect(texto).not.toContain('REC-#');
   });
 
   it('FE-08 no emite peticiones por polling: sin interacción no hay más tráfico', fakeAsync(() => {

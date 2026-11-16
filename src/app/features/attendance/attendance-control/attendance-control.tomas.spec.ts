@@ -102,7 +102,7 @@ describe('AttendanceControlComponent tomas (CULM-001 B.2)', () => {
     (realtime as never as { watchTomas: jasmine.Spy }).watchTomas.and.returnValue(tomasEvents$.asObservable());
     realtime.connectionAlerts.and.returnValue(NEVER);
     claims.getReclamosDocente.and.returnValue(of({ exitoso: true, datos: [] }) as never);
-    claims.getReclamosDocentePorGrupo.and.returnValue(of([]));
+    claims.getReclamosDocentePorGrupo.and.returnValue(of({ exitoso: true, datos: [], total: 0 }));
 
     TestBed.configureTestingModule({
       imports: [AttendanceControlComponent],

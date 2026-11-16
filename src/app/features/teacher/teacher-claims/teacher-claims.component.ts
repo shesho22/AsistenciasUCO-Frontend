@@ -1,7 +1,7 @@
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
-import { Component, OnDestroy, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 
-import { Subscription, finalize } from 'rxjs';
+import { Subject, Subscription, debounceTime, distinctUntilChanged, finalize } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
 import {
@@ -36,6 +36,9 @@ const ETIQUETA_ESTADO_TOMA_RECLAMO: Readonly<Record<EstadoTomaEstudiante, string
 type VistaDocenteReclamos = 'BANDEJA' | 'RESOLUCION';
 type EstadoFiltroReclamos = 'TODOS' | 'P' | 'A' | 'R';
 type ReclamosListState = 'LOADING' | 'LOADED' | 'FORBIDDEN' | 'NETWORK_ERROR' | 'SERVER_ERROR';
+
+/** Espera tras la última tecla antes de pedir la búsqueda al servidor (no es sondeo: se dispara por la entrada del usuario). */
+const BUSQUEDA_ESPERA_MS = 300;
 
 @Component({
     selector: 'app-teacher-claims',
@@ -117,7 +120,7 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'FORBIDDEN' | 'NETWORK_ERROR' | 
               <app-button variant="secondary" size="sm" (clicked)="cargarReclamos()">Reintentar</app-button>
             }
           </div>
-        } @else if (filteredReclamos().length === 0) {
+        } @else if (reclamos().length === 0) {
           <div class="superficie p-12 text-center">
             <div class="w-12 h-12 rounded-full bg-warm-100 text-warm-400 flex items-center justify-center mx-auto mb-3">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -132,14 +135,14 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'FORBIDDEN' | 'NETWORK_ERROR' | 
           </div>
         } @else {
           <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-            @for (reclamo of filteredReclamos(); track reclamo.id) {
+            @for (reclamo of reclamos(); track reclamo.id) {
               <app-card [hoverable]="true" padding="md">
                 <div class="flex flex-col h-full justify-between gap-4">
                   <div>
                     <div class="flex flex-wrap items-start justify-between gap-2 mb-2">
                       <div class="flex flex-wrap items-center gap-2">
                         <span class="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-warm-100 text-warm-700">
-                          REC-#{{ reclamo.id.slice(0, 8).toUpperCase() }}
+                          {{ reclamo.folio }}
                         </span>
                         @if (reclamo.categoria) {
                           <span class="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-warning-50 text-warning-900 border border-warning-200">
@@ -245,7 +248,7 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'FORBIDDEN' | 'NETWORK_ERROR' | 
           </button>
 
           <span class="text-xs font-mono font-bold px-2.5 py-1 rounded-md bg-warm-100 text-warm-800">
-            Expediente: REC-#{{ selectedReclamo()?.id?.slice(0, 8)?.toUpperCase() }}
+            Expediente: {{ selectedReclamo()?.folio }}
           </span>
         </div>
 
@@ -479,31 +482,29 @@ export class TeacherClaimsComponent implements OnInit, OnDestroy {
   private pendientesSub?: Subscription;
   private detalleSub?: Subscription;
 
-  filteredReclamos = computed(() => {
-    const query = this.searchQuery().toLowerCase().trim();
-
-    return this.reclamos().filter(
-      (item) =>
-        !query ||
-        item.estudianteNombre.toLowerCase().includes(query) ||
-        item.materiaNombre.toLowerCase().includes(query) ||
-        item.materiaCodigo.toLowerCase().includes(query) ||
-        item.justificacionSolicitud.toLowerCase().includes(query)
-    );
-  });
+  /** CIERRE-W1A: el texto de búsqueda viaja al servidor (con espera corta); la lista no se filtra en memoria. */
+  private readonly busqueda$ = new Subject<string>();
+  private busquedaSub?: Subscription;
 
   ngOnInit(): void {
+    this.busquedaSub = this.busqueda$.pipe(debounceTime(BUSQUEDA_ESPERA_MS), distinctUntilChanged()).subscribe(() => {
+      this.pagina.set(1);
+      this.cargarReclamos();
+    });
     this.cargarReclamos();
   }
 
   ngOnDestroy(): void {
+    this.busquedaSub?.unsubscribe();
     this.listaSub?.unsubscribe();
     this.pendientesSub?.unsubscribe();
     this.detalleSub?.unsubscribe();
   }
 
   onBuscar(event: Event): void {
-    this.searchQuery.set((event.target as HTMLInputElement).value);
+    const texto = (event.target as HTMLInputElement).value;
+    this.searchQuery.set(texto);
+    this.busqueda$.next(texto.trim());
   }
 
   onEstadoChange(event: Event): void {
@@ -538,6 +539,7 @@ export class TeacherClaimsComponent implements OnInit, OnDestroy {
         estado: estado === 'TODOS' ? undefined : estado,
         pagina: this.pagina(),
         tamano: this.tamano(),
+        busqueda: this.searchQuery().trim() || undefined,
       })
       .subscribe({
         next: (res) => {
@@ -570,7 +572,7 @@ export class TeacherClaimsComponent implements OnInit, OnDestroy {
    */
   private actualizarPendientes(estado: EstadoFiltroReclamos, totalLista: number): void {
     this.pendientesSub?.unsubscribe();
-    if (estado === 'P') {
+    if (estado === 'P' && !this.searchQuery().trim()) {
       this.totalPendientes.set(totalLista);
       return;
     }

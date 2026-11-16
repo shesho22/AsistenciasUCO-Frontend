@@ -1,7 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { By } from '@angular/platform-browser';
 import { TeacherGrupoHubComponent } from './teacher-grupo-hub.component';
+import { TeacherGrupoEstudiantesComponent } from './teacher-grupo-estudiantes.component';
+import { TeacherGrupoReclamosComponent } from './teacher-grupo-reclamos.component';
 import { Course } from '../../../../core/models/course.model';
 import { ClassSession } from '../../../../core/models/attendance.model';
 import { RealtimeService } from '../../../../core/realtime/realtime.service';
@@ -94,13 +97,62 @@ describe('TeacherGrupoHubComponent', () => {
     const retirar = jasmine.createSpy('retirarEstudiante');
     fixture.componentInstance.retirarEstudiante.subscribe(retirar);
     fixture.componentRef.setInput('selectedCourse', course);
-    fixture.componentRef.setInput('estudiantes', [{ idEstudiante: 'est-1', nombreCompleto: 'Ana Gómez', codigoEstado: 'A' }]);
+    // CIERRE-W1A: la pestaña Matrícula pinta la página que entrega el servidor (`padronPagina`), no el padrón completo.
+    fixture.componentRef.setInput('padronPagina', [{ idEstudiante: 'est-1', nombreCompleto: 'Ana Gómez', codigoEstado: 'A' }]);
     fixture.componentInstance.subPestanaHub.set('ESTUDIANTES');
     fixture.detectChanges();
 
     (fixture.nativeElement.querySelector('button[data-accion="retirar"]') as HTMLButtonElement).click();
 
     expect(retirar).toHaveBeenCalledWith(jasmine.objectContaining({ idEstudiante: 'est-1' }));
+  });
+
+  it('CIERRE-W1A la pestaña Matrícula muestra la página y el total del servidor y reenvía página, tamaño y búsqueda', () => {
+    const pagina = jasmine.createSpy('pagina');
+    const tamano = jasmine.createSpy('tamano');
+    const busqueda = jasmine.createSpy('busqueda');
+    fixture.componentInstance.paginaPadronChange.subscribe(pagina);
+    fixture.componentInstance.tamanoPadronChange.subscribe(tamano);
+    fixture.componentInstance.busquedaPadronChange.subscribe(busqueda);
+    fixture.componentRef.setInput('selectedCourse', course);
+    fixture.componentRef.setInput('estudiantes', Array.from({ length: 40 }, (_, i) => ({ idEstudiante: `t-${i}`, nombreCompleto: `Todos ${i}`, codigoEstado: 'A' })));
+    fixture.componentRef.setInput('padronPagina', [{ idEstudiante: 'est-1', nombreCompleto: 'Ana Gómez', codigoEstado: 'A' }]);
+    fixture.componentRef.setInput('totalEstudiantes', 40);
+    fixture.componentRef.setInput('paginaPadron', 2);
+    fixture.componentInstance.subPestanaHub.set('ESTUDIANTES');
+    fixture.detectChanges();
+
+    const padron = fixture.debugElement.query(By.directive(TeacherGrupoEstudiantesComponent)).componentInstance as TeacherGrupoEstudiantesComponent;
+    expect(padron.estudiantes().map((e) => e.idEstudiante)).toEqual(['est-1']);
+    expect(padron.totalEstudiantes()).toBe(40);
+    expect(padron.pagina()).toBe(2);
+    padron.paginaChange.emit(3);
+    padron.tamanoChange.emit(24);
+    padron.busquedaChange.emit('ana');
+
+    expect(pagina).toHaveBeenCalledOnceWith(3);
+    expect(tamano).toHaveBeenCalledOnceWith(24);
+    expect(busqueda).toHaveBeenCalledOnceWith('ana');
+  });
+
+  it('CIERRE-W1A la pestaña Reclamos muestra el total del servidor y reenvía el cambio de página', () => {
+    const pagina = jasmine.createSpy('paginaReclamos');
+    fixture.componentInstance.paginaReclamosChange.subscribe(pagina);
+    fixture.componentRef.setInput('selectedCourse', course);
+    fixture.componentRef.setInput('estadoCargaReclamos', 'LOADED');
+    fixture.componentRef.setInput('reclamos', [{ id: 'r-1', estudianteNombre: 'Ana', estadoSolicitud: 'PENDIENTE', justificacionSolicitud: 'x', fechaSolicitud: '2026-11-01' }]);
+    fixture.componentRef.setInput('totalReclamos', 23);
+    fixture.componentRef.setInput('paginaReclamos', 2);
+    fixture.componentInstance.subPestanaHub.set('RECLAMOS');
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="grupo-reclamos-count"]').textContent.trim()).toBe('23');
+    const lista = fixture.debugElement.query(By.directive(TeacherGrupoReclamosComponent)).componentInstance as TeacherGrupoReclamosComponent;
+    expect(lista.pagina()).toBe(2);
+    expect(lista.totalReclamos()).toBe(23);
+    lista.paginaChange.emit(3);
+
+    expect(pagina).toHaveBeenCalledOnceWith(3);
   });
 
   it('el badge muestra el conteo solo después de una carga completa', () => {

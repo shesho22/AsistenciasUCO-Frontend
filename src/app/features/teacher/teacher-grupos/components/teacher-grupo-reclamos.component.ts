@@ -3,11 +3,12 @@ import { Component, ChangeDetectionStrategy, input, output } from '@angular/core
 import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
 import { type EstadoCargaReclamos, SolicitudRevisionItem } from '../../../../core/models/role-management.model';
 import { etiquetaEstadoReclamo, varianteEstadoReclamo } from '../../../../core/utils/reclamo-estado.util';
+import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 
 @Component({
     selector: 'app-teacher-grupo-reclamos',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [BadgeComponent],
+    imports: [BadgeComponent, PaginationComponent],
     template: `
     <div class="bg-white rounded-b-2xl border-x border-b border-warm-200 shadow-warm-sm p-6 space-y-5">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-warm-100">
@@ -42,7 +43,7 @@ import { etiquetaEstadoReclamo, varianteEstadoReclamo } from '../../../../core/u
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
                   <span class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-warm-100 text-warm-800">
-                    REC-#{{ rec.id.slice(0, 8).toUpperCase() }}
+                    {{ rec.folio }}
                   </span>
                   <span class="text-xs font-bold text-warm-900">{{ rec.estudianteNombre }}</span>
                 </div>
@@ -61,6 +62,13 @@ import { etiquetaEstadoReclamo, varianteEstadoReclamo } from '../../../../core/u
             </div>
           }
         </div>
+        <app-pagination
+          [totalItems]="totalReclamos() ?? reclamos().length"
+          [pageSize]="tamano()"
+          [currentPage]="pagina()"
+          [showPageSizeSelector]="false"
+          (pageChange)="paginaChange.emit($event)"
+        />
       } @else if (estadoCarga() === 'FORBIDDEN' || estadoCarga() === 'UNAVAILABLE' || estadoCarga() === 'NETWORK_ERROR' || estadoCarga() === 'SERVER_ERROR') {
         <div role="alert" class="p-8 text-center space-y-3">
           @if (estadoCarga() === 'FORBIDDEN') {
@@ -87,9 +95,14 @@ import { etiquetaEstadoReclamo, varianteEstadoReclamo } from '../../../../core/u
 })
 export class TeacherGrupoReclamosComponent {
   reclamos = input<SolicitudRevisionItem[]>([]);
+  /** Total del grupo según el servidor (la lista es solo la página vigente); sin él se usa la longitud de la lista. */
+  totalReclamos = input<number | null>(null);
+  pagina = input<number>(1);
+  tamano = input<number>(10);
   /** Valor LOADED conserva el uso anterior del componente standalone; el hub envía el estado HTTP real. */
   estadoCarga = input<EstadoCargaReclamos>('LOADED');
   irAReclamos = output<void>();
+  paginaChange = output<number>();
   reintentar = output<void>();
 
   /** Una solicitud retirada por el estudiante se ve neutra: no es pendiente, rechazada ni resuelta. */

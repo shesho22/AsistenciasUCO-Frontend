@@ -1,4 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
+import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 import { TeacherGrupoReclamosComponent } from './teacher-grupo-reclamos.component';
 
 describe('TeacherGrupoReclamosComponent', () => {
@@ -48,6 +50,41 @@ describe('TeacherGrupoReclamosComponent', () => {
     const el = fixture.nativeElement as HTMLElement;
     expect(el.textContent).toContain('Retirada');
     expect(el.querySelector('.bg-danger-50')).toBeNull();
+  });
+
+  it('CIERRE-W1A muestra el folio que entrega el backend y no uno armado con el id', () => {
+    fixture.componentRef.setInput('reclamos', [{ ...mockReclamos[0], folio: 'REC-RECABCDE' }]);
+    fixture.detectChanges();
+
+    const texto = fixture.nativeElement.textContent as string;
+    expect(texto).toContain('REC-RECABCDE');
+    expect(texto).not.toContain('REC-#');
+    expect(texto).not.toContain('REC-12345678');
+  });
+
+  it('CIERRE-W1A pagina con el total del servidor y delega el cambio de página', () => {
+    const pagina = jasmine.createSpy('pagina');
+    component.paginaChange.subscribe(pagina);
+    fixture.componentRef.setInput('reclamos', mockReclamos);
+    fixture.componentRef.setInput('totalReclamos', 45);
+    fixture.componentRef.setInput('pagina', 2);
+    fixture.detectChanges();
+
+    const paginador = fixture.debugElement.query(By.directive(PaginationComponent)).componentInstance as PaginationComponent;
+    expect(paginador.totalItems()).toBe(45);
+    expect(paginador.currentPage()).toBe(2);
+    expect(paginador.pageSize()).toBe(10);
+    paginador.pageChange.emit(3);
+
+    expect(pagina).toHaveBeenCalledOnceWith(3);
+  });
+
+  it('sin total del servidor el paginador usa la cantidad de filas', () => {
+    fixture.componentRef.setInput('reclamos', mockReclamos);
+    fixture.detectChanges();
+
+    const paginador = fixture.debugElement.query(By.directive(PaginationComponent)).componentInstance as PaginationComponent;
+    expect(paginador.totalItems()).toBe(1);
   });
 
   it('emite irAReclamos al hacer clic en el botón del portal', () => {

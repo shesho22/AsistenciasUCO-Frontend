@@ -280,6 +280,8 @@ export type EstadoCargaReclamos = 'IDLE' | 'LOADING' | 'LOADED' | 'FORBIDDEN' | 
 
 export interface SolicitudRevisionItem {
   id: string;
+  /** Folio del reclamo (`REC-XXXXXXXX`) que entrega el backend (`nombre` del DTO); la UI solo lo muestra, nunca lo compone. */
+  folio?: string;
   /** UUID real del grupo informado por el DTO del backend; no se deriva del nombre visible. */
   grupoId?: string;
   estudianteId: string;

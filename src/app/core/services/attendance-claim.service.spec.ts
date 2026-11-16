@@ -511,12 +511,13 @@ describe('AttendanceClaimService', () => {
     });
   });
 
-  describe('APP-05 reclamos del grupo docente', () => {
+  // CIERRE-W1A: el servidor filtra y pagina; el cliente no recorre páginas ni filtra en memoria.
+  describe('CIERRE-W1A reclamos del docente filtrados en el servidor', () => {
     const GROUP_A = '3f0c1d2e-0000-4000-8000-000000000001';
-    const GROUP_B = '3f0c1d2e-0000-4000-8000-000000000002';
     const LISTA = `${environment.apiUrl}/docente/reclamos`;
-    const reclamo = (id: string, grupoId?: string) => ({
+    const reclamo = (id: string, grupoId?: string, nombre?: string) => ({
       id,
+      nombre,
       fechaSolicitud: '2026-11-02',
       estadoSolicitud: 'PENDIENTE',
       justificacionSolicitud: 'Justificación de prueba',
@@ -533,87 +534,83 @@ describe('AttendanceClaimService', () => {
       soporteAdjunto: null,
     });
 
-    it('recorre páginas completas y filtra por el UUID DTO sin inventar query params', () => {
-      let resultado: SolicitudRevisionItem[] | undefined;
-      service.getReclamosDocentePorGrupo(GROUP_A).subscribe((items) => (resultado = items));
+    it('getReclamosDocente envía busqueda recortada y grupoId al servidor', () => {
+      let resultado: { total?: number; datos: SolicitudRevisionItem[] } | undefined;
+      service
+        .getReclamosDocente({ pagina: 2, tamano: 10, estado: 'P', busqueda: '  ana  ', grupoId: GROUP_A })
+        .subscribe((res) => (resultado = res));
 
-      const pagina1 = http.expectOne((request) => request.url === LISTA);
-      expect(pagina1.request.params.get('pagina')).toBe('1');
-      expect(pagina1.request.params.get('tamano')).toBe('100');
-      expect(pagina1.request.params.has('grupoId')).toBeFalse();
-      const primeraPagina = [
-        reclamo('target-1', GROUP_A),
-        ...Array.from({ length: 99 }, (_, index) => reclamo(`other-${index}`, GROUP_B)),
-      ];
-      pagina1.flush({ exitoso: true, datos: primeraPagina, total: 101 });
+      const peticion = http.expectOne((request) => request.url === LISTA);
+      expect(peticion.request.params.get('pagina')).toBe('2');
+      expect(peticion.request.params.get('tamano')).toBe('10');
+      expect(peticion.request.params.get('estado')).toBe('P');
+      expect(peticion.request.params.get('busqueda')).toBe('ana');
+      expect(peticion.request.params.get('grupoId')).toBe(GROUP_A);
+      peticion.flush({ exitoso: true, datos: [reclamo('r-1', GROUP_A)], total: 31 });
 
-      const pagina2 = http.expectOne((request) => request.url === LISTA);
-      expect(pagina2.request.params.get('pagina')).toBe('2');
-      expect(pagina2.request.params.get('tamano')).toBe('100');
-      pagina2.flush({ exitoso: true, datos: [reclamo('target-2', GROUP_A)], total: 101 });
-
-      expect(resultado?.map((item) => item.id)).toEqual(['target-1', 'target-2']);
-      expect(resultado?.every((item) => item.grupoId === GROUP_A)).toBeTrue();
+      expect(resultado?.total).toBe(31);
+      expect(resultado?.datos.length).toBe(1);
     });
 
-    it('solo declara vacío después de recorrer todas las páginas de otros grupos', () => {
-      let resultado: SolicitudRevisionItem[] | undefined;
-      service.getReclamosDocentePorGrupo(GROUP_A).subscribe((items) => (resultado = items));
-      http.expectOne((request) => request.url === LISTA).flush({
-        exitoso: true,
-        datos: Array.from({ length: 100 }, (_, index) => reclamo(`other-${index}`, GROUP_B)),
-        total: 101,
-      });
-      http.expectOne((request) => request.url === LISTA).flush({
-        exitoso: true,
-        datos: [reclamo('other-final', GROUP_B)],
-        total: 101,
-      });
-      expect(resultado).toEqual([]);
+    it('getReclamosDocente no envía busqueda vacía ni grupoId ausente', () => {
+      service.getReclamosDocente({ pagina: 1, tamano: 10, busqueda: '   ' }).subscribe();
+
+      const peticion = http.expectOne((request) => request.url === LISTA);
+      expect(peticion.request.params.has('busqueda')).toBeFalse();
+      expect(peticion.request.params.has('grupoId')).toBeFalse();
+      peticion.flush({ exitoso: true, datos: [], total: 0 });
     });
 
-    it('falla cerrado si una fila no incluye el UUID grupoId requerido por el DTO', () => {
-      let resultado!: SolicitudRevisionItem[];
+    it('getReclamosDocentePorGrupo pide UNA página con el grupoId y devuelve el total del servidor', () => {
+      let resultado: { total?: number; datos: SolicitudRevisionItem[] } | undefined;
+      service.getReclamosDocentePorGrupo(GROUP_A, { pagina: 3, tamano: 10 }).subscribe((res) => (resultado = res));
+
+      const peticion = http.expectOne((request) => request.url === LISTA);
+      expect(peticion.request.params.get('grupoId')).toBe(GROUP_A);
+      expect(peticion.request.params.get('pagina')).toBe('3');
+      expect(peticion.request.params.get('tamano')).toBe('10');
+      expect(peticion.request.params.has('estado')).toBeFalse();
+      peticion.flush({ exitoso: true, datos: [reclamo('r-1', GROUP_A)], total: 41 });
+      http.expectNone(LISTA);
+
+      expect(resultado?.total).toBe(41);
+      expect(resultado?.datos.map((item) => item.id)).toEqual(['r-1']);
+    });
+
+    it('getReclamosDocentePorGrupo con estado y tamano 1 sirve de conteo sin descargar la lista', () => {
+      let total: number | undefined;
+      service.getReclamosDocentePorGrupo(GROUP_A, { pagina: 1, tamano: 1, estado: 'P' }).subscribe((res) => (total = res.total));
+
+      const peticion = http.expectOne((request) => request.url === LISTA);
+      expect(peticion.request.params.get('estado')).toBe('P');
+      expect(peticion.request.params.get('tamano')).toBe('1');
+      peticion.flush({ exitoso: true, datos: [reclamo('r-1', GROUP_A)], total: 7 });
+
+      expect(total).toBe(7);
+    });
+
+    it('getReclamosDocentePorGrupo rechaza un identificador que no es UUID sin emitir petición', () => {
       let error: unknown;
-      service.getReclamosDocentePorGrupo(GROUP_A).subscribe({
-        next: (items) => (resultado = items),
-        error: (reason) => (error = reason),
-      });
-      http.expectOne((request) => request.url === LISTA).flush({
-        exitoso: true,
-        datos: [reclamo('missing-group')],
-        total: 1,
-      });
-      expect(resultado).toBeUndefined();
-      expect(error).toBeTruthy();
+      service.getReclamosDocentePorGrupo('no-es-uuid', { pagina: 1, tamano: 10 }).subscribe({ error: (e) => (error = e) });
+
+      http.expectNone(LISTA);
+      expect(error).toBeInstanceOf(IdentificadorInvalidoError);
     });
 
-    it('falla cerrado si el total cambia mientras se recorren las páginas', () => {
-      let resultado!: SolicitudRevisionItem[];
-      let error: unknown;
-      service.getReclamosDocentePorGrupo(GROUP_A).subscribe({
-        next: (items) => (resultado = items),
-        error: (reason) => (error = reason),
-      });
-      http.expectOne((request) => request.url === LISTA).flush({
-        exitoso: true,
-        datos: Array.from({ length: 100 }, (_, index) => reclamo(`row-${index}`, GROUP_B)),
-        total: 101,
-      });
-      http.expectOne((request) => request.url === LISTA).flush({
-        exitoso: true,
-        datos: [reclamo('row-final', GROUP_B)],
-        total: 102,
-      });
-      expect(resultado).toBeUndefined();
-      expect(error).toBeTruthy();
+    it('un grupo sin reclamos devuelve lista vacía con total 0', () => {
+      let resultado: { total?: number; datos: SolicitudRevisionItem[] } | undefined;
+      service.getReclamosDocentePorGrupo(GROUP_A, { pagina: 1, tamano: 10 }).subscribe((res) => (resultado = res));
+      http.expectOne((request) => request.url === LISTA).flush({ exitoso: true, datos: [], total: 0 });
+
+      expect(resultado?.datos).toEqual([]);
+      expect(resultado?.total).toBe(0);
     });
 
     it('propaga 403, 501 y fallo de conexión sin convertirlos en lista vacía', () => {
       for (const status of [403, 501]) {
-        let resultado!: SolicitudRevisionItem[];
+        let resultado: unknown;
         let error: { status?: number } | undefined;
-        service.getReclamosDocentePorGrupo(GROUP_A).subscribe({
+        service.getReclamosDocentePorGrupo(GROUP_A, { pagina: 1, tamano: 10 }).subscribe({
           next: (items) => (resultado = items),
           error: (reason) => (error = reason),
         });
@@ -625,15 +622,40 @@ describe('AttendanceClaimService', () => {
         expect(error?.status).toBe(status);
       }
 
-      let resultado!: SolicitudRevisionItem[];
+      let resultado: unknown;
       let error: { status?: number } | undefined;
-      service.getReclamosDocentePorGrupo(GROUP_A).subscribe({
+      service.getReclamosDocentePorGrupo(GROUP_A, { pagina: 1, tamano: 10 }).subscribe({
         next: (items) => (resultado = items),
         error: (reason) => (error = reason),
       });
       http.expectOne((request) => request.url === LISTA).error(new ProgressEvent('error'));
       expect(resultado).toBeUndefined();
       expect(error?.status).toBe(0);
+    });
+
+    it('el folio es el `nombre` que entrega el backend y la UI no lo compone', () => {
+      let items: SolicitudRevisionItem[] = [];
+      service.getReclamosDocente({ pagina: 1, tamano: 10 }).subscribe((res) => (items = res.datos));
+      http.expectOne((request) => request.url === LISTA).flush({
+        exitoso: true,
+        datos: [reclamo('1f2e3d4c-aaaa-4bbb-8ccc-000000000001', GROUP_A, 'REC-1F2E3D4C'), reclamo('9a8b7c6d-aaaa-4bbb-8ccc-000000000002', GROUP_A)],
+        total: 2,
+      });
+
+      expect(items[0].folio).toBe('REC-1F2E3D4C');
+      expect(items[1].folio).toBeUndefined();
+    });
+
+    it('el folio también llega en los reclamos del estudiante', () => {
+      let items: SolicitudRevisionItem[] = [];
+      service.getReclamosEstudiante({ pagina: 1, tamano: 10 }).subscribe((res) => (items = res.datos));
+      http.expectOne((request) => request.url === `${environment.apiUrl}/estudiante/reclamos`).flush({
+        exitoso: true,
+        datos: [reclamo('1f2e3d4c-aaaa-4bbb-8ccc-000000000001', GROUP_A, 'REC-1F2E3D4C')],
+        total: 1,
+      });
+
+      expect(items[0].folio).toBe('REC-1F2E3D4C');
     });
   });
 
