@@ -11,6 +11,7 @@ import {
   VincularDocenteExistentePayload,
   VincularDocenteNuevoPayload,
 } from '../../../../core/models/docente-programa.model';
+import { ModalComponent } from '../../../../shared/components/modal/modal.component';
 
 type ModoVinculacion = 'NUEVO' | 'EXISTENTE';
 
@@ -25,101 +26,99 @@ const CLASE_CONTROL =
 @Component({
     selector: 'app-coordinator-docente-form-modal',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [FormsModule, DatosPersonaComponent],
+    imports: [ModalComponent, FormsModule, DatosPersonaComponent],
     template: `
-    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-warm-900/60 backdrop-blur-xs">
-      <div class="bg-white rounded-3xl shadow-warm-2xl border border-warm-200/80 w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
-        <div class="px-6 py-5 border-b border-warm-100 flex items-start justify-between bg-warm-50/50">
-          <div>
-            <h2 class="text-xl font-serif font-bold text-warm-900">Vincular docente al programa</h2>
-            <p class="text-xs text-warm-500 mt-0.5">Registra a una persona nueva o vincula a un docente ya registrado en la institución.</p>
-          </div>
-          <button type="button" (click)="solicitarCierre()" aria-label="Cerrar" class="text-warm-400 hover:text-warm-700 p-2 rounded-xl hover:bg-warm-100">✕</button>
-        </div>
-
-        <div class="px-6 pt-4 flex gap-2" role="tablist">
-          <button type="button" role="tab" [attr.aria-selected]="modo() === 'NUEVO'" (click)="cambiarModo('NUEVO')"
-                  class="px-3.5 py-1.5 rounded-xl text-xs font-semibold border"
-                  [class]="modo() === 'NUEVO' ? 'bg-primary-100 border-primary-300 text-primary-900' : 'bg-white border-warm-200 text-warm-700'">
-            Docente nuevo
-          </button>
-          <button type="button" role="tab" [attr.aria-selected]="modo() === 'EXISTENTE'" (click)="cambiarModo('EXISTENTE')"
-                  class="px-3.5 py-1.5 rounded-xl text-xs font-semibold border"
-                  [class]="modo() === 'EXISTENTE' ? 'bg-primary-100 border-primary-300 text-primary-900' : 'bg-white border-warm-200 text-warm-700'">
-            Docente existente
-          </button>
-        </div>
-
-        <div class="p-6 overflow-y-auto space-y-4">
-          @if (error()) {
-            <p role="alert" class="text-xs font-medium text-danger-700 bg-danger-50 border border-danger-200 rounded-xl px-3 py-2">{{ error() }}</p>
-          }
-
-          @if (modo() === 'NUEVO') {
-            <form (ngSubmit)="enviarNuevo()" class="space-y-4" autocomplete="off">
-              <app-datos-persona
-                [datos]="{
-                  tipoIdentificacionId: form.tipoIdentificacionId || tiposIdentificacion()[0]?.id || '',
-                  numeroIdentificacion: form.numeroIdentificacion,
-                  primerNombre: form.primerNombre,
-                  segundoNombre: form.segundoNombre,
-                  primerApellido: form.primerApellido,
-                  segundoApellido: form.segundoApellido,
-                  correo: form.correo
-                }"
-                [tiposIdentificacion]="tiposIdentificacion()"
-                aviso="No se asigna contraseña. El docente recibirá en su correo institucional un enlace para activar la cuenta y definir su contraseña."
-                (cambio)="alCambiarDato($event)"
-              />
-              <label class="block text-xs font-semibold text-warm-700">Tipo de vinculación
-                <select name="idTipoVinculacion" [(ngModel)]="form.idTipoVinculacion" [class]="clase">
-                  <option value="">Seleccione…</option>
-                  @for (tipo of tiposVinculacion(); track tipo.id) {
-                    <option [value]="tipo.id">{{ tipo.nombre }}</option>
-                  }
-                </select>
-              </label>
-              <div class="flex justify-end gap-3 pt-3 border-t border-warm-100">
-                <button type="button" (click)="solicitarCierre()" class="px-4 py-2 rounded-xl text-sm font-semibold bg-warm-100 text-warm-800 hover:bg-warm-200">Cancelar</button>
-                <button type="submit" class="px-4 py-2 rounded-xl text-sm font-semibold bg-primary-700 text-white hover:bg-primary-800">Registrar y vincular</button>
-              </div>
-            </form>
-          } @else {
-            <div class="space-y-4">
-              <label class="block text-xs font-semibold text-warm-700">Buscar por documento o nombre (mínimo 3 caracteres)
-                <input type="text" name="busquedaCandidato" [ngModel]="busquedaCandidato()" (ngModelChange)="onBusquedaCandidato($event)" [class]="clase" />
-              </label>
-              <ul class="divide-y divide-warm-100 border border-warm-200 rounded-xl max-h-56 overflow-y-auto">
-                @for (c of candidatos(); track c.idDocente) {
-                  <li>
-                    <button type="button" (click)="seleccionarCandidato(c)"
-                            class="w-full text-left px-3.5 py-2.5 text-sm hover:bg-warm-50"
-                            [class]="candidatoSeleccionado()?.idDocente === c.idDocente ? 'bg-primary-50' : ''">
-                      <span class="font-semibold text-warm-900">{{ c.nombreCompleto }}</span>
-                      <span class="block text-xs text-warm-500">{{ c.codigoTipoIdentificacion }} {{ c.numeroIdentificacion }}</span>
-                    </button>
-                  </li>
-                } @empty {
-                  <li class="px-3.5 py-3 text-xs text-warm-500">Sin resultados. Escribe al menos 3 caracteres para buscar.</li>
-                }
-              </ul>
-              <label class="block text-xs font-semibold text-warm-700">Tipo de vinculación
-                <select name="idTipoVinculacionExistente" [(ngModel)]="form.idTipoVinculacion" [class]="clase">
-                  <option value="">Seleccione…</option>
-                  @for (tipo of tiposVinculacion(); track tipo.id) {
-                    <option [value]="tipo.id">{{ tipo.nombre }}</option>
-                  }
-                </select>
-              </label>
-              <div class="flex justify-end gap-3 pt-3 border-t border-warm-100">
-                <button type="button" (click)="solicitarCierre()" class="px-4 py-2 rounded-xl text-sm font-semibold bg-warm-100 text-warm-800 hover:bg-warm-200">Cancelar</button>
-                <button type="button" (click)="enviarExistente()" class="px-4 py-2 rounded-xl text-sm font-semibold bg-primary-700 text-white hover:bg-primary-800">Vincular al programa</button>
-              </div>
-            </div>
-          }
-        </div>
+    <app-modal
+      [isOpen]="true"
+      title="Vincular docente al programa"
+      subtitulo="Registra a una persona nueva o vincula a un docente ya registrado en la institución."
+      tamano="2xl"
+      etiquetaCerrar="Cerrar"
+      [cerrarAlPulsarFondo]="false"
+      (closed)="solicitarCierre()"
+    >
+      <div class="flex gap-2" role="tablist">
+        <button type="button" role="tab" [attr.aria-selected]="modo() === 'NUEVO'" (click)="cambiarModo('NUEVO')"
+                class="px-3.5 py-1.5 rounded-xl text-xs font-semibold border"
+                [class]="modo() === 'NUEVO' ? 'bg-primary-100 border-primary-300 text-primary-900' : 'bg-white border-warm-200 text-warm-700'">
+          Docente nuevo
+        </button>
+        <button type="button" role="tab" [attr.aria-selected]="modo() === 'EXISTENTE'" (click)="cambiarModo('EXISTENTE')"
+                class="px-3.5 py-1.5 rounded-xl text-xs font-semibold border"
+                [class]="modo() === 'EXISTENTE' ? 'bg-primary-100 border-primary-300 text-primary-900' : 'bg-white border-warm-200 text-warm-700'">
+          Docente existente
+        </button>
       </div>
-    </div>
+
+      <div class="pt-4 space-y-4">
+        @if (error()) {
+          <p role="alert" class="text-xs font-medium text-danger-700 bg-danger-50 border border-danger-200 rounded-xl px-3 py-2">{{ error() }}</p>
+        }
+
+        @if (modo() === 'NUEVO') {
+          <form (ngSubmit)="enviarNuevo()" class="space-y-4" autocomplete="off">
+            <app-datos-persona
+              [datos]="{
+                tipoIdentificacionId: form.tipoIdentificacionId || tiposIdentificacion()[0]?.id || '',
+                numeroIdentificacion: form.numeroIdentificacion,
+                primerNombre: form.primerNombre,
+                segundoNombre: form.segundoNombre,
+                primerApellido: form.primerApellido,
+                segundoApellido: form.segundoApellido,
+                correo: form.correo
+              }"
+              [tiposIdentificacion]="tiposIdentificacion()"
+              aviso="No se asigna contraseña. El docente recibirá en su correo institucional un enlace para activar la cuenta y definir su contraseña."
+              (cambio)="alCambiarDato($event)"
+            />
+            <label class="block text-xs font-semibold text-warm-700">Tipo de vinculación
+              <select name="idTipoVinculacion" [(ngModel)]="form.idTipoVinculacion" [class]="clase">
+                <option value="">Seleccione…</option>
+                @for (tipo of tiposVinculacion(); track tipo.id) {
+                  <option [value]="tipo.id">{{ tipo.nombre }}</option>
+                }
+              </select>
+            </label>
+            <div class="flex justify-end gap-3 pt-3 border-t border-warm-100">
+              <button type="button" (click)="solicitarCierre()" class="px-4 py-2 rounded-xl text-sm font-semibold bg-warm-100 text-warm-800 hover:bg-warm-200">Cancelar</button>
+              <button type="submit" class="px-4 py-2 rounded-xl text-sm font-semibold bg-primary-700 text-white hover:bg-primary-800">Registrar y vincular</button>
+            </div>
+          </form>
+        } @else {
+          <div class="space-y-4">
+            <label class="block text-xs font-semibold text-warm-700">Buscar por documento o nombre (mínimo 3 caracteres)
+              <input type="text" name="busquedaCandidato" [ngModel]="busquedaCandidato()" (ngModelChange)="onBusquedaCandidato($event)" [class]="clase" />
+            </label>
+            <ul class="divide-y divide-warm-100 border border-warm-200 rounded-xl max-h-56 overflow-y-auto">
+              @for (c of candidatos(); track c.idDocente) {
+                <li>
+                  <button type="button" (click)="seleccionarCandidato(c)"
+                          class="w-full text-left px-3.5 py-2.5 text-sm hover:bg-warm-50"
+                          [class]="candidatoSeleccionado()?.idDocente === c.idDocente ? 'bg-primary-50' : ''">
+                    <span class="font-semibold text-warm-900">{{ c.nombreCompleto }}</span>
+                    <span class="block text-xs text-warm-500">{{ c.codigoTipoIdentificacion }} {{ c.numeroIdentificacion }}</span>
+                  </button>
+                </li>
+              } @empty {
+                <li class="px-3.5 py-3 text-xs text-warm-500">Sin resultados. Escribe al menos 3 caracteres para buscar.</li>
+              }
+            </ul>
+            <label class="block text-xs font-semibold text-warm-700">Tipo de vinculación
+              <select name="idTipoVinculacionExistente" [(ngModel)]="form.idTipoVinculacion" [class]="clase">
+                <option value="">Seleccione…</option>
+                @for (tipo of tiposVinculacion(); track tipo.id) {
+                  <option [value]="tipo.id">{{ tipo.nombre }}</option>
+                }
+              </select>
+            </label>
+            <div class="flex justify-end gap-3 pt-3 border-t border-warm-100">
+              <button type="button" (click)="solicitarCierre()" class="px-4 py-2 rounded-xl text-sm font-semibold bg-warm-100 text-warm-800 hover:bg-warm-200">Cancelar</button>
+              <button type="button" (click)="enviarExistente()" class="px-4 py-2 rounded-xl text-sm font-semibold bg-primary-700 text-white hover:bg-primary-800">Vincular al programa</button>
+            </div>
+          </div>
+        }
+      </div>
+    </app-modal>
   `
 })
 export class CoordinatorDocenteFormModalComponent {

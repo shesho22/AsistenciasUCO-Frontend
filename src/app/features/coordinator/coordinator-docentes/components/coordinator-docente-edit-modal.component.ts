@@ -4,6 +4,7 @@ import { ActualizarDocentePayload, DocentePrograma, TipoVinculacionItem } from '
 import { CorreccionDocumentoComponent } from '../../../../shared/components/correccion-documento/correccion-documento.component';
 import { EstadoCorreccionDocumento } from '../../../../core/models/correccion-identidad.model';
 import { getPersonNamesError } from '../../../../core/validation/form-fields.util';
+import { ModalComponent } from '../../../../shared/components/modal/modal.component';
 
 const CLASE_CONTROL =
   'w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20';
@@ -16,58 +17,56 @@ const CLASE_CONTROL =
 @Component({
     selector: 'app-coordinator-docente-edit-modal',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [FormsModule, CorreccionDocumentoComponent],
+    imports: [ModalComponent, FormsModule, CorreccionDocumentoComponent],
     template: `
-    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-warm-900/60 backdrop-blur-xs">
-      <div class="bg-white rounded-3xl shadow-warm-2xl border border-warm-200/80 w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden">
-        <div class="px-6 py-5 border-b border-warm-100 flex items-start justify-between bg-warm-50/50">
-          <div>
-            <h2 class="text-xl font-serif font-bold text-warm-900">Editar docente</h2>
-            <p class="text-xs text-warm-500 mt-0.5">{{ docente().codigoTipoIdentificacion }} {{ docente().numeroIdentificacion }} · {{ docente().correo }}</p>
-          </div>
-          <button type="button" (click)="solicitarCierre()" aria-label="Cerrar" class="text-warm-400 hover:text-warm-700 p-2 rounded-xl hover:bg-warm-100">✕</button>
-        </div>
-
-        <form (ngSubmit)="enviar()" class="p-6 space-y-4 overflow-y-auto" autocomplete="off">
-          @if (error()) {
-            <p role="alert" class="text-xs font-medium text-danger-700 bg-danger-50 border border-danger-200 rounded-xl px-3 py-2">{{ error() }}</p>
-          }
-          <p class="text-xs text-warm-600 bg-warm-50 border border-warm-100 rounded-xl px-3 py-2">
-            El cambio de nombres y de documento aplica a la persona en todos sus programas. El correo no se puede editar aquí.
-          </p>
-          <label class="block text-xs font-semibold text-warm-700">Tipo de vinculación
-            <select name="idTipoVinculacion" [(ngModel)]="form.idTipoVinculacion" [class]="clase">
-              @for (tipo of tiposVinculacion(); track tipo.id) {
-                <option [value]="tipo.id">{{ tipo.nombre }}</option>
-              }
-            </select>
+    <app-modal
+      [isOpen]="true"
+      title="Editar docente"
+      [subtitulo]="docente().codigoTipoIdentificacion + ' ' + docente().numeroIdentificacion + ' · ' + docente().correo"
+      tamano="xl"
+      etiquetaCerrar="Cerrar"
+      [cerrarAlPulsarFondo]="false"
+      (closed)="solicitarCierre()"
+    >
+      <form (ngSubmit)="enviar()" class="space-y-4" autocomplete="off">
+        @if (error()) {
+          <p role="alert" class="text-xs font-medium text-danger-700 bg-danger-50 border border-danger-200 rounded-xl px-3 py-2">{{ error() }}</p>
+        }
+        <p class="text-xs text-warm-600 bg-warm-50 border border-warm-100 rounded-xl px-3 py-2">
+          El cambio de nombres y de documento aplica a la persona en todos sus programas. El correo no se puede editar aquí.
+        </p>
+        <label class="block text-xs font-semibold text-warm-700">Tipo de vinculación
+          <select name="idTipoVinculacion" [(ngModel)]="form.idTipoVinculacion" [class]="clase">
+            @for (tipo of tiposVinculacion(); track tipo.id) {
+              <option [value]="tipo.id">{{ tipo.nombre }}</option>
+            }
+          </select>
+        </label>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <label class="block text-xs font-semibold text-warm-700">Primer nombre
+            <input type="text" name="primerNombre" [(ngModel)]="form.primerNombre" maxlength="50" [class]="clase" />
           </label>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <label class="block text-xs font-semibold text-warm-700">Primer nombre
-              <input type="text" name="primerNombre" [(ngModel)]="form.primerNombre" maxlength="50" [class]="clase" />
-            </label>
-            <label class="block text-xs font-semibold text-warm-700">Segundo nombre
-              <input type="text" name="segundoNombre" [(ngModel)]="form.segundoNombre" maxlength="50" [class]="clase" />
-            </label>
-            <label class="block text-xs font-semibold text-warm-700">Primer apellido
-              <input type="text" name="primerApellido" [(ngModel)]="form.primerApellido" maxlength="50" [class]="clase" />
-            </label>
-            <label class="block text-xs font-semibold text-warm-700">Segundo apellido
-              <input type="text" name="segundoApellido" [(ngModel)]="form.segundoApellido" maxlength="50" [class]="clase" />
-            </label>
-          </div>
-          <app-correccion-documento
-            [numeroActual]="docente().numeroIdentificacion"
-            [codigoTipoActual]="docente().codigoTipoIdentificacion"
-            (estadoCambio)="documento.set($event)"
-          />
-          <div class="flex justify-end gap-3 pt-3 border-t border-warm-100">
-            <button type="button" (click)="solicitarCierre()" class="px-4 py-2 rounded-xl text-sm font-semibold bg-warm-100 text-warm-800 hover:bg-warm-200">Cancelar</button>
-            <button type="submit" class="px-4 py-2 rounded-xl text-sm font-semibold bg-primary-700 text-white hover:bg-primary-800">Guardar cambios</button>
-          </div>
-        </form>
-      </div>
-    </div>
+          <label class="block text-xs font-semibold text-warm-700">Segundo nombre
+            <input type="text" name="segundoNombre" [(ngModel)]="form.segundoNombre" maxlength="50" [class]="clase" />
+          </label>
+          <label class="block text-xs font-semibold text-warm-700">Primer apellido
+            <input type="text" name="primerApellido" [(ngModel)]="form.primerApellido" maxlength="50" [class]="clase" />
+          </label>
+          <label class="block text-xs font-semibold text-warm-700">Segundo apellido
+            <input type="text" name="segundoApellido" [(ngModel)]="form.segundoApellido" maxlength="50" [class]="clase" />
+          </label>
+        </div>
+        <app-correccion-documento
+          [numeroActual]="docente().numeroIdentificacion"
+          [codigoTipoActual]="docente().codigoTipoIdentificacion"
+          (estadoCambio)="documento.set($event)"
+        />
+        <div class="flex justify-end gap-3 pt-3 border-t border-warm-100">
+          <button type="button" (click)="solicitarCierre()" class="px-4 py-2 rounded-xl text-sm font-semibold bg-warm-100 text-warm-800 hover:bg-warm-200">Cancelar</button>
+          <button type="submit" class="px-4 py-2 rounded-xl text-sm font-semibold bg-primary-700 text-white hover:bg-primary-800">Guardar cambios</button>
+        </div>
+      </form>
+    </app-modal>
   `
 })
 export class CoordinatorDocenteEditModalComponent implements OnInit {
