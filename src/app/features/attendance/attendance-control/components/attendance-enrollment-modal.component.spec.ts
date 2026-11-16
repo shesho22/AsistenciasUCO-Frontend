@@ -91,7 +91,7 @@ describe('AttendanceEnrollmentModalComponent', () => {
     expect(component.searchStatus()).toBe('FOUND');
     const host = fixture.nativeElement as HTMLElement;
     expect(host.textContent).toContain('a***@uco.edu.co');
-    expect(host.querySelector('input[name="studentEmail"]')).toBeNull();
+    expect(host.querySelector('input[name="correo"]')).toBeNull();
     expect(host.querySelector('input[type="password"]')).toBeNull();
   });
 
@@ -271,8 +271,8 @@ describe('AttendanceEnrollmentModalComponent', () => {
     fixture.detectChanges();
 
     const host = fixture.nativeElement as HTMLElement;
-    expect(host.querySelector('[data-testid="email-domain-hint"]')?.textContent).toContain('@otra.edu');
-    expect(host.querySelector<HTMLInputElement>('input[name="studentEmail"]')?.placeholder).toBe('juan.perez@otra.edu');
+    expect(host.querySelector('[data-testid="datos-persona"]')?.textContent).toContain('Debe terminar en @otra.edu.');
+    expect(host.querySelector<HTMLInputElement>('input[name="correo"]')?.placeholder).toBe('juan.perez@otra.edu');
   });
 
   it('IDENT-001: sin dominio conocido no muestra la ayuda y conserva el ejemplo institucional', () => {
@@ -280,8 +280,8 @@ describe('AttendanceEnrollmentModalComponent', () => {
     fixture.detectChanges();
 
     const host = fixture.nativeElement as HTMLElement;
-    expect(host.querySelector('[data-testid="email-domain-hint"]')).toBeNull();
-    expect(host.querySelector<HTMLInputElement>('input[name="studentEmail"]')?.placeholder).toBe('juan.perez@uco.edu.co');
+    expect(host.querySelector('[data-testid="datos-persona"]')?.textContent).not.toContain('Debe terminar en');
+    expect(host.querySelector<HTMLInputElement>('input[name="correo"]')?.placeholder).toBe('juan.perez@uco.edu.co');
   });
 
   describe('F-DOC-006: discriminación de errores en buscarEstudiante', () => {

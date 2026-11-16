@@ -90,7 +90,6 @@ describe('OverviewComponent', () => {
       nombres: 'Decano 1',
       apellidos: 'Pérez',
       correo: 'decano@uco.edu.co',
-      telefono: '5698000',
       facultad: 'Facultad de Ingeniería',
       fechaAsignacion: '2025-01-01',
       estado: 'ACTIVO',

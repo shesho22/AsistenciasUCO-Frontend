@@ -78,11 +78,9 @@ describe('DeanCoordinadoresComponent', () => {
     const reqCoords = http.expectOne(porUrl(`${environment.apiUrl}/decano/coordinadores`));
     reqCoords.flush(paginaApi(mockCoordinadores));
 
+    // GET /tipos-identificacion devuelve el arreglo del catálogo (CatalogService lo envuelve en { exitoso, datos }).
     http.match(`${environment.apiUrl}/tipos-identificacion`).forEach((r) =>
-      r.flush({
-        exitoso: true,
-        datos: [{ id: 'tipo-1', tipoIdentificacion: 'CC', nombre: 'Cédula de Ciudadanía' }],
-      })
+      r.flush([{ id: 'tipo-1', tipoIdentificacion: 'CC', nombre: 'Cédula de Ciudadanía' }])
     );
     http.match((r) => r.url === `${environment.apiUrl}/decano/programas`).forEach((r) =>
       r.flush({
@@ -290,11 +288,18 @@ describe('DeanCoordinadoresComponent', () => {
     expect(component.coordinadorEnEdicion()).toEqual(mockCoordinadores[0]);
   });
 
-  it('onNumeroIdentificacionInput limpia caracteres no numéricos', () => {
+  it('alCambiarDato aplica los cambios del bloque de datos personales y resuelve el tipo de documento', () => {
     flushInitialRequests();
-    const event = { target: { value: '1017-abc-999' } } as unknown as Event;
-    component.onNumeroIdentificacionInput(event);
+    component.tiposIdentificacion.set([{ id: 'tipo-1', tipoIdentificacion: 'CC', nombre: 'Cédula de Ciudadanía' }]);
+    component.alCambiarDato({ campo: 'numeroIdentificacion', valor: '1017999' });
+    component.alCambiarDato({ campo: 'primerNombre', valor: 'Jorge' });
+    component.alCambiarDato({ campo: 'tipoIdentificacionId', valor: 'tipo-1' });
+    component.alCambiarDato({ campo: 'tipoIdentificacionId', valor: 'no-existe' });
+
     expect(component.formData.numeroIdentificacion).toBe('1017999');
+    expect(component.formData.primerNombre).toBe('Jorge');
+    expect(component.formData.tipoIdentificacionId).toBe('tipo-1');
+    expect(component.formData.tipoIdentificacion).toBe('CC');
   });
 
   // DEC-073: formato de nombres, correo institucional y nombre del programa nuevo.
@@ -369,6 +374,8 @@ describe('DeanCoordinadoresComponent', () => {
     expect(toastService.warning).not.toHaveBeenCalled();
     const post = http.expectOne(`${environment.apiUrl}/decano/coordinadores`);
     expect('password' in (post.request.body as Record<string, unknown>)).toBeFalse();
+    // El tipo de documento elegido viaja al backend (antes se omitia y la BD aplicaba siempre el tipo por defecto).
+    expect(post.request.body.tipoIdentificacionId).toBe(component.formData.tipoIdentificacionId);
     post.flush({ message: 'Error' }, { status: 500, statusText: 'Server Error' });
   });
 

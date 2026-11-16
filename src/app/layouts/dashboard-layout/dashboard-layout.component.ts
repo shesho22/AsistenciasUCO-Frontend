@@ -136,27 +136,6 @@ interface NavItem {
           }
         </nav>
 
-        <!-- Mock Role Switcher (Visible en modo Mock) -->
-        @if (isMockMode() && !isCollapsed()) {
-          <div class="px-4 py-3 mx-3 mb-2 rounded-xl bg-warm-100/70 border border-warm-200/80 shrink-0">
-            <div class="flex items-center justify-between mb-1.5">
-              <span class="text-[10px] font-bold uppercase tracking-wider text-warm-600">Simulador de Rol</span>
-              <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-primary-100 text-primary-800">Mock</span>
-            </div>
-            <select
-              [value]="currentRole()"
-              (change)="onRoleChange($event)"
-              class="w-full text-xs font-semibold py-1.5 px-2 bg-white border border-warm-300 rounded-lg text-warm-800 focus:outline-none focus:ring-1 focus:ring-primary-500"
-            >
-              <option value="ADMINISTRADOR">Administrador</option>
-              <option value="DECANO">Decano</option>
-              <option value="COORDINADOR">Coordinador</option>
-              <option value="DOCENTE">Docente</option>
-              <option value="ESTUDIANTE">Estudiante</option>
-            </select>
-          </div>
-        }
-
         <!-- User Profile Card Footer -->
         <div class="p-4 border-t border-warm-200/80 bg-warm-50/50 shrink-0">
           <div class="flex items-center gap-2 p-1.5 rounded-xl bg-white border border-warm-200 shadow-warm-sm hover:border-primary-300 transition-colors">
@@ -235,7 +214,6 @@ export class DashboardLayoutComponent {
   toastState = this.toastService.currentToast;
 
   user = this.authService.currentUser;
-  isMockMode = this.authService.isMockMode;
   isCollapsed = signal<boolean>(false);
   isMobileMenuOpen = signal<boolean>(false);
   private readonly botonMenu = viewChild<ElementRef<HTMLButtonElement>>('botonMenu');
@@ -501,12 +479,6 @@ export class DashboardLayoutComponent {
     if (!this.isMobileMenuOpen()) return;
     this.isMobileMenuOpen.set(false);
     this.botonMenu()?.nativeElement.focus();
-  }
-
-  onRoleChange(event: Event): void {
-    const target = event.target as HTMLSelectElement;
-    const newRole = target.value as UserRole;
-    this.authService.loginAsMockUser(newRole, true);
   }
 
   logout(): void {
