@@ -124,20 +124,41 @@ describe('TeacherClaimsComponent', () => {
     expect(component.listState()).toBe('LOADED');
   });
 
-  it('maneja error 501 marcando listUnavailable', () => {
-    claimServiceSpy.getReclamosDocente.and.returnValue(throwError(() => ({ status: 501 })));
+  const errorApi = (status: number, code: string, message: string) =>
+    new HttpErrorResponse({
+      status,
+      error: { timestamp: '2026-11-16T10:00:00Z', status, error: 'Error', code, message, path: '/api/v1/docente/reclamos', correlationId: null },
+    });
+
+  it('un 501 inesperado se muestra con el mensaje del backend, sin texto técnico ni código HTTP', () => {
+    claimServiceSpy.getReclamosDocente.and.returnValue(throwError(() => errorApi(501, 'FEATURE_UNAVAILABLE', 'Esta funcionalidad no está disponible por el momento.')));
     component.cargarReclamos();
-    expect(component.listUnavailable()).toBeTrue();
-    expect(component.listState()).toBe('UNAVAILABLE');
-    expect(component.listStateMessage()).toContain('501');
+    fixture.detectChanges();
+    const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(component.listState()).toBe('SERVER_ERROR');
+    expect(component.listStateMessage()).toBe('Esta funcionalidad no está disponible por el momento.');
+    expect(texto).toContain('Esta funcionalidad no está disponible por el momento.');
+    expect(texto).not.toContain('501');
+    expect(texto).not.toContain('Not Implemented');
+    expect(texto).not.toContain('contrato');
   });
 
-  it('maneja error 403 y otros estados en listStateMessage', () => {
-    claimServiceSpy.getReclamosDocente.and.returnValue(throwError(() => ({ status: 403, error: { mensajeUsuario: 'Sin acceso' } })));
+  it('maneja error 403 mostrando el mensaje del backend sin el código HTTP', () => {
+    claimServiceSpy.getReclamosDocente.and.returnValue(throwError(() => errorApi(403, 'FORBIDDEN', 'No tienes acceso a esta información.')));
     component.cargarReclamos();
     expect(component.listState()).toBe('FORBIDDEN');
-    expect(component.listStateMessage()).toContain('403');
-    expect(toastSpy.error).toHaveBeenCalled();
+    expect(component.listStateMessage()).toBe('No tienes acceso a esta información.');
+    expect(component.listStateMessage()).not.toContain('403');
+    expect(toastSpy.error).toHaveBeenCalledWith('No tienes acceso a esta información.');
+  });
+
+  it('sin respuesta del servidor (estado 0) se ofrece reintento con el mensaje semántico', () => {
+    claimServiceSpy.getReclamosDocente.and.returnValue(throwError(() => new HttpErrorResponse({ status: 0 })));
+    component.cargarReclamos();
+    fixture.detectChanges();
+    expect(component.listState()).toBe('NETWORK_ERROR');
+    expect(component.listStateMessage().length).toBeGreaterThan(0);
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Reintentar');
   });
 
   it('permite abrir vista de resolución y volver a bandeja', () => {
@@ -568,12 +589,12 @@ describe('TeacherClaimsComponent — bandeja paginada y detalle (HU035/HU036)', 
     expect(texto).not.toMatch(/Resolución registrada el\s*:/);
   });
 
-  it('FE-06 un 501 de la bandeja se refleja como módulo no disponible', () => {
+  it('FE-06 un 501 de la bandeja se trata como error del servidor con reintento, no como módulo pendiente', () => {
     fixture.detectChanges();
     listaReq().flush({}, { status: 501, statusText: 'Not Implemented' });
 
-    expect(component.listState()).toBe('UNAVAILABLE');
-    expect(component.listUnavailable()).toBeTrue();
+    expect(component.listState()).toBe('SERVER_ERROR');
+    expect(component.listStateMessage()).not.toContain('501');
   });
 
   it('si la página actual queda vacía (p. ej. tras resolver), retrocede a la última página con datos', () => {
