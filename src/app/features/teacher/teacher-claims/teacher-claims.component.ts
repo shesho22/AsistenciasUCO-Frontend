@@ -35,7 +35,7 @@ const ETIQUETA_ESTADO_TOMA_RECLAMO: Readonly<Record<EstadoTomaEstudiante, string
 
 type VistaDocenteReclamos = 'BANDEJA' | 'RESOLUCION';
 type EstadoFiltroReclamos = 'TODOS' | 'P' | 'A' | 'R';
-type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'NETWORK_ERROR' | 'SERVER_ERROR';
+type ReclamosListState = 'LOADING' | 'LOADED' | 'FORBIDDEN' | 'NETWORK_ERROR' | 'SERVER_ERROR';
 
 /** Espera tras la última tecla antes de pedir la búsqueda al servidor (no es sondeo: se dispara por la entrada del usuario). */
 const BUSQUEDA_ESPERA_MS = 300;
@@ -72,13 +72,6 @@ const BUSQUEDA_ESPERA_MS = 300;
             </span>
           </div>
         </app-page-header>
-
-        @if (listUnavailable()) {
-          <div class="bg-warning-50 border border-warning-200 rounded-2xl p-4 text-sm text-warning-900">
-            El listado de reclamos docentes está pendiente del contrato backend y responde <strong>501 Not Implemented</strong>.
-            La resolución individual permanece disponible cuando se conoce el identificador del reclamo.
-          </div>
-        }
 
         <!-- Filtros y Búsqueda -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -458,7 +451,8 @@ export class TeacherClaimsComponent implements OnInit, OnDestroy {
   vistaActual = signal<VistaDocenteReclamos>('BANDEJA');
   reclamos = signal<SolicitudRevisionItem[]>([]);
   isLoading = signal<boolean>(true);
-  listUnavailable = signal<boolean>(false);
+  /** Mensaje institucional del backend para el último fallo de la bandeja. */
+  private listaError = signal<string>('');
   listState = signal<ReclamosListState>('LOADING');
   searchQuery = signal<string>('');
   estadoFiltro = signal<EstadoFiltroReclamos>('TODOS');
@@ -537,7 +531,7 @@ export class TeacherClaimsComponent implements OnInit, OnDestroy {
   cargarReclamos(): void {
     this.listaSub?.unsubscribe();
     this.isLoading.set(true);
-    this.listUnavailable.set(false);
+    this.listaError.set('');
     this.listState.set('LOADING');
     const estado = this.estadoFiltro();
     this.listaSub = this.claimService
@@ -564,16 +558,10 @@ export class TeacherClaimsComponent implements OnInit, OnDestroy {
         },
         error: (error: unknown) => {
           const status = (error as { status?: number })?.status;
-          this.listState.set(status === 501
-            ? 'UNAVAILABLE'
-            : status === 403
-              ? 'FORBIDDEN'
-              : status === 0
-                ? 'NETWORK_ERROR'
-                : 'SERVER_ERROR');
-          this.listUnavailable.set(status === 501);
+          this.listState.set(status === 403 ? 'FORBIDDEN' : status === 0 ? 'NETWORK_ERROR' : 'SERVER_ERROR');
+          this.listaError.set(getApiErrorMessage(error));
           this.isLoading.set(false);
-          if (status !== 501) this.toast.error(getApiErrorMessage(error));
+          this.toast.error(this.listaError());
         },
       });
   }
@@ -685,14 +673,9 @@ ull si el reclamo es de la sesión completa. */
     return getApiErrorResponse(error)?.message.trim() || getApiErrorMessage(error);
   }
 
+  /** El texto lo entrega el backend (catálogo institucional); aquí no se muestran códigos HTTP ni nombres de contratos. */
   listStateMessage(): string {
-    switch (this.listState()) {
-      case 'FORBIDDEN': return 'No tienes autorización para consultar los reclamos de este alcance institucional (403).';
-      case 'NETWORK_ERROR': return 'No se pudo conectar con el backend. La lista no se reemplazó por datos simulados.';
-      case 'SERVER_ERROR': return 'El backend no pudo cargar los reclamos. Intenta nuevamente más tarde.';
-      case 'UNAVAILABLE': return 'El listado de reclamos todavía no está implementado en el backend (501).';
-      default: return 'No fue posible cargar los reclamos.';
-    }
+    return this.listaError() || mensajeUi('API_ERROR_DEFAULT');
   }
 
   descargandoSoporte = signal<boolean>(false);

@@ -5,6 +5,12 @@ import { mockStore } from '../mocks/mock-data-store';
 import { respuestaConsultasTransversales } from '../mocks/mock-consultas-transversales';
 import { plantillasNotificacionMock } from '../mocks/mock-notificaciones';
 import {
+  JORNADAS_PROGRAMA_MOCK,
+  MODALIDADES_PROGRAMA_MOCK,
+  TIPOS_PROGRAMA_MOCK,
+  filtrarProgramasMock,
+} from '../mocks/mock-programas';
+import {
   mockHorariosToDto,
   mockMateriasToDto,
   mockSesionesToDto,
@@ -485,6 +491,25 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
       ],
     };
     return of(okResponse(ficha)).pipe(delay(200));
+  }
+  // ================= DECANO: PROGRAMAS ACADÉMICOS Y SUS CATÁLOGOS =================
+  // El inicio del decano (coordinadores) los consulta al abrir: sin simularlos devolvían 501 y avisaban al usuario.
+  if (url.split('?')[0].endsWith('/decano/programas') && method === 'GET') {
+    const filtrados = filtrarProgramasMock(req.params.get('nombre'), req.params.get('estaActivo'), req.params.get('idTipoPrograma'));
+    const tamano = Math.max(Number(req.params.get('tamano')) || 10, 1);
+    const pagina = Math.max(Number(req.params.get('pagina')) || 1, 1);
+    const pageDatos = filtrados.slice((pagina - 1) * tamano, pagina * tamano);
+    return of(okResponse(pageDatos, undefined, filtrados.length)).pipe(delay(200));
+  }
+  // Catálogos de solo lectura: el backend los entrega como arreglo simple, sin sobre ApiResponse.
+  for (const [sufijo, catalogo] of [
+    ['/tipos-programa', TIPOS_PROGRAMA_MOCK],
+    ['/modalidades-programa', MODALIDADES_PROGRAMA_MOCK],
+    ['/jornadas-programa', JORNADAS_PROGRAMA_MOCK],
+  ] as const) {
+    if (!url.includes('/admin/') && url.split('?')[0].endsWith(sufijo) && method === 'GET') {
+      return of(new HttpResponse({ status: 200, body: catalogo })).pipe(delay(150));
+    }
   }
   if (url.endsWith('/decano/estructura') && method === 'GET') {
     const estructura = [

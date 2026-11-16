@@ -1,15 +1,26 @@
-import { Component, ChangeDetectionStrategy, input, output, signal, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, DestroyRef, effect, inject, input, output, signal, computed, untracked } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Subject, debounceTime } from 'rxjs';
 
 import { FormsModule } from '@angular/forms';
 import { PlanEstudioItem, AsignaturaPlanItem } from '../../../../core/models/role-management.model';
 import { BadgeComponent, BadgeVariant } from '../../../../shared/components/badge/badge.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
+import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
+import { ErrorCargaComponent } from '../../../../shared/components/error-carga/error-carga.component';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
+
+/** Filtros de la malla que el servidor aplica (búsqueda, semestre y código de carácter). */
+export interface FiltrosMalla {
+  busqueda: string;
+  semestre: number;
+  caracter: string;
+}
 
 @Component({
     selector: 'app-study-plan-mesh',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [FormsModule, BadgeComponent, ButtonComponent, PaginationComponent],
+    imports: [FormsModule, BadgeComponent, ButtonComponent, ErrorCargaComponent, PaginationComponent],
     template: `
     <div class="space-y-6">
       <div class="superficie flex items-center justify-between p-4">
@@ -41,7 +52,7 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
           </div>
           <h2 class="font-serif font-bold text-2xl text-warm-900">{{ plan().nombre }}</h2>
           <p class="text-xs text-warm-600">
-            Duración: <strong>{{ plan().totalSemestres }} Semestres</strong> • Créditos: <strong>{{ creditosMalla() }}</strong> • Asignaturas: <strong>{{ asignaturas().length }}</strong>
+            Duración: <strong>{{ plan().totalSemestres }} Semestres</strong>@if (plan().totalCreditos !== null) { • Créditos: <strong>{{ plan().totalCreditos }}</strong>} • Asignaturas: <strong>{{ totalAsignaturas() }}</strong>
           </p>
         </div>
 
@@ -84,7 +95,7 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
           <input aria-label="Buscar asignatura en la malla"
             type="text"
             [ngModel]="searchAsignatura()"
-            (ngModelChange)="searchAsignatura.set($event)"
+            (ngModelChange)="onBusqueda($event)"
             placeholder="Buscar asignatura por nombre, código o área curricular..."
             class="w-full pl-10 pr-4 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-900 placeholder-warm-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 shadow-warm-sm"
           />
@@ -96,7 +107,7 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
         <div>
           <select aria-label="Filtrar la malla por semestre"
             [ngModel]="selectedSemestre()"
-            (ngModelChange)="selectedSemestre.set($event)"
+            (ngModelChange)="onSemestre($event)"
             class="w-full px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20 shadow-warm-sm"
           >
             <option [value]="0">Todos los semestres</option>
@@ -109,25 +120,27 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
         <div>
           <select aria-label="Filtrar la malla por carácter"
             [ngModel]="selectedCaracter()"
-            (ngModelChange)="selectedCaracter.set($event); currentPage.set(1)"
+            (ngModelChange)="onCaracter($event)"
             class="w-full px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20 shadow-warm-sm"
           >
             <option value="">Todos los caracteres</option>
-            @for (c of caracteresDisponibles(); track c) {
-              <option [value]="c">{{ c }}</option>
+            @for (c of caracteresDisponibles(); track c.codigo) {
+              <option [value]="c.codigo">{{ c.nombre }}</option>
             }
           </select>
         </div>
       </div>
 
       <!-- Malla Curricular en Tarjetas -->
-      @if (filteredAsignaturas().length === 0) {
+      @if (error() && !cargando()) {
+        <app-error-carga [error]="error()!" (reintentar)="reintentar.emit()" />
+      } @else if (asignaturas().length === 0 && !cargando()) {
         <div class="superficie p-12 text-center">
           <p class="text-sm text-warm-500">No hay asignaturas registradas para este filtro o semestre.</p>
         </div>
       } @else {
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          @for (asig of pagedAsignaturas(); track asig.id) {
+          @for (asig of asignaturas(); track asig.id) {
             <div class="p-4 rounded-2xl bg-white border border-warm-200/90 shadow-warm-sm flex flex-col justify-between gap-3 hover:border-primary-400/80 transition-all">
               <div class="space-y-2">
                 <div class="flex items-center justify-between">
@@ -191,13 +204,13 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
           }
         </div>
 
-        @if (filteredAsignaturas().length > pageSize()) {
+        @if (totalAsignaturas() > pageSize()) {
           <div class="mt-6 flex justify-center">
             <app-pagination
-              [currentPage]="currentPage()"
-              [totalItems]="filteredAsignaturas().length"
+              [currentPage]="pagina()"
+              [totalItems]="totalAsignaturas()"
               [pageSize]="pageSize()"
-              (pageChange)="currentPage.set($event)"
+              (pageChange)="pageChange.emit($event)"
             />
           </div>
         }
@@ -206,12 +219,17 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
   `
 })
 export class StudyPlanMeshComponent {
+  private readonly destroyRef = inject(DestroyRef);
+
   plan = input.required<PlanEstudioItem>();
+  /** Página actual de la malla, ya filtrada y paginada por el servidor. */
   asignaturas = input.required<AsignaturaPlanItem[]>();
-  /** Certificación F3: créditos reales de la malla cargada (el plan no trae el total). */
-  creditosMalla = computed(() =>
-    this.asignaturas().reduce((total, a) => total + (Number(a.creditos) || 0), 0)
-  );
+  /** Total real de asignaturas del filtro (`totalElementos` del servidor). */
+  totalAsignaturas = input(0);
+  pagina = input(1);
+  pageSize = input(9);
+  cargando = input(false);
+  error = input<LoadErrorState | null>(null);
 
   back = output<void>();
   addSemester = output<void>();
@@ -220,44 +238,66 @@ export class StudyPlanMeshComponent {
   associateSubject = output<void>();
   editSubject = output<AsignaturaPlanItem>();
   removeSubject = output<AsignaturaPlanItem>();
+  /** Cambió la búsqueda, el semestre o el carácter: el contenedor vuelve a consultar desde la página 1. */
+  filtrosChange = output<FiltrosMalla>();
+  pageChange = output<number>();
+  reintentar = output<void>();
 
   searchAsignatura = signal('');
   selectedSemestre = signal<number>(0);
   selectedCaracter = signal<string>('');
-  currentPage = signal(1);
-  pageSize = signal(9);
+
+  private readonly busqueda$ = new Subject<void>();
+
+  /** Caracteres vistos en la malla (cada fila trae su código y nombre del catálogo del backend). */
+  private readonly caracteresVistos = signal<Record<string, string>>({});
+  caracteresDisponibles = computed(() =>
+    Object.entries(this.caracteresVistos())
+      .map(([codigo, nombre]) => ({ codigo, nombre }))
+      .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
+  );
 
   semestresDisponibles = computed(() => {
     const total = this.plan().totalSemestres;
     return Array.from({ length: total }, (_, i) => i + 1);
   });
 
-  /** Caracteres presentes en la malla cargada (Obligatoria, Optativa). */
-  caracteresDisponibles = computed(() =>
-    [...new Set(this.asignaturas().map((a) => a.nombreCaracter).filter((n): n is string => !!n))].sort((a, b) => a.localeCompare(b, 'es'))
-  );
-
-  filteredAsignaturas = computed(() => {
-    const q = this.searchAsignatura().toLowerCase().trim();
-    const sem = Number(this.selectedSemestre());
-    const caracter = this.selectedCaracter();
-    return this.asignaturas().filter((a) => {
-      const matchQ =
-        !q ||
-        a.nombre.toLowerCase().includes(q) ||
-        a.codigo.toLowerCase().includes(q) ||
-        a.area.toLowerCase().includes(q);
-      const matchSem = sem === 0 || a.semestre === sem;
-      const matchCaracter = !caracter || a.nombreCaracter === caracter;
-      return matchQ && matchSem && matchCaracter;
+  constructor() {
+    this.busqueda$.pipe(debounceTime(300), takeUntilDestroyed(this.destroyRef)).subscribe(() => this.emitirFiltros());
+    effect(() => {
+      const items = this.asignaturas();
+      untracked(() => {
+        const nuevos: Record<string, string> = {};
+        for (const a of items) {
+          if (a.codigoCaracter && a.nombreCaracter) nuevos[a.codigoCaracter] = a.nombreCaracter;
+        }
+        if (Object.keys(nuevos).length > 0) this.caracteresVistos.update((previos) => ({ ...previos, ...nuevos }));
+      });
     });
-  });
+  }
 
-  pagedAsignaturas = computed(() => {
-    const list = this.filteredAsignaturas();
-    const start = (this.currentPage() - 1) * this.pageSize();
-    return list.slice(start, start + this.pageSize());
-  });
+  onBusqueda(valor: string): void {
+    this.searchAsignatura.set(valor);
+    this.busqueda$.next();
+  }
+
+  onSemestre(valor: number | string): void {
+    this.selectedSemestre.set(Number(valor));
+    this.emitirFiltros();
+  }
+
+  onCaracter(codigo: string): void {
+    this.selectedCaracter.set(codigo);
+    this.emitirFiltros();
+  }
+
+  private emitirFiltros(): void {
+    this.filtrosChange.emit({
+      busqueda: this.searchAsignatura().trim(),
+      semestre: Number(this.selectedSemestre()) || 0,
+      caracter: this.selectedCaracter(),
+    });
+  }
 
   getPlanBadgeVariant(estado: PlanEstudioItem['estado']): BadgeVariant {
     switch (estado) {

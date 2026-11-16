@@ -1,7 +1,7 @@
 import { ElementRef, ChangeDetectionStrategy, Component, OnChanges, OnInit, SimpleChanges, computed, inject, input, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { Observable, of, tap, map } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { ConsultasTransversalesService } from '../../../core/services/consultas-transversales.service';
 import { DeanFacultadService } from '../../../core/services/dean-facultad.service';
 import { CourseService } from '../../../core/services/course.service';
@@ -340,9 +340,6 @@ export class DeanDirectorioComponent implements OnInit, OnChanges {
   readonly historial = signal<FichaUnificadaEstudiante | null>(null);
   private readonly fichaPanel = viewChild<ElementRef<HTMLElement>>('fichaPanel');
 
-  /** Grupos de la facultad: el backend los entrega completos, así que se leen una vez y se pagina en el cliente. */
-  private gruposCache: Course[] | null = null;
-
   readonly listado = new ListadoPaginado<FilaDirectorio>(
     (pagina, tamano) => this.consultar(pagina, tamano),
     (mensaje) => this.toast.error(mensaje)
@@ -466,19 +463,9 @@ export class DeanDirectorioComponent implements OnInit, OnChanges {
         })))
       );
     }
-    return this.gruposFiltrados(texto).pipe(
-      map((todos) => {
-        const inicio = (pagina - 1) * tamano;
-        return {
-          elementos: todos.slice(inicio, inicio + tamano).map((c): FilaDirectorio => this.filaGrupo(c)),
-          exitoso: true,
-          numeroPagina: pagina,
-          tamanoPagina: tamano,
-          totalElementos: todos.length,
-          totalPaginas: Math.max(1, Math.ceil(todos.length / tamano)),
-        };
-      })
-    );
+    return this.cursos
+      .getDeanCoursesPage({ busqueda: texto, pagina, tamano })
+      .pipe(map((res) => ({ ...res, elementos: res.elementos.map((c): FilaDirectorio => this.filaGrupo(c)) })));
   }
 
   /** Respuesta de página con sus elementos ya convertidos a filas (la forma de página la conserva ListadoPaginado). */
@@ -494,21 +481,6 @@ export class DeanDirectorioComponent implements OnInit, OnChanges {
       totalElementos,
       totalPaginas: origen.totalPaginas ?? Math.max(1, Math.ceil(totalElementos / tamanoPagina)),
     };
-  }
-
-  private gruposFiltrados(texto: string): Observable<Course[]> {
-    const filtrar = (cursos: Course[]) => {
-      const q = texto.toLowerCase().trim();
-      if (!q) return cursos;
-      return cursos.filter(
-        (c) => c.name.toLowerCase().includes(q) || (c.code ?? '').toLowerCase().includes(q) || (c.room ?? '').toLowerCase().includes(q)
-      );
-    };
-    if (this.gruposCache) return of(filtrar(this.gruposCache));
-    return this.cursos.getDeanCourses().pipe(
-      tap((res) => (this.gruposCache = res.datos ?? [])),
-      map((res) => filtrar(res.datos ?? []))
-    );
   }
 
   private filaGrupo(c: Course): FilaDirectorio {

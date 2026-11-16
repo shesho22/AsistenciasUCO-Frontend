@@ -12,6 +12,11 @@ export interface ToastData {
   type: ToastType;
   /** VAL OBS-14: id de correlación (o referencia local) que el usuario puede citar al reportar el error. */
   reference?: string | null;
+  /**
+   * Número del aviso publicado: crece con cada `show`. Permite al componente distinguir un aviso nuevo de uno ya
+   * visible aunque `visible` no cambie (el último aviso publicado siempre dura su tiempo completo).
+   */
+  secuencia: number;
 }
 
 @Injectable({
@@ -22,12 +27,16 @@ export class ToastService {
     visible: false,
     message: '',
     type: 'success',
+    secuencia: 0,
   });
 
   currentToast = this.state.asReadonly();
 
   show(message: string, type: ToastType = 'success', reference: string | null = null): void {
-    this.state.set(reference ? { visible: true, message, type, reference } : { visible: true, message, type });
+    const secuencia = this.state().secuencia + 1;
+    this.state.set(
+      reference ? { visible: true, message, type, secuencia, reference } : { visible: true, message, type, secuencia }
+    );
   }
 
   success(message: string): void {

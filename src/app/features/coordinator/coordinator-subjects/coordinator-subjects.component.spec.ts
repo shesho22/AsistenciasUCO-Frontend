@@ -119,6 +119,37 @@ describe('CoordinatorSubjectsComponent', () => {
     expect(text).not.toContain('Solicitudes de Cupo');
   });
 
+  describe('cupo máximo del grupo (sin valores inventados)', () => {
+    const sinCupo: Course = { ...course, id: 'crs-2', code: 'IS-402', name: 'Bases de Datos', enrolledStudentsCount: 12, cupoMaximo: undefined };
+
+    function recargar(cursos: Course[]): string {
+      courseService.getCoordinatorCourses.and.returnValue(of<never>({ exitoso: true, datos: cursos } as never));
+      component.cargarDatos();
+      fixture.detectChanges();
+      return (fixture.nativeElement as HTMLElement).textContent ?? '';
+    }
+
+    it('muestra el cupo que entrega el backend', () => {
+      const texto = recargar([course]);
+      expect(texto).toContain('28 / 35');
+      expect(component.totalCapacidadGrupos()).toBe('35');
+    });
+
+    it('un grupo sin cupo se muestra como no disponible, sin número inventado', () => {
+      const texto = recargar([sinCupo]);
+      expect(texto).toContain('12 / —');
+      expect(texto).not.toContain('12 / 35');
+      expect(component.cupoTexto(sinCupo)).toBe('—');
+      expect(component.totalCapacidadGrupos()).toBe('—');
+    });
+
+    it('un grupo sin cupo no entra en la suma de la capacidad', () => {
+      recargar([course, sinCupo]);
+      expect(component.totalCapacidadGrupos()).toBe('35');
+      expect(component.cupoTexto({ ...sinCupo, cupoMaximo: 0 })).toBe('—');
+    });
+  });
+
   it('navega a la malla curricular del plan al invocar irAMallaPlan', () => {
     const navSpy = spyOn(router, 'navigate').and.returnValue(Promise.resolve(true));
     component.irAMallaPlan('plan-1');

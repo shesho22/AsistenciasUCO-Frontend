@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { HttpErrorResponse } from '@angular/common/http';
 import { of, throwError } from 'rxjs';
 import { CoordinatorGroupsComponent, cupoValidoOVacio } from './coordinator-groups.component';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
@@ -113,18 +114,39 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
     expect(component.grupos().length).toBe(1);
   });
 
-  it('sin planes o con catálogos que fallan deja las listas vacías', () => {
+  it('si fallan los catálogos del formulario se muestra el error con reintento y no solo listas vacías', () => {
     coordinatorService.getPlanesEstudio.and.returnValue(of({ exitoso: true, datos: [] }));
-    coordinatorService.getDocentesPrograma.and.returnValue(throwError(() => new Error('x')));
-    coordinatorService.getPeriodosAcademicos.and.returnValue(throwError(() => new Error('x')));
+    coordinatorService.getDocentesPrograma.and.returnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
+    coordinatorService.getPeriodosAcademicos.and.returnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
     component.cargarCatalogos();
     expect(component.asignaturas()).toEqual([]);
     expect(component.docentes()).toEqual([]);
     expect(component.periodos()).toEqual([]);
+    expect(component.errorCatalogos()?.kind).toBe('SERVIDOR');
 
-    coordinatorService.getPlanesEstudio.and.returnValue(throwError(() => new Error('x')));
+    component.abrirCrear();
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[data-testid="error-carga"]')).not.toBeNull();
+
+    coordinatorService.getDocentesPrograma.and.returnValue(of({ exitoso: true, total: 0, datos: [] }));
+    coordinatorService.getPeriodosAcademicos.and.returnValue(of({ exitoso: true, datos: [] }));
+    (el.querySelector('[data-testid="error-carga"] button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(component.errorCatalogos()).toBeNull();
+    expect(el.querySelector('[data-testid="error-carga"]')).toBeNull();
+  });
+
+  it('si falla la malla de un plan o la lista de planes se informa el error de catálogos', () => {
+    coordinatorService.getPlanesEstudio.and.returnValue(of({ exitoso: true, datos: [{ id: 'p-1' } as never] }));
+    coordinatorService.getAsignaturasPorPlan.and.returnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
     component.cargarCatalogos();
     expect(component.asignaturas()).toEqual([]);
+    expect(component.errorCatalogos()).not.toBeNull();
+
+    coordinatorService.getPlanesEstudio.and.returnValue(throwError(() => new HttpErrorResponse({ status: 403 })));
+    component.cargarCatalogos();
+    expect(component.errorCatalogos()?.kind).toBe('AUTORIZACION');
   });
 
   it('crear: valida los campos y envía grupo y franjas en una sola llamada', () => {
@@ -270,6 +292,29 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
 
     component.volver();
     expect(component.vista()).toBe('LISTA');
+  });
+
+  it('ERR_CRUCE_HORARIO_DOCENTE: crear un grupo con cruce de horario (409) muestra el mensaje del backend en el formulario', () => {
+    const mensaje = 'Existe cruce de horario para el docente.';
+    courseService.crearGrupo.and.returnValue(throwError(() => new HttpErrorResponse({
+      status: 409,
+      error: {
+        timestamp: '2026-11-16T10:00:00Z', status: 409, error: 'Conflict', code: 'ERR_CRUCE_HORARIO_DOCENTE',
+        message: mensaje, path: '/api/v1/grupos', correlationId: null,
+      },
+    })));
+    component.abrirCrear();
+    component.form = { ...component.form, idAsignatura: 'a-1', idPeriodoAcademico: 'p-1', codigo: 3, nombre: 'Grupo 03', idDocente: 'doc-1' };
+    component.guardar();
+    fixture.detectChanges();
+
+    const alerta = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="error-guardado-grupo"]');
+    expect(alerta?.textContent).toContain(mensaje);
+    expect(toast.error).toHaveBeenCalledWith(mensaje);
+    expect(component.vista()).toBe('FORM');
+
+    component.volver();
+    expect(component.errorGuardado()).toBeNull();
   });
 
   it('F-COO-009: el selector de docentes trae todas las paginas del directorio (mas de 100)', () => {
