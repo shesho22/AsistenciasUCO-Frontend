@@ -112,6 +112,7 @@ type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO';
       <app-student-matricula-codigo-modal
         [isOpen]="modalMatriculaGrupoVisible()"
         [processing]="procesandoMatriculaGrupo()"
+        [error]="errorMatriculaGrupo()"
         [tokenInicial]="tokenPrecargado()"
         [codigoInicial]="pinPrecargado()"
         (submitted)="enviarMatriculaPorCodigo($event)"
@@ -143,6 +144,8 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
   // Matrícula por Código o PIN de Grupo
   modalMatriculaGrupoVisible = signal<boolean>(false);
   procesandoMatriculaGrupo = signal<boolean>(false);
+  /** Mensaje del backend ante un rechazo de la matrícula por código; se muestra dentro del modal. */
+  errorMatriculaGrupo = signal<string | null>(null);
   /** PIN que trae el login (`?matricula=<PIN>`); el modal lo muestra precargado. */
   pinPrecargado = signal<string>('');
   /** Token QR que trae el login (`?t=<TOKEN>`); F-EST-012. */
@@ -650,10 +653,12 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
   }
 
   abrirModalMatriculaGrupo(): void {
+    this.errorMatriculaGrupo.set(null);
     this.modalMatriculaGrupoVisible.set(true);
   }
 
   cerrarModalMatriculaGrupo(): void {
+    this.errorMatriculaGrupo.set(null);
     this.modalMatriculaGrupoVisible.set(false);
   }
 
@@ -664,12 +669,14 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
     } else {
       const pin = String(dato || '').trim();
       if (!/^[0-9]{6}$/.test(pin)) {
+        this.errorMatriculaGrupo.set(mensajeUi('UI_STUDENT_COURSES_004'));
         this.toast.error(mensajeUi('UI_STUDENT_COURSES_004'));
         return;
       }
       credencial = { pin };
     }
 
+    this.errorMatriculaGrupo.set(null);
     this.procesandoMatriculaGrupo.set(true);
     this.matriculaQrService.matricularAutenticado(credencial).subscribe({
       next: (resultado) => {
@@ -680,7 +687,9 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.procesandoMatriculaGrupo.set(false);
-        this.toast.error(getApiErrorMessage(err));
+        const mensaje = getApiErrorMessage(err);
+        this.errorMatriculaGrupo.set(mensaje);
+        this.toast.error(mensaje);
       },
     });
   }

@@ -36,6 +36,14 @@ describe('ToastComponent', () => {
     expect(fixture.componentInstance.isExiting()).toBeFalse();
   }));
 
+  it('se dibuja por encima de los modales (z-50) para que un error al enviar un modal no quede oculto', () => {
+    const fixture = TestBed.createComponent(ToastComponent);
+    fixture.componentRef.setInput('visible', true);
+    fixture.detectChanges();
+    expect(fixture.componentInstance.containerClasses()).toContain('z-[60]');
+    expect(fixture.componentInstance.containerClasses()).not.toContain('z-50');
+  });
+
   it('reinicia el temporizador al cerrar manualmente', fakeAsync(() => {
     const fixture = TestBed.createComponent(ToastComponent);
     fixture.componentRef.setInput('visible', true);

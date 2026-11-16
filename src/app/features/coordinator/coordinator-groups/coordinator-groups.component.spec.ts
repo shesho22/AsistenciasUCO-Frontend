@@ -294,6 +294,29 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
     expect(component.vista()).toBe('LISTA');
   });
 
+  it('ERR_CRUCE_HORARIO_DOCENTE: crear un grupo con cruce de horario (409) muestra el mensaje del backend en el formulario', () => {
+    const mensaje = 'Existe cruce de horario para el docente.';
+    courseService.crearGrupo.and.returnValue(throwError(() => new HttpErrorResponse({
+      status: 409,
+      error: {
+        timestamp: '2026-11-16T10:00:00Z', status: 409, error: 'Conflict', code: 'ERR_CRUCE_HORARIO_DOCENTE',
+        message: mensaje, path: '/api/v1/grupos', correlationId: null,
+      },
+    })));
+    component.abrirCrear();
+    component.form = { ...component.form, idAsignatura: 'a-1', idPeriodoAcademico: 'p-1', codigo: 3, nombre: 'Grupo 03', idDocente: 'doc-1' };
+    component.guardar();
+    fixture.detectChanges();
+
+    const alerta = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="error-guardado-grupo"]');
+    expect(alerta?.textContent).toContain(mensaje);
+    expect(toast.error).toHaveBeenCalledWith(mensaje);
+    expect(component.vista()).toBe('FORM');
+
+    component.volver();
+    expect(component.errorGuardado()).toBeNull();
+  });
+
   it('F-COO-009: el selector de docentes trae todas las paginas del directorio (mas de 100)', () => {
     const docente = (n: number) => ({ idDocente: `doc-${n}`, nombreCompleto: `Docente ${n}` }) as never;
     const pagina1 = Array.from({ length: 100 }, (_, i) => docente(i + 1));

@@ -599,8 +599,36 @@ describe('StudentCoursesComponent', () => {
     component.abrirModalMatriculaGrupo();
     component.enviarMatriculaPorCodigo('482913');
     expect(toastSpy.error).toHaveBeenCalledWith('Solo desde la red Wi-Fi del campus.');
+    expect(component.errorMatriculaGrupo()).toBe('Solo desde la red Wi-Fi del campus.');
     expect(component.modalMatriculaGrupoVisible()).toBeTrue();
     expect(component.procesandoMatriculaGrupo()).toBeFalse();
+  });
+
+  it('MQR_001: un PIN inexistente (404) muestra el mensaje del backend dentro del modal y se limpia al reintentar o cerrar', () => {
+    matriculaQrSpy.matricularAutenticado.and.returnValue(
+      throwError(() => apiHttpError(404, 'El código de matrícula no es válido o ya no está disponible. Solicítale al docente uno nuevo.')));
+    component.abrirModalMatriculaGrupo();
+    fixture.detectChanges();
+    component.enviarMatriculaPorCodigo('000000');
+    fixture.detectChanges();
+
+    const alerta = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="matricula-error"]');
+    expect(alerta?.textContent).toContain('El código de matrícula no es válido');
+    expect(component.modalMatriculaGrupoVisible()).toBeTrue();
+
+    matriculaQrSpy.matricularAutenticado.and.returnValue(of({ idGrupo: 'g-1' }));
+    component.enviarMatriculaPorCodigo('482913');
+    expect(component.errorMatriculaGrupo()).toBeNull();
+
+    component.errorMatriculaGrupo.set('x');
+    component.cerrarModalMatriculaGrupo();
+    expect(component.errorMatriculaGrupo()).toBeNull();
+  });
+
+  it('un PIN con formato inválido se informa dentro del modal sin llamar al backend', () => {
+    component.enviarMatriculaPorCodigo('12');
+    expect(matriculaQrSpy.matricularAutenticado).not.toHaveBeenCalled();
+    expect(component.errorMatriculaGrupo()).toBeTruthy();
   });
 
   it('F-EST-012: enviarMatriculaPorCodigo con objeto token llama a matricularAutenticado({ token })', () => {

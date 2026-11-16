@@ -122,8 +122,9 @@ export class ToastComponent {
     return this.type() === 'error' && id ? mensajeUi('UI_ERROR_REFERENCIA', { id }) : null;
   });
 
+  /** z-[60]: por encima de los modales (z-50); si no, el aviso de un error al enviar un modal queda oculto tras su fondo. */
   readonly containerClasses = computed(() => {
-    const base = 'fixed top-16 right-6 z-50 flex flex-col gap-2 p-3.5 bg-warm-950 text-white rounded-2xl shadow-warm-lg border border-primary-800/80 max-w-xs sm:max-w-sm w-full select-none';
+    const base = 'fixed top-16 right-6 z-[60] flex flex-col gap-2 p-3.5 bg-warm-950 text-white rounded-2xl shadow-warm-lg border border-primary-800/80 max-w-xs sm:max-w-sm w-full select-none';
     const anim = this.isExiting() ? 'animate-toast-exit' : 'animate-toast-enter';
     return `${base} ${anim}`;
   });
