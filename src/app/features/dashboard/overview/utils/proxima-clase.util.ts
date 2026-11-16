@@ -197,8 +197,8 @@ export function calcularProximaClaseDesdeItems(
   const elegido = candidatos[0];
   const diffMinutos = Math.max(0, Math.round(elegido.diffMs / 60000));
 
-  let tiempoRestanteTexto = '';
-  let tiempoDetalleBadge = '';
+  let tiempoRestanteTexto: string;
+  let tiempoDetalleBadge: string;
 
   const cleanDia = sanitizeDayName(elegido.item.dia);
 

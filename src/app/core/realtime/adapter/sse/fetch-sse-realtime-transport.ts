@@ -241,7 +241,7 @@ export class FetchSseRealtimeTransport implements RealtimeTransport {
         return;
       }
 
-      let token: string | null = null;
+      let token: string | null;
       try {
         token = await this.authService.getValidAccessToken(
           MIN_TOKEN_VALIDITY_SECONDS
