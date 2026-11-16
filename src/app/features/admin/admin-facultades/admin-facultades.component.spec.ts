@@ -243,7 +243,7 @@ describe('AdminFacultadesComponent', () => {
     component.abrirModalVincularDecano(fac);
     expect(component.facultadParaDecano()?.id).toBe(fac.id);
 
-    component.decanoSeleccionadoId = 'dec-2';
+    component.decanoSeleccionadoId.set('dec-2');
     spyOn(adminService, 'actualizarFacultad').and.returnValue(of({ exitoso: true, datos: mockFacultades[0] }));
 
     component.confirmarAsignacionDecano();
@@ -253,10 +253,26 @@ describe('AdminFacultadesComponent', () => {
     expect(component.facultadParaDecano()).toBeNull();
   });
 
+  it('cambiar decano envia el decano elegido aunque la vista ya haya leido el decano actual (regresion del selector)', () => {
+    inicializar();
+    const fac = mockFacultades[0];
+    component.abrirModalVincularDecano(fac);
+    // La plantilla lee el detalle del decano actual al abrir el modal; antes, el computed quedaba fijado en ese valor.
+    expect(component.decanoSeleccionadoObjeto()?.id).toBe(fac.decanoId);
+
+    component.decanoSeleccionadoId.set('dec-2');
+    expect(component.decanoSeleccionadoObjeto()?.id).toBe('dec-2');
+    spyOn(adminService, 'actualizarFacultad').and.returnValue(of({ exitoso: true, datos: mockFacultades[0] }));
+
+    component.confirmarAsignacionDecano();
+
+    expect(adminService.actualizarFacultad).toHaveBeenCalledWith(fac.id, { idDecano: 'dec-2' });
+  });
+
   it('cambiar decano: el toast de exito solo aparece tras la respuesta y el modal sigue abierto mientras tanto', () => {
     inicializar();
     component.abrirModalVincularDecano(mockFacultades[0]);
-    component.decanoSeleccionadoId = 'dec-2';
+    component.decanoSeleccionadoId.set('dec-2');
     const pendiente = new Subject<ObservedValueOf<ReturnType<AdminManagementService['actualizarFacultad']>>>();
     spyOn(adminService, 'actualizarFacultad').and.returnValue(pendiente);
 
@@ -279,7 +295,7 @@ describe('AdminFacultadesComponent', () => {
   it('cambiar decano: ante 409 muestra el mensaje del backend y mantiene el modal abierto', () => {
     inicializar();
     component.abrirModalVincularDecano(mockFacultades[0]);
-    component.decanoSeleccionadoId = 'dec-2';
+    component.decanoSeleccionadoId.set('dec-2');
     spyOn(adminService, 'actualizarFacultad').and.returnValue(
       throwError(() => ({ status: 409, error: { message: 'El decano ya es titular de otra facultad activa.' } }))
     );
@@ -460,7 +476,7 @@ describe('AdminFacultadesComponent', () => {
     it('cambiar decano: exitoso=false muestra mensajeUsuario o el respaldo y mantiene el modal', () => {
       inicializar();
       component.abrirModalVincularDecano(mockFacultades[0]);
-      component.decanoSeleccionadoId = 'dec-2';
+      component.decanoSeleccionadoId.set('dec-2');
       const spy = spyOn(adminService, 'actualizarFacultad');
 
       spy.and.returnValue(of({ exitoso: false, mensajeUsuario: 'Decano no asignable.', datos: null as never }));
@@ -476,7 +492,7 @@ describe('AdminFacultadesComponent', () => {
     it('cambiar decano: un error sin message usa el texto de respaldo', () => {
       inicializar();
       component.abrirModalVincularDecano(mockFacultades[0]);
-      component.decanoSeleccionadoId = 'dec-2';
+      component.decanoSeleccionadoId.set('dec-2');
       spyOn(adminService, 'actualizarFacultad').and.returnValue(throwError(() => ({ status: 0 })));
 
       component.confirmarAsignacionDecano();
