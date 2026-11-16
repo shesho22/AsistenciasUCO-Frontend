@@ -45,7 +45,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
       <app-consolidado-asistencia [embebido]="true" />
 
       <details
-        class="rounded-2xl border border-warm-200 bg-white p-4 shadow-warm-sm"
+        class="superficie p-4"
         data-testid="alertas-plegables"
         (toggle)="alternarAlertas($any($event.target).open)"
       >
