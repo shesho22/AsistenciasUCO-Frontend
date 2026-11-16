@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, input, output, signal, computed, effect } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, output, signal, computed, effect, untracked, OnDestroy } from '@angular/core';
 import type { ToastType } from './toast.service';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
@@ -71,11 +71,16 @@ export type { ToastData, ToastType } from './toast.service';
     }
   `
 })
-export class ToastComponent {
+export class ToastComponent implements OnDestroy {
   visible = input<boolean>(false);
   message = input<string>('');
   type = input<ToastType>('success');
   duration = input<number>(3500);
+  /**
+   * Número del aviso publicado (ToastService.secuencia). Un aviso nuevo con otro valor reinicia el temporizador y
+   * cancela el cierre diferido del anterior, aunque `visible` ya fuera verdadero.
+   */
+  secuencia = input<number>(0);
   /** VAL OBS-14: referencia del error (correlationId); solo se muestra en los toasts de error. */
   reference = input<string | null | undefined>(null);
 
@@ -83,14 +88,25 @@ export class ToastComponent {
 
   isExiting = signal<boolean>(false);
   private timerId: ReturnType<typeof setTimeout> | null = null;
+  private exitTimerId: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     effect(() => {
+      // Depende de `visible` y de `secuencia`: cada aviso nuevo reinicia su reloj aunque otro siguiera visible.
+      this.secuencia();
       if (this.visible()) {
-        this.isExiting.set(false);
-        this.startAutoDismissTimer();
+        untracked(() => {
+          this.clearExitTimer();
+          this.isExiting.set(false);
+          this.startAutoDismissTimer();
+        });
       }
     }, { allowSignalWrites: true });
+  }
+
+  ngOnDestroy(): void {
+    this.clearTimer();
+    this.clearExitTimer();
   }
 
   private startAutoDismissTimer(): void {
@@ -102,12 +118,22 @@ export class ToastComponent {
 
   triggerDismiss(): void {
     this.clearTimer();
+    this.clearExitTimer();
     this.isExiting.set(true);
 
-    setTimeout(() => {
+    // El cierre diferido se cancela si llega un aviso nuevo antes de 250 ms: no debe ocultar al más reciente.
+    this.exitTimerId = setTimeout(() => {
+      this.exitTimerId = null;
       this.isExiting.set(false);
       this.dismissed.emit();
     }, 250);
+  }
+
+  private clearExitTimer(): void {
+    if (this.exitTimerId) {
+      clearTimeout(this.exitTimerId);
+      this.exitTimerId = null;
+    }
   }
 
   private clearTimer(): void {
