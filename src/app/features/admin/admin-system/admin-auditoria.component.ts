@@ -49,7 +49,7 @@ export function rangoUtc(desde: string, hasta: string): { desde: string; hasta: 
     imports: [ModalComponent, FechaHoraCortaPipe, FormsModule, BadgeComponent, PaginationComponent, ErrorCargaComponent],
     template: `
     <div class="space-y-4">
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 bg-white p-4 rounded-2xl border border-warm-200 shadow-warm-sm">
+      <div class="superficie grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 p-4">
         <label class="text-xs font-semibold text-warm-600">
           Desde
           <input type="date" aria-label="Desde" [ngModel]="desde()" (ngModelChange)="desde.set($event)"
@@ -109,7 +109,7 @@ export function rangoUtc(desde: string, hasta: string): { desde: string; hasta: 
         <p role="alert" class="text-sm text-danger-700">{{ errorRango() }}</p>
       }
 
-      <section class="bg-white border border-warm-200 rounded-2xl overflow-hidden shadow-warm-sm">
+      <section class="superficie overflow-hidden">
         @if (listado.error() && !listado.cargando()) {
           <app-error-carga [error]="listado.error()!" (reintentar)="listado.reintentar()" />
         } @else if (listado.cargando()) {

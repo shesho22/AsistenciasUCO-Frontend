@@ -30,7 +30,7 @@ const MARGEN_IZQ = 44;
       </app-page-header>
 
       @if (cargando()) {
-        <p role="status" class="rounded-2xl border border-warm-200 bg-white p-4 text-sm text-warm-700 shadow-warm-sm">Cargando indicadores…</p>
+        <p role="status" class="superficie p-4 text-sm text-warm-700">Cargando indicadores…</p>
       }
 
       @if (service.kpis(); as k) {
@@ -46,7 +46,7 @@ const MARGEN_IZQ = 44;
         </div>
       }
 
-      <div class="rounded-2xl border border-warm-200 bg-white p-4 shadow-warm-sm">
+      <div class="superficie p-4">
         <h2 class="font-serif font-bold text-lg text-warm-900">Ausentismo por facultad</h2>
         <p class="mb-3 text-xs text-warm-600" data-testid="nota-horas">Calculado por horas dictadas.</p>
         @if (service.comparativa().length === 0 && !cargando()) {
@@ -65,7 +65,7 @@ const MARGEN_IZQ = 44;
         }
       </div>
 
-      <div class="rounded-2xl border border-warm-200 bg-white p-4 shadow-warm-sm">
+      <div class="superficie p-4">
         <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 class="font-serif font-bold text-lg text-warm-900">Tendencia de ausentismo</h2>

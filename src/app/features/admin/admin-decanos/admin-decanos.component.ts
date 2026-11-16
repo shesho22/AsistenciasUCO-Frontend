@@ -115,7 +115,7 @@ const NOMBRE_FACULTAD_MAX = 50;
             }
           </div>
         } @else if (filteredDecanos().length === 0) {
-          <div class="bg-white rounded-2xl border border-warm-200 p-12 text-center shadow-warm-sm">
+          <div class="superficie p-12 text-center">
             <div class="w-12 h-12 rounded-full bg-warm-100 text-warm-400 flex items-center justify-center mx-auto mb-3">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -190,7 +190,7 @@ const NOMBRE_FACULTAD_MAX = 50;
       <!-- 2. VISTA COMPLETA: FORMULARIO DE REGISTRO DE DECANO -->
       @if (vistaActual() === 'REGISTRO') {
         <!-- Barra Superior de Retorno -->
-        <div class="flex items-center justify-between bg-white p-4 rounded-2xl border border-warm-200 shadow-warm-sm">
+        <div class="superficie flex items-center justify-between p-4">
           <button
             type="button"
             (click)="volverALista()"
@@ -207,7 +207,7 @@ const NOMBRE_FACULTAD_MAX = 50;
           </span>
         </div>
 
-        <div class="bg-white p-6 sm:p-8 rounded-2xl border border-warm-200 shadow-warm-sm max-w-3xl mx-auto space-y-6">
+        <div class="superficie p-6 sm:p-8 max-w-3xl mx-auto space-y-6">
           <div>
             <h2 class="font-serif font-bold text-2xl text-warm-900">
               Registrar Nuevo Decano

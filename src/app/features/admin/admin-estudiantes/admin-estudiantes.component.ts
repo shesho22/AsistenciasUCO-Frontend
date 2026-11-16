@@ -65,7 +65,7 @@ interface OpcionFacultad {
         </div>
       </app-page-header>
 
-      <section class="bg-white p-6 rounded-2xl border border-warm-200 shadow-warm-sm space-y-4">
+      <section class="superficie p-6 space-y-4">
         <app-filtros-plegables [activos]="filtrosActivos()">
           <div buscar class="flex gap-2">
             <input
@@ -183,7 +183,7 @@ interface OpcionFacultad {
           tabindex="-1"
           role="region"
           aria-label="Ficha unificada del estudiante"
-          class="bg-white p-6 rounded-2xl border border-warm-200 shadow-warm-sm space-y-4 outline-none focus:ring-2 focus:ring-primary-500/30"
+          class="superficie p-6 space-y-4 outline-none focus:ring-2 focus:ring-primary-500/30"
         >
           <div class="flex items-start justify-between gap-3">
             <div>
