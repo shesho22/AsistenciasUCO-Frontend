@@ -49,6 +49,7 @@ interface FacultadApiDto {
   decanoId?: string;
   nombreCompletoDecano?: string;
   decanoNombre?: string;
+  idInstitucion?: string;
   estaActivaFacultad?: boolean | null;
   totalProgramas?: unknown;
   totalEstudiantes?: unknown;
@@ -190,6 +191,7 @@ export class AdminManagementService {
             nombre: dto.nombreFacultad || dto.nombre || '',
             decanoId: dto.idDecano || dto.decanoId,
             decanoNombre: dto.nombreCompletoDecano || dto.decanoNombre || 'Sin asignar',
+            idInstitucion: dto.idInstitucion,
             estado: (dto.estaActivaFacultad ?? true) ? 'ACTIVO' : 'INACTIVO',
             totalProgramas: typeof dto.totalProgramas === 'number' ? dto.totalProgramas : undefined,
             totalEstudiantes: typeof dto.totalEstudiantes === 'number' ? dto.totalEstudiantes : undefined,

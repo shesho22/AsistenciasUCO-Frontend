@@ -176,8 +176,58 @@ describe('AdminFacultadesComponent', () => {
 
     expect(component.vista()).toBe('FORM');
     expect(component.facultadEnEdicion).toBeNull();
-    // En el modelo formFacultad se inicializa con el primer decano disponible
+    // Sin valores por defecto: ni el primer decano ni la primera institución se preseleccionan.
+    expect(component.formFacultad.idDecano).toBe('');
+    expect(component.formFacultad.idInstitucion).toBe('');
+    const selectInstitucion = (fixture.nativeElement as HTMLElement).querySelector('#fac-institucion') as HTMLSelectElement;
+    expect(selectInstitucion.options[0].textContent).toContain('Seleccionar institución');
+  });
+
+  it('crear sin elegir decano no llama al backend y pide seleccionarlo', () => {
+    fixture.detectChanges();
+    http.expectOne(`${environment.apiUrl}/admin/facultades`).flush({ exitoso: true, datos: [] });
+    http.expectOne(`${environment.apiUrl}/admin/decanos`).flush({ exitoso: true, datos: mockDecanos });
+    http.expectOne(`${environment.apiUrl}/admin/instituciones`).flush({ exitoso: true, datos: [{ id: 'inst-1', nombre: 'UCO' }] });
+    flushCoordinatorCatalogs();
+    component.abrirFormularioCrear();
+    component.formFacultad.nombre = 'Facultad de Teología';
+    const crear = spyOn(adminService, 'crearFacultad');
+
+    component.guardar();
+
+    expect(crear).not.toHaveBeenCalled();
+    expect(component.errorGuardado()).toBe('Seleccione el decano titular de la facultad.');
+  });
+
+  it('editar carga la institución y el decano reales de la facultad, no la primera institución', async () => {
+    fixture.detectChanges();
+    http.expectOne(`${environment.apiUrl}/admin/facultades`).flush({ exitoso: true, datos: [] });
+    http.expectOne(`${environment.apiUrl}/admin/decanos`).flush({ exitoso: true, datos: mockDecanos });
+    http.expectOne(`${environment.apiUrl}/admin/instituciones`).flush({
+      exitoso: true,
+      datos: [{ id: 'inst-1', nombre: 'UCO' }, { id: 'inst-2', nombre: 'Otra' }],
+    });
+    flushCoordinatorCatalogs();
+
+    component.editarFacultad({ ...mockFacultades[0], idInstitucion: 'inst-2' });
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(component.formFacultad.idInstitucion).toBe('inst-2');
     expect(component.formFacultad.idDecano).toBe('dec-1');
+    expect(((fixture.nativeElement as HTMLElement).querySelector('#fac-institucion') as HTMLSelectElement).disabled).toBeTrue();
+  });
+
+  it('el listado conserva la institución de cada facultad que entrega el backend', () => {
+    fixture.detectChanges();
+    http.expectOne(`${environment.apiUrl}/admin/facultades`).flush({
+      exitoso: true,
+      datos: [{ ...mockFacultadesApi[0], idInstitucion: 'inst-9' }],
+    });
+    http.expectOne(`${environment.apiUrl}/admin/decanos`).flush({ exitoso: true, datos: mockDecanos });
+    http.expectOne(`${environment.apiUrl}/admin/instituciones`).flush({ exitoso: true, datos: [] });
+    flushCoordinatorCatalogs();
+    expect(component.facultades()[0].idInstitucion).toBe('inst-9');
   });
 
   it('guarda una nueva facultad invocando el endpoint con nombre e idDecano', () => {
