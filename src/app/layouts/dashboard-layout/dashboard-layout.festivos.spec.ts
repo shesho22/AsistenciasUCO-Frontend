@@ -17,6 +17,7 @@ describe('DashboardLayoutComponent menú de festivos (CULM-001 B.1)', () => {
           provide: AuthService,
           useValue: jasmine.createSpyObj('AuthService', ['logout'], {
             currentUser: user.asReadonly(),
+            cerrandoSesion: signal(false).asReadonly(),
             isMockMode: signal(false).asReadonly(),
           }),
         },

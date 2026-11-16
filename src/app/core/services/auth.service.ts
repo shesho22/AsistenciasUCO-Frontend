@@ -128,6 +128,11 @@ export class AuthService implements OnDestroy {
   isAuthenticated = computed(() => !!this.token());
   private mockModeSignal = signal<boolean>(environment.useMocks);
   isMockMode = computed(() => this.mockModeSignal());
+  /**
+   * true desde que el usuario pide cerrar sesión hasta que el navegador abandona la SPA. Permite a los
+   * layouts tapar la interfaz mientras se navega al logout del PDP, en vez de re-pintarla sin usuario.
+   */
+  readonly cerrandoSesion = signal<boolean>(false);
   /** Mensaje de autenticación para la pantalla de login (cuenta sin rol, retorno inválido, etc.). */
   authError = signal<string | null>(null);
   /**
@@ -706,6 +711,8 @@ export class AuthService implements OnDestroy {
 
   async logout(): Promise<void> {
     if (this.isBaselineMode()) {
+      // La navegación al PDP es de página completa y tarda: la interfaz queda tapada hasta que el navegador sale.
+      this.cerrandoSesion.set(true);
       this.clearSession(true);
       clearPending();
       // El endpoint oficial invalida la sesión BFF del PDP y la sesión SSO central, y vuelve a la SPA.

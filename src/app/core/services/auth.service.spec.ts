@@ -743,6 +743,7 @@ describe('AuthService', () => {
       expect(service.token()).toBeNull();
       expect(service.currentUser()).toBeNull();
       expect(service.isAuthenticated()).toBeFalse();
+      expect(service.cerrandoSesion()).toBeTrue();
       expect(navigatorSpy.assign).toHaveBeenCalledWith(`${PDP}/api/v1/session/logout`);
     });
   });
