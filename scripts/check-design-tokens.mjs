@@ -26,17 +26,37 @@ function walk(dir, out = []) {
   return out;
 }
 
-function stripNoise(line, state) {
-  let s = line;
-  if (state.block) {
-    const end = s.indexOf('*/');
-    if (end < 0) return '';
-    state.block = false;
-    s = s.slice(end + 2);
+// Comentarios de bloque (CSS/TS y HTML). Pueden abrir en una linea y cerrar en otra, asi que el
+// delimitador de cierre pendiente se conserva en state.close entre lineas del mismo archivo.
+const BLOCK_COMMENTS = [['/*', '*/'], ['<!--', '-->']];
+
+function stripBlockComments(line, state) {
+  let rest = line;
+  let out = '';
+  while (rest.length) {
+    if (state.close) {
+      const end = rest.indexOf(state.close);
+      if (end < 0) return out;
+      rest = rest.slice(end + state.close.length);
+      state.close = null;
+      continue;
+    }
+    let first = -1;
+    let pair = null;
+    for (const candidate of BLOCK_COMMENTS) {
+      const at = rest.indexOf(candidate[0]);
+      if (at >= 0 && (first < 0 || at < first)) { first = at; pair = candidate; }
+    }
+    if (!pair) { out += rest; break; }
+    out += rest.slice(0, first);
+    rest = rest.slice(first + pair[0].length);
+    state.close = pair[1];
   }
-  s = s.replace(/\/\*.*?\*\//g, '').replace(/<!--.*?-->/g, '');
-  const open = s.indexOf('/*');
-  if (open >= 0) { state.block = true; s = s.slice(0, open); }
+  return out;
+}
+
+function stripNoise(line, state) {
+  let s = stripBlockComments(line, state);
   s = s.replace(/data:[^'")\s]+/g, '');
   s = s.replace(/(^|\s)\/\/.*$/, '$1');
   // Anclas/ids de URL (p. ej. href="#seccion", routerLink con #) no son colores.
@@ -46,7 +66,7 @@ function stripNoise(line, state) {
 
 const hits = [];
 for (const file of walk(root)) {
-  const state = { block: false };
+  const state = { close: null };
   readFileSync(file, 'utf8').split(/\r?\n/).forEach((raw, i) => {
     const line = stripNoise(raw, state);
     for (const { name, re } of rules) {
