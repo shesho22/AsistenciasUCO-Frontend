@@ -7,7 +7,8 @@ import { ApiListResponse } from '../api/models/api-list-response.model';
 import { AsignaturaDocenteApiDto } from '../api/models/asignatura-docente-api-dto.model';
 import { GrupoApiDto } from '../api/models/grupo-api-dto.model';
 import { GrupoFacultadApiDto } from '../api/models/grupo-facultad-api-dto.model';
-import { obtenerTodasLasPaginas } from '../api/pagination.util';
+import { ApiPageResponse } from '../api/models/api-page-response.model';
+import { obtenerTodasLasPaginas, paramsSinVacios } from '../api/pagination.util';
 import { HorarioDocenteApiDto } from '../api/models/horario-docente-api-dto.model';
 import { Course, FranjaHorario } from '../models/course.model';
 import { MOCK_COURSES } from '../mocks/course.mock';
@@ -78,6 +79,45 @@ export class CourseService {
         datos: this.buildCoursesFromGruposFacultad(elementos),
       }))
     );
+  }
+
+  /**
+   * Una página de los grupos de la facultad del decano (GET /decano/grupos): la búsqueda, el programa, el periodo y la
+   * paginación los resuelve el servidor; `totalElementos` es el total real, no el tamaño de la página.
+   */
+  getDeanCoursesPage(filtro: {
+    busqueda?: string | null;
+    programaId?: string | null;
+    idPeriodoAcademico?: string | null;
+    pagina: number;
+    tamano: number;
+  }): Observable<ApiPageResponse<Course>> {
+    if (environment.useMocks) {
+      const q = (filtro.busqueda ?? '').trim().toLowerCase();
+      const todos = this.coursesSignal().filter(
+        (c) => !q || c.name.toLowerCase().includes(q) || (c.code ?? '').toLowerCase().includes(q)
+      );
+      const inicio = (filtro.pagina - 1) * filtro.tamano;
+      return of({
+        exitoso: true,
+        elementos: todos.slice(inicio, inicio + filtro.tamano),
+        numeroPagina: filtro.pagina,
+        tamanoPagina: filtro.tamano,
+        totalElementos: todos.length,
+        totalPaginas: Math.max(1, Math.ceil(todos.length / filtro.tamano)),
+      }).pipe(delay(250));
+    }
+    return this.http
+      .get<ApiPageResponse<GrupoFacultadApiDto>>(`${environment.apiUrl}/decano/grupos`, {
+        params: paramsSinVacios({
+          busqueda: filtro.busqueda,
+          programaId: filtro.programaId,
+          idPeriodoAcademico: filtro.idPeriodoAcademico,
+          pagina: filtro.pagina,
+          tamano: filtro.tamano,
+        }),
+      })
+      .pipe(map((res) => ({ ...res, elementos: this.buildCoursesFromGruposFacultad(res.elementos ?? []) })));
   }
 
   private buildCoursesFromGruposFacultad(grupos: GrupoFacultadApiDto[]): Course[] {
