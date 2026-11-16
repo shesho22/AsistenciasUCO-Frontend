@@ -432,6 +432,55 @@ describe('OverviewComponent', () => {
     expect(component.isLoading()).toBeFalse();
   });
 
+  describe('HU178: decano sin facultad y coordinador sin programa', () => {
+    function crear(role: 'DECANO' | 'COORDINADOR', vinculos: User['vinculos']) {
+      currentUserSignal.set({ ...mockUserDocente, role, department: 'Sin entidad', vinculos });
+      fixture = TestBed.createComponent(OverviewComponent);
+      component = fixture.componentInstance;
+      fixture.detectChanges();
+      return fixture.nativeElement as HTMLElement;
+    }
+
+    it('al decano sin facultad le muestra el aviso y no consulta datos de facultad que responderían 403', () => {
+      const el = crear('DECANO', []);
+
+      expect(el.querySelector('[data-testid="decano-sin-facultad"]')).not.toBeNull();
+      expect(el.querySelector('app-overview-dean')).toBeNull();
+      expect(deanIndicatorsSpy.consultarKpis).not.toHaveBeenCalled();
+      expect(deanServiceSpy.getCoordinadores).not.toHaveBeenCalled();
+      expect(component.isLoading()).toBeFalse();
+    });
+
+    it('con su facultad en el perfil carga el panel del decano como siempre', () => {
+      const el = crear('DECANO', [{ rol: 'DECANO', nombreEntidad: 'Facultad de Ciencias' }]);
+
+      expect(el.querySelector('[data-testid="decano-sin-facultad"]')).toBeNull();
+      expect(el.querySelector('app-overview-dean')).not.toBeNull();
+      expect(deanServiceSpy.getCoordinadores).toHaveBeenCalled();
+    });
+
+    it('al coordinador sin programa le muestra el aviso y no consulta datos de programa que responderían 403', () => {
+      const el = crear('COORDINADOR', []);
+
+      expect(el.querySelector('[data-testid="coordinador-sin-programa"]')).not.toBeNull();
+      expect(el.querySelector('app-overview-coordinator')).toBeNull();
+      expect(coordinatorServiceSpy.getPlanesEstudio).not.toHaveBeenCalled();
+      expect(coordinatorServiceSpy.getDocentes).not.toHaveBeenCalled();
+      expect(coordinatorServiceSpy.getEstudiantesDirectorio).not.toHaveBeenCalled();
+      expect(coordinatorIndicatorsSpy.consultarKpis).not.toHaveBeenCalled();
+      expect(coordinatorProgramSpy.cargar).not.toHaveBeenCalled();
+      expect(component.isLoading()).toBeFalse();
+    });
+
+    it('con su programa en el perfil carga el panel del coordinador como siempre', () => {
+      const el = crear('COORDINADOR', [{ rol: 'COORDINADOR', nombreEntidad: 'Derecho' }]);
+
+      expect(el.querySelector('[data-testid="coordinador-sin-programa"]')).toBeNull();
+      expect(el.querySelector('app-overview-coordinator')).not.toBeNull();
+      expect(coordinatorServiceSpy.getDocentes).toHaveBeenCalled();
+    });
+  });
+
   it('debe inicializarse correctamente para rol COORDINADOR', () => {
     createComponentWithRole('COORDINADOR');
     expect(coordinatorServiceSpy.getPlanesEstudio).toHaveBeenCalled();

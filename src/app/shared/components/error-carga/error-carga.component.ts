@@ -1,16 +1,26 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { LoadErrorState } from '../../../core/api/errors/load-error.util';
 import { ButtonComponent } from '../button/button.component';
+import { EmptyStateComponent } from '../empty-state/empty-state.component';
+import { SinEntidadAsignadaComponent } from '../sin-entidad-asignada/sin-entidad-asignada.component';
 
 /**
  * Fallo de carga de una lista, distinguible de una lista vacía (`role="alert"`). Ofrece «Reintentar» solo cuando
  * reintentar puede cambiar el resultado: no ante un identificador inválido, una autorización denegada ni una funcionalidad no implementada (501).
+ * HU178: el rol sin ámbito (`SIN_AMBITO`) no es un fallo: se muestra el aviso informativo del rol, sin alerta ni Reintentar.
  */
 @Component({
     selector: 'app-error-carga',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [ButtonComponent],
+    imports: [ButtonComponent, EmptyStateComponent, SinEntidadAsignadaComponent],
     template: `
+    @if (error().kind === 'SIN_AMBITO') {
+      @if (error().rolSinAmbito; as rol) {
+        <app-sin-entidad-asignada [rol]="rol" />
+      } @else {
+        <app-empty-state variant="info" [title]="error().titulo" [description]="error().mensaje" />
+      }
+    } @else {
     <div class="bg-danger-50 border border-danger-200 rounded-2xl p-6 text-center space-y-3" role="alert" data-testid="error-carga">
       <p class="text-sm font-bold text-danger-800">{{ error().titulo }}</p>
       <p class="text-xs text-danger-900">{{ error().mensaje }}</p>
@@ -18,6 +28,7 @@ import { ButtonComponent } from '../button/button.component';
         <app-button variant="secondary" size="sm" (clicked)="reintentar.emit()">Reintentar</app-button>
       }
     </div>
+    }
   `
 })
 export class ErrorCargaComponent {
@@ -26,6 +37,6 @@ export class ErrorCargaComponent {
 
   protected readonly permiteReintento = computed(() => {
     const tipo = this.error().kind;
-    return tipo !== 'IDENTIFICADOR' && tipo !== 'AUTORIZACION' && tipo !== 'NO_IMPLEMENTADO';
+    return tipo !== 'IDENTIFICADOR' && tipo !== 'AUTORIZACION' && tipo !== 'NO_IMPLEMENTADO' && tipo !== 'SIN_AMBITO';
   });
 }

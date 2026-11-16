@@ -1,12 +1,23 @@
 import { API_ERROR_CODE, getApiErrorCode } from './api-error.util';
+import { RolSinAmbito, rolSinAmbito } from './sin-ambito.util';
 
 /** Causa visible de un fallo de carga; permite distinguirlo de una respuesta 200 con cero elementos. */
-export type LoadErrorKind = 'IDENTIFICADOR' | 'VALIDACION' | 'AUTORIZACION' | 'NO_IMPLEMENTADO' | 'SERVIDOR' | 'RED';
+export type LoadErrorKind =
+  | 'IDENTIFICADOR'
+  | 'VALIDACION'
+  | 'AUTORIZACION'
+  | 'NO_IMPLEMENTADO'
+  | 'SERVIDOR'
+  | 'RED'
+  /** HU178: estado controlado, no un fallo: el usuario aún no tiene su programa, facultad o institución asignada. */
+  | 'SIN_AMBITO';
 
 export interface LoadErrorState {
   kind: LoadErrorKind;
   titulo: string;
   mensaje: string;
+  /** HU178: con `SIN_AMBITO`, el rol al que le falta el ámbito (decide el aviso que se muestra). */
+  rolSinAmbito?: RolSinAmbito;
 }
 
 const ESTADOS: Record<LoadErrorKind, Omit<LoadErrorState, 'kind'>> = {
@@ -34,14 +45,20 @@ const ESTADOS: Record<LoadErrorKind, Omit<LoadErrorState, 'kind'>> = {
     titulo: 'Sin conexión con el servidor',
     mensaje: 'No fue posible conectar con el servidor. Verifica tu conexión e inténtalo de nuevo.',
   },
+  SIN_AMBITO: {
+    titulo: 'Sin asignación',
+    mensaje: 'Aún no tiene asignado el programa, la facultad o la institución de estos datos.',
+  },
 };
 
 export function loadErrorState(kind: LoadErrorKind): LoadErrorState {
   return { kind, ...ESTADOS[kind] };
 }
 
-/** Clasifica por codigo semantico/status (nunca por texto): 400 validacion, 401/403 autorizacion, 501 no implementado, otros 5xx servidor, 0 red. */
+/** Clasifica por codigo semantico/status (nunca por texto): KPI_001/003/004 sin ambito (HU178), 400 validacion, 401/403 autorizacion, 501 no implementado, otros 5xx servidor, 0 red. */
 export function classifyLoadError(error: unknown): LoadErrorState {
+  const rol = rolSinAmbito(error);
+  if (rol) return { ...loadErrorState('SIN_AMBITO'), rolSinAmbito: rol };
   let code = getApiErrorCode(error);
   const status = (error as { status?: unknown } | null)?.status;
   if (code === API_ERROR_CODE.UNKNOWN && typeof status === 'number') {

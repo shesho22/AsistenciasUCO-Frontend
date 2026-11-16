@@ -1,6 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 import { Router, Routes, provideRouter } from '@angular/router';
 import { routes } from './app.routes';
+import { roleGuard } from './core/guards/role.guard';
+import {
+  RUTA_SIN_ENTIDAD,
+  coordinadorConProgramaGuard,
+  decanoConFacultadGuard,
+  esperarPerfilGuard,
+} from './core/guards/entidad-asignada.guard';
 
 describe('application routes', () => {
   it('/app/asistencia autoriza exclusivamente DOCENTE', () => {
@@ -277,6 +284,73 @@ describe('application routes', () => {
         expect(ruta(path)?.loadComponent).toBeDefined();
         expect(ruta(path)?.data?.['roles']).toEqual(['ESTUDIANTE']);
       }
+    });
+  });
+
+  describe('HU178: decano sin facultad y coordinador sin programa', () => {
+    const hijas = () => routes.find((route) => route.path === 'app')?.children ?? [];
+    const ruta = (path: string) => hijas().find((route) => route.path === path);
+
+    for (const dest of [
+      'decano/mi-facultad',
+      'decano/seguimiento',
+      'decano/directorio',
+      'decano/grupos/:grupoId',
+      'decano/programas/:planId',
+    ]) {
+      it(`${dest} exige que el decano tenga facultad (después de la regla de rol)`, () => {
+        const guards = ruta(dest)?.canActivate ?? [];
+        expect(guards).toContain(roleGuard);
+        expect(guards).toContain(decanoConFacultadGuard);
+        expect(guards.indexOf(roleGuard)).toBeLessThan(guards.indexOf(decanoConFacultadGuard));
+      });
+    }
+
+    for (const dest of ['decano/periodos', 'decano/revisiones-cancelacion']) {
+      it(`${dest} no depende de la facultad y no se bloquea`, () => {
+        expect(ruta(dest)?.canActivate ?? []).not.toContain(decanoConFacultadGuard);
+      });
+    }
+
+    for (const dest of [
+      'coordinador/programa',
+      'coordinador/asistencia',
+      'coordinador/planes-estudio',
+      'coordinador/planes-estudio/nuevo',
+      'coordinador/planes-estudio/:planId/editar',
+      'coordinador/planes-estudio/:planId/malla',
+      'coordinador/planes-estudio/:planId/asignaturas/nueva',
+      'coordinador/planes-estudio/:planId/asignaturas/:asignaturaId/editar',
+      'coordinador/estudiantes',
+    ]) {
+      it(`${dest} exige que el coordinador tenga programa (después de la regla de rol)`, () => {
+        const guards = ruta(dest)?.canActivate ?? [];
+        expect(guards).toContain(roleGuard);
+        expect(guards).toContain(coordinadorConProgramaGuard);
+        expect(guards.indexOf(roleGuard)).toBeLessThan(guards.indexOf(coordinadorConProgramaGuard));
+      });
+    }
+
+    it('coordinador/revisiones-cancelacion no depende del programa y no se bloquea', () => {
+      expect(ruta('coordinador/revisiones-cancelacion')?.canActivate ?? []).not.toContain(coordinadorConProgramaGuard);
+    });
+
+    for (const [rol, guard] of [
+      ['DECANO', decanoConFacultadGuard],
+      ['COORDINADOR', coordinadorConProgramaGuard],
+    ] as const) {
+      it(`el aviso único del ${rol} vive en ${RUTA_SIN_ENTIDAD[rol]}, solo para ese rol`, () => {
+        const r = ruta(RUTA_SIN_ENTIDAD[rol].replace('/app/', ''));
+        expect(r?.canActivate).toContain(roleGuard);
+        expect(r?.canActivate ?? []).not.toContain(guard);
+        expect(r?.data?.['roles']).toEqual([rol]);
+        expect(r?.data?.['rol']).toBe(rol);
+        expect(r?.loadComponent).toBeDefined();
+      });
+    }
+
+    it('el panel principal espera el perfil del decano y del coordinador antes de cargar', () => {
+      expect(ruta('dashboard')?.canActivate).toContain(esperarPerfilGuard);
     });
   });
 });

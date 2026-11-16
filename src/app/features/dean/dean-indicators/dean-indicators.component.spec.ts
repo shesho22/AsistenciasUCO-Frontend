@@ -158,6 +158,20 @@ describe('DeanIndicatorsComponent', () => {
     expect(toast.error).toHaveBeenCalledTimes(3);
   });
 
+  it('HU178: KPI_003 (decano sin facultad) muestra el aviso informativo y no un toast de error', () => {
+    spyOn(toast, 'error');
+    component.cargar();
+    const sinFacultad = { timestamp: '2026-11-16T07:00:00Z', status: 403, error: 'Forbidden', code: 'KPI_003', message: 'texto que no se analiza', path: '/api/v1/x', correlationId: null };
+    http.expectOne((r) => r.url === `${base}/indicadores`).flush(sinFacultad, { status: 403, statusText: 'Forbidden' });
+    http.expectOne((r) => r.url === `${base}/comparativa-programas`).flush(sinFacultad, { status: 403, statusText: 'Forbidden' });
+    aforoReqs().forEach((r) => r.flush(sinFacultad, { status: 403, statusText: 'Forbidden' }));
+    fixture.detectChanges();
+
+    expect(toast.error).not.toHaveBeenCalled();
+    expect(component.sinAmbito()).toBe('DECANO');
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="decano-sin-facultad"]')).not.toBeNull();
+  });
+
   it('el estado vacío se muestra cuando no hay grupos', () => {
     component.service.aforo.set([]);
     fixture.detectChanges();

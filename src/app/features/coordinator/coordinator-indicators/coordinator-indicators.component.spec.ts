@@ -119,6 +119,19 @@ describe('CoordinatorIndicatorsComponent', () => {
     expect(toast.error).toHaveBeenCalled();
   });
 
+  it('HU178: KPI_001 (coordinador sin programa) muestra el aviso informativo y no un toast de error', () => {
+    spyOn(toast, 'error');
+    component.cargar();
+    const sinPrograma = { timestamp: '2026-11-16T07:00:00Z', status: 403, error: 'Forbidden', code: 'KPI_001', message: 'texto que no se analiza', path: '/api/v1/x', correlationId: null };
+    http.expectOne((r) => r.url === `${base}/indicadores`).flush(sinPrograma, { status: 403, statusText: 'Forbidden' });
+    alertasReq().forEach((r) => r.flush(sinPrograma, { status: 403, statusText: 'Forbidden' }));
+    fixture.detectChanges();
+
+    expect(toast.error).not.toHaveBeenCalled();
+    expect(component.sinAmbito()).toBe('COORDINADOR');
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="coordinador-sin-programa"]')).not.toBeNull();
+  });
+
   it('T-FE-04 abrir la ficha desde una alerta selecciona al estudiante y cerrarla lo limpia', () => {
     component.abrirFicha(alerta);
     expect(component.estudianteFicha()).toEqual(alerta);
