@@ -5,7 +5,8 @@ import { CoordinatorManagementService } from '../../../../core/services/coordina
 import { PlanEstudioItem, AsignaturaPlanItem } from '../../../../core/models/role-management.model';
 import { ToastService } from '../../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../../core/api/errors/api-error.util';
-import { StudyPlanMeshComponent } from '../components/study-plan-mesh.component';
+import { ListadoPaginado } from '../../../../shared/utils/listado-paginado';
+import { FiltrosMalla, StudyPlanMeshComponent } from '../components/study-plan-mesh.component';
 import { ConfirmDialogComponent } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { AssociateSubjectDialogComponent } from '../components/associate-subject-dialog.component';
 import { mensajeUi } from '../../../../core/messages/mensajes-ui';
@@ -32,7 +33,15 @@ const MAX_SEMESTRES = 10;
       @if (selectedPlan(); as plan) {
         <app-study-plan-mesh
           [plan]="plan"
-          [asignaturas]="asignaturas()"
+          [asignaturas]="listado.filas()"
+          [totalAsignaturas]="listado.total()"
+          [pagina]="listado.pagina()"
+          [pageSize]="listado.tamano()"
+          [cargando]="listado.cargando()"
+          [error]="listado.error()"
+          (filtrosChange)="alCambiarFiltros($event)"
+          (pageChange)="listado.irAPagina($event)"
+          (reintentar)="listado.reintentar()"
           (back)="volver()"
           (addSemester)="agregarSemestre()"
           (removeSemester)="eliminarSemestreVacio()"
@@ -80,7 +89,21 @@ export class CoordinatorStudyPlanMeshPageComponent implements OnInit {
   planId = input<string>();
 
   planes = signal<PlanEstudioItem[]>(this.coordService.planes());
-  asignaturas = signal<AsignaturaPlanItem[]>([]);
+  /** Filtros que viajan al servidor (la malla se filtra y pagina allí, no en el cliente). */
+  private filtros: FiltrosMalla = { busqueda: '', semestre: 0, caracter: '' };
+
+  readonly listado = new ListadoPaginado<AsignaturaPlanItem>(
+    (pagina, tamano) =>
+      this.coordService.getAsignaturasPlanPagina(this.effectivePlanId(), {
+        semestre: this.filtros.semestre || null,
+        caracter: this.filtros.caracter || null,
+        busqueda: this.filtros.busqueda,
+        pagina,
+        tamano,
+      }),
+    (mensaje) => this.toast.error(mensaje)
+  );
+  asignaturas = this.listado.filas;
 
   effectivePlanId = computed(() => {
     return this.planId() || this.route.snapshot.paramMap.get('planId') || '';
@@ -100,6 +123,7 @@ export class CoordinatorStudyPlanMeshPageComponent implements OnInit {
 
   ngOnInit(): void {
     const id = this.effectivePlanId();
+    this.listado.tamano.set(9);
     // Siempre se recarga del servidor: la copia en memoria puede tener un total de semestres desactualizado.
     this.recargarPlanes();
     if (id) {
@@ -119,18 +143,14 @@ export class CoordinatorStudyPlanMeshPageComponent implements OnInit {
     this.toast.error(mensaje);
   }
 
-  /** El backend expone el semestre como `codigoSemestre` (p. ej. "S8"); el mock usa `semestre` numérico. */
-  private numeroSemestre(asignatura: AsignaturaPlanItem): number {
-    const raw = asignatura.semestre ?? (asignatura as unknown as { codigoSemestre?: string }).codigoSemestre;
-    const numero = Number(String(raw ?? '').replace(/\D/g, ''));
-    return Number.isFinite(numero) ? numero : 0;
+  cargarAsignaturas(id: string): void {
+    if (!id) return;
+    this.listado.cargar();
   }
 
-  cargarAsignaturas(id: string): void {
-    this.coordService.getAsignaturasPorPlan(id).subscribe({
-      next: (res) => this.asignaturas.set(res.datos || []),
-      error: (err) => this.toast.error(getApiErrorMessage(err)),
-    });
+  alCambiarFiltros(filtros: FiltrosMalla): void {
+    this.filtros = filtros;
+    this.listado.buscar();
   }
 
   agregarSemestre(): void {
@@ -166,16 +186,8 @@ export class CoordinatorStudyPlanMeshPageComponent implements OnInit {
       this.mostrarRechazo('El plan debe conservar al menos un semestre.');
       return;
     }
+    // La regla «solo se quita un semestre vacío» la resuelve el backend (PLA_006): se muestra su mensaje.
     const ultimoSem = plan.totalSemestres;
-    const tieneAsignaturas = this.asignaturas().some((a) => this.numeroSemestre(a) === ultimoSem);
-
-    if (tieneAsignaturas) {
-      this.mostrarRechazo(
-        `El semestre ${ultimoSem} tiene asignaturas asignadas, por eso no se puede quitar. Reubícalas o elimínalas primero.`
-      );
-      return;
-    }
-
     const nuevoTotal = ultimoSem - 1;
     this.coordService.eliminarSemestrePlan(plan.id, ultimoSem).subscribe({
       next: (res) => {
