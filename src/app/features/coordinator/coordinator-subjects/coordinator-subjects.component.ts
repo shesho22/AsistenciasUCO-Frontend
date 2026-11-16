@@ -155,7 +155,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
 
                 <div class="pt-3 border-t border-warm-100 flex items-center justify-between gap-2">
                   <span class="text-xs text-warm-500">
-                    Cupos: <strong class="text-warm-900">{{ curso.enrolledStudentsCount }} / {{ curso.cupoMaximo || 35 }}</strong>
+                    Cupos: <strong class="text-warm-900">{{ curso.enrolledStudentsCount }} / {{ cupoTexto(curso) }}</strong>
                   </span>
                   <app-button
                     [variant]="selectedCourseId() === curso.id ? 'primary' : 'secondary'"
@@ -189,7 +189,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
               </p>
             </div>
             <span class="text-xs font-bold px-3 py-1 rounded-full bg-primary-50 text-primary-800 border border-primary-200 shrink-0">
-              {{ enrolledStudents().length }} / {{ cursoActual.cupoMaximo || 35 }} estudiantes
+              {{ enrolledStudents().length }} / {{ cupoTexto(cursoActual) }} estudiantes
             </span>
           </div>
 
@@ -364,9 +364,20 @@ export class CoordinatorSubjectsComponent implements OnInit {
     this.courses().reduce((acc, c) => acc + (c.enrolledStudentsCount || 0), 0)
   );
 
-  totalCapacidadGrupos = computed(() =>
-    this.courses().reduce((acc, c) => acc + (c.cupoMaximo || 35), 0)
-  );
+  /** Capacidad total de los grupos que informan cupo; un grupo sin cupo del backend no entra en la suma. */
+  totalCapacidadGrupos = computed(() => {
+    const conCupo = this.courses().filter((c) => this.tieneCupo(c));
+    return conCupo.length === 0 ? '—' : String(conCupo.reduce((acc, c) => acc + (c.cupoMaximo ?? 0), 0));
+  });
+
+  private tieneCupo(curso: Course): boolean {
+    return typeof curso.cupoMaximo === 'number' && curso.cupoMaximo > 0;
+  }
+
+  /** Cupo máximo del backend; «—» (no disponible) cuando no viene: no se inventa un número. */
+  cupoTexto(curso: Course): string {
+    return this.tieneCupo(curso) ? String(curso.cupoMaximo) : '—';
+  }
 
   readonly errorCarga = signal<LoadErrorState | null>(null);
 

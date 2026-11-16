@@ -13,7 +13,8 @@ import { FormsModule } from '@angular/forms';
 import { ButtonComponent } from '../button/button.component';
 import { BadgeComponent } from '../badge/badge.component';
 import { TeacherService } from '../../../core/services/teacher.service';
-import { MOCK_DOCENTES } from '../../../core/mocks/role-management.mock';
+import { classifyLoadError, LoadErrorState } from '../../../core/api/errors/load-error.util';
+import { ErrorCargaComponent } from '../error-carga/error-carga.component';
 import { ModalComponent } from '../modal/modal.component';
 
 export interface UserPickerItem {
@@ -26,7 +27,8 @@ export interface UserPickerItem {
   segundoApellido?: string;
   nombres: string;
   apellidos: string;
-  correo: string;
+  /** Solo si el backend lo entrega; el directorio de docentes (`GET /docentes`) no incluye correo. */
+  correo?: string;
   dependenciaOPrograma?: string;
   rolActual?: string;
 }
@@ -34,7 +36,7 @@ export interface UserPickerItem {
 @Component({
     selector: 'app-user-picker-modal',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [ModalComponent, FormsModule, ButtonComponent, BadgeComponent],
+    imports: [ModalComponent, FormsModule, ButtonComponent, BadgeComponent, ErrorCargaComponent],
     template: `
     <app-modal [isOpen]="isOpen()" [title]="title()" [subtitulo]="subtitle()" tamano="2xl" (closed)="cancelar()">
       <div modal-encabezado class="flex items-center gap-2 mt-1">
@@ -72,6 +74,8 @@ export interface UserPickerItem {
             <div class="w-8 h-8 border-3 border-primary-500 border-t-transparent rounded-full animate-spin mb-3"></div>
             <p class="text-sm font-medium text-warm-600">Consultando directorio universitario...</p>
           </div>
+        } @else if (error(); as fallo) {
+          <app-error-carga [error]="fallo" (reintentar)="cargarDirectorio()" />
         } @else if (filteredUsers().length === 0) {
           <div class="py-12 flex flex-col items-center justify-center text-center px-4">
             <div class="w-12 h-12 rounded-2xl bg-warm-100 flex items-center justify-center text-warm-400 mb-3">
@@ -114,9 +118,15 @@ export interface UserPickerItem {
                     }
                   </div>
                   <div class="flex flex-wrap items-center gap-y-0.5 gap-x-3 text-xs text-warm-500 mt-0.5">
-                    <span class="font-mono text-warm-700">Doc: {{ user.numeroIdentificacion }}</span>
-                    <span>•</span>
-                    <span class="truncate text-primary-700 font-medium">{{ user.correo }}</span>
+                    @if (user.numeroIdentificacion) {
+                      <span class="font-mono text-warm-700">Doc: {{ user.numeroIdentificacion }}</span>
+                    }
+                    @if (user.correo) {
+                      @if (user.numeroIdentificacion) {
+                        <span>•</span>
+                      }
+                      <span class="truncate text-primary-700 font-medium">{{ user.correo }}</span>
+                    }
                     @if (user.dependenciaOPrograma) {
                       <span>•</span>
                       <span class="truncate text-warm-500">{{ user.dependenciaOPrograma }}</span>
@@ -178,6 +188,8 @@ export class UserPickerModalComponent implements OnInit {
 
   searchQuery = signal<string>('');
   isLoading = signal<boolean>(false);
+  /** Fallo al consultar el directorio: se muestra como error con reintento, nunca como lista vacía ni con datos de respaldo. */
+  error = signal<LoadErrorState | null>(null);
   usersList = signal<UserPickerItem[]>([]);
 
   filteredUsers = computed(() => {
@@ -193,7 +205,7 @@ export class UserPickerModalComponent implements OnInit {
         u.nombres.toLowerCase().includes(query) ||
         u.apellidos.toLowerCase().includes(query);
       const matchDoc = u.numeroIdentificacion.toLowerCase().includes(query);
-      const matchEmail = u.correo.toLowerCase().includes(query);
+      const matchEmail = (u.correo ?? '').toLowerCase().includes(query);
       const matchDep = (u.dependenciaOPrograma || '').toLowerCase().includes(query);
 
       return matchName || matchDoc || matchEmail || matchDep;
@@ -206,63 +218,40 @@ export class UserPickerModalComponent implements OnInit {
     }
   }
 
+  /** Muestra solo lo que entrega el backend: lo que no viene (correo, tipo de documento, dependencia) no se muestra. */
   cargarDirectorio(): void {
     this.isLoading.set(true);
+    this.error.set(null);
 
     this.teacherService.getAllTeachers().subscribe({
       next: (teachers) => {
-        if (teachers && teachers.length > 0) {
-          const mapped: UserPickerItem[] = teachers.map((t) => {
-            const parts = (t.nombreCompleto || '').trim().split(/\s+/);
-            const pNom = parts[0] || 'Docente';
-            const pApe = parts.slice(1).join(' ') || 'UCO';
-            return {
-              id: t.id,
-              numeroIdentificacion: String(t.numeroIdentificacion || 'Sin ID'),
-              tipoIdentificacion: 'CC',
-              nombres: pNom,
-              apellidos: pApe,
-              primerNombre: pNom,
-              primerApellido: pApe,
-              correo: `docente.${String(t.numeroIdentificacion || t.id.slice(0, 6))}@uco.edu.co`,
-              dependenciaOPrograma: 'Docencia Universitaria',
-              rolActual: 'DOCENTE',
-            };
-          });
-          this.usersList.set(mapped);
-          this.isLoading.set(false);
-          return;
-        }
-        this.cargarFallbackMock();
+        this.usersList.set(
+          (Array.isArray(teachers) ? teachers : []).map((t): UserPickerItem => ({
+            id: t.id,
+            numeroIdentificacion: t.numeroIdentificacion === null || t.numeroIdentificacion === undefined ? '' : String(t.numeroIdentificacion),
+            nombres: t.nombreCompleto ?? '',
+            apellidos: '',
+            rolActual: 'DOCENTE',
+          }))
+        );
+        this.isLoading.set(false);
       },
-      error: () => {
-        this.cargarFallbackMock();
+      error: (error: unknown) => {
+        this.usersList.set([]);
+        this.error.set(classifyLoadError(error));
+        this.isLoading.set(false);
       },
     });
   }
 
-  private cargarFallbackMock(): void {
-    // Los directorios de decano/administrador no deben consultar endpoints del coordinador (403): lista de respaldo local.
-    const mapped: UserPickerItem[] = MOCK_DOCENTES.map((d) => ({
-      id: d.id,
-      numeroIdentificacion: d.numeroIdentificacion,
-      tipoIdentificacion: 'CC',
-      nombres: d.nombres,
-      apellidos: d.apellidos,
-      primerNombre: d.nombres.split(' ')[0] || '',
-      primerApellido: d.apellidos.split(' ')[0] || '',
-      correo: d.correo,
-      dependenciaOPrograma: d.departamento || 'Facultad de Ingeniería',
-      rolActual: 'DOCENTE',
-    }));
-    this.usersList.set(mapped);
-    this.isLoading.set(false);
-  }
-
   getInitials(nombres: string, apellidos: string): string {
-    const n = (nombres || '').trim().charAt(0);
-    const a = (apellidos || '').trim().charAt(0);
-    return `${n}${a}`.toUpperCase() || 'U';
+    const nombre = (nombres || '').trim();
+    const apellido = (apellidos || '').trim();
+    if (apellido) return `${nombre.charAt(0)}${apellido.charAt(0)}`.toUpperCase() || 'U';
+    // El directorio entrega el nombre completo en un solo campo: iniciales de su primera y última palabra (solo presentación).
+    const palabras = nombre.split(/\s+/).filter(Boolean);
+    const iniciales = palabras.length > 1 ? palabras[0].charAt(0) + palabras[palabras.length - 1].charAt(0) : (palabras[0] ?? '').charAt(0);
+    return iniciales.toUpperCase() || 'U';
   }
 
   seleccionar(user: UserPickerItem): void {
