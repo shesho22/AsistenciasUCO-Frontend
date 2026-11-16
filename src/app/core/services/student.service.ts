@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, delay, of, throwError } from 'rxjs';
+import { Observable, delay, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { EstudianteDetalleApiDto } from '../api/models/estudiante-api-dto.model';
 import { EstudianteBusquedaApiDto } from '../api/models/estudiante-busqueda-api-dto.model';
@@ -10,7 +10,6 @@ import { EstudianteGrupoApiDto } from '../api/models/estudiante-grupo-api-dto.mo
 import { MOCK_ESTUDIANTES_DIRECTORIO } from '../mocks/role-management.mock';
 import { OperationResultResponse } from '../api/models/operation-result-response.model';
 import { RegistrarEstudianteEnGrupoRequest } from '../api/models/registrar-estudiante-en-grupo-request.model';
-import { getPasswordValidationError } from '../validation/request-form-validation.util';
 
 export interface EnrollStudentFormValue {
   grupo: string;
@@ -24,7 +23,6 @@ export interface EnrollStudentFormValue {
   idPrograma?: string;
   /** Solo en el alta de un estudiante nuevo; al matricular a uno existente se omiten. */
   correoElectronico?: string;
-  password?: string;
 }
 
 export type EnrollStudentDTO = EnrollStudentFormValue;
@@ -46,14 +44,8 @@ export class StudentService {
       }).pipe(delay(400));
     }
 
-    const esAltaNueva = Boolean(dto.correoElectronico?.trim() || dto.password?.trim());
-    const password = dto.password?.trim() ?? '';
-    if (esAltaNueva) {
-      const passwordError = getPasswordValidationError(password, String(dto.numeroIdentificacion));
-      if (passwordError) {
-        return throwError(() => new Error(passwordError));
-      }
-    }
+    // IDENT-002: el alta nueva lleva solo el correo; el estudiante define su contraseña al activar la cuenta.
+    const esAltaNueva = Boolean(dto.correoElectronico?.trim());
 
     const request: RegistrarEstudianteEnGrupoRequest = {
       tipoIdentificacionId: dto.tipoDocumento,
@@ -64,7 +56,6 @@ export class StudentService {
 
     if (esAltaNueva) {
       request.correo = dto.correoElectronico?.trim() ?? '';
-      request.password = password;
     }
 
     if (dto.idPrograma) {

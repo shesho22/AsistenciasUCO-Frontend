@@ -340,16 +340,10 @@ const NOMBRE_FACULTAD_MAX = 50;
                   class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                 />
               </app-form-field>
-              <app-form-field label="Contraseña Inicial de Acceso" [required]="true" [helperText]="'Mínimo 12 caracteres (mayúscula, minúscula, número y símbolo).'">
-                <input
-                  type="text"
-                  [(ngModel)]="formData.password"
-                  name="password"
-                  required
-                  placeholder="Ingrese una contraseña segura (mín. 12 car.)"
-                  class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                />
-              </app-form-field>
+              <div class="sm:col-span-1 flex items-start gap-2 rounded-xl border border-primary-100 bg-primary-50 px-3.5 py-2.5 text-xs text-primary-800" role="note">
+                <span aria-hidden="true">✉</span>
+                <span>No se asigna contraseña. La persona recibirá en su correo institucional un enlace para activar la cuenta y definir su contraseña.</span>
+              </div>
             </div>
 
             <app-form-field label="Correo Institucional UCO" [required]="true" [errorMessage]="errorCorreo()">
@@ -514,7 +508,7 @@ export class AdminDecanosComponent implements OnInit {
   selectedEstado = 'TODOS';
   private readonly ultimaPeticionDecanos = new UltimaPeticion();
 
-  formData: Omit<DecanoItem, 'id'> & { password?: string } = {
+  formData: Omit<DecanoItem, 'id'> = {
     tipoIdentificacionId: '',
     tipoIdentificacion: '',
     numeroIdentificacion: '',
@@ -530,7 +524,6 @@ export class AdminDecanosComponent implements OnInit {
     telefono: '',
     fechaAsignacion: this.sessionTimeZone.currentDate(),
     estado: 'ACTIVO',
-    password: '',
   };
 
   filteredDecanos = computed(() => {
@@ -706,7 +699,6 @@ export class AdminDecanosComponent implements OnInit {
       telefono: '',
       fechaAsignacion: this.sessionTimeZone.currentDate(),
       estado: 'ACTIVO',
-      password: '',
     };
     this.modoFacultad.set('CREAR');
     this.facultadNueva = { nombre: '', codigo: '', idInstitucion: '' };
@@ -778,7 +770,6 @@ export class AdminDecanosComponent implements OnInit {
       !!(f.primerApellido || '').trim() &&
       getPersonNamesError(f) === null &&
       getStaffEmailError(f.correo, this.dominioCorreo()) === null &&
-      !!(f.password || '').trim() &&
       this.errorFacultad() === null
     );
   }
@@ -846,12 +837,6 @@ export class AdminDecanosComponent implements OnInit {
       return;
     }
 
-    const pwd = (this.formData.password || '').trim();
-    if (!pwd) {
-      this.toast.warning(mensajeUi('UI_ADMIN_DECANOS_008'));
-      return;
-    }
-
     const errorFacultad = this.errorFacultad();
     if (errorFacultad) {
       this.toast.warning(errorFacultad);
@@ -869,7 +854,6 @@ export class AdminDecanosComponent implements OnInit {
       primerApellido: pa,
       segundoApellido: (this.formData.segundoApellido || '').trim(),
       correo: this.formData.correo.trim(),
-      password: pwd,
       ...this.facultadParaPayload(),
     };
 
@@ -925,7 +909,6 @@ export class AdminDecanosComponent implements OnInit {
     this.formData.primerApellido = user.primerApellido || user.apellidos.split(' ')[0] || '';
     this.formData.segundoApellido = user.segundoApellido || '';
     this.formData.correo = user.correo || '';
-    this.formData.password = '';
     this.toast.info(mensajeUi('UI_ADMIN_DECANOS_011', { nombres: user.nombres, apellidos: user.apellidos }));
   }
 }

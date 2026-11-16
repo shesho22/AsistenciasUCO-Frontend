@@ -54,12 +54,22 @@ for raw in "${API_URL:-}" "${KEYCLOAK_URL:-}" "${SECURITY_BASELINE_URL:-}" "${SE
   [ -n "$o" ] && csp_connect="$csp_connect $o"
 done
 
+# Micro frontends remotos (Module Federation): Security UI y la consola del Catalogo de Parametros se cargan como modulos
+# JavaScript desde su propio origen, piden sus fragmentos y hojas de estilo al mismo origen. Una URL relativa (servida por
+# este Nginx) no agrega nada: ya la cubre 'self'.
+csp_remotos=""
+for raw in "${SECURITY_BASELINE_UI_URL:-}" "${CATALOGO_PARAMETROS_UI_URL:-}" ${CSP_EXTRA_SCRIPT_SRC:-}; do
+  o="$(origin_of "$raw")"
+  [ -n "$o" ] && csp_remotos="$csp_remotos $o"
+done
+csp_connect="$csp_connect$csp_remotos"
+
 # Origenes de los que el SPA navega o embebe (silent-check-sso usa iframe del propio origen).
 # VAL CF-04 (2026-11-14): sin JavaScript en linea. `inlineCritical` esta apagado en angular.json, asi que el index ya no
 # lleva el `onload` del CSS critico y script-src-attr queda en 'none'. style-src conserva 'unsafe-inline' solo porque los
 # micro frontends externos (Security UI y minifront-mensajes) inyectan <style> en su shadow DOM sin soporte de nonce; con
 # un nonce el navegador ignoraria 'unsafe-inline' y los romperia. Quitarlo depende de esos equipos (ver VALIDATION.md).
-csp_policy="default-src 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src $csp_connect; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+csp_policy="default-src 'self'; script-src 'self'$csp_remotos; script-src-attr 'none'; style-src 'self' 'unsafe-inline'$csp_remotos; font-src 'self' data:; img-src 'self' data: blob:; connect-src $csp_connect; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
 
 {
   printf 'add_header Content-Security-Policy "%s" always;\n' "$csp_policy"

@@ -7,7 +7,6 @@ export interface RegistrarEstudianteEnGrupoRequest {
   segundoApellido?: string;
   /** CULM-001 B2NM: obligatorio solo cuando el grupo pertenece a más de un programa (EST_005 si falta). */
   idPrograma?: string;
-  /** Obligatorios solo en el alta de un estudiante nuevo; al matricular a uno existente no se envían. */
+  /** Obligatorio solo en el alta de un estudiante nuevo; al matricular a uno existente no se envía (IDENT-002: sin contraseña). */
   correo?: string;
-  password?: string;
 }

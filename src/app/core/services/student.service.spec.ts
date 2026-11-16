@@ -25,9 +25,7 @@ describe('StudentService', () => {
     localStorage.removeItem('USE_MOCKS');
   });
 
-  it('rechaza una matrícula sin contraseña explícita y no llama al backend', () => {
-    let receivedError: unknown;
-
+  it('IDENT-002: el alta nueva envía solo el correo, nunca una contraseña', () => {
     service
       .enrollStudentInGroup({
         grupo: 'grupo-1',
@@ -35,13 +33,14 @@ describe('StudentService', () => {
         numeroIdentificacion: 123456,
         primerNombre: 'Ada',
         primerApellido: 'Lovelace',
-        correoElectronico: 'ada@example.test',
-        password: '   ',
+        correoElectronico: ' ada@uco.edu.co ',
       })
-      .subscribe({ error: (error) => (receivedError = error) });
+      .subscribe();
 
-    expect(receivedError).toBeTruthy();
-    http.expectNone(`${environment.apiUrl}/grupos/grupo-1/estudiantes`);
+    const req = http.expectOne(`${environment.apiUrl}/grupos/grupo-1/estudiantes`);
+    expect(req.request.body.correo).toBe('ada@uco.edu.co');
+    expect('password' in req.request.body).toBeFalse();
+    req.flush({ exitoso: true, mensajeUsuario: 'Estudiante vinculado' });
   });
 
   it('matricula un estudiante con segundoNombre y segundoApellido exitosamente', () => {
@@ -55,7 +54,6 @@ describe('StudentService', () => {
         primerApellido: 'Gómez',
         segundoApellido: 'Restrepo',
         correoElectronico: 'ana.gomez@uco.edu.co',
-        password: 'PasswordSegura2026*',
       })
       .subscribe();
 
@@ -69,7 +67,6 @@ describe('StudentService', () => {
       primerApellido: 'Gómez',
       segundoApellido: 'Restrepo',
       correo: 'ana.gomez@uco.edu.co',
-      password: 'PasswordSegura2026*',
     });
     req.flush({ exitoso: true, mensajeUsuario: 'Estudiante vinculado' });
   });

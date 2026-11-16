@@ -377,7 +377,7 @@ describe('CoordinatorDocentesComponent', () => {
     coordService.getDocentesPrograma.calls.reset();
     const payload = {
       idTipoIdentificacion: 'tipo-1', numeroIdentificacion: '1017555444', primerNombre: 'Jorge', primerApellido: 'Henao',
-      correo: 'jorge@uco.edu.co', password: 'Clave1234!', idTipoVinculacion: 'tv-1',
+      correo: 'jorge@uco.edu.co', idTipoVinculacion: 'tv-1',
     };
 
     component.guardarNuevo(payload);
@@ -397,7 +397,7 @@ describe('CoordinatorDocentesComponent', () => {
 
     component.guardarNuevo({
       idTipoIdentificacion: 'tipo-1', numeroIdentificacion: '1017555444', primerNombre: 'Jorge', primerApellido: 'Henao',
-      correo: 'jorge@uco.edu.co', password: 'Clave1234!', idTipoVinculacion: 'tv-1',
+      correo: 'jorge@uco.edu.co', idTipoVinculacion: 'tv-1',
     });
     fixture.detectChanges();
     fixture.detectChanges();

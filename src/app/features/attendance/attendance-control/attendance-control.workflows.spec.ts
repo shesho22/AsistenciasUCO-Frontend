@@ -219,7 +219,7 @@ describe('AttendanceControlComponent public workflows', () => {
     expect(component.showToast()).toBeTrue();
   });
 
-  it('matricula con contraseña explícita y refresca la sesión actual', () => {
+  it('IDENT-002: matricula sin contraseña y refresca la sesión actual', () => {
     const component = createComponent();
     component.openStudentRegistration();
 
@@ -231,15 +231,14 @@ describe('AttendanceControlComponent public workflows', () => {
       primerApellido: ' Lovelace ',
       segundoApellido: '',
       correo: ' ada@example.test ',
-      password: ' ClaveSegura1! ',
     });
 
     expect(studentService.enrollStudentInGroup).toHaveBeenCalledWith(jasmine.objectContaining({
       grupo: 'group-1',
       numeroIdentificacion: 123456,
       primerNombre: 'Ada',
-      password: 'ClaveSegura1!',
     }));
+    expect('password' in (studentService.enrollStudentInGroup.calls.mostRecent().args[0] as object)).toBeFalse();
     expect(component.isRegisterModalOpen()).toBeFalse();
     expect(component.studentFieldErrors()).toEqual({});
     expect(component.toastType()).toBe('success');
@@ -255,7 +254,6 @@ describe('AttendanceControlComponent public workflows', () => {
       primerNombre: 'Carlos',
       primerApellido: 'Perez',
       correo: 'carlos.perez@uco.edu.co',
-      password: 'Temporal2026*',
     });
 
     expect(studentService.enrollStudentInGroup).toHaveBeenCalledWith(jasmine.objectContaining({
@@ -290,7 +288,6 @@ describe('AttendanceControlComponent public workflows', () => {
       primerNombre: 'Ada',
       primerApellido: 'Lovelace',
       correo: 'ada@example.test',
-      password: 'ClaveSegura1!',
     });
 
     expect(component.studentFieldErrors()['correo']).toBe('El correo ya existe');
@@ -304,7 +301,6 @@ describe('AttendanceControlComponent public workflows', () => {
       primerNombre: 'Carlos',
       primerApellido: 'Perez',
       correo,
-      password: 'Temporal2026*',
       esNuevoEstudiante: true,
     });
 

@@ -20,7 +20,7 @@ import {
   ProgramaInstitucionDto,
 } from '../../../core/models/role-management.model';
 import { TipoIdentificacionApiDto } from '../../../core/api/models/tipo-identificacion-api-dto.model';
-import { getApiErrorCode, getApiErrorMessage, getApiFieldErrors } from '../../../core/api/errors/api-error.util';
+import { getApiErrorMessage, getApiFieldErrors } from '../../../core/api/errors/api-error.util';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
 import { getPersonNameError, getPersonNamesError, getStaffEmailError } from '../../../core/validation/form-fields.util';
 import { StudentRegistrationConfigService } from '../../../core/services/student-registration-config.service';
@@ -38,9 +38,6 @@ function esDocumentoEntero(valor: string): boolean {
 }
 
 /** Campos del formulario que pueden mostrar el error de `details[].field` debajo de su input. */
-/** Códigos con los que el backend pide la clave inicial de una persona nueva. */
-const CODIGOS_CLAVE_REQUERIDA = new Set(['ADS_006', 'ERR_PASSWORD_REQUERIDO']);
-
 const CAMPOS_FORMULARIO = new Set([
   'tipoIdentificacionId',
   'numeroIdentificacion',
@@ -49,14 +46,14 @@ const CAMPOS_FORMULARIO = new Set([
   'primerApellido',
   'segundoApellido',
   'correo',
-  'password',
   'idPrograma',
 ]);
 
 /**
  * HU156: modal de admisión individual de estudiantes por el Administrador Institucional.
  * Permite registrar un estudiante en un programa activo de la institución sin necesidad de matrícula previa en grupos.
- * Maneja asignación de credenciales (ADS_006), validación de unicidad (ADS_002, ADS_004) y advertencia de estado de cuenta.
+ * IDENT-002: no asigna contraseña; el estudiante activa su cuenta con el enlace que recibe en su correo institucional.
+ * Maneja la validación de unicidad (ADS_002, ADS_004) y la advertencia de estado de cuenta.
  */
 @Component({
     selector: 'app-admision-estudiante-modal',
@@ -253,38 +250,10 @@ const CAMPOS_FORMULARIO = new Set([
             </p>
           </div>
 
-          <!-- Contraseña Inicial (Condicional o requerida ante ADS_006) -->
-          @if (mostrarPassword()) {
-            <div class="sm:col-span-2 p-3 bg-warm-50 border border-warm-200 rounded-xl space-y-2">
-              <div class="flex items-center justify-between">
-                <label for="adm-contrasena" class="block text-xs font-semibold text-warm-800">
-                  Contraseña inicial requerida <span class="text-danger-600">*</span>
-                </label>
-                <span class="text-xs text-warm-500">Mínimo 8 caracteres</span>
-              </div>
-              <input id="adm-contrasena"
-                type="password"
-                aria-label="Contraseña inicial"
-                [ngModel]="password()"
-                (ngModelChange)="password.set($event)"
-                placeholder="Contraseña segura temporal"
-                [class]="claseInput"
-              />
-              @if (erroresCampos()['password']) {
-                <p class="text-xs text-danger-600">{{ erroresCampos()['password'] }}</p>
-              }
-            </div>
-          } @else {
-            <div class="sm:col-span-2 flex items-center justify-between pt-1">
-              <button
-                type="button"
-                (click)="mostrarPassword.set(true)"
-                class="text-xs font-semibold text-primary-700 hover:underline"
-              >
-                + Asignar contraseña inicial explícita
-              </button>
-            </div>
-          }
+          <!-- IDENT-002: sin contraseña; el estudiante la define al activar la cuenta -->
+          <p class="sm:col-span-2 text-xs text-warm-600" data-testid="aviso-activacion-cuenta">
+            {{ avisoActivacion }}
+          </p>
         </div>
       </div>
 
@@ -324,6 +293,10 @@ export class AdmisionEstudianteModalComponent implements OnInit {
   readonly avisoSinGrupo =
     'Aparecerá en la lista de estudiantes cuando esté inscrito en un grupo.';
 
+  /** IDENT-002: el registro no lleva contraseña; la cuenta se activa con el enlace del correo institucional. */
+  readonly avisoActivacion =
+    'No se asigna contraseña. Si el estudiante es nuevo, recibirá en su correo institucional un enlace para activar la cuenta y definir su contraseña.';
+
   readonly cerrar = output<void>();
   readonly admitido = output<AdmisionEstudianteDto>();
 
@@ -344,8 +317,6 @@ export class AdmisionEstudianteModalComponent implements OnInit {
   readonly correo = signal('');
   readonly idPrograma = signal('');
   readonly busquedaPrograma = signal('');
-  readonly password = signal('');
-  readonly mostrarPassword = signal(false);
 
   // Errors
   readonly errorGeneral = signal<string | null>(null);
@@ -367,8 +338,7 @@ export class AdmisionEstudianteModalComponent implements OnInit {
       this.correo().trim().length > 0 &&
       this.errorNombres() === null &&
       !this.errorLocal('correo') &&
-      this.idPrograma().trim().length > 0 &&
-      (!this.mostrarPassword() || this.password().trim().length > 0)
+      this.idPrograma().trim().length > 0
     );
   });
 
@@ -450,7 +420,6 @@ export class AdmisionEstudianteModalComponent implements OnInit {
       primerApellido: this.primerApellido().trim(),
       segundoApellido: this.segundoApellido().trim() || undefined,
       correo: this.correo().trim(),
-      password: this.password().trim() || '',
       idPrograma: this.idPrograma(),
     };
 
@@ -477,24 +446,10 @@ export class AdmisionEstudianteModalComponent implements OnInit {
   /**
    * CERT-CULM001 (HU156): la API responde con el contrato de errores del golden path ({@code code}, {@code message},
    * {@code details[].field/message}); antes se leian {@code codigo}, {@code mensajeUsuario} y {@code details[].campo},
-   * asi que el formulario nunca mostraba el error ni pedia la clave inicial (ADS_006).
-   *
-   * <p>La clave inicial la piden dos codigos: {@code ERR_PASSWORD_REQUERIDO} (la regla del backend, antes de llegar a la
-   * BD, cuando la persona es nueva) y {@code ADS_006} (la BD). Con cualquiera de los dos se abre el campo de la clave
-   * y el mensaje queda junto a el.</p>
+   * asi que el formulario nunca mostraba el error.
    */
   private procesarError(err: unknown): void {
-    const codigo = getApiErrorCode(err);
     const mensaje = getApiErrorMessage(err);
-
-    if (codigo !== null && CODIGOS_CLAVE_REQUERIDA.has(codigo)) {
-      this.mostrarPassword.set(true);
-      this.erroresCampos.update((m) => ({
-        ...m,
-        password: mensaje || 'Indica una contraseña inicial para el estudiante nuevo.',
-      }));
-      return;
-    }
 
     const mapa: Record<string, string> = {};
     for (const detalle of getApiFieldErrors(err)) {

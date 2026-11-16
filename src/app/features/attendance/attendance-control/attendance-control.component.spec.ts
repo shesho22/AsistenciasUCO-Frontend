@@ -322,20 +322,23 @@ describe('AttendanceControlComponent contract corrections', () => {
     ).toBeNull();
   });
 
-  it('exige contraseña explícita antes de matricular', () => {
+  it('IDENT-002: matricula a un estudiante nuevo sin pedir ni enviar contraseña', () => {
     const component = createComponent();
+    component.selectedCourseId.set('grupo-1');
+    studentService.enrollStudentInGroup.and.returnValue(of({ exitoso: true, mensajeUsuario: 'Matriculado.' }) as never);
 
     component.onRegisterStudentSubmit({
       tipoIdentificacionId: 'tipo-1',
       numeroIdentificacion: '123456',
       primerNombre: 'Ada',
       primerApellido: 'Lovelace',
-      correo: 'ada@example.test',
-      password: '   ',
+      correo: 'ada@uco.edu.co',
     });
 
-    expect(studentService.enrollStudentInGroup).not.toHaveBeenCalled();
-    expect(component.studentFieldErrors()['password']).toBeTruthy();
+    expect(studentService.enrollStudentInGroup).toHaveBeenCalled();
+    const enviado = studentService.enrollStudentInGroup.calls.mostRecent().args[0] as unknown as Record<string, unknown>;
+    expect('password' in enviado).toBeFalse();
+    expect(component.studentFieldErrors()).toEqual({});
   });
 
   it('el 409 ERR_MATRICULA_DUPLICADA indica matrícula activa', () => {
@@ -365,7 +368,6 @@ describe('AttendanceControlComponent contract corrections', () => {
       primerNombre: 'Ada',
       primerApellido: 'Lovelace',
       correo: 'ada@uco.edu.co',
-      password: 'Clave-Prueba-123',
     });
 
     expect(studentService.enrollStudentInGroup).toHaveBeenCalled();

@@ -22,4 +22,12 @@ export class AccountAccessService {
   reconcile(correo: string): Observable<ApiResponse<AccountAccess>> {
     return this.http.post<ApiResponse<AccountAccess>>(`${environment.apiUrl}/identidad/cuentas/acceso/reconciliaciones`, { correo });
   }
+
+  /** IDENT-002: reenvia el enlace de activacion de una cuenta que aun no se activa; devuelve el mensaje institucional. */
+  resendActivation(correo: string): Observable<ApiResponse<{ mensaje: string }>> {
+    return this.http.post<ApiResponse<{ mensaje: string }>>(
+      `${environment.apiUrl}/identidad/cuentas/activacion/reenvios`,
+      { correo }
+    );
+  }
 }

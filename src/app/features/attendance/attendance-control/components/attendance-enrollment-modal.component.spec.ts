@@ -97,13 +97,13 @@ describe('AttendanceEnrollmentModalComponent', () => {
 
   it('A2-F-06 matricular a un existente no envía correo ni password', () => {
     buscar(encontrado());
-    let payload: { correo: string; password: string; esNuevoEstudiante?: boolean } | undefined;
+    let payload: MatriculaEstudianteSolicitud | undefined;
     component.submitted.subscribe((p) => (payload = p));
 
     component.onSubmit(new Event('submit'));
 
     expect(payload?.correo).toBe('');
-    expect(payload?.password).toBe('');
+    expect('password' in (payload ?? {})).toBeFalse();
     expect(payload?.esNuevoEstudiante).toBeFalse();
   });
 
@@ -176,8 +176,6 @@ describe('AttendanceEnrollmentModalComponent', () => {
     component.firstName.set('Carlos');
     component.lastName.set('Ramírez');
     component.email.set('carlos.ramirez@uco.edu.co');
-    component.password.set('Temporal2026*');
-    component.confirmPassword.set('Temporal2026*');
 
     component.onSubmit(new Event('submit'));
 
@@ -187,17 +185,14 @@ describe('AttendanceEnrollmentModalComponent', () => {
     expect(payloadEmitido?.esNuevoEstudiante).toBeTrue();
   });
 
-  it('onFieldInput actualiza el valor y limpia los errores de confirmPassword', () => {
+  it('onFieldInput actualiza el valor y pide limpiar el error del campo', () => {
     let campoLimpio = '';
     component.clearFieldError.subscribe((f) => (campoLimpio = f));
 
-    component.confirmPasswordError.set('Error previo');
-    component.password.set('Secret123*');
-    component.onFieldInput('confirmPassword', 'Secret123*', component.confirmPassword);
+    component.onFieldInput('correo', 'nuevo@uco.edu.co', component.email);
 
-    expect(component.confirmPassword()).toBe('Secret123*');
-    expect(component.confirmPasswordError()).toBe('');
-    expect(campoLimpio).toBe('confirmPassword');
+    expect(component.email()).toBe('nuevo@uco.edu.co');
+    expect(campoLimpio).toBe('correo');
   });
 
   it('desplegarFormularioNuevoEstudiante limpia formulario y muestra campos', () => {
@@ -233,7 +228,7 @@ describe('AttendanceEnrollmentModalComponent', () => {
     expect(studentServiceSpy.searchStudentByIdentification).not.toHaveBeenCalled();
   });
 
-  it('onSubmit valida contraseñas al registrar nuevo estudiante', () => {
+  it('IDENT-002: el alta nueva no muestra campos de contraseña y emite sin ella', () => {
     let payloadEmitido = null as MatriculaEstudianteSolicitud | null;
     component.submitted.subscribe((p) => (payloadEmitido = p));
 
@@ -243,26 +238,17 @@ describe('AttendanceEnrollmentModalComponent', () => {
     component.firstName.set('Nuevo');
     component.lastName.set('Alumno');
     component.email.set('nuevo@uco.edu.co');
-    component.password.set('Pass1234*');
-    component.confirmPassword.set('');
+    fixture.detectChanges();
 
-    const event = new Event('submit');
-    component.onSubmit(event);
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelector('input[type="password"]')).toBeNull();
+    expect(host.querySelector('[data-testid="aviso-activacion-cuenta"]')?.textContent).toContain('activar la cuenta');
 
-    expect(component.confirmPasswordError()).toBe('Debe confirmar la contraseña.');
-    expect(payloadEmitido?.hasLocalConfirmError).toBeTrue();
+    component.onSubmit(new Event('submit'));
 
-    // Contraseñas no coinciden
-    component.confirmPassword.set('PassDistinta*');
-    component.onSubmit(event);
-    expect(component.confirmPasswordError()).toBe('Las contraseñas no coinciden.');
-    expect(payloadEmitido?.hasLocalConfirmError).toBeTrue();
-
-    // Contraseñas coinciden
-    component.confirmPassword.set('Pass1234*');
-    component.onSubmit(event);
-    expect(component.confirmPasswordError()).toBe('');
-    expect(payloadEmitido?.hasLocalConfirmError).toBeFalse();
+    expect(payloadEmitido?.correo).toBe('nuevo@uco.edu.co');
+    expect(payloadEmitido?.esNuevoEstudiante).toBeTrue();
+    expect('password' in (payloadEmitido ?? {})).toBeFalse();
   });
 
   it('IDENT-001: el payload distingue al estudiante nuevo del existente', () => {

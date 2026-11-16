@@ -94,8 +94,9 @@ describe('DeanCoordinadoresComponent UX (F-DEC-004, F-DEC-007, F-DEC-S04, F-COO-
     const alertas = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('p[role="alert"]')).map((a) => a.textContent);
     expect(alertas.some((t) => t?.includes('primer nombre es obligatorio'))).toBeTrue();
     expect(alertas.some((t) => t?.includes('primer apellido es obligatorio'))).toBeTrue();
-    expect(alertas.some((t) => t?.includes('contraseña es obligatoria'))).toBeTrue();
-    expect(alertas.length).toBeGreaterThanOrEqual(5);
+    // IDENT-002: el formulario ya no tiene contraseña; quedan los demás campos obligatorios.
+    expect(alertas.some((t) => t?.toLowerCase().includes('contraseña'))).toBeFalse();
+    expect(alertas.length).toBeGreaterThanOrEqual(4);
   });
 
   describe('UX densidad: cabecera con una accion primaria', () => {

@@ -211,7 +211,6 @@ describe('CoordinatorManagementService', () => {
         primerNombre: 'Jorge',
         primerApellido: 'Henao',
         correo: 'jorge.henao@uco.edu.co',
-        password: 'Clave1234!',
         idTipoVinculacion: 'tv-1',
       };
 

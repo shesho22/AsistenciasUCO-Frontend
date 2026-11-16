@@ -31,6 +31,15 @@ export const routes: Routes = [
           ),
       },
       {
+        // IDENT-002: destino del enlace de activacion de una cuenta registrada por otra persona (define su contrasena).
+        path: 'activar-cuenta',
+        data: { modo: 'ACTIVACION' },
+        loadComponent: () =>
+          import('./features/auth/verify-email/verify-email.component').then(
+            (m) => m.VerifyEmailComponent
+          ),
+      },
+      {
         // HU176B: matricula publica por QR (token en `?t=`, que la pagina borra de la URL) o por PIN. Sin authGuard: el
         // estudiante aun puede no tener cuenta. El backend exige red del campus y limita los intentos.
         path: 'matricula/qr',

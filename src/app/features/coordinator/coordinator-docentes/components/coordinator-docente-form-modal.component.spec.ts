@@ -37,7 +37,6 @@ describe('CoordinatorDocenteFormModalComponent', () => {
     component.form.primerApellido = 'Henao';
     component.form.segundoApellido = '';
     component.form.correo = 'jorge.henao@uco.edu.co';
-    component.form.password = 'Clave1234!';
     component.form.idTipoVinculacion = 'tv-2';
   }
 
@@ -47,9 +46,10 @@ describe('CoordinatorDocenteFormModalComponent', () => {
     expect(fuente).not.toContain('A1B2C3D4');
   });
 
-  it('T-FE-03: el formulario pide contraseña inicial y tipo de vinculación, y NO pide especialidad ni departamento', () => {
+  it('IDENT-002: el formulario pide tipo de vinculación, NO pide contraseña, especialidad ni departamento', () => {
     const html: string = fixture.nativeElement.innerHTML;
-    expect(html).toContain('name="password"');
+    expect(html).not.toContain('name="password"');
+    expect(html).toContain('activar la cuenta');
     expect(html).toContain('name="idTipoVinculacion"');
     expect(html).not.toContain('especialidad');
     expect(html).not.toContain('departamento');
@@ -68,7 +68,6 @@ describe('CoordinatorDocenteFormModalComponent', () => {
       primerNombre: 'Jorge',
       primerApellido: 'Henao',
       correo: 'jorge.henao@uco.edu.co',
-      password: 'Clave1234!',
       idTipoVinculacion: 'tv-2',
     });
   });
@@ -86,8 +85,8 @@ describe('CoordinatorDocenteFormModalComponent', () => {
     expect(emitido?.segundoApellido).toBe('Perez');
   });
 
-  // DEC-073: formato de nombres, documento numérico, correo institucional y política de contraseña.
-  it('DEC-073: no emite con nombres con números, documento con letras, correo no institucional o contraseña débil', () => {
+  // DEC-073: formato de nombres, documento numérico y correo institucional.
+  it('DEC-073: no emite con nombres con números, documento con letras o correo no institucional', () => {
     const emisiones: VincularDocenteNuevoPayload[] = [];
     component.guardarNuevo.subscribe((p) => emisiones.push(p));
 
@@ -106,11 +105,6 @@ describe('CoordinatorDocenteFormModalComponent', () => {
     component.enviarNuevo();
     expect(component.error()).toBe('El correo debe ser institucional y terminar en @uco.edu.co.');
 
-    llenarNuevo();
-    component.form.password = 'clave';
-    component.enviarNuevo();
-    expect(component.error()).toContain('Contraseña');
-
     expect(emisiones).toEqual([]);
   });
 
@@ -123,7 +117,7 @@ describe('CoordinatorDocenteFormModalComponent', () => {
     expect(component.error()).toBeTruthy();
 
     llenarNuevo();
-    component.form.password = '';
+    component.form.idTipoVinculacion = '';
     component.enviarNuevo();
     expect(emisiones.length).toBe(0);
   });

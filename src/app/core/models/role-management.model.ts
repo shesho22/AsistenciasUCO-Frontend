@@ -572,7 +572,6 @@ export interface AdmisionEstudianteRequest {
   primerApellido: string;
   segundoApellido?: string;
   correo: string;
-  password?: string;
   idPrograma: string;
 }
 
