@@ -87,7 +87,7 @@ export class TabsNavComponent {
   onTabKeydown(event: KeyboardEvent): void {
     const actual = this.indiceActivo();
     const ultimo = this.tabs().length - 1;
-    let destino = actual;
+    let destino: number;
     if (event.key === 'ArrowRight') destino = actual === ultimo ? 0 : actual + 1;
     else if (event.key === 'ArrowLeft') destino = actual <= 0 ? ultimo : actual - 1;
     else if (event.key === 'Home') destino = 0;
