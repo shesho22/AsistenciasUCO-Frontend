@@ -55,7 +55,6 @@ export interface VincularDocenteNuevoPayload {
   primerApellido: string;
   segundoApellido?: string;
   correo: string;
-  password: string;
   idTipoVinculacion: string;
 }
 

@@ -20,7 +20,7 @@ describe('AccountAccessStatusComponent', () => {
   }
 
   beforeEach(() => {
-    service = jasmine.createSpyObj<AccountAccessService>('AccountAccessService', ['consult', 'reconcile']);
+    service = jasmine.createSpyObj<AccountAccessService>('AccountAccessService', ['consult', 'reconcile', 'resendActivation']);
     TestBed.configureTestingModule({ providers: [{ provide: AccountAccessService, useValue: service }] });
   });
 
@@ -123,5 +123,55 @@ describe('AccountAccessStatusComponent', () => {
     expect(el.textContent).not.toContain('Reconciliar');
     expect(el.textContent).not.toContain('idempotente');
     expect(el.querySelector('button')?.textContent).toContain('Reintentar activación');
+  });
+
+  describe('IDENT-002 reenvío del enlace de activación', () => {
+    const botonReenvio = (el: HTMLElement) =>
+      Array.from(el.querySelectorAll('button')).find((b) => b.textContent?.includes('Reenviar enlace de activación'));
+
+    it('una cuenta activa no ofrece reenviar el enlace', () => {
+      service.consult.and.returnValue(of({ exitoso: true, datos: acceso('ACTIVA') }));
+
+      expect(botonReenvio(crear('persona@uco.edu.co').nativeElement)).toBeUndefined();
+    });
+
+    it('una cuenta inactiva reenvía el enlace con su correo y muestra el mensaje del backend', () => {
+      service.consult.and.returnValue(of({ exitoso: true, datos: acceso('INACTIVA') }));
+      service.resendActivation.and.returnValue(of({ exitoso: true, datos: { mensaje: 'Se envió de nuevo el enlace de activación.' } }));
+      const fixture = crear('persona@uco.edu.co');
+
+      botonReenvio(fixture.nativeElement)!.click();
+      fixture.detectChanges();
+
+      expect(service.resendActivation).toHaveBeenCalledOnceWith('persona@uco.edu.co');
+      expect(fixture.nativeElement.querySelector('[data-testid="account-activation-resent"]')?.textContent)
+        .toContain('Se envió de nuevo el enlace de activación.');
+    });
+
+    it('sin datos usa el mensaje de usuario y un error del backend se muestra como alerta', () => {
+      service.consult.and.returnValue(of({ exitoso: true, datos: acceso('PENDIENTE_SINCRONIZACION') }));
+      service.resendActivation.and.returnValues(
+        of({ exitoso: true, datos: null as never, mensajeUsuario: 'Enlace reenviado.' }),
+        throwError(() => new Error('espera minima')),
+      );
+      const fixture = crear('persona@uco.edu.co');
+      const componente = fixture.componentInstance;
+
+      componente.resendActivation();
+      expect(componente.resendMessage()).toBe('Enlace reenviado.');
+
+      componente.resendActivation();
+      fixture.detectChanges();
+      expect(componente.resendMessage()).toBeNull();
+      expect(fixture.nativeElement.querySelector('[role="alert"]')).not.toBeNull();
+    });
+
+    it('sin correo no reenvía nada', () => {
+      const fixture = crear(null);
+
+      fixture.componentInstance.resendActivation();
+
+      expect(service.resendActivation).not.toHaveBeenCalled();
+    });
   });
 });

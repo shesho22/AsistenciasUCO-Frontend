@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
 import { getPersonNamesError, getStaffEmailError } from '../../../../core/validation/form-fields.util';
-import { getPasswordValidationError, parseIdentificationNumber } from '../../../../core/validation/request-form-validation.util';
+import { parseIdentificationNumber } from '../../../../core/validation/request-form-validation.util';
 import { StudentRegistrationConfigService } from '../../../../core/services/student-registration-config.service';
 import { FormsModule } from '@angular/forms';
 import { TipoIdentificacionItem } from '../../../../core/services/catalog.service';
@@ -17,8 +17,8 @@ const CLASE_CONTROL =
   'w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20';
 
 /**
- * Modal de vinculacion de docentes (HU091): alta de persona nueva (con contrasena inicial asignada por el
- * coordinador) o vinculo de un docente ya registrado en la institucion elegido entre los candidatos del servidor.
+ * Modal de vinculacion de docentes (HU091): alta de persona nueva (IDENT-002: sin contrasena; el docente activa su
+ * cuenta con el enlace que recibe en su correo institucional) o vinculo de un docente ya registrado en la institucion elegido entre los candidatos del servidor.
  * No valida reglas de negocio: el backend es la autoridad y sus mensajes se muestran tal cual.
  */
 @Component({
@@ -85,10 +85,9 @@ const CLASE_CONTROL =
               <label class="block text-xs font-semibold text-warm-700">Correo institucional
                 <input type="email" name="correo" [(ngModel)]="form.correo" maxlength="100" placeholder="nombre.apellido&#64;uco.edu.co" [class]="clase" />
               </label>
-              <label class="block text-xs font-semibold text-warm-700">Contraseña inicial
-                <input type="password" name="password" autocomplete="new-password" [(ngModel)]="form.password" [class]="clase" />
-                <span class="font-normal text-warm-500">Se la entrega usted al docente; no hay flujo de recuperación en esta etapa.</span>
-              </label>
+              <p class="text-xs text-warm-600" data-testid="aviso-activacion-cuenta">
+                No se asigna contraseña. El docente recibirá en su correo institucional un enlace para activar la cuenta y definir su contraseña.
+              </p>
               <label class="block text-xs font-semibold text-warm-700">Tipo de vinculación
                 <select name="idTipoVinculacion" [(ngModel)]="form.idTipoVinculacion" [class]="clase">
                   <option value="">Seleccione…</option>
@@ -173,7 +172,6 @@ export class CoordinatorDocenteFormModalComponent {
     primerApellido: '',
     segundoApellido: '',
     correo: '',
-    password: '',
     idTipoVinculacion: '',
   };
 
@@ -196,18 +194,17 @@ export class CoordinatorDocenteFormModalComponent {
     const f = this.form;
     const tipoId = this.form.tipoIdentificacionId || this.tipoIdentificacionEfectivo();
     const faltantes = !tipoId || !f.numeroIdentificacion.trim() || !f.primerNombre.trim() || !f.primerApellido.trim()
-      || !f.correo.trim() || !f.password || !f.idTipoVinculacion;
+      || !f.correo.trim() || !f.idTipoVinculacion;
     if (faltantes) {
-      this.error.set('Complete todos los campos obligatorios: documento, nombre, apellido, correo, contraseña y tipo de vinculación.');
+      this.error.set('Complete todos los campos obligatorios: documento, nombre, apellido, correo y tipo de vinculación.');
       return;
     }
-    // DEC-073: formato de nombres, documento numerico, correo institucional y politica de contraseña antes de enviar.
+    // DEC-073: formato de nombres, documento numerico y correo institucional antes de enviar.
     const documento = parseIdentificationNumber(f.numeroIdentificacion);
     const problema =
       getPersonNamesError(f) ??
       (documento.valid ? null : documento.error) ??
       getStaffEmailError(f.correo, this.dominioCorreo()) ??
-      getPasswordValidationError(f.password, f.numeroIdentificacion) ??
       null;
     if (problema) {
       this.error.set(problema);
@@ -220,7 +217,6 @@ export class CoordinatorDocenteFormModalComponent {
       primerNombre: f.primerNombre.trim(),
       primerApellido: f.primerApellido.trim(),
       correo: f.correo.trim(),
-      password: f.password,
       idTipoVinculacion: f.idTipoVinculacion,
     };
     if (f.segundoNombre.trim()) {

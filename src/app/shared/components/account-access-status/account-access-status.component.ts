@@ -23,7 +23,8 @@ const VARIANTS: Record<AccountAccessState, BadgeVariant> = {
 /**
  * Estado de acceso de la última cuenta registrada: ACTIVA, PENDIENTE DE SINCRONIZACIÓN, INACTIVA o PROBLEMA CONTROLADO.
  * La verificación y la reconciliación las ejecuta el backend (nunca el PDP desde la SPA); la reconciliación es
- * idempotente y se puede repetir. Una cuenta pendiente todavía no tiene acceso.
+ * idempotente y se puede repetir. Una cuenta pendiente todavía no tiene acceso. IDENT-002: mientras la cuenta no esté
+ * activa se puede reenviar el enlace de activación (el backend valida el alcance, la cuenta pendiente y la espera).
  */
 @Component({
     selector: 'app-account-access-status',
@@ -62,11 +63,21 @@ const VARIANTS: Record<AccountAccessState, BadgeVariant> = {
         @if (error(); as mensaje) {
           <p class="text-xs text-danger-700" role="alert">{{ mensaje }}</p>
         }
-        @if (!loading() && (needsReconciliation() || error())) {
-          <div>
-            <app-button size="sm" variant="secondary" [loading]="reconciling()" (clicked)="reconcile()">
-              {{ error() && !access() ? 'Reintentar verificación' : 'Reintentar activación' }}
-            </app-button>
+        @if (resendMessage(); as mensaje) {
+          <p class="text-xs text-success-700" role="status" data-testid="account-activation-resent">{{ mensaje }}</p>
+        }
+        @if (!loading() && (needsReconciliation() || error() || canResendActivation())) {
+          <div class="flex flex-wrap gap-2">
+            @if (needsReconciliation() || error()) {
+              <app-button size="sm" variant="secondary" [loading]="reconciling()" (clicked)="reconcile()">
+                {{ error() && !access() ? 'Reintentar verificación' : 'Reintentar activación' }}
+              </app-button>
+            }
+            @if (canResendActivation()) {
+              <app-button size="sm" variant="secondary" [loading]="resending()" (clicked)="resendActivation()">
+                Reenviar enlace de activación
+              </app-button>
+            }
           </div>
         }
       </section>
@@ -83,7 +94,9 @@ export class AccountAccessStatusComponent {
   readonly access = signal<AccountAccess | null>(null);
   readonly loading = signal(false);
   readonly reconciling = signal(false);
+  readonly resending = signal(false);
   readonly error = signal<string | null>(null);
+  readonly resendMessage = signal<string | null>(null);
 
   readonly label = computed(() => {
     const state = this.access()?.estado;
@@ -97,6 +110,11 @@ export class AccountAccessStatusComponent {
     const state = this.access()?.estado;
     return state === 'PENDIENTE_SINCRONIZACION' || state === 'PROBLEMA';
   });
+  /** IDENT-002: una cuenta que aún no está activa puede recibir de nuevo su enlace de activación. */
+  readonly canResendActivation = computed(() => {
+    const state = this.access()?.estado;
+    return !!state && state !== 'ACTIVA';
+  });
 
   constructor() {
     effect(() => {
@@ -104,6 +122,7 @@ export class AccountAccessStatusComponent {
       untracked(() => {
         this.access.set(null);
         this.error.set(null);
+        this.resendMessage.set(null);
         if (mail) {
           this.refresh(mail);
         }
@@ -133,6 +152,29 @@ export class AccountAccessStatusComponent {
         error: (err: unknown) => {
           this.error.set(getApiErrorMessage(err));
           this.reconciling.set(false);
+        },
+      });
+  }
+
+  resendActivation(): void {
+    const mail = this.correo();
+    if (!mail || this.resending()) {
+      return;
+    }
+    this.resending.set(true);
+    this.error.set(null);
+    this.resendMessage.set(null);
+    this.service
+      .resendActivation(mail)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => {
+          this.resendMessage.set(res.datos?.mensaje ?? res.mensajeUsuario ?? null);
+          this.resending.set(false);
+        },
+        error: (err: unknown) => {
+          this.error.set(getApiErrorMessage(err));
+          this.resending.set(false);
         },
       });
   }

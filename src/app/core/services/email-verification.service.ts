@@ -19,15 +19,18 @@ export class EmailVerificationService {
   private readonly http = inject(HttpClient);
 
 
-  /** @returns el mensaje institucional de exito que debe mostrarse al estudiante. */
-  verifyEmail(token: string): Observable<string> {
+  /**
+   * @param password IDENT-002: contrasena que define el titular al activar una cuenta registrada por otra persona.
+   * @returns el mensaje institucional de exito que debe mostrarse.
+   */
+  verifyEmail(token: string, password?: string): Observable<string> {
     if (environment.useFrontendMocks) {
       return of('Su correo fue verificado. Ya puede iniciar sesión.').pipe(delay(300));
     }
     return this.http
       .post<ApiDataResponse<EmailVerificationResultDto>>(
         `${environment.apiUrl}/public/verificar-correo`,
-        { token }
+        password === undefined ? { token } : { token, password }
       )
       .pipe(map((response) => response.datos.mensaje));
   }

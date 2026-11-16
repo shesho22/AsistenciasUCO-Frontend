@@ -43,4 +43,15 @@ describe('AccountAccessService', () => {
     expect(req.request.body).toEqual({ correo: 'persona@uco.edu.co' });
     req.flush({ exitoso: true, datos: { usuario: 'u-1', estado: 'ACTIVA', detalle: '', roles: [] } });
   });
+
+  it('IDENT-002: resendActivation envía el correo en el cuerpo al endpoint de reenvíos', () => {
+    let mensaje = '';
+    service.resendActivation('persona@uco.edu.co').subscribe((res) => (mensaje = res.datos.mensaje));
+
+    const req = http.expectOne(`${environment.apiUrl}/identidad/cuentas/activacion/reenvios`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ correo: 'persona@uco.edu.co' });
+    req.flush({ exitoso: true, datos: { mensaje: 'Se envió de nuevo el enlace de activación.' } });
+    expect(mensaje).toBe('Se envió de nuevo el enlace de activación.');
+  });
 });

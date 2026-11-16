@@ -22,9 +22,6 @@ export interface MatriculaEstudianteSolicitud {
   /** Programa del estudiante; solo viaja cuando el grupo tiene más de un programa. */
   idPrograma?: string;
   correo: string;
-  password: string;
-  confirmPassword?: string;
-  hasLocalConfirmError?: boolean;
   esNuevoEstudiante?: boolean;
   estudianteExistente?: boolean;
 }
@@ -266,47 +263,15 @@ export interface MatriculaEstudianteSolicitud {
               />
               @if (emailDomain()) {
                 <p class="mt-1 text-[11px] text-warm-500" data-testid="email-domain-hint">
-                  Debe terminar en {{ emailDomain() }}. Se enviará un enlace para verificar el correo.
+                  Debe terminar en {{ emailDomain() }}.
                 </p>
               }
             </app-form-field>
 
-            <!-- Contraseña Temporal y Confirmación de Contraseña -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <app-form-field
-                label="Contraseña Temporal"
-                [required]="true"
-                [errorMessage]="fieldErrors()['password'] ?? ''"
-              >
-                <input
-                  type="password"
-                  minlength="8"
-                  maxlength="255"
-                  [ngModel]="password()"
-                  (ngModelChange)="onFieldInput('password', $event, password)"
-                  name="studentPassword"
-                  placeholder="Mínimo 8 caracteres"
-                  class="w-full bg-white text-warm-900 border border-warm-300 rounded-xl px-4 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
-              </app-form-field>
-
-              <app-form-field
-                label="Confirmar Contraseña"
-                [required]="true"
-                [errorMessage]="confirmPasswordError()"
-              >
-                <input
-                  type="password"
-                  minlength="8"
-                  maxlength="255"
-                  [ngModel]="confirmPassword()"
-                  (ngModelChange)="onFieldInput('confirmPassword', $event, confirmPassword)"
-                  name="studentConfirmPassword"
-                  placeholder="Repita la contraseña"
-                  class="w-full bg-white text-warm-900 border border-warm-300 rounded-xl px-4 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
-              </app-form-field>
-            </div>
+            <!-- IDENT-002: sin contraseña; el estudiante la define al activar su cuenta con el enlace del correo -->
+            <p class="text-[11px] text-warm-600" data-testid="aviso-activacion-cuenta">
+              No se asigna contraseña. El estudiante recibirá en su correo institucional un enlace para activar la cuenta y definir su contraseña.
+            </p>
           </div>
         }
 
@@ -371,9 +336,6 @@ export class AttendanceEnrollmentModalComponent {
   lastName = signal<string>('');
   secondLastName = signal<string>('');
   email = signal<string>('');
-  password = signal<string>('');
-  confirmPassword = signal<string>('');
-  confirmPasswordError = signal<string>('');
 
   isSearching = signal<boolean>(false);
   isExistingStudent = signal<boolean>(false);
@@ -415,15 +377,6 @@ export class AttendanceEnrollmentModalComponent {
 
   onFieldInput(field: string, value: string, signalRef: WritableSignal<string>): void {
     signalRef.set(value);
-    if (field === 'password' || field === 'confirmPassword') {
-      if (this.confirmPasswordError()) {
-        const pass = field === 'password' ? value : this.password();
-        const conf = field === 'confirmPassword' ? value : this.confirmPassword();
-        if (!conf || pass === conf) {
-          this.confirmPasswordError.set('');
-        }
-      }
-    }
     this.clearFieldError.emit(field);
   }
 
@@ -489,8 +442,6 @@ export class AttendanceEnrollmentModalComponent {
             this.lastName.set(estudiante.primerApellido);
             this.secondLastName.set(estudiante.segundoApellido ?? '');
             this.email.set('');
-            this.password.set('');
-            this.confirmPassword.set('');
             this.correoEnmascarado.set(estudiante.correoEnmascarado);
             this.estadoMatricula.set(estudiante.codigoEstadoMatriculaGrupo);
             this.isExistingStudent.set(true);
@@ -532,9 +483,6 @@ export class AttendanceEnrollmentModalComponent {
     this.lastName.set('');
     this.secondLastName.set('');
     this.email.set('');
-    this.password.set('');
-    this.confirmPassword.set('');
-    this.confirmPasswordError.set('');
     this.correoEnmascarado.set('');
     this.estadoMatricula.set(null);
   }
@@ -562,22 +510,6 @@ export class AttendanceEnrollmentModalComponent {
     }
     const existente = this.isExistingStudent() && !this.showRegistrationForm();
 
-    let hasLocalConfirmError = false;
-    if (this.showRegistrationForm()) {
-      const pass = this.password();
-      const confirm = this.confirmPassword();
-
-      if (!confirm) {
-        this.confirmPasswordError.set('Debe confirmar la contraseña.');
-        hasLocalConfirmError = true;
-      } else if (pass !== confirm) {
-        this.confirmPasswordError.set('Las contraseñas no coinciden.');
-        hasLocalConfirmError = true;
-      } else {
-        this.confirmPasswordError.set('');
-      }
-    }
-
     // Emitir siempre submitted para que el componente padre calcule y pinte los mensajes
     // de error en rojo debajo de todos los campos obligatorios o inválidos (primerNombre, correo, etc.)
     this.submitted.emit({
@@ -588,11 +520,9 @@ export class AttendanceEnrollmentModalComponent {
       primerApellido: this.lastName().trim(),
       segundoApellido: this.secondLastName().trim() || undefined,
       idPrograma: this.programas().length > 1 ? this.idPrograma() : undefined,
-      // Un estudiante existente se matricula solo por documento: ni correo ni contraseña salen del modal.
+      // Un estudiante existente se matricula solo por documento: su correo no sale del modal. IDENT-002: nunca hay
+      // contraseña; el estudiante nuevo la define al activar su cuenta.
       correo: existente ? '' : this.email().trim(),
-      password: existente ? '' : this.password(),
-      confirmPassword: existente ? '' : this.confirmPassword(),
-      hasLocalConfirmError,
       esNuevoEstudiante: this.showRegistrationForm(),
       estudianteExistente: existente,
     });

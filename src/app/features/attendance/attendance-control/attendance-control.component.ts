@@ -29,10 +29,7 @@ import { AttendanceMapper } from '../../../core/mappers/attendance.mapper';
 import { RegistrarAsistenciasSesionRequest } from '../../../core/api/models/registrar-asistencias-sesion-request.model';
 import { environment } from '../../../../environments/environment';
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
-import {
-  getPasswordValidationError,
-  parseIdentificationNumber,
-} from '../../../core/validation/request-form-validation.util';
+import { parseIdentificationNumber } from '../../../core/validation/request-form-validation.util';
 
 import { ActivatedRoute, Router } from '@angular/router';
 
@@ -85,8 +82,7 @@ type StudentEnrollmentField =
   | 'primerApellido'
   | 'segundoApellido'
   | 'correo'
-  | 'numeroIdentificacion'
-  | 'password';
+  | 'numeroIdentificacion';
 
 @Component({
     selector: 'app-attendance-control',
@@ -994,11 +990,9 @@ export class AttendanceControlComponent {
     });
   }
 
-  onRegisterStudentSubmit(data: Omit<MatriculaEstudianteSolicitud, 'password'> & { password?: string }): void {
+  onRegisterStudentSubmit(data: MatriculaEstudianteSolicitud): void {
     this.studentFieldErrors.set({});
     const identificationResult = parseIdentificationNumber(data.numeroIdentificacion);
-    const effectivePassword = data.password?.trim() ?? '';
-    const passwordError = getPasswordValidationError(effectivePassword, data.numeroIdentificacion);
     const fieldErrors: Partial<Record<StudentEnrollmentField, string>> = {};
 
     if (!identificationResult.valid) {
@@ -1023,7 +1017,8 @@ export class AttendanceControlComponent {
         fieldErrors[campo] = formato;
       }
     }
-    // A.2-15: un estudiante existente se matricula por documento; su correo y contraseña no se piden ni se envían.
+    // A.2-15: un estudiante existente se matricula por documento; su correo no se pide ni se envía. IDENT-002: nunca hay
+    // contraseña; el estudiante nuevo la define al activar su cuenta.
     const esExistente = data.estudianteExistente === true;
     if (esExistente) {
       // Sin validaciones de cuenta: ya existe.
@@ -1035,24 +1030,16 @@ export class AttendanceControlComponent {
       // IDENT-001: pre-validacion de comodidad; la autoridad es el backend (si el dominio no se pudo cargar se omite).
       fieldErrors.correo = `El correo del estudiante debe ser institucional y terminar en ${this.emailDomain()}.`;
     }
-    if (passwordError && !esExistente) {
-      fieldErrors.password = passwordError;
-    }
-
-    if (!data.tipoIdentificacionId || Object.keys(fieldErrors).length > 0 || data.hasLocalConfirmError) {
+    if (!data.tipoIdentificacionId || Object.keys(fieldErrors).length > 0) {
       if (!data.tipoIdentificacionId) {
         fieldErrors.tipoIdentificacionId = 'El campo Tipo de Documento es obligatorio.';
       }
       this.studentFieldErrors.set(fieldErrors);
       this.toastType.set('error');
       const errList = Object.values(fieldErrors);
-      if (errList.length > 0) {
-        this.toastMessage.set(
-          errList.length === 1 ? errList[0]! : `Campos con error en la inscripción: ${Object.keys(fieldErrors).join(', ')}.`
-        );
-      } else if (data.hasLocalConfirmError) {
-        this.toastMessage.set('Por favor verifique la confirmación de la contraseña.');
-      }
+      this.toastMessage.set(
+        errList.length === 1 ? errList[0]! : `Campos con error en la inscripción: ${Object.keys(fieldErrors).join(', ')}.`
+      );
       this.showToast.set(true);
       return;
     }
@@ -1081,7 +1068,6 @@ export class AttendanceControlComponent {
         segundoApellido: data.segundoApellido?.trim(),
         idPrograma: data.idPrograma,
         correoElectronico: esExistente ? undefined : data.correo.trim(),
-        password: esExistente ? undefined : effectivePassword,
       })
       .pipe(finalize(() => this.isEnrolling.set(false)))
       .subscribe({
@@ -1141,7 +1127,6 @@ export class AttendanceControlComponent {
       'segundoApellido',
       'correo',
       'numeroIdentificacion',
-      'password',
     ];
     const fieldErrors: Partial<Record<StudentEnrollmentField, string>> = {};
 

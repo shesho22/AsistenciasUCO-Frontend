@@ -23,7 +23,6 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import {
   parseIdentificationNumber,
   validateInstitutionalEmail,
-  getPasswordValidationError,
 } from '../../../core/validation/request-form-validation.util';
 import { getPersonNameError, getPersonNamesError, getSafeTextError, getStaffEmailError, NAME_MAX_LENGTH } from '../../../core/validation/form-fields.util';
 import { StudentRegistrationConfigService } from '../../../core/services/student-registration-config.service';
@@ -383,16 +382,9 @@ const NOMBRE_PROGRAMA_MAX = 50;
                 />
               </app-form-field>
 
-              <app-form-field label="Contraseña" [required]="true" [errorMessage]="errorCampo('password')">
-                <input
-                  type="text"
-                  [(ngModel)]="formData.password"
-                  name="password"
-                  required
-                  placeholder="ej. UcoCoord2026!"
-                  class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                />
-              </app-form-field>
+              <p class="self-end text-xs text-warm-600" data-testid="aviso-activacion-cuenta">
+                No se asigna contraseña. La persona recibirá en su correo institucional un enlace para activar la cuenta y definir su contraseña.
+              </p>
             </div>
 
             <fieldset class="space-y-4 p-4 rounded-2xl border border-warm-200 bg-warm-50/60" data-testid="seccion-programa">
@@ -788,7 +780,6 @@ export class DeanCoordinadoresComponent implements OnInit {
       nombres: '',
       apellidos: '',
       correo: '',
-      password: '',
       facultad: '',
       programaAcademico: '',
       idPrograma: null,
@@ -843,10 +834,6 @@ export class DeanCoordinadoresComponent implements OnInit {
       case 'correo': {
         return getStaffEmailError(f.correo, this.dominioCorreo()) ?? '';
       }
-      case 'password': {
-        if (vacio(f.password)) return 'La contraseña es obligatoria.';
-        return getPasswordValidationError((f.password ?? '').trim(), (f.numeroIdentificacion ?? '').trim()) ?? '';
-      }
       default:
         return '';
     }
@@ -874,11 +861,9 @@ export class DeanCoordinadoresComponent implements OnInit {
     }
   }
 
-  /** Habilita Guardar solo cuando datos personales, acceso y programa son válidos. */
+  /** Habilita Guardar solo cuando datos personales y programa son válidos (IDENT-002: sin contraseña). */
   formularioValido(): boolean {
     const f = this.formData;
-    const documento = (f.numeroIdentificacion ?? '').trim();
-    const password = (f.password ?? '').trim();
     return (
       !!f.tipoIdentificacionId &&
       parseIdentificationNumber(f.numeroIdentificacion).valid &&
@@ -886,8 +871,6 @@ export class DeanCoordinadoresComponent implements OnInit {
       !!(f.primerApellido ?? '').trim() &&
       getPersonNamesError(f) === null &&
       getStaffEmailError(f.correo, this.dominioCorreo()) === null &&
-      !!password &&
-      !getPasswordValidationError(password, documento) &&
       this.errorPrograma() === null
     );
   }
@@ -971,17 +954,6 @@ export class DeanCoordinadoresComponent implements OnInit {
       return;
     }
 
-    if (!this.formData.password || !this.formData.password.trim()) {
-      this.toast.warning(mensajeUi('UI_DEAN_COORDINADORES_004'));
-      return;
-    }
-
-    const passwordError = getPasswordValidationError(this.formData.password.trim(), this.formData.numeroIdentificacion.trim());
-    if (passwordError) {
-      this.toast.warning(passwordError);
-      return;
-    }
-
     this.formData.nombres = [pn, (this.formData.segundoNombre || '').trim()].filter(Boolean).join(' ');
     this.formData.apellidos = [pa, (this.formData.segundoApellido || '').trim()].filter(Boolean).join(' ');
 
@@ -993,7 +965,6 @@ export class DeanCoordinadoresComponent implements OnInit {
       segundoApellido: (this.formData.segundoApellido || '').trim(),
       correo: this.formData.correo.trim(),
       ...this.programaParaPayload(),
-      password: (this.formData.password || '').trim() || undefined,
     };
 
     this.isSubmitting.set(true);

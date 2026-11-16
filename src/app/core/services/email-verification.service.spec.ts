@@ -35,6 +35,15 @@ describe('EmailVerificationService (IDENT-001)', () => {
     expect(mensaje).toBe('Su correo fue verificado.');
   });
 
+  it('IDENT-002: al activar una cuenta envía token y contraseña en el cuerpo', () => {
+    service.verifyEmail('T'.repeat(43), 'MiClaveSegura2026!').subscribe();
+
+    const req = http.expectOne(`${environment.apiUrl}/public/verificar-correo`);
+    expect(req.request.body).toEqual({ token: 'T'.repeat(43), password: 'MiClaveSegura2026!' });
+    expect(req.request.urlWithParams).not.toContain('MiClave');
+    req.flush({ exitoso: true, datos: { mensaje: 'Su cuenta quedó activa.' } });
+  });
+
   it('propaga el error del backend cuando el token no es valido', () => {
     let error: unknown;
 

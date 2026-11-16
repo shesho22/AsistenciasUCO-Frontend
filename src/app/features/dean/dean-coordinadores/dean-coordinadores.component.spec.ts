@@ -361,17 +361,15 @@ describe('DeanCoordinadoresComponent', () => {
     component.guardarCoordinador();
     expect(toastService.warning).toHaveBeenCalled();
 
-    // Con programa pero sin contraseña
+    // IDENT-002: con programa ya no se pide contraseña y el cuerpo no la incluye.
     component.formData.programaAcademico = 'Ingeniería de Sistemas';
     component.modoPrograma.set('VINCULAR');
-    component.formData.password = '';
+    toastService.warning.calls.reset();
     component.guardarCoordinador();
-    expect(toastService.warning).toHaveBeenCalledWith('El campo Contraseña Inicial IAM es obligatorio.');
-
-    // Con contraseña inválida (sin cumplir política o con documento)
-    component.formData.password = '123';
-    component.guardarCoordinador();
-    expect(toastService.warning).toHaveBeenCalled();
+    expect(toastService.warning).not.toHaveBeenCalled();
+    const post = http.expectOne(`${environment.apiUrl}/decano/coordinadores`);
+    expect('password' in (post.request.body as Record<string, unknown>)).toBeFalse();
+    post.flush({ message: 'Error' }, { status: 500, statusText: 'Server Error' });
   });
 
   it('tras registrar un coordinador consulta y muestra el estado de acceso real (pendiente, sin declarar acceso)', () => {
@@ -383,7 +381,6 @@ describe('DeanCoordinadoresComponent', () => {
     component.formData.correo = 'jorge.henao@uco.edu.co';
     component.formData.programaAcademico = 'Ingeniería de Sistemas';
     component.modoPrograma.set('VINCULAR');
-    component.formData.password = 'ClaveSegura2026!';
 
     component.guardarCoordinador();
     http.expectOne(`${environment.apiUrl}/decano/coordinadores`).flush({ exitoso: true, mensajeUsuario: 'Coordinador creado.', datos: {} });
@@ -413,7 +410,6 @@ describe('DeanCoordinadoresComponent', () => {
     component.formData.correo = 'jorge.henao@uco.edu.co';
     component.formData.programaAcademico = 'Ingeniería de Sistemas';
     component.modoPrograma.set('VINCULAR');
-    component.formData.password = 'ClaveSegura2026!';
 
     component.guardarCoordinador();
 
@@ -463,7 +459,6 @@ describe('DeanCoordinadoresComponent', () => {
     component.formData.correo = 'coordinador231@uco.edu.co';
     component.formData.programaAcademico = 'Ingeniería de Sistemas';
     component.modoPrograma.set('VINCULAR');
-    component.formData.password = 'ClaveSegura2026!';
 
     component.guardarCoordinador();
     component.guardarCoordinador();
@@ -552,7 +547,6 @@ describe('DeanCoordinadoresComponent', () => {
     component.formData.primerNombre = 'Elena';
     component.formData.primerApellido = 'Montoya';
     component.formData.correo = 'elena.montoya@uco.edu.co';
-    component.formData.password = 'ClaveSegura2026!';
 
     component.guardarCoordinador();
 
@@ -599,7 +593,6 @@ describe('DeanCoordinadoresComponent', () => {
       component.formData.primerNombre = 'Jorge';
       component.formData.primerApellido = 'Henao';
       component.formData.correo = 'jorge.henao@uco.edu.co';
-      component.formData.password = 'ClaveSegura2026!';
     }
 
     function responderExito(post: TestRequest) {
@@ -700,7 +693,7 @@ describe('DeanCoordinadoresComponent', () => {
       expect(boton().disabled).toBeTrue();
     });
 
-    it('formularioValido exige cada dato personal y una contraseña que cumpla la política', () => {
+    it('formularioValido exige cada dato personal (IDENT-002: no pide contraseña)', () => {
       component.modoPrograma.set('SIN');
       llenarDatosPersonales();
       expect(component.formularioValido()).toBeTrue();
@@ -710,8 +703,6 @@ describe('DeanCoordinadoresComponent', () => {
         () => (component.formData.primerNombre = ' '),
         () => (component.formData.primerApellido = ''),
         () => (component.formData.correo = 'no-es-correo'),
-        () => (component.formData.password = ''),
-        () => (component.formData.password = '123'),
       ];
       for (const romper of rotos) {
         llenarDatosPersonales();

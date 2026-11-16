@@ -137,7 +137,6 @@ describe('AdmisionEstudianteModalComponent (HU156)', () => {
       primerApellido: 'Pérez',
       segundoApellido: 'Gómez',
       correo: 'carlos.perez@uco.edu.co',
-      password: '',
       idPrograma: 'prog-1',
     });
     expect(resultado as unknown).toEqual(admitidoDto);
@@ -180,20 +179,11 @@ describe('AdmisionEstudianteModalComponent (HU156)', () => {
     );
   });
 
-  it('maneja error 400 ADS_006 requiriendo contraseña inicial', () => {
-    const errorResponse = errorApi(400, 'ADS_006', 'Indica una contraseña inicial para el estudiante nuevo.');
-    adminService.admitirEstudiante.and.returnValue(throwError(() => errorResponse));
-
-    component.numeroIdentificacion.set('1017000444');
-    component.primerNombre.set('Mateo');
-    component.primerApellido.set('Gómez');
-    component.correo.set('mateo@uco.edu.co');
-    component.idPrograma.set('prog-1');
-
-    component.onGuardar();
-
-    expect(component.mostrarPassword()).toBeTrue();
-    expect(component.erroresCampos()['password']).toContain('contraseña inicial');
+  it('IDENT-002: no hay campo de contraseña y el formulario explica la activación por correo', () => {
+    fixture.detectChanges();
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelector('input[type="password"]')).toBeNull();
+    expect(host.querySelector('[data-testid="aviso-activacion-cuenta"]')?.textContent).toContain('activar la cuenta');
   });
 
   it('maneja error 400 con details mapeando errores a los campos respectivos', () => {
@@ -329,7 +319,7 @@ describe('AdmisionEstudianteModalComponent (HU156)', () => {
     expect(component.errorGeneral()).toBeTruthy();
   });
 
-  it('ERR_PASSWORD_REQUERIDO abre el campo de la clave inicial y deja el mensaje junto a él (recertificación)', () => {
+  it('IDENT-002: un error de un backend anterior que pida la clave se muestra arriba sin abrir ningún campo', () => {
     adminService.admitirEstudiante.and.returnValue(
       throwError(() => errorApi(400, 'ERR_PASSWORD_REQUERIDO', 'La clave es obligatoria.'))
     );
@@ -338,20 +328,13 @@ describe('AdmisionEstudianteModalComponent (HU156)', () => {
     component.primerApellido.set('Admision');
     component.correo.set('qa.estudiante.admision@uco.edu.co');
     component.idPrograma.set('prog-1');
-    fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('input[type="password"]')).toBeNull();
+    expect(component.esValido()).toBeTrue();
 
     component.onGuardar();
     fixture.detectChanges();
 
-    expect(component.mostrarPassword()).toBeTrue();
-    expect(component.erroresCampos()['password']).toBe('La clave es obligatoria.');
-    expect(component.errorGeneral()).toBeNull();
-    expect(fixture.nativeElement.querySelector('input[type="password"]')).not.toBeNull();
-    // Con el campo abierto y vacío el botón queda deshabilitado hasta que se escriba la clave.
-    expect(component.esValido()).toBeFalse();
-    component.password.set('ClaveTemporal-2026');
-    expect(component.esValido()).toBeTrue();
+    expect(component.errorGeneral()).toBe('La clave es obligatoria.');
+    expect(fixture.nativeElement.querySelector('input[type="password"]')).toBeNull();
   });
 
   it('explica por qué no se puede admitir cuando el documento no es un número válido', () => {

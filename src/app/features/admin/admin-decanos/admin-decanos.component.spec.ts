@@ -364,31 +364,19 @@ describe('AdminDecanosComponent', () => {
       expect(component.errorFacultad()).toContain('solo admite');
     });
 
-    it('valida contraseña obligatoria', () => {
+    it('IDENT-002: registra al decano sin contraseña; la define al activar la cuenta', () => {
       component.formData.tipoIdentificacionId = 'tipo-1';
       component.formData.numeroIdentificacion = '1020304050';
       component.formData.primerNombre = 'Ana';
       component.formData.primerApellido = 'Mora';
       component.formData.correo = 'ana.mora@uco.edu.co';
-      component.formData.password = '';
       component.modoFacultad.set('SIN');
-component.guardarDecano();
-      expect(toastService.warning).toHaveBeenCalledWith('La contraseña inicial de acceso es obligatoria.');
-    });
-
-    it('no valida longitud mínima de 12 caracteres en cliente (política delegada al backend, F-ADM-011)', () => {
-      component.formData.tipoIdentificacionId = 'tipo-1';
-      component.formData.numeroIdentificacion = '1020304050';
-      component.formData.primerNombre = 'Ana';
-      component.formData.primerApellido = 'Mora';
-      component.formData.correo = 'ana.mora@uco.edu.co';
-      component.formData.password = 'Pass123!';
-      component.modoFacultad.set('SIN');
-component.guardarDecano();
-      // No debe advertir por longitud de 12 caracteres en cliente:
-      expect(toastService.warning).not.toHaveBeenCalledWith('La contraseña inicial debe tener mínimo 12 caracteres según las políticas de Keycloak.');
+      expect(component.formularioValido()).toBeTrue();
+      component.guardarDecano();
+      expect(toastService.warning).not.toHaveBeenCalled();
       const req = http.expectOne(`${environment.apiUrl}/admin/decanos`);
       expect(req.request.method).toBe('POST');
+      expect('password' in (req.request.body as Record<string, unknown>)).toBeFalse();
       req.flush({ exitoso: true, datos: { ...mockDecanos[0], id: 'dec-nuevo' } });
 
       const reqDecReload = http.expectOne(`${environment.apiUrl}/admin/decanos`);
@@ -424,7 +412,6 @@ component.guardarDecano();
       component.formData.primerApellido = 'Zapata';
       component.formData.segundoApellido = 'Mejía';
       component.formData.correo = 'carlos.zapata@uco.edu.co';
-      component.formData.password = 'ClaveSegura2026#';
 
       component.modoFacultad.set('SIN');
 component.guardarDecano();
@@ -452,7 +439,6 @@ component.guardarDecano();
       component.formData.primerNombre = 'Carlos';
       component.formData.primerApellido = 'Zapata';
       component.formData.correo = 'carlos.zapata@uco.edu.co';
-      component.formData.password = 'ClaveSegura2026#';
 
       component.modoFacultad.set('SIN');
 component.guardarDecano();
@@ -483,7 +469,6 @@ component.guardarDecano();
     component.formData.primerNombre = 'Carlos';
     component.formData.primerApellido = 'Zapata';
     component.formData.correo = 'carlos.zapata@uco.edu.co';
-    component.formData.password = 'ClaveSegura2026#';
 
     component.modoFacultad.set('SIN');
 component.guardarDecano();
@@ -524,7 +509,6 @@ component.guardarDecano();
       component.formData.primerNombre = 'Carlos';
       component.formData.primerApellido = 'Zapata';
       component.formData.correo = 'carlos.zapata@uco.edu.co';
-      component.formData.password = 'ClaveSegura2026#';
 
       component.modoFacultad.set('SIN');
 component.guardarDecano();
@@ -585,7 +569,7 @@ component.guardarDecano();
       expect(component.formData.primerNombre).toBe('Esteban');
       expect(component.formData.primerApellido).toBe('López');
       expect(component.formData.correo).toBe('esteban.lopez@uco.edu.co');
-      expect(component.formData.password).toBe('');
+      expect('password' in component.formData).toBeFalse();
       expect(toastService.info).toHaveBeenCalled();
     });
   });
@@ -658,7 +642,6 @@ component.guardarDecano();
       component.formData.primerNombre = 'Carlos';
       component.formData.primerApellido = 'Zapata';
       component.formData.correo = 'carlos.zapata@uco.edu.co';
-      component.formData.password = 'ClaveSegura2026#';
     }
 
     function responderExito(post: TestRequest) {
@@ -767,7 +750,6 @@ component.guardarDecano();
         () => (component.formData.primerNombre = ' '),
         () => (component.formData.primerApellido = ''),
         () => (component.formData.correo = 'no-es-correo'),
-        () => (component.formData.password = ''),
       ];
       for (const romper of rotos) {
         llenarDatosPersonales();
