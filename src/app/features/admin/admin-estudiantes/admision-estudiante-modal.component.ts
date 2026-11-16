@@ -24,6 +24,11 @@ import { getApiErrorMessage, getApiFieldErrors } from '../../../core/api/errors/
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
 import { getPersonNameError, getPersonNamesError, getStaffEmailError } from '../../../core/validation/form-fields.util';
 import { StudentRegistrationConfigService } from '../../../core/services/student-registration-config.service';
+import {
+  CambioDatoPersona,
+  CampoPersona,
+  DatosPersonaComponent,
+} from '../../../shared/components/datos-persona/datos-persona.component';
 
 const CLASE_INPUT =
   'w-full bg-white text-warm-900 border border-warm-300 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500';
@@ -58,7 +63,7 @@ const CAMPOS_FORMULARIO = new Set([
 @Component({
     selector: 'app-admision-estudiante-modal',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [FormsModule, ModalComponent],
+    imports: [FormsModule, ModalComponent, DatosPersonaComponent],
     template: `
     <app-modal [isOpen]="isOpen()" title="Admitir nuevo estudiante" (closed)="onCancelar()">
       <div class="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
@@ -73,138 +78,22 @@ const CAMPOS_FORMULARIO = new Set([
         }
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <!-- Tipo y Número de Documento -->
-          <div>
-            <label for="adm-tipo-documento" class="block text-xs font-semibold text-warm-700 mb-1">
-              Tipo de documento <span class="text-danger-600">*</span>
-            </label>
-            <select id="adm-tipo-documento"
-              aria-label="Tipo de documento"
-              [ngModel]="tipoIdentificacionId()"
-              (ngModelChange)="tipoIdentificacionId.set($event)"
-              [class]="claseInput"
-            >
-              @for (tipo of tipos(); track tipo.id) {
-                <option [value]="tipo.id">{{ tipo.tipoIdentificacion }} · {{ tipo.nombre }}</option>
-              }
-            </select>
-            @if (erroresCampos()['tipoIdentificacionId']) {
-              <p class="text-xs text-danger-600 mt-1">{{ erroresCampos()['tipoIdentificacionId'] }}</p>
-            }
-          </div>
-
-          <div>
-            <label for="adm-numero-documento" class="block text-xs font-semibold text-warm-700 mb-1">
-              Número de documento <span class="text-danger-600">*</span>
-            </label>
-            <input id="adm-numero-documento"
-              type="text"
-              inputmode="numeric"
-              aria-label="Número de documento"
-              maxlength="20"
-              [ngModel]="numeroIdentificacion()"
-              (ngModelChange)="numeroIdentificacion.set($event)"
-              placeholder="Ej. 1017000111"
-              [class]="claseInput"
-            />
-            @if (erroresCampos()['numeroIdentificacion']) {
-              <p class="text-xs text-danger-600 mt-1">{{ erroresCampos()['numeroIdentificacion'] }}</p>
-            } @else if (documentoInvalido()) {
-              <p class="text-xs text-danger-600 mt-1" data-testid="documento-invalido">
-                Escribe solo números, sin puntos, espacios ni ceros al inicio (máximo 2147483647).
-              </p>
-            }
-          </div>
-
-          <!-- Nombres -->
-          <div>
-            <label for="adm-primer-nombre" class="block text-xs font-semibold text-warm-700 mb-1">
-              Primer nombre <span class="text-danger-600">*</span>
-            </label>
-            <input id="adm-primer-nombre"
-              type="text"
-              aria-label="Primer nombre"
-              maxlength="50"
-              [ngModel]="primerNombre()"
-              (ngModelChange)="primerNombre.set($event)"
-              placeholder="Primer nombre"
-              [class]="claseInput"
-            />
-            @if (errorLocal('primerNombre') || erroresCampos()['primerNombre']) {
-              <p class="text-xs text-danger-600 mt-1">{{ errorLocal('primerNombre') || erroresCampos()['primerNombre'] }}</p>
-            }
-          </div>
-
-          <div>
-            <label for="adm-segundo-nombre" class="block text-xs font-semibold text-warm-700 mb-1">Segundo nombre</label>
-            <input id="adm-segundo-nombre"
-              type="text"
-              aria-label="Segundo nombre"
-              maxlength="50"
-              [ngModel]="segundoNombre()"
-              (ngModelChange)="segundoNombre.set($event)"
-              placeholder="Opcional"
-              [class]="claseInput"
-            />
-            @if (errorLocal('segundoNombre') || erroresCampos()['segundoNombre']) {
-              <p class="text-xs text-danger-600 mt-1">{{ errorLocal('segundoNombre') || erroresCampos()['segundoNombre'] }}</p>
-            }
-          </div>
-
-          <!-- Apellidos -->
-          <div>
-            <label for="adm-primer-apellido" class="block text-xs font-semibold text-warm-700 mb-1">
-              Primer apellido <span class="text-danger-600">*</span>
-            </label>
-            <input id="adm-primer-apellido"
-              type="text"
-              aria-label="Primer apellido"
-              maxlength="50"
-              [ngModel]="primerApellido()"
-              (ngModelChange)="primerApellido.set($event)"
-              placeholder="Primer apellido"
-              [class]="claseInput"
-            />
-            @if (errorLocal('primerApellido') || erroresCampos()['primerApellido']) {
-              <p class="text-xs text-danger-600 mt-1">{{ errorLocal('primerApellido') || erroresCampos()['primerApellido'] }}</p>
-            }
-          </div>
-
-          <div>
-            <label for="adm-segundo-apellido" class="block text-xs font-semibold text-warm-700 mb-1">Segundo apellido</label>
-            <input id="adm-segundo-apellido"
-              type="text"
-              aria-label="Segundo apellido"
-              maxlength="50"
-              [ngModel]="segundoApellido()"
-              (ngModelChange)="segundoApellido.set($event)"
-              placeholder="Opcional"
-              [class]="claseInput"
-            />
-            @if (errorLocal('segundoApellido') || erroresCampos()['segundoApellido']) {
-              <p class="text-xs text-danger-600 mt-1">{{ errorLocal('segundoApellido') || erroresCampos()['segundoApellido'] }}</p>
-            }
-          </div>
-
-          <!-- Correo Institucional -->
           <div class="sm:col-span-2">
-            <label for="adm-correo" class="block text-xs font-semibold text-warm-700 mb-1">
-              Correo institucional <span class="text-danger-600">*</span>
-            </label>
-            <input id="adm-correo"
-              type="email"
-              aria-label="Correo institucional"
-              maxlength="100"
-              [ngModel]="correo()"
-              (ngModelChange)="correo.set($event)"
-              placeholder="ejemplo@uco.edu.co"
-              [class]="claseInput"
+            <app-datos-persona
+              [datos]="{
+                tipoIdentificacionId: tipoIdentificacionId(),
+                numeroIdentificacion: numeroIdentificacion(),
+                primerNombre: primerNombre(),
+                segundoNombre: segundoNombre(),
+                primerApellido: primerApellido(),
+                segundoApellido: segundoApellido(),
+                correo: correo()
+              }"
+              [tiposIdentificacion]="tipos()"
+              [errores]="erroresPersona()"
+              (cambio)="alCambiarDato($event)"
             />
-            @if (errorLocal('correo') || erroresCampos()['correo']) {
-              <p class="text-xs text-danger-600 mt-1">{{ errorLocal('correo') || erroresCampos()['correo'] }}</p>
-            }
           </div>
-
           <!-- Selección de Programa Académico con Búsqueda -->
           <div class="sm:col-span-2 space-y-1.5">
             <label for="adm-programa" class="block text-xs font-semibold text-warm-700">
@@ -353,6 +242,35 @@ export class AdmisionEstudianteModalComponent implements OnInit {
   );
 
   /** DEC-073: error de formato de un campo antes de enviar; vacío si es válido o aún no se escribió. */
+  /** Errores de cada dato personal para el bloque compartido: los del backend (details) y las pre-validaciones locales. */
+  readonly erroresPersona = computed<Partial<Record<CampoPersona, string>>>(() => {
+    const api = this.erroresCampos();
+    const documento = api['numeroIdentificacion']
+      || (this.documentoInvalido() ? 'Escribe solo números, sin puntos, espacios ni ceros al inicio (máximo 2147483647).' : '');
+    return {
+      tipoIdentificacionId: api['tipoIdentificacionId'] ?? '',
+      numeroIdentificacion: documento,
+      primerNombre: this.errorLocal('primerNombre') || api['primerNombre'] || '',
+      segundoNombre: this.errorLocal('segundoNombre') || api['segundoNombre'] || '',
+      primerApellido: this.errorLocal('primerApellido') || api['primerApellido'] || '',
+      segundoApellido: this.errorLocal('segundoApellido') || api['segundoApellido'] || '',
+      correo: this.errorLocal('correo') || api['correo'] || '',
+    };
+  });
+
+  alCambiarDato(cambio: CambioDatoPersona): void {
+    const destinos = {
+      tipoIdentificacionId: this.tipoIdentificacionId,
+      numeroIdentificacion: this.numeroIdentificacion,
+      primerNombre: this.primerNombre,
+      segundoNombre: this.segundoNombre,
+      primerApellido: this.primerApellido,
+      segundoApellido: this.segundoApellido,
+      correo: this.correo,
+    };
+    destinos[cambio.campo].set(cambio.valor);
+  }
+
   errorLocal(campo: 'primerNombre' | 'segundoNombre' | 'primerApellido' | 'segundoApellido' | 'correo'): string {
     if (campo === 'correo') {
       return this.correo().trim() ? getStaffEmailError(this.correo(), this.dominioCorreo()) ?? '' : '';

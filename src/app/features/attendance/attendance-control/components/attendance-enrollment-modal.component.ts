@@ -10,6 +10,7 @@ import { StudentService } from '../../../../core/services/student.service';
 import { GroupService } from '../../../../core/services/group.service';
 import { ProgramaResumen } from '../../../../core/models/role-management.model';
 import { getApiErrorMessage, getApiErrorCode, API_ERROR_CODE } from '../../../../core/api/errors/api-error.util';
+import { CambioDatoPersona, DatosPersonaComponent } from '../../../../shared/components/datos-persona/datos-persona.component';
 
 /** Datos del formulario de matricula/registro de estudiante que emite el modal. */
 export interface MatriculaEstudianteSolicitud {
@@ -29,7 +30,7 @@ export interface MatriculaEstudianteSolicitud {
 @Component({
     selector: 'app-attendance-enrollment-modal',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [FormsModule, ModalComponent, ButtonComponent, FormFieldComponent, FormSelectComponent],
+    imports: [FormsModule, ModalComponent, ButtonComponent, FormFieldComponent, FormSelectComponent, DatosPersonaComponent],
     template: `
     <app-modal
       [isOpen]="isOpen()"
@@ -178,100 +179,24 @@ export interface MatriculaEstudianteSolicitud {
               </div>
             </div>
 
-            <!-- Primer y Segundo Nombre -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <app-form-field
-                label="Primer Nombre"
-                [required]="true"
-                [errorMessage]="fieldErrors()['primerNombre'] ?? ''"
-              >
-                <input
-                  type="text"
-                  maxlength="50"
-                  [ngModel]="firstName()"
-                  (ngModelChange)="onFieldInput('primerNombre', $event, firstName)"
-                  name="studentFirstName"
-                  placeholder="Ej. Juan"
-                  class="w-full bg-white text-warm-900 border border-warm-300 rounded-xl px-4 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
-              </app-form-field>
-
-              <app-form-field
-                label="Segundo Nombre (Opcional)"
-                [errorMessage]="fieldErrors()['segundoNombre'] ?? ''"
-              >
-                <input
-                  type="text"
-                  maxlength="50"
-                  [ngModel]="secondName()"
-                  (ngModelChange)="onFieldInput('segundoNombre', $event, secondName)"
-                  name="studentSecondName"
-                  placeholder="Ej. Carlos"
-                  class="w-full bg-white text-warm-900 border border-warm-300 rounded-xl px-4 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
-              </app-form-field>
-            </div>
-
-            <!-- Primer y Segundo Apellido -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <app-form-field
-                label="Primer Apellido"
-                [required]="true"
-                [errorMessage]="fieldErrors()['primerApellido'] ?? ''"
-              >
-                <input
-                  type="text"
-                  maxlength="50"
-                  [ngModel]="lastName()"
-                  (ngModelChange)="onFieldInput('primerApellido', $event, lastName)"
-                  name="studentLastName"
-                  placeholder="Ej. Pérez"
-                  class="w-full bg-white text-warm-900 border border-warm-300 rounded-xl px-4 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
-              </app-form-field>
-
-              <app-form-field
-                label="Segundo Apellido (Opcional)"
-                [errorMessage]="fieldErrors()['segundoApellido'] ?? ''"
-              >
-                <input
-                  type="text"
-                  maxlength="50"
-                  [ngModel]="secondLastName()"
-                  (ngModelChange)="onFieldInput('segundoApellido', $event, secondLastName)"
-                  name="studentSecondLastName"
-                  placeholder="Ej. Gómez"
-                  class="w-full bg-white text-warm-900 border border-warm-300 rounded-xl px-4 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
-              </app-form-field>
-            </div>
-
-            <!-- Correo Electrónico Institucional -->
-            <app-form-field
-              label="Correo Electrónico Institucional"
-              [required]="true"
-              [errorMessage]="fieldErrors()['correo'] ?? ''"
-            >
-              <input
-                type="email"
-                maxlength="100"
-                [ngModel]="email()"
-                (ngModelChange)="onFieldInput('correo', $event, email)"
-                name="studentEmail"
-                [placeholder]="emailPlaceholder()"
-                class="w-full bg-white text-warm-900 border border-warm-300 rounded-xl px-4 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
-              @if (emailDomain()) {
-                <p class="mt-1 text-[11px] text-warm-500" data-testid="email-domain-hint">
-                  Debe terminar en {{ emailDomain() }}.
-                </p>
-              }
-            </app-form-field>
-
-            <!-- IDENT-002: sin contraseña; el estudiante la define al activar su cuenta con el enlace del correo -->
-            <p class="text-[11px] text-warm-600" data-testid="aviso-activacion-cuenta">
-              No se asigna contraseña. El estudiante recibirá en su correo institucional un enlace para activar la cuenta y definir su contraseña.
-            </p>
+            <!-- Datos personales (bloque compartido); el documento se escribe arriba para buscar al estudiante -->
+            <app-datos-persona
+              [datos]="{
+                tipoIdentificacionId: docType(),
+                numeroIdentificacion: code(),
+                primerNombre: firstName(),
+                segundoNombre: secondName(),
+                primerApellido: lastName(),
+                segundoApellido: secondLastName(),
+                correo: email()
+              }"
+              [incluirDocumento]="false"
+              [errores]="fieldErrors()"
+              [placeholderCorreo]="emailPlaceholder()"
+              [ayudaCorreo]="emailDomain() ? 'Debe terminar en ' + emailDomain() + '.' : ''"
+              aviso="No se asigna contraseña. El estudiante recibirá en su correo institucional un enlace para activar la cuenta y definir su contraseña."
+              (cambio)="alCambiarDato($event)"
+            />
           </div>
         }
 
@@ -373,6 +298,21 @@ export class AttendanceEnrollmentModalComponent {
         });
       });
     });
+  }
+
+  /** Cambio de un dato personal desde el bloque compartido; limpia el error del campo como el resto del modal. */
+  alCambiarDato(cambio: CambioDatoPersona): void {
+    const destinos: Partial<Record<CambioDatoPersona['campo'], WritableSignal<string>>> = {
+      primerNombre: this.firstName,
+      segundoNombre: this.secondName,
+      primerApellido: this.lastName,
+      segundoApellido: this.secondLastName,
+      correo: this.email,
+    };
+    const destino = destinos[cambio.campo];
+    if (destino) {
+      this.onFieldInput(cambio.campo, cambio.valor, destino);
+    }
   }
 
   onFieldInput(field: string, value: string, signalRef: WritableSignal<string>): void {

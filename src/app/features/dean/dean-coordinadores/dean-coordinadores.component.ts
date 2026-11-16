@@ -15,6 +15,7 @@ import { ActionMenuComponent, ActionMenuItem } from '../../../shared/components/
 import { SelectorModoComponent, OpcionModo } from '../../../shared/components/selector-modo/selector-modo.component';
 import { ButtonComponent } from '../../../shared/components/button/button.component';
 import { FormFieldComponent } from '../../../shared/components/form-field/form-field.component';
+import { CambioDatoPersona, DatosPersonaComponent } from '../../../shared/components/datos-persona/datos-persona.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { UserPickerModalComponent, UserPickerItem } from '../../../shared/components/user-picker-modal/user-picker-modal.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
@@ -48,6 +49,7 @@ const NOMBRE_PROGRAMA_MAX = 50;
     BadgeComponent,
     ButtonComponent,
     FormFieldComponent,
+    DatosPersonaComponent,
     UserPickerModalComponent,
     AccountAccessStatusComponent,
     PaginationComponent,
@@ -291,101 +293,30 @@ const NOMBRE_PROGRAMA_MAX = 50;
           </div>
 
           <form (ngSubmit)="guardarCoordinador()" class="space-y-4">
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <app-form-field label="Primer Nombre" [required]="true" [errorMessage]="errorCampo('primerNombre')">
-                <input
-                  type="text"
-                  [(ngModel)]="formData.primerNombre"
-                  name="primerNombre"
-                  [attr.maxlength]="maxNombre"
-                  required
-                  placeholder="ej. Andrés"
-                  class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                />
-              </app-form-field>
-              <app-form-field label="Segundo Nombre (Opcional)" [errorMessage]="errorCampo('segundoNombre')">
-                <input
-                  type="text"
-                  [(ngModel)]="formData.segundoNombre"
-                  name="segundoNombre"
-                  [attr.maxlength]="maxNombre"
-                  placeholder="ej. Felipe"
-                  class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                />
-              </app-form-field>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <app-form-field label="Primer Apellido" [required]="true" [errorMessage]="errorCampo('primerApellido')">
-                <input
-                  type="text"
-                  [(ngModel)]="formData.primerApellido"
-                  name="primerApellido"
-                  [attr.maxlength]="maxNombre"
-                  required
-                  placeholder="ej. López"
-                  class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                />
-              </app-form-field>
-              <app-form-field label="Segundo Apellido (Opcional)" [errorMessage]="errorCampo('segundoApellido')">
-                <input
-                  type="text"
-                  [(ngModel)]="formData.segundoApellido"
-                  name="segundoApellido"
-                  [attr.maxlength]="maxNombre"
-                  placeholder="ej. Martínez"
-                  class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                />
-              </app-form-field>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <app-form-field label="Tipo de Documento" [required]="true" [errorMessage]="errorCampo('tipoIdentificacionId')">
-                <select
-                  [(ngModel)]="formData.tipoIdentificacionId"
-                  (change)="onTipoIdentificacionChange($event)"
-                  name="tipoIdentificacionId"
-                  required
-                  class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                >
-                  @for (tipo of tiposIdentificacion(); track tipo.id) {
-                    <option [value]="tipo.id">{{ tipo.tipoIdentificacion }} - {{ tipo.nombre }}</option>
-                  }
-                </select>
-              </app-form-field>
-
-              <div class="sm:col-span-2">
-                <app-form-field label="Número de Identificación" [required]="true" [errorMessage]="errorCampo('numeroIdentificacion')">
-                  <input
-                    type="text"
-                    [(ngModel)]="formData.numeroIdentificacion"
-                    (input)="onNumeroIdentificacionInput($event)"
-                    name="numeroIdentificacion"
-                    required
-                    maxlength="15"
-                    placeholder="ej. 1017000002"
-                    class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                  />
-                </app-form-field>
-              </div>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <app-form-field label="Correo Institucional UCO" [required]="true" [errorMessage]="errorCampo('correo')">
-                <input
-                  type="email"
-                  [(ngModel)]="formData.correo"
-                  name="correo"
-                  placeholder="coordinador.programa@uco.edu.co"
-                  required
-                  class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                />
-              </app-form-field>
-
-              <p class="self-end text-xs text-warm-600" data-testid="aviso-activacion-cuenta">
-                No se asigna contraseña. La persona recibirá en su correo institucional un enlace para activar la cuenta y definir su contraseña.
-              </p>
-            </div>
+            <app-datos-persona
+              [datos]="{
+                tipoIdentificacionId: formData.tipoIdentificacionId ?? '',
+                numeroIdentificacion: formData.numeroIdentificacion,
+                primerNombre: formData.primerNombre ?? '',
+                segundoNombre: formData.segundoNombre ?? '',
+                primerApellido: formData.primerApellido ?? '',
+                segundoApellido: formData.segundoApellido ?? '',
+                correo: formData.correo
+              }"
+              [tiposIdentificacion]="tiposIdentificacion()"
+              [errores]="{
+                tipoIdentificacionId: errorCampo('tipoIdentificacionId'),
+                numeroIdentificacion: errorCampo('numeroIdentificacion'),
+                primerNombre: errorCampo('primerNombre'),
+                segundoNombre: errorCampo('segundoNombre'),
+                primerApellido: errorCampo('primerApellido'),
+                segundoApellido: errorCampo('segundoApellido'),
+                correo: errorCampo('correo')
+              }"
+              placeholderCorreo="coordinador.programa@uco.edu.co"
+              aviso="No se asigna contraseña. La persona recibirá en su correo institucional un enlace para activar la cuenta y definir su contraseña."
+              (cambio)="alCambiarDato($event)"
+            />
 
             <fieldset class="space-y-4 p-4 rounded-2xl border border-warm-200 bg-warm-50/60" data-testid="seccion-programa">
               <legend class="px-2 text-sm font-bold text-warm-800">Programa</legend>
@@ -581,7 +512,7 @@ export class DeanCoordinadoresComponent implements OnInit {
   private readonly ultimaPeticionCoordinadores = new UltimaPeticion();
 
   formData: Omit<CoordinadorItem, 'id' | 'totalDocentes' | 'totalGrupos'> = {
-    tipoIdentificacionId: 'A1B2C3D4-0000-0000-0000-000000000001',
+    tipoIdentificacionId: '',
     tipoIdentificacion: 'CC',
     numeroIdentificacion: '',
     primerNombre: '',
@@ -672,13 +603,17 @@ export class DeanCoordinadoresComponent implements OnInit {
     });
   }
 
-  onTipoIdentificacionChange(event: Event): void {
-    const select = event.target as HTMLSelectElement;
-    const selectedTipo = this.tiposIdentificacion().find((t) => t.id === select.value);
-    if (selectedTipo) {
-      this.formData.tipoIdentificacion = selectedTipo.tipoIdentificacion;
-      this.formData.tipoIdentificacionId = selectedTipo.id;
+  /** Cambio de un dato personal desde el bloque compartido (el documento ya llega solo con digitos). */
+  alCambiarDato(cambio: CambioDatoPersona): void {
+    if (cambio.campo === 'tipoIdentificacionId') {
+      const tipo = this.tiposIdentificacion().find((t) => t.id === cambio.valor);
+      if (tipo) {
+        this.formData.tipoIdentificacion = tipo.tipoIdentificacion;
+        this.formData.tipoIdentificacionId = tipo.id;
+      }
+      return;
     }
+    this.formData[cambio.campo] = cambio.valor;
   }
 
   cargarCoordinadores(identidadEsperada?: IdentidadEsperada): void {
@@ -770,7 +705,7 @@ export class DeanCoordinadoresComponent implements OnInit {
 
   abrirFormularioRegistro(): void {
     this.formData = {
-      tipoIdentificacionId: this.tiposIdentificacion().length > 0 ? this.tiposIdentificacion()[0].id : 'A1B2C3D4-0000-0000-0000-000000000001',
+      tipoIdentificacionId: this.tiposIdentificacion().length > 0 ? this.tiposIdentificacion()[0].id : '',
       tipoIdentificacion: this.tiposIdentificacion().length > 0 ? this.tiposIdentificacion()[0].tipoIdentificacion : 'CC',
       numeroIdentificacion: '',
       primerNombre: '',
@@ -789,12 +724,6 @@ export class DeanCoordinadoresComponent implements OnInit {
     this.programaNuevo = { nombre: '', idTipoPrograma: '', idModalidad: '', idJornada: '' };
     this.intentoGuardar.set(false);
     this.vistaActual.set('REGISTRO');
-  }
-
-  onNumeroIdentificacionInput(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    input.value = input.value.replace(/\D/g, '');
-    this.formData.numeroIdentificacion = input.value;
   }
 
   volverALista(): void {
@@ -958,6 +887,8 @@ export class DeanCoordinadoresComponent implements OnInit {
     this.formData.apellidos = [pa, (this.formData.segundoApellido || '').trim()].filter(Boolean).join(' ');
 
     const payload = {
+      // El tipo de documento elegido viaja al backend (antes se omitia y la BD guardaba siempre el tipo por defecto).
+      tipoIdentificacionId: this.formData.tipoIdentificacionId,
       numeroIdentificacion: this.formData.numeroIdentificacion.trim(),
       primerNombre: pn,
       segundoNombre: (this.formData.segundoNombre || '').trim(),
@@ -1011,7 +942,7 @@ export class DeanCoordinadoresComponent implements OnInit {
       this.tiposIdentificacion().find((t) => t.tipoIdentificacion === user.tipoIdentificacion)?.id ||
       (this.tiposIdentificacion().length > 0
         ? this.tiposIdentificacion()[0].id
-        : 'A1B2C3D4-0000-0000-0000-000000000001');
+        : '');
     this.formData.tipoIdentificacion = user.tipoIdentificacion || 'CC';
     this.formData.numeroIdentificacion = String(user.numeroIdentificacion || '');
     this.formData.primerNombre = user.primerNombre || user.nombres.split(' ')[0] || '';

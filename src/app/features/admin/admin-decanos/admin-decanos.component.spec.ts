@@ -33,7 +33,6 @@ describe('AdminDecanosComponent', () => {
       correo: 'rgomez@uco.edu.co',
       facultad: 'Facultad de Ingeniería',
       idFacultad: 'fac-1',
-      telefono: '123456',
       fechaAsignacion: '2026-01-01',
       estado: 'ACTIVO' as const,
       estaActivoDecano: true,
@@ -50,7 +49,6 @@ describe('AdminDecanosComponent', () => {
       correo: 'mzapata@uco.edu.co',
       facultad: 'Facultad de Ciencias de la Salud',
       idFacultad: 'fac-2',
-      telefono: '',
       fechaAsignacion: '2026-02-01',
       estado: 'INACTIVO' as const,
       estaActivoDecano: false,
@@ -144,17 +142,15 @@ describe('AdminDecanosComponent', () => {
     expect(component.isLoading()).toBeFalse();
   });
 
-  it('onTipoIdentificacionChange actualiza tipoIdentificacion correctamente', () => {
+  it('alCambiarDato resuelve el tipo de documento del catálogo e ignora uno inexistente', () => {
     fixture.detectChanges();
     satisfyInitRequests();
 
-    const eventFound = { target: { value: 'tipo-2' } } as unknown as Event;
-    component.onTipoIdentificacionChange(eventFound);
+    component.alCambiarDato({ campo: 'tipoIdentificacionId', valor: 'tipo-2' });
     expect(component.formData.tipoIdentificacion).toBe('CE');
     expect(component.formData.tipoIdentificacionId).toBe('tipo-2');
 
-    const eventNotFound = { target: { value: 'inexistente' } } as unknown as Event;
-    component.onTipoIdentificacionChange(eventNotFound);
+    component.alCambiarDato({ campo: 'tipoIdentificacionId', valor: 'inexistente' });
     expect(component.formData.tipoIdentificacion).toBe('CE');
   });
 
@@ -263,7 +259,7 @@ describe('AdminDecanosComponent', () => {
     expect(toastService.error).toHaveBeenCalled();
   });
 
-  it('abrirFormularioRegistro, volverALista y onNumeroIdentificacionInput funcionan como se espera', () => {
+  it('abrirFormularioRegistro, volverALista y alCambiarDato funcionan como se espera', () => {
     fixture.detectChanges();
     satisfyInitRequests();
 
@@ -271,8 +267,10 @@ describe('AdminDecanosComponent', () => {
     expect(component.vistaActual()).toBe('REGISTRO');
     expect(component.formData.numeroIdentificacion).toBe('');
 
-    component.onNumeroIdentificacionInput({ target: { value: '102030ABC-40' } } as unknown as Event);
+    component.alCambiarDato({ campo: 'numeroIdentificacion', valor: '10203040' });
     expect(component.formData.numeroIdentificacion).toBe('10203040');
+    component.alCambiarDato({ campo: 'primerNombre', valor: 'Ana' });
+    expect(component.formData.primerNombre).toBe('Ana');
 
     component.volverALista();
     expect(component.vistaActual()).toBe('LISTA');
