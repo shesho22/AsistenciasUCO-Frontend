@@ -18,7 +18,6 @@ export interface DecanoItem {
   password?: string;
   facultad: string;
   nombreFacultad?: string;
-  telefono: string;
   fechaAsignacion: string;
   estado: 'ACTIVO' | 'INACTIVO';
   estaActivoDecano?: boolean;

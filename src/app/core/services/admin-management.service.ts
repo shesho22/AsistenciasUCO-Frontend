@@ -33,7 +33,6 @@ interface DecanoApiDto {
   idFacultad?: string | null;
   nombreFacultad?: string;
   facultad?: string;
-  telefono?: string;
   fechaAsignacion?: string;
   estado?: DecanoItem['estado'];
   estaActivoDecano?: boolean | null;
@@ -157,7 +156,6 @@ export class AdminManagementService {
       idFacultad: raw.idFacultad || undefined,
       facultad: raw.nombreFacultad || raw.facultad || 'Sin Facultad Asignada',
       nombreFacultad: raw.nombreFacultad || raw.facultad || 'Sin Facultad Asignada',
-      telefono: raw.telefono || '',
       fechaAsignacion: raw.fechaAsignacion || '',
       estado: raw.estado || (estaActivo === false ? 'INACTIVO' : 'ACTIVO'),
       estaActivoDecano: estaActivo ?? true,
