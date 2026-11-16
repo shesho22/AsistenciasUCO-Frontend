@@ -29,6 +29,7 @@ describe('DashboardLayoutComponent menu simplificado (CULM-001 UX)', () => {
           provide: AuthService,
           useValue: jasmine.createSpyObj('AuthService', ['logout'], {
             currentUser: user.asReadonly(),
+            cerrandoSesion: signal(false).asReadonly(),
             isMockMode: signal(false).asReadonly(),
           }),
         },

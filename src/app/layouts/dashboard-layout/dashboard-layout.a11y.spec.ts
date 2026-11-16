@@ -14,6 +14,7 @@ describe('DashboardLayoutComponent accesibilidad (F-TRX-014)', () => {
     const user = signal({ id: 'u', name: 'Ana', email: 'a@uco.edu.co', role: 'COORDINADOR' as UserRole });
     const auth = jasmine.createSpyObj('AuthService', ['logout'], {
       currentUser: user.asReadonly(),
+      cerrandoSesion: signal(false).asReadonly(),
       isMockMode: signal(false).asReadonly(),
     });
     const toast = jasmine.createSpyObj('ToastService', ['dismiss'], {
@@ -105,6 +106,7 @@ describe('DashboardLayoutComponent: menu cerrado fuera del foco (movil)', () => 
     const user = signal({ id: 'u', name: 'Ana', email: 'a@uco.edu.co', role: 'ESTUDIANTE' as UserRole });
     const auth = jasmine.createSpyObj('AuthService', ['logout'], {
       currentUser: user.asReadonly(),
+      cerrandoSesion: signal(false).asReadonly(),
       isMockMode: signal(false).asReadonly(),
     });
     const toast = jasmine.createSpyObj('ToastService', ['dismiss'], {
@@ -150,6 +152,7 @@ describe('DashboardLayoutComponent: menu cerrado fuera del foco (movil)', () => 
       const user = signal({ id: 'u', name: 'Ana', email: 'a@uco.edu.co', role: 'ESTUDIANTE' as UserRole });
       const auth = jasmine.createSpyObj('AuthService', ['logout'], {
         currentUser: user.asReadonly(),
+        cerrandoSesion: signal(false).asReadonly(),
         isMockMode: signal(false).asReadonly(),
       });
       const toast = jasmine.createSpyObj('ToastService', ['dismiss'], {
@@ -180,6 +183,7 @@ describe('DashboardLayoutComponent: menu cerrado fuera del foco (movil)', () => 
     const user = signal({ id: 'u', name: 'Ana', email: 'a@uco.edu.co', role: 'ESTUDIANTE' as UserRole });
     const auth = jasmine.createSpyObj('AuthService', ['logout'], {
       currentUser: user.asReadonly(),
+      cerrandoSesion: signal(false).asReadonly(),
       isMockMode: signal(false).asReadonly(),
     });
     const toast = jasmine.createSpyObj('ToastService', ['dismiss'], {

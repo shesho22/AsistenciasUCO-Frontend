@@ -22,6 +22,7 @@ describe('DashboardLayoutComponent', () => {
 
     authServiceSpy = jasmine.createSpyObj('AuthService', ['logout'], {
       currentUser: mockUserSignal.asReadonly(),
+      cerrandoSesion: signal(false).asReadonly(),
       isMockMode: signal(false).asReadonly(),
     });
     authServiceSpy.logout.and.returnValue(Promise.resolve());
@@ -98,6 +99,7 @@ describe('DashboardLayoutComponent (ESTUDIANTE, CULM-001 A.1)', () => {
     const user = signal({ id: 'usr-2', name: 'Est Uno', email: 'est@uco.edu.co', role: 'ESTUDIANTE' as UserRole });
     const auth = jasmine.createSpyObj('AuthService', ['logout'], {
       currentUser: user.asReadonly(),
+      cerrandoSesion: signal(false).asReadonly(),
       isMockMode: signal(false).asReadonly(),
     });
     const toast = jasmine.createSpyObj('ToastService', ['dismiss'], {
@@ -116,5 +118,65 @@ describe('DashboardLayoutComponent (ESTUDIANTE, CULM-001 A.1)', () => {
     // CULM-001 UX: la oferta de grupos pasa a ser una pestaña de Mis Materias (/app/estudiante/mis-materias/oferta).
     expect(items.some((i) => i.label === 'Oferta de Grupos')).toBeFalse();
     expect(items.some((i) => i.route === '/app/estudiante/mis-materias')).toBeTrue();
+  });
+});
+
+describe('DashboardLayoutComponent (cierre de sesión sin rol fantasma)', () => {
+  async function montar(rol: UserRole | null, cerrando: boolean) {
+    const user = signal(rol ? { id: 'usr-3', name: 'Coord Uno', email: 'coord@uco.edu.co', role: rol } : null);
+    const cerrandoSesion = signal(cerrando);
+    const auth = jasmine.createSpyObj('AuthService', ['logout'], {
+      currentUser: user.asReadonly(),
+      cerrandoSesion: cerrandoSesion.asReadonly(),
+      isMockMode: signal(false).asReadonly(),
+    });
+    const toast = jasmine.createSpyObj('ToastService', ['dismiss'], {
+      currentToast: signal({ visible: false, message: '', type: 'info' as const }).asReadonly(),
+    });
+    await TestBed.configureTestingModule({
+      imports: [DashboardLayoutComponent],
+      providers: [provideRouter([]), { provide: AuthService, useValue: auth }, { provide: ToastService, useValue: toast }],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(DashboardLayoutComponent);
+    fixture.detectChanges();
+    return { fixture, user, cerrandoSesion };
+  }
+
+  it('sin usuario no inventa el rol DOCENTE: sin rol, sin menú y sin insignias', async () => {
+    const { fixture } = await montar(null, false);
+    const html = fixture.nativeElement as HTMLElement;
+
+    expect(fixture.componentInstance.currentRole()).toBeNull();
+    expect(fixture.componentInstance.filteredNavItems()).toEqual([]);
+    expect(html.textContent).not.toContain('DOCENTE');
+    expect(html.textContent).not.toContain('Módulos para');
+    expect(html.textContent).not.toContain('Sesión activa como');
+  });
+
+  it('al vaciarse el usuario durante el cierre de sesión no se pinta el menú de otro rol', async () => {
+    const { fixture, user } = await montar('COORDINADOR', false);
+    expect(fixture.componentInstance.filteredNavItems().length).toBeGreaterThan(0);
+
+    user.set(null);
+    fixture.detectChanges();
+
+    const html = fixture.nativeElement as HTMLElement;
+    expect(fixture.componentInstance.filteredNavItems()).toEqual([]);
+    expect(html.textContent).not.toContain('DOCENTE');
+    expect(html.querySelectorAll('nav a').length).toBe(0);
+  });
+
+  it('mientras se cierra la sesión muestra el overlay "Cerrando sesión…"', async () => {
+    const { fixture, cerrandoSesion } = await montar('DOCENTE', false);
+    const html = fixture.nativeElement as HTMLElement;
+    expect(html.querySelector('[data-testid="overlay-cerrando-sesion"]')).toBeNull();
+
+    cerrandoSesion.set(true);
+    fixture.detectChanges();
+
+    const overlay = html.querySelector('[data-testid="overlay-cerrando-sesion"]');
+    expect(overlay).not.toBeNull();
+    expect(overlay?.getAttribute('role')).toBe('status');
+    expect(overlay?.textContent).toContain('Cerrando sesión');
   });
 });

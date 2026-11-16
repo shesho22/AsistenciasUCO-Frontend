@@ -35,6 +35,17 @@ interface NavItem {
       [duration]="toastState().reference ? 8000 : 3500"
       (dismissed)="toastService.dismiss()"
     ></app-toast>
+    @if (cerrandoSesion()) {
+      <div
+        data-testid="overlay-cerrando-sesion"
+        class="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-3 bg-warm-50"
+        role="status"
+        aria-live="polite"
+      >
+        <img src="logo.svg" alt="" class="w-12 h-12 object-contain" />
+        <p class="text-sm font-medium text-warm-700">Cerrando sesión…</p>
+      </div>
+    }
     <a
       href="#contenido-principal"
       (click)="irAlContenido($event)"
@@ -106,7 +117,7 @@ interface NavItem {
 
         <!-- Navigation Links Filtrados por Rol -->
         <nav class="flex-1 p-4 space-y-1.5 overflow-y-auto">
-          @if (!isCollapsed()) {
+          @if (!isCollapsed() && currentRole()) {
             <div class="px-3 pb-2 text-[10px] font-bold tracking-wider text-warm-400 uppercase">
               Módulos para {{ currentRole() }}
             </div>
@@ -152,9 +163,11 @@ interface NavItem {
                     {{ user()?.name }}
                   </p>
                   <div class="flex items-center gap-1.5 mt-0.5">
-                    <app-badge [variant]="getRoleBadgeVariant(currentRole())" size="sm">
-                      {{ currentRole() }}
-                    </app-badge>
+                    @if (currentRole(); as rol) {
+                      <app-badge [variant]="getRoleBadgeVariant(rol)" size="sm">
+                        {{ rol }}
+                      </app-badge>
+                    }
                     <span class="text-[10px] text-warm-400 group-hover:text-primary-600 transition-colors">
                       • Editar
                     </span>
@@ -192,12 +205,14 @@ interface NavItem {
             <span class="text-xs text-warm-600 font-medium">{{ user()?.department }}</span>
           </div>
 
-          <div class="flex items-center gap-3">
-            <span class="text-xs text-warm-500">Sesión activa como:</span>
-            <span class="text-xs font-bold px-2 py-0.5 rounded-md bg-warm-100 text-warm-800 border border-warm-200">
-              {{ currentRole() }}
-            </span>
-          </div>
+          @if (currentRole(); as rol) {
+            <div class="flex items-center gap-3">
+              <span class="text-xs text-warm-500">Sesión activa como:</span>
+              <span class="text-xs font-bold px-2 py-0.5 rounded-md bg-warm-100 text-warm-800 border border-warm-200">
+                {{ rol }}
+              </span>
+            </div>
+          }
         </div>
 
         <!-- Page View Container -->
@@ -222,10 +237,11 @@ export class DashboardLayoutComponent {
   /** WCAG 2.4.3 / 4.1.2: en móvil con el menú cerrado el panel está fuera de pantalla; no recibe foco ni se lee. */
   readonly menuInerte = computed(() => !this.esEscritorio() && !this.isMobileMenuOpen());
 
-  currentRole = computed<UserRole>(() => {
-    const role = this.user()?.role;
-    return (role || 'DOCENTE') as UserRole;
-  });
+  /** Overlay de cierre de sesión: tapa la interfaz mientras el navegador sale hacia el logout del PDP. */
+  readonly cerrandoSesion = this.authService.cerrandoSesion;
+
+  /** Sin usuario no hay rol: nunca se inventa uno (antes caía en DOCENTE y se pintaba su menú al cerrar sesión). */
+  currentRole = computed<UserRole | null>(() => this.user()?.role ?? null);
 
   private readonly alertaService = inject(AlertaInasistenciaService, { optional: true });
   private readonly revisionService = inject(RevisionCancelacionService, { optional: true });
@@ -246,7 +262,7 @@ export class DashboardLayoutComponent {
       const role = this.currentRole();
       const cancelacionEnabled = Boolean(environment.features?.cancelacionInasistenciaEnabled);
 
-      if (!cancelacionEnabled) {
+      if (!cancelacionEnabled || role === null) {
         return;
       }
 
@@ -428,7 +444,10 @@ export class DashboardLayoutComponent {
 
   filteredNavItems = computed<NavItem[]>(() => {
     const user = this.user();
-    const roles = user ? effectiveRoles(user) : [this.currentRole()];
+    if (!user) {
+      return [];
+    }
+    const roles = effectiveRoles(user);
     const cancelacionEnabled = Boolean(environment.features?.cancelacionInasistenciaEnabled);
 
     return this.allNavItems
@@ -494,7 +513,7 @@ export class DashboardLayoutComponent {
     return `fixed md:static inset-y-0 left-0 z-50 h-dvh max-h-dvh bg-white border-r border-warm-200/80 flex flex-col justify-between transition-all duration-300 ease-in-out shadow-warm-md md:shadow-none ${collapsedWidth} ${mobileVisibility}`;
   }
 
-  getRoleBadgeVariant(role: UserRole): 'success' | 'warning' | 'danger' | 'info' | 'neutral' {
+  getRoleBadgeVariant(role: UserRole | null): 'success' | 'warning' | 'danger' | 'info' | 'neutral' {
     switch (role) {
       case 'ADMINISTRADOR':
         return 'danger';
