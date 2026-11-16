@@ -37,7 +37,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
 
       <!-- KPIs Bento -->
       <div class="grid grid-cols-1 gap-4">
-        <div class="p-4 rounded-2xl bg-white border border-warm-200 shadow-warm-sm flex items-center justify-between">
+        <div class="superficie p-4 flex items-center justify-between">
           <div>
             <span class="text-xs text-warm-500 font-medium">Áreas de Conocimiento</span>
             <p class="text-2xl font-serif font-bold text-warm-900">{{ areasTotal() }}</p>
@@ -72,7 +72,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
             <p class="text-sm text-danger-700">No fue posible cargar las áreas de conocimiento.</p>
           </div>
         } @else if (areasFiltradas().length === 0) {
-          <div class="bg-white rounded-2xl border border-warm-200 p-8 text-center shadow-warm-sm">
+          <div class="superficie p-8 text-center">
             <p class="text-sm text-warm-500">No se encontraron áreas de conocimiento.</p>
           </div>
         } @else {

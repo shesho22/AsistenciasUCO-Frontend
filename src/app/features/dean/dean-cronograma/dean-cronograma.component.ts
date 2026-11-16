@@ -32,7 +32,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
         <span cabecera-acciones class="px-3.5 py-2 rounded-xl bg-warm-100 text-xs font-bold text-warm-800 border border-warm-200">{{ total() }} Sesiones</span>
       </app-page-header>
 
-      <section class="bg-white p-6 rounded-2xl border border-warm-200 shadow-warm-sm space-y-4">
+      <section class="superficie p-6 space-y-4">
         <div class="flex flex-wrap items-end gap-2 text-xs">
           <label class="flex flex-col text-warm-500">Desde
             <input type="date" aria-label="Desde" [ngModel]="desde()" (ngModelChange)="desde.set($event)" class="px-2 py-1.5 border border-warm-200 rounded-lg text-warm-900" />
