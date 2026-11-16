@@ -206,6 +206,15 @@
   }
 }
 
+/*
+ * Superficie de seccion o tarjeta: fondo blanco, radio 2xl, borde y sombra calidos.
+ * Reemplaza la combinacion `rounded-2xl border border-warm-200 bg-white shadow-warm-sm` que repetian las vistas.
+ * El relleno, el espaciado interno y el layout se siguen eligiendo en cada contenedor (p-4, p-6, space-y-4...).
+ */
+@utility superficie {
+  @apply rounded-2xl border border-warm-200 bg-white shadow-warm-sm;
+}
+
 /* Toast Animations */
 @keyframes toastEnter {
   0% {

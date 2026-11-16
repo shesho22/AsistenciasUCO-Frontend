@@ -19,7 +19,7 @@ const RESUMEN = 'resumen';
     imports: [TomaAsistenciasComponent, ResumenSesionTomasComponent],
     template: `
     <section
-      class="bg-white rounded-2xl border border-warm-200 shadow-warm-sm p-4 sm:p-5 space-y-4"
+      class="superficie p-4 sm:p-5 space-y-4"
       data-testid="panel-tomas"
       aria-label="Tomas de asistencia de la sesión"
     >

@@ -11,7 +11,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
     imports: [RouterLink],
     host: { class: 'block w-full' },
     template: `
-    <section class="bg-white p-8 sm:p-12 rounded-2xl border border-warm-200 shadow-warm-sm text-center space-y-4" role="alert">
+    <section class="superficie p-8 sm:p-12 text-center space-y-4" role="alert">
       <p class="text-5xl font-serif font-bold text-primary-800" data-testid="codigo-ruta">{{ codigo }}</p>
       <h1 class="font-serif font-bold text-2xl text-warm-900" data-testid="titulo-ruta">{{ titulo }}</h1>
       <p class="text-sm text-warm-600 max-w-md mx-auto">{{ detalle }}</p>

@@ -39,7 +39,7 @@ function adaptarGrupoACurso(dto: GrupoDetalleDecanoApiDto): Course {
     template: `
     <div class="space-y-6 animate-fade-in">
       <!-- Barra de Retorno -->
-      <div class="flex items-center justify-between bg-white p-4 rounded-2xl border border-warm-200 shadow-warm-sm">
+      <div class="superficie flex items-center justify-between p-4">
         <button
           type="button"
           (click)="volverAGrupos()"
@@ -67,7 +67,7 @@ function adaptarGrupoACurso(dto: GrupoDetalleDecanoApiDto): Course {
 
       @if (errorGrupo() === null ? selectedCourse() : null; as curso) {
         <!-- Ficha Resumen del Grupo -->
-        <div class="bg-white p-6 rounded-2xl border border-warm-200 shadow-warm-sm grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="superficie p-6 grid grid-cols-1 md:grid-cols-4 gap-6">
           <div class="md:col-span-3 space-y-2">
             <div class="flex items-center gap-2">
               <span class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-primary-50 text-primary-800 border border-primary-200">
@@ -99,7 +99,7 @@ function adaptarGrupoACurso(dto: GrupoDetalleDecanoApiDto): Course {
       }
 
       <!-- Cronograma de Sesiones del Grupo -->
-      <div class="bg-white rounded-2xl border border-warm-200 shadow-warm-sm overflow-hidden">
+      <div class="superficie overflow-hidden">
         <div class="p-5 border-b border-warm-100 flex items-center justify-between">
           <div>
             <h2 class="font-serif font-bold text-lg text-warm-900">Sesiones de Clase Registradas</h2>

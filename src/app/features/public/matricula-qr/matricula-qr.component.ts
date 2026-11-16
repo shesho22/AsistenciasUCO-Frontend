@@ -34,7 +34,7 @@ const PIN_SEIS_DIGITOS = /^[0-9]{6}$/;
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FormsModule, RouterLink, DatosPersonaComponent, FormFieldComponent],
     template: `
-    <section class="w-full max-w-md mx-auto bg-white border border-warm-200 rounded-2xl shadow-warm-sm p-6 space-y-5">
+    <section class="superficie w-full max-w-md mx-auto p-6 space-y-5">
       <h1 class="text-lg font-bold text-warm-900 text-center">Matrícula en el grupo</h1>
 
       @switch (estado()) {

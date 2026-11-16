@@ -50,7 +50,7 @@ const PESTANAS_GRUPO: readonly PestanaGrupo[] = [
     @if (selectedCourse()) {
       <div class="space-y-4">
         <!-- Barra Superior de Retorno -->
-        <div class="flex items-center justify-between bg-white p-4 rounded-2xl border border-warm-200 shadow-warm-sm">
+        <div class="superficie flex items-center justify-between p-4">
           <button
             type="button"
             (click)="volver.emit()"
@@ -65,7 +65,7 @@ const PESTANAS_GRUPO: readonly PestanaGrupo[] = [
         </div>
 
         <!-- Ficha de Encabezado Bento del Grupo -->
-        <div class="bg-white p-6 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="superficie p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div class="space-y-1.5 min-w-0">
             <div class="flex flex-wrap items-center gap-2">
               @if (selectedCourse()?.code) {
@@ -129,7 +129,7 @@ const PESTANAS_GRUPO: readonly PestanaGrupo[] = [
 
         @if (modo() === 'HOY') {
           <!-- MODO HOY: la sesion en curso o la proxima, con una unica accion primaria -->
-          <section class="bg-white p-5 sm:p-6 rounded-2xl border border-warm-200 shadow-warm-sm space-y-4" data-testid="hub-hoy" aria-label="Sesión de hoy">
+          <section class="superficie p-5 sm:p-6 space-y-4" data-testid="hub-hoy" aria-label="Sesión de hoy">
             @if (hoy(); as h) {
               <div class="space-y-1.5 min-w-0">
                 <p class="text-xs font-bold uppercase tracking-wider text-primary-700">

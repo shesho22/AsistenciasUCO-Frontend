@@ -13,7 +13,7 @@ import { CREDITS_MAX, getCreditsError, getSafeTextError, NAME_MAX_LENGTH } from 
     imports: [FormsModule, ButtonComponent, FormFieldComponent],
     template: `
     <div class="space-y-6">
-      <div class="flex items-center justify-between bg-white p-4 rounded-2xl border border-warm-200 shadow-warm-sm">
+      <div class="superficie flex items-center justify-between p-4">
         <button
           type="button"
           (click)="cancelar.emit()"
@@ -30,7 +30,7 @@ import { CREDITS_MAX, getCreditsError, getSafeTextError, NAME_MAX_LENGTH } from 
         </span>
       </div>
 
-      <div class="bg-white p-6 sm:p-8 rounded-2xl border border-warm-200 shadow-warm-sm max-w-2xl mx-auto space-y-6">
+      <div class="superficie p-6 sm:p-8 max-w-2xl mx-auto space-y-6">
         <div>
           <h2 class="font-serif font-bold text-2xl text-warm-900">
             {{ modo() === 'CREAR' ? 'Registro de Asignatura en el Plan' : 'Edición de Asignatura Curricular' }}

@@ -8,6 +8,7 @@ import { CardComponent } from '../../../shared/components/card/card.component';
 import { BadgeComponent } from '../../../shared/components/badge/badge.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 const DEBOUNCE_MS = 300;
 
@@ -19,13 +20,13 @@ const DEBOUNCE_MS = 300;
 @Component({
     selector: 'app-student-group-offer',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CommonModule, FormsModule, CardComponent, BadgeComponent, PaginationComponent],
+    imports: [PageHeaderComponent, CommonModule, FormsModule, CardComponent, BadgeComponent, PaginationComponent],
     template: `
     <div class="space-y-6 animate-fade-in">
-      <div>
-        <h1 class="font-serif text-2xl sm:text-3xl font-bold text-warm-900">Oferta de grupos</h1>
-        <p class="text-sm text-warm-600 mt-1">Grupos de tus programas y asignaturas transversales en el período vigente y los próximos, con sus cupos disponibles.</p>
-      </div>
+      <app-page-header
+        titulo="Oferta de grupos"
+        descripcion="Grupos de tus programas y asignaturas transversales en el período vigente y los próximos, con sus cupos disponibles."
+      />
 
       <input
         type="text"

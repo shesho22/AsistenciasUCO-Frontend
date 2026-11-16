@@ -3,6 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { AsistenciaQrService } from '../../../core/services/asistencia-qr.service';
 import { RegistroAsistenciaQr } from '../../../core/models/asistencia-qr.model';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 const PIN_VALIDO = /^[0-9]{6}$/;
 
@@ -12,14 +13,12 @@ const PIN_VALIDO = /^[0-9]{6}$/;
  */
 @Component({
   selector: 'app-student-attendance-qr',
+    imports: [PageHeaderComponent],
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="max-w-md mx-auto w-full space-y-5 px-0 py-2" aria-live="polite">
-      <header class="space-y-1">
-        <h1 class="font-serif font-bold text-2xl text-warm-900">Registrar asistencia</h1>
-        <p class="text-sm text-warm-600">Solo funciona con la red Wi-Fi del campus UCO.</p>
-      </header>
+      <app-page-header titulo="Registrar asistencia" descripcion="Solo funciona con la red Wi-Fi del campus UCO." />
 
       @if (cargando()) {
         <div class="h-24 rounded-2xl bg-warm-100 animate-pulse" data-testid="registro-cargando"></div>

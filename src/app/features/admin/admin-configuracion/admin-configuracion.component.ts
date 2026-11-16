@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { TabsNavComponent, pestanaEnRuta } from '../../../shared/components/tabs/tabs-nav.component';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 export type TabConfiguracion =
   | 'parametros'
@@ -37,13 +38,10 @@ const TAB_POR_DEFECTO: TabConfiguracion = 'parametros';
 @Component({
     selector: 'app-admin-configuracion',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [RouterOutlet, TabsNavComponent],
+    imports: [PageHeaderComponent, RouterOutlet, TabsNavComponent],
     template: `
     <div class="space-y-5 min-w-0">
-      <div>
-        <h1 class="text-2xl font-serif font-bold text-warm-900">Configuración</h1>
-        <p class="text-sm text-warm-600">Variables, catálogos, festivos, correo, áreas y períodos del sistema en un solo lugar.</p>
-      </div>
+      <app-page-header titulo="Configuración" descripcion="Variables, catálogos, festivos, correo, áreas y períodos del sistema en un solo lugar." />
 
       <app-tabs-nav
         [tabs]="tabs"

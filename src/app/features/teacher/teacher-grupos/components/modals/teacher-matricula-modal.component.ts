@@ -4,6 +4,7 @@ import { Component, ChangeDetectionStrategy, Injector, input, output, inject, si
 import { Subscription } from 'rxjs';
 import { ButtonComponent } from '../../../../../shared/components/button/button.component';
 import { ActionMenuItem } from '../../../../../shared/components/action-menu/action-menu.component';
+import { ModalComponent } from '../../../../../shared/components/modal/modal.component';
 import { QrProyeccionComponent } from '../../../../../shared/components/qr-proyeccion/qr-proyeccion.component';
 import { ToastService } from '../../../../../shared/components/toast/toast.component';
 import { Course } from '../../../../../core/models/course.model';
@@ -29,7 +30,7 @@ import { mensajeUi } from '../../../../../core/messages/mensajes-ui';
 @Component({
     selector: 'app-teacher-matricula-modal',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [HoraCortaPipe, ButtonComponent, QrProyeccionComponent],
+    imports: [HoraCortaPipe, ButtonComponent, QrProyeccionComponent, ModalComponent],
     template: `
     @if (isOpen() && curso()) {
       @if (ventana(); as v) {
@@ -63,29 +64,16 @@ import { mensajeUi } from '../../../../../core/messages/mensajes-ui';
           </p>
         </app-qr-proyeccion>
       } @else {
-      <div class="fixed inset-0 bg-warm-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
-        <div class="bg-white rounded-3xl border border-warm-200 shadow-warm-2xl max-w-lg w-full overflow-hidden animate-scale-up">
-          <div class="p-6 border-b border-warm-100 flex items-center justify-between bg-primary-900 text-white">
-            <div>
-              <h3 class="font-serif font-bold text-xl leading-tight">Inscripción y Matrícula al Grupo</h3>
-              <p class="text-xs text-success-200">
-                {{ curso()?.name }}{{ curso()?.code ? ' • ' + curso()?.code : '' }} ({{ curso()?.section }})
-              </p>
-            </div>
-            <button
-              type="button"
-              aria-label="Ocultar"
-              data-testid="matricula-ocultar"
-              (click)="closed.emit()"
-              class="p-2 rounded-xl text-primary-200 hover:text-white hover:bg-primary-800 transition-colors"
-            >
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-
-          <div class="p-6 sm:p-8 space-y-5 text-center">
+        <app-modal
+          [isOpen]="true"
+          title="Inscripción y Matrícula al Grupo"
+          [subtitulo]="(curso()?.name ?? '') + (curso()?.code ? ' • ' + curso()?.code : '') + ' (' + (curso()?.section ?? '') + ')'"
+          etiquetaCerrar="Ocultar"
+          cerrarTestId="matricula-ocultar"
+          [cerrarAlPulsarFondo]="false"
+          (closed)="closed.emit()"
+        >
+          <div class="space-y-5 text-center">
             @if (cargando()) {
               <p class="text-sm text-warm-600" role="status" data-testid="matricula-cargando">Generando el código de matrícula…</p>
             } @else if (error()) {
@@ -118,12 +106,9 @@ import { mensajeUi } from '../../../../../core/messages/mensajes-ui';
             }
           </div>
 
-          <div class="p-4 border-t border-warm-100 bg-warm-50/70 flex items-center justify-end gap-2">
-            <app-button variant="secondary" size="sm" (clicked)="closed.emit()">Ocultar</app-button>
-            <app-button variant="primary" size="sm" (clicked)="cerrarMatricula()">Cerrar matrícula</app-button>
-          </div>
-        </div>
-      </div>
+          <app-button modal-footer variant="secondary" size="sm" (clicked)="closed.emit()">Ocultar</app-button>
+          <app-button modal-footer variant="primary" size="sm" (clicked)="cerrarMatricula()">Cerrar matrícula</app-button>
+        </app-modal>
       }
     }
   `

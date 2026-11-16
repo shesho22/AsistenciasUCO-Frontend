@@ -6,11 +6,12 @@ import { HorarioItem, DiaSemana } from '../../../core/models/role-management.mod
 import { CardComponent } from '../../../shared/components/card/card.component';
 import { ButtonComponent } from '../../../shared/components/button/button.component';
 import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load-error.util';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 @Component({
     selector: 'app-student-schedule',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [
+    imports: [PageHeaderComponent, 
     RangoHorarioPipe,
     CardComponent,
     ButtonComponent
@@ -18,24 +19,13 @@ import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load
     template: `
     <div class="space-y-6 animate-fade-in">
       <!-- Header Bento -->
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
-        <div>
-          <div class="flex items-center gap-2 mb-1">
-            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary-50 text-primary-800 border border-primary-200">
-              Portal Estudiantil
-            </span>
-            <span class="text-xs text-warm-400">•</span>
-            <span class="text-xs font-medium text-warm-500">Horario semanal</span>
-          </div>
-          <h1 class="font-serif font-bold text-2xl sm:text-3xl text-warm-900 tracking-tight">
-            Mi Horario de Clases
-          </h1>
-          <p class="text-sm text-warm-600 mt-1">
-            Consulta la distribución semanal de tus clases y docentes titulares según la información registrada.
-          </p>
-        </div>
-
-      </div>
+      <app-page-header
+        [enTarjeta]="true"
+        etiqueta="Portal Estudiantil"
+        contexto="Horario semanal"
+        titulo="Mi Horario de Clases"
+        descripcion="Consulta la distribución semanal de tus clases y docentes titulares según la información registrada."
+      />
 
       <!-- Grilla Semanal Bento (Lunes a Viernes) -->
       @if (isLoading()) {
@@ -58,7 +48,7 @@ import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load
         }
         <div [class]="diasVisibles().length === 6 ? 'grid grid-cols-1 md:grid-cols-6 gap-4' : 'grid grid-cols-1 md:grid-cols-5 gap-4'">
           @for (dia of diasVisibles(); track dia) {
-            <div class="flex flex-col bg-white rounded-2xl border border-warm-200/80 shadow-warm-sm overflow-hidden">
+            <div class="superficie flex flex-col overflow-hidden">
               <!-- Encabezado del Día -->
               <div class="p-3.5 bg-warm-50 border-b border-warm-200 flex items-center justify-between">
                 <span class="font-serif font-bold text-sm text-warm-900">{{ dia }}</span>

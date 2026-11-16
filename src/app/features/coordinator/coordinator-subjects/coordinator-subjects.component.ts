@@ -15,11 +15,12 @@ import { ButtonComponent } from '../../../shared/components/button/button.compon
 import { AvatarComponent } from '../../../shared/components/avatar/avatar.component';
 import { ErrorCargaComponent } from '../../../shared/components/error-carga/error-carga.component';
 import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load-error.util';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 @Component({
     selector: 'app-coordinator-subjects',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [
+    imports: [PageHeaderComponent, 
     FormsModule,
     RouterLink,
     BadgeComponent,
@@ -30,26 +31,15 @@ import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load
     template: `
     <div class="space-y-6">
       <!-- Header Bento -->
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
-        @if (!embebido()) {
-        <div>
-          <div class="flex items-center gap-2 mb-1">
-            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-info-50 text-info-800 border border-info-200">
-              Coordinación de Programa
-            </span>
-            <span class="text-xs text-warm-400">•</span>
-            <span class="text-xs font-medium text-warm-500">Oferta Académica de la Carrera</span>
-          </div>
-          <h1 class="font-serif font-bold text-2xl sm:text-3xl text-warm-900 tracking-tight">
-            Materias del Programa
-          </h1>
-          <p class="text-sm text-warm-600 mt-1">
-            Consulta todas las materias y grupos activos de la carrera, sus horarios y el listado de estudiantes inscritos por grupo.
-          </p>
-        </div>
-        }
-
-        <div class="flex flex-wrap items-center gap-2">
+      <app-page-header
+        [enTarjeta]="true"
+        [conTitulo]="!embebido()"
+        etiqueta="Coordinación de Programa"
+        contexto="Oferta Académica de la Carrera"
+        titulo="Materias del Programa"
+        descripcion="Consulta todas las materias y grupos activos de la carrera, sus horarios y el listado de estudiantes inscritos por grupo."
+      >
+        <div cabecera-acciones class="flex flex-wrap items-center gap-2">
           <a routerLink="/app/coordinador/estudiantes">
             <app-button variant="secondary" size="sm">
               Ver Estudiantes →
@@ -61,21 +51,21 @@ import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load
             </app-button>
           </a>
         </div>
-      </div>
+      </app-page-header>
 
       <!-- KPIs de Materias del Programa -->
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="bg-white p-4 rounded-2xl border border-warm-200 shadow-warm-sm">
+        <div class="superficie p-4">
           <span class="text-xs text-warm-500 font-medium">Grupos / Materias Ofertadas</span>
           <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ courses().length }}</p>
           <span class="text-[11px] text-primary-700 font-medium">Activos en el período</span>
         </div>
-        <div class="bg-white p-4 rounded-2xl border border-warm-200 shadow-warm-sm">
+        <div class="superficie p-4">
           <span class="text-xs text-warm-500 font-medium">Asignaturas en Malla Curricular</span>
           <p class="text-2xl font-serif font-bold text-success-700 mt-1">{{ asignaturasCurriculares().length }}</p>
           <span class="text-[11px] text-warm-500">En {{ planes().length }} planes de estudio</span>
         </div>
-        <div class="bg-white p-4 rounded-2xl border border-warm-200 shadow-warm-sm">
+        <div class="superficie p-4">
           <span class="text-xs text-warm-500 font-medium">Ocupación Total de Cupos</span>
           <p class="text-2xl font-serif font-bold text-info-800 mt-1">
             {{ totalInscritosGrupos() }} / {{ totalCapacidadGrupos() }}
@@ -138,7 +128,7 @@ import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load
         } @else {
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             @for (curso of filteredCourses(); track curso.id) {
-              <div class="bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm flex flex-col h-full justify-between gap-3">
+              <div class="superficie p-6 flex flex-col h-full justify-between gap-3">
                 <div>
                   <div class="flex items-start justify-between gap-2 mb-2">
                     <span class="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-warm-100 text-warm-800">
@@ -183,7 +173,7 @@ import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load
 
       <!-- Detalle de Estudiantes Inscritos en el Grupo Seleccionado (Solo Consulta) -->
       @if (selectedCourse(); as cursoActual) {
-        <div class="bg-white rounded-2xl border border-warm-200 shadow-warm-sm overflow-hidden">
+        <div class="superficie overflow-hidden">
           <div class="p-5 border-b border-warm-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <div class="flex items-center gap-2">
@@ -256,7 +246,7 @@ import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load
         } @else {
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             @for (asig of filteredAsignaturas(); track clavePlan(asig)) {
-              <div class="bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm flex flex-col h-full justify-between gap-3">
+              <div class="superficie p-6 flex flex-col h-full justify-between gap-3">
                 <div>
                   <div class="flex items-start justify-between gap-2 mb-2">
                     <span class="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-warm-100 text-warm-800">

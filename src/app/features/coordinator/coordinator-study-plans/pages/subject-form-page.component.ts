@@ -30,12 +30,12 @@ import { mensajeUi } from '../../../../core/messages/mensajes-ui';
             (cancelar)="volverAMalla()"
           />
         } @else {
-          <div class="bg-white rounded-2xl border border-warm-200 p-12 text-center shadow-warm-sm">
+          <div class="superficie p-12 text-center">
             <p class="text-sm text-warm-500">Cargando asignatura del plan...</p>
           </div>
         }
       } @else {
-        <div class="bg-white rounded-2xl border border-warm-200 p-12 text-center shadow-warm-sm">
+        <div class="superficie p-12 text-center">
           <p class="text-sm text-warm-500">Cargando plan de estudio...</p>
         </div>
       }

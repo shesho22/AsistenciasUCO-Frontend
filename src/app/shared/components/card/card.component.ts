@@ -45,7 +45,7 @@ export class CardComponent {
   hasHeaderSlot = input<boolean>(false);
 
   cardClasses = computed(() => {
-    const base = 'bg-white rounded-2xl border border-warm-200/80 shadow-warm-sm transition-all duration-300 relative overflow-hidden flex flex-col justify-between h-full w-full';
+    const base = 'superficie transition-all duration-300 relative overflow-hidden flex flex-col justify-between h-full w-full';
     const glassEffect = this.glass() ? 'bg-white/95 backdrop-blur-md border-warm-200/90 shadow-warm-lg' : '';
     const hoverEffect = this.hoverable() ? 'hover:shadow-warm-md hover:-translate-y-0.5 hover:border-warm-300' : '';
 

@@ -7,6 +7,7 @@ import { ButtonComponent } from '../../../../shared/components/button/button.com
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 import { MateriaEstudianteItem } from '../../../../core/models/role-management.model';
 import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
+import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header.component';
 
 /** Minúsculas y sin tildes, para que "calculo" encuentre "Cálculo". */
 function normalizar(texto: string): string {
@@ -40,28 +41,18 @@ interface BarraHoras {
 @Component({
     selector: 'app-student-courses-list',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CardComponent, BadgeComponent, ButtonComponent, AttendanceStatusBadgeComponent, PaginationComponent],
+    imports: [PageHeaderComponent, CardComponent, BadgeComponent, ButtonComponent, AttendanceStatusBadgeComponent, PaginationComponent],
     template: `
     <div class="space-y-6">
       <!-- Header Bento -->
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
-        <div>
-          <div class="flex items-center gap-2 mb-1">
-            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary-50 text-primary-800 border border-primary-200">
-              Portal Estudiantil
-            </span>
-            <span class="text-xs text-warm-400">•</span>
-            <span class="text-xs font-medium text-warm-500">Plan de Estudios</span>
-          </div>
-          <h1 class="font-serif font-bold text-2xl sm:text-3xl text-warm-900 tracking-tight">
-            Gestión de Mis Materias
-          </h1>
-          <p class="text-sm text-warm-600 mt-1">
-            Selecciona una asignatura para abrir su vista completa de sesiones, revisar tu registro de asistencia y radicar justificaciones.
-          </p>
-        </div>
-
-        <div class="flex flex-wrap items-center gap-2.5">
+      <app-page-header
+        [enTarjeta]="true"
+        etiqueta="Portal Estudiantil"
+        contexto="Plan de Estudios"
+        titulo="Gestión de Mis Materias"
+        descripcion="Selecciona una asignatura para abrir su vista completa de sesiones, revisar tu registro de asistencia y radicar justificaciones."
+      >
+        <div cabecera-acciones class="flex flex-wrap items-center gap-2.5">
           <button
             type="button"
             (click)="openCodeEnrollment.emit()"
@@ -87,11 +78,11 @@ interface BarraHoras {
             Registrar asistencia con PIN
           </button>
         </div>
-      </div>
+      </app-page-header>
 
       <!-- Métricas Generales -->
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="p-4 rounded-2xl bg-white border border-warm-200 shadow-warm-sm flex items-center gap-4">
+        <div class="superficie p-4 flex items-center gap-4">
           <div class="w-11 h-11 rounded-xl bg-primary-50 text-primary-700 flex items-center justify-center shrink-0">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
@@ -103,7 +94,7 @@ interface BarraHoras {
           </div>
         </div>
 
-        <div class="p-4 rounded-2xl bg-white border border-warm-200 shadow-warm-sm flex items-center gap-4">
+        <div class="superficie p-4 flex items-center gap-4">
           <div class="w-11 h-11 rounded-xl bg-success-50 text-success-700 flex items-center justify-center shrink-0">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -119,7 +110,7 @@ interface BarraHoras {
           </div>
         </div>
 
-        <div class="p-4 rounded-2xl bg-white border border-warm-200 shadow-warm-sm flex items-center gap-4">
+        <div class="superficie p-4 flex items-center gap-4">
           <div class="w-11 h-11 rounded-xl bg-warning-50 text-warning-700 flex items-center justify-center shrink-0">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />

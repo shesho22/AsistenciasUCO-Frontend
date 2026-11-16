@@ -24,7 +24,7 @@ const PREFIJO_POLITICA_CONTRASENA = 'ERR_PASSWORD_';
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [RouterLink, FormsModule],
     template: `
-    <section class="w-full max-w-md mx-auto bg-white border border-warm-200 rounded-2xl shadow-warm-sm p-6 space-y-4 text-center">
+    <section class="superficie w-full max-w-md mx-auto p-6 space-y-4 text-center">
       <h1 class="text-lg font-bold text-warm-900">{{ activacion() ? 'Activación de cuenta' : 'Verificación de correo' }}</h1>
 
       @switch (state()) {

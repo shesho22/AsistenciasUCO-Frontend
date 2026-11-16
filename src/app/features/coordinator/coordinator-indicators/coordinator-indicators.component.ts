@@ -10,10 +10,11 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { CoordinatorFichaModalComponent } from './components/coordinator-ficha-modal.component';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 @Component({
     selector: 'app-coordinator-indicators',
-    imports: [EmptyStateComponent, KpiCardComponent, PaginationComponent, CoordinatorFichaModalComponent, CoordinatorProgramSelectorComponent, SemaforoAsistenciaComponent],
+    imports: [PageHeaderComponent, EmptyStateComponent, KpiCardComponent, PaginationComponent, CoordinatorFichaModalComponent, CoordinatorProgramSelectorComponent, SemaforoAsistenciaComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
     <section class="space-y-6">
@@ -21,7 +22,7 @@ import { CoordinatorFichaModalComponent } from './components/coordinator-ficha-m
         <header class="space-y-3">
           <app-coordinator-program-selector (programaCambiado)="cambiarPrograma()" />
           @if (!embebido()) {
-            <h1 class="text-2xl font-semibold text-neutral-900">Indicadores del programa</h1>
+            <app-page-header titulo="Indicadores del programa" />
           }
           @if (service.kpis(); as k) {
             <p class="text-sm text-neutral-600">{{ k.nombrePrograma }} · {{ k.nombrePeriodoAcademico ?? 'Sin período' }}</p>

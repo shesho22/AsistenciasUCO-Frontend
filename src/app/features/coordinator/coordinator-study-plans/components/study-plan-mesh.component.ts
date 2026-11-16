@@ -12,7 +12,7 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
     imports: [FormsModule, BadgeComponent, ButtonComponent, PaginationComponent],
     template: `
     <div class="space-y-6">
-      <div class="flex items-center justify-between bg-white p-4 rounded-2xl border border-warm-200 shadow-warm-sm">
+      <div class="superficie flex items-center justify-between p-4">
         <button
           type="button"
           (click)="back.emit()"
@@ -30,7 +30,7 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
       </div>
 
       <!-- Banner Resumen y Acciones Curriculares -->
-      <div class="bg-white p-6 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div class="superficie p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div class="space-y-1">
           <div class="flex items-center gap-2">
             <app-badge [variant]="getPlanBadgeVariant(plan().estado)">
@@ -122,7 +122,7 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
 
       <!-- Malla Curricular en Tarjetas -->
       @if (filteredAsignaturas().length === 0) {
-        <div class="bg-white rounded-2xl border border-warm-200 p-12 text-center shadow-warm-sm">
+        <div class="superficie p-12 text-center">
           <p class="text-sm text-warm-500">No hay asignaturas registradas para este filtro o semestre.</p>
         </div>
       } @else {

@@ -24,6 +24,7 @@ import { etiquetaEstadoReclamo, etiquetaResultadoAprobacion, varianteEstadoRecla
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
 import { CLAIM_RESPONSE_MAX, getClaimResponseError } from '../../../core/validation/form-fields.util';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 const ETIQUETA_ESTADO_TOMA_RECLAMO: Readonly<Record<EstadoTomaEstudiante, string>> = {
   PRESENTE: 'Presente',
@@ -39,7 +40,7 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
 @Component({
     selector: 'app-teacher-claims',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [
+    imports: [PageHeaderComponent, 
     EmptyStateComponent,
     FormsModule,
     CardComponent,
@@ -54,30 +55,20 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
       <!-- 1. VISTA: BANDEJA GENERAL DE RECLAMOS -->
       @if (vistaActual() === 'BANDEJA') {
         <!-- Header Bento -->
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
-          <div>
-            <div class="flex items-center gap-2 mb-1">
-              <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary-50 text-primary-800 border border-primary-200">
-                Gestión Docente
-              </span>
-              <span class="text-xs text-warm-400">•</span>
-              <span class="text-xs font-medium text-warm-500">Bandeja de Novedades</span>
-            </div>
-            <h1 class="font-serif font-bold text-2xl sm:text-3xl text-warm-900 tracking-tight">
-              Reclamos y Justificaciones de Asistencia
-            </h1>
-            <p class="text-sm text-warm-600 mt-1">
-              Selecciona una solicitud para abrir su vista completa de revisión, examinar el caso del estudiante y decidir la justificación.
-            </p>
-          </div>
-
+        <app-page-header
+          [enTarjeta]="true"
+          etiqueta="Gestión Docente"
+          contexto="Bandeja de Novedades"
+          titulo="Reclamos y Justificaciones de Asistencia"
+          descripcion="Selecciona una solicitud para abrir su vista completa de revisión, examinar el caso del estudiante y decidir la justificación."
+        >
           <!-- Indicador de Pendientes -->
-          <div class="flex items-center gap-3">
+          <div cabecera-acciones class="flex items-center gap-3">
             <span class="px-3.5 py-1.5 rounded-xl bg-warning-50 text-warning-900 text-xs font-bold border border-warning-200">
               {{ totalPendientes() ?? '—' }} Pendientes por Resolver
             </span>
           </div>
-        </div>
+        </app-page-header>
 
         @if (listUnavailable()) {
           <div class="bg-warning-50 border border-warning-200 rounded-2xl p-4 text-sm text-warning-900">
@@ -134,7 +125,7 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
             }
           </div>
         } @else if (filteredReclamos().length === 0) {
-          <div class="bg-white rounded-2xl border border-warm-200 p-12 text-center shadow-warm-sm">
+          <div class="superficie p-12 text-center">
             <div class="w-12 h-12 rounded-full bg-warm-100 text-warm-400 flex items-center justify-center mx-auto mb-3">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -248,7 +239,7 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
       <!-- 2. VISTA COMPLETA: EVALUACIÓN Y RESOLUCIÓN DEL RECLAMO -->
       @if (vistaActual() === 'RESOLUCION' && selectedReclamo()) {
         <!-- Barra Superior de Retorno -->
-        <div class="flex items-center justify-between bg-white p-4 rounded-2xl border border-warm-200 shadow-warm-sm">
+        <div class="superficie flex items-center justify-between p-4">
           <button
             type="button"
             (click)="volverABandeja()"
@@ -265,7 +256,7 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
           </span>
         </div>
 
-        <div class="bg-white p-6 sm:p-8 rounded-2xl border border-warm-200 shadow-warm-sm max-w-4xl mx-auto space-y-6">
+        <div class="superficie p-6 sm:p-8 max-w-4xl mx-auto space-y-6">
           <!-- Encabezado con estado -->
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-warm-100">
             <div>

@@ -37,7 +37,7 @@ import { CoordinatorAprobarSolicitudModalComponent } from './coordinator-aprobar
     CoordinatorAprobarSolicitudModalComponent,
   ],
   template: `
-    <section class="bg-white p-4 sm:p-5 rounded-2xl border border-warm-200 shadow-warm-sm space-y-4" aria-label="Solicitudes de sesión" data-testid="solicitudes-sesion">
+    <section class="superficie p-4 sm:p-5 space-y-4" aria-label="Solicitudes de sesión" data-testid="solicitudes-sesion">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h2 class="font-serif font-bold text-lg text-warm-900">Solicitudes de sesión</h2>

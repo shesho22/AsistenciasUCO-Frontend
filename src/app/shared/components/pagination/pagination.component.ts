@@ -7,7 +7,7 @@ import { Component, ChangeDetectionStrategy, input, output, computed } from '@an
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
     @if (totalItems() > 0) {
-      <nav aria-label="Paginación" class="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 bg-white border border-warm-200 rounded-2xl shadow-warm-sm text-xs text-warm-600">
+      <nav aria-label="Paginación" class="superficie flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 text-xs text-warm-600">
         <!-- Resumen de Conteo -->
         <div class="flex items-center gap-2">
           <span>

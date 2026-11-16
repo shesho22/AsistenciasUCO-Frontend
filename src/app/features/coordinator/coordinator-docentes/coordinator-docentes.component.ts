@@ -28,6 +28,8 @@ import { CoordinatorDocenteFormModalComponent } from './components/coordinator-d
 import { CoordinatorDocenteEditModalComponent } from './components/coordinator-docente-edit-modal.component';
 import { CoordinatorDocenteFichaModalComponent } from './components/coordinator-docente-ficha-modal.component';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
+import { ModalComponent } from '../../../shared/components/modal/modal.component';
 
 type FiltroEstado = 'TODOS' | 'ACTIVO' | 'INACTIVO';
 
@@ -37,7 +39,7 @@ const MIN_CARACTERES_CANDIDATOS = 3;
 @Component({
     selector: 'app-coordinator-docentes',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [
+    imports: [ModalComponent, PageHeaderComponent, 
     FormsModule,
     CardComponent,
     BadgeComponent,
@@ -51,20 +53,17 @@ const MIN_CARACTERES_CANDIDATOS = 3;
 ],
     template: `
     <div class="space-y-6 animate-fade-in">
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
-        @if (!embebido()) {
-        <div>
-          <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary-100 text-primary-900 border border-primary-200">
-            Coordinación de Programa
-          </span>
-          <h1 class="font-serif font-bold text-2xl sm:text-3xl text-warm-900 tracking-tight mt-2">Gestión de Docentes</h1>
-          <p class="text-sm text-warm-600 mt-1">Directorio de docentes vinculados a su programa, con su tipo de vinculación y grupos asignados.</p>
-        </div>
-        }
-        <div class="flex flex-wrap items-center gap-3">
+      <app-page-header
+        [enTarjeta]="true"
+        [conTitulo]="!embebido()"
+        etiqueta="Coordinación de Programa"
+        titulo="Gestión de Docentes"
+        descripcion="Directorio de docentes vinculados a su programa, con su tipo de vinculación y grupos asignados."
+      >
+        <div cabecera-acciones class="flex flex-wrap items-center gap-3">
           <app-button variant="primary" size="md" (clicked)="abrirFormulario()">Vincular docente</app-button>
         </div>
-      </div>
+      </app-page-header>
 
 
       <!-- Estado de acceso de la ultima cuenta docente creada (verificado por el backend, nunca por la SPA) -->
@@ -73,15 +72,15 @@ const MIN_CARACTERES_CANDIDATOS = 3;
       <!-- HU095: consolidado del directorio del programa (servidor), por estado y tipo de vinculacion -->
       @if (resumen(); as r) {
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4" data-testid="resumen-docentes">
-          <div class="bg-white p-4 rounded-2xl border border-warm-200/80 shadow-warm-sm">
+          <div class="superficie p-4">
             <p class="text-xs font-semibold text-warm-500 uppercase">Docentes vinculados</p>
             <p class="text-2xl font-bold text-warm-900">{{ r.totalDocentes }}</p>
           </div>
-          <div class="bg-white p-4 rounded-2xl border border-warm-200/80 shadow-warm-sm">
+          <div class="superficie p-4">
             <p class="text-xs font-semibold text-success-700 uppercase">Activos</p>
             <p class="text-2xl font-bold text-success-800">{{ r.totalActivos }}</p>
           </div>
-          <div class="bg-white p-4 rounded-2xl border border-warm-200/80 shadow-warm-sm">
+          <div class="superficie p-4">
             <p class="text-xs font-semibold text-warm-500 uppercase">Inactivos</p>
             <p class="text-2xl font-bold text-warm-700">{{ r.totalInactivos }}</p>
           </div>
@@ -146,7 +145,7 @@ const MIN_CARACTERES_CANDIDATOS = 3;
       } @else if (errorCarga()) {
         <app-error-carga [error]="errorCarga()!" (reintentar)="reintentarCarga()" />
       } @else if (docentes().length === 0) {
-        <div class="bg-white rounded-2xl border border-warm-200 p-12 text-center shadow-warm-sm">
+        <div class="superficie p-12 text-center">
           <h3 class="text-base font-semibold text-warm-900">No se encontraron docentes</h3>
           <p class="text-xs text-warm-500 mt-1">Ajuste la búsqueda o vincule un docente al programa.</p>
         </div>
@@ -213,24 +212,22 @@ const MIN_CARACTERES_CANDIDATOS = 3;
       }
 
       @if (docentePendienteEstado(); as pendiente) {
-        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-warm-900/60 backdrop-blur-xs" role="dialog" aria-modal="true">
-          <div class="bg-white rounded-3xl shadow-warm-2xl border border-warm-200/80 w-full max-w-md p-6 space-y-4">
-            <h2 class="text-lg font-serif font-bold text-warm-900">
-              {{ pendiente.estaActivo ? 'Inactivar vinculación' : 'Reactivar vinculación' }}
-            </h2>
-            <p class="text-sm text-warm-700">
-              {{ pendiente.estaActivo
-                  ? 'El docente ' + pendiente.nombreCompleto + ' dejará de poder ser asignado como titular de nuevos grupos de este programa. Sus grupos actuales y su cuenta de acceso no cambian.'
-                  : 'El docente ' + pendiente.nombreCompleto + ' volverá a poder ser asignado como titular de grupos de este programa.' }}
-            </p>
-            <div class="flex justify-end gap-3 pt-2">
-              <button type="button" (click)="cancelarCambioEstado()" class="px-4 py-2 rounded-xl text-sm font-semibold bg-warm-100 text-warm-800 hover:bg-warm-200">Cancelar</button>
-              <button type="button" data-testid="confirmar-estado" (click)="confirmarCambioEstado()" class="px-4 py-2 rounded-xl text-sm font-semibold bg-primary-700 text-white hover:bg-primary-800">
-                {{ pendiente.estaActivo ? 'Inactivar' : 'Reactivar' }}
-              </button>
-            </div>
-          </div>
-        </div>
+        <app-modal
+          [isOpen]="true"
+          [title]="pendiente.estaActivo ? 'Inactivar vinculación' : 'Reactivar vinculación'"
+          tamano="md"
+          (closed)="cancelarCambioEstado()"
+        >
+          <p class="text-sm text-warm-700">
+            {{ pendiente.estaActivo
+                ? 'El docente ' + pendiente.nombreCompleto + ' dejará de poder ser asignado como titular de nuevos grupos de este programa. Sus grupos actuales y su cuenta de acceso no cambian.'
+                : 'El docente ' + pendiente.nombreCompleto + ' volverá a poder ser asignado como titular de grupos de este programa.' }}
+          </p>
+          <button modal-footer type="button" (click)="cancelarCambioEstado()" class="px-4 py-2 rounded-xl text-sm font-semibold bg-warm-100 text-warm-800 hover:bg-warm-200">Cancelar</button>
+          <button modal-footer type="button" data-testid="confirmar-estado" (click)="confirmarCambioEstado()" class="px-4 py-2 rounded-xl text-sm font-semibold bg-primary-700 text-white hover:bg-primary-800">
+            {{ pendiente.estaActivo ? 'Inactivar' : 'Reactivar' }}
+          </button>
+        </app-modal>
       }
 
       @if (docenteEnEdicion(); as enEdicion) {

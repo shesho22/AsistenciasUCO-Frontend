@@ -34,7 +34,7 @@ const ROUTE = '/app/admin/mensajes';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [EmptyStateComponent],
   template: `
-    <section class="rounded-2xl border border-warm-200 bg-white p-6 shadow-warm-sm">
+    <section class="superficie p-6">
       <div class="mb-5">
         <p class="text-xs font-bold uppercase tracking-wider text-primary-700">MessageUcoLab</p>
         <h2 class="mt-1 text-2xl font-bold text-warm-900">Administración de mensajes</h2>
