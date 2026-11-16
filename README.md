@@ -135,7 +135,7 @@ npm start
 # O alternativamente:
 ng serve
 ```
-Abre tu navegador en `http://localhost:4200/`. Puedes cambiar entre roles en cualquier momento usando el **Simulador de Rol** ubicado en la barra lateral izquierda.
+Abre tu navegador en `http://localhost:4200/`. Con el backend simulado (`useMocks: true`), el rol se elige al iniciar sesión: escribe el correo de una cuenta de prueba (o el nombre del rol) en el formulario de ingreso. Para cambiar de rol, cierra la sesión y vuelve a entrar.
 
 ### 3. Compilación para Producción
 ```bash

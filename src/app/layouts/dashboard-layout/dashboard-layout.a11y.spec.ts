@@ -12,7 +12,7 @@ describe('DashboardLayoutComponent accesibilidad (F-TRX-014)', () => {
 
   beforeEach(async () => {
     const user = signal({ id: 'u', name: 'Ana', email: 'a@uco.edu.co', role: 'COORDINADOR' as UserRole });
-    const auth = jasmine.createSpyObj('AuthService', ['logout', 'loginAsMockUser'], {
+    const auth = jasmine.createSpyObj('AuthService', ['logout'], {
       currentUser: user.asReadonly(),
       isMockMode: signal(false).asReadonly(),
     });
@@ -103,7 +103,7 @@ describe('DashboardLayoutComponent: menu cerrado fuera del foco (movil)', () => 
     } as unknown as MediaQueryList;
     spyOn(window, 'matchMedia').and.returnValue(mq);
     const user = signal({ id: 'u', name: 'Ana', email: 'a@uco.edu.co', role: 'ESTUDIANTE' as UserRole });
-    const auth = jasmine.createSpyObj('AuthService', ['logout', 'loginAsMockUser'], {
+    const auth = jasmine.createSpyObj('AuthService', ['logout'], {
       currentUser: user.asReadonly(),
       isMockMode: signal(false).asReadonly(),
     });
@@ -148,7 +148,7 @@ describe('DashboardLayoutComponent: menu cerrado fuera del foco (movil)', () => 
     (window as { matchMedia?: unknown }).matchMedia = undefined;
     try {
       const user = signal({ id: 'u', name: 'Ana', email: 'a@uco.edu.co', role: 'ESTUDIANTE' as UserRole });
-      const auth = jasmine.createSpyObj('AuthService', ['logout', 'loginAsMockUser'], {
+      const auth = jasmine.createSpyObj('AuthService', ['logout'], {
         currentUser: user.asReadonly(),
         isMockMode: signal(false).asReadonly(),
       });
@@ -178,7 +178,7 @@ describe('DashboardLayoutComponent: menu cerrado fuera del foco (movil)', () => 
     } as unknown as MediaQueryList;
     spyOn(window, 'matchMedia').and.returnValue(mq);
     const user = signal({ id: 'u', name: 'Ana', email: 'a@uco.edu.co', role: 'ESTUDIANTE' as UserRole });
-    const auth = jasmine.createSpyObj('AuthService', ['logout', 'loginAsMockUser'], {
+    const auth = jasmine.createSpyObj('AuthService', ['logout'], {
       currentUser: user.asReadonly(),
       isMockMode: signal(false).asReadonly(),
     });
