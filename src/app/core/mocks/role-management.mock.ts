@@ -1058,7 +1058,7 @@ export const MOCK_REGISTROS_AUDITORIA: RegistroAuditoriaItem[] = [
     modulo: 'ASISTENCIA',
     accion: 'ACTUALIZAR',
     descripcion: 'Aprobó solicitud de corrección de inasistencia (SES-002) del estudiante Andrés Felipe Gómez (EST-101).',
-    direccionIp: '192.168.10.45',
+    direccionIp: '192.0.2.45',
     nivel: 'INFO',
   },
   {
@@ -1070,7 +1070,7 @@ export const MOCK_REGISTROS_AUDITORIA: RegistroAuditoriaItem[] = [
     modulo: 'MATRICULA',
     accion: 'APROBACION',
     descripcion: 'Aprobó solicitud de cupo extemporánea para Alejandro Morales en MAT-301.',
-    direccionIp: '192.168.10.12',
+    direccionIp: '192.0.2.12',
     nivel: 'INFO',
   },
   {
@@ -1082,7 +1082,7 @@ export const MOCK_REGISTROS_AUDITORIA: RegistroAuditoriaItem[] = [
     modulo: 'SISTEMA',
     accion: 'ACTUALIZAR',
     descripcion: 'Modificó parámetro institucional DIAS_HABILITADOS_RECLAMO_FALLA de 3 a 5 días.',
-    direccionIp: '10.0.0.1',
+    direccionIp: '198.51.100.1',
     nivel: 'WARNING',
   },
   {
@@ -1094,7 +1094,7 @@ export const MOCK_REGISTROS_AUDITORIA: RegistroAuditoriaItem[] = [
     modulo: 'PLANES_ESTUDIO',
     accion: 'CREAR',
     descripcion: 'Creó nueva asignatura electiva IA-501 (Inteligencia Artificial Aplicada) en Plan 2026-IS.',
-    direccionIp: '192.168.10.12',
+    direccionIp: '192.0.2.12',
     nivel: 'INFO',
   },
   {
@@ -1106,7 +1106,7 @@ export const MOCK_REGISTROS_AUDITORIA: RegistroAuditoriaItem[] = [
     modulo: 'ASISTENCIA',
     accion: 'CIERRE_MASIVO',
     descripcion: 'Ejecutó cierre masivo de asistencia para el Periodo 2026-1. 1,420 estudiantes procesados.',
-    direccionIp: '10.0.0.1',
+    direccionIp: '198.51.100.1',
     nivel: 'CRITICO',
   },
 ];
