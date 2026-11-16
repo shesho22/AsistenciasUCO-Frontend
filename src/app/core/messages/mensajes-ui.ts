@@ -74,6 +74,9 @@ export const MENSAJES_UI = {
   UI_ADMIN_PERIODOS_001: 'Período académico guardado.',
   UI_ADMIN_PERIODOS_002: 'Período {codigo} eliminado.',
   UI_ADMIN_PERIODOS_003: 'No se pudo guardar el período académico.',
+  // HU178: aviso para el administrador que aún no tiene institución asignada (KPI_004; estado informativo, no un error).
+  UI_ADMIN_SIN_INSTITUCION_001: 'Aún no tiene una institución asignada',
+  UI_ADMIN_SIN_INSTITUCION_002: 'Solicítela al soporte institucional. Cuando la tenga, aquí verá los datos de la institución.',
   UI_ADMIN_SYSTEM_001: 'Debe seleccionar un período válido para ejecutar el cierre.',
   UI_ADMISION_ESTUDIANTE_MODAL_001: 'Estudiante admitido exitosamente. {aviso}',
   UI_ADMISION_ESTUDIANTE_MODAL_002: 'Estudiante admitido. La cuenta de acceso quedó en estado {estado}. {aviso}',
@@ -89,6 +92,9 @@ export const MENSAJES_UI = {
   UI_COORDINATOR_SOLICITUDES_SESION_001: 'Sesión aprobada.',
   UI_COORDINATOR_SOLICITUDES_SESION_002: 'Solicitud rechazada.',
   UI_COORDINATOR_STUDY_PLANS_001: 'Estado del plan de estudio actualizado.',
+  // HU178: aviso para el coordinador que aún no tiene programa asignado (estado informativo, no un error).
+  UI_COORDINATOR_SIN_PROGRAMA_001: 'Aún no tiene un programa asignado',
+  UI_COORDINATOR_SIN_PROGRAMA_002: 'Solicítelo al decano de su facultad. Cuando lo tenga, aquí verá los datos de su programa.',
   UI_DEAN_COORDINADORES_001: 'El cambio se guardó. La cuenta de acceso se sincronizará pronto.',
   UI_DEAN_COORDINADORES_002: 'Cambio guardado.',
   UI_DEAN_COORDINADORES_004: 'El campo Contraseña Inicial IAM es obligatorio.',
@@ -102,6 +108,9 @@ export const MENSAJES_UI = {
   UI_DEAN_PROGRAMAS_GESTION_001: 'Programa actualizado.',
   UI_DEAN_PROGRAMAS_GESTION_002: 'Programa creado.',
   UI_DEAN_PROGRAMAS_GESTION_003: 'Estado del programa actualizado.',
+  // HU178: aviso para el decano que aún no tiene facultad asignada (estado informativo, no un error).
+  UI_DEAN_SIN_FACULTAD_001: 'Aún no tiene una facultad asignada',
+  UI_DEAN_SIN_FACULTAD_002: 'Solicítela al administrador. Cuando la tenga, aquí verá los datos de su facultad.',
   UI_ERROR_GLOBAL_001: 'Ocurrió un error inesperado. Si se repite, recarga la página y reporta el código de referencia.',
   UI_ERROR_REFERENCIA: 'Código de referencia: {id}',
   UI_ERROR_INTERCEPTOR_001: 'Acceso denegado: No cuenta con los permisos necesarios para realizar esta acción.',

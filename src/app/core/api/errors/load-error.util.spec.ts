@@ -36,4 +36,29 @@ describe('classifyLoadError', () => {
       expect(classifyLoadError({ status: caso.status }).kind).toBe(caso.kind);
     }
   });
+
+  const envelope = (code: string) => ({
+    timestamp: '2026-11-16T07:00:00Z',
+    status: 403,
+    error: 'Forbidden',
+    code,
+    message: 'texto que no se analiza',
+    path: '/api/v1/x',
+    correlationId: null,
+  });
+
+  it('HU178: el rol sin ámbito (KPI_001, KPI_003, KPI_004) es un estado controlado, no un fallo de servidor', () => {
+    const casos = [
+      { code: 'KPI_001', rol: 'COORDINADOR' },
+      { code: 'KPI_003', rol: 'DECANO' },
+      { code: 'KPI_004', rol: 'ADMINISTRADOR' },
+    ] as const;
+
+    for (const caso of casos) {
+      const estado = classifyLoadError(http(403, envelope(caso.code)));
+      expect(estado.kind).withContext(caso.code).toBe('SIN_AMBITO');
+      expect(estado.rolSinAmbito).withContext(caso.code).toBe(caso.rol);
+    }
+    expect(classifyLoadError(http(403, envelope('FORBIDDEN'))).kind).toBe('AUTORIZACION');
+  });
 });

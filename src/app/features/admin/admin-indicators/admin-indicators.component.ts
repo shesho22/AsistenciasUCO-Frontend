@@ -6,6 +6,8 @@ import { Observable, finalize } from 'rxjs';
 import { AdminIndicatorsService } from '../../../core/services/admin-indicators.service';
 import { GranularidadTendencia } from '../../../core/models/admin-indicators.model';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
+import { RolSinAmbito, rolSinAmbito } from '../../../core/api/errors/sin-ambito.util';
+import { SinEntidadAsignadaComponent } from '../../../shared/components/sin-entidad-asignada/sin-entidad-asignada.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
@@ -18,10 +20,13 @@ const MARGEN_IZQ = 44;
 
 @Component({
     selector: 'app-admin-indicators',
-    imports: [PageHeaderComponent, CifraConBaseComponent, KpiCardComponent, DecimalPipe],
+    imports: [PageHeaderComponent, CifraConBaseComponent, KpiCardComponent, DecimalPipe, SinEntidadAsignadaComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
     <section class="space-y-6">
+      @if (sinAmbito(); as rol) {
+        <app-sin-entidad-asignada [rol]="rol" />
+      } @else {
       <app-page-header titulo="Indicadores de la institución">
         @if (service.kpis(); as k) {
           <p cabecera-detalle class="text-sm text-warm-600 mt-1">{{ k.nombreInstitucion }} · {{ k.nombrePeriodoAcademico ?? 'Sin período' }}</p>
@@ -99,12 +104,25 @@ const MARGEN_IZQ = 44;
           </svg>
         }
       </div>
+      }
     </section>
   `
 })
 export class AdminIndicatorsComponent implements OnInit {
   readonly service = inject(AdminIndicatorsService);
   private readonly toast = inject(ToastService);
+  /** HU178: el backend respondió que el usuario aún no tiene su ámbito asignado (código canónico KPI_00x). */
+  readonly sinAmbito = signal<RolSinAmbito | null>(null);
+
+  /** HU178: el rol sin ámbito es un estado controlado (aviso informativo); cualquier otro error se notifica. */
+  private readonly fallo = (e: unknown): void => {
+    const rol = rolSinAmbito(e);
+    if (rol) {
+      this.sinAmbito.set(rol);
+      return;
+    }
+    this.toast.error(getApiErrorMessage(e));
+  };
 
   readonly ancho = ANCHO;
   readonly alto = ALTO;
@@ -129,8 +147,8 @@ export class AdminIndicatorsComponent implements OnInit {
   }
 
   cargar(): void {
-    this.seguir(this.service.consultarKpis()).subscribe({ error: (e) => this.toast.error(getApiErrorMessage(e)) });
-    this.seguir(this.service.consultarComparativa()).subscribe({ error: (e) => this.toast.error(getApiErrorMessage(e)) });
+    this.seguir(this.service.consultarKpis()).subscribe({ error: this.fallo });
+    this.seguir(this.service.consultarComparativa()).subscribe({ error: this.fallo });
     this.cargarTendencia();
   }
 
@@ -166,7 +184,7 @@ export class AdminIndicatorsComponent implements OnInit {
   }
 
   private cargarTendencia(): void {
-    this.seguir(this.service.consultarTendencia(this.granularidad())).subscribe({ error: (e) => this.toast.error(getApiErrorMessage(e)) });
+    this.seguir(this.service.consultarTendencia(this.granularidad())).subscribe({ error: this.fallo });
   }
 
   private seguir<T>(origen: Observable<T>): Observable<T> {

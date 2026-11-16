@@ -3,7 +3,7 @@ import { Injectable, OnDestroy, inject, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, of } from 'rxjs';
 import { ApiResponse } from '../models/api-response.model';
-import { User, UserRole } from '../models/user.model';
+import { RolConEntidad, User, UserRole, VinculoInstitucional, entidadACargo } from '../models/user.model';
 import { MOCK_USERS_BY_ROLE, MOCK_USERS_LIST } from '../mocks/user.mock';
 import { environment } from '../../../environments/environment';
 import {
@@ -97,6 +97,36 @@ function parseJwt(token: string): JwtTokenPayload | null {
     console.error('Error al decodificar JWT:', e);
     return null;
   }
+}
+
+/**
+ * HU178: etiqueta del área del decano y del coordinador mientras llega su perfil y cuando el perfil confirma que no
+ * tienen su entidad a cargo (facultad o programa). Nunca un nombre de facultad o de programa quemado.
+ */
+const DEPARTAMENTO_PENDIENTE: Readonly<Record<RolConEntidad, string>> = {
+  DECANO: 'Decanatura',
+  COORDINADOR: 'Coordinación de programa',
+};
+const DEPARTAMENTO_SIN_ENTIDAD: Readonly<Record<RolConEntidad, string>> = {
+  DECANO: 'Sin facultad asignada',
+  COORDINADOR: 'Sin programa asignado',
+};
+
+function esRolConEntidad(role: UserRole): role is RolConEntidad {
+  return role === 'DECANO' || role === 'COORDINADOR';
+}
+
+/** HU178: vínculos válidos de `GET /usuarios/perfil`; `undefined` si el perfil no trae la lista. */
+function mapearVinculos(valor: unknown): VinculoInstitucional[] | undefined {
+  if (!Array.isArray(valor)) {
+    return undefined;
+  }
+  return valor
+    .filter(
+      (v): v is VinculoInstitucional =>
+        !!v && typeof v.rol === 'string' && typeof v.nombreEntidad === 'string' && v.nombreEntidad.trim() !== ''
+    )
+    .map((v) => ({ rol: v.rol, nombreEntidad: v.nombreEntidad }));
 }
 
 /** Identidad institucional resuelta por el backend (`GET /api/v1/auth/me`). */
@@ -758,7 +788,29 @@ export class AuthService implements OnDestroy {
   }
 
 
-  async fetchProfileFromBackend(token?: string): Promise<User | null> {
+  /**
+   * HU178: resuelve cuando termina la hidratación del perfil en curso (o de inmediato si no hay ninguna). Las vistas
+   * que dependen de los vínculos del perfil (la facultad del decano) la esperan antes de decidir.
+   */
+  perfilListo(): Promise<void> {
+    return this.perfilEnCurso ?? Promise.resolve();
+  }
+
+  private perfilEnCurso: Promise<void> | null = null;
+
+  fetchProfileFromBackend(token?: string): Promise<User | null> {
+    const hidratacion = this.hidratarPerfil(token);
+    const enCurso = hidratacion.then(() => undefined);
+    this.perfilEnCurso = enCurso;
+    void enCurso.then(() => {
+      if (this.perfilEnCurso === enCurso) {
+        this.perfilEnCurso = null;
+      }
+    });
+    return hidratacion;
+  }
+
+  private async hidratarPerfil(token?: string): Promise<User | null> {
     if (this.mockModeSignal()) {
       return this.currentUser();
     }
@@ -794,6 +846,15 @@ export class AuthService implements OnDestroy {
         [dbData.primerNombre, dbData.primerApellido].filter(Boolean).join(' ') ||
         current.name;
 
+      // HU178: los vínculos del perfil dicen qué entidad tiene a cargo cada rol; sin vínculo DECANO el decano no tiene
+      // facultad y sin vínculo COORDINADOR el coordinador no tiene programa. Si el perfil no los informa quedan
+      // desconocidos (no se presume nada).
+      const vinculos = mapearVinculos(dbData.vinculos) ?? current.vinculos;
+      const department =
+        esRolConEntidad(current.role) && vinculos
+          ? (entidadACargo({ vinculos }, current.role) ?? DEPARTAMENTO_SIN_ENTIDAD[current.role])
+          : current.department;
+
       const syncedUser: User = {
         ...current,
         primerNombre: dbData.primerNombre || current.primerNombre,
@@ -804,6 +865,8 @@ export class AuthService implements OnDestroy {
         name: nombreVisible,
         email: dbData.email || dbData.correo || current.email,
         status: dbData.estado || current.status,
+        department,
+        vinculos,
       };
 
       this.currentUser.set(syncedUser);
@@ -920,9 +983,9 @@ export class AuthService implements OnDestroy {
       case 'ADMINISTRADOR':
         return 'Administración Institucional';
       case 'DECANO':
-        return 'Facultad de Ingeniería';
       case 'COORDINADOR':
-        return 'Ingeniería de Sistemas';
+        // HU178: la facultad o el programa real llega con el perfil (vínculo del rol); antes se mostraba uno quemado ajeno.
+        return DEPARTAMENTO_PENDIENTE[role];
       case 'DOCENTE':
         return 'Docencia Académica';
       case 'ESTUDIANTE':

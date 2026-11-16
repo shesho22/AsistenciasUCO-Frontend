@@ -1515,6 +1515,160 @@ describe('AuthService', () => {
     });
   });
 
+  describe('HU178: facultad del decano en la barra superior', () => {
+    const decanoPayload = () => basePayload({ resource_access: { 'asistencias-api': { roles: ['DECANO'] } } });
+
+    function perfilResponde(datos: Record<string, unknown>) {
+      fetchSpy.and.resolveTo({ ok: true, json: () => Promise.resolve({ datos }) } as Response);
+    }
+
+    it('antes de hidratar el perfil no muestra una facultad ajena quemada', async () => {
+      mockTokenResponse(decanoPayload());
+      await service.loginWithCredentials('decano@uco.edu.co', 'pass');
+
+      expect(service.currentUser()?.role).toBe('DECANO');
+      expect(service.currentUser()?.department).not.toBe('Facultad de Ingeniería');
+      expect(service.currentUser()?.department).toBe('Decanatura');
+    });
+
+    it('con el vínculo DECANO del perfil muestra el nombre real de su facultad', async () => {
+      mockTokenResponse(decanoPayload());
+      await service.loginWithCredentials('decano@uco.edu.co', 'pass');
+      perfilResponde({
+        vinculos: [
+          { rol: 'DECANO', idEntidad: 'f-1', nombreEntidad: 'Facultad de Ciencias', detalle: 'UCO', estaActivo: true },
+        ],
+      });
+
+      const result = await service.fetchProfileFromBackend();
+
+      expect(result?.department).toBe('Facultad de Ciencias');
+      expect(result?.vinculos).toEqual([{ rol: 'DECANO', nombreEntidad: 'Facultad de Ciencias' }]);
+    });
+
+    it('sin vínculo DECANO en el perfil indica que no tiene facultad asignada', async () => {
+      mockTokenResponse(decanoPayload());
+      await service.loginWithCredentials('decano@uco.edu.co', 'pass');
+      perfilResponde({ vinculos: [] });
+
+      const result = await service.fetchProfileFromBackend();
+
+      expect(result?.department).toBe('Sin facultad asignada');
+      expect(result?.vinculos).toEqual([]);
+    });
+
+    it('si el perfil no informa vínculos los deja desconocidos y conserva la etiqueta neutra', async () => {
+      mockTokenResponse(decanoPayload());
+      await service.loginWithCredentials('decano@uco.edu.co', 'pass');
+      perfilResponde({ primerNombre: 'Luz' });
+
+      const result = await service.fetchProfileFromBackend();
+
+      expect(result?.vinculos).toBeUndefined();
+      expect(result?.department).toBe('Decanatura');
+    });
+
+    it('para otros roles no cambia la etiqueta del área aunque el perfil traiga vínculos', async () => {
+      mockTokenResponse(basePayload());
+      await service.loginWithCredentials('docente@uco.edu.co', 'pass');
+      const antes = service.currentUser()?.department;
+      perfilResponde({ vinculos: [{ rol: 'DOCENTE', nombreEntidad: 'Ingeniería de Sistemas' }] });
+
+      const result = await service.fetchProfileFromBackend();
+
+      expect(result?.department).toBe(antes);
+      expect(result?.vinculos).toEqual([{ rol: 'DOCENTE', nombreEntidad: 'Ingeniería de Sistemas' }]);
+    });
+
+    it('descarta vínculos mal formados del perfil', async () => {
+      mockTokenResponse(decanoPayload());
+      await service.loginWithCredentials('decano@uco.edu.co', 'pass');
+      perfilResponde({ vinculos: [null, { rol: 'DECANO' }, { rol: 'DECANO', nombreEntidad: 'Facultad de Artes' }] });
+
+      const result = await service.fetchProfileFromBackend();
+
+      expect(result?.vinculos).toEqual([{ rol: 'DECANO', nombreEntidad: 'Facultad de Artes' }]);
+    });
+
+    it('perfilListo espera la hidratación en curso del perfil', async () => {
+      mockTokenResponse(decanoPayload());
+      await service.loginWithCredentials('decano@uco.edu.co', 'pass');
+      let resolver!: (r: Response) => void;
+      fetchSpy.and.returnValue(new Promise<Response>((r) => (resolver = r)));
+
+      void service.fetchProfileFromBackend();
+      let listo = false;
+      const espera = service.perfilListo().then(() => (listo = true));
+      await Promise.resolve();
+      expect(listo).toBeFalse();
+
+      resolver({ ok: true, json: () => Promise.resolve({ datos: { vinculos: [] } }) } as Response);
+      await espera;
+
+      expect(listo).toBeTrue();
+      expect(service.currentUser()?.vinculos).toEqual([]);
+    });
+
+    it('perfilListo resuelve de inmediato si no hay hidratación en curso', async () => {
+      await expectAsync(service.perfilListo()).toBeResolved();
+    });
+  });
+
+  describe('HU178: programa del coordinador en la barra superior', () => {
+    const coordinadorPayload = () =>
+      basePayload({ resource_access: { 'asistencias-api': { roles: ['COORDINADOR'] } } });
+
+    function perfilResponde(datos: Record<string, unknown>) {
+      fetchSpy.and.resolveTo({ ok: true, json: () => Promise.resolve({ datos }) } as Response);
+    }
+
+    it('antes de hidratar el perfil no muestra un programa ajeno quemado', async () => {
+      mockTokenResponse(coordinadorPayload());
+      await service.loginWithCredentials('coordinador@uco.edu.co', 'pass');
+
+      expect(service.currentUser()?.role).toBe('COORDINADOR');
+      expect(service.currentUser()?.department).not.toBe('Ingeniería de Sistemas');
+      expect(service.currentUser()?.department).toBe('Coordinación de programa');
+    });
+
+    it('con el vínculo COORDINADOR del perfil muestra el nombre real de su programa', async () => {
+      mockTokenResponse(coordinadorPayload());
+      await service.loginWithCredentials('coordinador@uco.edu.co', 'pass');
+      perfilResponde({
+        vinculos: [
+          { rol: 'DOCENTE', idEntidad: 'p-2', nombreEntidad: 'Filosofía', detalle: 'Planta', estaActivo: true },
+          { rol: 'COORDINADOR', idEntidad: 'p-1', nombreEntidad: 'Derecho', detalle: 'Facultad', estaActivo: true },
+        ],
+      });
+
+      const result = await service.fetchProfileFromBackend();
+
+      expect(result?.department).toBe('Derecho');
+    });
+
+    it('sin vínculo COORDINADOR en el perfil indica que no tiene programa asignado', async () => {
+      mockTokenResponse(coordinadorPayload());
+      await service.loginWithCredentials('coordinador@uco.edu.co', 'pass');
+      perfilResponde({ vinculos: [] });
+
+      const result = await service.fetchProfileFromBackend();
+
+      expect(result?.department).toBe('Sin programa asignado');
+      expect(result?.vinculos).toEqual([]);
+    });
+
+    it('si el perfil no informa vínculos conserva la etiqueta neutra', async () => {
+      mockTokenResponse(coordinadorPayload());
+      await service.loginWithCredentials('coordinador@uco.edu.co', 'pass');
+      perfilResponde({ primerNombre: 'Paula' });
+
+      const result = await service.fetchProfileFromBackend();
+
+      expect(result?.vinculos).toBeUndefined();
+      expect(result?.department).toBe('Coordinación de programa');
+    });
+  });
+
   describe('mapPayloadToUser: fallbacks de nombre/email', () => {
     it('usa payload.name si no hay given_name/family_name', async () => {
       mockTokenResponse(

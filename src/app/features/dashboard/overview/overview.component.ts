@@ -23,7 +23,8 @@ import { CoordinatorManagementService } from '../../../core/services/coordinator
 import { StudentManagementService } from '../../../core/services/student-management.service';
 import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
 import { Course } from '../../../core/models/course.model';
-import { UserRole } from '../../../core/models/user.model';
+import { UserRole, sinEntidadAsignada } from '../../../core/models/user.model';
+import { SinEntidadAsignadaComponent } from '../../../shared/components/sin-entidad-asignada/sin-entidad-asignada.component';
 import {
   DecanoItem,
   CoordinadorItem,
@@ -57,6 +58,7 @@ import { OverviewStudentComponent } from './components/overview-student.componen
     OverviewHeroComponent,
     OverviewAdminComponent,
     OverviewDeanComponent,
+    SinEntidadAsignadaComponent,
     OverviewCoordinatorComponent,
     OverviewTeacherComponent,
     OverviewStudentComponent,
@@ -83,23 +85,31 @@ import { OverviewStudentComponent } from './components/overview-student.componen
           />
         }
         @case ('DECANO') {
-          <app-overview-dean
-            [coordinadores]="coordinadores()"
-            [totalDocentes]="totalDocentesFacultad()"
-            [totalGrupos]="gruposActivosFacultad()"
-            [periodo]="periodoFacultad()"
-            [porcentajeAsistencia]="porcentajeAsistenciaFacultad()"
-          />
+          @if (decanoSinFacultad()) {
+            <app-sin-entidad-asignada rol="DECANO" />
+          } @else {
+            <app-overview-dean
+              [coordinadores]="coordinadores()"
+              [totalDocentes]="totalDocentesFacultad()"
+              [totalGrupos]="gruposActivosFacultad()"
+              [periodo]="periodoFacultad()"
+              [porcentajeAsistencia]="porcentajeAsistenciaFacultad()"
+            />
+          }
         }
         @case ('COORDINADOR') {
-          <app-overview-coordinator
-            [docentes]="docentes()"
-            [planesEstudio]="planesEstudio()"
-            [totalGrupos]="totalGruposPrograma()"
-            [totalEstudiantes]="totalEstudiantesPrograma()"
-            [estudiantesRiesgo]="estudiantesRiesgoPrograma()"
-            [solicitudesSesionPendientes]="solicitudesSesionPendientes()"
-          />
+          @if (coordinadorSinPrograma()) {
+            <app-sin-entidad-asignada rol="COORDINADOR" />
+          } @else {
+            <app-overview-coordinator
+              [docentes]="docentes()"
+              [planesEstudio]="planesEstudio()"
+              [totalGrupos]="totalGruposPrograma()"
+              [totalEstudiantes]="totalEstudiantesPrograma()"
+              [estudiantesRiesgo]="estudiantesRiesgoPrograma()"
+              [solicitudesSesionPendientes]="solicitudesSesionPendientes()"
+            />
+          }
         }
         @case ('DOCENTE') {
           <app-overview-teacher
@@ -139,6 +149,10 @@ export class OverviewComponent implements OnInit {
 
   user = computed(() => this.authService.currentUser() || MOCK_USERS_BY_ROLE.DOCENTE);
   userRole = computed<UserRole>(() => this.user()?.role || 'DOCENTE');
+  /** HU178: el perfil confirmó que el decano no tiene facultad asignada. */
+  decanoSinFacultad = computed(() => sinEntidadAsignada(this.user(), 'DECANO'));
+  /** HU178: el perfil confirmó que el coordinador no tiene programa asignado. */
+  coordinadorSinPrograma = computed(() => sinEntidadAsignada(this.user(), 'COORDINADOR'));
 
   // Próxima Clase Reactiva
   horariosDocente = signal<HorarioDocenteItem[]>([]);
@@ -225,6 +239,11 @@ export class OverviewComponent implements OnInit {
         break;
 
       case 'DECANO':
+        // HU178: sin facultad asignada el panel muestra el aviso y no consulta indicadores que responderían 403.
+        if (this.decanoSinFacultad()) {
+          this.isLoading.set(false);
+          break;
+        }
         this.deanIndicators.consultarKpis().subscribe({
           next: (res) => {
             this.porcentajeAsistenciaFacultad.set(res.datos?.porcentajeAsistencia ?? null);
@@ -249,6 +268,11 @@ export class OverviewComponent implements OnInit {
         break;
 
       case 'COORDINADOR':
+        // HU178: sin programa asignado el panel muestra el aviso y no consulta datos que responderían 403.
+        if (this.coordinadorSinPrograma()) {
+          this.isLoading.set(false);
+          break;
+        }
         this.coordinatorService.getPlanesEstudio().subscribe({
           next: (res) => {
             if (res.exitoso && res.datos) {

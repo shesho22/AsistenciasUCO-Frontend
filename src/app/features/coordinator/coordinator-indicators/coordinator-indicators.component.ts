@@ -7,6 +7,8 @@ import { CoordinatorProgramSelectorComponent } from '../shared/coordinator-progr
 import { CoordinatorIndicatorsService } from '../../../core/services/coordinator-indicators.service';
 import { AlertaTemprana, SemaforoAlerta } from '../../../core/models/coordinator-indicators.model';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
+import { RolSinAmbito, rolSinAmbito } from '../../../core/api/errors/sin-ambito.util';
+import { SinEntidadAsignadaComponent } from '../../../shared/components/sin-entidad-asignada/sin-entidad-asignada.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { CoordinatorFichaModalComponent } from './components/coordinator-ficha-modal.component';
@@ -14,10 +16,13 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
 
 @Component({
     selector: 'app-coordinator-indicators',
-    imports: [PageHeaderComponent, EmptyStateComponent, KpiCardComponent, PaginationComponent, CoordinatorFichaModalComponent, CoordinatorProgramSelectorComponent, SemaforoAsistenciaComponent],
+    imports: [PageHeaderComponent, EmptyStateComponent, KpiCardComponent, PaginationComponent, CoordinatorFichaModalComponent, CoordinatorProgramSelectorComponent, SemaforoAsistenciaComponent, SinEntidadAsignadaComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
     <section class="space-y-6">
+      @if (sinAmbito(); as rol) {
+        <app-sin-entidad-asignada [rol]="rol" />
+      } @else {
       @if (parte() !== 'alertas') {
         <header class="space-y-3">
           <app-coordinator-program-selector (programaCambiado)="cambiarPrograma()" />
@@ -95,12 +100,25 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
         <app-coordinator-ficha-modal [idEstudiante]="e.idEstudiante" [nombre]="e.nombreCompleto" (cerrar)="cerrarFicha()" />
       }
       }
+      }
     </section>
   `
 })
 export class CoordinatorIndicatorsComponent implements OnInit {
   readonly service = inject(CoordinatorIndicatorsService);
   private readonly toast = inject(ToastService);
+  /** HU178: el backend respondió que el usuario aún no tiene su ámbito asignado (código canónico KPI_00x). */
+  readonly sinAmbito = signal<RolSinAmbito | null>(null);
+
+  /** HU178: el rol sin ámbito es un estado controlado (aviso informativo); cualquier otro error se notifica. */
+  private readonly fallo = (e: unknown): void => {
+    const rol = rolSinAmbito(e);
+    if (rol) {
+      this.sinAmbito.set(rol);
+      return;
+    }
+    this.toast.error(getApiErrorMessage(e));
+  };
   private readonly programa = inject(CoordinatorProgramService);
 
   /** CULM-001: dentro de otra pantalla, el título lo pone el cascarón. */
@@ -120,7 +138,7 @@ export class CoordinatorIndicatorsComponent implements OnInit {
     // S4: se conocen los programas del coordinador antes de pedir cifras, para enviar siempre programaId.
     this.programa.cargar().subscribe({
       next: () => this.cargar(),
-      error: (e) => this.toast.error(getApiErrorMessage(e)),
+      error: this.fallo,
     });
   }
 
@@ -132,7 +150,7 @@ export class CoordinatorIndicatorsComponent implements OnInit {
 
   cargar(): void {
     if (this.parte() !== 'alertas') {
-      this.service.consultarKpis().subscribe({ error: (e) => this.toast.error(getApiErrorMessage(e)) });
+      this.service.consultarKpis().subscribe({ error: this.fallo });
     }
     if (this.parte() !== 'kpis') {
       this.cargarAlertas();
@@ -169,6 +187,6 @@ export class CoordinatorIndicatorsComponent implements OnInit {
         semaforo: this.filtroSemaforo() ?? undefined,
         nombre: this.filtroNombre() || undefined,
       })
-      .subscribe({ error: (e) => this.toast.error(getApiErrorMessage(e)) });
+      .subscribe({ error: this.fallo });
   }
 }

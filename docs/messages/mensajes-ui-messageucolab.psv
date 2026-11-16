@@ -61,6 +61,8 @@ UI_ADMIN_FACULTADES_008|UI058|Funcional|Información|UI_ADMIN_FACULTADES_008|Dec
 UI_ADMIN_PERIODOS_001|UI059|Funcional|Información|UI_ADMIN_PERIODOS_001|Período académico guardado.
 UI_ADMIN_PERIODOS_002|UI060|Funcional|Información|UI_ADMIN_PERIODOS_002|Período {codigo} eliminado.
 UI_ADMIN_PERIODOS_003|UI061|Funcional|Información|UI_ADMIN_PERIODOS_003|No se pudo guardar el período académico.
+UI_ADMIN_SIN_INSTITUCION_001|UI140|Funcional|Información|UI_ADMIN_SIN_INSTITUCION_001|Aún no tiene una institución asignada
+UI_ADMIN_SIN_INSTITUCION_002|UI141|Funcional|Información|UI_ADMIN_SIN_INSTITUCION_002|Solicítela al soporte institucional. Cuando la tenga, aquí verá los datos de la institución.
 UI_ADMIN_SYSTEM_001|UI062|Funcional|Información|UI_ADMIN_SYSTEM_001|Debe seleccionar un período válido para ejecutar el cierre.
 UI_ADMISION_ESTUDIANTE_MODAL_001|UI063|Funcional|Información|UI_ADMISION_ESTUDIANTE_MODAL_001|Estudiante admitido exitosamente. {aviso}
 UI_ADMISION_ESTUDIANTE_MODAL_002|UI064|Funcional|Información|UI_ADMISION_ESTUDIANTE_MODAL_002|Estudiante admitido. La cuenta de acceso quedó en estado {estado}. {aviso}
@@ -76,6 +78,8 @@ UI_COORDINATOR_SESIONES_GRUPO_002|UI073|Funcional|Información|UI_COORDINATOR_SE
 UI_COORDINATOR_SOLICITUDES_SESION_001|UI074|Funcional|Información|UI_COORDINATOR_SOLICITUDES_SESION_001|Sesión aprobada.
 UI_COORDINATOR_SOLICITUDES_SESION_002|UI075|Funcional|Información|UI_COORDINATOR_SOLICITUDES_SESION_002|Solicitud rechazada.
 UI_COORDINATOR_STUDY_PLANS_001|UI076|Funcional|Información|UI_COORDINATOR_STUDY_PLANS_001|Estado del plan de estudio actualizado.
+UI_COORDINATOR_SIN_PROGRAMA_001|UI138|Funcional|Información|UI_COORDINATOR_SIN_PROGRAMA_001|Aún no tiene un programa asignado
+UI_COORDINATOR_SIN_PROGRAMA_002|UI139|Funcional|Información|UI_COORDINATOR_SIN_PROGRAMA_002|Solicítelo al decano de su facultad. Cuando lo tenga, aquí verá los datos de su programa.
 UI_DEAN_COORDINADORES_001|UI077|Funcional|Información|UI_DEAN_COORDINADORES_001|El cambio se guardó. La cuenta de acceso se sincronizará pronto.
 UI_DEAN_COORDINADORES_002|UI078|Funcional|Información|UI_DEAN_COORDINADORES_002|Cambio guardado.
 UI_DEAN_COORDINADORES_004|UI079|Funcional|Información|UI_DEAN_COORDINADORES_004|El campo Contraseña Inicial IAM es obligatorio.
@@ -89,6 +93,8 @@ UI_DEAN_COORDINADORES_011|UI086|Funcional|Información|UI_DEAN_COORDINADORES_011
 UI_DEAN_PROGRAMAS_GESTION_001|UI087|Funcional|Información|UI_DEAN_PROGRAMAS_GESTION_001|Programa actualizado.
 UI_DEAN_PROGRAMAS_GESTION_002|UI088|Funcional|Información|UI_DEAN_PROGRAMAS_GESTION_002|Programa creado.
 UI_DEAN_PROGRAMAS_GESTION_003|UI089|Funcional|Información|UI_DEAN_PROGRAMAS_GESTION_003|Estado del programa actualizado.
+UI_DEAN_SIN_FACULTAD_001|UI136|Funcional|Información|UI_DEAN_SIN_FACULTAD_001|Aún no tiene una facultad asignada
+UI_DEAN_SIN_FACULTAD_002|UI137|Funcional|Información|UI_DEAN_SIN_FACULTAD_002|Solicítela al administrador. Cuando la tenga, aquí verá los datos de su facultad.
 UI_ERROR_GLOBAL_001|UI090|Funcional|Error|UI_ERROR_GLOBAL_001|Ocurrió un error inesperado. Si se repite, recarga la página y reporta el código de referencia.
 UI_ERROR_REFERENCIA|UI091|Funcional|Error|UI_ERROR_REFERENCIA|Código de referencia: {id}
 UI_ERROR_INTERCEPTOR_001|UI092|Funcional|Error|UI_ERROR_INTERCEPTOR_001|Acceso denegado: No cuenta con los permisos necesarios para realizar esta acción.

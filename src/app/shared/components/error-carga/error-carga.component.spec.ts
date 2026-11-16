@@ -39,4 +39,31 @@ describe('ErrorCargaComponent', () => {
     expect(boton(crear('IDENTIFICADOR'))).toBeUndefined();
     expect(boton(crear('NO_IMPLEMENTADO'))).toBeUndefined();
   });
+
+  describe('HU178: rol sin ámbito', () => {
+    function crearSinAmbito(estado: ReturnType<typeof loadErrorState>): HTMLElement {
+      fixture = TestBed.createComponent(ErrorCargaComponent);
+      component = fixture.componentInstance;
+      fixture.componentRef.setInput('error', estado);
+      fixture.detectChanges();
+      return fixture.nativeElement as HTMLElement;
+    }
+
+    it('muestra el aviso informativo del rol, sin alerta roja ni Reintentar', () => {
+      const el = crearSinAmbito({ ...loadErrorState('SIN_AMBITO'), rolSinAmbito: 'COORDINADOR' });
+
+      expect(el.querySelector('[data-testid="coordinador-sin-programa"]')).not.toBeNull();
+      expect(el.querySelector('[role="alert"]')).toBeNull();
+      expect(el.querySelector('[data-testid="error-carga"]')).toBeNull();
+      expect(boton(el)).toBeUndefined();
+    });
+
+    it('sin rol conocido muestra un estado neutro informativo, no una alerta', () => {
+      const el = crearSinAmbito(loadErrorState('SIN_AMBITO'));
+
+      expect(el.querySelector('[role="status"]')).not.toBeNull();
+      expect(el.querySelector('[role="alert"]')).toBeNull();
+      expect(boton(el)).toBeUndefined();
+    });
+  });
 });
