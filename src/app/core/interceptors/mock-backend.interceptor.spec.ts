@@ -512,5 +512,56 @@ describe('mockBackendInterceptor', () => {
     expect(res!.exitoso).toBeTrue();
     expect(res!.datos.id).toBe('GRP-MOCK-1');
   }));
+  it('simula los programas del decano y los catálogos de programa que consulta su inicio', fakeAsync(() => {
+    auth.setMockMode(true);
+
+    let programas: (SobreDatos<{ id: string; estaActivo: boolean; nombreFacultad: string | null }[]> & { total?: number }) | undefined;
+    httpClient
+      .get<typeof programas>(`${environment.apiUrl}/decano/programas`, { params: { estaActivo: true, pagina: 1, tamano: 100 } })
+      .subscribe((r) => (programas = r));
+    tick(250);
+    expect(programas!.exitoso).toBeTrue();
+    expect(programas!.datos.length).toBeGreaterThan(0);
+    expect(programas!.datos.every((p) => p.estaActivo)).toBeTrue();
+    expect(programas!.total).toBe(programas!.datos.length);
+
+    // Los catálogos son arreglos simples (sin sobre), como los entrega el backend real.
+    for (const catalogo of ['tipos-programa', 'modalidades-programa', 'jornadas-programa']) {
+      let lista: { id: string; codigo: string; nombre: string }[] | undefined;
+      httpClient.get<{ id: string; codigo: string; nombre: string }[]>(`${environment.apiUrl}/${catalogo}`).subscribe((r) => (lista = r));
+      tick(250);
+      expect(Array.isArray(lista)).withContext(catalogo).toBeTrue();
+      expect(lista!.length).withContext(catalogo).toBeGreaterThan(0);
+      expect(Object.keys(lista![0]).sort()).withContext(catalogo).toEqual(['codigo', 'id', 'nombre']);
+    }
+  }));
+
+  it('el filtro de programas del decano respeta nombre, estado y paginación', fakeAsync(() => {
+    auth.setMockMode(true);
+    let porNombre: SobreDatos<{ nombre: string }[]> | undefined;
+    httpClient
+      .get<SobreDatos<{ nombre: string }[]>>(`${environment.apiUrl}/decano/programas`, { params: { nombre: 'industrial', pagina: 1, tamano: 10 } })
+      .subscribe((r) => (porNombre = r));
+    tick(250);
+    expect(porNombre!.datos.map((p) => p.nombre)).toEqual(['Ingeniería Industrial']);
+
+    let inactivos: SobreDatos<unknown[]> | undefined;
+    httpClient.get<SobreDatos<unknown[]>>(`${environment.apiUrl}/decano/programas`, { params: { estaActivo: false } }).subscribe((r) => (inactivos = r));
+    tick(250);
+    expect(inactivos!.datos).toEqual([]);
+
+    let pagina: (SobreDatos<unknown[]> & { total?: number }) | undefined;
+    httpClient.get<typeof pagina>(`${environment.apiUrl}/decano/programas`, { params: { pagina: 2, tamano: 1 } }).subscribe((r) => (pagina = r));
+    tick(250);
+    expect(pagina!.datos.length).toBe(1);
+    expect(pagina!.total).toBeGreaterThan(1);
+  }));
+
+  it('los catálogos de administración de tipos de programa siguen sin simular', () => {
+    auth.setMockMode(true);
+    let error: HttpErrorResponse | undefined;
+    httpClient.get(`${environment.apiUrl}/admin/tipos-programa`).subscribe({ error: (value) => (error = value) });
+    expect(error?.status).toBe(501);
+  });
 });
 
