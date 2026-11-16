@@ -19,7 +19,7 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
     template: `
     <div class="space-y-6 animate-fade-in">
       <!-- Barra de Retorno -->
-      <div class="flex items-center justify-between bg-white p-4 rounded-2xl border border-warm-200 shadow-warm-sm">
+      <div class="superficie flex items-center justify-between p-4">
         <button
           type="button"
           (click)="volverAProgramas()"
@@ -40,7 +40,7 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 
       @if (selectedPlan(); as plan) {
         <!-- Ficha del Plan de Estudios -->
-        <div class="bg-white p-6 rounded-2xl border border-warm-200 shadow-warm-sm space-y-4">
+        <div class="superficie p-6 space-y-4">
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <div class="flex items-center gap-2 mb-1">
@@ -113,17 +113,17 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 
       <!-- Listado de Asignaturas del Plan -->
       @if (cargando()) {
-        <div class="bg-white rounded-2xl border border-warm-200 p-12 text-center shadow-warm-sm" role="status">
+        <div class="superficie p-12 text-center" role="status">
           <p class="text-sm text-warm-500">Cargando la malla del plan…</p>
         </div>
       } @else if (asignaturas().length === 0) {
-        <div class="bg-white rounded-2xl border border-warm-200 p-12 text-center shadow-warm-sm">
+        <div class="superficie p-12 text-center">
           <p class="text-sm text-warm-500">No hay asignaturas registradas para este filtro.</p>
         </div>
       } @else {
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           @for (asig of asignaturas(); track asig.id) {
-            <div class="p-4 bg-white rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between gap-3">
+            <div class="superficie p-4 flex flex-col justify-between gap-3">
               <div class="space-y-1.5">
                 <div class="flex items-center justify-between gap-2">
                   <span class="font-mono font-bold text-xs px-2 py-0.5 rounded bg-warm-100 text-primary-800">

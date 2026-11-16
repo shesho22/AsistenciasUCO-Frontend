@@ -23,7 +23,7 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
       <!-- 1. BENTO GRID DE KPIs GLOBALES DEL GRUPO -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- KPI 1: Sesiones Registradas -->
-        <div class="bg-white p-5 rounded-2xl border border-warm-200/80 shadow-warm-sm flex flex-col justify-between">
+        <div class="superficie p-5 flex flex-col justify-between">
           <div class="flex items-center justify-between">
             <span class="text-xs font-semibold text-warm-500 uppercase tracking-wider">Cronograma</span>
             <span class="w-8 h-8 rounded-xl bg-primary-50 text-primary-800 flex items-center justify-center shrink-0">
@@ -46,7 +46,7 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
         </div>
 
         <!-- KPI 2: Promedio de Asistencia Global -->
-        <div class="bg-white p-5 rounded-2xl border border-warm-200/80 shadow-warm-sm flex flex-col justify-between">
+        <div class="superficie p-5 flex flex-col justify-between">
           <div class="flex items-center justify-between">
             <span class="text-xs font-semibold text-warm-500 uppercase tracking-wider">Asistencia Promedio</span>
             <span class="w-8 h-8 rounded-xl bg-success-50 text-success-700 flex items-center justify-center shrink-0">
@@ -71,7 +71,7 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
         </div>
 
         <!-- KPI 3: Alumnos en riesgo o con pérdida según codigoPermanencia del backend (umbrales parametrizados) -->
-        <div class="bg-white p-5 rounded-2xl border border-warm-200/80 shadow-warm-sm flex flex-col justify-between">
+        <div class="superficie p-5 flex flex-col justify-between">
           <div class="flex items-center justify-between">
             <span class="text-xs font-semibold text-warm-500 uppercase tracking-wider">Alerta Inasistencia</span>
             <span class="w-8 h-8 rounded-xl bg-warning-50 text-warning-800 flex items-center justify-center shrink-0">
@@ -135,7 +135,7 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
       </div>
 
       <!-- 2. CABECERA DE LA TABLA PANORÁMICA DE SESIONES -->
-      <div class="bg-white rounded-2xl border border-warm-200 shadow-warm-sm overflow-hidden">
+      <div class="superficie overflow-hidden">
         <div class="p-5 border-b border-warm-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div class="flex items-center gap-2 mb-1">

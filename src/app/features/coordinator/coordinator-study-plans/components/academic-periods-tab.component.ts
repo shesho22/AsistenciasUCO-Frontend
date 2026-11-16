@@ -13,7 +13,7 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
   imports: [CommonModule, CardComponent, BadgeComponent, ButtonComponent, PaginationComponent, AcademicPeriodFormModalComponent],
   template: `
     <div class="space-y-6">
-      <div class="flex items-center justify-between bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm">
+      <div class="superficie flex items-center justify-between p-5">
         <div>
           <h3 class="font-serif font-bold text-lg text-warm-900">Calendario de Períodos Académicos</h3>
           <p class="text-xs text-warm-500">Configuración de ciclos lectivos, fechas límites y activación de períodos.</p>
@@ -33,7 +33,7 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
 
       <!-- Grid de Períodos -->
       @if (pagedPeriodos().length === 0) {
-        <div class="bg-white rounded-2xl border border-warm-200 p-12 text-center shadow-warm-sm">
+        <div class="superficie p-12 text-center">
           <p class="text-sm text-warm-500">No hay períodos académicos registrados.</p>
         </div>
       } @else {

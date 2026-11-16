@@ -11,31 +11,28 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
 import { resolveSessionInstant } from '../../../core/time/session-timezone.util';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 /** HU145: cronograma de las sesiones de clase programadas en la facultad, por rango de fechas. Solo lectura. */
 @Component({
     selector: 'app-dean-cronograma',
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: { class: 'block w-full' },
-    imports: [EmptyStateComponent, FormsModule, PaginationComponent, SesionEstadoBadgeComponent],
+    imports: [PageHeaderComponent, EmptyStateComponent, FormsModule, PaginationComponent, SesionEstadoBadgeComponent],
     template: `
     <div class="space-y-6 animate-fade-in">
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
-        @if (!embebido()) {
-        <div>
-          <div class="flex items-center gap-2 mb-1">
-            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary-100 text-primary-900 border border-primary-200">Decanatura</span>
-            <span class="text-xs text-warm-400">•</span>
-            <span class="text-xs font-medium text-warm-500">Cronograma</span>
-          </div>
-          <h1 class="font-serif font-bold text-2xl sm:text-3xl text-warm-900 tracking-tight">Sesiones de la Facultad</h1>
-          <p class="text-sm text-warm-600 mt-1">Sesiones de clase programadas en los grupos de los programas de tu facultad.</p>
-        </div>
-        }
-        <span class="px-3.5 py-2 rounded-xl bg-warm-100 text-xs font-bold text-warm-800 border border-warm-200">{{ total() }} Sesiones</span>
-      </div>
+      <app-page-header
+        [enTarjeta]="true"
+        [conTitulo]="!embebido()"
+        etiqueta="Decanatura"
+        contexto="Cronograma"
+        titulo="Sesiones de la Facultad"
+        descripcion="Sesiones de clase programadas en los grupos de los programas de tu facultad."
+      >
+        <span cabecera-acciones class="px-3.5 py-2 rounded-xl bg-warm-100 text-xs font-bold text-warm-800 border border-warm-200">{{ total() }} Sesiones</span>
+      </app-page-header>
 
-      <section class="bg-white p-6 rounded-2xl border border-warm-200 shadow-warm-sm space-y-4">
+      <section class="superficie p-6 space-y-4">
         <div class="flex flex-wrap items-end gap-2 text-xs">
           <label class="flex flex-col text-warm-500">Desde
             <input type="date" aria-label="Desde" [ngModel]="desde()" (ngModelChange)="desde.set($event)" class="px-2 py-1.5 border border-warm-200 rounded-lg text-warm-900" />

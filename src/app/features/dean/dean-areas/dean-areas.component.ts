@@ -3,40 +3,30 @@ import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy, i
 import { FormsModule } from '@angular/forms';
 import { AdminManagementService } from '../../../core/services/admin-management.service';
 import { BadgeComponent } from '../../../shared/components/badge/badge.component';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 @Component({
     selector: 'app-dean-areas',
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: { class: 'block w-full' },
-    imports: [FormsModule, BadgeComponent],
+    imports: [PageHeaderComponent, FormsModule, BadgeComponent],
     template: `
     <div class="space-y-6 animate-fade-in">
       <!-- Header Bento -->
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
-        @if (!embebido()) {
-        <div>
-          <div class="flex items-center gap-2 mb-1">
-            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-accent-100 text-accent-900 border border-accent-200">
-              Decanatura Institucional
-            </span>
-            <span class="text-xs text-warm-400">•</span>
-            <span class="text-xs font-medium text-warm-500">Estructura Académica</span>
-          </div>
-          <h1 class="font-serif font-bold text-2xl sm:text-3xl text-warm-900 tracking-tight">
-            Áreas de Conocimiento
-          </h1>
-          <p class="text-sm text-warm-600 mt-1">
-            Supervisión de las áreas temáticas adscritas a la facultad.
-          </p>
-        </div>
-        }
-
-        <div class="flex items-center gap-2.5">
+      <app-page-header
+        [enTarjeta]="true"
+        [conTitulo]="!embebido()"
+        etiqueta="Decanatura Institucional"
+        contexto="Estructura Académica"
+        titulo="Áreas de Conocimiento"
+        descripcion="Supervisión de las áreas temáticas adscritas a la facultad."
+      >
+        <div cabecera-acciones class="flex items-center gap-2.5">
           <span class="px-3.5 py-2 rounded-xl bg-warm-100 text-xs font-bold text-warm-800 border border-warm-200">
             {{ areasTotal() }} Áreas
           </span>
         </div>
-      </div>
+      </app-page-header>
 
       @if (errorAreas()) {
         <div class="rounded-2xl border border-danger-200 bg-danger-50 p-4 text-xs text-danger-800" role="alert">
@@ -47,7 +37,7 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
 
       <!-- KPIs Bento -->
       <div class="grid grid-cols-1 gap-4">
-        <div class="p-4 rounded-2xl bg-white border border-warm-200 shadow-warm-sm flex items-center justify-between">
+        <div class="superficie p-4 flex items-center justify-between">
           <div>
             <span class="text-xs text-warm-500 font-medium">Áreas de Conocimiento</span>
             <p class="text-2xl font-serif font-bold text-warm-900">{{ areasTotal() }}</p>
@@ -82,7 +72,7 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
             <p class="text-sm text-danger-700">No fue posible cargar las áreas de conocimiento.</p>
           </div>
         } @else if (areasFiltradas().length === 0) {
-          <div class="bg-white rounded-2xl border border-warm-200 p-8 text-center shadow-warm-sm">
+          <div class="superficie p-8 text-center">
             <p class="text-sm text-warm-500">No se encontraron áreas de conocimiento.</p>
           </div>
         } @else {

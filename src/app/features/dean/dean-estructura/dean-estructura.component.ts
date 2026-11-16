@@ -6,6 +6,7 @@ import { FacultadNodo } from '../../../core/models/facultad-decano.model';
 import { BadgeComponent } from '../../../shared/components/badge/badge.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 /**
  * HU109 (organigrama de la facultad) y HU119 (árbol Facultad → Programa → Plan de estudio). Solo lectura; cada
@@ -15,32 +16,28 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
     selector: 'app-dean-estructura',
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: { class: 'block w-full' },
-    imports: [RouterLink, BadgeComponent],
+    imports: [PageHeaderComponent, RouterLink, BadgeComponent],
     template: `
     <div class="space-y-6 animate-fade-in">
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
-        @if (!embebido()) {
-        <div>
-          <div class="flex items-center gap-2 mb-1">
-            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary-100 text-primary-900 border border-primary-200">Decanatura</span>
-            <span class="text-xs text-warm-400">•</span>
-            <span class="text-xs font-medium text-warm-500">Organigrama</span>
-          </div>
-          <h1 class="font-serif font-bold text-2xl sm:text-3xl text-warm-900 tracking-tight">Estructura de la Facultad</h1>
-          <p class="text-sm text-warm-600 mt-1">Facultad, programas académicos y planes de estudio vigentes.</p>
-        </div>
-        }
-        <span class="px-3.5 py-2 rounded-xl bg-warm-100 text-xs font-bold text-warm-800 border border-warm-200">
+      <app-page-header
+        [enTarjeta]="true"
+        [conTitulo]="!embebido()"
+        etiqueta="Decanatura"
+        contexto="Organigrama"
+        titulo="Estructura de la Facultad"
+        descripcion="Facultad, programas académicos y planes de estudio vigentes."
+      >
+        <span cabecera-acciones class="px-3.5 py-2 rounded-xl bg-warm-100 text-xs font-bold text-warm-800 border border-warm-200">
           {{ totalProgramas() }} Programas · {{ totalPlanes() }} Planes
         </span>
-      </div>
+      </app-page-header>
 
       @if (facultades().length === 0 && !cargando()) {
         <div class="bg-white rounded-2xl border border-warm-200 p-10 text-center text-sm text-warm-500">No hay una facultad asociada a tu usuario.</div>
       }
 
       @for (f of facultades(); track f.id) {
-        <section class="bg-white p-6 rounded-2xl border border-warm-200 shadow-warm-sm space-y-4">
+        <section class="superficie p-6 space-y-4">
           @if (!embebido()) {
           <div class="flex items-center justify-between gap-3">
             <div>

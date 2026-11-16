@@ -12,6 +12,7 @@ import { DeanProgramasCreditosComponent } from './components/dean-programas-cred
 import { ConsultasTransversalesService } from '../../../core/services/consultas-transversales.service';
 import { ProgramaCreditosItem } from '../../../core/models/consultas-transversales.model';
 import { EMPTY, expand, reduce } from 'rxjs';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 /** HU112: tamaño máximo de página del backend; si la facultad tiene más filas se piden las páginas siguientes. */
 const TAMANO_CREDITOS = 100;
@@ -20,35 +21,24 @@ const TAMANO_CREDITOS = 100;
     selector: 'app-dean-programas',
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: { class: 'block w-full' },
-    imports: [FormsModule, BadgeComponent, PaginationComponent, DeanProgramasGestionComponent, DeanProgramasCreditosComponent],
+    imports: [PageHeaderComponent, FormsModule, BadgeComponent, PaginationComponent, DeanProgramasGestionComponent, DeanProgramasCreditosComponent],
     template: `
     <div class="space-y-6 animate-fade-in">
       <!-- Header Bento -->
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
-        @if (!embebido()) {
-        <div>
-          <div class="flex items-center gap-2 mb-1">
-            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-accent-100 text-accent-900 border border-accent-200">
-              Decanatura Institucional
-            </span>
-            <span class="text-xs text-warm-400">•</span>
-            <span class="text-xs font-medium text-warm-500">Estructura Curricular</span>
-          </div>
-          <h1 class="font-serif font-bold text-2xl sm:text-3xl text-warm-900 tracking-tight">
-            Programas Académicos y Planes de Estudio
-          </h1>
-          <p class="text-sm text-warm-600 mt-1">
-            Consulta los programas académicos adscritos a la facultad, sus créditos, semestres y mallas curriculares.
-          </p>
-        </div>
-        }
-
-        <div class="flex items-center gap-2.5">
+      <app-page-header
+        [enTarjeta]="true"
+        [conTitulo]="!embebido()"
+        etiqueta="Decanatura Institucional"
+        contexto="Estructura Curricular"
+        titulo="Programas Académicos y Planes de Estudio"
+        descripcion="Consulta los programas académicos adscritos a la facultad, sus créditos, semestres y mallas curriculares."
+      >
+        <div cabecera-acciones class="flex items-center gap-2.5">
           <span class="px-3.5 py-2 rounded-xl bg-primary-50 text-xs font-bold text-primary-800 border border-primary-200">
             {{ cargandoEstructura() ? '…' : planes().length }} Planes
           </span>
         </div>
-      </div>
+      </app-page-header>
 
       <!-- Gestión de programas (HU076, HU077, HU078, HU108) -->
       <app-dean-programas-gestion />
@@ -59,7 +49,7 @@ const TAMANO_CREDITOS = 100;
       @if (!embebido()) {
       <!-- KPIs Bento -->
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="p-4 rounded-2xl bg-white border border-warm-200 shadow-warm-sm flex items-center justify-between">
+        <div class="superficie p-4 flex items-center justify-between">
           <div>
             <span class="text-xs text-warm-500 font-medium">Planes Registrados</span>
             <p class="text-2xl font-serif font-bold text-warm-900">{{ cargandoEstructura() ? '—' : planes().length }}</p>
@@ -71,7 +61,7 @@ const TAMANO_CREDITOS = 100;
           </div>
         </div>
 
-        <div class="p-4 rounded-2xl bg-white border border-warm-200 shadow-warm-sm flex items-center justify-between">
+        <div class="superficie p-4 flex items-center justify-between">
           <div>
             <span class="text-xs text-warm-500 font-medium">Planes Vigentes</span>
             <p class="text-2xl font-serif font-bold text-success-700">{{ cargandoEstructura() ? '—' : planesVigentes() }}</p>
@@ -83,7 +73,7 @@ const TAMANO_CREDITOS = 100;
           </div>
         </div>
 
-        <div class="p-4 rounded-2xl bg-white border border-warm-200 shadow-warm-sm flex items-center justify-between">
+        <div class="superficie p-4 flex items-center justify-between">
           <div>
             <span class="text-xs text-warm-500 font-medium">Total Asignaturas</span>
             <p class="text-2xl font-serif font-bold text-primary-800">{{ totalAsignaturasTexto() }}</p>
@@ -120,17 +110,17 @@ const TAMANO_CREDITOS = 100;
           <p class="text-xs text-danger-700 mt-1">{{ errorEstructura() }}</p>
         </div>
       } @else if (cargandoEstructura()) {
-        <div class="bg-white rounded-2xl border border-warm-200 p-12 text-center shadow-warm-sm" role="status">
+        <div class="superficie p-12 text-center" role="status">
           <p class="text-sm text-warm-500">Cargando planes de estudio…</p>
         </div>
       } @else if (pagedPlanes().length === 0) {
-        <div class="bg-white rounded-2xl border border-warm-200 p-12 text-center shadow-warm-sm">
+        <div class="superficie p-12 text-center">
           <p class="text-sm text-warm-500">No se encontraron planes de estudio registrados.</p>
         </div>
       } @else {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           @for (plan of pagedPlanes(); track plan.id) {
-            <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm hover:border-primary-300 transition-all flex flex-col justify-between h-full space-y-3">
+            <div class="superficie p-5 hover:border-primary-300 transition-all flex flex-col justify-between h-full space-y-3">
               <div>
                 <div class="flex items-center justify-between gap-2 mb-1.5">
                   <span class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-warm-100 text-warm-800">

@@ -27,6 +27,8 @@ import { FechaCortaPipe } from '../../../shared/pipes/fecha-hora.pipes';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { ApiPageResponse } from '../../../core/api/models/api-page-response.model';
 import { ApiDataResponse } from '../../../core/api/models/api-data-response.model';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
+import { ModalComponent } from '../../../shared/components/modal/modal.component';
 
 /** Estados que el decano puede filtrar en su consulta (códigos del catálogo del backend). */
 export const ESTADOS_FILTRABLES: ReadonlyArray<{ codigo: EstadoRevisionCancelacion; etiqueta: string }> = [
@@ -43,7 +45,7 @@ export const ESTADOS_FILTRABLES: ReadonlyArray<{ codigo: EstadoRevisionCancelaci
  */
 @Component({
   selector: 'app-revisiones-resolucion',
-  imports: [
+  imports: [ModalComponent, PageHeaderComponent, 
     EmptyStateComponent,
     DecimalPipe,
     FormsModule,
@@ -55,26 +57,16 @@ export const ESTADOS_FILTRABLES: ReadonlyArray<{ codigo: EstadoRevisionCancelaci
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="space-y-6 animate-fade-in">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200 shadow-warm-sm">
-        <div>
-          <div class="flex items-center gap-2 text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1">
-            <span>{{ esDecano() ? 'Decanatura' : 'Coordinación' }}</span>
-            <span>/</span>
-            <span class="text-primary-700">Seguimiento Académico</span>
-          </div>
-          <h1 class="text-2xl font-serif font-bold text-warm-900">
-            {{ esDecano() ? 'Revisiones de cancelación de la facultad (consulta)' : 'Revisiones de Cancelación' }}
-          </h1>
-          <p class="text-sm text-warm-600 mt-0.5">
-            @if (esDecano()) {
-              Consulta de las revisiones de cancelación de matrícula por inasistencia de los grupos de tu facultad. La decisión final la toma el coordinador del programa.
-            } @else {
-              Decide si se cancela la matrícula de los estudiantes que el docente propuso cancelar por pérdida de inasistencia.
-            }
-          </p>
-        </div>
-
-        <div class="flex items-center gap-3">
+      <app-page-header
+        [enTarjeta]="true"
+        [etiqueta]="esDecano() ? 'Decanatura' : 'Coordinación'"
+        contexto="Seguimiento Académico"
+        [titulo]="esDecano() ? 'Revisiones de cancelación de la facultad (consulta)' : 'Revisiones de Cancelación'"
+        [descripcion]="esDecano()
+          ? 'Consulta de las revisiones de cancelación de matrícula por inasistencia de los grupos de tu facultad. La decisión final la toma el coordinador del programa.'
+          : 'Decide si se cancela la matrícula de los estudiantes que el docente propuso cancelar por pérdida de inasistencia.'"
+      >
+        <div cabecera-acciones class="flex items-center gap-3">
           @if (esDecano()) {
             <label class="flex items-center gap-2 text-xs font-medium text-warm-700">
               <span>Estado</span>
@@ -106,7 +98,7 @@ export const ESTADOS_FILTRABLES: ReadonlyArray<{ codigo: EstadoRevisionCancelaci
             {{ totalElementos() }} {{ totalElementos() === 1 ? 'registro' : 'registros' }}
           </span>
         </div>
-      </div>
+      </app-page-header>
 
       @if (errorCarga(); as err) {
         <div class="p-3.5 rounded-xl bg-danger-50 border border-danger-200 text-xs text-danger-800" role="alert">{{ err }}</div>
@@ -125,7 +117,7 @@ export const ESTADOS_FILTRABLES: ReadonlyArray<{ codigo: EstadoRevisionCancelaci
           (accion)="alAccionVacio()"
         />
       } @else {
-        <div class="bg-white rounded-2xl border border-warm-200 shadow-warm-sm overflow-hidden">
+        <div class="superficie overflow-hidden">
           <div class="overflow-x-auto">
             <table class="w-full text-left text-sm">
               <thead class="bg-warm-50 border-b border-warm-200 text-xs font-bold text-warm-600 uppercase tracking-wider">
@@ -227,79 +219,63 @@ export const ESTADOS_FILTRABLES: ReadonlyArray<{ codigo: EstadoRevisionCancelaci
         />
       }
 
-      @if (modalAbierto()) {
-        <div
-          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-warm-950/60 backdrop-blur-xs animate-fade-in"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="modal-resolucion-titulo"
-        >
-          <div class="bg-white rounded-2xl shadow-warm-xl border border-warm-200 w-full max-w-lg overflow-hidden">
-            <div class="p-6 border-b border-warm-100 flex items-center justify-between">
-              <div>
-                <h2 id="modal-resolucion-titulo" class="font-serif font-bold text-lg text-warm-900" data-testid="modal-titulo">
-                  {{ decisionModal() === 'APROBAR' ? 'Aprobar cancelación' : 'Rechazar propuesta' }}
-                </h2>
-                <p class="text-xs text-warm-500 mt-0.5">
-                  Estudiante: <strong class="text-warm-800">{{ revisionSeleccionada() ? nombre(revisionSeleccionada()!) : '' }}</strong>
-                </p>
-                <p class="text-xs text-warm-500 mt-0.5">
-                  {{ decisionModal() === 'APROBAR'
-                    ? 'Cancela definitivamente la matrícula del estudiante por inasistencia.'
-                    : 'Mantiene la matrícula activa y desestima la cancelación.' }}
-                </p>
-              </div>
-              <button
-                type="button"
-                (click)="cerrarModal()"
-                class="p-2 text-warm-400 hover:text-warm-700 rounded-lg hover:bg-warm-100 transition-colors"
-                aria-label="Cerrar modal"
-              >
-                ✕
-              </button>
-            </div>
-
-            @if (modalError(); as err) {
-              <div class="mx-6 mt-4 p-3.5 rounded-xl bg-danger-50 border border-danger-200 text-xs text-danger-800" role="alert">
-                {{ err }}
-              </div>
-            }
-
-            <form (submit)="onSubmitResolucion($event)" class="p-6 space-y-4">
-              <div class="space-y-1.5">
-                <label for="motivo-resolucion" class="block text-xs font-bold text-warm-700 uppercase tracking-wider">
-                  Motivo o fundamento institucional (obligatorio)
-                </label>
-                <textarea
-                  id="motivo-resolucion"
-                  rows="3"
-                  [value]="motivoModal()"
-                  (input)="onMotivoInput($event)"
-                  placeholder="Fundamenta tu resolución con base en el reglamento y la trazabilidad..."
-                  class="w-full px-3.5 py-2.5 bg-white border border-warm-300 rounded-xl text-xs text-warm-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                ></textarea>
-              </div>
-
-              <div class="flex items-center justify-end gap-3 pt-2 border-t border-warm-100">
-                <button
-                  type="button"
-                  (click)="cerrarModal()"
-                  class="min-h-[44px] px-4 py-2 rounded-xl border border-warm-300 text-warm-700 text-xs font-semibold hover:bg-warm-50"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  [disabled]="isModalSubmitDisabled()"
-                  class="min-h-[44px] px-5 py-2 bg-primary-700 hover:bg-primary-800 disabled:bg-warm-300 text-white rounded-xl text-xs font-bold shadow-xs transition-colors"
-                >
-                  {{ enviandoResolucion() ? 'Procesando…' : 'Emitir resolución' }}
-                </button>
-              </div>
-            </form>
-          </div>
+      <app-modal
+        [isOpen]="modalAbierto()"
+        [title]="decisionModal() === 'APROBAR' ? 'Aprobar cancelación' : 'Rechazar propuesta'"
+        tituloTestId="modal-titulo"
+        [cerrarAlPulsarFondo]="false"
+        (closed)="cerrarModal()"
+      >
+        <div modal-encabezado>
+          <p class="text-xs text-warm-500 mt-0.5">
+            Estudiante: <strong class="text-warm-800">{{ revisionSeleccionada() ? nombre(revisionSeleccionada()!) : '' }}</strong>
+          </p>
+          <p class="text-xs text-warm-500 mt-0.5">
+            {{ decisionModal() === 'APROBAR'
+              ? 'Cancela definitivamente la matrícula del estudiante por inasistencia.'
+              : 'Mantiene la matrícula activa y desestima la cancelación.' }}
+          </p>
         </div>
-      }
+
+        @if (modalError(); as err) {
+          <div class="mb-4 p-3.5 rounded-xl bg-danger-50 border border-danger-200 text-xs text-danger-800" role="alert">
+            {{ err }}
+          </div>
+        }
+
+        <form (submit)="onSubmitResolucion($event)" class="space-y-4">
+          <div class="space-y-1.5">
+            <label for="motivo-resolucion" class="block text-xs font-bold text-warm-700 uppercase tracking-wider">
+              Motivo o fundamento institucional (obligatorio)
+            </label>
+            <textarea
+              id="motivo-resolucion"
+              rows="3"
+              [value]="motivoModal()"
+              (input)="onMotivoInput($event)"
+              placeholder="Fundamenta tu resolución con base en el reglamento y la trazabilidad..."
+              class="w-full px-3.5 py-2.5 bg-white border border-warm-300 rounded-xl text-xs text-warm-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            ></textarea>
+          </div>
+
+          <div class="flex items-center justify-end gap-3 pt-2 border-t border-warm-100">
+            <button
+              type="button"
+              (click)="cerrarModal()"
+              class="min-h-[44px] px-4 py-2 rounded-xl border border-warm-300 text-warm-700 text-xs font-semibold hover:bg-warm-50"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              [disabled]="isModalSubmitDisabled()"
+              class="min-h-[44px] px-5 py-2 bg-primary-700 hover:bg-primary-800 disabled:bg-warm-300 text-white rounded-xl text-xs font-bold shadow-xs transition-colors"
+            >
+              {{ enviandoResolucion() ? 'Procesando…' : 'Emitir resolución' }}
+            </button>
+          </div>
+        </form>
+      </app-modal>
     </div>
   `,
 })

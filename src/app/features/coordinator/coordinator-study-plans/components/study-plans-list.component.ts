@@ -27,7 +27,7 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
       </div>
 
       @if (pagedPlanes().length === 0) {
-        <div class="bg-white rounded-2xl border border-warm-200 p-12 text-center shadow-warm-sm">
+        <div class="superficie p-12 text-center">
           <p class="text-sm text-warm-500">No hay planes de estudio registrados.</p>
         </div>
       } @else {

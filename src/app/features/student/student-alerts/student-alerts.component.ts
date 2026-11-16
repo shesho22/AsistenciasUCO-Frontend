@@ -8,35 +8,30 @@ import { Router } from '@angular/router';
 import { AlertaInasistenciaService } from '../../../core/services/alerta-inasistencia.service';
 import { AlertaInasistencia } from '../../../core/models/alerta-inasistencia.model';
 import { BadgeComponent } from '../../../shared/components/badge/badge.component';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 /** Pestaña "Materias" de "Mis materias": ahí vive el detalle de cada materia. */
 const RUTA_MIS_MATERIAS = '/app/estudiante/mis-materias/materias';
 
 @Component({
     selector: 'app-student-alerts',
-    imports: [EmptyStateComponent, FechaHoraCortaPipe, FormsModule, BadgeComponent, SemaforoAsistenciaComponent],
+    imports: [PageHeaderComponent, EmptyStateComponent, FechaHoraCortaPipe, FormsModule, BadgeComponent, SemaforoAsistenciaComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
     <div class="space-y-6 animate-fade-in max-w-4xl mx-auto">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200 shadow-warm-sm">
-        <div>
-          <div class="flex items-center gap-2 text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1">
-            <span>Portal Estudiante</span>
-            <span>/</span>
-            <span class="text-primary-700">Seguimiento de Asistencia</span>
-          </div>
-          <h1 class="text-2xl font-serif font-bold text-warm-900">Mis Alertas de Asistencia</h1>
-          <p class="text-sm text-warm-600 mt-0.5">
-            Avisos institucionales sobre el porcentaje de inasistencias acumulado en tus asignaturas.
-          </p>
-        </div>
-
-        <div class="flex items-center gap-2">
+      <app-page-header
+        [enTarjeta]="true"
+        etiqueta="Portal Estudiante"
+        contexto="Seguimiento de Asistencia"
+        titulo="Mis Alertas de Asistencia"
+        descripcion="Avisos institucionales sobre el porcentaje de inasistencias acumulado en tus asignaturas."
+      >
+        <div cabecera-acciones class="flex items-center gap-2">
           <span class="px-3.5 py-2 rounded-xl bg-warm-100 text-xs font-bold text-warm-800 border border-warm-200">
             {{ totalElementos() }} {{ totalElementos() === 1 ? 'alerta' : 'alertas' }}
           </span>
         </div>
-      </div>
+      </app-page-header>
 
       @if (cargando()) {
         <div class="bg-white p-12 rounded-2xl border border-warm-200 text-center text-sm text-warm-500">

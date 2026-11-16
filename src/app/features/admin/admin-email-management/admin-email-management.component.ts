@@ -186,7 +186,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
         @if (tabActiva() === 'PLANTILLAS') {
           <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             <!-- Left Column: Master List (4 cols) -->
-            <div class="lg:col-span-4 bg-white border border-warm-200 rounded-2xl p-4 shadow-warm-sm space-y-3">
+            <div class="superficie lg:col-span-4 p-4 space-y-3">
               <div class="flex items-center justify-between pb-2 border-b border-warm-100">
                 <span class="text-xs font-bold uppercase tracking-wider text-warm-600">Catálogo de Notificaciones</span>
                 <span class="text-xs text-warm-400 font-mono">{{ plantillasFiltradas().length }} tipos</span>
@@ -233,7 +233,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
             @if (selectedPlantilla(); as tpl) {
               <div class="lg:col-span-8 space-y-5">
                 <!-- Header Card -->
-                <div class="bg-white border border-warm-200 rounded-2xl p-5 shadow-warm-sm">
+                <div class="superficie p-5">
                   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-warm-100">
                     <div>
                       <div class="flex items-center gap-2">
@@ -381,7 +381,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
 
                 <!-- Preview Box -->
                 @if (vistaPrevia(); as vp) {
-                  <div class="bg-white border border-warm-200 rounded-2xl p-5 shadow-warm-sm space-y-3">
+                  <div class="superficie p-5 space-y-3">
                     <div class="flex items-center justify-between pb-2 border-b border-warm-100">
                       <div class="flex items-center gap-2">
                         <span class="text-xs font-bold uppercase tracking-wider text-warm-700">Renderizado de Vista Previa</span>
@@ -421,7 +421,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
                 }
 
                 <!-- Version History Table -->
-                <div class="bg-white border border-warm-200 rounded-2xl p-5 shadow-warm-sm">
+                <div class="superficie p-5">
                   <div class="flex items-center justify-between mb-3 pb-2 border-b border-warm-100">
                     <h3 class="text-xs font-bold uppercase tracking-wider text-warm-700">Historial de Versiones de la Plantilla</h3>
                     <span class="text-xs text-warm-400">{{ tpl.versiones.length }} versión(es)</span>
@@ -483,7 +483,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
             <!-- Top Bento Grid with 5 KPI Cards -->
             <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
               <!-- Entregadas -->
-              <div class="bg-white border border-warm-200 rounded-2xl p-4 shadow-warm-sm flex items-center gap-3">
+              <div class="superficie p-4 flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl bg-success-50 text-success-700 flex items-center justify-center shrink-0 border border-success-100">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                 </div>
@@ -494,7 +494,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
               </div>
 
               <!-- Pendientes -->
-              <div class="bg-white border border-warm-200 rounded-2xl p-4 shadow-warm-sm flex items-center gap-3">
+              <div class="superficie p-4 flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl bg-warning-50 text-warning-700 flex items-center justify-center shrink-0 border border-warning-100">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 </div>
@@ -505,7 +505,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
               </div>
 
               <!-- Reservadas (En Proceso) -->
-              <div class="bg-white border border-warm-200 rounded-2xl p-4 shadow-warm-sm flex items-center gap-3">
+              <div class="superficie p-4 flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl bg-info-50 text-info-700 flex items-center justify-center shrink-0 border border-info-100">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                 </div>
@@ -516,7 +516,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
               </div>
 
               <!-- Reintentables -->
-              <div class="bg-white border border-warm-200 rounded-2xl p-4 shadow-warm-sm flex items-center gap-3">
+              <div class="superficie p-4 flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl bg-warning-100 text-warning-800 flex items-center justify-center shrink-0 border border-warning-200">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 </div>
@@ -527,7 +527,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
               </div>
 
               <!-- Fallidas Definitivas -->
-              <div class="bg-white border border-warm-200 rounded-2xl p-4 shadow-warm-sm flex items-center gap-3 col-span-2 sm:col-span-1">
+              <div class="superficie p-4 flex items-center gap-3 col-span-2 sm:col-span-1">
                 <div class="w-10 h-10 rounded-xl bg-danger-50 text-danger-700 flex items-center justify-center shrink-0 border border-danger-100">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                 </div>
@@ -539,7 +539,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
             </div>
 
             <!-- Filters Bar -->
-            <div class="bg-white border border-warm-200 rounded-2xl p-4 shadow-warm-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <div class="superficie p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
               <div class="flex flex-wrap items-center gap-3">
                 <div>
                   <label for="cola-filtro-estado" class="text-[10px] font-bold text-warm-500 uppercase block mb-1">Estado</label>
@@ -585,7 +585,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
             </div>
 
             <!-- Queue Table -->
-            <div class="bg-white border border-warm-200 rounded-2xl shadow-warm-sm overflow-hidden">
+            <div class="superficie overflow-hidden">
               <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs">
                   <thead class="bg-warm-50 text-warm-600 uppercase text-[10px] font-bold border-b border-warm-200">
@@ -679,7 +679,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
         @if (tabActiva() === 'CANAL_SMTP') {
           <div class="space-y-6">
             <!-- Architecture & Decoupling Status Card -->
-            <div class="bg-white border border-warm-200 rounded-2xl p-5 shadow-warm-sm space-y-4">
+            <div class="superficie p-5 space-y-4">
               <div class="flex items-center justify-between pb-3 border-b border-warm-100">
                 <div>
                   <span class="text-xs font-bold uppercase tracking-wider text-primary-700">Canal de envío</span>
@@ -726,7 +726,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
             <!-- SMTP Connection Diagnostic & Live Test Grid -->
             <div class="grid grid-cols-1 gap-6 items-start">
               <!-- Card: Live Test Email -->
-              <div class="bg-white border border-warm-200 rounded-2xl p-5 shadow-warm-sm space-y-4">
+              <div class="superficie p-5 space-y-4">
                 <div class="pb-3 border-b border-warm-100">
                   <h4 class="text-sm font-bold text-warm-900 uppercase tracking-wider">Probar Envío de Correo en Vivo</h4>
                   <p class="text-xs text-warm-600 mt-0.5">

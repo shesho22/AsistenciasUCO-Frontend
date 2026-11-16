@@ -7,33 +7,24 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { StudyPlansListComponent } from './components/study-plans-list.component';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 @Component({
     selector: 'app-coordinator-study-plans',
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: { class: 'block w-full' },
-    imports: [StudyPlansListComponent],
+    imports: [PageHeaderComponent, StudyPlansListComponent],
     template: `
     <div class="space-y-6 animate-fade-in">
       <!-- Header Bento -->
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
-        <div>
-          <div class="flex items-center gap-2 mb-1">
-            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary-100 text-primary-900 border border-primary-200">
-              Coordinación de Programa
-            </span>
-            <span class="text-xs text-warm-400">•</span>
-            <span class="text-xs font-medium text-warm-500">Gestión Curricular</span>
-          </div>
-          <h1 class="font-serif font-bold text-2xl sm:text-3xl text-warm-900 tracking-tight">
-            Planes de Estudio y Mallas Curriculares
-          </h1>
-          <p class="text-sm text-warm-600 mt-1">
-            Administra planes de estudio, mallas por semestres y asignaturas de tu coordinación.
-          </p>
-        </div>
-
-        <div class="flex flex-wrap items-center gap-2.5">
+      <app-page-header
+        [enTarjeta]="true"
+        etiqueta="Coordinación de Programa"
+        contexto="Gestión Curricular"
+        titulo="Planes de Estudio y Mallas Curriculares"
+        descripcion="Administra planes de estudio, mallas por semestres y asignaturas de tu coordinación."
+      >
+        <div cabecera-acciones class="flex flex-wrap items-center gap-2.5">
           <button
             type="button"
             (click)="irAPeriodos()"
@@ -48,7 +39,7 @@ import { mensajeUi } from '../../../core/messages/mensajes-ui';
             {{ planes().length }} Planes
           </span>
         </div>
-      </div>
+      </app-page-header>
 
       <!-- KPIs Bento -->
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">

@@ -9,6 +9,7 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { RolSinAmbito, rolSinAmbito } from '../../../core/api/errors/sin-ambito.util';
 import { SinEntidadAsignadaComponent } from '../../../shared/components/sin-entidad-asignada/sin-entidad-asignada.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 /** Dimensiones del lienzo SVG (solo presentación; los valores a graficar los entrega el backend). */
 const ANCHO = 600;
@@ -19,25 +20,22 @@ const MARGEN_IZQ = 44;
 
 @Component({
     selector: 'app-admin-indicators',
-    imports: [CifraConBaseComponent, KpiCardComponent, DecimalPipe, SinEntidadAsignadaComponent],
+    imports: [PageHeaderComponent, CifraConBaseComponent, KpiCardComponent, DecimalPipe, SinEntidadAsignadaComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
     <section class="space-y-6">
       @if (sinAmbito(); as rol) {
         <app-sin-entidad-asignada [rol]="rol" />
       } @else {
-      <header class="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 class="font-serif font-bold text-2xl sm:text-3xl text-warm-900 tracking-tight">Indicadores de la institución</h1>
-          @if (service.kpis(); as k) {
-            <p class="text-sm text-warm-700">{{ k.nombreInstitucion }} · {{ k.nombrePeriodoAcademico ?? 'Sin período' }}</p>
-          }
-        </div>
-        <button type="button" class="min-h-[44px] rounded-xl border border-warm-200 bg-white px-4 py-2 text-sm font-semibold text-warm-800 hover:bg-warm-50" (click)="actualizar()">Actualizar</button>
-      </header>
+      <app-page-header titulo="Indicadores de la institución">
+        @if (service.kpis(); as k) {
+          <p cabecera-detalle class="text-sm text-warm-600 mt-1">{{ k.nombreInstitucion }} · {{ k.nombrePeriodoAcademico ?? 'Sin período' }}</p>
+        }
+        <button cabecera-acciones type="button" class="min-h-[44px] rounded-xl border border-warm-200 bg-white px-4 py-2 text-sm font-semibold text-warm-800 hover:bg-warm-50" (click)="actualizar()">Actualizar</button>
+      </app-page-header>
 
       @if (cargando()) {
-        <p role="status" class="rounded-2xl border border-warm-200 bg-white p-4 text-sm text-warm-700 shadow-warm-sm">Cargando indicadores…</p>
+        <p role="status" class="superficie p-4 text-sm text-warm-700">Cargando indicadores…</p>
       }
 
       @if (service.kpis(); as k) {
@@ -53,7 +51,7 @@ const MARGEN_IZQ = 44;
         </div>
       }
 
-      <div class="rounded-2xl border border-warm-200 bg-white p-4 shadow-warm-sm">
+      <div class="superficie p-4">
         <h2 class="font-serif font-bold text-lg text-warm-900">Ausentismo por facultad</h2>
         <p class="mb-3 text-xs text-warm-600" data-testid="nota-horas">Calculado por horas dictadas.</p>
         @if (service.comparativa().length === 0 && !cargando()) {
@@ -72,7 +70,7 @@ const MARGEN_IZQ = 44;
         }
       </div>
 
-      <div class="rounded-2xl border border-warm-200 bg-white p-4 shadow-warm-sm">
+      <div class="superficie p-4">
         <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 class="font-serif font-bold text-lg text-warm-900">Tendencia de ausentismo</h2>

@@ -19,13 +19,14 @@ import { EstudianteResumenApiDto } from '../../../core/api/models/estudiante-api
 import { CoordinatorProgramService } from '../../../core/services/coordinator-program.service';
 import { CoordinatorProgramSelectorComponent } from '../shared/coordinator-program-selector.component';
 import { CoordinatorFichaModalComponent } from '../coordinator-indicators/components/coordinator-ficha-modal.component';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 type PestanaModulo = 'DIRECTORIO';
 
 @Component({
     selector: 'app-coordinator-students',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [
+    imports: [PageHeaderComponent, 
     FormsModule,
     BadgeComponent,
     ButtonComponent,
@@ -39,24 +40,14 @@ type PestanaModulo = 'DIRECTORIO';
     <div class="space-y-6">
       <app-coordinator-program-selector (programaCambiado)="alCambiarPrograma()" />
       <!-- Header Bento -->
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
-        <div>
-          <div class="flex items-center gap-2 mb-1">
-            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-info-50 text-info-800 border border-info-200">
-              Coordinación de Programa
-            </span>
-            <span class="text-xs text-warm-400">•</span>
-            <span class="text-xs font-medium text-warm-500">Padrón Estudiantil de la Carrera</span>
-          </div>
-          <h1 class="font-serif font-bold text-2xl sm:text-3xl text-warm-900 tracking-tight">
-            Estudiantes del Programa
-          </h1>
-          <p class="text-sm text-warm-600 mt-1">
-            Consulta la información académica e institucional de todos los estudiantes adscritos a la carrera.
-          </p>
-        </div>
-
-        <div class="flex flex-wrap items-center gap-3">
+      <app-page-header
+        [enTarjeta]="true"
+        etiqueta="Coordinación de Programa"
+        contexto="Padrón Estudiantil de la Carrera"
+        titulo="Estudiantes del Programa"
+        descripcion="Consulta la información académica e institucional de todos los estudiantes adscritos a la carrera."
+      >
+        <div cabecera-acciones class="flex flex-wrap items-center gap-3">
           <span class="px-3.5 py-2 rounded-xl bg-primary-50 text-primary-900 text-xs font-bold border border-primary-200">
             {{ totalDirectorio() }} Estudiantes Registrados
           </span>
@@ -64,21 +55,21 @@ type PestanaModulo = 'DIRECTORIO';
             Ver Materias del Programa →
           </app-button>
         </div>
-      </div>
+      </app-page-header>
 
       <!-- KPIs Rápidos del Padrón Estudiantil -->
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="bg-white p-4 rounded-2xl border border-warm-200 shadow-warm-sm">
+        <div class="superficie p-4">
           <span class="text-xs text-warm-500 font-medium">Total en el Programa</span>
           <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ totalDirectorio() }}</p>
           <span class="text-[11px] text-warm-500">Estudiantes encontrados</span>
         </div>
-        <div class="bg-white p-4 rounded-2xl border border-warm-200 shadow-warm-sm">
+        <div class="superficie p-4">
           <span class="text-xs text-warm-500 font-medium">Activos en Página Actual</span>
           <p class="text-2xl font-serif font-bold text-success-700 mt-1">{{ totalActivosPagina() }}</p>
           <span class="text-[11px] text-success-700">Matrícula académica vigente</span>
         </div>
-        <div class="bg-white p-4 rounded-2xl border border-warm-200 shadow-warm-sm">
+        <div class="superficie p-4">
           <span class="text-xs text-warm-500 font-medium">Inactivos en Página Actual</span>
           <p class="text-2xl font-serif font-bold text-warm-700 mt-1">{{ totalInactivosPagina() }}</p>
           <span class="text-[11px] text-warm-500">Sin matrícula activa en el período</span>
@@ -123,7 +114,7 @@ type PestanaModulo = 'DIRECTORIO';
       } @else {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
           @for (est of paginatedDirectorio(); track est.id) {
-            <div class="bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm flex flex-col h-full justify-between gap-3">
+            <div class="superficie p-6 flex flex-col h-full justify-between gap-3">
               <div>
                 <div class="flex items-start justify-between gap-2 mb-2">
                   <span class="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-warm-100 text-warm-700">

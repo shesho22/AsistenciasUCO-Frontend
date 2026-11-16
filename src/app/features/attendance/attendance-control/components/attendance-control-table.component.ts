@@ -32,7 +32,7 @@ import {
         </div>
       }
       <!-- Barra Unificada Compacta: Buscador + Filtros -->
-      <section class="flex flex-col md:flex-row gap-3 items-center justify-between bg-white p-3.5 rounded-2xl border border-warm-200 shadow-warm-sm">
+      <section class="superficie flex flex-col md:flex-row gap-3 items-center justify-between p-3.5">
         <!-- Buscador -->
         <div class="relative w-full md:w-72">
           <input

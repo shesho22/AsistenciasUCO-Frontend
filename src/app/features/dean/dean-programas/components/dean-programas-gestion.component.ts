@@ -61,13 +61,13 @@ import { mensajeUi } from '../../../../core/messages/mensajes-ui';
       </div>
 
       @if (service.programas().length === 0) {
-        <div class="bg-white rounded-2xl border border-warm-200 p-8 text-center shadow-warm-sm" [attr.role]="service.cargando() ? 'status' : null">
+        <div class="superficie p-8 text-center" [attr.role]="service.cargando() ? 'status' : null">
           <p class="text-sm text-warm-500">
             {{ service.cargando() ? 'Cargando programas...' : 'No hay programas académicos para los filtros indicados.' }}
           </p>
         </div>
       } @else {
-        <div class="relative overflow-x-auto bg-white rounded-2xl border border-warm-200 shadow-warm-sm">
+        <div class="superficie relative overflow-x-auto">
           <table class="min-w-full text-sm">
             <thead class="bg-warm-50 text-xs uppercase text-warm-500">
               <tr>

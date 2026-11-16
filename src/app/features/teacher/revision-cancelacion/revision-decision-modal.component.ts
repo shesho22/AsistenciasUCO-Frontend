@@ -14,6 +14,7 @@ import { RevisionCancelacionService } from '../../../core/services/revision-canc
 import { MarcaRevisionDocente } from '../../../core/models/revision-cancelacion.model';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { ToastService } from '../../../shared/components/toast/toast.component';
+import { ModalComponent } from '../../../shared/components/modal/modal.component';
 
 /** Lo que el modal lee de la revision: su id, las acciones permitidas o la revision anidada de una marca. */
 export interface RevisionDecisionEntrada {
@@ -24,134 +25,115 @@ export interface RevisionDecisionEntrada {
 
 @Component({
     selector: 'app-revision-decision-modal',
-    imports: [FormsModule],
+    imports: [ModalComponent, FormsModule],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
-    @if (isOpen()) {
-      <div
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-warm-950/60 backdrop-blur-xs animate-fade-in"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="modal-decision-titulo"
-      >
-        <div class="bg-white rounded-2xl shadow-warm-xl border border-warm-200 w-full max-w-lg overflow-hidden">
-          <div class="p-6 border-b border-warm-100 flex items-center justify-between">
-            <div>
-              <h2 id="modal-decision-titulo" class="font-serif font-bold text-lg text-warm-900">
-                Decisión de Inasistencia
-              </h2>
-              <p class="text-xs text-warm-500 mt-0.5">
-                Estudiante: <strong class="text-warm-800">{{ estudianteNombre() }}</strong>
-              </p>
+    <app-modal
+      [isOpen]="isOpen()"
+      title="Decisión de Inasistencia"
+      [cerrarAlPulsarFondo]="false"
+      (closed)="cerrar()"
+    >
+      <p modal-encabezado class="text-xs text-warm-500 mt-0.5">
+        Estudiante: <strong class="text-warm-800">{{ estudianteNombre() }}</strong>
+      </p>
+
+      @if (errorMensaje(); as err) {
+        <div class="mb-4 p-3.5 rounded-xl bg-danger-50 border border-danger-200 text-xs text-danger-800" role="alert">
+          {{ err }}
+        </div>
+      }
+
+      @if (requiereConfirmacion()) {
+        <div class="space-y-4">
+          <div class="p-4 rounded-xl bg-warning-50 border border-warning-200 text-xs text-warning-900 space-y-2">
+            <p class="font-bold">¿Confirmas la propuesta de cancelación?</p>
+            <p>
+              Esta acción enviará la solicitud al coordinador o decano para que evalúe y decida sobre la cancelación de la matrícula de este estudiante en la asignatura.
+            </p>
+          </div>
+
+          <div class="flex items-center justify-end gap-3 pt-2">
+            <button
+              type="button"
+              (click)="requiereConfirmacion.set(false)"
+              class="min-h-[44px] px-4 py-2 rounded-xl border border-warm-300 text-warm-700 text-xs font-semibold hover:bg-warm-50"
+            >
+              Volver a editar
+            </button>
+            <button
+              type="button"
+              (click)="confirmarEnvio()"
+              [disabled]="enviando()"
+              class="min-h-[44px] px-5 py-2 bg-danger-700 hover:bg-danger-800 text-white rounded-xl text-xs font-bold shadow-xs disabled:opacity-50"
+            >
+              {{ enviando() ? 'Enviando…' : 'Sí, proponer cancelación' }}
+            </button>
+          </div>
+        </div>
+      } @else {
+        <form (submit)="onSubmit($event)" class="space-y-4">
+          <div class="space-y-2">
+            <p id="revision-decision-accion" class="block text-xs font-bold text-warm-700 uppercase tracking-wider">
+              Acción a tomar
+            </p>
+            <div class="space-y-2" role="radiogroup" aria-labelledby="revision-decision-accion">
+              @for (opcion of opciones(); track opcion.valor) {
+                <label
+                  class="flex items-center gap-3 p-3 rounded-xl border border-warm-200 hover:bg-warm-50 cursor-pointer transition-colors"
+                  [class.border-primary-500]="decision() === opcion.valor"
+                  [class.bg-primary-50]="decision() === opcion.valor"
+                >
+                  <input
+                    type="radio"
+                    name="decision"
+                    [value]="opcion.valor"
+                    [checked]="decision() === opcion.valor"
+                    (change)="decision.set(opcion.valor)"
+                    class="text-primary-700 focus:ring-primary-500"
+                  />
+                  <div>
+                    <span class="block text-sm font-semibold text-warm-900">{{ opcion.etiqueta }}</span>
+                    <span class="block text-xs text-warm-500">{{ opcion.descripcion }}</span>
+                  </div>
+                </label>
+              }
             </div>
+          </div>
+
+          <div class="space-y-1.5">
+            <label for="motivo-decision" class="block text-xs font-bold text-warm-700 uppercase tracking-wider">
+              Motivo de la decisión (obligatorio)
+            </label>
+            <textarea
+              id="motivo-decision"
+              rows="3"
+              [value]="motivo()"
+              (input)="onMotivoInput($event)"
+              placeholder="Explica detalladamente la razón o justificación académica..."
+              class="w-full px-3.5 py-2.5 bg-white border border-warm-300 rounded-xl text-xs text-warm-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            ></textarea>
+          </div>
+
+          <div class="flex items-center justify-end gap-3 pt-2 border-t border-warm-100">
             <button
               type="button"
               (click)="cerrar()"
-              class="p-2 text-warm-400 hover:text-warm-700 rounded-lg hover:bg-warm-100 transition-colors"
-              aria-label="Cerrar modal"
+              class="min-h-[44px] px-4 py-2 rounded-xl border border-warm-300 text-warm-700 text-xs font-semibold hover:bg-warm-50"
             >
-              ✕
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              [disabled]="isSubmitDisabled()"
+              class="min-h-[44px] px-5 py-2 bg-primary-700 hover:bg-primary-800 disabled:bg-warm-300 text-white rounded-xl text-xs font-bold shadow-xs transition-colors"
+            >
+              {{ enviando() ? 'Guardando…' : 'Continuar' }}
             </button>
           </div>
-
-          @if (errorMensaje(); as err) {
-            <div class="mx-6 mt-4 p-3.5 rounded-xl bg-danger-50 border border-danger-200 text-xs text-danger-800" role="alert">
-              {{ err }}
-            </div>
-          }
-
-          @if (requiereConfirmacion()) {
-            <div class="p-6 space-y-4">
-              <div class="p-4 rounded-xl bg-warning-50 border border-warning-200 text-xs text-warning-900 space-y-2">
-                <p class="font-bold">¿Confirmas la propuesta de cancelación?</p>
-                <p>
-                  Esta acción enviará la solicitud al coordinador o decano para que evalúe y decida sobre la cancelación de la matrícula de este estudiante en la asignatura.
-                </p>
-              </div>
-
-              <div class="flex items-center justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  (click)="requiereConfirmacion.set(false)"
-                  class="min-h-[44px] px-4 py-2 rounded-xl border border-warm-300 text-warm-700 text-xs font-semibold hover:bg-warm-50"
-                >
-                  Volver a editar
-                </button>
-                <button
-                  type="button"
-                  (click)="confirmarEnvio()"
-                  [disabled]="enviando()"
-                  class="min-h-[44px] px-5 py-2 bg-danger-700 hover:bg-danger-800 text-white rounded-xl text-xs font-bold shadow-xs disabled:opacity-50"
-                >
-                  {{ enviando() ? 'Enviando…' : 'Sí, proponer cancelación' }}
-                </button>
-              </div>
-            </div>
-          } @else {
-            <form (submit)="onSubmit($event)" class="p-6 space-y-4">
-              <div class="space-y-2">
-                <p id="revision-decision-accion" class="block text-xs font-bold text-warm-700 uppercase tracking-wider">
-                  Acción a tomar
-                </p>
-                <div class="space-y-2" role="radiogroup" aria-labelledby="revision-decision-accion">
-                  @for (opcion of opciones(); track opcion.valor) {
-                    <label
-                      class="flex items-center gap-3 p-3 rounded-xl border border-warm-200 hover:bg-warm-50 cursor-pointer transition-colors"
-                      [class.border-primary-500]="decision() === opcion.valor"
-                      [class.bg-primary-50]="decision() === opcion.valor"
-                    >
-                      <input
-                        type="radio"
-                        name="decision"
-                        [value]="opcion.valor"
-                        [checked]="decision() === opcion.valor"
-                        (change)="decision.set(opcion.valor)"
-                        class="text-primary-700 focus:ring-primary-500"
-                      />
-                      <div>
-                        <span class="block text-sm font-semibold text-warm-900">{{ opcion.etiqueta }}</span>
-                        <span class="block text-xs text-warm-500">{{ opcion.descripcion }}</span>
-                      </div>
-                    </label>
-                  }
-                </div>
-              </div>
-
-              <div class="space-y-1.5">
-                <label for="motivo-decision" class="block text-xs font-bold text-warm-700 uppercase tracking-wider">
-                  Motivo de la decisión (obligatorio)
-                </label>
-                <textarea
-                  id="motivo-decision"
-                  rows="3"
-                  [value]="motivo()"
-                  (input)="onMotivoInput($event)"
-                  placeholder="Explica detalladamente la razón o justificación académica..."
-                  class="w-full px-3.5 py-2.5 bg-white border border-warm-300 rounded-xl text-xs text-warm-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                ></textarea>
-              </div>
-
-              <div class="flex items-center justify-end gap-3 pt-2 border-t border-warm-100">
-                <button
-                  type="button"
-                  (click)="cerrar()"
-                  class="min-h-[44px] px-4 py-2 rounded-xl border border-warm-300 text-warm-700 text-xs font-semibold hover:bg-warm-50"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  [disabled]="isSubmitDisabled()"
-                  class="min-h-[44px] px-5 py-2 bg-primary-700 hover:bg-primary-800 disabled:bg-warm-300 text-white rounded-xl text-xs font-bold shadow-xs transition-colors"
-                >
-                  {{ enviando() ? 'Guardando…' : 'Continuar' }}
-                </button>
-              </div>
-            </form>
-          }
-        </div>
-      </div>
-    }
+        </form>
+      }
+    </app-modal>
   `
 })
 export class RevisionDecisionModalComponent {

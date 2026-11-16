@@ -8,105 +8,89 @@ import { CorreccionIdentidadService } from '../../../../core/services/correccion
 import { CorregirIdentidadPayload, IdentidadActual } from '../../../../core/models/correccion-identidad.model';
 import { CorreccionIdentidadModalComponent } from '../../../../shared/components/correccion-identidad-modal/correccion-identidad-modal.component';
 import { ToastService } from '../../../../shared/components/toast/toast.component';
-import { DialogoAccesibleDirective } from '../../../../shared/directives/dialogo-accesible.directive';
 import { mensajeUi } from '../../../../core/messages/mensajes-ui';
-
-let fichaEstudianteIdContador = 0;
+import { ModalComponent } from '../../../../shared/components/modal/modal.component';
 
 @Component({
     selector: 'app-coordinator-ficha-modal',
-    imports: [PaginationComponent, CorreccionIdentidadModalComponent, DialogoAccesibleDirective],
+    imports: [ModalComponent, PaginationComponent, CorreccionIdentidadModalComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
-    <div
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 focus:outline-none"
-      role="dialog"
-      aria-modal="true"
-      [attr.aria-labelledby]="tituloId"
-      appDialogoAccesible
-      (cerrarSolicitado)="cancelar()"
-    >
-      <div class="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
-        <div class="mb-4 flex items-start justify-between gap-4">
-          <h2 [id]="tituloId" class="text-xl font-semibold text-neutral-900">Ficha de {{ nombre() }}</h2>
-          <button type="button" class="text-neutral-500 hover:text-neutral-800" aria-label="Cerrar" (click)="cancelar()">✕</button>
+    <app-modal [isOpen]="true" [title]="'Ficha de ' + nombre()" tamano="3xl" etiquetaCerrar="Cerrar" (closed)="cancelar()">
+      @if (error()) {
+        <p class="rounded-lg bg-danger-50 p-3 text-sm text-danger-700">{{ error() }}</p>
+      }
+
+      @if (ficha(); as f) {
+        <section class="mb-6 grid grid-cols-1 gap-2 text-sm text-neutral-700 sm:grid-cols-2">
+          <p><span class="font-medium">Nombre:</span> {{ f.nombreCompleto }}</p>
+          <p><span class="font-medium">Identificación:</span> {{ f.tipoIdentificacion }} {{ f.numeroIdentificacion }}</p>
+          <p><span class="font-medium">Correo:</span> {{ f.correo }}</p>
+          <p><span class="font-medium">Programa:</span> {{ f.nombrePrograma }}</p>
+        </section>
+        <!-- HU159: el coordinador corrige los datos de identidad de un estudiante de su programa -->
+        <div class="mb-6 -mt-3">
+          <button type="button" data-accion="corregir-identidad" (click)="corrigiendo.set(true)"
+            class="text-xs px-3 py-1.5 rounded-xl border border-neutral-300 text-neutral-700 hover:bg-neutral-100">Corregir datos</button>
         </div>
-
-        @if (error()) {
-          <p class="rounded-lg bg-danger-50 p-3 text-sm text-danger-700">{{ error() }}</p>
+        @if (corrigiendo()) {
+          <app-correccion-identidad-modal
+            titulo="Corregir datos del estudiante"
+            [actual]="identidadActual(f)"
+            [guardando]="guardandoCorreccion()"
+            [error]="errorCorreccion()"
+            (guardar)="corregir($event)"
+            (cancelar)="cerrarCorreccion()"
+          />
         }
 
-        @if (ficha(); as f) {
-          <section class="mb-6 grid grid-cols-1 gap-2 text-sm text-neutral-700 sm:grid-cols-2">
-            <p><span class="font-medium">Nombre:</span> {{ f.nombreCompleto }}</p>
-            <p><span class="font-medium">Identificación:</span> {{ f.tipoIdentificacion }} {{ f.numeroIdentificacion }}</p>
-            <p><span class="font-medium">Correo:</span> {{ f.correo }}</p>
-            <p><span class="font-medium">Programa:</span> {{ f.nombrePrograma }}</p>
-          </section>
-          <!-- HU159: el coordinador corrige los datos de identidad de un estudiante de su programa -->
-          <div class="mb-6 -mt-3">
-            <button type="button" data-accion="corregir-identidad" (click)="corrigiendo.set(true)"
-              class="text-xs px-3 py-1.5 rounded-xl border border-neutral-300 text-neutral-700 hover:bg-neutral-100">Corregir datos</button>
-          </div>
-          @if (corrigiendo()) {
-            <app-correccion-identidad-modal
-              titulo="Corregir datos del estudiante"
-              [actual]="identidadActual(f)"
-              [guardando]="guardandoCorreccion()"
-              [error]="errorCorreccion()"
-              (guardar)="corregir($event)"
-              (cancelar)="cerrarCorreccion()"
-            />
-          }
+        <h3 class="mb-2 text-sm font-semibold text-neutral-900">Resumen por asignatura</h3>
+        <div class="mb-6 overflow-x-auto">
+          <table class="w-full text-left text-sm">
+            <thead class="text-xs uppercase text-neutral-500">
+              <tr><th scope="col" class="py-2">Asignatura</th><th scope="col">Grupo</th><th scope="col">Sesiones</th><th scope="col">Asist.</th><th scope="col">Faltas</th><th scope="col">Excusas</th><th scope="col">Inasistencia</th><th scope="col">Estado</th></tr>
+            </thead>
+            <tbody>
+              @for (r of f.resumenPorAsignatura; track r.idGrupo) {
+                <tr class="border-t border-neutral-100">
+                  <td class="py-2">{{ r.nombreAsignatura }}</td>
+                  <td>{{ r.codigoGrupo }}</td>
+                  <td>{{ r.sesionesEjecutadas }}</td>
+                  <td>{{ r.asistencias }}</td>
+                  <td>{{ r.faltasSinJustaCausa }}</td>
+                  <td>{{ r.excusas }}</td>
+                  <td>{{ porcentaje(r.porcentajeInasistencia) }}</td>
+                  <td>{{ r.codigoPermanencia }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
 
-          <h3 class="mb-2 text-sm font-semibold text-neutral-900">Resumen por asignatura</h3>
-          <div class="mb-6 overflow-x-auto">
-            <table class="w-full text-left text-sm">
-              <thead class="text-xs uppercase text-neutral-500">
-                <tr><th scope="col" class="py-2">Asignatura</th><th scope="col">Grupo</th><th scope="col">Sesiones</th><th scope="col">Asist.</th><th scope="col">Faltas</th><th scope="col">Excusas</th><th scope="col">Inasistencia</th><th scope="col">Estado</th></tr>
-              </thead>
-              <tbody>
-                @for (r of f.resumenPorAsignatura; track r.idGrupo) {
-                  <tr class="border-t border-neutral-100">
-                    <td class="py-2">{{ r.nombreAsignatura }}</td>
-                    <td>{{ r.codigoGrupo }}</td>
-                    <td>{{ r.sesionesEjecutadas }}</td>
-                    <td>{{ r.asistencias }}</td>
-                    <td>{{ r.faltasSinJustaCausa }}</td>
-                    <td>{{ r.excusas }}</td>
-                    <td>{{ porcentaje(r.porcentajeInasistencia) }}</td>
-                    <td>{{ r.codigoPermanencia }}</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
+      <h3 class="mb-2 text-sm font-semibold text-neutral-900">Bitácora de asistencia</h3>
+      <p class="mb-2 text-xs text-neutral-500">Horas en {{ timeZone.zoneLabel() }}.</p>
+      <ol class="mb-3 space-y-2">
+        @for (s of bitacora(); track s.idSesion + s.idGrupo) {
+          <li class="rounded-lg border border-neutral-100 p-3 text-sm">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <span class="font-medium">{{ s.nombreAsignatura }} · {{ s.nombreSesion }}</span>
+              <span class="text-xs text-neutral-500">{{ timeZone.formatTemporal(s.fechaHoraInicio) }}</span>
+            </div>
+            <p class="text-neutral-700">
+              {{ etiquetaAsistencia(s.asistio) }}@if (s.nombreRazonCausa) { · {{ s.nombreRazonCausa }} }
+            </p>
+          </li>
         }
-
-        <h3 class="mb-2 text-sm font-semibold text-neutral-900">Bitácora de asistencia</h3>
-        <p class="mb-2 text-xs text-neutral-500">Horas en {{ timeZone.zoneLabel() }}.</p>
-        <ol class="mb-3 space-y-2">
-          @for (s of bitacora(); track s.idSesion + s.idGrupo) {
-            <li class="rounded-lg border border-neutral-100 p-3 text-sm">
-              <div class="flex flex-wrap items-center justify-between gap-2">
-                <span class="font-medium">{{ s.nombreAsignatura }} · {{ s.nombreSesion }}</span>
-                <span class="text-xs text-neutral-500">{{ timeZone.formatTemporal(s.fechaHoraInicio) }}</span>
-              </div>
-              <p class="text-neutral-700">
-                {{ etiquetaAsistencia(s.asistio) }}@if (s.nombreRazonCausa) { · {{ s.nombreRazonCausa }} }
-              </p>
-            </li>
-          }
-        </ol>
-        <app-pagination
-          [totalItems]="totalBitacora()"
-          [pageSize]="tamano"
-          [currentPage]="pagina()"
-          [showPageSizeSelector]="false"
-          (pageChange)="onPageChange($event)"
-        />
-      </div>
-    </div>
+      </ol>
+      <app-pagination
+        [totalItems]="totalBitacora()"
+        [pageSize]="tamano"
+        [currentPage]="pagina()"
+        [showPageSizeSelector]="false"
+        (pageChange)="onPageChange($event)"
+      />
+    </app-modal>
   `
 })
 export class CoordinatorFichaModalComponent implements OnInit {
@@ -115,7 +99,6 @@ export class CoordinatorFichaModalComponent implements OnInit {
   private readonly toast = inject(ToastService);
   readonly timeZone = inject(SessionTimeZoneService);
 
-  readonly tituloId = `ficha-estudiante-titulo-${++fichaEstudianteIdContador}`;
   readonly idEstudiante = input.required<string>();
   readonly nombre = input<string>('');
   readonly cerrar = output<void>();

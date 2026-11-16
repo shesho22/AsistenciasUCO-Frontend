@@ -7,10 +7,11 @@ import { RolSinAmbito, rolSinAmbito } from '../../../core/api/errors/sin-ambito.
 import { SinEntidadAsignadaComponent } from '../../../shared/components/sin-entidad-asignada/sin-entidad-asignada.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 @Component({
     selector: 'app-dean-indicators',
-    imports: [KpiCardComponent, DecimalPipe, PaginationComponent, SinEntidadAsignadaComponent],
+    imports: [PageHeaderComponent, KpiCardComponent, DecimalPipe, PaginationComponent, SinEntidadAsignadaComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
     <section class="space-y-6">
@@ -19,7 +20,7 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
       } @else {
       <header>
         @if (!embebido()) {
-          <h1 class="text-2xl font-semibold text-neutral-900">Indicadores de la facultad</h1>
+          <app-page-header titulo="Indicadores de la facultad" />
         }
         @if (service.kpis(); as k) {
           <p class="text-sm text-neutral-600">{{ k.nombreFacultad }} · {{ k.nombrePeriodoAcademico ?? 'Sin período' }}</p>

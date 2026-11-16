@@ -14,6 +14,7 @@ import { SessionTimeZoneService } from '../../../core/services/session-timezone.
 import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load-error.util';
 import { ButtonComponent } from '../../../shared/components/button/button.component';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
 
@@ -25,15 +26,15 @@ type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
 @Component({
     selector: 'app-student-claims',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [EmptyStateComponent, CommonModule, CardComponent, BadgeComponent, PaginationComponent, ButtonComponent],
+    imports: [PageHeaderComponent, EmptyStateComponent, CommonModule, CardComponent, BadgeComponent, PaginationComponent, ButtonComponent],
     template: `
     <div class="space-y-6 animate-fade-in">
-      <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-        <div>
-          <h1 class="font-serif text-2xl sm:text-3xl font-bold text-warm-900">Mis Reclamos</h1>
-          <p class="text-sm text-warm-600 mt-1">Consulta el estado de tus solicitudes de revisión de asistencia.</p>
-        </div>
-        <label class="flex flex-col gap-1 text-xs font-semibold text-warm-700">
+      <app-page-header
+        alineacion="final"
+        titulo="Mis Reclamos"
+        descripcion="Consulta el estado de tus solicitudes de revisión de asistencia."
+      >
+        <label cabecera-acciones class="flex flex-col gap-1 text-xs font-semibold text-warm-700">
           Estado
           <select
             class="px-3 py-2 min-h-[44px] bg-white border border-warm-200 rounded-xl text-sm"
@@ -46,7 +47,7 @@ type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
             <option value="RECHAZADA">Rechazadas</option>
           </select>
         </label>
-      </div>
+      </app-page-header>
 
       @if (isLoading()) {
         <div class="space-y-4" role="status" aria-live="polite" aria-label="Cargando solicitudes" data-testid="reclamos-cargando">
