@@ -28,6 +28,7 @@ import { CoordinatorDocenteFormModalComponent } from './components/coordinator-d
 import { CoordinatorDocenteEditModalComponent } from './components/coordinator-docente-edit-modal.component';
 import { CoordinatorDocenteFichaModalComponent } from './components/coordinator-docente-ficha-modal.component';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 type FiltroEstado = 'TODOS' | 'ACTIVO' | 'INACTIVO';
 
@@ -37,7 +38,7 @@ const MIN_CARACTERES_CANDIDATOS = 3;
 @Component({
     selector: 'app-coordinator-docentes',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [
+    imports: [PageHeaderComponent, 
     FormsModule,
     CardComponent,
     BadgeComponent,
@@ -51,20 +52,17 @@ const MIN_CARACTERES_CANDIDATOS = 3;
 ],
     template: `
     <div class="space-y-6 animate-fade-in">
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
-        @if (!embebido()) {
-        <div>
-          <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary-100 text-primary-900 border border-primary-200">
-            Coordinación de Programa
-          </span>
-          <h1 class="font-serif font-bold text-2xl sm:text-3xl text-warm-900 tracking-tight mt-2">Gestión de Docentes</h1>
-          <p class="text-sm text-warm-600 mt-1">Directorio de docentes vinculados a su programa, con su tipo de vinculación y grupos asignados.</p>
-        </div>
-        }
-        <div class="flex flex-wrap items-center gap-3">
+      <app-page-header
+        [enTarjeta]="true"
+        [conTitulo]="!embebido()"
+        etiqueta="Coordinación de Programa"
+        titulo="Gestión de Docentes"
+        descripcion="Directorio de docentes vinculados a su programa, con su tipo de vinculación y grupos asignados."
+      >
+        <div cabecera-acciones class="flex flex-wrap items-center gap-3">
           <app-button variant="primary" size="md" (clicked)="abrirFormulario()">Vincular docente</app-button>
         </div>
-      </div>
+      </app-page-header>
 
 
       <!-- Estado de acceso de la ultima cuenta docente creada (verificado por el backend, nunca por la SPA) -->

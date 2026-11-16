@@ -6,6 +6,7 @@ import { CoordinatorSolicitudesSesionComponent } from '../coordinator-solicitude
 import { CoordinatorIndicatorsComponent } from '../coordinator-indicators/coordinator-indicators.component';
 import { ConsolidadoAsistenciaComponent } from '../coordinator-consolidado/consolidado-asistencia.component';
 import { RevisionesPendientesKpiComponent } from '../../../shared/components/revisiones-pendientes-kpi/revisiones-pendientes-kpi.component';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 /**
  * CULM-001: pantalla única de asistencia del coordinador. Fusiona las antiguas «Asistencias del programa», «Consolidado
@@ -17,15 +18,13 @@ import { RevisionesPendientesKpiComponent } from '../../../shared/components/rev
   selector: 'app-coordinator-asistencia',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full' },
-  imports: [CoordinatorIndicatorsComponent, ConsolidadoAsistenciaComponent, RevisionesPendientesKpiComponent, KpiCardComponent, CoordinatorSolicitudesSesionComponent],
+  imports: [PageHeaderComponent, CoordinatorIndicatorsComponent, ConsolidadoAsistenciaComponent, RevisionesPendientesKpiComponent, KpiCardComponent, CoordinatorSolicitudesSesionComponent],
   template: `
     <div class="space-y-5 min-w-0">
-      <div>
-        <h1 class="font-serif font-bold text-2xl sm:text-3xl text-warm-900 tracking-tight">Asistencia del programa</h1>
-        <p class="text-sm text-warm-600 mt-1">
-          Indicadores del programa y consolidado por grupo; despliega un grupo para ver sus sesiones.
-        </p>
-      </div>
+      <app-page-header
+        titulo="Asistencia del programa"
+        descripcion="Indicadores del programa y consolidado por grupo; despliega un grupo para ver sus sesiones."
+      />
 
       <div class="max-w-sm">
         <app-revisiones-pendientes-kpi rol="COORDINADOR" />

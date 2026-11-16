@@ -13,6 +13,7 @@ import { ActionMenuComponent, ActionMenuItem } from '../../../shared/components/
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
 import { getSafeTextError } from '../../../core/validation/form-fields.util';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 type VistaFacultad = 'LISTA' | 'FORM';
 type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
@@ -20,27 +21,19 @@ type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
 @Component({
     selector: 'app-admin-facultades',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [FormsModule, PaginationComponent, ActionMenuComponent],
+    imports: [PageHeaderComponent, FormsModule, PaginationComponent, ActionMenuComponent],
     template: `
     <div class="space-y-6 animate-fade-in">
       <!-- ================= HEADER & BREADCRUMB ================= -->
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div class="flex items-center gap-2 text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1">
-            <span>Administración Institucional</span>
-            <span>/</span>
-            <span class="text-primary-700">Gobierno Universitario</span>
-          </div>
-          <h1 class="text-2xl sm:text-3xl font-serif font-bold text-warm-900 tracking-tight">
-            Gestión de Facultades
-          </h1>
-          <p class="text-sm text-warm-600 mt-0.5">
-            Administración de facultades institucionales, estructura académica y asignación de decanos titulares.
-          </p>
-        </div>
-
+      <app-page-header
+        etiqueta="Administración Institucional"
+        contexto="Gobierno Universitario"
+        titulo="Gestión de Facultades"
+        descripcion="Administración de facultades institucionales, estructura académica y asignación de decanos titulares."
+      >
         @if (vista() === 'LISTA') {
           <button
+            cabecera-acciones
             type="button"
             (click)="abrirFormularioCrear()"
             class="px-4 py-2.5 bg-primary-700 text-white rounded-xl text-sm font-semibold hover:bg-primary-800 shadow-sm transition-all flex items-center gap-2 shrink-0 self-start sm:self-auto"
@@ -51,7 +44,7 @@ type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
             <span>Nueva Facultad</span>
           </button>
         }
-      </div>
+      </app-page-header>
 
       <!-- ================= BENTO GRID OVERVIEW (SOLO EN VISTA LISTA) ================= -->
       @if (vista() === 'LISTA') {

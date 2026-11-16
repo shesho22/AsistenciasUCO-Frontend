@@ -8,39 +8,30 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { ButtonComponent } from '../../../shared/components/button/button.component';
 import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load-error.util';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 @Component({
     selector: 'app-teacher-schedule',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [RangoHorarioPipe, CardComponent, ButtonComponent],
+    imports: [PageHeaderComponent, RangoHorarioPipe, CardComponent, ButtonComponent],
     template: `
     <div class="space-y-6 animate-fade-in">
       <!-- Header Bento -->
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
-        <div>
-          <div class="flex items-center gap-2 mb-1">
-            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary-50 text-primary-800 border border-primary-200">
-              Carga Docente
-            </span>
-            <span class="text-xs text-warm-400">•</span>
-            <span class="text-xs font-medium text-warm-500">Semestre 2026-2</span>
-          </div>
-          <h1 class="font-serif font-bold text-2xl sm:text-3xl text-warm-900 tracking-tight">
-            Mi Horario Académico
-          </h1>
-          <p class="text-sm text-warm-600 mt-1">
-            Distribución semanal de tus clases presenciales y estudiantes por grupo.
-          </p>
-        </div>
-
+      <app-page-header
+        [enTarjeta]="true"
+        etiqueta="Carga Docente"
+        contexto="Semestre 2026-2"
+        titulo="Mi Horario Académico"
+        descripcion="Distribución semanal de tus clases presenciales y estudiantes por grupo."
+      >
         @if (!errorCarga()) {
-          <div class="flex items-center gap-2">
+          <div cabecera-acciones class="flex items-center gap-2">
             <span class="px-3 py-1.5 rounded-xl bg-warm-100 text-xs font-bold text-warm-800 border border-warm-200">
               {{ totalHorasSemanales() }} Horas / Semana
             </span>
           </div>
         }
-      </div>
+      </app-page-header>
 
       <!-- Grilla Semanal Bento (Lunes a Viernes) -->
       @if (isLoading()) {

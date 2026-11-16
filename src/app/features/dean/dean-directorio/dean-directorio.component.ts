@@ -18,6 +18,7 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
 import { ApiPageResponse } from '../../../core/api/models/api-page-response.model';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { FiltroEstado, ListadoPaginado, estadoComoFiltro } from '../../../shared/utils/listado-paginado';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 export type EntidadDirectorio = 'docentes' | 'estudiantes' | 'asignaturas' | 'grupos';
 
@@ -122,7 +123,7 @@ export function entidadValida(valor: string | null | undefined): EntidadDirector
     selector: 'app-dean-directorio',
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: { class: 'block w-full' },
-    imports: [
+    imports: [PageHeaderComponent, 
         FormsModule,
         BadgeComponent,
         ErrorCargaComponent,
@@ -133,10 +134,10 @@ export function entidadValida(valor: string | null | undefined): EntidadDirector
     ],
     template: `
     <div class="space-y-4 min-w-0">
-      <div>
-        <h1 class="font-serif font-bold text-2xl sm:text-3xl text-warm-900 tracking-tight">Directorio de la facultad</h1>
-        <p class="text-sm text-warm-600 mt-1">Docentes, estudiantes, asignaturas y grupos de los programas de tu facultad.</p>
-      </div>
+      <app-page-header
+        titulo="Directorio de la facultad"
+        descripcion="Docentes, estudiantes, asignaturas y grupos de los programas de tu facultad."
+      />
 
       <app-tabs-nav
         [tabs]="entidades"

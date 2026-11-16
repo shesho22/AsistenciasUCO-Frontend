@@ -7,6 +7,7 @@ import { ButtonComponent } from '../../../../shared/components/button/button.com
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 import { MateriaEstudianteItem } from '../../../../core/models/role-management.model';
 import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
+import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header.component';
 
 /** Minúsculas y sin tildes, para que "calculo" encuentre "Cálculo". */
 function normalizar(texto: string): string {
@@ -40,28 +41,18 @@ interface BarraHoras {
 @Component({
     selector: 'app-student-courses-list',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CardComponent, BadgeComponent, ButtonComponent, AttendanceStatusBadgeComponent, PaginationComponent],
+    imports: [PageHeaderComponent, CardComponent, BadgeComponent, ButtonComponent, AttendanceStatusBadgeComponent, PaginationComponent],
     template: `
     <div class="space-y-6">
       <!-- Header Bento -->
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
-        <div>
-          <div class="flex items-center gap-2 mb-1">
-            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary-50 text-primary-800 border border-primary-200">
-              Portal Estudiantil
-            </span>
-            <span class="text-xs text-warm-400">•</span>
-            <span class="text-xs font-medium text-warm-500">Plan de Estudios</span>
-          </div>
-          <h1 class="font-serif font-bold text-2xl sm:text-3xl text-warm-900 tracking-tight">
-            Gestión de Mis Materias
-          </h1>
-          <p class="text-sm text-warm-600 mt-1">
-            Selecciona una asignatura para abrir su vista completa de sesiones, revisar tu registro de asistencia y radicar justificaciones.
-          </p>
-        </div>
-
-        <div class="flex flex-wrap items-center gap-2.5">
+      <app-page-header
+        [enTarjeta]="true"
+        etiqueta="Portal Estudiantil"
+        contexto="Plan de Estudios"
+        titulo="Gestión de Mis Materias"
+        descripcion="Selecciona una asignatura para abrir su vista completa de sesiones, revisar tu registro de asistencia y radicar justificaciones."
+      >
+        <div cabecera-acciones class="flex flex-wrap items-center gap-2.5">
           <button
             type="button"
             (click)="openCodeEnrollment.emit()"
@@ -87,7 +78,7 @@ interface BarraHoras {
             Registrar asistencia con PIN
           </button>
         </div>
-      </div>
+      </app-page-header>
 
       <!-- Métricas Generales -->
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">

@@ -16,6 +16,7 @@ import { hasAnyRole } from '../../../core/models/user.model';
 import { environment } from '../../../../environments/environment';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { readDesignToken } from '../../../shared/utils/design-tokens';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 interface SecurityUiOptions {
   applicationId: string;
@@ -68,17 +69,15 @@ type ViewState = 'loading' | 'ready' | 'error' | 'unauthorized' | 'forbidden';
 
 @Component({
   selector: 'app-security-administration',
-  imports: [CommonModule, EmptyStateComponent],
+  imports: [PageHeaderComponent, CommonModule, EmptyStateComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="rounded-2xl border border-warm-200 bg-white p-6 shadow-warm-sm">
-      <div class="mb-5">
-        <p class="text-xs font-bold uppercase tracking-wider text-primary-700">Security Baseline</p>
-        <h1 class="mt-1 font-serif text-2xl font-bold text-warm-900">Administración de seguridad</h1>
-        <p class="mt-2 text-sm text-warm-600">
+      <app-page-header class="mb-5" contexto="Security Baseline" titulo="Administración de seguridad">
+        <p cabecera-detalle class="text-sm text-warm-600 mt-1">
           Recursos, roles, perfiles y asignaciones de <strong>AsistenciasUCO</strong>.
         </p>
-      </div>
+      </app-page-header>
 
       @if (state() === 'loading') {
         <p class="rounded-xl bg-warm-50 p-4 text-sm text-warm-700" role="status">

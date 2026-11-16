@@ -20,13 +20,14 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { AdminAuditoriaComponent } from './admin-auditoria.component';
 import { ParametrosAdministrationComponent } from '../../parametros/parametros-administration/parametros-administration.component';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
 
 @Component({
   selector: 'app-admin-system',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
+  imports: [PageHeaderComponent, 
     EmptyStateComponent,
     FechaHoraCortaPipe,
     FormsModule,
@@ -39,20 +40,13 @@ type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
     <div class="space-y-6">
      @if (modo === 'completo') {
       <!-- ================= HEADER & BREADCRUMB ================= -->
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div class="flex items-center gap-2 text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1">
-            <span>Gobierno de TI & Auditoría</span>
-            <span>/</span>
-            <span class="text-primary-700">Parámetros, Trazabilidad y Cierre Semestral</span>
-          </div>
-          <h1 class="text-2xl font-serif font-bold text-warm-900">Sistema, Auditoría y Consolidación</h1>
-          <p class="text-sm text-warm-600">
-            Ajuste de reglas de inasistencia, logs de auditoría y cierre masivo de asistencia por período.
-          </p>
-        </div>
-
-        <div class="flex flex-wrap items-center gap-2">
+      <app-page-header
+        etiqueta="Gobierno de TI & Auditoría"
+        contexto="Parámetros, Trazabilidad y Cierre Semestral"
+        titulo="Sistema, Auditoría y Consolidación"
+        descripcion="Ajuste de reglas de inasistencia, logs de auditoría y cierre masivo de asistencia por período."
+      >
+        <div cabecera-acciones class="flex flex-wrap items-center gap-2">
           <a
             routerLink="/app/admin/configuracion/correo"
             class="min-h-[44px] px-4 py-2 bg-warm-100 text-warm-800 border border-warm-300 rounded-xl text-xs font-bold hover:bg-warm-200 shadow-sm transition-all flex items-center gap-2"
@@ -70,7 +64,7 @@ type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
             <span>Cierre Masivo de Asistencia</span>
           </button>
         </div>
-      </div>
+      </app-page-header>
 
       <!-- ================= TABS SELECTOR ================= -->
       <div class="flex border-b border-warm-200 gap-2 overflow-x-auto" role="tablist" aria-label="Secciones del sistema">

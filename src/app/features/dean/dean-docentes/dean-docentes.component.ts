@@ -12,6 +12,7 @@ import { ErrorCargaComponent } from '../../../shared/components/error-carga/erro
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { FiltroEstado, ListadoPaginado, estadoComoFiltro } from '../../../shared/utils/listado-paginado';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 interface OpcionPrograma {
   id: string;
@@ -34,25 +35,20 @@ interface OpcionFacultad {
     selector: 'app-dean-docentes',
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: { class: 'block w-full' },
-    imports: [CommonModule, FormsModule, BadgeComponent, PaginationComponent, ErrorCargaComponent],
+    imports: [PageHeaderComponent, CommonModule, FormsModule, BadgeComponent, PaginationComponent, ErrorCargaComponent],
     template: `
     <div class="space-y-6 animate-fade-in">
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
-        <div>
-          <div class="flex items-center gap-2 mb-1">
-            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary-100 text-primary-900 border border-primary-200">{{ comoAdministrador ? 'Administración' : 'Decanatura' }}</span>
-            <span class="text-xs text-warm-400">•</span>
-            <span class="text-xs font-medium text-warm-500">Planta Docente</span>
-          </div>
-          <h1 class="font-serif font-bold text-2xl sm:text-3xl text-warm-900 tracking-tight">{{ comoAdministrador ? 'Docentes de la Institución' : 'Docentes de la Facultad' }}</h1>
-          <p class="text-sm text-warm-600 mt-1">
-            {{ comoAdministrador
-              ? 'Profesores con vínculo activo en los programas de la institución, filtrables por facultad y programa.'
-              : 'Profesores con vínculo activo en los programas de tu facultad, filtrables por programa.' }}
-          </p>
-        </div>
-        <span class="px-3.5 py-2 rounded-xl bg-warm-100 text-xs font-bold text-warm-800 border border-warm-200">{{ listado.total() }} Docentes</span>
-      </div>
+      <app-page-header
+        [enTarjeta]="true"
+        [etiqueta]="comoAdministrador ? 'Administración' : 'Decanatura'"
+        contexto="Planta Docente"
+        [titulo]="comoAdministrador ? 'Docentes de la Institución' : 'Docentes de la Facultad'"
+        [descripcion]="comoAdministrador
+          ? 'Profesores con vínculo activo en los programas de la institución, filtrables por facultad y programa.'
+          : 'Profesores con vínculo activo en los programas de tu facultad, filtrables por programa.'"
+      >
+        <span cabecera-acciones class="px-3.5 py-2 rounded-xl bg-warm-100 text-xs font-bold text-warm-800 border border-warm-200">{{ listado.total() }} Docentes</span>
+      </app-page-header>
 
       <section class="bg-white p-6 rounded-2xl border border-warm-200 shadow-warm-sm space-y-4">
         <div class="grid grid-cols-1 gap-3" [ngClass]="comoAdministrador ? 'sm:grid-cols-6' : 'sm:grid-cols-4'">

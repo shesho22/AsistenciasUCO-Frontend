@@ -24,6 +24,7 @@ import { etiquetaEstadoReclamo, etiquetaResultadoAprobacion, varianteEstadoRecla
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
 import { CLAIM_RESPONSE_MAX, getClaimResponseError } from '../../../core/validation/form-fields.util';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 const ETIQUETA_ESTADO_TOMA_RECLAMO: Readonly<Record<EstadoTomaEstudiante, string>> = {
   PRESENTE: 'Presente',
@@ -39,7 +40,7 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
 @Component({
     selector: 'app-teacher-claims',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [
+    imports: [PageHeaderComponent, 
     EmptyStateComponent,
     FormsModule,
     CardComponent,
@@ -54,30 +55,20 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
       <!-- 1. VISTA: BANDEJA GENERAL DE RECLAMOS -->
       @if (vistaActual() === 'BANDEJA') {
         <!-- Header Bento -->
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
-          <div>
-            <div class="flex items-center gap-2 mb-1">
-              <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary-50 text-primary-800 border border-primary-200">
-                Gestión Docente
-              </span>
-              <span class="text-xs text-warm-400">•</span>
-              <span class="text-xs font-medium text-warm-500">Bandeja de Novedades</span>
-            </div>
-            <h1 class="font-serif font-bold text-2xl sm:text-3xl text-warm-900 tracking-tight">
-              Reclamos y Justificaciones de Asistencia
-            </h1>
-            <p class="text-sm text-warm-600 mt-1">
-              Selecciona una solicitud para abrir su vista completa de revisión, examinar el caso del estudiante y decidir la justificación.
-            </p>
-          </div>
-
+        <app-page-header
+          [enTarjeta]="true"
+          etiqueta="Gestión Docente"
+          contexto="Bandeja de Novedades"
+          titulo="Reclamos y Justificaciones de Asistencia"
+          descripcion="Selecciona una solicitud para abrir su vista completa de revisión, examinar el caso del estudiante y decidir la justificación."
+        >
           <!-- Indicador de Pendientes -->
-          <div class="flex items-center gap-3">
+          <div cabecera-acciones class="flex items-center gap-3">
             <span class="px-3.5 py-1.5 rounded-xl bg-warning-50 text-warning-900 text-xs font-bold border border-warning-200">
               {{ totalPendientes() ?? '—' }} Pendientes por Resolver
             </span>
           </div>
-        </div>
+        </app-page-header>
 
         @if (listUnavailable()) {
           <div class="bg-warning-50 border border-warning-200 rounded-2xl p-4 text-sm text-warning-900">

@@ -25,6 +25,7 @@ import { CorreccionIdentidadService } from '../../../core/services/correccion-id
 import { CorregirIdentidadPayload, IdentidadActual } from '../../../core/models/correccion-identidad.model';
 import { CorreccionIdentidadModalComponent } from '../../../shared/components/correccion-identidad-modal/correccion-identidad-modal.component';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 type VistaAdmin = 'LISTA' | 'REGISTRO';
 
@@ -37,7 +38,7 @@ const NOMBRE_FACULTAD_MAX = 50;
 @Component({
   selector: 'app-admin-decanos',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
+  imports: [PageHeaderComponent, 
     ActionMenuComponent,
     CommonModule,
     FormsModule,
@@ -56,24 +57,14 @@ const NOMBRE_FACULTAD_MAX = 50;
       <!-- 1. VISTA: LISTA DE DECANOS -->
       @if (vistaActual() === 'LISTA') {
         <!-- Header Bento -->
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
-          <div>
-            <div class="flex items-center gap-2 mb-1">
-              <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary-50 text-primary-800 border border-primary-200">
-                Administración Central
-              </span>
-              <span class="text-xs text-warm-400">•</span>
-              <span class="text-xs font-medium text-warm-500">Módulo de Gobierno</span>
-            </div>
-            <h1 class="font-serif font-bold text-2xl sm:text-3xl text-warm-900 tracking-tight">
-              Gestión de Decanos
-            </h1>
-            <p class="text-sm text-warm-600 mt-1">
-              Administra los decanos asignados a cada facultad institucional y supervisa su estado activo.
-            </p>
-          </div>
-
-          <div class="flex items-center gap-3" data-testid="acciones-encabezado">
+        <app-page-header
+          [enTarjeta]="true"
+          etiqueta="Administración Central"
+          contexto="Módulo de Gobierno"
+          titulo="Gestión de Decanos"
+          descripcion="Administra los decanos asignados a cada facultad institucional y supervisa su estado activo."
+        >
+          <div cabecera-acciones class="flex items-center gap-3" data-testid="acciones-encabezado">
             <app-button variant="primary" size="md" (clicked)="abrirModalSeleccionarDecano()">
               <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
@@ -82,7 +73,7 @@ const NOMBRE_FACULTAD_MAX = 50;
             </app-button>
             <app-action-menu label="Más acciones" [items]="accionesEncabezado" (selected)="alElegirAccion($event)" />
           </div>
-        </div>
+        </app-page-header>
 
 
         <!-- Estado de acceso de la ultima cuenta registrada (verificado por el backend, nunca por la SPA) -->

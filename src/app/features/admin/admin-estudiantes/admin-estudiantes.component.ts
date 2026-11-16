@@ -18,6 +18,7 @@ import { AdmisionEstudianteModalComponent } from './admision-estudiante-modal.co
 import { CorreccionIdentidadModalComponent } from '../../../shared/components/correccion-identidad-modal/correccion-identidad-modal.component';
 import { FiltroEstado, ListadoPaginado, estadoComoFiltro } from '../../../shared/utils/listado-paginado';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 interface OpcionFacultad {
   id: string;
@@ -33,7 +34,7 @@ interface OpcionFacultad {
     selector: 'app-admin-estudiantes',
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: { class: 'block w-full' },
-    imports: [
+    imports: [PageHeaderComponent, 
     FormsModule,
     BadgeComponent,
     PaginationComponent,
@@ -45,17 +46,14 @@ interface OpcionFacultad {
 ],
     template: `
     <div class="space-y-6 animate-fade-in">
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
-        <div>
-          <div class="flex items-center gap-2 mb-1">
-            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary-100 text-primary-900 border border-primary-200">Administración</span>
-            <span class="text-xs text-warm-400">•</span>
-            <span class="text-xs font-medium text-warm-500">Gestión de Estudiantes</span>
-          </div>
-          <h1 class="font-serif font-bold text-2xl sm:text-3xl text-warm-900 tracking-tight">Estudiantes de la Institución</h1>
-          <p class="text-sm text-warm-600 mt-1">Busca estudiantes, consulta su ficha unificada, admite nuevos alumnos o corrige sus datos de identidad.</p>
-        </div>
-        <div class="flex items-center gap-3">
+      <app-page-header
+        [enTarjeta]="true"
+        etiqueta="Administración"
+        contexto="Gestión de Estudiantes"
+        titulo="Estudiantes de la Institución"
+        descripcion="Busca estudiantes, consulta su ficha unificada, admite nuevos alumnos o corrige sus datos de identidad."
+      >
+        <div cabecera-acciones class="flex items-center gap-3">
           <button
             type="button"
             (click)="abrirAdmision()"
@@ -65,7 +63,7 @@ interface OpcionFacultad {
           </button>
           <span class="px-3.5 py-2 rounded-xl bg-warm-100 text-xs font-bold text-warm-800 border border-warm-200">{{ listado.cargando() && listado.filas().length === 0 ? '…' : listado.total() }} Estudiantes</span>
         </div>
-      </div>
+      </app-page-header>
 
       <section class="bg-white p-6 rounded-2xl border border-warm-200 shadow-warm-sm space-y-4">
         <app-filtros-plegables [activos]="filtrosActivos()">

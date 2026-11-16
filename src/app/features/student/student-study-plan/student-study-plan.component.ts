@@ -9,6 +9,7 @@ import { CardComponent } from '../../../shared/components/card/card.component';
 import { BadgeComponent } from '../../../shared/components/badge/badge.component';
 import { ButtonComponent } from '../../../shared/components/button/button.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 const TIPOS_ASIGNATURA: Record<string, string> = {
   ESPECIFICA: 'Específica',
@@ -24,15 +25,13 @@ const TIPOS_ASIGNATURA: Record<string, string> = {
 @Component({
     selector: 'app-student-study-plan',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CardComponent, BadgeComponent, ButtonComponent],
+    imports: [PageHeaderComponent, CardComponent, BadgeComponent, ButtonComponent],
     template: `
     <div class="space-y-6 animate-fade-in">
-      <div>
-        <h1 class="font-serif text-2xl sm:text-3xl font-bold text-warm-900">Plan de estudios</h1>
-        <p class="text-sm text-warm-600 mt-1">
-          La estructura de tu programa por semestres, con los créditos de cada asignatura y las que cursas hoy.
-        </p>
-      </div>
+      <app-page-header
+        titulo="Plan de estudios"
+        descripcion="La estructura de tu programa por semestres, con los créditos de cada asignatura y las que cursas hoy."
+      />
 
       @if (cargando()) {
         <div class="space-y-3" aria-busy="true" data-testid="plan-cargando">

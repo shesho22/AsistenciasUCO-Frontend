@@ -7,32 +7,23 @@ import { EmptyStateComponent } from '../../../../shared/components/empty-state/e
 import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
 import { Course } from '../../../../core/models/course.model';
 import { CatalogoPrograma } from '../../../../core/models/programa-academico.model';
+import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header.component';
 
 @Component({
     selector: 'app-teacher-grupos-list',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [FormsModule, CardComponent, ButtonComponent, BadgeComponent, EmptyStateComponent],
+    imports: [PageHeaderComponent, FormsModule, CardComponent, ButtonComponent, BadgeComponent, EmptyStateComponent],
     template: `
     <div class="space-y-6 animate-fade-in">
       <!-- Header Bento -->
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
-        <div>
-          <div class="flex items-center gap-2 mb-1">
-            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-success-50 text-success-800 border border-success-200">
-              Portal Docente & Oferta Horaria
-            </span>
-            <span class="text-xs text-warm-400">•</span>
-            <span class="text-xs font-medium text-warm-500">Período Académico 2026-2</span>
-          </div>
-          <h1 class="font-serif font-bold text-2xl sm:text-3xl text-warm-900 tracking-tight">
-            Gestión Integral de Grupos y Sesiones
-          </h1>
-          <p class="text-sm text-warm-600 mt-1">
-            Crea tus grupos con su horario inicial (los cambios posteriores los aprueba el coordinador), programa sesiones y toma asistencia.
-          </p>
-        </div>
-
-        <div class="flex flex-wrap items-center gap-2.5">
+      <app-page-header
+        [enTarjeta]="true"
+        etiqueta="Portal Docente & Oferta Horaria"
+        contexto="Período Académico 2026-2"
+        titulo="Gestión Integral de Grupos y Sesiones"
+        descripcion="Crea tus grupos con su horario inicial (los cambios posteriores los aprueba el coordinador), programa sesiones y toma asistencia."
+      >
+        <div cabecera-acciones class="flex flex-wrap items-center gap-2.5">
           <app-button variant="secondary" size="md" (clicked)="irAsistencia.emit()">
             <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
@@ -40,7 +31,7 @@ import { CatalogoPrograma } from '../../../../core/models/programa-academico.mod
             Toma de Asistencia
           </app-button>
         </div>
-      </div>
+      </app-page-header>
 
       <!-- Resumen de Métricas Bento -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -27,6 +27,7 @@ import { FechaCortaPipe } from '../../../shared/pipes/fecha-hora.pipes';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { ApiPageResponse } from '../../../core/api/models/api-page-response.model';
 import { ApiDataResponse } from '../../../core/api/models/api-data-response.model';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 /** Estados que el decano puede filtrar en su consulta (códigos del catálogo del backend). */
 export const ESTADOS_FILTRABLES: ReadonlyArray<{ codigo: EstadoRevisionCancelacion; etiqueta: string }> = [
@@ -43,7 +44,7 @@ export const ESTADOS_FILTRABLES: ReadonlyArray<{ codigo: EstadoRevisionCancelaci
  */
 @Component({
   selector: 'app-revisiones-resolucion',
-  imports: [
+  imports: [PageHeaderComponent, 
     EmptyStateComponent,
     DecimalPipe,
     FormsModule,
@@ -55,26 +56,16 @@ export const ESTADOS_FILTRABLES: ReadonlyArray<{ codigo: EstadoRevisionCancelaci
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="space-y-6 animate-fade-in">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200 shadow-warm-sm">
-        <div>
-          <div class="flex items-center gap-2 text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1">
-            <span>{{ esDecano() ? 'Decanatura' : 'Coordinación' }}</span>
-            <span>/</span>
-            <span class="text-primary-700">Seguimiento Académico</span>
-          </div>
-          <h1 class="text-2xl font-serif font-bold text-warm-900">
-            {{ esDecano() ? 'Revisiones de cancelación de la facultad (consulta)' : 'Revisiones de Cancelación' }}
-          </h1>
-          <p class="text-sm text-warm-600 mt-0.5">
-            @if (esDecano()) {
-              Consulta de las revisiones de cancelación de matrícula por inasistencia de los grupos de tu facultad. La decisión final la toma el coordinador del programa.
-            } @else {
-              Decide si se cancela la matrícula de los estudiantes que el docente propuso cancelar por pérdida de inasistencia.
-            }
-          </p>
-        </div>
-
-        <div class="flex items-center gap-3">
+      <app-page-header
+        [enTarjeta]="true"
+        [etiqueta]="esDecano() ? 'Decanatura' : 'Coordinación'"
+        contexto="Seguimiento Académico"
+        [titulo]="esDecano() ? 'Revisiones de cancelación de la facultad (consulta)' : 'Revisiones de Cancelación'"
+        [descripcion]="esDecano()
+          ? 'Consulta de las revisiones de cancelación de matrícula por inasistencia de los grupos de tu facultad. La decisión final la toma el coordinador del programa.'
+          : 'Decide si se cancela la matrícula de los estudiantes que el docente propuso cancelar por pérdida de inasistencia.'"
+      >
+        <div cabecera-acciones class="flex items-center gap-3">
           @if (esDecano()) {
             <label class="flex items-center gap-2 text-xs font-medium text-warm-700">
               <span>Estado</span>
@@ -106,7 +97,7 @@ export const ESTADOS_FILTRABLES: ReadonlyArray<{ codigo: EstadoRevisionCancelaci
             {{ totalElementos() }} {{ totalElementos() === 1 ? 'registro' : 'registros' }}
           </span>
         </div>
-      </div>
+      </app-page-header>
 
       @if (errorCarga(); as err) {
         <div class="p-3.5 rounded-xl bg-danger-50 border border-danger-200 text-xs text-danger-800" role="alert">{{ err }}</div>
