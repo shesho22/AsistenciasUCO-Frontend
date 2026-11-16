@@ -44,6 +44,23 @@ describe('AdminEstudiantesComponent (HU157)', () => {
 
   afterEach(() => http.verify());
 
+  it('CIERRE-W1B: la corrección de identidad usa los cuatro campos de nombre del backend y no parte el nombre completo', () => {
+    const conNombres: EstudianteInstitucionItem = {
+      ...estudiante, primerNombre: 'Ana', segundoNombre: 'María', primerApellido: 'Ruiz', segundoApellido: 'Gómez',
+      nombres: 'Ana María', apellidos: 'Ruiz Gómez',
+    };
+    expect(component.identidadDe(conNombres)).toEqual({
+      primerNombre: 'Ana', segundoNombre: 'María', primerApellido: 'Ruiz', segundoApellido: 'Gómez',
+      numeroIdentificacion: '1017000111', codigoTipoIdentificacion: null, idTipoIdentificacion: null,
+    });
+
+    const sinNombres = component.identidadDe(estudiante);
+    expect(sinNombres.primerNombre).toBe('');
+    expect(sinNombres.primerApellido).toBe('');
+    expect(sinNombres.segundoNombre).toBeNull();
+    expect(sinNombres.segundoApellido).toBeNull();
+  });
+
   it('lista los estudiantes de la institución con facultades y programas', () => {
     const texto = fixture.nativeElement.textContent as string;
     expect(texto).toContain('Ana Ruiz');
