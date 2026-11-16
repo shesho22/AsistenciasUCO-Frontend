@@ -10,6 +10,7 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { ListadoPaginado } from '../../../shared/utils/listado-paginado';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
+import { ModalComponent } from '../../../shared/components/modal/modal.component';
 
 /** Rango por defecto (últimos 7 días, contando hoy) y máximo permitido por el backend. */
 export const DIAS_AUDITORIA_POR_DEFECTO = 7;
@@ -45,7 +46,7 @@ export function rangoUtc(desde: string, hasta: string): { desde: string; hasta: 
 @Component({
     selector: 'app-admin-auditoria',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [FechaHoraCortaPipe, FormsModule, BadgeComponent, PaginationComponent, ErrorCargaComponent],
+    imports: [ModalComponent, FechaHoraCortaPipe, FormsModule, BadgeComponent, PaginationComponent, ErrorCargaComponent],
     template: `
     <div class="space-y-4">
       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 bg-white p-4 rounded-2xl border border-warm-200 shadow-warm-sm">
@@ -200,38 +201,23 @@ export function rangoUtc(desde: string, hasta: string): { desde: string; hasta: 
 
       <!-- Modal de Visualización de Metadatos -->
       @if (metadataVisualizada()) {
-        <div
-          class="fixed inset-0 z-50 overflow-y-auto bg-warm-900/60 backdrop-blur-xs flex items-center justify-center p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="modal-metadata-title"
+        <app-modal
+          [isOpen]="true"
+          title="Metadatos de la Operación"
+          etiquetaCerrar="Cerrar visor de metadatos"
+          (closed)="metadataVisualizada.set(null)"
         >
-          <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-warm-xl border border-warm-200">
-            <div class="flex items-center justify-between mb-4 pb-2 border-b border-warm-100">
-              <h3 id="modal-metadata-title" class="text-sm font-bold text-warm-900">Metadatos de la Operación</h3>
-              <button
-                type="button"
-                (click)="metadataVisualizada.set(null)"
-                aria-label="Cerrar visor de metadatos"
-                class="min-h-[44px] min-w-[44px] flex items-center justify-center text-warm-400 hover:text-warm-700 transition-colors"
-              >
-                <svg aria-hidden="true" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <pre class="bg-warm-50 p-4 rounded-xl text-xs font-mono text-warm-800 overflow-x-auto max-h-80 border border-warm-200 whitespace-pre-wrap">{{ formatJson(metadataVisualizada()) }}</pre>
-            <div class="mt-4 flex justify-end">
-              <button
-                type="button"
-                (click)="metadataVisualizada.set(null)"
-                class="min-h-[44px] px-4 py-2 bg-warm-100 text-warm-800 rounded-xl text-xs font-bold hover:bg-warm-200 transition-colors"
-              >
-                Cerrar
-              </button>
-            </div>
+          <pre class="bg-warm-50 p-4 rounded-xl text-xs font-mono text-warm-800 overflow-x-auto max-h-80 border border-warm-200 whitespace-pre-wrap">{{ formatJson(metadataVisualizada()) }}</pre>
+          <div modal-footer>
+            <button
+              type="button"
+              (click)="metadataVisualizada.set(null)"
+              class="min-h-[44px] px-4 py-2 bg-warm-100 text-warm-800 rounded-xl text-xs font-bold hover:bg-warm-200 transition-colors"
+            >
+              Cerrar
+            </button>
           </div>
-        </div>
+        </app-modal>
       }
     </div>
   `

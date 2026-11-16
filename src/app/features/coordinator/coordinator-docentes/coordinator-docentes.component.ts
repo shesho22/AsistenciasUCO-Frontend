@@ -29,6 +29,7 @@ import { CoordinatorDocenteEditModalComponent } from './components/coordinator-d
 import { CoordinatorDocenteFichaModalComponent } from './components/coordinator-docente-ficha-modal.component';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
+import { ModalComponent } from '../../../shared/components/modal/modal.component';
 
 type FiltroEstado = 'TODOS' | 'ACTIVO' | 'INACTIVO';
 
@@ -38,7 +39,7 @@ const MIN_CARACTERES_CANDIDATOS = 3;
 @Component({
     selector: 'app-coordinator-docentes',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [PageHeaderComponent, 
+    imports: [ModalComponent, PageHeaderComponent, 
     FormsModule,
     CardComponent,
     BadgeComponent,
@@ -211,24 +212,22 @@ const MIN_CARACTERES_CANDIDATOS = 3;
       }
 
       @if (docentePendienteEstado(); as pendiente) {
-        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-warm-900/60 backdrop-blur-xs" role="dialog" aria-modal="true">
-          <div class="bg-white rounded-3xl shadow-warm-2xl border border-warm-200/80 w-full max-w-md p-6 space-y-4">
-            <h2 class="text-lg font-serif font-bold text-warm-900">
-              {{ pendiente.estaActivo ? 'Inactivar vinculación' : 'Reactivar vinculación' }}
-            </h2>
-            <p class="text-sm text-warm-700">
-              {{ pendiente.estaActivo
-                  ? 'El docente ' + pendiente.nombreCompleto + ' dejará de poder ser asignado como titular de nuevos grupos de este programa. Sus grupos actuales y su cuenta de acceso no cambian.'
-                  : 'El docente ' + pendiente.nombreCompleto + ' volverá a poder ser asignado como titular de grupos de este programa.' }}
-            </p>
-            <div class="flex justify-end gap-3 pt-2">
-              <button type="button" (click)="cancelarCambioEstado()" class="px-4 py-2 rounded-xl text-sm font-semibold bg-warm-100 text-warm-800 hover:bg-warm-200">Cancelar</button>
-              <button type="button" data-testid="confirmar-estado" (click)="confirmarCambioEstado()" class="px-4 py-2 rounded-xl text-sm font-semibold bg-primary-700 text-white hover:bg-primary-800">
-                {{ pendiente.estaActivo ? 'Inactivar' : 'Reactivar' }}
-              </button>
-            </div>
-          </div>
-        </div>
+        <app-modal
+          [isOpen]="true"
+          [title]="pendiente.estaActivo ? 'Inactivar vinculación' : 'Reactivar vinculación'"
+          tamano="md"
+          (closed)="cancelarCambioEstado()"
+        >
+          <p class="text-sm text-warm-700">
+            {{ pendiente.estaActivo
+                ? 'El docente ' + pendiente.nombreCompleto + ' dejará de poder ser asignado como titular de nuevos grupos de este programa. Sus grupos actuales y su cuenta de acceso no cambian.'
+                : 'El docente ' + pendiente.nombreCompleto + ' volverá a poder ser asignado como titular de grupos de este programa.' }}
+          </p>
+          <button modal-footer type="button" (click)="cancelarCambioEstado()" class="px-4 py-2 rounded-xl text-sm font-semibold bg-warm-100 text-warm-800 hover:bg-warm-200">Cancelar</button>
+          <button modal-footer type="button" data-testid="confirmar-estado" (click)="confirmarCambioEstado()" class="px-4 py-2 rounded-xl text-sm font-semibold bg-primary-700 text-white hover:bg-primary-800">
+            {{ pendiente.estaActivo ? 'Inactivar' : 'Reactivar' }}
+          </button>
+        </app-modal>
       }
 
       @if (docenteEnEdicion(); as enEdicion) {

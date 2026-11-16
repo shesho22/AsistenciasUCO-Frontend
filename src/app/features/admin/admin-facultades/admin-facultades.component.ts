@@ -14,6 +14,7 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
 import { getSafeTextError } from '../../../core/validation/form-fields.util';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
+import { ModalComponent } from '../../../shared/components/modal/modal.component';
 
 type VistaFacultad = 'LISTA' | 'FORM';
 type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
@@ -21,7 +22,7 @@ type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
 @Component({
     selector: 'app-admin-facultades',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [PageHeaderComponent, FormsModule, PaginationComponent, ActionMenuComponent],
+    imports: [ModalComponent, PageHeaderComponent, FormsModule, PaginationComponent, ActionMenuComponent],
     template: `
     <div class="space-y-6 animate-fade-in">
       <!-- ================= HEADER & BREADCRUMB ================= -->
@@ -359,179 +360,162 @@ type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
 
       <!-- ================= MODAL: CAMBIAR DECANO ================= -->
       @if (facultadParaDecano()) {
-        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-warm-950/40 backdrop-blur-xs animate-fade-in">
-          <div class="bg-white border border-warm-200 rounded-3xl max-w-md w-full shadow-warm-xl overflow-hidden animate-slide-down">
-            <div class="p-6 bg-warm-50 border-b border-warm-200/80 flex items-start justify-between">
-              <div>
-                <span class="text-[10px] font-bold uppercase tracking-wider text-primary-800 bg-primary-100 px-2.5 py-0.5 rounded-full border border-primary-200">
-                  Gobierno Académico
-                </span>
-                <h3 class="text-lg font-serif font-bold text-warm-900 mt-2">
-                  Cambiar Decano(a) Titular
-                </h3>
-                <p class="text-xs text-warm-600 mt-0.5">
-                  Facultad: <span class="font-bold text-warm-900">{{ facultadParaDecano()?.nombre }}</span>
-                </p>
-              </div>
-              <button
-                type="button"
-                (click)="cerrarModalDecano()"
-                class="p-1.5 rounded-full text-warm-400 hover:text-warm-700 hover:bg-warm-100 transition-colors"
+        <app-modal
+          [isOpen]="true"
+          title="Cambiar Decano(a) Titular"
+          tamano="md"
+          etiquetaCerrar="Cerrar"
+          [cerrarAlPulsarFondo]="false"
+          (closed)="cerrarModalDecano()"
+        >
+          <div modal-encabezado>
+            <p class="text-xs text-warm-600 mt-0.5">
+              Facultad: <span class="font-bold text-warm-900">{{ facultadParaDecano()?.nombre }}</span>
+            </p>
+            <span class="inline-block mt-2 text-[10px] font-bold uppercase tracking-wider text-primary-800 bg-primary-100 px-2.5 py-0.5 rounded-full border border-primary-200">
+              Gobierno Académico
+            </span>
+          </div>
+
+          <div class="space-y-4">
+            <div>
+              <label for="fac-decano-directorio" class="block text-xs font-bold text-warm-700 uppercase mb-1">
+                Seleccionar Decano(a) del Directorio
+              </label>
+              <select
+                id="fac-decano-directorio"
+                [(ngModel)]="decanoSeleccionadoId"
+                class="w-full px-3.5 py-2.5 rounded-xl border border-warm-200 text-sm focus:ring-2 focus:ring-primary-700/20 focus:border-primary-700 bg-white"
               >
-                ✕
-              </button>
+                <option value="">-- Seleccionar Profesional --</option>
+                @for (dec of decanos(); track dec.id) {
+                  <option [value]="dec.id">
+                    {{ dec.nombreCompleto || (dec.nombres + ' ' + dec.apellidos).trim() }} ({{ dec.tipoIdentificacion || 'CC' }} {{ dec.numeroIdentificacion }})
+                  </option>
+                }
+              </select>
+              @if (decanos().length === 0) {
+                <p class="text-[11px] text-warning-600 mt-1.5">
+                  No hay decanos registrados en el directorio central. Puedes registrar nuevos en la vista de Decanos.
+                </p>
+              }
             </div>
 
-            <div class="p-6 space-y-4">
-              <div>
-                <label for="fac-decano-directorio" class="block text-xs font-bold text-warm-700 uppercase mb-1">
-                  Seleccionar Decano(a) del Directorio
-                </label>
-                <select
-                  id="fac-decano-directorio"
-                  [(ngModel)]="decanoSeleccionadoId"
-                  class="w-full px-3.5 py-2.5 rounded-xl border border-warm-200 text-sm focus:ring-2 focus:ring-primary-700/20 focus:border-primary-700 bg-white"
-                >
-                  <option value="">-- Seleccionar Profesional --</option>
-                  @for (dec of decanos(); track dec.id) {
-                    <option [value]="dec.id">
-                      {{ dec.nombreCompleto || (dec.nombres + ' ' + dec.apellidos).trim() }} ({{ dec.tipoIdentificacion || 'CC' }} {{ dec.numeroIdentificacion }})
-                    </option>
-                  }
-                </select>
-                @if (decanos().length === 0) {
-                  <p class="text-[11px] text-warning-600 mt-1.5">
-                    No hay decanos registrados en el directorio central. Puedes registrar nuevos en la vista de Decanos.
+            <!-- Vista previa del decano seleccionado -->
+            @if (decanoSeleccionadoObjeto()) {
+              <div class="p-3 rounded-xl bg-warm-50 border border-warm-200 text-xs space-y-1">
+                <p class="font-bold text-warm-900">
+                  {{ decanoSeleccionadoObjeto()?.nombreCompleto || (decanoSeleccionadoObjeto()?.nombres + ' ' + decanoSeleccionadoObjeto()?.apellidos) }}
+                </p>
+                <p class="text-warm-600">
+                  <span class="text-warm-400">Documento:</span> {{ decanoSeleccionadoObjeto()?.tipoIdentificacion || 'CC' }} {{ decanoSeleccionadoObjeto()?.numeroIdentificacion }}
+                </p>
+                @if (decanoSeleccionadoObjeto()?.correo) {
+                  <p class="text-warm-600 truncate">
+                    <span class="text-warm-400">Correo:</span> {{ decanoSeleccionadoObjeto()?.correo }}
                   </p>
                 }
               </div>
+            }
 
-              <!-- Vista previa del decano seleccionado -->
-              @if (decanoSeleccionadoObjeto()) {
-                <div class="p-3 rounded-xl bg-warm-50 border border-warm-200 text-xs space-y-1">
-                  <p class="font-bold text-warm-900">
-                    {{ decanoSeleccionadoObjeto()?.nombreCompleto || (decanoSeleccionadoObjeto()?.nombres + ' ' + decanoSeleccionadoObjeto()?.apellidos) }}
-                  </p>
-                  <p class="text-warm-600">
-                    <span class="text-warm-400">Documento:</span> {{ decanoSeleccionadoObjeto()?.tipoIdentificacion || 'CC' }} {{ decanoSeleccionadoObjeto()?.numeroIdentificacion }}
-                  </p>
-                  @if (decanoSeleccionadoObjeto()?.correo) {
-                    <p class="text-warm-600 truncate">
-                      <span class="text-warm-400">Correo:</span> {{ decanoSeleccionadoObjeto()?.correo }}
-                    </p>
-                  }
-                </div>
-              }
-
-              <div class="flex items-center justify-end gap-3 pt-4 border-t border-warm-100">
-                <button
-                  type="button"
-                  (click)="cerrarModalDecano()"
-                  class="px-4 py-2 text-xs font-semibold text-warm-600 hover:text-warm-800"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  [disabled]="!decanoSeleccionadoId || guardandoDecano()"
-                  (click)="confirmarAsignacionDecano()"
-                  class="px-5 py-2.5 bg-primary-700 hover:bg-primary-800 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-sm transition-all"
-                >
-                  Asignar a Facultad
-                </button>
-              </div>
+            <div class="flex items-center justify-end gap-3 pt-4 border-t border-warm-100">
+              <button
+                type="button"
+                (click)="cerrarModalDecano()"
+                class="px-4 py-2 text-xs font-semibold text-warm-600 hover:text-warm-800"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                [disabled]="!decanoSeleccionadoId || guardandoDecano()"
+                (click)="confirmarAsignacionDecano()"
+                class="px-5 py-2.5 bg-primary-700 hover:bg-primary-800 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-sm transition-all"
+              >
+                Asignar a Facultad
+              </button>
             </div>
           </div>
-        </div>
+        </app-modal>
       }
 
       <!-- ================= MODAL: VER PROGRAMAS Y PLANES DE ESTUDIO (HU108) ================= -->
       @if (facultadSeleccionada()) {
-        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-warm-950/40 backdrop-blur-xs animate-fade-in">
-          <div class="bg-white border border-warm-200 rounded-3xl max-w-3xl w-full shadow-warm-xl overflow-hidden animate-slide-down">
-            <div class="p-6 bg-warm-50 border-b border-warm-200/80 flex items-start justify-between">
-              <div>
-                <div class="flex items-center gap-2 mb-1">
-                  <span class="text-xs font-semibold text-primary-800 bg-primary-50 px-2 py-0.5 rounded-md border border-primary-200">
-                    Estructura Curricular
-                  </span>
-                </div>
-                <h3 class="text-xl font-serif font-bold text-warm-900">
-                  {{ facultadSeleccionada()?.nombre }}
-                </h3>
-                <p class="text-xs text-warm-500 mt-0.5">
-                  Decano(a): <span class="font-bold text-warm-800">{{ facultadSeleccionada()?.decanoNombre || 'Titular designado' }}</span>
+        <app-modal
+          [isOpen]="true"
+          [title]="facultadSeleccionada()?.nombre ?? ''"
+          tamano="3xl"
+          etiquetaCerrar="Cerrar"
+          (closed)="facultadSeleccionada.set(null)"
+        >
+          <div modal-encabezado>
+            <p class="text-xs text-warm-500 mt-0.5">
+              Decano(a): <span class="font-bold text-warm-800">{{ facultadSeleccionada()?.decanoNombre || 'Titular designado' }}</span>
+            </p>
+            <span class="inline-block mt-2 text-xs font-semibold text-primary-800 bg-primary-50 px-2 py-0.5 rounded-md border border-primary-200">
+              Estructura Curricular
+            </span>
+          </div>
+
+          <div class="space-y-6">
+            <div>
+              <h4 class="text-xs font-bold uppercase tracking-wider text-warm-500 mb-3">
+                Planes de Estudio Vigentes
+              </h4>
+              @if (planes().length === 0) {
+                <p class="text-xs text-warm-500 italic">
+                  La consulta de planes por facultad no está disponible para el administrador; use la vista de la
+                  decanatura o de coordinación.
                 </p>
-              </div>
-              <button
-                type="button"
-                (click)="facultadSeleccionada.set(null)"
-                class="p-2 rounded-full text-warm-400 hover:text-warm-700 hover:bg-warm-100 transition-colors"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div class="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
-              <div>
-                <h4 class="text-xs font-bold uppercase tracking-wider text-warm-500 mb-3">
-                  Planes de Estudio Vigentes
-                </h4>
-                @if (planes().length === 0) {
-                  <p class="text-xs text-warm-500 italic">
-                    La consulta de planes por facultad no está disponible para el administrador; use la vista de la
-                    decanatura o de coordinación.
-                  </p>
-                } @else {
-                  <div class="space-y-4">
-                    @for (plan of planes(); track plan.id) {
-                      <div class="p-4 rounded-2xl border border-warm-200 bg-warm-50/40 space-y-3">
-                        <div class="flex items-center justify-between">
-                          <div>
-                            <span class="text-xs font-mono font-bold text-primary-800 bg-primary-50 px-2 py-0.5 rounded-md">
-                              {{ plan.codigo }}
-                            </span>
-                            <span class="font-bold text-sm text-warm-900 ml-2">{{ plan.nombre }}</span>
-                          </div>
-                          <span class="text-xs font-bold text-warm-600">
-                            {{ plan.totalCreditos ?? '—' }} créditos
+              } @else {
+                <div class="space-y-4">
+                  @for (plan of planes(); track plan.id) {
+                    <div class="p-4 rounded-2xl border border-warm-200 bg-warm-50/40 space-y-3">
+                      <div class="flex items-center justify-between">
+                        <div>
+                          <span class="text-xs font-mono font-bold text-primary-800 bg-primary-50 px-2 py-0.5 rounded-md">
+                            {{ plan.codigo }}
                           </span>
+                          <span class="font-bold text-sm text-warm-900 ml-2">{{ plan.nombre }}</span>
                         </div>
+                        <span class="text-xs font-bold text-warm-600">
+                          {{ plan.totalCreditos ?? '—' }} créditos
+                        </span>
+                      </div>
 
-                        <!-- Asignaturas del Plan -->
-                        <div class="pt-2 border-t border-warm-100">
-                          <span class="text-[10px] font-bold uppercase tracking-wider text-warm-400 block mb-2">
-                            Malla Curricular
-                          </span>
-                          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            @for (asig of getAsignaturasPlan(plan.id); track asig.id) {
-                              <div class="flex items-center justify-between p-2 rounded-xl bg-white border border-warm-200/80 text-xs">
-                                <span class="font-semibold text-warm-800 truncate">{{ asig.nombre }}</span>
-                                <span class="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-warm-100 text-warm-600">
-                                  {{ asig.creditos }} cr.
-                                </span>
-                              </div>
-                            }
-                          </div>
+                      <!-- Asignaturas del Plan -->
+                      <div class="pt-2 border-t border-warm-100">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-warm-400 block mb-2">
+                          Malla Curricular
+                        </span>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          @for (asig of getAsignaturasPlan(plan.id); track asig.id) {
+                            <div class="flex items-center justify-between p-2 rounded-xl bg-white border border-warm-200/80 text-xs">
+                              <span class="font-semibold text-warm-800 truncate">{{ asig.nombre }}</span>
+                              <span class="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-warm-100 text-warm-600">
+                                {{ asig.creditos }} cr.
+                              </span>
+                            </div>
+                          }
                         </div>
                       </div>
-                    }
-                  </div>
-                }
-              </div>
-            </div>
-
-            <div class="p-4 bg-warm-50 border-t border-warm-200 flex justify-end">
-              <button
-                type="button"
-                (click)="facultadSeleccionada.set(null)"
-                class="px-5 py-2 bg-warm-200 hover:bg-warm-300 text-warm-800 text-xs font-bold rounded-xl transition-colors"
-              >
-                Cerrar
-              </button>
+                    </div>
+                  }
+                </div>
+              }
             </div>
           </div>
-        </div>
+
+          <div modal-footer>
+            <button
+              type="button"
+              (click)="facultadSeleccionada.set(null)"
+              class="px-5 py-2 bg-warm-200 hover:bg-warm-300 text-warm-800 text-xs font-bold rounded-xl transition-colors"
+            >
+              Cerrar
+            </button>
+          </div>
+        </app-modal>
       }
     </div>
   `
