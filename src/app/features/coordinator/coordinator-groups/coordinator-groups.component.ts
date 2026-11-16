@@ -64,7 +64,7 @@ interface GrupoForm {
       </app-page-header>
 
       @if (vista() === 'LISTA') {
-        <div class="bg-white rounded-2xl border border-warm-200 shadow-warm-sm overflow-x-auto">
+        <div class="superficie overflow-x-auto">
           @if (cargando()) {
             <p class="p-6 text-sm text-warm-500">Cargando grupos...</p>
           } @else if (errorCarga()) {
@@ -114,7 +114,7 @@ interface GrupoForm {
       }
 
       @if (vista() === 'FORM') {
-        <form class="bg-white p-6 rounded-2xl border border-warm-200 shadow-warm-sm space-y-5 max-w-3xl" (ngSubmit)="guardar()">
+        <form class="superficie p-6 space-y-5 max-w-3xl" (ngSubmit)="guardar()">
           <h2 class="font-serif font-bold text-xl text-warm-900">{{ modo() === 'CREAR' ? 'Nuevo grupo' : 'Editar grupo' }}</h2>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">

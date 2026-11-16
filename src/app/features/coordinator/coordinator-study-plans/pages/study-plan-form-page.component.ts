@@ -23,7 +23,7 @@ import { mensajeUi } from '../../../../core/messages/mensajes-ui';
           (cancelar)="volver()"
         />
       } @else {
-        <div class="bg-white rounded-2xl border border-warm-200 p-12 text-center shadow-warm-sm">
+        <div class="superficie p-12 text-center">
           <p class="text-sm text-warm-500">Cargando información del plan de estudio...</p>
         </div>
       }

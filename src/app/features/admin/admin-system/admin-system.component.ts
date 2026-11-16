@@ -183,7 +183,7 @@ type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
           <div>
             <h3 class="text-base font-bold text-warm-900 mb-3">Historial de Cierres Masivos Realizados</h3>
             
-            <div class="bg-white border border-warm-200 rounded-2xl overflow-x-auto shadow-warm-sm">
+            <div class="superficie overflow-x-auto">
               <table class="w-full text-left text-sm">
                 <thead class="bg-warm-50 border-b border-warm-200 text-xs font-bold text-warm-600 uppercase tracking-wider">
                   <tr>

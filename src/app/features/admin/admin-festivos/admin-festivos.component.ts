@@ -55,7 +55,7 @@ const ANIO_VALIDO = /^\d{4}$/;
       </div>
 
       <!-- Selector de año -->
-      <section class="bg-white border border-warm-200 rounded-2xl p-4 shadow-warm-sm space-y-3" aria-label="Selector de año">
+      <section class="superficie p-4 space-y-3" aria-label="Selector de año">
         <div class="flex flex-wrap items-end gap-3">
           <div class="flex flex-col gap-1">
             <label for="festivos-anio" class="text-xs font-semibold text-warm-700">Año</label>

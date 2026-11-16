@@ -61,13 +61,13 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
           </button>
         </div>
       } @else if (periodosFiltrados().length === 0) {
-        <div class="bg-white rounded-2xl border border-warm-200 p-12 text-center shadow-warm-sm">
+        <div class="superficie p-12 text-center">
           <p class="text-sm text-warm-500">No se encontraron períodos académicos registrados.</p>
         </div>
       } @else {
         <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
           @for (p of periodosFiltrados(); track p.id) {
-            <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm space-y-3 flex flex-col justify-between h-full">
+            <div class="superficie p-5 space-y-3 flex flex-col justify-between h-full">
               <div>
                 <div class="flex items-center justify-between gap-2 mb-2">
                   <span class="text-xs font-mono font-bold px-2.5 py-1 rounded-md bg-warm-100 text-warm-800">

@@ -125,7 +125,7 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
             }
           </div>
         } @else if (filteredReclamos().length === 0) {
-          <div class="bg-white rounded-2xl border border-warm-200 p-12 text-center shadow-warm-sm">
+          <div class="superficie p-12 text-center">
             <div class="w-12 h-12 rounded-full bg-warm-100 text-warm-400 flex items-center justify-center mx-auto mb-3">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -239,7 +239,7 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
       <!-- 2. VISTA COMPLETA: EVALUACIÓN Y RESOLUCIÓN DEL RECLAMO -->
       @if (vistaActual() === 'RESOLUCION' && selectedReclamo()) {
         <!-- Barra Superior de Retorno -->
-        <div class="flex items-center justify-between bg-white p-4 rounded-2xl border border-warm-200 shadow-warm-sm">
+        <div class="superficie flex items-center justify-between p-4">
           <button
             type="button"
             (click)="volverABandeja()"
@@ -256,7 +256,7 @@ type ReclamosListState = 'LOADING' | 'LOADED' | 'UNAVAILABLE' | 'FORBIDDEN' | 'N
           </span>
         </div>
 
-        <div class="bg-white p-6 sm:p-8 rounded-2xl border border-warm-200 shadow-warm-sm max-w-4xl mx-auto space-y-6">
+        <div class="superficie p-6 sm:p-8 max-w-4xl mx-auto space-y-6">
           <!-- Encabezado con estado -->
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-warm-100">
             <div>

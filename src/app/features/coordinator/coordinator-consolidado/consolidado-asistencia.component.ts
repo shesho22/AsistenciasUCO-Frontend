@@ -69,7 +69,7 @@ export function acumularOpciones(opciones: Opcion[], filas: ConsolidadoGrupoItem
         <span cabecera-acciones class="px-3.5 py-2 rounded-xl bg-warm-100 text-xs font-bold text-warm-800 border border-warm-200">{{ listado.total() }} Grupos</span>
       </app-page-header>
 
-      <section class="bg-white p-6 rounded-2xl border border-warm-200 shadow-warm-sm space-y-4">
+      <section class="superficie p-6 space-y-4">
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <select aria-label="Cohorte (período académico)" [ngModel]="idPeriodo()" (ngModelChange)="filtrar(idPeriodo, $event)"
             class="px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-800">

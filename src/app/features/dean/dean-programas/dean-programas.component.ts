@@ -49,7 +49,7 @@ const TAMANO_CREDITOS = 100;
       @if (!embebido()) {
       <!-- KPIs Bento -->
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="p-4 rounded-2xl bg-white border border-warm-200 shadow-warm-sm flex items-center justify-between">
+        <div class="superficie p-4 flex items-center justify-between">
           <div>
             <span class="text-xs text-warm-500 font-medium">Planes Registrados</span>
             <p class="text-2xl font-serif font-bold text-warm-900">{{ cargandoEstructura() ? '—' : planes().length }}</p>
@@ -61,7 +61,7 @@ const TAMANO_CREDITOS = 100;
           </div>
         </div>
 
-        <div class="p-4 rounded-2xl bg-white border border-warm-200 shadow-warm-sm flex items-center justify-between">
+        <div class="superficie p-4 flex items-center justify-between">
           <div>
             <span class="text-xs text-warm-500 font-medium">Planes Vigentes</span>
             <p class="text-2xl font-serif font-bold text-success-700">{{ cargandoEstructura() ? '—' : planesVigentes() }}</p>
@@ -73,7 +73,7 @@ const TAMANO_CREDITOS = 100;
           </div>
         </div>
 
-        <div class="p-4 rounded-2xl bg-white border border-warm-200 shadow-warm-sm flex items-center justify-between">
+        <div class="superficie p-4 flex items-center justify-between">
           <div>
             <span class="text-xs text-warm-500 font-medium">Total Asignaturas</span>
             <p class="text-2xl font-serif font-bold text-primary-800">{{ totalAsignaturasTexto() }}</p>
@@ -110,17 +110,17 @@ const TAMANO_CREDITOS = 100;
           <p class="text-xs text-danger-700 mt-1">{{ errorEstructura() }}</p>
         </div>
       } @else if (cargandoEstructura()) {
-        <div class="bg-white rounded-2xl border border-warm-200 p-12 text-center shadow-warm-sm" role="status">
+        <div class="superficie p-12 text-center" role="status">
           <p class="text-sm text-warm-500">Cargando planes de estudio…</p>
         </div>
       } @else if (pagedPlanes().length === 0) {
-        <div class="bg-white rounded-2xl border border-warm-200 p-12 text-center shadow-warm-sm">
+        <div class="superficie p-12 text-center">
           <p class="text-sm text-warm-500">No se encontraron planes de estudio registrados.</p>
         </div>
       } @else {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           @for (plan of pagedPlanes(); track plan.id) {
-            <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm hover:border-primary-300 transition-all flex flex-col justify-between h-full space-y-3">
+            <div class="superficie p-5 hover:border-primary-300 transition-all flex flex-col justify-between h-full space-y-3">
               <div>
                 <div class="flex items-center justify-between gap-2 mb-1.5">
                   <span class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-warm-100 text-warm-800">

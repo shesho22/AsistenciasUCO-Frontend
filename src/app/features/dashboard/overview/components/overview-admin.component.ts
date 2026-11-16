@@ -18,22 +18,22 @@ import { DecanoItem } from '../../../../core/models/role-management.model';
     <div class="space-y-6">
       <!-- KPIs Administrador -->
       <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px]">
+        <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Facultades Activas</span>
           <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ totalFacultades() }}</p>
           <span class="text-[11px] text-success-700 font-medium">Sincronizadas con base de datos</span>
         </div>
-        <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px]">
+        <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Decanos en ejercicio</span>
           <p class="text-2xl font-serif font-bold text-warm-900 mt-1" data-testid="decanos-activos">{{ decanosActivos() }}</p>
           <span class="text-[11px] text-warm-500 font-medium"><app-cifra-con-base [valor]="decanosActivos()" [base]="decanos().length" [soloBase]="true" /></span>
         </div>
-        <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px]">
+        <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Programas Académicos</span>
           <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ totalProgramas() === null ? 'Sin datos' : totalProgramas() }}</p>
           <span class="text-[11px] text-primary-700 font-medium">De la institución</span>
         </div>
-        <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px]">
+        <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Asistencia Promedio Campus</span>
           <p class="text-2xl font-serif font-bold text-accent-700 mt-1" data-testid="asistencia-campus">{{ porcentajeAsistencia() === null ? 'Sin datos' : porcentajeAsistencia() + '%' }}</p>
           <span class="text-[11px] text-success-700 font-medium">Indicador institucional</span>

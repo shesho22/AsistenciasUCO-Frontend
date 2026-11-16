@@ -72,15 +72,15 @@ const MIN_CARACTERES_CANDIDATOS = 3;
       <!-- HU095: consolidado del directorio del programa (servidor), por estado y tipo de vinculacion -->
       @if (resumen(); as r) {
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4" data-testid="resumen-docentes">
-          <div class="bg-white p-4 rounded-2xl border border-warm-200/80 shadow-warm-sm">
+          <div class="superficie p-4">
             <p class="text-xs font-semibold text-warm-500 uppercase">Docentes vinculados</p>
             <p class="text-2xl font-bold text-warm-900">{{ r.totalDocentes }}</p>
           </div>
-          <div class="bg-white p-4 rounded-2xl border border-warm-200/80 shadow-warm-sm">
+          <div class="superficie p-4">
             <p class="text-xs font-semibold text-success-700 uppercase">Activos</p>
             <p class="text-2xl font-bold text-success-800">{{ r.totalActivos }}</p>
           </div>
-          <div class="bg-white p-4 rounded-2xl border border-warm-200/80 shadow-warm-sm">
+          <div class="superficie p-4">
             <p class="text-xs font-semibold text-warm-500 uppercase">Inactivos</p>
             <p class="text-2xl font-bold text-warm-700">{{ r.totalInactivos }}</p>
           </div>
@@ -145,7 +145,7 @@ const MIN_CARACTERES_CANDIDATOS = 3;
       } @else if (errorCarga()) {
         <app-error-carga [error]="errorCarga()!" (reintentar)="reintentarCarga()" />
       } @else if (docentes().length === 0) {
-        <div class="bg-white rounded-2xl border border-warm-200 p-12 text-center shadow-warm-sm">
+        <div class="superficie p-12 text-center">
           <h3 class="text-base font-semibold text-warm-900">No se encontraron docentes</h3>
           <p class="text-xs text-warm-500 mt-1">Ajuste la búsqueda o vincule un docente al programa.</p>
         </div>

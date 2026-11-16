@@ -68,7 +68,7 @@ export class PageHeaderComponent {
   protected readonly contenedorClases = computed(() => {
     const base = 'flex flex-col sm:flex-row sm:justify-between gap-4';
     const alinear = this.alineacion() === 'final' ? 'sm:items-end' : 'sm:items-center';
-    const tarjeta = this.enTarjeta() ? 'bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm' : '';
+    const tarjeta = this.enTarjeta() ? 'superficie p-6' : '';
     return `${base} ${alinear} ${tarjeta}`.trim();
   });
 }

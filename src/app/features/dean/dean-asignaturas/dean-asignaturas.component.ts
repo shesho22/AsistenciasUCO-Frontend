@@ -39,7 +39,7 @@ interface OpcionFacultad {
         <span cabecera-acciones class="px-3.5 py-2 rounded-xl bg-warm-100 text-xs font-bold text-warm-800 border border-warm-200">{{ listado.total() }} Asignaturas</span>
       </app-page-header>
 
-      <section class="bg-white p-6 rounded-2xl border border-warm-200 shadow-warm-sm space-y-4">
+      <section class="superficie p-6 space-y-4">
         <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
           <input
             type="text"

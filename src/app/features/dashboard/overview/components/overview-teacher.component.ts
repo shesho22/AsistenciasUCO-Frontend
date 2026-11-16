@@ -24,17 +24,17 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
 
       <!-- KPIs Docente -->
       <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px]">
+        <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Asignaturas a Cargo</span>
           <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ courses().length }}</p>
           <span class="text-[11px] text-primary-700 font-medium">Semestre 2026-II</span>
         </div>
-        <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px]">
+        <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Alumnos Matriculados</span>
           <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ totalStudentsCount() }}</p>
           <span class="text-[11px] text-warm-500 font-medium">Total en tus grupos</span>
         </div>
-        <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px]">
+        <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Reclamos Pendientes</span>
           <p class="text-2xl font-serif font-bold text-warm-900 mt-1" [ngClass]="(pendingClaimsCount() ?? 0) > 0 ? 'text-warning-600' : 'text-warm-900'">
             {{ pendingClaimsCount() ?? '—' }}
@@ -45,7 +45,7 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
             </span>
           }
         </div>
-        <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px]"
+        <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]"
              [ngClass]="{'border-primary-300 bg-primary-50/30 ring-1 ring-primary-400/20': $safeNavigationMigration(proximaClase()?.enCurso), 'border-primary-200/60': proximaClase() && !proximaClase()?.enCurso}">
           <div class="flex items-center justify-between">
             <span class="text-xs text-warm-500 font-medium">Próxima Clase</span>

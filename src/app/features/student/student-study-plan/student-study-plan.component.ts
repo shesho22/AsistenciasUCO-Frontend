@@ -55,7 +55,7 @@ const TIPOS_ASIGNATURA: Record<string, string> = {
       } @else {
         @for (plan of planes(); track plan.idPlanEstudio) {
           <section class="space-y-3" [attr.aria-labelledby]="'plan-' + plan.idPlanEstudio" data-testid="plan-estudio">
-            <div class="bg-white p-5 rounded-2xl border border-warm-200/80 shadow-warm-sm space-y-4">
+            <div class="superficie p-5 space-y-4">
               <div>
                 <h2 class="font-serif font-bold text-xl text-warm-900" [id]="'plan-' + plan.idPlanEstudio">{{ plan.nombrePrograma }}</h2>
                 @if (plan.inp !== null) {
@@ -87,7 +87,7 @@ const TIPOS_ASIGNATURA: Record<string, string> = {
 
             @for (semestre of plan.semestres; track semestre.idSemestrePlanEstudio) {
               <details
-                class="bg-white rounded-2xl border border-warm-200 shadow-warm-sm group"
+                class="superficie group"
                 [open]="abierto(plan, semestre)"
                 data-testid="semestre-plan"
               >

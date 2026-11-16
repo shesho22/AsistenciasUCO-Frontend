@@ -57,7 +57,7 @@ const MAX_SEMESTRES = 10;
           (cancelled)="asignaturaAQuitar.set(null)"
         />
       } @else {
-        <div class="bg-white rounded-2xl border border-warm-200 p-12 text-center shadow-warm-sm space-y-3">
+        <div class="superficie p-12 text-center space-y-3">
           <p class="text-sm text-warm-500">Cargando malla curricular del plan de estudio...</p>
           <button
             type="button"

@@ -59,17 +59,17 @@ type PestanaModulo = 'DIRECTORIO';
 
       <!-- KPIs Rápidos del Padrón Estudiantil -->
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="bg-white p-4 rounded-2xl border border-warm-200 shadow-warm-sm">
+        <div class="superficie p-4">
           <span class="text-xs text-warm-500 font-medium">Total en el Programa</span>
           <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ totalDirectorio() }}</p>
           <span class="text-[11px] text-warm-500">Estudiantes encontrados</span>
         </div>
-        <div class="bg-white p-4 rounded-2xl border border-warm-200 shadow-warm-sm">
+        <div class="superficie p-4">
           <span class="text-xs text-warm-500 font-medium">Activos en Página Actual</span>
           <p class="text-2xl font-serif font-bold text-success-700 mt-1">{{ totalActivosPagina() }}</p>
           <span class="text-[11px] text-success-700">Matrícula académica vigente</span>
         </div>
-        <div class="bg-white p-4 rounded-2xl border border-warm-200 shadow-warm-sm">
+        <div class="superficie p-4">
           <span class="text-xs text-warm-500 font-medium">Inactivos en Página Actual</span>
           <p class="text-2xl font-serif font-bold text-warm-700 mt-1">{{ totalInactivosPagina() }}</p>
           <span class="text-[11px] text-warm-500">Sin matrícula activa en el período</span>
@@ -114,7 +114,7 @@ type PestanaModulo = 'DIRECTORIO';
       } @else {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
           @for (est of paginatedDirectorio(); track est.id) {
-            <div class="bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm flex flex-col h-full justify-between gap-3">
+            <div class="superficie p-6 flex flex-col h-full justify-between gap-3">
               <div>
                 <div class="flex items-start justify-between gap-2 mb-2">
                   <span class="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-warm-100 text-warm-700">

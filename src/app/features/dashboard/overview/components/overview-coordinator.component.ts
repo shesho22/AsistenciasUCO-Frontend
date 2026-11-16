@@ -23,22 +23,22 @@ import { DocenteItem, PlanEstudioItem } from '../../../../core/models/role-manag
 
       <!-- KPIs Coordinador -->
       <section class="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px]">
+        <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Planta Docente Activa</span>
           <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ docentes().length }}</p>
           <span class="text-[11px] text-success-700 font-medium">100% con carga asignada</span>
         </div>
-        <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px]">
+        <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Grupos en Curso</span>
           <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ totalGrupos() }}</p>
           <span class="text-[11px] text-primary-700 font-medium">Periodo 2026-II</span>
         </div>
-        <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px]">
+        <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Estudiantes Registrados</span>
           <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ totalEstudiantes() }}</p>
           <span class="text-[11px] text-warm-500 font-medium">Padrón del programa</span>
         </div>
-        <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px]">
+        <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Estudiantes en Riesgo</span>
           <p class="text-2xl font-serif font-bold text-accent-700 mt-1" data-testid="estudiantes-riesgo">{{ estudiantesRiesgo() === null ? 'Sin datos' : estudiantesRiesgo() }}</p>
           <span class="text-[11px] text-warm-500 font-medium">Indicador del programa</span>
@@ -46,7 +46,7 @@ import { DocenteItem, PlanEstudioItem } from '../../../../core/models/role-manag
         <a
           routerLink="/app/coordinador/asistencia"
           data-testid="solicitudes-sesion-pendientes"
-          class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px] hover:bg-warm-50 transition-colors"
+          class="superficie p-5 flex flex-col justify-between h-full min-h-[120px] hover:bg-warm-50 transition-colors"
         >
           <span class="text-xs text-warm-500 font-medium">Solicitudes de sesión pendientes</span>
           <p class="text-2xl font-serif font-bold text-warning-700 mt-1" data-testid="solicitudes-sesion-valor">{{ solicitudesSesionPendientes() === null ? 'Sin datos' : solicitudesSesionPendientes() }}</p>
@@ -121,7 +121,7 @@ import { DocenteItem, PlanEstudioItem } from '../../../../core/models/role-manag
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
           @for (docente of docentes().slice(0, 3); track docente.id) {
-            <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between space-y-4">
+            <div class="superficie p-5 flex flex-col justify-between space-y-4">
               <div class="space-y-2">
                 <div class="flex items-center justify-between">
                   <span class="font-bold text-warm-900 text-sm">{{ docente.nombres }} {{ docente.apellidos }}</span>

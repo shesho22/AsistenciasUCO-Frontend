@@ -139,7 +139,7 @@ type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
 
         <!-- ================= LISTADO DE FACULTADES ================= -->
         @if (pagedFacultades().length === 0) {
-          <div class="bg-white rounded-2xl border border-warm-200 p-12 text-center shadow-warm-sm">
+          <div class="superficie p-12 text-center">
             <div class="w-12 h-12 rounded-full bg-warm-100 text-warm-400 flex items-center justify-center mx-auto mb-3">
               <svg aria-hidden="true" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
@@ -151,7 +151,7 @@ type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
         } @else {
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             @for (fac of pagedFacultades(); track fac.id) {
-              <div class="bg-white border border-warm-200 rounded-2xl p-5 shadow-warm-sm hover:shadow-warm-md transition-all flex flex-col justify-between h-full">
+              <div class="superficie p-5 hover:shadow-warm-md transition-all flex flex-col justify-between h-full">
                 <div>
                   <!-- Encabezado de Tarjeta -->
                   <div class="flex items-start justify-between gap-3 mb-2.5">
@@ -231,7 +231,7 @@ type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
 
       <!-- ================= 2. FORMULARIO: CREAR / EDITAR FACULTAD ================= -->
       @if (vista() === 'FORM') {
-        <div class="bg-white border border-warm-200 rounded-2xl p-6 sm:p-8 shadow-warm-sm max-w-xl mx-auto space-y-6">
+        <div class="superficie p-6 sm:p-8 max-w-xl mx-auto space-y-6">
           <div class="flex items-center justify-between pb-4 border-b border-warm-100">
             <div>
               <h2 class="text-xl font-serif font-bold text-warm-900">

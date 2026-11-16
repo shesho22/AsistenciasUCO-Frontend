@@ -151,7 +151,7 @@ export function entidadValida(valor: string | null | undefined): EntidadDirector
         id="panel-directorio"
         role="tabpanel"
         [attr.aria-labelledby]="'tab-' + entidadActiva()"
-        class="bg-white p-4 sm:p-6 rounded-2xl border border-warm-200 shadow-warm-sm space-y-4 min-w-0"
+        class="superficie p-4 sm:p-6 space-y-4 min-w-0"
       >
         <div class="flex items-center justify-between gap-3">
           <h2 class="font-serif font-bold text-lg text-warm-900">{{ config().plural }}</h2>
@@ -270,7 +270,7 @@ export function entidadValida(valor: string | null | undefined): EntidadDirector
           tabindex="-1"
           role="region"
           aria-label="Ficha del estudiante"
-          class="bg-white p-4 sm:p-6 rounded-2xl border border-warm-200 shadow-warm-sm space-y-4 outline-none focus:ring-2 focus:ring-primary-500/30"
+          class="superficie p-4 sm:p-6 space-y-4 outline-none focus:ring-2 focus:ring-primary-500/30"
         >
           <div class="flex items-start justify-between gap-3">
             <div>

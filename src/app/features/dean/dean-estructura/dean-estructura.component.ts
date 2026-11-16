@@ -37,7 +37,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
       }
 
       @for (f of facultades(); track f.id) {
-        <section class="bg-white p-6 rounded-2xl border border-warm-200 shadow-warm-sm space-y-4">
+        <section class="superficie p-6 space-y-4">
           @if (!embebido()) {
           <div class="flex items-center justify-between gap-3">
             <div>

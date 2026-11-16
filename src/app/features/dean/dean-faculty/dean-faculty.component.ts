@@ -17,7 +17,7 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
     template: `
     <div class="space-y-4">
       <!-- CULM-001: cabecera compacta de la facultad con tres cifras (grupos, planes, áreas) -->
-      <div class="bg-white p-4 sm:p-5 rounded-2xl border border-warm-200/80 shadow-warm-sm space-y-3" data-testid="cabecera-facultad">
+      <div class="superficie p-4 sm:p-5 space-y-3" data-testid="cabecera-facultad">
         <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <div class="min-w-0">
             <h2 class="font-serif font-bold text-xl text-warm-900 tracking-tight">{{ nombreFacultad() }}</h2>

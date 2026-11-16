@@ -65,7 +65,7 @@ describe('PageHeaderComponent', () => {
     expect(el().querySelector('h1 + p')).toBeNull();
     expect(el().querySelector('.rounded-full')).toBeNull();
     expect(contenedor().className).toContain('sm:items-center');
-    expect(contenedor().className).not.toContain('bg-white');
+    expect(contenedor().className).not.toContain('superficie');
   });
 
   it('muestra descripción, etiqueta, contexto y separador cuando se indican', () => {
@@ -95,7 +95,7 @@ describe('PageHeaderComponent', () => {
     anfitrion.alineacion.set('final');
     anfitrion.tituloTestId.set('titulo-x');
     render();
-    expect(contenedor().className).toContain('bg-white');
+    expect(contenedor().className).toContain('superficie');
     expect(contenedor().className).toContain('sm:items-end');
     expect(el().querySelector('[data-testid="titulo-x"]')?.tagName).toBe('H1');
   });
