@@ -17,22 +17,22 @@ import { CoordinadorItem } from '../../../../core/models/role-management.model';
     <div class="space-y-6">
       <!-- KPIs Decano -->
       <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px]">
+        <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Coordinadores Asignados</span>
           <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ coordinadores().length }}</p>
           <span class="text-[11px] text-primary-700 font-medium">Programas de facultad</span>
         </div>
-        <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px]">
+        <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Docentes de Facultad</span>
           <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ totalDocentes() }}</p>
           <span class="text-[11px] text-warm-500 font-medium">Asignados a los coordinadores</span>
         </div>
-        <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px]">
+        <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Grupos en Curso</span>
           <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ totalGrupos() ?? '—' }}</p>
           <span class="text-[11px] text-warm-500 font-medium">{{ periodo() ?? 'Sin período vigente' }}</span>
         </div>
-        <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-sm flex flex-col justify-between h-full min-h-[120px]">
+        <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Asistencia Promedio</span>
           <p class="text-2xl font-serif font-bold text-success-700 mt-1">{{ porcentajeAsistencia() === null ? 'Sin datos' : porcentajeAsistencia() + '%' }}</p>
           <span class="text-[11px] text-warm-500 font-medium">Período vigente de la facultad</span>
