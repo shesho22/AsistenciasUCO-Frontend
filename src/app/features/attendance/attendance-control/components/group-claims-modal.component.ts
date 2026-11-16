@@ -7,11 +7,12 @@ import { BadgeComponent, BadgeVariant } from '../../../../shared/components/badg
 import { type EstadoCargaReclamos, ResultadoAprobacionReclamo, SolicitudRevisionItem } from '../../../../core/models/role-management.model';
 import { Course } from '../../../../core/models/course.model';
 import { etiquetaEstadoReclamo, etiquetaResultadoAprobacion } from '../../../../core/utils/reclamo-estado.util';
+import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 
 @Component({
     selector: 'app-group-claims-modal',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [FormsModule, ModalComponent, ButtonComponent, BadgeComponent],
+    imports: [FormsModule, ModalComponent, ButtonComponent, BadgeComponent, PaginationComponent],
     template: `
     <app-modal
       [isOpen]="isOpen()"
@@ -31,7 +32,7 @@ import { etiquetaEstadoReclamo, etiquetaResultadoAprobacion } from '../../../../
           </div>
           <span data-testid="group-claims-count" class="px-2.5 py-1 rounded-full text-xs font-bold bg-warning-100 text-warning-900 border border-warning-200">
             @if (estadoCarga() === 'LOADED') {
-              {{ reclamos().length }} Registros
+              {{ totalReclamos() ?? reclamos().length }} Registros
             } @else if (estadoCarga() === 'LOADING') {
               Cargando…
             } @else {
@@ -62,7 +63,7 @@ import { etiquetaEstadoReclamo, etiquetaResultadoAprobacion } from '../../../../
                 <div class="flex items-center justify-between gap-2">
                   <div class="flex items-center gap-2 min-w-0">
                     <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-warm-100 text-warm-800">
-                      REC-#{{ rec.id.slice(0, 8).toUpperCase() }}
+                      {{ rec.folio }}
                     </span>
                     <h6 class="font-bold text-xs text-warm-900 truncate">{{ rec.estudianteNombre }}</h6>
                   </div>
@@ -124,6 +125,13 @@ import { etiquetaEstadoReclamo, etiquetaResultadoAprobacion } from '../../../../
               </div>
             }
           </div>
+          <app-pagination
+            [totalItems]="totalReclamos() ?? reclamos().length"
+            [pageSize]="tamano()"
+            [currentPage]="pagina()"
+            [showPageSizeSelector]="false"
+            (pageChange)="paginaChange.emit($event)"
+          />
         } @else if (estadoCarga() === 'FORBIDDEN' || estadoCarga() === 'UNAVAILABLE' || estadoCarga() === 'NETWORK_ERROR' || estadoCarga() === 'SERVER_ERROR') {
           <div role="alert" class="py-8 px-4 text-center space-y-3">
             @if (estadoCarga() === 'FORBIDDEN') {
@@ -164,9 +172,14 @@ export class GroupClaimsModalComponent {
   isOpen = input<boolean>(false);
   course = input<Course | null | undefined>(null);
   reclamos = input<SolicitudRevisionItem[]>([]);
+  /** Total del grupo según el servidor (la lista es solo la página vigente); sin él se usa la longitud de la lista. */
+  totalReclamos = input<number | null>(null);
+  pagina = input<number>(1);
+  tamano = input<number>(10);
   estadoCarga = input<EstadoCargaReclamos>('IDLE');
 
   closed = output<void>();
+  paginaChange = output<number>();
   resolver = output<{ id: string; accion: 'APROBADA' | 'RECHAZADA'; resultado?: ResultadoAprobacionReclamo }>();
   irABandejaGeneral = output<void>();
   reintentar = output<void>();

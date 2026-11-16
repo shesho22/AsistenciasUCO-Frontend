@@ -112,7 +112,7 @@ describe('AttendanceControlComponent contract corrections', () => {
     );
     attendanceClaimService.getReclamosDocente.and.returnValue(
       of({ exitoso: true, datos: [] })
-    );    attendanceClaimService.getReclamosDocentePorGrupo.and.returnValue(of([]) as never);
+    );    attendanceClaimService.getReclamosDocentePorGrupo.and.returnValue(of({ exitoso: true, datos: [], total: 0 }));
     realtimeAlerts$ = new Subject<RealtimeConnectionState>();
     realtimeSync = jasmine.createSpyObj<AttendanceRealtimeSyncService>(
       'AttendanceRealtimeSyncService',
@@ -611,24 +611,86 @@ describe('AttendanceControlComponent contract corrections', () => {
     expect(groupService.getStudentsByGroup).toHaveBeenCalledOnceWith('group-1');
   });
 
+  // CIERRE-W1A: el servidor filtra por grupo y pagina; el componente solo pide lo que muestra.
   describe('APP-05 dialogo de reclamos por grupo', () => {
     const GROUP_A = '3f0c1d2e-0000-4000-8000-000000000001';
-    const GROUP_B = '3f0c1d2e-0000-4000-8000-000000000002';
-    const claim = (id: string, grupoId: string) => ({ id, grupoId, estadoSolicitud: 'PENDIENTE' } as never);
+    const claim = (id: string, estadoSolicitud = 'PENDIENTE') => ({ id, grupoId: GROUP_A, estadoSolicitud } as never);
 
-    it('consulta por UUID aunque la bandera legacy este desactivada y conserva solo el grupo exacto', () => {
+    it('pide al servidor la primera página del grupo y el conteo de pendientes con una consulta de una fila', () => {
       const component = createComponent([activeStudent], []);
       attendanceClaimService.getReclamosDocentePorGrupo.calls.reset();
-      attendanceClaimService.getReclamosDocentePorGrupo.and.returnValue(
-        of([claim('a-1', GROUP_A), claim('b-1', GROUP_B)]) as never
+      attendanceClaimService.getReclamosDocentePorGrupo.and.callFake((_grupo, paginacion) =>
+        paginacion.estado === 'P'
+          ? of({ exitoso: true, datos: [claim('a-1')], total: 4 })
+          : of({ exitoso: true, datos: [claim('a-1'), claim('a-2', 'APROBADA')], total: 12 })
       );
       component.selectedCourseId.set(GROUP_A);
 
       component.abrirReclamosGrupo();
 
-      expect(attendanceClaimService.getReclamosDocentePorGrupo).toHaveBeenCalledOnceWith(GROUP_A);
-      expect(component.filteredGroupClaims().map((item) => item.id)).toEqual(['a-1']);
+      expect(attendanceClaimService.getReclamosDocentePorGrupo).toHaveBeenCalledWith(GROUP_A, { pagina: 1, tamano: 10 });
+      expect(attendanceClaimService.getReclamosDocentePorGrupo).toHaveBeenCalledWith(GROUP_A, { pagina: 1, tamano: 1, estado: 'P' });
+      expect(component.reclamosGrupo().map((item) => item.id)).toEqual(['a-1', 'a-2']);
+      expect(component.totalReclamosGrupo()).toBe(12);
+      expect(component.pendingClaimsCount()).toBe(4);
       expect(component.estadoCargaReclamos()).toBe('LOADED');
+    });
+
+    it('cambiar de página pide esa página al servidor', () => {
+      const component = createComponent([activeStudent], []);
+      attendanceClaimService.getReclamosDocentePorGrupo.and.returnValue(of({ exitoso: true, datos: [claim('a-1')], total: 25 }));
+      component.selectedCourseId.set(GROUP_A);
+      component.abrirReclamosGrupo();
+      attendanceClaimService.getReclamosDocentePorGrupo.calls.reset();
+
+      component.cambiarPaginaReclamos(3);
+
+      expect(component.paginaReclamosGrupo()).toBe(3);
+      expect(attendanceClaimService.getReclamosDocentePorGrupo).toHaveBeenCalledWith(GROUP_A, { pagina: 3, tamano: 10 });
+    });
+
+    it('si la página pedida quedó fuera de rango (se resolvieron reclamos), retrocede a la última página', () => {
+      const component = createComponent([activeStudent], []);
+      attendanceClaimService.getReclamosDocentePorGrupo.and.callFake((_grupo, paginacion) =>
+        paginacion.pagina === 3
+          ? of({ exitoso: true, datos: [], total: 12 })
+          : of({ exitoso: true, datos: [claim('a-9')], total: 12 })
+      );
+      component.selectedCourseId.set(GROUP_A);
+      component.abrirReclamosGrupo();
+
+      component.cambiarPaginaReclamos(3);
+
+      expect(component.paginaReclamosGrupo()).toBe(2);
+      expect(component.reclamosGrupo().map((item) => item.id)).toEqual(['a-9']);
+    });
+
+    it('si falla el conteo de pendientes la lista se muestra igual y el conteo sale de la página', () => {
+      const component = createComponent([activeStudent], []);
+      attendanceClaimService.getReclamosDocentePorGrupo.and.callFake((_grupo, paginacion) =>
+        paginacion.estado === 'P'
+          ? throwError(() => ({ status: 500 }))
+          : of({ exitoso: true, datos: [claim('a-1'), claim('a-2', 'APROBADA')], total: 2 })
+      );
+      component.selectedCourseId.set(GROUP_A);
+
+      component.abrirReclamosGrupo();
+
+      expect(component.estadoCargaReclamos()).toBe('LOADED');
+      expect(component.pendingClaimsCount()).toBe(1);
+    });
+
+    it('un grupo sin reclamos queda cargado y vacío', () => {
+      const component = createComponent([activeStudent], []);
+      attendanceClaimService.getReclamosDocentePorGrupo.and.returnValue(of({ exitoso: true, datos: [], total: 0 }));
+      component.selectedCourseId.set(GROUP_A);
+
+      component.abrirReclamosGrupo();
+
+      expect(component.estadoCargaReclamos()).toBe('LOADED');
+      expect(component.reclamosGrupo()).toEqual([]);
+      expect(component.totalReclamosGrupo()).toBe(0);
+      expect(component.pendingClaimsCount()).toBe(0);
     });
 
     it('mantiene 403, 501, red y 5xx como error y no como lista vacia', () => {
@@ -648,7 +710,7 @@ describe('AttendanceControlComponent contract corrections', () => {
         component.abrirReclamosGrupo();
 
         expect(component.estadoCargaReclamos()).toBe(caso.esperado);
-        expect(component.filteredGroupClaims()).toEqual([]);
+        expect(component.reclamosGrupo()).toEqual([]);
       }
     });
   });
