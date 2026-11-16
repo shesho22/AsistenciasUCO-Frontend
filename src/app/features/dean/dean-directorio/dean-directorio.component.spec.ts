@@ -367,24 +367,39 @@ describe('DeanDirectorioComponent (CULM-001)', () => {
       expect(texto(f)).not.toContain('/ 30');
     });
 
-    it('filtra por texto en el cliente y pagina sin volver a pedir los grupos', () => {
+    it('envía búsqueda y página al servidor y muestra el total real', () => {
       const f = crear('grupos');
-      http.expectOne(porUrl(GRUPOS)).flush(
-        paginaApi(Array.from({ length: 12 }, (_, i) => grupo(String(i + 1), 20, { nombreAsignatura: i === 11 ? 'Álgebra' : `Materia ${i + 1}` })))
-      );
+      const primera = http.expectOne(porUrl(GRUPOS));
+      expect(primera.request.params.get('pagina')).toBe('1');
+      expect(primera.request.params.get('tamano')).toBe('10');
+      expect(primera.request.params.has('busqueda')).toBeFalse();
+      primera.flush(paginaApi(Array.from({ length: 10 }, (_, i) => grupo(String(i + 1), 20)), 1, 10, 12));
       f.detectChanges();
       expect(f.componentInstance.listado.total()).toBe(12);
       expect(f.componentInstance.listado.filas().length).toBe(10);
 
       f.componentInstance.listado.irAPagina(2);
-      http.expectNone(porUrl(GRUPOS));
+      const segunda = http.expectOne(porUrl(GRUPOS));
+      expect(segunda.request.params.get('pagina')).toBe('2');
+      segunda.flush(paginaApi([grupo('11', 20), grupo('12', 20)], 2, 10, 12));
       expect(f.componentInstance.listado.filas().length).toBe(2);
 
       f.componentInstance.busqueda.set('álgebra');
       f.componentInstance.buscar();
-      http.expectNone(porUrl(GRUPOS));
+      const filtrada = http.expectOne(porUrl(GRUPOS));
+      expect(filtrada.request.params.get('busqueda')).toBe('álgebra');
+      expect(filtrada.request.params.get('pagina')).toBe('1');
+      filtrada.flush(paginaApi([grupo('12', 20, { nombreAsignatura: 'Álgebra' })], 1, 10, 1));
       expect(f.componentInstance.listado.total()).toBe(1);
       expect(f.componentInstance.listado.filas()[0].id).toBe('12');
+    });
+
+    it('sin resultados del servidor muestra la lista vacía', () => {
+      const f = crear('grupos');
+      http.expectOne(porUrl(GRUPOS)).flush(paginaApi([], 1, 10, 0));
+      f.detectChanges();
+      expect(f.componentInstance.listado.total()).toBe(0);
+      expect(texto(f)).toContain('No se encontraron grupos');
     });
 
     it('«Ver sesiones» navega al detalle del grupo', () => {
@@ -396,7 +411,7 @@ describe('DeanDirectorioComponent (CULM-001)', () => {
       expect(navegar).toHaveBeenCalledWith(['/app/decano/grupos', '1']);
     });
 
-    it('mientras responde no muestra «No se encontraron»; un grupo sin respuesta no queda en caché tras un error', () => {
+    it('mientras responde no muestra «No se encontraron»; un error de carga se muestra con reintento', () => {
       const f = crear('grupos');
       expect(texto(f)).not.toContain('No se encontraron grupos');
       http.expectOne(porUrl(GRUPOS)).flush({}, { status: 500, statusText: 'Error' });

@@ -33,6 +33,12 @@ import { ModalComponent } from '../../../../../shared/components/modal/modal.com
           />
         </div>
 
+        @if (error(); as mensaje) {
+          <p role="alert" data-testid="matricula-error" class="text-sm font-semibold text-danger-700 bg-danger-50 border border-danger-200 rounded-xl px-3 py-2 text-center">
+            {{ mensaje }}
+          </p>
+        }
+
         <div class="p-3.5 rounded-xl bg-primary-50/50 border border-primary-100 text-xs text-warm-600 space-y-1">
           <p class="font-semibold text-primary-900">Inscripción inmediata</p>
           <p class="text-xs leading-relaxed">
@@ -63,6 +69,8 @@ import { ModalComponent } from '../../../../../shared/components/modal/modal.com
 export class StudentMatriculaCodigoModalComponent {
   isOpen = input<boolean>(false);
   processing = input<boolean>(false);
+  /** Mensaje del backend cuando la matrícula fue rechazada (p. ej. MQR_001): se ve dentro del modal. */
+  error = input<string | null>(null);
   /** Token de QR inicial (F-EST-012). */
   tokenInicial = input<string>('');
   /** PIN que ya conoce el flujo (p. ej. viene del login); se copia al campo al abrir el modal. */

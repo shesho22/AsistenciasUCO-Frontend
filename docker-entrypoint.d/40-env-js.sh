@@ -4,6 +4,13 @@ set -eu
 template="/usr/share/nginx/html/assets/env.template.js"
 target="/usr/share/nginx/html/assets/env.js"
 
+# Fail-closed: la SPA simulada (USE_MOCKS=true) no debe servirse por accidente en un despliegue real. Solo arranca si ademas se
+# declara ALLOW_MOCKS=true, de uso exclusivo de laboratorio.
+if [ "${USE_MOCKS:-false}" = "true" ] && [ "${ALLOW_MOCKS:-false}" != "true" ]; then
+  echo "USE_MOCKS=true no esta permitido: la interfaz simulada es solo de laboratorio. Para usarla declare tambien ALLOW_MOCKS=true; en un despliegue real use USE_MOCKS=false." >&2
+  exit 1
+fi
+
 if [ -f "$template" ]; then
   API_URL="${API_URL:-http://localhost:8080/api/v1}"
   KEYCLOAK_URL="${KEYCLOAK_URL:-http://127.0.0.1:8081}"

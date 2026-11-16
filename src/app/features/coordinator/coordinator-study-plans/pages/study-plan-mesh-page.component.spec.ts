@@ -218,12 +218,69 @@ describe('CoordinatorStudyPlanMeshPageComponent', () => {
     expect(component.selectedPlan()?.totalSemestres).toBe(10);
   });
 
-  it('eliminarSemestreVacio avisa sin llamar al backend si el último semestre tiene asignaturas (codigoSemestre)', () => {
-    component.asignaturas.set([{ id: 'a-10', codigoSemestre: 'S10' } as never]);
+  it('eliminarSemestreVacio no decide en el cliente si el semestre tiene asignaturas: lo resuelve el backend', () => {
     component.eliminarSemestreVacio();
 
-    http.expectNone(`${environment.apiUrl}/coordinador/planes-estudio/PLAN-SIS-2024/semestres/10`);
-    expect(component.aviso()).toContain('El semestre 10 tiene asignaturas');
+    const delReq = http.expectOne(`${environment.apiUrl}/coordinador/planes-estudio/PLAN-SIS-2024/semestres/10`);
+    expect(delReq.request.method).toBe('DELETE');
+    delReq.flush({ exitoso: true, datos: null });
+  });
+
+  describe('malla filtrada y paginada en el servidor', () => {
+    it('envía semestre, código de carácter, búsqueda y página, y muestra el total real', () => {
+      component.alCambiarFiltros({ busqueda: 'algoritmos', semestre: 3, caracter: 'OBL' });
+      const req = http.expectOne(porUrl(urlMalla));
+      expect(req.request.params.get('semestre')).toBe('3');
+      expect(req.request.params.get('caracter')).toBe('OBL');
+      expect(req.request.params.get('busqueda')).toBe('algoritmos');
+      expect(req.request.params.get('pagina')).toBe('1');
+      expect(req.request.params.get('tamano')).toBe('9');
+      req.flush(paginaApi([vinculo], 1, 9, 25));
+      fixture.detectChanges();
+
+      expect(component.listado.total()).toBe(25);
+      expect((fixture.nativeElement as HTMLElement).textContent).toContain('Asignaturas: 25');
+      expect(fixture.nativeElement.querySelector('app-pagination')).not.toBeNull();
+    });
+
+    it('sin filtros no envía semestre, carácter ni búsqueda', () => {
+      component.alCambiarFiltros({ busqueda: '', semestre: 0, caracter: '' });
+      const req = http.expectOne(porUrl(urlMalla));
+      expect(req.request.params.has('semestre')).toBeFalse();
+      expect(req.request.params.has('caracter')).toBeFalse();
+      expect(req.request.params.has('busqueda')).toBeFalse();
+      req.flush(paginaApi([]));
+    });
+
+    it('cambiar de página vuelve a consultar al servidor con esa página', () => {
+      component.listado.irAPagina(2);
+      const req = http.expectOne(porUrl(urlMalla));
+      expect(req.request.params.get('pagina')).toBe('2');
+      req.flush(paginaApi([vinculo], 2, 9, 12));
+      expect(component.listado.pagina()).toBe(2);
+    });
+
+    it('un error de carga se muestra como error con reintento, no como malla vacía', () => {
+      component.alCambiarFiltros({ busqueda: '', semestre: 0, caracter: '' });
+      http.expectOne(porUrl(urlMalla)).flush({ message: 'Fallo' }, { status: 500, statusText: 'Error' });
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('[data-testid="error-carga"]')).not.toBeNull();
+      expect(el.textContent).not.toContain('No hay asignaturas registradas');
+      expect(toastSpy.error).toHaveBeenCalled();
+
+      component.listado.reintentar();
+      http.expectOne(porUrl(urlMalla)).flush(paginaApi([vinculo]));
+      fixture.detectChanges();
+      expect(el.querySelector('[data-testid="error-carga"]')).toBeNull();
+    });
+
+    it('una malla sin resultados muestra el mensaje de vacío', () => {
+      component.alCambiarFiltros({ busqueda: 'zzz', semestre: 0, caracter: '' });
+      http.expectOne(porUrl(urlMalla)).flush(paginaApi([]));
+      fixture.detectChanges();
+      expect((fixture.nativeElement as HTMLElement).textContent).toContain('No hay asignaturas registradas');
+    });
   });
 
   it('eliminarSemestreVacio con un solo semestre avisa que debe conservarlo', () => {

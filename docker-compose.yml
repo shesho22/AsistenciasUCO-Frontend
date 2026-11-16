@@ -11,6 +11,8 @@ services:
       KEYCLOAK_REALM: ${KEYCLOAK_REALM:-asistencias-uco}
       KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-asistencias-uco-frontend}
       USE_MOCKS: ${USE_MOCKS:-false}
+      # Solo laboratorio: USE_MOCKS=true exige ALLOW_MOCKS=true (docker-entrypoint.d/40-env-js.sh); sin él el contenedor no arranca.
+      ALLOW_MOCKS: ${ALLOW_MOCKS:-false}
       SECURITY_PROVIDER: ${SECURITY_PROVIDER:-baseline}
       SECURITY_BASELINE_URL: ${SECURITY_BASELINE_URL:-http://localhost:18080}
       SECURITY_BASELINE_UI_URL: ${SECURITY_BASELINE_UI_URL:-http://localhost:5175}

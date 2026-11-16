@@ -3,7 +3,8 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiPageResponse, ApiResponse } from '../models/api-response.model';
-import { obtenerTodasLasPaginas } from '../api/pagination.util';
+import { ApiPageResponse as PaginaApi } from '../api/models/api-page-response.model';
+import { obtenerTodasLasPaginas, paramsSinVacios } from '../api/pagination.util';
 import { CoordinatorProgramService } from './coordinator-program.service';
 import {
   ActualizarDocentePayload,
@@ -355,7 +356,22 @@ export class CoordinatorManagementService {
     );
   }
 
-  /** Malla vigente del plan (vínculos activos). Lee todas las páginas; la UI filtra y pagina sobre la lista. */
+  /**
+   * Una página de la malla del plan: semestre, carácter (código), búsqueda y paginación los resuelve el servidor
+   * (`totalElementos` es el total real). Un plan ajeno o inexistente responde 404 (PLA_002).
+   */
+  getAsignaturasPlanPagina(
+    planId: string,
+    filtro: { semestre?: number | null; caracter?: string | null; busqueda?: string | null; pagina: number; tamano: number }
+  ): Observable<PaginaApi<AsignaturaPlanItem>> {
+    return this.http
+      .get<PaginaApi<AsignaturaPlanItem>>(`${environment.apiUrl}/coordinador/planes-estudio/${planId}/asignaturas`, {
+        params: paramsSinVacios({ ...filtro, semestre: filtro.semestre || null }),
+      })
+      .pipe(map((page) => ({ ...page, elementos: (page.elementos ?? []).map(normalizarAsignaturaPlan) })));
+  }
+
+  /** Malla vigente del plan (vínculos activos). Lee todas las páginas: solo para pantallas que necesitan la lista completa (selectores). */
   getAsignaturasPorPlan(planId: string): Observable<ApiResponse<AsignaturaPlanItem[]>> {
     return obtenerTodasLasPaginas<AsignaturaPlanItem>(
       this.http,

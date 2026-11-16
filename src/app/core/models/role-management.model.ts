@@ -447,6 +447,8 @@ export interface FacultadItem {
   nombre: string;
   decanoId?: string;
   decanoNombre?: string;
+  /** Institución a la que pertenece la facultad, tal como la entrega el backend. */
+  idInstitucion?: string;
   estado: 'ACTIVO' | 'INACTIVO';
   totalProgramas?: number;
   totalEstudiantes?: number;

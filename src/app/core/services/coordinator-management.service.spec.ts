@@ -588,6 +588,40 @@ describe('CoordinatorManagementService', () => {
       expect(service.getAsignaturasPlan('plan-1').length).toBe(1);
     });
 
+    it('getAsignaturasPlanPagina envía los filtros al servidor y conserva el total real', () => {
+      let total = 0;
+      let cantidad = 0;
+      service
+        .getAsignaturasPlanPagina('plan-1', { semestre: 2, caracter: 'OBL', busqueda: ' calc ', pagina: 2, tamano: 9 })
+        .subscribe((page) => {
+          total = page.totalElementos;
+          cantidad = page.elementos.length;
+        });
+
+      const req = http.expectOne(porUrl(`${environment.apiUrl}/coordinador/planes-estudio/plan-1/asignaturas`));
+      expect(req.request.params.get('semestre')).toBe('2');
+      expect(req.request.params.get('caracter')).toBe('OBL');
+      expect(req.request.params.get('busqueda')).toBe('calc');
+      expect(req.request.params.get('pagina')).toBe('2');
+      expect(req.request.params.get('tamano')).toBe('9');
+      req.flush(paginaApi([{ idAsignatura: 'a-1', codigo: 'MAT101', nombre: 'Cálculo' }], 2, 9, 19));
+      expect(total).toBe(19);
+      expect(cantidad).toBe(1);
+    });
+
+    it('getAsignaturasPlanPagina omite semestre 0 y filtros vacíos, y propaga el error', () => {
+      let status = 0;
+      service
+        .getAsignaturasPlanPagina('plan-1', { semestre: 0, caracter: '', busqueda: '', pagina: 1, tamano: 9 })
+        .subscribe({ error: (e) => (status = e.status) });
+      const req = http.expectOne(porUrl(`${environment.apiUrl}/coordinador/planes-estudio/plan-1/asignaturas`));
+      expect(req.request.params.has('semestre')).toBeFalse();
+      expect(req.request.params.has('caracter')).toBeFalse();
+      expect(req.request.params.has('busqueda')).toBeFalse();
+      req.flush({}, { status: 404, statusText: 'Not Found' });
+      expect(status).toBe(404);
+    });
+
     it('crearAsignaturaPlan agrega una asignatura y actualiza el contador de asignaturas del plan', () => {
       const nuevaAsig: Partial<AsignaturaPlanItem> = {
         codigo: 'PRG101',

@@ -257,11 +257,10 @@ type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
               <select
                 id="fac-institucion"
                 [(ngModel)]="formFacultad.idInstitucion"
+                [disabled]="facultadEnEdicion !== null"
                 class="w-full px-3.5 py-2.5 rounded-xl border border-warm-200 text-sm focus:ring-2 focus:ring-primary-700/20 focus:border-primary-700 bg-white"
               >
-                @if (instituciones().length === 0) {
-                  <option value="">Cargando instituciones...</option>
-                }
+                <option value="">{{ instituciones().length === 0 ? 'Cargando instituciones...' : '-- Seleccionar institución --' }}</option>
                 @for (inst of instituciones(); track inst.id) {
                   <option [value]="inst.id">{{ inst.nombre }}</option>
                 }
@@ -634,14 +633,11 @@ export class AdminFacultadesComponent implements OnInit {
 
   abrirFormularioCrear(): void {
     this.facultadEnEdicion = null;
-    const inst = this.instituciones();
-    const instId = inst.length > 0 ? inst[0].id : '';
-    const decs = this.decanos();
-    const decId = decs.length > 0 ? decs[0].id : '';
+    // Sin valores por defecto: la institución y el decano los elige el usuario.
     this.formFacultad = {
       nombre: '',
-      idInstitucion: instId,
-      idDecano: decId,
+      idInstitucion: '',
+      idDecano: '',
       estado: 'ACTIVO',
     };
     this.errorGuardado.set(null);
@@ -651,11 +647,9 @@ export class AdminFacultadesComponent implements OnInit {
 
   editarFacultad(fac: FacultadItem): void {
     this.facultadEnEdicion = fac;
-    const inst = this.instituciones();
-    const instId = inst.length > 0 ? inst[0].id : '';
     this.formFacultad = {
       nombre: fac.nombre,
-      idInstitucion: instId,
+      idInstitucion: fac.idInstitucion || '',
       idDecano: fac.decanoId || '',
       estado: fac.estado,
     };
