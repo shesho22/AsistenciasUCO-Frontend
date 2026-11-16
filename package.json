@@ -57,7 +57,7 @@
     "@angular/compiler-cli": "22.2.6",
     "@eslint/js": "9.39.5",
     "@playwright/test": "1.65.0",
-    "@types/jasmine": "~5.1.0",
+    "@types/jasmine": "~7.0.0",
     "angular-eslint": "22.6.0",
     "eslint": "9.39.5",
     "istanbul-lib-instrument": "6.0.3",
