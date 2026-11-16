@@ -219,13 +219,13 @@ const PESTANAS_GRUPO: readonly PestanaGrupo[] = [
               >
                 {{ tab.etiqueta }}
                 @if (tab.id === 'ESTUDIANTES') {
-                  <span class="px-2 py-0.5 rounded-full text-[11px] bg-success-100 text-success-800">{{ estudiantes().length }}</span>
+                  <span class="px-2 py-0.5 rounded-full text-[11px] bg-success-100 text-success-800">{{ totalEstudiantes() ?? estudiantes().length }}</span>
                 }
                 @if (tab.id === 'RECLAMOS') {
                   <span
                     data-testid="grupo-reclamos-count"
                     class="px-2 py-0.5 rounded-full text-[11px] bg-warning-100 text-warning-800"
-                  >{{ estadoCargaReclamos() === 'LOADED' ? reclamos().length : (estadoCargaReclamos() === 'LOADING' ? '…' : '—') }}</span>
+                  >{{ estadoCargaReclamos() === 'LOADED' ? (totalReclamos() ?? reclamos().length) : (estadoCargaReclamos() === 'LOADING' ? '…' : '—') }}</span>
                 }
               </button>
             }
@@ -259,7 +259,11 @@ const PESTANAS_GRUPO: readonly PestanaGrupo[] = [
           @if (subPestanaHub() === 'RECLAMOS') {
             <app-teacher-grupo-reclamos
               [reclamos]="reclamos()"
+              [totalReclamos]="totalReclamos()"
+              [pagina]="paginaReclamos()"
+              [tamano]="tamanoReclamos()"
               [estadoCarga]="estadoCargaReclamos()"
+              (paginaChange)="paginaReclamosChange.emit($event)"
               (irAReclamos)="irReclamos.emit()"
               (reintentar)="reintentarReclamos.emit()"
             />
@@ -267,9 +271,16 @@ const PESTANAS_GRUPO: readonly PestanaGrupo[] = [
 
           @if (subPestanaHub() === 'ESTUDIANTES') {
             <app-teacher-grupo-estudiantes
-              [estudiantes]="estudiantes()"
-              [cargando]="cargandoEstudiantes()"
+              [estudiantes]="padronPagina()"
+              [totalEstudiantes]="totalEstudiantes()"
+              [pagina]="paginaPadron()"
+              [tamano]="tamanoPadron()"
+              [busqueda]="busquedaPadron()"
+              [cargando]="cargandoPadron()"
               [curso]="selectedCourse()"
+              (paginaChange)="paginaPadronChange.emit($event)"
+              (tamanoChange)="tamanoPadronChange.emit($event)"
+              (busquedaChange)="busquedaPadronChange.emit($event)"
               (retirar)="retirarEstudiante.emit($event)"
             />
           }
@@ -304,6 +315,17 @@ export class TeacherGrupoHubComponent {
   estudiantes = input<EstudianteGrupoItem[]>([]);
   cargandoEstudiantes = input<boolean>(false);
   reclamos = input<SolicitudRevisionItem[]>([]);
+  /** Total de reclamos del grupo según el servidor; `reclamos` es solo la página vigente. */
+  totalReclamos = input<number | null>(null);
+  paginaReclamos = input<number>(1);
+  tamanoReclamos = input<number>(10);
+  /** Padrón de la pestaña Matrícula: página, total y filtros del servidor (el padrón completo sigue en `estudiantes` para la planilla). */
+  padronPagina = input<EstudianteGrupoItem[]>([]);
+  totalEstudiantes = input<number | null>(null);
+  paginaPadron = input<number>(1);
+  tamanoPadron = input<number>(12);
+  busquedaPadron = input<string>('');
+  cargandoPadron = input<boolean>(false);
   estadoCargaReclamos = input<EstadoCargaReclamos>('IDLE');
   // OUT_OF_GOLDEN_PATH: acciones de sesión sin contrato backend; ocultas salvo feature explícita.
   sessionQrEnabled = input<boolean>(false);
@@ -332,6 +354,10 @@ export class TeacherGrupoHubComponent {
   }
 
   reintentarReclamos = output<void>();
+  paginaReclamosChange = output<number>();
+  paginaPadronChange = output<number>();
+  tamanoPadronChange = output<number>();
+  busquedaPadronChange = output<string>();
 
   volver = output<void>();
   irAsistencia = output<Course>();

@@ -65,6 +65,7 @@ describe('TeacherGruposComponent', () => {
     ]);
     studentService = jasmine.createSpyObj<StudentService>('StudentService', [
       'getStudentsByGroup',
+      'getPadronGrupoPagina',
     ]);
     claimService = jasmine.createSpyObj<AttendanceClaimService>('AttendanceClaimService', [
       'getReclamosDocentePorGrupo',
@@ -83,7 +84,10 @@ describe('TeacherGruposComponent', () => {
     courseService.getAsignaturasDocente.and.returnValue(
       of<never>({ exitoso: true, datos: [] } as never)
     );
-    claimService.getReclamosDocentePorGrupo.and.returnValue(of([]) as never);
+    claimService.getReclamosDocentePorGrupo.and.returnValue(of({ exitoso: true, datos: [], total: 0 }));
+    studentService.getPadronGrupoPagina.and.returnValue(
+      of({ exitoso: true, elementos: [], numeroPagina: 1, tamanoPagina: 12, totalElementos: 0, totalPaginas: 0 })
+    );
     studentService.getStudentsByGroup.and.returnValue(
       of<never>({ exitoso: true, datos: [] } as never)
     );
@@ -489,34 +493,68 @@ describe('TeacherGruposComponent', () => {
     component.onEstudianteRetirado();
     expect(studentService.getStudentsByGroup).not.toHaveBeenCalled();
   });
+  // CIERRE-W1A: el servidor filtra por grupo y pagina; el componente solo muestra lo que llega.
   describe('APP-05 reclamos por grupo', () => {
     const GROUP_A = '3f0c1d2e-0000-4000-8000-000000000001';
     const GROUP_B = '3f0c1d2e-0000-4000-8000-000000000002';
-    const claim = (id: string, grupoId: string) => ({ id, grupoId } as never);
+    const claim = (id: string, grupoId: string) => ({ id, grupoId } as never as SolicitudRevisionItem);
+    const pagina = (datos: SolicitudRevisionItem[], total = datos.length) => ({ exitoso: true, datos, total });
 
-    it('solicita el UUID seleccionado y no retiene filas de otro grupo', () => {
-      claimService.getReclamosDocentePorGrupo.and.returnValue(of([
-        claim('a-1', GROUP_A),
-        claim('b-1', GROUP_B),
-      ]) as never);
+    it('solicita la primera página del UUID seleccionado y muestra el total del servidor', () => {
+      claimService.getReclamosDocentePorGrupo.and.returnValue(of(pagina([claim('a-1', GROUP_A)], 23)));
 
       component.verHubGrupo({ ...course, id: GROUP_A });
 
-      expect(claimService.getReclamosDocentePorGrupo).toHaveBeenCalledOnceWith(GROUP_A);
+      expect(claimService.getReclamosDocentePorGrupo).toHaveBeenCalledOnceWith(GROUP_A, { pagina: 1, tamano: 10 });
       expect(component.reclamosGrupo().map((item) => item.id)).toEqual(['a-1']);
+      expect(component.totalReclamosGrupo()).toBe(23);
       expect(component.estadoCargaReclamos()).toBe('LOADED');
     });
 
+    it('cambiar de página pide esa página al servidor', () => {
+      claimService.getReclamosDocentePorGrupo.and.returnValue(of(pagina([claim('a-1', GROUP_A)], 23)));
+      component.verHubGrupo({ ...course, id: GROUP_A });
+      claimService.getReclamosDocentePorGrupo.calls.reset();
+
+      component.cambiarPaginaReclamosGrupo(3);
+
+      expect(component.paginaReclamosGrupo()).toBe(3);
+      expect(claimService.getReclamosDocentePorGrupo).toHaveBeenCalledOnceWith(GROUP_A, { pagina: 3, tamano: 10 });
+    });
+
+    it('si la página pedida quedó vacía pero hay reclamos, retrocede a la última', () => {
+      claimService.getReclamosDocentePorGrupo.and.callFake((_grupo, paginacion) =>
+        of(paginacion.pagina === 3 ? pagina([], 12) : pagina([claim('a-9', GROUP_A)], 12))
+      );
+      component.verHubGrupo({ ...course, id: GROUP_A });
+
+      component.cambiarPaginaReclamosGrupo(3);
+
+      expect(component.paginaReclamosGrupo()).toBe(2);
+      expect(component.reclamosGrupo().map((item) => item.id)).toEqual(['a-9']);
+    });
+
+    it('al abrir otro grupo vuelve a la primera página', () => {
+      claimService.getReclamosDocentePorGrupo.and.returnValue(of(pagina([claim('a-1', GROUP_A)], 23)));
+      component.verHubGrupo({ ...course, id: GROUP_A });
+      component.cambiarPaginaReclamosGrupo(3);
+
+      component.verHubGrupo({ ...course, id: GROUP_B });
+
+      expect(component.paginaReclamosGrupo()).toBe(1);
+      expect(claimService.getReclamosDocentePorGrupo.calls.mostRecent().args).toEqual([GROUP_B, { pagina: 1, tamano: 10 }]);
+    });
+
     it('descarta la respuesta pendiente del grupo anterior al cambiar rápidamente', () => {
-      const anterior = new Subject<SolicitudRevisionItem[]>();
-      const actual = new Subject<SolicitudRevisionItem[]>();
-      claimService.getReclamosDocentePorGrupo.and.returnValues(anterior.asObservable() as never, actual.asObservable() as never);
+      const anterior = new Subject<ReturnType<typeof pagina>>();
+      const actual = new Subject<ReturnType<typeof pagina>>();
+      claimService.getReclamosDocentePorGrupo.and.returnValues(anterior.asObservable(), actual.asObservable());
 
       component.verHubGrupo({ ...course, id: GROUP_A });
       expect(component.estadoCargaReclamos()).toBe('LOADING');
       component.verHubGrupo({ ...course, id: GROUP_B });
-      anterior.next([claim('a-1', GROUP_A)]);
-      actual.next([claim('b-1', GROUP_B)]);
+      anterior.next(pagina([claim('a-1', GROUP_A)]));
+      actual.next(pagina([claim('b-1', GROUP_B)]));
 
       expect(component.reclamosGrupo().map((item) => item.id)).toEqual(['b-1']);
       expect(component.reclamosGrupo()[0].grupoId).toBe(GROUP_B);
@@ -524,14 +562,14 @@ describe('TeacherGruposComponent', () => {
     });
 
     it('no duplica una consulta activa del mismo grupo', () => {
-      const pendiente = new Subject<SolicitudRevisionItem[]>();
-      claimService.getReclamosDocentePorGrupo.and.returnValue(pendiente.asObservable() as never);
+      const pendiente = new Subject<ReturnType<typeof pagina>>();
+      claimService.getReclamosDocentePorGrupo.and.returnValue(pendiente.asObservable());
       const grupo = { ...course, id: GROUP_A };
 
       component.verHubGrupo(grupo);
       component.cargarReclamosGrupo(GROUP_A);
 
-      expect(claimService.getReclamosDocentePorGrupo).toHaveBeenCalledOnceWith(GROUP_A);
+      expect(claimService.getReclamosDocentePorGrupo).toHaveBeenCalledOnceWith(GROUP_A, { pagina: 1, tamano: 10 });
     });
 
     it('distingue 403, 501, red y error HTTP de una lista vacía', () => {
@@ -549,7 +587,99 @@ describe('TeacherGruposComponent', () => {
         component.verHubGrupo({ ...course, id: GROUP_A });
         expect(component.estadoCargaReclamos()).toBe(caso.esperado);
         expect(component.reclamosGrupo()).toEqual([]);
+        expect(component.totalReclamosGrupo()).toBe(0);
       }
+    });
+  });
+
+  // CIERRE-W1A: el padrón de la pestaña Matrícula lo pagina y filtra el servidor.
+  describe('CIERRE-W1A padrón paginado en el servidor', () => {
+    const matricula = (n: number) => ({ id: `m-${n}`, idEstudiante: `e-${n}`, nombreCompleto: `Estudiante ${n}`, documento: `${n}`, correo: `e${n}@uco.edu.co`, codigoEstado: 'A', nombreEstado: 'activo' });
+    const paginaPadron = (n: number, total: number, numeroPagina = 1) => ({
+      exitoso: true,
+      elementos: Array.from({ length: n }, (_, i) => matricula(i)),
+      numeroPagina,
+      tamanoPagina: 12,
+      totalElementos: total,
+      totalPaginas: Math.ceil(total / 12),
+    });
+
+    it('al abrir el hub pide la primera página (12) sin búsqueda y guarda total y filas', () => {
+      studentService.getPadronGrupoPagina.and.returnValue(of(paginaPadron(12, 30)));
+
+      component.verHubGrupo(course);
+
+      expect(studentService.getPadronGrupoPagina).toHaveBeenCalledOnceWith(course.id, { pagina: 1, tamano: 12, busqueda: '' });
+      expect(component.padronPagina().length).toBe(12);
+      expect(component.totalPadron()).toBe(30);
+      expect(component.cargandoPadron()).toBeFalse();
+    });
+
+    it('cambiar de página, de tamaño o de búsqueda vuelve a pedir al servidor (la búsqueda y el tamaño reinician la página)', () => {
+      studentService.getPadronGrupoPagina.and.returnValue(of(paginaPadron(12, 30)));
+      component.verHubGrupo(course);
+      studentService.getPadronGrupoPagina.calls.reset();
+
+      component.cambiarPaginaPadron(3);
+      expect(studentService.getPadronGrupoPagina.calls.mostRecent().args).toEqual([course.id, { pagina: 3, tamano: 12, busqueda: '' }]);
+
+      component.cambiarTamanoPadron(24);
+      expect(studentService.getPadronGrupoPagina.calls.mostRecent().args).toEqual([course.id, { pagina: 1, tamano: 24, busqueda: '' }]);
+
+      component.cambiarPaginaPadron(2);
+      component.cambiarBusquedaPadron('ana');
+      expect(component.paginaPadron()).toBe(1);
+      expect(studentService.getPadronGrupoPagina.calls.mostRecent().args).toEqual([course.id, { pagina: 1, tamano: 24, busqueda: 'ana' }]);
+    });
+
+    it('sin grupo abierto no se pide nada al cambiar de página', () => {
+      component.selectedCourse.set(null);
+      studentService.getPadronGrupoPagina.calls.reset();
+
+      component.cambiarPaginaPadron(2);
+
+      expect(studentService.getPadronGrupoPagina).not.toHaveBeenCalled();
+    });
+
+    it('si la página pedida quedó vacía pero hay matrículas, retrocede a la última', () => {
+      studentService.getPadronGrupoPagina.and.callFake((_grupo, filtro) =>
+        of(filtro.pagina === 5 ? { ...paginaPadron(0, 30, 5) } : paginaPadron(6, 30, 3))
+      );
+      component.verHubGrupo(course);
+
+      component.cambiarPaginaPadron(5);
+
+      expect(component.paginaPadron()).toBe(3);
+      expect(component.padronPagina().length).toBe(6);
+    });
+
+    it('un error al cargar la página vacía el padrón, avisa y no queda cargando', () => {
+      studentService.getPadronGrupoPagina.and.returnValue(throwError(() => ({ status: 500 })));
+
+      component.verHubGrupo(course);
+
+      expect(component.padronPagina()).toEqual([]);
+      expect(component.totalPadron()).toBeNull();
+      expect(component.cargandoPadron()).toBeFalse();
+    });
+
+    it('abrir otro grupo reinicia la página y la búsqueda del padrón', () => {
+      studentService.getPadronGrupoPagina.and.returnValue(of(paginaPadron(12, 30)));
+      component.verHubGrupo(course);
+      component.cambiarPaginaPadron(3);
+      component.cambiarBusquedaPadron('ana');
+
+      component.verHubGrupo({ ...course, id: 'otro-grupo' });
+
+      expect(studentService.getPadronGrupoPagina.calls.mostRecent().args).toEqual(['otro-grupo', { pagina: 1, tamano: 12, busqueda: '' }]);
+    });
+
+    it('el padrón completo para la planilla se sigue cargando aparte (no se rompe la matriz)', () => {
+      studentService.getPadronGrupoPagina.and.returnValue(of(paginaPadron(12, 30)));
+
+      component.verHubGrupo(course);
+
+      expect(studentService.getStudentsByGroup).toHaveBeenCalledWith(course.id);
     });
   });
 

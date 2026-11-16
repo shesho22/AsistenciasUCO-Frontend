@@ -79,6 +79,37 @@ describe('StudentService', () => {
     req.flush({ exitoso: true, datos: [] });
   });
 
+  // CIERRE-W1A: el padrón paginado del docente lo pagina y filtra el servidor.
+  it('getPadronGrupoPagina pide la página, el tamaño y la búsqueda recortada a la ruta del docente', () => {
+    let total = -1;
+    service.getPadronGrupoPagina('grupo-123', { pagina: 2, tamano: 12, busqueda: '  ana  ' }).subscribe((res) => (total = res.totalElementos));
+
+    const req = http.expectOne((r) => r.url === `${environment.apiUrl}/docente/grupos/grupo-123/estudiantes`);
+    expect(req.request.method).toBe('GET');
+    expect(req.request.params.get('pagina')).toBe('2');
+    expect(req.request.params.get('tamano')).toBe('12');
+    expect(req.request.params.get('busqueda')).toBe('ana');
+    req.flush({ exitoso: true, elementos: [], numeroPagina: 2, tamanoPagina: 12, totalElementos: 30, totalPaginas: 3 });
+    expect(total).toBe(30);
+  });
+
+  it('getPadronGrupoPagina no envía búsqueda vacía', () => {
+    service.getPadronGrupoPagina('grupo-123', { pagina: 1, tamano: 12, busqueda: '   ' }).subscribe();
+
+    const req = http.expectOne((r) => r.url === `${environment.apiUrl}/docente/grupos/grupo-123/estudiantes`);
+    expect(req.request.params.has('busqueda')).toBeFalse();
+    req.flush({ exitoso: true, elementos: [], numeroPagina: 1, tamanoPagina: 12, totalElementos: 0, totalPaginas: 0 });
+  });
+
+  it('getPadronGrupoPagina propaga el error HTTP (403 de un grupo ajeno) sin convertirlo en lista vacía', () => {
+    let status: number | undefined;
+    service.getPadronGrupoPagina('grupo-ajeno', { pagina: 1, tamano: 12 }).subscribe({ error: (e) => (status = e.status) });
+
+    http.expectOne((r) => r.url === `${environment.apiUrl}/docente/grupos/grupo-ajeno/estudiantes`)
+      .flush({}, { status: 403, statusText: 'Forbidden' });
+    expect(status).toBe(403);
+  });
+
   it('obtiene los datos de un estudiante mediante getStudentById', () => {
     service.getStudentById('est-999').subscribe();
 
