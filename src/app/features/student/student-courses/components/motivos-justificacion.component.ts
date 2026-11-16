@@ -11,7 +11,7 @@ import { CategoriaJustificacionItem } from '../../../../core/models/consultas-tr
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (categorias().length) {
-      <details class="bg-white rounded-2xl border border-warm-200 shadow-warm-sm group" data-testid="motivos-justificacion">
+      <details class="superficie group" data-testid="motivos-justificacion">
         <summary class="cursor-pointer list-none p-5 flex items-center justify-between gap-3">
           <div>
             <h3 class="font-serif font-bold text-lg text-warm-900">¿Por qué motivos puedo justificar una inasistencia?</h3>

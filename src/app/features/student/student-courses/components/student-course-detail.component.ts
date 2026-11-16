@@ -34,7 +34,7 @@ import { ToastService } from '../../../../shared/components/toast/toast.componen
     @if (materia()) {
       <div class="space-y-6">
         <!-- Barra Superior de Navegación "Atrás" -->
-        <div class="flex items-center justify-between bg-white p-4 rounded-2xl border border-warm-200 shadow-warm-sm">
+        <div class="superficie flex items-center justify-between p-4">
           <button
             type="button"
             (click)="back.emit()"
@@ -55,7 +55,7 @@ import { ToastService } from '../../../../shared/components/toast/toast.componen
         </div>
 
         <!-- Ficha Resumen de la Asignatura -->
-        <div class="bg-white p-6 rounded-2xl border border-warm-200 shadow-warm-sm grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="superficie p-6 grid grid-cols-1 md:grid-cols-4 gap-6">
           <div class="md:col-span-3 space-y-2">
             <div class="flex items-center gap-2">
               @if (materia()?.creditos) {
@@ -122,7 +122,7 @@ import { ToastService } from '../../../../shared/components/toast/toast.componen
         <app-motivos-justificacion [categorias]="categorias()" />
 
         <!-- Tabla Completa de Sesiones de Clase -->
-        <div class="bg-white rounded-2xl border border-warm-200 shadow-warm-sm overflow-hidden">
+        <div class="superficie overflow-hidden">
           <div class="p-5 border-b border-warm-100 flex items-center justify-between">
             <div>
               <h3 class="font-serif font-bold text-lg text-warm-900">Historial Detallado de Sesiones</h3>
