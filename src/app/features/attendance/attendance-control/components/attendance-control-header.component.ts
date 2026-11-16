@@ -22,7 +22,7 @@ import { ClassSession } from '../../../../core/models/attendance.model';
         </p>
       }
 
-      <header class="bg-white p-4 sm:p-5 rounded-2xl border border-warm-200 shadow-warm-sm space-y-4">
+      <header class="superficie p-4 sm:p-5 space-y-4">
         <!-- Fila Superior: Título + Botones de Gestión -->
         <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-warm-100 pb-3.5">
           <div>

@@ -17,7 +17,7 @@ import { TAMANO_PAGINA_TOMA, cargarTodasLasPaginas } from './toma-paginas.util';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="bg-white rounded-2xl border border-warm-200 shadow-warm-sm p-4 sm:p-5 space-y-4" aria-label="Pendientes de validar">
+    <section class="superficie p-4 sm:p-5 space-y-4" aria-label="Pendientes de validar">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h3 class="font-serif font-bold text-lg text-warm-900">Pendientes de validar ({{ faltantes().length }})</h3>
