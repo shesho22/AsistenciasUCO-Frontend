@@ -38,7 +38,7 @@ describe('DatosPersonaComponent', () => {
   }
 
   const etiquetas = (host: HTMLElement) =>
-    Array.from(host.querySelectorAll('label')).map((l) => l.textContent?.replace(/\s+/g, ' ').replace('*', '').trim());
+    Array.from(host.querySelectorAll('label')).map((l) => l.textContent?.replace(/\s+/g, ' ').replace(/\*/g, '').trim());
 
   it('muestra los campos en el orden comun: documento, nombres, apellidos y correo', () => {
     const host = crear();

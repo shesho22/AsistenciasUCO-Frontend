@@ -384,7 +384,8 @@ type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
               </label>
               <select
                 id="fac-decano-directorio"
-                [(ngModel)]="decanoSeleccionadoId"
+                [ngModel]="decanoSeleccionadoId()"
+                (ngModelChange)="decanoSeleccionadoId.set($event)"
                 class="w-full px-3.5 py-2.5 rounded-xl border border-warm-200 text-sm focus:ring-2 focus:ring-primary-700/20 focus:border-primary-700 bg-white"
               >
                 <option value="">-- Seleccionar Profesional --</option>
@@ -428,7 +429,7 @@ type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
               </button>
               <button
                 type="button"
-                [disabled]="!decanoSeleccionadoId || guardandoDecano()"
+                [disabled]="!decanoSeleccionadoId() || guardandoDecano()"
                 (click)="confirmarAsignacionDecano()"
                 class="px-5 py-2.5 bg-primary-700 hover:bg-primary-800 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-sm transition-all"
               >
@@ -547,7 +548,8 @@ export class AdminFacultadesComponent implements OnInit {
 
   // Modal de asignación / cambio de decano
   facultadParaDecano = signal<FacultadItem | null>(null);
-  decanoSeleccionadoId = '';
+  /** Signal: decanoSeleccionadoObjeto (computed) debe recalcularse con cada eleccion del selector. */
+  decanoSeleccionadoId = signal('');
 
   // Formulario Facultad (DECANO OBLIGATORIO SEGÚN DB NOT NULL)
   formFacultad = {
@@ -606,7 +608,7 @@ export class AdminFacultadesComponent implements OnInit {
   });
 
   decanoSeleccionadoObjeto = computed(() => {
-    const id = this.decanoSeleccionadoId;
+    const id = this.decanoSeleccionadoId();
     if (!id) return null;
     return this.decanos().find((d) => d.id === id) || null;
   });
@@ -765,12 +767,12 @@ export class AdminFacultadesComponent implements OnInit {
   // ================= DECANATO: VINCULACIÓN / CAMBIO =================
   abrirModalVincularDecano(fac: FacultadItem): void {
     this.facultadParaDecano.set(fac);
-    this.decanoSeleccionadoId = fac.decanoId || '';
+    this.decanoSeleccionadoId.set(fac.decanoId || '');
   }
 
   cerrarModalDecano(): void {
     this.facultadParaDecano.set(null);
-    this.decanoSeleccionadoId = '';
+    this.decanoSeleccionadoId.set('');
   }
 
   confirmarAsignacionDecano(): void {

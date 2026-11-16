@@ -20,7 +20,7 @@ describe('DashboardLayoutComponent', () => {
       role: 'DOCENTE' as UserRole,
     });
 
-    authServiceSpy = jasmine.createSpyObj('AuthService', ['logout', 'loginAsMockUser'], {
+    authServiceSpy = jasmine.createSpyObj('AuthService', ['logout'], {
       currentUser: mockUserSignal.asReadonly(),
       isMockMode: signal(false).asReadonly(),
     });
@@ -96,7 +96,7 @@ describe('DashboardLayoutComponent', () => {
 describe('DashboardLayoutComponent (ESTUDIANTE, CULM-001 A.1)', () => {
   it('F-RED-03 el menú del estudiante ya no ofrece Solicitudes de Ingreso y la oferta de grupos vive dentro de Mis Materias', async () => {
     const user = signal({ id: 'usr-2', name: 'Est Uno', email: 'est@uco.edu.co', role: 'ESTUDIANTE' as UserRole });
-    const auth = jasmine.createSpyObj('AuthService', ['logout', 'loginAsMockUser'], {
+    const auth = jasmine.createSpyObj('AuthService', ['logout'], {
       currentUser: user.asReadonly(),
       isMockMode: signal(false).asReadonly(),
     });

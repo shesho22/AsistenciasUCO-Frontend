@@ -29,7 +29,7 @@ describe('DashboardLayoutComponent - Cancelación por Inasistencia C.1 (C-F-58..
       role,
     });
 
-    authServiceSpy = jasmine.createSpyObj('AuthService', ['logout', 'loginAsMockUser'], {
+    authServiceSpy = jasmine.createSpyObj('AuthService', ['logout'], {
       currentUser: mockUserSignal.asReadonly(),
       isMockMode: signal(false).asReadonly(),
     });
