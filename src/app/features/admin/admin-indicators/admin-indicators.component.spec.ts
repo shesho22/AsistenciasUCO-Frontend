@@ -143,6 +143,20 @@ describe('AdminIndicatorsComponent', () => {
     expect(toast.error).toHaveBeenCalledTimes(3);
   });
 
+  it('HU178: KPI_004 (administrador sin institución) muestra el aviso informativo y no un toast de error', () => {
+    spyOn(toast, 'error');
+    component.cargar();
+    const sinInstitucion = { timestamp: '2026-11-16T07:00:00Z', status: 403, error: 'Forbidden', code: 'KPI_004', message: 'texto que no se analiza', path: '/api/v1/x', correlationId: null };
+    http.expectOne((r) => r.url === `${base}/indicadores`).flush(sinInstitucion, { status: 403, statusText: 'Forbidden' });
+    http.expectOne((r) => r.url === `${base}/comparativa-facultades`).flush(sinInstitucion, { status: 403, statusText: 'Forbidden' });
+    tendenciaReq().flush(sinInstitucion, { status: 403, statusText: 'Forbidden' });
+    fixture.detectChanges();
+
+    expect(toast.error).not.toHaveBeenCalled();
+    expect(component.sinAmbito()).toBe('ADMINISTRADOR');
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="administrador-sin-institucion"]')).not.toBeNull();
+  });
+
   it('sin facultades se muestra el estado vacío', () => {
     component.service.comparativa.set([]);
     fixture.detectChanges();

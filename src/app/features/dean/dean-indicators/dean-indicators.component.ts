@@ -3,16 +3,21 @@ import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, inject, input, signal } from '@angular/core';
 import { DeanIndicatorsService } from '../../../core/services/dean-indicators.service';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
+import { RolSinAmbito, rolSinAmbito } from '../../../core/api/errors/sin-ambito.util';
+import { SinEntidadAsignadaComponent } from '../../../shared/components/sin-entidad-asignada/sin-entidad-asignada.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 @Component({
     selector: 'app-dean-indicators',
-    imports: [PageHeaderComponent, KpiCardComponent, DecimalPipe, PaginationComponent],
+    imports: [PageHeaderComponent, KpiCardComponent, DecimalPipe, PaginationComponent, SinEntidadAsignadaComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
     <section class="space-y-6">
+      @if (sinAmbito(); as rol) {
+        <app-sin-entidad-asignada [rol]="rol" />
+      } @else {
       <header>
         @if (!embebido()) {
           <app-page-header titulo="Indicadores de la facultad" />
@@ -105,6 +110,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
           (pageChange)="onPageChange($event)"
         />
       </div>
+      }
     </section>
   `
 })
@@ -113,6 +119,18 @@ export class DeanIndicatorsComponent implements OnInit {
   readonly embebido = input(false);
   readonly service = inject(DeanIndicatorsService);
   private readonly toast = inject(ToastService);
+  /** HU178: el backend respondió que el usuario aún no tiene su ámbito asignado (código canónico KPI_00x). */
+  readonly sinAmbito = signal<RolSinAmbito | null>(null);
+
+  /** HU178: el rol sin ámbito es un estado controlado (aviso informativo); cualquier otro error se notifica. */
+  private readonly fallo = (e: unknown): void => {
+    const rol = rolSinAmbito(e);
+    if (rol) {
+      this.sinAmbito.set(rol);
+      return;
+    }
+    this.toast.error(getApiErrorMessage(e));
+  };
 
   readonly tamano = 10;
   readonly pagina = signal(1);
@@ -124,8 +142,8 @@ export class DeanIndicatorsComponent implements OnInit {
   }
 
   cargar(): void {
-    this.service.consultarKpis().subscribe({ error: (e) => this.toast.error(getApiErrorMessage(e)) });
-    this.service.consultarComparativa().subscribe({ error: (e) => this.toast.error(getApiErrorMessage(e)) });
+    this.service.consultarKpis().subscribe({ error: this.fallo });
+    this.service.consultarComparativa().subscribe({ error: this.fallo });
     this.cargarAforo();
   }
 
@@ -156,6 +174,6 @@ export class DeanIndicatorsComponent implements OnInit {
         idPrograma: this.filtroPrograma() || undefined,
         soloHabilitados: this.incluirNoHabilitados() ? false : undefined,
       })
-      .subscribe({ error: (e) => this.toast.error(getApiErrorMessage(e)) });
+      .subscribe({ error: this.fallo });
   }
 }

@@ -1,6 +1,11 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { roleGuard } from './core/guards/role.guard';
+import {
+  coordinadorConProgramaGuard,
+  decanoConFacultadGuard,
+  esperarPerfilGuard,
+} from './core/guards/entidad-asignada.guard';
 
 export const routes: Routes = [
   {
@@ -76,6 +81,8 @@ export const routes: Routes = [
       },
       {
         path: 'dashboard',
+        // HU178: el panel del decano y del coordinador espera su perfil para no consultar una entidad que no tiene.
+        canActivate: [esperarPerfilGuard],
         loadComponent: () =>
           import('./features/dashboard/overview/overview.component').then(
             (m) => m.OverviewComponent
@@ -192,19 +199,19 @@ export const routes: Routes = [
       // o selector; Períodos y Revisiones se mantienen. Los destinos hijos viven en su propio archivo diferido.
       {
         path: 'decano/mi-facultad',
-        canActivate: [roleGuard],
+        canActivate: [roleGuard, decanoConFacultadGuard],
         data: { roles: ['DECANO'] },
         loadChildren: () => import('./features/dean/dean.routes').then((m) => m.MI_FACULTAD_ROUTES),
       },
       {
         path: 'decano/seguimiento',
-        canActivate: [roleGuard],
+        canActivate: [roleGuard, decanoConFacultadGuard],
         data: { roles: ['DECANO'] },
         loadChildren: () => import('./features/dean/dean.routes').then((m) => m.SEGUIMIENTO_ROUTES),
       },
       {
         path: 'decano/directorio',
-        canActivate: [roleGuard],
+        canActivate: [roleGuard, decanoConFacultadGuard],
         data: { roles: ['DECANO'] },
         children: [
           { path: '', pathMatch: 'full', redirectTo: 'docentes' },
@@ -214,6 +221,16 @@ export const routes: Routes = [
               import('./features/dean/dean-directorio/dean-directorio.component').then((m) => m.DeanDirectorioComponent),
           },
         ],
+      },
+      {
+        // HU178: aviso único del decano sin facultad asignada (destino de decanoConFacultadGuard).
+        path: 'decano/sin-facultad',
+        canActivate: [roleGuard],
+        data: { roles: ['DECANO'], rol: 'DECANO' },
+        loadComponent: () =>
+          import('./shared/components/sin-entidad-asignada/sin-entidad-asignada.component').then(
+            (m) => m.SinEntidadAsignadaComponent
+          ),
       },
       // Rutas antiguas del decano: se conservan solo para no romper marcadores guardados.
       { path: 'decano/facultad', redirectTo: 'decano/mi-facultad/programas', pathMatch: 'full' },
@@ -231,7 +248,7 @@ export const routes: Routes = [
       { path: 'decano/grupos', redirectTo: 'decano/directorio/grupos', pathMatch: 'full' },
       {
         path: 'decano/grupos/:grupoId',
-        canActivate: [roleGuard],
+        canActivate: [roleGuard, decanoConFacultadGuard],
         data: { roles: ['DECANO'] },
         loadComponent: () =>
           import('./features/dean/dean-grupo-detalle/dean-grupo-detalle.component').then(
@@ -240,7 +257,7 @@ export const routes: Routes = [
       },
       {
         path: 'decano/programas/:planId',
-        canActivate: [roleGuard],
+        canActivate: [roleGuard, decanoConFacultadGuard],
         data: { roles: ['DECANO'] },
         loadComponent: () =>
           import('./features/dean/dean-plan-malla/dean-plan-malla.component').then(
@@ -274,17 +291,27 @@ export const routes: Routes = [
       // consolidado e indicadores; Estudiantes, Planes de estudio y Revisiones se mantienen.
       {
         path: 'coordinador/programa',
-        canActivate: [roleGuard],
+        canActivate: [roleGuard, coordinadorConProgramaGuard],
         data: { roles: ['COORDINADOR'] },
         loadChildren: () => import('./features/coordinator/coordinator.routes').then((m) => m.PROGRAMA_ROUTES),
       },
       {
         path: 'coordinador/asistencia',
-        canActivate: [roleGuard],
+        canActivate: [roleGuard, coordinadorConProgramaGuard],
         data: { roles: ['COORDINADOR'] },
         loadComponent: () =>
           import('./features/coordinator/coordinator-asistencia/coordinator-asistencia.component').then(
             (m) => m.CoordinatorAsistenciaComponent
+          ),
+      },
+      {
+        // HU178: aviso único del coordinador sin programa asignado (destino de coordinadorConProgramaGuard).
+        path: 'coordinador/sin-programa',
+        canActivate: [roleGuard],
+        data: { roles: ['COORDINADOR'], rol: 'COORDINADOR' },
+        loadComponent: () =>
+          import('./shared/components/sin-entidad-asignada/sin-entidad-asignada.component').then(
+            (m) => m.SinEntidadAsignadaComponent
           ),
       },
       // Rutas antiguas del coordinador: se conservan solo para no romper marcadores guardados.
@@ -297,7 +324,7 @@ export const routes: Routes = [
       { path: 'coordinador/indicadores', redirectTo: 'coordinador/asistencia', pathMatch: 'full' },
       {
         path: 'coordinador/planes-estudio',
-        canActivate: [roleGuard],
+        canActivate: [roleGuard, coordinadorConProgramaGuard],
         data: { roles: ['COORDINADOR'] },
         loadComponent: () =>
           import(
@@ -306,7 +333,7 @@ export const routes: Routes = [
       },
       {
         path: 'coordinador/planes-estudio/nuevo',
-        canActivate: [roleGuard],
+        canActivate: [roleGuard, coordinadorConProgramaGuard],
         data: { roles: ['COORDINADOR'] },
         loadComponent: () =>
           import(
@@ -315,7 +342,7 @@ export const routes: Routes = [
       },
       {
         path: 'coordinador/planes-estudio/:planId/editar',
-        canActivate: [roleGuard],
+        canActivate: [roleGuard, coordinadorConProgramaGuard],
         data: { roles: ['COORDINADOR'] },
         loadComponent: () =>
           import(
@@ -324,7 +351,7 @@ export const routes: Routes = [
       },
       {
         path: 'coordinador/planes-estudio/:planId/malla',
-        canActivate: [roleGuard],
+        canActivate: [roleGuard, coordinadorConProgramaGuard],
         data: { roles: ['COORDINADOR'] },
         loadComponent: () =>
           import(
@@ -333,7 +360,7 @@ export const routes: Routes = [
       },
       {
         path: 'coordinador/planes-estudio/:planId/asignaturas/nueva',
-        canActivate: [roleGuard],
+        canActivate: [roleGuard, coordinadorConProgramaGuard],
         data: { roles: ['COORDINADOR'] },
         loadComponent: () =>
           import(
@@ -342,7 +369,7 @@ export const routes: Routes = [
       },
       {
         path: 'coordinador/planes-estudio/:planId/asignaturas/:asignaturaId/editar',
-        canActivate: [roleGuard],
+        canActivate: [roleGuard, coordinadorConProgramaGuard],
         data: { roles: ['COORDINADOR'] },
         loadComponent: () =>
           import(
@@ -351,7 +378,7 @@ export const routes: Routes = [
       },
       {
         path: 'coordinador/estudiantes',
-        canActivate: [roleGuard],
+        canActivate: [roleGuard, coordinadorConProgramaGuard],
         data: { roles: ['COORDINADOR'] },
         loadComponent: () =>
           import(
