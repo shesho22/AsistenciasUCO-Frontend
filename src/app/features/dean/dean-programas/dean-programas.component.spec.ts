@@ -84,7 +84,7 @@ describe('DeanProgramasComponent', () => {
     });
     http.expectNone(`${environment.apiUrl}/coordinador/planes-estudio`);
     // HU112 (DAT-06): créditos y asignaturas salen de la tabla unificada, en UNA consulta y no una malla por plan.
-    const creditos = http.expectOne((r) => r.url === `${environment.apiUrl}/decano/programas-creditos`);
+    const creditos = http.expectOne((r) => r.url === `${environment.apiUrl}/decano/programas-creditos` && r.params.get('tamano') === '100');
     expect(creditos.request.params.get('pagina')).toBe('1');
     expect(creditos.request.params.get('tamano')).toBe('100');
     creditos.flush({
@@ -95,6 +95,9 @@ describe('DeanProgramasComponent', () => {
       ],
       total: 2,
     });
+    // La tabla unificada consulta su propia página al servidor (no reutiliza la lista completa de las tarjetas).
+    const tabla = http.expectOne((r) => r.url === `${environment.apiUrl}/decano/programas-creditos` && r.params.get('tamano') === '10');
+    tabla.flush({ exitoso: true, elementos: [filaCreditos('PLAN-SIS-2024', 20241, 2, 7), filaCreditos('PLAN-SIS-2019', 20191, 0, 0)], numeroPagina: 1, tamanoPagina: 10, totalElementos: 2, totalPaginas: 1 });
     http.expectNone((r) => r.url.includes('/asignaturas'));
     http.match((r) => r.url === `${environment.apiUrl}/decano/programas`).forEach((req) =>
       req.flush({ exitoso: true, datos: [], total: 0 })
@@ -120,7 +123,7 @@ describe('DeanProgramasComponent', () => {
     expect(component.totalesDe('PLAN-SIS-2024')?.totalAsignaturas).toBe(2);
     expect(component.totalAsignaturasTexto()).toBe('2');
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('Programas y Créditos');
-    expect((fixture.nativeElement as HTMLElement).textContent).toContain('7 créditos en 2 planes');
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('2 planes');
 
     component.verPlanEstudio(mockPlanes[0]);
     expect(routerSpy.navigate).toHaveBeenCalledWith(['/app/decano/programas', 'PLAN-SIS-2024']);
@@ -163,7 +166,7 @@ describe('DeanProgramasComponent con créditos no disponibles', () => {
       datos: [{ id: 'F', nombre: 'F', nombreDecano: null, activa: true, programas: [{ id: 'P', nombre: 'Prog', activo: true, planes: [{ id: 'PL', inp: 20241, activo: true, totalSemestres: 8 }] }] }],
     });
     http
-      .expectOne((r) => r.url === `${environment.apiUrl}/decano/programas-creditos`)
+      .expectOne((r) => r.url === `${environment.apiUrl}/decano/programas-creditos` && r.params.get('tamano') === '100')
       .flush({ exitoso: false }, { status: 500, statusText: 'Server Error' });
     fixture.detectChanges();
 
@@ -185,8 +188,8 @@ describe('DeanProgramasComponent con más de una página de créditos', () => {
     const fixture = TestBed.createComponent(DeanProgramasComponent);
     fixture.detectChanges();
     const url = `${environment.apiUrl}/decano/programas-creditos`;
-    http.expectOne((r) => r.url === url && r.params.get('pagina') === '1').flush({ exitoso: true, datos: [filaCreditos('A', 1, 1, 3)], total: 101 });
-    http.expectOne((r) => r.url === url && r.params.get('pagina') === '2').flush({ exitoso: true, datos: [filaCreditos('B', 2, 1, 4)], total: 101 });
+    http.expectOne((r) => r.url === url && r.params.get('tamano') === '100' && r.params.get('pagina') === '1').flush({ exitoso: true, datos: [filaCreditos('A', 1, 1, 3)], total: 101 });
+    http.expectOne((r) => r.url === url && r.params.get('tamano') === '100' && r.params.get('pagina') === '2').flush({ exitoso: true, datos: [filaCreditos('B', 2, 1, 4)], total: 101 });
 
     expect(fixture.componentInstance.creditos().length).toBe(2);
     expect(fixture.componentInstance.totalesDe('B')?.totalCreditos).toBe(4);

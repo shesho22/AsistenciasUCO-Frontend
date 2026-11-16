@@ -44,7 +44,7 @@ const TAMANO_CREDITOS = 100;
       <app-dean-programas-gestion />
 
       <!-- Tabla unificada de programas y créditos (HU112) -->
-      <app-dean-programas-creditos [filas]="creditos()" [error]="errorCreditos()" />
+      <app-dean-programas-creditos />
 
       @if (!embebido()) {
       <!-- KPIs Bento -->
