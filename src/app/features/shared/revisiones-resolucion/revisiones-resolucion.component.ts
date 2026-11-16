@@ -117,7 +117,7 @@ export const ESTADOS_FILTRABLES: ReadonlyArray<{ codigo: EstadoRevisionCancelaci
           (accion)="alAccionVacio()"
         />
       } @else {
-        <div class="bg-white rounded-2xl border border-warm-200 shadow-warm-sm overflow-hidden">
+        <div class="superficie overflow-hidden">
           <div class="overflow-x-auto">
             <table class="w-full text-left text-sm">
               <thead class="bg-warm-50 border-b border-warm-200 text-xs font-bold text-warm-600 uppercase tracking-wider">
