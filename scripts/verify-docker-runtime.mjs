@@ -61,14 +61,19 @@ try {
   ]);
   containerStarted = true;
 
+  // La imagen ya trae un env.js con los valores de desarrollo; el entrypoint lo sobrescribe al arrancar. Leerlo antes de
+  // que termine daba un falso fallo intermitente, así que se espera a que aparezca el valor inyectado. La aserción final
+  // es la misma: si el entrypoint nunca lo escribe, falla igual tras agotar los intentos.
+  const marcaRenderizado = `window.env['API_URL'] = '${values.API_URL}';`;
   let envJs = '';
   for (let attempt = 0; attempt < 30; attempt += 1) {
     try {
       envJs = runDocker(['exec', container, 'cat', '/usr/share/nginx/html/assets/env.js']);
-      break;
+      if (envJs.includes(marcaRenderizado)) break;
     } catch {
-      await delay(500);
+      // el contenedor aún no acepta `exec`; se reintenta
     }
+    await delay(500);
   }
   assertRenderedEnv(envJs, 'contenedor Nginx');
 
