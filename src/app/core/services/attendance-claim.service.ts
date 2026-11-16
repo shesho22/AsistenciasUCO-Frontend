@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpContext, HttpParams } from '@angular/common/http';
-import { Observable, catchError, defer, map, of, switchMap, throwError } from 'rxjs';
+import { Observable, catchError, defer, map, of, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiResponse } from '../models/api-response.model';
 import { ApiDataResponse } from '../api/models/api-data-response.model';
@@ -30,11 +30,23 @@ export const DEFAULT_CONFIGURACION_RECLAMOS: ConfiguracionReclamosDTO = {
   diasLimiteJustificacion: 5,
 };
 
-/** Filtro de la bandeja del docente: `estado` P/A/R opcional; `pagina` base 1; `tamano` máximo 100 (límite del backend). */
+/**
+ * Filtro de la bandeja del docente: `estado` P/A/R opcional; `pagina` base 1; `tamano` máximo 100 (límite del backend).
+ * `busqueda` (texto) y `grupoId` (solo ese grupo) los resuelve el servidor (CIERRE-W1A); el cliente no filtra en memoria.
+ */
 export interface FiltroReclamosDocente {
   estado?: 'P' | 'A' | 'R';
   pagina: number;
   tamano: number;
+  busqueda?: string;
+  grupoId?: string;
+}
+
+/** Paginación de los reclamos de un grupo del docente; `estado` opcional (con `tamano: 1` el `total` sirve de conteo). */
+export interface PaginacionReclamosGrupo {
+  pagina: number;
+  tamano: number;
+  estado?: 'P' | 'A' | 'R';
 }
 
 /** Filtro de "Mis Reclamos" del estudiante (HU010/HU011): mismo contrato de paginación que el docente. */
@@ -49,14 +61,6 @@ export class IdentificadorInvalidoError extends Error {
   constructor(readonly valor: unknown) {
     super('Identificador inválido.');
     this.name = 'IdentificadorInvalidoError';
-  }
-}
-
-/** La respuesta paginada no permite certificar el conjunto completo de reclamos. */
-export class PaginacionReclamosInconsistenteError extends Error {
-  constructor() {
-    super('No fue posible verificar la paginación de reclamos.');
-    this.name = 'PaginacionReclamosInconsistenteError';
   }
 }
 
@@ -121,6 +125,13 @@ export class AttendanceClaimService {
     if (filtro.estado) {
       params = params.set('estado', filtro.estado);
     }
+    const busqueda = filtro.busqueda?.trim();
+    if (busqueda) {
+      params = params.set('busqueda', busqueda);
+    }
+    if (filtro.grupoId) {
+      params = params.set('grupoId', filtro.grupoId);
+    }
     return this.http.get<ApiListResponse<ReclamoDocenteApi>>(`${environment.apiUrl}/docente/reclamos`, { params }).pipe(
       map((res): ApiListResponse<SolicitudRevisionItem> => {
         const datos = (res.datos ?? []).map((item) =>
@@ -132,70 +143,21 @@ export class AttendanceClaimService {
   }
 
   /**
-   * Recorre el listado existente por su paginación contractual y filtra usando exclusivamente el UUID `grupoId`
-   * del DTO. La respuesta no se emite hasta verificar páginas, total, IDs y pertenencia del grupo en todo el lote.
-   * No agrega parámetros HTTP al contrato del backend.
+   * Reclamos de UN grupo del docente titular: una página que filtra y pagina el servidor (`grupoId`, `pagina`, `tamano`,
+   * `estado` opcional). `total` es el total del grupo (o del estado) según el servidor: con `tamano: 1` sirve de conteo sin
+   * descargar la lista. Valida el UUID antes de emitir la petición; un grupo ajeno responde vacío desde el servidor.
    */
-  getReclamosDocentePorGrupo(grupoId: string): Observable<SolicitudRevisionItem[]> {
+  getReclamosDocentePorGrupo(grupoId: string, paginacion: PaginacionReclamosGrupo): Observable<ApiListResponse<SolicitudRevisionItem>> {
     return defer(() => {
       if (!isUuid(grupoId)) {
         return throwError(() => new IdentificadorInvalidoError(grupoId));
       }
-
-      const tamanoPagina = 100;
-      const grupoBuscado = grupoId.toLowerCase();
-      const cargarPagina = (
-        pagina: number,
-        totalEsperado?: number,
-        acumulados: SolicitudRevisionItem[] = [],
-        idsVistos: Set<string> = new Set<string>()
-      ): Observable<SolicitudRevisionItem[]> => {
-        const params = new HttpParams().set('pagina', pagina).set('tamano', tamanoPagina);
-        return this.http.get<ApiListResponse<ReclamoDocenteApi>>(`${environment.apiUrl}/docente/reclamos`, { params }).pipe(
-          switchMap((res) => {
-            const datos = res?.datos;
-            const total = res?.total;
-            if (res?.exitoso !== true || !Number.isSafeInteger(total) || total < 0 || !Array.isArray(datos)) {
-              return throwError(() => new PaginacionReclamosInconsistenteError());
-            }
-            if (totalEsperado !== undefined && total !== totalEsperado) {
-              return throwError(() => new PaginacionReclamosInconsistenteError());
-            }
-
-            const paginasTotales = Math.max(1, Math.ceil(total / tamanoPagina));
-            const filasEsperadas = total === 0 && pagina === 1 ? 0 : Math.min(tamanoPagina, total - (pagina - 1) * tamanoPagina);
-            if (pagina > paginasTotales || filasEsperadas < 0 || datos.length !== filasEsperadas) {
-              return throwError(() => new PaginacionReclamosInconsistenteError());
-            }
-
-            const idsPagina = new Set(idsVistos);
-            for (const dto of datos) {
-              if (!dto || typeof dto.id !== 'string' || !dto.id.trim() || !isUuid(dto.grupoId)) {
-                return throwError(() => new PaginacionReclamosInconsistenteError());
-              }
-              const idNormalizado = dto.id.trim().toLowerCase();
-              if (idsPagina.has(idNormalizado)) {
-                return throwError(() => new PaginacionReclamosInconsistenteError());
-              }
-              idsPagina.add(idNormalizado);
-            }
-
-            const paginaMapeada = datos.map((item) =>
-              ClaimMapper.fromReclamoDocente(item, (instant) => this.sessionTimeZone.displayInstant(instant).date)
-            );
-            const siguienteAcumulado = [...acumulados, ...paginaMapeada];
-            if (pagina < paginasTotales) {
-              return cargarPagina(pagina + 1, total, siguienteAcumulado, idsPagina);
-            }
-            if (siguienteAcumulado.length !== total) {
-              return throwError(() => new PaginacionReclamosInconsistenteError());
-            }
-            return of(siguienteAcumulado.filter((item) => item.grupoId?.toLowerCase() === grupoBuscado));
-          })
-        );
-      };
-
-      return cargarPagina(1);
+      return this.getReclamosDocente({
+        grupoId,
+        pagina: paginacion.pagina,
+        tamano: paginacion.tamano,
+        ...(paginacion.estado ? { estado: paginacion.estado } : {}),
+      });
     });
   }
 
