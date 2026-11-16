@@ -54,7 +54,7 @@ export class TabsRutaComponent {
     const lista = this.tabs();
     const actual = lista.findIndex((t) => t.id === this.activa());
     const ultimo = lista.length - 1;
-    let destino = actual;
+    let destino: number;
     if (event.key === 'ArrowRight') destino = actual === ultimo ? 0 : actual + 1;
     else if (event.key === 'ArrowLeft') destino = actual <= 0 ? ultimo : actual - 1;
     else if (event.key === 'Home') destino = 0;

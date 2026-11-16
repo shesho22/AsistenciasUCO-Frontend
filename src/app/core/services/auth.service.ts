@@ -553,7 +553,7 @@ export class AuthService implements OnDestroy {
       });
     } catch (networkError) {
       console.error('Error de red al conectar con el servidor de autenticación institucional:', networkError);
-      throw new Error(this.resolveAuthMessage('AUTH_NETWORK_ERROR'));
+      throw new Error(this.resolveAuthMessage('AUTH_NETWORK_ERROR'), { cause: networkError });
     }
 
     if (!response.ok) {

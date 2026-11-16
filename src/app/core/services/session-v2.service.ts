@@ -110,7 +110,7 @@ export class SessionV2Service {
       });
     } catch (error) {
       if (error instanceof SessionTimeZoneError) throw error;
-      throw new Error('No fue posible convertir el horario a un instante válido.');
+      throw new Error('No fue posible convertir el horario a un instante válido.', { cause: error });
     }
   }
 
