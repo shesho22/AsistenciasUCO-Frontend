@@ -87,6 +87,15 @@ try {
       .map((fuente) => new URL(fuente).origin),
   );
   assert(origenesConnect.has(origenApi), `CSP: connect-src no incluye el origen del API (${origenApi}).`);
+  // Los micro frontends remotos (Security UI) se cargan como modulos JavaScript desde su propio origen: sin ese origen
+  // en script-src el navegador bloquea la consola de seguridad y muestra "no disponible".
+  const origenSecurityUi = new URL(values.SECURITY_BASELINE_UI_URL).origin;
+  const origenesDe = (nombre) => new Set(
+    (directivas.get(nombre) ?? []).filter((fuente) => /^https?:\/\//.test(fuente)).map((fuente) => new URL(fuente).origin),
+  );
+  for (const nombre of ['script-src', 'connect-src', 'style-src']) {
+    assert(origenesDe(nombre).has(origenSecurityUi), `CSP: ${nombre} no incluye el origen de Security UI (${origenSecurityUi}).`);
+  }
   const index = runDocker(['exec', container, 'cat', '/usr/share/nginx/html/index.html']);
   assert(!/<[^>]+\son[a-z]+\s*=/i.test(index), 'index.html trae un manejador de evento en linea (onload/onclick).');
 
