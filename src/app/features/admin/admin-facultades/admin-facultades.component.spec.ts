@@ -179,7 +179,7 @@ describe('AdminFacultadesComponent', () => {
     // Sin valores por defecto: ni el primer decano ni la primera institución se preseleccionan.
     expect(component.formFacultad.idDecano).toBe('');
     expect(component.formFacultad.idInstitucion).toBe('');
-    const selectInstitucion = (fixture.nativeElement as HTMLElement).querySelector('#fac-institucion') as HTMLSelectElement;
+    const selectInstitucion = (fixture.nativeElement as HTMLElement).querySelector('[id="fac-institucion"]') as HTMLSelectElement;
     expect(selectInstitucion.options[0].textContent).toContain('Seleccionar institución');
   });
 
@@ -215,7 +215,7 @@ describe('AdminFacultadesComponent', () => {
 
     expect(component.formFacultad.idInstitucion).toBe('inst-2');
     expect(component.formFacultad.idDecano).toBe('dec-1');
-    expect(((fixture.nativeElement as HTMLElement).querySelector('#fac-institucion') as HTMLSelectElement).disabled).toBeTrue();
+    expect(((fixture.nativeElement as HTMLElement).querySelector('[id="fac-institucion"]') as HTMLSelectElement).disabled).toBeTrue();
   });
 
   it('el listado conserva la institución de cada facultad que entrega el backend', () => {
