@@ -1,19 +1,25 @@
-import { Component, ChangeDetectionStrategy, computed, input, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Subject, debounceTime } from 'rxjs';
 
 import { FormsModule } from '@angular/forms';
 import { ProgramaCreditosItem } from '../../../../core/models/consultas-transversales.model';
+import { ConsultasTransversalesService } from '../../../../core/services/consultas-transversales.service';
+import { ErrorCargaComponent } from '../../../../shared/components/error-carga/error-carga.component';
+import { ToastService } from '../../../../shared/components/toast/toast.component';
+import { ListadoPaginado } from '../../../../shared/utils/listado-paginado';
 import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 
 /**
  * HU112: tabla unificada de programas y créditos de la facultad (una fila por programa y plan, con semestres,
- * asignaturas y suma de créditos). Recibe las filas que ya cargó la pantalla de programas (una sola consulta, que
- * también alimenta los créditos de las tarjetas) y las filtra y pagina en el navegador.
+ * asignaturas y suma de créditos). La búsqueda y la paginación las resuelve el servidor
+ * (GET /decano/programas-creditos); el total que se muestra es `totalElementos`.
  */
 @Component({
     selector: 'app-dean-programas-creditos',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [FormsModule, BadgeComponent, PaginationComponent],
+    imports: [FormsModule, BadgeComponent, ErrorCargaComponent, PaginationComponent],
     template: `
     <section class="superficie p-6 space-y-4" aria-label="Programas y créditos">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -22,12 +28,12 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
           <p class="text-xs text-warm-500">Créditos, semestres y asignaturas de cada plan de estudio de la facultad.</p>
         </div>
         <span class="px-3 py-1.5 rounded-xl bg-primary-50 text-xs font-bold text-primary-800 border border-primary-200">
-          {{ totalCreditos() }} créditos en {{ filas().length }} planes
+          {{ listado.total() }} {{ listado.total() === 1 ? 'plan' : 'planes' }}
         </span>
       </div>
 
-      @if (error()) {
-        <p class="text-sm text-danger-700 text-center py-4" role="alert">{{ error() }}</p>
+      @if (listado.error() && !listado.cargando()) {
+        <app-error-carga [error]="listado.error()!" (reintentar)="listado.reintentar()" />
       } @else {
         <input
           type="text"
@@ -37,7 +43,7 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
           placeholder="Filtrar por programa, tipo o INP del plan..."
           class="w-full px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-900"
         />
-        @if (filtradas().length === 0) {
+        @if (listado.filas().length === 0 && !listado.cargando()) {
           <p class="text-sm text-warm-500 text-center py-4">No hay programas que coincidan.</p>
         } @else {
           <div class="relative overflow-x-auto">
@@ -53,7 +59,7 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
                 </tr>
               </thead>
               <tbody>
-                @for (f of pagina(); track clave(f)) {
+                @for (f of listado.filas(); track clave(f)) {
                   <tr class="border-b border-warm-50">
                     <td class="py-2 pr-3">
                       <span class="font-semibold text-warm-900 block">{{ f.nombrePrograma }}</span>
@@ -74,42 +80,34 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
             </table>
           </div>
           <app-pagination
-            [totalItems]="filtradas().length"
-            [pageSize]="tamano()"
-            [currentPage]="paginaActual()"
-            (pageChange)="paginaActual.set($event)"
-            (pageSizeChange)="onTamano($event)"
+            [totalItems]="listado.total()"
+            [pageSize]="listado.tamano()"
+            [currentPage]="listado.pagina()"
+            (pageChange)="listado.irAPagina($event)"
+            (pageSizeChange)="listado.cambiarTamano($event)"
           ></app-pagination>
         }
       }
     </section>
   `
 })
-export class DeanProgramasCreditosComponent {
-  readonly filas = input<ProgramaCreditosItem[]>([]);
-  readonly error = input<string | null>(null);
+export class DeanProgramasCreditosComponent implements OnInit {
+  private readonly consultas = inject(ConsultasTransversalesService);
+  private readonly toast = inject(ToastService);
+  private readonly destroyRef = inject(DestroyRef);
 
   filtro = signal('');
-  paginaActual = signal(1);
-  tamano = signal(10);
+  private readonly busqueda$ = new Subject<void>();
 
-  readonly totalCreditos = computed(() => this.filas().reduce((suma, f) => suma + f.totalCreditos, 0));
+  readonly listado = new ListadoPaginado<ProgramaCreditosItem>(
+    (pagina, tamano) => this.consultas.getProgramasCreditos({ busqueda: this.filtro().trim(), pagina, tamano }),
+    (mensaje) => this.toast.error(mensaje)
+  );
 
-  readonly filtradas = computed(() => {
-    const q = this.filtro().toLowerCase().trim();
-    if (!q) return this.filas();
-    return this.filas().filter(
-      (f) =>
-        f.nombrePrograma.toLowerCase().includes(q) ||
-        (f.nombreTipoPrograma ?? '').toLowerCase().includes(q) ||
-        String(f.inpPlanEstudio ?? '').includes(q)
-    );
-  });
-
-  readonly pagina = computed(() => {
-    const inicio = (this.paginaActual() - 1) * this.tamano();
-    return this.filtradas().slice(inicio, inicio + this.tamano());
-  });
+  ngOnInit(): void {
+    this.busqueda$.pipe(debounceTime(300), takeUntilDestroyed(this.destroyRef)).subscribe(() => this.listado.buscar());
+    this.listado.cargar();
+  }
 
   /** Identidad de la fila: un programa puede tener varios planes y un programa sin plan trae el plan en nulo. */
   clave(fila: ProgramaCreditosItem): string {
@@ -118,11 +116,6 @@ export class DeanProgramasCreditosComponent {
 
   onFiltro(valor: string): void {
     this.filtro.set(valor);
-    this.paginaActual.set(1);
-  }
-
-  onTamano(tamano: number): void {
-    this.tamano.set(tamano);
-    this.paginaActual.set(1);
+    this.busqueda$.next();
   }
 }

@@ -363,6 +363,26 @@ describe('StudentCoursesComponent — soporte y radicación (LB-004D FE-01..FE-0
       expect(component.configuracionReclamos()?.maximoSoportes).toBe(3);
     });
 
+    it('si la configuración de reclamos falla se informa el error y se reintenta al abrir la radicación', () => {
+      claims.getConfiguracionReclamos.and.returnValue(throwError(() => new HttpErrorResponse({ status: 500, error: { message: 'No se pudo consultar la configuración.' } })));
+      component.ngOnInit();
+      expect(component.configuracionReclamos()).toBeNull();
+      expect(toast.error).toHaveBeenCalledWith('No se pudo consultar la configuración.');
+
+      claims.getConfiguracionReclamos.calls.reset();
+      claims.getConfiguracionReclamos.and.returnValue(of({ exitoso: true, datos: { maximoSoportes: 2, tamanioMaximoBytes: 1024, tiposPermitidos: [], limiteSubidasPorMinuto: 1, diasLimiteJustificacion: 5 } }) as never);
+      component.iniciarReclamo(crearSesion({ id: 's-2', numeroSesion: 4, fecha: '2026-10-20', estadoAsistencia: 'AUSENTE', reclamable: true }));
+      expect(claims.getConfiguracionReclamos).toHaveBeenCalledTimes(1);
+      expect(component.configuracionReclamos()?.maximoSoportes).toBe(2);
+    });
+
+    it('con la configuración ya cargada no se vuelve a pedir al abrir la radicación', () => {
+      component.ngOnInit();
+      claims.getConfiguracionReclamos.calls.reset();
+      component.iniciarReclamo(crearSesion({ id: 's-2', numeroSesion: 4, fecha: '2026-10-20', estadoAsistencia: 'AUSENTE', reclamable: true }));
+      expect(claims.getConfiguracionReclamos).not.toHaveBeenCalled();
+    });
+
     it('mantiene el estado individual de subida: si el segundo archivo es rechazado por antivirus o 429, no afecta al primero', () => {
       claims.subirSoporte.and.returnValues(
         of({ exitoso: true, datos: { fileId: 'f-1', nombre: 'a.pdf', url: '/api/v1/archivos/f-1', tamanio: 1024 } }) as never,
@@ -579,8 +599,36 @@ describe('StudentCoursesComponent', () => {
     component.abrirModalMatriculaGrupo();
     component.enviarMatriculaPorCodigo('482913');
     expect(toastSpy.error).toHaveBeenCalledWith('Solo desde la red Wi-Fi del campus.');
+    expect(component.errorMatriculaGrupo()).toBe('Solo desde la red Wi-Fi del campus.');
     expect(component.modalMatriculaGrupoVisible()).toBeTrue();
     expect(component.procesandoMatriculaGrupo()).toBeFalse();
+  });
+
+  it('MQR_001: un PIN inexistente (404) muestra el mensaje del backend dentro del modal y se limpia al reintentar o cerrar', () => {
+    matriculaQrSpy.matricularAutenticado.and.returnValue(
+      throwError(() => apiHttpError(404, 'El código de matrícula no es válido o ya no está disponible. Solicítale al docente uno nuevo.')));
+    component.abrirModalMatriculaGrupo();
+    fixture.detectChanges();
+    component.enviarMatriculaPorCodigo('000000');
+    fixture.detectChanges();
+
+    const alerta = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="matricula-error"]');
+    expect(alerta?.textContent).toContain('El código de matrícula no es válido');
+    expect(component.modalMatriculaGrupoVisible()).toBeTrue();
+
+    matriculaQrSpy.matricularAutenticado.and.returnValue(of({ idGrupo: 'g-1' }));
+    component.enviarMatriculaPorCodigo('482913');
+    expect(component.errorMatriculaGrupo()).toBeNull();
+
+    component.errorMatriculaGrupo.set('x');
+    component.cerrarModalMatriculaGrupo();
+    expect(component.errorMatriculaGrupo()).toBeNull();
+  });
+
+  it('un PIN con formato inválido se informa dentro del modal sin llamar al backend', () => {
+    component.enviarMatriculaPorCodigo('12');
+    expect(matriculaQrSpy.matricularAutenticado).not.toHaveBeenCalled();
+    expect(component.errorMatriculaGrupo()).toBeTruthy();
   });
 
   it('F-EST-012: enviarMatriculaPorCodigo con objeto token llama a matricularAutenticado({ token })', () => {

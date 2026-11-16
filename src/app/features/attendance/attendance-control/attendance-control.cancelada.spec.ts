@@ -81,7 +81,7 @@ describe('AttendanceControlComponent sesión cancelada (B.1)', () => {
     realtime['watchTomas'].and.returnValue(NEVER);
     realtime.connectionAlerts.and.returnValue(NEVER);
     claims.getReclamosDocente.and.returnValue(of({ exitoso: true, datos: [] }) as never);
-    claims.getReclamosDocentePorGrupo.and.returnValue(of([]));
+    claims.getReclamosDocentePorGrupo.and.returnValue(of({ exitoso: true, datos: [], total: 0 }));
     registrationConfig.getEmailDomain.and.returnValue(of('@uco.edu.co'));
     emailVerification.resendVerification.and.returnValue(of({ exitoso: true, datos: null }) as never);
 

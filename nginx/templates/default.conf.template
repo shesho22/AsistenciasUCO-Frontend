@@ -41,6 +41,24 @@ server {
         expires off;
     }
 
+    # index.html referencia los archivos con hash de cada versión: debe revalidarse siempre para que un despliegue nuevo
+    # se vea sin vaciar la caché. También atiende el fallback de la SPA (try_files ... /index.html) y la raíz (`/`).
+    location = /index.html {
+        add_header Cache-Control "no-cache";
+        include /etc/nginx/snippets/security-headers.conf;
+        include /etc/nginx/snippets/csp.conf;
+    }
+
+    # Archivos con hash en el nombre (main-XXXXXXXX.js, chunk-XXXXXXXX.js, styles-XXXXXXXX.css y las fuentes de /media/):
+    # su contenido no cambia sin cambiar el nombre, así que se cachean un año. Solo la raíz y /media/; /assets/ (sin hash)
+    # y las rutas de los componentes externos no coinciden.
+    location ~ "^/(?:media/)?[^/]+-[A-Za-z0-9_-]{8}\.(?:js|css|woff2?|ttf|otf)$" {
+        add_header Cache-Control "public, max-age=31536000, immutable";
+        include /etc/nginx/snippets/security-headers.conf;
+        include /etc/nginx/snippets/csp.conf;
+        try_files $uri =404;
+    }
+
     # API de MessageUcoLab (administración de mensajes, paquete minifront-mensajes).
     location /messageucolab/ {
         include /etc/nginx/snippets/security-headers.conf;

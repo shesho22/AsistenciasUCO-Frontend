@@ -357,6 +357,52 @@ describe('CourseService', () => {
     http.expectNone(`${environment.apiUrl}/docente/horarios`);
   });
 
+  describe('getDeanCoursesPage (listado paginado en el servidor)', () => {
+    const URL_GRUPOS = `${environment.apiUrl}/decano/grupos`;
+
+    it('envía búsqueda, programa, periodo, página y tamaño al servidor y conserva el total real', () => {
+      let resultado: { elementos: Course[]; totalElementos: number; totalPaginas: number } | null = null;
+      service
+        .getDeanCoursesPage({ busqueda: ' cálculo ', programaId: 'p-1', idPeriodoAcademico: 'per-1', pagina: 3, tamano: 10 })
+        .subscribe((res) => (resultado = res));
+
+      const req = http.expectOne(porUrl(URL_GRUPOS));
+      expect(req.request.params.get('busqueda')).toBe('cálculo');
+      expect(req.request.params.get('programaId')).toBe('p-1');
+      expect(req.request.params.get('idPeriodoAcademico')).toBe('per-1');
+      expect(req.request.params.get('pagina')).toBe('3');
+      expect(req.request.params.get('tamano')).toBe('10');
+      req.flush(paginaApi([grupoFacultadApi()], 3, 10, 41));
+
+      expect(resultado!.elementos.length).toBe(1);
+      expect(resultado!.elementos[0].name).toBe('Matemática Avanzada III');
+      expect(resultado!.totalElementos).toBe(41);
+      expect(resultado!.totalPaginas).toBe(5);
+    });
+
+    it('omite la búsqueda y los filtros vacíos', () => {
+      service.getDeanCoursesPage({ busqueda: '', pagina: 1, tamano: 10 }).subscribe();
+      const req = http.expectOne(porUrl(URL_GRUPOS));
+      expect(req.request.params.has('busqueda')).toBeFalse();
+      expect(req.request.params.has('programaId')).toBeFalse();
+      req.flush(paginaApi([]));
+    });
+
+    it('una página sin elementos produce una lista vacía', () => {
+      let elementos: Course[] = [{ id: 'x' } as Course];
+      service.getDeanCoursesPage({ pagina: 1, tamano: 10 }).subscribe((res) => (elementos = res.elementos));
+      http.expectOne(porUrl(URL_GRUPOS)).flush({ exitoso: true, numeroPagina: 1, tamanoPagina: 10, totalElementos: 0, totalPaginas: 1 });
+      expect(elementos).toEqual([]);
+    });
+
+    it('un 500 se propaga para que la pantalla ofrezca reintento', () => {
+      let status = 0;
+      service.getDeanCoursesPage({ pagina: 1, tamano: 10 }).subscribe({ error: (err) => (status = err.status) });
+      http.expectOne(porUrl(URL_GRUPOS)).flush({}, { status: 500, statusText: 'Error' });
+      expect(status).toBe(500);
+    });
+  });
+
   it('getCoordinatorCourses lee GET /grupos y nunca los endpoints del docente', () => {
     let courses: Course[] = [];
     service.getCoordinatorCourses().subscribe((res) => (courses = res.datos));

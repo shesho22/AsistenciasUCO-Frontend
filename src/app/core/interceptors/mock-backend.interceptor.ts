@@ -5,6 +5,12 @@ import { mockStore } from '../mocks/mock-data-store';
 import { respuestaConsultasTransversales } from '../mocks/mock-consultas-transversales';
 import { plantillasNotificacionMock } from '../mocks/mock-notificaciones';
 import {
+  JORNADAS_PROGRAMA_MOCK,
+  MODALIDADES_PROGRAMA_MOCK,
+  TIPOS_PROGRAMA_MOCK,
+  filtrarProgramasMock,
+} from '../mocks/mock-programas';
+import {
   mockHorariosToDto,
   mockMateriasToDto,
   mockSesionesToDto,
@@ -508,6 +514,25 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     };
     return of(okResponse(ficha)).pipe(delay(200));
   }
+  // ================= DECANO: PROGRAMAS ACADÉMICOS Y SUS CATÁLOGOS =================
+  // El inicio del decano (coordinadores) los consulta al abrir: sin simularlos devolvían 501 y avisaban al usuario.
+  if (url.split('?')[0].endsWith('/decano/programas') && method === 'GET') {
+    const filtrados = filtrarProgramasMock(req.params.get('nombre'), req.params.get('estaActivo'), req.params.get('idTipoPrograma'));
+    const tamano = Math.max(Number(req.params.get('tamano')) || 10, 1);
+    const pagina = Math.max(Number(req.params.get('pagina')) || 1, 1);
+    const pageDatos = filtrados.slice((pagina - 1) * tamano, pagina * tamano);
+    return of(okResponse(pageDatos, undefined, filtrados.length)).pipe(delay(200));
+  }
+  // Catálogos de solo lectura: el backend los entrega como arreglo simple, sin sobre ApiResponse.
+  for (const [sufijo, catalogo] of [
+    ['/tipos-programa', TIPOS_PROGRAMA_MOCK],
+    ['/modalidades-programa', MODALIDADES_PROGRAMA_MOCK],
+    ['/jornadas-programa', JORNADAS_PROGRAMA_MOCK],
+  ] as const) {
+    if (!url.includes('/admin/') && url.split('?')[0].endsWith(sufijo) && method === 'GET') {
+      return of(new HttpResponse({ status: 200, body: catalogo })).pipe(delay(150));
+    }
+  }
   if (url.endsWith('/decano/estructura') && method === 'GET') {
     const estructura = [
       {
@@ -655,8 +680,49 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     return of(okResponse(mockFileRes, 'Archivo subido correctamente.')).pipe(delay(300));
   }
   if (url.endsWith('/docente/reclamos') && method === 'GET') {
-    // PC (puntos de control): la bandeja trae la toma reclamada (numero y punto de control), como el backend real.
-    return of(okResponse(mockStore.solicitudesRevision.map((r) => ({ ...r, ...datosTomaMock(r.idToma) })))).pipe(delay(250));
+    // CIERRE-W1A: como el backend real, filtra por estado, `busqueda` (estudiante, asignatura, justificacion) y `grupoId`, pagina
+    // y entrega el folio (`nombre`). PC (puntos de control): la bandeja trae la toma reclamada (numero y punto de control).
+    const estadoPorCodigo: Record<string, string> = { P: 'PENDIENTE', A: 'APROBADA', R: 'RECHAZADA' };
+    const estado = req.params.get('estado');
+    const busqueda = (req.params.get('busqueda') ?? '').trim().toLowerCase();
+    const grupoId = req.params.get('grupoId');
+    const pagina = Math.max(1, Number(req.params.get('pagina') ?? 1));
+    const tamano = Math.min(100, Math.max(1, Number(req.params.get('tamano') ?? 10)));
+    const filtradas = mockStore.solicitudesRevision.filter(
+      (r) =>
+        (!estado || r.estadoSolicitud === (estadoPorCodigo[estado] ?? estado)) &&
+        (!grupoId || r.grupoId?.toLowerCase() === grupoId.toLowerCase()) &&
+        (!busqueda ||
+          [r.estudianteNombre, r.materiaNombre, r.materiaCodigo, r.justificacionSolicitud].some((texto) =>
+            (texto ?? '').toLowerCase().includes(busqueda)
+          ))
+    );
+    const pagina$ = filtradas
+      .slice((pagina - 1) * tamano, pagina * tamano)
+      .map((r) => ({ ...r, nombre: r.folio ?? r.id, ...datosTomaMock(r.idToma) }));
+    return of(okResponse(pagina$, undefined, filtradas.length)).pipe(delay(250));
+  }
+  if (/\/docente\/grupos\/[^/]+\/estudiantes$/.test(url) && method === 'GET') {
+    // CIERRE-W1A: padron paginado del docente titular (pagina, tamano, busqueda por nombre o documento), como el backend real.
+    const grupoId = url.split('/docente/grupos/')[1].split('/')[0];
+    const busqueda = (req.params.get('busqueda') ?? '').trim().toLowerCase();
+    const pagina = Math.max(1, Number(req.params.get('pagina') ?? 1));
+    const tamano = Math.min(100, Math.max(1, Number(req.params.get('tamano') ?? 10)));
+    const matriculados = mockStore.estudiantesDirectorio
+      .filter((e) => e.gruposInscritos?.includes(grupoId))
+      .filter((e) => !busqueda || `${e.nombreCompleto} ${e.documento}`.toLowerCase().includes(busqueda))
+      .map((e) => ({
+        id: `matricula-${grupoId}-${e.id}`,
+        idEstudiante: e.id,
+        documento: e.documento,
+        nombreCompleto: e.nombreCompleto,
+        correo: e.correo,
+        codigoEstado: e.estadoMatricula,
+        nombreEstado: e.estadoMatricula,
+      }));
+    return of(okPageResponse(matriculados.slice((pagina - 1) * tamano, pagina * tamano), pagina, tamano, matriculados.length)).pipe(
+      delay(250)
+    );
   }
   if (url.endsWith('/estudiante/reclamos') && method === 'GET') {
     // HU010/HU011: misma forma que el backend (lista con `total`), filtrada por estado y paginada.

@@ -1,4 +1,6 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
+import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 import { TeacherGrupoEstudiantesComponent } from './teacher-grupo-estudiantes.component';
 import { Course } from '../../../../core/models/course.model';
 
@@ -84,15 +86,73 @@ describe('TeacherGrupoEstudiantesComponent', () => {
     expect(text).not.toContain('No hay estudiantes');
   });
 
-  it('F-DOC-007: el padron se pinta por paginas (12) y no completo', () => {
-    const muchos = Array.from({ length: 30 }, (_, i) => ({ idEstudiante: `e-${i}`, nombreCompleto: `Estudiante ${i}`, documento: `${i}` }));
-    fixture.componentRef.setInput('estudiantes', muchos);
+  // CIERRE-W1A: la página, el total y la búsqueda las entrega el servidor; el componente no recorta ni filtra el padrón.
+  it('CIERRE-W1A pinta exactamente las filas que recibe (la página del servidor) y el paginador usa el total del servidor', () => {
+    const pagina = Array.from({ length: 12 }, (_, i) => ({ idEstudiante: `e-${i}`, nombreCompleto: `Estudiante ${i}`, documento: `${i}` }));
+    fixture.componentRef.setInput('estudiantes', pagina);
+    fixture.componentRef.setInput('totalEstudiantes', 30);
+    fixture.componentRef.setInput('pagina', 2);
     fixture.detectChanges();
 
     expect(fixture.nativeElement.querySelectorAll('[data-testid="padron-fila"]').length).toBe(12);
-    expect(fixture.nativeElement.querySelector('app-pagination')).not.toBeNull();
-    component.pagina.set(3);
+    const paginador = fixture.debugElement.query(By.directive(PaginationComponent)).componentInstance as PaginationComponent;
+    expect(paginador.totalItems()).toBe(30);
+    expect(paginador.currentPage()).toBe(2);
+    expect(paginador.pageSize()).toBe(12);
+    expect(fixture.nativeElement.textContent).toContain('30 de');
+  });
+
+  it('sin total del servidor el paginador usa la cantidad de filas recibidas', () => {
+    fixture.componentRef.setInput('estudiantes', mockEstudiantes);
     fixture.detectChanges();
-    expect(component.estudiantesPagina().length).toBe(6);
+
+    const paginador = fixture.debugElement.query(By.directive(PaginationComponent)).componentInstance as PaginationComponent;
+    expect(paginador.totalItems()).toBe(2);
+  });
+
+  it('pedir otra página o tamaño se delega al padre', () => {
+    const pagina = jasmine.createSpy('pagina');
+    const tamano = jasmine.createSpy('tamano');
+    component.paginaChange.subscribe(pagina);
+    component.tamanoChange.subscribe(tamano);
+    fixture.componentRef.setInput('estudiantes', mockEstudiantes);
+    fixture.componentRef.setInput('totalEstudiantes', 60);
+    fixture.detectChanges();
+
+    const paginador = fixture.debugElement.query(By.directive(PaginationComponent)).componentInstance as PaginationComponent;
+    paginador.pageChange.emit(3);
+    paginador.pageSizeChange.emit(24);
+
+    expect(pagina).toHaveBeenCalledOnceWith(3);
+    expect(tamano).toHaveBeenCalledOnceWith(24);
+  });
+
+  it('la búsqueda se emite al padre tras una espera corta y sin repetir el mismo texto', fakeAsync(() => {
+    const busqueda = jasmine.createSpy('busqueda');
+    component.busquedaChange.subscribe(busqueda);
+    fixture.detectChanges();
+    const input = fixture.nativeElement.querySelector('[data-testid="padron-busqueda"]') as HTMLInputElement;
+
+    for (const texto of ['a', 'an', ' ana ']) {
+      input.value = texto;
+      input.dispatchEvent(new Event('input'));
+      tick(100);
+    }
+    expect(busqueda).not.toHaveBeenCalled();
+    tick(300);
+    expect(busqueda).toHaveBeenCalledOnceWith('ana');
+
+    input.value = 'ana';
+    input.dispatchEvent(new Event('input'));
+    tick(300);
+    expect(busqueda).toHaveBeenCalledTimes(1);
+  }));
+
+  it('sin resultados de la búsqueda se informa que ningún estudiante coincide', () => {
+    fixture.componentRef.setInput('busqueda', 'zzz');
+    fixture.componentRef.setInput('estudiantes', []);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Ningún estudiante del grupo coincide con la búsqueda');
   });
 });

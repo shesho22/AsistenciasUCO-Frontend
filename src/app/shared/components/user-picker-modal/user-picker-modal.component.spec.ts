@@ -153,6 +153,34 @@ describe('UserPickerModalComponent', () => {
     expect(fixture.nativeElement.querySelector('app-error-carga')).not.toBeNull();
   });
 
+  it('un docente sin documento ni correo no muestra «Sin ID», «Doc:» ni correo inventado', () => {
+    consultas.getDocentesInstitucion.and.returnValue(of(pagina([{
+      idDocente: 'doc-2', numeroIdentificacion: null, nombreCompleto: 'Ana Ruiz', correo: null, activo: true,
+      programas: null, totalProgramas: 0, totalGrupos: 0,
+    }])));
+    abrir();
+
+    const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(texto).toContain('Ana Ruiz');
+    expect(texto).not.toContain('Sin ID');
+    expect(texto).not.toContain('Doc:');
+    expect(texto).not.toContain('@uco.edu.co');
+  });
+
+  it('un fallo se muestra como error con reintento y el reintento vuelve a consultar', () => {
+    consultas.getDocentesInstitucion.and.returnValue(throwError(() => new HttpErrorResponse({ status: 500, statusText: 'Error' })));
+    abrir();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[data-testid="error-carga"]')).not.toBeNull();
+    expect(el.textContent).not.toContain('No se encontraron resultados');
+
+    consultas.getDocentesInstitucion.and.returnValue(of(pagina([ROBERTO], 1)));
+    (el.querySelector('[data-testid="error-carga"] button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(component.listado.error()).toBeNull();
+    expect(component.usuarios().length).toBe(1);
+  });
+
   it('sin resultados muestra el estado vacío y ofrece registrar a la persona', () => {
     consultas.getDocentesInstitucion.and.returnValue(of(pagina([], 0)));
     abrir();

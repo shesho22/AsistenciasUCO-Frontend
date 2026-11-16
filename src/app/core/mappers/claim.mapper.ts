@@ -195,6 +195,7 @@ export class ClaimMapper {
       categoria,
       soporteAdjunto: soporte,
       soportes: soportesMapeados,
+      folio: dto.nombre ?? undefined,
       justificacionSolicitud: dto.justificacionSolicitud,
       justificacionRespuesta: dto.justificacionRespuesta ?? undefined,
       idToma: dto.idToma ?? null,

@@ -124,20 +124,41 @@ describe('TeacherClaimsComponent', () => {
     expect(component.listState()).toBe('LOADED');
   });
 
-  it('maneja error 501 marcando listUnavailable', () => {
-    claimServiceSpy.getReclamosDocente.and.returnValue(throwError(() => ({ status: 501 })));
+  const errorApi = (status: number, code: string, message: string) =>
+    new HttpErrorResponse({
+      status,
+      error: { timestamp: '2026-11-16T10:00:00Z', status, error: 'Error', code, message, path: '/api/v1/docente/reclamos', correlationId: null },
+    });
+
+  it('un 501 inesperado se muestra con el mensaje del backend, sin texto técnico ni código HTTP', () => {
+    claimServiceSpy.getReclamosDocente.and.returnValue(throwError(() => errorApi(501, 'FEATURE_UNAVAILABLE', 'Esta funcionalidad no está disponible por el momento.')));
     component.cargarReclamos();
-    expect(component.listUnavailable()).toBeTrue();
-    expect(component.listState()).toBe('UNAVAILABLE');
-    expect(component.listStateMessage()).toContain('501');
+    fixture.detectChanges();
+    const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(component.listState()).toBe('SERVER_ERROR');
+    expect(component.listStateMessage()).toBe('Esta funcionalidad no está disponible por el momento.');
+    expect(texto).toContain('Esta funcionalidad no está disponible por el momento.');
+    expect(texto).not.toContain('501');
+    expect(texto).not.toContain('Not Implemented');
+    expect(texto).not.toContain('contrato');
   });
 
-  it('maneja error 403 y otros estados en listStateMessage', () => {
-    claimServiceSpy.getReclamosDocente.and.returnValue(throwError(() => ({ status: 403, error: { mensajeUsuario: 'Sin acceso' } })));
+  it('maneja error 403 mostrando el mensaje del backend sin el código HTTP', () => {
+    claimServiceSpy.getReclamosDocente.and.returnValue(throwError(() => errorApi(403, 'FORBIDDEN', 'No tienes acceso a esta información.')));
     component.cargarReclamos();
     expect(component.listState()).toBe('FORBIDDEN');
-    expect(component.listStateMessage()).toContain('403');
-    expect(toastSpy.error).toHaveBeenCalled();
+    expect(component.listStateMessage()).toBe('No tienes acceso a esta información.');
+    expect(component.listStateMessage()).not.toContain('403');
+    expect(toastSpy.error).toHaveBeenCalledWith('No tienes acceso a esta información.');
+  });
+
+  it('sin respuesta del servidor (estado 0) se ofrece reintento con el mensaje semántico', () => {
+    claimServiceSpy.getReclamosDocente.and.returnValue(throwError(() => new HttpErrorResponse({ status: 0 })));
+    component.cargarReclamos();
+    fixture.detectChanges();
+    expect(component.listState()).toBe('NETWORK_ERROR');
+    expect(component.listStateMessage().length).toBeGreaterThan(0);
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Reintentar');
   });
 
   it('permite abrir vista de resolución y volver a bandeja', () => {
@@ -568,12 +589,12 @@ describe('TeacherClaimsComponent — bandeja paginada y detalle (HU035/HU036)', 
     expect(texto).not.toMatch(/Resolución registrada el\s*:/);
   });
 
-  it('FE-06 un 501 de la bandeja se refleja como módulo no disponible', () => {
+  it('FE-06 un 501 de la bandeja se trata como error del servidor con reintento, no como módulo pendiente', () => {
     fixture.detectChanges();
     listaReq().flush({}, { status: 501, statusText: 'Not Implemented' });
 
-    expect(component.listState()).toBe('UNAVAILABLE');
-    expect(component.listUnavailable()).toBeTrue();
+    expect(component.listState()).toBe('SERVER_ERROR');
+    expect(component.listStateMessage()).not.toContain('501');
   });
 
   it('si la página actual queda vacía (p. ej. tras resolver), retrocede a la última página con datos', () => {
@@ -591,15 +612,96 @@ describe('TeacherClaimsComponent — bandeja paginada y detalle (HU035/HU036)', 
     expect(component.pagina()).toBe(1);
   });
 
-  it('la búsqueda local es reactiva sobre la página cargada', () => {
-    cargarInicial([fila(ID_1), fila(ID_2)], 2, 2);
-    const input = fixture.nativeElement.querySelector('input[type="text"]') as HTMLInputElement;
-    input.value = 'Estudiante 2';
-    input.dispatchEvent(new Event('input'));
-    fixture.detectChanges();
+  // CIERRE-W1A: la búsqueda la resuelve el servidor; la lista nunca se filtra en memoria.
+  describe('CIERRE-W1A búsqueda en el servidor', () => {
+    function escribir(texto: string): void {
+      const input = fixture.nativeElement.querySelector('input[type="text"]') as HTMLInputElement;
+      input.value = texto;
+      input.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+    }
 
-    expect(component.filteredReclamos().map((r) => r.id)).toEqual([ID_2]);
-    expect(fixture.nativeElement.textContent).not.toContain('Estudiante 1');
+    it('envía la búsqueda al servidor tras una espera corta, vuelve a la página 1 y muestra lo que devuelve', fakeAsync(() => {
+      cargarInicial([fila(ID_1), fila(ID_2)], 25, 7);
+      component.cambiarPagina(3);
+      http.expectOne((r) => r.url === LISTA && r.params.get('pagina') === '3').flush({ exitoso: true, datos: [fila(ID_1)], total: 25 });
+      http.expectOne((r) => r.url === LISTA && r.params.get('estado') === 'P').flush({ exitoso: true, datos: [], total: 7 });
+
+      escribir('Estudiante 2');
+      tick(299);
+      http.expectNone((r) => r.url === LISTA);
+      tick(1);
+
+      const req = http.expectOne((r) => r.url === LISTA && r.params.get('busqueda') === 'Estudiante 2');
+      expect(req.request.params.get('pagina')).toBe('1');
+      req.flush({ exitoso: true, datos: [fila(ID_2)], total: 1 });
+      http.expectOne((r) => r.url === LISTA && r.params.get('estado') === 'P').flush({ exitoso: true, datos: [], total: 7 });
+      fixture.detectChanges();
+
+      expect(component.pagina()).toBe(1);
+      expect(component.total()).toBe(1);
+      expect(component.reclamos().map((r) => r.id)).toEqual([ID_2]);
+    }));
+
+    it('varias teclas seguidas producen una sola petición', fakeAsync(() => {
+      cargarInicial([fila(ID_1)], 1, 1);
+
+      escribir('E');
+      tick(100);
+      escribir('Es');
+      tick(100);
+      escribir('Est');
+      tick(300);
+
+      const req = http.expectOne((r) => r.url === LISTA && r.params.get('busqueda') === 'Est');
+      req.flush({ exitoso: true, datos: [], total: 0 });
+      http.expectOne((r) => r.url === LISTA && r.params.get('estado') === 'P').flush({ exitoso: true, datos: [], total: 1 });
+      http.expectNone((r) => r.url === LISTA);
+    }));
+
+    it('una búsqueda sin coincidencias muestra el estado vacío del servidor y borrarla vuelve a la lista completa', fakeAsync(() => {
+      cargarInicial([fila(ID_1)], 1, 1);
+
+      escribir('zzz');
+      tick(300);
+      http.expectOne((r) => r.url === LISTA && r.params.get('busqueda') === 'zzz').flush({ exitoso: true, datos: [], total: 0 });
+      http.expectOne((r) => r.url === LISTA && r.params.get('estado') === 'P').flush({ exitoso: true, datos: [], total: 1 });
+      fixture.detectChanges();
+      expect(component.reclamos()).toEqual([]);
+      expect(fixture.nativeElement.textContent).toContain('No hay reclamos en esta categoría');
+
+      escribir('');
+      tick(300);
+      const todos = http.expectOne((r) => r.url === LISTA && !r.params.has('busqueda') && !r.params.has('estado'));
+      todos.flush({ exitoso: true, datos: [fila(ID_1)], total: 1 });
+      http.expectOne((r) => r.url === LISTA && r.params.get('estado') === 'P').flush({ exitoso: true, datos: [], total: 1 });
+      expect(component.reclamos().length).toBe(1);
+    }));
+
+    it('con el filtro Pendientes y una búsqueda activa el contador de pendientes se consulta aparte (no es el total filtrado)', fakeAsync(() => {
+      cargarInicial([fila(ID_1)], 1, 9);
+      component.cambiarEstado('P');
+      http.expectOne((r) => r.url === LISTA && r.params.get('estado') === 'P' && r.params.get('tamano') === '10')
+        .flush({ exitoso: true, datos: [fila(ID_1)], total: 9 });
+
+      escribir('ana');
+      tick(300);
+      http.expectOne((r) => r.url === LISTA && r.params.get('busqueda') === 'ana')
+        .flush({ exitoso: true, datos: [fila(ID_1)], total: 2 });
+      http.expectOne((r) => r.url === LISTA && r.params.get('tamano') === '1' && !r.params.has('busqueda'))
+        .flush({ exitoso: true, datos: [], total: 9 });
+
+      expect(component.totalPendientes()).toBe(9);
+      expect(component.total()).toBe(2);
+    }));
+  });
+
+  it('CIERRE-W1A el folio que se muestra es el del backend, no uno armado con el id', () => {
+    cargarInicial([fila(ID_1, { nombre: 'REC-3F0C1D2E' })], 1, 1);
+
+    const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(texto).toContain('REC-3F0C1D2E');
+    expect(texto).not.toContain('REC-#');
   });
 
   it('FE-08 no emite peticiones por polling: sin interacción no hay más tráfico', fakeAsync(() => {

@@ -123,7 +123,7 @@ describe('AttendanceControlComponent public workflows', () => {
     attendanceClaimService.getReclamosDocente.and.returnValue(
       of({ exitoso: true, datos: [] })
     );
-    attendanceClaimService.getReclamosDocentePorGrupo.and.returnValue(of([]));
+    attendanceClaimService.getReclamosDocentePorGrupo.and.returnValue(of({ exitoso: true, datos: [], total: 0 }));
 
     TestBed.configureTestingModule({
       imports: [AttendanceControlComponent],

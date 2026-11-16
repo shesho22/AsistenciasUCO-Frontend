@@ -39,7 +39,8 @@ export interface UserPickerItem {
   nombres: string;
   apellidos: string;
   nombreCompleto: string;
-  correo: string;
+  /** Solo si el backend lo entrega; el directorio de docentes puede no incluir correo. */
+  correo?: string;
   dependenciaOPrograma?: string;
   rolActual?: string;
 }
@@ -131,9 +132,13 @@ export interface UserPickerItem {
                     }
                   </div>
                   <div class="flex flex-wrap items-center gap-y-0.5 gap-x-3 text-xs text-warm-500 mt-0.5">
-                    <span class="font-mono text-warm-700">Doc: {{ user.numeroIdentificacion }}</span>
+                    @if (user.numeroIdentificacion) {
+                      <span class="font-mono text-warm-700">Doc: {{ user.numeroIdentificacion }}</span>
+                    }
                     @if (user.correo) {
-                      <span>•</span>
+                      @if (user.numeroIdentificacion) {
+                        <span>•</span>
+                      }
                       <span class="truncate text-primary-700 font-medium">{{ user.correo }}</span>
                     }
                     @if (user.dependenciaOPrograma) {

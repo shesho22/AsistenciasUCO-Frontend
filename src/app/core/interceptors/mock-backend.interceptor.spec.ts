@@ -389,6 +389,112 @@ describe('mockBackendInterceptor', () => {
     expect(deSesion.fechaPuntoControlUtc).toBeNull();
   }));
 
+  // CIERRE-W1A: el simulador respeta los parámetros nuevos y entrega el folio como el backend real.
+  describe('CIERRE-W1A GET /docente/reclamos filtra y pagina como el backend', () => {
+    interface ReclamoFiltrado extends ReclamoDocenteMock {
+      nombre: string;
+      estadoSolicitud: string;
+      estudianteNombre: string;
+    }
+
+    function pedir(params: Record<string, string>): SobreDatos<ReclamoFiltrado[]> & { total: number } {
+      let res: (SobreDatos<ReclamoFiltrado[]> & { total: number }) | undefined;
+      httpClient
+        .get<SobreDatos<ReclamoFiltrado[]> & { total: number }>(`${environment.apiUrl}/docente/reclamos`, { params })
+        .subscribe((r) => (res = r));
+      tick(300);
+      return res!;
+    }
+
+    it('entrega el folio en `nombre` (el del backend, no uno armado en la UI)', fakeAsync(() => {
+      auth.setMockMode(true);
+      const res = pedir({});
+      expect(res.datos.length).toBeGreaterThan(0);
+      expect(res.datos.every((r) => !!r.nombre)).toBeTrue();
+      expect(res.datos.find((r) => r.id === 'REC-001')!.nombre).toBe('REC-001');
+    }));
+
+    it('filtra por estado P/A/R y devuelve el total filtrado', fakeAsync(() => {
+      auth.setMockMode(true);
+      const total = pedir({}).total;
+      const pendientes = pedir({ estado: 'P' });
+      expect(pendientes.datos.every((r) => r.estadoSolicitud === 'PENDIENTE')).toBeTrue();
+      expect(pendientes.total).toBe(pendientes.datos.length);
+      expect(pendientes.total).toBeLessThan(total);
+    }));
+
+    it('filtra por texto (estudiante, asignatura o justificación) sin distinguir mayúsculas', fakeAsync(() => {
+      auth.setMockMode(true);
+      const res = pedir({ busqueda: 'ZAPATA' });
+      expect(res.datos.map((r) => r.id)).toEqual(['REC-001']);
+      expect(res.total).toBe(1);
+      expect(pedir({ busqueda: 'zzz-sin-coincidencias' }).total).toBe(0);
+    }));
+
+    it('pagina con pagina y tamano y mantiene el total', fakeAsync(() => {
+      auth.setMockMode(true);
+      const total = pedir({}).total;
+      const primera = pedir({ pagina: '1', tamano: '2' });
+      const segunda = pedir({ pagina: '2', tamano: '2' });
+      expect(primera.datos.length).toBe(2);
+      expect(segunda.datos.length).toBe(total - 2);
+      expect(primera.total).toBe(total);
+      expect(segunda.total).toBe(total);
+      expect(primera.datos.map((r) => r.id)).not.toEqual(segunda.datos.map((r) => r.id));
+    }));
+
+    it('filtra por grupoId: un grupo sin reclamos devuelve lista vacía', fakeAsync(() => {
+      auth.setMockMode(true);
+      const res = pedir({ grupoId: '3f0c1d2e-0000-4000-8000-0000000000ff' });
+      expect(res.datos).toEqual([]);
+      expect(res.total).toBe(0);
+    }));
+  });
+
+  describe('CIERRE-W1A GET /docente/grupos/{id}/estudiantes pagina y busca como el backend', () => {
+    interface Matricula {
+      id: string;
+      idEstudiante: string;
+      nombreCompleto: string;
+      documento: string;
+    }
+
+    it('devuelve ApiPageResponse con la página y el total filtrado', fakeAsync(() => {
+      auth.setMockMode(true);
+      const grupo = mockStore.estudiantesDirectorio.find((e) => e.gruposInscritos?.length)!.gruposInscritos![0];
+      const matriculados = mockStore.estudiantesDirectorio.filter((e) => e.gruposInscritos?.includes(grupo));
+      let res: SobrePagina<Matricula> | undefined;
+      httpClient
+        .get<SobrePagina<Matricula>>(`${environment.apiUrl}/docente/grupos/${grupo}/estudiantes`, { params: { pagina: '1', tamano: '1' } })
+        .subscribe((r) => (res = r));
+      tick(300);
+
+      expect(res!.elementos.length).toBe(1);
+      expect(res!.totalElementos).toBe(matriculados.length);
+      expect(res!.totalPaginas).toBe(matriculados.length);
+      expect(res!.elementos[0].idEstudiante).toBe(matriculados[0].id);
+    }));
+
+    it('filtra por nombre o documento y un texto sin coincidencias da cero', fakeAsync(() => {
+      auth.setMockMode(true);
+      const estudiante = mockStore.estudiantesDirectorio.find((e) => e.gruposInscritos?.length)!;
+      const grupo = estudiante.gruposInscritos![0];
+      let porDocumento: SobrePagina<Matricula> | undefined;
+      let sinResultados: SobrePagina<Matricula> | undefined;
+      httpClient
+        .get<SobrePagina<Matricula>>(`${environment.apiUrl}/docente/grupos/${grupo}/estudiantes`, { params: { busqueda: estudiante.documento } })
+        .subscribe((r) => (porDocumento = r));
+      httpClient
+        .get<SobrePagina<Matricula>>(`${environment.apiUrl}/docente/grupos/${grupo}/estudiantes`, { params: { busqueda: 'zzz-sin-coincidencias' } })
+        .subscribe((r) => (sinResultados = r));
+      tick(300);
+
+      expect(porDocumento!.elementos.some((m) => m.idEstudiante === estudiante.id)).toBeTrue();
+      expect(sinResultados!.elementos).toEqual([]);
+      expect(sinResultados!.totalElementos).toBe(0);
+    }));
+  });
+
   it('A2-F-08 DELETE /estudiante/reclamos/{id} retira un reclamo pendiente y lo deja RETIRADA', fakeAsync(() => {
     auth.setMockMode(true);
     const copia = JSON.parse(JSON.stringify(mockStore.solicitudesRevision));
@@ -538,5 +644,56 @@ describe('mockBackendInterceptor', () => {
     expect(res!.exitoso).toBeTrue();
     expect(res!.datos.id).toBe('GRP-MOCK-1');
   }));
+  it('simula los programas del decano y los catálogos de programa que consulta su inicio', fakeAsync(() => {
+    auth.setMockMode(true);
+
+    let programas: (SobreDatos<{ id: string; estaActivo: boolean; nombreFacultad: string | null }[]> & { total?: number }) | undefined;
+    httpClient
+      .get<typeof programas>(`${environment.apiUrl}/decano/programas`, { params: { estaActivo: true, pagina: 1, tamano: 100 } })
+      .subscribe((r) => (programas = r));
+    tick(250);
+    expect(programas!.exitoso).toBeTrue();
+    expect(programas!.datos.length).toBeGreaterThan(0);
+    expect(programas!.datos.every((p) => p.estaActivo)).toBeTrue();
+    expect(programas!.total).toBe(programas!.datos.length);
+
+    // Los catálogos son arreglos simples (sin sobre), como los entrega el backend real.
+    for (const catalogo of ['tipos-programa', 'modalidades-programa', 'jornadas-programa']) {
+      let lista: { id: string; codigo: string; nombre: string }[] | undefined;
+      httpClient.get<{ id: string; codigo: string; nombre: string }[]>(`${environment.apiUrl}/${catalogo}`).subscribe((r) => (lista = r));
+      tick(250);
+      expect(Array.isArray(lista)).withContext(catalogo).toBeTrue();
+      expect(lista!.length).withContext(catalogo).toBeGreaterThan(0);
+      expect(Object.keys(lista![0]).sort()).withContext(catalogo).toEqual(['codigo', 'id', 'nombre']);
+    }
+  }));
+
+  it('el filtro de programas del decano respeta nombre, estado y paginación', fakeAsync(() => {
+    auth.setMockMode(true);
+    let porNombre: SobreDatos<{ nombre: string }[]> | undefined;
+    httpClient
+      .get<SobreDatos<{ nombre: string }[]>>(`${environment.apiUrl}/decano/programas`, { params: { nombre: 'industrial', pagina: 1, tamano: 10 } })
+      .subscribe((r) => (porNombre = r));
+    tick(250);
+    expect(porNombre!.datos.map((p) => p.nombre)).toEqual(['Ingeniería Industrial']);
+
+    let inactivos: SobreDatos<unknown[]> | undefined;
+    httpClient.get<SobreDatos<unknown[]>>(`${environment.apiUrl}/decano/programas`, { params: { estaActivo: false } }).subscribe((r) => (inactivos = r));
+    tick(250);
+    expect(inactivos!.datos).toEqual([]);
+
+    let pagina: (SobreDatos<unknown[]> & { total?: number }) | undefined;
+    httpClient.get<typeof pagina>(`${environment.apiUrl}/decano/programas`, { params: { pagina: 2, tamano: 1 } }).subscribe((r) => (pagina = r));
+    tick(250);
+    expect(pagina!.datos.length).toBe(1);
+    expect(pagina!.total).toBeGreaterThan(1);
+  }));
+
+  it('los catálogos de administración de tipos de programa siguen sin simular', () => {
+    auth.setMockMode(true);
+    let error: HttpErrorResponse | undefined;
+    httpClient.get(`${environment.apiUrl}/admin/tipos-programa`).subscribe({ error: (value) => (error = value) });
+    expect(error?.status).toBe(501);
+  });
 });
 

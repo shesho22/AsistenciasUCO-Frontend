@@ -33,6 +33,7 @@ interface NavItem {
       [type]="toastState().type"
       [reference]="toastState().reference"
       [duration]="toastState().reference ? 8000 : 3500"
+      [secuencia]="toastState().secuencia"
       (dismissed)="toastService.dismiss()"
     ></app-toast>
     @if (cerrandoSesion()) {

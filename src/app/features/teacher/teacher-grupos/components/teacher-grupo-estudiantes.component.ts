@@ -1,4 +1,5 @@
-import { Component, ChangeDetectionStrategy, computed, input, output, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, OnDestroy, input, output } from '@angular/core';
+import { Subject, Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
 
 import { Course } from '../../../../core/models/course.model';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
@@ -16,9 +17,19 @@ import { EstudianteGrupoItem } from '../../../../core/models/estudiante-grupo-it
           <p class="text-xs text-warm-500">Listado oficial de estudiantes con asistencia habilitada para este grupo.</p>
         </div>
         <span class="px-3 py-1 rounded-full text-xs font-bold bg-success-100 text-success-800 border border-success-200">
-          {{ estudiantes().length }} de {{ curso()?.cupoMaximo ?? '—' }} Cupos
+          {{ totalEstudiantes() ?? estudiantes().length }} de {{ curso()?.cupoMaximo ?? '—' }} Cupos
         </span>
       </div>
+
+      <input
+        type="search"
+        data-testid="padron-busqueda"
+        aria-label="Buscar estudiante por nombre o documento"
+        placeholder="Buscar por nombre o documento..."
+        [value]="busqueda()"
+        (input)="onBuscar($event)"
+        class="w-full px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-900 placeholder-warm-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
+      />
 
       @if (cargando()) {
         <div class="p-6 space-y-3">
@@ -28,11 +39,17 @@ import { EstudianteGrupoItem } from '../../../../core/models/estudiante-grupo-it
         </div>
       } @else if (estudiantes().length === 0) {
         <div class="p-12 text-center text-warm-400">
-          <p class="text-sm">No hay estudiantes matriculados en este grupo actualmente.</p>
+          <p class="text-sm">
+            @if (busqueda().trim()) {
+              Ningún estudiante del grupo coincide con la búsqueda.
+            } @else {
+              No hay estudiantes matriculados en este grupo actualmente.
+            }
+          </p>
         </div>
       } @else {
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-          @for (est of estudiantesPagina(); track est.idEstudiante || est.studentId || est.id) {
+          @for (est of estudiantes(); track est.idEstudiante || est.studentId || est.id) {
             <div data-testid="padron-fila" class="p-3.5 rounded-xl bg-warm-50 border border-warm-200 flex items-center justify-between gap-3">
               <div class="min-w-0">
                 <p class="font-bold text-xs text-warm-900 truncate">
@@ -63,37 +80,45 @@ import { EstudianteGrupoItem } from '../../../../core/models/estudiante-grupo-it
           }
         </div>
         <app-pagination
-          [totalItems]="estudiantes().length"
+          [totalItems]="totalEstudiantes() ?? estudiantes().length"
           [pageSize]="tamano()"
-          [currentPage]="paginaEfectiva()"
+          [currentPage]="pagina()"
           [pageSizeOptions]="[12, 24, 48]"
-          (pageChange)="pagina.set($event)"
-          (pageSizeChange)="cambiarTamano($event)"
+          (pageChange)="paginaChange.emit($event)"
+          (pageSizeChange)="tamanoChange.emit($event)"
         />
       }
     </div>
   `
 })
-export class TeacherGrupoEstudiantesComponent {
+export class TeacherGrupoEstudiantesComponent implements OnDestroy {
+  /** CIERRE-W1A: filas de la página vigente que entrega el servidor; el componente no recorta ni filtra el padrón. */
   estudiantes = input<EstudianteGrupoItem[]>([]);
+  /** Total de matrículas que cumplen la búsqueda según el servidor; sin él se usa la longitud de `estudiantes`. */
+  totalEstudiantes = input<number | null>(null);
+  pagina = input<number>(1);
+  tamano = input<number>(12);
+  busqueda = input<string>('');
   cargando = input<boolean>(false);
-  readonly pagina = signal(1);
-  readonly tamano = signal(12);
-  readonly paginaEfectiva = computed(() =>
-    Math.min(this.pagina(), Math.max(1, Math.ceil(this.estudiantes().length / this.tamano())))
-  );
-  /** F-DOC-007: el padron se pinta por paginas, no completo. */
-  readonly estudiantesPagina = computed(() => {
-    const inicio = (this.paginaEfectiva() - 1) * this.tamano();
-    return this.estudiantes().slice(inicio, inicio + this.tamano());
-  });
+  curso = input<Course | null>(null);
 
-  cambiarTamano(tamano: number): void {
-    this.tamano.set(tamano);
-    this.pagina.set(1);
+  readonly paginaChange = output<number>();
+  readonly tamanoChange = output<number>();
+  /** Texto de búsqueda ya estabilizado (espera corta tras la última tecla); el padre lo envía al servidor. */
+  readonly busquedaChange = output<string>();
+
+  private readonly busqueda$ = new Subject<string>();
+  private readonly busquedaSub: Subscription = this.busqueda$
+    .pipe(debounceTime(300), distinctUntilChanged())
+    .subscribe((texto) => this.busquedaChange.emit(texto));
+
+  onBuscar(event: Event): void {
+    this.busqueda$.next((event.target as HTMLInputElement).value.trim());
   }
 
-  curso = input<Course | null>(null);
+  ngOnDestroy(): void {
+    this.busquedaSub.unsubscribe();
+  }
 
   /** HU051: el docente pide retirar a un estudiante activo (el padre abre el modal con el motivo). */
   readonly retirar = output<EstudianteGrupoItem>();

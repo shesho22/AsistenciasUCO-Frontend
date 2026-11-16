@@ -1,6 +1,13 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { provideHttpClient, withXhr } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { DeanProgramasCreditosComponent } from './dean-programas-creditos.component';
 import { ProgramaCreditosItem } from '../../../../core/models/consultas-transversales.model';
+import { ToastService } from '../../../../shared/components/toast/toast.component';
+import { environment } from '../../../../../environments/environment';
+import { paginaApi, porUrl } from '../../../../core/testing/pagina-api';
+
+const URL = `${environment.apiUrl}/decano/programas-creditos`;
 
 function fila(cambios: Partial<ProgramaCreditosItem>): ProgramaCreditosItem {
   return {
@@ -14,53 +21,101 @@ function fila(cambios: Partial<ProgramaCreditosItem>): ProgramaCreditosItem {
 describe('DeanProgramasCreditosComponent (HU112)', () => {
   let fixture: ComponentFixture<DeanProgramasCreditosComponent>;
   let component: DeanProgramasCreditosComponent;
+  let http: HttpTestingController;
+  let toast: jasmine.SpyObj<ToastService>;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ imports: [DeanProgramasCreditosComponent] });
+    toast = jasmine.createSpyObj('ToastService', ['success', 'error', 'info', 'warning']);
+    TestBed.configureTestingModule({
+      imports: [DeanProgramasCreditosComponent],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting(), { provide: ToastService, useValue: toast }],
+    });
+    http = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(DeanProgramasCreditosComponent);
     component = fixture.componentInstance;
+    fixture.detectChanges();
   });
 
-  it('muestra cada programa y plan con sus totales y el programa sin plan', () => {
-    fixture.componentRef.setInput('filas', [
-      fila({}),
-      fila({ idPrograma: 'p-2', nombrePrograma: 'Industrial', nombreTipoPrograma: 'Posgrado', idPlanEstudio: null, inpPlanEstudio: null, planActivo: false, totalSemestres: 0, totalAsignaturas: 0, totalCreditos: 0 }),
-    ]);
+  afterEach(() => http.verify());
+
+  it('consulta la primera página al servidor y muestra cada programa y plan con sus totales y el programa sin plan', () => {
+    const req = http.expectOne(porUrl(URL));
+    expect(req.request.params.get('pagina')).toBe('1');
+    expect(req.request.params.get('tamano')).toBe('10');
+    expect(req.request.params.has('busqueda')).toBeFalse();
+    req.flush(
+      paginaApi(
+        [
+          fila({}),
+          fila({ idPrograma: 'p-2', nombrePrograma: 'Industrial', nombreTipoPrograma: 'Posgrado', idPlanEstudio: null, inpPlanEstudio: null, planActivo: false, totalSemestres: 0, totalAsignaturas: 0, totalCreditos: 0 }),
+        ],
+        1,
+        10,
+        2
+      )
+    );
     fixture.detectChanges();
     const texto = fixture.nativeElement.textContent as string;
-    expect(texto).toContain('160 créditos en 2 planes');
+    expect(texto).toContain('2 planes');
     expect(texto).toContain('INP-20241');
     expect(texto).toContain('Sin plan');
     expect(texto).toContain('Vigente');
     expect(texto).toContain('Inactivo');
   });
 
-  it('filtra por programa, tipo o INP y vuelve a la primera página', () => {
-    fixture.componentRef.setInput('filas', [fila({}), fila({ idPrograma: 'p-2', nombrePrograma: 'Industrial', nombreTipoPrograma: 'Posgrado', inpPlanEstudio: 20191 })]);
-    component.paginaActual.set(2);
-    component.onFiltro('posgrado');
-    expect(component.paginaActual()).toBe(1);
-    expect(component.filtradas().map((f) => f.nombrePrograma)).toEqual(['Industrial']);
-    component.onFiltro('20241');
-    expect(component.filtradas().length).toBe(1);
-    component.onFiltro('nada');
+  it('el total que se muestra es el del servidor, no el de la página', () => {
+    http.expectOne(porUrl(URL)).flush(paginaApi([fila({})], 1, 10, 37));
+    fixture.detectChanges();
+    expect(component.listado.total()).toBe(37);
+    expect(fixture.nativeElement.textContent).toContain('37 planes');
+  });
+
+  it('la búsqueda viaja al servidor con retardo, desde la primera página', fakeAsync(() => {
+    http.expectOne(porUrl(URL)).flush(paginaApi([fila({})], 1, 10, 30));
+    component.listado.irAPagina(2);
+    http.expectOne(porUrl(URL)).flush(paginaApi([fila({})], 2, 10, 30));
+
+    component.onFiltro('pos');
+    component.onFiltro(' posgrado ');
+    http.expectNone(porUrl(URL));
+    tick(300);
+    const req = http.expectOne(porUrl(URL));
+    expect(req.request.params.get('busqueda')).toBe('posgrado');
+    expect(req.request.params.get('pagina')).toBe('1');
+    req.flush(paginaApi([fila({ nombrePrograma: 'Industrial' })], 1, 10, 1));
+  }));
+
+  it('cambiar de página y de tamaño vuelve a consultar al servidor', () => {
+    http.expectOne(porUrl(URL)).flush(paginaApi([fila({})], 1, 10, 30));
+    component.listado.irAPagina(3);
+    const pagina3 = http.expectOne(porUrl(URL));
+    expect(pagina3.request.params.get('pagina')).toBe('3');
+    pagina3.flush(paginaApi([fila({})], 3, 10, 30));
+
+    component.listado.cambiarTamano(20);
+    const tamano = http.expectOne(porUrl(URL));
+    expect(tamano.request.params.get('tamano')).toBe('20');
+    expect(tamano.request.params.get('pagina')).toBe('1');
+    tamano.flush(paginaApi([fila({})], 1, 20, 30));
+  });
+
+  it('sin resultados muestra el mensaje de vacío', () => {
+    http.expectOne(porUrl(URL)).flush(paginaApi([], 1, 10, 0));
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('No hay programas que coincidan.');
   });
 
-  it('pagina en el navegador', () => {
-    fixture.componentRef.setInput('filas', Array.from({ length: 12 }, (_, i) => fila({ idPlanEstudio: `pl-${i}` })));
-    expect(component.pagina().length).toBe(10);
-    component.paginaActual.set(2);
-    expect(component.pagina().length).toBe(2);
-    component.onTamano(20);
-    expect(component.paginaActual()).toBe(1);
-    expect(component.pagina().length).toBe(12);
-  });
-
-  it('muestra el error de la consulta', () => {
-    fixture.componentRef.setInput('error', 'No fue posible consultar los programas.');
+  it('un error de carga se muestra con reintento y no como lista vacía', () => {
+    http.expectOne(porUrl(URL)).flush({ message: 'Fallo' }, { status: 500, statusText: 'Error' });
     fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('No fue posible consultar los programas.');
+    expect(fixture.nativeElement.querySelector('[data-testid="error-carga"]')).not.toBeNull();
+    expect(fixture.nativeElement.textContent).not.toContain('No hay programas que coincidan.');
+    expect(toast.error).toHaveBeenCalled();
+
+    component.listado.reintentar();
+    http.expectOne(porUrl(URL)).flush(paginaApi([fila({})], 1, 10, 1));
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[data-testid="error-carga"]')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Ingeniería de Sistemas');
   });
 });

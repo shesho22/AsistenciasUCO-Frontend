@@ -112,6 +112,7 @@ type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO';
       <app-student-matricula-codigo-modal
         [isOpen]="modalMatriculaGrupoVisible()"
         [processing]="procesandoMatriculaGrupo()"
+        [error]="errorMatriculaGrupo()"
         [tokenInicial]="tokenPrecargado()"
         [codigoInicial]="pinPrecargado()"
         (submitted)="enviarMatriculaPorCodigo($event)"
@@ -143,6 +144,8 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
   // Matrícula por Código o PIN de Grupo
   modalMatriculaGrupoVisible = signal<boolean>(false);
   procesandoMatriculaGrupo = signal<boolean>(false);
+  /** Mensaje del backend ante un rechazo de la matrícula por código; se muestra dentro del modal. */
+  errorMatriculaGrupo = signal<string | null>(null);
   /** PIN que trae el login (`?matricula=<PIN>`); el modal lo muestra precargado. */
   pinPrecargado = signal<string>('');
   /** Token QR que trae el login (`?t=<TOKEN>`); F-EST-012. */
@@ -246,8 +249,14 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
           this.configuracionReclamos.set(res.datos);
         }
       },
-      error: () => {},
+      // Sin la configuración no se conocen los topes de soportes: se informa el fallo y se reintenta al abrir la radicación.
+      error: (error: unknown) => this.toast.error(getApiErrorMessage(error)),
     });
+  }
+
+  /** Si la configuración de reclamos no se pudo cargar, se vuelve a pedir al abrir la radicación. */
+  private reintentarConfiguracionReclamos(): void {
+    if (this.configuracionReclamos() === null) this.cargarConfiguracionReclamos();
   }
 
   /** Sin catálogo el formulario no deja radicar y lo informa; no se usa una lista fija de respaldo. */
@@ -329,6 +338,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
     // Sin ausencia/retardo confirmado, o con una solicitud ya existente, no se abre la radicacion.
     if (!sesion.reclamable || sesion.estadoAsistencia === 'NO_DISPONIBLE') return;
     this.errorEnvio.set(null);
+    this.reintentarConfiguracionReclamos();
     this.sesionReclamar.set(sesion);
     this.tomaReclamar.set(null);
     this.limpiarSoporte();
@@ -339,6 +349,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
   iniciarReclamoToma(evento: { sesion: SesionMateriaDetalle; toma: TomaSesionEstudiante }): void {
     if (!evento.toma.reclamable) return;
     this.errorEnvio.set(null);
+    this.reintentarConfiguracionReclamos();
     this.sesionReclamar.set(evento.sesion);
     this.tomaReclamar.set(evento.toma);
     this.limpiarSoporte();
@@ -642,10 +653,12 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
   }
 
   abrirModalMatriculaGrupo(): void {
+    this.errorMatriculaGrupo.set(null);
     this.modalMatriculaGrupoVisible.set(true);
   }
 
   cerrarModalMatriculaGrupo(): void {
+    this.errorMatriculaGrupo.set(null);
     this.modalMatriculaGrupoVisible.set(false);
   }
 
@@ -656,12 +669,14 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
     } else {
       const pin = String(dato || '').trim();
       if (!/^[0-9]{6}$/.test(pin)) {
+        this.errorMatriculaGrupo.set(mensajeUi('UI_STUDENT_COURSES_004'));
         this.toast.error(mensajeUi('UI_STUDENT_COURSES_004'));
         return;
       }
       credencial = { pin };
     }
 
+    this.errorMatriculaGrupo.set(null);
     this.procesandoMatriculaGrupo.set(true);
     this.matriculaQrService.matricularAutenticado(credencial).subscribe({
       next: (resultado) => {
@@ -672,7 +687,9 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.procesandoMatriculaGrupo.set(false);
-        this.toast.error(getApiErrorMessage(err));
+        const mensaje = getApiErrorMessage(err);
+        this.errorMatriculaGrupo.set(mensaje);
+        this.toast.error(mensaje);
       },
     });
   }

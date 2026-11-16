@@ -117,6 +117,16 @@ interface GrupoForm {
         <form class="superficie p-6 space-y-5 max-w-3xl" (ngSubmit)="guardar()">
           <h2 class="font-serif font-bold text-xl text-warm-900">{{ modo() === 'CREAR' ? 'Nuevo grupo' : 'Editar grupo' }}</h2>
 
+          @if (errorGuardado(); as mensaje) {
+            <p role="alert" data-testid="error-guardado-grupo" class="text-sm font-semibold text-danger-700 bg-danger-50 border border-danger-200 rounded-xl px-3 py-2">
+              {{ mensaje }}
+            </p>
+          }
+
+          @if (errorCatalogos(); as fallo) {
+            <app-error-carga [error]="fallo" (reintentar)="cargarCatalogos()" />
+          }
+
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             @if (modo() === 'CREAR') {
               <label class="text-xs font-semibold text-warm-700">Asignatura
@@ -194,6 +204,10 @@ export class CoordinatorGroupsComponent implements OnInit {
   asignaturas = signal<AsignaturaPlanItem[]>([]);
   periodos = signal<PeriodoAcademicoItem[]>([]);
   docentes = signal<DocentePrograma[]>([]);
+  /** Fallo al cargar las asignaturas, docentes o periodos del formulario: se muestra con reintento, no como listas vacías. */
+  errorCatalogos = signal<LoadErrorState | null>(null);
+  /** Rechazo del backend al guardar (p. ej. cruce de horario del docente): se muestra en el formulario, además del aviso. */
+  errorGuardado = signal<string | null>(null);
   private grupoEditado: string | null = null;
   private readonly nombresDocente = computed(() => new Map(this.docentes().map((d) => [d.idDocente, d.nombreCompleto])));
 
@@ -228,6 +242,9 @@ export class CoordinatorGroupsComponent implements OnInit {
 
   /** Asignaturas de los planes del programa, docentes activos del programa y períodos académicos. */
   cargarCatalogos(): void {
+    this.errorCatalogos.set(null);
+    const alFallar = (error: unknown): void => this.errorCatalogos.set(classifyLoadError(error));
+
     this.coordinatorService
       .getPlanesEstudio()
       .pipe(
@@ -237,10 +254,16 @@ export class CoordinatorGroupsComponent implements OnInit {
             ? of([] as AsignaturaPlanItem[])
             : forkJoin(planes.map((p) => this.coordinatorService.getAsignaturasPorPlan(p.id).pipe(
                 map((r) => r.datos ?? []),
-                catchError(() => of([] as AsignaturaPlanItem[]))
+                catchError((error: unknown) => {
+                  alFallar(error);
+                  return of([] as AsignaturaPlanItem[]);
+                })
               ))).pipe(map((listas) => listas.flat()));
         }),
-        catchError(() => of([] as AsignaturaPlanItem[]))
+        catchError((error: unknown) => {
+          alFallar(error);
+          return of([] as AsignaturaPlanItem[]);
+        })
       )
       .subscribe((asignaturas) => this.asignaturas.set(asignaturas));
 
@@ -252,13 +275,21 @@ export class CoordinatorGroupsComponent implements OnInit {
       .pipe(
         expand((res) => (pagina * TAMANO < Number(res.total ?? 0) ? pedir(++pagina) : EMPTY)),
         reduce((acumulados: DocentePrograma[], res) => [...acumulados, ...(res.datos ?? [])], []),
-        catchError(() => of([] as DocentePrograma[]))
+        catchError((error: unknown) => {
+          alFallar(error);
+          return of([] as DocentePrograma[]);
+        })
       )
       .subscribe((docentes) => this.docentes.set(docentes));
 
     this.coordinatorService
       .getPeriodosAcademicos()
-      .pipe(catchError(() => of({ exitoso: false, datos: [] as PeriodoAcademicoItem[] })))
+      .pipe(
+        catchError((error: unknown) => {
+          alFallar(error);
+          return of({ exitoso: false, datos: [] as PeriodoAcademicoItem[] });
+        })
+      )
       .subscribe((res) => this.periodos.set(res.datos ?? []));
   }
 
@@ -270,6 +301,7 @@ export class CoordinatorGroupsComponent implements OnInit {
     this.modo.set('CREAR');
     this.grupoEditado = null;
     this.form = this.formVacio();
+    this.errorGuardado.set(null);
     this.vista.set('FORM');
   }
 
@@ -285,10 +317,12 @@ export class CoordinatorGroupsComponent implements OnInit {
       cupoMaximo: grupo.cupoMaximo ?? null,
       franjas: (grupo.franjas ?? []).map((f) => ({ ...f })),
     };
+    this.errorGuardado.set(null);
     this.vista.set('FORM');
   }
 
   volver(): void {
+    this.errorGuardado.set(null);
     this.vista.set('LISTA');
     this.grupoEditado = null;
   }
@@ -317,6 +351,7 @@ export class CoordinatorGroupsComponent implements OnInit {
             cupoMaximo: this.form.cupoMaximo ? Number(this.form.cupoMaximo) : undefined,
           });
 
+    this.errorGuardado.set(null);
     this.guardando.set(true);
     peticion.subscribe({
       next: (res) => {
@@ -326,14 +361,19 @@ export class CoordinatorGroupsComponent implements OnInit {
           this.volver();
           this.cargarGrupos();
         } else {
-          this.toast.error(res.mensajeUsuario || mensajeUi('UI_COORDINATOR_GROUPS_003'));
+          this.rechazoGuardado(res.mensajeUsuario || mensajeUi('UI_COORDINATOR_GROUPS_003'));
         }
       },
       error: (err: unknown) => {
         this.guardando.set(false);
-        this.toast.error(getApiErrorMessage(err) || mensajeUi('UI_COORDINATOR_GROUPS_003'));
+        this.rechazoGuardado(getApiErrorMessage(err) || mensajeUi('UI_COORDINATOR_GROUPS_003'));
       },
     });
+  }
+
+  private rechazoGuardado(mensaje: string): void {
+    this.errorGuardado.set(mensaje);
+    this.toast.error(mensaje);
   }
 
   /** Validaciones de formato antes de llamar al backend (las reglas de negocio las confirma la DB). */
