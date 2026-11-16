@@ -85,11 +85,13 @@ describe('DeanCoordinadorEditModalComponent (HU121)', () => {
     expect(campo('tipoIdentificacion')).toBeNull();
   });
 
-  it('cuando solo vienen nombres y apellidos consolidados, los separa para precargar', async () => {
+  it('no parte cadenas: si el backend no entrega los cuatro campos, quedan vacíos aunque vengan nombres y apellidos agrupados', async () => {
     await render({ ...coordinador, primerNombre: undefined, segundoNombre: undefined, primerApellido: undefined, segundoApellido: undefined });
 
-    expect(campo('primerNombre').value).toBe('Carlos');
-    expect(campo('primerApellido').value).toBe('Ramírez');
+    expect(campo('primerNombre').value).toBe('');
+    expect(campo('segundoNombre').value).toBe('');
+    expect(campo('primerApellido').value).toBe('');
+    expect(campo('segundoApellido').value).toBe('');
   });
 
   it('emite el payload recortado, sin documento, al guardar con datos válidos', async () => {

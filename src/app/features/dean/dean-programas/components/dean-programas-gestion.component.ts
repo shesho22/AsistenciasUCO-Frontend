@@ -158,11 +158,9 @@ export class DeanProgramasGestionComponent implements OnInit {
   readonly programaEstado = signal<ProgramaAcademico | null>(null);
   readonly errorEstado = signal('');
 
+  /** HU121/HU122: el servidor ya entrega solo los coordinadores libres con usuario y rol activos (`sinPrograma` + `estaActivo`). */
   readonly coordinadoresDisponibles = computed<CoordinadorOpcion[]>(() =>
-    this.coordinadores()
-      // HU121/HU122: solo coordinadores libres con usuario y rol activos (el SP lo vuelve a validar).
-      .filter((c) => !c.idPrograma && c.estaActivoCoordinador !== false && c.estaActivoRolCoordinador !== false)
-      .map((c) => ({ id: c.id, nombre: c.nombreCompleto ?? c.id }))
+    this.coordinadores().map((c) => ({ id: c.id, nombre: c.nombreCompleto ?? c.id }))
   );
 
   ngOnInit(): void {
@@ -186,8 +184,8 @@ export class DeanProgramasGestionComponent implements OnInit {
   }
 
   private cargarCoordinadores(): void {
-    this.deanService.getCoordinadores().subscribe({
-      next: (res) => this.coordinadores.set(res.datos ?? []),
+    this.deanService.getCoordinadores({ pagina: 1, tamano: 100, estaActivo: true, sinPrograma: true }).subscribe({
+      next: (res) => this.coordinadores.set(res.elementos),
       error: (e) => this.toast.error(getApiErrorMessage(e)),
     });
   }

@@ -117,24 +117,61 @@ describe('DeanCoordinadoresComponent', () => {
     expect(component.programasAcademicos().some((p) => p.id.startsWith('PROG-'))).toBeFalse();
   });
 
-  it('filteredCoordinadores filtra por texto de búsqueda', () => {
+  it('la búsqueda se envía al servidor al aplicar filtros y vuelve a la primera página', () => {
     flushInitialRequests();
+    component.currentPage.set(3);
     component.searchQuery = 'carlos';
-    component.coordinadores.set([...component.coordinadores()]);
-    fixture.detectChanges();
 
-    expect(component.filteredCoordinadores().length).toBe(1);
-    expect(component.filteredCoordinadores()[0].nombres).toBe('Carlos');
+    component.aplicarFiltros();
+    const req = http.expectOne(porUrl(`${environment.apiUrl}/decano/coordinadores`));
+    expect(req.request.params.get('busqueda')).toBe('carlos');
+    expect(req.request.params.get('pagina')).toBe('1');
+    expect(req.request.params.has('estaActivo')).toBeFalse();
+    req.flush(paginaApi([mockCoordinadores[0]], 1, 6, 1));
+
+    expect(component.currentPage()).toBe(1);
+    expect(component.coordinadores().length).toBe(1);
+    expect(component.coordinadores()[0].nombres).toBe('Carlos');
+    expect(component.totalCoordinadores()).toBe(1);
   });
 
-  it('filteredCoordinadores filtra por estado', () => {
+  it('el filtro de estado se envía como estaActivo y el total sale del servidor', () => {
     flushInitialRequests();
-    component.selectedEstado = 'INACTIVO';
-    component.coordinadores.set([...component.coordinadores()]);
-    fixture.detectChanges();
 
-    expect(component.filteredCoordinadores().length).toBe(1);
-    expect(component.filteredCoordinadores()[0].nombres).toBe('Ana');
+    component.selectedEstado = 'INACTIVO';
+    const inactivos = http.expectOne(porUrl(`${environment.apiUrl}/decano/coordinadores`));
+    expect(inactivos.request.params.get('estaActivo')).toBe('false');
+    inactivos.flush(paginaApi([mockCoordinadores[1]], 1, 6, 1));
+    expect(component.coordinadores()[0].nombres).toBe('Ana');
+    expect(component.totalCoordinadores()).toBe(1);
+
+    component.selectedEstado = 'ACTIVO';
+    const activos = http.expectOne(porUrl(`${environment.apiUrl}/decano/coordinadores`));
+    expect(activos.request.params.get('estaActivo')).toBe('true');
+    activos.flush(paginaApi([mockCoordinadores[0]], 1, 6, 1));
+
+    component.selectedEstado = 'TODOS';
+    const todos = http.expectOne(porUrl(`${environment.apiUrl}/decano/coordinadores`));
+    expect(todos.request.params.has('estaActivo')).toBeFalse();
+    todos.flush(paginaApi(mockCoordinadores, 1, 6, 2));
+  });
+
+  it('cambiar de página y de tamaño consulta al servidor y muestra el total real (sin truncar a 100)', () => {
+    flushInitialRequests();
+
+    component.irAPagina(2);
+    const pagina2 = http.expectOne(porUrl(`${environment.apiUrl}/decano/coordinadores`));
+    expect(pagina2.request.params.get('pagina')).toBe('2');
+    expect(pagina2.request.params.get('tamano')).toBe('6');
+    pagina2.flush(paginaApi([mockCoordinadores[0]], 2, 6, 250));
+    expect(component.totalCoordinadores()).toBe(250);
+
+    component.onPageSizeChange(20);
+    const tamano = http.expectOne(porUrl(`${environment.apiUrl}/decano/coordinadores`));
+    expect(tamano.request.params.get('pagina')).toBe('1');
+    expect(tamano.request.params.get('tamano')).toBe('20');
+    tamano.flush(paginaApi(mockCoordinadores, 1, 20, 250));
+    expect(component.pageSize()).toBe(20);
   });
 
   it('abrirFormularioRegistro cambia la vista a REGISTRO', () => {
@@ -509,17 +546,39 @@ describe('DeanCoordinadoresComponent', () => {
     expect(component.vistaActual()).toBe('REGISTRO');
   });
 
-  it('onCoordinadorSeleccionadoDelDirectorio avisa si el usuario ya coordina un programa', () => {
+  it('onCoordinadorSeleccionadoDelDirectorio no decide en el cliente si la persona ya coordina: abre el alta y el backend valida', () => {
     flushInitialRequests();
     component.onCoordinadorSeleccionadoDelDirectorio({
       id: 'coord-1',
       numeroIdentificacion: '1017001',
+      primerNombre: 'Carlos',
+      primerApellido: 'Aristizábal',
       nombres: 'Carlos',
       apellidos: 'Aristizábal',
+      nombreCompleto: 'Carlos Aristizábal',
       correo: 'caristizabal@uco.edu.co',
     });
 
-    expect(toastService.info).toHaveBeenCalled();
+    // La lista visible es solo una página del servidor: no sirve para saber si la persona ya es coordinadora.
+    expect(component.vistaActual()).toBe('REGISTRO');
+    expect(component.formData.numeroIdentificacion).toBe('1017001');
+    expect(component.formData.primerNombre).toBe('Carlos');
+  });
+
+  it('el alta desde el selector no parte nombres: sin primer nombre del backend deja el campo vacío', () => {
+    flushInitialRequests();
+    component.onCoordinadorSeleccionadoDelDirectorio({
+      id: 'usr-sin-partir',
+      numeroIdentificacion: '1017111222',
+      nombres: 'Luisa Fernanda',
+      apellidos: 'Ríos Mora',
+      nombreCompleto: 'Luisa Fernanda Ríos Mora',
+      correo: '',
+    });
+
+    expect(component.formData.primerNombre).toBe('');
+    expect(component.formData.primerApellido).toBe('');
+    expect(component.formData.correo).toBe('');
   });
 
   it('onCoordinadorSeleccionadoDelDirectorio precarga datos cuando es un nuevo coordinador', () => {
@@ -531,6 +590,7 @@ describe('DeanCoordinadoresComponent', () => {
       primerApellido: 'Restrepo',
       nombres: 'Valeria',
       apellidos: 'Restrepo',
+      nombreCompleto: 'Valeria Restrepo',
       correo: 'valeria.restrepo@uco.edu.co',
       tipoIdentificacion: 'CC',
     });

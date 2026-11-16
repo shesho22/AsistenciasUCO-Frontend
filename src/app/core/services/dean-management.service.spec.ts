@@ -52,22 +52,28 @@ describe('DeanManagementService', () => {
     req.flush(paginaApi(mockCoordinadores));
   });
 
-  it('getCoordinadores normaliza y deduplica DTOs del backend incluyendo coordinadores sin programa', () => {
+  it('getCoordinadores normaliza los DTOs del backend (sin partir nombres) incluyendo coordinadores sin programa', () => {
     const backendDtos = [
       {
         id: 'coord-dto-1',
         idUsuario: 'usr-1',
         numeroIdentificacion: '1017555444',
         nombreCompleto: 'Jorge Luis Henao Perez',
+        nombres: 'Jorge Luis',
+        apellidos: 'Henao Perez',
+        primerNombre: 'Jorge',
+        segundoNombre: 'Luis',
+        primerApellido: 'Henao',
+        segundoApellido: 'Perez',
         idPrograma: null,
         nombrePrograma: null,
         estaActivoCoordinador: true,
       },
       {
-        id: 'coord-dto-1',
-        idUsuario: 'usr-1',
-        numeroIdentificacion: '1017555444',
-        nombreCompleto: 'Jorge Luis Henao Perez',
+        id: 'coord-dto-2',
+        idUsuario: 'usr-2',
+        numeroIdentificacion: '1017555445',
+        nombreCompleto: 'Ana Maria Gomez',
         idPrograma: 'prog-1',
         nombrePrograma: 'Ingeniería de Sistemas',
         estaActivoCoordinador: true,
@@ -76,20 +82,61 @@ describe('DeanManagementService', () => {
 
     service.getCoordinadores().subscribe((res) => {
       expect(res.exitoso).toBeTrue();
-      expect(res.datos?.length).toBe(1);
+      expect(res.datos?.length).toBe(2);
+      expect(res.elementos).toEqual(res.datos);
       expect(res.datos?.[0].nombres).toBe('Jorge Luis');
       expect(res.datos?.[0].apellidos).toBe('Henao Perez');
+      expect(res.datos?.[0].primerNombre).toBe('Jorge');
+      expect(res.datos?.[0].segundoApellido).toBe('Perez');
       expect(res.datos?.[0].programaAcademico).toBe('Sin Programa Asignado');
       expect(res.datos?.[0].estado).toBe('ACTIVO');
       // Certificación F3: el contrato no trae facultad ni conteos; no se inventan "Sin Facultad Asignada" ni ceros.
       expect(res.datos?.[0].facultad).toBe('');
       expect(res.datos?.[0].totalDocentes).toBeNull();
       expect(res.datos?.[0].totalGrupos).toBeNull();
+      // CIERRE-W1B: sin nombres del backend la pantalla no los deduce del nombre completo.
+      expect(res.datos?.[1].nombres).toBe('');
+      expect(res.datos?.[1].apellidos).toBe('');
+      expect(res.datos?.[1].nombreCompleto).toBe('Ana Maria Gomez');
     });
 
     const req = http.expectOne((r) => r.url === `${environment.apiUrl}/decano/coordinadores`);
     expect(req.request.method).toBe('GET');
     req.flush(paginaApi(backendDtos));
+  });
+
+  it('CIERRE-W1B: envía pagina, tamano y los filtros opcionales al servidor y devuelve el total real', () => {
+    let total = 0;
+    service.getCoordinadores({ pagina: 3, tamano: 6, busqueda: '  ana ', estaActivo: false, sinPrograma: true })
+      .subscribe((res) => (total = res.totalElementos));
+
+    const req = http.expectOne((r) => r.url === `${environment.apiUrl}/decano/coordinadores`);
+    expect(req.request.params.get('pagina')).toBe('3');
+    expect(req.request.params.get('tamano')).toBe('6');
+    expect(req.request.params.get('busqueda')).toBe('ana');
+    expect(req.request.params.get('estaActivo')).toBe('false');
+    expect(req.request.params.get('sinPrograma')).toBe('true');
+    req.flush(paginaApi([{ id: 'c1', numeroIdentificacion: '1', estaActivoCoordinador: false }], 3, 6, 250));
+    expect(total).toBe(250);
+  });
+
+  it('CIERRE-W1B: sin filtros no envía busqueda, estaActivo ni sinPrograma y pide la primera página de 100', () => {
+    service.getCoordinadores().subscribe();
+    const req = http.expectOne((r) => r.url === `${environment.apiUrl}/decano/coordinadores`);
+    expect(req.request.params.get('pagina')).toBe('1');
+    expect(req.request.params.get('tamano')).toBe('100');
+    expect(req.request.params.has('busqueda')).toBeFalse();
+    expect(req.request.params.has('estaActivo')).toBeFalse();
+    expect(req.request.params.has('sinPrograma')).toBeFalse();
+    req.flush(paginaApi([]));
+  });
+
+  it('CIERRE-W1B: un fallo HTTP del listado se propaga al llamador', () => {
+    let fallo: unknown;
+    service.getCoordinadores().subscribe({ error: (e) => (fallo = e) });
+    http.expectOne((r) => r.url === `${environment.apiUrl}/decano/coordinadores`)
+      .flush({ message: 'Sin permiso' }, { status: 403, statusText: 'Forbidden' });
+    expect(fallo).toBeTruthy();
   });
 
   it('certificación F3: usa la facultad y los conteos reales que envía /decano/coordinadores', () => {

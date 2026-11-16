@@ -213,10 +213,30 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
 
   // ================= DECANO: COORDINADORES =================
   if (url.split('?')[0].endsWith('/decano/coordinadores') && method === 'GET') {
-    const elementos = mockStore.coordinadores;
+    // Como el SP: filtra por busqueda (nombre, documento, correo o programa), estaActivo y sinPrograma, y pagina.
+    const busqueda = (req.params.get('busqueda') ?? '').trim().toLowerCase();
+    const estaActivo = req.params.get('estaActivo');
+    const sinPrograma = req.params.get('sinPrograma');
+    const pagina = Number(req.params.get('pagina') ?? 1);
+    const tamano = Number(req.params.get('tamano') ?? 10);
+    const filtrados = mockStore.coordinadores.filter((c) => {
+      const texto = `${c.nombres} ${c.apellidos} ${c.numeroIdentificacion} ${c.correo} ${c.programaAcademico ?? ''}`.toLowerCase();
+      const tienePrograma = !!c.idPrograma || (!!c.programaAcademico && c.programaAcademico !== 'Sin Programa Asignado');
+      return (!busqueda || texto.includes(busqueda))
+        && (estaActivo === null || (c.estado === 'ACTIVO') === (estaActivo === 'true'))
+        && (sinPrograma === null || tienePrograma === (sinPrograma === 'false'));
+    });
+    const inicio = (pagina - 1) * tamano;
     return of(new HttpResponse({
       status: 200,
-      body: { exitoso: true, elementos, numeroPagina: 1, tamanoPagina: 100, totalElementos: elementos.length, totalPaginas: 1 },
+      body: {
+        exitoso: true,
+        elementos: filtrados.slice(inicio, inicio + tamano),
+        numeroPagina: pagina,
+        tamanoPagina: tamano,
+        totalElementos: filtrados.length,
+        totalPaginas: Math.max(1, Math.ceil(filtrados.length / tamano)),
+      },
     })).pipe(delay(250));
   }
   if (url.endsWith('/decano/coordinadores') && method === 'POST') {
@@ -448,7 +468,9 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     if (transversal.esPaginada && Array.isArray(transversal.datos)) {
       const pagina = Number(req.params.get('pagina') ?? 1);
       const tamano = Number(req.params.get('tamano') ?? 10);
-      return of(okPageResponse(transversal.datos, pagina, tamano, transversal.total)).pipe(delay(200));
+      const inicio = (pagina - 1) * tamano;
+      // Como el SP: devuelve solo la página pedida y el total de filas que cumplen el filtro.
+      return of(okPageResponse(transversal.datos.slice(inicio, inicio + tamano), pagina, tamano, transversal.total)).pipe(delay(200));
     }
     return of(okResponse(transversal.datos, undefined, transversal.total)).pipe(delay(200));
   }

@@ -3,6 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiResponse } from '../models/api-response.model';
+import { ApiPageResponse } from '../api/models/api-page-response.model';
 import { ActualizarCoordinadorPayload, CoordinadorItem, ResultadoGestionCoordinador } from '../models/role-management.model';
 
 /** Fila de GET /decano/coordinadores (CoordinadorItemDTO) o una ya normalizada. */
@@ -10,6 +11,20 @@ type CoordinadorApiDto = Partial<Omit<CoordinadorItem, 'numeroIdentificacion'>> 
   numeroIdentificacion?: string | number | null;
   nombreFacultad?: string;
 };
+
+/** Filtros de GET /decano/coordinadores (CIERRE-W1B): la búsqueda, el estado y el paginado los resuelve el servidor. */
+export interface FiltroCoordinadores {
+  pagina: number;
+  tamano: number;
+  busqueda?: string | null;
+  estaActivo?: boolean | null;
+  sinPrograma?: boolean | null;
+}
+
+/** Página de coordinadores ya normalizada: `elementos` y `datos` traen las mismas filas. */
+export interface PaginaCoordinadores extends ApiPageResponse<CoordinadorItem> {
+  datos: CoordinadorItem[];
+}
 
 /** `ApiPageResponse` de GET /decano/coordinadores. */
 interface CoordinadoresPageDto {
@@ -28,71 +43,68 @@ export class DeanManagementService {
   private http = inject(HttpClient);
 
 
-  getCoordinadores(): Observable<ApiResponse<CoordinadorItem[]>> {
-    // CULM-001 D.9-a: GET /decano/coordinadores es ApiPageResponse { elementos, totalElementos, ... }.
-    const params = new HttpParams().set('pagina', 1).set('tamano', 100);
+  /**
+   * CIERRE-W1B: `GET /decano/coordinadores` pagina y filtra en el servidor (SP). Sin filtro devuelve la primera página de
+   * 100 (el máximo del backend), como hasta ahora para los resúmenes que solo necesitan la lista corta.
+   */
+  getCoordinadores(
+    filtro: FiltroCoordinadores = { pagina: 1, tamano: 100 }
+  ): Observable<PaginaCoordinadores> {
+    let params = new HttpParams().set('pagina', filtro.pagina).set('tamano', filtro.tamano);
+    const busqueda = filtro.busqueda?.trim();
+    if (busqueda) {
+      params = params.set('busqueda', busqueda);
+    }
+    if (filtro.estaActivo !== undefined && filtro.estaActivo !== null) {
+      params = params.set('estaActivo', filtro.estaActivo);
+    }
+    if (filtro.sinPrograma !== undefined && filtro.sinPrograma !== null) {
+      params = params.set('sinPrograma', filtro.sinPrograma);
+    }
     return this.http.get<CoordinadoresPageDto>(`${environment.apiUrl}/decano/coordinadores`, { params }).pipe(
       map((page) => {
-        const res = { ...page, datos: page?.elementos } as unknown as ApiResponse<CoordinadorApiDto[]>;
-        if (page && page.exitoso !== false && Array.isArray(page.elementos)) {
-          const coordMap = new Map<string, CoordinadorApiDto>();
-          for (const item of page.elementos) {
-            if (item && item.id && !coordMap.has(item.id)) {
-              coordMap.set(item.id, item);
-            }
-          }
-
-          const normalizados: CoordinadorItem[] = Array.from(coordMap.values()).map((raw) => {
-            const nombreCompleto = (raw.nombreCompleto || '').trim();
-            let nombres = raw.nombres || '';
-            let apellidos = raw.apellidos || '';
-
-            if (!nombres && nombreCompleto) {
-              const partes = nombreCompleto.split(/\s+/);
-              if (partes.length <= 2) {
-                nombres = partes[0] || '';
-                apellidos = partes[1] || '';
-              } else {
-                nombres = partes.slice(0, 2).join(' ');
-                apellidos = partes.slice(2).join(' ');
-              }
-            }
-
-            const programaResuelto =
-              raw.programaAcademico ||
-              raw.nombrePrograma ||
-              'Sin Programa Asignado';
-
-            return {
-              id: raw.id as string,
-              idUsuario: raw.idUsuario,
-              idPrograma: raw.idPrograma ?? null,
-              tipoIdentificacion: raw.tipoIdentificacion || 'CC',
-              tipoIdentificacionId: raw.tipoIdentificacionId,
-              numeroIdentificacion: String(raw.numeroIdentificacion || ''),
-              nombreCompleto: nombreCompleto || `${nombres} ${apellidos}`.trim(),
-              primerNombre: raw.primerNombre,
-              segundoNombre: raw.segundoNombre,
-              primerApellido: raw.primerApellido,
-              segundoApellido: raw.segundoApellido,
-              nombres: nombres || nombreCompleto,
-              apellidos: apellidos,
-              correo: raw.correo || '',
-              // Certificación F3: el contrato no trae la facultad (es la del decano); no se inventa "Sin Facultad".
-              facultad: raw.facultad || raw.nombreFacultad || '',
-              programaAcademico: programaResuelto,
-              nombrePrograma: raw.nombrePrograma || programaResuelto,
-              totalDocentes: raw.totalDocentes ?? null,
-              totalGrupos: raw.totalGrupos ?? null,
-              estado: raw.estado || (raw.estaActivoCoordinador === false ? 'INACTIVO' : 'ACTIVO'),
-              estaActivoCoordinador: raw.estaActivoCoordinador ?? true,
-              estaActivoRolCoordinador: raw.estaActivoRolCoordinador,
-            };
-          });
-
-          return { ...res, exitoso: true, datos: normalizados };
-        }
-        return res as unknown as ApiResponse<CoordinadorItem[]>;
+        const crudos = Array.isArray(page?.elementos) ? page.elementos : [];
+        // El backend entrega un coordinador por fila, ya con nombres y apellidos separados: no se deduplica ni se parte.
+        const normalizados: CoordinadorItem[] = crudos.filter((raw) => !!raw?.id).map((raw) => {
+          const nombres = raw.nombres ?? '';
+          const apellidos = raw.apellidos ?? '';
+          const programaResuelto = raw.programaAcademico || raw.nombrePrograma || 'Sin Programa Asignado';
+          return {
+            id: raw.id as string,
+            idUsuario: raw.idUsuario,
+            idPrograma: raw.idPrograma ?? null,
+            tipoIdentificacion: raw.tipoIdentificacion || 'CC',
+            tipoIdentificacionId: raw.tipoIdentificacionId,
+            numeroIdentificacion: String(raw.numeroIdentificacion || ''),
+            nombreCompleto: raw.nombreCompleto ?? undefined,
+            primerNombre: raw.primerNombre,
+            segundoNombre: raw.segundoNombre,
+            primerApellido: raw.primerApellido,
+            segundoApellido: raw.segundoApellido,
+            nombres,
+            apellidos,
+            correo: raw.correo || '',
+            // Certificación F3: el contrato no trae la facultad (es la del decano); no se inventa "Sin Facultad".
+            facultad: raw.facultad || raw.nombreFacultad || '',
+            programaAcademico: programaResuelto,
+            nombrePrograma: raw.nombrePrograma || programaResuelto,
+            totalDocentes: raw.totalDocentes ?? null,
+            totalGrupos: raw.totalGrupos ?? null,
+            estado: raw.estado || (raw.estaActivoCoordinador === false ? 'INACTIVO' : 'ACTIVO'),
+            estaActivoCoordinador: raw.estaActivoCoordinador ?? true,
+            estaActivoRolCoordinador: raw.estaActivoRolCoordinador,
+          };
+        });
+        const total = Number(page?.totalElementos ?? normalizados.length);
+        return {
+          exitoso: page?.exitoso !== false,
+          elementos: normalizados,
+          datos: normalizados,
+          numeroPagina: page?.numeroPagina ?? filtro.pagina,
+          tamanoPagina: page?.tamanoPagina ?? filtro.tamano,
+          totalElementos: total,
+          totalPaginas: page?.totalPaginas ?? Math.max(1, Math.ceil(total / filtro.tamano)),
+        };
       })
     );
   }

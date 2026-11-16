@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { paginaApi, porUrl } from '../../../../core/testing/pagina-api';
-import { provideHttpClient, withXhr } from '@angular/common/http';
+import { HttpParams, provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@angular/common/http/testing';
 import { DeanProgramasGestionComponent } from './dean-programas-gestion.component';
 import { environment } from '../../../../../environments/environment';
@@ -21,6 +21,8 @@ describe('DeanProgramasGestionComponent', () => {
   };
   const payload: ProgramaPayload = { nombre: 'Nuevo', idTipoPrograma: 't-1', idCoordinador: 'c-2', idModalidad: null, idJornada: null };
 
+  let peticionCoordinadores: HttpParams | undefined;
+
   const listados = () => http.match((r) => r.url === `${api}/decano/programas` && r.method === 'GET');
 
   function iniciar(): void {
@@ -28,11 +30,11 @@ describe('DeanProgramasGestionComponent', () => {
     component = fixture.componentInstance;
     fixture.detectChanges();
     listados().forEach((r) => r.flush({ exitoso: true, datos: [programa], total: 12 }));
-    http.expectOne(porUrl(`${api}/decano/coordinadores`)).flush(paginaApi([
-        { id: 'c-1', idPrograma: 'p-1', nombreCompleto: 'Ana Pérez' },
+    const coordinadores = http.expectOne(porUrl(`${api}/decano/coordinadores`));
+    // CIERRE-W1B: el servidor entrega solo los coordinadores libres con usuario y rol activos.
+    peticionCoordinadores = coordinadores.request.params;
+    coordinadores.flush(paginaApi([
         { id: 'c-2', idPrograma: null, nombreCompleto: 'Luis Gómez', estaActivoCoordinador: true, estaActivoRolCoordinador: true },
-        { id: 'c-3', idPrograma: null, nombreCompleto: 'Rol Inactivo', estaActivoCoordinador: false, estaActivoRolCoordinador: false },
-        { id: 'c-4', idPrograma: null, nombreCompleto: 'Usuario Inactivo', estaActivoCoordinador: false, estaActivoRolCoordinador: true },
       ]));
     http.expectOne(`${api}/tipos-programa`).flush([{ id: 't-1', codigo: 'PRE', nombre: 'pregrado' }]);
     http.expectOne(`${api}/modalidades-programa`).flush([]);
@@ -58,7 +60,10 @@ describe('DeanProgramasGestionComponent', () => {
     expect(component.service.total()).toBe(12);
   });
 
-  it('solo ofrece como disponibles los coordinadores sin programa y con usuario y rol activos (HU121/HU122)', () => {
+  it('pide al servidor los coordinadores sin programa y activos y ofrece exactamente los que devuelve (HU121/HU122)', () => {
+    expect(peticionCoordinadores?.get('sinPrograma')).toBe('true');
+    expect(peticionCoordinadores?.get('estaActivo')).toBe('true');
+    expect(peticionCoordinadores?.get('tamano')).toBe('100');
     expect(component.coordinadoresDisponibles()).toEqual([{ id: 'c-2', nombre: 'Luis Gómez' }]);
   });
 

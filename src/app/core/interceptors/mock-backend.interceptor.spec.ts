@@ -183,6 +183,32 @@ describe('mockBackendInterceptor', () => {
     tick(300);
     expect(coordRes?.exitoso).toBeTrue();
 
+    // CIERRE-W1B: el simulador filtra y pagina como el SP (busqueda, estaActivo, sinPrograma, pagina y tamano).
+    const total = mockStore.coordinadores.length;
+    let paginaRes: { elementos: unknown[]; totalElementos: number; numeroPagina: number; tamanoPagina: number; totalPaginas: number } | undefined;
+    httpClient.get<typeof paginaRes>(`${environment.apiUrl}/decano/coordinadores`, { params: { pagina: 1, tamano: 2 } }).subscribe((r) => (paginaRes = r));
+    tick(300);
+    expect(paginaRes?.elementos.length).toBe(2);
+    expect(paginaRes?.totalElementos).toBe(total);
+    expect(paginaRes?.tamanoPagina).toBe(2);
+    expect(paginaRes?.totalPaginas).toBe(Math.ceil(total / 2));
+
+    let busquedaRes: typeof paginaRes;
+    httpClient.get<typeof paginaRes>(`${environment.apiUrl}/decano/coordinadores`, { params: { busqueda: 'zzz-no-existe' } }).subscribe((r) => (busquedaRes = r));
+    tick(300);
+    expect(busquedaRes?.totalElementos).toBe(0);
+    expect(busquedaRes?.elementos).toEqual([]);
+
+    let inactivosRes: typeof paginaRes;
+    httpClient.get<typeof paginaRes>(`${environment.apiUrl}/decano/coordinadores`, { params: { estaActivo: 'false' } }).subscribe((r) => (inactivosRes = r));
+    tick(300);
+    expect(inactivosRes?.totalElementos).toBe(mockStore.coordinadores.filter((c) => c.estado === 'INACTIVO').length);
+
+    let sinProgramaRes: typeof paginaRes;
+    httpClient.get<typeof paginaRes>(`${environment.apiUrl}/decano/coordinadores`, { params: { sinPrograma: 'true' } }).subscribe((r) => (sinProgramaRes = r));
+    tick(300);
+    expect(sinProgramaRes?.totalElementos).toBe(0);
+
     let postCoordRes: Sobre | undefined;
     httpClient.post<Sobre>(`${environment.apiUrl}/decano/coordinadores`, { nombres: 'Coord', apellidos: 'Nuevo' }).subscribe((r) => (postCoordRes = r));
     tick(350);
