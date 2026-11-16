@@ -5,16 +5,17 @@ import { DeanIndicatorsService } from '../../../core/services/dean-indicators.se
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 @Component({
     selector: 'app-dean-indicators',
-    imports: [KpiCardComponent, DecimalPipe, PaginationComponent],
+    imports: [PageHeaderComponent, KpiCardComponent, DecimalPipe, PaginationComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
     <section class="space-y-6">
       <header>
         @if (!embebido()) {
-          <h1 class="text-2xl font-semibold text-neutral-900">Indicadores de la facultad</h1>
+          <app-page-header titulo="Indicadores de la facultad" />
         }
         @if (service.kpis(); as k) {
           <p class="text-sm text-neutral-600">{{ k.nombreFacultad }} · {{ k.nombrePeriodoAcademico ?? 'Sin período' }}</p>

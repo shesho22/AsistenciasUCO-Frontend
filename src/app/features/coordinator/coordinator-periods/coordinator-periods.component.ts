@@ -6,35 +6,25 @@ import { PeriodoAcademicoItem } from '../../../core/models/role-management.model
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { AcademicPeriodsTabComponent } from '../coordinator-study-plans/components/academic-periods-tab.component';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 @Component({
     selector: 'app-coordinator-periods',
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: { class: 'block w-full' },
-    imports: [AcademicPeriodsTabComponent],
+    imports: [PageHeaderComponent, AcademicPeriodsTabComponent],
     template: `
     <div class="space-y-6 animate-fade-in">
       <!-- Header Bento -->
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
-        @if (!embebido()) {
-        <div>
-          <div class="flex items-center gap-2 mb-1">
-            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary-100 text-primary-900 border border-primary-200">
-              Coordinación de Programa
-            </span>
-            <span class="text-xs text-warm-400">•</span>
-            <span class="text-xs font-medium text-warm-500">Calendario Lectivo</span>
-          </div>
-          <h1 class="font-serif font-bold text-2xl sm:text-3xl text-warm-900 tracking-tight">
-            Períodos Académicos
-          </h1>
-          <p class="text-sm text-warm-600 mt-1">
-            Consulta de los períodos académicos de la institución (los administra el administrador institucional).
-          </p>
-        </div>
-        }
-
-        <div class="flex flex-wrap items-center gap-2.5">
+      <app-page-header
+        [enTarjeta]="true"
+        [conTitulo]="!embebido()"
+        etiqueta="Coordinación de Programa"
+        contexto="Calendario Lectivo"
+        titulo="Períodos Académicos"
+        descripcion="Consulta de los períodos académicos de la institución (los administra el administrador institucional)."
+      >
+        <div cabecera-acciones class="flex flex-wrap items-center gap-2.5">
           <button
             type="button"
             (click)="irAPlanes()"
@@ -46,7 +36,7 @@ import { AcademicPeriodsTabComponent } from '../coordinator-study-plans/componen
             {{ periodos().length }} Períodos
           </span>
         </div>
-      </div>
+      </app-page-header>
 
       <!-- KPIs Bento -->
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">

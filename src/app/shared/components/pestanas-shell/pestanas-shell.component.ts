@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { ActivatedRoute, RouterOutlet } from '@angular/router';
 import { TabItem, TabsNavComponent, pestanaEnRuta } from '../tabs/tabs-nav.component';
+import { PageHeaderComponent } from '../page-header/page-header.component';
 
 /** Datos que cada ruta cascarón declara en `data` para describir su pantalla. */
 export interface PestanasShellData {
@@ -20,15 +21,10 @@ export interface PestanasShellData {
     selector: 'app-pestanas-shell',
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: { class: 'block w-full' },
-    imports: [RouterOutlet, TabsNavComponent],
+    imports: [RouterOutlet, TabsNavComponent, PageHeaderComponent],
     template: `
     <div class="space-y-4 min-w-0">
-      <div>
-        <h1 class="font-serif font-bold text-2xl sm:text-3xl text-warm-900 tracking-tight">{{ datos.titulo }}</h1>
-        @if (datos.descripcion) {
-          <p class="text-sm text-warm-600 mt-1">{{ datos.descripcion }}</p>
-        }
-      </div>
+      <app-page-header [titulo]="datos.titulo" [descripcion]="datos.descripcion ?? null" />
 
       <app-tabs-nav
         [tabs]="datos.tabs"

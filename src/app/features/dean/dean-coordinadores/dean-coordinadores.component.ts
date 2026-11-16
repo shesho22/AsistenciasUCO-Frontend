@@ -30,6 +30,7 @@ import { StudentRegistrationConfigService } from '../../../core/services/student
 import { finalize } from 'rxjs';
 import { IdentidadEsperada, UltimaPeticion, advertirRegistroNoListado } from '../../../core/utils/registro-confirmado.util';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 type VistaDecano = 'LISTA' | 'REGISTRO';
 
@@ -41,7 +42,7 @@ const NOMBRE_PROGRAMA_MAX = 50;
 @Component({
   selector: 'app-dean-coordinadores',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
+  imports: [PageHeaderComponent, 
     ActionMenuComponent,
     CommonModule,
     FormsModule,
@@ -62,26 +63,15 @@ const NOMBRE_PROGRAMA_MAX = 50;
       <!-- 1. VISTA: LISTA DE COORDINADORES -->
       @if (vistaActual() === 'LISTA') {
         <!-- Header Bento -->
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
-          @if (!embebido()) {
-          <div>
-            <div class="flex items-center gap-2 mb-1">
-              <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-accent-100 text-accent-900 border border-accent-200">
-                Decanatura
-              </span>
-              <span class="text-xs text-warm-400">•</span>
-              <span class="text-xs font-medium text-warm-500">Gestión Académica de Programas</span>
-            </div>
-            <h1 class="font-serif font-bold text-2xl sm:text-3xl text-warm-900 tracking-tight">
-              Gestión de Coordinadores
-            </h1>
-            <p class="text-sm text-warm-600 mt-1">
-              Supervisa los coordinadores a cargo de los programas adscritos a la facultad, su carga de docentes y grupos.
-            </p>
-          </div>
-          }
-
-          <div class="flex items-center gap-3" data-testid="acciones-encabezado">
+        <app-page-header
+          [enTarjeta]="true"
+          [conTitulo]="!embebido()"
+          etiqueta="Decanatura"
+          contexto="Gestión Académica de Programas"
+          titulo="Gestión de Coordinadores"
+          descripcion="Supervisa los coordinadores a cargo de los programas adscritos a la facultad, su carga de docentes y grupos."
+        >
+          <div cabecera-acciones class="flex items-center gap-3" data-testid="acciones-encabezado">
             <app-button variant="primary" size="md" (clicked)="abrirModalSeleccionarCoordinador()">
               <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
@@ -90,7 +80,7 @@ const NOMBRE_PROGRAMA_MAX = 50;
             </app-button>
             <app-action-menu label="Más acciones" [items]="accionesEncabezado" (selected)="alElegirAccion($event)" />
           </div>
-        </div>
+        </app-page-header>
 
 
         <!-- Estado de acceso de la ultima cuenta registrada (verificado por el backend, nunca por la SPA) -->

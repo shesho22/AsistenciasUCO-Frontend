@@ -17,6 +17,7 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
 import { FranjasEditorComponent } from '../../../shared/components/franjas-editor/franjas-editor.component';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
 import { getSafeTextError } from '../../../core/validation/form-fields.util';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 /** Cupo editable del grupo: vacío (no se cambia) o entero >= 1. El tope por estudiantes activos lo valida la DB. */
 export function cupoValidoOVacio(cupo: number | string | null | undefined): boolean {
@@ -44,28 +45,23 @@ interface GrupoForm {
     selector: 'app-coordinator-groups',
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: { class: 'block w-full' },
-    imports: [FormsModule, FranjasEditorComponent, PaginationComponent, ErrorCargaComponent],
+    imports: [PageHeaderComponent, FormsModule, FranjasEditorComponent, PaginationComponent, ErrorCargaComponent],
     template: `
     <div class="space-y-6 animate-fade-in">
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
-        @if (!embebido()) {
-        <div>
-          <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary-100 text-primary-900 border border-primary-200">
-            Coordinación de Programa
-          </span>
-          <h1 class="font-serif font-bold text-2xl sm:text-3xl text-warm-900 tracking-tight mt-1">Grupos y Horarios</h1>
-          <p class="text-sm text-warm-600 mt-1">
-            Crea los grupos del programa, asigna el docente titular y define su horario semanal.
-          </p>
-        </div>
-        }
+      <app-page-header
+        [enTarjeta]="true"
+        [conTitulo]="!embebido()"
+        etiqueta="Coordinación de Programa"
+        titulo="Grupos y Horarios"
+        descripcion="Crea los grupos del programa, asigna el docente titular y define su horario semanal."
+      >
         @if (vista() === 'LISTA') {
-          <button type="button" data-testid="nuevo-grupo" (click)="abrirCrear()"
+          <button cabecera-acciones type="button" data-testid="nuevo-grupo" (click)="abrirCrear()"
             class="px-4 py-2 rounded-xl bg-primary-700 hover:bg-primary-800 text-sm font-semibold text-white transition-colors">
             Nuevo grupo
           </button>
         }
-      </div>
+      </app-page-header>
 
       @if (vista() === 'LISTA') {
         <div class="bg-white rounded-2xl border border-warm-200 shadow-warm-sm overflow-x-auto">

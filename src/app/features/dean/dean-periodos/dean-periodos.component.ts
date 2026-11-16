@@ -6,33 +6,24 @@ import { CoordinatorManagementService } from '../../../core/services/coordinator
 import { PeriodoAcademicoItem } from '../../../core/models/role-management.model';
 import { BadgeComponent } from '../../../shared/components/badge/badge.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 @Component({
     selector: 'app-dean-periodos',
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: { class: 'block w-full' },
-    imports: [FormsModule, BadgeComponent],
+    imports: [PageHeaderComponent, FormsModule, BadgeComponent],
     template: `
     <div class="space-y-6 animate-fade-in">
       <!-- Header Bento -->
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl border border-warm-200/80 shadow-warm-sm">
-        <div>
-          <div class="flex items-center gap-2 mb-1">
-            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-accent-100 text-accent-900 border border-accent-200">
-              Decanatura Institucional
-            </span>
-            <span class="text-xs text-warm-400">•</span>
-            <span class="text-xs font-medium text-warm-500">Calendario Académico</span>
-          </div>
-          <h1 class="font-serif font-bold text-2xl sm:text-3xl text-warm-900 tracking-tight">
-            Períodos Académicos Institucionales
-          </h1>
-          <p class="text-sm text-warm-600 mt-1">
-            Consulta de semestres académicos activos, fechas de corte de asistencia y planeación lectiva.
-          </p>
-        </div>
-
-        <div class="flex items-center gap-2.5">
+      <app-page-header
+        [enTarjeta]="true"
+        etiqueta="Decanatura Institucional"
+        contexto="Calendario Académico"
+        titulo="Períodos Académicos Institucionales"
+        descripcion="Consulta de semestres académicos activos, fechas de corte de asistencia y planeación lectiva."
+      >
+        <div cabecera-acciones class="flex items-center gap-2.5">
           <button
             type="button"
             (click)="volverAFacultad()"
@@ -44,7 +35,7 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
             {{ errorPeriodos() ? '—' : periodos().length }} Períodos
           </span>
         </div>
-      </div>
+      </app-page-header>
 
       <!-- Buscador -->
       <div class="relative">
