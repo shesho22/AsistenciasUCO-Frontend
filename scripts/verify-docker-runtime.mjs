@@ -25,6 +25,16 @@ function runDocker(args, options = {}) {
   }).trim();
 }
 
+/** Ejecuta `docker run` esperando que el contenedor termine con error; devuelve su salida de error. */
+function runDockerExpectFailure(args) {
+  try {
+    execFileSync('docker', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+  } catch (error) {
+    return `${error.stdout ?? ''}${error.stderr ?? ''}`;
+  }
+  throw new Error('El contenedor arrancó cuando debía rechazar la configuración.');
+}
+
 function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
@@ -96,6 +106,23 @@ try {
   for (const nombre of ['script-src', 'connect-src', 'style-src']) {
     assert(origenesDe(nombre).has(origenSecurityUi), `CSP: ${nombre} no incluye el origen de Security UI (${origenSecurityUi}).`);
   }
+  // Caché: index.html se revalida siempre, env.js no se guarda y los archivos con hash son inmutables.
+  const cabeceras = (ruta) =>
+    runDocker(['exec', container, 'sh', '-c', `wget -S -q -O /dev/null "http://127.0.0.1:8080${ruta}" 2>&1`]);
+  const cacheControl = (ruta) => (/^\s*cache-control:\s*(.+)$/im.exec(cabeceras(ruta)) ?? [])[1]?.trim() ?? '';
+  assert(cacheControl('/index.html') === 'no-cache', 'Caché: index.html debe responder Cache-Control: no-cache.');
+  assert(cacheControl('/') === 'no-cache', 'Caché: la raíz (index.html) debe responder Cache-Control: no-cache.');
+  assert(cacheControl('/ruta-spa-inexistente') === 'no-cache', 'Caché: el fallback de la SPA debe responder Cache-Control: no-cache.');
+  assert(/no-store/.test(cacheControl('/assets/env.js')), 'Caché: assets/env.js debe responder Cache-Control: no-store.');
+  const hasheado = runDocker(['exec', container, 'sh', '-c', 'ls /usr/share/nginx/html | grep -E "^main-[A-Za-z0-9_-]{8}\\.js$" | head -1']);
+  assert(hasheado !== '', 'Caché: no se encontró main-<hash>.js en la imagen.');
+  assert(
+    /immutable/.test(cacheControl(`/${hasheado}`)) && /max-age=31536000/.test(cacheControl(`/${hasheado}`)),
+    `Caché: ${hasheado} debe ser inmutable con caché de un año.`,
+  );
+  assert(!/immutable/.test(cacheControl('/favicon.svg')), 'Caché: un archivo sin hash no debe ser inmutable.');
+  assert(/X-Content-Type-Options:\s*nosniff/i.test(cabeceras(`/${hasheado}`)), 'Caché: el archivo con hash perdió las cabeceras de seguridad.');
+
   const index = runDocker(['exec', container, 'cat', '/usr/share/nginx/html/index.html']);
   assert(!/<[^>]+\son[a-z]+\s*=/i.test(index), 'index.html trae un manejador de evento en linea (onload/onclick).');
 
@@ -116,7 +143,35 @@ try {
   }
   assert(compose.includes('SECURITY_PROVIDER: baseline'), 'Compose no queda configurado en modo baseline.');
 
+  // Fail-closed de mocks: USE_MOCKS=true sin ALLOW_MOCKS=true no arranca; con ambos (laboratorio) sí.
+  const base = Object.entries(values).filter(([name]) => name !== 'USE_MOCKS').flatMap(([name, value]) => ['-e', `${name}=${value}`]);
+  const salida = runDockerExpectFailure(['run', '--rm', ...base, '-e', 'USE_MOCKS=true', image]);
+  assert(/USE_MOCKS=true no esta permitido/.test(salida) && /ALLOW_MOCKS=true/.test(salida), 'USE_MOCKS=true sin ALLOW_MOCKS debe abortar con un mensaje claro.');
+  const salidaAllowFalse = runDockerExpectFailure(['run', '--rm', ...base, '-e', 'USE_MOCKS=true', '-e', 'ALLOW_MOCKS=false', image]);
+  assert(/USE_MOCKS=true no esta permitido/.test(salidaAllowFalse), 'USE_MOCKS=true con ALLOW_MOCKS=false debe abortar.');
+  const contenedorLab = `${container}-lab`;
+  try {
+    runDocker(['run', '-d', '--name', contenedorLab, ...base, '-e', 'USE_MOCKS=true', '-e', 'ALLOW_MOCKS=true', image]);
+    let envLab = '';
+    for (let intento = 0; intento < 30 && envLab === ''; intento += 1) {
+      try {
+        envLab = runDocker(['exec', contenedorLab, 'cat', '/usr/share/nginx/html/assets/env.js']);
+      } catch {
+        await delay(500);
+      }
+    }
+    assert(envLab.includes("window.env['USE_MOCKS'] = 'true';"), 'Con ALLOW_MOCKS=true el contenedor de laboratorio debe arrancar con USE_MOCKS=true.');
+  } finally {
+    try {
+      runDocker(['rm', '-f', contenedorLab]);
+    } catch {
+      // el contenedor puede no haberse creado
+    }
+  }
+
   console.log(`DOCKER_RUNTIME_ENV_PASS image=${image}`);
+  console.log('DOCKER_RUNTIME_CACHE_PASS index=no-cache assets=immutable env=no-store');
+  console.log('DOCKER_RUNTIME_MOCKS_PASS fail-closed');
   console.log('DOCKER_RUNTIME_CSP_PASS script-inline=none');
   console.log('COMPOSE_SECURITY_WIRING_PASS oauth=oidc keycloak=bff-pep-pdp security-ui');
 } catch (error) {
