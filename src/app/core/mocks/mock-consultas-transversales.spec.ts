@@ -15,6 +15,25 @@ describe('respuestaConsultasTransversales (mock HU112/HU128/HU143/HU157)', () =>
     expect(respuestaConsultasTransversales(get('/api/v1/admin/estudiantes', '1017'), '/api/v1/admin/estudiantes')?.total).toBe(1);
   });
 
+  it('CIERRE-W1B: el directorio de docentes del administrador responde como el del decano, con nombres separados', () => {
+    const admin = respuestaConsultasTransversales(get('/api/v1/admin/docentes'), '/api/v1/admin/docentes');
+    expect(admin?.total).toBe(2);
+    expect(admin?.esPaginada).toBeTrue();
+    const primero = (admin?.datos as { primerNombre: string; apellidos: string; codigoTipoIdentificacion: string }[])[0];
+    expect(primero.primerNombre).toBe('María');
+    expect(primero.apellidos).toBe('Rostagno');
+    expect(primero.codigoTipoIdentificacion).toBe('CC');
+    expect(respuestaConsultasTransversales(get('/api/v1/admin/docentes', 'cardona'), '/api/v1/admin/docentes')?.total).toBe(1);
+    expect(respuestaConsultasTransversales(get('/api/v1/admin/docentes', 'zzz'), '/api/v1/admin/docentes')?.total).toBe(0);
+  });
+
+  it('CIERRE-W1B: respeta el filtro estaActivo de los directorios', () => {
+    const inactivos = new HttpRequest('GET', '/api/v1/decano/docentes', { params: new HttpParams().set('estaActivo', 'false') });
+    expect(respuestaConsultasTransversales(inactivos, '/api/v1/decano/docentes')?.total).toBe(0);
+    const activos = new HttpRequest('GET', '/api/v1/decano/docentes', { params: new HttpParams().set('estaActivo', 'true') });
+    expect(respuestaConsultasTransversales(activos, '/api/v1/decano/docentes')?.total).toBe(2);
+  });
+
   it('simula el historial con el estudiante pedido', () => {
     const url = '/api/v1/admin/estudiantes/EST-9/historial';
     const respuesta = respuestaConsultasTransversales(get(url), url);

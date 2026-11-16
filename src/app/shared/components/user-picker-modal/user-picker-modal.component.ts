@@ -1,20 +1,32 @@
 import {
   Component,
-  OnInit,
+  effect,
   inject,
   signal,
-  computed,
   input,
   output,
+  untracked,
   ChangeDetectionStrategy,
 } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
+import { Observable } from 'rxjs';
 import { ButtonComponent } from '../button/button.component';
 import { BadgeComponent } from '../badge/badge.component';
-import { TeacherService } from '../../../core/services/teacher.service';
-import { MOCK_DOCENTES } from '../../../core/mocks/role-management.mock';
+import { ErrorCargaComponent } from '../error-carga/error-carga.component';
 import { ModalComponent } from '../modal/modal.component';
+import { PaginationComponent } from '../pagination/pagination.component';
+import { ToastService } from '../toast/toast.component';
+import { ApiPageResponse } from '../../../core/api/models/api-page-response.model';
+import { DocenteFacultadItem } from '../../../core/models/consultas-transversales.model';
+import { ConsultasTransversalesService } from '../../../core/services/consultas-transversales.service';
+import { ListadoPaginado } from '../../utils/listado-paginado';
+
+/**
+ * Fuente de datos del selector (la elige quien lo abre; el componente no conoce roles): `FACULTAD` consulta los docentes de
+ * la facultad del decano e `INSTITUCION` los de la institución del administrador. Ambas buscan y paginan en el servidor.
+ */
+export type FuenteSelectorPersonas = 'FACULTAD' | 'INSTITUCION';
 
 export interface UserPickerItem {
   id: string;
@@ -26,6 +38,7 @@ export interface UserPickerItem {
   segundoApellido?: string;
   nombres: string;
   apellidos: string;
+  nombreCompleto: string;
   correo: string;
   dependenciaOPrograma?: string;
   rolActual?: string;
@@ -34,7 +47,7 @@ export interface UserPickerItem {
 @Component({
     selector: 'app-user-picker-modal',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [ModalComponent, FormsModule, ButtonComponent, BadgeComponent],
+    imports: [ModalComponent, FormsModule, ButtonComponent, BadgeComponent, ErrorCargaComponent, PaginationComponent],
     template: `
     <app-modal [isOpen]="isOpen()" [title]="title()" [subtitulo]="subtitle()" tamano="2xl" (closed)="cancelar()">
       <div modal-encabezado class="flex items-center gap-2 mt-1">
@@ -53,26 +66,30 @@ export interface UserPickerItem {
           </span>
           <input
             type="text"
+            aria-label="Buscar persona"
             [ngModel]="searchQuery()"
             (ngModelChange)="searchQuery.set($event)"
-            placeholder="Buscar por cédula, nombre completo o correo institucional..."
+            (keyup.enter)="buscar()"
+            placeholder="Buscar por nombre o documento y presiona Enter..."
             class="w-full pl-10 pr-4 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all placeholder:text-warm-400"
           />
         </div>
         <div class="flex items-center justify-between mt-2 text-xs text-warm-500">
-          <span>Coincidencias encontradas: {{ filteredUsers().length }}</span>
+          <span>Coincidencias encontradas: {{ listado.total() }}</span>
           <span class="italic text-warm-400">Selecciona una persona para vincular</span>
         </div>
       </div>
 
       <!-- Lista de Personas -->
       <div class="pt-4 overflow-y-auto space-y-2.5 max-h-[50vh] divide-y divide-warm-100">
-        @if (isLoading()) {
+        @if (listado.cargando()) {
           <div class="py-12 flex flex-col items-center justify-center text-center">
             <div class="w-8 h-8 border-3 border-primary-500 border-t-transparent rounded-full animate-spin mb-3"></div>
             <p class="text-sm font-medium text-warm-600">Consultando directorio universitario...</p>
           </div>
-        } @else if (filteredUsers().length === 0) {
+        } @else if (listado.error(); as error) {
+          <app-error-carga [error]="error" (reintentar)="listado.reintentar()" />
+        } @else if (usuarios().length === 0) {
           <div class="py-12 flex flex-col items-center justify-center text-center px-4">
             <div class="w-12 h-12 rounded-2xl bg-warm-100 flex items-center justify-center text-warm-400 mb-3">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -95,17 +112,17 @@ export interface UserPickerItem {
             }
           </div>
         } @else {
-          @for (user of filteredUsers(); track user.id) {
+          @for (user of usuarios(); track user.id) {
             <div class="pt-2.5 first:pt-0 flex items-center justify-between p-3 rounded-2xl hover:bg-primary-50/40 border border-transparent hover:border-primary-100 transition-all group">
               <div class="flex items-center gap-3.5 min-w-0">
                 <!-- Avatar con iniciales -->
                 <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-600 to-primary-800 text-white font-bold text-xs flex items-center justify-center shadow-xs shrink-0">
-                  {{ getInitials(user.nombres, user.apellidos) }}
+                  {{ iniciales(user) }}
                 </div>
                 <div class="min-w-0">
                   <div class="flex items-center gap-2">
                     <h4 class="text-sm font-semibold text-warm-900 truncate">
-                      {{ user.nombres }} {{ user.apellidos }}
+                      {{ user.nombreCompleto }}
                     </h4>
                     @if (user.rolActual) {
                       <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-warm-100 text-warm-700">
@@ -115,8 +132,10 @@ export interface UserPickerItem {
                   </div>
                   <div class="flex flex-wrap items-center gap-y-0.5 gap-x-3 text-xs text-warm-500 mt-0.5">
                     <span class="font-mono text-warm-700">Doc: {{ user.numeroIdentificacion }}</span>
-                    <span>•</span>
-                    <span class="truncate text-primary-700 font-medium">{{ user.correo }}</span>
+                    @if (user.correo) {
+                      <span>•</span>
+                      <span class="truncate text-primary-700 font-medium">{{ user.correo }}</span>
+                    }
                     @if (user.dependenciaOPrograma) {
                       <span>•</span>
                       <span class="truncate text-warm-500">{{ user.dependenciaOPrograma }}</span>
@@ -137,6 +156,17 @@ export interface UserPickerItem {
           }
         }
       </div>
+      @if (listado.total() > 0) {
+        <app-pagination
+          [totalItems]="listado.total()"
+          [pageSize]="listado.tamano()"
+          [currentPage]="listado.pagina()"
+          [totalPages]="listado.totalPaginas()"
+          [pageSizeOptions]="[5, 10, 20]"
+          (pageChange)="listado.irAPagina($event)"
+          (pageSizeChange)="listado.cambiarTamano($event)"
+        />
+      }
 
       <!-- Footer del Modal -->
       <div modal-footer class="w-full flex items-center justify-between">
@@ -162,107 +192,85 @@ export interface UserPickerItem {
     </app-modal>
   `
 })
-export class UserPickerModalComponent implements OnInit {
-  private teacherService = inject(TeacherService);
+export class UserPickerModalComponent {
+  private readonly consultas = inject(ConsultasTransversalesService);
+  private readonly toast = inject(ToastService);
 
   isOpen = input<boolean>(false);
+  /** Qué directorio consulta el selector (lo decide quien lo abre). */
+  fuente = input<FuenteSelectorPersonas>('INSTITUCION');
   title = input<string>('Seleccionar Docente o Funcionario');
-  subtitle = input<string>('Busca por documento, nombre o correo institucional para vincularlo.');
+  subtitle = input<string>('Busca por documento o nombre para vincularlo.');
   roleBadge = input<string>('Personal UCO');
   allowNew = input<boolean>(true);
-  customUsers = input<UserPickerItem[] | null>(null);
 
   userSelected = output<UserPickerItem>();
   requestNew = output<void>();
   cancelled = output<void>();
 
   searchQuery = signal<string>('');
-  isLoading = signal<boolean>(false);
-  usersList = signal<UserPickerItem[]>([]);
 
-  filteredUsers = computed(() => {
-    const query = this.searchQuery().toLowerCase().trim();
-    const source = this.customUsers() ?? this.usersList();
+  /** Página actual del directorio: la búsqueda, el ámbito y la paginación los resuelve el servidor. */
+  readonly listado = new ListadoPaginado<DocenteFacultadItem>(
+    (pagina, tamano) => this.consultar(pagina, tamano),
+    (mensaje) => this.toast.error(mensaje)
+  );
 
-    if (!query) {
-      return source;
-    }
+  /** Filas ya mapeadas al formato del selector (solo lo que entrega el backend; nada se deduce). */
+  readonly usuarios = signal<UserPickerItem[]>([]);
 
-    return source.filter((u) => {
-      const matchName =
-        u.nombres.toLowerCase().includes(query) ||
-        u.apellidos.toLowerCase().includes(query);
-      const matchDoc = u.numeroIdentificacion.toLowerCase().includes(query);
-      const matchEmail = u.correo.toLowerCase().includes(query);
-      const matchDep = (u.dependenciaOPrograma || '').toLowerCase().includes(query);
-
-      return matchName || matchDoc || matchEmail || matchDep;
+  constructor() {
+    // Al abrirse (o al cambiar la fuente) consulta la primera página sin filtro; cerrado no consulta.
+    effect(() => {
+      const abierto = this.isOpen();
+      this.fuente();
+      if (abierto) {
+        untracked(() => {
+          this.searchQuery.set('');
+          this.listado.buscar();
+        });
+      }
     });
-  });
-
-  ngOnInit(): void {
-    if (!this.customUsers()) {
-      this.cargarDirectorio();
-    }
-  }
-
-  cargarDirectorio(): void {
-    this.isLoading.set(true);
-
-    this.teacherService.getAllTeachers().subscribe({
-      next: (teachers) => {
-        if (teachers && teachers.length > 0) {
-          const mapped: UserPickerItem[] = teachers.map((t) => {
-            const parts = (t.nombreCompleto || '').trim().split(/\s+/);
-            const pNom = parts[0] || 'Docente';
-            const pApe = parts.slice(1).join(' ') || 'UCO';
-            return {
-              id: t.id,
-              numeroIdentificacion: String(t.numeroIdentificacion || 'Sin ID'),
-              tipoIdentificacion: 'CC',
-              nombres: pNom,
-              apellidos: pApe,
-              primerNombre: pNom,
-              primerApellido: pApe,
-              correo: `docente.${String(t.numeroIdentificacion || t.id.slice(0, 6))}@uco.edu.co`,
-              dependenciaOPrograma: 'Docencia Universitaria',
-              rolActual: 'DOCENTE',
-            };
-          });
-          this.usersList.set(mapped);
-          this.isLoading.set(false);
-          return;
-        }
-        this.cargarFallbackMock();
-      },
-      error: () => {
-        this.cargarFallbackMock();
-      },
+    effect(() => {
+      const filas = this.listado.filas();
+      untracked(() => this.usuarios.set(filas.map(UserPickerModalComponent.aItem)));
     });
   }
 
-  private cargarFallbackMock(): void {
-    // Los directorios de decano/administrador no deben consultar endpoints del coordinador (403): lista de respaldo local.
-    const mapped: UserPickerItem[] = MOCK_DOCENTES.map((d) => ({
-      id: d.id,
-      numeroIdentificacion: d.numeroIdentificacion,
-      tipoIdentificacion: 'CC',
-      nombres: d.nombres,
-      apellidos: d.apellidos,
-      primerNombre: d.nombres.split(' ')[0] || '',
-      primerApellido: d.apellidos.split(' ')[0] || '',
-      correo: d.correo,
-      dependenciaOPrograma: d.departamento || 'Facultad de Ingeniería',
-      rolActual: 'DOCENTE',
-    }));
-    this.usersList.set(mapped);
-    this.isLoading.set(false);
+  /** Consulta al servidor con la búsqueda escrita y vuelve a la primera página. */
+  buscar(): void {
+    this.listado.buscar();
   }
 
-  getInitials(nombres: string, apellidos: string): string {
-    const n = (nombres || '').trim().charAt(0);
-    const a = (apellidos || '').trim().charAt(0);
-    return `${n}${a}`.toUpperCase() || 'U';
+  private consultar(pagina: number, tamano: number): Observable<ApiPageResponse<DocenteFacultadItem>> {
+    const filtro = { busqueda: this.searchQuery(), pagina, tamano };
+    return this.fuente() === 'FACULTAD'
+      ? this.consultas.getDocentesFacultad(filtro)
+      : this.consultas.getDocentesInstitucion(filtro);
+  }
+
+  private static aItem(d: DocenteFacultadItem): UserPickerItem {
+    return {
+      id: d.idDocente,
+      numeroIdentificacion: d.numeroIdentificacion ?? '',
+      tipoIdentificacion: d.codigoTipoIdentificacion ?? undefined,
+      primerNombre: d.primerNombre ?? undefined,
+      segundoNombre: d.segundoNombre ?? undefined,
+      primerApellido: d.primerApellido ?? undefined,
+      segundoApellido: d.segundoApellido ?? undefined,
+      nombres: d.nombres ?? '',
+      apellidos: d.apellidos ?? '',
+      nombreCompleto: d.nombreCompleto,
+      correo: d.correo ?? '',
+      dependenciaOPrograma: d.programas ?? undefined,
+    };
+  }
+
+  /** Iniciales del avatar: primera letra del primer nombre y del primer apellido que entrega el backend. */
+  iniciales(user: UserPickerItem): string {
+    const nombre = (user.primerNombre ?? user.nombreCompleto).trim().charAt(0);
+    const apellido = (user.primerApellido ?? '').trim().charAt(0);
+    return `${nombre}${apellido}`.toUpperCase() || 'U';
   }
 
   seleccionar(user: UserPickerItem): void {
