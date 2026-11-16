@@ -83,7 +83,7 @@ class MockDataStore {
       modulo: evento.modulo,
       accion: evento.accion,
       descripcion: evento.descripcion,
-      direccionIp: '10.0.0.1',
+      direccionIp: '198.51.100.1',
       nivel: evento.nivel,
     };
     this.auditoria = [item, ...this.auditoria];
