@@ -338,7 +338,9 @@ describe('AdmisionEstudianteModalComponent (HU156)', () => {
   });
 
   it('explica por qué no se puede admitir cuando el documento no es un número válido', () => {
-    const aviso = () => fixture.nativeElement.querySelector('[data-testid="documento-invalido"]') as HTMLElement | null;
+    const aviso = () =>
+      (Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('[data-testid="datos-persona"] [role="alert"]'))
+        .find((a) => a.textContent?.includes('solo números')) as HTMLElement | undefined) ?? null;
     fixture.detectChanges();
     expect(aviso()).toBeNull();
 
