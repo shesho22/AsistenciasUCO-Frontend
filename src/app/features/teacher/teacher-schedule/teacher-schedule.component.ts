@@ -49,7 +49,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
       } @else {
         <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
           @for (dia of diasSemana; track dia) {
-            <div class="flex flex-col bg-white rounded-2xl border border-warm-200/80 shadow-warm-sm overflow-hidden">
+            <div class="superficie flex flex-col overflow-hidden">
               <!-- Encabezado del Día -->
               <div class="p-3.5 bg-warm-50 border-b border-warm-200 flex items-center justify-between">
                 <span class="font-serif font-bold text-sm text-warm-900">{{ dia }}</span>
