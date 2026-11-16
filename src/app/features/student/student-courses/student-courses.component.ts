@@ -246,8 +246,14 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
           this.configuracionReclamos.set(res.datos);
         }
       },
-      error: () => {},
+      // Sin la configuración no se conocen los topes de soportes: se informa el fallo y se reintenta al abrir la radicación.
+      error: (error: unknown) => this.toast.error(getApiErrorMessage(error)),
     });
+  }
+
+  /** Si la configuración de reclamos no se pudo cargar, se vuelve a pedir al abrir la radicación. */
+  private reintentarConfiguracionReclamos(): void {
+    if (this.configuracionReclamos() === null) this.cargarConfiguracionReclamos();
   }
 
   /** Sin catálogo el formulario no deja radicar y lo informa; no se usa una lista fija de respaldo. */
@@ -329,6 +335,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
     // Sin ausencia/retardo confirmado, o con una solicitud ya existente, no se abre la radicacion.
     if (!sesion.reclamable || sesion.estadoAsistencia === 'NO_DISPONIBLE') return;
     this.errorEnvio.set(null);
+    this.reintentarConfiguracionReclamos();
     this.sesionReclamar.set(sesion);
     this.tomaReclamar.set(null);
     this.limpiarSoporte();
@@ -339,6 +346,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
   iniciarReclamoToma(evento: { sesion: SesionMateriaDetalle; toma: TomaSesionEstudiante }): void {
     if (!evento.toma.reclamable) return;
     this.errorEnvio.set(null);
+    this.reintentarConfiguracionReclamos();
     this.sesionReclamar.set(evento.sesion);
     this.tomaReclamar.set(evento.toma);
     this.limpiarSoporte();

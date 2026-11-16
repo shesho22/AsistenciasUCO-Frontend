@@ -117,6 +117,10 @@ interface GrupoForm {
         <form class="superficie p-6 space-y-5 max-w-3xl" (ngSubmit)="guardar()">
           <h2 class="font-serif font-bold text-xl text-warm-900">{{ modo() === 'CREAR' ? 'Nuevo grupo' : 'Editar grupo' }}</h2>
 
+          @if (errorCatalogos(); as fallo) {
+            <app-error-carga [error]="fallo" (reintentar)="cargarCatalogos()" />
+          }
+
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             @if (modo() === 'CREAR') {
               <label class="text-xs font-semibold text-warm-700">Asignatura
@@ -194,6 +198,8 @@ export class CoordinatorGroupsComponent implements OnInit {
   asignaturas = signal<AsignaturaPlanItem[]>([]);
   periodos = signal<PeriodoAcademicoItem[]>([]);
   docentes = signal<DocentePrograma[]>([]);
+  /** Fallo al cargar las asignaturas, docentes o periodos del formulario: se muestra con reintento, no como listas vacías. */
+  errorCatalogos = signal<LoadErrorState | null>(null);
   private grupoEditado: string | null = null;
   private readonly nombresDocente = computed(() => new Map(this.docentes().map((d) => [d.idDocente, d.nombreCompleto])));
 
@@ -228,6 +234,9 @@ export class CoordinatorGroupsComponent implements OnInit {
 
   /** Asignaturas de los planes del programa, docentes activos del programa y períodos académicos. */
   cargarCatalogos(): void {
+    this.errorCatalogos.set(null);
+    const alFallar = (error: unknown): void => this.errorCatalogos.set(classifyLoadError(error));
+
     this.coordinatorService
       .getPlanesEstudio()
       .pipe(
@@ -237,10 +246,16 @@ export class CoordinatorGroupsComponent implements OnInit {
             ? of([] as AsignaturaPlanItem[])
             : forkJoin(planes.map((p) => this.coordinatorService.getAsignaturasPorPlan(p.id).pipe(
                 map((r) => r.datos ?? []),
-                catchError(() => of([] as AsignaturaPlanItem[]))
+                catchError((error: unknown) => {
+                  alFallar(error);
+                  return of([] as AsignaturaPlanItem[]);
+                })
               ))).pipe(map((listas) => listas.flat()));
         }),
-        catchError(() => of([] as AsignaturaPlanItem[]))
+        catchError((error: unknown) => {
+          alFallar(error);
+          return of([] as AsignaturaPlanItem[]);
+        })
       )
       .subscribe((asignaturas) => this.asignaturas.set(asignaturas));
 
@@ -252,13 +267,21 @@ export class CoordinatorGroupsComponent implements OnInit {
       .pipe(
         expand((res) => (pagina * TAMANO < Number(res.total ?? 0) ? pedir(++pagina) : EMPTY)),
         reduce((acumulados: DocentePrograma[], res) => [...acumulados, ...(res.datos ?? [])], []),
-        catchError(() => of([] as DocentePrograma[]))
+        catchError((error: unknown) => {
+          alFallar(error);
+          return of([] as DocentePrograma[]);
+        })
       )
       .subscribe((docentes) => this.docentes.set(docentes));
 
     this.coordinatorService
       .getPeriodosAcademicos()
-      .pipe(catchError(() => of({ exitoso: false, datos: [] as PeriodoAcademicoItem[] })))
+      .pipe(
+        catchError((error: unknown) => {
+          alFallar(error);
+          return of({ exitoso: false, datos: [] as PeriodoAcademicoItem[] });
+        })
+      )
       .subscribe((res) => this.periodos.set(res.datos ?? []));
   }
 
