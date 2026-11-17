@@ -95,12 +95,12 @@ describe('TeacherRetiroEstudianteModalComponent (HU051)', () => {
     fixture.componentRef.setInput('grupoId', null);
     component.motivo.set('Motivo');
     component.confirmar();
-    http.expectNone(URL_RETIRO);
+    expect(http.match(URL_RETIRO)).toHaveSize(0);
 
     fixture.componentRef.setInput('grupoId', 'grp-1');
     component.enviando.set(true);
     component.confirmar();
-    http.expectNone(URL_RETIRO);
+    expect(http.match(URL_RETIRO)).toHaveSize(0);
   });
 
   it('RT-14 sin nombre usa un texto genérico en el aviso', () => {

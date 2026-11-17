@@ -73,7 +73,9 @@ describe('roleScopeInterceptor', () => {
       http.get(`${environment.apiUrl}/${ruta}`).subscribe();
     }
     for (const ruta of rutas) {
-      ctrl.expectOne(`${environment.apiUrl}/${ruta}`).flush({});
+      const req = ctrl.expectOne(`${environment.apiUrl}/${ruta}`);
+      expect(req.request.method).toBe('GET');
+      req.flush({});
     }
   });
 
@@ -99,14 +101,20 @@ describe('roleScopeInterceptor', () => {
     como('DECANO');
     http.get(`${environment.apiUrl}/decano/programas`).subscribe();
     http.get(`${environment.apiUrl}/tipos-programa`).subscribe();
-    ctrl.expectOne(`${environment.apiUrl}/decano/programas`).flush({});
-    ctrl.expectOne(`${environment.apiUrl}/tipos-programa`).flush([]);
+    const programas = ctrl.expectOne(`${environment.apiUrl}/decano/programas`);
+    const tipos = ctrl.expectOne(`${environment.apiUrl}/tipos-programa`);
+    expect(programas.request.method).toBe('GET');
+    expect(tipos.request.method).toBe('GET');
+    programas.flush({});
+    tipos.flush([]);
   });
 
   it('las escrituras nunca se interceptan: las rechaza el backend', () => {
     como('DECANO');
     http.post(`${environment.apiUrl}/admin/facultades`, {}).subscribe({ error: () => undefined });
-    ctrl.expectOne(`${environment.apiUrl}/admin/facultades`).flush({}, { status: 403, statusText: 'Forbidden' });
+    const req = ctrl.expectOne(`${environment.apiUrl}/admin/facultades`);
+    expect(req.request.method).toBe('POST');
+    req.flush({}, { status: 403, statusText: 'Forbidden' });
   });
 
   it('sin sesion o fuera del API v1 la peticion pasa sin cambios', () => {
@@ -114,15 +122,21 @@ describe('roleScopeInterceptor', () => {
     http.get(`${environment.apiUrl}/admin/areas`).subscribe({ error: () => undefined });
     http.get('http://otro-host.test/api/v1/admin/areas').subscribe({ error: () => undefined });
     http.get('/assets/config.json').subscribe();
-    ctrl.expectOne(`${environment.apiUrl}/admin/areas`).flush({});
-    ctrl.expectOne('http://otro-host.test/api/v1/admin/areas').flush({});
-    ctrl.expectOne('/assets/config.json').flush({});
+    const propia = ctrl.expectOne(`${environment.apiUrl}/admin/areas`);
+    const ajena = ctrl.expectOne('http://otro-host.test/api/v1/admin/areas');
+    const asset = ctrl.expectOne('/assets/config.json');
+    expect([propia.request.method, ajena.request.method, asset.request.method]).toEqual(['GET', 'GET', 'GET']);
+    propia.flush({});
+    ajena.flush({});
+    asset.flush({});
   });
 
   it('un segmento sin regla (p. ej. grupos, sesiones) pasa para cualquier rol', () => {
     como('ESTUDIANTE');
     http.get(`${environment.apiUrl}/grupos/x/estudiantes`).subscribe();
-    ctrl.expectOne(`${environment.apiUrl}/grupos/x/estudiantes`).flush([]);
+    const req = ctrl.expectOne(`${environment.apiUrl}/grupos/x/estudiantes`);
+    expect(req.request.method).toBe('GET');
+    req.flush([]);
   });
 
   describe('matriz rol x prefijo (espejo de SecurityConfig)', () => {

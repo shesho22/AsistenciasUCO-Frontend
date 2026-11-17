@@ -298,7 +298,7 @@ describe('CoordinatorSesionesGrupoComponent (HU060/HU061)', () => {
   it('sin sesión seleccionada no consulta asistencias', () => {
     component.onPaginaAsistencias(2);
     component.onFiltroAsistio('ASISTIO');
-    http.expectNone(listaAsistencias);
+    expect(http.match(listaAsistencias)).toHaveSize(0);
   });
 
   it('B1-F-26 HU060: la sesión cancelada se rotula como tal con su motivo', () => {
@@ -320,7 +320,7 @@ describe('CoordinatorSesionesGrupoComponent (HU060/HU061)', () => {
     fixture.detectChanges();
 
     const filas = fixture.nativeElement.querySelectorAll('[data-testid^="sesion-fila-"]') as NodeListOf<HTMLElement>;
-    expect(filas.length).toBe(2);
+    expect(filas).toHaveSize(2);
     expect(filas[0].textContent).not.toContain('Cancelada');
     expect(filas[1].textContent).toContain('Cancelada');
     expect(filas[1].textContent).toContain('Paro de transporte');
@@ -342,13 +342,13 @@ describe('Mock backend de consultas del coordinador (HU064/HU060/HU061)', () => 
 
     // CIERRE-W2A: los grupos del programa llegan paginados por el servidor, con su horario
     TestBed.inject(CourseService).getCoordinatorCoursesPage({ pagina: 1, tamano: 10 }).subscribe((grupos) => {
-      expect(grupos.elementos.length).toBe(1);
+      expect(grupos.elementos).toHaveSize(1);
       expect(grupos.totalElementos).toBe(1);
       expect(grupos.elementos[0].franjas?.length).toBe(1);
       service.getSesionesGrupo(grupos.elementos[0].id, { pagina: 1, tamano: 10 }).subscribe((sesiones) => {
         expect(sesiones.datos[0].idGrupo).toBe('GRP-MOCK-1');
         service.getAsistenciasSesion(sesiones.datos[0].id, { asistio: false, pagina: 1, tamano: 10 }).subscribe((res) => {
-          expect(res.datos.length).toBe(1);
+          expect(res.datos).toHaveSize(1);
           expect(res.datos[0].asistio).toBeFalse();
           done();
         });

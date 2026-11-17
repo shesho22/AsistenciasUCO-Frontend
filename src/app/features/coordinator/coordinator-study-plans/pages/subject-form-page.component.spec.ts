@@ -73,6 +73,10 @@ describe('CoordinatorSubjectFormPageComponent', () => {
     fixture.detectChanges();
   });
 
+  afterEach(() => {
+    http.verify();
+  });
+
   it('HU147/P5: carga componentes y áreas reales para el formulario', () => {
     expect(component.componentes().map((c) => c.codigo)).toEqual(['ESP']);
     expect(component.areas().map((a) => a.codigo)).toEqual(['ISW']);
@@ -92,10 +96,6 @@ describe('CoordinatorSubjectFormPageComponent', () => {
       nombreArea: 'Ingeniería de Software', nombreComponente: 'Específicas', codigoCaracter: 'OPT',
     });
     req.flush({ exitoso: true, datos: { id: 'asig-3' } });
-  });
-
-  afterEach(() => {
-    http.verify();
   });
 
   it('guarda una nueva asignatura y regresa a la malla curricular del plan', () => {

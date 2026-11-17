@@ -54,12 +54,16 @@ describe('Golden Path en modo REAL (USE_MOCKS=false)', () => {
 
   it('GroupService → GET /grupos/{id}/estudiantes', () => {
     TestBed.inject(GroupService).getStudentsByGroup('g1').subscribe();
-    http.expectOne(`${api()}/grupos/g1/estudiantes`).flush({ exitoso: true, datos: [], total: 0 });
+    const req = http.expectOne(`${api()}/grupos/g1/estudiantes`);
+    expect(req.request.method).toBe('GET');
+    req.flush({ exitoso: true, datos: [], total: 0 });
   });
 
   it('SessionService → GET /sesiones/grupo/{id}', () => {
     TestBed.inject(SessionService).getSessionsByGroup('g1').subscribe();
-    http.expectOne(`${environment.apiV2Url}/sesiones/grupo/g1`).flush({ exitoso: true, datos: [], total: 0 });
+    const req = http.expectOne(`${environment.apiV2Url}/sesiones/grupo/g1`);
+    expect(req.request.method).toBe('GET');
+    req.flush({ exitoso: true, datos: [], total: 0 });
   });
 
   it('AttendanceService → GET /grupos/{id}/asistencias?sesionId= y POST /asistencias/lote', () => {
