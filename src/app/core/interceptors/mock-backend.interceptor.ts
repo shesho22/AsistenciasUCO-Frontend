@@ -13,6 +13,8 @@ import {
 import {
   mockHorariosToDto,
   mockMateriasToDto,
+  mockPaginarSesionesDto,
+  mockResumenMateriasToDto,
   mockSesionesToDto,
   mockUuid,
 } from '../mocks/student-portal-mock.adapter';
@@ -290,6 +292,9 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   if (url.endsWith('/estudiante/materias') && method === 'GET') {
     return of(okResponse(mockMateriasToDto(mockStore.materiasEstudiante))).pipe(delay(250));
   }
+  if (url.endsWith('/estudiante/materias/resumen') && method === 'GET') {
+    return of(okResponse(mockResumenMateriasToDto(mockStore.materiasEstudiante, mockStore.sesionesMaterias))).pipe(delay(250));
+  }
   if (url.includes('/estudiante/materias/') && url.endsWith('/sesiones') && method === 'GET') {
     const segments = url.split('/');
     const materiaId = segments[segments.length - 2];
@@ -314,7 +319,13 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
           : toma;
       }),
     }));
-    return of(okResponse(dtos)).pipe(delay(200));
+    // La base ordena (inicio, numero, id), filtra por `grupoId` y pagina; `total` es el del filtro.
+    const { pagina, total } = mockPaginarSesionesDto(dtos, {
+      grupoId: req.params.get('grupoId'),
+      pagina: req.params.has('pagina') ? Number(req.params.get('pagina')) : undefined,
+      tamano: req.params.has('tamano') ? Number(req.params.get('tamano')) : undefined,
+    });
+    return of(okResponse(pagina, undefined, total)).pipe(delay(200));
   }
   if (url.endsWith('/estudiante/matricular-grupo') && method === 'POST') {
     const body = req.body as { codigo?: string } | null;
