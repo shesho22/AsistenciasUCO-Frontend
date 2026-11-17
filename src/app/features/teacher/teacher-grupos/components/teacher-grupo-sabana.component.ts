@@ -1,7 +1,6 @@
 import {
   Component,
   ChangeDetectionStrategy,
-  DestroyRef,
   input,
   inject,
   computed,
@@ -10,15 +9,15 @@ import {
   untracked,
   OnDestroy,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
-import { Subscription } from 'rxjs';
-import { EstudianteGrupoItem, idEstudianteDe } from '../../../../core/models/estudiante-grupo-item.model';
+import { Subject, Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
 import { ClassSession } from '../../../../core/models/attendance.model';
 import { estaCancelada, estaPendienteAprobacion, estaRechazada } from '../../../../core/models/sesion-estado.model';
 import { SessionTimeZoneService } from '../../../../core/services/session-timezone.service';
 import { TeacherAttendanceSummaryService } from '../../../../core/services/teacher-attendance-summary.service';
+import { TeacherMatrizAsistenciaService } from '../../../../core/services/teacher-matriz-asistencia.service';
 import { ResumenAsistenciaEstudiante } from '../../../../core/models/indicadores-asistencia.model';
+import { CeldaMatriz, FilaMatriz } from '../../../../core/models/matriz-asistencia.model';
 import { AttendanceStatusBadgeComponent } from '../../../../shared/components/attendance-status-badge/attendance-status-badge.component';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 import { getApiErrorMessage } from '../../../../core/api/errors/api-error.util';
@@ -29,6 +28,12 @@ import { MarcaRevisionDocente } from '../../../../core/models/revision-cancelaci
 import { RealtimeService } from '../../../../core/realtime/realtime.service';
 import { onRealtimeReconnect } from '../../../../core/realtime/realtime-reconnect-trigger';
 import { REALTIME_EVENT_TYPE } from '../../../../core/realtime/model/realtime-event.model';
+
+/** Una fila de la matriz con sus celdas indexadas por sesion (solo para ubicar la celda de cada columna). */
+interface FilaPlanilla {
+  fila: FilaMatriz;
+  celdas: ReadonlyMap<string, CeldaMatriz>;
+}
 
 @Component({
     selector: 'app-teacher-grupo-sabana',
@@ -72,18 +77,42 @@ import { REALTIME_EVENT_TYPE } from '../../../../core/realtime/model/realtime-ev
             <span class="w-3 h-3 rounded-full bg-danger-500 inline-block"></span>
             Falta Injustificada (SJC)
           </span>
+          <span class="flex items-center gap-1.5 font-semibold text-primary-800">
+            <span class="w-3 h-3 rounded-full bg-primary-300 inline-block"></span>
+            Parcial (minutos asistidos)
+          </span>
         </div>
       </div>
 
-      @if (cargando()) {
+      <input
+        type="search"
+        data-testid="sabana-busqueda"
+        aria-label="Buscar estudiante por nombre o documento"
+        placeholder="Buscar por nombre o documento..."
+        [value]="busqueda()"
+        (input)="onBuscar($event)"
+        class="w-full px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-900 placeholder-warm-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
+      />
+
+      @if (cargando() || cargandoMatriz()) {
         <div class="p-8 space-y-3">
           <div class="h-8 bg-warm-100 rounded-lg animate-pulse"></div>
           <div class="h-16 bg-warm-100 rounded-xl animate-pulse"></div>
           <div class="h-16 bg-warm-100 rounded-xl animate-pulse"></div>
         </div>
-      } @else if (estudiantes().length === 0) {
+      } @else if (errorMatriz()) {
+        <p class="rounded-xl bg-danger-100 text-danger-900 px-4 py-2 text-sm font-medium" role="alert" data-testid="sabana-matriz-error">
+          {{ errorMatriz() }}
+        </p>
+      } @else if (filasPlanilla().length === 0) {
         <div class="p-12 text-center text-warm-400 bg-warm-50/50 rounded-2xl border border-dashed border-warm-200">
-          <p class="text-sm font-medium">No hay estudiantes matriculados en este grupo para generar la sábana.</p>
+          <p class="text-sm font-medium">
+            @if (busqueda().trim()) {
+              Ningún estudiante del grupo coincide con la búsqueda.
+            } @else {
+              No hay estudiantes matriculados en este grupo para generar la sábana.
+            }
+          </p>
         </div>
       } @else if (sessions().length === 0) {
         <div class="p-12 text-center text-warm-400 bg-warm-50/50 rounded-2xl border border-dashed border-warm-200">
@@ -145,44 +174,58 @@ import { REALTIME_EVENT_TYPE } from '../../../../core/realtime/model/realtime-ev
               </tr>
             </thead>
             <tbody class="divide-y divide-warm-100 bg-white">
-              @for (est of estudiantesPagina(); track idDe(est)) {
-                <tr class="hover:bg-warm-50/60 transition-colors" [attr.data-testid]="'sabana-resumen-' + idDe(est)">
+              @for (item of filasPlanilla(); track item.fila.idEstudiante) {
+                @let est = item.fila;
+                <tr class="hover:bg-warm-50/60 transition-colors" [attr.data-testid]="'sabana-resumen-' + est.idEstudiante">
                   <!-- Nombre Estudiante Sticky -->
                   <td class="p-3.5 sticky left-0 z-10 bg-white group-hover:bg-warm-50/60 border-r border-warm-200 font-medium text-warm-900 shadow-xs">
-                    <div class="font-bold text-xs">{{ est.studentName || est.nombreCompleto || (est.nombres + ' ' + est.apellidos) }}</div>
-                    <div class="font-mono text-xs text-warm-500">ID: {{ est.studentCode || est.documento || est.numeroIdentificacion || 'N/A' }}</div>
+                    <div class="font-bold text-xs">{{ est.nombreCompleto }}</div>
+                    <div class="font-mono text-xs text-warm-500">ID: {{ est.documento || 'N/A' }}</div>
                   </td>
 
-                  <!-- Columnas de Cada Sesión -->
+                  <!-- Columnas de Cada Sesión: la celda la entrega el backend (estado de la base por tramos entre tomas) -->
                   @for (ses of sessions(); track ses.id) {
                     <td
                       class="p-2 text-center border-r border-warm-100"
                       [class.opacity-60]="esCancelada(ses)"
-                      [attr.data-testid]="'sabana-celda-' + idDe(est) + '-' + ses.id"
+                      [attr.data-testid]="'sabana-celda-' + est.idEstudiante + '-' + ses.id"
                     >
-                      @let estado = esCancelada(ses) ? '—' : getAsistenciaEstudianteEnSesion(idDe(est), ses);
-                      @if (estado === 'AN') {
-                        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-success-100 text-success-800 font-bold text-xs" title="Asistencia Normal (Presente)">
-                          AN
-                        </span>
-                      } @else if (estado === 'EX') {
-                        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-warning-100 text-warning-900 font-bold text-xs" title="Excusa Justificada">
-                          EX
-                        </span>
-                      } @else if (estado === 'SJC') {
-                        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-danger-100 text-danger-800 font-bold text-xs" title="Falta Injustificada">
-                          SJC
-                        </span>
-                      } @else {
-                        <span class="text-warm-300 font-mono text-xs" title="Sin registro o pendiente">
-                          —
-                        </span>
+                      @let celda = item.celdas.get(ses.id);
+                      @switch (celda?.codigoEstado) {
+                        @case ('PRESENTE') {
+                          <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-success-100 text-success-800 font-bold text-xs" title="Asistencia Normal (Presente)">
+                            AN
+                          </span>
+                        }
+                        @case ('JUSTIFICADA') {
+                          <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-warning-100 text-warning-900 font-bold text-xs" title="Excusa Justificada">
+                            EX
+                          </span>
+                        }
+                        @case ('AUSENTE') {
+                          <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-danger-100 text-danger-800 font-bold text-xs" title="Falta Injustificada">
+                            SJC
+                          </span>
+                        }
+                        @case ('PARCIAL') {
+                          <span
+                            class="inline-flex items-center justify-center px-1.5 h-6 rounded-full bg-primary-100 text-primary-900 font-bold text-[10px] whitespace-nowrap"
+                            [title]="'Asistencia parcial: ' + celda!.minutosAsistidos + ' de ' + celda!.minutosSesion + ' minutos'"
+                          >
+                            {{ celda!.minutosAsistidos }}/{{ celda!.minutosSesion }}
+                          </span>
+                        }
+                        @default {
+                          <span class="text-warm-300 font-mono text-xs" title="Sin registro o pendiente">
+                            —
+                          </span>
+                        }
                       }
                     </td>
                   }
 
                   <!-- Resumen por horas: lo calcula el backend; aquí solo se pinta -->
-                  @let r = resumenDe(idDe(est));
+                  @let r = resumenDe(est.idEstudiante);
                   <td class="p-3 text-center font-mono font-bold text-xs text-warm-800 bg-warm-50/40 border-r border-warm-100">
                     {{ r ? r.horasFalta + ' / ' + r.horasDictadas + ' h' : '—' }}
                   </td>
@@ -204,13 +247,13 @@ import { REALTIME_EVENT_TYPE } from '../../../../core/realtime/model/realtime-ev
                       <app-inasistencia-marca-badge
                         data-testid="marca-inasistencia"
                         [marca]="r?.marca ?? null"
-                        [estadoMatricula]="est.codigoEstado || est.codigoEstadoEstudiante || null"
+                        [estadoMatricula]="est.codigoEstadoEstudiante || null"
                       />
                       @if (r?.marca?.revision?.accionesPermitidas && r!.marca!.revision!.accionesPermitidas!.length > 0) {
                         <button
                           type="button"
-                          [attr.data-testid]="'btn-decidir-' + idDe(est)"
-                          (click)="abrirModalDecision(est, $safeNavigationMigration(r?.marca))"
+                          [attr.data-testid]="'btn-decidir-' + est.idEstudiante"
+                          (click)="abrirModalDecision(est, r?.marca)"
                           class="min-h-[36px] px-2.5 py-1 bg-primary-700 hover:bg-primary-800 text-white rounded-lg text-xs font-semibold shadow-xs transition-colors"
                         >
                           Decidir
@@ -244,12 +287,14 @@ import { REALTIME_EVENT_TYPE } from '../../../../core/realtime/model/realtime-ev
 export class TeacherGrupoSabanaComponent implements OnDestroy {
   readonly timeZone = inject(SessionTimeZoneService);
   private readonly resumenService = inject(TeacherAttendanceSummaryService);
-  private readonly destroyRef = inject(DestroyRef);
+  private readonly matrizService = inject(TeacherMatrizAsistenciaService);
   private readonly realtime = inject(RealtimeService, { optional: true });
   private subRealtime?: Subscription;
+  private subCarga?: Subscription;
+  private subResumen?: Subscription;
 
   grupoId = input<string>('');
-  estudiantes = input<EstudianteGrupoItem[]>([]);
+  /** Sesiones del grupo: solo dan el encabezado (titulo, fecha, estado de cancelacion); la asistencia llega en la matriz. */
   sessions = input<ClassSession[]>([]);
   cargando = input<boolean>(false);
   /** Contador que cambia cuando otra vista (tarjeta de decisiones) pide recargar el resumen. */
@@ -260,31 +305,39 @@ export class TeacherGrupoSabanaComponent implements OnDestroy {
 
   protected readonly tamano = 50;
   protected readonly pagina = signal(1);
-  protected readonly totalResumen = signal(0);
+  protected readonly busqueda = signal('');
+  protected readonly totalFilas = signal(0);
+  protected readonly cargandoMatriz = signal(false);
+  protected readonly errorMatriz = signal<string | null>(null);
   protected readonly errorResumen = signal<string | null>(null);
+  private readonly filas = signal<readonly FilaMatriz[]>([]);
   private readonly resumenes = signal<ReadonlyMap<string, ResumenAsistenciaEstudiante>>(new Map());
-  protected readonly totalFilas = computed(() => Math.max(this.totalResumen(), this.estudiantes().length));
-  /** F-DOC-007: la matriz pinta solo la pagina vigente (la misma que se pide al backend para el resumen). */
-  protected readonly estudiantesPagina = computed(() => {
-    const inicio = (this.pagina() - 1) * this.tamano;
-    return this.estudiantes().slice(inicio, inicio + this.tamano);
-  });
-  protected idDe(est: EstudianteGrupoItem): string {
-    return idEstudianteDe(est);
-  }
-  protected readonly hayResumen = computed(() => this.resumenes().size > 0);
+  /** La pagina que entrego el servidor, con las celdas de cada fila indexadas por sesion para ubicarlas en su columna. */
+  protected readonly filasPlanilla = computed<FilaPlanilla[]>(() =>
+    this.filas().map((fila) => ({ fila, celdas: new Map(fila.celdas.map((c) => [c.idSesion, c])) }))
+  );
 
   modalDecisionAbierto = signal<boolean>(false);
   revisionSeleccionada = signal<RevisionDecisionEntrada | MarcaRevisionDocente | null>(null);
   estudianteNombreModal = signal<string>('');
+
+  private readonly busqueda$ = new Subject<string>();
+  private readonly busquedaSub: Subscription = this.busqueda$
+    .pipe(debounceTime(300), distinctUntilChanged())
+    .subscribe((texto) => {
+      this.busqueda.set(texto);
+      this.pagina.set(1);
+      this.cargar(this.grupoId());
+    });
 
   constructor() {
     effect(() => {
       const grupo = this.grupoId();
       untracked(() => {
         this.pagina.set(1);
+        this.busqueda.set('');
         if (grupo) {
-          this.cargarResumen(grupo);
+          this.cargar(grupo);
           this.iniciarRealtime(grupo);
         }
       });
@@ -295,9 +348,14 @@ export class TeacherGrupoSabanaComponent implements OnDestroy {
     const version = this.refresco();
     untracked(() => {
       const grupo = this.grupoId();
-      if (version > 0 && grupo) this.cargarResumen(grupo);
+      if (version > 0 && grupo) this.cargar(grupo);
     });
   });
+
+  /** Texto de busqueda ya estabilizado (espera corta tras la ultima tecla): el servidor filtra y reordena la pagina. */
+  protected onBuscar(event: Event): void {
+    this.busqueda$.next((event.target as HTMLInputElement).value.trim());
+  }
 
   private iniciarRealtime(grupo: string): void {
     if (!this.realtime) return;
@@ -308,7 +366,7 @@ export class TeacherGrupoSabanaComponent implements OnDestroy {
 
     sub.add(
       onRealtimeReconnect(this.realtime.connectionState$).subscribe(() => {
-        this.cargarResumen(this.grupoId());
+        this.cargar(this.grupoId());
       })
     );
 
@@ -329,7 +387,8 @@ export class TeacherGrupoSabanaComponent implements OnDestroy {
             evt.type === REALTIME_EVENT_TYPE.REVISION_CANCELACION_RESUELTA ||
             evt.type === REALTIME_EVENT_TYPE.ASISTENCIAS_SESION_ACTUALIZADAS
           ) {
-            this.cargarResumen(this.grupoId());
+            // Al llegar un evento se vuelve a pedir la pagina visible; no se recalcula nada en el cliente.
+            this.cargar(this.grupoId());
           }
         })
       );
@@ -338,8 +397,8 @@ export class TeacherGrupoSabanaComponent implements OnDestroy {
     this.subRealtime = sub;
   }
 
-  abrirModalDecision(est: EstudianteGrupoItem, marca: MarcaRevisionDocente | null | undefined): void {
-    this.estudianteNombreModal.set(est.studentName || est.nombreCompleto || 'Estudiante');
+  abrirModalDecision(est: FilaMatriz, marca: MarcaRevisionDocente | null | undefined): void {
+    this.estudianteNombreModal.set(est.nombreCompleto || 'Estudiante');
     this.revisionSeleccionada.set(marca?.revision || marca || null);
     this.modalDecisionAbierto.set(true);
   }
@@ -347,13 +406,16 @@ export class TeacherGrupoSabanaComponent implements OnDestroy {
   onDecisionRegistrada(): void {
     const grupo = this.grupoId();
     if (grupo) {
-      this.cargarResumen(grupo);
+      this.cargar(grupo);
     }
   }
 
   ngOnDestroy(): void {
     // El canal del grupo lo cierra la tarjeta de decisiones del hub: esta planilla solo comparte la conexión.
     this.subRealtime?.unsubscribe();
+    this.subCarga?.unsubscribe();
+    this.subResumen?.unsubscribe();
+    this.busquedaSub.unsubscribe();
   }
 
   /** El resumen (horas, % de inasistencia y semaforo) lo calcula el backend; el cliente no recalcula nada. */
@@ -363,34 +425,43 @@ export class TeacherGrupoSabanaComponent implements OnDestroy {
 
   protected cambiarPagina(pagina: number): void {
     this.pagina.set(pagina);
-    this.cargarResumen(this.grupoId());
+    this.cargar(this.grupoId());
   }
 
-  private cargarResumen(grupo: string): void {
+  /** Pide al servidor la pagina vigente de la matriz y del resumen por horas con la misma pagina, tamano y busqueda. */
+  private cargar(grupo: string): void {
+    this.errorMatriz.set(null);
     this.errorResumen.set(null);
-    this.resumenService
-      .consultarResumen(grupo, this.pagina(), this.tamano)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (respuesta) => {
-          this.resumenes.set(new Map(respuesta.elementos.map((r) => [r.estudianteId, r])));
-          this.totalResumen.set(respuesta.totalElementos);
-        },
-        error: (err: unknown) => this.errorResumen.set(getApiErrorMessage(err)),
-      });
+    this.cargandoMatriz.set(true);
+    this.subCarga?.unsubscribe();
+    this.subResumen?.unsubscribe();
+    const pagina = this.pagina();
+    const busqueda = this.busqueda();
+    this.subCarga = this.matrizService.consultarMatriz(grupo, pagina, this.tamano, busqueda).subscribe({
+      next: (respuesta) => {
+        this.filas.set(respuesta.elementos);
+        this.totalFilas.set(respuesta.totalElementos);
+        this.cargandoMatriz.set(false);
+      },
+      error: (err: unknown) => {
+        this.filas.set([]);
+        this.totalFilas.set(0);
+        this.cargandoMatriz.set(false);
+        this.errorMatriz.set(getApiErrorMessage(err));
+      },
+    });
+    this.subResumen = this.resumenService.consultarResumen(grupo, pagina, this.tamano, busqueda).subscribe({
+      next: (respuesta) => this.resumenes.set(new Map(respuesta.elementos.map((r) => [r.estudianteId, r]))),
+      error: (err: unknown) => {
+        this.resumenes.set(new Map());
+        this.errorResumen.set(getApiErrorMessage(err));
+      },
+    });
   }
 
   displayDate(session: ClassSession): string {
     return session.estadoTemporal === 'INDETERMINADA'
       ? 'Horario no confirmado'
       : this.timeZone.displaySessionDate(session);
-  }
-
-  getAsistenciaEstudianteEnSesion(estudianteId: string, sesion: ClassSession): string {
-    if (!sesion.records || sesion.records.length === 0) {
-      return '—';
-    }
-    const rec = sesion.records.find((r) => r.studentId === estudianteId);
-    return rec?.status ?? '—';
   }
 }

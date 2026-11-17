@@ -10,14 +10,21 @@ import { ResumenAsistenciaEstudiante } from '../models/indicadores-asistencia.mo
 export class TeacherAttendanceSummaryService {
   private readonly http = inject(HttpClient);
 
+  /** CIERRE-W3M: `busqueda` opcional (nombre o documento) la resuelve el servidor, con la misma regla de la matriz. */
   consultarResumen(
     grupoId: string,
     pagina: number,
-    tamano: number
+    tamano: number,
+    busqueda = ''
   ): Observable<ApiPageResponse<ResumenAsistenciaEstudiante>> {
+    let params = new HttpParams().set('pagina', String(pagina)).set('tamano', String(tamano));
+    const texto = busqueda.trim();
+    if (texto) {
+      params = params.set('busqueda', texto);
+    }
     return this.http.get<ApiPageResponse<ResumenAsistenciaEstudiante>>(
       `${environment.apiUrl}/docente/grupos/${grupoId}/resumen-asistencia`,
-      { params: new HttpParams().set('pagina', String(pagina)).set('tamano', String(tamano)) }
+      { params }
     );
   }
 }

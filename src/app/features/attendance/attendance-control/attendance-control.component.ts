@@ -43,8 +43,8 @@ import type { NotificacionToma } from './components/toma-asistencias.component';
 import { TomaModoSelectorComponent } from './components/toma-modo-selector.component';
 import { TomaCierreDialogComponent } from './components/toma-cierre-dialog.component';
 import { TomaQrProyeccionComponent } from './components/toma-qr-proyeccion.component';
-import { TeacherAttendanceSummaryService } from '../../../core/services/teacher-attendance-summary.service';
-import { ResumenAsistenciaEstudiante } from '../../../core/models/indicadores-asistencia.model';
+import { TeacherMatrizAsistenciaService } from '../../../core/services/teacher-matriz-asistencia.service';
+import { ResumenSesionesGrupo } from '../../../core/models/resumen-sesiones-grupo.model';
 import { TomaAsistenciaService } from '../../../core/services/toma-asistencia.service';
 import { AsistenciaQrService } from '../../../core/services/asistencia-qr.service';
 import { ModoToma, TomaAsistencia, TomasSesion } from '../../../core/models/toma-asistencia.model';
@@ -56,7 +56,6 @@ import { TeacherMatriculaModalComponent } from '../../teacher/teacher-grupos/com
 import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
 import { type EstadoCargaReclamos, ResultadoAprobacionReclamo, SolicitudRevisionItem } from '../../../core/models/role-management.model';
 import { EstudianteGrupoApiDto } from '../../../core/api/models/estudiante-grupo-api-dto.model';
-import { AsistenciaConsultadaApiDto } from '../../../core/api/models/asistencia-consultada-api-dto.model';
 import { detalleCancelacion, estaCancelada, marcarSesionCancelada } from '../../../core/models/sesion-estado.model';
 import { findActiveOrUpcomingSession } from '../../../core/utils/session-selection.util';
 import {
@@ -137,7 +136,7 @@ type StudentEnrollmentField =
         <app-group-sessions-overview
           [course]="currentCourse()"
           [sessions]="sessions()"
-          [resumen]="resumenGrupo()"
+          [resumenSesiones]="resumenSesiones()"
           [totalReclamosPendientes]="pendingClaimsCount()"
           (selectSession)="irASesionDetalle($event)"
           (openNewSession)="openNewSessionModal()"
@@ -287,7 +286,7 @@ export class AttendanceControlComponent {
   private studentRegistrationConfig = inject(StudentRegistrationConfigService);
   private emailVerification = inject(EmailVerificationService);
   private tomaService = inject(TomaAsistenciaService);
-  private resumenService = inject(TeacherAttendanceSummaryService);
+  private resumenSesionesService = inject(TeacherMatrizAsistenciaService);
   private qrService = inject(AsistenciaQrService);
   emailDomain = signal<string>('');
   resendingStudentId = signal<string>('');
@@ -324,7 +323,8 @@ export class AttendanceControlComponent {
   // CULM-001 B.2: tomas de la sesión, proyección del QR y faltantes.
   tomasSesion = signal<TomasSesion | null>(null);
   /** Resumen por horas del grupo (backend): alimenta los KPIs de la panorámica. */
-  resumenGrupo = signal<ResumenAsistenciaEstudiante[]>([]);
+  /** CIERRE-W3M: estado temporal, conteos por sesion, en riesgo y promedio del grupo, resueltos por el servidor. */
+  resumenSesiones = signal<ResumenSesionesGrupo | null>(null);
   abriendoToma = signal<boolean>(false);
   modoSelectorAbierto = signal<boolean>(false);
   cierrePendiente = signal<boolean>(false);
@@ -458,17 +458,22 @@ export class AttendanceControlComponent {
     if (courseId && sessionId) this.cargarEstudiantesYSesion(courseId, sessionId);
   }
 
-  /** El backend limita la pagina a 100 (PAGINACION/TAMANO_MAXIMO): se recorren las paginas y se acumulan. */
-  private cargarResumenGrupo(courseId: string, pagina = 1, acumulado: ResumenAsistenciaEstudiante[] = []): void {
-    this.resumenService.consultarResumen(courseId, pagina, 100).subscribe({
+  /** CIERRE-W3M: el servidor calcula conteos y estado de cada sesion; el cliente solo vuelve a pedirlo cuando cambia algo. */
+  private cargarResumenSesiones(courseId: string): void {
+    this.resumenSesionesService.consultarResumenSesiones(courseId).subscribe({
       next: (res) => {
         if (this.selectedCourseId() !== courseId) return;
-        const todo = [...acumulado, ...res.elementos];
-        this.resumenGrupo.set(todo);
-        if (pagina < res.totalPaginas) this.cargarResumenGrupo(courseId, pagina + 1, todo);
+        this.resumenSesiones.set(res.datos ?? null);
       },
-      error: () => this.resumenGrupo.set([]),
+      error: () => {
+        if (this.selectedCourseId() === courseId) this.resumenSesiones.set(null);
+      },
     });
+  }
+
+  private recargarResumenSesiones(): void {
+    const courseId = this.selectedCourseId();
+    if (courseId) this.cargarResumenSesiones(courseId);
   }
 
   private cargarTomas(sesionId: string): void {
@@ -738,6 +743,7 @@ export class AttendanceControlComponent {
       .subscribe(() => {
         const courseId = this.selectedCourseId();
         const sessionId = this.selectedSessionId();
+        if (courseId) this.cargarResumenSesiones(courseId);
         if (courseId && sessionId) {
           this.cargarEstudiantesYSesion(courseId, sessionId);
         }
@@ -916,21 +922,10 @@ export class AttendanceControlComponent {
             this.showToast.set(true);
             this.isNewSessionModalOpen.set(false);
 
-            forkJoin({
-              sessionsRes: this.sessionService.getSessionsByGroup(course.id),
-              studentsRes: this.groupService.getStudentsByGroup(course.id),
-              attendancesRes: this.attendanceService.getAttendancesByGroup(course.id),
-            }).subscribe({
-              next: ({ sessionsRes, studentsRes, attendancesRes }) => {
-                const rawSessions = sessionsRes.datos || [];
-                const activeStudents = (studentsRes.datos || []).filter((s) => s.codigoEstado === 'A');
-                const attendances = attendancesRes.datos || [];
-
-                const populatedSessions = rawSessions.map((session) => {
-                  const sessionAttendances = attendances.filter((a) => a.sesion === session.id);
-                  const records = AttendanceMapper.fromGroupStudentsAndAttendances(activeStudents, sessionAttendances);
-                  return { ...session, records };
-                });
+            this.sessionService.getSessionsByGroup(course.id).subscribe({
+              next: (sessionsRes) => {
+                const populatedSessions = sessionsRes.datos || [];
+                this.recargarResumenSesiones();
 
                 this.sessions.set(populatedSessions);
                 const responseWithCreatedData = res as typeof res & {
@@ -1165,28 +1160,14 @@ export class AttendanceControlComponent {
     this.vistaActual.set(initialSessionId ? 'DETALLE' : 'OVERVIEW');
     if (courseId) {
       this.attendanceRealtimeSync.connectGroup(courseId);
-      this.resumenGrupo.set([]);
-      this.cargarResumenGrupo(courseId);
+      this.resumenSesiones.set(null);
+      this.cargarResumenSesiones(courseId);
       this.cargarReclamosDocente(courseId);
     }
 
-    forkJoin({
-      sessionsRes: this.sessionService.getSessionsByGroup(courseId),
-      studentsRes: this.groupService.getStudentsByGroup(courseId),
-      attendancesRes: this.attendanceService.getAttendancesByGroup(courseId),
-    }).subscribe({
-      next: ({ sessionsRes, studentsRes, attendancesRes }) => {
-        const rawSessions = sessionsRes.datos || [];
-        const activeStudents = (studentsRes.datos || []).filter((s) => s.codigoEstado === 'A');
-        const attendances = attendancesRes.datos || [];
-
-        // Mapear records por sesión para alimentar el conteo de asistentes y KPIs del cronograma
-        const populatedSessions = rawSessions.map((session) => {
-          const sessionAttendances = attendances.filter((a) => a.sesion === session.id);
-          const records = AttendanceMapper.fromGroupStudentsAndAttendances(activeStudents, sessionAttendances);
-          return { ...session, records };
-        });
-
+    this.sessionService.getSessionsByGroup(courseId).subscribe({
+      next: (sessionsRes) => {
+        const populatedSessions = sessionsRes.datos || [];
         this.sessions.set(populatedSessions);
 
         if (populatedSessions.length > 0) {
@@ -1197,16 +1178,13 @@ export class AttendanceControlComponent {
           const defaultSession = matchingSession || findActiveOrUpcomingSession(populatedSessions) || populatedSessions[0];
 
           this.selectedSessionId.set(defaultSession.id);
-          // F-DOC-S10: el padron y las asistencias del grupo ya se acaban de pedir; no se vuelven a pedir.
-          this.cargarEstudiantesYSesion(courseId, defaultSession.id, {
-            students: studentsRes.datos || [],
-            attendances: attendances,
-          });
+          // Solo la lista de la sesion elegida (acotada al cupo): el cruce historico estudiantes x sesiones lo entrega el servidor.
+          this.cargarEstudiantesYSesion(courseId, defaultSession.id);
         }
       },
       error: (err: unknown) => {
         this.sessions.set([]);
-        this.mostrarError(err, 'No fue posible cargar las sesiones y asistencias del grupo.');
+        this.mostrarError(err, 'No fue posible cargar las sesiones del grupo.');
       },
     });
   }
@@ -1262,11 +1240,7 @@ export class AttendanceControlComponent {
     }
   }
 
-  private cargarEstudiantesYSesion(
-    courseId: string,
-    sessionId: string,
-    precargados?: { students: EstudianteGrupoApiDto[]; attendances: AsistenciaConsultadaApiDto[] }
-  ): void {
+  private cargarEstudiantesYSesion(courseId: string, sessionId: string): void {
     this.isLoadingSession.set(true);
     this.cargarTomas(sessionId);
     const pendingLocalStatus = new Map<string, AttendanceStatus>();
@@ -1276,16 +1250,10 @@ export class AttendanceControlComponent {
       }
     }
 
-    const fuente$ = precargados
-      ? of({
-          students: { datos: precargados.students },
-          attendances: { datos: precargados.attendances.filter((a) => a.sesion === sessionId) },
-        })
-      : forkJoin({
-          students: this.groupService.getStudentsByGroup(courseId),
-          attendances: this.attendanceService.getAttendancesByGroup(courseId, sessionId),
-        });
-    fuente$
+    forkJoin({
+      students: this.groupService.getStudentsByGroup(courseId),
+      attendances: this.attendanceService.getAttendancesByGroup(courseId, sessionId),
+    })
       .pipe(
         map(({ students, attendances }) =>
           AttendanceMapper.fromGroupStudentsAndAttendances(
@@ -1402,6 +1370,7 @@ export class AttendanceControlComponent {
             const courseId = this.selectedCourseId();
             if (courseId) {
               this.cargarEstudiantesYSesion(courseId, sessionId);
+              this.cargarResumenSesiones(courseId);
             }
           } else {
             this.toastType.set('error');
