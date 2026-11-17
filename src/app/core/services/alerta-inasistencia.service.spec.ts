@@ -55,7 +55,7 @@ describe('AlertaInasistenciaService (CULM-001 C.1)', () => {
     service
       .consultar({ soloVigentes: true, grupoId: 'grp-1', pagina: 1, tamano: 10 })
       .subscribe((res) => {
-        expect(res.elementos.length).toBe(1);
+        expect(res.elementos).toHaveSize(1);
         expect(res.elementos[0].id).toBe('alt-1');
       });
 

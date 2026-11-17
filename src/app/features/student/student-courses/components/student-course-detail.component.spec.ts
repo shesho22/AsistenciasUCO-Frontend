@@ -265,7 +265,7 @@ describe('StudentCourseDetailComponent', () => {
 
       const botones = Array.from(fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>)
         .filter((b) => b.textContent?.trim() === 'Retirar');
-      expect(botones.length).toBe(1);
+      expect(botones).toHaveSize(1);
       const emitido: SesionMateriaDetalle[] = [];
       component.withdrawClaim.subscribe((s) => emitido.push(s));
       botones[0].click();
@@ -282,7 +282,7 @@ describe('StudentCourseDetailComponent', () => {
       expect(texto()).toContain('Retirada');
       const botones = Array.from(fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>)
         .filter((b) => b.textContent?.trim() === 'Retirar');
-      expect(botones.length).toBe(0);
+      expect(botones).toHaveSize(0);
     });
 
     it('A2-F-07 una solicitud existente RETIRADA se informa como retirada', () => {
@@ -375,7 +375,7 @@ describe('StudentCourseDetailComponent', () => {
       fixture.componentRef.setInput('pagina', 2);
       fixture.detectChanges();
 
-      expect(numeros().length).toBe(10);
+      expect(numeros()).toHaveSize(10);
       expect(fixture.nativeElement.querySelector('[data-testid="conteo-sesiones"]').textContent).toContain('25 sesiones');
       expect(fixture.nativeElement.querySelector('app-pagination')).not.toBeNull();
     });

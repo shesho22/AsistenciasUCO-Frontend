@@ -252,9 +252,8 @@ export function normalizeRfc3339ToUtc(value: string): string {
   if (offsetRemainder > 59 || offsetHours > 14 || (offsetHours === 14 && offsetRemainder !== 0)) {
     throw new SessionTimeZoneError('INVALID_INPUT', `Offset RFC3339 inválido: ${value}`);
   }
-  const offsetMinutes = rawOffset === 'Z'
-    ? 0
-    : (offsetHours * 60 + offsetRemainder) * (rawOffset[0] === '+' ? 1 : -1);
+  const offsetSign = rawOffset.startsWith('+') ? 1 : -1;
+  const offsetMinutes = rawOffset === 'Z' ? 0 : (offsetHours * 60 + offsetRemainder) * offsetSign;
   const instant = new Date(0);
   instant.setUTCFullYear(year, month - 1, day);
   instant.setUTCHours(hour, minute, second, 0);

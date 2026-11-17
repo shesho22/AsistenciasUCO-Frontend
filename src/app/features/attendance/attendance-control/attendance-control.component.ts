@@ -273,21 +273,21 @@ type StudentEnrollmentField =
   `
 })
 export class AttendanceControlComponent {
-  private courseService = inject(CourseService);
-  private sessionService = inject(SessionService);
-  private groupService = inject(GroupService);
-  private studentService = inject(StudentService);
-  private attendanceService = inject(AttendanceService);
-  private attendanceRealtimeSync = inject(AttendanceRealtimeSyncService);
-  private destroyRef = inject(DestroyRef);
-  private catalogService = inject(CatalogService);
-  private attendanceClaimService = inject(AttendanceClaimService);
-  private timeZone = inject(SessionTimeZoneService);
-  private studentRegistrationConfig = inject(StudentRegistrationConfigService);
-  private emailVerification = inject(EmailVerificationService);
-  private tomaService = inject(TomaAsistenciaService);
-  private resumenSesionesService = inject(TeacherMatrizAsistenciaService);
-  private qrService = inject(AsistenciaQrService);
+  private readonly courseService = inject(CourseService);
+  private readonly sessionService = inject(SessionService);
+  private readonly groupService = inject(GroupService);
+  private readonly studentService = inject(StudentService);
+  private readonly attendanceService = inject(AttendanceService);
+  private readonly attendanceRealtimeSync = inject(AttendanceRealtimeSyncService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly catalogService = inject(CatalogService);
+  private readonly attendanceClaimService = inject(AttendanceClaimService);
+  private readonly timeZone = inject(SessionTimeZoneService);
+  private readonly studentRegistrationConfig = inject(StudentRegistrationConfigService);
+  private readonly emailVerification = inject(EmailVerificationService);
+  private readonly tomaService = inject(TomaAsistenciaService);
+  private readonly resumenSesionesService = inject(TeacherMatrizAsistenciaService);
+  private readonly qrService = inject(AsistenciaQrService);
   emailDomain = signal<string>('');
   resendingStudentId = signal<string>('');
 
@@ -308,7 +308,7 @@ export class AttendanceControlComponent {
    * aún no se ha guardado. Solo ellos viajan en el lote (batch parcial): lo
    * ya persistido y lo "Sin registrar" no se envían.
    */
-  private pendingStudentIds = new Set<string>();
+  private readonly pendingStudentIds = new Set<string>();
   isSaving = signal<boolean>(false);
 
   isNewSessionModalOpen = signal<boolean>(false);
@@ -334,7 +334,7 @@ export class AttendanceControlComponent {
   /** Tomas de la sesión mostrada (nunca las de otra sesión). */
   tomasSesionActual = computed(() => {
     const datos = this.tomasSesion();
-    return datos && datos.idSesion === this.selectedSessionId() ? datos : null;
+    return datos?.idSesion === this.selectedSessionId() ? datos : null;
   });
   hayTomas = computed(() => (this.tomasSesionActual()?.tomas.length ?? 0) > 0);
   tomaAbierta = computed(() => this.tomasSesionActual()?.tomas.find((t) => t.estado === 'ABIERTA') ?? null);
@@ -374,8 +374,8 @@ export class AttendanceControlComponent {
     }))
   );
 
-  private route = inject(ActivatedRoute, { optional: true });
-  private router = inject(Router, { optional: true });
+  private readonly route = inject(ActivatedRoute, { optional: true });
+  private readonly router = inject(Router, { optional: true });
 
   volverAListaGrupos(): void {
     void this.router?.navigate(['/app/docente/grupos']);
@@ -803,14 +803,19 @@ export class AttendanceControlComponent {
   sessionOptions = computed<SelectOption[]>(() => {
     return this.sessions()
       .map((s) => {
-        const base = s.estadoTemporal === 'INDETERMINADA'
-          ? `Sesión #${s.sessionNumber} (horario no confirmado): ${s.title}`
-          : `Sesión #${s.sessionNumber} (${this.timeZone.displaySessionDate(s)}${this.timeZone.displaySessionEndDate(s) !== this.timeZone.displaySessionDate(s) ? ` – ${this.timeZone.displaySessionEndDate(s)}` : ''}): ${s.title}`;
+        let base = `Sesión #${s.sessionNumber} (horario no confirmado): ${s.title}`;
+        if (s.estadoTemporal !== 'INDETERMINADA') {
+          const fechaInicio = this.timeZone.displaySessionDate(s);
+          const fechaFin = this.timeZone.displaySessionEndDate(s);
+          const rango = fechaFin === fechaInicio ? fechaInicio : `${fechaInicio} – ${fechaFin}`;
+          base = `Sesión #${s.sessionNumber} (${rango}): ${s.title}`;
+        }
         if (!estaCancelada(s)) return { value: s.id, label: base };
         const detalle = detalleCancelacion(s.cancelacion);
+        const sufijoDetalle = detalle ? ` (${detalle})` : '';
         return {
           value: s.id,
-          label: `${base} · Cancelada${detalle ? ` (${detalle})` : ''}`,
+          label: `${base} · Cancelada${sufijoDetalle}`,
           disabled: true,
         };
       });
@@ -1406,7 +1411,7 @@ export class AttendanceControlComponent {
         a.download = fileName;
         document.body.appendChild(a);
         a.click();
-        document.body.removeChild(a);
+        a.remove();
         window.URL.revokeObjectURL(url);
 
         this.toastType.set('success');

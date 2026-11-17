@@ -100,7 +100,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
 export class DeanAreasComponent implements OnInit {
   /** CULM-001: dentro de una pestaña, el título lo pone el cascarón. */
   readonly embebido = input(false);
-  private adminService = inject(AdminManagementService);
+  private readonly adminService = inject(AdminManagementService);
 
   areas = this.adminService.areas;
 

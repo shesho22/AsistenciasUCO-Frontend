@@ -45,7 +45,7 @@ describe('CoordinatorAsistenciaComponent (CULM-001: asistencia unificada)', () =
     http.expectOne((r) => r.url === `${base}/revisiones-cancelacion`).flush(paginaApi([], 1, 1, 3));
     // DEC-065 (2): bandeja de solicitudes (lista) y conteo de pendientes (una fila).
     const solicitudes = http.match((r) => r.url === `${base}/sesiones/solicitudes`);
-    expect(solicitudes.length).toBe(2);
+    expect(solicitudes).toHaveSize(2);
     for (const req of solicitudes) {
       const cuenta = req.request.params.get('tamano') === '1';
       req.flush(paginaApi([], 1, cuenta ? 1 : 20, 3));
@@ -59,7 +59,7 @@ describe('CoordinatorAsistenciaComponent (CULM-001: asistencia unificada)', () =
   });
 
   it('un solo título de pantalla, con las tarjetas KPI arriba y el consolidado como vista principal', () => {
-    expect(el().querySelectorAll('h1').length).toBe(1);
+    expect(el().querySelectorAll('h1')).toHaveSize(1);
     expect(el().querySelector('h1')?.textContent).toContain('Asistencia del programa');
     const texto = el().textContent ?? '';
     expect(texto.indexOf('Sesiones ejecutadas')).toBeGreaterThan(-1);
@@ -102,14 +102,18 @@ describe('CoordinatorAsistenciaComponent (CULM-001: asistencia unificada)', () =
     http.expectOne((r) => r.url === `${base}/alertas-tempranas`).flush({ exitoso: true, datos: [], total: 0 });
 
     fixture.componentInstance.alRecambiarPrograma();
-    http.expectOne((r) => r.url === `${base}/sesiones/solicitudes`).flush(paginaApi([], 1, 1, 3));
-    http.expectOne((r) => r.url === `${base}/alertas-tempranas`).flush({ exitoso: true, datos: [], total: 0 });
+    const solicitudes = http.expectOne((r) => r.url === `${base}/sesiones/solicitudes`);
+    const alertas = http.expectOne((r) => r.url === `${base}/alertas-tempranas`);
+    expect(solicitudes.request.method).toBe('GET');
+    expect(alertas.request.method).toBe('GET');
+    solicitudes.flush(paginaApi([], 1, 1, 3));
+    alertas.flush({ exitoso: true, datos: [], total: 0 });
   });
 
   it('cambiar de programa sin alertas desplegadas no consulta alertas', () => {
     fixture.componentInstance.alRecambiarPrograma();
     http.expectOne((r) => r.url === `${base}/sesiones/solicitudes`).flush(paginaApi([], 1, 1, 3));
-    http.expectNone((r) => r.url === `${base}/alertas-tempranas`);
+    expect(http.match((r) => r.url === `${base}/alertas-tempranas`)).toHaveSize(0);
   });
 
   it('DEC-065 (2): muestra la tarjeta de solicitudes pendientes y la bandeja de solicitudes', () => {
@@ -139,6 +143,8 @@ describe('CoordinatorAsistenciaComponent (CULM-001: asistencia unificada)', () =
 
   it('DEC-065 (2): cambiar de programa también recuenta las pendientes', () => {
     fixture.componentInstance.alRecambiarPrograma();
-    http.expectOne((r) => r.url === `${base}/sesiones/solicitudes`).flush(paginaApi([], 1, 1, 1));
+    const req = http.expectOne((r) => r.url === `${base}/sesiones/solicitudes`);
+    expect(req.request.method).toBe('GET');
+    req.flush(paginaApi([], 1, 1, 1));
   });
 });

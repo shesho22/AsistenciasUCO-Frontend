@@ -75,7 +75,7 @@ describe('Recuperación realtime integrada (MV001-R02)', () => {
     window.dispatchEvent(new Event('online'));
     await flush();
     await flush();
-    expect(calls.length).toBe(2);
+    expect(calls).toHaveSize(2);
     expect(calls[0].init.signal?.aborted).toBeTrue();
     expect(refreshes).toBe(0);
 

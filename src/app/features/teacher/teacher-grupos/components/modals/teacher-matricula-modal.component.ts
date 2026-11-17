@@ -150,7 +150,9 @@ export class TeacherMatriculaModalComponent {
 
   readonly tituloProyeccion = computed(() => {
     const c = this.curso();
-    return c ? `${c.name}${c.section ? ' (' + c.section + ')' : ''}` : '';
+    if (!c) return '';
+    const seccion = c.section ? ' (' + c.section + ')' : '';
+    return `${c.name}${seccion}`;
   });
   readonly subtituloProyeccion = computed(() => this.curso()?.code ?? '');
   readonly programaSeleccionado = computed(() => {

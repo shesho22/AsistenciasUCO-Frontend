@@ -26,6 +26,7 @@ import {
 } from '../security/baseline-oidc';
 import { BrowserNavigator } from '../security/browser-navigator';
 import { esCodigoMensajeUi, mensajeUi } from '../messages/mensajes-ui';
+import { quitarBarrasFinales } from '../utils/barras-finales.util';
 
 
 /** Compatibilidad del modo legacy: el refresh token solo existe en memoria y sessionStorage.
@@ -83,7 +84,7 @@ function parseJwt(token: string): JwtTokenPayload | null {
   try {
     const base64Url = token.split('.')[1];
     if (!base64Url) return null;
-    const unpadded = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const unpadded = base64Url.replaceAll('-', '+').replaceAll('_', '/');
     // base64url (JWT) no lleva padding; atob() sí lo requiere.
     const base64 = unpadded.padEnd(unpadded.length + ((4 - (unpadded.length % 4)) % 4), '=');
     const jsonPayload = decodeURIComponent(
@@ -150,13 +151,13 @@ function isValidUuid(value: unknown): value is string {
   providedIn: 'root',
 })
 export class AuthService implements OnDestroy {
-  private router = inject(Router);
+  private readonly router = inject(Router);
 
   // ── Signals públicos ──────────────────────────────────────────────────────
   currentUser = signal<User | null>(null);
   token = signal<string | null>(null);
   isAuthenticated = computed(() => !!this.token());
-  private mockModeSignal = signal<boolean>(environment.useMocks);
+  private readonly mockModeSignal = signal<boolean>(environment.useMocks);
   isMockMode = computed(() => this.mockModeSignal());
   /**
    * true desde que el usuario pide cerrar sesión hasta que el navegador abandona la SPA. Permite a los
@@ -182,7 +183,7 @@ export class AuthService implements OnDestroy {
    * se modifica mediante `storeRefreshToken` para mantener ambos sincronizados.
    * NUNCA se persiste en localStorage (AGENTS.md §3.3).
    */
-  private refreshTokenInMemory = signal<string | null>(null);
+  private readonly refreshTokenInMemory = signal<string | null>(null);
 
   /**
    * Promise de renovación en vuelo para serializar llamadas concurrentes
@@ -531,7 +532,7 @@ export class AuthService implements OnDestroy {
       return this.currentUser()!;
     }
 
-    const keycloakUrl = environment.keycloak.url.replace(/\/+$/, '');
+    const keycloakUrl = quitarBarrasFinales(environment.keycloak.url);
     const tokenEndpoint = `${keycloakUrl}/realms/${environment.keycloak.realm}/protocol/openid-connect/token`;
 
     const body = new URLSearchParams({
@@ -608,7 +609,7 @@ export class AuthService implements OnDestroy {
     const refreshToken = refreshTokenStr || this.refreshTokenInMemory();
     if (!refreshToken) return false;
 
-    const keycloakUrl = environment.keycloak.url.replace(/\/+$/, '');
+    const keycloakUrl = quitarBarrasFinales(environment.keycloak.url);
     const tokenEndpoint = `${keycloakUrl}/realms/${environment.keycloak.realm}/protocol/openid-connect/token`;
 
     const body = new URLSearchParams({
@@ -686,11 +687,9 @@ export class AuthService implements OnDestroy {
       return null;
     }
 
-    if (!this.refreshInFlight) {
-      this.refreshInFlight = this.refreshAccessToken().finally(() => {
-        this.refreshInFlight = null;
-      });
-    }
+    this.refreshInFlight ??= this.refreshAccessToken().finally(() => {
+      this.refreshInFlight = null;
+    });
 
     const refreshed = await this.refreshInFlight;
     return refreshed ? this.token() : null;

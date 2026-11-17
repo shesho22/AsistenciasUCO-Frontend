@@ -97,8 +97,8 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
   `
 })
 export class DeanPeriodosComponent implements OnInit {
-  private coordService = inject(CoordinatorManagementService);
-  private router = inject(Router);
+  private readonly coordService = inject(CoordinatorManagementService);
+  private readonly router = inject(Router);
 
   periodos = signal<PeriodoAcademicoItem[]>(this.coordService.periodos());
   filtroTexto = signal('');

@@ -444,15 +444,15 @@ const BUSQUEDA_ESPERA_MS = 300;
   `
 })
 export class TeacherClaimsComponent implements OnInit, OnDestroy {
-  private claimService = inject(AttendanceClaimService);
-  private toast = inject(ToastService);
+  private readonly claimService = inject(AttendanceClaimService);
+  private readonly toast = inject(ToastService);
   private readonly zona = inject(SessionTimeZoneService);
 
   vistaActual = signal<VistaDocenteReclamos>('BANDEJA');
   reclamos = signal<SolicitudRevisionItem[]>([]);
   isLoading = signal<boolean>(true);
   /** Mensaje institucional del backend para el último fallo de la bandeja. */
-  private listaError = signal<string>('');
+  private readonly listaError = signal<string>('');
   listState = signal<ReclamosListState>('LOADING');
   searchQuery = signal<string>('');
   estadoFiltro = signal<EstadoFiltroReclamos>('TODOS');
@@ -558,7 +558,8 @@ export class TeacherClaimsComponent implements OnInit, OnDestroy {
         },
         error: (error: unknown) => {
           const status = (error as { status?: number })?.status;
-          this.listState.set(status === 403 ? 'FORBIDDEN' : status === 0 ? 'NETWORK_ERROR' : 'SERVER_ERROR');
+          const errorRed = status === 0 ? 'NETWORK_ERROR' : 'SERVER_ERROR';
+          this.listState.set(status === 403 ? 'FORBIDDEN' : errorRed);
           this.listaError.set(getApiErrorMessage(error));
           this.isLoading.set(false);
           this.toast.error(this.listaError());
@@ -607,7 +608,7 @@ export class TeacherClaimsComponent implements OnInit, OnDestroy {
 
   /** "Toma N · HH:mm · estado actual" cuando el reclamo es de una toma; `null` si es de la sesión. */
   textoTomaReclamada(reclamo: DetalleReclamoDocenteItem | null): string | null {
-    if (!reclamo || reclamo.numeroToma == null) return null;
+    if (reclamo?.numeroToma == null) return null;
     const estado = reclamo.estadoToma ? ETIQUETA_ESTADO_TOMA_RECLAMO[reclamo.estadoToma] : null;
     return [this.textoTomaTarjeta(reclamo), estado].filter((parte) => !!parte).join(' · ');
   }
@@ -615,14 +616,14 @@ export class TeacherClaimsComponent implements OnInit, OnDestroy {
   /** Toma N · HH:mm (hora local, igual que el detalle) en la tarjeta de la bandeja; 
 ull si el reclamo es de la sesión completa. */
   textoTomaTarjeta(reclamo: Pick<SolicitudRevisionItem, 'numeroToma' | 'fechaPuntoControlUtc'> | null): string | null {
-    if (!reclamo || reclamo.numeroToma == null) return null;
+    if (reclamo?.numeroToma == null) return null;
     const hora = reclamo.fechaPuntoControlUtc ? this.zona.formatTemporal(reclamo.fechaPuntoControlUtc, 'time') : null;
     return ['Toma ' + reclamo.numeroToma, hora].filter((parte) => !!parte).join(' · ');
   }
 
   /** "Asistencia de la sesión: X de Y min" (cálculo del backend). */
   textoMinutosSesion(reclamo: DetalleReclamoDocenteItem | null): string | null {
-    if (!reclamo || reclamo.minutosAsistidos == null || reclamo.minutosSesion == null) return null;
+    if (reclamo?.minutosAsistidos == null || reclamo.minutosSesion == null) return null;
     return `Asistencia de la sesión: ${reclamo.minutosAsistidos} de ${reclamo.minutosSesion} min`;
   }
 

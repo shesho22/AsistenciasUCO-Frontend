@@ -225,7 +225,7 @@ interface NavItem {
   `
 })
 export class DashboardLayoutComponent {
-  private authService = inject(AuthService);
+  private readonly authService = inject(AuthService);
   toastService = inject(ToastService);
   toastState = this.toastService.currentToast;
 
@@ -286,7 +286,7 @@ export class DashboardLayoutComponent {
     }, { allowSignalWrites: true });
   }
 
-  private allNavItems: NavItem[] = [
+  private readonly allNavItems: NavItem[] = [
     {
       label: 'Panel Principal',
       route: '/app/dashboard',

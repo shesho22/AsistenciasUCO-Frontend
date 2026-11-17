@@ -20,7 +20,7 @@ const PERSON_NAME = /^(?![ '’-])(?!.*[ '’-]{2})[\p{L}\p{M} '’-]+(?<![ '’
 /** Texto seguro para nombres de entidades: letras, numeros, espacios y . , - _ ( ) / # : (sin < > ni comillas). */
 const SAFE_TEXT = /^[\p{L}\p{M}\p{N} .,_()/#:-]+$/u;
 
-const CONTROL_OR_TAB = /[\p{Cc}]/u;
+const CONTROL_OR_TAB = /\p{Cc}/u;
 const HTML_TAG_DELIMITER = /[<>]/;
 
 export const SAFE_TEXT_FORMAT_HINT = 'letras, números, espacios y los signos . , - _ ( ) / # :';
@@ -152,7 +152,8 @@ export const CLAIM_RESPONSE_REJECT_MIN = 10;
 export const CLAIM_RESPONSE_MAX = 500;
 
 export function getClaimResponseError(
-  action: 'APROBADA' | 'RECHAZADA' | string,
+  /** Valores conocidos: 'APROBADA', 'RECHAZADA'. */
+  action: string,
   response: string | null | undefined
 ): string | null {
   const rejecting = action === 'RECHAZADA';

@@ -55,9 +55,9 @@ describe('DeanPeriodosComponent', () => {
   });
 
   it('carga explícitamente los períodos académicos y permite filtrarlos', () => {
-    expect(component.periodos().length).toBe(1);
+    expect(component.periodos()).toHaveSize(1);
     component.filtroTexto.set('2026-2');
-    expect(component.periodosFiltrados().length).toBe(1);
+    expect(component.periodosFiltrados()).toHaveSize(1);
   });
 });
 

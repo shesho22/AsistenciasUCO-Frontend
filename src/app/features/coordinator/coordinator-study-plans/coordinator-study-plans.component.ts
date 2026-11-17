@@ -95,9 +95,9 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
   `
 })
 export class CoordinatorStudyPlansComponent implements OnInit {
-  private coordService = inject(CoordinatorManagementService);
-  private toast = inject(ToastService);
-  private router = inject(Router);
+  private readonly coordService = inject(CoordinatorManagementService);
+  private readonly toast = inject(ToastService);
+  private readonly router = inject(Router);
 
   planes = signal<PlanEstudioItem[]>(this.coordService.planes());
 

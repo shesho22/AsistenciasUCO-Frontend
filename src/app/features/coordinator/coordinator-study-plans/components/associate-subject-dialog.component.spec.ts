@@ -52,7 +52,7 @@ describe('AssociateSubjectDialogComponent (F-COO-005, B2NM)', () => {
     fixture.componentRef.setInput('abierto', true);
     fixture.detectChanges();
     cargarInicial();
-    expect(component.resultados().length).toBe(2);
+    expect(component.resultados()).toHaveSize(2);
     expect(component.caracteres().map((c) => c.codigo)).toEqual(['OBL', 'OPT']);
     expect(component.semestres()).toEqual([1, 2, 3]);
   });
@@ -63,7 +63,7 @@ describe('AssociateSubjectDialogComponent (F-COO-005, B2NM)', () => {
     const el = fixture.nativeElement as HTMLElement;
 
     expect(el.querySelector('input[aria-label="Buscar asignatura asociable por código o nombre"]')).not.toBeNull();
-    expect(el.querySelectorAll('input[type="radio"]').length).toBe(2);
+    expect(el.querySelectorAll('input[type="radio"]')).toHaveSize(2);
     expect(el.textContent).toContain('SOF-310');
     expect(el.textContent).toContain('Software (Plan 2023)');
     // Los selects están dentro de un label: tienen nombre accesible.
@@ -89,7 +89,7 @@ describe('AssociateSubjectDialogComponent (F-COO-005, B2NM)', () => {
     expect(req.request.params.get('busqueda')).toBe('pruebas');
     expect(req.request.params.get('pagina')).toBe('1');
     req.flush(paginaApi([asociable('a-1', 'SOF-310', 'Pruebas de Software')], 1, 5));
-    expect(component.resultados().length).toBe(1);
+    expect(component.resultados()).toHaveSize(1);
   }));
 
   it('con más resultados que el tamaño de página pagina contra el servidor', () => {

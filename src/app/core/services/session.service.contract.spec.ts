@@ -130,7 +130,7 @@ describe('SessionService contract operations', () => {
       .flush({ codigo: 'X' }, { status: 500, statusText: 'Server Error' });
 
     expect(failed).toBeTrue();
-    expect(http.match(isSessionPut).length).toBe(0);
+    expect(http.match(isSessionPut)).toHaveSize(0);
   });
 
   it('el tipo de updateSession es ApiDataResponse<null>, no ApiResponse<ClassSession>', () => {

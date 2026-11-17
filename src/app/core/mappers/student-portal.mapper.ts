@@ -71,7 +71,7 @@ const HAS_OFFSET = /(Z|[+-]\d{2}:\d{2})$/;
 function texto(value: unknown): string | null {
   if (typeof value !== 'string') return null;
   const trimmed = value.trim();
-  return trimmed ? trimmed : null;
+  return trimmed || null;
 }
 
 /** Cantidad (horas o sesiones) que entrega el backend; lo que no es un número finito y no negativo queda en `null`. */

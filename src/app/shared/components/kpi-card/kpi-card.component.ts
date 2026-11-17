@@ -53,13 +53,19 @@ export class KpiCardComponent {
   protected readonly variacionVista = computed(() => {
     const d = this.variacion();
     if (d === null || d === undefined || Number.isNaN(d)) return null;
-    const direccion = d > 0 ? 'sube' : d < 0 ? 'baja' : 'igual';
+    let direccion: 'sube' | 'baja' | 'igual' = 'igual';
+    if (d > 0) direccion = 'sube';
+    else if (d < 0) direccion = 'baja';
     const mejora = this.sentido() === 'menor-mejor' ? d < 0 : d > 0;
-    const tono = d === 0 ? 'neutro' : mejora ? 'mejora' : 'empeora';
-    const clases = tono === 'mejora' ? 'text-success-700' : tono === 'empeora' ? 'text-danger-700' : 'text-warm-600';
+    const veredicto = mejora ? 'mejora' : 'empeora';
+    const tono = d === 0 ? 'neutro' : veredicto;
+    let clases = 'text-warm-600';
+    if (tono === 'mejora') clases = 'text-success-700';
+    else if (tono === 'empeora') clases = 'text-danger-700';
     const magnitud = `${Math.abs(d).toLocaleString('es-CO', { maximumFractionDigits: 2 })} ${this.unidadVariacion()}`;
     const texto = d === 0 ? 'Sin cambio vs período anterior' : `${magnitud} vs período anterior`;
-    const verbo = d === 0 ? 'sin cambio' : `${direccion === 'sube' ? 'sube' : 'baja'} ${magnitud}, ${mejora ? 'mejora' : 'empeora'}`;
+    const verboDireccion = direccion === 'sube' ? 'sube' : 'baja';
+    const verbo = d === 0 ? 'sin cambio' : `${verboDireccion} ${magnitud}, ${veredicto}`;
     return { direccion, tono, clases, texto, aria: `Variación frente al período anterior: ${verbo}` };
   });
 }

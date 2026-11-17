@@ -82,10 +82,10 @@ const MAX_SEMESTRES = 10;
   `
 })
 export class CoordinatorStudyPlanMeshPageComponent implements OnInit {
-  private coordService = inject(CoordinatorManagementService);
-  private toast = inject(ToastService);
-  private router = inject(Router);
-  private route = inject(ActivatedRoute);
+  private readonly coordService = inject(CoordinatorManagementService);
+  private readonly toast = inject(ToastService);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   planId = input<string>();
 

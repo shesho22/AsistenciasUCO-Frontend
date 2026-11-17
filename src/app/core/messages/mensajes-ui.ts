@@ -183,5 +183,5 @@ export function mensajeUi(codigo: CodigoMensajeUi, parametros: ParametrosMensaje
 
 /** Indica si un código que llega como texto (por ejemplo de otra capa) existe en el catálogo. */
 export function esCodigoMensajeUi(codigo: string): codigo is CodigoMensajeUi {
-  return Object.prototype.hasOwnProperty.call(MENSAJES_UI, codigo);
+  return Object.hasOwn(MENSAJES_UI, codigo);
 }

@@ -37,7 +37,7 @@ describe('StudyPlanFormComponent', () => {
   it('solo muestra el campo INP: no pide código, nombre, facultad, semestres ni créditos', () => {
     crear('CREAR');
     const texto = fixture.nativeElement.textContent as string;
-    expect(fixture.nativeElement.querySelectorAll('input').length).toBe(1);
+    expect(fixture.nativeElement.querySelectorAll('input')).toHaveSize(1);
     expect(texto).toContain('INP del plan');
     expect(texto).not.toContain('Código del Plan');
     expect(texto).not.toContain('Total de Créditos');

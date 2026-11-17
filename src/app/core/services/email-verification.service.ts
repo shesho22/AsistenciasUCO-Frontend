@@ -2,8 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, delay, map, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { ApiDataResponse } from '../api/models/api-data-response.model';
-import { ApiVoidDataResponse } from '../api/models/api-data-response.model';
+import { ApiDataResponse, ApiVoidDataResponse } from '../api/models/api-data-response.model';
 
 /** Respuesta de `POST /api/v1/public/verificar-correo`: el mensaje institucional ya viene listo del catalogo. */
 export interface EmailVerificationResultDto {

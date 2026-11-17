@@ -359,7 +359,7 @@ describe('AttendanceEnrollmentModalComponent', () => {
       let emitido: { idPrograma?: string } | null = null;
       component.submitted.subscribe((p) => (emitido = p));
 
-      expect(component.programas().length).toBe(1);
+      expect(component.programas()).toHaveSize(1);
       expect(component.idPrograma()).toBe('prg-a');
       expect(fixture.nativeElement.textContent).not.toContain('Programa del estudiante');
       component.docType.set('tipo-cc');
@@ -385,7 +385,7 @@ describe('AttendanceEnrollmentModalComponent', () => {
       component.docType.set('tipo-cc');
       component.code.set('1017123456');
       component.onSubmit(new Event('submit'));
-      expect(emitidos.length).toBe(0);
+      expect(emitidos).toHaveSize(0);
 
       component.idPrograma.set('prg-b');
       expect(component.faltaPrograma()).toBeFalse();

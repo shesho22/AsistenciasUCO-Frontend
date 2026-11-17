@@ -59,10 +59,7 @@ export class DialogoAccesibleDirective implements AfterViewInit, OnDestroy {
     if (evento.shiftKey && (activo === primero || activo === this.raiz)) {
       evento.preventDefault();
       ultimo.focus();
-    } else if (!evento.shiftKey && activo === ultimo) {
-      evento.preventDefault();
-      primero.focus();
-    } else if (!this.raiz.contains(activo)) {
+    } else if ((!evento.shiftKey && activo === ultimo) || !this.raiz.contains(activo)) {
       evento.preventDefault();
       primero.focus();
     }

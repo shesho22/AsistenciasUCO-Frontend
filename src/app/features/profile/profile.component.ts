@@ -205,10 +205,10 @@ import { PerfilInstitucionalStore, TEXTO_SIN_REGISTRAR } from './perfil-instituc
   `
 })
 export class ProfileComponent implements OnInit {
-  private authService = inject(AuthService);
-  private location = inject(Location);
-  private router = inject(Router);
-  private perfilStore = inject(PerfilInstitucionalStore);
+  private readonly authService = inject(AuthService);
+  private readonly location = inject(Location);
+  private readonly router = inject(Router);
+  private readonly perfilStore = inject(PerfilInstitucionalStore);
 
   user = this.authService.currentUser;
   /** APP-06: documento leido solo del GET institucional; nunca del token. */
@@ -227,7 +227,7 @@ export class ProfileComponent implements OnInit {
   };
 
   /** Nombres vigentes en pantalla: los del perfil institucional, o los de la sesión mientras este no llega. */
-  private nombresVisibles = signal({ ...this.formModel });
+  private readonly nombresVisibles = signal({ ...this.formModel });
 
   computedFullName = computed(() => {
     const n = this.nombresVisibles();

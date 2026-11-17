@@ -85,7 +85,7 @@ describe('CourseService', () => {
     const { courses, error } = loadCourses([asignacion()], []);
 
     expect(error).toBeNull();
-    expect(courses.length).toBe(1);
+    expect(courses).toHaveSize(1);
     expect(courses[0].id).toBe(GRUPO_ARQ);
     expect(courses[0].asignaturaId).toBe(ASIG_ARQ);
     expect(courses[0].name).toBe('Arquitectura de Software');
@@ -130,7 +130,7 @@ describe('CourseService', () => {
       [horario(), horario({ id: 'h2', dia: 'Miércoles' })]
     );
 
-    expect(courses.length).toBe(1);
+    expect(courses).toHaveSize(1);
     expect(courses[0].id).toBe(GRUPO_ARQ);
     expect(courses[0].schedule).toBe('Lunes 08:00-10:00, Miércoles 08:00-10:00');
     expect(courses[0].code).toBe('ARQ-402');
@@ -167,7 +167,7 @@ describe('CourseService', () => {
     const { courses, error } = loadCourses([asignacion()], 'error');
 
     expect(error).toBeNull();
-    expect(courses.length).toBe(1);
+    expect(courses).toHaveSize(1);
     expect(courses[0].id).toBe(GRUPO_ARQ);
     expect(courses[0].schedule).toBe('');
   });
@@ -204,7 +204,7 @@ describe('CourseService', () => {
   it('no repite un grupo si /docente/asignaturas lo devuelve más de una vez', () => {
     const { courses } = loadCourses([asignacion(), asignacion()], []);
 
-    expect(courses.length).toBe(1);
+    expect(courses).toHaveSize(1);
   });
 
   // --- LB-001B.1B / LB-001B.5A: sin docenteName ni room sintetizados ---
@@ -212,7 +212,7 @@ describe('CourseService', () => {
   it('no hardcodea docenteName al mapear los contratos reales', () => {
     const { courses } = loadCourses([asignacion()], [horario()]);
 
-    expect(courses.length).toBe(1);
+    expect(courses).toHaveSize(1);
     expect(courses[0].docenteName).not.toBe(['Docente', 'UCO'].join(' '));
     expect(courses[0].docenteName).toBeUndefined();
   });
@@ -239,7 +239,7 @@ describe('CourseService', () => {
       .expectOne(`${environment.apiUrl}/docente/horarios`)
       .flush({ exitoso: true, total: 0, datos: [] });
 
-    expect(courses.length).toBe(1);
+    expect(courses).toHaveSize(1);
     expect(courses[0].id).toBe(GRUPO_ARQ);
   });
 
@@ -252,7 +252,7 @@ describe('CourseService', () => {
       datos: [asignacion()],
     });
 
-    expect(asignaturas.length).toBe(1);
+    expect(asignaturas).toHaveSize(1);
     expect(asignaturas[0].idAsignatura).toBe(ASIG_ARQ);
     expect(asignaturas[0].nombreAsignatura).toBe('Arquitectura de Software');
   });
@@ -350,7 +350,7 @@ describe('CourseService', () => {
     expect(req.request.params.get('tamano')).toBe('100');
     req.flush(paginaApi([grupoFacultadApi(), grupoFacultadApi({ idGrupo: 'g2', codigo: 'SIS-102', programas: ['Sistemas', 'Software'] })]));
 
-    expect(courses.length).toBe(2);
+    expect(courses).toHaveSize(2);
     expect(courses[1].programas).toEqual(['Sistemas', 'Software']);
     http.expectNone(`${environment.apiUrl}/docente/asignaturas`);
     http.expectNone(`${environment.apiUrl}/docente/horarios`);
@@ -373,7 +373,7 @@ describe('CourseService', () => {
       expect(req.request.params.get('tamano')).toBe('10');
       req.flush(paginaApi([grupoFacultadApi()], 3, 10, 41));
 
-      expect(resultado!.elementos.length).toBe(1);
+      expect(resultado!.elementos).toHaveSize(1);
       expect(resultado!.elementos[0].name).toBe('Matemática Avanzada III');
       expect(resultado!.totalElementos).toBe(41);
       expect(resultado!.totalPaginas).toBe(5);
@@ -415,7 +415,7 @@ describe('CourseService', () => {
     req.flush(paginaApi([grupoProgramaApi()], 2, 10, 31));
 
     // El total y las páginas son los del servidor, no el tamaño de la página recibida
-    expect(pagina!.elementos.length).toBe(1);
+    expect(pagina!.elementos).toHaveSize(1);
     expect(pagina!.totalElementos).toBe(31);
     expect(pagina!.totalPaginas).toBe(4);
     http.expectNone(`${environment.apiUrl}/docente/asignaturas`);

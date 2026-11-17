@@ -104,7 +104,7 @@ describe('DeanCoordinadorEditModalComponent (HU121)', () => {
 
     botonGuardar().click();
 
-    expect(guardados.length).toBe(1);
+    expect(guardados).toHaveSize(1);
     expect(guardados[0]).toEqual({
       primerNombre: 'Ana',
       segundoNombre: '',
@@ -123,7 +123,7 @@ describe('DeanCoordinadorEditModalComponent (HU121)', () => {
 
     expect(botonGuardar().disabled).toBeTrue();
     botonGuardar().click();
-    expect(guardados.length).toBe(0);
+    expect(guardados).toHaveSize(0);
   });
 
   it('valida al escribir: apellido en blanco deshabilita guardar', async () => {
@@ -142,7 +142,7 @@ describe('DeanCoordinadorEditModalComponent (HU121)', () => {
     fixture.detectChanges();
 
     expect(botonGuardar().disabled).toBeTrue();
-    expect(guardados.length).toBe(0);
+    expect(guardados).toHaveSize(0);
   });
 
   it('emite cancelar al pulsar cancelar', async () => {
@@ -151,7 +151,7 @@ describe('DeanCoordinadorEditModalComponent (HU121)', () => {
     (fixture.nativeElement.querySelector('button[data-accion="cancelar"]') as HTMLButtonElement).click();
 
     expect(cancelaciones).toBe(1);
-    expect(guardados.length).toBe(0);
+    expect(guardados).toHaveSize(0);
   });
 
   it('HU159: envia el documento corregido y su motivo solo si el documento cambia', async () => {

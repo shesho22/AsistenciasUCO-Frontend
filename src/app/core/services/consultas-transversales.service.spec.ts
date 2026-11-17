@@ -25,7 +25,7 @@ describe('ConsultasTransversalesService (HU112/HU128/HU143/HU157)', () => {
     expect(req.request.params.get('pagina')).toBe('1');
     expect(req.request.params.get('tamano')).toBe('100');
     req.flush({ exitoso: true, elementos: [{ idPrograma: 'prg-1', nombrePrograma: 'Ingeniería', totalCreditos: 160 }], numeroPagina: 1, tamanoPagina: 100, totalElementos: 1, totalPaginas: 1 });
-    expect(response.elementos.length).toBe(1);
+    expect(response.elementos).toHaveSize(1);
     expect(response.totalElementos).toBe(1);
     expect(response.totalPaginas).toBe(1);
   });
@@ -53,7 +53,7 @@ describe('ConsultasTransversalesService (HU112/HU128/HU143/HU157)', () => {
       totalElementos: 1,
       totalPaginas: 1,
     });
-    expect(responseDecano.elementos.length).toBe(1);
+    expect(responseDecano.elementos).toHaveSize(1);
 
     let responseAdmin!: ObservedValueOf<ReturnType<typeof service.buscarAsignaturas>>;
     service.buscarAsignaturas({ idFacultad: 'f-1', estaActiva: false, pagina: 1, tamano: 10 }, true).subscribe((r) => (responseAdmin = r));
@@ -75,7 +75,7 @@ describe('ConsultasTransversalesService (HU112/HU128/HU143/HU157)', () => {
       totalElementos: 1,
       totalPaginas: 1,
     });
-    expect(responseEstudiantes.elementos.length).toBe(1);
+    expect(responseEstudiantes.elementos).toHaveSize(1);
 
     service.getHistorialEstudiante('e-1', true).subscribe();
     http.expectOne(`${api}/admin/estudiantes/e-1/historial`).flush({ exitoso: true, datos: null });
@@ -139,7 +139,7 @@ describe('ConsultasTransversalesService (HU112/HU128/HU143/HU157)', () => {
         tamano: 20,
       })
       .subscribe((res) => {
-        expect(res.elementos.length).toBe(1);
+        expect(res.elementos).toHaveSize(1);
         expect(res.elementos[0].idCorrelacion).toBe('corr-1234');
       });
 
@@ -180,7 +180,7 @@ describe('ConsultasTransversalesService (HU112/HU128/HU143/HU157)', () => {
   });
 
   it('HU147: consulta los componentes de formación', () => {
-    service.getComponentesFormacion().subscribe((res) => expect(res.datos.length).toBe(1));
+    service.getComponentesFormacion().subscribe((res) => expect(res.datos).toHaveSize(1));
     http
       .expectOne(`${api}/coordinador/componentes-formacion`)
       .flush({ exitoso: true, datos: [{ idComponente: 'c', codigo: 'ESP', nombre: 'Específicas', totalAsignaturas: 0 }] });
@@ -205,7 +205,7 @@ describe('ConsultasTransversalesService (HU112/HU128/HU143/HU157)', () => {
   });
 
   it('HU155: consulta los estados del sistema del administrador', () => {
-    service.getEstadosSistema().subscribe((res) => expect(res.datos.length).toBe(1));
+    service.getEstadosSistema().subscribe((res) => expect(res.datos).toHaveSize(1));
     http
       .expectOne(`${api}/admin/estados`)
       .flush({ exitoso: true, datos: [{ catalogo: 'SOLICITUD', id: 'e', codigo: 'P', nombre: 'pendiente' }] });

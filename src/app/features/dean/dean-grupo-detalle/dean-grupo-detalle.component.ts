@@ -1,11 +1,9 @@
-import { GrupoDetalleDecanoApiDto } from '../../../core/services/dean-facultad.service';
-import { RealtimeEvent } from '../../../core/realtime/model/realtime-event.model';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { Component, OnInit, OnDestroy, inject, input, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 
 import { ActivatedRoute, Router } from '@angular/router';
 import { Observable, Subscription } from 'rxjs';
-import { DeanFacultadService } from '../../../core/services/dean-facultad.service';
+import { DeanFacultadService, GrupoDetalleDecanoApiDto } from '../../../core/services/dean-facultad.service';
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
 import { resolveSessionInstant } from '../../../core/time/session-timezone.util';
 import { Course } from '../../../core/models/course.model';
@@ -15,7 +13,7 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { RealtimeService } from '../../../core/realtime/realtime.service';
 import { onRealtimeReconnect } from '../../../core/realtime/realtime-reconnect-trigger';
-import { REALTIME_EVENT_TYPE } from '../../../core/realtime/model/realtime-event.model';
+import { REALTIME_EVENT_TYPE, RealtimeEvent } from '../../../core/realtime/model/realtime-event.model';
 
 function adaptarGrupoACurso(dto: GrupoDetalleDecanoApiDto): Course {
   return {
@@ -159,10 +157,10 @@ function adaptarGrupoACurso(dto: GrupoDetalleDecanoApiDto): Course {
   `
 })
 export class DeanGrupoDetalleComponent implements OnInit, OnDestroy {
-  private deanService = inject(DeanFacultadService);
-  private toast = inject(ToastService);
-  private router = inject(Router);
-  private route = inject(ActivatedRoute);
+  private readonly deanService = inject(DeanFacultadService);
+  private readonly toast = inject(ToastService);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   readonly timeZone = inject(SessionTimeZoneService);
   private readonly realtime = inject(RealtimeService, { optional: true });
   private subRealtime?: Subscription;

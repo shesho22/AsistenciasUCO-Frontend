@@ -54,8 +54,8 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
   `,
 })
 export class AdminPeriodosComponent implements OnInit {
-  private coordService = inject(CoordinatorManagementService);
-  private toast = inject(ToastService);
+  private readonly coordService = inject(CoordinatorManagementService);
+  private readonly toast = inject(ToastService);
 
   private readonly tab = viewChild(AcademicPeriodsTabComponent);
 

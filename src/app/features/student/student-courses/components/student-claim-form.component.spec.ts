@@ -112,7 +112,7 @@ describe('StudentClaimFormComponent — soporte (LB-004D FE-01..FE-03)', () => {
     component.fileSelected.subscribe((event) => events.push(event));
     const input = host().querySelector('input[type="file"]') as HTMLInputElement;
     input.dispatchEvent(new Event('change'));
-    expect(events.length).toBe(1);
+    expect(events).toHaveSize(1);
   });
 
   describe('CULM-001 D.1 plazo y rechazo por plazo vencido', () => {

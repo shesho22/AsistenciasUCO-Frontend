@@ -168,7 +168,7 @@ export function getApiErrorMessage(error: unknown): string {
   }
 
   // Códigos de catálogo de feature (ERR_*): el backend define el mensaje.
-  if (envelope && envelope.message.trim()) {
+  if (envelope?.message.trim()) {
     return envelope.message.trim();
   }
 

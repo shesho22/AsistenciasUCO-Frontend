@@ -93,9 +93,9 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
 export class CoordinatorPeriodsComponent implements OnInit {
   /** CULM-001: dentro de una pestaña, el título lo pone el cascarón. */
   readonly embebido = input(false);
-  private coordService = inject(CoordinatorManagementService);
-  private toast = inject(ToastService);
-  private router = inject(Router);
+  private readonly coordService = inject(CoordinatorManagementService);
+  private readonly toast = inject(ToastService);
+  private readonly router = inject(Router);
 
   periodos = signal<PeriodoAcademicoItem[]>(this.coordService.periodos());
 

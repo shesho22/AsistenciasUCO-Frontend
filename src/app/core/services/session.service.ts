@@ -22,10 +22,10 @@ export interface UpdateSessionInput {
   providedIn: 'root',
 })
 export class SessionService {
-  private http = inject(HttpClient);
-  private sessionV2 = inject(SessionV2Service);
+  private readonly http = inject(HttpClient);
+  private readonly sessionV2 = inject(SessionV2Service);
 
-  private initialSessions: Record<string, ClassSession[]> = {
+  private readonly initialSessions: Record<string, ClassSession[]> = {
     'crs-1': [
       {
         id: 'ses-101',
@@ -92,7 +92,7 @@ export class SessionService {
     ],
   };
 
-  private sessionsByGroupSignal = signal<Record<string, ClassSession[]>>(this.initialSessions);
+  private readonly sessionsByGroupSignal = signal<Record<string, ClassSession[]>>(this.initialSessions);
 
   getSessionsByGroup(grupoId: string): Observable<ApiResponse<ClassSession[]>> {
     if (!environment.useMocks) {

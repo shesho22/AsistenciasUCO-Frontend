@@ -176,7 +176,7 @@ import { CardComponent } from '../../../shared/components/card/card.component';
   `
 })
 export class LoginComponent {
-  private authService = inject(AuthService);
+  private readonly authService = inject(AuthService);
   readonly baselineMode = this.authService.isBaselineMode();
 
   username = '';

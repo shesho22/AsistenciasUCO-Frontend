@@ -167,7 +167,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   }
   if (url.includes('/admin/decanos/') && url.endsWith('/toggle') && method === 'PATCH') {
     const segments = url.split('/');
-    const id = segments[segments.length - 2];
+    const id = segments.at(-2);
     const decano = mockStore.decanos.find((d) => d.id === id);
     if (decano) {
       decano.estado = decano.estado === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO';
@@ -200,7 +200,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   }
   if (url.includes('/admin/facultades/') && url.endsWith('/estado') && method === 'PATCH') {
     const segments = url.split('/');
-    const id = segments[segments.length - 2];
+    const id = segments.at(-2);
     mockStore.facultades = mockStore.facultades.map((f) =>
       f.id === id ? { ...f, estado: f.estado === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO' } : f
     );
@@ -291,7 +291,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   }
   if (url.includes('/decano/coordinadores/') && url.endsWith('/estado') && method === 'PATCH') {
     const segments = url.split('/');
-    const id = segments[segments.length - 2];
+    const id = segments.at(-2);
     const body = req.body as { estaActivo: boolean };
     mockStore.coordinadores = mockStore.coordinadores.map((c) =>
       c.id === id ? { ...c, estado: body.estaActivo ? 'ACTIVO' : 'INACTIVO' } : c
@@ -306,7 +306,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   }
   if (url.includes('/decano/coordinadores/') && url.endsWith('/facultad') && method === 'PATCH') {
     const segments = url.split('/');
-    const id = segments[segments.length - 2];
+    const id = segments.at(-2);
     const body = req.body as { nuevaFacultad?: string };
     mockStore.coordinadores = mockStore.coordinadores.map((c) =>
       c.id === id ? { ...c, facultad: body.nuevaFacultad as string } : c
@@ -388,7 +388,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   // HU094: ficha del docente con historial de grupos y resumen de carga.
   if (url.includes('/coordinador/docentes/') && url.endsWith('/ficha') && method === 'GET') {
     const segments = url.split('/');
-    const id = segments[segments.length - 2];
+    const id = segments.at(-2);
     const doc = mockStore.docentes.find((d) => d.id === id);
     const historial = [
       { idGrupo: `${id}-G1`, codigoGrupo: 1, nombreGrupo: 'Grupo 1', idAsignatura: 'ASG-1', nombreAsignatura: 'Matemática Avanzada III',
@@ -409,7 +409,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   }
   if (url.includes('/coordinador/docentes/') && url.endsWith('/toggle') && method === 'PATCH') {
     const segments = url.split('/');
-    const id = segments[segments.length - 2];
+    const id = segments.at(-2);
     mockStore.docentes = mockStore.docentes.map((d) =>
       d.id === id ? { ...d, estado: d.estado === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO' } : d
     );
@@ -442,7 +442,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   if (url.includes('/coordinador/planes-estudio/') && url.includes('/asignaturas/') && method === 'DELETE') {
     const segments = url.split('/');
     const planId = segments[segments.length - 3];
-    const asigId = segments[segments.length - 1];
+    const asigId = segments.at(-1);
     mockStore.asignaturasPlan[planId] = (mockStore.asignaturasPlan[planId] || []).filter((a) => a.id !== asigId);
     return of(okResponse(null, 'Asignatura quitada del plan.')).pipe(delay(200));
   }
@@ -480,7 +480,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   }
   if (url.includes('/coordinador/planes-estudio/') && url.endsWith('/toggle-estado') && method === 'PATCH') {
     const segments = url.split('/');
-    const id = segments[segments.length - 2];
+    const id = segments.at(-2);
     mockStore.planesEstudio = mockStore.planesEstudio.map((p) =>
       p.id === id ? { ...p, estado: p.estado === 'VIGENTE' ? 'INACTIVO' : 'VIGENTE' } : p
     );
@@ -489,7 +489,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   }
   if (url.includes('/coordinador/planes-estudio/') && url.endsWith('/semestres') && method === 'POST') {
     const segments = url.split('/');
-    const id = segments[segments.length - 2];
+    const id = segments.at(-2);
     mockStore.planesEstudio = mockStore.planesEstudio.map((p) =>
       p.id === id ? { ...p, totalSemestres: p.totalSemestres + 1 } : p
     );
@@ -497,7 +497,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   }
   if (url.includes('/coordinador/planes-estudio/') && url.includes('/semestres/') && method === 'DELETE') {
     const segments = url.split('/');
-    const id = segments[segments.length - 3];
+    const id = segments.at(-3);
     mockStore.planesEstudio = mockStore.planesEstudio.map((p) =>
       p.id === id ? { ...p, totalSemestres: Math.max(0, p.totalSemestres - 1) } : p
     );
@@ -940,23 +940,23 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     const body = req.body as { accion?: string; respuestaDocente?: string; respuesta?: string; resultado?: string } | null;
     const accion = body?.accion === 'APROBADA' ? 'APROBADA' : 'RECHAZADA';
     const comentario = body?.respuestaDocente || body?.respuesta || '';
+    const resultadoPositivo = body?.resultado === 'PRESENTE' ? ('PRESENTE' as const) : ('JUSTIFICADA' as const);
     mockStore.solicitudesRevision = mockStore.solicitudesRevision.map((r) =>
       r.id === id
         ? {
             ...r,
             estadoSolicitud: accion,
-            resultadoAprobacion: accion === 'APROBADA' ? (body?.resultado === 'PRESENTE' ? ('PRESENTE' as const) : ('JUSTIFICADA' as const)) : null,
+            resultadoAprobacion: accion === 'APROBADA' ? resultadoPositivo : null,
             justificacionRespuesta: comentario,
             fechaRespuesta: new Date().toISOString().slice(0, 10),
           }
         : r
     );
     const actualizado = mockStore.solicitudesRevision.find((r) => r.id === id);
-    const msg = accion === 'APROBADA'
-      ? body?.resultado === 'PRESENTE'
-        ? 'Reclamo aprobado. Se registró que el estudiante estuvo presente en la toma.'
-        : 'Reclamo aprobado. Se ha actualizado la asistencia a "Justificada".'
-      : 'Reclamo rechazado con la justificación suministrada.';
+    const msgAprobado = body?.resultado === 'PRESENTE'
+      ? 'Reclamo aprobado. Se registró que el estudiante estuvo presente en la toma.'
+      : 'Reclamo aprobado. Se ha actualizado la asistencia a "Justificada".';
+    const msg = accion === 'APROBADA' ? msgAprobado : 'Reclamo rechazado con la justificación suministrada.';
     return of(okResponse(actualizado, msg)).pipe(delay(250));
   }
   if (url.endsWith('/docente/horarios') && method === 'GET') {

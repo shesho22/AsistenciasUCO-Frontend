@@ -438,11 +438,11 @@ const NOMBRE_PROGRAMA_MAX = 50;
 export class DeanCoordinadoresComponent implements OnInit {
   /** CULM-001: dentro de una pestaña, el título lo pone el cascarón. */
   readonly embebido = input(false);
-  private deanService = inject(DeanManagementService);
-  private catalogService = inject(CatalogService);
-  private programasService = inject(DeanProgramasService);
-  private toast = inject(ToastService);
-  private registroConfig = inject(StudentRegistrationConfigService);
+  private readonly deanService = inject(DeanManagementService);
+  private readonly catalogService = inject(CatalogService);
+  private readonly programasService = inject(DeanProgramasService);
+  private readonly toast = inject(ToastService);
+  private readonly registroConfig = inject(StudentRegistrationConfigService);
   /** DEC-073: dominio institucional vigente para el correo del coordinador (llega del backend). */
   readonly dominioCorreo = signal<string | null>(null);
   readonly maxNombre = NAME_MAX_LENGTH;

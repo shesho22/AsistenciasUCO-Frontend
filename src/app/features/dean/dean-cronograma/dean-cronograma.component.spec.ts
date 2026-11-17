@@ -165,16 +165,16 @@ describe('Mock backend de consultas del decano (HU104/HU105/HU109/HU119/HU145)',
     const service = TestBed.inject(DeanFacultadService);
 
     service.getEstudiantes({ busqueda: 'luis', pagina: 1, tamano: 10 }).subscribe((estudiantes) => {
-      expect(estudiantes.elementos.length).toBe(1);
+      expect(estudiantes.elementos).toHaveSize(1);
       expect(estudiantes.elementos[0].nombreCompleto).toBe('Luis Gómez');
       service.getFichaEstudiante('EST-MOCK-1').subscribe((ficha) => {
-        expect(ficha.datos.matriculas.length).toBe(1);
+        expect(ficha.datos.matriculas).toHaveSize(1);
         service.getEstructura().subscribe((estructura) => {
           expect(estructura.datos[0].programas[0].planes[0].inp).toBe(20241);
           service.getSesiones({ pagina: 1, tamano: 10 }).subscribe((sesiones) => {
             expect(sesiones.elementos[0].codigo).toBe('S-01');
             service.getAsignaturasPlan('PLAN-1', { pagina: 1, tamano: 10 }).subscribe((malla) => {
-              expect(malla.elementos.length).toBe(2);
+              expect(malla.elementos).toHaveSize(2);
               expect(malla.totalElementos).toBe(2);
               expect(malla.elementos[1].semestre).toBe(2);
               expect(malla.elementos[1].creditos).toBe(3);

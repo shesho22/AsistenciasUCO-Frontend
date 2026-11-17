@@ -165,7 +165,7 @@ export class SessionTomasPanelComponent {
     const elegida = this.seleccion();
     if (elegida === RESUMEN && tomas.length > 1) return RESUMEN;
     if (elegida && tomas.some((t) => t.idToma === elegida)) return elegida;
-    return (tomas.find((t) => t.estado === 'ABIERTA') ?? tomas[tomas.length - 1])?.idToma ?? null;
+    return (tomas.find((t) => t.estado === 'ABIERTA') ?? tomas.at(-1))?.idToma ?? null;
   });
 
   protected readonly motivo = computed<string | null>(() => {

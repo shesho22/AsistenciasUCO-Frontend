@@ -248,10 +248,10 @@ type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
   `,
 })
 export class AdminSystemComponent implements OnInit {
-  private adminService = inject(AdminManagementService);
-  private coordService = inject(CoordinatorManagementService);
-  private toast = inject(ToastService);
-  private destroyRef = inject(DestroyRef);
+  private readonly adminService = inject(AdminManagementService);
+  private readonly coordService = inject(CoordinatorManagementService);
+  private readonly toast = inject(ToastService);
+  private readonly destroyRef = inject(DestroyRef);
 
   /**
    * La ruta de Configuración declara `data.modo = 'parametros'`: se ocultan el encabezado y las pestañas de operaciones y

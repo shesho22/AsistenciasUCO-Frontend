@@ -5,7 +5,7 @@ import { RegistroAsistenciaQr } from '../../../core/models/asistencia-qr.model';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
-const PIN_VALIDO = /^[0-9]{6}$/;
+const PIN_VALIDO = /^\d{6}$/;
 
 /**
  * CULM-001 B.2 (HU176): `/app/asistencia/qr?t=<token>` registra al cargar (la camara nativa del celular abre la URL) y

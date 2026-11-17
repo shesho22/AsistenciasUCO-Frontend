@@ -93,7 +93,7 @@ describe('CoordinatorDocenteFichaModalComponent', () => {
     const resumen = el.querySelector('[data-testid="resumen-carga"]')?.textContent ?? '';
     expect(resumen).toContain('12');
     expect(resumen).toContain('25');
-    expect(el.querySelectorAll('[data-testid="grupo-historial"]').length).toBe(3);
+    expect(el.querySelectorAll('[data-testid="grupo-historial"]')).toHaveSize(3);
     expect(el.textContent).toContain('Vigente');
     expect(el.textContent).toContain('Finalizado');
     expect(el.textContent).toContain('Próximo');
@@ -114,7 +114,7 @@ describe('CoordinatorDocenteFichaModalComponent', () => {
     crear();
 
     expect(fixture.nativeElement.textContent).toContain('no tiene grupos registrados');
-    expect(fixture.nativeElement.querySelectorAll('[data-testid="grupo-historial"]').length).toBe(0);
+    expect(fixture.nativeElement.querySelectorAll('[data-testid="grupo-historial"]')).toHaveSize(0);
   });
 
   it('FM-05 un error del servidor se muestra en la ficha y deja el historial vacio', () => {

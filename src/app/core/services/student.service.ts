@@ -39,7 +39,7 @@ export interface FiltroPadronGrupo {
   providedIn: 'root',
 })
 export class StudentService {
-  private http = inject(HttpClient);
+  private readonly http = inject(HttpClient);
 
 
   enrollStudentInGroup(

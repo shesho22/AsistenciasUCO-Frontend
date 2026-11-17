@@ -144,7 +144,7 @@ describe('SubjectFormComponent (HU147 / P5)', () => {
     component.save.subscribe((e) => emitidos.push(e));
 
     component.guardar();
-    expect(emitidos.length).toBe(0);
+    expect(emitidos).toHaveSize(0);
 
     completar();
     component.asigForm.creditos = '5' as unknown as number;

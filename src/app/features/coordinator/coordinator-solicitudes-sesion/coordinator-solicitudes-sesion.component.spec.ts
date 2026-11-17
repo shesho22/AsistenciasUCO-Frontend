@@ -147,7 +147,7 @@ describe('CoordinatorSolicitudesSesionComponent (DEC-065 (2))', () => {
       fixture.detectChanges();
 
       expect(component.error()).not.toBeNull();
-      expect(component.solicitudes().length).toBe(0);
+      expect(component.solicitudes()).toHaveSize(0);
       expect(error).toHaveBeenCalledWith(`Mensaje del backend ${status}`);
     });
   }
@@ -228,7 +228,7 @@ describe('CoordinatorSolicitudesSesionComponent (DEC-065 (2))', () => {
     (el().querySelector('[data-testid="rechazar-solicitud"]') as HTMLButtonElement).click();
     http.expectOne(`${base}/sesiones/motivos-cancelacion`).flush({ exitoso: true, datos: [{ codigo: 'SIN_AULA', nombre: 'Sin aula' }] });
     fixture.detectChanges();
-    expect(component.motivos().length).toBe(1);
+    expect(component.motivos()).toHaveSize(1);
 
     component.confirmarRechazo({ codigoMotivo: 'SIN_AULA', observacion: 'No hay aula' });
     const post = http.expectOne(`${base}/sesiones/ses-1/rechazo`);

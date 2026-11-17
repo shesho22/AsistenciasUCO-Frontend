@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable, filter } from 'rxjs';
 import { REALTIME_TRANSPORT, RealtimeTransport } from './contract/realtime-transport';
-import { RealtimeEvent, RealtimeEventType } from './model/realtime-event.model';
+import { RealtimeEvent } from './model/realtime-event.model';
 import { RealtimeConnectionState } from './model/realtime-connection-state.model';
 
 /**
@@ -24,8 +24,8 @@ export class RealtimeService {
     return this.transport.events$;
   }
 
-  /** Suscripción filtrada por `type` (match exacto, sin normalizar casing). */
-  listenType<T = unknown>(type: RealtimeEventType | string): Observable<RealtimeEvent<T>> {
+  /** Suscripción filtrada por `type` (match exacto, sin normalizar casing). Valores conocidos: ver `RealtimeEventType`. */
+  listenType<T = unknown>(type: string): Observable<RealtimeEvent<T>> {
     return this.transport.events$.pipe(
       filter((evt): evt is RealtimeEvent<T> => evt.type === type)
     );

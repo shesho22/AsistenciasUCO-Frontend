@@ -55,7 +55,7 @@ describe('RealtimeService', () => {
     events$.next(makeEvent('ASISTENCIAS_SESION_ACTUALIZADAS'));
     events$.next(makeEvent('OTRO_TIPO'));
 
-    expect(received.length).toBe(1);
+    expect(received).toHaveSize(1);
     expect(received[0].type).toBe('ASISTENCIAS_SESION_ACTUALIZADAS');
   });
 
@@ -68,8 +68,8 @@ describe('RealtimeService', () => {
     events$.next(makeEvent('ASISTENCIAS_SESION_ACTUALIZADAS'));
     events$.next(makeEvent('OTRO_TIPO'));
 
-    expect(a.length).toBe(1);
-    expect(b.length).toBe(2);
+    expect(a).toHaveSize(1);
+    expect(b).toHaveSize(2);
   });
 
   it('expone connectionState$ del transporte', () => {

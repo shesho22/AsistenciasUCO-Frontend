@@ -177,6 +177,6 @@ describe('CoordinatorSesionesGrupoComponent - cancelación de sesiones manuales 
       payload: { grupo: grupo.id, sesion: 'a', tipo: 'COORDINADOR', fechaHoraInicioUtc: null },
     });
     flushSesiones([sesion('a', 'CANCELADA')]);
-    expect(component.sesiones().length).toBe(1);
+    expect(component.sesiones()).toHaveSize(1);
   });
 });

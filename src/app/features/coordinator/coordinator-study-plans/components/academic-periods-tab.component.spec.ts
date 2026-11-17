@@ -67,9 +67,9 @@ describe('AcademicPeriodsTabComponent', () => {
   it('pagina y muestra el estado vacio', () => {
     fixture.componentRef.setInput('periodos', Array.from({ length: 8 }, (_, i) => periodo(i + 1)));
     fixture.detectChanges();
-    expect(component.pagedPeriodos().length).toBe(6);
+    expect(component.pagedPeriodos()).toHaveSize(6);
     component.currentPage.set(2);
-    expect(component.pagedPeriodos().length).toBe(2);
+    expect(component.pagedPeriodos()).toHaveSize(2);
     fixture.componentRef.setInput('periodos', []);
     fixture.detectChanges();
     expect(texto()).toContain('No hay períodos académicos registrados.');

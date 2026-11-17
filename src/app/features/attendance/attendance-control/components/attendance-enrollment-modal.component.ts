@@ -232,8 +232,8 @@ export interface MatriculaEstudianteSolicitud {
   `
 })
 export class AttendanceEnrollmentModalComponent {
-  private studentService = inject(StudentService);
-  private groupService = inject(GroupService);
+  private readonly studentService = inject(StudentService);
+  private readonly groupService = inject(GroupService);
 
   isOpen = input.required<boolean>();
   /** Grupo del docente titular en el que se matricula: la búsqueda por documento es de ese grupo (DEC-027). */
@@ -364,7 +364,7 @@ export class AttendanceEnrollmentModalComponent {
     }
 
     const numDoc = Number(documento);
-    if (isNaN(numDoc) || numDoc <= 0) {
+    if (Number.isNaN(numDoc) || numDoc <= 0) {
       return;
     }
 

@@ -4,6 +4,7 @@ import { throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../services/auth.service';
 import { UserRole, effectiveRoles } from '../models/user.model';
+import { quitarBarrasFinales } from '../utils/barras-finales.util';
 
 /**
  * Espejo de las reglas por prefijo de `SecurityConfig` (backend). Las lecturas (GET) de un prefijo que el rol
@@ -55,11 +56,11 @@ function segmentosApi(url: string): { primero: string; resto: string | null } | 
   try {
     const request = new URL(url, window.location.origin);
     const api = new URL(environment.apiUrl, window.location.origin);
-    const base = `${api.pathname.replace(/\/+$/, '')}/`;
+    const base = `${quitarBarrasFinales(api.pathname)}/`;
     if (request.origin !== api.origin || !request.pathname.startsWith(base)) {
       return null;
     }
-    const relativa = request.pathname.slice(base.length).replace(/\/+$/, '');
+    const relativa = quitarBarrasFinales(request.pathname.slice(base.length));
     const corte = relativa.indexOf('/');
     const primero = corte < 0 ? relativa : relativa.slice(0, corte);
     const resto = corte < 0 ? '' : relativa.slice(corte + 1);

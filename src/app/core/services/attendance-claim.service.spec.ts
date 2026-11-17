@@ -66,7 +66,7 @@ describe('AttendanceClaimService', () => {
     const request = http.expectOne(`${environment.apiUrl}/docente/reclamos?pagina=1&tamano=10`);
     expect(request.request.method).toBe('GET');
     request.flush({ exitoso: true, datos: [{ id: 'rec-1', materia: 'Cálculo' }], total: 1 });
-    expect(reclamos.length).toBe(1);
+    expect(reclamos).toHaveSize(1);
 
     let error: { status?: number } | undefined;
     service.getReclamosDocente({ pagina: 1, tamano: 10 }).subscribe({ error: (e) => (error = e) });
@@ -187,7 +187,7 @@ describe('AttendanceClaimService', () => {
         }],
       });
 
-      expect(sesiones.length).toBe(1);
+      expect(sesiones).toHaveSize(1);
       expect(sesiones[0].materiaId).toBe(ASIGNATURA);
       expect(sesiones[0].grupoId).toBe(GRUPO);
       expect(sesiones[0].estadoAsistencia).toBe('NO_DISPONIBLE');
@@ -365,7 +365,9 @@ describe('AttendanceClaimService', () => {
 
   it('getHorarioDocente consulta /docente/horarios', () => {
     service.getHorarioDocente().subscribe();
-    http.expectOne(`${environment.apiUrl}/docente/horarios`).flush({ exitoso: true, datos: [] });
+    const req = http.expectOne(`${environment.apiUrl}/docente/horarios`);
+    expect(req.request.method).toBe('GET');
+    req.flush({ exitoso: true, datos: [] });
   });
 
   it('crearReclamo envía solo soporteArchivoId', () => {

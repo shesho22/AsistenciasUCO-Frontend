@@ -137,31 +137,34 @@ export class ClaimMapper {
    * offsets manuales: la zona la resuelve el formateador inyectado (IANA, con DST).
    */
   static fromReclamoDocente(dto: ReclamoDocenteApi, formatDate: InstantDateFormatter): SolicitudRevisionItem {
-    const soportesMapeados: SoporteAdjuntoItem[] | undefined = dto.soportes && dto.soportes.length > 0
-      ? dto.soportes.map((s) => ({
-          fileId: s.fileId,
-          nombre: s.nombre,
-          tipo: s.tipoContenido || s.tipo || '',
-          tipoContenido: s.tipoContenido || s.tipo || '',
-          tamanioBytes: s.tamanioBytes,
-          tamanioKb: Math.max(1, Math.round((s.tamanioBytes ?? 0) / 1024)),
-          urlSimulada: s.url ?? undefined,
-          fechaSubida: s.fechaSubidaUtc ? formatDate(s.fechaSubidaUtc) : '',
-          fechaSubidaUtc: s.fechaSubidaUtc ?? undefined,
-          estado: 'LISTO' as const,
-        }))
-      : (dto.soporteAdjunto ? [{
-          fileId: dto.soporteAdjunto.fileId,
-          nombre: dto.soporteAdjunto.nombre,
-          tipo: dto.soporteAdjunto.tipo,
-          tipoContenido: dto.soporteAdjunto.tipo,
-          tamanioBytes: dto.soporteAdjunto.tamanioBytes,
-          tamanioKb: Math.max(1, Math.round((dto.soporteAdjunto.tamanioBytes ?? 0) / 1024)),
-          urlSimulada: dto.soporteAdjunto.url ?? undefined,
-          fechaSubida: dto.soporteAdjunto.fechaSubidaUtc ? formatDate(dto.soporteAdjunto.fechaSubidaUtc) : '',
-          fechaSubidaUtc: dto.soporteAdjunto.fechaSubidaUtc ?? undefined,
-          estado: 'LISTO' as const,
-        }] : undefined);
+    let soportesMapeados: SoporteAdjuntoItem[] | undefined;
+    if (dto.soportes && dto.soportes.length > 0) {
+      soportesMapeados = dto.soportes.map((s) => ({
+        fileId: s.fileId,
+        nombre: s.nombre,
+        tipo: s.tipoContenido || s.tipo || '',
+        tipoContenido: s.tipoContenido || s.tipo || '',
+        tamanioBytes: s.tamanioBytes,
+        tamanioKb: Math.max(1, Math.round((s.tamanioBytes ?? 0) / 1024)),
+        urlSimulada: s.url ?? undefined,
+        fechaSubida: s.fechaSubidaUtc ? formatDate(s.fechaSubidaUtc) : '',
+        fechaSubidaUtc: s.fechaSubidaUtc ?? undefined,
+        estado: 'LISTO' as const,
+      }));
+    } else if (dto.soporteAdjunto) {
+      soportesMapeados = [{
+        fileId: dto.soporteAdjunto.fileId,
+        nombre: dto.soporteAdjunto.nombre,
+        tipo: dto.soporteAdjunto.tipo,
+        tipoContenido: dto.soporteAdjunto.tipo,
+        tamanioBytes: dto.soporteAdjunto.tamanioBytes,
+        tamanioKb: Math.max(1, Math.round((dto.soporteAdjunto.tamanioBytes ?? 0) / 1024)),
+        urlSimulada: dto.soporteAdjunto.url ?? undefined,
+        fechaSubida: dto.soporteAdjunto.fechaSubidaUtc ? formatDate(dto.soporteAdjunto.fechaSubidaUtc) : '',
+        fechaSubidaUtc: dto.soporteAdjunto.fechaSubidaUtc ?? undefined,
+        estado: 'LISTO' as const,
+      }];
+    }
 
     const soporte = soportesMapeados && soportesMapeados.length > 0 ? soportesMapeados[0] : undefined;
 

@@ -109,7 +109,8 @@ export interface AlertaInasistenciaRealtimePayload {
   grupo: string;
   alerta: string;
   estudianteGrupo: string;
-  tipo: 'ADVERTENCIA' | 'PERDIDA' | string;
+  /** Valores conocidos: 'ADVERTENCIA', 'PERDIDA'. */
+  tipo: string;
   porcentajeInasistencia: number;
   umbral: number;
 }
@@ -127,7 +128,8 @@ export interface RevisionCancelacionDecididaRealtimePayload {
   estudianteGrupo: string;
   decision: string;
   estado: string;
-  perfilResolutor: 'COORDINADOR' | 'DECANO' | string;
+  /** Valores conocidos: 'COORDINADOR', 'DECANO'. */
+  perfilResolutor: string;
 }
 
 export interface RevisionCancelacionResueltaRealtimePayload {
@@ -143,7 +145,8 @@ export interface RevisionCancelacionReasignadaRealtimePayload {
   grupo: string;
   revision: string;
   estudianteGrupo: string;
-  perfilResolutor: 'COORDINADOR' | 'DECANO' | string;
+  /** Valores conocidos: 'COORDINADOR', 'DECANO'. */
+  perfilResolutor: string;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

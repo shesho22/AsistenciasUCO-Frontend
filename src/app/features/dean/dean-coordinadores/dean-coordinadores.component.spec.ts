@@ -105,7 +105,7 @@ describe('DeanCoordinadoresComponent', () => {
   it('debe crearse e inicializar lista de coordinadores', () => {
     flushInitialRequests();
     expect(component).toBeTruthy();
-    expect(component.coordinadores().length).toBe(2);
+    expect(component.coordinadores()).toHaveSize(2);
     expect(component.isLoading()).toBeFalse();
   });
 
@@ -130,7 +130,7 @@ describe('DeanCoordinadoresComponent', () => {
     req.flush(paginaApi([mockCoordinadores[0]], 1, 6, 1));
 
     expect(component.currentPage()).toBe(1);
-    expect(component.coordinadores().length).toBe(1);
+    expect(component.coordinadores()).toHaveSize(1);
     expect(component.coordinadores()[0].nombres).toBe('Carlos');
     expect(component.totalCoordinadores()).toBe(1);
   });
@@ -489,7 +489,7 @@ describe('DeanCoordinadoresComponent', () => {
       ],
     });
 
-    expect(component.coordinadores().length).toBe(3);
+    expect(component.coordinadores()).toHaveSize(3);
     expect(component.vistaActual()).toBe('LISTA');
     expect(toastService.success).toHaveBeenCalled();
   });
@@ -508,7 +508,7 @@ describe('DeanCoordinadoresComponent', () => {
     component.guardarCoordinador();
 
     const posts = http.match(`${environment.apiUrl}/decano/coordinadores`);
-    expect(posts.length).toBe(1);
+    expect(posts).toHaveSize(1);
     expect(component.isSubmitting()).toBeTrue();
     posts[0].flush({ exitoso: true, mensajeUsuario: 'Coordinador creado.', datos: {} });
     http.expectOne(porUrl(`${environment.apiUrl}/decano/coordinadores`)).flush({ exitoso: true, elementos: [
@@ -525,7 +525,7 @@ describe('DeanCoordinadoresComponent', () => {
     component.cargarCoordinadores();
 
     const requests = http.match(porUrl(`${environment.apiUrl}/decano/coordinadores`));
-    expect(requests.length).toBe(2);
+    expect(requests).toHaveSize(2);
     const nuevoListado = [
       ...mockCoordinadores,
       { ...mockCoordinadores[0], id: 'coord-nuevo', numeroIdentificacion: '1017555444' },

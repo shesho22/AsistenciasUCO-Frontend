@@ -48,7 +48,7 @@ describe('AdminInstitucionesComponent (F-ADM-009)', () => {
     expect(host.textContent).toContain('Universidad Católica de Oriente');
     expect(host.textContent).toContain('UCO-01');
     expect(host.textContent).toContain('890980040-8');
-    expect(component.instituciones().length).toBe(1);
+    expect(component.instituciones()).toHaveSize(1);
   });
 
   it('informa si no hay instituciones registradas', () => {

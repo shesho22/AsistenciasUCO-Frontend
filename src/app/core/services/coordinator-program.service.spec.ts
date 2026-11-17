@@ -127,8 +127,8 @@ describe('CoordinatorProgramService (S4, B2NM)', () => {
 
     http.expectOne(porUrl(url)).flush(paginaApi([plan('p-1', 'Sistemas')]));
 
-    expect(a.length).toBe(1);
-    expect(b.length).toBe(1);
+    expect(a).toHaveSize(1);
+    expect(b).toHaveSize(1);
     expect(service.cargado()).toBeTrue();
   });
 

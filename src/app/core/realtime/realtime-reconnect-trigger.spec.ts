@@ -16,7 +16,7 @@ describe('onRealtimeReconnect (CULM-001 C.1 §4.1, §4.8, N-2)', () => {
     states$.next('CONNECTING');
     states$.next('CONNECTED');
 
-    expect(emitted.length).toBe(0);
+    expect(emitted).toHaveSize(0);
   });
 
   it('C-F-13 emite cuando CONNECTED sigue a RECONNECTING', () => {
@@ -28,7 +28,7 @@ describe('onRealtimeReconnect (CULM-001 C.1 §4.1, §4.8, N-2)', () => {
     states$.next('RECONNECTING');
     states$.next('CONNECTED');
 
-    expect(emitted.length).toBe(1);
+    expect(emitted).toHaveSize(1);
   });
 
   it('C-F-14 emite cuando CONNECTED sigue a ERROR', () => {
@@ -39,7 +39,7 @@ describe('onRealtimeReconnect (CULM-001 C.1 §4.1, §4.8, N-2)', () => {
     states$.next('ERROR');
     states$.next('CONNECTED');
 
-    expect(emitted.length).toBe(1);
+    expect(emitted).toHaveSize(1);
   });
 
   it('C-F-15 no emite durante transiciones a desconectado o reconectando', () => {
@@ -51,6 +51,6 @@ describe('onRealtimeReconnect (CULM-001 C.1 §4.1, §4.8, N-2)', () => {
     states$.next('DISCONNECTED');
     states$.next('CONNECTING');
 
-    expect(emitted.length).toBe(0);
+    expect(emitted).toHaveSize(0);
   });
 });

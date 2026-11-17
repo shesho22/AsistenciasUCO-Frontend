@@ -3,10 +3,13 @@ export type EstadoAlerta = 'VIGENTE' | 'SUPERADA' | 'RESUELTA';
 
 export interface AlertaInasistencia {
   id: string;
-  tipo?: TipoAlerta | string;
-  tipoAlerta?: TipoAlerta | string;
+  /** Valores conocidos: ver `TipoAlerta`. */
+  tipo?: string;
+  /** Valores conocidos: ver `TipoAlerta`. */
+  tipoAlerta?: string;
   nombreTipo?: string;
-  estado: EstadoAlerta | string;
+  /** Valores conocidos: ver `EstadoAlerta`. */
+  estado: string;
   mensaje: string;
   porcentajeCruce?: number;
   porcentajeActual?: number;
@@ -38,7 +41,8 @@ export interface AlertaInasistencia {
 export interface FiltroAlertasEstudiante {
   idGrupo?: string;
   grupoId?: string;
-  tipo?: TipoAlerta | string;
+  /** Valores conocidos: ver `TipoAlerta`. */
+  tipo?: string;
   soloVigentes?: boolean;
   soloNoLeidas?: boolean;
   pagina?: number;

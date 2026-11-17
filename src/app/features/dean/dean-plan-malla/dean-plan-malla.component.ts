@@ -169,10 +169,10 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
   `
 })
 export class DeanPlanMallaComponent implements OnInit {
-  private deanService = inject(DeanFacultadService);
-  private router = inject(Router);
-  private route = inject(ActivatedRoute);
-  private destroyRef = inject(DestroyRef);
+  private readonly deanService = inject(DeanFacultadService);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  private readonly destroyRef = inject(DestroyRef);
 
   planId = input<string>();
 
@@ -180,8 +180,8 @@ export class DeanPlanMallaComponent implements OnInit {
   asignaturas = signal<AsignaturaPlanItem[]>([]);
   totalAsignaturas = signal(0);
   cargando = signal(false);
-  private errorEstructura = signal('');
-  private errorMalla = signal('');
+  private readonly errorEstructura = signal('');
+  private readonly errorMalla = signal('');
   /** El primer error visible: el de la malla (p. ej. 404) o el de la estructura de la facultad. */
   mensajeError = computed(() => this.errorMalla() || this.errorEstructura());
 
@@ -192,7 +192,7 @@ export class DeanPlanMallaComponent implements OnInit {
   pageSize = signal(9);
 
   /** Caracteres vistos en la malla (el decano no tiene el catálogo del coordinador): código y nombre del backend. */
-  private caracteresVistos = signal<Record<string, string>>({});
+  private readonly caracteresVistos = signal<Record<string, string>>({});
   caracteres = computed(() =>
     Object.entries(this.caracteresVistos())
       .map(([codigo, nombre]) => ({ codigo, nombre }))

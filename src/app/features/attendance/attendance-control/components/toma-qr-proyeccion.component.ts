@@ -28,7 +28,7 @@ import { getApiErrorMessage } from '../../../../core/api/errors/api-error.util';
 /** Segundos de gracia tras la hora de rotacion antes de pedir el QR por HTTP (VAL F12-06). */
 export const MARGEN_RESINCRONIZACION_QR_SEGUNDOS = 5;
 
-const ESTADOS_SIN_CANAL: readonly RealtimeConnectionState[] = ['RECONNECTING', 'ERROR', 'UNAUTHORIZED'];
+const ESTADOS_SIN_CANAL: ReadonlySet<RealtimeConnectionState> = new Set<RealtimeConnectionState>(['RECONNECTING', 'ERROR', 'UNAUTHORIZED']);
 
 /**
  * CULM-001 B.2 (HU175): vista de proyeccion del QR de una toma para el video beam o la tablet del docente.
@@ -107,7 +107,7 @@ export class TomaQrProyeccionComponent {
   protected readonly qrActual = computed(() => {
     const recibido = this.qrRecibido();
     const inicial = this.qr();
-    return recibido && recibido.idToma === inicial.idToma ? recibido : inicial;
+    return recibido?.idToma === inicial.idToma ? recibido : inicial;
   });
 
   protected readonly acciones = computed<ActionMenuItem[]>(() => [
@@ -130,7 +130,7 @@ export class TomaQrProyeccionComponent {
   private readonly estadoConexion = toSignal(this.realtime.connectionState$, {
     initialValue: 'CONNECTED' as RealtimeConnectionState,
   });
-  protected readonly sinCanal = computed(() => ESTADOS_SIN_CANAL.includes(this.estadoConexion()));
+  protected readonly sinCanal = computed(() => ESTADOS_SIN_CANAL.has(this.estadoConexion()));
 
   private readonly proximaRotacionMs = computed(() => {
     const qr = this.qrActual();

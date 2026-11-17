@@ -23,7 +23,7 @@ export interface ToastData {
   providedIn: 'root',
 })
 export class ToastService {
-  private state = signal<ToastData>({
+  private readonly state = signal<ToastData>({
     visible: false,
     message: '',
     type: 'success',

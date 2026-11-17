@@ -38,7 +38,7 @@ describe('DeanFacultadService (F-DEC-003 & §11.3 ApiPageResponse)', () => {
       totalPaginas: 1,
     });
 
-    expect(resultado.elementos.length).toBe(1);
+    expect(resultado.elementos).toHaveSize(1);
     expect(resultado.totalElementos).toBe(1);
     expect(resultado.totalPaginas).toBe(1);
   });

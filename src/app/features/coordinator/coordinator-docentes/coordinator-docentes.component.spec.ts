@@ -354,7 +354,7 @@ describe('CoordinatorDocentesComponent', () => {
 
     component.buscarCandidatos('ros');
     expect(coordService.getCandidatosDocente).toHaveBeenCalledWith('ros');
-    expect(component.candidatos().length).toBe(1);
+    expect(component.candidatos()).toHaveSize(1);
   }));
 
   it('buscarCandidatos con error muestra el mensaje y limpia la lista', fakeAsync(() => {

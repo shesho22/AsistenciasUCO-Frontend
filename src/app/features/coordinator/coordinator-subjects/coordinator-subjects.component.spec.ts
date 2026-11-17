@@ -123,9 +123,9 @@ describe('CoordinatorSubjectsComponent', () => {
   });
 
   it('carga las materias ofertadas, las asignaturas curriculares y los inscritos del grupo inicial', () => {
-    expect(component.courses().length).toBe(1);
-    expect(component.listadoAsignaturas.filas().length).toBe(1);
-    expect(component.enrolledStudents().length).toBe(1);
+    expect(component.courses()).toHaveSize(1);
+    expect(component.listadoAsignaturas.filas()).toHaveSize(1);
+    expect(component.enrolledStudents()).toHaveSize(1);
   });
 
   it('no renderiza docenteName sintetizado ni controles de solicitud de cupo', () => {
@@ -229,7 +229,7 @@ describe('CoordinatorSubjectsComponent', () => {
 
     it('muestra los matriculados y el cupo de TODOS los grupos habilitados, no la suma de la pagina visible', () => {
       // La pagina visible tiene un solo grupo (28 / 35): la cifra del KPI es la del servidor (888 / 1110).
-      expect(component.courses().length).toBe(1);
+      expect(component.courses()).toHaveSize(1);
       expect(texto('ocupacion-cupos')).toBe('888 / 1110');
       expect(texto('ocupacion-detalle')).toBe('80 % de ocupación · 37 grupos habilitados');
       expect(programa.cargar).toHaveBeenCalled();
@@ -302,7 +302,7 @@ describe('CoordinatorSubjectsComponent', () => {
     it('Ver Malla navega al plan de la fila', () => {
       const navSpy = spyOn(router, 'navigate').and.returnValue(Promise.resolve(true));
       const botones = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('button')).filter((b) => b.textContent?.includes('Ver Malla'));
-      expect(botones.length).toBe(2);
+      expect(botones).toHaveSize(2);
       (botones[1] as HTMLButtonElement).click();
       expect(navSpy).toHaveBeenCalledWith(['/app/coordinador/planes-estudio', 'plan-2', 'malla']);
     });

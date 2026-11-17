@@ -21,7 +21,7 @@ import { FormFieldComponent } from '../../../shared/components/form-field/form-f
 
 export type MatriculaQrEstado = 'PIN' | 'VALIDANDO' | 'CURSO' | 'REGISTRO' | 'ENVIANDO' | 'EXITO' | 'EXITO_SESION' | 'ERROR';
 
-const PIN_SEIS_DIGITOS = /^[0-9]{6}$/;
+const PIN_SEIS_DIGITOS = /^\d{6}$/;
 
 /**
  * HU176B: pagina PUBLICA de matricula por QR/PIN. El estudiante llega desde el QR (`/matricula/qr?t=<token>`) o escribe el

@@ -133,7 +133,7 @@ describe('GroupSessionsOverviewComponent', () => {
     render([session(1)]);
     const el = fixture.nativeElement as HTMLElement;
     const cabecera = el.querySelector('[data-testid="acciones-grupo"]') as HTMLElement;
-    expect(cabecera.querySelectorAll('button').length).toBe(2);
+    expect(cabecera.querySelectorAll('button')).toHaveSize(2);
     expect(cabecera.textContent).toContain('Nueva Sesión');
     expect(el.querySelector('[data-testid="action-menu-trigger"]')).not.toBeNull();
     expect(el.querySelector('[data-testid="padron"]')).toBeNull();
@@ -181,7 +181,7 @@ describe('GroupSessionsOverviewComponent', () => {
     const botones = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('button')).filter((b) =>
       (b.textContent || '').includes('Nueva Sesión')
     );
-    expect(botones.length).toBe(1);
+    expect(botones).toHaveSize(1);
   });
 
   it('B1-F-14 el total de sesiones y las canceladas son los que cuenta el servidor', () => {

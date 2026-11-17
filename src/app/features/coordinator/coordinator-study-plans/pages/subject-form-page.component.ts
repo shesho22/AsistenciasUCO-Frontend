@@ -43,11 +43,11 @@ import { mensajeUi } from '../../../../core/messages/mensajes-ui';
   `
 })
 export class CoordinatorSubjectFormPageComponent implements OnInit {
-  private coordService = inject(CoordinatorManagementService);
-  private consultas = inject(ConsultasTransversalesService);
-  private toast = inject(ToastService);
-  private router = inject(Router);
-  private route = inject(ActivatedRoute);
+  private readonly coordService = inject(CoordinatorManagementService);
+  private readonly consultas = inject(ConsultasTransversalesService);
+  private readonly toast = inject(ToastService);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   planId = input<string>();
   asignaturaId = input<string>();

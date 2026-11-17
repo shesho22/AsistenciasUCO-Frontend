@@ -161,7 +161,7 @@ export class ModalComponent {
   }
 
   private esElDeArriba(): boolean {
-    return this.isOpen() && pilaAbiertos[pilaAbiertos.length - 1] === this;
+    return this.isOpen() && pilaAbiertos.at(-1) === this;
   }
 
   private enfocables(): HTMLElement[] {
@@ -178,7 +178,7 @@ export class ModalComponent {
     const raiz = this.dialog()?.nativeElement;
     if (!raiz) return;
     // El primer elemento del cuerpo antes que el boton de cerrar; si no hay, el propio dialogo.
-    const destino = this.enfocables().find((el) => !el.hasAttribute('data-modal-cerrar')) ?? raiz;
+    const destino = this.enfocables().find((el) => !('modalCerrar' in el.dataset)) ?? raiz;
     destino.focus();
   }
 
@@ -199,10 +199,10 @@ export class ModalComponent {
     if (teclado.shiftKey && (activo === primero || activo === raiz)) {
       teclado.preventDefault();
       ultimo.focus();
-    } else if (!teclado.shiftKey && activo === ultimo) {
-      teclado.preventDefault();
-      primero.focus();
-    } else if (activo instanceof HTMLElement && !raiz.contains(activo)) {
+    } else if (
+      (!teclado.shiftKey && activo === ultimo) ||
+      (activo instanceof HTMLElement && !raiz.contains(activo))
+    ) {
       teclado.preventDefault();
       primero.focus();
     }

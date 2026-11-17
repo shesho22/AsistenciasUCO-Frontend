@@ -42,13 +42,13 @@ describe('FranjasEditorComponent', () => {
   it('dibuja una fila por franja y el botón agregar crea otra', () => {
     component.franjas.set([{ dia: 'LU', horaInicio: '08:00', horaFin: '10:00' }]);
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelectorAll('input[type="time"]').length).toBe(2);
+    expect(fixture.nativeElement.querySelectorAll('input[type="time"]')).toHaveSize(2);
 
     fixture.nativeElement.querySelector('[data-testid="agregar-franja"]').click();
     fixture.detectChanges();
 
-    expect(component.franjas().length).toBe(2);
-    expect(fixture.nativeElement.querySelectorAll('input[type="time"]').length).toBe(4);
+    expect(component.franjas()).toHaveSize(2);
+    expect(fixture.nativeElement.querySelectorAll('input[type="time"]')).toHaveSize(4);
   });
 });
 

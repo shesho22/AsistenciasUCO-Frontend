@@ -255,6 +255,13 @@
   animation: toastExit 0.25s ease-in forwards;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .animate-toast-enter,
+  .animate-toast-exit {
+    animation: none;
+  }
+}
+
 .animate-toast-progress {
   animation: toastProgress linear forwards;
 }

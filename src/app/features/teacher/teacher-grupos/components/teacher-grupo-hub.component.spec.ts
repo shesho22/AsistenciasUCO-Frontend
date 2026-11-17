@@ -185,7 +185,7 @@ describe('TeacherGrupoHubComponent', () => {
       fixture.detectChanges();
       const ficha = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="hub-acciones"]') as HTMLElement;
       const visibles = Array.from(ficha.querySelectorAll('button')).filter((b) => !b.hasAttribute('role'));
-      expect(visibles.length).toBe(1);
+      expect(visibles).toHaveSize(1);
       expect(ficha.querySelector('[data-testid="hub-tomar-asistencia"]')).toBeNull();
     });
 
@@ -257,7 +257,7 @@ describe('TeacherGrupoHubComponent', () => {
       expect(q('[data-testid="hub-hoy"]')?.textContent).toContain('Sesion 3');
       (q('[data-testid="hub-tomar-asistencia"]') as HTMLButtonElement).click();
       expect(tomar).toHaveBeenCalledOnceWith(enCurso);
-      expect(el().querySelectorAll('[data-testid="hub-tomar-asistencia"]').length).toBe(1);
+      expect(el().querySelectorAll('[data-testid="hub-tomar-asistencia"]')).toHaveSize(1);
     });
 
     it('sin sesion en curso Hoy muestra la proxima sesion', () => {
@@ -294,7 +294,7 @@ describe('TeacherGrupoHubComponent', () => {
       fixture.detectChanges();
       expect(fixture.componentInstance.subPestanaHub()).toBe('SABANA');
       const tabs = Array.from(el().querySelectorAll('[data-testid="hub-grupo-tabs"] [role="tab"]')).map((t) => t.textContent!.replace(/\s+/g, ' ').trim());
-      expect(tabs.length).toBe(4);
+      expect(tabs).toHaveSize(4);
       expect(tabs[0]).toContain('Planilla');
       expect(tabs[1]).toContain('Cronograma');
       expect(tabs[2]).toContain('Reclamos');

@@ -181,9 +181,9 @@ const TAMANO_CREDITOS = 100;
 export class DeanProgramasComponent implements OnInit {
   /** CULM-001: dentro de una pestaña, el título lo pone el cascarón. */
   readonly embebido = input(false);
-  private deanService = inject(DeanFacultadService);
-  private consultas = inject(ConsultasTransversalesService);
-  private router = inject(Router);
+  private readonly deanService = inject(DeanFacultadService);
+  private readonly consultas = inject(ConsultasTransversalesService);
+  private readonly router = inject(Router);
 
   planes = signal<PlanEstudioItem[]>([]);
   errorEstructura = signal<string | null>(null);
@@ -191,7 +191,7 @@ export class DeanProgramasComponent implements OnInit {
   /** HU112: filas de programas y créditos; alimentan la tabla unificada y los créditos de las tarjetas. */
   creditos = signal<ProgramaCreditosItem[]>([]);
   errorCreditos = signal<string | null>(null);
-  private creditosPorPlan = computed(
+  private readonly creditosPorPlan = computed(
     () => new Map(this.creditos().filter((c) => c.idPlanEstudio).map((c) => [c.idPlanEstudio as string, c]))
   );
   filtroTexto = signal('');

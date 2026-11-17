@@ -62,7 +62,7 @@ describe('simulador del portal del estudiante (CIERRE-W2B)', () => {
     });
 
     it('valores invalidos de pagina o tamano se acotan a 1', () => {
-      expect(mockPaginarSesionesDto(todas, { pagina: 0, tamano: 0 }).pagina.length).toBe(1);
+      expect(mockPaginarSesionesDto(todas, { pagina: 0, tamano: 0 }).pagina).toHaveSize(1);
     });
   });
 

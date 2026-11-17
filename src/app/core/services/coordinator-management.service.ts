@@ -168,23 +168,23 @@ export interface DirectorioEstudiantesQuery {
   providedIn: 'root',
 })
 export class CoordinatorManagementService {
-  private http = inject(HttpClient);
+  private readonly http = inject(HttpClient);
 
-  private docentesSignal = signal<DocentePrograma[]>([]);
+  private readonly docentesSignal = signal<DocentePrograma[]>([]);
   public docentes = this.docentesSignal.asReadonly();
 
-  private totalDocentesSignal = signal(0);
+  private readonly totalDocentesSignal = signal(0);
   public totalDocentes = this.totalDocentesSignal.asReadonly();
 
-  private planesSignal = signal<PlanEstudioItem[]>([]);
+  private readonly planesSignal = signal<PlanEstudioItem[]>([]);
   public planes = this.planesSignal.asReadonly();
 
-  private asignaturasSignal = signal<Record<string, AsignaturaPlanItem[]>>({});
+  private readonly asignaturasSignal = signal<Record<string, AsignaturaPlanItem[]>>({});
 
-  private periodosSignal = signal<PeriodoAcademicoItem[]>([]);
+  private readonly periodosSignal = signal<PeriodoAcademicoItem[]>([]);
   public periodos = this.periodosSignal.asReadonly();
 
-  private estudiantesSignal = signal<EstudianteDirectorioItem[]>([]);
+  private readonly estudiantesSignal = signal<EstudianteDirectorioItem[]>([]);
   public estudiantes = this.estudiantesSignal.asReadonly();
 
   private readonly programaService = inject(CoordinatorProgramService);

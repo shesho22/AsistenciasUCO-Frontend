@@ -296,7 +296,7 @@ describe('OverviewComponent', () => {
     gruposResumenSpy.consultar.and.returnValue(throwError(() => ({ status: 403 })));
     createComponentWithRole('DOCENTE');
     expect(component.totalStudentsCount()).toBeNull();
-    expect(component.courses.length).toBe(1);
+    expect(component.courses).toHaveSize(1);
   });
 
   it('DOCENTE: una respuesta sin datos deja el total en blanco', () => {
@@ -336,7 +336,7 @@ describe('OverviewComponent', () => {
   it('debe inicializarse correctamente para rol ADMINISTRADOR', () => {
     createComponentWithRole('ADMINISTRADOR');
     expect(adminServiceSpy.getDecanos).toHaveBeenCalled();
-    expect(component.decanos().length).toBe(1);
+    expect(component.decanos()).toHaveSize(1);
     expect(component.adminEstado()).toBe('listo');
     expect(component.isLoading()).toBeFalse();
   });
@@ -345,7 +345,7 @@ describe('OverviewComponent', () => {
     // El directorio trae un solo decano; la institucion tiene 3 facultades activas (una sin decano en la lista) y 3 decanos.
     createComponentWithRole('ADMINISTRADOR');
     expect(adminIndicatorsSpy.consultarKpis).toHaveBeenCalled();
-    expect(component.decanos().length).toBe(1);
+    expect(component.decanos()).toHaveSize(1);
     expect(texto('facultades-activas')).toBe('3');
     expect(texto('decanos-activos')).toBe('1');
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('de 3 registrados');
@@ -379,7 +379,7 @@ describe('OverviewComponent', () => {
     expect(component.adminEstado()).toBe('error');
     expect(component.adminKpis()).toBeNull();
     expect(texto('facultades-activas')).toBe('Sin datos');
-    expect(component.decanos().length).toBe(1);
+    expect(component.decanos()).toHaveSize(1);
     expect(component.isLoading()).toBeFalse();
   });
 
@@ -407,7 +407,7 @@ describe('OverviewComponent', () => {
   it('debe inicializarse correctamente para rol DECANO', () => {
     createComponentWithRole('DECANO');
     expect(deanServiceSpy.getCoordinadores).toHaveBeenCalled();
-    expect(component.coordinadores().length).toBe(1);
+    expect(component.coordinadores()).toHaveSize(1);
     expect(component.deanEstado()).toBe('listo');
     expect(component.isLoading()).toBeFalse();
     const el = fixture.nativeElement as HTMLElement;
@@ -459,7 +459,7 @@ describe('OverviewComponent', () => {
     createComponentWithRole('DECANO');
     expect(component.deanEstado()).toBe('error');
     expect(component.deanKpis()).toBeNull();
-    expect(component.coordinadores().length).toBe(1);
+    expect(component.coordinadores()).toHaveSize(1);
     expect(component.isLoading()).toBeFalse();
     expect(texto('grupos')).toBe('Sin datos');
     expect(texto('periodo')).toBe('Sin datos');
@@ -531,8 +531,8 @@ describe('OverviewComponent', () => {
     createComponentWithRole('COORDINADOR');
     expect(coordinatorServiceSpy.getPlanesEstudio).toHaveBeenCalled();
     expect(coordinatorServiceSpy.getDocentes).toHaveBeenCalled();
-    expect(component.planesEstudio().length).toBe(1);
-    expect(component.docentes().length).toBe(1);
+    expect(component.planesEstudio()).toHaveSize(1);
+    expect(component.docentes()).toHaveSize(1);
     expect(component.coordEstado()).toBe('listo');
     expect(component.isLoading()).toBeFalse();
   });
@@ -621,7 +621,7 @@ describe('OverviewComponent', () => {
     createComponentWithRole('ESTUDIANTE');
     expect(studentServiceSpy.getHorarios).toHaveBeenCalled();
     expect(studentServiceSpy.getMaterias).toHaveBeenCalled();
-    expect(component.materias().length).toBe(1);
+    expect(component.materias()).toHaveSize(1);
     expect(studentServiceSpy.getResumenMaterias).toHaveBeenCalledTimes(1);
     expect(component.studentResumen()).toEqual({ totalMaterias: 1, materiasEnRiesgo: 0, totalHorasFalta: 2, totalCreditos: 3 });
     expect(component.estadoMateriasEstudiante()).toBe('LISTO');

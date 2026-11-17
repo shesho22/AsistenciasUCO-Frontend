@@ -90,6 +90,7 @@ describe('mockBackendInterceptor', () => {
     auth.setMockMode(true);
     httpClient.get('https://cdn.example.test/font.css').subscribe();
     const request = http.expectOne('https://cdn.example.test/font.css');
+    expect(request.request.method).toBe('GET');
     request.flush('body');
   });
 
@@ -325,7 +326,7 @@ describe('mockBackendInterceptor', () => {
       .subscribe((r) => (creado = r));
     tick(300);
     expect(creado?.exitoso).toBeTrue();
-    expect(mockStore.periodosAcademicos.length).toBe(total + 1);
+    expect(mockStore.periodosAcademicos).toHaveSize(total + 1);
 
     const id = mockStore.periodosAcademicos[0].id;
     let editado: Sobre | undefined;
@@ -337,7 +338,7 @@ describe('mockBackendInterceptor', () => {
     httpClient.delete<Sobre>(`${environment.apiUrl}/admin/periodos-academicos/${id}`).subscribe((r) => (eliminado = r));
     tick(300);
     expect(eliminado?.exitoso).toBeTrue();
-    expect(mockStore.periodosAcademicos.length).toBe(total);
+    expect(mockStore.periodosAcademicos).toHaveSize(total);
   }));
 
   it('F-RED-05 los endpoints de solicitudes de ingreso ya no los resuelve el mock', fakeAsync(() => {
@@ -436,8 +437,8 @@ describe('mockBackendInterceptor', () => {
       const total = pedir({}).total;
       const primera = pedir({ pagina: '1', tamano: '2' });
       const segunda = pedir({ pagina: '2', tamano: '2' });
-      expect(primera.datos.length).toBe(2);
-      expect(segunda.datos.length).toBe(total - 2);
+      expect(primera.datos).toHaveSize(2);
+      expect(segunda.datos).toHaveSize(total - 2);
       expect(primera.total).toBe(total);
       expect(segunda.total).toBe(total);
       expect(primera.datos.map((r) => r.id)).not.toEqual(segunda.datos.map((r) => r.id));
@@ -469,7 +470,7 @@ describe('mockBackendInterceptor', () => {
         .subscribe((r) => (res = r));
       tick(300);
 
-      expect(res!.elementos.length).toBe(1);
+      expect(res!.elementos).toHaveSize(1);
       expect(res!.totalElementos).toBe(matriculados.length);
       expect(res!.totalPaginas).toBe(matriculados.length);
       expect(res!.elementos[0].idEstudiante).toBe(matriculados[0].id);
@@ -529,7 +530,7 @@ describe('mockBackendInterceptor', () => {
 
       expect(res!.exitoso).toBeTrue();
       expect(res!.sesiones).toEqual([]);
-      expect(res!.elementos.length).toBe(1);
+      expect(res!.elementos).toHaveSize(1);
       expect(res!.elementos[0].celdas).toEqual([]);
       expect(res!.elementos[0].idEstudiante).toBe(matriculados[0].id);
       expect(res!.totalElementos).toBe(matriculados.length);
@@ -614,7 +615,7 @@ describe('mockBackendInterceptor', () => {
     httpClient.get<SobreDatos<{ correo: string; vinculos: unknown[] }>>(`${environment.apiUrl}/usuarios/perfil`).subscribe((r) => (perfil = r));
     tick(250);
     expect(perfil!.datos.correo).toBe('usuario.mock@uco.edu.co');
-    expect(perfil!.datos.vinculos.length).toBe(1);
+    expect(perfil!.datos.vinculos).toHaveSize(1);
   }));
 
   it('HU008 MK-08 simula la oferta de grupos sin campos de solicitud de ingreso', fakeAsync(() => {
@@ -622,7 +623,7 @@ describe('mockBackendInterceptor', () => {
     let oferta: SobreDatos<{ cuposDisponibles: number }[]> | undefined;
     httpClient.get<SobreDatos<{ cuposDisponibles: number }[]>>(`${environment.apiUrl}/estudiante/oferta-academica`).subscribe((r) => (oferta = r));
     tick(300);
-    expect(oferta!.datos.length).toBe(2);
+    expect(oferta!.datos).toHaveSize(2);
     expect(oferta!.datos[0].cuposDisponibles).toBe(5);
     expect('idSolicitud' + 'Abierta' in oferta!.datos[0]).toBeFalse();
     expect('estadoSolicitud' in oferta!.datos[0]).toBeFalse();
@@ -674,7 +675,7 @@ describe('mockBackendInterceptor', () => {
     let asociables: SobrePagina<unknown> | undefined;
     httpClient.get<SobrePagina<unknown>>(`${api}/coordinador/planes-estudio/${planId}/asignaturas-asociables`, { params: { busqueda: 'prueb' } }).subscribe((r) => (asociables = r));
     tick(300);
-    expect(asociables!.elementos.length).toBe(1);
+    expect(asociables!.elementos).toHaveSize(1);
 
     let asociada: Sobre | undefined;
     httpClient.post<Sobre>(`${api}/coordinador/planes-estudio/${planId}/asignaturas-asociadas`, { idAsignatura: 'ASG-EXT-1', semestreNumero: 1, codigoCaracter: 'OBL' }).subscribe((r) => (asociada = r));
@@ -780,7 +781,7 @@ describe('mockBackendInterceptor', () => {
     let pagina: (SobreDatos<unknown[]> & { total?: number }) | undefined;
     httpClient.get<typeof pagina>(`${environment.apiUrl}/decano/programas`, { params: { pagina: 2, tamano: 1 } }).subscribe((r) => (pagina = r));
     tick(250);
-    expect(pagina!.datos.length).toBe(1);
+    expect(pagina!.datos).toHaveSize(1);
     expect(pagina!.total).toBeGreaterThan(1);
   }));
 
@@ -791,7 +792,7 @@ describe('mockBackendInterceptor', () => {
       httpClient.get<typeof todos>(`${environment.apiUrl}/coordinador/grupos`, { params: { pagina: 1, tamano: 10 } }).subscribe((r) => (todos = r));
       tick(250);
       expect(todos!.totalElementos).toBe(1);
-      expect(todos!.elementos[0].franjas.length).toBe(1);
+      expect(todos!.elementos[0].franjas).toHaveSize(1);
 
       let ninguno: SobrePagina<unknown> | undefined;
       httpClient.get<typeof ninguno>(`${environment.apiUrl}/coordinador/grupos`, { params: { busqueda: 'zzz' } }).subscribe((r) => (ninguno = r));
