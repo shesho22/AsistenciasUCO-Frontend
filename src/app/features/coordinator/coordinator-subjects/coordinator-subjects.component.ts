@@ -1,4 +1,6 @@
-import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy, input } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject, signal, computed, ChangeDetectionStrategy, input } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Subject, debounceTime, tap } from 'rxjs';
 
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -7,8 +9,8 @@ import { CourseService } from '../../../core/services/course.service';
 import { Course } from '../../../core/models/course.model';
 import {
   AsignaturaPlanItem,
+  CaracterAsignatura,
   EstudianteDirectorioItem,
-  PlanEstudioItem,
 } from '../../../core/models/role-management.model';
 import { BadgeComponent, BadgeVariant } from '../../../shared/components/badge/badge.component';
 import { ButtonComponent } from '../../../shared/components/button/button.component';
@@ -16,6 +18,9 @@ import { AvatarComponent } from '../../../shared/components/avatar/avatar.compon
 import { ErrorCargaComponent } from '../../../shared/components/error-carga/error-carga.component';
 import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load-error.util';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
+import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
+import { ListadoPaginado } from '../../../shared/utils/listado-paginado';
+import { ToastService } from '../../../shared/components/toast/toast.component';
 
 @Component({
     selector: 'app-coordinator-subjects',
@@ -26,7 +31,8 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
     BadgeComponent,
     ButtonComponent,
     AvatarComponent,
-    ErrorCargaComponent
+    ErrorCargaComponent,
+    PaginationComponent
 ],
     template: `
     <div class="space-y-6">
@@ -57,16 +63,16 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div class="superficie p-4">
           <span class="text-xs text-warm-500 font-medium">Grupos / Materias Ofertadas</span>
-          <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ courses().length }}</p>
+          <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ listado.total() }}</p>
           <span class="text-[11px] text-primary-700 font-medium">Activos en el período</span>
         </div>
         <div class="superficie p-4">
           <span class="text-xs text-warm-500 font-medium">Asignaturas en Malla Curricular</span>
-          <p class="text-2xl font-serif font-bold text-success-700 mt-1">{{ asignaturasCurriculares().length }}</p>
-          <span class="text-[11px] text-warm-500">En {{ planes().length }} planes de estudio</span>
+          <p class="text-2xl font-serif font-bold text-success-700 mt-1">{{ listadoAsignaturas.total() }}</p>
+          <span class="text-[11px] text-warm-500">En {{ totalPlanes() }} planes de estudio</span>
         </div>
         <div class="superficie p-4">
-          <span class="text-xs text-warm-500 font-medium">Ocupación Total de Cupos</span>
+          <span class="text-xs text-warm-500 font-medium">Ocupación de Cupos de la página</span>
           <p class="text-2xl font-serif font-bold text-info-800 mt-1">
             {{ totalInscritosGrupos() }} / {{ totalCapacidadGrupos() }}
           </p>
@@ -80,7 +86,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
           <input aria-label="Buscar asignatura por código o nombre"
             type="text"
             [ngModel]="searchQuery()"
-            (ngModelChange)="searchQuery.set($event)"
+            (ngModelChange)="onBusqueda($event)"
             placeholder="Buscar materia por código, nombre o grupo..."
             class="w-full pl-10 pr-4 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-900 placeholder-warm-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 shadow-warm-sm"
           />
@@ -92,12 +98,12 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
         <div>
           <select aria-label="Filtrar asignaturas por tipo"
             [ngModel]="filtroTipoAsignatura()"
-            (ngModelChange)="filtroTipoAsignatura.set($event)"
+            (ngModelChange)="onCaracter($event)"
             class="w-full px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20 shadow-warm-sm"
           >
-            <option value="TODOS">Todos los caracteres</option>
-            @for (c of caracteresDisponibles(); track c) {
-              <option [value]="c">{{ c }}</option>
+            <option value="">Todos los caracteres</option>
+            @for (c of caracteres(); track c.codigo) {
+              <option [value]="c.codigo">{{ c.nombre }}</option>
             }
           </select>
         </div>
@@ -115,19 +121,19 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
             </p>
           </div>
           <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-warm-100 text-warm-700">
-            {{ filteredCourses().length }} grupos
+            {{ listado.total() }} grupos
           </span>
         </div>
 
         @if (errorCarga()) {
           <app-error-carga [error]="errorCarga()!" (reintentar)="cargarDatos()" />
-        } @else if (filteredCourses().length === 0) {
+        } @else if (listado.filas().length === 0) {
           <div class="bg-white rounded-2xl border border-warm-200 p-10 text-center text-sm text-warm-500">
             No se encontraron grupos ofertados que coincidan con la búsqueda.
           </div>
         } @else {
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            @for (curso of filteredCourses(); track curso.id) {
+            @for (curso of courses(); track curso.id) {
               <div class="superficie p-6 flex flex-col h-full justify-between gap-3">
                 <div>
                   <div class="flex items-start justify-between gap-2 mb-2">
@@ -168,6 +174,14 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
               </div>
             }
           </div>
+          <app-pagination
+            [totalItems]="listado.total()"
+            [totalPages]="listado.totalPaginas()"
+            [pageSize]="listado.tamano()"
+            [currentPage]="listado.pagina()"
+            (pageChange)="listado.irAPagina($event)"
+            (pageSizeChange)="listado.cambiarTamano($event)"
+          />
         }
       </div>
 
@@ -235,17 +249,17 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
             </p>
           </div>
           <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-warm-100 text-warm-700">
-            {{ filteredAsignaturas().length }} asignaturas
+            {{ listadoAsignaturas.total() }} asignaturas
           </span>
         </div>
 
-        @if (filteredAsignaturas().length === 0) {
+        @if (listadoAsignaturas.filas().length === 0) {
           <div class="bg-white rounded-2xl border border-warm-200 p-10 text-center text-sm text-warm-500">
             No hay asignaturas curriculares que coincidan con los filtros seleccionados.
           </div>
         } @else {
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            @for (asig of filteredAsignaturas(); track clavePlan(asig)) {
+            @for (asig of listadoAsignaturas.filas(); track clavePlan(asig)) {
               <div class="superficie p-6 flex flex-col h-full justify-between gap-3">
                 <div>
                   <div class="flex items-start justify-between gap-2 mb-2">
@@ -299,6 +313,14 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
               </div>
             }
           </div>
+          <app-pagination
+            [totalItems]="listadoAsignaturas.total()"
+            [totalPages]="listadoAsignaturas.totalPaginas()"
+            [pageSize]="listadoAsignaturas.tamano()"
+            [currentPage]="listadoAsignaturas.pagina()"
+            (pageChange)="listadoAsignaturas.irAPagina($event)"
+            (pageSizeChange)="listadoAsignaturas.cambiarTamano($event)"
+          />
         }
       </div>
     </div>
@@ -311,49 +333,45 @@ export class CoordinatorSubjectsComponent implements OnInit {
   private readonly courseService = inject(CourseService);
   private readonly router = inject(Router);
 
-  courses = signal<Course[]>([]);
+  /** Los grupos del programa se buscan y paginan en el servidor (CIERRE-W2A); `total` es el del filtro. */
+  readonly listado = new ListadoPaginado<Course>(
+    (pagina, tamano) =>
+      this.courseService
+        .getCoordinatorCoursesPage({ busqueda: this.searchQuery().trim() || null, pagina, tamano })
+        .pipe(tap((res) => this.seleccionarInicial(res.elementos ?? []))),
+    (mensaje) => this.toast.error(mensaje)
+  );
+  /** Asignaturas del catálogo curricular del programa: búsqueda, carácter y paginación en el servidor. */
+  readonly listadoAsignaturas = new ListadoPaginado<AsignaturaPlanItem>(
+    (pagina, tamano) =>
+      this.coordinatorService.getAsignaturasPrograma({
+        busqueda: this.searchQuery().trim() || null,
+        caracter: this.filtroTipoAsignatura() || null,
+        pagina,
+        tamano,
+      }),
+    (mensaje) => this.toast.error(mensaje)
+  );
+  courses = this.listado.filas;
   selectedCourseId = signal<string>('');
   enrolledStudents = signal<EstudianteDirectorioItem[]>([]);
 
-  planes = signal<PlanEstudioItem[]>([]);
-  asignaturasCurriculares = signal<AsignaturaPlanItem[]>([]);
+  /** Total de planes de estudio del programa (`total` del servidor). */
+  totalPlanes = signal(0);
+  /** Caracteres del catálogo (código y nombre), no los que aparecen en las filas cargadas. */
+  caracteres = signal<CaracterAsignatura[]>([]);
 
   searchQuery = signal<string>('');
-  filtroTipoAsignatura = signal<string>('TODOS');
+  /** Código del carácter elegido ('' = todos). */
+  filtroTipoAsignatura = signal<string>('');
+  private readonly busqueda$ = new Subject<void>();
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly toast = inject(ToastService);
+  private readonly errorAuxiliar = signal<LoadErrorState | null>(null);
 
   selectedCourse = computed(() => {
     return this.courses().find((c) => c.id === this.selectedCourseId()) || null;
   });
-
-  filteredCourses = computed(() => {
-    const q = this.searchQuery().toLowerCase().trim();
-    if (!q) return this.courses();
-    return this.courses().filter(
-      (c) =>
-        (c.code ?? '').toLowerCase().includes(q) ||
-        c.name.toLowerCase().includes(q) ||
-        c.section.toLowerCase().includes(q) ||
-        (c.room || '').toLowerCase().includes(q)
-    );
-  });
-
-  filteredAsignaturas = computed(() => {
-    const q = this.searchQuery().toLowerCase().trim();
-    const tipo = this.filtroTipoAsignatura();
-    return this.asignaturasCurriculares().filter((a) => {
-      const matchQuery =
-        !q ||
-        a.codigo.toLowerCase().includes(q) ||
-        a.nombre.toLowerCase().includes(q);
-      const matchTipo = tipo === 'TODOS' || (a.nombreCaracter ?? a.componente) === tipo;
-      return matchQuery && matchTipo;
-    });
-  });
-
-  /** Caracteres presentes en el catálogo cargado (Obligatoria, Optativa). */
-  caracteresDisponibles = computed(() =>
-    [...new Set(this.asignaturasCurriculares().map((a) => a.nombreCaracter ?? a.componente).filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b), 'es'))
-  );
 
   /** B2NM: la misma asignatura aparece una vez por plan donde está vinculada. */
   clavePlan(a: AsignaturaPlanItem): string {
@@ -379,45 +397,50 @@ export class CoordinatorSubjectsComponent implements OnInit {
     return this.tieneCupo(curso) ? String(curso.cupoMaximo) : '—';
   }
 
-  readonly errorCarga = signal<LoadErrorState | null>(null);
+  readonly errorCarga = computed(() => this.listado.error() ?? this.listadoAsignaturas.error() ?? this.errorAuxiliar());
+
+  constructor() {
+    this.listado.tamano.set(12);
+    this.listadoAsignaturas.tamano.set(12);
+    this.busqueda$.pipe(debounceTime(300), takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      this.listado.buscar();
+      this.listadoAsignaturas.buscar();
+    });
+  }
 
   ngOnInit(): void {
     this.cargarDatos();
   }
 
   cargarDatos(): void {
-    this.errorCarga.set(null);
-    this.courseService.getCoordinatorCourses().subscribe({
-      next: (res) => {
-        const list = res.datos || [];
-        this.courses.set(list);
-        if (list.length > 0 && !this.selectedCourseId()) {
-          this.onSelectCourse(list[0].id);
-        }
-      },
-      error: (error: unknown) => this.errorCarga.set(classifyLoadError(error)),
-    });
+    this.errorAuxiliar.set(null);
+    this.listado.buscar();
+    this.listadoAsignaturas.buscar();
 
     this.coordinatorService.getPlanesEstudio().subscribe({
-      next: (res) => {
-        const planesList = res.datos || [];
-        this.planes.set(planesList);
-        this.asignaturasCurriculares.set([]);
-        for (const plan of planesList) {
-          this.coordinatorService.getAsignaturasPorPlan(plan.id).subscribe({
-            next: (asigRes) => {
-              const nuevas = asigRes.datos || [];
-              this.asignaturasCurriculares.update((prev) => {
-                const claves = new Set(prev.map((item) => this.clavePlan(item)));
-                return [...prev, ...nuevas.filter((item) => !claves.has(this.clavePlan(item)))];
-              });
-            },
-            error: (error: unknown) => this.errorCarga.set(classifyLoadError(error)),
-          });
-        }
-      },
-      error: (error: unknown) => this.errorCarga.set(classifyLoadError(error)),
+      next: (res) => this.totalPlanes.set(Number(res.total ?? res.datos?.length ?? 0)),
+      error: (error: unknown) => this.errorAuxiliar.set(classifyLoadError(error)),
     });
+    this.coordinatorService.getCaracteresAsignatura().subscribe({
+      next: (res) => this.caracteres.set(res.datos ?? []),
+      error: (error: unknown) => this.errorAuxiliar.set(classifyLoadError(error)),
+    });
+  }
+
+  onBusqueda(valor: string): void {
+    this.searchQuery.set(valor);
+    this.busqueda$.next();
+  }
+
+  onCaracter(codigo: string): void {
+    this.filtroTipoAsignatura.set(codigo);
+    this.listadoAsignaturas.buscar();
+  }
+
+  private seleccionarInicial(grupos: Course[]): void {
+    if (grupos.length > 0 && !this.selectedCourseId()) {
+      this.onSelectCourse(grupos[0].id);
+    }
   }
 
   onSelectCourse(cursoId: string): void {
