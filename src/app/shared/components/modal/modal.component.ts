@@ -161,7 +161,7 @@ export class ModalComponent {
   }
 
   private esElDeArriba(): boolean {
-    return this.isOpen() && pilaAbiertos[pilaAbiertos.length - 1] === this;
+    return this.isOpen() && pilaAbiertos.at(-1) === this;
   }
 
   private enfocables(): HTMLElement[] {
