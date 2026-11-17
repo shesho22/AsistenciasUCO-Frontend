@@ -6,9 +6,9 @@ import {
 } from '@angular/common/http/testing';
 import { DeanFacultyComponent } from './dean-faculty.component';
 import { environment } from '../../../../environments/environment';
-import { Course } from '../../../core/models/course.model';
+import { KpisDecano } from '../../../core/models/dean-indicators.model';
 import { FacultadNodo } from '../../../core/models/facultad-decano.model';
-import { grupoFacultadApi, paginaApi, porUrl } from '../../../core/testing/pagina-api';
+import { porUrl } from '../../../core/testing/pagina-api';
 
 // LB-001B.1B (DB source of truth cleanup): AS-IS #14 (tabla de cursos), #15 (ficha resumen) y #17 (filtro de
 // búsqueda por docenteName). INT-05/AUTH-03/AUTH-04/DAT-06/UX-09: el decano solo consume rutas de lectura que su
@@ -19,21 +19,16 @@ describe('DeanFacultyComponent', () => {
   let component: DeanFacultyComponent;
   let http: HttpTestingController;
 
-  const MARCADOR_DOCENTE = 'MARCADOR-DOCENTE-NO-DEBE-RENDERIZARSE';
   const api = environment.apiUrl;
 
-  const course: Course = {
-    id: 'crs-1',
-    code: 'MAT-301',
-    name: 'Matemática Avanzada III',
-    section: 'Sección A',
-    schedule: 'Lun, Mié 08:00 - 10:00 AM',
-    room: 'Aula A-204',
-    enrolledStudentsCount: 32,
-    cupoMaximo: 35,
-    docenteName: MARCADOR_DOCENTE,
-    colorCategory: 'emerald',
-  };
+  /** Indicadores de la facultad: grupos, inscritos y cupos de los grupos habilitados los calcula la base. */
+  const kpis = (extra: Partial<KpisDecano> = {}): KpisDecano => ({
+    idFacultad: 'fac-1', nombreFacultad: 'Facultad de Ingeniería', idPeriodoAcademico: 'p1', nombrePeriodoAcademico: '2026-2',
+    totalProgramas: 1, totalEstudiantes: 6, estudiantesRegulares: 2, estudiantesRiesgo: 1, estudiantesPerdida: 3, tasaRetencion: 50,
+    sesionesEjecutadas: 35, faltasSinJustaCausa: 6, porcentajeAusentismo: 17.14, porcentajeAsistencia: 82.86,
+    gruposActivos: 1, cupoTotal: 35, matriculadosActivos: 32, tasaAforo: 91.43, umbralAdvertencia: 15, umbralPerdida: 20,
+    totalCoordinadores: 1, totalDocentes: 4, ...extra,
+  });
 
   const estructura: FacultadNodo[] = [
     {
@@ -71,7 +66,7 @@ describe('DeanFacultyComponent', () => {
     fixture = TestBed.createComponent(DeanFacultyComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
-    responder('/decano/grupos', respuestas['/decano/grupos'] ?? { body: paginaApi([]) });
+    responder('/decano/indicadores', respuestas['/decano/indicadores'] ?? { body: { exitoso: true, datos: kpis() } });
     responder('/decano/estructura', respuestas['/decano/estructura'] ?? ok(estructura));
     responder('/admin/areas', respuestas['/admin/areas'] ?? ok([{ id: 'a1', nombre: 'Matemáticas', estado: 'ACTIVO' }]));
     responder('/coordinador/periodos-academicos', respuestas['/coordinador/periodos-academicos'] ?? ok([
@@ -126,14 +121,6 @@ describe('DeanFacultyComponent', () => {
     expect(text).not.toContain('FAC-ING');
   });
 
-  it('suma cupos solo con los valores recibidos (sin inventar 30 por grupo)', () => {
-    crear();
-    component.courses.set([{ ...course, cupoMaximo: undefined, enrolledStudentsCount: 10 }]);
-    expect(component.totalCupos()).toBe(0);
-    component.courses.set([{ ...course, cupoMaximo: 35 }]);
-    expect(component.totalCupos()).toBe(35);
-  });
-
   // UX-09: un 403/500 no es "0 períodos"; se informa y la tarjeta muestra un guion.
   it('un error HTTP en períodos se informa y no se muestra como 0', () => {
     crear({ '/coordinador/periodos-academicos': fallo(403) });
@@ -159,25 +146,49 @@ describe('DeanFacultyComponent', () => {
     expect(component.periodosTotal()).toBe('0');
   });
 
-  it('no renderiza docenteName en la tabla de grupos de la facultad', () => {
-    crear();
-    component.courses.set([course]);
-    fixture.detectChanges();
-
-    const text = (fixture.nativeElement as HTMLElement).textContent || '';
-    expect(text).not.toContain(MARCADOR_DOCENTE);
-  });
-
   // CULM-001: la cabecera de la facultad solo lleva tres cifras (grupos, planes y áreas); los accesos a otras
   // pantallas son ahora las pestañas de Mi facultad.
   it('CULM-001 muestra tres chips: grupos, planes y áreas, con los valores recibidos', () => {
-    crear({ '/decano/grupos': { body: paginaApi([grupoFacultadApi({ idGrupo: 'crs-1', estudiantesActivos: 32, capacidadMaximaPermitida: 35 })]) } });
+    crear({ '/decano/indicadores': { body: { exitoso: true, datos: kpis({ gruposActivos: 1, matriculadosActivos: 32, cupoTotal: 35 }) } } });
     const el = fixture.nativeElement as HTMLElement;
     expect(el.querySelectorAll('[aria-label="Cifras de la facultad"] li').length).toBe(3);
     expect(el.querySelector('[data-testid="chip-grupos"]')?.textContent).toContain('1');
     expect(el.querySelector('[data-testid="chip-grupos"]')?.textContent).toContain('32 inscritos de 35 cupos');
     expect(el.querySelector('[data-testid="chip-planes"]')?.textContent).toContain('2');
     expect(el.querySelector('[data-testid="chip-areas"]')?.textContent).toContain('1');
+  });
+
+  it('CIERRE-W3I los grupos, inscritos y cupos son los del servidor (no se descargan ni se suman los grupos en el cliente)', () => {
+    crear({ '/decano/indicadores': { body: { exitoso: true, datos: kpis({ gruposActivos: 150, matriculadosActivos: 4200, cupoTotal: 6000 }) } } });
+    http.expectNone((r) => r.url.includes('/decano/grupos'));
+    const chip = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="chip-grupos"]');
+    expect(component.gruposTotal()).toBe('150');
+    expect(chip?.textContent).toContain('150');
+    expect(chip?.textContent).toContain('4200 inscritos de 6000 cupos');
+  });
+
+  it('CIERRE-W3I un error en los indicadores muestra «—» y no un cero', () => {
+    crear({ '/decano/indicadores': fallo(500) });
+    const chip = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="chip-grupos"]');
+    expect(component.errorGrupos()).toBeTrue();
+    expect(component.gruposTotal()).toBe('—');
+    expect(chip?.textContent).toContain('—');
+    expect(chip?.textContent).not.toContain('inscritos');
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('No fue posible cargar: grupos');
+  });
+
+  it('CIERRE-W3I una respuesta sin datos se trata como fallo', () => {
+    crear({ '/decano/indicadores': { body: { exitoso: true, datos: null } } });
+    expect(component.errorGrupos()).toBeTrue();
+  });
+
+  it('CIERRE-W3I mientras los indicadores no llegan el chip dice "Cargando…" y no 0', () => {
+    fixture = TestBed.createComponent(DeanFacultyComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+    expect(component.gruposTotal()).toBe('Cargando…');
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="chip-grupos"]')?.textContent).not.toContain('inscritos');
+    http.match(() => true).forEach((r) => r.flush({ exitoso: true, datos: [] }));
   });
 
   it('CULM-001 un error en una sección muestra «—» en su chip y no un cero', () => {
