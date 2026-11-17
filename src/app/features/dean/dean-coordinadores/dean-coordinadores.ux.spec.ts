@@ -64,7 +64,7 @@ describe('DeanCoordinadoresComponent UX (F-DEC-004, F-DEC-007, F-DEC-S04, F-COO-
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
     expect(el.querySelector('app-pagination')).toBeTruthy();
-    expect(component.coordinadores().length).toBe(6);
+    expect(component.coordinadores()).toHaveSize(6);
     expect(component.totalCoordinadores()).toBe(14);
 
     component.currentPage.set(3);
@@ -122,7 +122,7 @@ describe('DeanCoordinadoresComponent UX (F-DEC-004, F-DEC-007, F-DEC-S04, F-COO-
     it('muestra "Nombrar" como unica accion visible mas el menu "Mas"', () => {
       iniciar([coord(1)]);
       const cab = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="acciones-encabezado"]') as HTMLElement;
-      expect(cab.querySelectorAll('button').length).toBe(2);
+      expect(cab.querySelectorAll('button')).toHaveSize(2);
       expect(cab.textContent).toContain('Nombrar');
       expect(cab.textContent).not.toContain('Carga Masiva');
     });

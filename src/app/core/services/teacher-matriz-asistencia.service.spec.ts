@@ -48,7 +48,7 @@ describe('TeacherMatrizAsistenciaService (CIERRE-W3M)', () => {
     service.consultarMatriz('g-1', 1, 50, '   ').subscribe();
 
     const reqs = http.match((r) => r.url === url('matriz-asistencia'));
-    expect(reqs.length).toBe(2);
+    expect(reqs).toHaveSize(2);
     for (const req of reqs) {
       expect(req.request.params.has('busqueda')).toBeFalse();
       req.flush({});

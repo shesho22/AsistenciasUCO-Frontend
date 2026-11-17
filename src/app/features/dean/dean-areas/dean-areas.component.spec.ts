@@ -43,11 +43,11 @@ describe('DeanAreasComponent', () => {
   });
 
   it('carga las áreas de la facultad y permite filtrar', () => {
-    expect(component.areas().length).toBe(2);
+    expect(component.areas()).toHaveSize(2);
     expect(component.areasTotal()).toBe('2');
 
     component.filtroTexto.set('Software');
-    expect(component.areasFiltradas().length).toBe(1);
+    expect(component.areasFiltradas()).toHaveSize(1);
   });
 
   // HU020/HU140 descartadas (2026-11-06): sedes y espacios físicos no se piden; la pantalla no los consulta ni los muestra.

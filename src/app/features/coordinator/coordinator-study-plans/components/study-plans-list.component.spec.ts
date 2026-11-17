@@ -38,7 +38,7 @@ describe('StudyPlansListComponent (CULM-001, densidad de acciones)', () => {
   it('cada tarjeta deja "Malla & Asignaturas" visible y un menu; Editar y Activar/Inactivar no estan sueltos', () => {
     crear([plan('a', 'VIGENTE')]);
     const acciones = q('[data-testid="acciones-plan"]') as HTMLElement;
-    expect(acciones.querySelectorAll('button').length).toBe(2);
+    expect(acciones.querySelectorAll('button')).toHaveSize(2);
     expect(acciones.textContent).toContain('Malla & Asignaturas');
     expect(acciones.textContent).not.toContain('Editar');
     expect(acciones.textContent).not.toContain('Inactivar');

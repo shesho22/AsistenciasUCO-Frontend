@@ -78,7 +78,7 @@ describe('CoordinatorDocenteEditModalComponent', () => {
 
     component.enviar();
 
-    expect(emisiones.length).toBe(0);
+    expect(emisiones).toHaveSize(0);
     expect(component.error()).toBeTruthy();
   });
 
@@ -88,13 +88,13 @@ describe('CoordinatorDocenteEditModalComponent', () => {
     component.form.primerNombre = '  ';
 
     component.enviar();
-    expect(emisiones.length).toBe(0);
+    expect(emisiones).toHaveSize(0);
     expect(component.error()).toBeTruthy();
 
     component.form.primerNombre = 'Jorge';
     component.form.primerApellido = '';
     component.enviar();
-    expect(emisiones.length).toBe(0);
+    expect(emisiones).toHaveSize(0);
   });
 
   it('cerrar emite el evento', () => {
@@ -109,7 +109,7 @@ describe('CoordinatorDocenteEditModalComponent', () => {
     component.guardar.subscribe((p) => emitidos.push(p));
     component.documento.set({ valido: false, documento: null, motivo: '' });
     component.enviar();
-    expect(emitidos.length).toBe(0);
+    expect(emitidos).toHaveSize(0);
     expect(component.error()).toContain('documento');
 
     component.documento.set({ valido: true, documento: { idTipoIdentificacion: 't-cc', numeroIdentificacion: 2002 }, motivo: 'Cédula mal digitada' });

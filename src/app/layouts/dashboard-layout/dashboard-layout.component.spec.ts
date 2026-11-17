@@ -163,7 +163,7 @@ describe('DashboardLayoutComponent (cierre de sesión sin rol fantasma)', () => 
     const html = fixture.nativeElement as HTMLElement;
     expect(fixture.componentInstance.filteredNavItems()).toEqual([]);
     expect(html.textContent).not.toContain('DOCENTE');
-    expect(html.querySelectorAll('nav a').length).toBe(0);
+    expect(html.querySelectorAll('nav a')).toHaveSize(0);
   });
 
   it('mientras se cierra la sesión muestra el overlay "Cerrando sesión…"', async () => {

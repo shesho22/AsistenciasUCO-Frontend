@@ -113,13 +113,13 @@ describe('CoordinatorDocenteFormModalComponent', () => {
     component.guardarNuevo.subscribe((p) => emisiones.push(p));
 
     component.enviarNuevo();
-    expect(emisiones.length).toBe(0);
+    expect(emisiones).toHaveSize(0);
     expect(component.error()).toBeTruthy();
 
     llenarNuevo();
     component.form.idTipoVinculacion = '';
     component.enviarNuevo();
-    expect(emisiones.length).toBe(0);
+    expect(emisiones).toHaveSize(0);
   });
 
   it('los datos personales se editan con el bloque compartido (el documento solo admite dígitos)', () => {
@@ -164,13 +164,13 @@ describe('CoordinatorDocenteFormModalComponent', () => {
     component.cambiarModo('EXISTENTE');
 
     component.enviarExistente();
-    expect(emisiones.length).toBe(0);
+    expect(emisiones).toHaveSize(0);
     expect(component.error()).toBeTruthy();
 
     component.seleccionarCandidato(candidato);
     component.form.idTipoVinculacion = '';
     component.enviarExistente();
-    expect(emisiones.length).toBe(0);
+    expect(emisiones).toHaveSize(0);
   });
 
   it('cambiar de modo limpia el error y la selección', () => {

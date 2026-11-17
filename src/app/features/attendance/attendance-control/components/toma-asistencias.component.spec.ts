@@ -248,8 +248,8 @@ describe('TomaAsistenciasComponent (CULM-001 UX toma)', () => {
     clic('marcar-todos-presentes');
     clic('guardar-toma');
     expect(tomas.registrarAsistencias).toHaveBeenCalledTimes(2);
-    expect(tomas.registrarAsistencias.calls.argsFor(0)[1].length).toBe(200);
-    expect(tomas.registrarAsistencias.calls.argsFor(1)[1].length).toBe(1);
+    expect(tomas.registrarAsistencias.calls.argsFor(0)[1]).toHaveSize(200);
+    expect(tomas.registrarAsistencias.calls.argsFor(1)[1]).toHaveSize(1);
   });
 
   it('un error al guardar muestra el mensaje del backend y conserva los cambios', () => {
@@ -425,7 +425,7 @@ describe('TomaAsistenciasComponent (CULM-001 UX toma)', () => {
       crear({ toma: toma({ modo: 'QR' }) });
       const barra = el('barra-acciones') as HTMLElement;
       const visibles = Array.from(barra.querySelectorAll('button')).filter((b) => !b.hasAttribute('role'));
-      expect(visibles.length).toBe(3);
+      expect(visibles).toHaveSize(3);
       expect(el('marcar-todos-presentes')).not.toBeNull();
       expect(el('guardar-toma')).not.toBeNull();
       expect(el('contador-marcados')).not.toBeNull();
@@ -440,7 +440,7 @@ describe('TomaAsistenciasComponent (CULM-001 UX toma)', () => {
       crear({ toma: toma({ modo: 'QR' }) });
       const raiz = fixture.nativeElement as HTMLElement;
       const cabecera = raiz.querySelector('[data-testid="toma-cabecera"]') as HTMLElement;
-      expect(cabecera.querySelectorAll('button').length).toBe(0);
+      expect(cabecera.querySelectorAll('button')).toHaveSize(0);
     });
 
     it('existe un unico boton Guardar (se retira el duplicado al pie de la lista)', () => {

@@ -82,7 +82,7 @@ describe('StudentManagementService', () => {
     });
     http.expectOne(`${environment.apiUrl}/estudiante/horarios`).flush({ exitoso: true, total: 0, datos: [] });
 
-    expect(resultado.length).toBe(1);
+    expect(resultado).toHaveSize(1);
     expect(resultado[0].id).toBe('e2f3a4b5-0000-0000-0000-000000000001');
     expect(resultado[0].nombre).toBe('Arquitectura de Software');
     expect(resultado[0].grupo).toBe('Grupo 001 - Arq Software');
@@ -127,7 +127,7 @@ describe('StudentManagementService', () => {
       datos: [{ idAsignatura: 'e2f3a4b5-0000-0000-0000-000000000001', nombreAsignatura: 'X', idGrupo: 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d', nombreGrupo: 'G' }],
     });
     http.expectOne(`${environment.apiUrl}/estudiante/horarios`).flush({}, { status: 500, statusText: 'err' });
-    expect(resultado.length).toBe(1);
+    expect(resultado).toHaveSize(1);
     expect(resultado[0].docente).toBeNull();
     expect(resultado[0].horario).toBeNull();
   });

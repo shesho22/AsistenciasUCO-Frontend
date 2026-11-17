@@ -63,7 +63,7 @@ describe('StudyPlanMeshComponent (certificación F3)', () => {
       { busqueda: '', semestre: 3, caracter: '' },
       { busqueda: '', semestre: 3, caracter: 'OPT' },
     ]);
-    expect(fixture.nativeElement.querySelectorAll('h4').length).toBe(2);
+    expect(fixture.nativeElement.querySelectorAll('h4')).toHaveSize(2);
   });
 
   it('la búsqueda se emite con retardo y un solo aviso por ráfaga de teclas', fakeAsync(() => {
@@ -77,7 +77,7 @@ describe('StudyPlanMeshComponent (certificación F3)', () => {
 
     fixture.componentInstance.onBusqueda('al');
     fixture.componentInstance.onBusqueda(' algoritmos ');
-    expect(emitidos.length).toBe(0);
+    expect(emitidos).toHaveSize(0);
     tick(300);
     expect(emitidos).toEqual([{ busqueda: 'algoritmos', semestre: 0, caracter: '' }]);
   }));

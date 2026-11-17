@@ -26,7 +26,7 @@ describe('GroupInfoModalComponent (IDENT-001 reenvio de verificacion)', () => {
   it('ofrece "Reenviar enlace" solo para filas con idEstudiante', () => {
     expect(boton('est-1')?.textContent).toContain('Reenviar enlace');
     expect(boton('est-2')).not.toBeNull();
-    expect(host().querySelectorAll('[data-testid^="resend-verification-"]').length).toBe(2);
+    expect(host().querySelectorAll('[data-testid^="resend-verification-"]')).toHaveSize(2);
   });
 
   it('emite el idEstudiante al pulsar el boton', () => {

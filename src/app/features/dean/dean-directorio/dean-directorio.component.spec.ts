@@ -103,7 +103,7 @@ describe('DeanDirectorioComponent (CULM-001)', () => {
       http.expectOne((r) => r.url === ESTUDIANTES).flush({ exitoso: true, datos: [estudiante], total: 1 });
       f.detectChanges();
       expect(el(f).querySelector('[role="tab"][aria-selected="true"]')?.id).toBe('tab-estudiantes');
-      expect(el(f).querySelectorAll('[role="tab"][aria-selected="true"]').length).toBe(1);
+      expect(el(f).querySelectorAll('[role="tab"][aria-selected="true"]')).toHaveSize(1);
     });
 
     it('una entidad desconocida o ausente cae en docentes', () => {
@@ -376,13 +376,13 @@ describe('DeanDirectorioComponent (CULM-001)', () => {
       primera.flush(paginaApi(Array.from({ length: 10 }, (_, i) => grupo(String(i + 1), 20)), 1, 10, 12));
       f.detectChanges();
       expect(f.componentInstance.listado.total()).toBe(12);
-      expect(f.componentInstance.listado.filas().length).toBe(10);
+      expect(f.componentInstance.listado.filas()).toHaveSize(10);
 
       f.componentInstance.listado.irAPagina(2);
       const segunda = http.expectOne(porUrl(GRUPOS));
       expect(segunda.request.params.get('pagina')).toBe('2');
       segunda.flush(paginaApi([grupo('11', 20), grupo('12', 20)], 2, 10, 12));
-      expect(f.componentInstance.listado.filas().length).toBe(2);
+      expect(f.componentInstance.listado.filas()).toHaveSize(2);
 
       f.componentInstance.busqueda.set('álgebra');
       f.componentInstance.buscar();

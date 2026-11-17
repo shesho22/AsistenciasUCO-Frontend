@@ -93,7 +93,7 @@ describe('DeanIndicatorsComponent', () => {
 
   it('T-FE-03 la comparativa dibuja una barra por programa con el ancho recibido y señala al programa inactivo', () => {
     const barras = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('[data-testid="barra-ausentismo"]')) as HTMLElement[];
-    expect(barras.length).toBe(2);
+    expect(barras).toHaveSize(2);
     expect(barras[0].style.width).toBe('15.15%');
     expect(barras[1].style.width).toBe('0%');
     expect(texto()).toContain('Programa Cerrado');

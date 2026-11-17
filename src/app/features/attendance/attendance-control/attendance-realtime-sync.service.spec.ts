@@ -63,7 +63,7 @@ describe('AttendanceRealtimeSyncService', () => {
     emit('g1', 's1');
     tick(300);
 
-    expect(received.length).toBe(1);
+    expect(received).toHaveSize(1);
   }));
 
   it('no emite si el evento pertenece a la misma sesión pero otro grupo', fakeAsync(() => {
@@ -73,7 +73,7 @@ describe('AttendanceRealtimeSyncService', () => {
     emit('g2', 's1');
     tick(300);
 
-    expect(received.length).toBe(0);
+    expect(received).toHaveSize(0);
   }));
 
   it('no emite si el evento pertenece al mismo grupo pero otra sesión', fakeAsync(() => {
@@ -83,7 +83,7 @@ describe('AttendanceRealtimeSyncService', () => {
     emit('g1', 's2');
     tick(300);
 
-    expect(received.length).toBe(0);
+    expect(received).toHaveSize(0);
   }));
 
   it('coalesce varios eventos consecutivos del mismo grupo/sesión en una sola emisión', fakeAsync(() => {
@@ -95,7 +95,7 @@ describe('AttendanceRealtimeSyncService', () => {
     emit('g1', 's1');
     tick(300);
 
-    expect(received.length).toBe(1);
+    expect(received).toHaveSize(1);
   }));
 
   it('no emite si no hay grupo o sesión seleccionados', fakeAsync(() => {
@@ -105,7 +105,7 @@ describe('AttendanceRealtimeSyncService', () => {
     emit('g1', 's1');
     tick(300);
 
-    expect(received.length).toBe(0);
+    expect(received).toHaveSize(0);
   }));
 
   it('RECONNECTING -> CONNECTED genera un refresh', () => {
@@ -116,7 +116,7 @@ describe('AttendanceRealtimeSyncService', () => {
     connectionState$.next('RECONNECTING');
     connectionState$.next('CONNECTED');
 
-    expect(received.length).toBe(1);
+    expect(received).toHaveSize(1);
   });
 
   it('CONNECTING -> CONNECTED inicial no genera refresh', () => {
@@ -126,7 +126,7 @@ describe('AttendanceRealtimeSyncService', () => {
     connectionState$.next('CONNECTING');
     connectionState$.next('CONNECTED');
 
-    expect(received.length).toBe(0);
+    expect(received).toHaveSize(0);
   });
 
   describe('recuperación tras reconexión (MV001-R01)', () => {
@@ -145,7 +145,7 @@ describe('AttendanceRealtimeSyncService', () => {
 
       emitStates('CONNECTED', 'RECONNECTING', 'CONNECTING', 'CONNECTED');
 
-      expect(received.length).toBe(1);
+      expect(received).toHaveSize(1);
     });
 
     it('B. RECONNECTING -> CONNECTING -> RECONNECTING -> CONNECTING -> CONNECTED produce 1 refresh', () => {
@@ -160,7 +160,7 @@ describe('AttendanceRealtimeSyncService', () => {
         'CONNECTED'
       );
 
-      expect(received.length).toBe(1);
+      expect(received).toHaveSize(1);
     });
 
     it('C. DISCONNECTED -> CONNECTING -> CONNECTED (conexión inicial) produce 0 refresh', () => {
@@ -168,19 +168,19 @@ describe('AttendanceRealtimeSyncService', () => {
 
       emitStates('DISCONNECTED', 'CONNECTING', 'CONNECTED');
 
-      expect(received.length).toBe(0);
+      expect(received).toHaveSize(0);
     });
 
     it('D. tras el refresh de reconexión, un evento de negocio sigue refrescando', fakeAsync(() => {
       const received = collect();
 
       emitStates('CONNECTED', 'RECONNECTING', 'CONNECTING', 'CONNECTED');
-      expect(received.length).toBe(1);
+      expect(received).toHaveSize(1);
 
       emit('g1', 's1');
       tick(300);
 
-      expect(received.length).toBe(2);
+      expect(received).toHaveSize(2);
     }));
 
     it('no duplica el refresh si CONNECTED se repite dentro de la misma reconexión', () => {
@@ -188,7 +188,7 @@ describe('AttendanceRealtimeSyncService', () => {
 
       emitStates('CONNECTED', 'RECONNECTING', 'CONNECTING', 'CONNECTED', 'CONNECTED');
 
-      expect(received.length).toBe(1);
+      expect(received).toHaveSize(1);
     });
 
     it('cada reconexión distinta produce exactamente un refresh', () => {
@@ -197,7 +197,7 @@ describe('AttendanceRealtimeSyncService', () => {
       emitStates('CONNECTED', 'RECONNECTING', 'CONNECTING', 'CONNECTED');
       emitStates('RECONNECTING', 'RECONNECTING', 'CONNECTED');
 
-      expect(received.length).toBe(2);
+      expect(received).toHaveSize(2);
     });
 
     it('la conexión inicial no refresca aunque haya varios CONNECTING previos', () => {
@@ -205,7 +205,7 @@ describe('AttendanceRealtimeSyncService', () => {
 
       emitStates('CONNECTING', 'CONNECTING', 'CONNECTED');
 
-      expect(received.length).toBe(0);
+      expect(received).toHaveSize(0);
     });
 
     it('el refresh de reconexión emite aunque no haya grupo ni sesión seleccionados aún', () => {
@@ -216,7 +216,7 @@ describe('AttendanceRealtimeSyncService', () => {
 
       emitStates('RECONNECTING', 'CONNECTING', 'CONNECTED');
 
-      expect(received.length).toBe(1);
+      expect(received).toHaveSize(1);
     });
   });
 

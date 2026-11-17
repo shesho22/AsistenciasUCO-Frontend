@@ -38,12 +38,12 @@ describe('AdminEstadosComponent (HU155, solo consulta)', () => {
     expect(host.textContent).toContain('pendiente');
     expect(host.textContent).toContain('cancelado por inasistencia');
     expect(host.textContent).not.toContain('Inactivo');
-    expect(host.querySelectorAll('button').length).toBe(0);
+    expect(host.querySelectorAll('button')).toHaveSize(0);
   });
 
   it('separa las filas por catálogo', () => {
     expect(filasDe(estados, 'SOLICITUD')).toEqual([{ id: 'e-1', codigo: 'P', nombre: 'pendiente' }]);
-    expect(filasDe(estados, 'ESTUDIANTE_GRUPO').length).toBe(1);
+    expect(filasDe(estados, 'ESTUDIANTE_GRUPO')).toHaveSize(1);
   });
 
   it('muestra el error del backend', () => {

@@ -105,7 +105,7 @@ describe('ConsolidadoAsistenciaComponent (HU061)', () => {
     expect(texto).toContain('93.75%');
     // Certificación F3: la columna cuenta sesiones ejecutadas, no las programadas del cronograma.
     expect(texto).toContain('Sesiones ejecutadas');
-    expect(fixture.componentInstance.periodos().length).toBe(1);
+    expect(fixture.componentInstance.periodos()).toHaveSize(1);
     // Las opciones salen del servidor y NO de las filas de la página (ASG-9 y DOC-7 no tienen fila)
     expect(fixture.componentInstance.asignaturas()).toEqual(OPCIONES.asignaturas);
     expect(fixture.componentInstance.docentes()).toEqual(OPCIONES.docentes);
@@ -134,7 +134,7 @@ describe('ConsolidadoAsistenciaComponent (HU061)', () => {
     expect(ancho('segmento-inasistencia')).toBe('10%');
     expect(ancho('segmento-excusa')).toBe('5.5%');
     expect(ancho('segmento-sin-registro')).toBe('24.5%');
-    expect(raiz.querySelectorAll('[data-testid="barra-distribucion"] > span').length).toBe(4);
+    expect(raiz.querySelectorAll('[data-testid="barra-distribucion"] > span')).toHaveSize(4);
     expect(raiz.querySelector('[data-testid="barra-distribucion"]')?.getAttribute('aria-label'))
       .toBe('Asistencia 60%, inasistencia 10%, excusa 5.5%, sin registro 24.5%');
   });

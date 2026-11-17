@@ -156,15 +156,15 @@ describe('AdminFestivosComponent (CULM-001 B.1, pantalla 3.7)', () => {
   it('B1-F-32 pagina los festivos con PaginationComponent', () => {
     crear();
     expect(el().querySelector('app-pagination')).not.toBeNull();
-    expect(qa('[data-testid^="festivo-fila-"]').length).toBe(10);
+    expect(qa('[data-testid^="festivo-fila-"]')).toHaveSize(10);
 
     component.onPaginaFestivos(2);
     fixture.detectChanges();
 
-    expect(qa('[data-testid^="festivo-fila-"]').length).toBe(9);
+    expect(qa('[data-testid^="festivo-fila-"]')).toHaveSize(9);
     component.onTamanoFestivos(20);
     fixture.detectChanges();
-    expect(qa('[data-testid^="festivo-fila-"]').length).toBe(19);
+    expect(qa('[data-testid^="festivo-fila-"]')).toHaveSize(19);
   });
 
   it('B1-F-33 estado de carga accesible mientras llega la respuesta', () => {
@@ -372,7 +372,7 @@ describe('AdminFestivosComponent (CULM-001 B.1, pantalla 3.7)', () => {
     expect(q('festivos-tabla')!.className).toContain('hidden');
     expect(q('festivos-tabla')!.className).toContain('md:block');
     expect(q('festivos-tarjetas')!.className).toContain('md:hidden');
-    expect(qa(`[data-testid^="festivo-card-"]`).length).toBe(10);
+    expect(qa(`[data-testid^="festivo-card-"]`)).toHaveSize(10);
     for (const id of ['recargar-anio', 'anio-actual', 'anio-siguiente', 'tab-festivos', 'tab-sesiones']) {
       expect(q(id)!.className).toContain('min-h-[44px]');
     }

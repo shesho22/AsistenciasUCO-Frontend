@@ -113,7 +113,7 @@ describe('DeanFacultyComponent', () => {
   it('muestra facultad, decano titular y planes reales de la estructura', () => {
     crear();
     const text = (fixture.nativeElement as HTMLElement).textContent || '';
-    expect(component.planes().length).toBe(2);
+    expect(component.planes()).toHaveSize(2);
     expect(text).toContain('Facultad de Ingeniería');
     expect(text).toContain('PRUEBA INTEGRACION DECANO UCO');
     expect(text).not.toContain('Decanatura Titular');
@@ -151,7 +151,7 @@ describe('DeanFacultyComponent', () => {
   it('CULM-001 muestra tres chips: grupos, planes y áreas, con los valores recibidos', () => {
     crear({ '/decano/indicadores': { body: { exitoso: true, datos: kpis({ gruposActivos: 1, matriculadosActivos: 32, cupoTotal: 35 }) } } });
     const el = fixture.nativeElement as HTMLElement;
-    expect(el.querySelectorAll('[aria-label="Cifras de la facultad"] li').length).toBe(3);
+    expect(el.querySelectorAll('[aria-label="Cifras de la facultad"] li')).toHaveSize(3);
     expect(el.querySelector('[data-testid="chip-grupos"]')?.textContent).toContain('1');
     expect(el.querySelector('[data-testid="chip-grupos"]')?.textContent).toContain('32 inscritos de 35 cupos');
     expect(el.querySelector('[data-testid="chip-planes"]')?.textContent).toContain('2');
@@ -202,6 +202,6 @@ describe('DeanFacultyComponent', () => {
     const text = (fixture.nativeElement as HTMLElement).textContent || '';
     expect(text).not.toContain('Módulos de Supervisión');
     expect(text).not.toContain('Ir a Grupos');
-    expect((fixture.nativeElement as HTMLElement).querySelectorAll('button').length).toBe(0);
+    expect((fixture.nativeElement as HTMLElement).querySelectorAll('button')).toHaveSize(0);
   });
 });

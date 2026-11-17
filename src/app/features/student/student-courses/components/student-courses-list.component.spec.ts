@@ -83,7 +83,7 @@ describe('StudentCoursesListComponent: paginacion y vacio (F-EST-013, F-EST-015)
       Array.from({ length: 15 }, (_, i) => crearMateria({ claveGrupo: `g-${i}`, nombre: `Materia ${i}` }))
     );
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelectorAll('app-card').length).toBe(12);
+    expect(fixture.nativeElement.querySelectorAll('app-card')).toHaveSize(12);
     expect(fixture.nativeElement.querySelector('app-pagination')).not.toBeNull();
   });
 });
@@ -177,7 +177,7 @@ describe('StudentCoursesListComponent: barra de horas de la materia (HU019)', ()
     expect(barra.getAttribute('role')).toBe('img');
     expect(barra.getAttribute('aria-label')).toBe('Asististe a 0.33 h de 4.97 h dictadas. El grupo tiene 8.97 h programadas.');
     expect(el(fixture, 'avance-curso')!.textContent).toContain('55% del curso dictado');
-    expect(el(fixture, 'leyenda-horas')!.querySelectorAll('li').length).toBe(3);
+    expect(el(fixture, 'leyenda-horas')!.querySelectorAll('li')).toHaveSize(3);
   });
 
   it('los tramos nunca pasan de 100 % ni el asistido sobresale del dictado', () => {

@@ -88,7 +88,7 @@ describe('TeacherGruposListComponent', () => {
     const text = (fixture.nativeElement as HTMLElement).textContent || '';
     expect(text).not.toContain('A-204');
     expect(text).not.toContain('Aula');
-    expect(fixture.componentInstance.filteredCourses().length).toBe(1);
+    expect(fixture.componentInstance.filteredCourses()).toHaveSize(1);
     fixture.componentInstance.searchQuery.set('a-204');
     expect(fixture.componentInstance.filteredCourses()).toEqual([]);
   });
@@ -100,7 +100,7 @@ describe('TeacherGruposListComponent', () => {
     fixture.componentInstance.searchQuery.set('mat');
 
     expect(() => fixture.detectChanges()).not.toThrow();
-    expect(fixture.componentInstance.filteredCourses().length).toBe(1);
+    expect(fixture.componentInstance.filteredCourses()).toHaveSize(1);
   });
 
   it('emite seleccionarGrupo al hacer clic en la tarjeta del grupo', () => {
@@ -133,7 +133,7 @@ describe('TeacherGruposListComponent', () => {
     fixture.componentInstance.nivelFormativo.set('TP-POS');
     expect(fixture.componentInstance.filteredCourses().map((c) => c.id)).toEqual(['crs-pos']);
     fixture.componentInstance.nivelFormativo.set('');
-    expect(fixture.componentInstance.filteredCourses().length).toBe(2);
+    expect(fixture.componentInstance.filteredCourses()).toHaveSize(2);
   });
 
   it('HU058: sin catálogo de tipos de programa no muestra el filtro', () => {
@@ -151,7 +151,7 @@ describe('TeacherGruposListComponent', () => {
 
     const vacio = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="grupos-vacio"]');
     expect(vacio?.textContent).toContain('Ningún grupo coincide');
-    expect((fixture.nativeElement as HTMLElement).querySelectorAll('app-card').length).toBe(0);
+    expect((fixture.nativeElement as HTMLElement).querySelectorAll('app-card')).toHaveSize(0);
   });
 
   it('F-DOC-S01: sin grupos asignados indica que aun no hay grupos', () => {

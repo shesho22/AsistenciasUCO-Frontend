@@ -72,7 +72,7 @@ describe('ProfileLinksComponent (HU006)', () => {
     fixture.detectChanges();
 
     const items = fixture.nativeElement.querySelectorAll('[data-testid="vinculo"]');
-    expect(items.length).toBe(3);
+    expect(items).toHaveSize(3);
     expect(items[0].textContent).toContain('Estudiante en');
     expect(items[0].textContent).toContain('Facultad de Ingeniería');
     expect(items[1].textContent).toContain('Docente en');

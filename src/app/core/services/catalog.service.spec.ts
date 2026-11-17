@@ -26,7 +26,7 @@ describe('CatalogService', () => {
     spyOnProperty(environment, 'useFrontendMocks', 'get').and.returnValue(false);
 
     service.getIdentityDocumentTypes().subscribe((tipos) => {
-      expect(tipos.length).toBe(2);
+      expect(tipos).toHaveSize(2);
       expect(tipos[0].tipoIdentificacion).toBe('CC');
     });
 
@@ -43,7 +43,7 @@ describe('CatalogService', () => {
 
     service.getTiposIdentificacion().subscribe((res) => {
       expect(res.exitoso).toBeTrue();
-      expect(res.datos.length).toBe(1);
+      expect(res.datos).toHaveSize(1);
       expect(res.datos[0].tipoIdentificacion).toBe('CC');
     });
 
@@ -57,7 +57,7 @@ describe('CatalogService', () => {
 
     service.getFacultades().subscribe((res) => {
       expect(res.exitoso).toBeTrue();
-      expect(res.datos.length).toBe(1);
+      expect(res.datos).toHaveSize(1);
       expect(res.datos[0].nombre).toBe('Facultad de Ingeniería');
     });
 

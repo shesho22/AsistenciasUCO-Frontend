@@ -96,7 +96,7 @@ describe('TeacherGrupoSabanaComponent — resumen del backend (CULM-001 B.2, F-D
 
     expect(matriz.consultarMatriz).toHaveBeenCalledWith('grp-1', 3, 50, '');
     expect(servicio.consultarResumen).toHaveBeenCalledWith('grp-1', 3, 50, '');
-    expect((fixture.nativeElement as HTMLElement).querySelectorAll('[data-testid^="sabana-resumen-"]').length).toBe(1);
+    expect((fixture.nativeElement as HTMLElement).querySelectorAll('[data-testid^="sabana-resumen-"]')).toHaveSize(1);
   });
 
   it('CIERRE-W3M buscar pide al servidor la busqueda en la pagina 1 para la matriz y para el resumen', fakeAsync(() => {
@@ -154,7 +154,7 @@ describe('TeacherGrupoSabanaComponent — resumen del backend (CULM-001 B.2, F-D
     crear(undefined, of(paginaMatriz(pagina, 120)));
 
     const filas = (fixture.nativeElement as HTMLElement).querySelectorAll('[data-testid^="sabana-resumen-"]');
-    expect(filas.length).toBe(50);
+    expect(filas).toHaveSize(50);
     expect((fixture.nativeElement as HTMLElement).querySelector('app-pagination')).not.toBeNull();
   });
 });

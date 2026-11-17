@@ -49,7 +49,7 @@ describe('StudentPortalMapper', () => {
         dto,
         { ...dto, idGrupo: GRUPO_2, nombreGrupo: 'Grupo 002' },
       ]);
-      expect(materias.length).toBe(2);
+      expect(materias).toHaveSize(2);
       expect(materias[0].id).toBe(materias[1].id);
       expect(new Set(materias.map((m) => m.claveGrupo)).size).toBe(2);
     });
@@ -61,7 +61,7 @@ describe('StudentPortalMapper', () => {
         { ...dto, idGrupo: '' },
         dto,
       ]);
-      expect(materias.length).toBe(1);
+      expect(materias).toHaveSize(1);
       expect(materias[0].id).toBe(ASIGNATURA);
     });
 
@@ -145,7 +145,7 @@ describe('StudentPortalMapper', () => {
         { ...dto, id: 'b1b2b3b4-0000-4000-8000-000000000002', dia: 'DOMINGO' },
         { ...dto, id: 'b1b2b3b4-0000-4000-8000-000000000003', horaInicio: 'x' },
       ]);
-      expect(horarios.length).toBe(1);
+      expect(horarios).toHaveSize(1);
     });
 
     it('mapea las sesiones de lunes a sabado en el formato real del backend, sin NaN ni undefined', () => {
@@ -370,7 +370,7 @@ describe('StudentPortalMapper', () => {
     });
 
     it('descarta sesiones sin UUID valido', () => {
-      expect(StudentPortalMapper.toSesiones([{ ...dto, id: 'undefined' }, dto], ASIGNATURA, formato).length).toBe(1);
+      expect(StudentPortalMapper.toSesiones([{ ...dto, id: 'undefined' }, dto], ASIGNATURA, formato)).toHaveSize(1);
     });
   });
 });
@@ -435,7 +435,7 @@ describe('StudentPortalMapper: puntos de control (minutos y tomas)', () => {
 
   it('una toma presente nunca es reclamable y una toma sin UUID válido se descarta', () => {
     const s = StudentPortalMapper.toSesion({ ...dto, tomas: [{ ...dto.tomas![0], reclamable: true }, { ...dto.tomas![1], idToma: 'no-uuid' }] }, ASIG, formato)!;
-    expect(s.tomas.length).toBe(1);
+    expect(s.tomas).toHaveSize(1);
     expect(s.tomas[0].reclamable).toBeFalse();
   });
 

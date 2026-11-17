@@ -326,7 +326,7 @@ describe('TeacherMatriculaModalComponent (HU176B)', () => {
     await crear();
     const raiz = fixture.nativeElement as HTMLElement;
     const visibles = Array.from(raiz.querySelectorAll('header button')).filter((b) => !b.hasAttribute('role'));
-    expect(visibles.length).toBe(3);
+    expect(visibles).toHaveSize(3);
     expect(raiz.querySelector('[data-testid="matricula-cerrar"]')).toBeNull();
     (raiz.querySelector('[data-testid="action-menu-trigger"]') as HTMLButtonElement).click();
     fixture.detectChanges();

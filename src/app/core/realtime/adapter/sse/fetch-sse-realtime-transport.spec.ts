@@ -97,7 +97,7 @@ describe('FetchSseRealtimeTransport', () => {
     transport.start({ grupoId: 'g1' });
     await flushAsync();
 
-    expect(fake.calls.length).toBe(1);
+    expect(fake.calls).toHaveSize(1);
     expect(fake.calls[0].input).toBe(
       `${environment.apiUrl}/realtime/stream?grupoId=g1`
     );
@@ -137,7 +137,7 @@ describe('FetchSseRealtimeTransport', () => {
     transport.start({ grupoId: 'g1' });
     await flushAsync();
 
-    expect(fake.calls.length).toBe(0);
+    expect(fake.calls).toHaveSize(0);
   });
 
   it('sin token disponible no conecta', async () => {
@@ -148,7 +148,7 @@ describe('FetchSseRealtimeTransport', () => {
     transport.start({ grupoId: 'g1' });
     await flushAsync();
 
-    expect(fake.calls.length).toBe(0);
+    expect(fake.calls).toHaveSize(0);
   });
 
   it('conexión exitosa emite el estado CONNECTED', async () => {
@@ -181,7 +181,7 @@ describe('FetchSseRealtimeTransport', () => {
       data: JSON.stringify(evt),
     });
 
-    expect(received.length).toBe(1);
+    expect(received).toHaveSize(1);
     expect(received[0]).toEqual(evt);
   });
 
@@ -199,7 +199,7 @@ describe('FetchSseRealtimeTransport', () => {
     call.init.onmessage?.({ id: '1', event: 'ASISTENCIAS_SESION_ACTUALIZADAS', data: 'not-json{{' });
     call.init.onmessage?.({ id: '2', event: 'ASISTENCIAS_SESION_ACTUALIZADAS', data: JSON.stringify({ foo: 'bar' }) });
 
-    expect(received.length).toBe(0);
+    expect(received).toHaveSize(0);
     expect(console.warn).toHaveBeenCalled();
   });
 
@@ -215,7 +215,7 @@ describe('FetchSseRealtimeTransport', () => {
 
     call.init.onmessage?.({ id: '', event: '', data: '' });
 
-    expect(received.length).toBe(0);
+    expect(received).toHaveSize(0);
   });
 
   it('event SSE y data.type inconsistentes se descartan', async () => {
@@ -236,7 +236,7 @@ describe('FetchSseRealtimeTransport', () => {
       data: JSON.stringify(evt),
     });
 
-    expect(received.length).toBe(0);
+    expect(received).toHaveSize(0);
     expect(console.warn).toHaveBeenCalled();
   });
 
@@ -264,7 +264,7 @@ describe('FetchSseRealtimeTransport', () => {
     const callsAfterStop = fake.calls.length;
     // Si quedara un timer de reconexión vivo, dispararía una nueva llamada.
     await new Promise((resolve) => setTimeout(resolve, 50));
-    expect(fake.calls.length).toBe(callsAfterStop);
+    expect(fake.calls).toHaveSize(callsAfterStop);
   });
 
   it('un fallo de red pasa a RECONNECTING', async () => {
@@ -295,7 +295,7 @@ describe('FetchSseRealtimeTransport', () => {
     await flushAsync();
 
     expect(authServiceSpy.refreshAccessToken).toHaveBeenCalledTimes(1);
-    expect(fake.calls.length).toBe(2);
+    expect(fake.calls).toHaveSize(2);
     expect(fake.calls[1].init.headers?.['Authorization']).toBe('Bearer token-new');
   });
 
@@ -313,7 +313,7 @@ describe('FetchSseRealtimeTransport', () => {
 
     expect(states).toContain('UNAUTHORIZED');
     expect(authServiceSpy.refreshAccessToken).toHaveBeenCalledTimes(1);
-    expect(fake.calls.length).toBe(1);
+    expect(fake.calls).toHaveSize(1);
   });
 
   it('403 es un error terminal, sin reintentos', async () => {
@@ -328,7 +328,7 @@ describe('FetchSseRealtimeTransport', () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     expect(states).toContain('ERROR');
-    expect(fake.calls.length).toBe(1);
+    expect(fake.calls).toHaveSize(1);
   });
 
   it('start() es idempotente: no abre dos streams simultáneos', async () => {
@@ -337,7 +337,7 @@ describe('FetchSseRealtimeTransport', () => {
     transport.start({ grupoId: 'g1' });
     await flushAsync();
 
-    expect(fake.calls.length).toBe(1);
+    expect(fake.calls).toHaveSize(1);
   });
 
   it('cambiar de grupo aborta el stream anterior y abre el nuevo scope', async () => {
@@ -350,7 +350,7 @@ describe('FetchSseRealtimeTransport', () => {
     await flushAsync();
 
     expect(previousCall.init.signal?.aborted).toBeTrue();
-    expect(fake.calls.length).toBe(2);
+    expect(fake.calls).toHaveSize(2);
     expect(fake.calls[1].input).toBe(
       `${environment.apiUrl}/realtime/stream?grupoId=g2`
     );
@@ -367,7 +367,7 @@ describe('FetchSseRealtimeTransport', () => {
     previousCall.resolve();
     await flushAsync();
 
-    expect(fake.calls.length).toBe(2);
+    expect(fake.calls).toHaveSize(2);
   });
 
   describe('reconexión offline → online (LB-001B.5)', () => {
@@ -393,12 +393,12 @@ describe('FetchSseRealtimeTransport', () => {
       const callsWhileOffline = fake.calls.length;
       fake.calls[0].resolve();
       await new Promise((r) => setTimeout(r, 30));
-      expect(fake.calls.length).toBe(callsWhileOffline);
+      expect(fake.calls).toHaveSize(callsWhileOffline);
 
       window.dispatchEvent(new Event('online'));
       await flushAsync();
       await flushAsync();
-      expect(fake.calls.length).toBe(callsWhileOffline + 1);
+      expect(fake.calls).toHaveSize(callsWhileOffline + 1);
 
       await connect(fake.calls[fake.calls.length - 1]);
       expect(states[states.length - 1]).toBe('CONNECTED');
@@ -428,7 +428,7 @@ describe('FetchSseRealtimeTransport', () => {
         retry: undefined,
       } as never);
 
-      expect(events.length).toBe(1);
+      expect(events).toHaveSize(1);
     });
 
     it('fallo de red mientras se pide el token (refresh sin red) no mata el loop', async () => {
@@ -440,7 +440,7 @@ describe('FetchSseRealtimeTransport', () => {
 
       transport.start({ grupoId: 'g1' });
       await flushAsync();
-      expect(fake.calls.length).toBe(0);
+      expect(fake.calls).toHaveSize(0);
       expect(states[states.length - 1]).toBe('RECONNECTING');
 
       authServiceSpy.getValidAccessToken.and.resolveTo('fresh-token');
@@ -448,7 +448,7 @@ describe('FetchSseRealtimeTransport', () => {
       await flushAsync();
       await flushAsync();
 
-      expect(fake.calls.length).toBe(1);
+      expect(fake.calls).toHaveSize(1);
       expect(fake.calls[0].init.headers?.['Authorization']).toBe('Bearer fresh-token');
     });
 
@@ -466,7 +466,7 @@ describe('FetchSseRealtimeTransport', () => {
       window.dispatchEvent(new Event('online'));
       await flushAsync();
       await flushAsync();
-      expect(fake.calls.length).toBe(1);
+      expect(fake.calls).toHaveSize(1);
     });
 
     it('sin sesión (token null) termina en DISCONNECTED sin reintentar', async () => {
@@ -482,7 +482,7 @@ describe('FetchSseRealtimeTransport', () => {
       await flushAsync();
 
       expect(states[states.length - 1]).toBe('DISCONNECTED');
-      expect(fake.calls.length).toBe(0);
+      expect(fake.calls).toHaveSize(0);
     });
 
     it('un fallo de red con navegador online reintenta con backoff y se puede despertar', async () => {
@@ -491,12 +491,12 @@ describe('FetchSseRealtimeTransport', () => {
       await flushAsync();
       fake.calls[0].reject(new TypeError('network error'));
       await flushAsync();
-      expect(fake.calls.length).toBe(1);
+      expect(fake.calls).toHaveSize(1);
 
       window.dispatchEvent(new Event('online'));
       await flushAsync();
       await flushAsync();
-      expect(fake.calls.length).toBe(2);
+      expect(fake.calls).toHaveSize(2);
     });
 
     it('stop() desregistra los listeners online/offline y no reabre', async () => {
@@ -506,7 +506,7 @@ describe('FetchSseRealtimeTransport', () => {
       transport.stop();
       window.dispatchEvent(new Event('online'));
       await flushAsync();
-      expect(fake.calls.length).toBe(1);
+      expect(fake.calls).toHaveSize(1);
     });
 
     it('403 sigue siendo terminal aunque vuelva la red', async () => {
@@ -517,7 +517,7 @@ describe('FetchSseRealtimeTransport', () => {
       await flushAsync();
       window.dispatchEvent(new Event('online'));
       await flushAsync();
-      expect(fake.calls.length).toBe(1);
+      expect(fake.calls).toHaveSize(1);
     });
   });
 
@@ -566,7 +566,7 @@ describe('FetchSseRealtimeTransport', () => {
 
       await connectThenOfflineThenOnline();
 
-      expect(fake.calls.length).toBe(2);
+      expect(fake.calls).toHaveSize(2);
       expect(states[states.length - 1]).toBe('RECONNECTING');
     });
 
@@ -580,7 +580,7 @@ describe('FetchSseRealtimeTransport', () => {
       await flushAsync();
       await flushAsync();
 
-      expect(fake.calls.length).toBe(3);
+      expect(fake.calls).toHaveSize(3);
       expect(statesAfterFirstConnected(states)).not.toContain('CONNECTING');
     });
 
@@ -645,7 +645,7 @@ describe('FetchSseRealtimeTransport', () => {
       await flushAsync();
       await connect(fake.calls[1]);
 
-      expect(states.filter((s) => s === 'CONNECTING').length).toBe(1);
+      expect(states.filter((s) => s === 'CONNECTING')).toHaveSize(1);
       expect(states[states.length - 1]).toBe('CONNECTED');
     });
 
@@ -696,7 +696,7 @@ describe('FetchSseRealtimeTransport', () => {
       await flushAsync();
 
       expect(fake.calls[0].init.signal?.aborted).toBeTrue();
-      expect(fake.calls.length).toBe(2);
+      expect(fake.calls).toHaveSize(2);
       expect(fake.calls[1].init.signal?.aborted).toBeFalse();
       expect(states[states.length - 1]).toBe('RECONNECTING');
 
@@ -708,7 +708,7 @@ describe('FetchSseRealtimeTransport', () => {
       setup();
       window.dispatchEvent(new Event('online'));
       await flushAsync();
-      expect(fake.calls.length).toBe(0);
+      expect(fake.calls).toHaveSize(0);
     });
 
     describe('watchdog', () => {
@@ -736,7 +736,7 @@ describe('FetchSseRealtimeTransport', () => {
         await micro();
 
         expect(fake.calls[0].init.signal?.aborted).toBeTrue();
-        expect(fake.calls.length).toBe(2);
+        expect(fake.calls).toHaveSize(2);
         expect(states.slice(-1)[0]).toBe('RECONNECTING');
 
         await connectMicro(fake.calls[1]);
@@ -747,7 +747,7 @@ describe('FetchSseRealtimeTransport', () => {
         await startConnected();
         jasmine.clock().tick(SSE_STALE_TIMEOUT_MS - 1000);
         await micro();
-        expect(fake.calls.length).toBe(1);
+        expect(fake.calls).toHaveSize(1);
       });
 
       it('C. el heartbeat rearma el watchdog y no llega a events$', async () => {
@@ -759,12 +759,12 @@ describe('FetchSseRealtimeTransport', () => {
         fake.calls[0].init.onmessage!(heartbeat);
         jasmine.clock().tick(SSE_STALE_TIMEOUT_MS - 5000);
         await micro();
-        expect(fake.calls.length).toBe(1);
+        expect(fake.calls).toHaveSize(1);
 
         jasmine.clock().tick(6000);
         await micro();
-        expect(fake.calls.length).toBe(2);
-        expect(events.length).toBe(0);
+        expect(fake.calls).toHaveSize(2);
+        expect(events).toHaveSize(0);
       });
 
       it('D. un evento de negocio llega a events$ y también rearma el watchdog', async () => {
@@ -782,8 +782,8 @@ describe('FetchSseRealtimeTransport', () => {
         jasmine.clock().tick(SSE_STALE_TIMEOUT_MS - 5000);
         await micro();
 
-        expect(events.length).toBe(1);
-        expect(fake.calls.length).toBe(1);
+        expect(events).toHaveSize(1);
+        expect(fake.calls).toHaveSize(1);
       });
 
       it('E. la generation 1 que resuelve tarde no crea otra conexión ni altera la generation 2', async () => {
@@ -808,9 +808,9 @@ describe('FetchSseRealtimeTransport', () => {
         jasmine.clock().tick(1000);
         await micro();
 
-        expect(fake.calls.length).toBe(2);
-        expect(events.length).toBe(0);
-        expect(states.length).toBe(statesBefore);
+        expect(fake.calls).toHaveSize(2);
+        expect(events).toHaveSize(0);
+        expect(states).toHaveSize(statesBefore);
       });
 
       it('F. dos eventos online seguidos no abren más de un stream', async () => {
@@ -821,7 +821,7 @@ describe('FetchSseRealtimeTransport', () => {
         await micro();
         await micro();
 
-        expect(fake.calls.length).toBe(2);
+        expect(fake.calls).toHaveSize(2);
         expect(fake.calls[1].init.signal?.aborted).toBeFalse();
       });
 
@@ -830,7 +830,7 @@ describe('FetchSseRealtimeTransport', () => {
         transport.stop();
         jasmine.clock().tick(SSE_STALE_TIMEOUT_MS * 2);
         await micro();
-        expect(fake.calls.length).toBe(1);
+        expect(fake.calls).toHaveSize(1);
       });
 
       it('offline limpia el watchdog: no fuerza reconexión sin red', async () => {
@@ -838,7 +838,7 @@ describe('FetchSseRealtimeTransport', () => {
         window.dispatchEvent(new Event('offline'));
         jasmine.clock().tick(SSE_STALE_TIMEOUT_MS * 2);
         await micro();
-        expect(fake.calls.length).toBe(1);
+        expect(fake.calls).toHaveSize(1);
       });
     });
   });

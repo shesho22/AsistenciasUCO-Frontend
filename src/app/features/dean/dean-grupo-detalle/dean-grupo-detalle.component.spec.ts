@@ -133,7 +133,7 @@ describe('DeanGrupoDetalleComponent', () => {
 
     const texto = fixture.nativeElement.textContent as string;
     expect(texto).toContain('13 sesiones');
-    expect(fixture.nativeElement.querySelectorAll('[data-testid^="sesion-fila-"]').length).toBe(13);
+    expect(fixture.nativeElement.querySelectorAll('[data-testid^="sesion-fila-"]')).toHaveSize(13);
     expect(texto).toContain('08:00 - 10:00');
   });
 
@@ -191,7 +191,7 @@ describe('DeanGrupoDetalleComponent', () => {
     fixture.detectChanges();
 
     const filas = fixture.nativeElement.querySelectorAll('[data-testid^="sesion-fila-"]') as NodeListOf<HTMLElement>;
-    expect(filas.length).toBe(2);
+    expect(filas).toHaveSize(2);
     expect(filas[0].textContent).not.toContain('Cancelada');
     expect(filas[1].textContent).toContain('Cancelada');
     expect(filas[1].textContent).toContain('Incapacidad');

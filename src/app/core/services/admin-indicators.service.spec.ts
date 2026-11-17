@@ -63,7 +63,7 @@ describe('AdminIndicatorsService', () => {
     const req = http.expectOne((r) => r.url === `${base}/comparativa-facultades`);
     expect(req.request.params.get('idPeriodoAcademico')).toBe('per-1');
     req.flush({ exitoso: true, datos: [facultad, { ...facultad, idFacultad: 'f-3', tasaRetencion: null, porcentajeAusentismo: null }] });
-    expect(service.comparativa().length).toBe(2);
+    expect(service.comparativa()).toHaveSize(2);
     expect(service.comparativa()[1].porcentajeAusentismo).toBeNull();
 
     let fallo: { status?: number } | undefined;
@@ -72,7 +72,7 @@ describe('AdminIndicatorsService', () => {
     expect(sin.request.params.keys()).toEqual([]);
     sin.flush({ message: 'x' }, { status: 403, statusText: 'Forbidden' });
     expect(fallo?.status).toBe(403);
-    expect(service.comparativa().length).toBe(2);
+    expect(service.comparativa()).toHaveSize(2);
   });
 
   it('consultarTendencia envía exactamente la granularidad indicada y publica los puntos', () => {
@@ -82,7 +82,7 @@ describe('AdminIndicatorsService', () => {
       expect(req.request.params.get('granularidad')).toBe(g);
       expect(req.request.params.get('idPeriodoAcademico')).toBe('per-1');
       req.flush({ exitoso: true, datos: [punto, { ...punto, inicioIntervalo: '2026-03-09', porcentajeAusentismo: null }] });
-      expect(service.tendencia().length).toBe(2);
+      expect(service.tendencia()).toHaveSize(2);
       expect(service.tendencia()[1].porcentajeAusentismo).toBeNull();
     }
 

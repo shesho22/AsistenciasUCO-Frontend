@@ -119,7 +119,7 @@ describe('TeacherClaimsComponent', () => {
 
   it('debe crearse y cargar reclamos exitosamente', () => {
     expect(component).toBeTruthy();
-    expect(component.reclamos().length).toBe(1);
+    expect(component.reclamos()).toHaveSize(1);
     expect(component.totalPendientes()).toBe(1);
     expect(component.listState()).toBe('LOADED');
   });
@@ -201,7 +201,7 @@ describe('TeacherClaimsComponent', () => {
       fixture.detectChanges();
 
       const tarjetas = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('[data-testid="tarjeta-toma"]'));
-      expect(tarjetas.length).toBe(1);
+      expect(tarjetas).toHaveSize(1);
       expect((tarjetas[0].textContent ?? '').replace(/\s+/g, ' ').trim()).toMatch(/^Toma 2 · \d{2}:\d{2}$/);
       // Misma hora local que el detalle (que agrega el estado actual de la toma)
       expect(component.textoTomaReclamada({ ...mockDetalle, ...deToma, estadoToma: 'AUSENTE' } as DetalleReclamoDocenteItem))
@@ -675,7 +675,7 @@ describe('TeacherClaimsComponent — bandeja paginada y detalle (HU035/HU036)', 
       const todos = http.expectOne((r) => r.url === LISTA && !r.params.has('busqueda') && !r.params.has('estado'));
       todos.flush({ exitoso: true, datos: [fila(ID_1)], total: 1 });
       http.expectOne((r) => r.url === LISTA && r.params.get('estado') === 'P').flush({ exitoso: true, datos: [], total: 1 });
-      expect(component.reclamos().length).toBe(1);
+      expect(component.reclamos()).toHaveSize(1);
     }));
 
     it('con el filtro Pendientes y una búsqueda activa el contador de pendientes se consulta aparte (no es el total filtrado)', fakeAsync(() => {
@@ -743,7 +743,7 @@ describe('TeacherClaimsComponent — bandeja paginada y detalle (HU035/HU036)', 
 
       spyOn(component, 'descargarSoporte');
       const downloadBtns = fixture.nativeElement.querySelectorAll('button[data-testid^="btn-descargar-soporte-"]');
-      expect(downloadBtns.length).toBe(2);
+      expect(downloadBtns).toHaveSize(2);
       downloadBtns[0].click();
       expect(component.descargarSoporte).toHaveBeenCalledWith(soportes[0]);
     });

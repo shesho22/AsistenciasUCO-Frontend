@@ -176,7 +176,7 @@ describe('TeacherGruposComponent', () => {
     component.cargarGrupos();
     fixture.detectChanges();
 
-    expect(component.courses().length).toBe(1);
+    expect(component.courses()).toHaveSize(1);
     const text = (fixture.nativeElement as HTMLElement).textContent || '';
     expect(text).toContain('Arquitectura de Software');
     expect(text).toContain('Grupo 001 - Arq Software');
@@ -662,7 +662,7 @@ describe('TeacherGruposComponent', () => {
       component.verHubGrupo(course);
 
       expect(studentService.getPadronGrupoPagina).toHaveBeenCalledOnceWith(course.id, { pagina: 1, tamano: 12, busqueda: '' });
-      expect(component.padronPagina().length).toBe(12);
+      expect(component.padronPagina()).toHaveSize(12);
       expect(component.totalPadron()).toBe(30);
       expect(component.cargandoPadron()).toBeFalse();
     });
@@ -702,7 +702,7 @@ describe('TeacherGruposComponent', () => {
       component.cambiarPaginaPadron(5);
 
       expect(component.paginaPadron()).toBe(3);
-      expect(component.padronPagina().length).toBe(6);
+      expect(component.padronPagina()).toHaveSize(6);
     });
 
     it('un error al cargar la página vacía el padrón, avisa y no queda cargando', () => {

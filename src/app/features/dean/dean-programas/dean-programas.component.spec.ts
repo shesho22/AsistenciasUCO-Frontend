@@ -114,7 +114,7 @@ describe('DeanProgramasComponent', () => {
   });
 
   it('debe cargar los planes de estudio y navegar a la malla por ruta', () => {
-    expect(component.planes().length).toBe(2);
+    expect(component.planes()).toHaveSize(2);
     expect(component.planesVigentes()).toBe(1);
     expect(component.planes()[0].codigo).toBe('INP-20241');
     expect(component.planes()[0].programa).toBe('Ingeniería de Sistemas');
@@ -191,7 +191,7 @@ describe('DeanProgramasComponent con más de una página de créditos', () => {
     http.expectOne((r) => r.url === url && r.params.get('tamano') === '100' && r.params.get('pagina') === '1').flush({ exitoso: true, datos: [filaCreditos('A', 1, 1, 3)], total: 101 });
     http.expectOne((r) => r.url === url && r.params.get('tamano') === '100' && r.params.get('pagina') === '2').flush({ exitoso: true, datos: [filaCreditos('B', 2, 1, 4)], total: 101 });
 
-    expect(fixture.componentInstance.creditos().length).toBe(2);
+    expect(fixture.componentInstance.creditos()).toHaveSize(2);
     expect(fixture.componentInstance.totalesDe('B')?.totalCreditos).toBe(4);
     http.match(() => true).forEach((req) => req.flush({ exitoso: true, datos: [] }));
   });

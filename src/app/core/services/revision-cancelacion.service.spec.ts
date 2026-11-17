@@ -82,7 +82,7 @@ describe('RevisionCancelacionService (CULM-001 C.1)', () => {
 
   it('C-F-06 consultarCoordinador() hace GET /api/v1/coordinador/revisiones-cancelacion con filtros', () => {
     service.consultarCoordinador({ soloPendientes: true, programaId: 'prg-1', pagina: 1, tamano: 20 }).subscribe((res) => {
-      expect(res.elementos.length).toBe(1);
+      expect(res.elementos).toHaveSize(1);
     });
 
     const req = httpMock.expectOne((r) => r.url === `${environment.apiUrl}/coordinador/revisiones-cancelacion`);
@@ -105,7 +105,7 @@ describe('RevisionCancelacionService (CULM-001 C.1)', () => {
 
   it('C-F-08 consultarDecano() hace GET /api/v1/decano/revisiones-cancelacion con filtros', () => {
     service.consultarDecano({ soloPendientes: true, pagina: 1, tamano: 10 }).subscribe((res) => {
-      expect(res.elementos.length).toBe(1);
+      expect(res.elementos).toHaveSize(1);
     });
 
     const req = httpMock.expectOne((r) => r.url === `${environment.apiUrl}/decano/revisiones-cancelacion`);
@@ -139,7 +139,7 @@ describe('RevisionCancelacionService (CULM-001 C.1)', () => {
 
   it('consultarDocente() hace GET /docente/revisiones-cancelacion con grupo y paginación', () => {
     service.consultarDocente({ soloPendientes: true, grupoId: 'grp-1', pagina: 1, tamano: 20 }).subscribe((res) => {
-      expect(res.elementos.length).toBe(1);
+      expect(res.elementos).toHaveSize(1);
     });
     const req = httpMock.expectOne((r) => r.url === `${environment.apiUrl}/docente/revisiones-cancelacion`);
     expect(req.request.method).toBe('GET');

@@ -63,14 +63,14 @@ describe('proxima-clase.util', () => {
   describe('parseScheduleString', () => {
     it('extrae días y horas desde cadenas complejas de horario', () => {
       const res = parseScheduleString('Lunes y Miércoles 08:00 - 10:00');
-      expect(res.length).toBe(2);
+      expect(res).toHaveSize(2);
       expect(res[0]).toEqual({ dia: 'Lunes', horaInicio: '08:00', horaFin: '10:00' });
       expect(res[1]).toEqual({ dia: 'Miércoles', horaInicio: '08:00', horaFin: '10:00' });
     });
 
     it('detecta todos los días de la semana en la cadena', () => {
       const res = parseScheduleString('Mar Jue Vie Sab Dom 14:00 - 16:00');
-      expect(res.length).toBe(5);
+      expect(res).toHaveSize(5);
     });
 
     it('retorna array vacío si el formato no contiene horas o es nulo', () => {

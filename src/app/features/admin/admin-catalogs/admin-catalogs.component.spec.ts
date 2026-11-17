@@ -39,7 +39,7 @@ describe('AdminCatalogsComponent - tipos de programa (HU154, solo consulta)', ()
     expect(host.textContent).toContain('PRE');
     expect(host.textContent).toContain('postgrado');
     expect(host.textContent).toContain('Inactivo');
-    expect(host.querySelectorAll('button').length).toBe(0);
+    expect(host.querySelectorAll('button')).toHaveSize(0);
   });
 
   it('muestra el error del backend si la carga falla', () => {
