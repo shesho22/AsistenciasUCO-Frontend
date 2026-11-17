@@ -26,16 +26,14 @@ export class StudentRegistrationConfigService {
     if (environment.useFrontendMocks) {
       return of(MOCK_EMAIL_DOMAIN);
     }
-    if (!this.cached$) {
-      this.cached$ = this.http
-        .get<ApiDataResponse<StudentRegistrationConfigDto>>(
-          `${environment.apiUrl}/configuracion/registro-estudiante`
-        )
-        .pipe(
-          map((response) => response.datos.dominioCorreo),
-          shareReplay({ bufferSize: 1, refCount: false })
-        );
-    }
+    this.cached$ ??= this.http
+      .get<ApiDataResponse<StudentRegistrationConfigDto>>(
+        `${environment.apiUrl}/configuracion/registro-estudiante`
+      )
+      .pipe(
+        map((response) => response.datos.dominioCorreo),
+        shareReplay({ bufferSize: 1, refCount: false })
+      );
     const current$ = this.cached$;
     return new Observable<string>((subscriber) => {
       const subscription = current$.subscribe({

@@ -70,25 +70,23 @@ function handle401(
   next: HttpHandlerFn,
   authService: AuthService
 ): Observable<HttpEvent<unknown>> {
-  if (!refreshInFlight$) {
-    refreshInFlight$ = defer(() => from(authService.refreshAccessToken())).pipe(
-      catchError(() => of(false)),
-      switchMap((refreshed) => {
-        const newToken = refreshed ? authService.token() : null;
-        if (!newToken) {
-          authService.notifySessionExpired();
-          return throwError(
-            () => new Error('No se pudo renovar el token de sesión')
-          );
-        }
-        return of(newToken);
-      }),
-      finalize(() => {
-        refreshInFlight$ = null;
-      }),
-      shareReplay({ bufferSize: 1, refCount: false })
-    );
-  }
+  refreshInFlight$ ??= defer(() => from(authService.refreshAccessToken())).pipe(
+    catchError(() => of(false)),
+    switchMap((refreshed) => {
+      const newToken = refreshed ? authService.token() : null;
+      if (!newToken) {
+        authService.notifySessionExpired();
+        return throwError(
+          () => new Error('No se pudo renovar el token de sesión')
+        );
+      }
+      return of(newToken);
+    }),
+    finalize(() => {
+      refreshInFlight$ = null;
+    }),
+    shareReplay({ bufferSize: 1, refCount: false })
+  );
 
   return refreshInFlight$.pipe(
     switchMap((token) =>
