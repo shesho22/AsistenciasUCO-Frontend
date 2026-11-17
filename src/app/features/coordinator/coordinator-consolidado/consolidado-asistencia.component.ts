@@ -3,13 +3,14 @@ import { Component, OnInit, inject, signal, effect, ChangeDetectionStrategy, Wri
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { Observable, map, tap } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { ConsultasTransversalesService } from '../../../core/services/consultas-transversales.service';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { CoordinatorIndicatorsService } from '../../../core/services/coordinator-indicators.service';
 import { DeanIndicatorsService } from '../../../core/services/dean-indicators.service';
 import { UMBRAL_ADVERTENCIA_RESPALDO, UMBRAL_PERDIDA_RESPALDO } from '../../../core/utils/nivel-asistencia';
-import { ConsolidadoGrupoItem } from '../../../core/models/consultas-transversales.model';
+import { ConsolidadoGrupoItem, OpcionConsolidado } from '../../../core/models/consultas-transversales.model';
+import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { PeriodoAcademicoItem } from '../../../core/models/role-management.model';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
@@ -25,22 +26,6 @@ const NUMERO_ES = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 2 });
 interface Umbrales {
   umbralAdvertencia: number;
   umbralPerdida: number;
-}
-
-interface Opcion {
-  id: string;
-  nombre: string;
-}
-
-/** Agrega a `opciones` los pares id/nombre nuevos de las filas, sin repetir y en orden alfabético. */
-export function acumularOpciones(opciones: Opcion[], filas: ConsolidadoGrupoItem[], campo: 'asignatura' | 'docente'): Opcion[] {
-  const mapa = new Map(opciones.map((o) => [o.id, o.nombre]));
-  for (const fila of filas) {
-    const id = campo === 'asignatura' ? fila.idAsignatura : fila.idDocente;
-    const nombre = campo === 'asignatura' ? fila.nombreAsignatura : fila.nombreDocente;
-    if (id && !mapa.has(id)) mapa.set(id, nombre || id);
-  }
-  return [...mapa.entries()].map(([id, nombre]) => ({ id, nombre })).sort((a, b) => a.nombre.localeCompare(b.nombre));
 }
 
 /**
@@ -71,7 +56,7 @@ export function acumularOpciones(opciones: Opcion[], filas: ConsolidadoGrupoItem
 
       <section class="superficie p-6 space-y-4">
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <select aria-label="Cohorte (período académico)" [ngModel]="idPeriodo()" (ngModelChange)="filtrar(idPeriodo, $event)"
+          <select aria-label="Cohorte (período académico)" [ngModel]="idPeriodo()" (ngModelChange)="cambiarPeriodo($event)"
             class="px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-800">
             <option value="">Todas las cohortes</option>
             @for (p of periodos(); track p.id) {
@@ -209,8 +194,9 @@ export class ConsolidadoAsistenciaComponent implements OnInit {
   idAsignatura = signal('');
   idDocente = signal('');
   periodos = signal<PeriodoAcademicoItem[]>([]);
-  asignaturas = signal<Opcion[]>([]);
-  docentes = signal<Opcion[]>([]);
+  /** Opciones COMPLETAS de materia y docente del ámbito y el período (las entrega el servidor, no se arman con las filas). */
+  asignaturas = signal<OpcionConsolidado[]>([]);
+  docentes = signal<OpcionConsolidado[]>([]);
   /**
    * PAR-06: umbrales del semaforo desde los parametros ASISTENCIA/UMBRAL_ALERTA_ADVERTENCIA y UMBRAL_ALERTA_PERDIDA, que el
    * backend publica en los KPI del coordinador o del decano. 15/20 solo son respaldo si los KPI no responden.
@@ -230,7 +216,7 @@ export class ConsolidadoAsistenciaComponent implements OnInit {
         },
         this.comoDecano
       );
-      return consulta.pipe(tap((res) => this.recordarOpciones(res.elementos ?? (res as { datos?: typeof res.elementos }).datos ?? [])));
+      return consulta;
     },
     (mensaje) => this.toast.error(mensaje)
   );
@@ -247,6 +233,7 @@ export class ConsolidadoAsistenciaComponent implements OnInit {
 
   ngOnInit(): void {
     this.listado.cargar();
+    this.cargarOpciones();
     if (!this.embebido()) this.cargarUmbrales();
     this.coordinador.getPeriodosAcademicos().subscribe({
       next: (res) => this.periodos.set(res.datos ?? []),
@@ -274,6 +261,16 @@ export class ConsolidadoAsistenciaComponent implements OnInit {
     }
   }
 
+  /** Las opciones de materia y docente dependen del período: al cambiarlo se recargan y se limpian esos dos filtros. */
+  cambiarPeriodo(valor: string): void {
+    this.idPeriodo.set(valor);
+    this.idAsignatura.set('');
+    this.idDocente.set('');
+    this.expandido.set(null);
+    this.cargarOpciones();
+    this.listado.buscar();
+  }
+
   filtrar(filtro: WritableSignal<string>, valor: string): void {
     filtro.set(valor);
     this.expandido.set(null);
@@ -294,9 +291,18 @@ export class ConsolidadoAsistenciaComponent implements OnInit {
     return `${NUMERO_ES.format(g.porcentajeInasistencia)} % · ${NUMERO_ES.format(horasFalta)} h de ${NUMERO_ES.format(g.horasDictadas)} h`;
   }
 
-  /** Las opciones de materia y docente se acumulan con lo que devuelve el backend (no se pierden al filtrar). */
-  private recordarOpciones(filas: ConsolidadoGrupoItem[]): void {
-    this.asignaturas.update((actuales) => acumularOpciones(actuales, filas, 'asignatura'));
-    this.docentes.update((actuales) => acumularOpciones(actuales, filas, 'docente'));
+  /** Asignaturas y docentes con grupos en el ámbito del usuario para el período elegido (todos si no hay período). */
+  private cargarOpciones(): void {
+    this.service.getOpcionesConsolidado(this.idPeriodo() || null, this.comoDecano).subscribe({
+      next: (res) => {
+        this.asignaturas.set(res.datos?.asignaturas ?? []);
+        this.docentes.set(res.datos?.docentes ?? []);
+      },
+      error: (error: unknown) => {
+        this.asignaturas.set([]);
+        this.docentes.set([]);
+        this.toast.error(getApiErrorMessage(error));
+      },
+    });
   }
 }

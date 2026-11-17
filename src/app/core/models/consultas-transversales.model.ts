@@ -215,3 +215,18 @@ export interface EstadoSistemaItem {
   codigo: string;
   nombre: string;
 }
+
+/** Una opción (id y nombre) de los filtros de materia y docente del consolidado. */
+export interface OpcionConsolidado {
+  id: string;
+  nombre: string;
+}
+
+/**
+ * CIERRE-W2A: `GET /coordinador|decano/consolidado-asistencia/opciones`. Asignaturas y docentes (titulares) con grupos dentro
+ * del ámbito del usuario para el período consultado, completos y ordenados por nombre.
+ */
+export interface OpcionesConsolidado {
+  asignaturas: OpcionConsolidado[];
+  docentes: OpcionConsolidado[];
+}
