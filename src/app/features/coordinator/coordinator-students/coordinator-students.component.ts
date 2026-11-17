@@ -65,13 +65,13 @@ type PestanaModulo = 'DIRECTORIO';
           <span class="text-[11px] text-warm-500">Estudiantes encontrados</span>
         </div>
         <div class="superficie p-4">
-          <span class="text-xs text-warm-500 font-medium">Activos en Página Actual</span>
-          <p class="text-2xl font-serif font-bold text-success-700 mt-1">{{ totalActivosPagina() }}</p>
+          <span class="text-xs text-warm-500 font-medium">Activos en el Programa</span>
+          <p class="text-2xl font-serif font-bold text-success-700 mt-1">{{ totalActivos() }}</p>
           <span class="text-[11px] text-success-700">Matrícula académica vigente</span>
         </div>
         <div class="superficie p-4">
-          <span class="text-xs text-warm-500 font-medium">Inactivos en Página Actual</span>
-          <p class="text-2xl font-serif font-bold text-warm-700 mt-1">{{ totalInactivosPagina() }}</p>
+          <span class="text-xs text-warm-500 font-medium">Inactivos en el Programa</span>
+          <p class="text-2xl font-serif font-bold text-warm-700 mt-1">{{ totalInactivos() }}</p>
           <span class="text-[11px] text-warm-500">Sin matrícula activa en el período</span>
         </div>
       </div>
@@ -220,13 +220,9 @@ export class CoordinatorStudentsComponent implements OnInit {
   filteredDirectorio = computed(() => this.directorio());
   paginatedDirectorio = computed(() => this.directorio());
 
-  totalActivosPagina = computed(
-    () => this.directorio().filter((e) => e.estadoMatricula === 'ACTIVO').length
-  );
-
-  totalInactivosPagina = computed(
-    () => this.directorio().filter((e) => e.estadoMatricula !== 'ACTIVO').length
-  );
+  /** Activos e inactivos del programa: los cuenta el servidor (filtro `activo`), no la página cargada. */
+  totalActivos = signal(0);
+  totalInactivos = signal(0);
 
   ngOnInit(): void {
     this.configureDirectorySearch();
@@ -284,6 +280,18 @@ export class CoordinatorStudentsComponent implements OnInit {
 
   cargarDatos(): void {
     this.ejecutarCargaDirecta();
+    this.cargarTotalesPorEstado();
+  }
+
+  private cargarTotalesPorEstado(): void {
+    this.coordinatorService
+      .getTotalEstudiantesPorEstado(true)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({ next: (total) => this.totalActivos.set(total), error: (error: unknown) => this.toast.error(getApiErrorMessage(error)) });
+    this.coordinatorService
+      .getTotalEstudiantesPorEstado(false)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({ next: (total) => this.totalInactivos.set(total), error: (error: unknown) => this.toast.error(getApiErrorMessage(error)) });
   }
 
   onDirectorioSearchChange(value: string): void {

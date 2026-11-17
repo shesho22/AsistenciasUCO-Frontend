@@ -14,6 +14,7 @@ import { ErrorCargaComponent } from '../../../shared/components/error-carga/erro
 import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load-error.util';
 import { franjaNueva, validarFranjas } from '../../../core/validation/franjas.util';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
+import { ListadoPaginado } from '../../../shared/utils/listado-paginado';
 import { FranjasEditorComponent } from '../../../shared/components/franjas-editor/franjas-editor.component';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
 import { getSafeTextError } from '../../../core/validation/form-fields.util';
@@ -69,7 +70,7 @@ interface GrupoForm {
             <p class="p-6 text-sm text-warm-500">Cargando grupos...</p>
           } @else if (errorCarga()) {
             <app-error-carga [error]="errorCarga()!" (reintentar)="cargarGrupos()" />
-          } @else if (grupos().length === 0) {
+          } @else if (listado.filas().length === 0) {
             <p class="p-6 text-sm text-warm-500" data-testid="sin-grupos">El programa aún no tiene grupos.</p>
           } @else {
             <table class="w-full text-sm">
@@ -84,7 +85,7 @@ interface GrupoForm {
                 </tr>
               </thead>
               <tbody>
-                @for (grupo of gruposPagina(); track grupo.id) {
+                @for (grupo of listado.filas(); track grupo.id) {
                   <tr class="border-t border-warm-100">
                     <td class="px-4 py-3 font-medium text-warm-900">{{ grupo.name }}</td>
                     <td class="px-4 py-3">{{ grupo.section }}</td>
@@ -102,13 +103,14 @@ interface GrupoForm {
             </table>
           }
         </div>
-        @if (!cargando() && grupos().length > 0) {
+        @if (!cargando() && listado.filas().length > 0) {
           <app-pagination
-            [totalItems]="grupos().length"
-            [pageSize]="tamanoPagina()"
-            [currentPage]="paginaActual()"
-            (pageChange)="paginaActual.set($event)"
-            (pageSizeChange)="cambiarTamano($event)"
+            [totalItems]="listado.total()"
+            [totalPages]="listado.totalPaginas()"
+            [pageSize]="listado.tamano()"
+            [currentPage]="listado.pagina()"
+            (pageChange)="listado.irAPagina($event)"
+            (pageSizeChange)="listado.cambiarTamano($event)"
           />
         }
       }
@@ -191,16 +193,14 @@ export class CoordinatorGroupsComponent implements OnInit {
 
   vista = signal<'LISTA' | 'FORM'>('LISTA');
   modo = signal<'CREAR' | 'EDITAR'>('CREAR');
-  cargando = signal<boolean>(true);
-  errorCarga = signal<LoadErrorState | null>(null);
   guardando = signal<boolean>(false);
-  grupos = signal<Course[]>([]);
-  paginaActual = signal(1);
-  tamanoPagina = signal(10);
-  gruposPagina = computed(() => {
-    const inicio = (this.paginaActual() - 1) * this.tamanoPagina();
-    return this.grupos().slice(inicio, inicio + this.tamanoPagina());
-  });
+  /** Los grupos del programa se pagina en el servidor (CIERRE-W2A): `total` y `totalPaginas` son los del servidor. */
+  readonly listado = new ListadoPaginado<Course>(
+    (pagina, tamano) => this.courseService.getCoordinatorCoursesPage({ pagina, tamano }),
+    (mensaje) => this.toast.error(mensaje || mensajeUi('UI_COORDINATOR_GROUPS_001'))
+  );
+  cargando = this.listado.cargando;
+  errorCarga = this.listado.error;
   asignaturas = signal<AsignaturaPlanItem[]>([]);
   periodos = signal<PeriodoAcademicoItem[]>([]);
   docentes = signal<DocentePrograma[]>([]);
@@ -219,25 +219,7 @@ export class CoordinatorGroupsComponent implements OnInit {
   }
 
   cargarGrupos(): void {
-    this.cargando.set(true);
-    this.errorCarga.set(null);
-    this.courseService.getCoordinatorCourses().subscribe({
-      next: (res) => {
-        this.grupos.set(res.datos ?? []);
-        this.paginaActual.set(1);
-        this.cargando.set(false);
-      },
-      error: (err: unknown) => {
-        this.cargando.set(false);
-        this.errorCarga.set(classifyLoadError(err));
-        this.toast.error(getApiErrorMessage(err) || mensajeUi('UI_COORDINATOR_GROUPS_001'));
-      },
-    });
-  }
-
-  cambiarTamano(tamano: number): void {
-    this.tamanoPagina.set(tamano);
-    this.paginaActual.set(1);
+    this.listado.cargar();
   }
 
   /** Asignaturas de los planes del programa, docentes activos del programa y períodos académicos. */

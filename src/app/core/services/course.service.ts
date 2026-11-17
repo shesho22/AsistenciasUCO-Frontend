@@ -5,7 +5,7 @@ import { environment } from '../../../environments/environment';
 import { ApiResponse } from '../models/api-response.model';
 import { ApiListResponse } from '../api/models/api-list-response.model';
 import { AsignaturaDocenteApiDto } from '../api/models/asignatura-docente-api-dto.model';
-import { GrupoApiDto } from '../api/models/grupo-api-dto.model';
+import { GrupoProgramaItem } from '../models/asistencia-programa.model';
 import { GrupoFacultadApiDto } from '../api/models/grupo-facultad-api-dto.model';
 import { ApiPageResponse } from '../api/models/api-page-response.model';
 import { obtenerTodasLasPaginas, paramsSinVacios } from '../api/pagination.util';
@@ -69,7 +69,7 @@ export class CourseService {
    */
   getDeanCourses(): Observable<ApiResponse<Course[]>> {
     if (environment.useMocks) {
-      return this.getGroupsAsCourses('decano/grupos');
+      return this.getGroupsAsCourses();
     }
     // B2NM: `GET /decano/grupos` es una página; la UI aún no pagina, así que se leen las páginas de 100 (contrato §4.1).
     return obtenerTodasLasPaginas<GrupoFacultadApiDto>(this.http, `${environment.apiUrl}/decano/grupos`).pipe(
@@ -139,51 +139,58 @@ export class CourseService {
     );
   }
 
-  /** Grupos para el coordinador (GET /grupos). Nunca usa los endpoints del docente (403 para su rol). */
-  getCoordinatorCourses(): Observable<ApiResponse<Course[]>> {
-    return this.getGroupsAsCourses('grupos');
-  }
-
-  private getGroupsAsCourses(path: string): Observable<ApiResponse<Course[]>> {
-    if (environment.useMocks) {
-      const courses = [...this.coursesSignal()];
-      return of({
-        exitoso: true,
-        total: courses.length,
-        datos: courses,
-      }).pipe(delay(250));
-    }
-
-    return this.http.get<ApiListResponse<GrupoApiDto>>(`${environment.apiUrl}/${path}`).pipe(
-      map((res) => {
-        const courses = this.buildCoursesFromGroups(res.datos ?? []);
-        return {
-          exitoso: res.exitoso,
-          total: courses.length,
-          datos: courses,
-        };
+  /**
+   * Una página de los grupos del programa del coordinador (GET /coordinador/grupos, CIERRE-W2A): la búsqueda, el período y la
+   * paginación los resuelve el servidor y `totalElementos` es el total real, no el tamaño de la página. Nunca usa los
+   * endpoints del docente (403 para su rol).
+   */
+  getCoordinatorCoursesPage(filtro: {
+    busqueda?: string | null;
+    idPeriodo?: string | null;
+    pagina: number;
+    tamano: number;
+  }): Observable<ApiPageResponse<Course>> {
+    return this.http
+      .get<ApiPageResponse<GrupoProgramaItem>>(`${environment.apiUrl}/coordinador/grupos`, {
+        params: paramsSinVacios({
+          busqueda: filtro.busqueda,
+          idPeriodo: filtro.idPeriodo,
+          pagina: filtro.pagina,
+          tamano: filtro.tamano,
+        }),
       })
-    );
+      .pipe(map((res) => ({ ...res, elementos: this.buildCoursesFromGruposPrograma(res.elementos ?? []) })));
   }
 
-  /** Solo los campos que entrega el contrato del grupo (F1: incluye las franjas del horario); sin aula ni nombre de docente sintetizados. */
-  private buildCoursesFromGroups(grupos: GrupoApiDto[]): Course[] {
+  /** Solo los campos que entrega el contrato del grupo (incluye las franjas del horario); sin aula ni nombre de docente sintetizados. */
+  private buildCoursesFromGruposPrograma(grupos: GrupoProgramaItem[]): Course[] {
     const colors: Course['colorCategory'][] = ['emerald', 'amber', 'blue', 'purple'];
-    return grupos.map(
-      (grupo, index): Course => ({
+    return grupos.map((grupo, index): Course => {
+      const franjas = toFranjas(grupo.franjas);
+      return {
         id: grupo.id,
-        code: grupo.codigo,
+        code: grupo.codigo === null || grupo.codigo === undefined ? undefined : String(grupo.codigo),
         name: grupo.nombreAsignatura,
         section: grupo.nombre,
-        schedule: describirFranjas(toFranjas(grupo)),
-        franjas: toFranjas(grupo),
-        asignaturaId: grupo.idAsignatura,
-        docenteId: grupo.idDocente,
-        enrolledStudentsCount: grupo.estudiantesActivos,
-        cupoMaximo: grupo.capacidadMaximaPermitida,
+        schedule: describirFranjas(franjas),
+        franjas,
+        asignaturaId: grupo.idAsignatura ?? undefined,
+        docenteId: grupo.idDocente ?? undefined,
+        enrolledStudentsCount: grupo.estudiantesActivos ?? undefined,
+        cupoMaximo: grupo.capacidadMaxima ?? undefined,
         colorCategory: colors[index % colors.length],
-      })
-    );
+      };
+    });
+  }
+
+  /** Solo con el simulador del frontend (USE_MOCKS): los grupos del estado local. */
+  private getGroupsAsCourses(): Observable<ApiResponse<Course[]>> {
+    const courses = [...this.coursesSignal()];
+    return of({
+      exitoso: true,
+      total: courses.length,
+      datos: courses,
+    }).pipe(delay(250));
   }
 
   private buildCourses(
@@ -354,8 +361,8 @@ export function describirFranjas(franjas: FranjaHorario[] | undefined): string {
   return (franjas ?? []).map((f) => `${f.nombreDia ?? f.dia} ${f.horaInicio}-${f.horaFin}`).join(', ');
 }
 
-function toFranjas(grupo: GrupoApiDto): FranjaHorario[] {
-  return (grupo.franjas ?? []).map((f) => ({
+function toFranjas(franjas: GrupoProgramaItem['franjas']): FranjaHorario[] {
+  return (franjas ?? []).map((f) => ({
     dia: f.codigoDia,
     nombreDia: f.nombreDia ?? undefined,
     horaInicio: f.horaInicio,

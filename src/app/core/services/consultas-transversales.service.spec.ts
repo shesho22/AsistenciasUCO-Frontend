@@ -97,6 +97,24 @@ describe('ConsultasTransversalesService (HU112/HU128/HU143/HU157)', () => {
     http.expectOne((r) => r.url === `${api}/decano/consolidado-asistencia`).flush({ exitoso: true, elementos: [], numeroPagina: 1, tamanoPagina: 10, totalElementos: 0, totalPaginas: 0 });
   });
 
+  it('CIERRE-W2A: las opciones del consolidado vienen del servidor por la ruta del rol y el período', () => {
+    let opciones: { asignaturas: unknown[]; docentes: unknown[] } | undefined;
+    service.getOpcionesConsolidado('per-1').subscribe((r) => (opciones = r.datos));
+    const req = http.expectOne((r) => r.url === `${api}/coordinador/consolidado-asistencia/opciones`);
+    expect(req.request.method).toBe('GET');
+    expect(req.request.params.get('idPeriodoAcademico')).toBe('per-1');
+    req.flush({ exitoso: true, datos: { asignaturas: [{ id: 'A1', nombre: 'Cálculo' }], docentes: [{ id: 'D1', nombre: 'Ana' }] } });
+    expect(opciones?.asignaturas).toEqual([{ id: 'A1', nombre: 'Cálculo' }]);
+    expect(opciones?.docentes).toEqual([{ id: 'D1', nombre: 'Ana' }]);
+  });
+
+  it('CIERRE-W2A: el decano usa su ruta y sin período no envía el parámetro', () => {
+    service.getOpcionesConsolidado(null, true).subscribe();
+    const req = http.expectOne((r) => r.url === `${api}/decano/consolidado-asistencia/opciones`);
+    expect(req.request.params.has('idPeriodoAcademico')).toBeFalse();
+    req.flush({ exitoso: true, datos: { asignaturas: [], docentes: [] } });
+  });
+
   it('HU172: la auditoría envía el rango, la acción y el filtro de asistencia retornando ApiPageResponse', () => {
     let responseAuditoria!: ObservedValueOf<ReturnType<typeof service.getAuditoria>>;
     service

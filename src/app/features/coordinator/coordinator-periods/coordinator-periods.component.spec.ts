@@ -49,7 +49,11 @@ describe('CoordinatorPeriodsComponent', () => {
       req.flush({ exitoso: true, datos: [] })
     );
     http.match(`${environment.apiUrl}/coordinador/periodos-academicos`).forEach((req) =>
-      req.flush({ exitoso: true, datos: mockPeriodos })
+      req.flush({ exitoso: true, datos: mockPeriodos, total: 3 })
+    );
+    // CIERRE-W2A: los activos los cuenta el servidor con el filtro `estado`, no la pantalla
+    http.match(`${environment.apiUrl}/coordinador/periodos-academicos?estado=ACTIVO`).forEach((req) =>
+      req.flush({ exitoso: true, datos: mockPeriodos, total: 1 })
     );
     fixture.detectChanges();
   });
@@ -61,14 +65,32 @@ describe('CoordinatorPeriodsComponent', () => {
   it('debe inicializarse y mostrar los períodos académicos y KPIs', () => {
     expect(component).toBeTruthy();
     expect(component.periodos().length).toBe(1);
-    expect(component.totalActivos()).toBe(1);
     expect(component.periodoActual()?.codigo).toBe('2026-2');
+  });
+
+  it('los totales salen del servidor y no de contar las filas cargadas', () => {
+    // La lista trae 1 fila, pero el servidor informa 3 períodos en total y 1 activo
+    expect(component.periodos().length).toBe(1);
+    expect(component.totalPeriodos()).toBe(3);
+    expect(component.totalActivos()).toBe(1);
+    const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(texto).toContain('3 Períodos');
   });
 
   it('muestra toast error si cargarPeriodos falla', () => {
     component.cargarPeriodos();
     const req = http.expectOne(`${environment.apiUrl}/coordinador/periodos-academicos`);
     req.flush({ error: 'Network error' }, { status: 500, statusText: 'Server Error' });
+    http.expectOne(`${environment.apiUrl}/coordinador/periodos-academicos?estado=ACTIVO`).flush({ exitoso: true, datos: [], total: 0 });
+
+    expect(toastSpy.error).toHaveBeenCalled();
+  });
+
+  it('muestra toast error si falla el total de períodos activos', () => {
+    component.cargarPeriodos();
+    http.expectOne(`${environment.apiUrl}/coordinador/periodos-academicos`).flush({ exitoso: true, datos: [], total: 0 });
+    http.expectOne(`${environment.apiUrl}/coordinador/periodos-academicos?estado=ACTIVO`)
+      .flush({ error: 'x' }, { status: 500, statusText: 'Server Error' });
 
     expect(toastSpy.error).toHaveBeenCalled();
   });

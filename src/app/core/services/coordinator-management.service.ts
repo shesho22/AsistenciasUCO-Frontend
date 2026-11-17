@@ -28,7 +28,7 @@ import {
   CaracterAsignatura,
 } from '../models/role-management.model';
 import { EstudiantePaginaApiDto } from '../api/models/estudiante-api-dto.model';
-import { AsistenciaSesionItem, GrupoProgramaItem, SesionGrupoItem } from '../models/asistencia-programa.model';
+import { AsistenciaSesionItem, SesionGrupoItem } from '../models/asistencia-programa.model';
 
 /** Plan de estudio tal como llega del backend (HU081-HU083) o ya con la forma de la pantalla. */
 type PlanEstudioApiDto = Partial<PlanEstudioItem> & {
@@ -98,19 +98,14 @@ export function normalizarEstudianteDirectorio(raw: EstudianteDirectorioApiDto |
 }
 
 /**
- * HU096-HU098: el backend devuelve el período con `nombre` (p. ej. 2026-2), `codigo` numérico y fechas; la pantalla
- * muestra el nombre como código y calcula el estado con las fechas (sin columna de estado en la DB).
+ * HU096-HU098: el backend devuelve el período con `nombre` (p. ej. 2026-2), `codigo` numérico, fechas y `estado`
+ * (PLANEACION, ACTIVO o CERRADO) resuelto en la base con la fecha local institucional; la pantalla muestra el nombre como
+ * código y NUNCA deduce el estado con el reloj del navegador (CIERRE-W2A).
  */
-export function normalizarPeriodoAcademico(
-  raw: PeriodoAcademicoApiDto | null | undefined,
-  hoy: Date = new Date()
-): PeriodoAcademicoItem {
+export function normalizarPeriodoAcademico(raw: PeriodoAcademicoApiDto | null | undefined): PeriodoAcademicoItem {
   const fechaInicio = String(raw?.fechaInicio ?? '');
   const fechaFin = String(raw?.fechaFin ?? '');
-  const dia = hoy.toISOString().slice(0, 10);
-  const calculado: PeriodoAcademicoItem['estado'] =
-    fechaInicio && dia < fechaInicio ? 'PLANEACION' : fechaFin && dia > fechaFin ? 'CERRADO' : 'ACTIVO';
-  const estado = raw?.estado ?? calculado;
+  const estado = raw?.estado as PeriodoAcademicoItem['estado'];
   return {
     id: raw?.id as string,
     codigo: raw?.idInstitucion !== undefined ? String(raw?.nombre ?? '') : String(raw?.codigo ?? raw?.nombre ?? ''),
@@ -119,6 +114,7 @@ export function normalizarPeriodoAcademico(
     fechaFin,
     fechaLimiteNotas: raw?.fechaLimiteNotas,
     estado,
+    // `esActual` se deriva del estado que ya resolvió la base (no de fechas ni del reloj del navegador)
     esActual: raw?.esActual ?? estado === 'ACTIVO',
   };
 }
@@ -331,6 +327,15 @@ export class CoordinatorManagementService {
     );
   }
 
+  /** Total de planes activos (vigentes): `totalElementos` del servidor con el filtro `estaActivo` y una página de un elemento. */
+  getTotalPlanesVigentes(): Observable<number> {
+    return this.http
+      .get<PaginaApi<PlanEstudioItem>>(`${environment.apiUrl}/coordinador/planes-estudio`, {
+        params: paramsPrograma(this.programaIdActual()).set('estaActivo', true).set('pagina', 1).set('tamano', 1),
+      })
+      .pipe(map((p) => Number(p.totalElementos ?? 0)));
+  }
+
   /**
    * HU079. Contrato del backend (`GuardarPlanEstudioRequest`): el cuerpo es solo `{ inp }` (entero positivo, año de
    * vigencia); el programa sale del coordinador autenticado. Cualquier otro campo responde 400 `FIELD_UNKNOWN`. La
@@ -471,18 +476,28 @@ export class CoordinatorManagementService {
     );
   }
 
-  /** Una fila por (asignatura, plan) del programa; programaId es obligatorio con varios programas. */
+  /**
+   * Una fila por (asignatura, plan) del programa; programaId es obligatorio con varios programas. La búsqueda, el carácter
+   * (código del catálogo `getCaracteresAsignatura`) y la paginación los resuelve el servidor: `totalElementos` es el total
+   * real del filtro.
+   */
   getAsignaturasPrograma(filtro: {
     busqueda?: string | null;
     estaActiva?: boolean | null;
+    caracter?: string | null;
     pagina: number;
     tamano: number;
-  }): Observable<ApiPageResponse<AsignaturaPlanItem>> {
+  }): Observable<PaginaApi<AsignaturaPlanItem>> {
     return this.http
-      .get<ApiPageResponse<AsignaturaPlanItem>>(`${environment.apiUrl}/coordinador/asignaturas`, {
+      .get<PaginaApi<AsignaturaPlanItem>>(`${environment.apiUrl}/coordinador/asignaturas`, {
         params: parametrosConsulta({ ...filtro, programaId: this.programaIdActual() }),
       })
-      .pipe(map((p) => ({ ...p, elementos: p.elementos.map(normalizarAsignaturaPlan) })));
+      .pipe(map((p) => ({ ...p, elementos: (p.elementos ?? []).map(normalizarAsignaturaPlan) })));
+  }
+
+  /** Total de vínculos asignatura-plan del programa (`totalElementos` del servidor, página de un elemento). */
+  getTotalAsignaturasVinculadas(): Observable<number> {
+    return this.getAsignaturasPrograma({ pagina: 1, tamano: 1 }).pipe(map((p) => Number(p.totalElementos ?? 0)));
   }
 
   /** P5: áreas de conocimiento reales para el formulario de asignaturas (GET /admin/areas, lectura compartida). */
@@ -500,6 +515,15 @@ export class CoordinatorManagementService {
         }
       })
     );
+  }
+
+  /** Total de períodos en un estado (PLANEACION, ACTIVO o CERRADO): el servidor filtra y entrega `total`; no toca la lista compartida. */
+  getTotalPeriodosPorEstado(estado: PeriodoAcademicoItem['estado']): Observable<number> {
+    return this.http
+      .get<ApiResponse<PeriodoAcademicoItem[]>>(`${environment.apiUrl}/coordinador/periodos-academicos`, {
+        params: parametrosConsulta({ estado }),
+      })
+      .pipe(map((res) => Number(res.total ?? res.datos?.length ?? 0)));
   }
 
   crearPeriodoAcademico(datos: Partial<PeriodoAcademicoItem>): Observable<ApiResponse<PeriodoAcademicoItem>> {
@@ -609,22 +633,17 @@ export class CoordinatorManagementService {
     return this.http.get<EstudiantePaginaApiDto>(`${environment.apiUrl}/estudiantes`, { params });
   }
 
+  /** Total de estudiantes del programa activos o inactivos: lo cuenta el servidor (`totalItems` con el filtro `activo`, página de uno). */
+  getTotalEstudiantesPorEstado(activo: boolean): Observable<number> {
+    return this.getEstudiantesDirectorioPagina({ page: 0, size: 1, activo }).pipe(map((p) => Number(p.totalItems ?? 0)));
+  }
+
   getEstudiantesPorGrupo(grupoId: string): Observable<ApiResponse<EstudianteDirectorioItem[]>> {
     return this.http.get<ApiResponse<EstudianteDirectorioItem[]>>(`${environment.apiUrl}/grupos/${grupoId}/estudiantes`);
   }
 
   // --- HU064/HU060/HU061: GRUPOS, SESIONES Y ASISTENCIAS DEL PROGRAMA (SOLO LECTURA) ---
-  getGruposPrograma(filtro: {
-    idPeriodo?: string | null;
-    busqueda?: string | null;
-    pagina: number;
-    tamano: number;
-  }): Observable<ApiResponse<GrupoProgramaItem[]>> {
-    return this.http.get<ApiResponse<GrupoProgramaItem[]>>(`${environment.apiUrl}/coordinador/grupos`, {
-      params: parametrosConsulta(filtro),
-    });
-  }
-
+  // Los grupos del programa los pide CourseService.getCoordinatorCoursesPage (GET /coordinador/grupos, paginado en el servidor).
   getSesionesGrupo(
     grupoId: string,
     filtro: { desde?: string | null; hasta?: string | null; pagina: number; tamano: number }

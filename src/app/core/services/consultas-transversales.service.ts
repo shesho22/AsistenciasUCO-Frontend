@@ -17,6 +17,7 @@ import {
   FiltroAuditoria,
   FiltroConsolidado,
   FiltroListado,
+  OpcionesConsolidado,
   ProgramaCreditosItem,
 } from '../models/consultas-transversales.model';
 import { parametros } from './dean-facultad.service';
@@ -68,6 +69,17 @@ export class ConsultasTransversalesService {
   /** HU061: una fila por grupo con el consolidado de asistencia; el ámbito lo decide el rol del usuario. */
   getConsolidadoAsistencia(filtro: FiltroConsolidado, comoDecano = false): Observable<ApiPageResponse<ConsolidadoGrupoItem>> {
     return this.listar(`${comoDecano ? this.decano : this.coordinador}/consolidado-asistencia`, filtro);
+  }
+
+  /**
+   * CIERRE-W2A: asignaturas y docentes con grupos dentro del ámbito del usuario (para el período, si se indica): las opciones
+   * COMPLETAS de los filtros del consolidado, no las filas ya vistas.
+   */
+  getOpcionesConsolidado(idPeriodoAcademico: string | null, comoDecano = false): Observable<ApiResponse<OpcionesConsolidado>> {
+    return this.http.get<ApiResponse<OpcionesConsolidado>>(
+      `${comoDecano ? this.decano : this.coordinador}/consolidado-asistencia/opciones`,
+      { params: parametros({ idPeriodoAcademico }) }
+    );
   }
 
   /** HU172: rastro de auditoría del administrador, paginado y con rango de fechas. */

@@ -77,6 +77,10 @@ describe('CoordinatorStudyPlanMeshPageComponent', () => {
     http
       .match(porUrl(`${environment.apiUrl}/coordinador/planes-estudio/PLAN-SIS-2024/asignaturas`))
       .forEach((req) => req.flush(paginaApi([vinculo])));
+    // CIERRE-W2A: las opciones del filtro de carácter salen del catálogo y no de las filas de la malla
+    http.match(`${environment.apiUrl}/coordinador/caracteres-asignatura`).forEach((req) =>
+      req.flush({ exitoso: true, datos: [{ codigo: 'OBL', nombre: 'Obligatoria', orden: 1 }, { codigo: 'OPT', nombre: 'Optativa', orden: 2 }] })
+    );
     fixture.detectChanges();
   });
 
@@ -313,5 +317,12 @@ describe('CoordinatorStudyPlanMeshPageComponent', () => {
     expect(toastSpy.error).toHaveBeenCalled();
     expect(component.aviso()).toBeTruthy();
     expect(component.selectedPlan()?.totalSemestres).toBe(10);
+  });
+
+  it('CIERRE-W2A: el filtro de carácter ofrece el catálogo completo aunque la página solo tenga filas obligatorias', () => {
+    expect(component.caracteres().map((c) => c.codigo)).toEqual(['OBL', 'OPT']);
+    const opciones = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('select option')).map((o) => o.textContent?.trim());
+    expect(opciones).toContain('Obligatoria');
+    expect(opciones).toContain('Optativa');
   });
 });

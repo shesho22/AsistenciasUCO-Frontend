@@ -306,17 +306,13 @@ describe('CourseService', () => {
 
   it('F1: el grupo del coordinador trae sus franjas y el texto del horario', () => {
     let courses: Course[] = [];
-    service.getCoordinatorCourses().subscribe((res) => (courses = res.datos));
-    http.expectOne(`${environment.apiUrl}/grupos`).flush({
-      exitoso: true,
-      total: 1,
-      datos: [grupoApi({
-        franjas: [
-          { codigoDia: 'LU', nombreDia: 'Lunes', horaInicio: '08:00', horaFin: '10:00' },
-          { codigoDia: 'MI', nombreDia: null, horaInicio: '14:00', horaFin: '16:00' },
-        ],
-      })],
-    });
+    service.getCoordinatorCoursesPage({ pagina: 1, tamano: 10 }).subscribe((res) => (courses = res.elementos));
+    http.expectOne(porUrl(`${environment.apiUrl}/coordinador/grupos`)).flush(paginaApi([grupoProgramaApi({
+      franjas: [
+        { codigoDia: 'LU', nombreDia: 'Lunes', horaInicio: '08:00', horaFin: '10:00' },
+        { codigoDia: 'MI', nombreDia: null, horaInicio: '14:00', horaFin: '16:00' },
+      ],
+    })]));
 
     expect(courses[0].franjas).toEqual([
       { dia: 'LU', nombreDia: 'Lunes', horaInicio: '08:00', horaFin: '10:00' },
@@ -324,21 +320,24 @@ describe('CourseService', () => {
     ]);
     expect(courses[0].schedule).toBe('Lunes 08:00-10:00, MI 14:00-16:00');
   });
+
   // --- Grupos por ambito (hallazgo del recorrido de vistas): decano y coordinador NO usan /docente/* ---
 
-  const grupoApi = (over: Record<string, unknown> = {}) => ({
+  /** Elemento de GET /coordinador/grupos (CIERRE-W2A). */
+  const grupoProgramaApi = (over: Record<string, unknown> = {}) => ({
     id: 'g1',
-    codigo: 'MAT-301',
+    codigo: 12,
     nombre: 'Sección A',
     idAsignatura: 'asig-1',
     nombreAsignatura: 'Matemática Avanzada III',
     idDocente: 'doc-1',
-    capacidadMaximaPermitida: 35,
+    capacidadMaxima: 35,
     estudiantesActivos: 28,
     cuposDisponibles: 7,
-    grupoHabilitado: true,
-    fechaInicioPeriodoAcademico: '2026-01-15',
-    fechaFinPeriodoAcademico: '2026-06-15',
+    habilitado: true,
+    inicioPeriodo: '2026-01-15',
+    finPeriodo: '2026-06-15',
+    franjas: [],
     ...over,
   });
 
@@ -403,17 +402,58 @@ describe('CourseService', () => {
     });
   });
 
-  it('getCoordinatorCourses lee GET /grupos y nunca los endpoints del docente', () => {
-    let courses: Course[] = [];
-    service.getCoordinatorCourses().subscribe((res) => (courses = res.datos));
+  it('getCoordinatorCoursesPage lee GET /coordinador/grupos paginado y nunca los endpoints del docente', () => {
+    let pagina: { elementos: Course[]; totalElementos: number; totalPaginas: number } | null = null;
+    service.getCoordinatorCoursesPage({ busqueda: 'calc', idPeriodo: 'per-1', pagina: 2, tamano: 10 }).subscribe((res) => (pagina = res));
 
-    const req = http.expectOne(`${environment.apiUrl}/grupos`);
+    const req = http.expectOne(porUrl(`${environment.apiUrl}/coordinador/grupos`));
     expect(req.request.method).toBe('GET');
-    req.flush({ exitoso: true, total: 1, datos: [grupoApi()] });
+    expect(req.request.params.get('busqueda')).toBe('calc');
+    expect(req.request.params.get('idPeriodo')).toBe('per-1');
+    expect(req.request.params.get('pagina')).toBe('2');
+    expect(req.request.params.get('tamano')).toBe('10');
+    req.flush(paginaApi([grupoProgramaApi()], 2, 10, 31));
 
-    expect(courses.length).toBe(1);
+    // El total y las páginas son los del servidor, no el tamaño de la página recibida
+    expect(pagina!.elementos.length).toBe(1);
+    expect(pagina!.totalElementos).toBe(31);
+    expect(pagina!.totalPaginas).toBe(4);
     http.expectNone(`${environment.apiUrl}/docente/asignaturas`);
     http.expectNone(`${environment.apiUrl}/docente/horarios`);
+  });
+
+  it('getCoordinatorCoursesPage omite los filtros vacíos', () => {
+    service.getCoordinatorCoursesPage({ busqueda: '  ', idPeriodo: null, pagina: 1, tamano: 12 }).subscribe();
+    const req = http.expectOne(porUrl(`${environment.apiUrl}/coordinador/grupos`));
+    expect(req.request.params.has('busqueda')).toBeFalse();
+    expect(req.request.params.has('idPeriodo')).toBeFalse();
+    req.flush(paginaApi([]));
+  });
+
+  it('getCoordinatorCoursesPage mapea cupo, docente, asignatura y código del grupo; los datos ausentes quedan sin definir', () => {
+    let courses: Course[] = [];
+    service.getCoordinatorCoursesPage({ pagina: 1, tamano: 10 }).subscribe((res) => (courses = res.elementos));
+    http.expectOne(porUrl(`${environment.apiUrl}/coordinador/grupos`)).flush(paginaApi([
+      grupoProgramaApi(),
+      grupoProgramaApi({ id: 'g2', codigo: null, idAsignatura: null, idDocente: null, capacidadMaxima: null, estudiantesActivos: null, franjas: undefined }),
+    ]));
+
+    expect(courses[0]).toEqual(jasmine.objectContaining({
+      id: 'g1', code: '12', name: 'Matemática Avanzada III', section: 'Sección A', asignaturaId: 'asig-1', docenteId: 'doc-1',
+      enrolledStudentsCount: 28, cupoMaximo: 35, schedule: '',
+    }));
+    expect(courses[1].code).toBeUndefined();
+    expect(courses[1].asignaturaId).toBeUndefined();
+    expect(courses[1].docenteId).toBeUndefined();
+    expect(courses[1].cupoMaximo).toBeUndefined();
+    expect(courses[1].franjas).toEqual([]);
+  });
+
+  it('getCoordinatorCoursesPage propaga el error HTTP sin inventar grupos', () => {
+    let status = 0;
+    service.getCoordinatorCoursesPage({ pagina: 1, tamano: 10 }).subscribe({ error: (err) => (status = err.status) });
+    http.expectOne(porUrl(`${environment.apiUrl}/coordinador/grupos`)).flush({}, { status: 500, statusText: 'Error' });
+    expect(status).toBe(500);
   });
 
   it('el mapeo del grupo conserva solo lo que entrega el contrato', () => {
@@ -438,12 +478,10 @@ describe('CourseService', () => {
 
   it('asigna colores de categoria de forma cíclica y estable', () => {
     let courses: Course[] = [];
-    service.getCoordinatorCourses().subscribe((res) => (courses = res.datos));
-    http.expectOne(`${environment.apiUrl}/grupos`).flush({
-      exitoso: true,
-      total: 5,
-      datos: [1, 2, 3, 4, 5].map((n) => grupoApi({ id: `g${n}` })),
-    });
+    service.getCoordinatorCoursesPage({ pagina: 1, tamano: 10 }).subscribe((res) => (courses = res.elementos));
+    http.expectOne(porUrl(`${environment.apiUrl}/coordinador/grupos`)).flush(
+      paginaApi([1, 2, 3, 4, 5].map((n) => grupoProgramaApi({ id: `g${n}` })))
+    );
 
     expect(courses.map((c) => c.colorCategory)).toEqual(['emerald', 'amber', 'blue', 'purple', 'emerald']);
   });
