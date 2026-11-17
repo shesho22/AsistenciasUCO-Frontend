@@ -55,7 +55,7 @@ import { PageHeaderComponent } from '../../../../shared/components/page-header/p
           </div>
           <div>
             <span class="text-xs text-warm-500 font-medium">Estudiantes Registrados</span>
-            <p class="text-2xl font-serif font-bold text-warm-900">{{ totalEstudiantes() }}</p>
+            <p class="text-2xl font-serif font-bold text-warm-900" data-testid="total-estudiantes">{{ totalEstudiantes() ?? '—' }}</p>
           </div>
         </div>
       </div>
@@ -188,9 +188,11 @@ export class TeacherGruposListComponent {
   searchQuery = signal<string>('');
   nivelFormativo = signal<string>('');
 
-  totalEstudiantes = computed(() =>
-    this.courses().reduce((acc, c) => acc + (c.enrolledStudentsCount || 0), 0)
-  );
+  /**
+   * CIERRE-W3I: estudiantes activos de los grupos habilitados del docente, calculados por el servidor
+   * (GET /docente/resumen-grupos); `null` mientras no llega o si falla (se muestra «—», nunca un 0 inventado).
+   */
+  totalEstudiantes = input<number | null>(null);
 
   filteredCourses = computed(() => {
     const q = this.searchQuery().trim().toLowerCase();

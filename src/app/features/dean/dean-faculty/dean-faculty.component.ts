@@ -1,10 +1,10 @@
 import { CifraConBaseComponent } from '../../../shared/components/cifra-con-base/cifra-con-base.component';
 import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
-import { CourseService } from '../../../core/services/course.service';
+import { DeanIndicatorsService } from '../../../core/services/dean-indicators.service';
 import { AdminManagementService } from '../../../core/services/admin-management.service';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { DeanFacultadService, planesDeLaEstructura } from '../../../core/services/dean-facultad.service';
-import { Course } from '../../../core/models/course.model';
+import { KpisDecano } from '../../../core/models/dean-indicators.model';
 import { FacultadNodo } from '../../../core/models/facultad-decano.model';
 import { PeriodoAcademicoItem, PlanEstudioItem } from '../../../core/models/role-management.model';
 import { BadgeComponent } from '../../../shared/components/badge/badge.component';
@@ -38,8 +38,10 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
 
         <ul class="flex flex-wrap gap-2" aria-label="Cifras de la facultad">
           <li class="px-3 py-1.5 rounded-xl bg-primary-50 border border-primary-200 text-xs text-primary-900" data-testid="chip-grupos">
-            <span class="font-bold">{{ gruposTotal() }}</span> Grupos
-            <span class="text-primary-700">· <app-cifra-con-base [valor]="totalEstudiantes()" [base]="totalCupos()" etiquetaValor="inscritos" etiquetaBase="cupos" /></span>
+            <span class="font-bold">{{ gruposTotal() }}</span> Grupos en curso
+            @if (kpis(); as k) {
+              <span class="text-primary-700">· <app-cifra-con-base [valor]="k.matriculadosActivos" [base]="k.cupoTotal" etiquetaValor="inscritos" etiquetaBase="cupos" /></span>
+            }
           </li>
           <li class="px-3 py-1.5 rounded-xl bg-accent-100 border border-accent-200 text-xs text-accent-900" data-testid="chip-planes">
             <span class="font-bold">{{ planesTotal() }}</span> Planes de Estudio
@@ -53,12 +55,16 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
   `
 })
 export class DeanFacultyComponent implements OnInit {
-  private courseService = inject(CourseService);
+  private deanIndicators = inject(DeanIndicatorsService);
   private adminService = inject(AdminManagementService);
   private coordService = inject(CoordinatorManagementService);
   private deanService = inject(DeanFacultadService);
 
-  courses = signal<Course[]>([]);
+  /**
+   * CIERRE-W3I: grupos, inscritos y cupos de la facultad salen de GET /decano/indicadores (grupos habilitados del período vigente,
+   * calculados en la base); antes se descargaban todas las páginas de grupos para sumarlas aquí.
+   */
+  kpis = signal<KpisDecano | null>(null);
   /** Áreas: lectura autorizada al DECANO (GET /admin/areas). */
   areas = this.adminService.areas;
   /** Facultad del decano autenticado (GET /decano/estructura); el ámbito lo fuerza el backend. */
@@ -80,7 +86,11 @@ export class DeanFacultyComponent implements OnInit {
     return secciones;
   });
 
-  gruposTotal = computed(() => (this.errorGrupos() ? '—' : String(this.courses().length)));
+  gruposTotal = computed(() => {
+    if (this.errorGrupos()) return '—';
+    const k = this.kpis();
+    return k === null ? 'Cargando…' : String(k.gruposActivos);
+  });
   planesTotal = computed(() => (this.errorEstructura() ? '—' : String(this.planes().length)));
   periodosTotal = computed(() => (this.errorPeriodos() ? '—' : String(this.periodos().length)));
   areasTotal = computed(() => (this.errorAreas() ? '—' : String(this.areas().length)));
@@ -99,20 +109,17 @@ export class DeanFacultyComponent implements OnInit {
     return actual ? actual.codigo : '—';
   });
 
-  totalEstudiantes = computed(() =>
-    this.courses().reduce((sum: number, c: Course) => sum + (c.enrolledStudentsCount || 0), 0)
-  );
-
-  totalCupos = computed(() => this.courses().reduce((sum: number, c: Course) => sum + (c.cupoMaximo ?? 0), 0));
-
   /**
    * Solo rutas de lectura autorizadas al DECANO. Espacios físicos, facultades, parámetros y auditoría son del
    * ADMINISTRADOR y los planes de /coordinador/** exigen alcance de programa: el decano obtiene sus planes de su
    * estructura de facultad.
    */
   ngOnInit(): void {
-    this.courseService.getDeanCourses().subscribe({
-      next: (res) => this.courses.set(res.datos || []),
+    this.deanIndicators.consultarKpis().subscribe({
+      next: (res) => {
+        this.kpis.set(res.datos ?? null);
+        this.errorGrupos.set(res.datos === null || res.datos === undefined);
+      },
       error: () => this.errorGrupos.set(true),
     });
     this.deanService.getEstructura().subscribe({

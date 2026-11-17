@@ -142,6 +142,24 @@ describe('RevisionesResolucionComponent (CULM-001 C.1 §4.5, §4.8)', () => {
     expect(fixture.nativeElement.querySelector('[data-testid="rev-motivo-docente"]').textContent).toContain('Ausencias constantes');
   });
 
+  it('CIERRE-W3I el nivel del semáforo de cada fila es el que clasifica el servidor (codigoPermanenciaActual), sin umbrales en el cliente', () => {
+    serviceMock.consultarCoordinador.and.returnValue(
+      of({
+        exitoso: true,
+        elementos: [
+          { ...mockRevision, id: 'rev-a', codigoPermanenciaActual: 'PERDIDA' },
+          { ...mockRevision, id: 'rev-b', codigoPermanenciaActual: 'RIESGO' },
+          // 22,5 % supera el limite de 20 de la fila, pero sin nivel del servidor no se inventa uno
+          { ...mockRevision, id: 'rev-c', codigoPermanenciaActual: null },
+        ],
+        numeroPagina: 1, tamanoPagina: 20, totalElementos: 3, totalPaginas: 1,
+      })
+    );
+    inicializar('COORDINADOR');
+    const chips = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('[data-testid="semaforo-nivel"]'));
+    expect(chips.map((c) => c.getAttribute('data-nivel'))).toEqual(['rojo', 'ambar']);
+  });
+
   it('Aprobar y Rechazar abren el modal con la decisión fija y la resolución usa esa decisión', () => {
     serviceMock.resolverCoordinador.and.returnValue(of({ exitoso: true, datos: mockRevision, mensajeUsuario: 'Listo.' }));
     inicializar('COORDINADOR');

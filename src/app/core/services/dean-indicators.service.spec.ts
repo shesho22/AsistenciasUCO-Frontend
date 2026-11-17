@@ -15,6 +15,7 @@ describe('DeanIndicatorsService', () => {
     totalProgramas: 3, totalEstudiantes: 6, estudiantesRegulares: 2, estudiantesRiesgo: 1, estudiantesPerdida: 3, tasaRetencion: 50,
     sesionesEjecutadas: 35, faltasSinJustaCausa: 6, porcentajeAusentismo: 17.14, porcentajeAsistencia: 82.86,
     gruposActivos: 3, cupoTotal: 55, matriculadosActivos: 7, tasaAforo: 12.73, umbralAdvertencia: 15, umbralPerdida: 20,
+    totalCoordinadores: 2, totalDocentes: 5,
   };
   const programa: ComparativaPrograma = {
     idPrograma: 'p-1', nombrePrograma: 'Sistemas', estaActivoPrograma: true, totalEstudiantes: 5, estudiantesRiesgo: 1, estudiantesPerdida: 2,

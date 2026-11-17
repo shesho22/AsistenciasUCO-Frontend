@@ -80,7 +80,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
                   <td>{{ formatoPorcentaje(a.porcentajeInasistencia) }}</td>
                   <td>{{ a.faltasSinJustaCausa }}</td>
                   <td>{{ a.codigoPermanencia }}</td>
-                  <td>{{ a.semaforo }} <app-semaforo-asistencia [porcentaje]="a.porcentajeInasistencia" [compacto]="true" /></td>
+                  <td>{{ a.semaforo }} <app-semaforo-asistencia [codigoPermanencia]="a.codigoPermanencia" [porcentaje]="a.porcentajeInasistencia" [compacto]="true" /></td>
                   <td><button type="button" class="text-info-700 hover:underline" (click)="abrirFicha(a)">Ficha</button></td>
                 </tr>
               }

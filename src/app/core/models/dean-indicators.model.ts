@@ -19,6 +19,9 @@ export interface KpisDecano {
   tasaAforo: number | null;
   umbralAdvertencia: number;
   umbralPerdida: number;
+  /** CIERRE-W3I: coordinadores activos y docentes con vinculo activo de la facultad (cada persona una sola vez). */
+  totalCoordinadores: number;
+  totalDocentes: number;
 }
 
 export interface ComparativaPrograma {

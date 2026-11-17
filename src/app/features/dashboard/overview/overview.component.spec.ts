@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { of, throwError } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
 import { signal } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { OverviewComponent } from './overview.component';
@@ -15,6 +15,7 @@ import { AdminIndicatorsService } from '../../../core/services/admin-indicators.
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { StudentManagementService } from '../../../core/services/student-management.service';
 import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
+import { TeacherGruposResumenService } from '../../../core/services/teacher-grupos-resumen.service';
 import { User, UserRole } from '../../../core/models/user.model';
 import { Course } from '../../../core/models/course.model';
 import {
@@ -45,6 +46,7 @@ describe('OverviewComponent', () => {
   let coordinatorServiceSpy: jasmine.SpyObj<CoordinatorManagementService>;
   let studentServiceSpy: jasmine.SpyObj<StudentManagementService>;
   let claimServiceSpy: jasmine.SpyObj<AttendanceClaimService>;
+  let gruposResumenSpy: jasmine.SpyObj<TeacherGruposResumenService>;
 
   const mockUserDocente: User = {
     id: 'user-doc-1',
@@ -190,15 +192,25 @@ describe('OverviewComponent', () => {
     }));
 
     adminIndicatorsSpy = jasmine.createSpyObj('AdminIndicatorsService', ['consultarKpis']);
-    adminIndicatorsSpy.consultarKpis.and.returnValue(of({ exitoso: true, datos: { totalProgramas: 4, porcentajeAsistencia: 96.54 } as never }));
+    adminIndicatorsSpy.consultarKpis.and.returnValue(
+      of({ exitoso: true, datos: { totalProgramas: 4, porcentajeAsistencia: 96.54, facultadesActivas: 3, totalDecanos: 3, decanosActivos: 1 } as never })
+    );
 
     deanIndicatorsSpy = jasmine.createSpyObj('DeanIndicatorsService', ['consultarKpis']);
     deanIndicatorsSpy.consultarKpis.and.returnValue(
-      of({ exitoso: true, datos: { porcentajeAsistencia: 82.86, gruposActivos: 5, nombrePeriodoAcademico: '2026-2' } as never })
+      of({
+        exitoso: true,
+        datos: { porcentajeAsistencia: 82.86, gruposActivos: 5, nombrePeriodoAcademico: '2026-2', totalCoordinadores: 4, totalDocentes: 37 } as never,
+      })
     );
 
     coordinatorIndicatorsSpy = jasmine.createSpyObj('CoordinatorIndicatorsService', ['consultarKpis']);
-    coordinatorIndicatorsSpy.consultarKpis.and.returnValue(of({ exitoso: true, datos: { estudiantesRiesgo: 3 } as never }));
+    coordinatorIndicatorsSpy.consultarKpis.and.returnValue(
+      of({
+        exitoso: true,
+        datos: { estudiantesRiesgo: 3, totalDocentes: 12, gruposActivos: 7, nombrePeriodoAcademico: '2026-2', estudiantesRegistrados: 5007 } as never,
+      })
+    );
 
     coordinadorSesionesSpy = jasmine.createSpyObj('CoordinadorSesionesService', ['contarPendientes']);
     coordinadorSesionesSpy.contarPendientes.and.returnValue(of(4));
@@ -215,6 +227,11 @@ describe('OverviewComponent', () => {
     coordinatorServiceSpy.getDocentes.and.returnValue(of({ exitoso: true, datos: mockDocentes }));
     coordinatorServiceSpy.getEstudiantesDirectorio.and.returnValue(
       of({ exitoso: true, datos: [{ id: 'est-1' } as never] })
+    );
+
+    gruposResumenSpy = jasmine.createSpyObj('TeacherGruposResumenService', ['consultar']);
+    gruposResumenSpy.consultar.and.returnValue(
+      of({ exitoso: true, datos: { gruposHabilitados: 1, estudiantesActivos: 31, cupoTotal: 40, tasaOcupacion: 77.5 } })
     );
 
     studentServiceSpy = jasmine.createSpyObj('StudentManagementService', ['getHorarios', 'getMaterias']);
@@ -246,6 +263,7 @@ describe('OverviewComponent', () => {
         { provide: CoordinatorProgramService, useValue: coordinatorProgramSpy },
         { provide: StudentManagementService, useValue: studentServiceSpy },
         { provide: AttendanceClaimService, useValue: claimServiceSpy },
+        { provide: TeacherGruposResumenService, useValue: gruposResumenSpy },
       ],
     }).compileComponents();
   });
@@ -267,8 +285,23 @@ describe('OverviewComponent', () => {
     expect(courseServiceSpy.getTeacherCourses).toHaveBeenCalled();
     expect(claimServiceSpy.getReclamosDocente.calls.mostRecent().args as unknown[]).toEqual([{ estado: 'P', pagina: 1, tamano: 1 }]);
     expect(component.pendingClaimsCount()).toBe(7);
-    expect(component.totalStudentsCount()).toBe(25);
+    // CIERRE-W3I: el total sale del servidor (31), no de sumar enrolledStudentsCount de los cursos cargados (25).
+    expect(gruposResumenSpy.consultar).toHaveBeenCalled();
+    expect(component.totalStudentsCount()).toBe(31);
     expect(component.isLoading()).toBeFalse();
+  });
+
+  it('DOCENTE: si el resumen de grupos falla no se inventa un total (null, la tarjeta muestra el guion)', () => {
+    gruposResumenSpy.consultar.and.returnValue(throwError(() => ({ status: 403 })));
+    createComponentWithRole('DOCENTE');
+    expect(component.totalStudentsCount()).toBeNull();
+    expect(component.courses.length).toBe(1);
+  });
+
+  it('DOCENTE: una respuesta sin datos deja el total en blanco', () => {
+    gruposResumenSpy.consultar.and.returnValue(of<never>({ exitoso: true, datos: null } as never));
+    createComponentWithRole('DOCENTE');
+    expect(component.totalStudentsCount()).toBeNull();
   });
 
   it('usa el total del servidor y no la longitud de la primera página para el contador de pendientes', () => {
@@ -296,92 +329,73 @@ describe('OverviewComponent', () => {
     expect(component.isLoading()).toBeFalse();
   });
 
+  const texto = (testid: string): string =>
+    ((fixture.nativeElement as HTMLElement).querySelector(`[data-testid="${testid}"]`)?.textContent ?? '').trim();
+
   it('debe inicializarse correctamente para rol ADMINISTRADOR', () => {
     createComponentWithRole('ADMINISTRADOR');
     expect(adminServiceSpy.getDecanos).toHaveBeenCalled();
     expect(component.decanos().length).toBe(1);
-    expect(component.totalFacultadesAdmin()).toBe(1);
+    expect(component.adminEstado()).toBe('listo');
     expect(component.isLoading()).toBeFalse();
   });
 
-  it('ADMIN: la tarjeta de programas refleja el total que entrega el backend y no una expresión sobre decanos', () => {
-
+  it('ADMIN: las facultades activas y los decanos salen del servidor, no del conjunto de decanos listados', () => {
+    // El directorio trae un solo decano; la institucion tiene 3 facultades activas (una sin decano en la lista) y 3 decanos.
     createComponentWithRole('ADMINISTRADOR');
-
     expect(adminIndicatorsSpy.consultarKpis).toHaveBeenCalled();
-
-    expect(component.totalProgramasAdmin()).toBe(4);
-
-    const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
-
-    expect(texto).toContain('Programas Académicos');
-
-    expect(texto).toMatch(/Programas Académicos\s*4/);
-
+    expect(component.decanos().length).toBe(1);
+    expect(texto('facultades-activas')).toBe('3');
+    expect(texto('decanos-activos')).toBe('1');
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('de 3 registrados');
+    expect(texto('programas')).toBe('4');
+    expect(texto('asistencia-campus')).toBe('96.54%');
   });
 
-
-
-  it('F3-ADM-02: Asistencia campus sale de /admin/indicadores y decanos en ejercicio solo cuenta los activos', () => {
-    adminServiceSpy.getDecanos.and.returnValue(of({
-      exitoso: true,
-      datos: [
-        { id: 'd1', estaActivoDecano: true },
-        { id: 'd2', estaActivoDecano: false },
-        { id: 'd3', estaActivoDecano: false },
-      ] as never,
-    }));
+  it('ADMIN: mientras los indicadores no llegan no se pinta un cero', () => {
+    adminIndicatorsSpy.consultarKpis.and.returnValue(new Observable(() => undefined));
     createComponentWithRole('ADMINISTRADOR');
-    const el = fixture.nativeElement as HTMLElement;
-    expect(el.querySelector('[data-testid="asistencia-campus"]')!.textContent!.trim()).toBe('96.54%');
-    expect(el.querySelector('[data-testid="decanos-activos"]')!.textContent!.trim()).toBe('1');
-    expect(el.textContent).toContain('3 registrados');
+    expect(component.adminEstado()).toBe('cargando');
+    expect(texto('facultades-activas')).toBe('Cargando…');
+    expect(texto('programas')).toBe('Cargando…');
   });
 
   it('F3-ADM-02: sin porcentajeAsistencia la tarjeta de campus muestra Sin datos, no 100%', () => {
     adminIndicatorsSpy.consultarKpis.and.returnValue(of({ exitoso: true, datos: { totalProgramas: 4, porcentajeAsistencia: null } as never }));
     createComponentWithRole('ADMINISTRADOR');
-    expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="asistencia-campus"]')!.textContent!.trim()).toBe('Sin datos');
+    expect(texto('asistencia-campus')).toBe('Sin datos');
+  });
+
+  it('ADMIN: sin total (null) la tarjeta de programas muestra Sin datos, no 0 ni 1', () => {
+    adminIndicatorsSpy.consultarKpis.and.returnValue(of({ exitoso: true, datos: { totalProgramas: null } as never }));
+    createComponentWithRole('ADMINISTRADOR');
+    expect(texto('programas')).toBe('Sin datos');
+  });
+
+  it('ADMIN: si la consulta de indicadores falla las tarjetas quedan en Sin datos y los decanos cargan', () => {
+    adminIndicatorsSpy.consultarKpis.and.returnValue(throwError(() => ({ status: 403 })));
+    createComponentWithRole('ADMINISTRADOR');
+    expect(component.adminEstado()).toBe('error');
+    expect(component.adminKpis()).toBeNull();
+    expect(texto('facultades-activas')).toBe('Sin datos');
+    expect(component.decanos().length).toBe(1);
+    expect(component.isLoading()).toBeFalse();
+  });
+
+  it('ADMIN: una respuesta sin datos se trata como fallo', () => {
+    adminIndicatorsSpy.consultarKpis.and.returnValue(of<never>({ exitoso: true, datos: null } as never));
+    createComponentWithRole('ADMINISTRADOR');
+    expect(component.adminEstado()).toBe('error');
   });
 
   it('F3-COO-01: la tarjeta fija de 92% se reemplaza por estudiantes en riesgo de /coordinador/indicadores y el rotulo dice Registrados', () => {
     createComponentWithRole('COORDINADOR');
     const el = fixture.nativeElement as HTMLElement;
-    expect(el.querySelector('[data-testid="estudiantes-riesgo"]')!.textContent!.trim()).toBe('3');
+    expect(texto('estudiantes-riesgo')).toBe('3');
     expect(el.textContent).toContain('Estudiantes Registrados');
     expect(el.textContent).not.toContain('Estudiantes Matriculados');
     expect(el.textContent).not.toContain('92%');
   });
-
-  it('ADMIN: sin total (null) la tarjeta de programas muestra Sin datos, no 0 ni 1', () => {
-
-    adminIndicatorsSpy.consultarKpis.and.returnValue(of({ exitoso: true, datos: { totalProgramas: null } as never }));
-
-    createComponentWithRole('ADMINISTRADOR');
-
-    expect(component.totalProgramasAdmin()).toBeNull();
-
-    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Sin datos');
-
-  });
-
-
-
-  it('ADMIN: si la consulta de indicadores falla la tarjeta queda en Sin datos y los decanos cargan', () => {
-
-    adminIndicatorsSpy.consultarKpis.and.returnValue(throwError(() => ({ status: 403 })));
-
-    createComponentWithRole('ADMINISTRADOR');
-
-    expect(component.totalProgramasAdmin()).toBeNull();
-
-    expect(component.decanos().length).toBe(1);
-
-    expect(component.isLoading()).toBeFalse();
-
-  });
-
-
 
   it('debe manejar error al cargar decanos para rol ADMINISTRADOR', () => {
     adminServiceSpy.getDecanos.and.returnValue(throwError(() => new Error('Error')));
@@ -393,39 +407,68 @@ describe('OverviewComponent', () => {
     createComponentWithRole('DECANO');
     expect(deanServiceSpy.getCoordinadores).toHaveBeenCalled();
     expect(component.coordinadores().length).toBe(1);
-    expect(component.totalDocentesFacultad()).toBe(10);
-    // DASH-13: los grupos en curso son los activos del período vigente de la facultad, no la suma por coordinador.
-    expect(component.gruposActivosFacultad()).toBe(5);
-    expect(component.periodoFacultad()).toBe('2026-2');
-    const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
-    expect(texto).not.toContain('Semestre 2026-II');
+    expect(component.deanEstado()).toBe('listo');
     expect(component.isLoading()).toBeFalse();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.textContent).not.toContain('Semestre 2026-II');
+  });
+
+  it('DECANO: coordinadores, docentes, grupos y periodo son los del servidor, no los de la lista de coordinadores', () => {
+    // La lista trae un coordinador con 10 docentes; el servidor cuenta 4 coordinadores y 37 docentes sin repetir (DASH-13).
+    createComponentWithRole('DECANO');
+    expect(texto('coordinadores')).toBe('4');
+    expect(texto('docentes')).toBe('37');
+    expect(texto('grupos')).toBe('5');
+    expect(texto('periodo')).toBe('2026-2');
+  });
+
+  it('F-DEC-01: mientras llegan los indicadores no se afirma "Sin período vigente"', () => {
+    deanIndicatorsSpy.consultarKpis.and.returnValue(new Observable(() => undefined));
+    createComponentWithRole('DECANO');
+    expect(component.deanEstado()).toBe('cargando');
+    expect(texto('grupos')).toBe('Cargando…');
+    expect(texto('periodo')).toBe('Cargando…');
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Sin período vigente');
+  });
+
+  it('F-DEC-01: "Sin período vigente" solo si el servidor respondió sin período', () => {
+    deanIndicatorsSpy.consultarKpis.and.returnValue(
+      of({ exitoso: true, datos: { gruposActivos: 0, nombrePeriodoAcademico: null, totalCoordinadores: 1, totalDocentes: 0, porcentajeAsistencia: null } as never })
+    );
+    createComponentWithRole('DECANO');
+    expect(texto('periodo')).toBe('Sin período vigente');
+    expect(texto('grupos')).toBe('0');
   });
 
   it('DECANO: la tarjeta de asistencia refleja el porcentaje que entrega el backend y no un valor fijo', () => {
     createComponentWithRole('DECANO');
     expect(deanIndicatorsSpy.consultarKpis).toHaveBeenCalled();
-    expect(component.porcentajeAsistenciaFacultad()).toBe(82.86);
-    const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
-    expect(texto).toContain('82.86%');
-    expect(texto).not.toContain('94%');
+    expect(texto('asistencia')).toBe('82.86%');
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('94%');
   });
 
   it('DECANO: sin porcentaje (null) la tarjeta muestra Sin datos, no 0%', () => {
     deanIndicatorsSpy.consultarKpis.and.returnValue(of({ exitoso: true, datos: { porcentajeAsistencia: null } as never }));
     createComponentWithRole('DECANO');
-    expect(component.porcentajeAsistenciaFacultad()).toBeNull();
-    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Sin datos');
+    expect(texto('asistencia')).toBe('Sin datos');
   });
 
-  it('DECANO: si la consulta de indicadores falla la tarjeta queda en Sin datos y el resto de la vista carga', () => {
+  it('DECANO: si la consulta de indicadores falla las tarjetas quedan en Sin datos y el resto de la vista carga', () => {
     deanIndicatorsSpy.consultarKpis.and.returnValue(throwError(() => ({ status: 403 })));
     createComponentWithRole('DECANO');
-    expect(component.porcentajeAsistenciaFacultad()).toBeNull();
-    expect(component.gruposActivosFacultad()).toBeNull();
+    expect(component.deanEstado()).toBe('error');
+    expect(component.deanKpis()).toBeNull();
     expect(component.coordinadores().length).toBe(1);
     expect(component.isLoading()).toBeFalse();
-    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Sin período vigente');
+    expect(texto('grupos')).toBe('Sin datos');
+    expect(texto('periodo')).toBe('Sin datos');
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Sin período vigente');
+  });
+
+  it('DECANO: una respuesta sin datos se trata como fallo', () => {
+    deanIndicatorsSpy.consultarKpis.and.returnValue(of<never>({ exitoso: true, datos: null } as never));
+    createComponentWithRole('DECANO');
+    expect(component.deanEstado()).toBe('error');
   });
 
   it('debe manejar error al cargar coordinadores para rol DECANO', () => {
@@ -487,12 +530,64 @@ describe('OverviewComponent', () => {
     createComponentWithRole('COORDINADOR');
     expect(coordinatorServiceSpy.getPlanesEstudio).toHaveBeenCalled();
     expect(coordinatorServiceSpy.getDocentes).toHaveBeenCalled();
-    expect(coordinatorServiceSpy.getEstudiantesDirectorio).toHaveBeenCalled();
     expect(component.planesEstudio().length).toBe(1);
     expect(component.docentes().length).toBe(1);
-    expect(component.totalGruposPrograma()).toBe(3);
-    expect(component.totalEstudiantesPrograma()).toBe(1);
+    expect(component.coordEstado()).toBe('listo');
     expect(component.isLoading()).toBeFalse();
+  });
+
+  it('F-COORD-01: los estudiantes registrados salen del servidor y no se descarga el directorio completo', () => {
+    // El directorio de la primera pagina trae 1 docente; el padron real del programa es 5007.
+    createComponentWithRole('COORDINADOR');
+    expect(coordinatorServiceSpy.getEstudiantesDirectorio).not.toHaveBeenCalled();
+    expect(texto('estudiantes')).toBe('5007');
+    expect(texto('docentes')).toBe('12');
+    expect(texto('grupos')).toBe('7');
+    expect(texto('periodo')).toBe('2026-2');
+  });
+
+  it('F-COORD-01: los indicadores se piden con el programa ya resuelto (antes de consultar, cargar el programa)', () => {
+    const orden: string[] = [];
+    coordinatorProgramSpy.cargar.and.callFake(() => {
+      orden.push('programa');
+      return of([]);
+    });
+    coordinatorIndicatorsSpy.consultarKpis.and.callFake(() => {
+      orden.push('indicadores');
+      return of({ exitoso: true, datos: { estudiantesRegistrados: 5007 } as never });
+    });
+    createComponentWithRole('COORDINADOR');
+    expect(orden).toEqual(['programa', 'indicadores']);
+  });
+
+  it('F-COORD-01: mientras llegan los indicadores el padron no se muestra como 0', () => {
+    coordinatorIndicatorsSpy.consultarKpis.and.returnValue(new Observable(() => undefined));
+    createComponentWithRole('COORDINADOR');
+    expect(component.coordEstado()).toBe('cargando');
+    expect(texto('estudiantes')).toBe('Cargando…');
+  });
+
+  it('F-COORD-01: si los indicadores fallan se muestra Sin datos y no 0', () => {
+    coordinatorIndicatorsSpy.consultarKpis.and.returnValue(throwError(() => ({ status: 400 })));
+    createComponentWithRole('COORDINADOR');
+    expect(component.coordEstado()).toBe('error');
+    expect(texto('estudiantes')).toBe('Sin datos');
+    expect(texto('estudiantes-riesgo')).toBe('Sin datos');
+  });
+
+  it('COORDINADOR: si no se pueden resolver los programas no se consultan indicadores y se muestra Sin datos', () => {
+    coordinatorProgramSpy.cargar.and.returnValue(throwError(() => ({ status: 403 })));
+    createComponentWithRole('COORDINADOR');
+    expect(coordinatorIndicatorsSpy.consultarKpis).not.toHaveBeenCalled();
+    expect(coordinadorSesionesSpy.contarPendientes).not.toHaveBeenCalled();
+    expect(component.coordEstado()).toBe('error');
+    expect(component.solicitudesSesionPendientes()).toBeNull();
+  });
+
+  it('COORDINADOR: una respuesta de indicadores sin datos se trata como fallo', () => {
+    coordinatorIndicatorsSpy.consultarKpis.and.returnValue(of<never>({ exitoso: true, datos: null } as never));
+    createComponentWithRole('COORDINADOR');
+    expect(component.coordEstado()).toBe('error');
   });
 
   it('DEC-065 (2): el coordinador ve las solicitudes de sesión pendientes de su programa con enlace a Asistencia', () => {

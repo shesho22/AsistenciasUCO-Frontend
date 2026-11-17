@@ -3,6 +3,8 @@ import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, inject, input, signal } from '@angular/core';
 import { DeanIndicatorsService } from '../../../core/services/dean-indicators.service';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
+import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load-error.util';
+import { ErrorCargaComponent } from '../../../shared/components/error-carga/error-carga.component';
 import { RolSinAmbito, rolSinAmbito } from '../../../core/api/errors/sin-ambito.util';
 import { SinEntidadAsignadaComponent } from '../../../shared/components/sin-entidad-asignada/sin-entidad-asignada.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
@@ -11,7 +13,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
 
 @Component({
     selector: 'app-dean-indicators',
-    imports: [PageHeaderComponent, KpiCardComponent, DecimalPipe, PaginationComponent, SinEntidadAsignadaComponent],
+    imports: [PageHeaderComponent, KpiCardComponent, DecimalPipe, PaginationComponent, SinEntidadAsignadaComponent, ErrorCargaComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
     <section class="space-y-6">
@@ -30,7 +32,11 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
       <div class="rounded-xl border border-neutral-100 bg-white p-4">
         <h2 class="text-lg font-semibold">Ausentismo por programa</h2>
         <p class="mb-3 text-xs text-neutral-500" data-testid="nota-horas">Calculado por horas dictadas.</p>
-        @if (service.comparativa().length === 0) {
+        @if (cargandoComparativa()) {
+          <p class="py-6 text-center text-sm text-neutral-500" role="status" data-testid="comparativa-cargando">Cargando programas…</p>
+        } @else if (errorComparativa(); as e) {
+          <app-error-carga [error]="e" (reintentar)="cargarComparativa()" />
+        } @else if (service.comparativa().length === 0) {
           <p class="py-6 text-center text-sm text-neutral-500">No hay programas en esta facultad.</p>
         } @else {
           <ul class="space-y-3">
@@ -132,6 +138,12 @@ export class DeanIndicatorsComponent implements OnInit {
     this.toast.error(getApiErrorMessage(e));
   };
 
+  /**
+   * F-DEC-02: la comparativa es la consulta más lenta de la pantalla. "No hay programas" solo se afirma con la respuesta recibida:
+   * mientras llega se muestra "Cargando" y si falla, el error con su reintento (antes ambos casos se veían como "vacío").
+   */
+  readonly cargandoComparativa = signal(true);
+  readonly errorComparativa = signal<LoadErrorState | null>(null);
   readonly tamano = 10;
   readonly pagina = signal(1);
   readonly filtroPrograma = signal('');
@@ -143,8 +155,24 @@ export class DeanIndicatorsComponent implements OnInit {
 
   cargar(): void {
     this.service.consultarKpis().subscribe({ error: this.fallo });
-    this.service.consultarComparativa().subscribe({ error: this.fallo });
+    this.cargarComparativa();
     this.cargarAforo();
+  }
+  cargarComparativa(): void {
+    this.cargandoComparativa.set(true);
+    this.errorComparativa.set(null);
+    this.service.consultarComparativa().subscribe({
+      next: () => this.cargandoComparativa.set(false),
+      error: (e: unknown) => {
+        this.cargandoComparativa.set(false);
+        if (rolSinAmbito(e)) {
+          this.fallo(e);
+          return;
+        }
+        this.errorComparativa.set(classifyLoadError(e));
+        this.fallo(e);
+      },
+    });
   }
 
   aplicarFiltros(): void {

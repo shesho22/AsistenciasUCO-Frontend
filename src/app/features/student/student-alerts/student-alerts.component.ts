@@ -71,7 +71,7 @@ const RUTA_MIS_MATERIAS = '/app/estudiante/mis-materias/materias';
 
                 <div class="text-xs font-bold" [class.text-danger-700]="alerta.tipo === 'PERDIDA'" [class.text-warning-800]="alerta.tipo !== 'PERDIDA'">
                   Inasistencia acumulada: {{ alerta.porcentajeActual ?? alerta.porcentajeCruce ?? 0 }}%
-                  <app-semaforo-asistencia [porcentaje]="alerta.porcentajeActual ?? alerta.porcentajeCruce ?? 0" [umbralPerdida]="alerta.umbralPerdida" />
+                  <app-semaforo-asistencia [codigoPermanencia]="alerta.codigoPermanenciaActual" [porcentaje]="alerta.porcentajeActual ?? alerta.porcentajeCruce" />
                 </div>
               </div>
 

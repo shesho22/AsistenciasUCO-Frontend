@@ -16,12 +16,13 @@ describe('ConsolidadoAsistenciaComponent (HU061)', () => {
   let toast: jasmine.SpyObj<ToastService>;
   const api = environment.apiUrl;
 
-  const grupo = (idAsignatura: string, nombreAsignatura: string, idDocente: string | null): ConsolidadoGrupoItem => ({
+  const grupo = (idAsignatura: string, nombreAsignatura: string, idDocente: string | null, codigoPermanencia: string | null = 'REGULAR'): ConsolidadoGrupoItem => ({
     idGrupo: `G-${idAsignatura}`, codigoGrupo: 1, nombreGrupo: 'Grupo 01', idPeriodoAcademico: 'PER-1',
     nombrePeriodoAcademico: '2026-2', idPrograma: 'PRG-1', nombrePrograma: 'Sistemas', idAsignatura, nombreAsignatura,
     idDocente, nombreDocente: idDocente ? 'Ana' : null, estudiantesActivos: 20, sesionesEjecutadas: 8, asistencias: 150,
     faltasSinJustaCausa: 10, excusas: 0, porcentajeAsistencia: 93.75, porcentajeInasistencia: 6.25,
     estudiantesRiesgo: 2, estudiantesPerdida: 1, horasDictadas: 16, porcentajeExcusa: 0, porcentajeSinRegistro: 0,
+    codigoPermanencia,
   });
 
   /** Opciones COMPLETAS del ámbito (CIERRE-W2A): incluyen materias y docentes que no están en las filas de la página. */
@@ -38,10 +39,7 @@ describe('ConsolidadoAsistenciaComponent (HU061)', () => {
     return rt;
   }
 
-  function crear(
-    comoDecano: boolean,
-    umbrales: { umbralAdvertencia: number; umbralPerdida: number } | null = { umbralAdvertencia: 15, umbralPerdida: 20 }
-  ): ComponentFixture<ConsolidadoAsistenciaComponent> {
+  function crear(comoDecano: boolean): ComponentFixture<ConsolidadoAsistenciaComponent> {
     toast = jasmine.createSpyObj('ToastService', ['success', 'error']);
     TestBed.configureTestingModule({
       imports: [ConsolidadoAsistenciaComponent],
@@ -62,41 +60,36 @@ describe('ConsolidadoAsistenciaComponent (HU061)', () => {
     });
     http.expectOne((r) => r.url === `${api}/${comoDecano ? 'decano' : 'coordinador'}/consolidado-asistencia/opciones`)
       .flush({ exitoso: true, datos: OPCIONES });
-    // PAR-06: los umbrales del semaforo salen de los KPI del rol (parametros ASISTENCIA/UMBRAL_ALERTA_*).
-    const kpis = http.expectOne((r) => r.url === `${api}/${comoDecano ? 'decano' : 'coordinador'}/indicadores`);
-    if (umbrales) {
-      kpis.flush({ exitoso: true, datos: umbrales });
-    } else {
-      kpis.flush({}, { status: 500, statusText: 'Error' });
-    }
     return fixture;
   }
 
   afterEach(() => http?.verify());
 
-  it('PAR-06 colorea la inasistencia con el umbral parametrizado de los KPI, no con un 15 fijo', () => {
-    const fixture = crear(false, { umbralAdvertencia: 5, umbralPerdida: 30 });
+  it('CIERRE-W3I el nivel del semaforo y el resalte los define el servidor (codigoPermanencia), sin umbrales en el cliente', () => {
+    const fixture = crear(false);
     http
       .expectOne((r) => r.url === `${api}/coordinador/consolidado-asistencia`)
-      .flush({ exitoso: true, datos: [grupo('ASG-1', 'Cálculo', 'DOC-1')], total: 1 });
+      .flush({
+        exitoso: true,
+        datos: [grupo('ASG-1', 'Cálculo', 'DOC-1', 'RIESGO'), grupo('ASG-2', 'Física', 'DOC-1', 'REGULAR'), grupo('ASG-3', 'Química', 'DOC-1', 'PERDIDA')],
+        total: 3,
+      });
     fixture.detectChanges();
 
-    expect(fixture.componentInstance.umbralAdvertencia()).toBe(5);
-    expect(fixture.componentInstance.umbralPerdida()).toBe(30);
-    const celda = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="inasistencia"]');
-    expect(celda?.className).toContain('text-danger-700');
+    const celdas = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('[data-testid="inasistencia"]'));
+    expect(celdas.map((c) => c.className.includes('text-danger-700'))).toEqual([true, false, true]);
+    expect(celdas.map((c) => c.querySelector('[data-testid="semaforo-nivel"]')?.getAttribute('data-nivel'))).toEqual(['ambar', 'verde', 'rojo']);
   });
 
-  it('PAR-06 conserva los umbrales de respaldo (15/20) si los KPI no responden', () => {
-    const fixture = crear(true, null);
+  it('CIERRE-W3I sin codigoPermanencia del servidor no se inventa un nivel ni se resalta', () => {
+    const fixture = crear(true);
     http.expectOne((r) => r.url === `${api}/decano/consolidado-asistencia`)
-      .flush({ exitoso: true, datos: [grupo('ASG-1', 'Cálculo', 'DOC-1')], total: 1 });
+      .flush({ exitoso: true, datos: [grupo('ASG-1', 'Cálculo', 'DOC-1', null)], total: 1 });
     fixture.detectChanges();
 
-    expect(fixture.componentInstance.umbralAdvertencia()).toBe(15);
-    expect(fixture.componentInstance.umbralPerdida()).toBe(20);
     const celda = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="inasistencia"]');
     expect(celda?.className).not.toContain('text-danger-700');
+    expect(celda?.querySelector('[data-testid="semaforo-nivel"]')).toBeNull();
   });
 
   it('el coordinador consulta su ruta y ve las métricas por grupo', () => {

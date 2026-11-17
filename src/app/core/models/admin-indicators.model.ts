@@ -25,6 +25,11 @@ export interface KpisInstitucion {
   docentesRegistrados: number;
   umbralAdvertencia: number;
   umbralPerdida: number;
+  /** CIERRE-W3I: facultades activas de la institucion (totalFacultades incluye las inactivas). */
+  facultadesActivas: number;
+  /** CIERRE-W3I: decanos de las facultades de la institucion y los que estan en ejercicio (usuario, rol y facultad activos). */
+  totalDecanos: number;
+  decanosActivos: number;
 }
 
 export interface ComparativaFacultad {

@@ -60,6 +60,21 @@ describe('StudentAlertsComponent (CULM-001 C.1 §4.3, §4.8)', () => {
     expect(card.textContent).toContain('16%');
   });
 
+  it('CIERRE-W3I el semáforo de la alerta es el nivel de permanencia vigente que clasifica el servidor', () => {
+    expect(fixture.nativeElement.querySelector('[data-testid="semaforo-nivel"]')).toBeNull();
+
+    serviceMock.consultar.and.returnValue(
+      of({
+        exitoso: true, elementos: [{ ...mockAlerta, codigoPermanenciaActual: 'RIESGO' }],
+        numeroPagina: 1, tamanoPagina: 20, totalElementos: 1, totalPaginas: 1,
+      })
+    );
+    component.cargar();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="semaforo-nivel"]')?.getAttribute('data-nivel')).toBe('ambar');
+  });
+
   it('C-F-43 diseño móvil primero con objetivos táctiles >= 44x44px', () => {
     const btnVerMateria = fixture.nativeElement.querySelector('[data-testid="btn-ver-materia-alt-1"]') as HTMLElement;
     expect(btnVerMateria).toBeTruthy();

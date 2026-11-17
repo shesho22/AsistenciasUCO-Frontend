@@ -16,6 +16,7 @@ describe('CoordinatorIndicatorsService', () => {
     totalEstudiantes: 5, estudiantesRegulares: 2, estudiantesRiesgo: 1, estudiantesPerdida: 2, tasaPermanencia: 60,
     sesionesProgramadas: 15, sesionesVencidas: 10, sesionesEjecutadas: 9, sesionesVencidasSinRegistro: 1, sesionesSinProcedenciaTemporal: 1,
     porcentajeCumplimiento: 90, porcentajeProgresoCalendario: 66.67, umbralAdvertencia: 15, umbralPerdida: 20,
+    totalDocentes: 4, gruposActivos: 3, cupoTotal: 90, matriculadosActivos: 60, tasaAforo: 66.67, estudiantesRegistrados: 120,
   };
   const alerta: AlertaTemprana = {
     idEstudiante: 'e-1', nombreCompleto: 'Ana Pérez', numeroIdentificacion: 1017000001, correo: 'ana@uco.edu.co',

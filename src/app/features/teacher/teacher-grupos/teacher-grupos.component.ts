@@ -15,6 +15,7 @@ import { GroupService } from '../../../core/services/group.service';
 import { StudentService } from '../../../core/services/student.service';
 import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
 import { AttendanceMapper } from '../../../core/mappers/attendance.mapper';
+import { TeacherGruposResumenService } from '../../../core/services/teacher-grupos-resumen.service';
 import { TeacherMatrizAsistenciaService } from '../../../core/services/teacher-matriz-asistencia.service';
 import { ResumenSesionesGrupo } from '../../../core/models/resumen-sesiones-grupo.model';
 import { ToastService } from '../../../shared/components/toast/toast.component';
@@ -58,6 +59,7 @@ type VistaGrupos = 'LISTA' | 'HUB_GRUPO' | 'FORM_SESION';
       @if (vistaActual() === 'LISTA') {
         <app-teacher-grupos-list
           [courses]="courses()"
+          [totalEstudiantes]="totalEstudiantes()"
           [tiposPrograma]="tiposPrograma()"
           [isLoading]="isLoading()"
           [sessionQrEnabled]="sessionQrEnabled"
@@ -162,6 +164,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   private studentService = inject(StudentService);
   private resumenSesionesService = inject(TeacherMatrizAsistenciaService);
   private claimService = inject(AttendanceClaimService);
+  private gruposResumen = inject(TeacherGruposResumenService);
   private router = inject(Router);
   private route = inject(ActivatedRoute, { optional: true });
   private toast = inject(ToastService);
@@ -253,8 +256,15 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
     this.detenerEscuchaCancelaciones();
   }
 
+  /** CIERRE-W3I: total de estudiantes activos de sus grupos habilitados, calculado en la base (no se suma en el cliente). */
+  readonly totalEstudiantes = signal<number | null>(null);
+
   cargarGrupos(): void {
     this.isLoading.set(true);
+    this.gruposResumen.consultar().subscribe({
+      next: (res) => this.totalEstudiantes.set(res.datos?.estudiantesActivos ?? null),
+      error: () => this.totalEstudiantes.set(null),
+    });
     this.courseService.getTeacherCourses().subscribe({
       next: (coursesRes) => {
         const teacherCourses = coursesRes.datos || [];
