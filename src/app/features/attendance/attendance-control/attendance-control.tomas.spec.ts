@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { TeacherAttendanceSummaryService } from '../../../core/services/teacher-attendance-summary.service';
+import { TeacherMatrizAsistenciaService } from '../../../core/services/teacher-matriz-asistencia.service';
+import { resumenSesiones } from '../../../core/testing/resumen-sesiones-grupo.fixture';
 import { NEVER, Subject, of, throwError } from 'rxjs';
 import { AttendanceService } from '../../../core/services/attendance.service';
 import { CatalogService } from '../../../core/services/catalog.service';
@@ -118,7 +119,7 @@ describe('AttendanceControlComponent tomas (CULM-001 B.2)', () => {
         { provide: StudentRegistrationConfigService, useValue: { getEmailDomain: () => of('') } },
         { provide: EmailVerificationService, useValue: { resendVerification: () => NEVER } },
         { provide: TomaAsistenciaService, useValue: tomaService },
-        { provide: TeacherAttendanceSummaryService, useValue: { consultarResumen: () => NEVER } },
+        { provide: TeacherMatrizAsistenciaService, useValue: { consultarResumenSesiones: () => NEVER } },
         { provide: AsistenciaQrService, useValue: qrService },
         { provide: RealtimeService, useValue: { startForGroup: () => undefined, listenType: () => NEVER, connectionState$: NEVER } },
         { provide: ATTENDANCE_NOW, useValue: () => nowMs },
@@ -265,15 +266,13 @@ describe('AttendanceControlComponent tomas (CULM-001 B.2)', () => {
     expect(tomaService.consultarTomas).toHaveBeenCalledWith('session-1');
   });
 
-  it('B2-F-24 el resumen del grupo se pide en paginas de 100 (maximo del backend) y se acumula', () => {
-    const resumenes = TestBed.inject(TeacherAttendanceSummaryService) as unknown as { consultarResumen: jasmine.Spy };
-    const fila = (id: string) => ({ estudianteId: id }) as never;
-    resumenes.consultarResumen = jasmine.createSpy('consultarResumen').and.callFake((_g: string, pagina: number) =>
-      of({ exitoso: true, elementos: [fila(`p${pagina}`)], numeroPagina: pagina, tamanoPagina: 100, totalElementos: 101, totalPaginas: 2 })
-    );
+  it('CIERRE-W3M el resumen de sesiones del grupo lo calcula el servidor y se pide una vez al elegir el grupo', () => {
+    const servicio = TestBed.inject(TeacherMatrizAsistenciaService) as unknown as { consultarResumenSesiones: jasmine.Spy };
+    const resumen = resumenSesiones({ sesionesProgramadas: 4, estudiantesEnRiesgo: 2, promedioAsistencia: 91 });
+    servicio.consultarResumenSesiones = jasmine.createSpy('consultarResumenSesiones').and.returnValue(of({ exitoso: true, datos: resumen }));
     const c = entrar();
-    expect(resumenes.consultarResumen.calls.allArgs()).toEqual([['group-1', 1, 100], ['group-1', 2, 100]]);
-    expect(c.resumenGrupo().length).toBe(2);
+    expect(servicio.consultarResumenSesiones.calls.allArgs()).toEqual([['group-1']]);
+    expect(c.resumenSesiones()).toEqual(resumen);
   });
 
   it('B2-F-13 el componente no usa setInterval', () => {

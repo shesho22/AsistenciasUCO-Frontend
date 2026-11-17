@@ -2,6 +2,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { GroupSessionsOverviewComponent } from './group-sessions-overview.component';
 import { ClassSession } from '../../../../core/models/attendance.model';
 import { Course } from '../../../../core/models/course.model';
+import { ResumenSesionesGrupo } from '../../../../core/models/resumen-sesiones-grupo.model';
+import { resumenSesiones, sesionResumen } from '../../../../core/testing/resumen-sesiones-grupo.fixture';
 
 describe('GroupSessionsOverviewComponent', () => {
   let fixture: ComponentFixture<GroupSessionsOverviewComponent>;
@@ -25,10 +27,11 @@ describe('GroupSessionsOverviewComponent', () => {
     records,
   });
 
-  function render(sessions: ClassSession[]): GroupSessionsOverviewComponent {
+  function render(sessions: ClassSession[], resumen: ResumenSesionesGrupo | null = null): GroupSessionsOverviewComponent {
     fixture = TestBed.createComponent(GroupSessionsOverviewComponent);
     fixture.componentRef.setInput('course', course);
     fixture.componentRef.setInput('sessions', sessions);
+    fixture.componentRef.setInput('resumenSesiones', resumen);
     fixture.detectChanges();
     return fixture.componentInstance;
   }
@@ -37,16 +40,16 @@ describe('GroupSessionsOverviewComponent', () => {
     TestBed.configureTestingModule({ imports: [GroupSessionsOverviewComponent] });
   });
 
-  it('sin registros de asistencia no muestra 100%: el promedio es desconocido', () => {
-    const component = render([session(1), session(2)]);
+  it('sin horas dictadas el servidor no entrega promedio y no se muestra 100%', () => {
+    const component = render([session(1), session(2)], resumenSesiones({ promedioAsistencia: null }));
 
-    expect(component.promedioAsistencia()).toBeNull();
+    expect(component.promedio()).toBeNull();
     const text = (fixture.nativeElement as HTMLElement).textContent || '';
     expect(text).not.toContain('100%');
     expect(text).toContain('Sin registros de asistencia para calcular');
   });
 
-  it('filas de estudiantes sin estado registrado tampoco generan un promedio', () => {
+  it('las filas locales sin estado no generan promedio: solo cuenta el que entrega el servidor', () => {
     const component = render([
       session(1, [
         { studentId: 'e1', status: null },
@@ -54,59 +57,49 @@ describe('GroupSessionsOverviewComponent', () => {
       ] as ClassSession['records']),
     ]);
 
-    expect(component.promedioAsistencia()).toBeNull();
+    expect(component.promedio()).toBeNull();
     const text = (fixture.nativeElement as HTMLElement).textContent || '';
     expect(text).toContain('Sin registros de asistencia para calcular');
     expect(text).not.toContain('0% Institucional');
   });
 
-  describe('SES-05: EX es una ausencia justificada, no una asistencia presencial', () => {
-    const conJustificada = () =>
-      session(1, [
-        { studentId: 'e1', status: 'AN' },
-        { studentId: 'e2', status: 'EX' },
-        { studentId: 'e3', status: 'SJC' },
-      ] as ClassSession['records']);
+  describe('SES-05: EX es una ausencia justificada, no una asistencia presencial (conteo del servidor)', () => {
+    const conteo = (parcial: Parameters<typeof sesionResumen>[1]) =>
+      resumenSesiones({ sesiones: [sesionResumen('sesion-1', { totalEstudiantes: 3, ...parcial })] });
+    const celda = () => (fixture.nativeElement as HTMLElement).querySelector('[data-testid="asistentes-sesion-1"]');
 
-    it('la columna Asistentes cuenta solo AN', () => {
-      const component = render([conJustificada()]);
+    it('la columna Asistentes muestra los presentes y el total de activos que cuenta la base', () => {
+      const component = render([session(1)], conteo({ presentes: 1, justificadas: 1, ausentes: 1 }));
 
-      expect(component.getPresentesCount(conJustificada())).toBe(1);
-      const celda = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="asistentes-sesion-1"]');
-      expect(celda?.textContent?.replace(/\s+/g, ' ').trim()).toContain('1 / 3');
+      expect(component.conteoDe('sesion-1')?.presentes).toBe(1);
+      expect(celda()?.textContent?.replace(/\s+/g, ' ').trim()).toContain('1 / 3');
     });
 
     it('las ausencias justificadas se muestran aparte', () => {
-      const component = render([conJustificada()]);
+      const component = render([session(1)], conteo({ presentes: 1, justificadas: 1, ausentes: 1 }));
 
-      expect(component.getJustificadasCount(conJustificada())).toBe(1);
-      const celda = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="asistentes-sesion-1"]');
-      expect(celda?.textContent).toContain('1 justificada');
+      expect(component.conteoDe('sesion-1')?.justificadas).toBe(1);
+      expect(celda()?.textContent).toContain('1 justificada');
     });
 
-    it('una sesión sin registros cuenta 0 asistentes y 0 justificadas', () => {
-      const component = render([session(1)]);
-      const sinRegistros = { ...session(1), records: undefined } as unknown as ClassSession;
+    it('una sesión sin conteo del servidor cuenta 0 asistentes y 0 justificadas', () => {
+      const component = render([session(1)], resumenSesiones());
 
-      expect(component.getPresentesCount(sinRegistros)).toBe(0);
-      expect(component.getJustificadasCount(sinRegistros)).toBe(0);
+      expect(component.conteoDe('sesion-1')).toBeUndefined();
+      expect(celda()?.textContent?.replace(/\s+/g, ' ').trim()).toContain('0 / 0');
+      expect(celda()?.textContent).not.toContain('justificada');
     });
 
     it('con varias EX usa el plural «justificadas»', () => {
-      render([session(1, [
-        { studentId: 'e1', status: 'EX' },
-        { studentId: 'e2', status: 'EX' },
-      ] as ClassSession['records'])]);
+      render([session(1)], conteo({ justificadas: 2 }));
 
-      const celda = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="asistentes-sesion-1"]');
-      expect(celda?.textContent).toContain('2 justificadas');
+      expect(celda()?.textContent).toContain('2 justificadas');
     });
 
     it('sin EX no muestra el indicador de justificadas', () => {
-      render([session(1, [{ studentId: 'e1', status: 'AN' }] as ClassSession['records'])]);
+      render([session(1)], conteo({ presentes: 1 }));
 
-      const celda = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="asistentes-sesion-1"]');
-      expect(celda?.textContent).not.toContain('justificada');
+      expect(celda()?.textContent).not.toContain('justificada');
     });
   });
 
@@ -191,15 +184,13 @@ describe('GroupSessionsOverviewComponent', () => {
     expect(botones.length).toBe(1);
   });
 
-  it('B1-F-14 las sesiones canceladas no cuentan en el total', () => {
+  it('B1-F-14 el total de sesiones y las canceladas son los que cuenta el servidor', () => {
     const cancelada: ClassSession = { ...session(3), estado: 'CANCELADA' };
-    const component = render([
-      session(1, [{ studentId: 'e1', status: 'SJC' }] as ClassSession['records']),
-      session(2),
-      cancelada,
-    ]);
+    render([session(1), session(2), cancelada], resumenSesiones({ sesionesProgramadas: 3, sesionesEjecutadas: 1, sesionesCanceladas: 1 }));
 
-    expect(component.totalSesiones()).toBe(2);
+    const text = ((fixture.nativeElement as HTMLElement).textContent || '').replace(/\s+/g, ' ');
+    expect(text).toContain('3 sesiones programadas');
+    expect(text).toContain('1 ejecutadas · 1 canceladas');
   });
 
   it('B1-F-14 una sesión cancelada se muestra con la etiqueta Cancelada en el listado', () => {

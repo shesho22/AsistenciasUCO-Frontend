@@ -10,6 +10,9 @@ import { ClassSession } from '../../../../core/models/attendance.model';
 import { RealtimeService } from '../../../../core/realtime/realtime.service';
 import { NEVER, of } from 'rxjs';
 import { RevisionCancelacionService } from '../../../../core/services/revision-cancelacion.service';
+import { TeacherMatrizAsistenciaService } from '../../../../core/services/teacher-matriz-asistencia.service';
+import { ResumenSesionesGrupo } from '../../../../core/models/resumen-sesiones-grupo.model';
+import { resumenSesiones } from '../../../../core/testing/resumen-sesiones-grupo.fixture';
 
 // LB-001B.1B (DB source of truth cleanup, PLAN.md AS-IS #13): retiro de la lectura de
 // Course.docenteName sintetizado en la ficha del hub.
@@ -39,6 +42,8 @@ describe('TeacherGrupoHubComponent', () => {
         provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         { provide: RealtimeService, useValue: { startForGroup: () => undefined, stop: () => undefined, events: () => NEVER, connectionState$: NEVER } },
+        // La planilla del hub pide su pagina al servidor: aqui no llega nada (estas pruebas no la verifican).
+        { provide: TeacherMatrizAsistenciaService, useValue: { consultarMatriz: () => NEVER, consultarResumenSesiones: () => NEVER } },
       ],
     });
     fixture = TestBed.createComponent(TeacherGrupoHubComponent);
@@ -115,7 +120,6 @@ describe('TeacherGrupoHubComponent', () => {
     fixture.componentInstance.tamanoPadronChange.subscribe(tamano);
     fixture.componentInstance.busquedaPadronChange.subscribe(busqueda);
     fixture.componentRef.setInput('selectedCourse', course);
-    fixture.componentRef.setInput('estudiantes', Array.from({ length: 40 }, (_, i) => ({ idEstudiante: `t-${i}`, nombreCompleto: `Todos ${i}`, codigoEstado: 'A' })));
     fixture.componentRef.setInput('padronPagina', [{ idEstudiante: 'est-1', nombreCompleto: 'Ana Gómez', codigoEstado: 'A' }]);
     fixture.componentRef.setInput('totalEstudiantes', 40);
     fixture.componentRef.setInput('paginaPadron', 2);
@@ -210,8 +214,7 @@ describe('TeacherGrupoHubComponent', () => {
     });
   });
 
-  describe('F3-DOC-03 modos Hoy y Grupo, y conteo unico de sesiones', () => {
-    const AHORA = new Date('2026-09-14T15:00:00Z');
+  describe('F3-DOC-03 modos Hoy y Grupo, y conteo unico de sesiones (CIERRE-W3M: lo decide el servidor)', () => {
     const sesion = (id: string, n: number, inicio: string, fin: string, extra: Partial<ClassSession> = {}): ClassSession => ({
       id, courseId: 'crs-1', sessionNumber: n, title: `Sesion ${n}`, date: '2026-09-14', startTime: '08:00', endTime: '10:00',
       records: [], fechaHoraInicio: inicio, fechaHoraFin: fin, ...extra,
@@ -224,10 +227,17 @@ describe('TeacherGrupoHubComponent', () => {
     const el = (): HTMLElement => fixture.nativeElement as HTMLElement;
     const q = (sel: string): HTMLElement | null => el().querySelector(sel);
 
-    function abrir(sesiones: ClassSession[] = [pasada, cancelada, enCurso, proxima]): void {
+    /** Resumen que entrega el servidor para la lista de prueba: en curso 'ses-hoy' y proxima 'ses-4'. */
+    const resumenDelServidor = (parcial: Partial<ResumenSesionesGrupo> = {}): ResumenSesionesGrupo =>
+      resumenSesiones({
+        sesionesProgramadas: 4, sesionesEjecutadas: 1, sesionesCanceladas: 1, sesionesEnCurso: 1,
+        idSesionEnCurso: 'ses-hoy', idSesionProxima: 'ses-4', ...parcial,
+      });
+
+    function abrir(sesiones: ClassSession[] = [pasada, cancelada, enCurso, proxima], resumen: ResumenSesionesGrupo | null = resumenDelServidor()): void {
       fixture.componentRef.setInput('selectedCourse', course);
       fixture.componentRef.setInput('sessions', sesiones);
-      fixture.componentRef.setInput('ahora', AHORA);
+      fixture.componentRef.setInput('resumenSesiones', resumen);
       fixture.detectChanges();
     }
 
@@ -251,7 +261,7 @@ describe('TeacherGrupoHubComponent', () => {
     });
 
     it('sin sesion en curso Hoy muestra la proxima sesion', () => {
-      abrir([pasada, proxima]);
+      abrir([pasada, proxima], resumenDelServidor({ idSesionEnCurso: null, sesionesEnCurso: 0 }));
       expect(q('[data-testid="hub-hoy"]')?.textContent).toContain('Próxima sesión');
       expect(q('[data-testid="hub-hoy"]')?.textContent).toContain('Sesion 4');
     });
@@ -272,7 +282,7 @@ describe('TeacherGrupoHubComponent', () => {
     it('sin sesiones vigentes Hoy lo dice con un estado vacio y "Tomar asistencia" abre la toma del grupo', () => {
       const irAsistencia = jasmine.createSpy('irAsistencia');
       fixture.componentInstance.irAsistencia.subscribe(irAsistencia);
-      abrir([pasada, cancelada]);
+      abrir([pasada, cancelada], resumenDelServidor({ idSesionEnCurso: null, idSesionProxima: null, sesionesEnCurso: 0 }));
       expect(q('[data-testid="hub-hoy"] app-empty-state')).not.toBeNull();
       (q('[data-testid="hub-tomar-asistencia"]') as HTMLButtonElement).click();
       expect(irAsistencia).toHaveBeenCalledOnceWith(course);
@@ -314,6 +324,24 @@ describe('TeacherGrupoHubComponent', () => {
       expect(conteo.textContent!.replace(/\s+/g, ' ').trim()).toContain('4 programadas · 1 ejecutada · 1 cancelada');
       expect(conteo.getAttribute('title')).toContain('Programadas:');
       expect(el().textContent!.match(/programada/g)?.length).toBe(1);
+    });
+
+    it('sin resumen del servidor no inventa conteos ni sesion de hoy', () => {
+      abrir([pasada, enCurso, proxima], null);
+      expect((q('[data-testid="hub-conteo-sesiones"]') as HTMLElement).textContent!.replace(/\s+/g, ' ').trim()).toContain('Sesiones: —');
+      expect(q('[data-testid="hub-hoy"] app-empty-state')).not.toBeNull();
+    });
+
+    it('la sesion de hoy la decide el id que entrega el servidor, no la hora del navegador', () => {
+      // Aunque 'proxima' tenga fechas futuras y 'enCurso' ya pasadas segun el reloj, manda el id del servidor.
+      abrir([pasada, enCurso, proxima], resumenDelServidor({ idSesionEnCurso: null, idSesionProxima: 'ses-1' }));
+      expect(q('[data-testid="hub-hoy"]')?.textContent).toContain('Próxima sesión');
+      expect(q('[data-testid="hub-hoy"]')?.textContent).toContain('Sesion 1');
+    });
+
+    it('un id del servidor que no esta en la lista de sesiones no muestra sesion de hoy', () => {
+      abrir([pasada], resumenDelServidor({ idSesionEnCurso: 'no-esta', idSesionProxima: 'tampoco' }));
+      expect(q('[data-testid="hub-hoy"] app-empty-state')).not.toBeNull();
     });
 
     it('las pestañas del grupo ya no muestran el total de sesiones como badge', () => {
@@ -384,7 +412,6 @@ describe('TeacherGrupoHubComponent', () => {
   });
 
   describe('sesión de hoy pendiente de aprobación (DEC-065 (2))', () => {
-    const ahora = new Date('2026-11-10T10:00:00Z');
     const base: ClassSession = {
       id: 'ses-p', courseId: 'crs-1', sessionNumber: 1, title: 'Refuerzo', date: '2026-11-10', startTime: '05:00', endTime: '07:00',
       records: [], fechaHoraInicio: '2026-11-10T09:00:00Z', fechaHoraFin: '2026-11-10T12:00:00Z', estadoTemporal: 'CONFIRMADA',
@@ -392,7 +419,7 @@ describe('TeacherGrupoHubComponent', () => {
     const abrir = (sesion: ClassSession) => {
       fixture.componentRef.setInput('selectedCourse', course);
       fixture.componentRef.setInput('sessionQrEnabled', true);
-      fixture.componentRef.setInput('ahora', ahora);
+      fixture.componentRef.setInput('resumenSesiones', resumenSesiones({ sesionesProgramadas: 1, sesionesEnCurso: 1, idSesionEnCurso: 'ses-p' }));
       fixture.componentRef.setInput('sessions', [sesion]);
       fixture.detectChanges();
     };

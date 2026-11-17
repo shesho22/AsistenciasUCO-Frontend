@@ -495,6 +495,101 @@ describe('mockBackendInterceptor', () => {
     }));
   });
 
+  describe('CIERRE-W3M matriz de asistencia, resumen de sesiones y resumen por horas del docente', () => {
+    interface FilaMock {
+      idEstudiante: string;
+      nombreCompleto: string;
+      codigoEstadoEstudiante: string;
+      celdas: unknown[];
+    }
+    interface MatrizMock extends SobrePagina<FilaMock> {
+      sesiones: unknown[];
+      tamanoPagina: number;
+    }
+    interface ResumenMock {
+      estudianteId: string;
+      codigoPermanencia: string;
+      marca: unknown;
+    }
+
+    const grupoConEstudiantes = () => {
+      const estudiante = mockStore.estudiantesDirectorio.find((e) => e.gruposInscritos?.length)!;
+      const grupo = estudiante.gruposInscritos![0];
+      return { estudiante, grupo, matriculados: mockStore.estudiantesDirectorio.filter((e) => e.gruposInscritos?.includes(grupo)) };
+    };
+
+    it('la matriz pagina por estudiante con la forma real: encabezado de sesiones, filas con celdas y total filtrado', fakeAsync(() => {
+      auth.setMockMode(true);
+      const { grupo, matriculados } = grupoConEstudiantes();
+      let res: MatrizMock | undefined;
+      httpClient
+        .get<MatrizMock>(`${environment.apiUrl}/docente/grupos/${grupo}/matriz-asistencia`, { params: { pagina: '1', tamano: '1' } })
+        .subscribe((r) => (res = r));
+      tick(300);
+
+      expect(res!.exitoso).toBeTrue();
+      expect(res!.sesiones).toEqual([]);
+      expect(res!.elementos.length).toBe(1);
+      expect(res!.elementos[0].celdas).toEqual([]);
+      expect(res!.elementos[0].idEstudiante).toBe(matriculados[0].id);
+      expect(res!.totalElementos).toBe(matriculados.length);
+      expect(res!.tamanoPagina).toBe(1);
+    }));
+
+    it('la matriz usa pagina 1 de 50 por defecto, filtra por nombre o documento y traduce la matricula activa a A', fakeAsync(() => {
+      auth.setMockMode(true);
+      const { estudiante, grupo } = grupoConEstudiantes();
+      let porDefecto: MatrizMock | undefined;
+      let filtrada: MatrizMock | undefined;
+      let vacia: MatrizMock | undefined;
+      httpClient.get<MatrizMock>(`${environment.apiUrl}/docente/grupos/${grupo}/matriz-asistencia`).subscribe((r) => (porDefecto = r));
+      httpClient
+        .get<MatrizMock>(`${environment.apiUrl}/docente/grupos/${grupo}/matriz-asistencia`, { params: { busqueda: estudiante.documento } })
+        .subscribe((r) => (filtrada = r));
+      httpClient
+        .get<MatrizMock>(`${environment.apiUrl}/docente/grupos/${grupo}/matriz-asistencia`, { params: { busqueda: 'zzz-sin-coincidencias' } })
+        .subscribe((r) => (vacia = r));
+      tick(300);
+
+      expect(porDefecto!.numeroPagina).toBe(1);
+      expect(porDefecto!.tamanoPagina).toBe(50);
+      const fila = filtrada!.elementos.find((e) => e.idEstudiante === estudiante.id)!;
+      expect(fila.codigoEstadoEstudiante).toBe(estudiante.estadoMatricula === 'ACTIVO' ? 'A' : 'I');
+      expect(vacia!.elementos).toEqual([]);
+      expect(vacia!.totalElementos).toBe(0);
+    }));
+
+    it('el resumen de sesiones entrega ceros y promedio nulo (el mock no tiene sesiones del docente) con los estudiantes activos', fakeAsync(() => {
+      auth.setMockMode(true);
+      const { grupo, matriculados } = grupoConEstudiantes();
+      let res: SobreDatos<Record<string, unknown>> | undefined;
+      httpClient.get<SobreDatos<Record<string, unknown>>>(`${environment.apiUrl}/docente/grupos/${grupo}/resumen-sesiones`).subscribe((r) => (res = r));
+      tick(300);
+
+      expect(res!.exitoso).toBeTrue();
+      expect(res!.datos['sesionesProgramadas']).toBe(0);
+      expect(res!.datos['idSesionEnCurso']).toBeNull();
+      expect(res!.datos['promedioAsistencia']).toBeNull();
+      expect(res!.datos['sesiones']).toEqual([]);
+      expect(res!.datos['estudiantesActivos']).toBe(matriculados.filter((e) => e.estadoMatricula === 'ACTIVO').length);
+    }));
+
+    it('el resumen por horas pagina y busca con la misma regla que la matriz', fakeAsync(() => {
+      auth.setMockMode(true);
+      const { estudiante, grupo } = grupoConEstudiantes();
+      let res: SobrePagina<ResumenMock> | undefined;
+      httpClient
+        .get<SobrePagina<ResumenMock>>(`${environment.apiUrl}/docente/grupos/${grupo}/resumen-asistencia`, { params: { busqueda: estudiante.documento } })
+        .subscribe((r) => (res = r));
+      tick(300);
+
+      const fila = res!.elementos.find((e) => e.estudianteId === estudiante.id)!;
+      expect(fila.codigoPermanencia).toBe('REGULAR');
+      expect(fila.marca).toBeNull();
+      expect(res!.numeroPagina).toBe(1);
+    }));
+  });
+
   it('A2-F-08 DELETE /estudiante/reclamos/{id} retira un reclamo pendiente y lo deja RETIRADA', fakeAsync(() => {
     auth.setMockMode(true);
     const copia = JSON.parse(JSON.stringify(mockStore.solicitudesRevision));

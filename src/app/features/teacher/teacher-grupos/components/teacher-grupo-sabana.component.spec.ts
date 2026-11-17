@@ -3,6 +3,8 @@ import { By } from '@angular/platform-browser';
 import { TeacherGrupoSabanaComponent } from './teacher-grupo-sabana.component';
 import { NEVER } from 'rxjs';
 import { TeacherAttendanceSummaryService } from '../../../../core/services/teacher-attendance-summary.service';
+import { TeacherMatrizAsistenciaService } from '../../../../core/services/teacher-matriz-asistencia.service';
+import { of } from 'rxjs';
 import { ClassSession } from '../../../../core/models/attendance.model';
 
 // LB-001B.1B (DB source of truth cleanup, PLAN.md AS-IS #25): el indicador visual por
@@ -27,14 +29,34 @@ describe('TeacherGrupoSabanaComponent', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [TeacherGrupoSabanaComponent],
-      providers: [{ provide: TeacherAttendanceSummaryService, useValue: { consultarResumen: () => NEVER } }],
+      providers: [
+        { provide: TeacherAttendanceSummaryService, useValue: { consultarResumen: () => NEVER } },
+        {
+          provide: TeacherMatrizAsistenciaService,
+          useValue: {
+            // La matriz que entrega el servidor: una fila con celdas para la sesion 1 (presente) y la 2 (cancelada).
+            consultarMatriz: () =>
+              of({
+                exitoso: true,
+                sesiones: [],
+                elementos: [{
+                  idEstudianteGrupo: 'eg-1', idEstudiante: 'st-1', nombreCompleto: 'Ada', documento: '001', codigoEstadoEstudiante: 'A',
+                  celdas: [
+                    { idSesion: 'ses-1', codigoEstado: 'PRESENTE', minutosAsistidos: 120, minutosSesion: 120 },
+                    { idSesion: 'ses-2', codigoEstado: 'NO_DISPONIBLE', minutosAsistidos: 0, minutosSesion: 120 },
+                  ],
+                }],
+                numeroPagina: 1, tamanoPagina: 50, totalElementos: 1, totalPaginas: 1,
+              }),
+          },
+        },
+      ],
     });
     fixture = TestBed.createComponent(TeacherGrupoSabanaComponent);
-    fixture.componentRef.setInput('estudiantes', [
-      { studentId: 'st-1', studentName: 'Ada', studentCode: '001' },
-    ]);
+    fixture.componentRef.setInput('grupoId', 'grp-1');
     fixture.componentRef.setInput('sessions', [session]);
     fixture.componentRef.setInput('cargando', false);
+    fixture.detectChanges();
     fixture.detectChanges();
   });
 

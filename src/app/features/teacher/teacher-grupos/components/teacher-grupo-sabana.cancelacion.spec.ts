@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of, Subject } from 'rxjs';
 import { TeacherGrupoSabanaComponent } from './teacher-grupo-sabana.component';
 import { TeacherAttendanceSummaryService } from '../../../../core/services/teacher-attendance-summary.service';
+import { TeacherMatrizAsistenciaService } from '../../../../core/services/teacher-matriz-asistencia.service';
 import { RealtimeService } from '../../../../core/realtime/realtime.service';
 import { RealtimeConnectionState } from '../../../../core/realtime/model/realtime-connection-state.model';
 import { RealtimeEvent, REALTIME_EVENT_TYPE } from '../../../../core/realtime/model/realtime-event.model';
@@ -11,6 +12,7 @@ import { ClassSession } from '../../../../core/models/attendance.model';
 describe('TeacherGrupoSabanaComponent — Cancelación por inasistencia y recarga SSE (CULM-001 C.1 §4.1, §4.4, §4.8)', () => {
   let fixture: ComponentFixture<TeacherGrupoSabanaComponent>;
   let summaryServiceSpy: jasmine.SpyObj<TeacherAttendanceSummaryService>;
+  let matrizServiceSpy: jasmine.SpyObj<TeacherMatrizAsistenciaService>;
   let realtimeSpy: jasmine.SpyObj<RealtimeService>;
   let connectionState$: Subject<RealtimeConnectionState>;
   let events$: Subject<RealtimeEvent>;
@@ -73,6 +75,18 @@ describe('TeacherGrupoSabanaComponent — Cancelación por inasistencia y recarg
       })
     );
 
+    matrizServiceSpy = jasmine.createSpyObj('TeacherMatrizAsistenciaService', ['consultarMatriz']);
+    matrizServiceSpy.consultarMatriz.and.returnValue(
+      of({
+        exitoso: true,
+        sesiones: [],
+        elementos: [{
+          idEstudianteGrupo: 'eg-1', idEstudiante: 'st-1', nombreCompleto: 'Estudiante Alfa', documento: '001', codigoEstadoEstudiante: 'A', celdas: [],
+        }],
+        numeroPagina: 1, tamanoPagina: 50, totalElementos: 1, totalPaginas: 1,
+      })
+    );
+
     realtimeSpy = jasmine.createSpyObj('RealtimeService', ['startForGroup', 'stop', 'events', 'listenType'], {
       connectionState$: connectionState$.asObservable(),
     });
@@ -83,15 +97,13 @@ describe('TeacherGrupoSabanaComponent — Cancelación por inasistencia y recarg
       imports: [TeacherGrupoSabanaComponent],
       providers: [
         { provide: TeacherAttendanceSummaryService, useValue: summaryServiceSpy },
+        { provide: TeacherMatrizAsistenciaService, useValue: matrizServiceSpy },
         { provide: RealtimeService, useValue: realtimeSpy },
       ],
     });
 
     fixture = TestBed.createComponent(TeacherGrupoSabanaComponent);
     fixture.componentRef.setInput('grupoId', 'grp-1');
-    fixture.componentRef.setInput('estudiantes', [
-      { studentId: 'st-1', studentName: 'Estudiante Alfa', studentCode: '001' },
-    ]);
     fixture.componentRef.setInput('sessions', [sesion]);
     fixture.componentRef.setInput('cargando', false);
     fixture.detectChanges();
@@ -143,6 +155,8 @@ describe('TeacherGrupoSabanaComponent — Cancelación por inasistencia y recarg
       payload: { grupo: 'grp-1', alerta: 'alt-1', estudianteGrupo: 'eg-1', tipo: 'ADVERTENCIA', porcentajeInasistencia: 16, umbral: 15 },
     });
     expect(summaryServiceSpy.consultarResumen).toHaveBeenCalledTimes(3);
+    // Cada recarga vuelve a pedir tambien la pagina de la matriz: el cliente no recalcula nada.
+    expect(matrizServiceSpy.consultarMatriz).toHaveBeenCalledTimes(3);
   });
 
   it('C-F-34 regla de recarga SSE: exactamente 1 carga cuando ocurre CONNECTING -> ERROR', () => {

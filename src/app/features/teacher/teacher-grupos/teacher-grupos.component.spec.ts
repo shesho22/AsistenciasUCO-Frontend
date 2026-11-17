@@ -12,6 +12,9 @@ import { AttendanceClaimService } from '../../../core/services/attendance-claim.
 import { SolicitudRevisionItem } from '../../../core/models/role-management.model';
 import { CatalogService } from '../../../core/services/catalog.service';
 import { TeacherAttendanceSummaryService } from '../../../core/services/teacher-attendance-summary.service';
+import { TeacherMatrizAsistenciaService } from '../../../core/services/teacher-matriz-asistencia.service';
+import { resumenSesiones } from '../../../core/testing/resumen-sesiones-grupo.fixture';
+import { EstadoCeldaAsistencia, FilaMatriz } from '../../../core/models/matriz-asistencia.model';
 import { Course } from '../../../core/models/course.model';
 import { ClassSession } from '../../../core/models/attendance.model';
 import { ToastService } from '../../../shared/components/toast/toast.component';
@@ -34,6 +37,7 @@ describe('TeacherGruposComponent', () => {
   let claimService: jasmine.SpyObj<AttendanceClaimService>;
   let router: jasmine.SpyObj<Router>;
   let attendanceService: jasmine.SpyObj<AttendanceService>;
+  let matrizService: jasmine.SpyObj<TeacherMatrizAsistenciaService>;
   let realtimeEvents$: Subject<RealtimeEvent<SesionCanceladaRealtimePayload | SesionManualCreadaRealtimePayload>>;
   let realtime: jasmine.SpyObj<RealtimeService>;
 
@@ -77,6 +81,12 @@ describe('TeacherGruposComponent', () => {
     resumenService.consultarResumen.and.returnValue(
       of({ exitoso: true, elementos: [], numeroPagina: 1, tamanoPagina: 100, totalElementos: 0, totalPaginas: 0 }) as never
     );
+
+    matrizService = jasmine.createSpyObj<TeacherMatrizAsistenciaService>('TeacherMatrizAsistenciaService', ['consultarMatriz', 'consultarResumenSesiones']);
+    matrizService.consultarMatriz.and.returnValue(
+      of({ exitoso: true, sesiones: [], elementos: [], numeroPagina: 1, tamanoPagina: 50, totalElementos: 0, totalPaginas: 0 })
+    );
+    matrizService.consultarResumenSesiones.and.returnValue(of({ exitoso: true, datos: resumenSesiones() }) as never);
 
     courseService.getTeacherCourses.and.returnValue(
       of<never>({ exitoso: true, datos: [course] } as never)
@@ -124,6 +134,7 @@ describe('TeacherGruposComponent', () => {
         { provide: Router, useValue: router },
         { provide: AttendanceService, useValue: attendanceService },
         { provide: TeacherAttendanceSummaryService, useValue: resumenService },
+        { provide: TeacherMatrizAsistenciaService, useValue: matrizService },
         // HU058: catálogo real de tipos de programa para el filtro "Nivel formativo".
         { provide: CatalogService, useValue: { getTiposPrograma: () => of([{ id: 'TP-PRE', codigo: 'PRE', nombre: 'pregrado' }]) } },
       ],
@@ -208,51 +219,43 @@ describe('TeacherGruposComponent', () => {
     expect(sessionService.getSessionsByGroup).toHaveBeenCalledWith('crs-1');
   });
 
-  it('F3-DOC-01: la sábana recibe el estado por sesión desde GET /grupos/{id}/asistencias', () => {
-    sessionService.getSessionsByGroup.and.returnValue(of<never>({
-      exitoso: true,
-      total: 2,
-      datos: [
-        { id: 'ses-1', courseId: 'crs-1', sessionNumber: 1, title: 'S1', date: '2026-09-10', startTime: '08:00', endTime: '10:00', records: [] },
-        { id: 'ses-2', courseId: 'crs-1', sessionNumber: 2, title: 'S2', date: '2026-09-17', startTime: '08:00', endTime: '10:00', records: [] },
-      ],
-    } as never));
-    attendanceService.getAttendancesByGroup.and.returnValue(of<never>({
-      exitoso: true,
-      total: 2,
-      datos: [
-        { asistencia: 'a1', estudiante: 'est-1', grupo: 'crs-1', sesion: 'ses-1', presente: true, estado: 'AN', observacion: null },
-        { asistencia: 'a2', estudiante: 'est-1', grupo: 'crs-1', sesion: 'ses-2', presente: false, estado: 'EX', observacion: null },
-      ],
-    } as never));
+  // CIERRE-W3M: el hub ya no descarga padron, asistencias y sesiones completos para cruzarlos; el servidor entrega la matriz
+  // (la pagina vigente de la sabana) y el resumen de sesiones (estado temporal, conteos, en curso y proxima).
+  it('CIERRE-W3M: al abrir el hub pide el resumen de sesiones al servidor y no descarga el padron ni las asistencias del grupo', () => {
+    const resumen = resumenSesiones({ sesionesProgramadas: 2, sesionesEjecutadas: 1, idSesionProxima: 'ses-2' });
+    matrizService.consultarResumenSesiones.and.returnValue(of({ exitoso: true, datos: resumen }) as never);
 
-    studentService.getStudentsByGroup.and.returnValue(
-      of({ exitoso: true, datos: [{ idEstudiante: 'est-1', nombreCompleto: 'Ana Gomez', documento: '1001', codigoEstado: 'A' }] }) as never
+    component.verHubGrupo(course);
+
+    expect(matrizService.consultarResumenSesiones).toHaveBeenCalledWith('crs-1');
+    expect(component.resumenSesiones()).toEqual(resumen);
+    expect(attendanceService.getAttendancesByGroup).not.toHaveBeenCalled();
+    expect(studentService.getStudentsByGroup).not.toHaveBeenCalled();
+  });
+
+  it('CIERRE-W3M: si falla el resumen de sesiones avisa con el mensaje del backend y no queda un resumen viejo', () => {
+    const toastError = spyOn(TestBed.inject(ToastService), 'error');
+    component.verHubGrupo(course);
+    matrizService.consultarResumenSesiones.and.returnValue(
+      throwError(() => apiHttpError(403, 'No eres el titular de este grupo.', 'SEC_002')) as never
     );
 
-    component.verHubGrupo(course);
+    component.cargarResumenSesiones('crs-1');
 
-    expect(attendanceService.getAttendancesByGroup).toHaveBeenCalledWith('crs-1');
-    const [s1, s2] = component.sessionsConRegistros();
-    expect(s1.records.map((r) => [r.studentId, r.status])).toEqual([['est-1', 'AN']]);
-    expect(s2.records.map((r) => [r.studentId, r.status])).toEqual([['est-1', 'EX']]);
+    expect(toastError).toHaveBeenCalledWith('No eres el titular de este grupo.');
+    expect(component.resumenSesiones()).toBeNull();
   });
 
-  it('F3-DOC-01: si falla la consulta de asistencias las sesiones se muestran igual sin estados', () => {
-    sessionService.getSessionsByGroup.and.returnValue(of<never>({
-      exitoso: true,
-      total: 1,
-      datos: [{ id: 'ses-1', courseId: 'crs-1', sessionNumber: 1, title: 'S1', date: '2026-09-10', startTime: '08:00', endTime: '10:00', records: [] }],
-    } as never));
-    attendanceService.getAttendancesByGroup.and.returnValue(throwError(() => new Error('x')));
-
+  it('CIERRE-W3M: al cargar las sesiones vuelve a pedir el resumen (estado temporal y conteos son del servidor)', () => {
     component.verHubGrupo(course);
+    matrizService.consultarResumenSesiones.calls.reset();
 
-    expect(component.sessionsConRegistros().length).toBe(1);
-    expect(component.sessionsConRegistros()[0].records).toEqual([]);
+    component.cargarSesiones('crs-1');
+
+    expect(matrizService.consultarResumenSesiones).toHaveBeenCalledOnceWith('crs-1');
   });
 
-  it('abrirDetalleSesionModal() ya no sintetiza AN/SJC por paridad del ID del estudiante', () => {
+  it('abrirDetalleSesionModal() pide solo la lista de esa sesion y no sintetiza AN/SJC por paridad del ID del estudiante', () => {
     const sesionConcluida: ClassSession = {
       id: 'ses-1',
       courseId: 'crs-1',
@@ -268,16 +271,53 @@ describe('TeacherGruposComponent', () => {
       of<never>({
         exitoso: true,
         datos: [
-          { id: 'student-2', studentName: 'Estudiante Dos', studentCode: '002' },
-          { id: 'student-3', studentName: 'Estudiante Tres', studentCode: '003' },
+          { idEstudiante: 'est-2', nombreCompleto: 'Estudiante Dos', documento: '002', codigoEstado: 'A' },
+          { idEstudiante: 'est-3', nombreCompleto: 'Estudiante Tres', documento: '003', codigoEstado: 'A' },
+          { idEstudiante: 'est-4', nombreCompleto: 'Retirado', documento: '004', codigoEstado: 'R' },
         ],
       } as never)
+    );
+    attendanceService.getAttendancesByGroup.and.returnValue(
+      of({
+        exitoso: true,
+        datos: [{ asistencia: 'a1', estudiante: 'est-2', grupo: 'crs-1', sesion: 'ses-1', presente: true, estado: 'AN', observacion: null }],
+      }) as never
     );
 
     component.abrirDetalleSesionModal(sesionConcluida);
 
+    expect(attendanceService.getAttendancesByGroup).toHaveBeenCalledWith('crs-1', 'ses-1');
     const detalle = component.sesionDetalle();
-    expect(detalle?.records ?? []).toEqual([]);
+    expect(detalle?.records.map((r) => [r.studentId, r.status])).toEqual([['est-2', 'AN'], ['est-3', null]]);
+  });
+
+  it('abrirDetalleSesionModal() abre el modal sin registros mientras llegan y avisa si la consulta falla', () => {
+    const toastError = spyOn(TestBed.inject(ToastService), 'error');
+    studentService.getStudentsByGroup.and.returnValue(throwError(() => apiHttpError(409, 'No se pudo consultar el padron.', 'CONFLICT')) as never);
+
+    component.abrirDetalleSesionModal({
+      id: 'ses-1', courseId: 'crs-1', sessionNumber: 1, title: 'S', date: '2026-09-10', startTime: '08:00', endTime: '10:00', records: [],
+    });
+
+    expect(component.modalDetalleSesionVisible()).toBeTrue();
+    expect(component.sesionDetalle()?.records).toEqual([]);
+    expect(toastError).toHaveBeenCalledWith('No se pudo consultar el padron.');
+  });
+
+  it('abrirDetalleSesionModal() descarta la respuesta de una sesion que ya no es la abierta', () => {
+    const lento = new Subject<never>();
+    studentService.getStudentsByGroup.and.returnValue(lento as never);
+    attendanceService.getAttendancesByGroup.and.returnValue(of({ exitoso: true, datos: [] }) as never);
+    const sesion = (id: string): ClassSession => ({
+      id, courseId: 'crs-1', sessionNumber: 1, title: 'S', date: '2026-09-10', startTime: '08:00', endTime: '10:00', records: [],
+    });
+
+    component.abrirDetalleSesionModal(sesion('ses-1'));
+    component.cerrarDetalleSesionModal();
+    lento.next({ exitoso: true, datos: [{ idEstudiante: 'est-1', nombreCompleto: 'Ana', documento: '1', codigoEstado: 'A' }] } as never);
+    lento.complete();
+
+    expect(component.sesionDetalle()).toBeNull();
   });
 
   it('al seleccionar un grupo de la lista, navega a la vista de asistencia del curso', () => {
@@ -473,11 +513,15 @@ describe('TeacherGruposComponent', () => {
     component.abrirModalRetiro({ idEstudiante: 'est-1', nombreCompleto: 'Ana Gómez' });
     expect(component.estudianteARetirar()).toEqual({ idEstudiante: 'est-1', nombreCompleto: 'Ana Gómez' });
 
-    studentService.getStudentsByGroup.calls.reset();
+    studentService.getPadronGrupoPagina.calls.reset();
+    matrizService.consultarResumenSesiones.calls.reset();
     component.onEstudianteRetirado();
 
     expect(component.estudianteARetirar()).toBeNull();
-    expect(studentService.getStudentsByGroup).toHaveBeenCalledWith('crs-1');
+    // CIERRE-W3M: se recarga la pagina del padron (servidor) y el resumen del grupo (cambian los activos); no el padron completo.
+    expect(studentService.getPadronGrupoPagina).toHaveBeenCalledOnceWith('crs-1', { pagina: 1, tamano: 12, busqueda: '' });
+    expect(matrizService.consultarResumenSesiones).toHaveBeenCalledOnceWith('crs-1');
+    expect(studentService.getStudentsByGroup).not.toHaveBeenCalled();
   });
 
   it('HU051 RT-12 acepta la forma heredada (studentId) y no abre el modal sin identificador', () => {
@@ -674,12 +718,13 @@ describe('TeacherGruposComponent', () => {
       expect(studentService.getPadronGrupoPagina.calls.mostRecent().args).toEqual(['otro-grupo', { pagina: 1, tamano: 12, busqueda: '' }]);
     });
 
-    it('el padrón completo para la planilla se sigue cargando aparte (no se rompe la matriz)', () => {
+    it('CIERRE-W3M: ya no se descarga el padrón completo; la planilla pide su página al servidor', () => {
       studentService.getPadronGrupoPagina.and.returnValue(of(paginaPadron(12, 30)));
 
       component.verHubGrupo(course);
 
-      expect(studentService.getStudentsByGroup).toHaveBeenCalledWith(course.id);
+      expect(studentService.getStudentsByGroup).not.toHaveBeenCalled();
+      expect(studentService.getPadronGrupoPagina).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -902,9 +947,8 @@ describe('TeacherGruposComponent', () => {
     });
   });
 
-  // HU029 (F-DOC-S03): la sabana y el detalle de sesion del hub deben mostrar el estado consolidado por sesion
-  // que entrega GET /grupos/{id}/asistencias; antes el hub nunca lo cargaba y todas las celdas salian "—".
-  describe('sabana del hub: marcas por sesion', () => {
+  // HU029 + CIERRE-W3M: la sabana del hub pinta la matriz que entrega el servidor (ya cruzada, paginada y con busqueda).
+  describe('sabana del hub: matriz del servidor', () => {
     const sesion = {
       id: 'ses-1',
       courseId: 'crs-1',
@@ -915,120 +959,69 @@ describe('TeacherGruposComponent', () => {
       endTime: '10:00',
       records: [],
     } as ClassSession;
+    const fila = (idEstudiante: string, codigoEstado: EstadoCeldaAsistencia | null): FilaMatriz => ({
+      idEstudianteGrupo: `eg-${idEstudiante}`,
+      idEstudiante,
+      nombreCompleto: `Estudiante ${idEstudiante}`,
+      documento: '1001',
+      codigoEstadoEstudiante: 'A',
+      celdas: codigoEstado ? [{ idSesion: 'ses-1', codigoEstado, minutosAsistidos: 0, minutosSesion: 120 }] : [],
+    });
     const celda = (est: string) =>
       (fixture.nativeElement as HTMLElement).querySelector(`[data-testid="sabana-celda-${est}-ses-1"]`);
+    const abrirSabana = () => {
+      component.verHubGrupo(course);
+      component.subPestanaHub.set('SABANA');
+      fixture.detectChanges();
+    };
 
     beforeEach(() => {
       sessionService.getSessionsByGroup.and.returnValue(of({ exitoso: true, datos: [sesion], total: 1 }) as never);
-      studentService.getStudentsByGroup.and.returnValue(
-        of({
-          exitoso: true,
-          datos: [
-            { idEstudiante: 'est-1', nombreCompleto: 'Ana Gomez', documento: '1001', codigoEstado: 'A' },
-            { idEstudiante: 'est-2', nombreCompleto: 'Luis Perez', documento: '1002', codigoEstado: 'A' },
-          ],
-        }) as never
-      );
-      attendanceService.getAttendancesByGroup.and.returnValue(
-        of({
-          exitoso: true,
-          total: 1,
-          datos: [{ asistencia: 'a1', estudiante: 'est-1', grupo: 'crs-1', sesion: 'ses-1', presente: false, estado: 'SJC', observacion: null }],
-        }) as never
-      );
+      matrizService.consultarMatriz.and.returnValue(of({
+        exitoso: true,
+        sesiones: [],
+        elementos: [fila('est-1', 'AUSENTE'), fila('est-2', null)],
+        numeroPagina: 1,
+        tamanoPagina: 50,
+        totalElementos: 2,
+        totalPaginas: 1,
+      }));
     });
 
-    it('pide las asistencias del grupo al abrir el hub y pinta la marca del estudiante en su sesion', () => {
-      component.verHubGrupo(course);
-      component.subPestanaHub.set('SABANA');
-      fixture.detectChanges();
+    it('pide la matriz del grupo al abrir la planilla y pinta la marca del estudiante en su sesion', () => {
+      abrirSabana();
 
-      expect(attendanceService.getAttendancesByGroup).toHaveBeenCalledWith('crs-1');
+      expect(matrizService.consultarMatriz).toHaveBeenCalledWith('crs-1', 1, 50, '');
       expect(celda('est-1')?.textContent).toContain('SJC');
     });
 
-    it('un estudiante sin registro en esa sesion sigue mostrando "—" (nunca se inventa una marca)', () => {
-      component.verHubGrupo(course);
-      component.subPestanaHub.set('SABANA');
-      fixture.detectChanges();
+    it('un estudiante sin celda en esa sesion sigue mostrando "—" (nunca se inventa una marca)', () => {
+      abrirSabana();
 
       expect(celda('est-2')?.textContent).toContain('—');
       expect(celda('est-2')?.textContent).not.toMatch(/AN|EX|SJC/);
     });
 
-    it('un fallo al cargar las asistencias avisa con el mensaje del backend y deja las marcas sin inventar', () => {
-      attendanceService.getAttendancesByGroup.and.returnValue(
-        throwError(() => apiHttpError(409, 'No se pudieron consultar las asistencias.', 'CONFLICT')) as never
+    it('un fallo al cargar la matriz muestra el mensaje del backend y no inventa marcas', () => {
+      matrizService.consultarMatriz.and.returnValue(
+        throwError(() => apiHttpError(409, 'No se pudo consultar la matriz.', 'CONFLICT')) as never
       );
-      const toastError = spyOn(TestBed.inject(ToastService), 'error');
-      component.verHubGrupo(course);
-      component.subPestanaHub.set('SABANA');
-      fixture.detectChanges();
+      abrirSabana();
 
-      expect(toastError).toHaveBeenCalledWith('No se pudieron consultar las asistencias.');
-      expect(celda('est-1')?.textContent).toContain('—');
+      const aviso = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="sabana-matriz-error"]');
+      expect(aviso?.textContent?.trim()).toBe('No se pudo consultar la matriz.');
+      expect(celda('est-1')).toBeNull();
     });
 
-    it('una respuesta sin datos se trata como sin registros', () => {
-      attendanceService.getAttendancesByGroup.and.returnValue(of({ exitoso: true }) as never);
-      component.verHubGrupo(course);
-      fixture.detectChanges();
+    it('al abrir otro grupo la planilla vuelve a pedir la matriz del nuevo grupo', () => {
+      abrirSabana();
 
-      expect(component.sessionsConRegistros()[0].records.every((r) => r.status === null)).toBeTrue();
-    });
-
-    it('un estado no soportado por el mapper no rompe el hub: la sesion queda sin registros', () => {
-      attendanceService.getAttendancesByGroup.and.returnValue(
-        of({
-          exitoso: true,
-          datos: [{ asistencia: 'a9', estudiante: 'est-1', grupo: 'crs-1', sesion: 'ses-1', presente: true, estado: 'XX', observacion: null }],
-        }) as never
-      );
-      component.verHubGrupo(course);
-      component.subPestanaHub.set('SABANA');
-      fixture.detectChanges();
-
-      expect(component.sessionsConRegistros()[0].records).toEqual([]);
-      expect(celda('est-1')?.textContent).toContain('—');
-    });
-
-    it('solo compone registros de los estudiantes activos y tolera un padron con campos minimos', () => {
-      studentService.getStudentsByGroup.and.returnValue(
-        of({
-          exitoso: true,
-          datos: [
-            { id: 'est-9', codigoEstado: 'A' },
-            { codigoEstado: 'A' },
-            { idEstudiante: 'est-8', nombreCompleto: 'Retirado', documento: '1', codigoEstado: 'R' },
-          ],
-        }) as never
-      );
-      attendanceService.getAttendancesByGroup.and.returnValue(
-        of({
-          exitoso: true,
-          datos: [{ asistencia: 'a2', estudiante: 'est-9', grupo: 'crs-1', sesion: 'ses-1', presente: true, estado: 'AN', observacion: null }],
-        }) as never
-      );
-      component.verHubGrupo(course);
-      fixture.detectChanges();
-
-      const records = component.sessionsConRegistros()[0].records;
-      expect(records.length).toBe(2);
-      expect(records.find((r) => r.studentId === 'est-9')).toEqual(jasmine.objectContaining({ status: 'AN' }));
-      expect(records.find((r) => r.studentId === '')?.status).toBeNull();
-    });
-
-    it('al abrir otro grupo se descartan las asistencias del anterior antes de cargar las nuevas', () => {
-      component.verHubGrupo(course);
-      fixture.detectChanges();
-      expect(component.sessionsConRegistros()[0].records.some((r) => r.status === 'SJC')).toBeTrue();
-
-      attendanceService.getAttendancesByGroup.and.returnValue(new Subject() as never);
       component.verHubGrupo({ ...course, id: 'crs-2' });
+      component.subPestanaHub.set('SABANA');
       fixture.detectChanges();
 
-      expect(attendanceService.getAttendancesByGroup).toHaveBeenCalledWith('crs-2');
-      expect(component.sessionsConRegistros()[0].records.every((r) => r.status === null)).toBeTrue();
+      expect(matrizService.consultarMatriz.calls.mostRecent().args[0]).toBe('crs-2');
+      expect(matrizService.consultarMatriz.calls.mostRecent().args[1]).toBe(1);
     });
   });
 });

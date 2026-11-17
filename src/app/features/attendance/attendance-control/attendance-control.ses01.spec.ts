@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { TeacherAttendanceSummaryService } from '../../../core/services/teacher-attendance-summary.service';
+import { TeacherMatrizAsistenciaService } from '../../../core/services/teacher-matriz-asistencia.service';
 import { TomaAsistenciaService } from '../../../core/services/toma-asistencia.service';
 import { AsistenciaQrService } from '../../../core/services/asistencia-qr.service';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
@@ -99,7 +99,7 @@ describe('AttendanceControlComponent SES-01 ventana estricta', () => {
         { provide: StudentService, useValue: jasmine.createSpyObj('StudentService', ['enrollStudentInGroup']) },
         { provide: AttendanceService, useValue: attendanceService },
         { provide: TomaAsistenciaService, useValue: { consultarTomas: () => NEVER, abrirToma: () => NEVER, cerrarToma: () => NEVER, registrarAsistencias: () => NEVER, consultarFaltantes: () => NEVER } },
-        { provide: TeacherAttendanceSummaryService, useValue: { consultarResumen: () => NEVER } },
+        { provide: TeacherMatrizAsistenciaService, useValue: { consultarResumenSesiones: () => NEVER } },
         { provide: AsistenciaQrService, useValue: { abrirQr: () => NEVER, rotarQr: () => NEVER, cerrarQr: () => NEVER } },
         { provide: AttendanceClaimService, useValue: claims },
         { provide: CatalogService, useValue: { getIdentityDocumentTypes: () => of([]) } },

@@ -1,7 +1,7 @@
-import { Component, OnInit, OnDestroy, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Subscription, forkJoin } from 'rxjs';
 import { AttendanceService } from '../../../core/services/attendance.service';
 import { avisoSolicitudSesionRegistrada, mensajeSolicitudAprobada, mensajeSolicitudRechazadaOCancelada } from '../../../core/models/sesion-manual.util';
 import { RealtimeService } from '../../../core/realtime/realtime.service';
@@ -15,8 +15,8 @@ import { GroupService } from '../../../core/services/group.service';
 import { StudentService } from '../../../core/services/student.service';
 import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
 import { AttendanceMapper } from '../../../core/mappers/attendance.mapper';
-import { AsistenciaConsultadaApiDto } from '../../../core/api/models/asistencia-consultada-api-dto.model';
-import { EstudianteGrupoApiDto } from '../../../core/api/models/estudiante-grupo-api-dto.model';
+import { TeacherMatrizAsistenciaService } from '../../../core/services/teacher-matriz-asistencia.service';
+import { ResumenSesionesGrupo } from '../../../core/models/resumen-sesiones-grupo.model';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { Course } from '../../../core/models/course.model';
 import { EstudianteGrupoItem } from '../../../core/models/estudiante-grupo-item.model';
@@ -72,10 +72,9 @@ type VistaGrupos = 'LISTA' | 'HUB_GRUPO' | 'FORM_SESION';
       @if (vistaActual() === 'HUB_GRUPO' && selectedCourse()) {
         <app-teacher-grupo-hub
           [selectedCourse]="selectedCourse()"
-          [sessions]="sessionsConRegistros()"
+          [sessions]="sessions()"
+          [resumenSesiones]="resumenSesiones()"
           [loadingSessions]="loadingSessions()"
-          [estudiantes]="estudiantesGrupo()"
-          [cargandoEstudiantes]="cargandoEstudiantes()"
           [reclamos]="reclamosGrupo()"
           [totalReclamos]="totalReclamosGrupo()"
           [paginaReclamos]="paginaReclamosGrupo()"
@@ -161,6 +160,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   private attendanceService = inject(AttendanceService);
   private groupService = inject(GroupService);
   private studentService = inject(StudentService);
+  private resumenSesionesService = inject(TeacherMatrizAsistenciaService);
   private claimService = inject(AttendanceClaimService);
   private router = inject(Router);
   private route = inject(ActivatedRoute, { optional: true });
@@ -182,8 +182,9 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
 
   // Hub del Grupo
   subPestanaHub = signal<SubPestanaHub>('HOY');
-  estudiantesGrupo = signal<EstudianteGrupoItem[]>([]);
-  cargandoEstudiantes = signal<boolean>(false);
+  /** CIERRE-W3M: conteos, estado temporal y sesion en curso o proxima del grupo abierto, resueltos por el servidor. */
+  resumenSesiones = signal<ResumenSesionesGrupo | null>(null);
+  private resumenSesionesSubscription: Subscription | null = null;
   reclamosGrupo = signal<SolicitudRevisionItem[]>([]);
   /** CIERRE-W1A: `reclamosGrupo` es la página vigente que filtra y pagina el servidor; el total es el del servidor. */
   totalReclamosGrupo = signal<number>(0);
@@ -224,31 +225,6 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
 
   modoFormSesion: 'CREAR' | 'EDITAR' = 'CREAR';
   sessions = signal<ClassSession[]>([]);
-  /** Estado consolidado por estudiante y sesion (GET /grupos/{id}/asistencias) del grupo abierto en el hub. */
-  private readonly asistenciasGrupo = signal<AsistenciaConsultadaApiDto[]>([]);
-
-  /**
-   * HU029: sesiones del grupo con sus registros (una marca por estudiante activo), para la sabana y el detalle de
-   * sesion. Sin registro del backend la marca queda en null: nunca se inventa un estado.
-   */
-  readonly sessionsConRegistros = computed<ClassSession[]>(() => {
-    const activos = this.estudiantesGrupo()
-      .filter((estudiante) => estudiante.codigoEstado === 'A')
-      .map((estudiante) => ({
-        idEstudiante: estudiante.idEstudiante ?? estudiante.id ?? '',
-        nombreCompleto: estudiante.nombreCompleto ?? '',
-        documento: estudiante.documento ?? '',
-      }) as EstudianteGrupoApiDto);
-    const asistencias = this.asistenciasGrupo();
-    return this.sessions().map((sesion) => {
-      try {
-        const deLaSesion = asistencias.filter((asistencia) => asistencia.sesion === sesion.id);
-        return { ...sesion, records: AttendanceMapper.fromGroupStudentsAndAttendances(activos, deLaSesion) };
-      } catch {
-        return sesion;
-      }
-    });
-  });
   loadingSessions = signal<boolean>(false);
   selectedSessionId: string | null = null;
 
@@ -272,6 +248,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.padronSubscription?.unsubscribe();
+    this.resumenSesionesSubscription?.unsubscribe();
     this.cancelarCargaReclamosGrupo();
     this.detenerEscuchaCancelaciones();
   }
@@ -313,7 +290,6 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
     this.paginaReclamosGrupo.set(1);
     this.cargarSesiones(course.id);
     this.cargarEstudiantesGrupo(course.id);
-    this.cargarAsistenciasGrupo(course.id);
     this.cargarReclamosGrupo(course.id);
     this.escucharCancelaciones(course.id);
   }
@@ -331,6 +307,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
       next: (res) => {
         this.sessions.set(res.datos || []);
         this.loadingSessions.set(false);
+        this.cargarResumenSesiones(courseId);
       },
       error: (err: unknown) => {
         this.loadingSessions.set(false);
@@ -339,12 +316,13 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
     });
   }
 
-  cargarAsistenciasGrupo(courseId: string): void {
-    this.asistenciasGrupo.set([]);
-    this.attendanceService.getAttendancesByGroup(courseId).subscribe({
-      next: (res) => this.asistenciasGrupo.set(res?.datos ?? []),
+  /** CIERRE-W3M: el servidor entrega el estado temporal y los conteos de las sesiones; aqui solo se pide y se guarda. */
+  cargarResumenSesiones(courseId: string): void {
+    this.resumenSesionesSubscription?.unsubscribe();
+    this.resumenSesionesSubscription = this.resumenSesionesService.consultarResumenSesiones(courseId).subscribe({
+      next: (res) => this.resumenSesiones.set(res.datos ?? null),
       error: (err: unknown) => {
-        this.asistenciasGrupo.set([]);
+        this.resumenSesiones.set(null);
         this.toast.error(getApiErrorMessage(err));
       },
     });
@@ -406,20 +384,10 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
     }
   }
 
+  /** Recarga la pagina del padron y el resumen del grupo (cambian los activos al matricular o retirar). */
   cargarEstudiantesGrupo(courseId: string): void {
-    this.cargandoEstudiantes.set(true);
     this.cargarPadronPagina(courseId);
-    this.studentService.getStudentsByGroup(courseId).subscribe({
-      next: (res) => {
-        this.estudiantesGrupo.set(res?.datos ?? []);
-        this.cargandoEstudiantes.set(false);
-      },
-      error: (err: unknown) => {
-        this.estudiantesGrupo.set([]);
-        this.cargandoEstudiantes.set(false);
-        this.toast.error(getApiErrorMessage(err));
-      },
-    });
+    this.cargarResumenSesiones(courseId);
   }
 
   cargarReclamosGrupo(courseId?: string): void {
@@ -673,6 +641,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
         this.sessions.update((prev) =>
           marcarSesionCancelada(prev, sesion, { tipo, motivo: null, nombreFestivo: null, fechaCancelacionUtc: null })
         );
+        this.cargarResumenSesiones(grupoId);
         if (tipo === 'COORDINADOR') this.toast.info(mensajeSolicitudRechazadaOCancelada(nombre));
       });
     // DEC-065 (2): la aprobación del coordinador llega como SESION_MANUAL_CREADA de una sesión que estaba pendiente.
@@ -684,6 +653,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
         const previa = this.sessions().find((s) => s.id === sesion);
         if (!previa || !estaPendienteAprobacion(previa)) return;
         this.sessions.update((prev) => marcarSesionAprobada(prev, sesion));
+        this.cargarResumenSesiones(grupoId);
         this.toast.success(mensajeSolicitudAprobada(previa.title));
       });
   }
@@ -724,6 +694,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
         const cancelacion = res.datos?.cancelacion;
         if (cancelacion) {
           this.sessions.update((prev) => marcarSesionCancelada(prev, sesion.id, cancelacion));
+          this.cargarResumenSesiones(sesion.courseId);
         }
         const notificados = res.datos?.estudiantesNotificados;
         this.toast.success(
@@ -785,13 +756,24 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
     void this.router.navigate(['/app/asistencia']);
   }
 
+  /**
+   * Detalle de UNA sesion: la lista de estudiantes y su marca se piden solo para la sesion elegida (acotada al cupo), como en la
+   * toma de asistencia; ya no se cruza el grupo completo. Sin registro del backend la marca queda en null: nunca se inventa.
+   */
   abrirDetalleSesionModal(sesion: ClassSession): void {
-    this.sesionDetalle.set(sesion);
+    this.sesionDetalle.set({ ...sesion, records: [] });
     this.modalDetalleSesionVisible.set(true);
-
-    // NOTA (PLAN.md LB-001B.1B, hallazgo #22): ya no se sintetiza AN/SJC por paridad del ID
-    // del estudiante cuando no hay records reales — si el backend no entregó registros de
-    // asistencia, la ausencia de registro se mantiene, sin inventar un reemplazo (DR-002).
+    forkJoin({
+      estudiantes: this.studentService.getStudentsByGroup(sesion.courseId),
+      asistencias: this.attendanceService.getAttendancesByGroup(sesion.courseId, sesion.id),
+    }).subscribe({
+      next: ({ estudiantes, asistencias }) => {
+        const activos = (estudiantes?.datos ?? []).filter((e) => e.codigoEstado === 'A');
+        if (this.sesionDetalle()?.id !== sesion.id) return;
+        this.sesionDetalle.set({ ...sesion, records: AttendanceMapper.fromGroupStudentsAndAttendances(activos, asistencias?.datos ?? []) });
+      },
+      error: (err: unknown) => this.toast.error(getApiErrorMessage(err)),
+    });
   }
 
   cerrarDetalleSesionModal(): void {

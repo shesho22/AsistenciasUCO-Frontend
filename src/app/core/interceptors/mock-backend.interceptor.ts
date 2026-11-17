@@ -89,6 +89,35 @@ function vinculoMock(a: { id: string; codigo: string; nombre: string; creditos: 
   };
 }
 
+/** Codigo de estado de matricula del backend real (`A` activo, `I` inactivo) a partir del estado del directorio del mock. */
+function codigoMatriculaMock(estado: string): string {
+  return estado === 'ACTIVO' ? 'A' : 'I';
+}
+
+/**
+ * Matriculas del grupo de una ruta `/docente/grupos/{id}/...` filtradas por `busqueda` (nombre o documento) y la pagina pedida,
+ * como las resuelve el SP del backend. Las usan el padron, la matriz y el resumen por horas para devolver el mismo orden y filtro.
+ */
+function matriculasDelGrupoMock(url: string, params: { get(nombre: string): string | null }, tamanoPorDefecto = 10) {
+  const grupoId = url.split('/docente/grupos/')[1].split('/')[0];
+  const busqueda = (params.get('busqueda') ?? '').trim().toLowerCase();
+  const pagina = Math.max(1, Number(params.get('pagina') ?? 1));
+  const tamano = Math.min(100, Math.max(1, Number(params.get('tamano') ?? tamanoPorDefecto)));
+  const matriculados = mockStore.estudiantesDirectorio
+    .filter((e) => e.gruposInscritos?.includes(grupoId))
+    .filter((e) => !busqueda || `${e.nombreCompleto} ${e.documento}`.toLowerCase().includes(busqueda))
+    .map((e) => ({
+      id: `matricula-${grupoId}-${e.id}`,
+      idEstudiante: e.id,
+      documento: e.documento,
+      nombreCompleto: e.nombreCompleto,
+      correo: e.correo,
+      codigoEstado: e.estadoMatricula,
+      nombreEstado: e.estadoMatricula,
+    }));
+  return { grupoId, pagina, tamano, matriculados };
+}
+
 /** Numero y punto de control (UTC) de una toma del mock, buscados en las sesiones de las materias del estudiante; nulos sin toma. */
 function datosTomaMock(idToma: string | null | undefined): { numeroToma: number | null; fechaPuntoControlUtc: string | null } {
   if (idToma) {
@@ -734,25 +763,67 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   }
   if (/\/docente\/grupos\/[^/]+\/estudiantes$/.test(url) && method === 'GET') {
     // CIERRE-W1A: padron paginado del docente titular (pagina, tamano, busqueda por nombre o documento), como el backend real.
-    const grupoId = url.split('/docente/grupos/')[1].split('/')[0];
-    const busqueda = (req.params.get('busqueda') ?? '').trim().toLowerCase();
-    const pagina = Math.max(1, Number(req.params.get('pagina') ?? 1));
-    const tamano = Math.min(100, Math.max(1, Number(req.params.get('tamano') ?? 10)));
-    const matriculados = mockStore.estudiantesDirectorio
-      .filter((e) => e.gruposInscritos?.includes(grupoId))
-      .filter((e) => !busqueda || `${e.nombreCompleto} ${e.documento}`.toLowerCase().includes(busqueda))
-      .map((e) => ({
-        id: `matricula-${grupoId}-${e.id}`,
-        idEstudiante: e.id,
-        documento: e.documento,
-        nombreCompleto: e.nombreCompleto,
-        correo: e.correo,
-        codigoEstado: e.estadoMatricula,
-        nombreEstado: e.estadoMatricula,
-      }));
+    const { pagina, tamano, matriculados } = matriculasDelGrupoMock(url, req.params);
     return of(okPageResponse(matriculados.slice((pagina - 1) * tamano, pagina * tamano), pagina, tamano, matriculados.length)).pipe(
       delay(250)
     );
+  }
+  if (/\/docente\/grupos\/[^/]+\/matriz-asistencia$/.test(url) && method === 'GET') {
+    // CIERRE-W3M: matriz estudiantes x sesiones del servidor, paginada por estudiante con busqueda. El mock no tiene sesiones del
+    // docente (la lista de sesiones del grupo no se simula), asi que el encabezado y las celdas van vacios con la forma real.
+    const { pagina, tamano, matriculados } = matriculasDelGrupoMock(url, req.params, 50);
+    const elementos = matriculados.slice((pagina - 1) * tamano, pagina * tamano).map((m) => ({
+      idEstudianteGrupo: m.id,
+      idEstudiante: m.idEstudiante,
+      nombreCompleto: m.nombreCompleto,
+      documento: m.documento,
+      codigoEstadoEstudiante: codigoMatriculaMock(m.codigoEstado),
+      celdas: [],
+    }));
+    const body = { ...okPageResponse(elementos, pagina, tamano, matriculados.length).body, sesiones: [] };
+    return of(new HttpResponse({ status: 200, body })).pipe(delay(250));
+  }
+  if (/\/docente\/grupos\/[^/]+\/resumen-sesiones$/.test(url) && method === 'GET') {
+    // CIERRE-W3M: resumen de sesiones del grupo (sin sesiones en el mock): conteos en cero y promedio nulo, como el backend real.
+    const { matriculados } = matriculasDelGrupoMock(url, req.params);
+    return of(
+      okResponse({
+        sesionesProgramadas: 0,
+        sesionesEjecutadas: 0,
+        sesionesCanceladas: 0,
+        sesionesEnCurso: 0,
+        idSesionEnCurso: null,
+        idSesionProxima: null,
+        estudiantesActivos: matriculados.filter((m) => codigoMatriculaMock(m.codigoEstado) === 'A').length,
+        estudiantesEnRiesgo: 0,
+        promedioAsistencia: null,
+        umbralAdvertencia: 15,
+        umbralPerdida: 20,
+        sesiones: [],
+      })
+    ).pipe(delay(200));
+  }
+  if (/\/docente\/grupos\/[^/]+\/resumen-asistencia$/.test(url) && method === 'GET') {
+    // CULM-001 B.2 + CIERRE-W3M: indicadores por horas de la pagina vigente (misma pagina, tamano y busqueda que la matriz).
+    const { pagina, tamano, matriculados } = matriculasDelGrupoMock(url, req.params, 50);
+    const elementos = matriculados.slice((pagina - 1) * tamano, pagina * tamano).map((m) => ({
+      estudianteId: m.idEstudiante,
+      nombreCompleto: m.nombreCompleto,
+      codigoEstadoEstudiante: codigoMatriculaMock(m.codigoEstado),
+      sesionesEjecutadas: 0,
+      horasDictadas: 0,
+      horasAsistidas: 0,
+      horasFalta: 0,
+      horasExcusa: 0,
+      horasSinRegistro: 0,
+      porcentajeInasistencia: 0,
+      porcentajeAsistencia: 0,
+      codigoPermanencia: 'REGULAR',
+      umbralAdvertencia: 15,
+      umbralPerdida: 20,
+      marca: null,
+    }));
+    return of(okPageResponse(elementos, pagina, tamano, matriculados.length)).pipe(delay(250));
   }
   if (url.endsWith('/estudiante/reclamos') && method === 'GET') {
     // HU010/HU011: misma forma que el backend (lista con `total`), filtrada por estado y paginada.

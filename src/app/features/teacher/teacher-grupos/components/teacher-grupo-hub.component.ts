@@ -5,7 +5,7 @@ import { EmptyStateComponent } from '../../../../shared/components/empty-state/e
 import { SesionEstadoBadgeComponent } from '../../../../shared/components/sesion-estado-badge/sesion-estado-badge.component';
 import { Course } from '../../../../core/models/course.model';
 import { ClassSession } from '../../../../core/models/attendance.model';
-import { DEFINICION_CONTEO_SESIONES, resumirSesiones, sesionDeHoy } from '../../../../core/models/sesiones-resumen.util';
+import { DEFINICION_CONTEO_SESIONES, ResumenSesionesGrupo, textoResumenSesiones } from '../../../../core/models/resumen-sesiones-grupo.model';
 import { estaPendienteAprobacion, TEXTO_SESION_PENDIENTE } from '../../../../core/models/sesion-estado.model';
 import { SessionTimeZoneService } from '../../../../core/services/session-timezone.service';
 import { TeacherGrupoSesionesComponent } from './teacher-grupo-sesiones.component';
@@ -76,7 +76,7 @@ const PESTANAS_GRUPO: readonly PestanaGrupo[] = [
               <span class="text-xs font-bold text-warm-600">{{ selectedCourse()?.section }}</span>
               <span class="text-xs text-warm-400">•</span>
               <span class="text-xs font-medium text-success-700 bg-success-50 px-2 py-0.5 rounded-full border border-success-200">
-                {{ selectedCourse()?.enrolledStudentsCount || estudiantes().length }} alumnos matriculados
+                {{ selectedCourse()?.enrolledStudentsCount || totalEstudiantes() || 0 }} alumnos matriculados
               </span>
             </div>
             <h2 class="font-serif font-bold text-2xl text-warm-900">{{ selectedCourse()?.name }}</h2>
@@ -89,7 +89,7 @@ const PESTANAS_GRUPO: readonly PestanaGrupo[] = [
               data-testid="hub-conteo-sesiones"
               [attr.title]="definicionConteo"
             >
-              Sesiones: <strong class="text-warm-900">{{ resumen().texto }}</strong>
+              Sesiones: <strong class="text-warm-900">{{ textoConteoSesiones() }}</strong>
             </p>
           </div>
 
@@ -219,7 +219,7 @@ const PESTANAS_GRUPO: readonly PestanaGrupo[] = [
               >
                 {{ tab.etiqueta }}
                 @if (tab.id === 'ESTUDIANTES') {
-                  <span class="px-2 py-0.5 rounded-full text-[11px] bg-success-100 text-success-800">{{ totalEstudiantes() ?? estudiantes().length }}</span>
+                  <span class="px-2 py-0.5 rounded-full text-[11px] bg-success-100 text-success-800">{{ totalEstudiantes() ?? 0 }}</span>
                 }
                 @if (tab.id === 'RECLAMOS') {
                   <span
@@ -234,9 +234,8 @@ const PESTANAS_GRUPO: readonly PestanaGrupo[] = [
           @if (subPestanaHub() === 'SABANA') {
             <app-teacher-grupo-sabana
               [grupoId]="selectedCourse()?.id ?? ''"
-              [estudiantes]="estudiantes()"
               [sessions]="sessions()"
-              [cargando]="cargandoEstudiantes() || loadingSessions()"
+              [cargando]="loadingSessions()"
               [refresco]="refrescoPlanilla()"
             />
           }
@@ -295,8 +294,8 @@ export class TeacherGrupoHubComponent {
   protected readonly definicionConteo = DEFINICION_CONTEO_SESIONES;
 
   selectedCourse = input<Course | null>(null);
-  /** Instante de referencia para "en curso", "próxima" y "ejecutada"; sin valor se usa la hora actual. */
-  ahora = input<Date | null>(null);
+  /** CIERRE-W3M: conteos, estado temporal y sesion en curso o proxima entregados por el servidor (el cliente no usa su reloj). */
+  resumenSesiones = input<ResumenSesionesGrupo | null>(null);
 
   protected readonly acciones = computed<ActionMenuItem[]>(() => {
     const items: ActionMenuItem[] = [{ id: 'matricula-qr', label: 'QR / PIN Matrícula', testid: 'hub-matricula-qr' }];
@@ -312,8 +311,6 @@ export class TeacherGrupoHubComponent {
   }
   sessions = input<ClassSession[]>([]);
   loadingSessions = input<boolean>(false);
-  estudiantes = input<EstudianteGrupoItem[]>([]);
-  cargandoEstudiantes = input<boolean>(false);
   reclamos = input<SolicitudRevisionItem[]>([]);
   /** Total de reclamos del grupo según el servidor; `reclamos` es solo la página vigente. */
   totalReclamos = input<number | null>(null);
@@ -339,8 +336,20 @@ export class TeacherGrupoHubComponent {
   /** Un solo conteo de sesiones del grupo; la definición viaja en el `title` de la cifra. */
   protected readonly esPendiente = estaPendienteAprobacion;
   protected readonly textoPendiente = TEXTO_SESION_PENDIENTE;
-  protected readonly resumen = computed(() => resumirSesiones(this.sessions(), this.ahora() ?? new Date()));
-  protected readonly hoy = computed(() => sesionDeHoy(this.sessions(), this.ahora() ?? new Date()));
+  protected readonly textoConteoSesiones = computed(() => {
+    const resumen = this.resumenSesiones();
+    return resumen ? textoResumenSesiones(resumen) : '—';
+  });
+  /** La sesion en curso o, si no hay, la proxima, segun los ids que decide el servidor; solo se ubica en la lista. */
+  protected readonly hoy = computed<{ sesion: ClassSession; tipo: 'EN_CURSO' | 'PROXIMA' } | null>(() => {
+    const resumen = this.resumenSesiones();
+    if (!resumen) return null;
+    const sesiones = this.sessions();
+    const enCurso = resumen.idSesionEnCurso ? sesiones.find((s) => s.id === resumen.idSesionEnCurso) : undefined;
+    if (enCurso) return { sesion: enCurso, tipo: 'EN_CURSO' };
+    const proxima = resumen.idSesionProxima ? sesiones.find((s) => s.id === resumen.idSesionProxima) : undefined;
+    return proxima ? { sesion: proxima, tipo: 'PROXIMA' } : null;
+  });
 
   protected irAGrupo(): void {
     if (this.subPestanaHub() === 'HOY') this.subPestanaHub.set('SABANA');
