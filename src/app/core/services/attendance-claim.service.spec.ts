@@ -316,7 +316,39 @@ describe('AttendanceClaimService', () => {
         const req = http.expectOne((r) => r.url === `${environment.apiUrl}/estudiante/materias/${ASIGNATURA}/sesiones`);
         expect(req.request.params.get('pagina')).toBe('2');
         expect(req.request.params.get('tamano')).toBe('25');
+        expect(req.request.params.has('grupoId')).toBeFalse();
         req.flush({ exitoso: true, datos: [] });
+      });
+
+      it('CIERRE-W2B: envia grupoId cuando se indica y entrega el total real del backend, no el de la pagina', () => {
+        const GRUPO = 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d';
+        let total: number | undefined;
+        service.getSesionesPorMateria(ASIGNATURA, { pagina: 2, tamano: 1, grupoId: GRUPO }).subscribe((res) => (total = res.total));
+        const req = http.expectOne((r) => r.url === `${environment.apiUrl}/estudiante/materias/${ASIGNATURA}/sesiones`);
+        expect(req.request.params.get('grupoId')).toBe(GRUPO);
+        req.flush({ exitoso: true, datos: [], total: 14 });
+        expect(total).toBe(14);
+      });
+
+      it('CIERRE-W2B: conserva el orden en que la base entrega las sesiones (no las reordena)', () => {
+        let numeros: number[] = [];
+        service.getSesionesPorMateria(ASIGNATURA).subscribe((res) => (numeros = res.datos.map((s) => s.numeroSesion)));
+        const req = http.expectOne((r) => r.url === `${environment.apiUrl}/estudiante/materias/${ASIGNATURA}/sesiones`);
+        const dto = (id: string, numero: number, inicio: string) => ({
+          id, nombre: `S${numero}`, numero, codigo: `SES-${numero}`, numeroSemana: 1,
+          idGrupo: 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d', codigoGrupo: '001', nombreGrupo: 'G1',
+          fechaHoraInicio: inicio, fechaHoraFin: inicio,
+        });
+        req.flush({
+          exitoso: true,
+          total: 3,
+          datos: [
+            dto('b1b2b3b4-0000-4000-8000-000000000003', 5, '2026-10-01T13:00:00Z'),
+            dto('b1b2b3b4-0000-4000-8000-000000000001', 9, '2026-10-02T13:00:00Z'),
+            dto('b1b2b3b4-0000-4000-8000-000000000002', 2, '2026-10-03T13:00:00Z'),
+          ],
+        });
+        expect(numeros).toEqual([5, 9, 2]);
       });
     });
 

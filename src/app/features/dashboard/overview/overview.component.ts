@@ -36,6 +36,7 @@ import {
   DocenteItem,
   PlanEstudioItem,
   MateriaEstudianteItem,
+  ResumenMateriasEstudiante,
   HorarioDocenteItem,
   HorarioItem,
 } from '../../../core/models/role-management.model';
@@ -116,8 +117,8 @@ import { OverviewStudentComponent } from './components/overview-student.componen
         @case ('ESTUDIANTE') {
           <app-overview-student
             [materias]="materias()"
-            [materiasEnRiesgo]="studentMateriasEnRiesgo()"
-            [horasFalta]="studentHorasFalta()"
+            [estadoMaterias]="estadoMateriasEstudiante()"
+            [resumen]="studentResumen()"
             [proximaClase]="proximaClase()"
           />
         }
@@ -180,9 +181,10 @@ export class OverviewComponent implements OnInit {
 
   // Datos Estudiante
   materias = signal<MateriaEstudianteItem[]>([]);
-  /** `null` = sin fuente autoritativa de asistencia (no se muestran ceros inventados). */
-  studentMateriasEnRiesgo = signal<number | null>(null);
-  studentHorasFalta = signal<number | null>(null);
+  /** Mientras la consulta no responde, o si falla, la vista no muestra "0 materias" ni "No tienes materias inscritas". */
+  estadoMateriasEstudiante = signal<'CARGANDO' | 'LISTO' | 'ERROR'>('CARGANDO');
+  /** Indicadores del tablero calculados por el backend (CIERRE-W2B); `null` = aun no llegan o no se pudieron consultar. */
+  studentResumen = signal<ResumenMateriasEstudiante | null>(null);
 
   isLoading = signal<boolean>(true);
 
@@ -333,26 +335,28 @@ export class OverviewComponent implements OnInit {
             }
           },
         });
+        // CIERRE-W2B: los indicadores (materias, en riesgo, horas de falta) los calcula el backend con las mismas materias del
+        // listado; el cliente no cuenta ni suma nada.
+        this.studentService.getResumenMaterias().subscribe({
+          next: (res) => this.studentResumen.set(res.exitoso ? res.datos : null),
+          error: () => this.studentResumen.set(null),
+        });
+        this.estadoMateriasEstudiante.set('CARGANDO');
         this.studentService.getMaterias().subscribe({
           next: (res) => {
             if (res.exitoso && res.datos) {
               this.materias.set(res.datos);
-              // CULM-001 B.2: solo se cuentan y suman valores que ya entrega el backend (por horas).
-              const conIndicadores = res.datos.filter((m) => m.indicadores !== null);
-              if (conIndicadores.length > 0) {
-                this.studentMateriasEnRiesgo.set(
-                  conIndicadores.filter((m) => m.indicadores!.codigoPermanencia === 'RIESGO' || m.indicadores!.codigoPermanencia === 'PERDIDA').length
-                );
-                this.studentHorasFalta.set(conIndicadores.reduce((acc, m) => acc + m.indicadores!.horasFalta, 0));
-              } else {
-                this.studentMateriasEnRiesgo.set(null);
-                this.studentHorasFalta.set(null);
-              }
+              this.estadoMateriasEstudiante.set('LISTO');
               this.recalcularProximaClase();
+            } else {
+              this.estadoMateriasEstudiante.set('ERROR');
             }
             this.isLoading.set(false);
           },
-          error: () => this.isLoading.set(false),
+          error: () => {
+            this.estadoMateriasEstudiante.set('ERROR');
+            this.isLoading.set(false);
+          },
         });
         this.iniciarRelojProximaClase();
         break;

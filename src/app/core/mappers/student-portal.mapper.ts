@@ -1,6 +1,7 @@
 import {
   HorarioEstudianteApiDto,
   MateriaEstudianteApiDto,
+  ResumenMateriasEstudianteApiDto,
   SesionMateriaEstudianteApiDto,
   TomaSesionEstudianteApiDto,
 } from '../api/models/estudiante-portal-api-dto.model';
@@ -12,6 +13,7 @@ import {
   HorarioItem,
   MateriaEstudianteItem,
   ResultadoAprobacionReclamo,
+  ResumenMateriasEstudiante,
   SesionMateriaDetalle,
   TomaSesionEstudiante,
 } from '../models/role-management.model';
@@ -160,6 +162,23 @@ export class StudentPortalMapper {
       estadoMatricula: dto.estadoMatricula ?? null,
       horasProgramadas: cantidadNoNegativa(dto.horasProgramadas),
       sesionesProgramadas: cantidadNoNegativa(dto.sesionesProgramadas),
+    };
+  }
+
+  /**
+   * Resumen del tablero tal como lo calculo el backend; nada se suma ni se clasifica aqui. Un cuerpo ausente o con cifras
+   * que no son numeros validos devuelve `null` (el tablero muestra "No disponible", nunca un cero).
+   */
+  static toResumenMaterias(dto: ResumenMateriasEstudianteApiDto | null | undefined): ResumenMateriasEstudiante | null {
+    const totalMaterias = cantidadNoNegativa(dto?.totalMaterias);
+    const totalHorasFalta = cantidadNoNegativa(dto?.totalHorasFalta);
+    const totalCreditos = cantidadNoNegativa(dto?.totalCreditos);
+    if (totalMaterias === null || totalHorasFalta === null || totalCreditos === null) return null;
+    return {
+      totalMaterias,
+      materiasEnRiesgo: cantidadNoNegativa(dto?.materiasEnRiesgo),
+      totalHorasFalta,
+      totalCreditos,
     };
   }
 

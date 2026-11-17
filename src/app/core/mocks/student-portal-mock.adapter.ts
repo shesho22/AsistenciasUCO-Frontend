@@ -1,6 +1,7 @@
 import {
   HorarioEstudianteApiDto,
   MateriaEstudianteApiDto,
+  ResumenMateriasEstudianteApiDto,
   SesionMateriaEstudianteApiDto,
   TomaSesionEstudianteApiDto,
 } from '../api/models/estudiante-portal-api-dto.model';
@@ -36,6 +37,58 @@ export function mockMateriasToDto(materias: MockMateriaEstudiante[]): MateriaEst
     idGrupo: mockUuid(`grupo:${m.id}:${m.grupo}`),
     nombreGrupo: m.grupo,
   }));
+}
+
+/** Inicio y fin (`HH:mm`) del texto de horario de una sesion mock; 08:00 a 10:00 si no se reconoce. */
+function inicioYFin(horario: string): { inicio: string; fin: string } {
+  const horas = /^(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})/.exec(horario);
+  return { inicio: horas?.[1] ?? '08:00', fin: horas?.[2] ?? '10:00' };
+}
+
+function minutosEntre(inicio: string, fin: string): number {
+  return (Number(fin.slice(0, 2)) - Number(inicio.slice(0, 2))) * 60 + Number(fin.slice(3)) - Number(inicio.slice(3));
+}
+
+/**
+ * Resumen mock -> `ResumenMateriasEstudianteDTO`. Simula al backend: sale de las MISMAS materias que `GET /estudiante/materias`
+ * (cada una cuenta una vez), con las horas de las sesiones ausentes del simulador y su propia marca de riesgo; la vista no
+ * calcula nada de esto.
+ */
+export function mockResumenMateriasToDto(
+  materias: MockMateriaEstudiante[],
+  sesionesPorMateria: Record<string, MockSesionMateria[]>
+): ResumenMateriasEstudianteApiDto {
+  const minutosFalta = materias
+    .flatMap((m) => sesionesPorMateria[m.id] ?? [])
+    .filter((s) => s.estadoAsistencia === 'AUSENTE')
+    .reduce((suma, s) => {
+      const { inicio, fin } = inicioYFin(s.horario);
+      return suma + minutosEntre(inicio, fin);
+    }, 0);
+  return {
+    totalMaterias: materias.length,
+    materiasEnRiesgo: materias.filter((m) => m.estado !== 'Al día').length,
+    totalHorasFalta: Math.round((minutosFalta / 60) * 100) / 100,
+    totalCreditos: materias.reduce((suma, m) => suma + m.creditos, 0),
+  };
+}
+
+/**
+ * Sesiones mock en el orden, el filtro y la pagina que aplica la base: filtro opcional por grupo, orden por inicio, numero e
+ * id, y total del filtro (no el de la pagina). El simulador atiende `pagina`, `tamano` y `grupoId` como el backend.
+ */
+export function mockPaginarSesionesDto(
+  sesiones: SesionMateriaEstudianteApiDto[],
+  filtro: { grupoId?: string | null; pagina?: number; tamano?: number }
+): { pagina: SesionMateriaEstudianteApiDto[]; total: number } {
+  const delGrupo = sesiones.filter((s) => !filtro.grupoId || s.idGrupo === filtro.grupoId);
+  const ordenadas = [...delGrupo].sort(
+    (a, b) =>
+      String(a.fechaHoraInicio).localeCompare(String(b.fechaHoraInicio)) || a.numero - b.numero || a.id.localeCompare(b.id)
+  );
+  const pagina = Math.max(1, filtro.pagina ?? 1);
+  const tamano = Math.max(1, filtro.tamano ?? 100);
+  return { pagina: ordenadas.slice((pagina - 1) * tamano, pagina * tamano), total: ordenadas.length };
 }
 
 /** Horario mock -> `HorarioEstudianteDTO`. */
@@ -80,11 +133,9 @@ export function mockSesionesToDto(
 ): SesionMateriaEstudianteApiDto[] {
   const grupo = materia?.grupo ?? 'GRP-01';
   return sesiones.map((s) => {
-    const horas = /^(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})/.exec(s.horario);
-    const inicio = horas?.[1] ?? '08:00';
-    const fin = horas?.[2] ?? '10:00';
+    const { inicio, fin } = inicioYFin(s.horario);
     const tomas = mockTomasDto(s.id, s.estadoAsistencia, s.fecha, inicio, fin);
-    const minutos = (Number(fin.slice(0, 2)) - Number(inicio.slice(0, 2))) * 60 + Number(fin.slice(3)) - Number(inicio.slice(3));
+    const minutos = minutosEntre(inicio, fin);
     return {
       id: mockUuid(`sesion:${s.id}`),
       nombre: s.tema,

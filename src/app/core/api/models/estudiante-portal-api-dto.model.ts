@@ -28,6 +28,15 @@ export interface MateriaEstudianteApiDto {
   sesionesProgramadas?: number | null;
 }
 
+/** `ResumenMateriasEstudianteDTO` (CIERRE-W2B): indicadores del tablero calculados en la base. */
+export interface ResumenMateriasEstudianteApiDto {
+  totalMaterias: number;
+  /** Nulo = hay materias pero ningun umbral de permanencia esta configurado. */
+  materiasEnRiesgo: number | null;
+  totalHorasFalta: number;
+  totalCreditos: number;
+}
+
 /** `HorarioEstudianteDTO`. `dia` y las horas llegan como texto (`LocalTime`: `HH:mm` o `HH:mm:ss`). */
 export interface HorarioEstudianteApiDto {
   id: string;

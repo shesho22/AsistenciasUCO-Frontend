@@ -207,13 +207,14 @@ export class AttendanceClaimService {
 
   /**
    * Sesiones de una asignatura (`idAsignatura`) del estudiante autenticado. Valida el UUID antes de construir la
-   * ruta (jamas `/materias/undefined/sesiones`) y adapta `SesionMateriaEstudianteDTO` al modelo de UI. El backend
-   * devuelve las sesiones de todos los grupos del estudiante en esa asignatura: el consumidor filtra por `grupoId`.
+   * ruta (jamas `/materias/undefined/sesiones`) y adapta `SesionMateriaEstudianteDTO` al modelo de UI. CIERRE-W2B: el
+   * backend entrega la pagina ya ordenada (inicio, numero, id) y `total` es el total del filtro (no el de la pagina);
+   * `grupoId` limita a un grupo del estudiante. Esta capa no ordena, filtra ni pagina.
    * El error HTTP se propaga sin toast global; la vista lo presenta localmente.
    */
   getSesionesPorMateria(
     materiaId: string,
-    paginacion?: { pagina?: number; tamano?: number }
+    paginacion?: { pagina?: number; tamano?: number; grupoId?: string }
   ): Observable<ApiResponse<SesionMateriaDetalle[]>> {
     if (!isUuid(materiaId)) {
       return throwError(() => new IdentificadorInvalidoError(materiaId));
@@ -222,6 +223,7 @@ export class AttendanceClaimService {
     let params = new HttpParams();
     if (paginacion?.pagina !== undefined) params = params.set('pagina', paginacion.pagina);
     if (paginacion?.tamano !== undefined) params = params.set('tamano', paginacion.tamano);
+    if (paginacion?.grupoId !== undefined) params = params.set('grupoId', paginacion.grupoId);
     return this.http
       .get<ApiListResponse<SesionMateriaEstudianteApiDto>>(
         `${environment.apiUrl}/estudiante/materias/${materiaId}/sesiones`,
@@ -232,7 +234,7 @@ export class AttendanceClaimService {
           const datos = StudentPortalMapper.toSesiones(res.datos, materiaId, (instant) =>
             this.sessionTimeZone.displayInstant(instant)
           );
-          return { exitoso: res.exitoso, datos, total: datos.length };
+          return { exitoso: res.exitoso, datos, total: res.total };
         })
       );
   }

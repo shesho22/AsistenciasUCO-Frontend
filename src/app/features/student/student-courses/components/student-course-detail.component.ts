@@ -1,6 +1,6 @@
 import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 import { SemaforoAsistenciaComponent } from '../../../../shared/components/semaforo-asistencia/semaforo-asistencia.component';
-import { Component, ChangeDetectionStrategy, computed, input, output, signal, inject, effect, OnDestroy } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, output, inject, effect, OnDestroy } from '@angular/core';
 
 import { Subscription } from 'rxjs';
 import { AttendanceStatusBadgeComponent } from '../../../../shared/components/attendance-status-badge/attendance-status-badge.component';
@@ -17,7 +17,6 @@ import {
 import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
 import { CategoriaJustificacionItem } from '../../../../core/models/consultas-transversales.model';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
-import { ordenarSesionesCronologicamente } from '../../../../core/utils/sesiones-orden.util';
 import { detalleExcusaSesion, etiquetaEstadoSesion } from '../../../../core/utils/estado-sesion-estudiante.util';
 import { etiquetaResultadoAprobacion } from '../../../../core/utils/reclamo-estado.util';
 import { MotivosJustificacionComponent } from './motivos-justificacion.component';
@@ -130,7 +129,7 @@ import { ToastService } from '../../../../shared/components/toast/toast.componen
             </div>
             @if (!loading() && !error()) {
               <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-warm-100 text-warm-700" data-testid="conteo-sesiones">
-                {{ sesiones().length }} {{ sesiones().length === 1 ? 'sesión' : 'sesiones' }}
+                {{ totalSesiones() }} {{ totalSesiones() === 1 ? 'sesión' : 'sesiones' }}
               </span>
             }
           </div>
@@ -158,7 +157,7 @@ import { ToastService } from '../../../../shared/components/toast/toast.componen
             </div>
           } @else {
             <div class="divide-y divide-warm-100">
-              @for (sesion of sesionesPagina(); track sesion.id) {
+              @for (sesion of sesiones(); track sesion.id) {
                 <div
                   class="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-warm-50/50 transition-colors"
                   [attr.data-testid]="'sesion-' + sesion.id"
@@ -332,13 +331,13 @@ import { ToastService } from '../../../../shared/components/toast/toast.componen
               }
             </div>
             <app-pagination
-              [totalItems]="sesionesOrdenadas().length"
+              [totalItems]="totalSesiones()"
               [pageSize]="tamano()"
-              [currentPage]="paginaEfectiva()"
+              [currentPage]="pagina()"
               [showPageSizeSelector]="true"
               [pageSizeOptions]="[10, 20, 50]"
-              (pageChange)="pagina.set($event)"
-              (pageSizeChange)="cambiarTamano($event)"
+              (pageChange)="paginaCambiada.emit($event)"
+              (pageSizeChange)="tamanoCambiado.emit($event)"
             />
           }
         </div>
@@ -352,7 +351,12 @@ export class StudentCourseDetailComponent implements OnDestroy {
   private subRealtime?: Subscription;
 
   materia = input<MateriaEstudianteItem | null>(null);
+  /** Pagina actual de sesiones tal como la entrega el backend (ya ordenada y filtrada por grupo). */
   sesiones = input<SesionMateriaDetalle[]>([]);
+  /** Total de sesiones del grupo (del backend, no el de la pagina). */
+  totalSesiones = input<number>(0);
+  pagina = input<number>(1);
+  tamano = input<number>(10);
   /** HU016: catálogo de motivos de justificación (solo consulta). */
   categorias = input<CategoriaJustificacionItem[]>([]);
   loading = input<boolean>(false);
@@ -423,22 +427,9 @@ export class StudentCourseDetailComponent implements OnDestroy {
     }
   }
 
-  /** Cronologico (F-EST-S17): el orden de llegada del backend no esta garantizado. */
-  readonly sesionesOrdenadas = computed(() => ordenarSesionesCronologicamente(this.sesiones()));
-  readonly pagina = signal(1);
-  readonly tamano = signal(10);
-  readonly paginaEfectiva = computed(() =>
-    Math.min(this.pagina(), Math.max(1, Math.ceil(this.sesionesOrdenadas().length / this.tamano())))
-  );
-  readonly sesionesPagina = computed(() => {
-    const inicio = (this.paginaEfectiva() - 1) * this.tamano();
-    return this.sesionesOrdenadas().slice(inicio, inicio + this.tamano());
-  });
-
-  cambiarTamano(tamano: number): void {
-    this.tamano.set(tamano);
-    this.pagina.set(1);
-  }
+  /** El padre pide la pagina al backend; esta vista no ordena ni pagina sesiones (CIERRE-W2B). */
+  paginaCambiada = output<number>();
+  tamanoCambiado = output<number>();
 
   retry = output<void>();
   back = output<void>();

@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { StudentCoursesListComponent } from './student-courses-list.component';
 import { crearMateria } from '../../../../core/testing/student-portal.fixtures';
 import { IndicadoresAsistenciaResponse } from '../../../../core/models/indicadores-asistencia.model';
+import { ResumenMateriasEstudiante } from '../../../../core/models/role-management.model';
 
 const indicadores = (parcial: Partial<IndicadoresAsistenciaResponse> = {}): IndicadoresAsistenciaResponse => ({
   sesionesEjecutadas: 10, horasDictadas: 20, horasAsistidas: 16, horasFalta: 3, horasExcusa: 1, horasSinRegistro: 0,
@@ -208,5 +209,51 @@ describe('StudentCoursesListComponent: barra de horas de la materia (HU019)', ()
 
     expect(el(fixture, 'barra-horas')).toBeNull();
     expect(el(fixture, 'asistencia-no-disponible')).not.toBeNull();
+  });
+});
+
+describe('StudentCoursesListComponent — tarjetas del resumen del backend (CIERRE-W2B)', () => {
+  function render(resumen: ResumenMateriasEstudiante | null) {
+    const fixture = TestBed.configureTestingModule({ imports: [StudentCoursesListComponent] }).createComponent(
+      StudentCoursesListComponent
+    );
+    fixture.componentRef.setInput('materias', [crearMateria(), crearMateria({ idGrupo: 'g-2', claveGrupo: 'a:g-2' })]);
+    fixture.componentRef.setInput('resumen', resumen);
+    fixture.detectChanges();
+    return fixture;
+  }
+  const el = (f: { nativeElement: HTMLElement }, id: string) => f.nativeElement.querySelector(`[data-testid="${id}"]`);
+
+  it('muestra las cifras que entrega el backend, aunque difieran de las filas visibles (no las recuenta)', () => {
+    const fixture = render({ totalMaterias: 5, materiasEnRiesgo: 2, totalHorasFalta: 7.25, totalCreditos: 14 });
+
+    expect(el(fixture, 'resumen-total-materias')!.textContent!.trim()).toBe('5');
+    expect(fixture.nativeElement.textContent).toContain('7.25 h');
+    expect(el(fixture, 'riesgo-no-disponible')).toBeNull();
+    expect(el(fixture, 'horas-falta-no-disponible')).toBeNull();
+  });
+
+  it('sin resumen todas las tarjetas dicen "No disponible" (ni 0 ni el numero de filas)', () => {
+    const fixture = render(null);
+
+    expect(el(fixture, 'materias-no-disponible')).not.toBeNull();
+    expect(el(fixture, 'riesgo-no-disponible')).not.toBeNull();
+    expect(el(fixture, 'horas-falta-no-disponible')).not.toBeNull();
+    expect(el(fixture, 'resumen-total-materias')).toBeNull();
+  });
+
+  it('con materias en riesgo nulo (sin umbrales) solo esa tarjeta dice "No disponible"', () => {
+    const fixture = render({ totalMaterias: 2, materiasEnRiesgo: null, totalHorasFalta: 0, totalCreditos: 6 });
+
+    expect(el(fixture, 'riesgo-no-disponible')).not.toBeNull();
+    expect(el(fixture, 'horas-falta-no-disponible')).toBeNull();
+    expect(el(fixture, 'resumen-total-materias')!.textContent!.trim()).toBe('2');
+  });
+
+  it('cero en riesgo es un dato real, no "No disponible"', () => {
+    const fixture = render({ totalMaterias: 2, materiasEnRiesgo: 0, totalHorasFalta: 0, totalCreditos: 6 });
+
+    expect(el(fixture, 'riesgo-no-disponible')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('0 h');
   });
 });

@@ -1,15 +1,18 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpContext } from '@angular/common/http';
 import { Observable, catchError, forkJoin, map, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiResponse } from '../models/api-response.model';
 import { ApiListResponse } from '../api/models/api-list-response.model';
+import { ApiDataResponse } from '../api/models/api-data-response.model';
 import {
   HorarioEstudianteApiDto,
   MateriaEstudianteApiDto,
+  ResumenMateriasEstudianteApiDto,
 } from '../api/models/estudiante-portal-api-dto.model';
+import { BYPASS_GLOBAL_ERROR_TOAST } from '../interceptors/error.interceptor';
 import { StudentPortalMapper } from '../mappers/student-portal.mapper';
-import { HorarioItem, MateriaEstudianteItem } from '../models/role-management.model';
+import { HorarioItem, MateriaEstudianteItem, ResumenMateriasEstudiante } from '../models/role-management.model';
 
 @Injectable({
   providedIn: 'root',
@@ -28,6 +31,19 @@ export class StudentManagementService {
           return { exitoso: res.exitoso, datos, total: datos.length };
         })
       );
+  }
+
+  /**
+   * `GET /estudiante/materias/resumen` (CIERRE-W2B): materias, materias en riesgo, horas de falta y creditos calculados por el
+   * backend con las mismas materias que el listado. `datos` es `null` si el cuerpo no trae cifras validas.
+   */
+  getResumenMaterias(): Observable<ApiResponse<ResumenMateriasEstudiante | null>> {
+    return this.http
+      .get<ApiDataResponse<ResumenMateriasEstudianteApiDto>>(`${environment.apiUrl}/estudiante/materias/resumen`, {
+        // Si falla, las tarjetas muestran "No disponible"; el listado de materias ya informa el error de la pantalla.
+        context: new HttpContext().set(BYPASS_GLOBAL_ERROR_TOAST, true),
+      })
+      .pipe(map((res) => ({ exitoso: res.exitoso, datos: StudentPortalMapper.toResumenMaterias(res.datos) })));
   }
 
   /**

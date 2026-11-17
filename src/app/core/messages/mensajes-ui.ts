@@ -157,6 +157,7 @@ export const MENSAJES_UI = {
   UI_TEACHER_MATRICULA_MODAL_001: 'La matrícula por código quedó cerrada.',
   UI_TEACHER_MATRICULA_MODAL_002: 'PIN de matrícula copiado al portapapeles.',
   UI_TEACHER_MATRICULA_MODAL_003: 'Enlace de matrícula copiado al portapapeles.',
+  UI_TEACHER_REVISION_DECISION_MODAL_001: 'No hay acciones disponibles para esta revisión: el caso no espera tu decisión.',
   UI_TEACHER_RETIRO_ESTUDIANTE_MODAL_001: '{nombre} fue retirado del grupo.',
   UI_TEACHER_RETIRO_ESTUDIANTE_MODAL_002: 'El estudiante fue retirado del grupo.',
 } as const;

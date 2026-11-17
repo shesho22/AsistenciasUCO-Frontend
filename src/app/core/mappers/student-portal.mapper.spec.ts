@@ -438,4 +438,29 @@ describe('StudentPortalMapper: puntos de control (minutos y tomas)', () => {
     expect(s.tomas.length).toBe(1);
     expect(s.tomas[0].reclamable).toBeFalse();
   });
+
+  describe('resumen del tablero (CIERRE-W2B)', () => {
+    it('conserva las cuatro cifras del backend sin recalcularlas', () => {
+      expect(StudentPortalMapper.toResumenMaterias({ totalMaterias: 3, materiasEnRiesgo: 1, totalHorasFalta: 4.5, totalCreditos: 9 }))
+        .toEqual({ totalMaterias: 3, materiasEnRiesgo: 1, totalHorasFalta: 4.5, totalCreditos: 9 });
+    });
+
+    it('un riesgo nulo o invalido queda en null (sin umbrales: no es un cero)', () => {
+      expect(StudentPortalMapper.toResumenMaterias({ totalMaterias: 2, materiasEnRiesgo: null, totalHorasFalta: 0, totalCreditos: 6 })?.materiasEnRiesgo).toBeNull();
+      expect(StudentPortalMapper.toResumenMaterias({ totalMaterias: 2, materiasEnRiesgo: -1, totalHorasFalta: 0, totalCreditos: 6 })?.materiasEnRiesgo).toBeNull();
+    });
+
+    it('cero es un valor real y se conserva', () => {
+      expect(StudentPortalMapper.toResumenMaterias({ totalMaterias: 0, materiasEnRiesgo: 0, totalHorasFalta: 0, totalCreditos: 0 }))
+        .toEqual({ totalMaterias: 0, materiasEnRiesgo: 0, totalHorasFalta: 0, totalCreditos: 0 });
+    });
+
+    it('un cuerpo ausente o con cifras que no son numeros validos devuelve null (nunca ceros inventados)', () => {
+      expect(StudentPortalMapper.toResumenMaterias(null)).toBeNull();
+      expect(StudentPortalMapper.toResumenMaterias(undefined)).toBeNull();
+      expect(StudentPortalMapper.toResumenMaterias({ totalMaterias: NaN, materiasEnRiesgo: 0, totalHorasFalta: 0, totalCreditos: 0 })).toBeNull();
+      expect(StudentPortalMapper.toResumenMaterias({ totalMaterias: 1, materiasEnRiesgo: 0, totalHorasFalta: -2, totalCreditos: 0 })).toBeNull();
+      expect(StudentPortalMapper.toResumenMaterias({ totalMaterias: 1, materiasEnRiesgo: 0, totalHorasFalta: 0 } as never)).toBeNull();
+    });
+  });
 });
