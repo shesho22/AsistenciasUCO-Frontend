@@ -158,34 +158,34 @@ describe('AdminDecanosComponent', () => {
 
     const triggerFilter = () => component.decanos.set([...component.decanos()]);
 
-    component.searchQuery = 'roberto';
-    component.selectedEstado = 'TODOS';
+    component.busqueda.set('roberto');
+    component.estado.set('TODOS');
     triggerFilter();
     expect(component.filteredDecanos()).toHaveSize(1);
 
-    component.searchQuery = 'carlos';
+    component.busqueda.set('carlos');
     triggerFilter();
     expect(component.filteredDecanos()).toHaveSize(1);
 
-    component.searchQuery = 'zapata';
+    component.busqueda.set('zapata');
     triggerFilter();
     expect(component.filteredDecanos()).toHaveSize(1);
 
-    component.searchQuery = 'ingeniería';
+    component.busqueda.set('ingeniería');
     triggerFilter();
     expect(component.filteredDecanos()).toHaveSize(1);
 
-    component.searchQuery = '1017000002';
+    component.busqueda.set('1017000002');
     triggerFilter();
     expect(component.filteredDecanos()).toHaveSize(1);
 
-    component.searchQuery = '';
-    component.selectedEstado = 'INACTIVO';
+    component.busqueda.set('');
+    component.estado.set('INACTIVO');
     triggerFilter();
     expect(component.filteredDecanos()).toHaveSize(1);
     expect(component.filteredDecanos()[0].id).toBe('dec-2');
 
-    component.selectedEstado = 'ACTIVO';
+    component.estado.set('ACTIVO');
     triggerFilter();
     expect(component.filteredDecanos()).toHaveSize(1);
     expect(component.filteredDecanos()[0].id).toBe('dec-1');
@@ -389,12 +389,12 @@ describe('AdminDecanosComponent', () => {
       expect(component.formData.tipoIdentificacion).not.toBe('CC');
     });
 
-    it('F3-ADM-03: la tarjeta titula con el nombre completo, no muestra el GUID y no calcula DEC-{{numeroIdentificacion}}', () => {
+    it('F3-ADM-03: la fila titula con el nombre completo, no muestra el GUID y no calcula DEC-{{numeroIdentificacion}}', () => {
       component.volverALista();
       fixture.detectChanges();
 
       const el = fixture.nativeElement as HTMLElement;
-      const titulos = Array.from(el.querySelectorAll('h3')).map((h) => h.textContent!.trim());
+      const titulos = Array.from(el.querySelectorAll('tbody td span.font-semibold')).map((h) => h.textContent!.trim());
       expect(titulos).toContain('Roberto Carlos Gómez Pérez');
       expect(el.innerHTML).not.toContain('DEC-1017000001');
       expect(el.textContent).not.toContain('dec-1');
@@ -622,32 +622,213 @@ component.guardarDecano();
     expect(component.decanoACorregir()).toBeNull();
   });
 
-  describe('UX densidad: cabecera con una accion primaria', () => {
-    function abrirMenu(): void {
-      (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('[data-testid="action-menu-trigger"]')!.click();
+  describe('cabecera, tabla, filtros y paginación en el cliente', () => {
+    const el = () => fixture.nativeElement as HTMLElement;
+    const filas = () => Array.from(el().querySelectorAll('tbody tr'));
+
+    function cargar(): void {
+      fixture.detectChanges();
+      satisfyInitRequests();
       fixture.detectChanges();
     }
 
-    it('muestra "Nombrar" como unica accion visible mas el menu "Mas"', () => {
-      fixture.detectChanges();
-      satisfyInitRequests();
-      fixture.detectChanges();
-      const cab = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="acciones-encabezado"]') as HTMLElement;
-      expect(cab.querySelectorAll('button')).toHaveSize(2);
-      expect(cab.textContent).toContain('Nombrar');
-      expect(cab.textContent).not.toContain('Carga Masiva');
+    it('muestra un único botón primario "Registrar decano" y el contador, sin menú ni carga masiva (DEC-074)', () => {
+      cargar();
+      const cab = el().querySelector('[data-testid="acciones-encabezado"]') as HTMLElement;
+      expect(cab.querySelectorAll('button')).toHaveSize(1);
+      expect(cab.textContent).toContain('Registrar decano');
+      expect(cab.textContent).not.toContain('Nombrar');
+      expect(cab.querySelector('[data-testid="contador-decanos"]')!.textContent!.trim()).toBe('2 Decanos');
+      expect(el().querySelector('[data-testid="action-menu-trigger"]')).toBeNull();
+      expect(el().querySelector('[data-testid="accion-carga-masiva"]')).toBeNull();
     });
 
-    it('"Registrar nuevo" esta en el menu y abre el registro; ya no hay carga masiva (DEC-074)', () => {
+    it('"Registrar decano" abre el formulario de registro', () => {
+      cargar();
+      (el().querySelector('[data-testid="accion-registrar-decano"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(component.vistaActual()).toBe('REGISTRO');
+    });
+
+    it('la lista es una tabla con Decano, Documento, Facultad, Estado y Acciones', () => {
+      cargar();
+      const cols = Array.from(el().querySelectorAll('thead th')).map((t) => t.textContent!.trim());
+      expect(cols).toEqual(['Decano', 'Documento', 'Facultad', 'Estado', 'Acciones']);
+      expect(filas()).toHaveSize(2);
+      expect(el().querySelector('app-card')).toBeNull();
+      const primera = filas()[0].textContent!;
+      expect(primera).toContain('Roberto Carlos Gómez Pérez');
+      expect(primera).toContain('rgomez@uco.edu.co');
+      expect(primera).toContain('1017000001');
+      expect(primera).toContain('Facultad de Ingeniería');
+      expect(primera).toContain('Activo');
+    });
+
+    it('cada fila ofrece Desactivar o Reactivar según el estado, y Corregir datos', () => {
+      cargar();
+      const acciones = (i: number) => Array.from(filas()[i].querySelectorAll('button')).map((b) => b.textContent!.trim());
+      expect(acciones(0)).toEqual(['Desactivar', 'Corregir datos']);
+      expect(acciones(1)).toEqual(['Reactivar', 'Corregir datos']);
+    });
+
+    it('los botones de la fila alternan el estado y abren la corrección de identidad', () => {
+      cargar();
+      (filas()[0].querySelector('[data-accion="alternar-estado"]') as HTMLButtonElement).click();
+      const req = http.expectOne(`${environment.apiUrl}/admin/decanos/dec-1/toggle`);
+      req.flush({ exitoso: true, datos: { ...mockDecanos[0], estado: 'INACTIVO', estaActivoDecano: false } });
+      (filas()[1].querySelector('[data-accion="corregir-identidad"]') as HTMLButtonElement).click();
+      expect(component.decanoACorregir()?.id).toBe('dec-2');
+    });
+
+    it('los filtros (búsqueda y estado) están plegados y actualizan la tabla y el contador', () => {
+      cargar();
+      expect(el().querySelector('app-filtros-plegables')).toBeTruthy();
+      const buscador = el().querySelector('input[type="search"]') as HTMLInputElement;
+      buscador.value = 'zapata';
+      buscador.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+      expect(filas()).toHaveSize(1);
+      expect(filas()[0].textContent).toContain('María Zapata');
+      expect(el().querySelector('[data-testid="contador-decanos"]')!.textContent).toContain('1 Decanos');
+
+      component.onBusqueda('');
+      component.onEstado('ACTIVO');
+      fixture.detectChanges();
+      expect(filas()).toHaveSize(1);
+      expect(filas()[0].textContent).toContain('Roberto');
+      expect(component.filtrosActivos()).toBe(1);
+    });
+
+    it('sin coincidencias muestra el mensaje de lista vacía', () => {
+      cargar();
+      component.onBusqueda('nadie-con-ese-nombre');
+      fixture.detectChanges();
+      expect(filas()).toHaveSize(0);
+      expect(el().textContent).toContain('No hay decanos que coincidan con la búsqueda.');
+    });
+
+    it('pagina en el cliente: parte la lista, navega y vuelve a la primera página al filtrar o cambiar el tamaño', () => {
+      cargar();
+      const muchos = Array.from({ length: 12 }, (_, i) => ({
+        ...mockDecanos[0],
+        id: `dec-${i + 10}`,
+        numeroIdentificacion: `20000000${i}`,
+        nombreCompleto: `Decano Número ${i + 1}`,
+        primerNombre: 'Decano',
+        nombres: 'Decano',
+        apellidos: `Número ${i + 1}`,
+      }));
+      component.decanos.set(muchos);
+      fixture.detectChanges();
+      expect(filas()).toHaveSize(10);
+      expect(component.totalPaginas()).toBe(2);
+      expect(el().querySelector('app-pagination')).toBeTruthy();
+
+      component.irAPagina(2);
+      fixture.detectChanges();
+      expect(filas()).toHaveSize(2);
+      expect(filas()[0].textContent).toContain('Decano Número 11');
+
+      component.onBusqueda('Número');
+      expect(component.pagina()).toBe(1);
+      component.irAPagina(2);
+      component.onEstado('TODOS');
+      expect(component.pagina()).toBe(1);
+
+      component.cambiarTamano(5);
+      fixture.detectChanges();
+      expect(component.tamano()).toBe(5);
+      expect(component.totalPaginas()).toBe(3);
+      expect(filas()).toHaveSize(5);
+    });
+
+    it('al recargar una lista más corta la página actual se ajusta al rango', () => {
+      cargar();
+      component.tamano.set(1);
+      component.irAPagina(2);
+      component.cargarDecanos();
+      http.expectOne(`${environment.apiUrl}/admin/decanos`).flush({ exitoso: true, datos: [mockDecanos[0]] });
+      expect(component.pagina()).toBe(1);
+    });
+
+    it('un fallo de carga muestra app-error-carga con reintento que vuelve a consultar', () => {
+      fixture.detectChanges();
+      http.expectOne(`${environment.apiUrl}/tipos-identificacion`).flush(mockTiposDoc);
+      http.expectOne(`${environment.apiUrl}/admin/facultades`).flush({ exitoso: true, datos: mockFacultades });
+      http.expectOne(`${environment.apiUrl}/admin/instituciones`).flush({ exitoso: true, datos: mockInstituciones });
+      http.expectOne(`${environment.apiUrl}/admin/decanos`).flush({ message: 'caído' }, { status: 500, statusText: 'Server Error' });
+      fixture.detectChanges();
+
+      expect(component.errorCarga()).toBeTruthy();
+      expect(toastService.error).toHaveBeenCalled();
+      const error = el().querySelector('app-error-carga');
+      expect(error).toBeTruthy();
+      expect(el().querySelector('table')).toBeNull();
+
+      const reintentar = Array.from(error!.querySelectorAll('button')).find((b) => /reintentar/i.test(b.textContent ?? ''));
+      (reintentar as HTMLButtonElement).click();
+      http.expectOne(`${environment.apiUrl}/admin/decanos`).flush({ exitoso: true, datos: mockDecanos });
+      fixture.detectChanges();
+      expect(component.errorCarga()).toBeNull();
+      expect(filas()).toHaveSize(2);
+    });
+
+    it('mientras carga por primera vez muestra el estado de carga y el contador provisional', () => {
+      fixture.detectChanges();
+      expect(el().querySelector('[role="status"]')!.textContent).toContain('Cargando decanos');
+      expect(el().querySelector('[data-testid="contador-decanos"]')!.textContent).toContain('…');
+      satisfyInitRequests();
+    });
+  });
+
+  describe('registro único: buscar en el directorio o llenar a mano', () => {
+    const el = () => fixture.nativeElement as HTMLElement;
+
+    beforeEach(() => {
       fixture.detectChanges();
       satisfyInitRequests();
+      component.abrirFormularioRegistro();
       fixture.detectChanges();
-      const el = fixture.nativeElement as HTMLElement;
-      abrirMenu();
-      // DEC-074: sin carga masiva por CSV; el personal se registra uno por uno.
-      expect(el.querySelector('[data-testid="accion-carga-masiva"]')).toBeNull();
-      (el.querySelector('[data-testid="accion-registrar-nuevo"]') as HTMLButtonElement).click();
-      fixture.detectChanges();
+    });
+
+    it('el formulario empieza con el paso "Buscar en el directorio" y no hay banner ni "Nombrar Decano Existente"', () => {
+      const paso = el().querySelector('[data-testid="paso-directorio"]') as HTMLElement;
+      expect(paso.textContent).toContain('Buscar en el directorio');
+      expect(el().textContent).not.toContain('Buscar Persona');
+      expect(el().textContent).not.toContain('Nombrar Decano Existente');
+      (paso.querySelector('button') as HTMLButtonElement).click();
+      expect(component.isPickerModalOpen()).toBeTrue();
+    });
+
+    it('persona del directorio: precarga sus datos en el formulario y avisa', () => {
+      component.abrirModalSeleccionarDecano();
+      component.onDecanoSeleccionadoDelDirectorio({
+        id: 'usr-n', numeroIdentificacion: '1099887766', primerNombre: 'Esteban', primerApellido: 'López',
+        nombres: 'Esteban', apellidos: 'López', nombreCompleto: 'Esteban López', correo: 'esteban.lopez@uco.edu.co', tipoIdentificacion: 'CC',
+      });
+      expect(component.isPickerModalOpen()).toBeFalse();
+      expect(component.vistaActual()).toBe('REGISTRO');
+      expect(component.formData.numeroIdentificacion).toBe('1099887766');
+      expect(component.formData.correo).toBe('esteban.lopez@uco.edu.co');
+      expect(toastService.info).toHaveBeenCalledWith(jasmine.stringContaining('Esteban'));
+    });
+
+    it('persona nueva: cierra el buscador, conserva lo escrito y permite llenar a mano', () => {
+      component.alCambiarDato({ campo: 'primerNombre', valor: 'Ana' });
+      component.abrirModalSeleccionarDecano();
+      component.onSolicitarRegistroNuevo();
+      expect(component.isPickerModalOpen()).toBeFalse();
+      expect(component.vistaActual()).toBe('REGISTRO');
+      expect(component.formData.primerNombre).toBe('Ana');
+    });
+
+    it('persona que ya es decano: avisa, no precarga y deja el formulario como estaba', () => {
+      component.onDecanoSeleccionadoDelDirectorio({
+        id: 'usr-1', numeroIdentificacion: '1017000001', nombres: 'Roberto Carlos', apellidos: 'Gómez Pérez',
+        nombreCompleto: 'Roberto Carlos Gómez Pérez', correo: 'rgomez@uco.edu.co',
+      });
+      expect(toastService.info).toHaveBeenCalledWith('El profesional Roberto Carlos Gómez Pérez ya está nombrado como Decano.');
+      expect(component.formData.numeroIdentificacion).toBe('');
       expect(component.vistaActual()).toBe('REGISTRO');
     });
   });
