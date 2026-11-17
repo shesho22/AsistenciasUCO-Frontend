@@ -1,4 +1,4 @@
-import { ApplicationConfig, EnvironmentInjector, ErrorHandler, provideBrowserGlobalErrorListeners, provideZoneChangeDetection, APP_INITIALIZER } from '@angular/core';
+import { ApplicationConfig, EnvironmentInjector, ErrorHandler, provideBrowserGlobalErrorListeners, provideZoneChangeDetection, inject, provideAppInitializer } from '@angular/core';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { provideHttpClient, withInterceptors, withXsrfConfiguration, withXhr } from '@angular/common/http';
 import { routes } from './app.routes';
@@ -58,17 +58,7 @@ export const appConfig: ApplicationConfig = {
     ),
     { provide: REALTIME_TRANSPORT, useClass: FetchSseRealtimeTransport },
     // VAL MSG-06 / INT-003: los textos de la interfaz se leen del catalogo a traves del Backend (sin bloquear el arranque).
-    {
-      provide: APP_INITIALIZER,
-      useFactory: iniciarCatalogoMensajesUi,
-      multi: true,
-      deps: [EnvironmentInjector],
-    },
-    {
-      provide: APP_INITIALIZER,
-      useFactory: initializeKeycloak,
-      multi: true,
-      deps: [AuthService],
-    },
+    provideAppInitializer(() => iniciarCatalogoMensajesUi(inject(EnvironmentInjector))()),
+    provideAppInitializer(() => initializeKeycloak(inject(AuthService))()),
   ],
 };

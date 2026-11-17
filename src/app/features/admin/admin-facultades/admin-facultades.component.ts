@@ -568,7 +568,7 @@ export class AdminFacultadesComponent implements OnInit {
     const nom = this.formFacultad.nombre.trim().toLowerCase();
     if (!nom) return false;
     return this.facultades().some(
-      (f) => f.nombre.trim().toLowerCase() === nom && (!this.facultadEnEdicion || f.id !== this.facultadEnEdicion.id)
+      (f) => f.nombre.trim().toLowerCase() === nom && f.id !== this.facultadEnEdicion?.id
     );
   }
 
@@ -590,7 +590,7 @@ export class AdminFacultadesComponent implements OnInit {
       const matchTxt =
         !txt ||
         f.nombre.toLowerCase().includes(txt) ||
-        (f.decanoNombre && f.decanoNombre.toLowerCase().includes(txt));
+        f.decanoNombre?.toLowerCase().includes(txt);
 
       let matchEstado = true;
       if (estado === 'ACTIVO') matchEstado = f.estado === 'ACTIVO';

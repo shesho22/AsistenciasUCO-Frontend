@@ -105,7 +105,7 @@ export class CorreccionIdentidadModalComponent implements OnInit {
       segundoNombre: this.segundoNombre().trim(),
       primerApellido: this.primerApellido().trim(),
       segundoApellido: this.segundoApellido().trim(),
-      ...(estado.documento ?? {}),
+      ...estado.documento,
       motivo: estado.motivo,
     });
   }

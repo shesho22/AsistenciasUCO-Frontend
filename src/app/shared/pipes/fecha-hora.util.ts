@@ -22,7 +22,7 @@ export function aFecha(valor: ValorTemporal): Date | null {
 }
 
 function limpiar(texto: string): string {
-  return texto.replace(/ de /g, ' ').replace(/[.,]/g, '').replace(/\s+/g, ' ').trim();
+  return texto.replaceAll(' de ', ' ').replace(/[.,]/g, '').replace(/\s+/g, ' ').trim();
 }
 
 export function formatearFechaCorta(valor: ValorTemporal, timeZone?: string): string {

@@ -67,9 +67,9 @@ export function parseTime(timeStr: string): { hours: number; minutes: number } |
   if (!timeStr) return null;
   const parts = timeStr.trim().split(':');
   if (parts.length < 2) return null;
-  const hours = parseInt(parts[0], 10);
-  const minutes = parseInt(parts[1], 10);
-  if (isNaN(hours) || isNaN(minutes)) return null;
+  const hours = Number.parseInt(parts[0], 10);
+  const minutes = Number.parseInt(parts[1], 10);
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
   return { hours, minutes };
 }
 
@@ -79,7 +79,7 @@ export function parseScheduleString(
   if (!schedule) return [];
   const res: Array<{ dia: string; horaInicio: string; horaFin: string }> = [];
 
-  const timeMatch = schedule.match(/(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/);
+  const timeMatch = /(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/.exec(schedule);
   if (!timeMatch) return [];
 
   const horaInicio = timeMatch[1];

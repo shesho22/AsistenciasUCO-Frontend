@@ -364,7 +364,7 @@ export class AttendanceEnrollmentModalComponent {
     }
 
     const numDoc = Number(documento);
-    if (isNaN(numDoc) || numDoc <= 0) {
+    if (Number.isNaN(numDoc) || numDoc <= 0) {
       return;
     }
 

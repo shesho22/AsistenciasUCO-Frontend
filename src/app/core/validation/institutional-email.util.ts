@@ -9,13 +9,13 @@ export function isInstitutionalEmail(
   domain: string | null | undefined
 ): boolean {
   const configured = (domain ?? '').trim().toLowerCase();
-  if (configured.length < 2 || !configured.startsWith('@') || configured.indexOf('@', 1) >= 0) {
+  if (configured.length < 2 || !configured.startsWith('@') || configured.includes('@', 1)) {
     return false;
   }
 
   const normalized = (email ?? '').trim().toLowerCase();
   const at = normalized.indexOf('@');
-  if (at <= 0 || normalized.indexOf('@', at + 1) >= 0) {
+  if (at <= 0 || normalized.includes('@', at + 1)) {
     return false;
   }
   return normalized.substring(at) === configured;

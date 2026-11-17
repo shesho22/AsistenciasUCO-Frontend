@@ -91,7 +91,7 @@ export class StudentMatriculaCodigoModalComponent {
     if (this.tokenInicial()) {
       return true;
     }
-    return /^[0-9]{6}$/.test(this.codigo().trim());
+    return /^\d{6}$/.test(this.codigo().trim());
   }
 
   /** El PIN es numerico: se descartan letras y simbolos al teclear o pegar. */

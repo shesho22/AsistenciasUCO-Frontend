@@ -334,7 +334,7 @@ export class AttendanceControlComponent {
   /** Tomas de la sesión mostrada (nunca las de otra sesión). */
   tomasSesionActual = computed(() => {
     const datos = this.tomasSesion();
-    return datos && datos.idSesion === this.selectedSessionId() ? datos : null;
+    return datos?.idSesion === this.selectedSessionId() ? datos : null;
   });
   hayTomas = computed(() => (this.tomasSesionActual()?.tomas.length ?? 0) > 0);
   tomaAbierta = computed(() => this.tomasSesionActual()?.tomas.find((t) => t.estado === 'ABIERTA') ?? null);
@@ -1411,7 +1411,7 @@ export class AttendanceControlComponent {
         a.download = fileName;
         document.body.appendChild(a);
         a.click();
-        document.body.removeChild(a);
+        a.remove();
         window.URL.revokeObjectURL(url);
 
         this.toastType.set('success');

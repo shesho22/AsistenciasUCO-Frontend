@@ -36,6 +36,8 @@ interface CoordinadoresPageDto {
   totalPaginas?: number;
 }
 
+const FILTRO_COORDINADORES_POR_DEFECTO: FiltroCoordinadores = { pagina: 1, tamano: 100 };
+
 @Injectable({
   providedIn: 'root',
 })
@@ -48,7 +50,7 @@ export class DeanManagementService {
    * 100 (el máximo del backend), como hasta ahora para los resúmenes que solo necesitan la lista corta.
    */
   getCoordinadores(
-    filtro: FiltroCoordinadores = { pagina: 1, tamano: 100 }
+    filtro: FiltroCoordinadores = FILTRO_COORDINADORES_POR_DEFECTO
   ): Observable<PaginaCoordinadores> {
     let params = new HttpParams().set('pagina', filtro.pagina).set('tamano', filtro.tamano);
     const busqueda = filtro.busqueda?.trim();

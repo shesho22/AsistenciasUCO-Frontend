@@ -73,6 +73,8 @@ export interface ResolverReclamoResponse {
   datos?: null;
 }
 
+const FILTRO_RECLAMOS_DOCENTE_POR_DEFECTO: FiltroReclamosDocente = { pagina: 1, tamano: 10 };
+
 @Injectable({
   providedIn: 'root',
 })
@@ -120,7 +122,7 @@ export class AttendanceClaimService {
   getReclamosDocente(filtro: FiltroReclamosDocente): Observable<ApiListResponse<SolicitudRevisionItem>>;
   /** Compatibilidad con consumidores del tablero que no paginan: primera página con el tamaño por defecto del backend. */
   getReclamosDocente(): Observable<ApiResponse<SolicitudRevisionItem[]>>;
-  getReclamosDocente(filtro: FiltroReclamosDocente = { pagina: 1, tamano: 10 }): Observable<ApiListResponse<SolicitudRevisionItem>> {
+  getReclamosDocente(filtro: FiltroReclamosDocente = FILTRO_RECLAMOS_DOCENTE_POR_DEFECTO): Observable<ApiListResponse<SolicitudRevisionItem>> {
     let params = new HttpParams().set('pagina', filtro.pagina).set('tamano', filtro.tamano);
     if (filtro.estado) {
       params = params.set('estado', filtro.estado);

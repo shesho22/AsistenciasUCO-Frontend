@@ -210,7 +210,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
     }
     const paramMatricula = this.route.snapshot.queryParamMap.get('matricula');
     if (paramMatricula) {
-      if (/^[0-9]{6}$/.test(paramMatricula)) {
+      if (/^\d{6}$/.test(paramMatricula)) {
         this.pinPrecargado.set(paramMatricula);
       }
       this.abrirModalMatriculaGrupo();
@@ -704,7 +704,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
       credencial = dato;
     } else {
       const pin = String(dato || '').trim();
-      if (!/^[0-9]{6}$/.test(pin)) {
+      if (!/^\d{6}$/.test(pin)) {
         this.errorMatriculaGrupo.set(mensajeUi('UI_STUDENT_COURSES_004'));
         this.toast.error(mensajeUi('UI_STUDENT_COURSES_004'));
         return;
