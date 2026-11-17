@@ -299,13 +299,17 @@ describe('AdminManagementService', () => {
     expect((service as unknown as Record<string, unknown>)['asignarDecanoFacultad']).toBeUndefined();
   });
 
-  it('getDecanos deduplica decanos por id y normaliza nombreCompleto', () => {
+  it('getDecanos deduplica decanos por id y conserva los nombres del backend', () => {
     service.getDecanos().subscribe((res) => {
       expect(res.exitoso).toBeTrue();
       expect(res.datos?.length).toBe(1);
       expect(res.datos?.[0].nombreCompleto).toBe('Juan Carlos Gomez Perez');
       expect(res.datos?.[0].nombres).toBe('Juan Carlos');
       expect(res.datos?.[0].apellidos).toBe('Gomez Perez');
+      expect(res.datos?.[0].primerNombre).toBe('Juan');
+      expect(res.datos?.[0].segundoNombre).toBe('Carlos');
+      expect(res.datos?.[0].primerApellido).toBe('Gomez');
+      expect(res.datos?.[0].segundoApellido).toBe('Perez');
       expect(res.datos?.[0].numeroIdentificacion).toBe('1017000001');
     });
 
@@ -320,6 +324,12 @@ describe('AdminManagementService', () => {
           idUsuario: 'usr-1',
           numeroIdentificacion: '1017000001',
           nombreCompleto: 'Juan Carlos Gomez Perez',
+          nombres: 'Juan Carlos',
+          apellidos: 'Gomez Perez',
+          primerNombre: 'Juan',
+          segundoNombre: 'Carlos',
+          primerApellido: 'Gomez',
+          segundoApellido: 'Perez',
           idFacultad: 'fac-1',
           nombreFacultad: 'Facultad de Ingeniería',
           estaActivoDecano: true,
@@ -575,10 +585,12 @@ describe('AdminManagementService', () => {
     patchReq.flush({ exitoso: true, datos: { id: 'dec-1', estado: 'INACTIVO' } });
   });
 
-  it('getDecanos divide correctamente nombres y apellidos de dos partes', () => {
+  it('getDecanos no parte el nombre completo: sin nombres del backend quedan vacíos', () => {
     service.getDecanos().subscribe((res) => {
-      expect(res.datos?.[0].nombres).toBe('Ana');
-      expect(res.datos?.[0].apellidos).toBe('Mora');
+      expect(res.datos?.[0].nombreCompleto).toBe('Ana Mora');
+      expect(res.datos?.[0].nombres).toBe('');
+      expect(res.datos?.[0].apellidos).toBe('');
+      expect(res.datos?.[0].primerNombre).toBeUndefined();
     });
 
     const req = http.expectOne(`${environment.apiUrl}/admin/decanos`);

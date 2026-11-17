@@ -13,6 +13,7 @@ import { FormFieldComponent } from '../../../shared/components/form-field/form-f
 import { CambioDatoPersona, DatosPersonaComponent } from '../../../shared/components/datos-persona/datos-persona.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { UserPickerModalComponent, UserPickerItem } from '../../../shared/components/user-picker-modal/user-picker-modal.component';
+import { datosDePersonaSeleccionada } from '../../../shared/components/user-picker-modal/datos-persona-seleccionada';
 import { AccountAccessStatusComponent } from '../../../shared/components/account-access-status/account-access-status.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { parseIdentificationNumber, validateInstitutionalEmail } from '../../../core/validation/request-form-validation.util';
@@ -343,6 +344,7 @@ const NOMBRE_FACULTAD_MAX = 50;
       <!-- Modal de Selección de Decano Existente -->
       <app-user-picker-modal
         [isOpen]="isPickerModalOpen()"
+        fuente="INSTITUCION"
         title="Nombrar Decano de Facultad"
         subtitle="Selecciona un directivo, docente o funcionario del claustro institucional para nombrarlo Decano."
         roleBadge="Gobierno Académico UCO"
@@ -455,13 +457,12 @@ export class AdminDecanosComponent implements OnInit {
   });
 
   identidadDe(d: DecanoItem): IdentidadActual {
-    const nombres = d.nombres?.trim().split(/\s+/).filter(Boolean) ?? [];
-    const apellidos = d.apellidos?.trim().split(/\s+/).filter(Boolean) ?? [];
+    // CIERRE-W1B: los cuatro campos de nombre los entrega el backend; no se parten cadenas.
     return {
-      primerNombre: d.primerNombre ?? nombres[0] ?? '',
-      segundoNombre: d.segundoNombre ?? (nombres.slice(1).join(' ') || null),
-      primerApellido: d.primerApellido ?? apellidos[0] ?? '',
-      segundoApellido: d.segundoApellido ?? (apellidos.slice(1).join(' ') || null),
+      primerNombre: d.primerNombre ?? '',
+      segundoNombre: d.segundoNombre || null,
+      primerApellido: d.primerApellido ?? '',
+      segundoApellido: d.segundoApellido || null,
       numeroIdentificacion: d.numeroIdentificacion,
       codigoTipoIdentificacion: d.tipoIdentificacion ?? null,
       idTipoIdentificacion: d.tipoIdentificacionId ?? null,
@@ -797,18 +798,7 @@ export class AdminDecanosComponent implements OnInit {
     }
 
     this.abrirFormularioRegistro();
-    this.formData.tipoIdentificacionId =
-      this.tiposIdentificacion().find((t) => t.tipoIdentificacion === user.tipoIdentificacion)?.id ||
-      (this.tiposIdentificacion().length > 0
-        ? this.tiposIdentificacion()[0].id
-        : '');
-    this.formData.tipoIdentificacion = user.tipoIdentificacion || 'CC';
-    this.formData.numeroIdentificacion = String(user.numeroIdentificacion || '');
-    this.formData.primerNombre = user.primerNombre || user.nombres.split(' ')[0] || '';
-    this.formData.segundoNombre = user.segundoNombre || '';
-    this.formData.primerApellido = user.primerApellido || user.apellidos.split(' ')[0] || '';
-    this.formData.segundoApellido = user.segundoApellido || '';
-    this.formData.correo = user.correo || '';
+    Object.assign(this.formData, datosDePersonaSeleccionada(user, this.tiposIdentificacion()));
     this.toast.info(mensajeUi('UI_ADMIN_DECANOS_011', { nombres: user.nombres, apellidos: user.apellidos }));
   }
 }

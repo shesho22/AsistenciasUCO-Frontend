@@ -184,7 +184,10 @@ describe('OverviewComponent', () => {
     adminServiceSpy.getDecanos.and.returnValue(of({ exitoso: true, datos: mockDecanos }));
 
     deanServiceSpy = jasmine.createSpyObj('DeanManagementService', ['getCoordinadores']);
-    deanServiceSpy.getCoordinadores.and.returnValue(of({ exitoso: true, datos: mockCoordinadores }));
+    deanServiceSpy.getCoordinadores.and.returnValue(of({
+      exitoso: true, datos: mockCoordinadores, elementos: mockCoordinadores, numeroPagina: 1, tamanoPagina: 100,
+      totalElementos: mockCoordinadores.length, totalPaginas: 1,
+    }));
 
     adminIndicatorsSpy = jasmine.createSpyObj('AdminIndicatorsService', ['consultarKpis']);
     adminIndicatorsSpy.consultarKpis.and.returnValue(of({ exitoso: true, datos: { totalProgramas: 4, porcentajeAsistencia: 96.54 } as never }));

@@ -27,8 +27,12 @@ interface DecanoApiDto {
   tipoIdentificacionId?: string;
   numeroIdentificacion?: string | number | null;
   nombreCompleto?: string | null;
-  nombres?: string;
-  apellidos?: string;
+  primerNombre?: string | null;
+  segundoNombre?: string | null;
+  primerApellido?: string | null;
+  segundoApellido?: string | null;
+  nombres?: string | null;
+  apellidos?: string | null;
   correo?: string;
   idFacultad?: string | null;
   nombreFacultad?: string;
@@ -129,19 +133,9 @@ export class AdminManagementService {
   /** Lleva el DecanoItemDTO del backend (o una fila ya normalizada) al modelo de presentación. */
   private normalizarDecano(raw: DecanoApiDto): DecanoItem {
     const nombreCompleto = (raw.nombreCompleto || '').trim();
-    let nombres = raw.nombres || '';
-    let apellidos = raw.apellidos || '';
-
-    if (!nombres && nombreCompleto) {
-      const partes = nombreCompleto.split(/\s+/);
-      if (partes.length <= 2) {
-        nombres = partes[0] || '';
-        apellidos = partes[1] || '';
-      } else {
-        nombres = partes.slice(0, 2).join(' ');
-        apellidos = partes.slice(2).join(' ');
-      }
-    }
+    // CIERRE-W1B: el backend entrega nombres y apellidos; la pantalla no parte el nombre completo.
+    const nombres = raw.nombres ?? '';
+    const apellidos = raw.apellidos ?? '';
 
     const estaActivo = raw.estaActivoDecano ?? raw.estaActivo;
     return {
@@ -150,9 +144,13 @@ export class AdminManagementService {
       tipoIdentificacion: raw.tipoIdentificacion || 'CC',
       tipoIdentificacionId: raw.tipoIdentificacionId,
       numeroIdentificacion: String(raw.numeroIdentificacion || ''),
-      nombreCompleto: nombreCompleto || `${nombres} ${apellidos}`.trim(),
-      nombres: nombres || nombreCompleto,
-      apellidos: apellidos,
+      nombreCompleto,
+      primerNombre: raw.primerNombre ?? undefined,
+      segundoNombre: raw.segundoNombre ?? undefined,
+      primerApellido: raw.primerApellido ?? undefined,
+      segundoApellido: raw.segundoApellido ?? undefined,
+      nombres,
+      apellidos,
       correo: raw.correo || '',
       idFacultad: raw.idFacultad || undefined,
       facultad: raw.nombreFacultad || raw.facultad || 'Sin Facultad Asignada',

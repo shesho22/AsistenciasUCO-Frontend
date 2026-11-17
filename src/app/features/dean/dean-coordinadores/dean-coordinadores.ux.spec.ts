@@ -56,15 +56,29 @@ describe('DeanCoordinadoresComponent UX (F-DEC-004, F-DEC-007, F-DEC-S04, F-COO-
 
   afterEach(() => http.verify());
 
-  it('pagina el directorio con PaginationComponent y el buscador reinicia la pagina', () => {
-    iniciar(Array.from({ length: 14 }, (_, i) => coord(i + 1)));
+  it('pagina el directorio con PaginationComponent en el servidor y el buscador reinicia la pagina', () => {
+    fixture.detectChanges();
+    http.expectOne(porUrl(`${environment.apiUrl}/decano/coordinadores`))
+      .flush(paginaApi(Array.from({ length: 6 }, (_, i) => coord(i + 1)), 1, 6, 14));
+    http.match(() => true).forEach((r) => r.flush(/\/(tipos-programa|modalidades-programa|jornadas-programa)$/.test(r.request.url) ? [] : { exitoso: true, datos: [] }));
+    fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
     expect(el.querySelector('app-pagination')).toBeTruthy();
-    expect(component.paginatedCoordinadores().length).toBe(6);
+    expect(component.coordinadores().length).toBe(6);
+    expect(component.totalCoordinadores()).toBe(14);
+
     component.currentPage.set(3);
     component.searchQuery = 'Nombre1';
+    // La búsqueda no consulta en cada tecla: se envía al presionar Enter.
+    http.expectNone(porUrl(`${environment.apiUrl}/decano/coordinadores`));
+    const input = el.querySelector('input[type="search"]') as HTMLInputElement;
+    input.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter' }));
+    const req = http.expectOne(porUrl(`${environment.apiUrl}/decano/coordinadores`));
+    expect(req.request.params.get('busqueda')).toBe('Nombre1');
+    expect(req.request.params.get('pagina')).toBe('1');
+    req.flush(paginaApi(Array.from({ length: 6 }, (_, i) => coord(i + 1)), 1, 6, 6));
     expect(component.currentPage()).toBe(1);
-    expect(component.filteredCoordinadores().length).toBe(6);
+    expect(component.totalCoordinadores()).toBe(6);
   });
 
   it('el buscador y el filtro de estado tienen nombre accesible', () => {
