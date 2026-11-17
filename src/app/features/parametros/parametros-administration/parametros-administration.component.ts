@@ -24,7 +24,7 @@ export type ParametrosViewState = 'loading' | 'ready' | 'error' | 'unauthorized'
  */
 export const PARAMETROS_REFRESH_INTERVAL_MS = 0;
 
-const RUTA_POR_DEFECTO = '/app/admin/sistema';
+const RUTA_POR_DEFECTO = '/app/admin/configuracion/parametros';
 
 /**
  * Administración de parámetros de AsistenciasUCO: monta el micro frontend `parametros-administration.js` del equipo del

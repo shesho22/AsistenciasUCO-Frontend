@@ -299,12 +299,12 @@ describe('ParametrosAdministrationComponent', () => {
     expect(component.state()).toBe('unauthorized');
   });
 
-  it('el login usa la ruta de administración del sistema si la ruta actual es la raíz', async () => {
+  it('el login vuelve a los parámetros de Configuración si la ruta actual es la raíz', async () => {
     await createComponent();
 
     component.signIn();
 
-    expect(authService.startBaselineLogin).toHaveBeenCalledOnceWith('/app/admin/sistema');
+    expect(authService.startBaselineLogin).toHaveBeenCalledOnceWith('/app/admin/configuracion/parametros');
   });
 
   it('desmonta al destruirse y no monta si el módulo llega después', async () => {

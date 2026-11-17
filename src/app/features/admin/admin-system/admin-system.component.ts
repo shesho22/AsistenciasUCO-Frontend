@@ -22,7 +22,7 @@ import { ParametrosAdministrationComponent } from '../../parametros/parametros-a
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
-type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
+type TabAdminSystem = 'AUDITORIA' | 'CIERRE_MASIVO';
 
 @Component({
   selector: 'app-admin-system',
@@ -42,9 +42,9 @@ type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
       <!-- ================= HEADER & BREADCRUMB ================= -->
       <app-page-header
         etiqueta="Gobierno de TI & Auditoría"
-        contexto="Parámetros, Trazabilidad y Cierre Semestral"
+        contexto="Trazabilidad y Cierre Semestral"
         titulo="Sistema, Auditoría y Consolidación"
-        descripcion="Ajuste de reglas de inasistencia, logs de auditoría y cierre masivo de asistencia por período."
+        descripcion="Rastro de auditoría y cierre masivo de asistencia por período. Los parámetros se administran en Configuración."
       >
         <div cabecera-acciones class="flex flex-wrap items-center gap-2">
           <a
@@ -68,22 +68,6 @@ type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
 
       <!-- ================= TABS SELECTOR ================= -->
       <div class="flex border-b border-warm-200 gap-2 overflow-x-auto" role="tablist" aria-label="Secciones del sistema">
-        <button
-          type="button"
-          role="tab"
-          id="tab-parametros"
-          aria-controls="panel-parametros"
-          [attr.aria-selected]="tabActiva() === 'PARAMETROS'"
-          [attr.tabindex]="tabActiva() === 'PARAMETROS' ? 0 : -1"
-          (keydown)="onTabKeydown($event)"
-          (click)="tabActiva.set('PARAMETROS')"
-          [class]="tabActiva() === 'PARAMETROS' ? 'border-primary-700 text-primary-800 font-bold border-b-2' : 'text-warm-500 hover:text-warm-700'"
-          class="min-h-[44px] px-4 py-3 text-sm flex items-center gap-2 whitespace-nowrap shrink-0 transition-colors"
-        >
-          <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-          <span>Parámetros</span>
-        </button>
-
         <button
           type="button"
           role="tab"
@@ -118,22 +102,22 @@ type TabAdminSystem = 'PARAMETROS' | 'AUDITORIA' | 'CIERRE_MASIVO';
       </div>
      }
 
-      <!-- ================= TAB 1: PARÁMETROS (micro frontend del Catálogo de Parámetros) ================= -->
-      @if (tabActiva() === 'PARAMETROS') {
-        <div role="tabpanel" id="panel-parametros" aria-labelledby="tab-parametros">
+      <!-- ===== PARÁMETROS (micro frontend del Catálogo): solo en Configuración; la pestaña del cascarón es su etiqueta ===== -->
+      @if (modo === 'parametros') {
+        <div id="panel-parametros">
           <app-parametros-administration />
         </div>
       }
 
-      <!-- ================= TAB 2: AUDITORÍA Y TRAZABILIDAD (HU172) ================= -->
-      @if (tabActiva() === 'AUDITORIA') {
+      <!-- ================= TAB 1: AUDITORÍA Y TRAZABILIDAD (HU172) ================= -->
+      @if (modo === 'completo' && tabActiva() === 'AUDITORIA') {
         <div role="tabpanel" id="panel-auditoria" aria-labelledby="tab-auditoria">
           <app-admin-auditoria />
         </div>
       }
 
-      <!-- ================= TAB 3: CIERRE MASIVO DE ASISTENCIA ================= -->
-      @if (tabActiva() === 'CIERRE_MASIVO') {
+      <!-- ================= TAB 2: CIERRE MASIVO DE ASISTENCIA ================= -->
+      @if (modo === 'completo' && tabActiva() === 'CIERRE_MASIVO') {
         <div class="space-y-6" role="tabpanel" id="panel-cierre" aria-labelledby="tab-cierre">
           <div class="bg-gradient-to-r from-primary-900 to-primary-950 text-white rounded-2xl p-6 shadow-md flex flex-col md:flex-row items-center justify-between gap-6">
             <div class="space-y-2">
@@ -255,13 +239,14 @@ export class AdminSystemComponent implements OnInit {
 
   /**
    * La ruta de Configuración declara `data.modo = 'parametros'`: se ocultan el encabezado y las pestañas de operaciones y
-   * solo se muestran los parámetros. En `admin/sistema` (sin ese dato) la pantalla es completa. En ambos casos la pestaña
-   * de parámetros monta el micro frontend del Catálogo de Parámetros: la lista y el modal propios que editaban
-   * `dbo.CatalogoParametro` se retiraron de la UI (INT-002, decisión del 2026-11-12; ver TECHNICAL_DEBT).
+   * solo se monta el micro frontend del Catálogo de Parámetros (la lista y el modal propios que editaban
+   * `dbo.CatalogoParametro` se retiraron de la UI: INT-002, decisión del 2026-11-12; ver TECHNICAL_DEBT). En
+   * `admin/sistema` (sin ese dato) quedan las operaciones: auditoría y cierre masivo. Los parámetros ya no se repiten
+   * allí (decisión del responsable, 2026-11-17): se administran solo en Configuración.
    */
   readonly modo: 'completo' | 'parametros' =
     inject(ActivatedRoute, { optional: true })?.snapshot.data['modo'] === 'parametros' ? 'parametros' : 'completo';
-  tabActiva = signal<TabAdminSystem>('PARAMETROS');
+  tabActiva = signal<TabAdminSystem>('AUDITORIA');
   periodoSeleccionadoCierre = '';
   isProcesandoCierre = signal<boolean>(false);
   cierrePendiente = signal<boolean>(false);
@@ -293,7 +278,7 @@ export class AdminSystemComponent implements OnInit {
   }
 
   onTabKeydown(event: KeyboardEvent): void {
-    const orden: TabAdminSystem[] = ['PARAMETROS', 'AUDITORIA', 'CIERRE_MASIVO'];
+    const orden: TabAdminSystem[] = ['AUDITORIA', 'CIERRE_MASIVO'];
     const actual = orden.indexOf(this.tabActiva());
     let destino = actual;
     if (event.key === 'ArrowRight') destino = (actual + 1) % orden.length;
@@ -303,7 +288,7 @@ export class AdminSystemComponent implements OnInit {
     else return;
     event.preventDefault();
     this.tabActiva.set(orden[destino]);
-    const ids = ['tab-parametros', 'tab-auditoria', 'tab-cierre'];
+    const ids = ['tab-auditoria', 'tab-cierre'];
     queueMicrotask(() => document.getElementById(ids[destino])?.focus());
   }
 
