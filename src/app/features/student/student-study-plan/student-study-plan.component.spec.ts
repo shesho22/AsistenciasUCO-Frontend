@@ -81,7 +81,7 @@ describe('StudentStudyPlanComponent (plan de estudios del estudiante)', () => {
     responder([plan()]);
 
     expect(el().querySelector('[data-testid="plan-cargando"]')).toBeNull();
-    expect(el().querySelectorAll('[data-testid="plan-estudio"]').length).toBe(1);
+    expect(el().querySelectorAll('[data-testid="plan-estudio"]')).toHaveSize(1);
     expect(texto()).toContain('Ingeniería de Sistemas');
     expect(texto()).toContain('Plan de estudios 2024');
     const cifras = Array.from(el().querySelectorAll('dl dd')).map((dd) => dd.textContent!.replace(/\s+/g, ' ').trim());
@@ -106,7 +106,7 @@ describe('StudentStudyPlanComponent (plan de estudios del estudiante)', () => {
 
     expect(semestres().map((s) => s.open)).toEqual([false, false, true]);
     const insignias = el().querySelectorAll('[data-testid="insignia-cursando"]');
-    expect(insignias.length).toBe(1);
+    expect(insignias).toHaveSize(1);
     expect(semestres()[2].textContent).toContain('Cursando');
     expect(semestres()[2].textContent).toContain('Grupo: Grupo 001 - Arq Software');
     expect(semestres()[2].querySelector('summary')!.textContent).toContain('Cursas 1');
@@ -131,7 +131,7 @@ describe('StudentStudyPlanComponent (plan de estudios del estudiante)', () => {
 
     expect(el().querySelector('[data-testid="plan-vacio"]')!.textContent).toContain('aún no tienen un plan de estudios activo');
     expect(el().querySelector('[data-testid="plan-error"]')).toBeNull();
-    expect(el().querySelectorAll('[data-testid="plan-estudio"]').length).toBe(0);
+    expect(el().querySelectorAll('[data-testid="plan-estudio"]')).toHaveSize(0);
   });
 
   it('PL-06 un error muestra el mensaje del backend y permite reintentar', () => {
@@ -154,7 +154,7 @@ describe('StudentStudyPlanComponent (plan de estudios del estudiante)', () => {
     fixture.detectChanges();
     responder([plan()]);
     expect(el().querySelector('[data-testid="plan-error"]')).toBeNull();
-    expect(el().querySelectorAll('[data-testid="plan-estudio"]').length).toBe(1);
+    expect(el().querySelectorAll('[data-testid="plan-estudio"]')).toHaveSize(1);
   });
 
   it('PL-07 omite lo que el backend no informa: sin código, sin créditos, sin carácter y con un tipo desconocido', () => {

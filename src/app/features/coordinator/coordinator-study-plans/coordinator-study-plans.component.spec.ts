@@ -77,7 +77,7 @@ describe('CoordinatorStudyPlansComponent', () => {
 
   it('debe cargar el listado de planes de estudio y mostrar los totales del servidor', () => {
     expect(component).toBeTruthy();
-    expect(component.planes().length).toBe(1);
+    expect(component.planes()).toHaveSize(1);
     expect(component.totalPlanes()).toBe(7);
     expect(component.totalVigentes()).toBe(5);
     expect(component.totalAsignaturasVinculadas()).toBe(120);

@@ -61,7 +61,7 @@ describe('TeacherScheduleComponent', () => {
   it('debe crear el componente y cargar el horario docente', () => {
     expect(component).toBeTruthy();
     expect(claimServiceSpy.getHorarioDocente).toHaveBeenCalled();
-    expect(component.horarios().length).toBe(2);
+    expect(component.horarios()).toHaveSize(2);
     expect(component.isLoading()).toBeFalse();
     expect(component.totalHorasSemanales()).toBe(4);
   });
@@ -81,14 +81,14 @@ describe('TeacherScheduleComponent', () => {
 
   it('debe filtrar las clases por día correctamente', () => {
     const clasesLunes = component.clasesPorDia('Lunes');
-    expect(clasesLunes.length).toBe(1);
+    expect(clasesLunes).toHaveSize(1);
     expect(clasesLunes[0].codigoMateria).toBe('IS-101');
 
     const clasesMartes = component.clasesPorDia('Martes');
-    expect(clasesMartes.length).toBe(0);
+    expect(clasesMartes).toHaveSize(0);
 
     const clasesMiercoles = component.clasesPorDia('Miércoles');
-    expect(clasesMiercoles.length).toBe(1);
+    expect(clasesMiercoles).toHaveSize(1);
     expect(clasesMiercoles[0].codigoMateria).toBe('BD-201');
   });
 

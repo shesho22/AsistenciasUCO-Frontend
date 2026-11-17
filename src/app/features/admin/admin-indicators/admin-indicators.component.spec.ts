@@ -63,7 +63,7 @@ describe('AdminIndicatorsComponent', () => {
     const t = texto();
     expect(t).toContain('Calculado por horas');
     expect(t).toContain('18 h de falta sobre 120 h dictadas');
-    expect(fixture.nativeElement.querySelectorAll('[data-testid="nota-horas"]').length).toBe(2);
+    expect(fixture.nativeElement.querySelectorAll('[data-testid="nota-horas"]')).toHaveSize(2);
   });
 
   it('T-FE-02 muestra exactamente las cifras recibidas (sin calcular nada en el cliente)', () => {
@@ -93,7 +93,7 @@ describe('AdminIndicatorsComponent', () => {
 
   it('T-FE-03 la comparativa muestra una tarjeta por facultad con la cifra recibida y señala la inactiva', () => {
     const tarjetas = (fixture.nativeElement as HTMLElement).querySelectorAll('[data-testid="tarjeta-facultad"]');
-    expect(tarjetas.length).toBe(2);
+    expect(tarjetas).toHaveSize(2);
     expect(texto()).toContain('Ingenieria');
     expect(texto()).toContain('Facultad Cerrada');
     expect(texto()).toContain('Inactiva');
@@ -101,7 +101,7 @@ describe('AdminIndicatorsComponent', () => {
 
   it('T-FE-04 la gráfica dibuja un punto por intervalo con dato, proporcional al valor recibido, y deja hueco donde es nulo', () => {
     const circulos = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('[data-testid="punto-tendencia"]')) as SVGElement[];
-    expect(circulos.length).toBe(2);
+    expect(circulos).toHaveSize(2);
     expect(Number(circulos[0].getAttribute('cy'))).toBe(component.yPunto(15));
     expect(Number(circulos[1].getAttribute('cy'))).toBe(component.yPunto(50));
     expect(component.yPunto(50)).toBeLessThan(component.yPunto(15));

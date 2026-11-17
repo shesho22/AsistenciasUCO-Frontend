@@ -64,13 +64,13 @@ describe('CoordinatorPeriodsComponent', () => {
 
   it('debe inicializarse y mostrar los períodos académicos y KPIs', () => {
     expect(component).toBeTruthy();
-    expect(component.periodos().length).toBe(1);
+    expect(component.periodos()).toHaveSize(1);
     expect(component.periodoActual()?.codigo).toBe('2026-2');
   });
 
   it('los totales salen del servidor y no de contar las filas cargadas', () => {
     // La lista trae 1 fila, pero el servidor informa 3 períodos en total y 1 activo
-    expect(component.periodos().length).toBe(1);
+    expect(component.periodos()).toHaveSize(1);
     expect(component.totalPeriodos()).toBe(3);
     expect(component.totalActivos()).toBe(1);
     const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';

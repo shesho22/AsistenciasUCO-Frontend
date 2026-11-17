@@ -99,7 +99,7 @@ describe('UserPickerModalComponent', () => {
 
     expect(consultas.getDocentesFacultad).toHaveBeenCalledOnceWith({ busqueda: '', pagina: 1, tamano: 10 });
     expect(consultas.getDocentesInstitucion).not.toHaveBeenCalled();
-    expect(component.usuarios().length).toBe(1);
+    expect(component.usuarios()).toHaveSize(1);
   });
 
   it('buscar envía el texto al servidor y vuelve a la primera página', () => {
@@ -178,7 +178,7 @@ describe('UserPickerModalComponent', () => {
     (el.querySelector('[data-testid="error-carga"] button') as HTMLButtonElement).click();
     fixture.detectChanges();
     expect(component.listado.error()).toBeNull();
-    expect(component.usuarios().length).toBe(1);
+    expect(component.usuarios()).toHaveSize(1);
   });
 
   it('sin resultados muestra el estado vacío y ofrece registrar a la persona', () => {

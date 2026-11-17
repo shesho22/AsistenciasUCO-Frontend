@@ -78,8 +78,8 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
   it('carga los grupos con su horario, las asignaturas de los planes, los docentes y los períodos', () => {
     expect(component.listado.filas()).toEqual([grupo]);
     expect(component.asignaturas().map((a) => a.id)).toEqual(['asig-1']);
-    expect(component.docentes().length).toBe(1);
-    expect(component.periodos().length).toBe(1);
+    expect(component.docentes()).toHaveSize(1);
+    expect(component.periodos()).toHaveSize(1);
     expect(component.nombreDocente('doc-1')).toBe('Ana Pérez');
     expect(component.nombreDocente(undefined)).toBe('Sin asignar');
     expect(fixture.nativeElement.textContent).toContain('Lunes 08:00-10:00');
@@ -121,7 +121,7 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
     fixture.detectChanges();
 
     expect(el.querySelector('[role="alert"]')).toBeNull();
-    expect(component.listado.filas().length).toBe(1);
+    expect(component.listado.filas()).toHaveSize(1);
   });
 
   it('si fallan los catálogos del formulario se muestra el error con reintento y no solo listas vacías', () => {
@@ -164,7 +164,7 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
     fixture.nativeElement.querySelector('[data-testid="nuevo-grupo"]').click();
     fixture.detectChanges();
     expect(component.vista()).toBe('FORM');
-    expect(component.form.franjas.length).toBe(1);
+    expect(component.form.franjas).toHaveSize(1);
 
     component.guardar();
     expect(toast.warning).toHaveBeenCalledWith('Seleccione la asignatura y el período académico.');
@@ -338,7 +338,7 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
     component.cargarCatalogos();
     expect(coordinatorService.getDocentesPrograma).toHaveBeenCalledTimes(2);
     expect(coordinatorService.getDocentesPrograma.calls.argsFor(1)[0]).toEqual({ pagina: 2, tamano: 100, estaActivo: true });
-    expect(component.docentes().length).toBe(120);
+    expect(component.docentes()).toHaveSize(120);
   });
 
   it('F-COO-009: el listado de grupos se pagina en el servidor y el total sale de totalElementos', () => {
@@ -349,7 +349,7 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
     expect(el.querySelector('app-pagination')).toBeTruthy();
-    expect(el.querySelectorAll('tbody tr').length).toBe(10);
+    expect(el.querySelectorAll('tbody tr')).toHaveSize(10);
     expect(component.listado.total()).toBe(25);
     expect(component.listado.totalPaginas()).toBe(3);
 
@@ -359,7 +359,7 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
     component.listado.irAPagina(3);
     fixture.detectChanges();
     expect(courseService.getCoordinatorCoursesPage).toHaveBeenCalledWith({ pagina: 3, tamano: 10 });
-    expect(el.querySelectorAll('tbody tr').length).toBe(5);
+    expect(el.querySelectorAll('tbody tr')).toHaveSize(5);
   });
 
   it('cambiar el tamaño de página pide la primera página con el nuevo tamaño al servidor', () => {

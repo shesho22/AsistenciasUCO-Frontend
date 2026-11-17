@@ -66,7 +66,7 @@ describe('DeanIndicatorsService', () => {
     const req = http.expectOne((r) => r.url === `${base}/comparativa-programas`);
     expect(req.request.params.get('idPeriodoAcademico')).toBe('per-1');
     req.flush({ exitoso: true, datos: [programa, { ...programa, idPrograma: 'p-4', tasaRetencion: null, porcentajeAusentismo: null }] });
-    expect(service.comparativa().length).toBe(2);
+    expect(service.comparativa()).toHaveSize(2);
     expect(service.comparativa()[1].porcentajeAusentismo).toBeNull();
 
     let fallo: { status?: number } | undefined;
@@ -75,7 +75,7 @@ describe('DeanIndicatorsService', () => {
     expect(sin.request.params.keys()).toEqual([]);
     sin.flush({ message: 'x' }, { status: 403, statusText: 'Forbidden' });
     expect(fallo?.status).toBe(403);
-    expect(service.comparativa().length).toBe(2);
+    expect(service.comparativa()).toHaveSize(2);
   });
 
   it('consultarAforo envía solo los filtros presentes (incluido soloHabilitados=false) y publica filas y total', () => {

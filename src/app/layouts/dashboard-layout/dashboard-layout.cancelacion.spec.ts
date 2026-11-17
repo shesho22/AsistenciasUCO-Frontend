@@ -119,7 +119,7 @@ describe('DashboardLayoutComponent - Cancelación por Inasistencia C.1 (C-F-58..
     const enlace = fixture.nativeElement.querySelector('a[href="/app/docente/grupos"]') as HTMLElement;
     expect(enlace.querySelector('[data-testid="menu-contador"]')?.textContent?.trim()).toBe('5');
     const otros = Array.from(fixture.nativeElement.querySelectorAll('a[href="/app/docente/reclamos"] [data-testid="menu-contador"]'));
-    expect(otros.length).toBe(0);
+    expect(otros).toHaveSize(0);
   });
 
   it('el contador del docente queda oculto si la consulta falla', () => {

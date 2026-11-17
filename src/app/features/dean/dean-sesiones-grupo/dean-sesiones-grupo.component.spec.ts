@@ -50,7 +50,7 @@ describe('DeanSesionesGrupoComponent (CULM-001)', () => {
     );
     fixture.detectChanges();
     const filas = el().querySelectorAll('[data-testid^="sesion-fila-"]');
-    expect(filas.length).toBe(2);
+    expect(filas).toHaveSize(2);
     expect(filas[0].textContent).toContain('S-a');
     expect(filas[1].textContent).toContain('Cancelada');
     expect(filas[1].textContent).toContain('Paro de transporte');

@@ -36,7 +36,7 @@ describe('RevisionDecisionModalComponent (CULM-001 C.1 §4.4, §4.8)', () => {
 
   it('C-F-26 muestra las opciones según accionesPermitidas', () => {
     const radios = fixture.nativeElement.querySelectorAll('input[type="radio"]') as NodeListOf<HTMLInputElement>;
-    expect(radios.length).toBe(2);
+    expect(radios).toHaveSize(2);
     const valores = Array.from(radios).map((r) => r.value);
     expect(valores).toContain('MANTENER');
     expect(valores).toContain('PROPONER');

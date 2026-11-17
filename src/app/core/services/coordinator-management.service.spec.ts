@@ -75,8 +75,8 @@ describe('CoordinatorManagementService', () => {
 
   it('cargarDatosAcademicosBase llena las señales de planes y periodos', () => {
     expect(service).toBeTruthy();
-    expect(service.planes().length).toBe(1);
-    expect(service.periodos().length).toBe(1);
+    expect(service.planes()).toHaveSize(1);
+    expect(service.periodos()).toHaveSize(1);
   });
 
   it('instanciar el servicio NO emite peticiones /coordinador/** (un estudiante no debe provocar 403)', () => {
@@ -171,7 +171,7 @@ describe('CoordinatorManagementService', () => {
 
     it('getDocentes (compatibilidad) adapta el directorio paginado a DocenteItem', () => {
       service.getDocentes().subscribe((res) => {
-        expect(res.datos.length).toBe(1);
+        expect(res.datos).toHaveSize(1);
         expect(res.datos[0]).toEqual(jasmine.objectContaining({
           id: 'doc-1', numeroIdentificacion: '1017555444', nombres: 'Jorge', apellidos: 'Henao',
           estado: 'ACTIVO', totalGruposAsignados: 0, correo: 'jorge.henao@uco.edu.co',
@@ -192,7 +192,7 @@ describe('CoordinatorManagementService', () => {
     });
 
     it('getCandidatosDocente consulta con la búsqueda', () => {
-      service.getCandidatosDocente('ros').subscribe((res) => expect(res.datos.length).toBe(1));
+      service.getCandidatosDocente('ros').subscribe((res) => expect(res.datos).toHaveSize(1));
 
       const req = http.expectOne((r) => r.url === `${environment.apiUrl}/coordinador/docentes/candidatos`);
       expect(req.request.method).toBe('GET');
@@ -380,7 +380,7 @@ describe('CoordinatorManagementService', () => {
     });
 
     it('getPlanesEstudio sigue pidiendo páginas hasta agotar totalPaginas', () => {
-      service.getPlanesEstudio('prg-a').subscribe((res) => expect(res.datos.length).toBe(3));
+      service.getPlanesEstudio('prg-a').subscribe((res) => expect(res.datos).toHaveSize(3));
       const url = `${environment.apiUrl}/coordinador/planes-estudio`;
       const primera = http.expectOne(porUrl(url));
       expect(primera.request.params.get('programaId')).toBe('prg-a');
@@ -418,7 +418,7 @@ describe('CoordinatorManagementService', () => {
       http
         .expectOne(porUrl(`${environment.apiUrl}/coordinador/planes-estudio/plan-1/asignaturas`))
         .flush(paginaApi([{ idAsignatura: 'a-1', codigo: 'A', nombre: 'A' }, { idAsignatura: 'a-2', codigo: 'B', nombre: 'B' }]));
-      expect(service.getAsignaturasPlan('plan-1').length).toBe(2);
+      expect(service.getAsignaturasPlan('plan-1')).toHaveSize(2);
 
       service.desvincularAsignaturaPlan('plan-1', 'a-1').subscribe((res) => expect(res.exitoso).toBeTrue());
       const req = http.expectOne(`${environment.apiUrl}/coordinador/planes-estudio/plan-1/asignaturas/a-1`);
@@ -669,7 +669,7 @@ describe('CoordinatorManagementService', () => {
       expect(req.request.method).toBe('GET');
       req.flush(paginaApi(mockAsigs));
 
-      expect(service.getAsignaturasPlan('plan-1').length).toBe(1);
+      expect(service.getAsignaturasPlan('plan-1')).toHaveSize(1);
     });
 
     it('getAsignaturasPlanPagina envía los filtros al servidor y conserva el total real', () => {
@@ -762,7 +762,7 @@ describe('CoordinatorManagementService', () => {
         ])
       );
 
-      expect(service.estudiantes().length).toBe(1);
+      expect(service.estudiantes()).toHaveSize(1);
       expect(service.estudiantes()[0].documento).toBe('1017009');
       expect(service.estudiantes()[0].programa).toBe('Ingeniería de Sistemas');
       void mockEstudiantes;
@@ -789,7 +789,7 @@ describe('CoordinatorManagementService', () => {
 
     it('getEstudiantesDirectorioPagina y getEstudiantesPorGrupo funcionan', () => {
       service.getEstudiantesDirectorioPagina({ page: 0, size: 10, nombre: 'Laura', activo: true }).subscribe((res) => {
-        expect(res.items.length).toBe(1);
+        expect(res.items).toHaveSize(1);
         expect(res.totalItems).toBe(1);
       });
 

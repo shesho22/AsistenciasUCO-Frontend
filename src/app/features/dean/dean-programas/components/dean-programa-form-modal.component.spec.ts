@@ -38,7 +38,7 @@ describe('DeanProgramaFormModalComponent', () => {
     const emitido: ProgramaPayload[] = [];
     component.guardar.subscribe((p) => emitido.push(p));
     component.enviar();
-    expect(emitido.length).toBe(0);
+    expect(emitido).toHaveSize(0);
   });
 
   it('alta: emite el payload tipado con modalidad y jornada opcionales como null', () => {
@@ -101,7 +101,7 @@ describe('DeanProgramaFormModalComponent', () => {
     const el = fixture.nativeElement as HTMLElement;
     const enviar = el.querySelector('button[type="submit"]') as HTMLButtonElement;
     expect(enviar.disabled).toBeFalse();
-    expect(el.querySelectorAll('p[role="alert"]').length).toBe(0);
+    expect(el.querySelectorAll('p[role="alert"]')).toHaveSize(0);
     component.enviar();
     fixture.detectChanges();
     const textos = Array.from(el.querySelectorAll('p[role="alert"]')).map((p) => p.textContent);

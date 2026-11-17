@@ -440,7 +440,7 @@ describe('AttendanceControlComponent contract corrections', () => {
     ] as never);
     expect(component.selectedCourseId()).toBe(grupoId);
     expect(sessionService.getSessionsByGroup).toHaveBeenCalledWith(grupoId);
-    expect(component.sessions().length).toBe(2);
+    expect(component.sessions()).toHaveSize(2);
     expect(component.showToast()).toBeFalse();
   });
 

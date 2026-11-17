@@ -31,7 +31,7 @@ describe('DeanProgramasTabComponent (CULM-001: Mi facultad / Programas)', () => 
 
     const el = fixture.nativeElement as HTMLElement;
     expect(el.querySelector('[data-testid="cabecera-facultad"]')?.textContent).toContain('Facultad de Ingeniería');
-    expect(el.querySelectorAll('[aria-label="Cifras de la facultad"] li').length).toBe(3);
+    expect(el.querySelectorAll('[aria-label="Cifras de la facultad"] li')).toHaveSize(3);
     expect(el.textContent).toContain('Plan 20241 · 10 semestres');
     expect(el.querySelector('a[href="/app/decano/programas/pl-1"]')).not.toBeNull();
     expect(el.querySelector('h1')).toBeNull();

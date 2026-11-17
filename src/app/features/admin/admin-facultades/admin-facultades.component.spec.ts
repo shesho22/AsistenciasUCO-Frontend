@@ -125,7 +125,7 @@ describe('AdminFacultadesComponent', () => {
     flushCoordinatorCatalogs();
 
     expect(component).toBeTruthy();
-    expect(component.facultades().length).toBe(2);
+    expect(component.facultades()).toHaveSize(2);
   });
 
   it('F3-ADM-01: muestra los totales reales (incluido 0) y "—" si el backend no los entrega, sin cifras fijas', () => {
@@ -616,7 +616,7 @@ describe('AdminFacultadesComponent', () => {
     it('cada tarjeta muestra "Ver Programas y Planes" y un menu; Editar, Cambiar decano y Activar/Desactivar no estan sueltos', () => {
       const el = iniciar();
       const tarjeta = el.querySelector('[data-testid="acciones-facultad"]') as HTMLElement;
-      expect(tarjeta.querySelectorAll('button').length).toBe(2);
+      expect(tarjeta.querySelectorAll('button')).toHaveSize(2);
       expect(tarjeta.textContent).toContain('Ver Programas y Planes');
       expect(tarjeta.textContent).not.toContain('Editar');
       expect(el.textContent).not.toContain('Cambiar Decano(a)');

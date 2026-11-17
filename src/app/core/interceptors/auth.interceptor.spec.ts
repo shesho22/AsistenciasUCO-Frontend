@@ -227,7 +227,7 @@ describe('authInterceptor 401 recovery', () => {
     secondRetry.flush({ id: 2 });
     tick();
 
-    expect(results.length).toBe(2);
+    expect(results).toHaveSize(2);
     expect(authService.notifySessionExpired).not.toHaveBeenCalled();
   }));
 });

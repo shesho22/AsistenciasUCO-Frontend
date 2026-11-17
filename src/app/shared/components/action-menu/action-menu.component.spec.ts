@@ -55,7 +55,7 @@ describe('ActionMenuComponent (CULM-001, patron "Mas acciones")', () => {
     crear();
     abrir();
     expect(q('[role="menu"]')).not.toBeNull();
-    expect(opciones().length).toBe(3);
+    expect(opciones()).toHaveSize(3);
     expect(trigger().getAttribute('aria-expanded')).toBe('true');
     expect(q('[data-testid="it-c"]')?.textContent).toContain('Cerrar toma');
   });

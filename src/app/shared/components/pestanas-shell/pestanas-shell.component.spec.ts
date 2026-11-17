@@ -47,7 +47,7 @@ describe('PestanasShellComponent', () => {
 
   it('muestra un solo título con su descripción y las pestañas declaradas en la ruta', async () => {
     const { el } = await abrir('/app/x/a');
-    expect(el.querySelectorAll('h1').length).toBe(1);
+    expect(el.querySelectorAll('h1')).toHaveSize(1);
     expect(el.querySelector('h1')?.textContent).toContain('Pantalla X');
     expect(el.textContent).toContain('Descripción de X');
     expect(Array.from(el.querySelectorAll('[role="tab"]')).map((t) => t.textContent?.trim())).toEqual(['Alfa', 'Beta']);

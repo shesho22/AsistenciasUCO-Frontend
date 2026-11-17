@@ -28,7 +28,7 @@ describe('PlanEstudioEstudianteService', () => {
 
     const req = http.expectOne((r) => r.url === URL);
     expect(req.request.method).toBe('GET');
-    expect(req.request.params.keys().length).toBe(0);
+    expect(req.request.params.keys()).toHaveSize(0);
     expect(req.request.context.get(BYPASS_GLOBAL_ERROR_TOAST)).toBeTrue();
     req.flush({
       exitoso: true,

@@ -154,7 +154,7 @@ describe('DeanPlanMallaComponent (HU108, B2NM)', () => {
     http.expectOne(`${API}/decano/estructura`).flush({ exitoso: true, datos: unSemestre });
     http.expectOne(porUrl(urlMalla)).flush(paginaApi([vinculo('asig-8', 'SIS-801', 'Arquitectura', 3, 8, 'OBL')], 1, 9));
     const maximo = Math.max(...component.asignaturas().map((a) => a.semestre));
-    expect(component.semestresDisponibles().length).toBe(Math.max(1, maximo));
+    expect(component.semestresDisponibles()).toHaveSize(Math.max(1, maximo));
     expect(component.semestresDisponibles()).toContain(maximo);
   });
 

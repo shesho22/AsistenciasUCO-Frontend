@@ -265,7 +265,7 @@ describe('TomaQrProyeccionComponent (CULM-001 B.2, HU175)', () => {
   it('UX densidad: visibles solo Ampliar, Dejar de proyectar y el menu; Regenerar y Cerrar toma van al menu', () => {
     const raiz = fixture.nativeElement as HTMLElement;
     const visibles = Array.from(raiz.querySelectorAll('header button')).filter((b) => !b.hasAttribute('role'));
-    expect(visibles.length).toBe(3);
+    expect(visibles).toHaveSize(3);
     expect(el('qr-regenerar')).toBeNull();
     expect(el('qr-cerrar-toma')).toBeNull();
     expect(itemMenu('qr-regenerar')).not.toBeNull();

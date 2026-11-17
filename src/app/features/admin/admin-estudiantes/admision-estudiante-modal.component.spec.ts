@@ -76,8 +76,8 @@ describe('AdmisionEstudianteModalComponent (HU156)', () => {
   it('inicializa cargando tipos de identificación y lista de programas institucional', () => {
     expect(catalogService.getTiposIdentificacion).toHaveBeenCalled();
     expect(adminService.getProgramasInstitucion).toHaveBeenCalledWith({ texto: '', pagina: 1, tamano: 20 });
-    expect(component.tipos().length).toBe(2);
-    expect(component.programas().length).toBe(2);
+    expect(component.tipos()).toHaveSize(2);
+    expect(component.programas()).toHaveSize(2);
     expect(component.tipoIdentificacionId()).toBe('t-cc');
   });
 
@@ -102,7 +102,7 @@ describe('AdmisionEstudianteModalComponent (HU156)', () => {
     tick(300);
 
     expect(adminService.getProgramasInstitucion).toHaveBeenCalledWith({ texto: 'Sistemas', pagina: 1, tamano: 20 });
-    expect(component.programas().length).toBe(1);
+    expect(component.programas()).toHaveSize(1);
     expect(component.programas()[0].codigo).toBe('SIS');
   }));
 

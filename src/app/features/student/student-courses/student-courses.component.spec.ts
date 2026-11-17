@@ -403,7 +403,7 @@ describe('StudentCoursesComponent — soporte y radicación (LB-004D FE-01..FE-0
       component.onFileSelected(evento(archivo('b.pdf', 2048, 'application/pdf')).event);
 
       const adjuntos = component.archivosAdjuntos();
-      expect(adjuntos.length).toBe(2);
+      expect(adjuntos).toHaveSize(2);
       expect(adjuntos[0].estado).toBe('LISTO');
       expect(adjuntos[0].fileId).toBe('f-1');
       expect(adjuntos[1].estado).toBe('RECHAZADO');
@@ -435,7 +435,7 @@ describe('StudentCoursesComponent — soporte y radicación (LB-004D FE-01..FE-0
       ]);
 
       component.removerAdjunto(0);
-      expect(component.archivosAdjuntos().length).toBe(1);
+      expect(component.archivosAdjuntos()).toHaveSize(1);
       expect(component.archivosAdjuntos()[0].fileId).toBe('f-2');
     });
   });
@@ -500,7 +500,7 @@ describe('StudentCoursesComponent', () => {
 
   it('debe inicializarse y cargar materias del estudiante', () => {
     expect(component).toBeTruthy();
-    expect(component.materias().length).toBe(1);
+    expect(component.materias()).toHaveSize(1);
   });
 
   describe('resumen del tablero calculado por el backend (CIERRE-W2B)', () => {
@@ -582,7 +582,7 @@ describe('StudentCoursesComponent', () => {
     expect(component.vistaActual()).toBe('DETALLE');
     expect(component.selectedMateria()?.id).toBe(ASIGNATURA_ID);
     expect(claimServiceSpy.getSesionesPorMateria).toHaveBeenCalledWith(ASIGNATURA_ID, { pagina: 1, tamano: 10, grupoId: mockMaterias[0].idGrupo });
-    expect(component.sesiones().length).toBe(1);
+    expect(component.sesiones()).toHaveSize(1);
     expect(component.totalSesiones()).toBe(1);
     component.volverALista();
     expect(component.vistaActual()).toBe('LISTA');
@@ -640,7 +640,7 @@ describe('StudentCoursesComponent', () => {
       component.cambiarPaginaSesiones(5);
 
       expect(component.paginaSesiones()).toBe(2);
-      expect(component.sesiones().length).toBe(1);
+      expect(component.sesiones()).toHaveSize(1);
       expect(component.totalSesiones()).toBe(14);
     });
 
@@ -873,7 +873,7 @@ describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', 
     fixture.detectChanges();
 
     expect(component.vistaActual()).toBe('DETALLE');
-    expect(component.sesiones().length).toBe(1);
+    expect(component.sesiones()).toHaveSize(1);
     expect(texto()).toContain('Introducción');
   });
 
@@ -882,8 +882,8 @@ describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', 
       materiaApi(),
       materiaApi({ idGrupo: GRUPO_2_ID, nombreGrupo: 'Grupo 002 - Arq Software' }),
     ]);
-    expect(component.materias().length).toBe(2);
-    expect(fixture.nativeElement.querySelectorAll('[data-testid="materia-grupo"]').length).toBe(2);
+    expect(component.materias()).toHaveSize(2);
+    expect(fixture.nativeElement.querySelectorAll('[data-testid="materia-grupo"]')).toHaveSize(2);
 
     component.verDetalleCompleto(component.materias()[1]);
     const req = http.expectOne(esSesiones(ASIGNATURA_ID));
@@ -921,7 +921,7 @@ describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', 
     const siguiente = http.expectOne(esSesiones(ASIGNATURA_ID));
     expect(siguiente.request.params.get('pagina')).toBe('2');
     siguiente.flush({ exitoso: true, total: 23, datos: [sesionApi({ id: 'd1d2d3d4-0000-4000-8000-0000000002ff', numero: 11 })] });
-    expect(component.sesiones().length).toBe(1);
+    expect(component.sesiones()).toHaveSize(1);
     expect(component.totalSesiones()).toBe(23);
   });
 
@@ -979,7 +979,7 @@ describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', 
     fixture.detectChanges();
 
     expect(component.sesionesError()).toBeNull();
-    expect(component.sesiones().length).toBe(1);
+    expect(component.sesiones()).toHaveSize(1);
   });
 
   it('una materia con identificador invalido jamas emite una peticion de sesiones', () => {
@@ -1093,7 +1093,7 @@ describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', 
     http.expectOne(esSesiones(ASIGNATURA_ID)).flush({ exitoso: true, datos: [], total: 0 });
 
     http.expectNone((r) => r.url.includes('/coordinador/') || r.url.includes('/admin/') || r.url.includes('/decano/'));
-    expect(component.materias().length).toBe(1);
+    expect(component.materias()).toHaveSize(1);
   });
 });
 

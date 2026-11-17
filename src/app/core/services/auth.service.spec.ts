@@ -891,7 +891,7 @@ describe('AuthService', () => {
         const accessToken = service.token()!;
         expect(accessToken).toBeTruthy();
         expect(sessionStorage.getItem(SESSION_REFRESH_KEY)).toBe('refresh-login');
-        expect(sessionStorage.length).toBe(1);
+        expect(sessionStorage).toHaveSize(1);
         expect(dumpStorage(sessionStorage)).not.toContain(accessToken);
         expect(dumpStorage(localStorage)).not.toContain(accessToken);
         expect(dumpStorage(localStorage)).not.toContain('refresh-login');
@@ -953,7 +953,7 @@ describe('AuthService', () => {
         expect(reloaded.currentUser()?.id).toBe(VALID_UUID);
 
         const calls = tokenEndpointCalls();
-        expect(calls.length).toBe(1);
+        expect(calls).toHaveSize(1);
         const body = String(calls[0][1].body);
         expect(body).toContain('grant_type=refresh_token');
         expect(body).toContain('refresh_token=refresh-1');
@@ -977,7 +977,7 @@ describe('AuthService', () => {
         const result = await service.initKeycloak();
 
         expect(result).toBeTrue();
-        expect(tokenEndpointCalls().length).toBe(0);
+        expect(tokenEndpointCalls()).toHaveSize(0);
       });
 
       it('C. refresh token inválido: devuelve false, limpia sessionStorage y memoria', async () => {

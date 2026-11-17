@@ -72,7 +72,7 @@ describe('StudentClaimsComponent (HU010/HU011: consulta del estudiante)', () => 
   it('SC-01 lista mis solicitudes con estado, materia, sesión, respuesta y soporte', () => {
     const texto = fixture.nativeElement.textContent as string;
     expect(component.total()).toBe(2);
-    expect(component.reclamos().length).toBe(2);
+    expect(component.reclamos()).toHaveSize(2);
     expect(texto).toContain('Cálculo');
     expect(texto).toContain('Pendiente');
     expect(texto).toContain('Aprobada');
@@ -114,7 +114,7 @@ describe('StudentClaimsComponent (HU010/HU011: consulta del estudiante)', () => 
   it('A2-F-01 solo los reclamos PENDIENTE ofrecen Retirar; al retirar muestra el mensaje del backend y recarga', () => {
     const el = fixture.nativeElement as HTMLElement;
     const botones = el.querySelectorAll<HTMLButtonElement>('[data-accion="retirar-reclamo"]');
-    expect(botones.length).toBe(1);
+    expect(botones).toHaveSize(1);
 
     botones[0].click();
     const del = http.expectOne(`${ENDPOINT}/sol-1`);

@@ -102,6 +102,6 @@ describe('AttendanceNewSessionModalComponent nombre 1..50', () => {
 
     fixture.componentInstance.title.set('x'.repeat(50));
     fixture.componentInstance.onSubmit(new Event('submit'));
-    expect(emitted.length).toBe(1);
+    expect(emitted).toHaveSize(1);
   });
 });

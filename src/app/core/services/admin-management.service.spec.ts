@@ -46,7 +46,7 @@ describe('AdminManagementService', () => {
       ],
     });
 
-    expect(service.facultades().length).toBe(1);
+    expect(service.facultades()).toHaveSize(1);
     expect(service.facultades()[0].nombre).toBe('Facultad de Ingeniería');
     expect(service.facultades()[0].decanoNombre).toBe('Dr. Roberto Gómez');
   });
@@ -290,7 +290,7 @@ describe('AdminManagementService', () => {
       expect(resultado.datos.nombre).toBe('');
       expect(resultado.datos.decanoNombre).toBe('Sin asignar');
       expect(resultado.datos.estado).toBe('ACTIVO');
-      expect(service.facultades().length).toBe(0);
+      expect(service.facultades()).toHaveSize(0);
     });
   });
 
@@ -355,7 +355,7 @@ describe('AdminManagementService', () => {
       ],
     });
 
-    expect(service.decanos().length).toBe(1);
+    expect(service.decanos()).toHaveSize(1);
     expect(service.decanos()[0].nombreCompleto).toBe('Juan Carlos Gomez Perez');
   });
 
@@ -372,7 +372,7 @@ describe('AdminManagementService', () => {
       datos: [{ id: 'area-1', codigo: 'IS', nombre: 'Ingeniería de Software', activa: true }],
     });
 
-    expect(service.areas().length).toBe(1);
+    expect(service.areas()).toHaveSize(1);
   });
 
   it('cargarParametros conserva los datos del DTO de parámetros recibido por GET', () => {
@@ -398,7 +398,7 @@ describe('AdminManagementService', () => {
       ],
     });
 
-    expect(service.parametros().length).toBe(1);
+    expect(service.parametros()).toHaveSize(1);
     expect(service.parametros()[0]).toEqual(jasmine.objectContaining({
       grupo: 'ASISTENCIA',
       clave: 'limite.inasistencia',
@@ -461,7 +461,7 @@ describe('AdminManagementService', () => {
       ],
     });
 
-    expect(service.decanos().length).toBe(1);
+    expect(service.decanos()).toHaveSize(1);
     expect(service.decanos()[0].facultad).toBe('Sin Facultad Asignada');
   });
 
@@ -488,7 +488,7 @@ describe('AdminManagementService', () => {
       datos: [{ id: 'inst-1', nombre: 'UCO', nit: '890.980.040', direccion: 'Rionegro', telefono: '5698000', estado: 'ACTIVO' }],
     });
 
-    expect(service.instituciones().length).toBe(1);
+    expect(service.instituciones()).toHaveSize(1);
     const servicio = service as unknown as Record<string, unknown>;
     expect(servicio['crearInstitucion']).toBeUndefined();
     expect(servicio['actualizarInstitucion']).toBeUndefined();
@@ -498,7 +498,7 @@ describe('AdminManagementService', () => {
   describe('HU168: parámetros editables (D.3)', () => {
     it('cargarParametros envía filtros y paginación a GET /admin/parametros y actualiza la señal', () => {
       service.cargarParametros({ grupo: 'ASISTENCIA', texto: 'inasistencia', soloEditables: true, pagina: 1, tamano: 20 }).subscribe((res) => {
-        expect(res.elementos.length).toBe(1);
+        expect(res.elementos).toHaveSize(1);
         expect(res.totalElementos).toBe(1);
       });
 
@@ -538,7 +538,7 @@ describe('AdminManagementService', () => {
         totalPaginas: 1,
       });
 
-      expect(service.parametros().length).toBe(1);
+      expect(service.parametros()).toHaveSize(1);
       expect(service.parametros()[0].clave).toBe('asistencias.limite.inasistencia');
       expect(service.parametros()[0].esEditable).toBeTrue();
     });
@@ -602,7 +602,7 @@ describe('AdminManagementService', () => {
 
   it('HU156: getProgramasInstitucion envía GET /admin/programas con parámetros de búsqueda', () => {
     service.getProgramasInstitucion({ texto: 'Sistemas', pagina: 1, tamano: 20 }).subscribe((res) => {
-      expect(res.elementos.length).toBe(1);
+      expect(res.elementos).toHaveSize(1);
       expect(res.elementos[0].codigo).toBe('SIS');
     });
 

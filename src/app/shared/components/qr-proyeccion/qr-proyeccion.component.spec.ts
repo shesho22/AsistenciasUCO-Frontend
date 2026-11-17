@@ -196,7 +196,7 @@ describe('QrProyeccionComponent (CULM-001, estetica unificada de proyeccion)', (
       host.detectChanges();
       const n = host.nativeElement as HTMLElement;
       const visibles = Array.from(n.querySelectorAll('header button')).filter((b) => !b.hasAttribute('role'));
-      expect(visibles.length).toBe(3);
+      expect(visibles).toHaveSize(3);
       expect(n.querySelector('[data-testid="qr-pantalla-completa"]')).not.toBeNull();
       expect(n.querySelector('[data-testid="qr-cerrar"]')).not.toBeNull();
       expect(n.querySelector('[data-testid="action-menu-trigger"]')).not.toBeNull();

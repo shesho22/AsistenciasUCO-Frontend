@@ -63,7 +63,7 @@ describe('StudentGroupOfferComponent (HU008: oferta de grupos)', () => {
       grupoApi('g3', { tipoAsignatura: 'INSTITUCIONAL', transversal: true }), grupoApi('g4', { tipoAsignatura: 'BASICA', transversal: true })], 12);
 
     const el: HTMLElement = fixture.nativeElement;
-    expect(el.querySelectorAll('[data-testid="grupo-oferta"]').length).toBe(4);
+    expect(el.querySelectorAll('[data-testid="grupo-oferta"]')).toHaveSize(4);
     const etiquetas = Array.from(el.querySelectorAll('[data-testid="etiqueta-transversal"]')).map((e) => e.textContent?.trim());
     expect(etiquetas).toEqual(['Transversal · Institucional', 'Transversal · Básica']);
     expect(el.textContent).toContain('5 de 30');

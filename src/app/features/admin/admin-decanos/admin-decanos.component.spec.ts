@@ -111,9 +111,9 @@ describe('AdminDecanosComponent', () => {
     satisfyInitRequests();
 
     expect(component).toBeTruthy();
-    expect(component.decanos().length).toBe(2);
-    expect(component.facultades().length).toBe(2);
-    expect(component.tiposIdentificacion().length).toBe(2);
+    expect(component.decanos()).toHaveSize(2);
+    expect(component.facultades()).toHaveSize(2);
+    expect(component.tiposIdentificacion()).toHaveSize(2);
     expect(component.isLoading()).toBeFalse();
   });
 
@@ -161,33 +161,33 @@ describe('AdminDecanosComponent', () => {
     component.searchQuery = 'roberto';
     component.selectedEstado = 'TODOS';
     triggerFilter();
-    expect(component.filteredDecanos().length).toBe(1);
+    expect(component.filteredDecanos()).toHaveSize(1);
 
     component.searchQuery = 'carlos';
     triggerFilter();
-    expect(component.filteredDecanos().length).toBe(1);
+    expect(component.filteredDecanos()).toHaveSize(1);
 
     component.searchQuery = 'zapata';
     triggerFilter();
-    expect(component.filteredDecanos().length).toBe(1);
+    expect(component.filteredDecanos()).toHaveSize(1);
 
     component.searchQuery = 'ingeniería';
     triggerFilter();
-    expect(component.filteredDecanos().length).toBe(1);
+    expect(component.filteredDecanos()).toHaveSize(1);
 
     component.searchQuery = '1017000002';
     triggerFilter();
-    expect(component.filteredDecanos().length).toBe(1);
+    expect(component.filteredDecanos()).toHaveSize(1);
 
     component.searchQuery = '';
     component.selectedEstado = 'INACTIVO';
     triggerFilter();
-    expect(component.filteredDecanos().length).toBe(1);
+    expect(component.filteredDecanos()).toHaveSize(1);
     expect(component.filteredDecanos()[0].id).toBe('dec-2');
 
     component.selectedEstado = 'ACTIVO';
     triggerFilter();
-    expect(component.filteredDecanos().length).toBe(1);
+    expect(component.filteredDecanos()).toHaveSize(1);
     expect(component.filteredDecanos()[0].id).toBe('dec-1');
   });
 
@@ -471,7 +471,7 @@ component.guardarDecano();
     component.guardarDecano();
 
     const posts = http.match(`${environment.apiUrl}/admin/decanos`);
-    expect(posts.length).toBe(1);
+    expect(posts).toHaveSize(1);
     expect(component.isSubmitting()).toBeTrue();
     posts[0].flush({ exitoso: true, mensajeUsuario: 'Decano registrado exitosamente.' });
     http.expectOne(`${environment.apiUrl}/admin/decanos`).flush({ exitoso: true, datos: [
@@ -488,7 +488,7 @@ component.guardarDecano();
     component.cargarDecanos();
 
     const requests = http.match(`${environment.apiUrl}/admin/decanos`);
-    expect(requests.length).toBe(2);
+    expect(requests).toHaveSize(2);
     const nuevoListado = [
       ...mockDecanos,
       { ...mockDecanos[0], id: 'dec-nuevo', numeroIdentificacion: '1020304050' },
@@ -633,7 +633,7 @@ component.guardarDecano();
       satisfyInitRequests();
       fixture.detectChanges();
       const cab = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="acciones-encabezado"]') as HTMLElement;
-      expect(cab.querySelectorAll('button').length).toBe(2);
+      expect(cab.querySelectorAll('button')).toHaveSize(2);
       expect(cab.textContent).toContain('Nombrar');
       expect(cab.textContent).not.toContain('Carga Masiva');
     });

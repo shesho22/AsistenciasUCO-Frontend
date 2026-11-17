@@ -94,7 +94,7 @@ describe('TeacherGrupoEstudiantesComponent', () => {
     fixture.componentRef.setInput('pagina', 2);
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelectorAll('[data-testid="padron-fila"]').length).toBe(12);
+    expect(fixture.nativeElement.querySelectorAll('[data-testid="padron-fila"]')).toHaveSize(12);
     const paginador = fixture.debugElement.query(By.directive(PaginationComponent)).componentInstance as PaginationComponent;
     expect(paginador.totalItems()).toBe(30);
     expect(paginador.currentPage()).toBe(2);

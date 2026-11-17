@@ -84,7 +84,7 @@ describe('DatosPersonaComponent', () => {
     documento.value = '10-17a 55.5444999';
     documento.dispatchEvent(new Event('input'));
 
-    expect(documento.value.length).toBe(DOCUMENTO_MAX_LENGTH);
+    expect(documento.value).toHaveSize(DOCUMENTO_MAX_LENGTH);
     expect(documento.value).toBe('1017555444');
     expect(cambios).toEqual([{ campo: 'numeroIdentificacion', valor: '1017555444' }]);
   });

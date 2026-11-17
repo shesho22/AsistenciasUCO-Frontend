@@ -50,7 +50,7 @@ describe('AdminPeriodosComponent', () => {
   });
 
   it('carga los períodos de la institución', () => {
-    expect(component.periodos().length).toBe(1);
+    expect(component.periodos()).toHaveSize(1);
   });
 
   it('HU096/HU097: crea y modifica por el endpoint del administrador y recarga', () => {

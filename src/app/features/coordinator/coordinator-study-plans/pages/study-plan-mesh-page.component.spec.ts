@@ -93,7 +93,7 @@ describe('CoordinatorStudyPlanMeshPageComponent', () => {
 
   it('resuelve el plan por planId y carga sus asignaturas', () => {
     expect(component.selectedPlan()?.codigo).toBe('PLAN-SIS-2024');
-    expect(component.asignaturas().length).toBe(1);
+    expect(component.asignaturas()).toHaveSize(1);
   });
 
   // CULM-001 B2NM (F-COO-005): reemplaza a A2-F-04, que ocultaba el control "hasta B2". Con B2 el control existe y llama al DELETE.
@@ -135,7 +135,7 @@ describe('CoordinatorStudyPlanMeshPageComponent', () => {
     cancelar.click();
     expect(component.asignaturaAQuitar()).toBeNull();
     http.expectNone(`${urlMalla}/asig-1`);
-    expect(component.asignaturas().length).toBe(1);
+    expect(component.asignaturas()).toHaveSize(1);
   });
 
   it('F-COO-005 ASI_005 explica el bloqueo con el mensaje del backend y conserva la malla', () => {
@@ -147,7 +147,7 @@ describe('CoordinatorStudyPlanMeshPageComponent', () => {
 
     expect(component.aviso()).toContain('tiene grupos con asistencia');
     expect(toastSpy.error).toHaveBeenCalled();
-    expect(component.asignaturas().length).toBe(1);
+    expect(component.asignaturas()).toHaveSize(1);
   });
 
   it('F-COO-005 asociar una asignatura existente abre el diálogo y, al asociar, recarga la malla', () => {

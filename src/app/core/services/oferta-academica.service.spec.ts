@@ -45,7 +45,7 @@ describe('OfertaAcademicaService (HU008)', () => {
       const claves = Object.keys(res.datos[0]);
       expect(claves).not.toContain('idSolicitud' + 'Abierta');
       expect(claves).not.toContain('estadoSolicitud');
-      expect(claves.length).toBe(19);
+      expect(claves).toHaveSize(19);
     });
     const grupo = {
       idGrupo: 'g1', codigoGrupo: 1, nombreGrupo: 'G1', idAsignatura: 'a', codigoAsignatura: 'M', nombreAsignatura: 'Mat',

@@ -172,14 +172,14 @@ describe('AdminSystemComponent', () => {
       const tablist = el().querySelector('[role="tablist"]');
       expect(tablist).toBeTruthy();
       const tabs = Array.from(el().querySelectorAll('[role="tab"]')) as HTMLElement[];
-      expect(tabs.length).toBe(3);
+      expect(tabs).toHaveSize(3);
       expect(tabs[0].getAttribute('aria-selected')).toBe('true');
       expect(tabs[1].getAttribute('aria-selected')).toBe('false');
       tabs[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
       fixture.detectChanges();
       expect(component.tabActiva()).toBe('AUDITORIA');
       expect(el().querySelector('[role="tabpanel"]')).toBeTruthy();
-      expect(el().querySelectorAll('svg:not([aria-hidden="true"])').length).toBe(0);
+      expect(el().querySelectorAll('svg:not([aria-hidden="true"])')).toHaveSize(0);
     });
   });
 });

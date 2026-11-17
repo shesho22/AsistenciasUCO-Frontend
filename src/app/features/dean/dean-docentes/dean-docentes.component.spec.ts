@@ -156,7 +156,7 @@ describe('DeanDocentesComponent (HU136, administrador)', () => {
     expect(texto).toContain('Docentes de la Institución');
     expect(texto).toContain('Administración');
     expect(texto).toContain('María Rostagno');
-    expect(component.programasVisibles().length).toBe(2);
+    expect(component.programasVisibles()).toHaveSize(2);
   });
 
   it('filtrar por facultad acota los programas, limpia el programa y consulta con la facultad', () => {

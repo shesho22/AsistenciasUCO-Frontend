@@ -42,7 +42,7 @@ describe('DashboardLayoutComponent menú de festivos (CULM-001 B.1)', () => {
   it('el administrador ve una sola entrada "Configuración" hacia /app/admin/configuracion', () => {
     const items = crear('ADMINISTRADOR').filteredNavItems();
     const cfg = items.filter((i) => i.route === '/app/admin/configuracion');
-    expect(cfg.length).toBe(1);
+    expect(cfg).toHaveSize(1);
     expect(cfg[0].label).toBe('Configuración');
   });
 

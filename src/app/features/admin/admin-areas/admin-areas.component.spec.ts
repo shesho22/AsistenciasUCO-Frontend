@@ -40,8 +40,8 @@ describe('AdminAreasComponent - áreas de conocimiento (HU150, solo consulta)', 
     expect(host.textContent).toContain('Ingeniería de Software');
     expect(host.textContent).toContain('Inactivo');
     expect(host.textContent).toContain('solo consulta');
-    expect(host.querySelectorAll('button').length).toBe(0);
-    expect(host.querySelectorAll('form').length).toBe(0);
+    expect(host.querySelectorAll('button')).toHaveSize(0);
+    expect(host.querySelectorAll('form')).toHaveSize(0);
   });
 
   it('muestra el error del backend si la carga falla', () => {

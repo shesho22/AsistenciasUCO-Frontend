@@ -64,6 +64,6 @@ describe('CorreccionIdentidadModalComponent (HU159)', () => {
 
     component.primerNombre.set('  ');
     component.onGuardar();
-    expect(emitidos.length).toBe(1);
+    expect(emitidos).toHaveSize(1);
   });
 });

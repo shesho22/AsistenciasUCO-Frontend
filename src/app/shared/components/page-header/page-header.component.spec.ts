@@ -58,7 +58,7 @@ describe('PageHeaderComponent', () => {
   it('pinta un único h1 con la tipografía del sistema y sin extras por defecto', () => {
     render();
     const titulos = el().querySelectorAll('h1');
-    expect(titulos.length).toBe(1);
+    expect(titulos).toHaveSize(1);
     expect(titulos[0].textContent?.trim()).toBe('Pantalla de prueba');
     expect(titulos[0].className).toContain('font-serif');
     expect(titulos[0].hasAttribute('data-testid')).toBeFalse();
