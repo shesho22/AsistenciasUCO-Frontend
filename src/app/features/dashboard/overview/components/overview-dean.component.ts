@@ -1,10 +1,12 @@
 import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
-import { Component, ChangeDetectionStrategy, input } from '@angular/core';
+import { Component, ChangeDetectionStrategy, computed, input } from '@angular/core';
 
 import { RouterLink } from '@angular/router';
 import { CardComponent } from '../../../../shared/components/card/card.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { CoordinadorItem } from '../../../../core/models/role-management.model';
+import { KpisDecano } from '../../../../core/models/dean-indicators.model';
+import { EstadoIndicadores, TEXTO_CARGANDO, TEXTO_SIN_DATOS, textoCifra } from '../../../../core/utils/cifra-indicador';
 
 @Component({
     selector: 'app-overview-dean',
@@ -16,25 +18,25 @@ import { CoordinadorItem } from '../../../../core/models/role-management.model';
     template: `
     <div class="space-y-6">
       <!-- KPIs Decano -->
-      <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <section class="grid grid-cols-2 lg:grid-cols-4 gap-4" [attr.aria-busy]="estado() === 'cargando'">
         <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Coordinadores Asignados</span>
-          <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ coordinadores().length }}</p>
+          <p class="text-2xl font-serif font-bold text-warm-900 mt-1" data-testid="coordinadores">{{ texto(kpis()?.totalCoordinadores) }}</p>
           <span class="text-[11px] text-primary-700 font-medium">Programas de facultad</span>
         </div>
         <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Docentes de Facultad</span>
-          <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ totalDocentes() }}</p>
-          <span class="text-[11px] text-warm-500 font-medium">Asignados a los coordinadores</span>
+          <p class="text-2xl font-serif font-bold text-warm-900 mt-1" data-testid="docentes">{{ texto(kpis()?.totalDocentes) }}</p>
+          <span class="text-[11px] text-warm-500 font-medium">Con vínculo activo en sus programas</span>
         </div>
         <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Grupos en Curso</span>
-          <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ totalGrupos() ?? '—' }}</p>
-          <span class="text-[11px] text-warm-500 font-medium">{{ periodo() ?? 'Sin período vigente' }}</span>
+          <p class="text-2xl font-serif font-bold text-warm-900 mt-1" data-testid="grupos">{{ texto(kpis()?.gruposActivos) }}</p>
+          <span class="text-[11px] text-warm-500 font-medium" data-testid="periodo">{{ periodoTexto() }}</span>
         </div>
         <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Asistencia Promedio</span>
-          <p class="text-2xl font-serif font-bold text-success-700 mt-1">{{ porcentajeAsistencia() === null ? 'Sin datos' : porcentajeAsistencia() + '%' }}</p>
+          <p class="text-2xl font-serif font-bold text-success-700 mt-1" data-testid="asistencia">{{ texto(kpis()?.porcentajeAsistencia, '%') }}</p>
           <span class="text-[11px] text-warm-500 font-medium">Período vigente de la facultad</span>
         </div>
       </section>
@@ -95,11 +97,24 @@ import { CoordinadorItem } from '../../../../core/models/role-management.model';
   `
 })
 export class OverviewDeanComponent {
+  /** Coordinadores que se listan abajo (no se cuentan: las cifras salen de `kpis`). */
   coordinadores = input<CoordinadorItem[]>([]);
-  totalDocentes = input<number>(0);
-  /** Grupos activos del período vigente (GET /decano/indicadores); `null` si la consulta no está disponible. */
-  totalGrupos = input<number | null>(null);
-  /** Nombre del período al que corresponden los indicadores. */
-  periodo = input<string | null>(null);
-  porcentajeAsistencia = input<number | null>(null);
+  /** CIERRE-W3I: indicadores de la facultad calculados en la base (GET /decano/indicadores). */
+  kpis = input<KpisDecano | null>(null);
+  estado = input<EstadoIndicadores>('cargando');
+
+  /**
+   * F-DEC-01: "Sin período vigente" solo se afirma cuando el servidor respondió y no hay período; mientras carga o si falló
+   * no se declara nada sobre el período.
+   */
+  periodoTexto = computed(() => {
+    const estado = this.estado();
+    if (estado === 'cargando') return TEXTO_CARGANDO;
+    if (estado === 'error') return TEXTO_SIN_DATOS;
+    return this.kpis()?.nombrePeriodoAcademico ?? 'Sin período vigente';
+  });
+
+  texto(valor: number | null | undefined, sufijo = ''): string {
+    return textoCifra(valor, this.estado(), sufijo);
+  }
 }

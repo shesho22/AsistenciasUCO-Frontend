@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, input } from '@angular/core';
+import { Component, ChangeDetectionStrategy, computed, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { RevisionesPendientesKpiComponent } from '../../../../shared/components/revisiones-pendientes-kpi/revisiones-pendientes-kpi.component';
@@ -6,6 +6,8 @@ import { CardComponent } from '../../../../shared/components/card/card.component
 import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { DocenteItem, PlanEstudioItem } from '../../../../core/models/role-management.model';
+import { KpisCoordinador } from '../../../../core/models/coordinator-indicators.model';
+import { EstadoIndicadores, TEXTO_CARGANDO, TEXTO_SIN_DATOS, textoCifra } from '../../../../core/utils/cifra-indicador';
 
 @Component({
   selector: 'app-overview-coordinator',
@@ -22,25 +24,25 @@ import { DocenteItem, PlanEstudioItem } from '../../../../core/models/role-manag
       </div>
 
       <!-- KPIs Coordinador -->
-      <section class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+      <section class="grid grid-cols-2 lg:grid-cols-5 gap-4" [attr.aria-busy]="estado() === 'cargando'">
         <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Planta Docente Activa</span>
-          <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ docentes().length }}</p>
-          <span class="text-[11px] text-success-700 font-medium">100% con carga asignada</span>
+          <p class="text-2xl font-serif font-bold text-warm-900 mt-1" data-testid="docentes">{{ texto(kpis()?.totalDocentes) }}</p>
+          <span class="text-[11px] text-success-700 font-medium">Con vínculo activo en el programa</span>
         </div>
         <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Grupos en Curso</span>
-          <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ totalGrupos() }}</p>
-          <span class="text-[11px] text-primary-700 font-medium">Periodo 2026-II</span>
+          <p class="text-2xl font-serif font-bold text-warm-900 mt-1" data-testid="grupos">{{ texto(kpis()?.gruposActivos) }}</p>
+          <span class="text-[11px] text-primary-700 font-medium" data-testid="periodo">{{ periodoTexto() }}</span>
         </div>
         <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Estudiantes Registrados</span>
-          <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ totalEstudiantes() }}</p>
+          <p class="text-2xl font-serif font-bold text-warm-900 mt-1" data-testid="estudiantes">{{ texto(kpis()?.estudiantesRegistrados) }}</p>
           <span class="text-[11px] text-warm-500 font-medium">Padrón del programa</span>
         </div>
         <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Estudiantes en Riesgo</span>
-          <p class="text-2xl font-serif font-bold text-accent-700 mt-1" data-testid="estudiantes-riesgo">{{ estudiantesRiesgo() === null ? 'Sin datos' : estudiantesRiesgo() }}</p>
+          <p class="text-2xl font-serif font-bold text-accent-700 mt-1" data-testid="estudiantes-riesgo">{{ texto(kpis()?.estudiantesRiesgo) }}</p>
           <span class="text-[11px] text-warm-500 font-medium">Indicador del programa</span>
         </div>
         <a
@@ -150,12 +152,24 @@ import { DocenteItem, PlanEstudioItem } from '../../../../core/models/role-manag
   `,
 })
 export class OverviewCoordinatorComponent {
+  /** Docentes que se muestran abajo (los primeros tres): las cifras salen de `kpis`, no de la longitud de esta lista. */
   docentes = input<DocenteItem[]>([]);
   planesEstudio = input<PlanEstudioItem[]>([]);
-  totalGrupos = input<number>(0);
-  totalEstudiantes = input<number>(0);
-  /** `estudiantesRiesgo` de GET /coordinador/indicadores; `null` = sin dato (el KPI no entrega % de asistencia). */
-  estudiantesRiesgo = input<number | null>(null);
+  /** CIERRE-W3I: indicadores del programa calculados en la base (GET /coordinador/indicadores). */
+  kpis = input<KpisCoordinador | null>(null);
+  estado = input<EstadoIndicadores>('cargando');
   /** DEC-065 (2): solicitudes de sesión extraordinaria por aprobar; `null` = sin dato. */
   solicitudesSesionPendientes = input<number | null>(null);
+
+  /** Período que resolvió el servidor para los indicadores (antes estaba escrito a mano). */
+  periodoTexto = computed(() => {
+    const estado = this.estado();
+    if (estado === 'cargando') return TEXTO_CARGANDO;
+    if (estado === 'error') return TEXTO_SIN_DATOS;
+    return this.kpis()?.nombrePeriodoAcademico ?? 'Sin período vigente';
+  });
+
+  texto(valor: number | null | undefined, sufijo = ''): string {
+    return textoCifra(valor, this.estado(), sufijo);
+  }
 }

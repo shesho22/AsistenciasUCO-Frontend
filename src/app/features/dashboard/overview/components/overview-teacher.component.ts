@@ -31,7 +31,7 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
         </div>
         <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Alumnos Matriculados</span>
-          <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ totalStudentsCount() }}</p>
+          <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ totalStudentsCount() ?? '—' }}</p>
           <span class="text-[11px] text-warm-500 font-medium">Total en tus grupos</span>
         </div>
         <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
@@ -215,7 +215,8 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
 })
 export class OverviewTeacherComponent {
   courses = input<Course[]>([]);
-  totalStudentsCount = input<number>(0);
+  /** CIERRE-W3I: estudiantes activos de sus grupos habilitados (GET /docente/resumen-grupos); `null` mientras no llega o si falla. */
+  totalStudentsCount = input<number | null>(null);
   pendingClaimsCount = input<number | null>(0);
   proximaClase = input<ProximaClaseInfo | null>(null);
   isLoading = input<boolean>(false);
