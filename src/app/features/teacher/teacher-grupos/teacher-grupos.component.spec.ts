@@ -13,6 +13,7 @@ import { SolicitudRevisionItem } from '../../../core/models/role-management.mode
 import { CatalogService } from '../../../core/services/catalog.service';
 import { TeacherAttendanceSummaryService } from '../../../core/services/teacher-attendance-summary.service';
 import { TeacherMatrizAsistenciaService } from '../../../core/services/teacher-matriz-asistencia.service';
+import { TeacherGruposResumenService } from '../../../core/services/teacher-grupos-resumen.service';
 import { resumenSesiones } from '../../../core/testing/resumen-sesiones-grupo.fixture';
 import { EstadoCeldaAsistencia, FilaMatriz } from '../../../core/models/matriz-asistencia.model';
 import { Course } from '../../../core/models/course.model';
@@ -30,6 +31,7 @@ import { RealtimeEvent, SesionCanceladaRealtimePayload, SesionManualCreadaRealti
 
 describe('TeacherGruposComponent', () => {
   let fixture: ComponentFixture<TeacherGruposComponent>;
+  let gruposResumen: jasmine.SpyObj<TeacherGruposResumenService>;
   let component: TeacherGruposComponent;
   let courseService: jasmine.SpyObj<CourseService>;
   let sessionService: jasmine.SpyObj<SessionService>;
@@ -122,6 +124,11 @@ describe('TeacherGruposComponent', () => {
     realtime.listenType.and.callFake(((tipo: string) => realtimeEvents$.pipe(filter((e) => e.type === tipo))) as never);
     realtime.events.and.returnValue(new Subject<RealtimeEvent>().asObservable());
 
+    gruposResumen = jasmine.createSpyObj<TeacherGruposResumenService>('TeacherGruposResumenService', ['consultar']);
+    gruposResumen.consultar.and.returnValue(
+      of({ exitoso: true, datos: { gruposHabilitados: 1, estudiantesActivos: 41, cupoTotal: 60, tasaOcupacion: 68.33 } })
+    );
+
     TestBed.configureTestingModule({
       imports: [TeacherGruposComponent],
       providers: [
@@ -135,6 +142,7 @@ describe('TeacherGruposComponent', () => {
         { provide: AttendanceService, useValue: attendanceService },
         { provide: TeacherAttendanceSummaryService, useValue: resumenService },
         { provide: TeacherMatrizAsistenciaService, useValue: matrizService },
+        { provide: TeacherGruposResumenService, useValue: gruposResumen },
         // HU058: catálogo real de tipos de programa para el filtro "Nivel formativo".
         { provide: CatalogService, useValue: { getTiposPrograma: () => of([{ id: 'TP-PRE', codigo: 'PRE', nombre: 'pregrado' }]) } },
       ],
@@ -1022,6 +1030,28 @@ describe('TeacherGruposComponent', () => {
 
       expect(matrizService.consultarMatriz.calls.mostRecent().args[0]).toBe('crs-2');
       expect(matrizService.consultarMatriz.calls.mostRecent().args[1]).toBe(1);
+    });
+  });
+
+  describe('CIERRE-W3I: total de estudiantes desde el servidor', () => {
+    it('pide los totales al servidor y los pasa a la lista de grupos', () => {
+      expect(gruposResumen.consultar).toHaveBeenCalled();
+      expect(component.totalEstudiantes()).toBe(41);
+      const total = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="total-estudiantes"]');
+      expect(total?.textContent?.trim()).toBe('41');
+    });
+
+    it('si el servidor falla no se inventa un total', () => {
+      gruposResumen.consultar.and.returnValue(throwError(() => new Error('403')));
+      component.cargarGrupos();
+      fixture.detectChanges();
+      expect(component.totalEstudiantes()).toBeNull();
+    });
+
+    it('una respuesta sin datos deja el total en blanco', () => {
+      gruposResumen.consultar.and.returnValue(of<never>({ exitoso: true, datos: null } as never));
+      component.cargarGrupos();
+      expect(component.totalEstudiantes()).toBeNull();
     });
   });
 });

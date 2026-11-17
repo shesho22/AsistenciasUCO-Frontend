@@ -39,6 +39,35 @@ describe('TeacherGruposListComponent', () => {
     expect(text).not.toContain(MARCADOR_DOCENTE);
   });
 
+  describe('CIERRE-W3I: total de estudiantes desde el servidor', () => {
+    const total = (): string =>
+      ((fixture.nativeElement as HTMLElement).querySelector('[data-testid="total-estudiantes"]')?.textContent ?? '').trim();
+
+    it('muestra el total que entrega el servidor, no la suma de enrolledStudentsCount de la lista', () => {
+      fixture.componentRef.setInput('courses', [course, { ...course, id: 'crs-2', enrolledStudentsCount: 10 }]);
+      fixture.componentRef.setInput('totalEstudiantes', 77);
+      fixture.componentRef.setInput('isLoading', false);
+      fixture.detectChanges();
+      expect(total()).toBe('77');
+    });
+
+    it('un cero del servidor es un cero legitimo', () => {
+      fixture.componentRef.setInput('courses', [course]);
+      fixture.componentRef.setInput('totalEstudiantes', 0);
+      fixture.componentRef.setInput('isLoading', false);
+      fixture.detectChanges();
+      expect(total()).toBe('0');
+    });
+
+    it('mientras no llega o si falla muestra «—» y no una suma local', () => {
+      fixture.componentRef.setInput('courses', [course]);
+      fixture.componentRef.setInput('totalEstudiantes', null);
+      fixture.componentRef.setInput('isLoading', false);
+      fixture.detectChanges();
+      expect(total()).toBe('—');
+    });
+  });
+
   it('DEC-065 (4): el docente no ve la acción "Nuevo grupo"', () => {
     fixture.componentRef.setInput('courses', [course]);
     fixture.componentRef.setInput('isLoading', false);
