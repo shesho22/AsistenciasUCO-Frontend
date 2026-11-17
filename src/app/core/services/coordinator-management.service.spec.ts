@@ -507,13 +507,97 @@ describe('CoordinatorManagementService', () => {
       expect(periodo.nombre).toBe('Período 2026-2');
     });
 
-    it('normalizarPeriodoAcademico calcula planeación, activo y cerrado con las fechas', () => {
-      const dto = { id: 'p', idInstitucion: 'i', nombre: '2030-1', fechaInicio: '2030-02-01', fechaFin: '2030-06-30' };
-      expect(normalizarPeriodoAcademico(dto, new Date('2030-01-15T12:00:00Z')).estado).toBe('PLANEACION');
-      expect(normalizarPeriodoAcademico(dto, new Date('2030-03-15T12:00:00Z')).estado).toBe('ACTIVO');
-      expect(normalizarPeriodoAcademico(dto, new Date('2030-03-15T12:00:00Z')).esActual).toBeTrue();
-      expect(normalizarPeriodoAcademico(dto, new Date('2030-07-15T12:00:00Z')).estado).toBe('CERRADO');
+    it('normalizarPeriodoAcademico conserva el estado que resolvió el backend y no lo deduce con el reloj (CIERRE-W2A)', () => {
+      // Fechas en el pasado y en el futuro lejano: si el cliente las comparara con su reloj, el estado sería otro.
+      const dto = { id: 'p', idInstitucion: 'i', nombre: '2000-1', fechaInicio: '2000-02-01', fechaFin: '2000-06-30' };
+      expect(normalizarPeriodoAcademico({ ...dto, estado: 'PLANEACION' }).estado).toBe('PLANEACION');
+      expect(normalizarPeriodoAcademico({ ...dto, estado: 'ACTIVO' }).estado).toBe('ACTIVO');
+      expect(normalizarPeriodoAcademico({ ...dto, estado: 'CERRADO' }).estado).toBe('CERRADO');
+      // El período «actual» sigue al estado del servidor, no a las fechas
+      expect(normalizarPeriodoAcademico({ ...dto, estado: 'ACTIVO' }).esActual).toBeTrue();
+      expect(normalizarPeriodoAcademico({ ...dto, estado: 'CERRADO' }).esActual).toBeFalse();
       expect(normalizarPeriodoAcademico({ id: 'm', codigo: '2027-1', nombre: 'Mock', estado: 'INACTIVO' }).codigo).toBe('2027-1');
+    });
+
+    it('normalizarPeriodoAcademico no calcula un estado cuando el backend no lo envía', () => {
+      const periodo = normalizarPeriodoAcademico({ id: 'p', nombre: '2030-1', fechaInicio: '2030-02-01', fechaFin: '2030-06-30' });
+      expect(periodo.estado).toBeUndefined();
+    });
+
+    it('getTotalPeriodosPorEstado pide el estado al servidor y usa su total sin tocar la lista compartida', () => {
+      let total = -1;
+      const listaAntes = service.periodos();
+      service.getTotalPeriodosPorEstado('ACTIVO').subscribe((t) => (total = t));
+
+      const req = http.expectOne(`${environment.apiUrl}/coordinador/periodos-academicos?estado=ACTIVO`);
+      req.flush({ exitoso: true, datos: [{ id: 'a' }], total: 4 });
+
+      expect(total).toBe(4);
+      expect(service.periodos()).toBe(listaAntes);
+    });
+
+    it('getTotalPeriodosPorEstado cae a la longitud de datos solo si el servidor no informa total', () => {
+      let total = -1;
+      service.getTotalPeriodosPorEstado('CERRADO').subscribe((t) => (total = t));
+      http.expectOne(`${environment.apiUrl}/coordinador/periodos-academicos?estado=CERRADO`).flush({ exitoso: true, datos: [{ id: 'a' }, { id: 'b' }] });
+      expect(total).toBe(2);
+    });
+
+    it('getTotalPlanesVigentes usa totalElementos del filtro estaActivo con una página de un elemento', () => {
+      let total = -1;
+      service.getTotalPlanesVigentes().subscribe((t) => (total = t));
+      const req = http.expectOne(porUrl(`${environment.apiUrl}/coordinador/planes-estudio`));
+      expect(req.request.params.get('estaActivo')).toBe('true');
+      expect(req.request.params.get('tamano')).toBe('1');
+      expect(req.request.params.get('pagina')).toBe('1');
+      req.flush(paginaApi([{ id: 'p-1' }], 1, 1, 5));
+      expect(total).toBe(5);
+    });
+
+    it('getTotalAsignaturasVinculadas usa totalElementos de GET /coordinador/asignaturas', () => {
+      let total = -1;
+      service.getTotalAsignaturasVinculadas().subscribe((t) => (total = t));
+      const req = http.expectOne(porUrl(`${environment.apiUrl}/coordinador/asignaturas`));
+      expect(req.request.params.get('tamano')).toBe('1');
+      req.flush(paginaApi([], 1, 1, 17));
+      expect(total).toBe(17);
+    });
+
+    it('getAsignaturasPrograma envía el carácter por código y normaliza las filas', () => {
+      let elementos: AsignaturaPlanItem[] = [];
+      service.getAsignaturasPrograma({ busqueda: 'calc', caracter: 'OPT', pagina: 2, tamano: 12 }).subscribe((p) => (elementos = p.elementos));
+
+      const req = http.expectOne(porUrl(`${environment.apiUrl}/coordinador/asignaturas`));
+      expect(req.request.params.get('caracter')).toBe('OPT');
+      expect(req.request.params.get('busqueda')).toBe('calc');
+      expect(req.request.params.get('pagina')).toBe('2');
+      req.flush(paginaApi([{ idAsignatura: 'a-1', idPlanEstudio: 'pl-1', codigo: 'IS-1', nombre: 'Cálculo', credito: 3, codigoSemestre: 'S2' }], 1));
+
+      expect(elementos[0].id).toBe('a-1');
+      expect(elementos[0].planEstudioId).toBe('pl-1');
+      expect(elementos[0].creditos).toBe(3);
+    });
+
+    it('getTotalEstudiantesPorEstado pide al servidor activos o inactivos con una página de un elemento', () => {
+      const totales: number[] = [];
+      service.getTotalEstudiantesPorEstado(true).subscribe((t) => totales.push(t));
+      service.getTotalEstudiantesPorEstado(false).subscribe((t) => totales.push(t));
+
+      const activos = http.expectOne((r) => r.url === `${environment.apiUrl}/estudiantes` && r.params.get('activo') === 'true');
+      expect(activos.request.params.get('size')).toBe('1');
+      expect(activos.request.params.get('page')).toBe('0');
+      activos.flush({ items: [], totalItems: 40, totalPages: 40, page: 0, size: 1 });
+      http.expectOne((r) => r.url === `${environment.apiUrl}/estudiantes` && r.params.get('activo') === 'false')
+        .flush({ items: [], totalItems: 3, totalPages: 3, page: 0, size: 1 });
+
+      expect(totales).toEqual([40, 3]);
+    });
+
+    it('getAsignaturasPrograma omite el carácter vacío', () => {
+      service.getAsignaturasPrograma({ caracter: '', pagina: 1, tamano: 12 }).subscribe();
+      const req = http.expectOne(porUrl(`${environment.apiUrl}/coordinador/asignaturas`));
+      expect(req.request.params.has('caracter')).toBeFalse();
+      req.flush(paginaApi([]));
     });
 
     it('eliminarPeriodoAcademico usa DELETE y quita el período de la señal', () => {

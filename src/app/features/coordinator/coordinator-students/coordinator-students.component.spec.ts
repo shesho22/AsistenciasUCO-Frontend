@@ -35,7 +35,7 @@ describe('CoordinatorStudentsComponent', () => {
   beforeEach(() => {
     coordinatorService = jasmine.createSpyObj<CoordinatorManagementService>(
       'CoordinatorManagementService',
-      ['getEstudiantesDirectorio', 'getEstudiantesDirectorioPagina', 'getEstudiantesPorGrupo']
+      ['getEstudiantesDirectorio', 'getEstudiantesDirectorioPagina', 'getEstudiantesPorGrupo', 'getTotalEstudiantesPorEstado']
     );
     courseService = jasmine.createSpyObj<CourseService>('CourseService', ['getTeacherCourses']);
 
@@ -48,6 +48,8 @@ describe('CoordinatorStudentsComponent', () => {
     coordinatorService.getEstudiantesPorGrupo.and.returnValue(
       of<never>({ exitoso: true, datos: [] } as never)
     );
+    // CIERRE-W2A: activos e inactivos del programa los cuenta el servidor (filtro `activo`)
+    coordinatorService.getTotalEstudiantesPorEstado.and.callFake((activo: boolean) => of(activo ? 40 : 3));
 
     courseService.getTeacherCourses.and.returnValue(
       of<never>({ exitoso: true, datos: [course] } as never)
@@ -105,7 +107,9 @@ describe('CoordinatorStudentsComponent', () => {
     expect(text).not.toContain(MARCADOR_DOCENTE);
   });
 
-  it('calcula correctamente totalActivosPagina y totalInactivosPagina', () => {
+  it('los activos e inactivos son los del servidor y no cuentan las filas de la página cargada', () => {
+    expect(coordinatorService.getTotalEstudiantesPorEstado).toHaveBeenCalledWith(true);
+    expect(coordinatorService.getTotalEstudiantesPorEstado).toHaveBeenCalledWith(false);
     component.directorio.set([
       {
         id: 'est-1',
@@ -127,8 +131,17 @@ describe('CoordinatorStudentsComponent', () => {
       },
     ]);
 
-    expect(component.totalActivosPagina()).toBe(1);
-    expect(component.totalInactivosPagina()).toBe(1);
+    // La página trae un activo y un inactivo, pero el programa tiene 40 y 3
+    expect(component.totalActivos()).toBe(40);
+    expect(component.totalInactivos()).toBe(3);
+    const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(texto).toContain('Activos en el Programa');
+    expect(texto).not.toContain('en Página Actual');
+  });
+
+  it('un fallo al contar activos o inactivos se anuncia sin romper la pantalla', () => {
+    coordinatorService.getTotalEstudiantesPorEstado.and.returnValue(throwError(() => new Error('falla')));
+    expect(() => component.cargarDatos()).not.toThrow();
   });
 
   it('gestiona cambios de página y tamaño de página del directorio', () => {
