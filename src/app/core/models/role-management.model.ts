@@ -157,6 +157,17 @@ export interface MateriaEstudianteItem {
   sesionesProgramadas?: number | null;
 }
 
+/**
+ * Indicadores del tablero del estudiante (`GET /estudiante/materias/resumen`), calculados por el backend con las mismas
+ * materias que el listado. `materiasEnRiesgo` nulo = sin umbrales configurados (no se muestra un cero inventado).
+ */
+export interface ResumenMateriasEstudiante {
+  totalMaterias: number;
+  materiasEnRiesgo: number | null;
+  totalHorasFalta: number;
+  totalCreditos: number;
+}
+
 export type EstadoAsistenciaSesion ='PRESENTE' | 'AUSENTE' | 'RETARDO' | 'JUSTIFICADA';
 /** `RETIRADA`: el estudiante retiró su solicitud mientras estaba pendiente (CULM-001 A.2-7). */
 export type EstadoSolicitudRevision = 'PENDIENTE' | 'APROBADA' | 'RECHAZADA' | 'RETIRADA';

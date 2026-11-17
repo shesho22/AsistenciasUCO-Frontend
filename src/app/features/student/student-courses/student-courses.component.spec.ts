@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
-import { HttpErrorResponse, withXhr } from '@angular/common/http';
+import { HttpErrorResponse, HttpRequest, withXhr } from '@angular/common/http';
 import { Subject, of, throwError } from 'rxjs';
 import { StudentCoursesComponent } from './student-courses.component';
 import { apiHttpError } from '../../../core/testing/api-error.fixture';
@@ -13,7 +13,7 @@ import { CourseService } from '../../../core/services/course.service';
 import { SessionService } from '../../../core/services/session.service';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { SOPORTE_MAX_BYTES } from '../../../core/files/soporte-file.validator';
-import { MateriaEstudianteItem, SesionMateriaDetalle } from '../../../core/models/role-management.model';
+import { MateriaEstudianteItem, ResumenMateriasEstudiante, SesionMateriaDetalle } from '../../../core/models/role-management.model';
 import {
   ASIGNATURA_ID,
   GRUPO_2_ID,
@@ -26,6 +26,13 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { environment } from '../../../../environments/environment';
 import { ConsultasTransversalesService } from '../../../core/services/consultas-transversales.service';
 import { CategoriaJustificacionItem } from '../../../core/models/consultas-transversales.model';
+
+/** Indicadores del tablero tal como los entrega el backend (calculados en la base). */
+const RESUMEN: ResumenMateriasEstudiante = { totalMaterias: 3, materiasEnRiesgo: 2, totalHorasFalta: 4.5, totalCreditos: 9 };
+
+/** La peticion de sesiones de una asignatura (con o sin `pagina`, `tamano` y `grupoId`). */
+const esSesiones = (asignatura: string) => (r: HttpRequest<unknown>) =>
+  r.method === 'GET' && r.url === `${environment.apiUrl}/estudiante/materias/${asignatura}/sesiones`;
 
 const CATEGORIAS: CategoriaJustificacionItem[] = [
   { id: 'c-1', codigo: 'MED', nombre: 'Médico / Salud', descripcion: 'Enfermedad o cita médica.' },
@@ -53,7 +60,7 @@ describe('StudentCoursesComponent — soporte y radicación (LB-004D FE-01..FE-0
     claims = jasmine.createSpyObj<AttendanceClaimService>('AttendanceClaimService', [
       'subirSoporte', 'crearReclamo', 'getSesionesPorMateria', 'eliminarReclamo', 'getConfiguracionReclamos',
     ]);
-    claims.getSesionesPorMateria.and.returnValue(of({ exitoso: true, datos: [] }) as never);
+    claims.getSesionesPorMateria.and.returnValue(of({ exitoso: true, datos: [], total: 0 }) as never);
     claims.getConfiguracionReclamos.and.returnValue(of({
       exitoso: true,
       datos: {
@@ -73,7 +80,7 @@ describe('StudentCoursesComponent — soporte y radicación (LB-004D FE-01..FE-0
         provideHttpClientTesting(),
         { provide: AttendanceClaimService, useValue: claims },
         { provide: ToastService, useValue: toast },
-        { provide: StudentManagementService, useValue: { getMaterias: () => of({ exitoso: true, datos: [] }) } },
+        { provide: StudentManagementService, useValue: { getMaterias: () => of({ exitoso: true, datos: [] }), getResumenMaterias: () => of({ exitoso: true, datos: null }) } },
         { provide: AuthService, useValue: { currentUser: () => ({ id: 'u-1', name: 'Ana', email: 'ana@uco.edu.co' }) } },
         { provide: CourseService, useValue: {} },
         { provide: SessionService, useValue: {} },
@@ -451,7 +458,7 @@ describe('StudentCoursesComponent', () => {
   ];
 
   beforeEach(async () => {
-    studentServiceSpy = jasmine.createSpyObj('StudentManagementService', ['getMaterias']);
+    studentServiceSpy = jasmine.createSpyObj('StudentManagementService', ['getMaterias', 'getResumenMaterias']);
     claimServiceSpy = jasmine.createSpyObj('AttendanceClaimService', ['getSesionesPorMateria', 'crearReclamo', 'eliminarReclamo', 'subirSoporte', 'getConfiguracionReclamos']);
     claimServiceSpy.getConfiguracionReclamos.and.returnValue(of({
       exitoso: true,
@@ -469,7 +476,8 @@ describe('StudentCoursesComponent', () => {
     toastSpy = jasmine.createSpyObj('ToastService', ['success', 'error', 'info', 'warning']);
     matriculaQrSpy = jasmine.createSpyObj('MatriculaQrService', ['matricularAutenticado']);
     studentServiceSpy.getMaterias.and.returnValue(of({ exitoso: true, datos: mockMaterias }));
-    claimServiceSpy.getSesionesPorMateria.and.returnValue(of({ exitoso: true, datos: mockSesiones }));
+    studentServiceSpy.getResumenMaterias.and.returnValue(of({ exitoso: true, datos: RESUMEN }));
+    claimServiceSpy.getSesionesPorMateria.and.returnValue(of({ exitoso: true, datos: mockSesiones, total: mockSesiones.length }));
 
     await TestBed.configureTestingModule({
       imports: [StudentCoursesComponent],
@@ -493,10 +501,50 @@ describe('StudentCoursesComponent', () => {
   it('debe inicializarse y cargar materias del estudiante', () => {
     expect(component).toBeTruthy();
     expect(component.materias().length).toBe(1);
-    expect(component.totalCreditos()).toBe(0);
-    // Sin indicadores autoritativos: no hay promedio ni fallas (nunca 0 ni NaN).
-    expect(component.materiasEnRiesgo()).toBeNull();
-    expect(component.totalHorasFalta()).toBeNull();
+  });
+
+  describe('resumen del tablero calculado por el backend (CIERRE-W2B)', () => {
+    it('lo carga junto con las materias y lo expone tal cual, sin sumar ni contar en el cliente', () => {
+      expect(studentServiceSpy.getResumenMaterias).toHaveBeenCalledTimes(1);
+      expect(component.resumen()).toEqual(RESUMEN);
+      const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
+      expect(texto).toContain('Materias Inscritas');
+      expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="resumen-total-materias"]')?.textContent?.trim()).toBe('3');
+      expect(texto).toContain('2');
+      expect(texto).toContain('4.5 h');
+    });
+
+    it('si la consulta falla queda en null: las tarjetas dicen "No disponible", nunca cero', () => {
+      studentServiceSpy.getResumenMaterias.and.returnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
+      component.cargarMaterias();
+      fixture.detectChanges();
+
+      expect(component.resumen()).toBeNull();
+      const raiz = fixture.nativeElement as HTMLElement;
+      expect(raiz.querySelector('[data-testid="materias-no-disponible"]')).not.toBeNull();
+      expect(raiz.querySelector('[data-testid="riesgo-no-disponible"]')).not.toBeNull();
+      expect(raiz.querySelector('[data-testid="horas-falta-no-disponible"]')).not.toBeNull();
+    });
+
+    it('con exitoso=false o sin umbrales (riesgo nulo) tampoco inventa cifras', () => {
+      studentServiceSpy.getResumenMaterias.and.returnValue(of({ exitoso: false, datos: null }));
+      component.cargarMaterias();
+      expect(component.resumen()).toBeNull();
+
+      studentServiceSpy.getResumenMaterias.and.returnValue(
+        of({ exitoso: true, datos: { ...RESUMEN, materiasEnRiesgo: null } })
+      );
+      component.cargarMaterias();
+      fixture.detectChanges();
+      expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="riesgo-no-disponible"]')).not.toBeNull();
+      expect(component.resumen()?.totalMaterias).toBe(3);
+    });
+
+    it('reintentar la lista vuelve a pedir tambien el resumen', () => {
+      studentServiceSpy.getResumenMaterias.calls.reset();
+      component.cargarMaterias();
+      expect(studentServiceSpy.getResumenMaterias).toHaveBeenCalledTimes(1);
+    });
   });
 
   it('HU005/HU016: carga los motivos de justificación del catálogo y los muestra en el detalle', () => {
@@ -533,11 +581,85 @@ describe('StudentCoursesComponent', () => {
     component.verDetalleCompleto(mockMaterias[0]);
     expect(component.vistaActual()).toBe('DETALLE');
     expect(component.selectedMateria()?.id).toBe(ASIGNATURA_ID);
-    expect(claimServiceSpy.getSesionesPorMateria).toHaveBeenCalledWith(ASIGNATURA_ID);
+    expect(claimServiceSpy.getSesionesPorMateria).toHaveBeenCalledWith(ASIGNATURA_ID, { pagina: 1, tamano: 10, grupoId: mockMaterias[0].idGrupo });
     expect(component.sesiones().length).toBe(1);
+    expect(component.totalSesiones()).toBe(1);
     component.volverALista();
     expect(component.vistaActual()).toBe('LISTA');
     expect(component.selectedMateria()).toBeNull();
+    expect(component.totalSesiones()).toBe(0);
+  });
+
+  describe('sesiones ordenadas, filtradas y paginadas en el servidor (CIERRE-W2B)', () => {
+    const pagina = (n: number) => claimServiceSpy.getSesionesPorMateria.calls.mostRecent().args[1]?.pagina === n;
+
+    it('muestra la pagina tal como llega (sin reordenar) y el total real del backend', () => {
+      const desordenadas = [
+        crearSesion({ id: 'z', numeroSesion: 9, tema: 'Tercera por numero' }),
+        crearSesion({ id: 'y', numeroSesion: 1, tema: 'Primera por numero' }),
+      ];
+      claimServiceSpy.getSesionesPorMateria.and.returnValue(of({ exitoso: true, datos: desordenadas, total: 25 }));
+
+      component.verDetalleCompleto(mockMaterias[0]);
+
+      expect(component.sesiones().map((x) => x.id)).toEqual(['z', 'y']);
+      expect(component.totalSesiones()).toBe(25);
+    });
+
+    it('cambiar de pagina pide esa pagina al backend con el mismo tamano y grupo', () => {
+      component.verDetalleCompleto(mockMaterias[0]);
+      component.cambiarPaginaSesiones(3);
+
+      expect(component.paginaSesiones()).toBe(3);
+      expect(claimServiceSpy.getSesionesPorMateria).toHaveBeenCalledWith(ASIGNATURA_ID, { pagina: 3, tamano: 10, grupoId: mockMaterias[0].idGrupo });
+    });
+
+    it('cambiar el tamano vuelve a la pagina 1 y lo pide al backend', () => {
+      component.verDetalleCompleto(mockMaterias[0]);
+      component.cambiarPaginaSesiones(4);
+      component.cambiarTamanoSesiones(20);
+
+      expect(component.tamanoSesiones()).toBe(20);
+      expect(component.paginaSesiones()).toBe(1);
+      expect(claimServiceSpy.getSesionesPorMateria).toHaveBeenCalledWith(ASIGNATURA_ID, { pagina: 1, tamano: 20, grupoId: mockMaterias[0].idGrupo });
+    });
+
+    it('ver otro detalle reinicia la pagina en 1', () => {
+      component.verDetalleCompleto(mockMaterias[0]);
+      component.cambiarPaginaSesiones(5);
+      component.volverALista();
+      component.verDetalleCompleto(mockMaterias[0]);
+
+      expect(pagina(1)).toBeTrue();
+    });
+
+    it('una pagina fuera de rango (se cancelo una sesion) vuelve a pedir la ultima que existe', () => {
+      claimServiceSpy.getSesionesPorMateria.and.callFake(((_id: string, p: { pagina: number }) =>
+        of(p.pagina > 2 ? { exitoso: true, datos: [], total: 14 } : { exitoso: true, datos: mockSesiones, total: 14 })) as never);
+      component.verDetalleCompleto(mockMaterias[0]);
+      component.cambiarPaginaSesiones(5);
+
+      expect(component.paginaSesiones()).toBe(2);
+      expect(component.sesiones().length).toBe(1);
+      expect(component.totalSesiones()).toBe(14);
+    });
+
+    it('un error HTTP no se presenta como "0 sesiones": deja error y total en cero', () => {
+      claimServiceSpy.getSesionesPorMateria.and.returnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
+      component.verDetalleCompleto(mockMaterias[0]);
+
+      expect(component.sesionesError()).not.toBeNull();
+      expect(component.sesiones()).toEqual([]);
+      expect(component.totalSesiones()).toBe(0);
+    });
+
+    it('un grupo sin sesiones devuelve lista vacia y total cero sin error', () => {
+      claimServiceSpy.getSesionesPorMateria.and.returnValue(of({ exitoso: true, datos: [], total: 0 }));
+      component.verDetalleCompleto(mockMaterias[0]);
+
+      expect(component.sesionesError()).toBeNull();
+      expect(component.totalSesiones()).toBe(0);
+    });
   });
 
   it('permite iniciar y enviar un reclamo con éxito', () => {
@@ -647,7 +769,6 @@ describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', 
   let toast: jasmine.SpyObj<ToastService>;
 
   const MATERIAS_URL = `${environment.apiUrl}/estudiante/materias`;
-  const sesionesUrl = (id: string) => `${MATERIAS_URL}/${id}/sesiones`;
   const materiaApi = (over: Record<string, unknown> = {}) => ({
     idAsignatura: ASIGNATURA_ID,
     nombreAsignatura: 'Arquitectura de Software',
@@ -678,10 +799,17 @@ describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', 
     fixture.detectChanges();
   };
 
-  function cargar(materias: unknown[]): void {
+  /** `resumen` = cuerpo de `GET /estudiante/materias/resumen`; sin el, la consulta falla y las tarjetas dicen "No disponible". */
+  function cargar(materias: unknown[], resumen?: unknown): void {
     fixture = TestBed.createComponent(StudentCoursesComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
+    const reqResumen = http.expectOne(`${MATERIAS_URL}/resumen`);
+    if (resumen === undefined) {
+      reqResumen.flush(null, { status: 500, statusText: 'err' });
+    } else {
+      reqResumen.flush({ exitoso: true, datos: resumen });
+    }
     http.expectOne(MATERIAS_URL).flush({ exitoso: true, datos: materias, total: materias.length });
     http.expectOne(`${environment.apiUrl}/estudiante/horarios`).flush({ exitoso: true, datos: [], total: 0 });
     http.match((r) => r.url.includes('/configuracion/reclamos')).forEach((req) =>
@@ -737,7 +865,7 @@ describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', 
     cargar([materiaApi()]);
     clickTexto('Ver Detalle');
 
-    const req = http.expectOne(sesionesUrl(ASIGNATURA_ID));
+    const req = http.expectOne(esSesiones(ASIGNATURA_ID));
     expect(req.request.method).toBe('GET');
     expect(req.request.url).not.toContain('undefined');
     expect(req.request.url).not.toContain('null');
@@ -749,7 +877,7 @@ describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', 
     expect(texto()).toContain('Introducción');
   });
 
-  it('con varios grupos de la misma asignatura muestra una tarjeta por grupo y filtra las sesiones por idGrupo', () => {
+  it('con varios grupos de la misma asignatura muestra una tarjeta por grupo y pide al backend las sesiones de ese grupo', () => {
     cargar([
       materiaApi(),
       materiaApi({ idGrupo: GRUPO_2_ID, nombreGrupo: 'Grupo 002 - Arq Software' }),
@@ -758,22 +886,49 @@ describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', 
     expect(fixture.nativeElement.querySelectorAll('[data-testid="materia-grupo"]').length).toBe(2);
 
     component.verDetalleCompleto(component.materias()[1]);
-    http.expectOne(sesionesUrl(ASIGNATURA_ID)).flush({
+    const req = http.expectOne(esSesiones(ASIGNATURA_ID));
+    expect(req.request.params.get('grupoId')).toBe(GRUPO_2_ID);
+    expect(req.request.params.get('pagina')).toBe('1');
+    expect(req.request.params.get('tamano')).toBe('10');
+    // El backend ya entrega solo las del grupo pedido: el cliente muestra lo que llega, sin filtrar.
+    req.flush({
       exitoso: true,
-      total: 2,
-      datos: [
-        sesionApi({ id: 'd1d2d3d4-0000-4000-8000-0000000000a1', nombre: 'Sesión grupo 1', idGrupo: GRUPO_ID }),
-        sesionApi({ id: 'd1d2d3d4-0000-4000-8000-0000000000a2', nombre: 'Sesión grupo 2', idGrupo: GRUPO_2_ID }),
-      ],
+      total: 1,
+      datos: [sesionApi({ id: 'd1d2d3d4-0000-4000-8000-0000000000a2', nombre: 'Sesión grupo 2', idGrupo: GRUPO_2_ID })],
     });
 
     expect(component.sesiones().map((s) => s.tema)).toEqual(['Sesión grupo 2']);
+    expect(component.totalSesiones()).toBe(1);
+  });
+
+  it('CIERRE-W2B: el tablero muestra las cifras del backend y la paginacion pide cada pagina al servidor', () => {
+    cargar([materiaApi()], { totalMaterias: 1, materiasEnRiesgo: 1, totalHorasFalta: 3.5, totalCreditos: 3 });
+    expect(fixture.nativeElement.querySelector('[data-testid="resumen-total-materias"]').textContent.trim()).toBe('1');
+    expect(texto()).toContain('3.5 h');
+    expect(fixture.nativeElement.querySelector('[data-testid="riesgo-no-disponible"]')).toBeNull();
+
+    clickTexto('Ver Detalle');
+    http.expectOne(esSesiones(ASIGNATURA_ID)).flush({
+      exitoso: true,
+      total: 23,
+      datos: Array.from({ length: 10 }, (_, i) => sesionApi({ id: `d1d2d3d4-0000-4000-8000-0000000001${String(i).padStart(2, '0')}`, numero: i + 1 })),
+    });
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[data-testid="conteo-sesiones"]').textContent).toContain('23 sesiones');
+    const botonSiguiente = fixture.nativeElement.querySelector('button[aria-label="Página siguiente"]') as HTMLButtonElement;
+    botonSiguiente.click();
+
+    const siguiente = http.expectOne(esSesiones(ASIGNATURA_ID));
+    expect(siguiente.request.params.get('pagina')).toBe('2');
+    siguiente.flush({ exitoso: true, total: 23, datos: [sesionApi({ id: 'd1d2d3d4-0000-4000-8000-0000000002ff', numero: 11 })] });
+    expect(component.sesiones().length).toBe(1);
+    expect(component.totalSesiones()).toBe(23);
   });
 
   it('una respuesta 200 con cero sesiones muestra estado vacio, sin error', () => {
     cargar([materiaApi()]);
     clickTexto('Ver Detalle');
-    http.expectOne(sesionesUrl(ASIGNATURA_ID)).flush({ exitoso: true, datos: [], total: 0 });
+    http.expectOne(esSesiones(ASIGNATURA_ID)).flush({ exitoso: true, datos: [], total: 0 });
     fixture.detectChanges();
 
     expect(component.sesionesError()).toBeNull();
@@ -792,7 +947,7 @@ describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', 
     it(`un ${nombre} se muestra como error ${kind} y NO como "0 sesiones registradas"`, () => {
       cargar([materiaApi()]);
       clickTexto('Ver Detalle');
-      const req = http.expectOne(sesionesUrl(ASIGNATURA_ID));
+      const req = http.expectOne(esSesiones(ASIGNATURA_ID));
       if (status === 0) {
         req.error(new ProgressEvent('error'));
       } else {
@@ -816,11 +971,11 @@ describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', 
   it('Reintentar vuelve a consultar y recupera las sesiones', () => {
     cargar([materiaApi()]);
     clickTexto('Ver Detalle');
-    http.expectOne(sesionesUrl(ASIGNATURA_ID)).flush(null, { status: 500, statusText: 'err' });
+    http.expectOne(esSesiones(ASIGNATURA_ID)).flush(null, { status: 500, statusText: 'err' });
     fixture.detectChanges();
 
     clickTexto('Reintentar');
-    http.expectOne(sesionesUrl(ASIGNATURA_ID)).flush({ exitoso: true, datos: [sesionApi()], total: 1 });
+    http.expectOne(esSesiones(ASIGNATURA_ID)).flush({ exitoso: true, datos: [sesionApi()], total: 1 });
     fixture.detectChanges();
 
     expect(component.sesionesError()).toBeNull();
@@ -840,6 +995,7 @@ describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', 
     fixture = TestBed.createComponent(StudentCoursesComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
+    http.expectOne(`${MATERIAS_URL}/resumen`).flush(null, { status: 500, statusText: 'err' });
     http.expectOne(`${environment.apiUrl}/estudiante/horarios`).flush({ exitoso: true, datos: [], total: 0 });
     http.expectOne(MATERIAS_URL).flush(null, { status: 500, statusText: 'err' });
     http.match((r) => r.url.includes('/configuracion/reclamos')).forEach((req) =>
@@ -864,7 +1020,7 @@ describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', 
   it('sin estado autoritativo de asistencia no se puede iniciar un reclamo ni radicarlo', () => {
     cargar([materiaApi()]);
     component.verDetalleCompleto(component.materias()[0]);
-    http.expectOne(sesionesUrl(ASIGNATURA_ID)).flush({ exitoso: true, datos: [sesionApi()], total: 1 });
+    http.expectOne(esSesiones(ASIGNATURA_ID)).flush({ exitoso: true, datos: [sesionApi()], total: 1 });
     fixture.detectChanges();
 
     expect(component.sesiones()[0].estadoAsistencia).toBe('NO_DISPONIBLE');
@@ -882,7 +1038,7 @@ describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', 
   it('una ausencia confirmada y reclamable por el backend habilita Radicar Reclamo y abre el formulario', () => {
     cargar([materiaApi()]);
     component.verDetalleCompleto(component.materias()[0]);
-    http.expectOne(sesionesUrl(ASIGNATURA_ID)).flush({
+    http.expectOne(esSesiones(ASIGNATURA_ID)).flush({
       exitoso: true,
       datos: [sesionApi({ estadoAsistencia: 'AUSENTE', estadoSolicitudRevision: null, reclamable: true })],
       total: 1,
@@ -899,7 +1055,7 @@ describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', 
   it('una ausencia con solicitud ya radicada no abre un segundo formulario', () => {
     cargar([materiaApi()]);
     component.verDetalleCompleto(component.materias()[0]);
-    http.expectOne(sesionesUrl(ASIGNATURA_ID)).flush({
+    http.expectOne(esSesiones(ASIGNATURA_ID)).flush({
       exitoso: true,
       datos: [sesionApi({ estadoAsistencia: 'AUSENTE', estadoSolicitudRevision: 'pendiente', reclamable: false })],
       total: 1,
@@ -917,7 +1073,7 @@ describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', 
   it('una sesion JUSTIFICADA o PRESENTE no ofrece reclamo aunque el backend enviara reclamable', () => {
     cargar([materiaApi()]);
     component.verDetalleCompleto(component.materias()[0]);
-    http.expectOne(sesionesUrl(ASIGNATURA_ID)).flush({
+    http.expectOne(esSesiones(ASIGNATURA_ID)).flush({
       exitoso: true,
       datos: [
         sesionApi({ id: 'd1d2d3d4-0000-4000-8000-0000000000b1', estadoAsistencia: 'JUSTIFICADA', reclamable: true }),
@@ -934,7 +1090,7 @@ describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', 
   it('un estudiante no dispara ninguna peticion /coordinador/** ni /admin/** al cargar el portal', () => {
     cargar([materiaApi()]);
     component.verDetalleCompleto(component.materias()[0]);
-    http.expectOne(sesionesUrl(ASIGNATURA_ID)).flush({ exitoso: true, datos: [], total: 0 });
+    http.expectOne(esSesiones(ASIGNATURA_ID)).flush({ exitoso: true, datos: [], total: 0 });
 
     http.expectNone((r) => r.url.includes('/coordinador/') || r.url.includes('/admin/') || r.url.includes('/decano/'));
     expect(component.materias().length).toBe(1);
@@ -947,7 +1103,6 @@ describe('StudentCoursesComponent — enlace desde Mis Alertas (CERT-CULM001)', 
   let http: HttpTestingController;
 
   const MATERIAS_URL = `${environment.apiUrl}/estudiante/materias`;
-  const sesionesUrl = (id: string) => `${MATERIAS_URL}/${id}/sesiones`;
   const OTRA_ASIGNATURA = 'e2f3a4b5-0000-0000-0000-000000000002';
   const materiaApi = (over: Record<string, unknown> = {}) => ({
     idAsignatura: ASIGNATURA_ID,
@@ -975,6 +1130,7 @@ describe('StudentCoursesComponent — enlace desde Mis Alertas (CERT-CULM001)', 
     fixture = TestBed.createComponent(StudentCoursesComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
+    http.expectOne(`${MATERIAS_URL}/resumen`).flush({ exitoso: true, datos: { totalMaterias: materias.length, materiasEnRiesgo: 0, totalHorasFalta: 0, totalCreditos: 0 } });
     http.expectOne(MATERIAS_URL).flush({ exitoso: true, datos: materias, total: materias.length });
     http.expectOne(`${environment.apiUrl}/estudiante/horarios`).flush({ exitoso: true, datos: [], total: 0 });
     http.match((r) => r.url.includes('/configuracion/reclamos')).forEach((req) => req.flush({ exitoso: true, datos: null }));
@@ -989,7 +1145,7 @@ describe('StudentCoursesComponent — enlace desde Mis Alertas (CERT-CULM001)', 
       materiaApi({ idGrupo: GRUPO_2_ID, nombreGrupo: 'Grupo 002 - Arq Software' }),
     ]);
 
-    http.expectOne(sesionesUrl(ASIGNATURA_ID)).flush({ exitoso: true, datos: [], total: 0 });
+    http.expectOne(esSesiones(ASIGNATURA_ID)).flush({ exitoso: true, datos: [], total: 0 });
     expect(component.vistaActual()).toBe('DETALLE');
     expect(component.selectedMateria()?.idGrupo).toBe(GRUPO_2_ID);
   });
@@ -997,7 +1153,7 @@ describe('StudentCoursesComponent — enlace desde Mis Alertas (CERT-CULM001)', 
   it('con solo ?materia abre el primer grupo de esa materia', async () => {
     await crear({ materia: ASIGNATURA_ID }, [materiaApi({ idAsignatura: OTRA_ASIGNATURA, nombreAsignatura: 'Bases de Datos' }), materiaApi()]);
 
-    http.expectOne(sesionesUrl(ASIGNATURA_ID)).flush({ exitoso: true, datos: [], total: 0 });
+    http.expectOne(esSesiones(ASIGNATURA_ID)).flush({ exitoso: true, datos: [], total: 0 });
     expect(component.selectedMateria()?.id).toBe(ASIGNATURA_ID);
     expect(component.selectedMateria()?.idGrupo).toBe(GRUPO_ID);
   });
@@ -1005,7 +1161,7 @@ describe('StudentCoursesComponent — enlace desde Mis Alertas (CERT-CULM001)', 
   it('un grupo que no es del estudiante cae al grupo propio de esa materia', async () => {
     await crear({ materia: ASIGNATURA_ID, grupo: GRUPO_2_ID }, [materiaApi()]);
 
-    http.expectOne(sesionesUrl(ASIGNATURA_ID)).flush({ exitoso: true, datos: [], total: 0 });
+    http.expectOne(esSesiones(ASIGNATURA_ID)).flush({ exitoso: true, datos: [], total: 0 });
     expect(component.selectedMateria()?.idGrupo).toBe(GRUPO_ID);
   });
 
@@ -1023,10 +1179,11 @@ describe('StudentCoursesComponent — enlace desde Mis Alertas (CERT-CULM001)', 
 
   it('el enlace se usa una sola vez: recargar las materias no reabre el detalle', async () => {
     await crear({ materia: ASIGNATURA_ID }, [materiaApi()]);
-    http.expectOne(sesionesUrl(ASIGNATURA_ID)).flush({ exitoso: true, datos: [], total: 0 });
+    http.expectOne(esSesiones(ASIGNATURA_ID)).flush({ exitoso: true, datos: [], total: 0 });
     component.volverALista();
 
     component.cargarMaterias();
+    http.expectOne(`${MATERIAS_URL}/resumen`).flush({ exitoso: true, datos: { totalMaterias: 1, materiasEnRiesgo: 0, totalHorasFalta: 0, totalCreditos: 0 } });
     http.expectOne(MATERIAS_URL).flush({ exitoso: true, datos: [materiaApi()], total: 1 });
     http.match(`${environment.apiUrl}/estudiante/horarios`).forEach((req) => req.flush({ exitoso: true, datos: [], total: 0 }));
 

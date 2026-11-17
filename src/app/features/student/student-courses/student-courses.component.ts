@@ -19,6 +19,7 @@ import {
   ConfiguracionReclamosDTO,
   EstadoAsistenciaSesion,
   MateriaEstudianteItem,
+  ResumenMateriasEstudiante,
   SesionMateriaDetalle,
   CategoriaJustificacion,
   SoporteAdjuntoItem,
@@ -60,8 +61,7 @@ type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO';
           [materias]="materias()"
           [isLoading]="isLoading()"
           [error]="materiasError()"
-          [materiasEnRiesgo]="materiasEnRiesgo()"
-          [totalHorasFalta]="totalHorasFalta()"
+          [resumen]="resumen()"
           (retry)="cargarMaterias()"
           (openCodeEnrollment)="abrirModalMatriculaGrupo()"
           (registrarConPin)="irARegistroConPin()"
@@ -74,9 +74,14 @@ type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO';
         <app-student-course-detail
           [materia]="selectedMateria()"
           [sesiones]="sesiones()"
+          [totalSesiones]="totalSesiones()"
+          [pagina]="paginaSesiones()"
+          [tamano]="tamanoSesiones()"
           [categorias]="categoriasJustificacion()"
           [loading]="loadingSesiones()"
           [error]="sesionesError()"
+          (paginaCambiada)="cambiarPaginaSesiones($event)"
+          (tamanoCambiado)="cambiarTamanoSesiones($event)"
           (retry)="reintentarSesiones()"
           (back)="volverALista()"
           (startClaim)="iniciarReclamo($event)"
@@ -138,6 +143,8 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
   materias = signal<MateriaEstudianteItem[]>([]);
   isLoading = signal<boolean>(true);
   materiasError = signal<LoadErrorState | null>(null);
+  /** Indicadores del tablero que calcula el backend; `null` = aun no llegan o no se pudieron consultar (no se muestra un cero). */
+  resumen = signal<ResumenMateriasEstudiante | null>(null);
 
   // Auto-Registro de Asistencia (HU176)
 
@@ -156,7 +163,12 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
 
   // Drill-down sesiones
   selectedMateria = signal<MateriaEstudianteItem | null>(null);
+  /** Pagina actual de sesiones, en el orden que entrega la base (el cliente no ordena ni pagina). */
   sesiones = signal<SesionMateriaDetalle[]>([]);
+  /** Total de sesiones del grupo seleccionado (del backend, no el de la pagina). */
+  totalSesiones = signal<number>(0);
+  paginaSesiones = signal<number>(1);
+  tamanoSesiones = signal<number>(10);
   loadingSesiones = signal<boolean>(false);
   sesionesError = signal<LoadErrorState | null>(null);
 
@@ -179,24 +191,6 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
   private subidaEnCurso: Subscription | null = null;
   /** Un reintento tecnico del mismo contenido reutiliza la correlacion; solo un exito la renueva. */
   private readonly intentoRadicacion = new RadicacionIntento();
-
-  totalCreditos(): number {
-    return this.materias().reduce((sum, m) => sum + (m.creditos ?? 0), 0);
-  }
-
-  /** Cuenta de materias con `codigoPermanencia` RIESGO o PERDIDA (valor del backend); `null` = sin indicadores. */
-  materiasEnRiesgo(): number | null {
-    const conIndicadores = this.materias().filter((m) => m.indicadores !== null);
-    if (conIndicadores.length === 0) return null;
-    return conIndicadores.filter((m) => m.indicadores!.codigoPermanencia === 'RIESGO' || m.indicadores!.codigoPermanencia === 'PERDIDA').length;
-  }
-
-  /** Suma de `horasFalta` entregadas por el backend; `null` = no disponible (nunca 0 ni NaN). */
-  totalHorasFalta(): number | null {
-    const conIndicadores = this.materias().filter((m) => m.indicadores !== null);
-    if (conIndicadores.length === 0) return null;
-    return conIndicadores.reduce((sum, m) => sum + m.indicadores!.horasFalta, 0);
-  }
 
   /** HU176: el registro por PIN vive en su propia pantalla (`/app/asistencia/pin`). */
   irARegistroConPin(): void {
@@ -267,7 +261,20 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Indicadores del tablero (materias, en riesgo, horas de falta, creditos) del backend. Mientras no llegan, o si la consulta
+   * falla, quedan en `null` y la lista muestra "No disponible": jamas un cero por defecto.
+   */
+  cargarResumen(): void {
+    this.resumen.set(null);
+    this.studentService.getResumenMaterias().subscribe({
+      next: (res) => this.resumen.set(res.exitoso ? res.datos : null),
+      error: () => this.resumen.set(null),
+    });
+  }
+
   cargarMaterias(): void {
+    this.cargarResumen();
     this.isLoading.set(true);
     this.materiasError.set(null);
     this.studentService.getMaterias().subscribe({
@@ -285,6 +292,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
   }
 
   verDetalleCompleto(materia: MateriaEstudianteItem): void {
+    this.paginaSesiones.set(1);
     this.selectedMateria.set(materia);
     this.vistaActual.set('DETALLE');
     this.cargarSesiones(materia);
@@ -331,6 +339,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
     this.detenerRealtime();
     this.selectedMateria.set(null);
     this.sesiones.set([]);
+    this.totalSesiones.set(0);
     this.sesionesError.set(null);
   }
 
@@ -516,31 +525,55 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Carga las sesiones de la asignatura de la tarjeta y conserva solo las del grupo seleccionado (el backend
-   * devuelve las de todos los grupos del estudiante en esa asignatura). Un error HTTP no se presenta como
-   * "0 sesiones": se guarda en `sesionesError`.
+   * Carga la pagina actual de sesiones del grupo de la tarjeta. El backend las entrega ya filtradas por grupo, en orden
+   * cronologico y con el total real: aqui no se ordena, filtra ni pagina. Un error HTTP no se presenta como "0 sesiones": se
+   * guarda en `sesionesError`. Si la pagina pedida quedo fuera de rango (p. ej. se cancelo una sesion), se vuelve a pedir la
+   * ultima pagina que existe.
    */
   cargarSesiones(materia: MateriaEstudianteItem): void {
     this.sesionesError.set(null);
     if (!isUuid(materia.id)) {
       this.sesiones.set([]);
+      this.totalSesiones.set(0);
       this.sesionesError.set(loadErrorState('IDENTIFICADOR'));
       return;
     }
     this.loadingSesiones.set(true);
-    this.claimService.getSesionesPorMateria(materia.id).subscribe({
+    const pagina = this.paginaSesiones();
+    const tamano = this.tamanoSesiones();
+    this.claimService.getSesionesPorMateria(materia.id, { pagina, tamano, grupoId: materia.idGrupo }).subscribe({
       next: (res) => {
-        this.sesiones.set((res.datos || []).filter((sesion) => sesion.grupoId === materia.idGrupo));
+        const total = res.total ?? 0;
+        const ultima = Math.max(1, Math.ceil(total / tamano));
+        if ((res.datos ?? []).length === 0 && total > 0 && pagina > ultima) {
+          this.paginaSesiones.set(ultima);
+          this.cargarSesiones(materia);
+          return;
+        }
+        this.sesiones.set(res.datos ?? []);
+        this.totalSesiones.set(total);
         this.loadingSesiones.set(false);
       },
       error: (err) => {
         this.sesiones.set([]);
+        this.totalSesiones.set(0);
         this.sesionesError.set(
           err instanceof IdentificadorInvalidoError ? loadErrorState('IDENTIFICADOR') : classifyLoadError(err)
         );
         this.loadingSesiones.set(false);
       },
     });
+  }
+
+  cambiarPaginaSesiones(pagina: number): void {
+    this.paginaSesiones.set(pagina);
+    this.reintentarSesiones();
+  }
+
+  cambiarTamanoSesiones(tamano: number): void {
+    this.tamanoSesiones.set(tamano);
+    this.paginaSesiones.set(1);
+    this.reintentarSesiones();
   }
 
   reintentarSesiones(): void {

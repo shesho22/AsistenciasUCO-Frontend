@@ -194,6 +194,7 @@ describe('StudentCourseDetailComponent', () => {
     it('una respuesta 200 con sesiones las lista', () => {
       fixture.componentRef.setInput('materia', crearMateria());
       fixture.componentRef.setInput('sesiones', mockSesiones);
+      fixture.componentRef.setInput('totalSesiones', mockSesiones.length);
       fixture.detectChanges();
       expect(fixture.nativeElement.querySelector('[data-testid="conteo-sesiones"]').textContent).toContain('2 sesiones');
       expect(texto()).toContain('Patrones GoF');
@@ -347,39 +348,65 @@ describe('StudentCourseDetailComponent', () => {
     });
   });
 
-  describe('orden y paginacion de sesiones (F-EST-S17, F-EST-013)', () => {
+  describe('orden y paginacion de sesiones en el servidor (F-EST-S17, F-EST-013, CIERRE-W2B)', () => {
     const numeros = () =>
       Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('[data-testid^="sesion-ses"]')).map((n) =>
         n.getAttribute('data-testid')
       );
 
-    it('muestra las sesiones en orden cronologico aunque el backend las entregue desordenadas', () => {
+    it('muestra las sesiones en el orden en que las entrega el backend: la vista no ordena', () => {
       fixture.componentRef.setInput('materia', mockMateria);
       fixture.componentRef.setInput('sesiones', [
-        crearSesion({ id: 'ses-3', numeroSesion: 3, fecha: '2026-11-06', horario: '22:30 - 23:30' }),
-        crearSesion({ id: 'ses-4', numeroSesion: 4, fecha: '2026-11-07', horario: '23:35 - 00:35' }),
-        crearSesion({ id: 'ses-5', numeroSesion: 5, fecha: '2026-11-06', horario: '22:45 - 23:35' }),
+        crearSesion({ id: 'ses-9', numeroSesion: 9, fecha: '2026-11-08', horario: '08:00 - 09:00' }),
+        crearSesion({ id: 'ses-1', numeroSesion: 1, fecha: '2026-11-01', horario: '08:00 - 09:00' }),
+        crearSesion({ id: 'ses-5', numeroSesion: 5, fecha: '2026-11-03', horario: '08:00 - 09:00' }),
       ]);
+      fixture.componentRef.setInput('totalSesiones', 3);
       fixture.detectChanges();
 
-      expect(numeros()).toEqual(['sesion-ses-3', 'sesion-ses-5', 'sesion-ses-4']);
+      expect(numeros()).toEqual(['sesion-ses-9', 'sesion-ses-1', 'sesion-ses-5']);
     });
 
-    it('pagina de a 10 y conserva el conteo total', () => {
-      const muchas = Array.from({ length: 25 }, (_, i) =>
-        crearSesion({ id: `ses-${i + 1}`, numeroSesion: i + 1, fecha: '2026-09-01', horario: `${String(8 + (i % 12)).padStart(2, '0')}:00 - 09:00` })
-      );
+    it('no recorta la pagina que recibe y el conteo es el total del backend, no el de la pagina', () => {
+      const pagina = Array.from({ length: 10 }, (_, i) => crearSesion({ id: `ses-${i + 1}`, numeroSesion: i + 11 }));
       fixture.componentRef.setInput('materia', mockMateria);
-      fixture.componentRef.setInput('sesiones', muchas);
+      fixture.componentRef.setInput('sesiones', pagina);
+      fixture.componentRef.setInput('totalSesiones', 25);
+      fixture.componentRef.setInput('pagina', 2);
       fixture.detectChanges();
 
       expect(numeros().length).toBe(10);
       expect(fixture.nativeElement.querySelector('[data-testid="conteo-sesiones"]').textContent).toContain('25 sesiones');
       expect(fixture.nativeElement.querySelector('app-pagination')).not.toBeNull();
+    });
 
-      component.pagina.set(3);
+    it('con una sola sesion el conteo va en singular', () => {
+      fixture.componentRef.setInput('materia', mockMateria);
+      fixture.componentRef.setInput('sesiones', [crearSesion({ id: 'ses-1' })]);
+      fixture.componentRef.setInput('totalSesiones', 1);
       fixture.detectChanges();
-      expect(numeros().length).toBe(5);
+
+      expect(fixture.nativeElement.querySelector('[data-testid="conteo-sesiones"]').textContent).toContain('1 sesión');
+      expect(fixture.nativeElement.querySelector('[data-testid="conteo-sesiones"]').textContent).not.toContain('sesiones');
+    });
+
+    it('cambiar de pagina o de tamano se lo avisa al padre, que lo pide al backend', () => {
+      const paginas: number[] = [];
+      const tamanos: number[] = [];
+      component.paginaCambiada.subscribe((p) => paginas.push(p));
+      component.tamanoCambiado.subscribe((t) => tamanos.push(t));
+      fixture.componentRef.setInput('materia', mockMateria);
+      fixture.componentRef.setInput('sesiones', Array.from({ length: 10 }, (_, i) => crearSesion({ id: `ses-${i + 1}` })));
+      fixture.componentRef.setInput('totalSesiones', 25);
+      fixture.detectChanges();
+
+      (fixture.nativeElement.querySelector('button[aria-label="Página siguiente"]') as HTMLButtonElement).click();
+      const selector = fixture.nativeElement.querySelector('select[aria-label="Resultados por página"]') as HTMLSelectElement;
+      selector.value = '20';
+      selector.dispatchEvent(new Event('change'));
+
+      expect(paginas).toEqual([2]);
+      expect(tamanos).toEqual([20]);
     });
   });
 });

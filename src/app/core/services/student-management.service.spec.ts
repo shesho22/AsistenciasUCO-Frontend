@@ -3,7 +3,7 @@ import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { StudentManagementService } from './student-management.service';
 import { environment } from '../../../environments/environment';
-import { HorarioItem, MateriaEstudianteItem } from '../models/role-management.model';
+import { HorarioItem, MateriaEstudianteItem, ResumenMateriasEstudiante } from '../models/role-management.model';
 
 describe('StudentManagementService', () => {
   let service: StudentManagementService;
@@ -130,5 +130,51 @@ describe('StudentManagementService', () => {
     expect(resultado.length).toBe(1);
     expect(resultado[0].docente).toBeNull();
     expect(resultado[0].horario).toBeNull();
+  });
+
+  describe('getResumenMaterias (CIERRE-W2B)', () => {
+    const URL = `${environment.apiUrl}/estudiante/materias/resumen`;
+
+    it('consulta /estudiante/materias/resumen y entrega las cifras del backend sin recalcularlas', () => {
+      let resultado: ResumenMateriasEstudiante | null | undefined;
+      service.getResumenMaterias().subscribe((res) => {
+        expect(res.exitoso).toBeTrue();
+        resultado = res.datos;
+      });
+
+      const req = http.expectOne(URL);
+      expect(req.request.method).toBe('GET');
+      req.flush({ exitoso: true, datos: { totalMaterias: 4, materiasEnRiesgo: 2, totalHorasFalta: 6.5, totalCreditos: 11 } });
+
+      expect(resultado).toEqual({ totalMaterias: 4, materiasEnRiesgo: 2, totalHorasFalta: 6.5, totalCreditos: 11 });
+    });
+
+    it('sin umbrales configurados el riesgo llega nulo y no se convierte en cero', () => {
+      let resultado: ResumenMateriasEstudiante | null | undefined;
+      service.getResumenMaterias().subscribe((res) => (resultado = res.datos));
+
+      http.expectOne(URL).flush({ exitoso: true, datos: { totalMaterias: 1, materiasEnRiesgo: null, totalHorasFalta: 0, totalCreditos: 3 } });
+
+      expect(resultado?.materiasEnRiesgo).toBeNull();
+      expect(resultado?.totalMaterias).toBe(1);
+    });
+
+    it('un cuerpo sin cifras validas se entrega como null (nunca ceros inventados)', () => {
+      let resultado: ResumenMateriasEstudiante | null | undefined = undefined;
+      service.getResumenMaterias().subscribe((res) => (resultado = res.datos));
+
+      http.expectOne(URL).flush({ exitoso: true, datos: { totalMaterias: 'x' } });
+
+      expect(resultado).toBeNull();
+    });
+
+    it('un error HTTP se propaga al consumidor (la vista muestra "No disponible")', () => {
+      let status = 0;
+      service.getResumenMaterias().subscribe({ error: (e) => (status = e.status) });
+
+      http.expectOne(URL).flush(null, { status: 500, statusText: 'err' });
+
+      expect(status).toBe(500);
+    });
   });
 });

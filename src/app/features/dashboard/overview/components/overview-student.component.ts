@@ -1,12 +1,12 @@
 import { RangoHorarioPipe } from '../../../../shared/pipes/fecha-hora.pipes';
-import { Component, ChangeDetectionStrategy, input } from '@angular/core';
+import { Component, ChangeDetectionStrategy, computed, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { CardComponent } from '../../../../shared/components/card/card.component';
 import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
 import { AttendanceStatusBadgeComponent } from '../../../../shared/components/attendance-status-badge/attendance-status-badge.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
-import { MateriaEstudianteItem } from '../../../../core/models/role-management.model';
+import { MateriaEstudianteItem, ResumenMateriasEstudiante } from '../../../../core/models/role-management.model';
 import { ProximaClaseInfo } from '../utils/proxima-clase.util';
 
 @Component({
@@ -22,7 +22,11 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
       <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Materias Matriculadas</span>
-          <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ materias().length }}</p>
+          @if (resumen(); as r) {
+            <p class="text-2xl font-serif font-bold text-warm-900 mt-1" data-testid="resumen-total-materias">{{ r.totalMaterias }}</p>
+          } @else {
+            <p class="text-base font-serif font-bold text-warm-500 mt-1" data-testid="materias-no-disponible">No disponible</p>
+          }
           <span class="text-[11px] text-primary-700 font-medium">Semestre 2026-II</span>
         </div>
         <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
@@ -37,8 +41,8 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
         </div>
         <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Horas de falta</span>
-          @if (horasFalta() !== null) {
-            <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ horasFalta() }} h</p>
+          @if (resumen(); as r) {
+            <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ r.totalHorasFalta }} h</p>
             <span class="text-[11px] text-warm-500 font-medium">En todo el periodo</span>
           } @else {
             <p class="text-base font-serif font-bold text-warm-500 mt-1" data-testid="horas-falta-no-disponible">No disponible</p>
@@ -192,7 +196,17 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
             </app-card>
           } @empty {
             <div class="col-span-2 bg-white p-12 rounded-2xl border border-warm-200 text-center space-y-3">
-              <p class="text-xs text-warm-500">No tienes materias inscritas para este periodo.</p>
+              @switch (estadoMaterias()) {
+                @case ('CARGANDO') {
+                  <p class="text-xs text-warm-500 animate-pulse" data-testid="materias-cargando">Cargando tus materias…</p>
+                }
+                @case ('ERROR') {
+                  <p class="text-xs text-danger-800" role="alert" data-testid="materias-error">No fue posible cargar tus materias. Intenta nuevamente.</p>
+                }
+                @default {
+                  <p class="text-xs text-warm-500" data-testid="materias-vacio">No tienes materias inscritas para este periodo.</p>
+                }
+              }
             </div>
           }
         </div>
@@ -222,7 +236,11 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
 })
 export class OverviewStudentComponent {
   materias = input<MateriaEstudianteItem[]>([]);
-  materiasEnRiesgo = input<number | null>(null);
-  horasFalta = input<number | null>(null);
+  /** El estado vacio solo se muestra con la consulta resuelta: pendiente o fallida no es "0 materias". */
+  estadoMaterias = input<'CARGANDO' | 'LISTO' | 'ERROR'>('LISTO');
+  /** Indicadores calculados por el backend con las mismas materias del listado; `null` = no disponibles (nunca un cero). */
+  resumen = input<ResumenMateriasEstudiante | null>(null);
+  /** Materias en riesgo del backend; `null` = sin resumen o sin umbrales configurados. */
+  materiasEnRiesgo = computed(() => this.resumen()?.materiasEnRiesgo ?? null);
   proximaClase = input<ProximaClaseInfo | null>(null);
 }

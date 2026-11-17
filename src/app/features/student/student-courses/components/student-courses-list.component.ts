@@ -5,7 +5,7 @@ import { CardComponent } from '../../../../shared/components/card/card.component
 import { BadgeComponent, BadgeVariant } from '../../../../shared/components/badge/badge.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
-import { MateriaEstudianteItem } from '../../../../core/models/role-management.model';
+import { MateriaEstudianteItem, ResumenMateriasEstudiante } from '../../../../core/models/role-management.model';
 import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
 import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header.component';
 
@@ -90,7 +90,11 @@ interface BarraHoras {
           </div>
           <div>
             <span class="text-xs text-warm-500 font-medium">Materias Inscritas</span>
-            <p class="text-2xl font-serif font-bold text-warm-900">{{ materias().length }}</p>
+            @if (resumen(); as r) {
+              <p class="text-2xl font-serif font-bold text-warm-900" data-testid="resumen-total-materias">{{ r.totalMaterias }}</p>
+            } @else {
+              <p class="text-base font-serif font-bold text-warm-500" data-testid="materias-no-disponible">No disponible</p>
+            }
           </div>
         </div>
 
@@ -118,8 +122,8 @@ interface BarraHoras {
           </div>
           <div>
             <span class="text-xs text-warm-500 font-medium">Horas de falta</span>
-            @if (totalHorasFalta() !== null) {
-              <p class="text-2xl font-serif font-bold text-warm-900">{{ totalHorasFalta() }} h</p>
+            @if (resumen(); as r) {
+              <p class="text-2xl font-serif font-bold text-warm-900">{{ r.totalHorasFalta }} h</p>
             } @else {
               <p class="text-base font-serif font-bold text-warm-500" data-testid="horas-falta-no-disponible">No disponible</p>
             }
@@ -296,10 +300,13 @@ export class StudentCoursesListComponent {
   materias = input<MateriaEstudianteItem[]>([]);
   isLoading = input<boolean>(false);
   error = input<LoadErrorState | null>(null);
-  totalCreditos = input<number>(0);
-  /** `null` = sin fuente autoritativa de asistencia. */
-  materiasEnRiesgo = input<number | null>(null);
-  totalHorasFalta = input<number | null>(null);
+  /**
+   * Indicadores del tablero calculados por el backend con las mismas materias del listado; `null` = aun no llegan o no se
+   * pudieron consultar (se muestra "No disponible", nunca un cero).
+   */
+  resumen = input<ResumenMateriasEstudiante | null>(null);
+  /** Materias en riesgo del backend; `null` = sin resumen o sin umbrales configurados. */
+  materiasEnRiesgo = computed(() => this.resumen()?.materiasEnRiesgo ?? null);
 
   /** HU007 (CERT-CULM001): texto libre para filtrar por nombre, código, grupo o docente. */
   readonly busqueda = signal('');

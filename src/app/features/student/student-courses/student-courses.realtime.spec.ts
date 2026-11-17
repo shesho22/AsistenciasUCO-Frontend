@@ -37,7 +37,7 @@ describe('StudentCoursesComponent - avisos en tiempo real (DEC-064)', () => {
     claims = jasmine.createSpyObj<AttendanceClaimService>('AttendanceClaimService', [
       'subirSoporte', 'crearReclamo', 'getSesionesPorMateria', 'eliminarReclamo', 'getConfiguracionReclamos',
     ]);
-    claims.getSesionesPorMateria.and.returnValue(of({ exitoso: true, datos: [] }) as never);
+    claims.getSesionesPorMateria.and.returnValue(of({ exitoso: true, datos: [], total: 0 }) as never);
     claims.getConfiguracionReclamos.and.returnValue(of({ exitoso: true, datos: null }) as never);
     toast = jasmine.createSpyObj<ToastService>('ToastService', ['success', 'error', 'warning', 'info']);
 
@@ -49,7 +49,7 @@ describe('StudentCoursesComponent - avisos en tiempo real (DEC-064)', () => {
         { provide: AttendanceClaimService, useValue: claims },
         { provide: ToastService, useValue: toast },
         { provide: RealtimeService, useValue: realtime },
-        { provide: StudentManagementService, useValue: { getMaterias: () => of({ exitoso: true, datos: [] }) } },
+        { provide: StudentManagementService, useValue: { getMaterias: () => of({ exitoso: true, datos: [] }), getResumenMaterias: () => of({ exitoso: true, datos: null }) } },
         { provide: AuthService, useValue: { currentUser: () => ({ id: 'u-1' }) } },
         { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap({}) } } },
         { provide: ConsultasTransversalesService, useValue: { getCategoriasJustificacion: () => of({ exitoso: true, datos: [] }) } },

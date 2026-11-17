@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { of, throwError } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 import { signal } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { OverviewComponent } from './overview.component';
@@ -217,9 +217,10 @@ describe('OverviewComponent', () => {
       of({ exitoso: true, datos: [{ id: 'est-1' } as never] })
     );
 
-    studentServiceSpy = jasmine.createSpyObj('StudentManagementService', ['getHorarios', 'getMaterias']);
+    studentServiceSpy = jasmine.createSpyObj('StudentManagementService', ['getHorarios', 'getMaterias', 'getResumenMaterias']);
     studentServiceSpy.getHorarios.and.returnValue(of({ exitoso: true, datos: mockHorarioEstudiante }));
     studentServiceSpy.getMaterias.and.returnValue(of({ exitoso: true, datos: mockMaterias }));
+    studentServiceSpy.getResumenMaterias.and.returnValue(of({ exitoso: true, datos: { totalMaterias: 1, materiasEnRiesgo: 0, totalHorasFalta: 2, totalCreditos: 3 } }));
 
     claimServiceSpy = jasmine.createSpyObj('AttendanceClaimService', [
       'getHorarioDocente',
@@ -526,23 +527,91 @@ describe('OverviewComponent', () => {
     expect(studentServiceSpy.getHorarios).toHaveBeenCalled();
     expect(studentServiceSpy.getMaterias).toHaveBeenCalled();
     expect(component.materias().length).toBe(1);
-    expect(component.studentMateriasEnRiesgo()).toBe(0);
-    expect(component.studentHorasFalta()).toBe(2);
+    expect(studentServiceSpy.getResumenMaterias).toHaveBeenCalledTimes(1);
+    expect(component.studentResumen()).toEqual({ totalMaterias: 1, materiasEnRiesgo: 0, totalHorasFalta: 2, totalCreditos: 3 });
+    expect(component.estadoMateriasEstudiante()).toBe('LISTO');
     expect(component.isLoading()).toBeFalse();
   });
 
-  it('sin indicadores autoritativos no cuenta riesgo ni horas de falta (null, nunca 0 ni NaN)', () => {
-    studentServiceSpy.getMaterias.and.returnValue(of({ exitoso: true, datos: [crearMateria()] }));
-    createComponentWithRole('ESTUDIANTE');
-    expect(component.materias().length).toBe(1);
-    expect(component.studentMateriasEnRiesgo()).toBeNull();
-    expect(component.studentHorasFalta()).toBeNull();
-  });
+  describe('indicadores del estudiante desde el backend (CIERRE-W2B, F-EST-01)', () => {
+    const q = (id: string): HTMLElement | null => fixture.nativeElement.querySelector(`[data-testid="${id}"]`);
 
-  it('debe manejar error al cargar materias para rol ESTUDIANTE', () => {
-    studentServiceSpy.getMaterias.and.returnValue(throwError(() => new Error('Error')));
-    createComponentWithRole('ESTUDIANTE');
-    expect(component.isLoading()).toBeFalse();
+    it('el tablero muestra las cifras del resumen del backend, sin contar ni sumar las materias del cliente', () => {
+      studentServiceSpy.getMaterias.and.returnValue(of({ exitoso: true, datos: [crearMateria(), crearMateria({ idGrupo: 'otro', claveGrupo: 'otro' })] }));
+      studentServiceSpy.getResumenMaterias.and.returnValue(
+        of({ exitoso: true, datos: { totalMaterias: 7, materiasEnRiesgo: 3, totalHorasFalta: 12.5, totalCreditos: 20 } })
+      );
+      createComponentWithRole('ESTUDIANTE');
+      fixture.detectChanges();
+
+      expect(q('resumen-total-materias')?.textContent?.trim()).toBe('7');
+      expect(fixture.nativeElement.textContent).toContain('12.5 h');
+      expect(q('riesgo-no-disponible')).toBeNull();
+    });
+
+    it('si el resumen falla, las tarjetas dicen "No disponible" y no muestran un 0 inventado', () => {
+      studentServiceSpy.getResumenMaterias.and.returnValue(throwError(() => new Error('500')));
+      createComponentWithRole('ESTUDIANTE');
+      fixture.detectChanges();
+
+      expect(component.studentResumen()).toBeNull();
+      expect(q('materias-no-disponible')).not.toBeNull();
+      expect(q('riesgo-no-disponible')).not.toBeNull();
+      expect(q('horas-falta-no-disponible')).not.toBeNull();
+      expect(q('resumen-total-materias')).toBeNull();
+    });
+
+    it('sin umbrales configurados (riesgo nulo) el riesgo es "No disponible" aunque haya materias', () => {
+      studentServiceSpy.getResumenMaterias.and.returnValue(
+        of({ exitoso: true, datos: { totalMaterias: 2, materiasEnRiesgo: null, totalHorasFalta: 1, totalCreditos: 6 } })
+      );
+      createComponentWithRole('ESTUDIANTE');
+      fixture.detectChanges();
+
+      expect(q('riesgo-no-disponible')).not.toBeNull();
+      expect(q('resumen-total-materias')?.textContent?.trim()).toBe('2');
+    });
+
+    it('mientras las materias no responden no se afirma "No tienes materias inscritas"', () => {
+      studentServiceSpy.getMaterias.and.returnValue(new Subject<never>().asObservable());
+      createComponentWithRole('ESTUDIANTE');
+      fixture.detectChanges();
+
+      expect(component.estadoMateriasEstudiante()).toBe('CARGANDO');
+      expect(q('materias-cargando')).not.toBeNull();
+      expect(q('materias-vacio')).toBeNull();
+      expect(q('resumen-total-materias')?.textContent?.trim()).toBe('1');
+    });
+
+    it('si las materias fallan se informa el error y no el estado vacio', () => {
+      studentServiceSpy.getMaterias.and.returnValue(throwError(() => new Error('Error')));
+      createComponentWithRole('ESTUDIANTE');
+      fixture.detectChanges();
+
+      expect(component.estadoMateriasEstudiante()).toBe('ERROR');
+      expect(component.isLoading()).toBeFalse();
+      expect(q('materias-error')).not.toBeNull();
+      expect(q('materias-vacio')).toBeNull();
+    });
+
+    it('con la consulta resuelta y cero materias si se muestra el estado vacio', () => {
+      studentServiceSpy.getMaterias.and.returnValue(of({ exitoso: true, datos: [] }));
+      studentServiceSpy.getResumenMaterias.and.returnValue(
+        of({ exitoso: true, datos: { totalMaterias: 0, materiasEnRiesgo: 0, totalHorasFalta: 0, totalCreditos: 0 } })
+      );
+      createComponentWithRole('ESTUDIANTE');
+      fixture.detectChanges();
+
+      expect(q('materias-vacio')).not.toBeNull();
+      expect(q('resumen-total-materias')?.textContent?.trim()).toBe('0');
+    });
+
+    it('una respuesta con exitoso=false no se toma por lista vacia: queda en error', () => {
+      studentServiceSpy.getMaterias.and.returnValue(of({ exitoso: false, datos: [] }));
+      createComponentWithRole('ESTUDIANTE');
+
+      expect(component.estadoMateriasEstudiante()).toBe('ERROR');
+    });
   });
 
   it('debe manejar fallback de cálculo de próxima clase con courses si no hay horariosDocente', () => {
