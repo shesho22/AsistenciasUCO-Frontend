@@ -136,7 +136,7 @@ interface OpcionFacultad {
                       <span class="font-semibold text-warm-900 block">{{ e.nombreCompleto }}</span>
                       <span class="text-xs text-warm-500">{{ e.correo || '—' }}</span>
                     </td>
-                    <td class="py-2 pr-3 font-mono text-xs text-warm-600">{{ e.numeroIdentificacion || '—' }}</td>
+                    <td class="py-2 pr-3 font-mono text-xs text-warm-600">{{ e.tipoIdentificacion ? e.tipoIdentificacion + ' ' : '' }}{{ e.numeroIdentificacion || '—' }}</td>
                     <td class="py-2 pr-3">
                       <span class="text-warm-900 block">{{ e.programas || '—' }}</span>
                       <span class="text-xs text-warm-500">{{ e.facultades || '—' }}</span>
@@ -322,7 +322,7 @@ export class AdminEstudiantesComponent implements OnInit {
       primerApellido,
       segundoApellido,
       numeroIdentificacion: e.numeroIdentificacion,
-      codigoTipoIdentificacion: null,
+      codigoTipoIdentificacion: e.tipoIdentificacion ?? null,
       idTipoIdentificacion: null,
     };
   }

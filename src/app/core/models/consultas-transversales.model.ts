@@ -72,6 +72,8 @@ export interface EstudianteInstitucionItem {
   segundoApellido?: string | null;
   nombres?: string | null;
   apellidos?: string | null;
+  /** Código corto del tipo de documento (CC, TI...); ausente si el backend no lo entrega. */
+  tipoIdentificacion?: string | null;
 }
 
 export interface ResumenAsistencia {

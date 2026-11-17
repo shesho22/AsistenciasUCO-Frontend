@@ -101,6 +101,29 @@ describe('AdminEstudiantesComponent (HU157)', () => {
     expect(contenedor.contains(contenedor.querySelector('.sr-only'))).toBeTrue();
   });
 
+  it('la tabla antepone el tipo de documento al número solo cuando el backend lo entrega', () => {
+    component.listado.buscar();
+    http.expectOne((r) => r.url === BASE).flush({
+      exitoso: true,
+      datos: [
+        { ...estudiante, tipoIdentificacion: 'TI' },
+        { ...estudiante, idEstudiante: 'e-2', nombreCompleto: 'Luis Gómez', numeroIdentificacion: '1017000222' },
+      ],
+      total: 2,
+    });
+    fixture.detectChanges();
+
+    const celdas = Array.from<HTMLElement>(fixture.nativeElement.querySelectorAll('td.font-mono')).map((c) => c.textContent?.trim());
+    expect(celdas).toContain('TI 1017000111');
+    expect(celdas).toContain('1017000222');
+    expect(celdas).not.toContain('CC 1017000222');
+  });
+
+  it('la corrección de identidad parte del tipo de documento real del estudiante', () => {
+    expect(component.identidadDe({ ...estudiante, tipoIdentificacion: 'TI' }).codigoTipoIdentificacion).toBe('TI');
+    expect(component.identidadDe(estudiante).codigoTipoIdentificacion).toBeNull();
+  });
+
   it('filtra por facultad, estado y texto', () => {
     component.onFacultad('f-1');
     expect(http.expectOne((r) => r.url === BASE).request.params.get('idFacultad')).toBe('f-1');
