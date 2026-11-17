@@ -83,6 +83,10 @@ export interface ResumenAsistencia {
   excusas: number;
   porcentajeInasistencia: number | null;
   codigoPermanencia: string | null;
+  /** NB-2: asistencias, faltas y excusas cuentan tomas; sesionesEjecutadas cuenta sesiones. Opcionales: ausentes si el backend no los entrega. */
+  tomasDictadas?: number;
+  horasDictadas?: number | null;
+  horasFalta?: number | null;
 }
 
 /** Una matrícula del historial; el grupo, el período y el resumen son nulos si el programa no tiene grupos. */
