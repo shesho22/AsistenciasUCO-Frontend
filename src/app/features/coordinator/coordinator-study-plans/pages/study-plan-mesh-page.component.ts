@@ -2,7 +2,7 @@ import { Component, OnInit, inject, input, signal, computed, ChangeDetectionStra
 
 import { ActivatedRoute, Router } from '@angular/router';
 import { CoordinatorManagementService } from '../../../../core/services/coordinator-management.service';
-import { PlanEstudioItem, AsignaturaPlanItem } from '../../../../core/models/role-management.model';
+import { PlanEstudioItem, AsignaturaPlanItem, CaracterAsignatura } from '../../../../core/models/role-management.model';
 import { ToastService } from '../../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../../core/api/errors/api-error.util';
 import { ListadoPaginado } from '../../../../shared/utils/listado-paginado';
@@ -34,6 +34,7 @@ const MAX_SEMESTRES = 10;
         <app-study-plan-mesh
           [plan]="plan"
           [asignaturas]="listado.filas()"
+          [caracteres]="caracteres()"
           [totalAsignaturas]="listado.total()"
           [pagina]="listado.pagina()"
           [pageSize]="listado.tamano()"
@@ -115,6 +116,9 @@ export class CoordinatorStudyPlanMeshPageComponent implements OnInit {
     return this.planes().find((p) => p.id === id) || null;
   });
 
+  /** Catálogo de caracteres para el filtro de la malla (no se arma con las filas cargadas). */
+  caracteres = signal<CaracterAsignatura[]>([]);
+
   /** HU082/HU083: aviso visible en la malla (además del toast) cuando no se puede agregar o quitar un semestre. */
   aviso = signal<string | null>(null);
 
@@ -126,6 +130,10 @@ export class CoordinatorStudyPlanMeshPageComponent implements OnInit {
     this.listado.tamano.set(9);
     // Siempre se recarga del servidor: la copia en memoria puede tener un total de semestres desactualizado.
     this.recargarPlanes();
+    this.coordService.getCaracteresAsignatura().subscribe({
+      next: (res) => this.caracteres.set(res.datos ?? []),
+      error: (err) => this.toast.error(getApiErrorMessage(err)),
+    });
     if (id) {
       this.cargarAsignaturas(id);
     }

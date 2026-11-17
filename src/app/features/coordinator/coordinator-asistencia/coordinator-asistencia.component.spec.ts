@@ -40,6 +40,8 @@ describe('CoordinatorAsistenciaComponent (CULM-001: asistencia unificada)', () =
     http.expectOne((r) => r.url === `${base}/indicadores`).flush({ exitoso: true, datos: kpis });
     http.expectOne(`${base}/periodos-academicos`).flush({ exitoso: true, datos: [] });
     http.expectOne((r) => r.url === `${base}/consolidado-asistencia`).flush({ exitoso: true, datos: [grupo], total: 1 });
+    // CIERRE-W2A: las opciones de materia y docente del consolidado vienen del servidor
+    http.expectOne((r) => r.url === `${base}/consolidado-asistencia/opciones`).flush({ exitoso: true, datos: { asignaturas: [], docentes: [] } });
     http.expectOne((r) => r.url === `${base}/revisiones-cancelacion`).flush(paginaApi([], 1, 1, 3));
     // DEC-065 (2): bandeja de solicitudes (lista) y conteo de pendientes (una fila).
     const solicitudes = http.match((r) => r.url === `${base}/sesiones/solicitudes`);

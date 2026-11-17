@@ -1,9 +1,9 @@
-import { Component, ChangeDetectionStrategy, DestroyRef, effect, inject, input, output, signal, computed, untracked } from '@angular/core';
+import { Component, ChangeDetectionStrategy, DestroyRef, inject, input, output, signal, computed } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, debounceTime } from 'rxjs';
 
 import { FormsModule } from '@angular/forms';
-import { PlanEstudioItem, AsignaturaPlanItem } from '../../../../core/models/role-management.model';
+import { PlanEstudioItem, AsignaturaPlanItem, CaracterAsignatura } from '../../../../core/models/role-management.model';
 import { BadgeComponent, BadgeVariant } from '../../../../shared/components/badge/badge.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
@@ -249,12 +249,10 @@ export class StudyPlanMeshComponent {
 
   private readonly busqueda$ = new Subject<void>();
 
-  /** Caracteres vistos en la malla (cada fila trae su código y nombre del catálogo del backend). */
-  private readonly caracteresVistos = signal<Record<string, string>>({});
+  /** Catálogo de caracteres (`GET /coordinador/caracteres-asignatura`): no se arma con las filas cargadas. */
+  caracteres = input<CaracterAsignatura[]>([]);
   caracteresDisponibles = computed(() =>
-    Object.entries(this.caracteresVistos())
-      .map(([codigo, nombre]) => ({ codigo, nombre }))
-      .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
+    [...this.caracteres()].sort((a, b) => a.orden - b.orden || a.nombre.localeCompare(b.nombre, 'es'))
   );
 
   semestresDisponibles = computed(() => {
@@ -264,16 +262,6 @@ export class StudyPlanMeshComponent {
 
   constructor() {
     this.busqueda$.pipe(debounceTime(300), takeUntilDestroyed(this.destroyRef)).subscribe(() => this.emitirFiltros());
-    effect(() => {
-      const items = this.asignaturas();
-      untracked(() => {
-        const nuevos: Record<string, string> = {};
-        for (const a of items) {
-          if (a.codigoCaracter && a.nombreCaracter) nuevos[a.codigoCaracter] = a.nombreCaracter;
-        }
-        if (Object.keys(nuevos).length > 0) this.caracteresVistos.update((previos) => ({ ...previos, ...nuevos }));
-      });
-    });
   }
 
   onBusqueda(valor: string): void {

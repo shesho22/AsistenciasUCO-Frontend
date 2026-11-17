@@ -141,7 +141,7 @@ export interface GrupoSesionesRef {
               <h2 class="font-serif font-bold text-lg text-warm-900">Asistencia · {{ sesion.nombre }}</h2>
               <p class="text-xs text-warm-500">
                 {{ horario(sesion) }} ·
-                {{ presentesPagina() }} presentes / {{ ausentesPagina() }} ausentes en esta página
+                {{ presentes() }} presentes / {{ ausentes() }} ausentes en la sesión
               </p>
             </div>
             <select
@@ -257,8 +257,9 @@ export class CoordinatorSesionesGrupoComponent implements OnInit, OnDestroy {
     this.timeZone.hasUnzonedValue(this.sesiones().map((s) => this.inicio(s)))
   );
 
-  presentesPagina = computed(() => this.asistencias().filter((a) => a.asistio).length);
-  ausentesPagina = computed(() => this.asistencias().filter((a) => !a.asistio).length);
+  /** Presentes y ausentes de TODA la sesión: los cuenta el servidor (filtro `asistio`, página de uno), no la página cargada. */
+  presentes = signal(0);
+  ausentes = signal(0);
 
   /** Horario de la sesión en la zona efectiva; el valor sin zona se muestra literal (APP-04). */
   horario(sesion: SesionGrupoItem): string {
@@ -419,6 +420,21 @@ export class CoordinatorSesionesGrupoComponent implements OnInit, OnDestroy {
     this.sesionSeleccionada.set(sesion);
     this.paginaAsistencias.set(1);
     this.cargarAsistencias();
+    this.cargarTotalesAsistencia(sesion.id);
+  }
+
+  private cargarTotalesAsistencia(idSesion: string): void {
+    this.presentes.set(0);
+    this.ausentes.set(0);
+    for (const asistio of [true, false]) {
+      this.service.getAsistenciasSesion(idSesion, { asistio, pagina: 1, tamano: 1 }).subscribe({
+        next: (res) => {
+          if (this.sesionSeleccionada()?.id !== idSesion) return;
+          (asistio ? this.presentes : this.ausentes).set(Number(res.total ?? 0));
+        },
+        error: (error: unknown) => this.toast.error(getApiErrorMessage(error)),
+      });
+    }
   }
 
   onFiltroAsistio(filtro: FiltroAsistio): void {

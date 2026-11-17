@@ -179,6 +179,20 @@ export function respuestaConsultasTransversales(req: HttpRequest<unknown>, url: 
   if (url.endsWith('/decano/asignaturas') || url.endsWith('/admin/asignaturas')) {
     return filtrar(req, ASIGNATURAS, ['codigo', 'nombre']);
   }
+  if (url.endsWith('/consolidado-asistencia/opciones')) {
+    // CIERRE-W2A: asignaturas y docentes de TODOS los grupos del ambito (no solo los de la pagina), ordenados por nombre
+    const unicos = (pares: [string | null, string | null][]) =>
+      [...new Map(pares.filter((p): p is [string, string | null] => !!p[0]).map(([id, nombre]) => [id, { id, nombre: nombre ?? id }])).values()]
+        .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+    const periodo = req.params.get('idPeriodoAcademico');
+    const grupos = CONSOLIDADO.filter((g) => !periodo || g.idPeriodoAcademico === periodo);
+    return {
+      datos: {
+        asignaturas: unicos(grupos.map((g) => [g.idAsignatura, g.nombreAsignatura] as [string | null, string | null])),
+        docentes: unicos(grupos.map((g) => [g.idDocente, g.nombreDocente] as [string | null, string | null])),
+      },
+    };
+  }
   if (url.endsWith('/consolidado-asistencia')) {
     const asignatura = req.params.get('idAsignatura');
     const datos = CONSOLIDADO.filter((g) => !asignatura || g.idAsignatura === asignatura);

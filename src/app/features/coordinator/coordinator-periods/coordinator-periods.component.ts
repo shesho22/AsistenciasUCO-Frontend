@@ -33,7 +33,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
             ← Planes de Estudio
           </button>
           <span class="px-3.5 py-2 rounded-xl bg-warm-100 text-xs font-bold text-warm-800 border border-warm-200">
-            {{ periodos().length }} Períodos
+            {{ totalPeriodos() }} Períodos
           </span>
         </div>
       </app-page-header>
@@ -43,7 +43,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
         <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-xs flex items-center justify-between">
           <div>
             <span class="text-xs font-bold uppercase tracking-wider text-warm-500">Total Períodos</span>
-            <div class="text-2xl font-bold font-serif text-warm-900 mt-1">{{ periodos().length }}</div>
+            <div class="text-2xl font-bold font-serif text-warm-900 mt-1">{{ totalPeriodos() }}</div>
             <p class="text-[11px] text-warm-500 mt-0.5">Registrados en el calendario</p>
           </div>
           <div class="p-2.5 rounded-xl bg-primary-50 text-primary-700">
@@ -99,9 +99,9 @@ export class CoordinatorPeriodsComponent implements OnInit {
 
   periodos = signal<PeriodoAcademicoItem[]>(this.coordService.periodos());
 
-  totalActivos = computed(() =>
-    this.periodos().filter((p) => p.estado === 'ACTIVO').length
-  );
+  /** Totales del servidor (`total` de la lista y de la lista filtrada por estado ACTIVO); la pantalla no cuenta filas. */
+  totalPeriodos = signal(0);
+  totalActivos = signal(0);
 
   periodoActual = computed(() =>
     this.periodos().find((p) => p.esActual || p.estado === 'ACTIVO') || null
@@ -113,7 +113,14 @@ export class CoordinatorPeriodsComponent implements OnInit {
 
   cargarPeriodos(): void {
     this.coordService.getPeriodosAcademicos().subscribe({
-      next: (res) => this.periodos.set(res.datos || []),
+      next: (res) => {
+        this.periodos.set(res.datos || []);
+        this.totalPeriodos.set(Number(res.total ?? 0));
+      },
+      error: (err) => this.toast.error(getApiErrorMessage(err)),
+    });
+    this.coordService.getTotalPeriodosPorEstado('ACTIVO').subscribe({
+      next: (total) => this.totalActivos.set(total),
       error: (err) => this.toast.error(getApiErrorMessage(err)),
     });
   }

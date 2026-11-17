@@ -29,8 +29,18 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
     colorCategory: 'emerald',
   };
 
+  /** Pagina del servidor (CIERRE-W2A): `totalElementos` es el total real aunque la pagina traiga menos filas. */
+  const paginaGrupos = (elementos: Course[], totalElementos = elementos.length, numeroPagina = 1, tamanoPagina = 10) => ({
+    exitoso: true,
+    elementos,
+    numeroPagina,
+    tamanoPagina,
+    totalElementos,
+    totalPaginas: Math.max(1, Math.ceil(totalElementos / tamanoPagina)),
+  });
+
   beforeEach(async () => {
-    courseService = jasmine.createSpyObj('CourseService', ['getCoordinatorCourses', 'crearGrupo', 'actualizarGrupo']);
+    courseService = jasmine.createSpyObj('CourseService', ['getCoordinatorCoursesPage', 'crearGrupo', 'actualizarGrupo']);
     coordinatorService = jasmine.createSpyObj('CoordinatorManagementService', [
       'getPlanesEstudio',
       'getAsignaturasPorPlan',
@@ -39,7 +49,7 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
     ]);
     toast = jasmine.createSpyObj('ToastService', ['success', 'error', 'warning']);
 
-    courseService.getCoordinatorCourses.and.returnValue(of({ exitoso: true, datos: [grupo] }));
+    courseService.getCoordinatorCoursesPage.and.returnValue(of(paginaGrupos([grupo])));
     coordinatorService.getPlanesEstudio.and.returnValue(of({ exitoso: true, datos: [{ id: 'plan-1' } as never, { id: 'plan-2' } as never] }));
     coordinatorService.getAsignaturasPorPlan.and.callFake((planId: string) =>
       planId === 'plan-1'
@@ -66,7 +76,7 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
   });
 
   it('carga los grupos con su horario, las asignaturas de los planes, los docentes y los períodos', () => {
-    expect(component.grupos()).toEqual([grupo]);
+    expect(component.listado.filas()).toEqual([grupo]);
     expect(component.asignaturas().map((a) => a.id)).toEqual(['asig-1']);
     expect(component.docentes().length).toBe(1);
     expect(component.periodos().length).toBe(1);
@@ -77,12 +87,12 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
   });
 
   it('muestra el estado vacío y avisa si falla la carga de grupos', () => {
-    courseService.getCoordinatorCourses.and.returnValue(of({ exitoso: true, datos: [] }));
+    courseService.getCoordinatorCoursesPage.and.returnValue(of(paginaGrupos([])));
     component.cargarGrupos();
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('[data-testid="sin-grupos"]')).not.toBeNull();
 
-    courseService.getCoordinatorCourses.and.returnValue(throwError(() => new Error('falla')));
+    courseService.getCoordinatorCoursesPage.and.returnValue(throwError(() => new Error('falla')));
     component.cargarGrupos();
     expect(component.cargando()).toBeFalse();
     expect(toast.error).toHaveBeenCalled();
@@ -90,7 +100,7 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
 
   // Un fallo de carga no puede verse como "El programa aun no tiene grupos": alerta accesible y Reintentar.
   it('un fallo al cargar los grupos muestra una alerta con Reintentar y no el estado vacio', () => {
-    courseService.getCoordinatorCourses.and.returnValue(throwError(() => new Error('falla')));
+    courseService.getCoordinatorCoursesPage.and.returnValue(throwError(() => new Error('falla')));
     component.cargarGrupos();
     fixture.detectChanges();
 
@@ -101,17 +111,17 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
   });
 
   it('Reintentar vuelve a pedir los grupos y, si responde, pinta la tabla y retira la alerta', () => {
-    courseService.getCoordinatorCourses.and.returnValue(throwError(() => new Error('falla')));
+    courseService.getCoordinatorCoursesPage.and.returnValue(throwError(() => new Error('falla')));
     component.cargarGrupos();
     fixture.detectChanges();
 
-    courseService.getCoordinatorCourses.and.returnValue(of({ exitoso: true, datos: [grupo] }));
+    courseService.getCoordinatorCoursesPage.and.returnValue(of(paginaGrupos([grupo])));
     const el = fixture.nativeElement as HTMLElement;
     (Array.from(el.querySelectorAll('button')).find((b) => /Reintentar/.test(b.textContent ?? '')) as HTMLButtonElement).click();
     fixture.detectChanges();
 
     expect(el.querySelector('[role="alert"]')).toBeNull();
-    expect(component.grupos().length).toBe(1);
+    expect(component.listado.filas().length).toBe(1);
   });
 
   it('si fallan los catálogos del formulario se muestra el error con reintento y no solo listas vacías', () => {
@@ -186,7 +196,7 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
     });
     expect(toast.success).toHaveBeenCalledWith('Grupo creado.');
     expect(component.vista()).toBe('LISTA');
-    expect(courseService.getCoordinatorCourses).toHaveBeenCalledTimes(2);
+    expect(courseService.getCoordinatorCoursesPage).toHaveBeenCalledTimes(2);
   });
 
   // DEC-073: el código es un entero positivo y el nombre, texto seguro.
@@ -331,16 +341,30 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
     expect(component.docentes().length).toBe(120);
   });
 
-  it('F-COO-009: el listado de grupos se pagina con PaginationComponent', () => {
-    const muchos = Array.from({ length: 25 }, (_, i) => ({ ...grupo, id: `g-${i}` }));
-    courseService.getCoordinatorCourses.and.returnValue(of({ exitoso: true, datos: muchos }));
+  it('F-COO-009: el listado de grupos se pagina en el servidor y el total sale de totalElementos', () => {
+    // La página trae 10 filas, pero el programa tiene 25 grupos: el total y las páginas son los del servidor
+    const primera = Array.from({ length: 10 }, (_, i) => ({ ...grupo, id: `g-${i}` }));
+    courseService.getCoordinatorCoursesPage.and.returnValue(of(paginaGrupos(primera, 25)));
     component.cargarGrupos();
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
     expect(el.querySelector('app-pagination')).toBeTruthy();
     expect(el.querySelectorAll('tbody tr').length).toBe(10);
-    component.paginaActual.set(3);
+    expect(component.listado.total()).toBe(25);
+    expect(component.listado.totalPaginas()).toBe(3);
+
+    // Ir a la página 3 vuelve a pedir esa página al servidor (no corta una lista en memoria)
+    const ultima = Array.from({ length: 5 }, (_, i) => ({ ...grupo, id: `u-${i}` }));
+    courseService.getCoordinatorCoursesPage.and.returnValue(of(paginaGrupos(ultima, 25, 3)));
+    component.listado.irAPagina(3);
     fixture.detectChanges();
+    expect(courseService.getCoordinatorCoursesPage).toHaveBeenCalledWith({ pagina: 3, tamano: 10 });
     expect(el.querySelectorAll('tbody tr').length).toBe(5);
+  });
+
+  it('cambiar el tamaño de página pide la primera página con el nuevo tamaño al servidor', () => {
+    courseService.getCoordinatorCoursesPage.calls.reset();
+    component.listado.cambiarTamano(25);
+    expect(courseService.getCoordinatorCoursesPage).toHaveBeenCalledWith({ pagina: 1, tamano: 25 });
   });
 });

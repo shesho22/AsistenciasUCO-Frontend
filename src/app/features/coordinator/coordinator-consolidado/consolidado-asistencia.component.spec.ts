@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ActivatedRoute } from '@angular/router';
-import { ConsolidadoAsistenciaComponent, acumularOpciones } from './consolidado-asistencia.component';
+import { ConsolidadoAsistenciaComponent } from './consolidado-asistencia.component';
 import { ConsolidadoGrupoItem } from '../../../core/models/consultas-transversales.model';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { RealtimeService } from '../../../core/realtime/realtime.service';
@@ -23,6 +23,12 @@ describe('ConsolidadoAsistenciaComponent (HU061)', () => {
     faltasSinJustaCausa: 10, excusas: 0, porcentajeAsistencia: 93.75, porcentajeInasistencia: 6.25,
     estudiantesRiesgo: 2, estudiantesPerdida: 1, horasDictadas: 16, porcentajeExcusa: 0, porcentajeSinRegistro: 0,
   });
+
+  /** Opciones COMPLETAS del ámbito (CIERRE-W2A): incluyen materias y docentes que no están en las filas de la página. */
+  const OPCIONES = {
+    asignaturas: [{ id: 'ASG-1', nombre: 'Cálculo' }, { id: 'ASG-9', nombre: 'Física' }],
+    docentes: [{ id: 'DOC-1', nombre: 'Ana' }, { id: 'DOC-7', nombre: 'Luis' }],
+  };
 
   function realtimeFalso(): jasmine.SpyObj<RealtimeService> {
     const rt = jasmine.createSpyObj<RealtimeService>('RealtimeService', ['startForGroup', 'stop', 'events'], {
@@ -54,6 +60,8 @@ describe('ConsolidadoAsistenciaComponent (HU061)', () => {
       exitoso: true,
       datos: [{ id: 'PER-1', codigo: '2026-2', nombre: '2026-2', fechaInicio: '2026-07-01', fechaFin: '2026-12-01', estado: 'ACTIVO' }],
     });
+    http.expectOne((r) => r.url === `${api}/${comoDecano ? 'decano' : 'coordinador'}/consolidado-asistencia/opciones`)
+      .flush({ exitoso: true, datos: OPCIONES });
     // PAR-06: los umbrales del semaforo salen de los KPI del rol (parametros ASISTENCIA/UMBRAL_ALERTA_*).
     const kpis = http.expectOne((r) => r.url === `${api}/${comoDecano ? 'decano' : 'coordinador'}/indicadores`);
     if (umbrales) {
@@ -105,7 +113,9 @@ describe('ConsolidadoAsistenciaComponent (HU061)', () => {
     // Certificación F3: la columna cuenta sesiones ejecutadas, no las programadas del cronograma.
     expect(texto).toContain('Sesiones ejecutadas');
     expect(fixture.componentInstance.periodos().length).toBe(1);
-    expect(fixture.componentInstance.asignaturas()).toEqual([{ id: 'ASG-1', nombre: 'Cálculo' }]);
+    // Las opciones salen del servidor y NO de las filas de la página (ASG-9 y DOC-7 no tienen fila)
+    expect(fixture.componentInstance.asignaturas()).toEqual(OPCIONES.asignaturas);
+    expect(fixture.componentInstance.docentes()).toEqual(OPCIONES.docentes);
   });
 
   it('D.8 muestra Excusa y Sin registro con la barra apilada de cuatro segmentos y la nota de horas', () => {
@@ -141,8 +151,9 @@ describe('ConsolidadoAsistenciaComponent (HU061)', () => {
     http.expectOne((r) => r.url === `${api}/decano/consolidado-asistencia`).flush({ exitoso: true, datos: [], total: 0 });
     const component = fixture.componentInstance;
 
-    component.filtrar(component.idPeriodo, 'PER-1');
+    component.cambiarPeriodo('PER-1');
 
+    http.expectOne((r) => r.url === `${api}/decano/consolidado-asistencia/opciones`).flush({ exitoso: true, datos: OPCIONES });
     const req = http.expectOne((r) => r.url === `${api}/decano/consolidado-asistencia`);
     expect(req.request.params.get('idPeriodoAcademico')).toBe('PER-1');
     expect(req.request.params.get('pagina')).toBe('1');
@@ -259,7 +270,8 @@ describe('ConsolidadoAsistenciaComponent (HU061)', () => {
       fixture.detectChanges();
       http.expectOne((r) => r.url === `${api}/decano/sesiones`).flush(paginaVacia);
       const component = fixture.componentInstance;
-      component.filtrar(component.idPeriodo, 'PER-1');
+      component.cambiarPeriodo('PER-1');
+      http.expectOne((r) => r.url === `${api}/decano/consolidado-asistencia/opciones`).flush({ exitoso: true, datos: OPCIONES });
       http.expectOne((r) => r.url === `${api}/decano/consolidado-asistencia`).flush({ exitoso: true, datos: [], total: 0 });
       expect(component.expandido()).toBeNull();
     });
@@ -276,15 +288,79 @@ describe('ConsolidadoAsistenciaComponent (HU061)', () => {
     });
   });
 
-  it('acumularOpciones no repite, ignora ids nulos y ordena por nombre', () => {
-    const opciones = acumularOpciones([{ id: 'ASG-2', nombre: 'Estructuras' }], [
-      grupo('ASG-1', 'Cálculo', null),
-      grupo('ASG-2', 'Estructuras', null),
-    ], 'asignatura');
-    expect(opciones).toEqual([
-      { id: 'ASG-1', nombre: 'Cálculo' },
-      { id: 'ASG-2', nombre: 'Estructuras' },
-    ]);
-    expect(acumularOpciones([], [grupo('ASG-1', 'Cálculo', null)], 'docente')).toEqual([]);
+  describe('CIERRE-W2A opciones de materia y docente desde el servidor', () => {
+    it('pide las opciones del ámbito sin período al abrir y las del período elegido al cambiarlo', () => {
+      const fixture = crear(false);
+      http.expectOne((r) => r.url === `${api}/coordinador/consolidado-asistencia`).flush({ exitoso: true, datos: [], total: 0 });
+      const component = fixture.componentInstance;
+
+      component.cambiarPeriodo('PER-1');
+      const opciones = http.expectOne((r) => r.url === `${api}/coordinador/consolidado-asistencia/opciones`);
+      expect(opciones.request.params.get('idPeriodoAcademico')).toBe('PER-1');
+      opciones.flush({ exitoso: true, datos: { asignaturas: [{ id: 'ASG-5', nombre: 'Redes' }], docentes: [] } });
+      http.expectOne((r) => r.url === `${api}/coordinador/consolidado-asistencia`).flush({ exitoso: true, datos: [], total: 0 });
+
+      expect(component.asignaturas()).toEqual([{ id: 'ASG-5', nombre: 'Redes' }]);
+      expect(component.docentes()).toEqual([]);
+    });
+
+    it('cambiar el período limpia la materia y el docente elegidos (sus opciones dependen del período)', () => {
+      const fixture = crear(false);
+      http.expectOne((r) => r.url === `${api}/coordinador/consolidado-asistencia`).flush({ exitoso: true, datos: [], total: 0 });
+      const component = fixture.componentInstance;
+      component.idAsignatura.set('ASG-9');
+      component.idDocente.set('DOC-7');
+
+      component.cambiarPeriodo('PER-1');
+      http.expectOne((r) => r.url === `${api}/coordinador/consolidado-asistencia/opciones`).flush({ exitoso: true, datos: OPCIONES });
+      const consulta = http.expectOne((r) => r.url === `${api}/coordinador/consolidado-asistencia`);
+      expect(consulta.request.params.has('idAsignatura')).toBeFalse();
+      expect(consulta.request.params.has('idDocente')).toBeFalse();
+      consulta.flush({ exitoso: true, datos: [], total: 0 });
+      expect(component.idPeriodo()).toBe('PER-1');
+      expect(component.idAsignatura()).toBe('');
+      expect(component.idDocente()).toBe('');
+    });
+
+    it('elegir una materia consulta el consolidado sin recargar las opciones', () => {
+      const fixture = crear(false);
+      http.expectOne((r) => r.url === `${api}/coordinador/consolidado-asistencia`).flush({ exitoso: true, datos: [], total: 0 });
+      const component = fixture.componentInstance;
+
+      component.filtrar(component.idAsignatura, 'ASG-9');
+
+      http.expectNone((r) => r.url.endsWith('/opciones'));
+      const consulta = http.expectOne((r) => r.url === `${api}/coordinador/consolidado-asistencia`);
+      expect(consulta.request.params.get('idAsignatura')).toBe('ASG-9');
+      consulta.flush({ exitoso: true, datos: [], total: 0 });
+    });
+
+    it('si fallan las opciones deja los selectores vacíos y anuncia el error del backend', () => {
+      const fixture = crear(false);
+      http.expectOne((r) => r.url === `${api}/coordinador/consolidado-asistencia`).flush({ exitoso: true, datos: [], total: 0 });
+      const component = fixture.componentInstance;
+
+      component.cambiarPeriodo('PER-1');
+      http.expectOne((r) => r.url === `${api}/coordinador/consolidado-asistencia/opciones`)
+        .flush({ message: 'Sin permisos' }, { status: 403, statusText: 'Forbidden' });
+      http.expectOne((r) => r.url === `${api}/coordinador/consolidado-asistencia`).flush({ exitoso: true, datos: [], total: 0 });
+
+      expect(component.asignaturas()).toEqual([]);
+      expect(component.docentes()).toEqual([]);
+      expect(toast.error).toHaveBeenCalled();
+    });
+
+    it('una respuesta sin datos deja las listas vacías', () => {
+      const fixture = crear(false);
+      http.expectOne((r) => r.url === `${api}/coordinador/consolidado-asistencia`).flush({ exitoso: true, datos: [], total: 0 });
+      const component = fixture.componentInstance;
+
+      component.cambiarPeriodo('');
+      http.expectOne((r) => r.url === `${api}/coordinador/consolidado-asistencia/opciones`).flush({ exitoso: true });
+      http.expectOne((r) => r.url === `${api}/coordinador/consolidado-asistencia`).flush({ exitoso: true, datos: [], total: 0 });
+
+      expect(component.asignaturas()).toEqual([]);
+      expect(component.docentes()).toEqual([]);
+    });
   });
 });

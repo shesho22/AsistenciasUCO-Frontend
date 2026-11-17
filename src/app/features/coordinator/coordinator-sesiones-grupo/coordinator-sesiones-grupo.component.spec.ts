@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient, withInterceptors, withXhr } from '@angular/common/http';
+import { HttpRequest, provideHttpClient, withInterceptors, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { CoordinatorSesionesGrupoComponent } from './coordinator-sesiones-grupo.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
@@ -10,6 +10,7 @@ import {
   SesionGrupoItem,
 } from '../../../core/models/asistencia-programa.model';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
+import { CourseService } from '../../../core/services/course.service';
 import { mockBackendInterceptor } from '../../../core/interceptors/mock-backend.interceptor';
 import { AuthService } from '../../../core/services/auth.service';
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
@@ -100,6 +101,16 @@ describe('CoordinatorSesionesGrupoComponent (HU060/HU061)', () => {
 
   afterEach(() => http.verify());
 
+  // CIERRE-W2A: presentes y ausentes de la sesión los cuenta el servidor (filtro `asistio`, página de uno)
+  const asistenciasSesion = (r: HttpRequest<unknown>) => r.url.endsWith('/asistencias');
+  const listaAsistencias = (r: HttpRequest<unknown>) => asistenciasSesion(r) && r.params.get('tamano') !== '1';
+  const totalAsistio = (valor: boolean) => (r: HttpRequest<unknown>) =>
+    asistenciasSesion(r) && r.params.get('tamano') === '1' && r.params.get('asistio') === String(valor);
+  function responderTotales(presentes = 0, ausentes = 0): void {
+    http.expectOne(totalAsistio(true)).flush({ exitoso: true, datos: [], total: presentes });
+    http.expectOne(totalAsistio(false)).flush({ exitoso: true, datos: [], total: ausentes });
+  }
+
   it('CULM-001: no consulta periodos ni la lista de grupos (eso lo da el consolidado)', () => {
     http.expectNone(`${API}/coordinador/periodos-academicos`);
     http.expectNone((r) => r.url === `${API}/coordinador/grupos`);
@@ -131,13 +142,14 @@ describe('CoordinatorSesionesGrupoComponent (HU060/HU061)', () => {
       component.seleccionarGrupo(grupo);
       http.expectOne((r) => r.url.endsWith('/sesiones')).flush({ exitoso: true, datos: [sesion], total: 1 });
       component.seleccionarSesion(sesion);
-      http.expectOne((r) => r.url.endsWith('/asistencias')).flush({}, { status: 500, statusText: 'Error' });
+      responderTotales();
+      http.expectOne(listaAsistencias).flush({}, { status: 500, statusText: 'Error' });
       fixture.detectChanges();
       expect(el().textContent).not.toContain('No hay registros de asistencia para esta sesión.');
       expect(el().querySelectorAll('[role="alert"]').length).toBeGreaterThan(0);
 
       (Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('button')).find((b) => /Reintentar/.test(b.textContent ?? '')) as HTMLButtonElement).click();
-      http.expectOne((r) => r.url.endsWith('/asistencias')).flush({ exitoso: true, datos: asistencias, total: 2 });
+      http.expectOne(listaAsistencias).flush({ exitoso: true, datos: asistencias, total: 2 });
       fixture.detectChanges();
       expect(el().textContent).toContain('Ana Ruiz');
     });
@@ -152,14 +164,18 @@ describe('CoordinatorSesionesGrupoComponent (HU060/HU061)', () => {
     expect(fixture.nativeElement.textContent).toContain('S-01');
 
     component.seleccionarSesion(sesion);
+
     http
-      .expectOne((r) => r.url === `${API}/coordinador/sesiones/ses-1/asistencias`)
+      .expectOne(listaAsistencias)
       .flush({ exitoso: true, datos: asistencias, total: 2 });
+    responderTotales(26, 4);
     fixture.detectChanges();
 
     const texto = fixture.nativeElement.textContent as string;
-    expect(component.presentesPagina()).toBe(1);
-    expect(component.ausentesPagina()).toBe(1);
+    // La página trae 1 presente y 1 ausente, pero la sesión completa tiene 26 y 4
+    expect(component.presentes()).toBe(26);
+    expect(component.ausentes()).toBe(4);
+    expect(texto).toContain('26 presentes / 4 ausentes en la sesión');
     expect(texto).toContain('Ana Ruiz');
     expect(texto).toContain('No asistió');
     expect(texto).toContain('Inasistencia injustificada');
@@ -203,21 +219,22 @@ describe('CoordinatorSesionesGrupoComponent (HU060/HU061)', () => {
     component.seleccionarGrupo(grupo);
     http.expectOne((r) => r.url.endsWith('/sesiones')).flush({ exitoso: true, datos: [sesion], total: 1 });
     component.seleccionarSesion(sesion);
-    http.expectOne((r) => r.url.endsWith('/asistencias')).flush({ exitoso: true, datos: [], total: 0 });
+    responderTotales();
+    http.expectOne(listaAsistencias).flush({ exitoso: true, datos: [], total: 0 });
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('No hay registros de asistencia para esta sesión.');
 
     component.onFiltroAsistio('NO_ASISTIO');
-    expect(http.expectOne((r) => r.url.endsWith('/asistencias')).request.params.get('asistio')).toBe('false');
+    expect(http.expectOne(listaAsistencias).request.params.get('asistio')).toBe('false');
     component.onFiltroAsistio('ASISTIO');
-    expect(http.expectOne((r) => r.url.endsWith('/asistencias')).request.params.get('asistio')).toBe('true');
+    expect(http.expectOne(listaAsistencias).request.params.get('asistio')).toBe('true');
     component.onFiltroAsistio('TODOS');
-    expect(http.expectOne((r) => r.url.endsWith('/asistencias')).request.params.has('asistio')).toBeFalse();
+    expect(http.expectOne(listaAsistencias).request.params.has('asistio')).toBeFalse();
     component.onPaginaAsistencias(2);
-    expect(http.expectOne((r) => r.url.endsWith('/asistencias')).request.params.get('pagina')).toBe('2');
+    expect(http.expectOne(listaAsistencias).request.params.get('pagina')).toBe('2');
     component.onTamanoAsistencias(50);
     http
-      .expectOne((r) => r.url.endsWith('/asistencias'))
+      .expectOne(listaAsistencias)
       .flush({ exitoso: false }, { status: 500, statusText: 'Error' });
     expect(component.asistencias()).toEqual([]);
     expect(toastSpy.error).toHaveBeenCalled();
@@ -281,7 +298,7 @@ describe('CoordinatorSesionesGrupoComponent (HU060/HU061)', () => {
   it('sin sesión seleccionada no consulta asistencias', () => {
     component.onPaginaAsistencias(2);
     component.onFiltroAsistio('ASISTIO');
-    http.expectNone((r) => r.url.endsWith('/asistencias'));
+    http.expectNone(listaAsistencias);
   });
 
   it('B1-F-26 HU060: la sesión cancelada se rotula como tal con su motivo', () => {
@@ -323,9 +340,12 @@ describe('Mock backend de consultas del coordinador (HU064/HU060/HU061)', () => 
     TestBed.inject(AuthService).setMockMode(true);
     const service = TestBed.inject(CoordinatorManagementService);
 
-    service.getGruposPrograma({ pagina: 1, tamano: 10 }).subscribe((grupos) => {
-      expect(grupos.datos.length).toBe(1);
-      service.getSesionesGrupo(grupos.datos[0].id, { pagina: 1, tamano: 10 }).subscribe((sesiones) => {
+    // CIERRE-W2A: los grupos del programa llegan paginados por el servidor, con su horario
+    TestBed.inject(CourseService).getCoordinatorCoursesPage({ pagina: 1, tamano: 10 }).subscribe((grupos) => {
+      expect(grupos.elementos.length).toBe(1);
+      expect(grupos.totalElementos).toBe(1);
+      expect(grupos.elementos[0].franjas?.length).toBe(1);
+      service.getSesionesGrupo(grupos.elementos[0].id, { pagina: 1, tamano: 10 }).subscribe((sesiones) => {
         expect(sesiones.datos[0].idGrupo).toBe('GRP-MOCK-1');
         service.getAsistenciasSesion(sesiones.datos[0].id, { asistio: false, pagina: 1, tamano: 10 }).subscribe((res) => {
           expect(res.datos.length).toBe(1);

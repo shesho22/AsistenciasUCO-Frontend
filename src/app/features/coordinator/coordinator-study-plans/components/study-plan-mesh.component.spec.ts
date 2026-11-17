@@ -103,22 +103,33 @@ describe('StudyPlanMeshComponent (certificación F3)', () => {
     expect(reintentos).toBe(1);
   });
 
-  it('EST-03 (S2871): los caracteres disponibles salen de la malla con código y nombre, ordenados en español y sin repetidos', () => {
+  it('EST-03 (S2871, CIERRE-W2A): los caracteres disponibles son los del catálogo recibido, ordenados, aunque la malla no los traiga', () => {
     TestBed.configureTestingModule({ imports: [StudyPlanMeshComponent] });
     const fixture = TestBed.createComponent(StudyPlanMeshComponent);
     fixture.componentRef.setInput('plan', plan);
-    fixture.componentRef.setInput('asignaturas', [
-      { ...asignatura('A-1', 3), codigoCaracter: 'OPT', nombreCaracter: 'Optativa' },
-      { ...asignatura('A-2', 3), codigoCaracter: 'ETI', nombreCaracter: 'Ética' },
-      { ...asignatura('A-3', 3), codigoCaracter: 'ALG', nombreCaracter: 'Álgebra' },
-      { ...asignatura('A-4', 3), codigoCaracter: 'OPT', nombreCaracter: 'Optativa' },
+    // La malla solo tiene filas optativas, pero el catálogo ofrece también los otros caracteres
+    fixture.componentRef.setInput('asignaturas', [{ ...asignatura('A-1', 3), codigoCaracter: 'OPT', nombreCaracter: 'Optativa' }]);
+    fixture.componentRef.setInput('caracteres', [
+      { codigo: 'OPT', nombre: 'Optativa', orden: 2 },
+      { codigo: 'ETI', nombre: 'Ética', orden: 3 },
+      { codigo: 'OBL', nombre: 'Obligatoria', orden: 1 },
     ]);
     fixture.detectChanges();
 
     expect(fixture.componentInstance.caracteresDisponibles()).toEqual([
-      { codigo: 'ALG', nombre: 'Álgebra' },
-      { codigo: 'ETI', nombre: 'Ética' },
-      { codigo: 'OPT', nombre: 'Optativa' },
+      { codigo: 'OBL', nombre: 'Obligatoria', orden: 1 },
+      { codigo: 'OPT', nombre: 'Optativa', orden: 2 },
+      { codigo: 'ETI', nombre: 'Ética', orden: 3 },
     ]);
+  });
+
+  it('sin catálogo no inventa opciones a partir de las filas cargadas', () => {
+    TestBed.configureTestingModule({ imports: [StudyPlanMeshComponent] });
+    const fixture = TestBed.createComponent(StudyPlanMeshComponent);
+    fixture.componentRef.setInput('plan', plan);
+    fixture.componentRef.setInput('asignaturas', [{ ...asignatura('A-1', 3), codigoCaracter: 'OPT', nombreCaracter: 'Optativa' }]);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.caracteresDisponibles()).toEqual([]);
   });
 });

@@ -689,6 +689,70 @@ describe('mockBackendInterceptor', () => {
     expect(pagina!.total).toBeGreaterThan(1);
   }));
 
+  describe('CIERRE-W2A: el simulador respeta los parámetros nuevos del coordinador', () => {
+    it('GET /coordinador/grupos responde ApiPageResponse con franjas y filtra por búsqueda', fakeAsync(() => {
+      auth.setMockMode(true);
+      let todos: SobrePagina<{ nombreAsignatura: string; franjas: unknown[] }> | undefined;
+      httpClient.get<typeof todos>(`${environment.apiUrl}/coordinador/grupos`, { params: { pagina: 1, tamano: 10 } }).subscribe((r) => (todos = r));
+      tick(250);
+      expect(todos!.totalElementos).toBe(1);
+      expect(todos!.elementos[0].franjas.length).toBe(1);
+
+      let ninguno: SobrePagina<unknown> | undefined;
+      httpClient.get<typeof ninguno>(`${environment.apiUrl}/coordinador/grupos`, { params: { busqueda: 'zzz' } }).subscribe((r) => (ninguno = r));
+      tick(250);
+      expect(ninguno!.totalElementos).toBe(0);
+    }));
+
+    it('GET /coordinador/asignaturas filtra por carácter (código) y búsqueda y pagina', fakeAsync(() => {
+      auth.setMockMode(true);
+      let todas: SobrePagina<{ codigoCaracter: string; codigo: string }> | undefined;
+      httpClient.get<typeof todas>(`${environment.apiUrl}/coordinador/asignaturas`, { params: { pagina: 1, tamano: 100 } }).subscribe((r) => (todas = r));
+      tick(250);
+      expect(todas!.totalElementos).toBeGreaterThan(0);
+
+      let optativas: typeof todas;
+      httpClient.get<typeof todas>(`${environment.apiUrl}/coordinador/asignaturas`, { params: { caracter: 'OPT', pagina: 1, tamano: 100 } }).subscribe((r) => (optativas = r));
+      tick(250);
+      expect(optativas!.elementos.every((a) => a.codigoCaracter === 'OPT')).toBeTrue();
+      expect(optativas!.totalElementos).toBeLessThan(todas!.totalElementos);
+
+      let porCodigo: typeof todas;
+      const codigo = todas!.elementos[0].codigo;
+      httpClient.get<typeof todas>(`${environment.apiUrl}/coordinador/asignaturas`, { params: { busqueda: codigo.toLowerCase() } }).subscribe((r) => (porCodigo = r));
+      tick(250);
+      expect(porCodigo!.elementos.every((a) => a.codigo === codigo || a.codigo.toLowerCase().includes(codigo.toLowerCase()))).toBeTrue();
+    }));
+
+    it('GET /coordinador/periodos-academicos trae estado en cada período y filtra por estado', fakeAsync(() => {
+      auth.setMockMode(true);
+      let todos: SobreDatos<{ estado: string }[]> | undefined;
+      httpClient.get<typeof todos>(`${environment.apiUrl}/coordinador/periodos-academicos`).subscribe((r) => (todos = r));
+      tick(250);
+      expect(todos!.datos.every((p) => ['PLANEACION', 'ACTIVO', 'CERRADO'].includes(p.estado))).toBeTrue();
+
+      let activos: typeof todos;
+      httpClient.get<typeof todos>(`${environment.apiUrl}/coordinador/periodos-academicos`, { params: { estado: 'activo' } }).subscribe((r) => (activos = r));
+      tick(250);
+      expect(activos!.datos.length).toBeGreaterThan(0);
+      expect(activos!.datos.every((p) => p.estado === 'ACTIVO')).toBeTrue();
+    }));
+
+    it('GET /coordinador/planes-estudio filtra por estaActivo con el total del filtro', fakeAsync(() => {
+      auth.setMockMode(true);
+      let todos: SobrePagina<unknown> | undefined;
+      httpClient.get<typeof todos>(`${environment.apiUrl}/coordinador/planes-estudio`).subscribe((r) => (todos = r));
+      tick(300);
+      let inactivos: typeof todos;
+      httpClient.get<typeof todos>(`${environment.apiUrl}/coordinador/planes-estudio`, { params: { estaActivo: false } }).subscribe((r) => (inactivos = r));
+      tick(300);
+      let activos: typeof todos;
+      httpClient.get<typeof todos>(`${environment.apiUrl}/coordinador/planes-estudio`, { params: { estaActivo: true, pagina: 1, tamano: 1 } }).subscribe((r) => (activos = r));
+      tick(300);
+      expect(activos!.totalElementos + inactivos!.totalElementos).toBe(todos!.totalElementos);
+    }));
+  });
+
   it('los catálogos de administración de tipos de programa siguen sin simular', () => {
     auth.setMockMode(true);
     let error: HttpErrorResponse | undefined;

@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 
 import { Router } from '@angular/router';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
@@ -36,7 +36,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
             Períodos Académicos →
           </button>
           <span class="px-3.5 py-2 rounded-xl bg-warm-100 text-xs font-bold text-warm-800 border border-warm-200">
-            {{ planes().length }} Planes
+            {{ totalPlanes() }} Planes
           </span>
         </div>
       </app-page-header>
@@ -46,7 +46,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
         <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-xs flex items-center justify-between">
           <div>
             <span class="text-xs font-bold uppercase tracking-wider text-warm-500">Total Planes</span>
-            <div class="text-2xl font-bold font-serif text-warm-900 mt-1">{{ planes().length }}</div>
+            <div class="text-2xl font-bold font-serif text-warm-900 mt-1">{{ totalPlanes() }}</div>
             <p class="text-[11px] text-warm-500 mt-0.5">Registrados en el programa</p>
           </div>
           <div class="p-2.5 rounded-xl bg-primary-50 text-primary-700">
@@ -101,13 +101,10 @@ export class CoordinatorStudyPlansComponent implements OnInit {
 
   planes = signal<PlanEstudioItem[]>(this.coordService.planes());
 
-  totalVigentes = computed(() =>
-    this.planes().filter((p) => p.estado === 'VIGENTE').length
-  );
-
-  totalAsignaturasVinculadas = computed(() =>
-    this.planes().reduce((acc, p) => acc + (p.totalAsignaturas || 0), 0)
-  );
+  /** Totales del servidor (`total` de la lista de planes, planes activos y vínculos asignatura-plan); la pantalla no cuenta filas. */
+  totalPlanes = signal(0);
+  totalVigentes = signal(0);
+  totalAsignaturasVinculadas = signal(0);
 
   ngOnInit(): void {
     this.cargarPlanes();
@@ -115,7 +112,18 @@ export class CoordinatorStudyPlansComponent implements OnInit {
 
   cargarPlanes(): void {
     this.coordService.getPlanesEstudio().subscribe({
-      next: (res) => this.planes.set(res.datos || []),
+      next: (res) => {
+        this.planes.set(res.datos || []);
+        this.totalPlanes.set(Number(res.total ?? 0));
+      },
+      error: (err) => this.toast.error(getApiErrorMessage(err)),
+    });
+    this.coordService.getTotalPlanesVigentes().subscribe({
+      next: (total) => this.totalVigentes.set(total),
+      error: (err) => this.toast.error(getApiErrorMessage(err)),
+    });
+    this.coordService.getTotalAsignaturasVinculadas().subscribe({
+      next: (total) => this.totalAsignaturasVinculadas.set(total),
       error: (err) => this.toast.error(getApiErrorMessage(err)),
     });
   }
