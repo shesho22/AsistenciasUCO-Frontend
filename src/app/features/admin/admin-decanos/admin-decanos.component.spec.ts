@@ -7,7 +7,6 @@ import { of } from 'rxjs';
 import { TestRequest } from '@angular/common/http/testing';
 import { AdminDecanosComponent } from './admin-decanos.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
-import { TeacherService } from '../../../core/services/teacher.service';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { environment } from '../../../../environments/environment';
 import { UserPickerItem } from '../../../shared/components/user-picker-modal/user-picker-modal.component';
@@ -78,7 +77,6 @@ describe('AdminDecanosComponent', () => {
         { provide: StudentRegistrationConfigService, useValue: { getEmailDomain: () => of('@uco.edu.co') } },
         provideHttpClientTesting(),
         { provide: ToastService, useValue: toastSpy },
-        { provide: TeacherService, useValue: { getAllTeachers: () => of([]) } },
         { provide: CoordinatorManagementService, useValue: { getDocentes: () => of({ exitoso: true, datos: [] }) } },
       ],
     });
@@ -539,6 +537,7 @@ component.guardarDecano();
         numeroIdentificacion: '1017000001',
         nombres: 'Roberto Carlos',
         apellidos: 'Gómez Pérez',
+        nombreCompleto: 'Roberto Carlos Gómez Pérez',
         correo: 'rgomez@uco.edu.co',
       };
 
@@ -556,6 +555,7 @@ component.guardarDecano();
         segundoApellido: 'Restrepo',
         nombres: 'Esteban David',
         apellidos: 'López Restrepo',
+        nombreCompleto: 'Esteban David López Restrepo',
         correo: 'esteban.lopez@uco.edu.co',
         tipoIdentificacion: 'CC',
       };
@@ -570,6 +570,24 @@ component.guardarDecano();
       expect('password' in component.formData).toBeFalse();
       expect(toastService.info).toHaveBeenCalled();
     });
+  });
+
+  it("CIERRE-W1B: identidadDe toma los cuatro campos del backend y no parte nombres ni apellidos agrupados", () => {
+    fixture.detectChanges();
+    satisfyInitRequests();
+    const base = component.decanos()[0];
+
+    const completo = component.identidadDe({ ...base, primerNombre: "Ana", segundoNombre: "Lucía", primerApellido: "Mora", segundoApellido: "Paz" });
+    expect(completo.primerNombre).toBe("Ana");
+    expect(completo.segundoNombre).toBe("Lucía");
+    expect(completo.primerApellido).toBe("Mora");
+    expect(completo.segundoApellido).toBe("Paz");
+
+    const sinCampos = component.identidadDe({ ...base, nombres: "Ana Lucía", apellidos: "Mora Paz", primerNombre: undefined, segundoNombre: undefined, primerApellido: undefined, segundoApellido: undefined });
+    expect(sinCampos.primerNombre).toBe("");
+    expect(sinCampos.segundoNombre).toBeNull();
+    expect(sinCampos.primerApellido).toBe("");
+    expect(sinCampos.segundoApellido).toBeNull();
   });
 
   it("HU159: el administrador corrige los datos del decano, con aviso si la cuenta queda pendiente", () => {

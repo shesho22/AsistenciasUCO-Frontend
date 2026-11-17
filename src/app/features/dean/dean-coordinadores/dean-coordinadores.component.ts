@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy, input } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DeanManagementService } from '../../../core/services/dean-management.service';
@@ -18,6 +18,7 @@ import { FormFieldComponent } from '../../../shared/components/form-field/form-f
 import { CambioDatoPersona, DatosPersonaComponent } from '../../../shared/components/datos-persona/datos-persona.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { UserPickerModalComponent, UserPickerItem } from '../../../shared/components/user-picker-modal/user-picker-modal.component';
+import { datosDePersonaSeleccionada } from '../../../shared/components/user-picker-modal/datos-persona-seleccionada';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { AccountAccessStatusComponent } from '../../../shared/components/account-access-status/account-access-status.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
@@ -96,7 +97,8 @@ const NOMBRE_PROGRAMA_MAX = 50;
                 aria-label="Buscar coordinador por nombre, cédula o programa"
                 [ngModel]="searchQuery"
                 (ngModelChange)="searchQuery = $event"
-                placeholder="Buscar por coordinador, cédula o programa académico..."
+                (keyup.enter)="aplicarFiltros()"
+                placeholder="Buscar por coordinador, cédula o programa y presiona Enter..."
                 class="w-full pl-10 pr-4 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-900 placeholder-warm-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 shadow-warm-sm transition-all"
               />
               <svg class="w-4 h-4 text-warm-400 absolute left-3.5 top-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -133,7 +135,7 @@ const NOMBRE_PROGRAMA_MAX = 50;
             <p class="text-xs text-danger-700 mt-1">{{ errorCarga() }}</p>
             <button type="button" (click)="cargarCoordinadores()" class="mt-4 min-h-[44px] px-4 text-xs font-semibold rounded-xl border border-danger-200 text-danger-700 hover:bg-danger-50">Reintentar</button>
           </div>
-        } @else if (filteredCoordinadores().length === 0) {
+        } @else if (coordinadores().length === 0) {
           <div class="superficie p-12 text-center">
             <div class="w-12 h-12 rounded-full bg-warm-100 text-warm-400 flex items-center justify-center mx-auto mb-3">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -145,7 +147,7 @@ const NOMBRE_PROGRAMA_MAX = 50;
           </div>
         } @else {
           <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-            @for (coord of paginatedCoordinadores(); track coord.id) {
+            @for (coord of coordinadores(); track coord.id) {
               <app-card [hoverable]="true" padding="md">
                 <div class="flex flex-col h-full justify-between gap-4">
                   <div>
@@ -221,11 +223,11 @@ const NOMBRE_PROGRAMA_MAX = 50;
             }
           </div>
           <app-pagination
-            [totalItems]="filteredCoordinadores().length"
+            [totalItems]="totalCoordinadores()"
             [pageSize]="pageSize()"
             [currentPage]="currentPage()"
             [pageSizeOptions]="[6, 10, 20]"
-            (pageChange)="currentPage.set($event)"
+            (pageChange)="irAPagina($event)"
             (pageSizeChange)="onPageSizeChange($event)"
           />
         }
@@ -404,6 +406,7 @@ const NOMBRE_PROGRAMA_MAX = 50;
       <!-- Modal de Selección de Coordinador Existente -->
       <app-user-picker-modal
         [isOpen]="isPickerModalOpen()"
+        fuente="FACULTAD"
         title="Nombrar Coordinador de Programa"
         subtitle="Selecciona un docente o funcionario existente para nombrarlo coordinador de un programa académico."
         roleBadge="Directorio Institucional UCO"
@@ -450,7 +453,10 @@ export class DeanCoordinadoresComponent implements OnInit {
   coordinadorEnEdicion = signal<CoordinadorItem | null>(null);
   coordinadorParaCambioEstado = signal<CoordinadorItem | null>(null);
   vistaActual = signal<VistaDecano>('LISTA');
+  /** Filas de la página actual; el servidor entrega la búsqueda, el estado y la paginación ya resueltos. */
   coordinadores = signal<CoordinadorItem[]>([]);
+  /** Total real de coordinadores que cumplen el filtro (no el de la página). */
+  totalCoordinadores = signal(0);
   tiposIdentificacion = signal<TipoIdentificacionItem[]>([]);
   programasAcademicos = signal<Array<{ id: string; nombre: string }>>([]);
   tiposPrograma = signal<CatalogoPrograma[]>([]);
@@ -483,9 +489,9 @@ export class DeanCoordinadoresComponent implements OnInit {
   get searchQuery(): string {
     return this.searchQuerySig();
   }
+  /** La búsqueda se envía al servidor al presionar Enter (`aplicarFiltros`), no en cada tecla. */
   set searchQuery(valor: string) {
     this.searchQuerySig.set(valor ?? '');
-    this.currentPage.set(1);
   }
 
   get selectedEstado(): string {
@@ -493,7 +499,7 @@ export class DeanCoordinadoresComponent implements OnInit {
   }
   set selectedEstado(valor: string) {
     this.selectedEstadoSig.set(valor);
-    this.currentPage.set(1);
+    this.aplicarFiltros();
   }
   /** Mensaje del backend si falla la carga del directorio de coordinadores. */
   errorCarga = signal<string | null>(null);
@@ -517,32 +523,20 @@ export class DeanCoordinadoresComponent implements OnInit {
     estado: 'ACTIVO',
   };
 
-  filteredCoordinadores = computed(() => {
-    const query = this.searchQuerySig().toLowerCase().trim();
-    const estado = this.selectedEstadoSig();
+  /** Vuelve a la primera página y consulta al servidor con la búsqueda y el estado elegidos. */
+  aplicarFiltros(): void {
+    this.currentPage.set(1);
+    this.cargarCoordinadores();
+  }
 
-    return this.coordinadores().filter((item) => {
-      const matchQuery =
-        !query ||
-        item.nombres.toLowerCase().includes(query) ||
-        item.apellidos.toLowerCase().includes(query) ||
-        item.programaAcademico.toLowerCase().includes(query) ||
-        item.numeroIdentificacion.includes(query);
-
-      const matchEstado = estado === 'TODOS' || item.estado === estado;
-
-      return matchQuery && matchEstado;
-    });
-  });
-
-  paginatedCoordinadores = computed(() => {
-    const inicio = (this.currentPage() - 1) * this.pageSize();
-    return this.filteredCoordinadores().slice(inicio, inicio + this.pageSize());
-  });
+  irAPagina(pagina: number): void {
+    this.currentPage.set(pagina);
+    this.cargarCoordinadores();
+  }
 
   onPageSizeChange(tamano: number): void {
     this.pageSize.set(tamano);
-    this.currentPage.set(1);
+    this.aplicarFiltros();
   }
 
 
@@ -610,15 +604,25 @@ export class DeanCoordinadoresComponent implements OnInit {
     const peticion = this.ultimaPeticionCoordinadores.iniciar();
     this.isLoading.set(true);
     this.errorCarga.set(null);
-    this.deanService.getCoordinadores().subscribe({
+    const estado = this.selectedEstadoSig();
+    this.deanService.getCoordinadores({
+      pagina: this.currentPage(),
+      tamano: this.pageSize(),
+      busqueda: this.searchQuerySig(),
+      estaActivo: estado === 'TODOS' ? null : estado === 'ACTIVO',
+    }).subscribe({
       next: (res) => {
         if (!this.ultimaPeticionCoordinadores.esVigente(peticion)) {
           return;
         }
-        const datos = res.datos || [];
+        const datos = res.elementos;
         this.coordinadores.set(datos);
+        this.totalCoordinadores.set(res.totalElementos);
         this.isLoading.set(false);
-        advertirRegistroNoListado(datos, identidadEsperada, (aviso) => this.toast.warning(aviso));
+        // Con filtros o varias páginas el alta puede no estar en esta página: solo se avisa si la lista completa cabe en ella.
+        if (res.totalElementos <= datos.length) {
+          advertirRegistroNoListado(datos, identidadEsperada, (aviso) => this.toast.warning(aviso));
+        }
       },
       error: (err) => {
         if (!this.ultimaPeticionCoordinadores.esVigente(peticion)) {
@@ -914,32 +918,9 @@ export class DeanCoordinadoresComponent implements OnInit {
   onCoordinadorSeleccionadoDelDirectorio(user: UserPickerItem): void {
     this.isPickerModalOpen.set(false);
 
-    // Si ya existe como coordinador
-    const yaExiste = this.coordinadores().some(
-      (c) =>
-        c.id === user.id ||
-        (c.numeroIdentificacion && c.numeroIdentificacion === user.numeroIdentificacion) ||
-        (c.correo && user.correo && c.correo.toLowerCase() === user.correo.toLowerCase())
-    );
-
-    if (yaExiste) {
-      this.toast.info(mensajeUi('UI_DEAN_COORDINADORES_006', { nombres: user.nombres, apellidos: user.apellidos }));
-      return;
-    }
-
+    // CIERRE-W1B: el alta del coordinador la valida el backend (la lista visible es solo una página del servidor).
     this.abrirFormularioRegistro();
-    this.formData.tipoIdentificacionId =
-      this.tiposIdentificacion().find((t) => t.tipoIdentificacion === user.tipoIdentificacion)?.id ||
-      (this.tiposIdentificacion().length > 0
-        ? this.tiposIdentificacion()[0].id
-        : '');
-    this.formData.tipoIdentificacion = user.tipoIdentificacion || 'CC';
-    this.formData.numeroIdentificacion = String(user.numeroIdentificacion || '');
-    this.formData.primerNombre = user.primerNombre || user.nombres.split(' ')[0] || '';
-    this.formData.segundoNombre = user.segundoNombre || '';
-    this.formData.primerApellido = user.primerApellido || user.apellidos.split(' ')[0] || '';
-    this.formData.segundoApellido = user.segundoApellido || '';
-    this.formData.correo = user.correo || '';
+    Object.assign(this.formData, datosDePersonaSeleccionada(user, this.tiposIdentificacion()));
     this.toast.info(mensajeUi('UI_DEAN_COORDINADORES_007', { nombres: user.nombres, apellidos: user.apellidos }));
   }
 }

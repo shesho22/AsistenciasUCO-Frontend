@@ -177,12 +177,11 @@ export class DeanCoordinadorEditModalComponent {
     });
     effect(() => {
       const c = this.coordinador();
-      const nombres = c.nombres?.trim().split(/\s+/).filter(Boolean) ?? [];
-      const apellidos = c.apellidos?.trim().split(/\s+/).filter(Boolean) ?? [];
-      this.primerNombre.set(c.primerNombre ?? nombres[0] ?? '');
-      this.segundoNombre.set(c.segundoNombre ?? nombres.slice(1).join(' '));
-      this.primerApellido.set(c.primerApellido ?? apellidos[0] ?? '');
-      this.segundoApellido.set(c.segundoApellido ?? apellidos.slice(1).join(' '));
+      // CIERRE-W1B: los cuatro campos de nombre los entrega el backend; no se parten cadenas.
+      this.primerNombre.set(c.primerNombre ?? '');
+      this.segundoNombre.set(c.segundoNombre ?? '');
+      this.primerApellido.set(c.primerApellido ?? '');
+      this.segundoApellido.set(c.segundoApellido ?? '');
       this.correo.set(c.correo ?? '');
     }, { allowSignalWrites: true });
   }

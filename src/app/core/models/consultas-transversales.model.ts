@@ -29,6 +29,15 @@ export interface DocenteFacultadItem {
   totalGrupos: number;
   /** HU136: falso para un docente retirado de todos sus programas (solo en la vista del administrador). */
   tieneVinculoActivo?: boolean;
+  /** CIERRE-W1B: nombres separados, agrupados y tipo de documento tal como los entrega el backend. */
+  primerNombre?: string | null;
+  segundoNombre?: string | null;
+  primerApellido?: string | null;
+  segundoApellido?: string | null;
+  nombres?: string | null;
+  apellidos?: string | null;
+  idTipoIdentificacion?: string | null;
+  codigoTipoIdentificacion?: string | null;
 }
 
 export interface AsignaturaInstitucionItem {
@@ -56,6 +65,13 @@ export interface EstudianteInstitucionItem {
   facultades: string | null;
   programas: string | null;
   totalGrupos: number;
+  /** CIERRE-W1B: nombres separados y agrupados tal como los entrega el backend. */
+  primerNombre?: string | null;
+  segundoNombre?: string | null;
+  primerApellido?: string | null;
+  segundoApellido?: string | null;
+  nombres?: string | null;
+  apellidos?: string | null;
 }
 
 export interface ResumenAsistencia {

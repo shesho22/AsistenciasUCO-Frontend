@@ -310,28 +310,11 @@ export class AdminEstudiantesComponent implements OnInit {
   }
 
   identidadDe(e: EstudianteInstitucionItem): IdentidadActual {
-    const nombres = e.nombreCompleto?.trim().split(/\s+/).filter(Boolean) ?? [];
-    let primerNombre = '';
-    let segundoNombre: string | null = null;
-    let primerApellido = '';
-    let segundoApellido: string | null = null;
-
-    if (nombres.length === 1) {
-      primerNombre = nombres[0];
-      primerApellido = nombres[0];
-    } else if (nombres.length === 2) {
-      primerNombre = nombres[0];
-      primerApellido = nombres[1];
-    } else if (nombres.length === 3) {
-      primerNombre = nombres[0];
-      primerApellido = nombres[1];
-      segundoApellido = nombres[2];
-    } else if (nombres.length >= 4) {
-      primerNombre = nombres[0];
-      segundoNombre = nombres.slice(1, nombres.length - 2).join(' ') || null;
-      primerApellido = nombres[nombres.length - 2];
-      segundoApellido = nombres[nombres.length - 1];
-    }
+    // CIERRE-W1B: los cuatro campos de nombre los entrega el backend; no se parten cadenas.
+    const primerNombre = e.primerNombre ?? '';
+    const segundoNombre = e.segundoNombre || null;
+    const primerApellido = e.primerApellido ?? '';
+    const segundoApellido = e.segundoApellido || null;
 
     return {
       primerNombre,

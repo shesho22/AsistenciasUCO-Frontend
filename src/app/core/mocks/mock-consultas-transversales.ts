@@ -36,7 +36,14 @@ const DOCENTES: DocenteFacultadItem[] = [
   {
     idDocente: 'DOC-MOCK-1', numeroIdentificacion: '43000111', nombreCompleto: 'María Rostagno',
     correo: 'maria.rostagno@uco.edu.co', activo: true, programas: 'Ingeniería de Sistemas', totalProgramas: 1,
-    totalGrupos: 2,
+    totalGrupos: 2, primerNombre: 'María', segundoNombre: null, primerApellido: 'Rostagno', segundoApellido: null,
+    nombres: 'María', apellidos: 'Rostagno', idTipoIdentificacion: 'TID-CC', codigoTipoIdentificacion: 'CC',
+  },
+  {
+    idDocente: 'DOC-MOCK-2', numeroIdentificacion: '43000222', nombreCompleto: 'Jorge Iván Cardona Silva',
+    correo: 'jorge.cardona@uco.edu.co', activo: true, programas: 'Ingeniería Industrial', totalProgramas: 1,
+    totalGrupos: 1, primerNombre: 'Jorge', segundoNombre: 'Iván', primerApellido: 'Cardona', segundoApellido: 'Silva',
+    nombres: 'Jorge Iván', apellidos: 'Cardona Silva', idTipoIdentificacion: 'TID-CC', codigoTipoIdentificacion: 'CC',
   },
 ];
 
@@ -143,9 +150,15 @@ const COMPONENTES: ComponenteFormacionItem[] = [
   { idComponente: 'CMP-INS', codigo: 'INS', nombre: 'Institucionales', totalAsignaturas: 0 },
 ];
 
+/** Como el backend: busca por subcadena en los campos indicados y respeta `estaActivo`; el interceptor pagina. */
 function filtrar<T>(req: HttpRequest<unknown>, filas: T[], campos: (keyof T)[]): RespuestaSimulada {
   const busqueda = (req.params.get('busqueda') ?? '').toLowerCase();
-  const datos = filas.filter((f) => !busqueda || campos.some((c) => String(f[c] ?? '').toLowerCase().includes(busqueda)));
+  const estaActivo = req.params.get('estaActivo');
+  const datos = filas.filter((f) => {
+    const coincide = !busqueda || campos.some((c) => String(f[c] ?? '').toLowerCase().includes(busqueda));
+    const activo = (f as { activo?: boolean }).activo;
+    return coincide && (estaActivo === null || activo === undefined || String(activo) === estaActivo);
+  });
   return { datos, total: datos.length, esPaginada: true };
 }
 
@@ -160,7 +173,9 @@ export function respuestaConsultasTransversales(req: HttpRequest<unknown>, url: 
     return { datos: historial(partes[partes.length - 2]) };
   }
   if (url.endsWith('/decano/programas-creditos')) return filtrar(req, PROGRAMAS_CREDITOS, ['nombrePrograma']);
-  if (url.endsWith('/decano/docentes')) return filtrar(req, DOCENTES, ['nombreCompleto', 'numeroIdentificacion']);
+  if (url.endsWith('/decano/docentes') || url.endsWith('/admin/docentes')) {
+    return filtrar(req, DOCENTES, ['nombreCompleto', 'numeroIdentificacion']);
+  }
   if (url.endsWith('/decano/asignaturas') || url.endsWith('/admin/asignaturas')) {
     return filtrar(req, ASIGNATURAS, ['codigo', 'nombre']);
   }
