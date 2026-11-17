@@ -1,10 +1,10 @@
-import { ResumenAsistenciaEstudiante } from '../../../../core/models/indicadores-asistencia.model';
+import { ResumenSesionesGrupo, SesionResumenGrupo } from '../../../../core/models/resumen-sesiones-grupo.model';
 import { Component, ChangeDetectionStrategy, input, output, computed, inject } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
 
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { Course } from '../../../../core/models/course.model';
 import { ClassSession } from '../../../../core/models/attendance.model';
-import { estaCancelada } from '../../../../core/models/sesion-estado.model';
 import { ActionMenuComponent, ActionMenuItem } from '../../../../shared/components/action-menu/action-menu.component';
 import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 import { SesionEstadoBadgeComponent } from '../../../../shared/components/sesion-estado-badge/sesion-estado-badge.component';
@@ -14,7 +14,7 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
 @Component({
     selector: 'app-group-sessions-overview',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [ButtonComponent, SesionEstadoBadgeComponent, ActionMenuComponent, EmptyStateComponent],
+    imports: [ButtonComponent, SesionEstadoBadgeComponent, ActionMenuComponent, EmptyStateComponent, DecimalPipe],
     host: {
         class: 'block w-full'
     },
@@ -35,12 +35,12 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
           <div class="mt-4">
             <div class="flex items-baseline gap-2">
               <span class="text-2xl sm:text-3xl font-serif font-bold text-warm-900 leading-none">
-                {{ totalSesiones() }}
+                {{ resumenSesiones()?.sesionesProgramadas ?? 0 }}
               </span>
               <span class="text-xs text-warm-500 font-medium">sesiones programadas</span>
             </div>
             <p class="text-[11px] text-warm-500 mt-1">
-              Sesiones registradas en el período
+              {{ resumenSesiones()?.sesionesEjecutadas ?? 0 }} ejecutadas · {{ resumenSesiones()?.sesionesCanceladas ?? 0 }} canceladas
             </p>
           </div>
         </div>
@@ -58,14 +58,14 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
           <div class="mt-4">
             <div class="flex items-baseline gap-2">
               <span class="text-2xl sm:text-3xl font-serif font-bold text-warm-900 leading-none">
-                {{ promedioAsistencia() === null ? '—' : promedioAsistencia() + '%' }}
+                {{ promedio() === null ? '—' : (promedio() | number: '1.0-0') + '%' }}
               </span>
-              @if (promedioAsistencia() !== null) {
+              @if (promedio() !== null) {
                 <span class="text-xs text-success-700 font-bold">Institucional</span>
               }
             </div>
             <p class="text-[11px] text-warm-500 mt-1">
-              {{ promedioAsistencia() === null ? 'Sin registros de asistencia para calcular' : 'Promedio por horas del grupo' }}
+              {{ promedio() === null ? 'Sin registros de asistencia para calcular' : 'Promedio por horas del grupo' }}
             </p>
           </div>
         </div>
@@ -83,7 +83,7 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
           <div class="mt-4">
             <div class="flex items-baseline gap-2">
               <span class="text-2xl sm:text-3xl font-serif font-bold text-warning-900 leading-none">
-                {{ estudiantesEnRiesgo() }}
+                {{ resumenSesiones()?.estudiantesEnRiesgo ?? 0 }}
               </span>
               <span class="text-xs text-warning-800 font-semibold">Alumnos</span>
             </div>
@@ -213,12 +213,17 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
                     </td>
                     <td class="px-5 py-4 text-center" [attr.data-testid]="'asistentes-sesion-' + s.sessionNumber">
                       <span class="font-bold text-warm-900">
-                        {{ getPresentesCount(s) }}
+                        {{ conteoDe(s.id)?.presentes ?? 0 }}
                       </span>
-                      <span class="text-warm-500 font-normal"> / {{ s.records ? s.records.length : 0 }}</span>
-                      @if (getJustificadasCount(s) > 0) {
+                      <span class="text-warm-500 font-normal"> / {{ conteoDe(s.id)?.totalEstudiantes ?? 0 }}</span>
+                      @if ((conteoDe(s.id)?.justificadas ?? 0) > 0) {
                         <span class="block text-[11px] font-semibold text-warning-700">
-                          {{ getJustificadasCount(s) }} {{ getJustificadasCount(s) === 1 ? 'justificada' : 'justificadas' }}
+                          {{ conteoDe(s.id)!.justificadas }} {{ conteoDe(s.id)!.justificadas === 1 ? 'justificada' : 'justificadas' }}
+                        </span>
+                      }
+                      @if ((conteoDe(s.id)?.parciales ?? 0) > 0) {
+                        <span class="block text-[11px] font-semibold text-primary-700">
+                          {{ conteoDe(s.id)!.parciales }} {{ conteoDe(s.id)!.parciales === 1 ? 'parcial' : 'parciales' }}
                         </span>
                       }
                     </td>
@@ -281,25 +286,19 @@ export class GroupSessionsOverviewComponent {
     acciones[id]?.();
   }
 
-  /** Sesiones vigentes: una sesión cancelada no cuenta como clase dictada (CULM-001 B.1). */
-  private vigentes = computed(() => this.sessions().filter((s) => !estaCancelada(s)));
+  /** CIERRE-W3M: conteos por sesion, en riesgo y promedio del grupo entregados por el servidor (el cliente no cuenta registros). */
+  resumenSesiones = input<ResumenSesionesGrupo | null>(null);
 
-  totalSesiones = computed(() => this.vigentes().length);
-
-  /** CULM-001 B.2 (F-DOC-004): resumen por horas del grupo, entregado por el backend. */
-  resumen = input<ResumenAsistenciaEstudiante[]>([]);
-
-  /** Promedio de `porcentajeAsistencia` de filas ya calculadas por el backend; el cliente no aplica reglas de negocio. */
-  promedioAsistencia = computed(() => {
-    const filas = this.resumen();
-    if (filas.length === 0) return null;
-    return Math.round(filas.reduce((suma, r) => suma + r.porcentajeAsistencia, 0) / filas.length);
-  });
-
-  /** Cantidad de estudiantes con `codigoPermanencia` RIESGO o PERDIDA en el resumen. */
-  estudiantesEnRiesgo = computed(
-    () => this.resumen().filter((r) => r.codigoPermanencia === 'RIESGO' || r.codigoPermanencia === 'PERDIDA').length
+  private readonly conteosPorSesion = computed(
+    () => new Map<string, SesionResumenGrupo>((this.resumenSesiones()?.sesiones ?? []).map((s) => [s.idSesion, s]))
   );
+
+  /** Promedio de asistencia por horas de las matriculas activas; `null` mientras el grupo no tenga horas dictadas. */
+  promedio = computed(() => this.resumenSesiones()?.promedioAsistencia ?? null);
+
+  conteoDe(idSesion: string): SesionResumenGrupo | undefined {
+    return this.conteosPorSesion().get(idSesion);
+  }
 
   sesionRecomendada = computed(() => {
     return findActiveOrUpcomingSession(this.sessions());
@@ -319,17 +318,6 @@ export class GroupSessionsOverviewComponent {
   sesionReciente = computed(() => {
     return this.sesionRecomendada();
   });
-
-  /** SES-05: solo AN es asistencia presencial; EX es una ausencia justificada y se informa aparte. */
-  getPresentesCount(session: ClassSession): number {
-    if (!session.records) return 0;
-    return session.records.filter((r) => r.status === 'AN').length;
-  }
-
-  getJustificadasCount(session: ClassSession): number {
-    if (!session.records) return 0;
-    return session.records.filter((r) => r.status === 'EX').length;
-  }
 
   displayDate(session: ClassSession | undefined): string {
     if (!session) return '';
