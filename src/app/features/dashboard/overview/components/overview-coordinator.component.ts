@@ -7,7 +7,7 @@ import { BadgeComponent } from '../../../../shared/components/badge/badge.compon
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { DocenteItem, PlanEstudioItem } from '../../../../core/models/role-management.model';
 import { KpisCoordinador } from '../../../../core/models/coordinator-indicators.model';
-import { EstadoIndicadores, TEXTO_CARGANDO, TEXTO_SIN_DATOS, textoCifra } from '../../../../core/utils/cifra-indicador';
+import { EstadoIndicadores, textoCifra, textoPeriodo } from '../../../../core/utils/cifra-indicador';
 
 @Component({
   selector: 'app-overview-coordinator',
@@ -162,12 +162,7 @@ export class OverviewCoordinatorComponent {
   solicitudesSesionPendientes = input<number | null>(null);
 
   /** Período que resolvió el servidor para los indicadores (antes estaba escrito a mano). */
-  periodoTexto = computed(() => {
-    const estado = this.estado();
-    if (estado === 'cargando') return TEXTO_CARGANDO;
-    if (estado === 'error') return TEXTO_SIN_DATOS;
-    return this.kpis()?.nombrePeriodoAcademico ?? 'Sin período vigente';
-  });
+  periodoTexto = computed(() => textoPeriodo(this.estado(), this.kpis()?.nombrePeriodoAcademico));
 
   texto(valor: number | null | undefined, sufijo = ''): string {
     return textoCifra(valor, this.estado(), sufijo);

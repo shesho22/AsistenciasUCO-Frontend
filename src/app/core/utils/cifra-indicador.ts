@@ -13,3 +13,13 @@ export function textoCifra(valor: number | null | undefined, estado: EstadoIndic
   if (estado === 'error' || valor === null || valor === undefined) return TEXTO_SIN_DATOS;
   return `${valor}${sufijo}`;
 }
+
+/**
+ * Texto del periodo al que corresponden los indicadores. "Sin período vigente" solo se afirma cuando el servidor respondio y
+ * no hay periodo; mientras carga o si fallo no se declara nada sobre el periodo (F-DEC-01).
+ */
+export function textoPeriodo(estado: EstadoIndicadores, nombrePeriodo: string | null | undefined): string {
+  if (estado === 'cargando') return TEXTO_CARGANDO;
+  if (estado === 'error') return TEXTO_SIN_DATOS;
+  return nombrePeriodo ?? 'Sin período vigente';
+}

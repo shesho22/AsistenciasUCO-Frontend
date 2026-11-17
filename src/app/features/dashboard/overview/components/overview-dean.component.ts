@@ -6,7 +6,7 @@ import { CardComponent } from '../../../../shared/components/card/card.component
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { CoordinadorItem } from '../../../../core/models/role-management.model';
 import { KpisDecano } from '../../../../core/models/dean-indicators.model';
-import { EstadoIndicadores, TEXTO_CARGANDO, TEXTO_SIN_DATOS, textoCifra } from '../../../../core/utils/cifra-indicador';
+import { EstadoIndicadores, textoCifra, textoPeriodo } from '../../../../core/utils/cifra-indicador';
 
 @Component({
     selector: 'app-overview-dean',
@@ -107,12 +107,7 @@ export class OverviewDeanComponent {
    * F-DEC-01: "Sin período vigente" solo se afirma cuando el servidor respondió y no hay período; mientras carga o si falló
    * no se declara nada sobre el período.
    */
-  periodoTexto = computed(() => {
-    const estado = this.estado();
-    if (estado === 'cargando') return TEXTO_CARGANDO;
-    if (estado === 'error') return TEXTO_SIN_DATOS;
-    return this.kpis()?.nombrePeriodoAcademico ?? 'Sin período vigente';
-  });
+  periodoTexto = computed(() => textoPeriodo(this.estado(), this.kpis()?.nombrePeriodoAcademico));
 
   texto(valor: number | null | undefined, sufijo = ''): string {
     return textoCifra(valor, this.estado(), sufijo);
