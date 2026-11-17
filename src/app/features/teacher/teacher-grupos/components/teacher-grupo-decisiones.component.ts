@@ -65,7 +65,7 @@ import { RevisionDecisionModalComponent } from '../../revision-cancelacion/revis
                   <p class="text-xs font-mono text-warm-500" data-testid="decision-documento">{{ rev.numeroIdentificacionEstudiante }}</p>
                 }
                 <p class="flex flex-wrap items-center gap-2 text-xs text-warm-600">
-                  <app-semaforo-asistencia [porcentaje]="porcentaje(rev)" [umbralPerdida]="rev.umbralPerdida" />
+                  <app-semaforo-asistencia [codigoPermanencia]="rev.codigoPermanenciaActual" [porcentaje]="porcentaje(rev)" />
                   <span>
                     {{ porcentaje(rev) | number: '1.1-2' }} % de inasistencia
                     @if (rev.umbralPerdida !== null && rev.umbralPerdida !== undefined) { (límite {{ rev.umbralPerdida }} %) }

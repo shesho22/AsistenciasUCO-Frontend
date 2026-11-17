@@ -232,7 +232,7 @@ interface FilaPlanilla {
                   <td class="p-3 text-center font-mono font-bold text-xs border-r border-warm-100 bg-warm-50/40">
                     {{ r ? r.porcentajeInasistencia + '%' : '—' }}
                     @if (r) {
-                      <app-semaforo-asistencia [porcentaje]="r.porcentajeInasistencia" [umbralAdvertencia]="r.umbralAdvertencia" [umbralPerdida]="r.umbralPerdida" [compacto]="true" />
+                      <app-semaforo-asistencia [codigoPermanencia]="r.codigoPermanencia" [porcentaje]="r.porcentajeInasistencia" [compacto]="true" />
                     }
                   </td>
                   <td class="p-3 text-center bg-warm-50/40 border-r border-warm-100">

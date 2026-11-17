@@ -60,6 +60,8 @@ export interface RevisionCancelacion {
   porcentajeCreacion?: number;
   porcentajeActual?: number;
   umbralPerdida?: number;
+  /** CIERRE-W3I: nivel de permanencia vigente que clasifica el servidor (REGULAR, RIESGO o PERDIDA); el semaforo solo lo pinta. */
+  codigoPermanenciaActual?: string | null;
   horasFalta?: number;
   horasDictadas?: number;
   fechaCreacionUtc?: string;

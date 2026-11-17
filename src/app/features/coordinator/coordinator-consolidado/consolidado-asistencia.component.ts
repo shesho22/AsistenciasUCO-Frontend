@@ -1,14 +1,11 @@
 import { SemaforoAsistenciaComponent } from '../../../shared/components/semaforo-asistencia/semaforo-asistencia.component';
-import { Component, OnInit, inject, signal, effect, ChangeDetectionStrategy, WritableSignal, input } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy, WritableSignal, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { Observable, map } from 'rxjs';
 import { ConsultasTransversalesService } from '../../../core/services/consultas-transversales.service';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
-import { CoordinatorIndicatorsService } from '../../../core/services/coordinator-indicators.service';
-import { DeanIndicatorsService } from '../../../core/services/dean-indicators.service';
-import { UMBRAL_ADVERTENCIA_RESPALDO, UMBRAL_PERDIDA_RESPALDO } from '../../../core/utils/nivel-asistencia';
+import { nivelDesdeCodigo } from '../../../core/utils/nivel-asistencia';
 import { ConsolidadoGrupoItem, OpcionConsolidado } from '../../../core/models/consultas-transversales.model';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { PeriodoAcademicoItem } from '../../../core/models/role-management.model';
@@ -21,12 +18,6 @@ import { CoordinatorSesionesGrupoComponent } from '../coordinator-sesiones-grupo
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 const NUMERO_ES = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 2 });
-
-/** Umbrales del semaforo que publican los KPI del coordinador y del decano (PAR-06). */
-interface Umbrales {
-  umbralAdvertencia: number;
-  umbralPerdida: number;
-}
 
 /**
  * HU061: consolidado de asistencia por grupo, filtrable por cohorte (período académico), materia y docente. El
@@ -126,9 +117,9 @@ interface Umbrales {
                     <td class="py-2 pr-3 text-right text-warm-700">{{ g.estudiantesActivos }}</td>
                     <td class="py-2 pr-3 text-right text-warm-700">{{ g.sesionesEjecutadas }}</td>
                     <td class="py-2 pr-3 text-right font-semibold text-warm-900">{{ g.porcentajeAsistencia | number: '1.0-2' }}%</td>
-                    <td class="py-2 pr-3 text-right whitespace-nowrap" data-testid="inasistencia" [class]="g.porcentajeInasistencia >= umbralAdvertencia() ? 'text-danger-700 font-semibold' : 'text-warm-700'">
+                    <td class="py-2 pr-3 text-right whitespace-nowrap" data-testid="inasistencia" [class]="conAdvertencia(g) ? 'text-danger-700 font-semibold' : 'text-warm-700'">
                       {{ inasistenciaConBase(g) }}
-                      <app-semaforo-asistencia [porcentaje]="g.porcentajeInasistencia" [umbralAdvertencia]="umbralAdvertencia()" [umbralPerdida]="umbralPerdida()" [compacto]="true" />
+                      <app-semaforo-asistencia [codigoPermanencia]="g.codigoPermanencia" [porcentaje]="g.porcentajeInasistencia" [compacto]="true" />
                     </td>
                     <td class="py-2 pr-3 text-right text-warm-700">{{ g.porcentajeExcusa | number: '1.0-2' }}%</td>
                     <td class="py-2 pr-3 text-right text-warm-700">{{ g.porcentajeSinRegistro | number: '1.0-2' }}%</td>
@@ -183,8 +174,6 @@ export class ConsolidadoAsistenciaComponent implements OnInit {
   readonly embebido = input(false);
   private readonly service = inject(ConsultasTransversalesService);
   private readonly coordinador = inject(CoordinatorManagementService);
-  private readonly indicadoresCoordinador = inject(CoordinatorIndicatorsService);
-  private readonly indicadoresDecano = inject(DeanIndicatorsService);
   private readonly toast = inject(ToastService);
   readonly comoDecano = inject(ActivatedRoute).snapshot.data['comoDecano'] === true;
 
@@ -197,13 +186,6 @@ export class ConsolidadoAsistenciaComponent implements OnInit {
   /** Opciones COMPLETAS de materia y docente del ámbito y el período (las entrega el servidor, no se arman con las filas). */
   asignaturas = signal<OpcionConsolidado[]>([]);
   docentes = signal<OpcionConsolidado[]>([]);
-  /**
-   * PAR-06: umbrales del semaforo desde los parametros ASISTENCIA/UMBRAL_ALERTA_ADVERTENCIA y UMBRAL_ALERTA_PERDIDA, que el
-   * backend publica en los KPI del coordinador o del decano. 15/20 solo son respaldo si los KPI no responden.
-   */
-  readonly umbralAdvertencia = signal(UMBRAL_ADVERTENCIA_RESPALDO);
-  readonly umbralPerdida = signal(UMBRAL_PERDIDA_RESPALDO);
-
   readonly listado = new ListadoPaginado<ConsolidadoGrupoItem>(
     (pagina, tamano) => {
       const consulta = this.service.getConsolidadoAsistencia(
@@ -221,44 +203,19 @@ export class ConsolidadoAsistenciaComponent implements OnInit {
     (mensaje) => this.toast.error(mensaje)
   );
 
-  constructor() {
-    // Embebido en la pantalla del coordinador, las tarjetas KPI ya piden los indicadores: se reutiliza el estado compartido
-    // del servicio en vez de repetir la peticion.
-    effect(() => {
-      if (!this.embebido()) return;
-      const kpis = this.comoDecano ? this.indicadoresDecano.kpis() : this.indicadoresCoordinador.kpis();
-      this.aplicarUmbrales(kpis);
-    });
-  }
-
   ngOnInit(): void {
     this.listado.cargar();
     this.cargarOpciones();
-    if (!this.embebido()) this.cargarUmbrales();
     this.coordinador.getPeriodosAcademicos().subscribe({
       next: (res) => this.periodos.set(res.datos ?? []),
       error: () => this.periodos.set([]),
     });
   }
 
-  private cargarUmbrales(): void {
-    const umbrales$: Observable<Umbrales | null | undefined> = this.comoDecano
-      ? this.indicadoresDecano.consultarKpis().pipe(map((res) => res?.datos))
-      : this.indicadoresCoordinador.consultarKpis().pipe(map((res) => res?.datos));
-    umbrales$.subscribe({
-      next: (datos) => this.aplicarUmbrales(datos),
-      // Sin KPI se conservan los umbrales de respaldo; el consolidado se sigue mostrando.
-      error: () => undefined,
-    });
-  }
-
-  private aplicarUmbrales(datos: Umbrales | null | undefined): void {
-    if (datos && Number.isFinite(datos.umbralAdvertencia) && datos.umbralAdvertencia > 0) {
-      this.umbralAdvertencia.set(datos.umbralAdvertencia);
-    }
-    if (datos && Number.isFinite(datos.umbralPerdida) && datos.umbralPerdida > 0) {
-      this.umbralPerdida.set(datos.umbralPerdida);
-    }
+  /** Resalta la inasistencia cuando el servidor clasifico el grupo en RIESGO o PERDIDA (el cliente no compara porcentajes). */
+  conAdvertencia(g: ConsolidadoGrupoItem): boolean {
+    const nivel = nivelDesdeCodigo(g.codigoPermanencia);
+    return nivel === 'ambar' || nivel === 'rojo';
   }
 
   /** Las opciones de materia y docente dependen del período: al cambiarlo se recargan y se limpian esos dos filtros. */
