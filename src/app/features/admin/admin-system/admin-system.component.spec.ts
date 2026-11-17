@@ -72,12 +72,14 @@ describe('AdminSystemComponent', () => {
     expect(adminServiceSpy.cargarParametros).not.toHaveBeenCalled();
   });
 
-  it('INT-002: la pestaña de parámetros monta el micro frontend del Catálogo y ya no la lista ni el modal propios', () => {
-    const panel = (fixture.nativeElement as HTMLElement).querySelector('#panel-parametros') as HTMLElement;
-    expect(panel).not.toBeNull();
-    expect(panel.querySelector('app-parametros-administration')).not.toBeNull();
-    expect(panel.querySelector('app-parametro-edicion-modal')).toBeNull();
-    expect(panel.querySelector('[data-testid^="btn-editar-"]')).toBeNull();
+  it('admin/sistema ya no repite los parámetros: se administran solo en Configuración', () => {
+    // El montaje del micro frontend (INT-002) se comprueba en admin-system.modo.spec.ts, en el modo de Configuración.
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('#tab-parametros')).toBeNull();
+    expect(el.querySelector('#panel-parametros')).toBeNull();
+    expect(el.querySelector('app-parametros-administration')).toBeNull();
+    expect(el.querySelector('app-parametro-edicion-modal')).toBeNull();
+    expect(el.querySelector('[data-testid^="btn-editar-"]')).toBeNull();
   });
 
   it('en admin/sistema (sin dato de ruta) muestra el encabezado y las pestañas de operaciones', () => {
@@ -88,11 +90,11 @@ describe('AdminSystemComponent', () => {
   });
 
   it('tabActiva alterna correctamente entre pestañas', () => {
-    expect(component.tabActiva()).toBe('PARAMETROS');
-    component.tabActiva.set('AUDITORIA');
     expect(component.tabActiva()).toBe('AUDITORIA');
     component.tabActiva.set('CIERRE_MASIVO');
     expect(component.tabActiva()).toBe('CIERRE_MASIVO');
+    component.tabActiva.set('AUDITORIA');
+    expect(component.tabActiva()).toBe('AUDITORIA');
   });
 
   it('HU172: la pestaña de auditoría consulta el rastro real paginado del backend', () => {
@@ -172,12 +174,13 @@ describe('AdminSystemComponent', () => {
       const tablist = el().querySelector('[role="tablist"]');
       expect(tablist).toBeTruthy();
       const tabs = Array.from(el().querySelectorAll('[role="tab"]')) as HTMLElement[];
-      expect(tabs).toHaveSize(3);
+      expect(tabs).toHaveSize(2);
+      expect(tabs.map((t) => t.id)).toEqual(['tab-auditoria', 'tab-cierre']);
       expect(tabs[0].getAttribute('aria-selected')).toBe('true');
       expect(tabs[1].getAttribute('aria-selected')).toBe('false');
       tabs[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
       fixture.detectChanges();
-      expect(component.tabActiva()).toBe('AUDITORIA');
+      expect(component.tabActiva()).toBe('CIERRE_MASIVO');
       expect(el().querySelector('[role="tabpanel"]')).toBeTruthy();
       expect(el().querySelectorAll('svg:not([aria-hidden="true"])')).toHaveSize(0);
     });

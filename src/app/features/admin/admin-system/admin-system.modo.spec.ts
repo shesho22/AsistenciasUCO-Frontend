@@ -26,7 +26,15 @@ describe('AdminSystemComponent modo de presentacion', () => {
     expect(f.componentInstance.modo).toBe('parametros');
     expect(el.querySelector('h1')).toBeNull();
     expect(el.querySelector('[role="tablist"]')).toBeNull();
-    expect(el.querySelector('#panel-parametros')).not.toBeNull();
+    // INT-002: los parámetros son el micro frontend del Catálogo, sin la lista ni el modal propios.
+    const panel = el.querySelector('#panel-parametros') as HTMLElement;
+    expect(panel).not.toBeNull();
+    expect(panel.querySelector('app-parametros-administration')).not.toBeNull();
+    expect(panel.querySelector('app-parametro-edicion-modal')).toBeNull();
+    expect(panel.querySelector('[data-testid^="btn-editar-"]')).toBeNull();
+    // Las operaciones de admin/sistema no se cuelan en Configuración.
+    expect(el.querySelector('app-admin-auditoria')).toBeNull();
+    expect(el.querySelector('#panel-cierre')).toBeNull();
   });
 
   it('en admin/sistema (sin dato de ruta) conserva el encabezado y las pestañas de operaciones', () => {
@@ -35,5 +43,8 @@ describe('AdminSystemComponent modo de presentacion', () => {
     expect(f.componentInstance.modo).toBe('completo');
     expect(el.querySelector('h1')).not.toBeNull();
     expect(el.querySelector('[role="tablist"]')).not.toBeNull();
+    // Abre en auditoría y no monta los parámetros (viven solo en Configuración).
+    expect(el.querySelector('app-admin-auditoria')).not.toBeNull();
+    expect(el.querySelector('app-parametros-administration')).toBeNull();
   });
 });
