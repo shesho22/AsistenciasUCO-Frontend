@@ -149,12 +149,18 @@ interface NavItem {
         </nav>
 
         <!-- User Profile Card Footer -->
-        <div class="p-4 border-t border-warm-200/80 bg-warm-50/50 shrink-0">
-          <div class="flex items-center gap-2 p-1.5 rounded-xl bg-white border border-warm-200 shadow-warm-sm hover:border-primary-300 transition-colors">
+        <!-- El pie se ajusta al ancho de la barra. Encogida (80 px) reduce su relleno y centra el avatar, que con el relleno
+             amplio se salia de la tarjeta. Extendida (256 px) deja 125 px para el nombre y el rol: la insignia del rol mas
+             largo (ADMINISTRADOR) mide 121 px sin el punto, asi que no lleva punto ni texto adicional a su lado; antes
+             media 131 px, mas el texto Editar, y se montaba sobre el boton de cerrar sesion. -->
+        <div data-testid="pie-usuario" [class]="isCollapsed() ? 'p-2' : 'p-3'" class="border-t border-warm-200/80 bg-warm-50/50 shrink-0">
+          <div class="flex items-center gap-1 p-1.5 rounded-xl bg-white border border-warm-200 shadow-warm-sm hover:border-primary-300 transition-colors">
             <!-- Clickable User Profile Area -->
             <a
               routerLink="/app/perfil"
-              class="flex items-center gap-2.5 flex-1 min-w-0 p-1 rounded-lg hover:bg-warm-50 group cursor-pointer transition-colors"
+              data-testid="pie-usuario-perfil"
+              [class.justify-center]="isCollapsed()"
+              class="flex items-center gap-2 flex-1 min-w-0 p-1 rounded-lg hover:bg-warm-50 group cursor-pointer transition-colors"
               title="Ver y editar mi perfil institucional"
             >
               <app-avatar [name]="user()?.name || 'Usuario'" size="md"></app-avatar>
@@ -163,15 +169,13 @@ interface NavItem {
                   <p class="text-xs font-bold text-warm-900 truncate group-hover:text-primary-800 transition-colors">
                     {{ user()?.name }}
                   </p>
-                  <div class="flex items-center gap-1.5 mt-0.5">
+                  <!-- overflow-hidden: un rol mas largo de lo previsto se recorta dentro de la tarjeta en vez de salirse. -->
+                  <div data-testid="pie-usuario-rol" class="flex items-center min-w-0 overflow-hidden mt-0.5">
                     @if (currentRole(); as rol) {
-                      <app-badge [variant]="getRoleBadgeVariant(rol)" size="sm">
+                      <app-badge [variant]="getRoleBadgeVariant(rol)" size="sm" [dot]="false">
                         {{ rol }}
                       </app-badge>
                     }
-                    <span class="text-[10px] text-warm-400 group-hover:text-primary-600 transition-colors">
-                      • Editar
-                    </span>
                   </div>
                 </div>
               }
