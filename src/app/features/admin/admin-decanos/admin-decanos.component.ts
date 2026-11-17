@@ -13,6 +13,7 @@ import { FormFieldComponent } from '../../../shared/components/form-field/form-f
 import { CambioDatoPersona, DatosPersonaComponent } from '../../../shared/components/datos-persona/datos-persona.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { UserPickerModalComponent, UserPickerItem } from '../../../shared/components/user-picker-modal/user-picker-modal.component';
+import { datosDePersonaSeleccionada } from '../../../shared/components/user-picker-modal/datos-persona-seleccionada';
 import { AccountAccessStatusComponent } from '../../../shared/components/account-access-status/account-access-status.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { parseIdentificationNumber, validateInstitutionalEmail } from '../../../core/validation/request-form-validation.util';
@@ -797,18 +798,7 @@ export class AdminDecanosComponent implements OnInit {
     }
 
     this.abrirFormularioRegistro();
-    this.formData.tipoIdentificacionId =
-      this.tiposIdentificacion().find((t) => t.tipoIdentificacion === user.tipoIdentificacion)?.id ||
-      (this.tiposIdentificacion().length > 0
-        ? this.tiposIdentificacion()[0].id
-        : '');
-    this.formData.tipoIdentificacion = user.tipoIdentificacion || 'CC';
-    this.formData.numeroIdentificacion = String(user.numeroIdentificacion || '');
-    this.formData.primerNombre = user.primerNombre ?? '';
-    this.formData.segundoNombre = user.segundoNombre ?? '';
-    this.formData.primerApellido = user.primerApellido ?? '';
-    this.formData.segundoApellido = user.segundoApellido ?? '';
-    this.formData.correo = user.correo ?? '';
+    Object.assign(this.formData, datosDePersonaSeleccionada(user, this.tiposIdentificacion()));
     this.toast.info(mensajeUi('UI_ADMIN_DECANOS_011', { nombres: user.nombres, apellidos: user.apellidos }));
   }
 }
