@@ -152,7 +152,8 @@ export const CLAIM_RESPONSE_REJECT_MIN = 10;
 export const CLAIM_RESPONSE_MAX = 500;
 
 export function getClaimResponseError(
-  action: 'APROBADA' | 'RECHAZADA' | string,
+  /** Valores conocidos: 'APROBADA', 'RECHAZADA'. */
+  action: string,
   response: string | null | undefined
 ): string | null {
   const rejecting = action === 'RECHAZADA';

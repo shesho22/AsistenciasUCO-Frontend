@@ -1,27 +1,20 @@
-export type EstadoRevisionCancelacion =
-  | 'PENDIENTE_DOCENTE'
-  | 'MANTENIDO'
-  | 'PROPUESTA_COORDINACION'
-  | 'PROPUESTA_DECANATURA'
-  | 'PROPUESTA'
-  | 'APROBADA'
-  | 'RECHAZADA'
-  | 'RECHAZADO'
-  | 'CANCELADO_POR_INASISTENCIA'
-  | string;
+/**
+ * Valores conocidos: 'PENDIENTE_DOCENTE', 'MANTENIDO', 'PROPUESTA_COORDINACION', 'PROPUESTA_DECANATURA',
+ * 'PROPUESTA', 'APROBADA', 'RECHAZADA', 'RECHAZADO', 'CANCELADO_POR_INASISTENCIA'.
+ */
+export type EstadoRevisionCancelacion = string;
 
-export type DecisionDocente = 'MANTENER' | 'PROPONER_CANCELACION' | 'PROPONER' | string;
+/** Valores conocidos: 'MANTENER', 'PROPONER_CANCELACION', 'PROPONER'. */
+export type DecisionDocente = string;
 
-export type DecisionResolutor =
-  | 'CONFIRMAR_CANCELACION'
-  | 'APROBAR'
-  | 'RECHAZAR_PROPUESTA'
-  | 'RECHAZAR'
-  | 'ESCALAR_DECANO'
-  | 'ESCALAR'
-  | string;
+/**
+ * Valores conocidos: 'CONFIRMAR_CANCELACION', 'APROBAR', 'RECHAZAR_PROPUESTA', 'RECHAZAR', 'ESCALAR_DECANO',
+ * 'ESCALAR'.
+ */
+export type DecisionResolutor = string;
 
-export type PerfilResolutor = 'COORDINADOR' | 'DECANO' | string;
+/** Valores conocidos: 'COORDINADOR', 'DECANO'. */
+export type PerfilResolutor = string;
 
 export interface RevisionCancelacion {
   id: string;
@@ -82,17 +75,11 @@ export interface MarcaRevisionResumen {
 
 export interface MarcaInasistencia {
   id?: string;
-  estado?:
-    | 'RIESGO'
-    | 'PERDIDA_PENDIENTE'
-    | 'PENDIENTE_DOCENTE'
-    | 'MANTENIDO'
-    | 'PROPUESTA_COORDINACION'
-    | 'PROPUESTA_DECANATURA'
-    | 'PROPUESTA'
-    | 'RECHAZADO'
-    | 'CANCELADO_POR_INASISTENCIA'
-    | string;
+  /**
+   * Valores conocidos: 'RIESGO', 'PERDIDA_PENDIENTE', 'PENDIENTE_DOCENTE', 'MANTENIDO', 'PROPUESTA_COORDINACION',
+   * 'PROPUESTA_DECANATURA', 'PROPUESTA', 'RECHAZADO', 'CANCELADO_POR_INASISTENCIA'.
+   */
+  estado?: string;
   nombreEstado?: string;
   requiereAccionDocente?: boolean;
   requiereAccionResolutor?: boolean;

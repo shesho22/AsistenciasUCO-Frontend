@@ -1,7 +1,5 @@
-import { EstadoSolicitudRevision } from '../models/role-management.model';
-
 /** Variante visual de la insignia de un reclamo; `RETIRADA` es neutra (no es pendiente, aprobada ni rechazada). */
-export function varianteEstadoReclamo(estado: EstadoSolicitudRevision | string | undefined): 'success' | 'warning' | 'danger' | 'neutral' {
+export function varianteEstadoReclamo(estado: string | undefined): 'success' | 'warning' | 'danger' | 'neutral' {
   switch (estado) {
     case 'APROBADA':
       return 'success';
@@ -27,7 +25,7 @@ export function etiquetaResultadoAprobacion(resultado: string | null | undefined
 }
 
 /** Texto legible de la insignia (nunca el codigo crudo del backend); un estado desconocido se muestra tal cual. */
-export function etiquetaEstadoReclamo(estado: EstadoSolicitudRevision | string | undefined): string {
+export function etiquetaEstadoReclamo(estado: string | undefined): string {
   switch (estado) {
     case 'PENDIENTE':
       return 'Pendiente';

@@ -112,6 +112,7 @@ export type IconName =
   `,
 })
 export class IconComponent {
-  name = input<IconName | string>('dashboard');
+  /** Valores conocidos: ver `IconName`. */
+  name = input<string>('dashboard');
   cssClass = input<string>('w-5 h-5');
 }

@@ -181,7 +181,8 @@ export interface EventoAuditoriaItem {
   accion: string;
   tipoRecurso: string;
   idRecurso: string | null;
-  resultado: 'SUCCESS' | 'FAILURE' | string;
+  /** Valores conocidos: 'SUCCESS', 'FAILURE'. */
+  resultado: string;
   idTraza: string | null;
   idCorrelacion?: string | null;
   metodoHttp: string;
