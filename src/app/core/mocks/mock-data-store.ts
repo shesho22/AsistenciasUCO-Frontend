@@ -46,27 +46,27 @@ import { mockUuid } from './student-portal-mock.adapter';
  * Nunca es referenciado por servicios de producción.
  */
 class MockDataStore {
-  decanos: DecanoItem[] = JSON.parse(JSON.stringify(MOCK_DECANOS));
-  coordinadores: CoordinadorItem[] = JSON.parse(JSON.stringify(MOCK_COORDINADORES));
-  docentes: DocenteItem[] = JSON.parse(JSON.stringify(MOCK_DOCENTES));
-  horariosEstudiante: HorarioItem[] = JSON.parse(JSON.stringify(MOCK_HORARIOS_ESTUDIANTE));
-  horariosDocente: HorarioDocenteItem[] = JSON.parse(JSON.stringify(MOCK_HORARIOS_DOCENTE));
-  materiasEstudiante: MockMateriaEstudiante[] = JSON.parse(JSON.stringify(MOCK_MATERIAS_ESTUDIANTE));
-  sesionesMaterias: Record<string, MockSesionMateria[]> = JSON.parse(JSON.stringify(MOCK_SESIONES_MATERIAS));
+  decanos: DecanoItem[] = structuredClone(MOCK_DECANOS);
+  coordinadores: CoordinadorItem[] = structuredClone(MOCK_COORDINADORES);
+  docentes: DocenteItem[] = structuredClone(MOCK_DOCENTES);
+  horariosEstudiante: HorarioItem[] = structuredClone(MOCK_HORARIOS_ESTUDIANTE);
+  horariosDocente: HorarioDocenteItem[] = structuredClone(MOCK_HORARIOS_DOCENTE);
+  materiasEstudiante: MockMateriaEstudiante[] = structuredClone(MOCK_MATERIAS_ESTUDIANTE);
+  sesionesMaterias: Record<string, MockSesionMateria[]> = structuredClone(MOCK_SESIONES_MATERIAS);
   // REC-001 es un reclamo de la toma 2 (a mitad de clase) de la sesion SES-001-03; el resto son reclamos de la sesion completa.
-  solicitudesRevision: SolicitudRevisionItem[] = (JSON.parse(JSON.stringify(MOCK_SOLICITUDES_REVISION)) as SolicitudRevisionItem[]).map((r) =>
+  solicitudesRevision: SolicitudRevisionItem[] = structuredClone(MOCK_SOLICITUDES_REVISION).map((r) =>
     r.id === 'REC-001' ? { ...r, idToma: mockUuid('toma:SES-001-03:2') } : r
   );
-  planesEstudio: PlanEstudioItem[] = JSON.parse(JSON.stringify(MOCK_PLANES_ESTUDIO));
-  asignaturasPlan: Record<string, AsignaturaPlanItem[]> = JSON.parse(JSON.stringify(MOCK_ASIGNATURAS_PLAN));
-  estudiantesDirectorio: EstudianteDirectorioItem[] = JSON.parse(JSON.stringify(MOCK_ESTUDIANTES_DIRECTORIO));
-  periodosAcademicos: PeriodoAcademicoItem[] = JSON.parse(JSON.stringify(MOCK_PERIODOS_ACADEMICOS));
-  facultades: FacultadItem[] = JSON.parse(JSON.stringify(MOCK_FACULTADES));
-  areasConocimiento: AreaConocimientoItem[] = JSON.parse(JSON.stringify(MOCK_AREAS_CONOCIMIENTO));
-  parametros: ParametroInstitucionalItem[] = JSON.parse(JSON.stringify(MOCK_PARAMETROS));
-  auditoria: RegistroAuditoriaItem[] = JSON.parse(JSON.stringify(MOCK_REGISTROS_AUDITORIA));
-  reportesCierre: CierrePeriodoReporte[] = JSON.parse(JSON.stringify(MOCK_REPORTES_CIERRE));
-  instituciones: InstitucionItem[] = JSON.parse(JSON.stringify(MOCK_INSTITUCIONES));
+  planesEstudio: PlanEstudioItem[] = structuredClone(MOCK_PLANES_ESTUDIO);
+  asignaturasPlan: Record<string, AsignaturaPlanItem[]> = structuredClone(MOCK_ASIGNATURAS_PLAN);
+  estudiantesDirectorio: EstudianteDirectorioItem[] = structuredClone(MOCK_ESTUDIANTES_DIRECTORIO);
+  periodosAcademicos: PeriodoAcademicoItem[] = structuredClone(MOCK_PERIODOS_ACADEMICOS);
+  facultades: FacultadItem[] = structuredClone(MOCK_FACULTADES);
+  areasConocimiento: AreaConocimientoItem[] = structuredClone(MOCK_AREAS_CONOCIMIENTO);
+  parametros: ParametroInstitucionalItem[] = structuredClone(MOCK_PARAMETROS);
+  auditoria: RegistroAuditoriaItem[] = structuredClone(MOCK_REGISTROS_AUDITORIA);
+  reportesCierre: CierrePeriodoReporte[] = structuredClone(MOCK_REPORTES_CIERRE);
+  instituciones: InstitucionItem[] = structuredClone(MOCK_INSTITUCIONES);
 
   registrarAuditoria(evento: {
     modulo: RegistroAuditoriaItem['modulo'];
