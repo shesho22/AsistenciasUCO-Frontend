@@ -75,36 +75,36 @@ interface ParametrosPaginaApiDto {
   providedIn: 'root',
 })
 export class AdminManagementService {
-  private http = inject(HttpClient);
+  private readonly http = inject(HttpClient);
 
   // Decanos
-  private _decanos = signal<DecanoItem[]>([]);
+  private readonly _decanos = signal<DecanoItem[]>([]);
   decanos = this._decanos.asReadonly();
 
   // Instituciones
-  private _instituciones = signal<InstitucionItem[]>([]);
+  private readonly _instituciones = signal<InstitucionItem[]>([]);
   instituciones = this._instituciones.asReadonly();
 
   // Facultades
-  private _facultades = signal<FacultadItem[]>([]);
+  private readonly _facultades = signal<FacultadItem[]>([]);
   facultades = this._facultades.asReadonly();
 
   // Áreas de Conocimiento
-  private _areas = signal<AreaConocimientoItem[]>([]);
+  private readonly _areas = signal<AreaConocimientoItem[]>([]);
   areas = this._areas.asReadonly();
 
   // Tipos de Programa
-  private _tiposPrograma = signal<TipoProgramaItem[]>([]);
+  private readonly _tiposPrograma = signal<TipoProgramaItem[]>([]);
   tiposPrograma = this._tiposPrograma.asReadonly();
 
   // Parámetros Institucionales
-  private _parametros = signal<ParametroAdminDto[]>([]);
+  private readonly _parametros = signal<ParametroAdminDto[]>([]);
   parametros = this._parametros.asReadonly();
 
   // Auditoría
 
   // Reportes Cierre Masivo
-  private _reportesCierre = signal<CierrePeriodoReporte[]>([]);
+  private readonly _reportesCierre = signal<CierrePeriodoReporte[]>([]);
   reportesCierre = this._reportesCierre.asReadonly();
 
   // ================= DECANOS =================

@@ -150,13 +150,13 @@ function isValidUuid(value: unknown): value is string {
   providedIn: 'root',
 })
 export class AuthService implements OnDestroy {
-  private router = inject(Router);
+  private readonly router = inject(Router);
 
   // ── Signals públicos ──────────────────────────────────────────────────────
   currentUser = signal<User | null>(null);
   token = signal<string | null>(null);
   isAuthenticated = computed(() => !!this.token());
-  private mockModeSignal = signal<boolean>(environment.useMocks);
+  private readonly mockModeSignal = signal<boolean>(environment.useMocks);
   isMockMode = computed(() => this.mockModeSignal());
   /**
    * true desde que el usuario pide cerrar sesión hasta que el navegador abandona la SPA. Permite a los
@@ -182,7 +182,7 @@ export class AuthService implements OnDestroy {
    * se modifica mediante `storeRefreshToken` para mantener ambos sincronizados.
    * NUNCA se persiste en localStorage (AGENTS.md §3.3).
    */
-  private refreshTokenInMemory = signal<string | null>(null);
+  private readonly refreshTokenInMemory = signal<string | null>(null);
 
   /**
    * Promise de renovación en vuelo para serializar llamadas concurrentes

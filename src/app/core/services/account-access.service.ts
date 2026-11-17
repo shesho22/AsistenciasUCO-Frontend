@@ -12,7 +12,7 @@ import { ApiResponse } from '../models/api-response.model';
  */
 @Injectable({ providedIn: 'root' })
 export class AccountAccessService {
-  private http = inject(HttpClient);
+  private readonly http = inject(HttpClient);
 
 
   consult(correo: string): Observable<ApiResponse<AccountAccess>> {

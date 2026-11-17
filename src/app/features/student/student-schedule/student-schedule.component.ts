@@ -100,7 +100,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
   `
 })
 export class StudentScheduleComponent implements OnInit {
-  private studentService = inject(StudentManagementService);
+  private readonly studentService = inject(StudentManagementService);
 
   horarios = signal<HorarioItem[]>([]);
   isLoading = signal<boolean>(true);

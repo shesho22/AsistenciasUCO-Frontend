@@ -273,21 +273,21 @@ type StudentEnrollmentField =
   `
 })
 export class AttendanceControlComponent {
-  private courseService = inject(CourseService);
-  private sessionService = inject(SessionService);
-  private groupService = inject(GroupService);
-  private studentService = inject(StudentService);
-  private attendanceService = inject(AttendanceService);
-  private attendanceRealtimeSync = inject(AttendanceRealtimeSyncService);
-  private destroyRef = inject(DestroyRef);
-  private catalogService = inject(CatalogService);
-  private attendanceClaimService = inject(AttendanceClaimService);
-  private timeZone = inject(SessionTimeZoneService);
-  private studentRegistrationConfig = inject(StudentRegistrationConfigService);
-  private emailVerification = inject(EmailVerificationService);
-  private tomaService = inject(TomaAsistenciaService);
-  private resumenSesionesService = inject(TeacherMatrizAsistenciaService);
-  private qrService = inject(AsistenciaQrService);
+  private readonly courseService = inject(CourseService);
+  private readonly sessionService = inject(SessionService);
+  private readonly groupService = inject(GroupService);
+  private readonly studentService = inject(StudentService);
+  private readonly attendanceService = inject(AttendanceService);
+  private readonly attendanceRealtimeSync = inject(AttendanceRealtimeSyncService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly catalogService = inject(CatalogService);
+  private readonly attendanceClaimService = inject(AttendanceClaimService);
+  private readonly timeZone = inject(SessionTimeZoneService);
+  private readonly studentRegistrationConfig = inject(StudentRegistrationConfigService);
+  private readonly emailVerification = inject(EmailVerificationService);
+  private readonly tomaService = inject(TomaAsistenciaService);
+  private readonly resumenSesionesService = inject(TeacherMatrizAsistenciaService);
+  private readonly qrService = inject(AsistenciaQrService);
   emailDomain = signal<string>('');
   resendingStudentId = signal<string>('');
 
@@ -308,7 +308,7 @@ export class AttendanceControlComponent {
    * aún no se ha guardado. Solo ellos viajan en el lote (batch parcial): lo
    * ya persistido y lo "Sin registrar" no se envían.
    */
-  private pendingStudentIds = new Set<string>();
+  private readonly pendingStudentIds = new Set<string>();
   isSaving = signal<boolean>(false);
 
   isNewSessionModalOpen = signal<boolean>(false);
@@ -374,8 +374,8 @@ export class AttendanceControlComponent {
     }))
   );
 
-  private route = inject(ActivatedRoute, { optional: true });
-  private router = inject(Router, { optional: true });
+  private readonly route = inject(ActivatedRoute, { optional: true });
+  private readonly router = inject(Router, { optional: true });
 
   volverAListaGrupos(): void {
     void this.router?.navigate(['/app/docente/grupos']);

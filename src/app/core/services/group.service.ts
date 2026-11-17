@@ -13,7 +13,7 @@ import { BYPASS_GLOBAL_ERROR_TOAST } from '../interceptors/error.interceptor';
   providedIn: 'root',
 })
 export class GroupService {
-  private http = inject(HttpClient);
+  private readonly http = inject(HttpClient);
 
 
   /**

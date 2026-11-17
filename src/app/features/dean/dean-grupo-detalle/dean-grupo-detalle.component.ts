@@ -159,10 +159,10 @@ function adaptarGrupoACurso(dto: GrupoDetalleDecanoApiDto): Course {
   `
 })
 export class DeanGrupoDetalleComponent implements OnInit, OnDestroy {
-  private deanService = inject(DeanFacultadService);
-  private toast = inject(ToastService);
-  private router = inject(Router);
-  private route = inject(ActivatedRoute);
+  private readonly deanService = inject(DeanFacultadService);
+  private readonly toast = inject(ToastService);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   readonly timeZone = inject(SessionTimeZoneService);
   private readonly realtime = inject(RealtimeService, { optional: true });
   private subRealtime?: Subscription;

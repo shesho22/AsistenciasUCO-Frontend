@@ -367,12 +367,12 @@ const NOMBRE_FACULTAD_MAX = 50;
   `,
 })
 export class AdminDecanosComponent implements OnInit {
-  private adminService = inject(AdminManagementService);
-  private catalogService = inject(CatalogService);
-  private toast = inject(ToastService);
-  private sessionTimeZone = inject(SessionTimeZoneService);
-  private correccionIdentidad = inject(CorreccionIdentidadService);
-  private registroConfig = inject(StudentRegistrationConfigService);
+  private readonly adminService = inject(AdminManagementService);
+  private readonly catalogService = inject(CatalogService);
+  private readonly toast = inject(ToastService);
+  private readonly sessionTimeZone = inject(SessionTimeZoneService);
+  private readonly correccionIdentidad = inject(CorreccionIdentidadService);
+  private readonly registroConfig = inject(StudentRegistrationConfigService);
   /** DEC-073: dominio institucional vigente para el correo del decano (llega del backend). */
   readonly dominioCorreo = signal<string | null>(null);
   readonly maxNombre = NAME_MAX_LENGTH;

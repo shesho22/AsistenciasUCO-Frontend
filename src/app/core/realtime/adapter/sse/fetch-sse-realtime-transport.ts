@@ -51,9 +51,9 @@ function isAbortError(err: unknown): boolean {
  */
 @Injectable()
 export class FetchSseRealtimeTransport implements RealtimeTransport {
-  private authService = inject(AuthService);
-  private ngZone = inject(NgZone);
-  private fetchEventSourceFn = inject<FetchEventSourceFn>(SSE_FETCH_EVENT_SOURCE);
+  private readonly authService = inject(AuthService);
+  private readonly ngZone = inject(NgZone);
+  private readonly fetchEventSourceFn = inject<FetchEventSourceFn>(SSE_FETCH_EVENT_SOURCE);
 
   private readonly eventsSubject = new Subject<RealtimeEvent>();
   private readonly stateSubject = new BehaviorSubject<RealtimeConnectionState>(

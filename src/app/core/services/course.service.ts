@@ -17,9 +17,9 @@ import { MOCK_COURSES } from '../mocks/course.mock';
   providedIn: 'root',
 })
 export class CourseService {
-  private http = inject(HttpClient);
+  private readonly http = inject(HttpClient);
 
-  private coursesSignal = signal<Course[]>([...MOCK_COURSES]);
+  private readonly coursesSignal = signal<Course[]>([...MOCK_COURSES]);
 
   getTeacherCourses(_docenteId?: string): Observable<ApiResponse<Course[]>> {
     return this.getCurrentTeacherCourses().pipe(

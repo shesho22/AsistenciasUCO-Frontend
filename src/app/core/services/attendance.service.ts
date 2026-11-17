@@ -12,7 +12,7 @@ import { SolicitarRevisionAsistenciaRequest } from '../api/models/solicitar-revi
   providedIn: 'root',
 })
 export class AttendanceService {
-  private http = inject(HttpClient);
+  private readonly http = inject(HttpClient);
 
 
   getAttendancesByGroup(

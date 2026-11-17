@@ -521,9 +521,9 @@ type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
   `
 })
 export class AdminFacultadesComponent implements OnInit {
-  private adminService = inject(AdminManagementService);
-  private coordService = inject(CoordinatorManagementService);
-  private toast = inject(ToastService);
+  private readonly adminService = inject(AdminManagementService);
+  private readonly coordService = inject(CoordinatorManagementService);
+  private readonly toast = inject(ToastService);
 
   vista = signal<VistaFacultad>('LISTA');
   guardando = signal<boolean>(false);

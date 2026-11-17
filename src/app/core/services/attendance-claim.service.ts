@@ -77,7 +77,7 @@ export interface ResolverReclamoResponse {
   providedIn: 'root',
 })
 export class AttendanceClaimService {
-  private http = inject(HttpClient);
+  private readonly http = inject(HttpClient);
 
   private readonly sessionTimeZone = inject(SessionTimeZoneService);
 

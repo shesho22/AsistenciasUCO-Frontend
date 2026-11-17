@@ -18,7 +18,7 @@ import { HorarioItem, MateriaEstudianteItem, ResumenMateriasEstudiante } from '.
   providedIn: 'root',
 })
 export class StudentManagementService {
-  private http = inject(HttpClient);
+  private readonly http = inject(HttpClient);
 
 
   /** `GET /estudiante/horarios` (`HorarioEstudianteDTO`) adaptado al modelo de UI; las filas invalidas se descartan. */

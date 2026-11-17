@@ -23,7 +23,7 @@ export const MOCK_DOCUMENT_TYPES: TipoIdentificacionApiDto[] = [
   providedIn: 'root',
 })
 export class CatalogService {
-  private http = inject(HttpClient);
+  private readonly http = inject(HttpClient);
 
 
   getIdentityDocumentTypes(): Observable<TipoIdentificacionApiDto[]> {

@@ -127,20 +127,20 @@ import { OverviewStudentComponent } from './components/overview-student.componen
   `,
 })
 export class OverviewComponent implements OnInit {
-  private authService = inject(AuthService);
-  private courseService = inject(CourseService);
-  private adminService = inject(AdminManagementService);
-  private deanService = inject(DeanManagementService);
-  private deanIndicators = inject(DeanIndicatorsService);
-  private adminIndicators = inject(AdminIndicatorsService);
-  private coordinatorService = inject(CoordinatorManagementService);
-  private coordinatorIndicators = inject(CoordinatorIndicatorsService);
-  private coordinadorSesiones = inject(CoordinadorSesionesService);
-  private coordinatorProgram = inject(CoordinatorProgramService);
-  private studentService = inject(StudentManagementService);
-  private claimService = inject(AttendanceClaimService);
-  private teacherResumen = inject(TeacherGruposResumenService);
-  private destroyRef = inject(DestroyRef);
+  private readonly authService = inject(AuthService);
+  private readonly courseService = inject(CourseService);
+  private readonly adminService = inject(AdminManagementService);
+  private readonly deanService = inject(DeanManagementService);
+  private readonly deanIndicators = inject(DeanIndicatorsService);
+  private readonly adminIndicators = inject(AdminIndicatorsService);
+  private readonly coordinatorService = inject(CoordinatorManagementService);
+  private readonly coordinatorIndicators = inject(CoordinatorIndicatorsService);
+  private readonly coordinadorSesiones = inject(CoordinadorSesionesService);
+  private readonly coordinatorProgram = inject(CoordinatorProgramService);
+  private readonly studentService = inject(StudentManagementService);
+  private readonly claimService = inject(AttendanceClaimService);
+  private readonly teacherResumen = inject(TeacherGruposResumenService);
+  private readonly destroyRef = inject(DestroyRef);
 
   user = computed(() => this.authService.currentUser() || MOCK_USERS_BY_ROLE.DOCENTE);
   userRole = computed<UserRole>(() => this.user()?.role || 'DOCENTE');

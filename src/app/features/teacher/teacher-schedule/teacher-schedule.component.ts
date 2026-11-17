@@ -102,8 +102,8 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
   `
 })
 export class TeacherScheduleComponent implements OnInit {
-  private claimService = inject(AttendanceClaimService);
-  private toast = inject(ToastService);
+  private readonly claimService = inject(AttendanceClaimService);
+  private readonly toast = inject(ToastService);
 
   horarios = signal<HorarioDocenteItem[]>([]);
   isLoading = signal<boolean>(true);

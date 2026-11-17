@@ -156,20 +156,20 @@ type VistaGrupos = 'LISTA' | 'HUB_GRUPO' | 'FORM_SESION';
   `
 })
 export class TeacherGruposComponent implements OnInit, OnDestroy {
-  private courseService = inject(CourseService);
-  private catalogService = inject(CatalogService);
-  private sessionService = inject(SessionService);
-  private attendanceService = inject(AttendanceService);
-  private groupService = inject(GroupService);
-  private studentService = inject(StudentService);
-  private resumenSesionesService = inject(TeacherMatrizAsistenciaService);
-  private claimService = inject(AttendanceClaimService);
-  private gruposResumen = inject(TeacherGruposResumenService);
-  private router = inject(Router);
-  private route = inject(ActivatedRoute, { optional: true });
-  private toast = inject(ToastService);
-  private timeZone = inject(SessionTimeZoneService);
-  private realtime = inject(RealtimeService);
+  private readonly courseService = inject(CourseService);
+  private readonly catalogService = inject(CatalogService);
+  private readonly sessionService = inject(SessionService);
+  private readonly attendanceService = inject(AttendanceService);
+  private readonly groupService = inject(GroupService);
+  private readonly studentService = inject(StudentService);
+  private readonly resumenSesionesService = inject(TeacherMatrizAsistenciaService);
+  private readonly claimService = inject(AttendanceClaimService);
+  private readonly gruposResumen = inject(TeacherGruposResumenService);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute, { optional: true });
+  private readonly toast = inject(ToastService);
+  private readonly timeZone = inject(SessionTimeZoneService);
+  private readonly realtime = inject(RealtimeService);
   private cancelacionesSub: Subscription | null = null;
   private aprobacionesSub: Subscription | null = null;
 

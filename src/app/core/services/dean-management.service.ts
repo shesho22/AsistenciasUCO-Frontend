@@ -40,7 +40,7 @@ interface CoordinadoresPageDto {
   providedIn: 'root',
 })
 export class DeanManagementService {
-  private http = inject(HttpClient);
+  private readonly http = inject(HttpClient);
 
 
   /**

@@ -55,10 +55,10 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
   `
 })
 export class DeanFacultyComponent implements OnInit {
-  private deanIndicators = inject(DeanIndicatorsService);
-  private adminService = inject(AdminManagementService);
-  private coordService = inject(CoordinatorManagementService);
-  private deanService = inject(DeanFacultadService);
+  private readonly deanIndicators = inject(DeanIndicatorsService);
+  private readonly adminService = inject(AdminManagementService);
+  private readonly coordService = inject(CoordinatorManagementService);
+  private readonly deanService = inject(DeanFacultadService);
 
   /**
    * CIERRE-W3I: grupos, inscritos y cupos de la facultad salen de GET /decano/indicadores (grupos habilitados del período vigente,

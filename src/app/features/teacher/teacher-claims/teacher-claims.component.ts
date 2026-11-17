@@ -444,15 +444,15 @@ const BUSQUEDA_ESPERA_MS = 300;
   `
 })
 export class TeacherClaimsComponent implements OnInit, OnDestroy {
-  private claimService = inject(AttendanceClaimService);
-  private toast = inject(ToastService);
+  private readonly claimService = inject(AttendanceClaimService);
+  private readonly toast = inject(ToastService);
   private readonly zona = inject(SessionTimeZoneService);
 
   vistaActual = signal<VistaDocenteReclamos>('BANDEJA');
   reclamos = signal<SolicitudRevisionItem[]>([]);
   isLoading = signal<boolean>(true);
   /** Mensaje institucional del backend para el último fallo de la bandeja. */
-  private listaError = signal<string>('');
+  private readonly listaError = signal<string>('');
   listState = signal<ReclamosListState>('LOADING');
   searchQuery = signal<string>('');
   estadoFiltro = signal<EstadoFiltroReclamos>('TODOS');
