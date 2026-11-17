@@ -940,23 +940,23 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     const body = req.body as { accion?: string; respuestaDocente?: string; respuesta?: string; resultado?: string } | null;
     const accion = body?.accion === 'APROBADA' ? 'APROBADA' : 'RECHAZADA';
     const comentario = body?.respuestaDocente || body?.respuesta || '';
+    const resultadoPositivo = body?.resultado === 'PRESENTE' ? ('PRESENTE' as const) : ('JUSTIFICADA' as const);
     mockStore.solicitudesRevision = mockStore.solicitudesRevision.map((r) =>
       r.id === id
         ? {
             ...r,
             estadoSolicitud: accion,
-            resultadoAprobacion: accion === 'APROBADA' ? (body?.resultado === 'PRESENTE' ? ('PRESENTE' as const) : ('JUSTIFICADA' as const)) : null,
+            resultadoAprobacion: accion === 'APROBADA' ? resultadoPositivo : null,
             justificacionRespuesta: comentario,
             fechaRespuesta: new Date().toISOString().slice(0, 10),
           }
         : r
     );
     const actualizado = mockStore.solicitudesRevision.find((r) => r.id === id);
-    const msg = accion === 'APROBADA'
-      ? body?.resultado === 'PRESENTE'
-        ? 'Reclamo aprobado. Se registró que el estudiante estuvo presente en la toma.'
-        : 'Reclamo aprobado. Se ha actualizado la asistencia a "Justificada".'
-      : 'Reclamo rechazado con la justificación suministrada.';
+    const msgAprobado = body?.resultado === 'PRESENTE'
+      ? 'Reclamo aprobado. Se registró que el estudiante estuvo presente en la toma.'
+      : 'Reclamo aprobado. Se ha actualizado la asistencia a "Justificada".';
+    const msg = accion === 'APROBADA' ? msgAprobado : 'Reclamo rechazado con la justificación suministrada.';
     return of(okResponse(actualizado, msg)).pipe(delay(250));
   }
   if (url.endsWith('/docente/horarios') && method === 'GET') {

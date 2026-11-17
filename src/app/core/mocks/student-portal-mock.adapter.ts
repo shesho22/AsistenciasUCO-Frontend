@@ -136,6 +136,7 @@ export function mockSesionesToDto(
     const { inicio, fin } = inicioYFin(s.horario);
     const tomas = mockTomasDto(s.id, s.estadoAsistencia, s.fecha, inicio, fin);
     const minutos = minutosEntre(inicio, fin);
+    const minutosSi = (coincide: boolean): number => (coincide ? minutos : 0);
     return {
       id: mockUuid(`sesion:${s.id}`),
       nombre: s.tema,
@@ -151,9 +152,9 @@ export function mockSesionesToDto(
       estadoSolicitudRevision: null,
       reclamable: s.estadoAsistencia === 'AUSENTE' || s.estadoAsistencia === 'RETARDO',
       minutosSesion: tomas.length > 0 ? minutos : null,
-      minutosAsistidos: tomas.length > 0 ? (s.estadoAsistencia === 'PRESENTE' ? minutos : 0) : null,
-      minutosFalta: tomas.length > 0 ? (s.estadoAsistencia === 'AUSENTE' ? minutos : 0) : null,
-      minutosExcusa: tomas.length > 0 ? (s.estadoAsistencia === 'JUSTIFICADA' ? minutos : 0) : null,
+      minutosAsistidos: tomas.length > 0 ? minutosSi(s.estadoAsistencia === 'PRESENTE') : null,
+      minutosFalta: tomas.length > 0 ? minutosSi(s.estadoAsistencia === 'AUSENTE') : null,
+      minutosExcusa: tomas.length > 0 ? minutosSi(s.estadoAsistencia === 'JUSTIFICADA') : null,
       minutosSinRegistro: tomas.length > 0 ? 0 : null,
       tomas,
     };

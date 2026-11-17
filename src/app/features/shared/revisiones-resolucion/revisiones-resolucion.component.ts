@@ -359,8 +359,9 @@ export class RevisionesResolucionComponent implements OnInit {
     this.cargando.set(true);
     this.errorCarga.set(null);
     const base: FiltroRevisionesCancelacion = { pagina: this.pagina(), tamano: this.tamano() };
+    const filtroDecano = this.filtroEstado() ? { ...base, estado: this.filtroEstado() } : base;
     const call$: Observable<ApiPageResponse<RevisionCancelacion>> = this.esDecano()
-      ? this.service.consultarDecano(this.filtroEstado() ? { ...base, estado: this.filtroEstado() } : base)
+      ? this.service.consultarDecano(filtroDecano)
       : this.service.consultarCoordinador({ ...base, soloPendientes: this.filtroSoloPendientes() });
 
     call$.subscribe({

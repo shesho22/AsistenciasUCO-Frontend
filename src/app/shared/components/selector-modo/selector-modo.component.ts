@@ -37,7 +37,12 @@ export class SelectorModoComponent<T extends string = string> {
   readonly valor = model.required<T>();
 
   alTeclear(evento: KeyboardEvent): void {
-    const paso = evento.key === 'ArrowRight' || evento.key === 'ArrowDown' ? 1 : evento.key === 'ArrowLeft' || evento.key === 'ArrowUp' ? -1 : 0;
+    let paso = 0;
+    if (evento.key === 'ArrowRight' || evento.key === 'ArrowDown') {
+      paso = 1;
+    } else if (evento.key === 'ArrowLeft' || evento.key === 'ArrowUp') {
+      paso = -1;
+    }
     if (paso === 0) {
       return;
     }

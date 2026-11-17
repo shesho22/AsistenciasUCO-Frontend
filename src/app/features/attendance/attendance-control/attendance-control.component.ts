@@ -803,14 +803,19 @@ export class AttendanceControlComponent {
   sessionOptions = computed<SelectOption[]>(() => {
     return this.sessions()
       .map((s) => {
-        const base = s.estadoTemporal === 'INDETERMINADA'
-          ? `Sesión #${s.sessionNumber} (horario no confirmado): ${s.title}`
-          : `Sesión #${s.sessionNumber} (${this.timeZone.displaySessionDate(s)}${this.timeZone.displaySessionEndDate(s) !== this.timeZone.displaySessionDate(s) ? ` – ${this.timeZone.displaySessionEndDate(s)}` : ''}): ${s.title}`;
+        let base = `Sesión #${s.sessionNumber} (horario no confirmado): ${s.title}`;
+        if (s.estadoTemporal !== 'INDETERMINADA') {
+          const fechaInicio = this.timeZone.displaySessionDate(s);
+          const fechaFin = this.timeZone.displaySessionEndDate(s);
+          const rango = fechaFin === fechaInicio ? fechaInicio : `${fechaInicio} – ${fechaFin}`;
+          base = `Sesión #${s.sessionNumber} (${rango}): ${s.title}`;
+        }
         if (!estaCancelada(s)) return { value: s.id, label: base };
         const detalle = detalleCancelacion(s.cancelacion);
+        const sufijoDetalle = detalle ? ` (${detalle})` : '';
         return {
           value: s.id,
-          label: `${base} · Cancelada${detalle ? ` (${detalle})` : ''}`,
+          label: `${base} · Cancelada${sufijoDetalle}`,
           disabled: true,
         };
       });

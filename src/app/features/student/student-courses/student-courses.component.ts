@@ -592,9 +592,12 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
     if (!sesion.reclamable || estadoSesion === 'NO_DISPONIBLE' || (toma && !toma.reclamable)) return;
     // Una sesion PARCIAL se reclama por su toma ausente (`tomaId`); el estado de la sesion no viaja al backend, que decide
     // con sus propios registros. Para un reclamo por toma el estado original es el de la toma.
-    const estadoOriginal: EstadoAsistenciaSesion | undefined = toma
-      ? toma.estado === 'AUSENTE' ? 'AUSENTE' : undefined
-      : estadoSesion === 'PARCIAL' ? undefined : estadoSesion;
+    let estadoOriginal: EstadoAsistenciaSesion | undefined;
+    if (toma) {
+      estadoOriginal = toma.estado === 'AUSENTE' ? 'AUSENTE' : undefined;
+    } else {
+      estadoOriginal = estadoSesion === 'PARCIAL' ? undefined : estadoSesion;
+    }
     // Sin doble envio: ni mientras sube el soporte (aun no hay fileId) ni mientras otra radicacion esta en curso.
     if (this.enviandoReclamo() || this.subiendoSoporte()) return;
 

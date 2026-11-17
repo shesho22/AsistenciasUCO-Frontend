@@ -558,7 +558,8 @@ export class TeacherClaimsComponent implements OnInit, OnDestroy {
         },
         error: (error: unknown) => {
           const status = (error as { status?: number })?.status;
-          this.listState.set(status === 403 ? 'FORBIDDEN' : status === 0 ? 'NETWORK_ERROR' : 'SERVER_ERROR');
+          const errorRed = status === 0 ? 'NETWORK_ERROR' : 'SERVER_ERROR';
+          this.listState.set(status === 403 ? 'FORBIDDEN' : errorRed);
           this.listaError.set(getApiErrorMessage(error));
           this.isLoading.set(false);
           this.toast.error(this.listaError());

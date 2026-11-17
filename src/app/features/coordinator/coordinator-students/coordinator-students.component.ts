@@ -255,13 +255,14 @@ export class CoordinatorStudentsComponent implements OnInit {
   private fetchDirectorioPage() {
     const query = this.searchDirectorio().trim();
     const isNumeric = /^\d+$/.test(query);
+    const filtroBusqueda = isNumeric ? { numeroIdentificacion: query } : { nombre: query };
     this.isLoadingDirectorio.set(true);
     this.errorDirectorio.set(null);
     return this.coordinatorService
       .getEstudiantesDirectorioPagina({
         page: this.currentPageDirectorio() - 1,
         size: this.pageSizeDirectorio(),
-        ...(query ? (isNumeric ? { numeroIdentificacion: query } : { nombre: query }) : {}),
+        ...(query ? filtroBusqueda : {}),
         ...(this.filtroEstadoDirectorio() !== 'TODOS'
           ? { activo: this.filtroEstadoDirectorio() === 'ACTIVO' }
           : {}),

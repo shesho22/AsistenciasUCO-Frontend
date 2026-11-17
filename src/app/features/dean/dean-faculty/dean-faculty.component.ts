@@ -99,7 +99,8 @@ export class DeanFacultyComponent implements OnInit {
 
   estadoFacultad = computed(() => {
     const facultad = this.facultad();
-    return facultad ? (facultad.activa ? 'ACTIVA' : 'INACTIVA') : '—';
+    if (!facultad) return '—';
+    return facultad.activa ? 'ACTIVA' : 'INACTIVA';
   });
 
   decanoResponsable = computed(() => this.facultad()?.nombreDecano ?? '—');
