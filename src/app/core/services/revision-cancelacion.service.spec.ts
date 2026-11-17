@@ -184,4 +184,25 @@ describe('RevisionCancelacionService (CULM-001 C.1)', () => {
     );
     expect(errorCapturado).toBeTruthy();
   });
+
+  it('CIERRE-W2B: la bandeja del docente conserva accionesPermitidas como lista (la vacia tambien) sin transformarla', () => {
+    let filas: RevisionCancelacion[] = [];
+    service.consultarDocente({ soloPendientes: true }).subscribe((res) => (filas = res.elementos));
+
+    httpMock.expectOne((r) => r.url === `${environment.apiUrl}/docente/revisiones-cancelacion`).flush({
+      exitoso: true,
+      elementos: [
+        { ...mockRevision, id: 'r-1', accionesPermitidas: ['MANTENER', 'PROPONER'] },
+        { ...mockRevision, id: 'r-2', accionesPermitidas: [] },
+      ],
+      numeroPagina: 1,
+      tamanoPagina: 20,
+      totalElementos: 2,
+      totalPaginas: 1,
+    });
+
+    expect(Array.isArray(filas[0].accionesPermitidas)).toBeTrue();
+    expect(filas[0].accionesPermitidas).toEqual(['MANTENER', 'PROPONER']);
+    expect(filas[1].accionesPermitidas).toEqual([]);
+  });
 });

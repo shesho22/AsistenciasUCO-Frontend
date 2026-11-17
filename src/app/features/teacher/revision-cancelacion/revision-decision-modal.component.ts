@@ -15,6 +15,7 @@ import { MarcaRevisionDocente } from '../../../core/models/revision-cancelacion.
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { ModalComponent } from '../../../shared/components/modal/modal.component';
+import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
 /** Lo que el modal lee de la revision: su id, las acciones permitidas o la revision anidada de una marca. */
 export interface RevisionDecisionEntrada {
@@ -71,6 +72,21 @@ export interface RevisionDecisionEntrada {
             </button>
           </div>
         </div>
+      } @else if (sinAcciones()) {
+        <div class="space-y-4" data-testid="decision-sin-acciones">
+          <p class="p-4 rounded-xl bg-warm-50 border border-warm-200 text-xs text-warm-800" role="status">
+            {{ mensajeSinAcciones() }}
+          </p>
+          <div class="flex items-center justify-end pt-2 border-t border-warm-100">
+            <button
+              type="button"
+              (click)="cerrar()"
+              class="min-h-[44px] px-4 py-2 rounded-xl border border-warm-300 text-warm-700 text-xs font-semibold hover:bg-warm-50"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
       } @else {
         <form (submit)="onSubmit($event)" class="space-y-4">
           <div class="space-y-2">
@@ -81,14 +97,14 @@ export interface RevisionDecisionEntrada {
               @for (opcion of opciones(); track opcion.valor) {
                 <label
                   class="flex items-center gap-3 p-3 rounded-xl border border-warm-200 hover:bg-warm-50 cursor-pointer transition-colors"
-                  [class.border-primary-500]="decision() === opcion.valor"
-                  [class.bg-primary-50]="decision() === opcion.valor"
+                  [class.border-primary-500]="decisionActiva() === opcion.valor"
+                  [class.bg-primary-50]="decisionActiva() === opcion.valor"
                 >
                   <input
                     type="radio"
                     name="decision"
                     [value]="opcion.valor"
-                    [checked]="decision() === opcion.valor"
+                    [checked]="decisionActiva() === opcion.valor"
                     (change)="decision.set(opcion.valor)"
                     class="text-primary-700 focus:ring-primary-500"
                   />
@@ -148,15 +164,20 @@ export class RevisionDecisionModalComponent {
   decisionRegistrada = output<void>();
   closed = output<void>();
 
-  decision = signal<string>('MANTENER');
+  /** Opcion elegida por el docente; `null` = ninguna todavia (vale la primera que el backend permite, ver `decisionActiva`). */
+  decision = signal<string | null>(null);
   motivo = signal<string>('');
   requiereConfirmacion = signal<boolean>(false);
   errorMensaje = signal<string | null>(null);
   enviando = signal<boolean>(false);
 
+  /**
+   * Solo las acciones que entrega el backend en `accionesPermitidas` (la base las toma del catalogo de transiciones). No hay
+   * lista de respaldo: con la lista ausente o vacia el docente no puede actuar y no se ofrece ninguna accion.
+   */
   opciones = computed(() => {
     const rev = this.revision();
-    const permitidas: readonly string[] = rev?.accionesPermitidas ?? ['MANTENER', 'PROPONER'];
+    const permitidas: readonly string[] = rev?.accionesPermitidas ?? [];
     const resultado: Array<{ valor: string; etiqueta: string; descripcion: string }> = [];
 
     if (permitidas.includes('MANTENER')) {
@@ -176,8 +197,19 @@ export class RevisionDecisionModalComponent {
     return resultado;
   });
 
+  /** Sin acciones permitidas el modal solo informa y no deja enviar nada. */
+  sinAcciones = computed(() => this.opciones().length === 0);
+  mensajeSinAcciones = computed(() => mensajeUi('UI_TEACHER_REVISION_DECISION_MODAL_001'));
+
+  /** La opcion elegida si el backend la permite; si no, la primera permitida; `null` si no hay ninguna. */
+  decisionActiva = computed<string | null>(() => {
+    const opciones = this.opciones();
+    const elegida = this.decision();
+    return opciones.some((opcion) => opcion.valor === elegida) ? elegida : (opciones[0]?.valor ?? null);
+  });
+
   isSubmitDisabled = computed(() => {
-    return this.enviando() || this.motivo().trim().length === 0;
+    return this.enviando() || this.sinAcciones() || this.motivo().trim().length === 0;
   });
 
   onMotivoInput(event: Event): void {
@@ -192,7 +224,8 @@ export class RevisionDecisionModalComponent {
     if (this.isSubmitDisabled()) {
       return;
     }
-    if (this.decision() === 'PROPONER' || this.decision() === 'PROPONER_CANCELACION') {
+    const decision = this.decisionActiva();
+    if (decision === 'PROPONER' || decision === 'PROPONER_CANCELACION') {
       this.requiereConfirmacion.set(true);
       return;
     }
@@ -205,7 +238,8 @@ export class RevisionDecisionModalComponent {
 
   private enviar(): void {
     const revId = this.revision()?.id || this.revision()?.revision?.id || '';
-    if (!revId) {
+    const decision = this.decisionActiva();
+    if (!revId || !decision) {
       return;
     }
 
@@ -221,7 +255,7 @@ export class RevisionDecisionModalComponent {
 
     this.service
       .decidir(revId, {
-        decision: this.decision(),
+        decision,
         motivo: this.motivo().trim(),
       })
       .subscribe({
@@ -247,6 +281,7 @@ export class RevisionDecisionModalComponent {
     this.requiereConfirmacion.set(false);
     this.errorMensaje.set(null);
     this.motivo.set('');
+    this.decision.set(null);
     this.closed.emit();
   }
 }
