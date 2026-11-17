@@ -21,6 +21,25 @@ describe('respuestaConsultasTransversales (mock HU112/HU128/HU143/HU157)', () =>
     expect((respuesta?.datos as { idEstudiante: string }).idEstudiante).toBe('EST-9');
   });
 
+  it('CIERRE-W2A: las opciones del consolidado son las del ámbito completo, sin repetir y ordenadas por nombre', () => {
+    const url = '/api/v1/coordinador/consolidado-asistencia/opciones';
+    const opciones = respuestaConsultasTransversales(get(url), url)?.datos as { asignaturas: { id: string; nombre: string }[]; docentes: { id: string; nombre: string }[] };
+    expect(opciones.asignaturas.length).toBeGreaterThan(0);
+    expect(opciones.asignaturas.map((a) => a.nombre)).toEqual([...opciones.asignaturas.map((a) => a.nombre)].sort((a, b) => a.localeCompare(b, 'es')));
+    expect(new Set(opciones.asignaturas.map((a) => a.id)).size).toBe(opciones.asignaturas.length);
+    expect(new Set(opciones.docentes.map((d) => d.id)).size).toBe(opciones.docentes.length);
+    // El decano usa el mismo simulador
+    expect(respuestaConsultasTransversales(get('/api/v1/decano/consolidado-asistencia/opciones'), '/api/v1/decano/consolidado-asistencia/opciones')?.datos).toBeTruthy();
+  });
+
+  it('CIERRE-W2A: un período sin grupos no tiene opciones', () => {
+    const url = '/api/v1/coordinador/consolidado-asistencia/opciones';
+    const req = new HttpRequest('GET', url, { params: new HttpParams().set('idPeriodoAcademico', 'PER-INEXISTENTE') });
+    const opciones = respuestaConsultasTransversales(req, url)?.datos as { asignaturas: unknown[]; docentes: unknown[] };
+    expect(opciones.asignaturas).toEqual([]);
+    expect(opciones.docentes).toEqual([]);
+  });
+
   it('simula el consolidado (HU061), la auditoría (HU172) y los componentes (HU147)', () => {
     const consolidado = '/api/v1/coordinador/consolidado-asistencia';
     expect(respuestaConsultasTransversales(get(consolidado), consolidado)?.total).toBe(2);

@@ -358,10 +358,11 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
 
   // ================= COORDINADOR: PLANES DE ESTUDIO =================
   if (url.endsWith('/coordinador/planes-estudio') && method === 'GET') {
+    const estaActivo = req.params.get('estaActivo');
     const planes = mockStore.planesEstudio.map((p) => ({
       ...p, idPrograma: 'PRG-MOCK-1', nombrePrograma: p.programa, inp: String(p.anioVigencia),
       estaActivoPlanEstudio: p.estado !== 'INACTIVO',
-    }));
+    })).filter((p) => estaActivo === null || String(p.estaActivoPlanEstudio) === estaActivo);
     return of(okPagina(planes, req)).pipe(delay(250));
   }
   if (url.endsWith('/coordinador/caracteres-asignatura') && method === 'GET') {
@@ -584,14 +585,29 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
 
   // ================= COORDINADOR: GRUPOS, SESIONES Y ASISTENCIAS (HU064/HU060/HU061) =================
   if (url.endsWith('/coordinador/grupos') && method === 'GET') {
+    const busqueda = (req.params.get('busqueda') ?? '').toLowerCase();
     const grupos = [
       {
         id: 'GRP-MOCK-1', codigo: 1, nombre: 'Grupo 1', idAsignatura: 'ASG-1', nombreAsignatura: 'Cálculo Diferencial',
         idDocente: 'DOC-1', capacidadMaxima: 30, estudiantesActivos: 2, cuposDisponibles: 28, habilitado: true,
         inicioPeriodo: '2026-01-20', finPeriodo: '2026-06-05',
+        franjas: [{ codigoDia: 'LU', nombreDia: 'Lunes', horaInicio: '07:00', horaFin: '09:00' }],
       },
-    ];
-    return of(okResponse(grupos, undefined, grupos.length)).pipe(delay(200));
+    ].filter((g) => !busqueda || g.nombre.toLowerCase().includes(busqueda) || g.nombreAsignatura.toLowerCase().includes(busqueda) || String(g.codigo).includes(busqueda));
+    return of(okPagina(grupos, req)).pipe(delay(200));
+  }
+  // CIERRE-W2A: asignaturas del programa del coordinador, filtradas por busqueda y caracter (codigo) y paginadas como el SP
+  if (url.endsWith('/coordinador/asignaturas') && method === 'GET') {
+    const caracter = req.params.get('caracter');
+    const busqueda = (req.params.get('busqueda') ?? '').toLowerCase();
+    const filas = mockStore.planesEstudio.flatMap((plan) =>
+      (mockStore.asignaturasPlan[plan.id] || []).map((a) => vinculoMock(a, plan.id))
+    ).filter(
+      (a) =>
+        (!caracter || a.codigoCaracter === caracter) &&
+        (!busqueda || a.codigo.toLowerCase().includes(busqueda) || a.nombre.toLowerCase().includes(busqueda))
+    );
+    return of(okPagina(filas, req)).pipe(delay(200));
   }
   if (url.includes('/coordinador/grupos/') && url.endsWith('/sesiones') && method === 'GET') {
     const idGrupo = url.split('/').slice(-2)[0];
@@ -625,7 +641,10 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
 
   // ================= COORDINADOR: PERÍODOS ACADÉMICOS =================
   if (url.endsWith('/coordinador/periodos-academicos') && method === 'GET') {
-    return of(okResponse(mockStore.periodosAcademicos)).pipe(delay(200));
+    // CIERRE-W2A: cada periodo trae su `estado` (lo resuelve la BD en el backend real) y se filtra por `estado` si se pide
+    const estado = req.params.get('estado')?.toUpperCase();
+    const periodos = mockStore.periodosAcademicos.filter((p) => !estado || p.estado === estado);
+    return of(okResponse(periodos)).pipe(delay(200));
   }
   if (url.endsWith('/admin/periodos-academicos') && method === 'POST') {
     const body = req.body as Partial<(typeof mockStore.periodosAcademicos)[number]>;
