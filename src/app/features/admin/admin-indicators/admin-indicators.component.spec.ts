@@ -19,6 +19,7 @@ describe('AdminIndicatorsComponent', () => {
     sesionesEjecutadas: 35, faltasSinJustaCausa: 6, porcentajeAusentismo: 17.14, porcentajeAsistencia: 82.86,
     sesionesVencidas: 12, sesionesConRegistro: 11, porcentajeCumplimiento: 91.67,
     estudiantesConMatriculaActiva: 6, estudiantesRegistrados: 7, docentesConGrupoActivo: 1, docentesRegistrados: 2, umbralAdvertencia: 15, umbralPerdida: 20,
+    facultadesActivas: 1, totalDecanos: 1, decanosActivos: 1,
   };
   const f1: ComparativaFacultad = {
     idFacultad: 'f-1', nombreFacultad: 'Ingenieria', estaActivaFacultad: true, totalProgramas: 3, totalEstudiantes: 6, estudiantesRiesgo: 1, estudiantesPerdida: 3,

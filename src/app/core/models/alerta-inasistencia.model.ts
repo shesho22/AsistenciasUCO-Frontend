@@ -12,6 +12,8 @@ export interface AlertaInasistencia {
   porcentajeActual?: number;
   umbral?: number;
   umbralPerdida?: number;
+  /** CIERRE-W3I: nivel de permanencia vigente que clasifica el servidor (REGULAR, RIESGO o PERDIDA); el semaforo solo lo pinta. */
+  codigoPermanenciaActual?: string | null;
   limitePorcentaje?: number;
   horasFalta?: number;
   horasDictadas?: number;

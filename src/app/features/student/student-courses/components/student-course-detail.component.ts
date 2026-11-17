@@ -99,7 +99,7 @@ import { ToastService } from '../../../../shared/components/toast/toast.componen
               <div>
                 <span class="text-xs text-warm-500 font-medium">Inasistencia (por horas)</span>
                 <p class="text-3xl font-serif font-bold text-primary-800 my-1" data-testid="detalle-porcentaje-inasistencia">{{ ind.porcentajeInasistencia }}%</p>
-                <app-semaforo-asistencia [porcentaje]="ind.porcentajeInasistencia" [umbralAdvertencia]="ind.umbralAdvertencia" [umbralPerdida]="ind.umbralPerdida" />
+                <app-semaforo-asistencia [codigoPermanencia]="ind.codigoPermanencia" [porcentaje]="ind.porcentajeInasistencia" />
                 <app-attendance-status-badge [codigoPermanencia]="ind.codigoPermanencia" />
               </div>
               <div class="text-xs text-warm-500 space-y-0.5 border-t border-warm-200/80 pt-2">

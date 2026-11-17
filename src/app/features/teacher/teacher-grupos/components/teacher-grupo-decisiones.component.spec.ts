@@ -80,6 +80,15 @@ describe('TeacherGrupoDecisionesComponent', () => {
     expect(texto).toContain('22.5');
   });
 
+  it('CIERRE-W3I el semáforo de la decisión es el nivel que clasifica el servidor (codigoPermanenciaActual)', () => {
+    servicio.consultarDocente.and.returnValue(
+      of(pagina([{ ...revision, id: 'r-rojo', codigoPermanenciaActual: 'PERDIDA' }, { ...revision, id: 'r-sin', codigoPermanenciaActual: null }]))
+    );
+    crear();
+    const chips = Array.from(el().querySelectorAll('[data-testid="semaforo-nivel"]'));
+    expect(chips.map((c) => c.getAttribute('data-nivel'))).toEqual(['rojo']);
+  });
+
   it('usa el nombre plano del estudiante y no pinta documento ni fecha si no vienen', () => {
     servicio.consultarDocente.and.returnValue(
       of(pagina([{ id: 'r2', estado: 'PENDIENTE_DOCENTE', nombreEstudiante: 'Luis Gil' }]))

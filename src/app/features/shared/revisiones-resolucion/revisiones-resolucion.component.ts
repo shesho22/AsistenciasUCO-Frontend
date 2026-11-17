@@ -151,7 +151,7 @@ export const ESTADOS_FILTRABLES: ReadonlyArray<{ codigo: EstadoRevisionCancelaci
                     </td>
                     <td class="px-5 py-4">
                       <div class="flex flex-col items-start gap-1">
-                        <app-semaforo-asistencia [porcentaje]="porcentaje(rev)" [umbralPerdida]="rev.umbralPerdida" />
+                        <app-semaforo-asistencia [codigoPermanencia]="rev.codigoPermanenciaActual" [porcentaje]="porcentaje(rev)" />
                         <span class="text-xs text-warm-600" data-testid="rev-porcentaje">
                           {{ porcentaje(rev) | number: '1.1-2' }} %
                           @if (rev.umbralPerdida !== null && rev.umbralPerdida !== undefined) { (límite {{ rev.umbralPerdida }} %) }

@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { NivelAsistencia, nivelAsistencia, redondearPorcentaje } from '../../../core/utils/nivel-asistencia';
+import { NivelAsistencia, nivelDesdeCodigo } from '../../../core/utils/nivel-asistencia';
 
 interface Presentacion {
   texto: string;
@@ -47,19 +47,21 @@ const PRESENTACION: Record<NivelAsistencia, Presentacion> = {
   `,
 })
 export class SemaforoAsistenciaComponent {
-  /** % de inasistencia por horas. */
+  /** Nivel de permanencia que clasifico el servidor (REGULAR, RIESGO o PERDIDA; VERDE, AMBAR o ROJO en las alertas tempranas). */
+  readonly codigoPermanencia = input<string | null | undefined>(null);
+  /** % de inasistencia por horas tal como lo entrega el servidor; solo se anuncia en el aria-label, no decide el nivel. */
   readonly porcentaje = input<number | null | undefined>(null);
-  readonly umbralAdvertencia = input<number | null | undefined>(null);
-  readonly umbralPerdida = input<number | null | undefined>(null);
   readonly compacto = input<boolean>(false);
 
   protected readonly vista = computed(() => {
-    const p = this.porcentaje();
-    const nivel = nivelAsistencia(p, this.umbralAdvertencia(), this.umbralPerdida());
+    const nivel = nivelDesdeCodigo(this.codigoPermanencia());
     if (nivel === null) return null;
     const pres = PRESENTACION[nivel];
-    // VAL PRU-14: el lector de pantalla anuncia el mismo valor redondeado con el que se decidio el nivel.
-    const valor = String(redondearPorcentaje(p as number)).replace('.', ',');
-    return { nivel, ...pres, aria: `Inasistencia ${valor} %: ${pres.descripcion}` };
+    const p = this.porcentaje();
+    const aria =
+      p === null || p === undefined || Number.isNaN(p)
+        ? `Nivel de asistencia: ${pres.descripcion}`
+        : `Inasistencia ${String(p).replace('.', ',')} %: ${pres.descripcion}`;
+    return { nivel, ...pres, aria };
   });
 }

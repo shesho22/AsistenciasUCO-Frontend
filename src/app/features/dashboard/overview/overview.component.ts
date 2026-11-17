@@ -8,7 +8,7 @@ import {
   ChangeDetectionStrategy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { switchMap, timer } from 'rxjs';
+import { timer } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../../core/services/auth.service';
 import { CourseService } from '../../../core/services/course.service';
@@ -22,6 +22,11 @@ import { AdminIndicatorsService } from '../../../core/services/admin-indicators.
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { StudentManagementService } from '../../../core/services/student-management.service';
 import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
+import { TeacherGruposResumenService } from '../../../core/services/teacher-grupos-resumen.service';
+import { KpisInstitucion } from '../../../core/models/admin-indicators.model';
+import { KpisDecano } from '../../../core/models/dean-indicators.model';
+import { KpisCoordinador } from '../../../core/models/coordinator-indicators.model';
+import { EstadoIndicadores } from '../../../core/utils/cifra-indicador';
 import { Course } from '../../../core/models/course.model';
 import { UserRole, sinEntidadAsignada } from '../../../core/models/user.model';
 import { SinEntidadAsignadaComponent } from '../../../shared/components/sin-entidad-asignada/sin-entidad-asignada.component';
@@ -78,24 +83,13 @@ import { OverviewStudentComponent } from './components/overview-student.componen
       <!-- 2. Dashboard Especializado por Rol -->
       @switch (userRole()) {
         @case ('ADMINISTRADOR') {
-          <app-overview-admin
-            [decanos]="decanos()"
-            [totalFacultades]="totalFacultadesAdmin()"
-            [totalProgramas]="totalProgramasAdmin()"
-            [porcentajeAsistencia]="porcentajeAsistenciaCampus()"
-          />
+          <app-overview-admin [decanos]="decanos()" [kpis]="adminKpis()" [estado]="adminEstado()" />
         }
         @case ('DECANO') {
           @if (decanoSinFacultad()) {
             <app-sin-entidad-asignada rol="DECANO" />
           } @else {
-            <app-overview-dean
-              [coordinadores]="coordinadores()"
-              [totalDocentes]="totalDocentesFacultad()"
-              [totalGrupos]="gruposActivosFacultad()"
-              [periodo]="periodoFacultad()"
-              [porcentajeAsistencia]="porcentajeAsistenciaFacultad()"
-            />
+            <app-overview-dean [coordinadores]="coordinadores()" [kpis]="deanKpis()" [estado]="deanEstado()" />
           }
         }
         @case ('COORDINADOR') {
@@ -105,9 +99,8 @@ import { OverviewStudentComponent } from './components/overview-student.componen
             <app-overview-coordinator
               [docentes]="docentes()"
               [planesEstudio]="planesEstudio()"
-              [totalGrupos]="totalGruposPrograma()"
-              [totalEstudiantes]="totalEstudiantesPrograma()"
-              [estudiantesRiesgo]="estudiantesRiesgoPrograma()"
+              [kpis]="coordKpis()"
+              [estado]="coordEstado()"
               [solicitudesSesionPendientes]="solicitudesSesionPendientes()"
             />
           }
@@ -146,6 +139,7 @@ export class OverviewComponent implements OnInit {
   private coordinatorProgram = inject(CoordinatorProgramService);
   private studentService = inject(StudentManagementService);
   private claimService = inject(AttendanceClaimService);
+  private teacherResumen = inject(TeacherGruposResumenService);
   private destroyRef = inject(DestroyRef);
 
   user = computed(() => this.authService.currentUser() || MOCK_USERS_BY_ROLE.DOCENTE);
@@ -164,40 +158,24 @@ export class OverviewComponent implements OnInit {
   courses: Course[] = [];
   /** Total de reclamos pendientes del servidor; `null` si la consulta falló (la vista no muestra cifra). */
   pendingClaimsCount = signal<number | null>(0);
-  totalStudentsCount = signal<number>(0);
+  /** CIERRE-W3I: estudiantes activos de sus grupos habilitados, calculados en la base; `null` mientras no llega o si falla. */
+  totalStudentsCount = signal<number | null>(null);
 
-  // Datos Administrador
+  // Datos Administrador (CIERRE-W3I: las cifras las calcula la base; solo el directorio de decanos se lista)
   decanos = signal<DecanoItem[]>([]);
-  totalFacultadesAdmin = computed<number>(() => {
-    const list = this.decanos();
-    if (!list || list.length === 0) return 0;
-    const unique = new Set(list.map((d) => d.facultad).filter(Boolean));
-    return unique.size || list.length;
-  });
+  adminKpis = signal<KpisInstitucion | null>(null);
+  adminEstado = signal<EstadoIndicadores>('cargando');
 
-  // Datos Decano
+  // Datos Decano (CIERRE-W3I: coordinadores, docentes, grupos y periodo salen de GET /decano/indicadores)
   coordinadores = signal<CoordinadorItem[]>([]);
-  porcentajeAsistenciaFacultad = signal<number | null>(null);
-  totalProgramasAdmin = signal<number | null>(null);
-  porcentajeAsistenciaCampus = signal<number | null>(null);
-  estudiantesRiesgoPrograma = signal<number | null>(null);
-  totalDocentesFacultad = computed<number>(() => {
-    return this.coordinadores().reduce((acc, c) => acc + (c.totalDocentes || 0), 0);
-  });
-  /**
-   * DASH-13: «Grupos en curso» sale de los indicadores de la facultad (grupos activos del período vigente) y no de la
-   * suma por coordinador, que daba 0 cuando el coordinador no tenía grupos propios aunque la facultad sí.
-   */
-  gruposActivosFacultad = signal<number | null>(null);
-  periodoFacultad = signal<string | null>(null);
+  deanKpis = signal<KpisDecano | null>(null);
+  deanEstado = signal<EstadoIndicadores>('cargando');
 
-  // Datos Coordinador
+  // Datos Coordinador (CIERRE-W3I: docentes, grupos, estudiantes y riesgo salen de GET /coordinador/indicadores)
   docentes = signal<DocenteItem[]>([]);
   planesEstudio = signal<PlanEstudioItem[]>([]);
-  totalGruposPrograma = computed<number>(() => {
-    return this.docentes().reduce((acc, d) => acc + (d.totalGruposAsignados || 0), 0);
-  });
-  totalEstudiantesPrograma = signal<number>(0);
+  coordKpis = signal<KpisCoordinador | null>(null);
+  coordEstado = signal<EstadoIndicadores>('cargando');
   /** DEC-065 (2): solicitudes de sesión extraordinaria pendientes de aval; `null` = sin dato. */
   solicitudesSesionPendientes = signal<number | null>(null);
 
@@ -221,12 +199,12 @@ export class OverviewComponent implements OnInit {
       case 'ADMINISTRADOR':
         this.adminIndicators.consultarKpis().subscribe({
           next: (res) => {
-            this.totalProgramasAdmin.set(res.datos?.totalProgramas ?? null);
-            this.porcentajeAsistenciaCampus.set(res.datos?.porcentajeAsistencia ?? null);
+            this.adminKpis.set(res.datos ?? null);
+            this.adminEstado.set(res.datos ? 'listo' : 'error');
           },
           error: () => {
-            this.totalProgramasAdmin.set(null);
-            this.porcentajeAsistenciaCampus.set(null);
+            this.adminKpis.set(null);
+            this.adminEstado.set('error');
           },
         });
         this.adminService.getDecanos().subscribe({
@@ -248,14 +226,12 @@ export class OverviewComponent implements OnInit {
         }
         this.deanIndicators.consultarKpis().subscribe({
           next: (res) => {
-            this.porcentajeAsistenciaFacultad.set(res.datos?.porcentajeAsistencia ?? null);
-            this.gruposActivosFacultad.set(res.datos?.gruposActivos ?? null);
-            this.periodoFacultad.set(res.datos?.nombrePeriodoAcademico ?? null);
+            this.deanKpis.set(res.datos ?? null);
+            this.deanEstado.set(res.datos ? 'listo' : 'error');
           },
           error: () => {
-            this.porcentajeAsistenciaFacultad.set(null);
-            this.gruposActivosFacultad.set(null);
-            this.periodoFacultad.set(null);
+            this.deanKpis.set(null);
+            this.deanEstado.set('error');
           },
         });
         this.deanService.getCoordinadores().subscribe({
@@ -282,17 +258,31 @@ export class OverviewComponent implements OnInit {
             }
           },
         });
-        this.coordinatorIndicators.consultarKpis().subscribe({
-          next: (res) => this.estudiantesRiesgoPrograma.set(res.datos?.estudiantesRiesgo ?? null),
-          error: () => this.estudiantesRiesgoPrograma.set(null),
+        // F-COORD-01: los indicadores y las solicitudes pendientes se piden con el programa ya resuelto (con varios programas
+        // el backend exige `programaId`); antes se pedian a ciegas y un fallo dejaba el 0 inicial.
+        this.coordinatorProgram.cargar().subscribe({
+          next: () => {
+            this.coordinatorIndicators.consultarKpis().subscribe({
+              next: (res) => {
+                this.coordKpis.set(res.datos ?? null);
+                this.coordEstado.set(res.datos ? 'listo' : 'error');
+              },
+              error: () => {
+                this.coordKpis.set(null);
+                this.coordEstado.set('error');
+              },
+            });
+            this.coordinadorSesiones.contarPendientes(this.coordinatorProgram.programaId()).subscribe({
+              next: (n) => this.solicitudesSesionPendientes.set(n),
+              error: () => this.solicitudesSesionPendientes.set(null),
+            });
+          },
+          error: () => {
+            this.coordKpis.set(null);
+            this.coordEstado.set('error');
+            this.solicitudesSesionPendientes.set(null);
+          },
         });
-        this.coordinatorProgram
-          .cargar()
-          .pipe(switchMap(() => this.coordinadorSesiones.contarPendientes(this.coordinatorProgram.programaId())))
-          .subscribe({
-            next: (n) => this.solicitudesSesionPendientes.set(n),
-            error: () => this.solicitudesSesionPendientes.set(null),
-          });
         this.coordinatorService.getDocentes().subscribe({
           next: (res) => {
             if (res.exitoso && res.datos) {
@@ -301,13 +291,6 @@ export class OverviewComponent implements OnInit {
             this.isLoading.set(false);
           },
           error: () => this.isLoading.set(false),
-        });
-        this.coordinatorService.getEstudiantesDirectorio().subscribe({
-          next: (res) => {
-            if (res.exitoso && res.datos) {
-              this.totalEstudiantesPrograma.set(res.datos.length);
-            }
-          },
         });
         break;
 
@@ -324,16 +307,16 @@ export class OverviewComponent implements OnInit {
           next: (res) => {
             if (res.exitoso && res.datos) {
               this.courses = res.datos;
-              const total = res.datos.reduce(
-                (acc: number, c: Course) => acc + (c.enrolledStudentsCount || 0),
-                0
-              );
-              this.totalStudentsCount.set(total);
               this.recalcularProximaClase();
             }
             this.isLoading.set(false);
           },
           error: () => this.isLoading.set(false),
+        });
+        // CIERRE-W3I: el total de estudiantes de sus grupos lo calcula la base; el cliente no suma `enrolledStudentsCount`.
+        this.teacherResumen.consultar().subscribe({
+          next: (res) => this.totalStudentsCount.set(res.datos?.estudiantesActivos ?? null),
+          error: () => this.totalStudentsCount.set(null),
         });
         // Total real del servidor (misma consulta de una fila que AC-04 de HU035), no la longitud de la primera página.
         this.claimService.getReclamosDocente({ estado: 'P', pagina: 1, tamano: 1 }).subscribe({

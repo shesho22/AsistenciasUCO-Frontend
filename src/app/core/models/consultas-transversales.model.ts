@@ -158,6 +158,8 @@ export interface ConsolidadoGrupoItem {
   /** Los cuatro porcentajes suman 100 (el backend reparte el redondeo). */
   porcentajeExcusa: number;
   porcentajeSinRegistro: number;
+  /** CIERRE-W3I: nivel de permanencia del grupo que clasifica el servidor (REGULAR, RIESGO o PERDIDA). */
+  codigoPermanencia?: string | null;
 }
 
 export interface FiltroConsolidado {

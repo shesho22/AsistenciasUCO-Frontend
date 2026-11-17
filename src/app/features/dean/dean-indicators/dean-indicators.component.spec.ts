@@ -18,6 +18,7 @@ describe('DeanIndicatorsComponent', () => {
     totalProgramas: 3, totalEstudiantes: 6, estudiantesRegulares: 2, estudiantesRiesgo: 1, estudiantesPerdida: 3, tasaRetencion: 50,
     sesionesEjecutadas: 35, faltasSinJustaCausa: 6, porcentajeAusentismo: 17.14, porcentajeAsistencia: 82.86,
     gruposActivos: 3, cupoTotal: 55, matriculadosActivos: 7, tasaAforo: 12.73, umbralAdvertencia: 15, umbralPerdida: 20,
+    totalCoordinadores: 2, totalDocentes: 5,
   };
   const p1: ComparativaPrograma = {
     idPrograma: 'p-1', nombrePrograma: 'Sistemas', estaActivoPrograma: true, totalEstudiantes: 5, estudiantesRiesgo: 1, estudiantesPerdida: 2,
@@ -182,5 +183,45 @@ describe('DeanIndicatorsComponent', () => {
     component.service.comparativa.set([]);
     fixture.detectChanges();
     expect(texto()).toContain('No hay programas');
+  });
+
+  describe('F-DEC-02: "No hay programas" solo con la respuesta recibida', () => {
+    it('mientras la comparativa no responde muestra "Cargando programas", no el estado vacio', () => {
+      component.cargarComparativa();
+      fixture.detectChanges();
+      expect(component.cargandoComparativa()).toBeTrue();
+      expect(texto()).toContain('Cargando programas');
+      expect(texto()).not.toContain('No hay programas');
+      http.expectOne((r) => r.url === `${base}/comparativa-programas`).flush({ exitoso: true, datos: [p1] });
+      fixture.detectChanges();
+      expect(component.cargandoComparativa()).toBeFalse();
+      expect(texto()).not.toContain('Cargando programas');
+      expect(texto()).toContain('Sistemas');
+    });
+
+    it('si responde sin programas ya se afirma el estado vacio', () => {
+      component.cargarComparativa();
+      http.expectOne((r) => r.url === `${base}/comparativa-programas`).flush({ exitoso: true, datos: [] });
+      fixture.detectChanges();
+      expect(texto()).toContain('No hay programas');
+      expect(texto()).not.toContain('Cargando programas');
+    });
+
+    it('si falla muestra el error con reintento y no el estado vacio', () => {
+      spyOn(toast, 'error');
+      component.cargarComparativa();
+      http.expectOne((r) => r.url === `${base}/comparativa-programas`).flush({ message: 'Fallo' }, { status: 500, statusText: 'Server Error' });
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('[data-testid="error-carga"]')).not.toBeNull();
+      expect(texto()).not.toContain('No hay programas');
+      expect(el.querySelector('[data-testid="comparativa-cargando"]')).toBeNull();
+
+      (el.querySelector('[data-testid="error-carga"] button') as HTMLButtonElement).click();
+      http.expectOne((r) => r.url === `${base}/comparativa-programas`).flush({ exitoso: true, datos: [p1] });
+      fixture.detectChanges();
+      expect(el.querySelector('[data-testid="error-carga"]')).toBeNull();
+      expect(texto()).toContain('Sistemas');
+    });
   });
 });

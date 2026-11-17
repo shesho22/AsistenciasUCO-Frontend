@@ -12,49 +12,47 @@ describe('SemaforoAsistenciaComponent', () => {
   }
   beforeEach(() => TestBed.configureTestingModule({ imports: [SemaforoAsistenciaComponent] }));
 
-  it('verde: texto, icono y aria-label', () => {
-    crear({ porcentaje: 5 });
+  it('verde (REGULAR): texto, icono y aria-label con el porcentaje del servidor', () => {
+    crear({ codigoPermanencia: 'REGULAR', porcentaje: 5 });
     expect(chip()?.getAttribute('data-nivel')).toBe('verde');
     expect(chip()?.getAttribute('aria-label')).toBe('Inasistencia 5 %: nivel normal');
     expect(chip()?.textContent).toContain('Normal');
     expect(chip()?.querySelector('svg')).not.toBeNull();
   });
-  it('ambar en 15 exacto', () => {
-    crear({ porcentaje: 15 });
+  it('ambar (RIESGO)', () => {
+    crear({ codigoPermanencia: 'RIESGO', porcentaje: 15 });
     expect(chip()?.getAttribute('data-nivel')).toBe('ambar');
     expect(chip()?.getAttribute('aria-label')).toContain('advertencia');
+    expect(chip()?.textContent).toContain('Advertencia');
   });
-  it('rojo en 20 exacto y respeta umbrales informados', () => {
-    crear({ porcentaje: 20 });
+  it('rojo (PERDIDA) y el nivel no depende del porcentaje que se anuncia', () => {
+    crear({ codigoPermanencia: 'PERDIDA', porcentaje: 1 });
     expect(chip()?.getAttribute('data-nivel')).toBe('rojo');
-    fixture.destroy();
-    crear({ porcentaje: 20, umbralAdvertencia: 10, umbralPerdida: 30 });
-    expect(chip()?.getAttribute('data-nivel')).toBe('ambar');
+    expect(chip()?.textContent).toContain('Pérdida');
   });
-  it('sin dato no pinta nada', () => {
-    crear({ porcentaje: null });
+  it('acepta el semaforo de las alertas tempranas (ROJO)', () => {
+    crear({ codigoPermanencia: 'ROJO' });
+    expect(chip()?.getAttribute('data-nivel')).toBe('rojo');
+  });
+  it('sin porcentaje anuncia el nivel', () => {
+    crear({ codigoPermanencia: 'RIESGO' });
+    expect(chip()?.getAttribute('aria-label')).toBe('Nivel de asistencia: advertencia');
+  });
+  it('decimales con coma en el aria-label', () => {
+    crear({ codigoPermanencia: 'RIESGO', porcentaje: 19.99 });
+    expect(chip()?.getAttribute('aria-label')).toBe('Inasistencia 19,99 %: advertencia');
+  });
+  it('sin codigo del servidor no pinta nada', () => {
+    crear({ codigoPermanencia: null, porcentaje: 80 });
+    expect(chip()).toBeNull();
+  });
+  it('con un codigo desconocido no pinta nada', () => {
+    crear({ codigoPermanencia: 'OTRO', porcentaje: 80 });
     expect(chip()).toBeNull();
   });
   it('modo compacto oculta el texto visible pero conserva aria-label', () => {
-    crear({ porcentaje: 25, compacto: true });
+    crear({ codigoPermanencia: 'PERDIDA', porcentaje: 25, compacto: true });
     expect(chip()?.getAttribute('aria-label')).toContain('pérdida');
     expect(chip()?.querySelector('[data-testid="semaforo-texto"]')).toBeNull();
-  });
-
-  describe('VAL PRU-14: presentacion del borde del umbral', () => {
-    const casos: Array<{ porcentaje: number; nivel: string; texto: string; aria: string }> = [
-      { porcentaje: 19.99, nivel: 'ambar', texto: 'Advertencia', aria: 'Inasistencia 19,99 %: advertencia' },
-      { porcentaje: 19.995, nivel: 'rojo', texto: 'Pérdida', aria: 'Inasistencia 20 %: pérdida de la asignatura' },
-      { porcentaje: 20, nivel: 'rojo', texto: 'Pérdida', aria: 'Inasistencia 20 %: pérdida de la asignatura' },
-      { porcentaje: 20.01, nivel: 'rojo', texto: 'Pérdida', aria: 'Inasistencia 20,01 %: pérdida de la asignatura' },
-    ];
-    for (const c of casos) {
-      it(`${c.porcentaje} % se presenta como ${c.texto} y anuncia el valor redondeado`, () => {
-        crear({ porcentaje: c.porcentaje });
-        expect(chip()?.getAttribute('data-nivel')).toBe(c.nivel);
-        expect(chip()?.textContent).toContain(c.texto);
-        expect(chip()?.getAttribute('aria-label')).toBe(c.aria);
-      });
-    }
   });
 });

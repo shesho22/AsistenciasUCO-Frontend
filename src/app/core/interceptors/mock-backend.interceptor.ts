@@ -3,6 +3,7 @@ import { inject } from '@angular/core';
 import { of, delay, throwError } from 'rxjs';
 import { mockStore } from '../mocks/mock-data-store';
 import { respuestaConsultasTransversales } from '../mocks/mock-consultas-transversales';
+import { respuestaIndicadores } from '../mocks/mock-indicadores';
 import { plantillasNotificacionMock } from '../mocks/mock-notificaciones';
 import {
   JORNADAS_PROGRAMA_MOCK,
@@ -507,6 +508,12 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     const planId = segments[segments.length - 2];
     const asignaturas = (mockStore.asignaturasPlan[planId] || []).map((a) => vinculoMock(a, planId));
     return of(okPagina(asignaturas, req)).pipe(delay(200));
+  }
+
+  // ================= INDICADORES DE LOS TABLEROS POR ROL (CIERRE-W3I) =================
+  const indicadores = respuestaIndicadores(method, url);
+  if (indicadores) {
+    return of(okResponse(indicadores.datos)).pipe(delay(200));
   }
 
   // ================= DECANO Y ADMINISTRADOR: CONSULTAS TRANSVERSALES (HU112/HU128/HU143/HU157) =================

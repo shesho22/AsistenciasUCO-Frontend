@@ -19,6 +19,15 @@ export interface KpisCoordinador {
   porcentajeProgresoCalendario: number | null;
   umbralAdvertencia: number;
   umbralPerdida: number;
+  /** CIERRE-W3I: docentes con vinculo activo en el programa (sin tope de pagina). */
+  totalDocentes: number;
+  /** CIERRE-W3I: grupos habilitados del programa en el periodo resuelto y su aforo (`tasaAforo` es null con cupo 0). */
+  gruposActivos: number;
+  cupoTotal: number;
+  matriculadosActivos: number;
+  tasaAforo: number | null;
+  /** CIERRE-W3I: padron del programa (estudiantes con vinculo al programa). */
+  estudiantesRegistrados: number;
 }
 
 export interface AlertaTemprana {

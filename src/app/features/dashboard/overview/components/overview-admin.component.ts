@@ -1,11 +1,13 @@
 import { CifraConBaseComponent } from '../../../../shared/components/cifra-con-base/cifra-con-base.component';
-import { Component, ChangeDetectionStrategy, computed, input } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input } from '@angular/core';
 
 import { RouterLink } from '@angular/router';
 import { CardComponent } from '../../../../shared/components/card/card.component';
 import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { DecanoItem } from '../../../../core/models/role-management.model';
+import { KpisInstitucion } from '../../../../core/models/admin-indicators.model';
+import { EstadoIndicadores, textoCifra } from '../../../../core/utils/cifra-indicador';
 
 @Component({
     selector: 'app-overview-admin',
@@ -17,25 +19,29 @@ import { DecanoItem } from '../../../../core/models/role-management.model';
     template: `
     <div class="space-y-6">
       <!-- KPIs Administrador -->
-      <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <section class="grid grid-cols-2 lg:grid-cols-4 gap-4" [attr.aria-busy]="estado() === 'cargando'">
         <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Facultades Activas</span>
-          <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ totalFacultades() }}</p>
-          <span class="text-[11px] text-success-700 font-medium">Sincronizadas con base de datos</span>
+          <p class="text-2xl font-serif font-bold text-warm-900 mt-1" data-testid="facultades-activas">{{ texto(kpis()?.facultadesActivas) }}</p>
+          <span class="text-[11px] text-success-700 font-medium">De la institución</span>
         </div>
         <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Decanos en ejercicio</span>
-          <p class="text-2xl font-serif font-bold text-warm-900 mt-1" data-testid="decanos-activos">{{ decanosActivos() }}</p>
-          <span class="text-[11px] text-warm-500 font-medium"><app-cifra-con-base [valor]="decanosActivos()" [base]="decanos().length" [soloBase]="true" /></span>
+          <p class="text-2xl font-serif font-bold text-warm-900 mt-1" data-testid="decanos-activos">{{ texto(kpis()?.decanosActivos) }}</p>
+          <span class="text-[11px] text-warm-500 font-medium">
+            @if (estado() === 'listo' && kpis(); as k) {
+              <app-cifra-con-base [valor]="k.decanosActivos" [base]="k.totalDecanos" [soloBase]="true" />
+            }
+          </span>
         </div>
         <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Programas Académicos</span>
-          <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ totalProgramas() === null ? 'Sin datos' : totalProgramas() }}</p>
+          <p class="text-2xl font-serif font-bold text-warm-900 mt-1" data-testid="programas">{{ texto(kpis()?.totalProgramas) }}</p>
           <span class="text-[11px] text-primary-700 font-medium">De la institución</span>
         </div>
         <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Asistencia Promedio Campus</span>
-          <p class="text-2xl font-serif font-bold text-accent-700 mt-1" data-testid="asistencia-campus">{{ porcentajeAsistencia() === null ? 'Sin datos' : porcentajeAsistencia() + '%' }}</p>
+          <p class="text-2xl font-serif font-bold text-accent-700 mt-1" data-testid="asistencia-campus">{{ texto(kpis()?.porcentajeAsistencia, '%') }}</p>
           <span class="text-[11px] text-success-700 font-medium">Indicador institucional</span>
         </div>
       </section>
@@ -95,11 +101,13 @@ import { DecanoItem } from '../../../../core/models/role-management.model';
   `
 })
 export class OverviewAdminComponent {
+  /** Directorio de decanos que se lista abajo (no se cuenta: las cifras salen de `kpis`). */
   decanos = input<DecanoItem[]>([]);
-  totalFacultades = input<number>(0);
-  totalProgramas = input<number | null>(null);
-  /** `porcentajeAsistencia` de GET /admin/indicadores; `null` = sin dato. */
-  porcentajeAsistencia = input<number | null>(null);
-  /** Solo los decanos con `estaActivoDecano` distinto de false. */
-  decanosActivos = computed(() => this.decanos().filter((d) => d.estaActivoDecano !== false).length);
+  /** CIERRE-W3I: indicadores de la institución calculados en la base (GET /admin/indicadores). */
+  kpis = input<KpisInstitucion | null>(null);
+  estado = input<EstadoIndicadores>('cargando');
+
+  texto(valor: number | null | undefined, sufijo = ''): string {
+    return textoCifra(valor, this.estado(), sufijo);
+  }
 }

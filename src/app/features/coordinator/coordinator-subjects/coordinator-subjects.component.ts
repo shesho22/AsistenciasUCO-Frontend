@@ -1,11 +1,15 @@
 import { Component, DestroyRef, OnInit, inject, signal, computed, ChangeDetectionStrategy, input } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Subject, debounceTime, tap } from 'rxjs';
+import { Subject, debounceTime, switchMap, tap } from 'rxjs';
 
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { CourseService } from '../../../core/services/course.service';
+import { CoordinatorIndicatorsService } from '../../../core/services/coordinator-indicators.service';
+import { CoordinatorProgramService } from '../../../core/services/coordinator-program.service';
+import { KpisCoordinador } from '../../../core/models/coordinator-indicators.model';
+import { EstadoIndicadores, TEXTO_CARGANDO, TEXTO_SIN_DATOS } from '../../../core/utils/cifra-indicador';
 import { Course } from '../../../core/models/course.model';
 import {
   AsignaturaPlanItem,
@@ -72,11 +76,9 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
           <span class="text-[11px] text-warm-500">En {{ totalPlanes() }} planes de estudio</span>
         </div>
         <div class="superficie p-4">
-          <span class="text-xs text-warm-500 font-medium">Ocupación de Cupos de la página</span>
-          <p class="text-2xl font-serif font-bold text-info-800 mt-1">
-            {{ totalInscritosGrupos() }} / {{ totalCapacidadGrupos() }}
-          </p>
-          <span class="text-[11px] text-warm-500">Matrícula gestionada por cada docente</span>
+          <span class="text-xs text-warm-500 font-medium">Ocupación de Cupos</span>
+          <p class="text-2xl font-serif font-bold text-info-800 mt-1" data-testid="ocupacion-cupos">{{ ocupacionTexto() }}</p>
+          <span class="text-[11px] text-warm-500" data-testid="ocupacion-detalle">{{ ocupacionDetalle() }}</span>
         </div>
       </div>
 
@@ -332,6 +334,8 @@ export class CoordinatorSubjectsComponent implements OnInit {
   private readonly coordinatorService = inject(CoordinatorManagementService);
   private readonly courseService = inject(CourseService);
   private readonly router = inject(Router);
+  private readonly indicadores = inject(CoordinatorIndicatorsService);
+  private readonly programa = inject(CoordinatorProgramService);
 
   /** Los grupos del programa se buscan y paginan en el servidor (CIERRE-W2A); `total` es el del filtro. */
   readonly listado = new ListadoPaginado<Course>(
@@ -378,14 +382,25 @@ export class CoordinatorSubjectsComponent implements OnInit {
     return `${a.id}|${a.planEstudioId}`;
   }
 
-  totalInscritosGrupos = computed(() =>
-    this.courses().reduce((acc, c) => acc + (c.enrolledStudentsCount || 0), 0)
-  );
+  /**
+   * CIERRE-W3I: la ocupación de cupos de todos los grupos habilitados del programa la calcula la base
+   * (`GET /coordinador/indicadores`); antes se sumaban solo los grupos de la página visible.
+   */
+  readonly kpis = signal<KpisCoordinador | null>(null);
+  readonly estadoKpis = signal<EstadoIndicadores>('cargando');
 
-  /** Capacidad total de los grupos que informan cupo; un grupo sin cupo del backend no entra en la suma. */
-  totalCapacidadGrupos = computed(() => {
-    const conCupo = this.courses().filter((c) => this.tieneCupo(c));
-    return conCupo.length === 0 ? '—' : String(conCupo.reduce((acc, c) => acc + (c.cupoMaximo ?? 0), 0));
+  readonly ocupacionTexto = computed(() => {
+    const estado = this.estadoKpis();
+    const k = this.kpis();
+    if (estado === 'cargando') return TEXTO_CARGANDO;
+    if (estado === 'error' || k === null) return TEXTO_SIN_DATOS;
+    return `${k.matriculadosActivos} / ${k.cupoTotal}`;
+  });
+
+  readonly ocupacionDetalle = computed(() => {
+    const k = this.kpis();
+    if (this.estadoKpis() !== 'listo' || k === null) return 'Grupos habilitados del período';
+    return k.tasaAforo === null ? 'Sin cupo registrado en los grupos habilitados' : `${k.tasaAforo} % de ocupación · ${k.gruposActivos} grupos habilitados`;
   });
 
   private tieneCupo(curso: Course): boolean {
@@ -425,6 +440,25 @@ export class CoordinatorSubjectsComponent implements OnInit {
       next: (res) => this.caracteres.set(res.datos ?? []),
       error: (error: unknown) => this.errorAuxiliar.set(classifyLoadError(error)),
     });
+    this.cargarOcupacion();
+  }
+
+  /** Ocupación de cupos desde el servidor; se pide con el programa ya resuelto (con varios programas el backend exige `programaId`). */
+  private cargarOcupacion(): void {
+    this.estadoKpis.set('cargando');
+    this.programa
+      .cargar()
+      .pipe(switchMap(() => this.indicadores.consultarKpis()))
+      .subscribe({
+        next: (res) => {
+          this.kpis.set(res.datos ?? null);
+          this.estadoKpis.set(res.datos ? 'listo' : 'error');
+        },
+        error: () => {
+          this.kpis.set(null);
+          this.estadoKpis.set('error');
+        },
+      });
   }
 
   onBusqueda(valor: string): void {
