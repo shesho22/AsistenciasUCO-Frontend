@@ -141,7 +141,7 @@ export class AdminManagementService {
     return {
       id: raw.id,
       idUsuario: raw.idUsuario,
-      tipoIdentificacion: raw.tipoIdentificacion || 'CC',
+      tipoIdentificacion: raw.tipoIdentificacion || undefined,
       tipoIdentificacionId: raw.tipoIdentificacionId,
       numeroIdentificacion: String(raw.numeroIdentificacion || ''),
       nombreCompleto,

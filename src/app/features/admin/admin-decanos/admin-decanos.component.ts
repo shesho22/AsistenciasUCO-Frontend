@@ -133,7 +133,7 @@ const NOMBRE_FACULTAD_MAX = 50;
                         <span class="font-semibold text-warm-900 block">{{ decano.nombreCompleto || (decano.nombres + ' ' + decano.apellidos).trim() }}</span>
                         <span class="text-xs text-warm-500">{{ decano.correo || '—' }}</span>
                       </td>
-                      <td class="py-2 pr-3 font-mono text-xs text-warm-600">{{ decano.tipoIdentificacion || 'CC' }} {{ decano.numeroIdentificacion || '—' }}</td>
+                      <td class="py-2 pr-3 font-mono text-xs text-warm-600">{{ decano.tipoIdentificacion ? decano.tipoIdentificacion + ' ' : '' }}{{ decano.numeroIdentificacion || '—' }}</td>
                       <td class="py-2 pr-3 text-warm-900">{{ decano.facultad || decano.nombreFacultad || 'Sin Facultad Asignada' }}</td>
                       <td class="py-2 pr-3">
                         <app-badge [variant]="decano.estado === 'ACTIVO' ? 'success' : 'neutral'">{{ decano.estado === 'ACTIVO' ? 'Activo' : 'Inactivo' }}</app-badge>

@@ -21,6 +21,7 @@ describe('AdminDecanosComponent', () => {
     {
       id: 'dec-1',
       idUsuario: 'usr-1',
+      tipoIdentificacion: 'CC',
       numeroIdentificacion: '1017000001',
       primerNombre: 'Roberto',
       segundoNombre: 'Carlos',
@@ -115,6 +116,35 @@ describe('AdminDecanosComponent', () => {
     expect(component.facultades()).toHaveSize(2);
     expect(component.tiposIdentificacion()).toHaveSize(2);
     expect(component.isLoading()).toBeFalse();
+  });
+
+  it('la tabla muestra el correo y el tipo de documento que entrega el backend, sin inventar ninguno', () => {
+    fixture.detectChanges();
+    satisfyInitRequests();
+    fixture.detectChanges();
+
+    const filas = Array.from<HTMLElement>(fixture.nativeElement.querySelectorAll('tbody tr'));
+    const filaConTipo = filas.find((f) => f.textContent?.includes('rgomez@uco.edu.co'));
+    expect(filaConTipo?.textContent).toContain('CC 1017000001');
+    const filaSinTipo = filas.find((f) => f.textContent?.includes('mzapata@uco.edu.co'));
+    expect(filaSinTipo?.textContent).toContain('1017000002');
+    expect(filaSinTipo?.textContent).not.toContain('CC 1017000002');
+    expect(component.decanos()[1].tipoIdentificacion).toBeUndefined();
+  });
+
+  it('el decano sin correo muestra el guion y no un valor inventado', () => {
+    fixture.detectChanges();
+    http.expectOne(`${environment.apiUrl}/tipos-identificacion`).flush(mockTiposDoc);
+    http.expectOne(`${environment.apiUrl}/admin/facultades`).flush({ exitoso: true, datos: mockFacultades });
+    http.expectOne(`${environment.apiUrl}/admin/instituciones`).flush({ exitoso: true, datos: mockInstituciones });
+    http.expectOne(`${environment.apiUrl}/admin/decanos`).flush({
+      exitoso: true, datos: [{ ...mockDecanos[1], correo: undefined }],
+    });
+    fixture.detectChanges();
+
+    const fila = fixture.nativeElement.querySelector('tbody tr') as HTMLElement;
+    expect(fila.textContent).toContain('—');
+    expect(fila.textContent).not.toContain('CC');
   });
 
   it('maneja errores en cargarFacultades, cargarTiposIdentificacion y cargarDecanos', () => {

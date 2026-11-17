@@ -62,7 +62,7 @@ const ASIGNATURAS: AsignaturaInstitucionItem[] = [
 
 const ESTUDIANTES: EstudianteInstitucionItem[] = [
   {
-    idEstudiante: 'EST-MOCK-1', numeroIdentificacion: '1017000111', nombreCompleto: 'Ana Ruiz',
+    idEstudiante: 'EST-MOCK-1', tipoIdentificacion: 'CC', numeroIdentificacion: '1017000111', nombreCompleto: 'Ana Ruiz',
     correo: 'ana.ruiz@uco.edu.co', activo: true, facultades: 'Facultad de Ingeniería',
     programas: 'Ingeniería de Sistemas', totalGrupos: 2,
   },
