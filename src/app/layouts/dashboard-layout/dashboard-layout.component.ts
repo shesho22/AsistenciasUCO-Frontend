@@ -149,11 +149,15 @@ interface NavItem {
         </nav>
 
         <!-- User Profile Card Footer -->
-        <div class="p-4 border-t border-warm-200/80 bg-warm-50/50 shrink-0">
+        <!-- Encogida, la barra mide 80 px: con el relleno amplio la tarjeta quedaba mas angosta que el avatar (40 px) y
+             este se salia del borde. El pie reduce su relleno y centra el avatar. -->
+        <div data-testid="pie-usuario" [class]="isCollapsed() ? 'p-2' : 'p-4'" class="border-t border-warm-200/80 bg-warm-50/50 shrink-0">
           <div class="flex items-center gap-2 p-1.5 rounded-xl bg-white border border-warm-200 shadow-warm-sm hover:border-primary-300 transition-colors">
             <!-- Clickable User Profile Area -->
             <a
               routerLink="/app/perfil"
+              data-testid="pie-usuario-perfil"
+              [class.justify-center]="isCollapsed()"
               class="flex items-center gap-2.5 flex-1 min-w-0 p-1 rounded-lg hover:bg-warm-50 group cursor-pointer transition-colors"
               title="Ver y editar mi perfil institucional"
             >
