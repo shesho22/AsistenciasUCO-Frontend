@@ -23,4 +23,21 @@ describe('TeacherAttendanceSummaryService (CULM-001 B.2, CONTRACT 3.2.8)', () =>
     expect(respuesta).toEqual(body);
     http.verify();
   });
+
+  it('CIERRE-W3M consultarResumen envia busqueda recortada solo si hay texto', () => {
+    TestBed.configureTestingModule({
+      providers: [TeacherAttendanceSummaryService, provideHttpClient(withXhr()), provideHttpClientTesting()],
+    });
+    const service = TestBed.inject(TeacherAttendanceSummaryService);
+    const http = TestBed.inject(HttpTestingController);
+
+    service.consultarResumen('g-1', 1, 50, '  ana ').subscribe();
+    service.consultarResumen('g-1', 1, 50, '   ').subscribe();
+    service.consultarResumen('g-1', 1, 50).subscribe();
+
+    const reqs = http.match((r) => r.url === `${environment.apiUrl}/docente/grupos/g-1/resumen-asistencia`);
+    expect(reqs.map((req) => req.request.params.get('busqueda'))).toEqual(['ana', null, null]);
+    reqs.forEach((req) => req.flush({}));
+    http.verify();
+  });
 });
