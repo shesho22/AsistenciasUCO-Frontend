@@ -4,9 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { AdminManagementService } from '../../../core/services/admin-management.service';
 import { CatalogService, TipoIdentificacionItem, FacultadItem } from '../../../core/services/catalog.service';
 import { DecanoItem, InstitucionItem } from '../../../core/models/role-management.model';
-import { CardComponent } from '../../../shared/components/card/card.component';
 import { BadgeComponent } from '../../../shared/components/badge/badge.component';
-import { ActionMenuComponent, ActionMenuItem } from '../../../shared/components/action-menu/action-menu.component';
+import { FiltrosPlegablesComponent } from '../../../shared/components/filtros-plegables/filtros-plegables.component';
+import { ErrorCargaComponent } from '../../../shared/components/error-carga/error-carga.component';
+import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
+import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load-error.util';
+import { FiltroEstado } from '../../../shared/utils/listado-paginado';
 import { SelectorModoComponent, OpcionModo } from '../../../shared/components/selector-modo/selector-modo.component';
 import { ButtonComponent } from '../../../shared/components/button/button.component';
 import { FormFieldComponent } from '../../../shared/components/form-field/form-field.component';
@@ -39,12 +42,13 @@ const NOMBRE_FACULTAD_MAX = 50;
 @Component({
   selector: 'app-admin-decanos',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PageHeaderComponent, 
-    ActionMenuComponent,
+  imports: [PageHeaderComponent,
     CommonModule,
     FormsModule,
-    CardComponent,
     BadgeComponent,
+    FiltrosPlegablesComponent,
+    ErrorCargaComponent,
+    PaginationComponent,
     ButtonComponent,
     FormFieldComponent,
     DatosPersonaComponent,
@@ -57,7 +61,6 @@ const NOMBRE_FACULTAD_MAX = 50;
     <div class="space-y-6 animate-fade-in">
       <!-- 1. VISTA: LISTA DE DECANOS -->
       @if (vistaActual() === 'LISTA') {
-        <!-- Header Bento -->
         <app-page-header
           [enTarjeta]="true"
           etiqueta="Administración Central"
@@ -66,126 +69,109 @@ const NOMBRE_FACULTAD_MAX = 50;
           descripcion="Administra los decanos asignados a cada facultad institucional y supervisa su estado activo."
         >
           <div cabecera-acciones class="flex items-center gap-3" data-testid="acciones-encabezado">
-            <app-button variant="primary" size="md" (clicked)="abrirModalSeleccionarDecano()">
-              <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-              </svg>
-              Nombrar Decano Existente
-            </app-button>
-            <app-action-menu label="Más acciones" [items]="accionesEncabezado" (selected)="alElegirAccion($event)" />
+            <button
+              type="button"
+              data-testid="accion-registrar-decano"
+              (click)="abrirFormularioRegistro()"
+              class="min-h-[44px] px-4 py-2.5 rounded-xl bg-primary-700 hover:bg-primary-800 text-white text-sm font-semibold transition-colors shadow-warm-sm flex items-center gap-2"
+            >
+              <span>+</span> Registrar decano
+            </button>
+            <span data-testid="contador-decanos" class="px-3.5 py-2 rounded-xl bg-warm-100 text-xs font-bold text-warm-800 border border-warm-200">{{ isLoading() && decanos().length === 0 ? '…' : filteredDecanos().length }} Decanos</span>
           </div>
         </app-page-header>
-
 
         <!-- Estado de acceso de la ultima cuenta registrada (verificado por el backend, nunca por la SPA) -->
         <app-account-access-status [correo]="ultimaCuentaRegistrada()" />
 
-        <!-- Filtros y Búsqueda -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div class="sm:col-span-2">
-            <div class="relative">
-              <input aria-label="Buscar decano por nombre, cédula o facultad"
-                type="text"
-                [(ngModel)]="searchQuery"
-                placeholder="Buscar por nombre, cédula o facultad..."
-                class="w-full pl-10 pr-4 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-900 placeholder-warm-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 shadow-warm-sm transition-all"
+        <section class="superficie p-6 space-y-4">
+          <app-filtros-plegables [activos]="filtrosActivos()">
+            <div buscar>
+              <input
+                type="search"
+                aria-label="Buscar decano por nombre, cédula o facultad"
+                [ngModel]="busqueda()"
+                (ngModelChange)="onBusqueda($event)"
+                placeholder="Buscar por nombre, documento o facultad..."
+                class="w-full min-w-0 px-3.5 py-2.5 min-h-[44px] bg-white border border-warm-200 rounded-xl text-sm text-warm-900"
               />
-              <svg class="w-4 h-4 text-warm-400 absolute left-3.5 top-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
             </div>
-          </div>
-
-          <div>
-            <select aria-label="Filtrar decanos por estado"
-              [(ngModel)]="selectedEstado"
-              class="w-full px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 shadow-warm-sm"
+            <select
+              aria-label="Filtrar decanos por estado"
+              [ngModel]="estado()"
+              (ngModelChange)="onEstado($event)"
+              class="w-full sm:w-64 px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-800"
             >
               <option value="TODOS">Todos los estados</option>
-              <option value="ACTIVO">Solo Activos</option>
-              <option value="INACTIVO">Solo Inactivos</option>
+              <option value="ACTIVO">Activos</option>
+              <option value="INACTIVO">Inactivos</option>
             </select>
-          </div>
-        </div>
+          </app-filtros-plegables>
 
-        <!-- Grid de Decanos en Bento Cards -->
-        @if (isLoading()) {
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-            @for (n of [1, 2, 3, 4]; track n) {
-              <div class="h-44 bg-warm-100 rounded-2xl animate-pulse"></div>
-            }
-          </div>
-        } @else if (filteredDecanos().length === 0) {
-          <div class="superficie p-12 text-center">
-            <div class="w-12 h-12 rounded-full bg-warm-100 text-warm-400 flex items-center justify-center mx-auto mb-3">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+          @if (errorCarga() && !isLoading()) {
+            <app-error-carga [error]="errorCarga()!" (reintentar)="cargarDecanos()" />
+          } @else if (isLoading() && decanos().length === 0) {
+            <p role="status" class="text-sm text-warm-500 text-center py-6">Cargando decanos…</p>
+          } @else if (filteredDecanos().length === 0) {
+            <p class="text-sm text-warm-500 text-center py-6">No hay decanos que coincidan con la búsqueda.</p>
+          } @else {
+            <div class="relative overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="text-left text-xs uppercase tracking-wider text-warm-500 border-b border-warm-100">
+                    <th scope="col" class="py-2 pr-3">Decano</th>
+                    <th scope="col" class="py-2 pr-3">Documento</th>
+                    <th scope="col" class="py-2 pr-3">Facultad</th>
+                    <th scope="col" class="py-2 pr-3">Estado</th>
+                    <th scope="col" class="py-2 text-right"><span class="sr-only">Acciones</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (decano of decanosPagina(); track decano.id) {
+                    <tr class="border-b border-warm-50">
+                      <td class="py-2 pr-3">
+                        <span class="font-semibold text-warm-900 block">{{ decano.nombreCompleto || (decano.nombres + ' ' + decano.apellidos).trim() }}</span>
+                        <span class="text-xs text-warm-500">{{ decano.correo || '—' }}</span>
+                      </td>
+                      <td class="py-2 pr-3 font-mono text-xs text-warm-600">{{ decano.tipoIdentificacion || 'CC' }} {{ decano.numeroIdentificacion || '—' }}</td>
+                      <td class="py-2 pr-3 text-warm-900">{{ decano.facultad || decano.nombreFacultad || 'Sin Facultad Asignada' }}</td>
+                      <td class="py-2 pr-3">
+                        <app-badge [variant]="decano.estado === 'ACTIVO' ? 'success' : 'neutral'">{{ decano.estado === 'ACTIVO' ? 'Activo' : 'Inactivo' }}</app-badge>
+                      </td>
+                      <td class="py-2 text-right whitespace-nowrap space-x-2">
+                        <button
+                          type="button"
+                          data-accion="alternar-estado"
+                          class="min-h-[44px] px-2 text-xs font-semibold text-warm-600 hover:underline"
+                          (click)="toggleEstado(decano)"
+                        >
+                          {{ decano.estado === 'ACTIVO' ? 'Desactivar' : 'Reactivar' }}
+                        </button>
+                        <!-- HU159: el administrador corrige los datos de identidad del decano -->
+                        <button
+                          type="button"
+                          data-accion="corregir-identidad"
+                          class="min-h-[44px] px-2 text-xs font-semibold text-primary-700 hover:underline"
+                          (click)="decanoACorregir.set(decano)"
+                        >
+                          Corregir datos
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
             </div>
-            <h3 class="text-base font-semibold text-warm-900">No se encontraron decanos</h3>
-            <p class="text-xs text-warm-500 mt-1">Prueba con otros términos de búsqueda o filtros.</p>
-          </div>
-        } @else {
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-            @for (decano of filteredDecanos(); track decano.id) {
-              <app-card [hoverable]="true" padding="md">
-                <div class="flex flex-col h-full justify-between gap-4">
-                  <div>
-                    <div class="flex items-start justify-between gap-3 mb-2">
-                      <div class="flex items-center gap-2">
-                        <app-badge [variant]="decano.estado === 'ACTIVO' ? 'success' : 'neutral'">
-                          {{ decano.estado }}
-                        </app-badge>
-                      </div>
-
-                      <button
-                        type="button"
-                        (click)="toggleEstado(decano)"
-                        class="text-xs px-2.5 py-1 rounded-lg border border-warm-200 hover:bg-warm-100 text-warm-700 transition-colors"
-                        [title]="decano.estado === 'ACTIVO' ? 'Desactivar decano' : 'Activar decano'"
-                      >
-                        {{ decano.estado === 'ACTIVO' ? 'Desactivar' : 'Reactivar' }}
-                      </button>
-                      <!-- HU159: el administrador corrige los datos de identidad del decano -->
-                      <button
-                        type="button"
-                        data-accion="corregir-identidad"
-                        (click)="decanoACorregir.set(decano)"
-                        class="text-xs px-2.5 py-1 rounded-lg border border-warm-200 hover:bg-warm-100 text-warm-700 transition-colors"
-                      >
-                        Corregir datos
-                      </button>
-                    </div>
-
-                    <h3 class="font-serif font-bold text-lg text-warm-900 leading-snug">
-                      {{ decano.nombreCompleto || (decano.nombres + ' ' + decano.apellidos).trim() }}
-                    </h3>
-                    <p class="text-xs font-semibold text-primary-800 mt-0.5">
-                      {{ decano.facultad || decano.nombreFacultad || 'Sin Facultad Asignada' }}
-                    </p>
-                  </div>
-
-                  <div class="space-y-1.5 pt-3 border-t border-warm-100 text-xs text-warm-600">
-                    <div class="flex items-center gap-2">
-                      <svg class="w-3.5 h-3.5 text-warm-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
-                      </svg>
-                      <span>{{ decano.tipoIdentificacion || 'CC' }} {{ decano.numeroIdentificacion }}</span>
-                    </div>
-                    @if (decano.correo) {
-                      <div class="flex items-center gap-2">
-                        <svg class="w-3.5 h-3.5 text-warm-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                        </svg>
-                        <span class="truncate">{{ decano.correo }}</span>
-                      </div>
-                    }
-                  </div>
-                </div>
-              </app-card>
-            }
-          </div>
-        }
+          }
+          <app-pagination
+            [totalItems]="filteredDecanos().length"
+            [totalPages]="totalPaginas()"
+            [pageSize]="tamano()"
+            [currentPage]="pagina()"
+            (pageChange)="irAPagina($event)"
+            (pageSizeChange)="cambiarTamano($event)"
+          ></app-pagination>
+        </section>
       }
 
       <!-- 2. VISTA COMPLETA: FORMULARIO DE REGISTRO DE DECANO -->
@@ -218,26 +204,16 @@ const NOMBRE_FACULTAD_MAX = 50;
             </p>
           </div>
 
-          <!-- Banner Asistido: Docente o Funcionario ya existente -->
-          <div class="mb-6 p-4 rounded-2xl bg-primary-50/70 border border-primary-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center text-primary-800 shrink-0">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div>
-                <p class="text-sm font-semibold text-primary-950">¿La persona ya pertenece a la Universidad?</p>
-                <p class="text-xs text-primary-800">Selecciona un docente o directivo del directorio institucional sin reescribir sus datos.</p>
-              </div>
+          <!-- Paso 1: buscar en el directorio institucional; si la persona no existe, se llena a mano -->
+          <section class="p-4 rounded-2xl bg-primary-50/70 border border-primary-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3" data-testid="paso-directorio">
+            <div>
+              <p class="text-sm font-semibold text-primary-950">Paso 1 · Buscar en el directorio</p>
+              <p class="text-xs text-primary-800">Si la persona ya pertenece a la Universidad, selecciónala para precargar sus datos. Si no aparece, completa el formulario a mano.</p>
             </div>
             <app-button variant="primary" size="sm" type="button" (clicked)="abrirModalSeleccionarDecano()">
-              <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              Buscar Persona
+              Buscar en el directorio
             </app-button>
-          </div>
+          </section>
 
           <form (ngSubmit)="guardarDecano()" class="space-y-4">
             <app-datos-persona
@@ -402,16 +378,15 @@ export class AdminDecanosComponent implements OnInit {
   isLoading = signal<boolean>(true);
   isSubmitting = signal<boolean>(false);
 
-  /** Acciones secundarias de la cabecera: se agrupan en "Mas" para dejar una sola accion primaria. */
-  readonly accionesEncabezado: ActionMenuItem[] = [
-    { id: 'registrar', label: 'Registrar nuevo', testid: 'accion-registrar-nuevo' },
-  ];
-
-  alElegirAccion(id: string): void {
-    if (id === 'registrar') this.abrirFormularioRegistro();
-  }
-  searchQuery = '';
-  selectedEstado = 'TODOS';
+  busqueda = signal('');
+  estado = signal<FiltroEstado>('TODOS');
+  /** Filtros aplicados fuera de la busqueda: alimenta la insignia del boton "Filtros". */
+  filtrosActivos = computed(() => (this.estado() !== 'TODOS' ? 1 : 0));
+  /** Fallo de la ultima carga (null si fue bien): permite ofrecer reintento en vez de una lista vacia. */
+  errorCarga = signal<LoadErrorState | null>(null);
+  /** La API de decanos no pagina: se pagina en el cliente sobre la lista ya filtrada. */
+  pagina = signal(1);
+  tamano = signal(10);
   private readonly ultimaPeticionDecanos = new UltimaPeticion();
 
   formData: Omit<DecanoItem, 'id'> = {
@@ -432,8 +407,8 @@ export class AdminDecanosComponent implements OnInit {
   };
 
   filteredDecanos = computed(() => {
-    const query = this.searchQuery.toLowerCase().trim();
-    const estado = this.selectedEstado;
+    const query = this.busqueda().toLowerCase().trim();
+    const estado = this.estado();
 
     return this.decanos().filter((item) => {
       const nombres = (item.nombres || '').toLowerCase();
@@ -455,6 +430,32 @@ export class AdminDecanosComponent implements OnInit {
       return matchQuery && matchEstado;
     });
   });
+
+  totalPaginas = computed(() => Math.max(1, Math.ceil(this.filteredDecanos().length / this.tamano())));
+
+  decanosPagina = computed(() => {
+    const inicio = (this.pagina() - 1) * this.tamano();
+    return this.filteredDecanos().slice(inicio, inicio + this.tamano());
+  });
+
+  onBusqueda(valor: string): void {
+    this.busqueda.set(valor);
+    this.pagina.set(1);
+  }
+
+  onEstado(valor: FiltroEstado): void {
+    this.estado.set(valor);
+    this.pagina.set(1);
+  }
+
+  irAPagina(pagina: number): void {
+    this.pagina.set(pagina);
+  }
+
+  cambiarTamano(tamano: number): void {
+    this.tamano.set(tamano);
+    this.pagina.set(1);
+  }
 
   identidadDe(d: DecanoItem): IdentidadActual {
     // CIERRE-W1B: los cuatro campos de nombre los entrega el backend; no se parten cadenas.
@@ -557,6 +558,7 @@ export class AdminDecanosComponent implements OnInit {
   cargarDecanos(identidadEsperada?: IdentidadEsperada): void {
     const peticion = this.ultimaPeticionDecanos.iniciar();
     this.isLoading.set(true);
+    this.errorCarga.set(null);
     this.adminService.getDecanos().subscribe({
       next: (res) => {
         if (!this.ultimaPeticionDecanos.esVigente(peticion)) {
@@ -564,6 +566,8 @@ export class AdminDecanosComponent implements OnInit {
         }
         const datos = res.datos || [];
         this.decanos.set(datos);
+        // Si la lista se acorto al recargar, la pagina actual puede quedar fuera de rango.
+        this.pagina.set(Math.min(this.pagina(), this.totalPaginas()));
         this.isLoading.set(false);
         advertirRegistroNoListado(datos, identidadEsperada, (aviso) => this.toast.warning(aviso));
       },
@@ -572,6 +576,7 @@ export class AdminDecanosComponent implements OnInit {
           return;
         }
         this.isLoading.set(false);
+        this.errorCarga.set(classifyLoadError(err));
         this.toast.error(getApiErrorMessage(err));
       },
     });
@@ -777,9 +782,12 @@ export class AdminDecanosComponent implements OnInit {
     this.isPickerModalOpen.set(true);
   }
 
+  /** "Persona nueva" en el directorio: se cierra el buscador y se conserva el formulario para llenarlo a mano. */
   onSolicitarRegistroNuevo(): void {
     this.isPickerModalOpen.set(false);
-    this.abrirFormularioRegistro();
+    if (this.vistaActual() !== 'REGISTRO') {
+      this.abrirFormularioRegistro();
+    }
   }
 
   onDecanoSeleccionadoDelDirectorio(user: UserPickerItem): void {
