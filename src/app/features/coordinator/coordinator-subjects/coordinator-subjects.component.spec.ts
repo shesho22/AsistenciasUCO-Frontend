@@ -1,9 +1,13 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
 import { CoordinatorSubjectsComponent } from './coordinator-subjects.component';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { CourseService } from '../../../core/services/course.service';
+import { CoordinatorIndicatorsService } from '../../../core/services/coordinator-indicators.service';
+import { CoordinatorProgramService } from '../../../core/services/coordinator-program.service';
+import { KpisCoordinador } from '../../../core/models/coordinator-indicators.model';
+import { ApiResponse } from '../../../core/models/api-response.model';
 import { Course } from '../../../core/models/course.model';
 import { AsignaturaPlanItem } from '../../../core/models/role-management.model';
 import { ToastService } from '../../../shared/components/toast/toast.component';
@@ -13,10 +17,25 @@ describe('CoordinatorSubjectsComponent', () => {
   let component: CoordinatorSubjectsComponent;
   let coordinatorService: jasmine.SpyObj<CoordinatorManagementService>;
   let courseService: jasmine.SpyObj<CourseService>;
+  let indicadores: jasmine.SpyObj<CoordinatorIndicatorsService>;
+  let programa: jasmine.SpyObj<CoordinatorProgramService>;
   let toast: jasmine.SpyObj<ToastService>;
   let router: Router;
 
   const MARCADOR_DOCENTE = 'MARCADOR-DOCENTE-NO-DEBE-RENDERIZARSE';
+
+  /** KPI del programa con el aforo de TODOS los grupos habilitados (no solo los de la pagina visible). */
+  const kpisPrograma = (extra: Partial<KpisCoordinador> = {}): ApiResponse<KpisCoordinador> => ({
+    exitoso: true,
+    datos: {
+      idPrograma: 'p-1', nombrePrograma: 'Sistemas', idPeriodoAcademico: 'per-1', nombrePeriodoAcademico: '2026-2',
+      totalEstudiantes: 40, estudiantesRegulares: 30, estudiantesRiesgo: 8, estudiantesPerdida: 2, tasaPermanencia: 95,
+      sesionesProgramadas: 10, sesionesVencidas: 5, sesionesEjecutadas: 5, sesionesVencidasSinRegistro: 0, sesionesSinProcedenciaTemporal: 0,
+      porcentajeCumplimiento: 100, porcentajeProgresoCalendario: 50, umbralAdvertencia: 15, umbralPerdida: 20,
+      totalDocentes: 12, gruposActivos: 37, cupoTotal: 1110, matriculadosActivos: 888, tasaAforo: 80, estudiantesRegistrados: 5007,
+      ...extra,
+    },
+  } as ApiResponse<KpisCoordinador>);
 
   const course: Course = {
     id: 'crs-1',
@@ -54,6 +73,10 @@ describe('CoordinatorSubjectsComponent', () => {
       ['getPlanesEstudio', 'getAsignaturasPrograma', 'getCaracteresAsignatura', 'getEstudiantesPorGrupo']
     );
     courseService = jasmine.createSpyObj<CourseService>('CourseService', ['getCoordinatorCoursesPage']);
+    indicadores = jasmine.createSpyObj<CoordinatorIndicatorsService>('CoordinatorIndicatorsService', ['consultarKpis']);
+    indicadores.consultarKpis.and.returnValue(of(kpisPrograma()));
+    programa = jasmine.createSpyObj<CoordinatorProgramService>('CoordinatorProgramService', ['cargar']);
+    programa.cargar.and.returnValue(of([]));
     toast = jasmine.createSpyObj<ToastService>('ToastService', ['success', 'error', 'warning', 'info']);
 
     courseService.getCoordinatorCoursesPage.and.returnValue(of(pagina([course])));
@@ -87,6 +110,8 @@ describe('CoordinatorSubjectsComponent', () => {
         provideRouter([]),
         { provide: CoordinatorManagementService, useValue: coordinatorService },
         { provide: CourseService, useValue: courseService },
+        { provide: CoordinatorIndicatorsService, useValue: indicadores },
+        { provide: CoordinatorProgramService, useValue: programa },
         { provide: ToastService, useValue: toast },
       ],
     }).compileComponents();
@@ -183,7 +208,6 @@ describe('CoordinatorSubjectsComponent', () => {
     it('muestra el cupo que entrega el backend', () => {
       const texto = recargar([course]);
       expect(texto).toContain('28 / 35');
-      expect(component.totalCapacidadGrupos()).toBe('35');
     });
 
     it('un grupo sin cupo se muestra como no disponible, sin número inventado', () => {
@@ -191,13 +215,63 @@ describe('CoordinatorSubjectsComponent', () => {
       expect(texto).toContain('12 / —');
       expect(texto).not.toContain('12 / 35');
       expect(component.cupoTexto(sinCupo)).toBe('—');
-      expect(component.totalCapacidadGrupos()).toBe('—');
     });
 
-    it('un grupo sin cupo no entra en la suma de la capacidad', () => {
+    it('un cupo en cero se muestra como no disponible', () => {
       recargar([course, sinCupo]);
-      expect(component.totalCapacidadGrupos()).toBe('35');
       expect(component.cupoTexto({ ...sinCupo, cupoMaximo: 0 })).toBe('—');
+    });
+  });
+
+  describe('CIERRE-W3I: Ocupacion de Cupos desde el servidor', () => {
+    const texto = (testid: string): string =>
+      ((fixture.nativeElement as HTMLElement).querySelector(`[data-testid="${testid}"]`)?.textContent ?? '').trim();
+
+    it('muestra los matriculados y el cupo de TODOS los grupos habilitados, no la suma de la pagina visible', () => {
+      // La pagina visible tiene un solo grupo (28 / 35): la cifra del KPI es la del servidor (888 / 1110).
+      expect(component.courses().length).toBe(1);
+      expect(texto('ocupacion-cupos')).toBe('888 / 1110');
+      expect(texto('ocupacion-detalle')).toBe('80 % de ocupación · 37 grupos habilitados');
+      expect(programa.cargar).toHaveBeenCalled();
+      expect(indicadores.consultarKpis).toHaveBeenCalled();
+    });
+
+    it('sin cupo registrado (tasa nula) no inventa un porcentaje', () => {
+      indicadores.consultarKpis.and.returnValue(of(kpisPrograma({ cupoTotal: 0, matriculadosActivos: 0, gruposActivos: 0, tasaAforo: null })));
+      component.cargarDatos();
+      fixture.detectChanges();
+      expect(texto('ocupacion-cupos')).toBe('0 / 0');
+      expect(texto('ocupacion-detalle')).toBe('Sin cupo registrado en los grupos habilitados');
+    });
+
+    it('mientras el servidor no responde muestra "Cargando…" y no una cifra', () => {
+      const pendiente = new Observable<ApiResponse<KpisCoordinador>>(() => undefined);
+      indicadores.consultarKpis.and.returnValue(pendiente);
+      component.cargarDatos();
+      fixture.detectChanges();
+      expect(texto('ocupacion-cupos')).toBe('Cargando…');
+    });
+
+    it('si el servidor falla muestra "Sin datos" y no 0 / 0', () => {
+      indicadores.consultarKpis.and.returnValue(throwError(() => new Error('500')));
+      component.cargarDatos();
+      fixture.detectChanges();
+      expect(texto('ocupacion-cupos')).toBe('Sin datos');
+    });
+
+    it('una respuesta sin datos se trata como fallo', () => {
+      indicadores.consultarKpis.and.returnValue(of<never>({ exitoso: true, datos: null } as never));
+      component.cargarDatos();
+      fixture.detectChanges();
+      expect(texto('ocupacion-cupos')).toBe('Sin datos');
+      expect(component.estadoKpis()).toBe('error');
+    });
+
+    it('si no se pueden cargar los programas del coordinador tampoco se afirma una ocupacion', () => {
+      programa.cargar.and.returnValue(throwError(() => new Error('403')));
+      component.cargarDatos();
+      fixture.detectChanges();
+      expect(texto('ocupacion-cupos')).toBe('Sin datos');
     });
   });
 
