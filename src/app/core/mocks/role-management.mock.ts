@@ -881,7 +881,6 @@ export const MOCK_ESTUDIANTES_DIRECTORIO: EstudianteDirectorioItem[] = [
     programa: 'Ingeniería de Sistemas',
     semestreActual: 4,
     estadoMatricula: 'ACTIVO',
-    promedioAcumulado: 4.5,
     gruposInscritos: ['crs-1', 'crs-2'],
   },
   {
@@ -893,7 +892,6 @@ export const MOCK_ESTUDIANTES_DIRECTORIO: EstudianteDirectorioItem[] = [
     programa: 'Ingeniería de Sistemas',
     semestreActual: 4,
     estadoMatricula: 'ACTIVO',
-    promedioAcumulado: 4.1,
     gruposInscritos: ['crs-1'],
   },
   {
@@ -905,7 +903,6 @@ export const MOCK_ESTUDIANTES_DIRECTORIO: EstudianteDirectorioItem[] = [
     programa: 'Ingeniería de Sistemas',
     semestreActual: 3,
     estadoMatricula: 'ACTIVO',
-    promedioAcumulado: 4.8,
     gruposInscritos: ['crs-2', 'crs-3'],
   },
   {
@@ -917,7 +914,6 @@ export const MOCK_ESTUDIANTES_DIRECTORIO: EstudianteDirectorioItem[] = [
     programa: 'Ingeniería Industrial',
     semestreActual: 5,
     estadoMatricula: 'ACTIVO',
-    promedioAcumulado: 3.9,
     gruposInscritos: ['crs-3'],
   },
   {
@@ -929,7 +925,6 @@ export const MOCK_ESTUDIANTES_DIRECTORIO: EstudianteDirectorioItem[] = [
     programa: 'Ingeniería de Sistemas',
     semestreActual: 6,
     estadoMatricula: 'INACTIVO',
-    promedioAcumulado: 3.6,
     gruposInscritos: [],
   },
   {
@@ -941,7 +936,6 @@ export const MOCK_ESTUDIANTES_DIRECTORIO: EstudianteDirectorioItem[] = [
     programa: 'Ingeniería de Sistemas',
     semestreActual: 2,
     estadoMatricula: 'ACTIVO',
-    promedioAcumulado: 4.3,
     gruposInscritos: ['crs-1'],
   },
 ];

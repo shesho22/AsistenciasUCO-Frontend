@@ -104,7 +104,7 @@ type PestanaModulo = 'DIRECTORIO';
         </div>
       </div>
 
-      <!-- Grid de Tarjetas de Estudiante -->
+      <!-- Lista de estudiantes del programa -->
       @if (errorDirectorio() && !isLoadingDirectorio()) {
         <app-error-carga [error]="errorDirectorio()!" (reintentar)="cargarDatos()" />
       } @else if (paginatedDirectorio().length === 0 && !isLoadingDirectorio()) {
@@ -112,62 +112,52 @@ type PestanaModulo = 'DIRECTORIO';
           No hay estudiantes que coincidan con los filtros actuales.
         </div>
       } @else {
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-          @for (est of paginatedDirectorio(); track est.id) {
-            <div class="superficie p-6 flex flex-col h-full justify-between gap-3">
-              <div>
-                <div class="flex items-start justify-between gap-2 mb-2">
-                  <span class="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-warm-100 text-warm-700">
-                    Cód. {{ est.codigo || est.documento }}
-                  </span>
-                  <app-badge [variant]="est.estadoMatricula === 'ACTIVO' ? 'success' : (est.estadoMatricula === 'BLOQUEADO' ? 'danger' : 'neutral')">
-                    {{ est.estadoMatricula }}
-                  </app-badge>
-                </div>
-
-                <div class="flex items-center gap-3 my-2">
-                  <app-avatar [name]="est.nombreCompleto" size="lg"></app-avatar>
-                  <div class="min-w-0">
-                    <h3 class="font-serif font-bold text-base text-warm-900 truncate">
-                      {{ est.nombreCompleto }}
-                    </h3>
-                    <p class="text-xs text-warm-500 truncate">{{ est.correo }}</p>
-                    <p class="text-xs text-warm-400 mt-0.5">Doc. {{ est.documento }}</p>
-                  </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-2 p-2.5 rounded-xl bg-warm-50 text-xs border border-warm-100 my-2">
-                  <div>
-                    <span class="text-warm-400 block text-[10px]">Semestre</span>
-                    <span class="font-semibold text-warm-900">{{ est.semestreActual ? est.semestreActual + '° Semestre' : 'No informado' }}</span>
-                  </div>
-                  <div>
-                    <span class="text-warm-400 block text-[10px]">Programa</span>
-                    <span class="font-semibold text-warm-900 truncate block">{{ est.programa }}</span>
-                  </div>
-                </div>
-
-                <div class="space-y-1 text-xs pt-1">
-                  <div class="flex items-center justify-between">
-                    <span class="text-warm-500">Estado Financiero</span>
-                    <span class="font-semibold text-success-700">Al Día</span>
-                  </div>
-                  <div class="flex items-center justify-between">
-                    <span class="text-warm-500">Promedio Ponderado</span>
-                    <span class="font-bold text-primary-700">{{ est.promedioAcumulado ?? 'No informado' }}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="flex items-center justify-between pt-2 border-t border-warm-100 text-xs text-warm-500">
-                <span>{{ est.gruposInscritos ? est.gruposInscritos.length + ' asignaturas matriculadas' : 'Matrícula gestionada por grupo docente' }}</span>
-                <!-- HU159: la ficha (historial y "Corregir datos") también desde el padrón del programa -->
-                <button type="button" data-testid="ver-ficha-estudiante" (click)="abrirFicha(est)" class="text-primary-700 font-semibold hover:underline">
-                  Ver ficha
-                </button>
-              </div>
-            </div>
-          }
+        <!-- MEJORAS-SERGIO 8: lista en tabla (una fila por estudiante) con la acción "Ver ficha"; sin estado financiero ni promedio,
+             que el sistema no administra -->
+        <div class="superficie overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm text-warm-800" data-testid="tabla-estudiantes">
+              <thead class="bg-warm-50 border-b border-warm-200 text-[11px] font-bold text-warm-600 uppercase tracking-wider">
+                <tr>
+                  <th scope="col" class="px-4 py-3 text-left">Estudiante</th>
+                  <th scope="col" class="px-4 py-3 text-left">Documento</th>
+                  <th scope="col" class="px-4 py-3 text-left">Semestre</th>
+                  <th scope="col" class="px-4 py-3 text-left">Programa</th>
+                  <th scope="col" class="px-4 py-3 text-left">Estado</th>
+                  <th scope="col" class="px-4 py-3 text-right"><span class="sr-only">Acciones</span></th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-warm-100">
+                @for (est of paginatedDirectorio(); track est.id) {
+                  <tr class="hover:bg-warm-50/60 transition-colors" [attr.data-testid]="'fila-estudiante-' + est.id">
+                    <td class="px-4 py-3">
+                      <div class="flex items-center gap-3 min-w-0">
+                        <app-avatar [name]="est.nombreCompleto" size="sm"></app-avatar>
+                        <div class="min-w-0">
+                          <p class="font-semibold text-warm-900 truncate">{{ est.nombreCompleto }}</p>
+                          <p class="text-xs text-warm-500 truncate">{{ est.correo }}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="px-4 py-3 font-mono text-xs text-warm-700 whitespace-nowrap">{{ est.documento }}</td>
+                    <td class="px-4 py-3 text-xs whitespace-nowrap">{{ est.semestreActual ? est.semestreActual + '°' : 'No informado' }}</td>
+                    <td class="px-4 py-3 text-xs max-w-[14rem] truncate" [title]="est.programa">{{ est.programa }}</td>
+                    <td class="px-4 py-3">
+                      <app-badge [variant]="est.estadoMatricula === 'ACTIVO' ? 'success' : (est.estadoMatricula === 'BLOQUEADO' ? 'danger' : 'neutral')">
+                        {{ est.estadoMatricula }}
+                      </app-badge>
+                    </td>
+                    <td class="px-4 py-3 text-right whitespace-nowrap">
+                      <!-- HU159: la ficha (historial y "Corregir datos") también desde el padrón del programa -->
+                      <button type="button" data-testid="ver-ficha-estudiante" (click)="abrirFicha(est)" class="min-h-[44px] px-3 text-xs text-primary-700 font-semibold hover:underline">
+                        Ver ficha
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
         </div>
       }
 
@@ -215,7 +205,7 @@ export class CoordinatorStudentsComponent implements OnInit {
 
   // Paginación Directorio
   currentPageDirectorio = signal(1);
-  pageSizeDirectorio = signal(6);
+  pageSizeDirectorio = signal(10);
 
   filteredDirectorio = computed(() => this.directorio());
   paginatedDirectorio = computed(() => this.directorio());

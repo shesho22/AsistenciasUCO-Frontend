@@ -740,7 +740,6 @@ describe('CoordinatorManagementService', () => {
           correo: 'lrestrepo@uco.edu.co',
           programa: 'Ingeniería de Sistemas',
           semestreActual: 4,
-          promedioAcumulado: 4.5,
           estadoMatricula: 'ACTIVO',
           gruposInscritos: ['grp-1'],
         },

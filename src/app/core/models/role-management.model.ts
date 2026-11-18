@@ -425,7 +425,6 @@ export interface EstudianteDirectorioItem {
   idPrograma?: string;
   semestreActual?: number;
   estadoMatricula: 'ACTIVO' | 'INACTIVO' | 'BLOQUEADO';
-  promedioAcumulado?: number;
   gruposInscritos?: string[];
 }
 
