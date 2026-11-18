@@ -158,10 +158,15 @@ describe('AdminEstudiantesComponent (HU157)', () => {
     const texto = fixture.nativeElement.textContent as string;
     expect(texto).toContain('Historial completo · 1 matrículas');
     expect(texto).toContain('Sin grupos');
+    // La ficha se muestra como ventana flotante con su botón X, no como un panel debajo de la lista.
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[role="dialog"]')).not.toBeNull();
+    expect(el.querySelector('[role="dialog"] button[aria-label="Cerrar ficha"]')).not.toBeNull();
 
-    component.ficha.set(null);
+    (el.querySelector('[role="dialog"] button[aria-label="Cerrar ficha"]') as HTMLButtonElement).click();
     fixture.detectChanges();
-    expect((fixture.nativeElement as HTMLElement).querySelector('[aria-label="Ficha unificada del estudiante"]')).toBeNull();
+    expect(component.ficha()).toBeNull();
+    expect(el.querySelector('[role="dialog"]')).toBeNull();
   });
 
   it('un error al abrir la ficha muestra el mensaje', () => {

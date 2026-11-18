@@ -71,6 +71,16 @@ describe('ModalComponent (foco y teclado, F-TRX-014)', () => {
     expect(tab().defaultPrevented).toBeFalse();
   });
 
+  it('con contenido más alto que la pantalla el encabezado sigue alcanzable: el panel se centra con margen automático', () => {
+    abrir();
+    const capa = fixture.nativeElement.querySelector('[role="presentation"]') as HTMLElement;
+    const panel = fixture.nativeElement.querySelector('[role="dialog"]') as HTMLElement;
+    // `items-center` en un contenedor con scroll recorta la parte superior del panel (título y botón X inalcanzables).
+    expect(capa.className).not.toContain('items-center');
+    expect(capa.className).toContain('overflow-y-auto');
+    expect(panel.className).toContain('my-auto');
+  });
+
   it('cierra con Escape', () => {
     abrir();
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));

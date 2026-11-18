@@ -52,11 +52,45 @@ describe('HistorialEstudianteComponent (HU157)', () => {
 
     expect(texto).toContain('Primer semestre 2026');
     expect(texto).toContain('Cálculo · Grupo 3');
-    expect(texto).toContain('9/10 sesiones');
+    // Asistencias, faltas y excusas cuentan tomas: no se comparan con las sesiones (NB-2).
+    expect(texto).toContain('9 asistencias · 1 faltas · 0 excusas');
+    expect(texto).not.toContain('/10 sesiones');
+    expect(texto).toContain('10 % de inasistencia (por horas)');
     expect(texto).toContain('REGULAR');
     expect(texto).toContain('PERDIDA');
     expect(texto).toContain('Sin grupos');
     expect(texto).toContain('Sistemas, Industrial');
+  });
+
+  it('agrupa las matrículas por período: todos plegados por defecto y con su conteo de riesgo', () => {
+    const el = render({
+      ...base,
+      matriculas: [
+        matricula({}),
+        matricula({ resumen: { ...matricula({}).resumen!, codigoPermanencia: 'PERDIDA' } }),
+        matricula({ idPeriodoAcademico: 'per-0', codigoPeriodo: '2025-2', nombrePeriodo: 'Segundo semestre 2025',
+          resumen: { ...matricula({}).resumen!, codigoPermanencia: 'RIESGO' } }),
+        matricula({ idPeriodoAcademico: null, codigoPeriodo: null, nombrePeriodo: null, idGrupo: null, resumen: null }),
+      ],
+    });
+    const grupos = Array.from(el.querySelectorAll('[data-testid="periodo-historial"]')) as HTMLDetailsElement[];
+    expect(grupos).toHaveSize(3);
+    expect(grupos[0].textContent).toContain('Primer semestre 2026');
+    expect(grupos[0].textContent).toContain('2 matrículas');
+    expect(grupos[0].textContent).toContain('1 en pérdida');
+    expect(grupos[0].hasAttribute('open')).toBeFalse();
+    expect(grupos[1].textContent).toContain('Segundo semestre 2025');
+    expect(grupos[1].textContent).toContain('1 en riesgo');
+    expect(grupos[1].hasAttribute('open')).toBeFalse();
+    expect(grupos[2].textContent).toContain('Sin período');
+  });
+
+  it('con las tomas dictadas del backend presenta «A de T tomas»', () => {
+    const el = render({
+      ...base,
+      matriculas: [matricula({ resumen: { ...matricula({}).resumen!, asistencias: 28, tomasDictadas: 30 } })],
+    });
+    expect(el.querySelector('[data-testid="detalle-asistencia"]')?.textContent).toContain('28 de 30 tomas');
   });
 
   it('asigna el color de la permanencia según el código de la DB', () => {
