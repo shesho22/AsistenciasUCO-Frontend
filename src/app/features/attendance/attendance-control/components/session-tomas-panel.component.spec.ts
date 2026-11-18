@@ -150,6 +150,13 @@ describe('SessionTomasPanelComponent (CULM-001 B.2 + UX toma)', () => {
     expect(el('tab-t-1')!.className).toContain('min-h-[44px]');
   });
 
+  it('ATA: en pantallas medianas y grandes las pestanas pasan a otra fila en vez de quedar cortadas', () => {
+    render(tomasSesion({ tomas: [toma(), toma({ idToma: 't-2', numero: 2 })] }));
+    const clases = el('tabs-tomas')!.className;
+    expect(clases).toContain('sm:flex-wrap');
+    expect(clases).toContain('sm:overflow-visible');
+  });
+
   it('UX-toma sin tomas explica que aun no hay ninguna', () => {
     render(tomasSesion({ tomas: [] }));
     expect(el('sin-tomas')).not.toBeNull();

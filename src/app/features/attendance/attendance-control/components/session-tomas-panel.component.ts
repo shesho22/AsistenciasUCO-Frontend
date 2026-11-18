@@ -71,7 +71,7 @@ const MAXIMO_RETARDO_MS = 2_147_483_647;
 
         @if (datos.tomas.length > 1) {
           <div
-            class="flex gap-1 overflow-x-auto border-b border-warm-200 px-1"
+            class="flex gap-1 overflow-x-auto sm:flex-wrap sm:overflow-visible border-b border-warm-200 px-1"
             role="tablist"
             aria-label="Tomas de la sesión"
             data-testid="tabs-tomas"

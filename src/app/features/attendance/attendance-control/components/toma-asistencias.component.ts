@@ -166,7 +166,8 @@ const OPCIONES_ESTADO: readonly EstadoRegistroToma[] = ['AN', 'SJC', 'EX'];
         </button>
       </div>
 
-      @if (totalPorValidar() > 0) {
+      <!-- ATA D4: con la sesión terminada ya no se corrige aquí (solo por reclamo); el aviso no pide hacerlo. -->
+      @if (totalPorValidar() > 0 && toma().esEditable) {
         <div
           class="rounded-xl border border-warning-200 bg-warning-50 px-3.5 py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
           role="status"
@@ -458,8 +459,11 @@ export class TomaAsistenciasComponent {
   /** La etiqueta sale de las banderas del backend; al guardar, la recarga quita a quien ya quedó presente. */
   private motivoPorValidar(faltante: FaltanteToma | undefined): string | null {
     if (!faltante) return null;
-    if (faltante.marcadoAlCerrar) return 'Falta al cerrar · por validar';
-    return faltante.tieneRegistro ? 'Por validar' : 'Sin lectura QR/PIN · por validar';
+    // ATA D4: si la toma ya no admite cambios, la fila solo explica el motivo (no invita a validar).
+    const sufijo = this.toma().esEditable ? ' · por validar' : '';
+    if (faltante.marcadoAlCerrar) return `Falta al cerrar${sufijo}`;
+    if (faltante.tieneRegistro) return this.toma().esEditable ? 'Por validar' : null;
+    return `Sin lectura QR/PIN${sufijo}`;
   }
 
   private origenDe(registro: AsistenciaToma): string | null {

@@ -438,6 +438,18 @@ describe('TomaAsistenciasComponent (CULM-001 UX toma)', () => {
       expect(texto('aviso-por-validar')).toContain('2 estudiante(s) por validar');
     });
 
+    it('ATA D4: con la sesión terminada no pide corregir: sin aviso "por validar" y las filas solo dicen el motivo', () => {
+      tomas.consultarFaltantes.and.returnValue(paginaFaltantes([
+        faltante('b', { tieneRegistro: true, estado: 'SJC', marcadoAlCerrar: true }), faltante('c'),
+        faltante('a', { tieneRegistro: true, estado: 'SJC' }),
+      ]));
+      crear({ toma: toma({ modo: 'QR', estado: 'CERRADA', esEditable: false }) });
+      expect(el('aviso-por-validar')).toBeNull();
+      expect(texto('por-validar-b')).toBe('Falta al cerrar');
+      expect(texto('por-validar-c')).toBe('Sin lectura QR/PIN');
+      expect(el('por-validar-a')).toBeNull();
+    });
+
     it('un faltante con registro y sin marca de cierre se etiqueta "Por validar"', () => {
       tomas.consultarFaltantes.and.returnValue(paginaFaltantes([faltante('b', { tieneRegistro: true, estado: 'SJC' })]));
       crear({ toma: toma({ modo: 'QR' }) });
