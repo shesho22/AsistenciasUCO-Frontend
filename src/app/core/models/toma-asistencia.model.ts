@@ -9,6 +9,13 @@ export type EstadoRegistroToma = 'AN' | 'SJC' | 'EX';
 /** Forma de `ApiPageResponse` del backend. */
 export type PaginaApi<T> = ApiPageResponse<T>;
 
+/** ATA D9: toma que el servidor cerró al abrir la nueva (solo viene en la respuesta de abrir). */
+export interface TomaCerradaAnterior {
+  idToma: string;
+  numero: number;
+  totalAusentesMarcados: number;
+}
+
 export interface TomaAsistencia {
   idToma: string;
   idSesion: string;
@@ -37,6 +44,8 @@ export interface TomaAsistencia {
   totalAusentes: number;
   totalExcusas: number;
   tieneQrActivo: boolean;
+  /** Campo aditivo de la respuesta de abrir toma; `null` o ausente si no había toma abierta. */
+  tomaCerradaAnterior?: TomaCerradaAnterior | null;
 }
 
 /** La ventana la calcula la BD; el cliente la pinta y no la recalcula. */

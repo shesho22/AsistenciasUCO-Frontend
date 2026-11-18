@@ -409,10 +409,20 @@ export class AttendanceControlComponent {
       .subscribe({
         next: (res) => {
           this.cargarTomas(sesionId);
+          this.avisarAperturaToma(res.datos);
           if (modo === 'QR') this.proyectarQr(res.datos);
         },
         error: (err: unknown) => this.mostrarError(err, 'No fue posible abrir la toma.'),
       });
+  }
+
+  /** ATA D9: el servidor informa si cerró la toma anterior; el cliente solo presenta esas cifras. */
+  private avisarAperturaToma(nueva: TomaAsistencia): void {
+    const anterior = nueva.tomaCerradaAnterior;
+    const texto = anterior
+      ? `Se cerró la toma ${anterior.numero} (${anterior.totalAusentesMarcados} ${anterior.totalAusentesMarcados === 1 ? 'ausente' : 'ausentes'}) y se abrió la toma ${nueva.numero}.`
+      : `Se abrió la toma ${nueva.numero}.`;
+    this.mostrarNotificacion({ tipo: 'success', texto });
   }
 
   onSeleccionarToma(toma: TomaAsistencia): void {

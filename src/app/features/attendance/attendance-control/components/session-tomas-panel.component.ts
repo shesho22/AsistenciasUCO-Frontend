@@ -4,6 +4,7 @@ import { TomaAsistencia, TomasSesion } from '../../../../core/models/toma-asiste
 import { detalleCancelacion, estaCancelada } from '../../../../core/models/sesion-estado.model';
 import { NotificacionToma, TomaAsistenciasComponent } from './toma-asistencias.component';
 import { ResumenSesionTomasComponent } from './resumen-sesion-tomas.component';
+import { TomaCierreDialogComponent } from './toma-cierre-dialog.component';
 
 const RESUMEN = 'resumen';
 
@@ -22,7 +23,7 @@ const MAXIMO_RETARDO_MS = 2_147_483_647;
 @Component({
     selector: 'app-session-tomas-panel',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [TomaAsistenciasComponent, ResumenSesionTomasComponent],
+    imports: [TomaAsistenciasComponent, ResumenSesionTomasComponent, TomaCierreDialogComponent],
     template: `
     <section
       class="superficie p-4 sm:p-5 space-y-4"
@@ -47,7 +48,7 @@ const MAXIMO_RETARDO_MS = 2_147_483_647;
             <button
               type="button"
               data-testid="nueva-toma"
-              (click)="nuevaToma.emit()"
+              (click)="solicitarNuevaToma()"
               [disabled]="!puedeAbrir()"
               class="min-h-[44px] px-5 rounded-xl bg-primary-700 text-white text-sm font-semibold hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -149,6 +150,17 @@ const MAXIMO_RETARDO_MS = 2_147_483_647;
             <app-resumen-sesion-tomas [tomas]="datos.tomas" [sesionId]="datos.idSesion" />
           </div>
         }
+        @if (confirmandoNueva() && tomaAbierta(); as abierta) {
+          <div data-testid="nueva-toma-dialogo">
+            <app-toma-cierre-dialog
+              modo="nueva"
+              [numeroToma]="abierta.numero"
+              [sinGuardar]="(sinGuardar()[abierta.idToma] ?? 0) > 0"
+              (confirmar)="confirmarNueva()"
+              (cancelar)="confirmandoNueva.set(false)"
+            />
+          </div>
+        }
       } @else {
         <div class="h-16 rounded-xl bg-warm-100 animate-pulse" data-testid="panel-tomas-cargando"></div>
       }
@@ -191,11 +203,14 @@ export class SessionTomasPanelComponent {
     const datos = this.tomasSesion();
     if (!datos) return null;
     if (this.cancelada()) return 'La sesión está cancelada; no se pueden abrir tomas.';
-    if (datos.tomas.some((t) => t.estado === 'ABIERTA')) return 'Hay una toma abierta; ciérrala para abrir otra.';
     if (datos.tomas.length >= datos.maximoTomas) return `Se alcanzó el máximo de ${datos.maximoTomas} tomas por sesión.`;
     if (!datos.ventana.abierta) return 'La ventana de asistencia de la sesión está cerrada.';
     return null;
   });
+
+  protected readonly tomaAbierta = computed(() => this.tomasSesion()?.tomas.find((t) => t.estado === 'ABIERTA') ?? null);
+  /** ATA D9: confirmación previa cuando "Nueva toma" va a cerrar la toma abierta. */
+  protected readonly confirmandoNueva = signal(false);
 
   protected readonly horaCierre = computed(() => this.zona.formatTemporal(this.tomasSesion()?.ventana.cierreUtc, 'time'));
 
@@ -209,6 +224,11 @@ export class SessionTomasPanelComponent {
         if (cantidad > this.tomasPrevias) this.seleccion.set(null);
         this.tomasPrevias = cantidad;
       });
+    });
+
+    // Si la toma abierta desaparece (cierre automático o de otro dispositivo), la confirmación pendiente ya no aplica.
+    effect(() => {
+      if (!this.tomaAbierta()) untracked(() => this.confirmandoNueva.set(false));
     });
 
     // Recordatorio de cierre: un único setTimeout programado al instante en que empieza el aviso (sin polling).
@@ -246,6 +266,17 @@ export class SessionTomasPanelComponent {
 
   protected horaDe(toma: TomaAsistencia): string {
     return this.zona.formatTemporal(toma.fechaPuntoControlUtc, 'time');
+  }
+
+  /** Con una toma abierta pide confirmación (el servidor la cierra al abrir la nueva); sin ella abre directo. */
+  protected solicitarNuevaToma(): void {
+    if (this.tomaAbierta()) this.confirmandoNueva.set(true);
+    else this.nuevaToma.emit();
+  }
+
+  protected confirmarNueva(): void {
+    this.confirmandoNueva.set(false);
+    this.nuevaToma.emit();
   }
 
   protected seleccionar(id: string): void {

@@ -240,10 +240,11 @@ describe('SessionTomasPanelComponent (CULM-001 B.2 + UX toma)', () => {
     expect(el('nueva-toma-motivo')).toBeNull();
   });
 
-  it('B2-F-06 Nueva toma se deshabilita con el motivo si hay una toma abierta', () => {
+  it('ATA D9 Nueva toma sigue habilitada con una toma abierta y ya no pide cerrarla antes', () => {
     render(tomasSesion({ tomas: [toma({ estado: 'ABIERTA' })] }));
-    expect(boton('nueva-toma').disabled).toBeTrue();
-    expect(el('nueva-toma-motivo')!.textContent).toContain('toma abierta');
+    expect(boton('nueva-toma').disabled).toBeFalse();
+    expect(el('nueva-toma-motivo')).toBeNull();
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('ciérrala para abrir otra');
   });
 
   it('B2-F-06 Nueva toma se deshabilita al alcanzar maximoTomas', () => {
@@ -272,6 +273,91 @@ describe('SessionTomasPanelComponent (CULM-001 B.2 + UX toma)', () => {
     fixture.componentInstance.nuevaToma.subscribe(nueva);
     boton('nueva-toma').click();
     expect(nueva).toHaveBeenCalledTimes(1);
+  });
+
+  describe('ATA D9: Nueva toma con una toma abierta pide confirmacion y la cierra', () => {
+    const abierta = (n = 2) => tomasSesion({ tomas: [toma(), toma({ idToma: 't-2', numero: n, estado: 'ABIERTA' })] });
+
+    it('con una toma abierta pide confirmacion con el texto del addendum y no emite todavia', () => {
+      const nueva = jasmine.createSpy('nueva');
+      render(abierta());
+      fixture.componentInstance.nuevaToma.subscribe(nueva);
+      boton('nueva-toma').click();
+      fixture.detectChanges();
+      expect(nueva).not.toHaveBeenCalled();
+      expect(texto('nueva-toma-dialogo')).toContain(
+        'Se cerrará la toma 2: quien no tenga marca quedará con falta. Podrás corregirla hasta que termine la sesión.');
+      expect(boton('cierre-confirmar')).not.toBeNull();
+    });
+
+    it('confirmar emite nuevaToma una vez y cierra el dialogo', () => {
+      const nueva = jasmine.createSpy('nueva');
+      render(abierta());
+      fixture.componentInstance.nuevaToma.subscribe(nueva);
+      boton('nueva-toma').click();
+      fixture.detectChanges();
+      boton('cierre-confirmar').click();
+      fixture.detectChanges();
+      expect(nueva).toHaveBeenCalledTimes(1);
+      expect(el('nueva-toma-dialogo')).toBeNull();
+    });
+
+    it('cancelar cierra el dialogo sin emitir', () => {
+      const nueva = jasmine.createSpy('nueva');
+      render(abierta());
+      fixture.componentInstance.nuevaToma.subscribe(nueva);
+      boton('nueva-toma').click();
+      fixture.detectChanges();
+      boton('cierre-cancelar').click();
+      fixture.detectChanges();
+      expect(nueva).not.toHaveBeenCalled();
+      expect(el('nueva-toma-dialogo')).toBeNull();
+    });
+
+    it('si la toma abierta tiene cambios sin guardar lo dice y no deja confirmar', () => {
+      const nueva = jasmine.createSpy('nueva');
+      render(abierta());
+      fixture.componentInstance.nuevaToma.subscribe(nueva);
+      (el('tabpanel-t-2')!.querySelector('[data-testid="estado-a-AN"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      boton('nueva-toma').click();
+      fixture.detectChanges();
+      expect(texto('nueva-toma-dialogo')).toContain('cambios sin guardar');
+      expect(el('cierre-confirmar')).toBeNull();
+      expect(nueva).not.toHaveBeenCalled();
+    });
+
+    it('al guardar o descartar los cambios con el dialogo abierto se habilita confirmar', () => {
+      render(abierta());
+      const panel = fixture.componentInstance as unknown as { registrarSinGuardar(id: string, n: number): void };
+      panel.registrarSinGuardar('t-2', 2);
+      fixture.detectChanges();
+      boton('nueva-toma').click();
+      fixture.detectChanges();
+      expect(el('cierre-confirmar')).toBeNull();
+      panel.registrarSinGuardar('t-2', 0);
+      fixture.detectChanges();
+      expect(el('cierre-confirmar')).not.toBeNull();
+    });
+
+    it('los cambios sin guardar de una toma cerrada no bloquean', () => {
+      render(abierta());
+      const panel = fixture.componentInstance as unknown as { registrarSinGuardar(id: string, n: number): void };
+      panel.registrarSinGuardar('t-1', 3);
+      fixture.detectChanges();
+      boton('nueva-toma').click();
+      fixture.detectChanges();
+      expect(el('cierre-confirmar')).not.toBeNull();
+    });
+
+    it('si la toma abierta desaparece con el dialogo abierto, el dialogo se retira', () => {
+      render(abierta());
+      boton('nueva-toma').click();
+      fixture.detectChanges();
+      fixture.componentRef.setInput('tomasSesion', tomasSesion({ tomas: [toma(), toma({ idToma: 't-2', numero: 2 })] }));
+      fixture.detectChanges();
+      expect(el('nueva-toma-dialogo')).toBeNull();
+    });
   });
 
   it('B2-F-06 sin datos todavia muestra el estado de carga', () => {
@@ -332,6 +418,36 @@ describe('TomaCierreDialogComponent (CULM-001 B.2)', () => {
     (fixture.nativeElement.querySelector('[data-testid="cierre-cancelar"]') as HTMLButtonElement).click();
     expect(confirmar).toHaveBeenCalledOnceWith(true);
     expect(cancelar).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('TomaCierreDialogComponent modo nueva toma (ATA D9)', () => {
+  function crear(sinGuardar: boolean) {
+    const fixture = TestBed.configureTestingModule({ imports: [TomaCierreDialogComponent] }).createComponent(TomaCierreDialogComponent);
+    fixture.componentRef.setInput('modo', 'nueva');
+    fixture.componentRef.setInput('numeroToma', 3);
+    fixture.componentRef.setInput('sinGuardar', sinGuardar);
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  it('muestra el aviso de cierre y confirma', () => {
+    const fixture = crear(false);
+    const confirmar = jasmine.createSpy('confirmar');
+    fixture.componentInstance.confirmar.subscribe(confirmar);
+    const html = fixture.nativeElement as HTMLElement;
+    expect(html.textContent).toContain('Se cerrará la toma 3: quien no tenga marca quedará con falta.');
+    expect(html.textContent).toContain('Podrás corregirla hasta que termine la sesión.');
+    (html.querySelector('[data-testid="cierre-confirmar"]') as HTMLButtonElement).click();
+    expect(confirmar).toHaveBeenCalledOnceWith(true);
+  });
+
+  it('con cambios sin guardar lo advierte y solo deja volver', () => {
+    const fixture = crear(true);
+    const html = fixture.nativeElement as HTMLElement;
+    expect(html.textContent).toContain('La toma 3 tiene cambios sin guardar');
+    expect(html.querySelector('[data-testid="cierre-confirmar"]')).toBeNull();
+    expect(html.querySelector('[data-testid="cierre-cancelar"]')).not.toBeNull();
   });
 });
 
