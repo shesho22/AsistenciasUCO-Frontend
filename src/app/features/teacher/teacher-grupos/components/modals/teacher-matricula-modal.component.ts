@@ -94,7 +94,7 @@ import { mensajeUi } from '../../../../../core/messages/mensajes-ui';
                   [value]="programaElegido()"
                   (change)="programaElegido.set($any($event.target).value)"
                 >
-                  <option value="">Selecciona el programa</option>
+                  <option value="">{{ programas().length === 0 ? '-- No hay programas disponibles --' : 'Selecciona el programa' }}</option>
                   @for (p of programas(); track p.idPrograma) {
                     <option [value]="p.idPrograma" [selected]="p.idPrograma === programaElegido()">{{ p.nombrePrograma }}</option>
                   }

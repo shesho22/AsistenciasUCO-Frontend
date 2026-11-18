@@ -49,14 +49,15 @@ describe('DashboardLayoutComponent menu simplificado (CULM-001 UX)', () => {
   const etiquetas = (c: DashboardLayoutComponent): string[] => c.filteredNavItems().map((i) => i.label);
   const rutas = (c: DashboardLayoutComponent): string[] => c.filteredNavItems().map((i) => i.route);
 
-  it('administrador sin componentes externos: Personas, Estructura, Configuracion, Sistema e Indicadores', () => {
+  it('administrador sin componentes externos: Personas, Estructura, Configuracion, Auditoria, Cierre masivo e Indicadores', () => {
     const c = crear('ADMINISTRADOR', 'legacy');
     expect(rutas(c)).toEqual([
       '/app/dashboard',
       '/app/admin/personas',
       '/app/admin/estructura',
       '/app/admin/configuracion',
-      '/app/admin/sistema',
+      '/app/admin/sistema/auditoria',
+      '/app/admin/sistema/cierre-masivo',
       '/app/admin/indicadores',
     ]);
     expect(etiquetas(c)).toContain('Personas');

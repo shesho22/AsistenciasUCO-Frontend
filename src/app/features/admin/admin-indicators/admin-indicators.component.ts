@@ -61,8 +61,12 @@ const MARGEN_IZQ = 44;
             @for (f of service.comparativa(); track f.idFacultad) {
               <article class="rounded-xl border border-warm-200 p-4" data-testid="tarjeta-facultad">
                 <p class="font-medium">{{ f.nombreFacultad }}@if (!f.estaActivaFacultad) { <span class="ml-2 text-xs text-warm-600">Inactiva</span> }</p>
-                <p class="text-2xl font-semibold">{{ formatoPorcentaje(f.porcentajeAusentismo) }}</p>
-                <p class="text-xs text-warm-600">{{ f.horasFalta | number: '1.0-2' }} h de falta sobre {{ f.horasDictadas | number: '1.0-2' }} h dictadas</p>
+                <p
+                  class="text-2xl font-semibold"
+                  data-testid="ausentismo-facultad"
+                  [attr.title]="(f.horasFalta | number: '1.0-2') + ' h de falta sin justa causa sobre ' + (f.horasDictadas | number: '1.0-2') + ' h dictadas (horas de clase por cada estudiante matriculado)'"
+                >{{ formatoPorcentaje(f.porcentajeAusentismo) }}</p>
+                <p class="text-xs text-warm-600">de las horas dictadas, sin justa causa</p>
                 <p class="text-xs text-warm-600">{{ f.totalEstudiantes }} estudiantes · {{ f.totalProgramas }} programas · retención {{ formatoPorcentaje(f.tasaRetencion) }}</p>
               </article>
             }

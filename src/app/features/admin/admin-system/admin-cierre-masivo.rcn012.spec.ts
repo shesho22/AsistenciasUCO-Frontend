@@ -5,14 +5,14 @@ import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { signal } from '@angular/core';
-import { AdminSystemComponent } from './admin-system.component';
+import { AdminCierreMasivoComponent } from './admin-cierre-masivo.component';
 import { AdminManagementService } from '../../../core/services/admin-management.service';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 
-describe('AdminSystemComponent - Cierre Masivo RCN_012 (C-F-57)', () => {
-  let fixture: ComponentFixture<AdminSystemComponent>;
-  let component: AdminSystemComponent;
+describe('AdminCierreMasivoComponent - Cierre Masivo RCN_012 (C-F-57)', () => {
+  let fixture: ComponentFixture<AdminCierreMasivoComponent>;
+  let component: AdminCierreMasivoComponent;
   let adminServiceSpy: jasmine.SpyObj<AdminManagementService>;
   let coordServiceSpy: jasmine.SpyObj<CoordinatorManagementService>;
   let toastSpy: jasmine.SpyObj<ToastService>;
@@ -58,7 +58,7 @@ describe('AdminSystemComponent - Cierre Masivo RCN_012 (C-F-57)', () => {
     );
 
     await TestBed.configureTestingModule({
-      imports: [AdminSystemComponent],
+      imports: [AdminCierreMasivoComponent],
       providers: [
         provideRouter([]),
         provideHttpClient(withXhr()),
@@ -69,7 +69,7 @@ describe('AdminSystemComponent - Cierre Masivo RCN_012 (C-F-57)', () => {
       ],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(AdminSystemComponent);
+    fixture = TestBed.createComponent(AdminCierreMasivoComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

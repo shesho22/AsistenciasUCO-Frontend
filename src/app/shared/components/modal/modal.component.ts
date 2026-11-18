@@ -42,7 +42,7 @@ const pilaAbiertos: ModalComponent[] = [];
     template: `
     @if (isOpen()) {
       <div
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
+        class="fixed inset-0 z-50 flex justify-center p-4 sm:p-6 overflow-y-auto"
         role="presentation"
       >
         <!-- Backdrop -->
@@ -126,7 +126,7 @@ export class ModalComponent {
 
   protected readonly panelClases = computed(
     () =>
-      `relative w-full ${ANCHOS[this.tamano()]} bg-white rounded-2xl shadow-warm-lg border border-warm-200 p-6 z-10 animate-scale-up focus:outline-none`,
+      `relative my-auto w-full ${ANCHOS[this.tamano()]} bg-white rounded-2xl shadow-warm-lg border border-warm-200 p-6 z-10 animate-scale-up focus:outline-none`,
   );
 
   private readonly injector = inject(Injector);

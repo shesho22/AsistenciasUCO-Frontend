@@ -11,6 +11,7 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
 import { ListadoPaginado } from '../../../shared/utils/listado-paginado';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
 import { ModalComponent } from '../../../shared/components/modal/modal.component';
+import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 /** Rango por defecto (últimos 7 días, contando hoy) y máximo permitido por el backend. */
 export const DIAS_AUDITORIA_POR_DEFECTO = 7;
@@ -46,9 +47,15 @@ export function rangoUtc(desde: string, hasta: string): { desde: string; hasta: 
 @Component({
     selector: 'app-admin-auditoria',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [ModalComponent, FechaHoraCortaPipe, FormsModule, BadgeComponent, PaginationComponent, ErrorCargaComponent],
+    imports: [PageHeaderComponent, ModalComponent, FechaHoraCortaPipe, FormsModule, BadgeComponent, PaginationComponent, ErrorCargaComponent],
     template: `
     <div class="space-y-4">
+      <app-page-header
+        etiqueta="Gobierno de TI & Auditoría"
+        contexto="Trazabilidad"
+        titulo="Trazabilidad y Auditoría"
+        descripcion="Rastro de las acciones registradas en el sistema. Consulta de solo lectura por rango de fechas."
+      />
       <div class="superficie grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 p-4">
         <label class="text-xs font-semibold text-warm-600">
           Desde

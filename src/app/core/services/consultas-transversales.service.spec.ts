@@ -84,6 +84,31 @@ describe('ConsultasTransversalesService (HU112/HU128/HU143/HU157)', () => {
     http.expectOne(`${api}/decano/estudiantes/e-1/historial`).flush({ exitoso: true, datos: null });
   });
 
+  it('NB-2: el resumen de la ficha conserva las tomas y las horas que entrega el backend', () => {
+    let ficha: ObservedValueOf<ReturnType<typeof service.getHistorialEstudiante>> | undefined;
+    service.getHistorialEstudiante('e-1', true).subscribe((r) => (ficha = r));
+    http.expectOne(`${api}/admin/estudiantes/e-1/historial`).flush({
+      exitoso: true,
+      datos: {
+        idEstudiante: 'e-1', tipoIdentificacion: 'CC', numeroIdentificacion: '1', nombreCompleto: 'Ana', correo: null, activo: true,
+        matriculas: [
+          { idGrupo: 'g-1', resumen: { sesionesEjecutadas: 14, asistencias: 26, faltasSinJustaCausa: 2, excusas: 0,
+            porcentajeInasistencia: 7.14, codigoPermanencia: 'REGULAR', tomasDictadas: 28, horasDictadas: 28, horasFalta: 2 } },
+          { idGrupo: 'g-2', resumen: { sesionesEjecutadas: 1, asistencias: 1, faltasSinJustaCausa: 0, excusas: 0,
+            porcentajeInasistencia: null, codigoPermanencia: null } },
+          { idGrupo: null, resumen: null },
+        ],
+      },
+    });
+
+    const [conTomas, sinTomas, sinGrupo] = ficha!.datos!.matriculas;
+    expect(conTomas.resumen?.tomasDictadas).toBe(28);
+    expect(conTomas.resumen?.horasDictadas).toBe(28);
+    expect(conTomas.resumen?.horasFalta).toBe(2);
+    expect(sinTomas.resumen?.tomasDictadas).toBeUndefined();
+    expect(sinGrupo.resumen).toBeNull();
+  });
+
   it('HU061: el coordinador y el decano consultan el consolidado por su propia ruta con los filtros', () => {
     let responseConsolidado!: ObservedValueOf<ReturnType<typeof service.getConsolidadoAsistencia>>;
     service.getConsolidadoAsistencia({ idPeriodoAcademico: 'per-1', idDocente: null, pagina: 1, tamano: 10 }).subscribe((r) => (responseConsolidado = r));

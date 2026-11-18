@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { AdminManagementService } from '../../../core/services/admin-management.service';
-import { CatalogService } from '../../../core/services/catalog.service';
 import { ConsultasTransversalesService } from '../../../core/services/consultas-transversales.service';
 import { DeanFacultadService } from '../../../core/services/dean-facultad.service';
 import { DocenteFacultadItem, EstadoVinculoDocente } from '../../../core/models/consultas-transversales.model';
@@ -132,7 +131,7 @@ interface OpcionFacultad {
                       <span class="font-semibold text-warm-900 block">{{ d.nombreCompleto }}</span>
                       <span class="text-xs text-warm-500">{{ d.correo || '—' }}</span>
                     </td>
-                    <td class="py-2 pr-3 font-mono text-xs text-warm-600">{{ d.numeroIdentificacion || '—' }}</td>
+                    <td class="py-2 pr-3 font-mono text-xs text-warm-600">{{ d.codigoTipoIdentificacion ? d.codigoTipoIdentificacion + ' ' : '' }}{{ d.numeroIdentificacion || '—' }}</td>
                     <td class="py-2 pr-3 text-warm-700">{{ d.programas || '—' }}</td>
                     <td class="py-2 pr-3 text-warm-700">{{ d.totalGrupos }}</td>
                     <td class="py-2">
@@ -163,7 +162,6 @@ export class DeanDocentesComponent implements OnInit {
   private readonly service = inject(ConsultasTransversalesService);
   private readonly facultad = inject(DeanFacultadService);
   private readonly admin = inject(AdminManagementService);
-  private readonly catalogo = inject(CatalogService);
   private readonly toast = inject(ToastService);
   readonly comoAdministrador = inject(ActivatedRoute).snapshot.data['comoAdministrador'] === true;
 
@@ -237,8 +235,12 @@ export class DeanDocentesComponent implements OnInit {
         next: (res) => this.facultades.set((res.datos ?? []).map((f) => ({ id: f.id, nombre: f.nombre }))),
         error: () => this.facultades.set([]),
       });
-      this.catalogo.getProgramasAcademicos().subscribe({
-        next: (res) => this.programas.set(res.datos.map((p) => ({ id: p.id, nombre: p.nombre, facultad: p.facultad }))),
+      // /decano/programas es solo del rol Decano (403 para el administrador): se usa el listado institucional.
+      this.admin.getProgramasInstitucion({ pagina: 1, tamano: 100 }).subscribe({
+        next: (res) =>
+          this.programas.set(
+            (res.elementos ?? []).map((p) => ({ id: p.id, nombre: p.nombre, facultad: p.nombreFacultad }))
+          ),
         error: () => this.programas.set([]),
       });
       return;

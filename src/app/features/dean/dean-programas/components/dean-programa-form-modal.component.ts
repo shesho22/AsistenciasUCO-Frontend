@@ -33,7 +33,7 @@ const NOMBRE_MAXIMO = 50;
 
         <app-form-field label="Tipo de programa" [required]="true" [errorMessage]="errorTipo()">
           <select name="tipo" [ngModel]="idTipoPrograma()" (ngModelChange)="idTipoPrograma.set($event)" class="w-full px-3 py-2 bg-white border border-warm-200 rounded-xl text-sm">
-            <option value="">-- Selecciona un tipo --</option>
+            <option value="">{{ tiposPrograma().length === 0 ? '-- No hay tipos de programa disponibles --' : '-- Selecciona un tipo --' }}</option>
             @for (t of tiposPrograma(); track t.id) {
               <option [value]="t.id">{{ t.nombre }}</option>
             }
@@ -42,7 +42,7 @@ const NOMBRE_MAXIMO = 50;
 
         <app-form-field label="Coordinador" [required]="true" [errorMessage]="errorCoordinador()">
           <select name="coordinador" [ngModel]="idCoordinador()" (ngModelChange)="idCoordinador.set($event)" class="w-full px-3 py-2 bg-white border border-warm-200 rounded-xl text-sm">
-            <option value="">-- Selecciona un coordinador --</option>
+            <option value="">{{ opcionesCoordinador().length === 0 ? '-- No hay coordinadores disponibles --' : '-- Selecciona un coordinador --' }}</option>
             @for (c of opcionesCoordinador(); track c.id) {
               <option [value]="c.id">{{ c.nombre }}</option>
             }

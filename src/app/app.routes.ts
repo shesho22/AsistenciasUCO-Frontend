@@ -166,13 +166,12 @@ export const routes: Routes = [
       { path: 'admin/estados', redirectTo: 'admin/configuracion/estados', pathMatch: 'full' },
       { path: 'admin/festivos', redirectTo: 'admin/configuracion/festivos', pathMatch: 'full' },
       {
+        // Sistema: pestañas auditoría y cierre masivo, cada una con su vista (/app/admin/sistema/:pestaña).
         path: 'admin/sistema',
         canActivate: [roleGuard],
         data: { roles: ['ADMINISTRADOR'] },
-        loadComponent: () =>
-          import('./features/admin/admin-system/admin-system.component').then(
-            (m) => m.AdminSystemComponent
-          ),
+        loadChildren: () =>
+          import('./features/admin/admin-system/admin-sistema.routes').then((m) => m.SISTEMA_ROUTES),
       },
       {
         path: 'admin/seguridad',

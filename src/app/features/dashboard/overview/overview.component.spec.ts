@@ -341,6 +341,18 @@ describe('OverviewComponent', () => {
     expect(component.isLoading()).toBeFalse();
   });
 
+  it('ADMIN: la tarjeta del decano muestra "Asignado" solo cuando hay fecha de asignación', () => {
+    createComponentWithRole('ADMINISTRADOR');
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.textContent).toContain('Asignado: 2025-01-01');
+
+    adminServiceSpy.getDecanos.and.returnValue(of({ exitoso: true, datos: [{ ...component.decanos()[0], fechaAsignacion: '' }] }) as never);
+    createComponentWithRole('ADMINISTRADOR');
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Asignado:');
+  });
+
   it('ADMIN: las facultades activas y los decanos salen del servidor, no del conjunto de decanos listados', () => {
     // El directorio trae un solo decano; la institucion tiene 3 facultades activas (una sin decano en la lista) y 3 decanos.
     createComponentWithRole('ADMINISTRADOR');

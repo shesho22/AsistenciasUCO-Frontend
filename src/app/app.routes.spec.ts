@@ -214,8 +214,10 @@ describe('application routes', () => {
       expect(cfg?.loadComponent).toBeUndefined();
     });
 
-    it('admin/sistema se conserva para las operaciones (auditoria y cierre masivo)', () => {
-      expect(appChildren().some((route) => route.path === 'admin/sistema')).toBeTrue();
+    it('admin/sistema se conserva para las operaciones y las carga como rutas hijas (auditoria y cierre masivo)', () => {
+      const sistema = appChildren().find((route) => route.path === 'admin/sistema');
+      expect(sistema?.loadChildren).toBeDefined();
+      expect(sistema?.loadComponent).toBeUndefined();
     });
   });
 
@@ -223,7 +225,7 @@ describe('application routes', () => {
     const appChildren = () => routes.find((route) => route.path === 'app')?.children ?? [];
     const ruta = (path: string) => appChildren().find((r) => r.path === path);
 
-    for (const path of ['admin/personas', 'admin/estructura']) {
+    for (const path of ['admin/personas', 'admin/estructura', 'admin/sistema']) {
       it(`${path} exige sesion, solo ADMINISTRADOR y carga sus hijas de forma diferida`, () => {
         const r = ruta(path);
         expect(r?.canActivate?.length).toBeGreaterThan(0);
@@ -273,8 +275,8 @@ describe('application routes', () => {
       }
     });
 
-    it('se conservan indicadores, periodos y sistema como pantallas del administrador', () => {
-      for (const path of ['admin/indicadores', 'admin/periodos', 'admin/sistema']) {
+    it('se conservan indicadores y periodos como pantallas del administrador', () => {
+      for (const path of ['admin/indicadores', 'admin/periodos']) {
         expect(ruta(path)?.loadComponent).toBeDefined();
       }
     });

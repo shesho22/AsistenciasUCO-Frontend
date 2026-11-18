@@ -106,6 +106,44 @@ describe('AdmisionEstudianteModalComponent (HU156)', () => {
     expect(component.programas()[0].codigo).toBe('SIS');
   }));
 
+  it('combobox: escribir filtra con espera, elegir una opción fija idPrograma y muestra su etiqueta', fakeAsync(() => {
+    component.onBusquedaProgramaChange('Sis');
+    expect(component.listaAbierta()).toBeTrue();
+    tick(250);
+    expect(adminService.getProgramasInstitucion).toHaveBeenCalledWith({ texto: 'Sis', pagina: 1, tamano: 20 });
+
+    component.seleccionarPrograma(programasMock[0]);
+    expect(component.idPrograma()).toBe(programasMock[0].id);
+    expect(component.busquedaPrograma()).toBe(component.etiquetaPrograma(programasMock[0]));
+    expect(component.listaAbierta()).toBeFalse();
+
+    // Editar el texto invalida la selección previa.
+    component.onBusquedaProgramaChange('otro');
+    expect(component.idPrograma()).toBe('');
+    tick(250);
+  }));
+
+  it('combobox: la etiqueta omite el código cuando es nulo', () => {
+    const sinCodigo = { ...programasMock[0], codigo: null as unknown as string };
+    expect(component.etiquetaPrograma(sinCodigo)).toBe(`${sinCodigo.nombre} (${sinCodigo.nombreFacultad})`);
+    expect(component.etiquetaPrograma(sinCodigo)).not.toContain('null');
+  });
+
+  it('combobox: navega con flechas y elige con Enter; Escape cierra', () => {
+    const tecla = (key: string) => ({ key, preventDefault: () => undefined }) as KeyboardEvent;
+    component.abrirLista();
+    component.onTeclaPrograma(tecla('ArrowDown'));
+    expect(component.indiceActivo()).toBe(0);
+    component.onTeclaPrograma(tecla('ArrowDown'));
+    component.onTeclaPrograma(tecla('ArrowUp'));
+    component.onTeclaPrograma(tecla('Enter'));
+    expect(component.idPrograma()).toBe(programasMock[0].id);
+
+    component.abrirLista();
+    component.onTeclaPrograma(tecla('Escape'));
+    expect(component.listaAbierta()).toBeFalse();
+  });
+
   it('envía admisión exitosa con estadoCuenta ACTIVA, emite admitido y muestra toast de éxito', () => {
     const admitidoDto: AdmisionEstudianteDto = {
       idEstudiante: 'est-10',

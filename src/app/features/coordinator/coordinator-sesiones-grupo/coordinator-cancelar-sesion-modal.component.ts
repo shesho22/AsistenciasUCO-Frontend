@@ -26,7 +26,7 @@ import { ModalComponent } from '../../../shared/components/modal/modal.component
             (change)="codigoMotivo.set($any($event.target).value)"
             class="px-3 py-2.5 bg-white border border-warm-200 rounded-xl text-sm font-normal text-warm-900"
           >
-            <option value="">Selecciona un motivo</option>
+            <option value="">{{ motivos().length === 0 ? '-- No hay motivos disponibles --' : 'Selecciona un motivo' }}</option>
             @for (m of motivos(); track m.codigo) {
               <option [value]="m.codigo">{{ m.nombre }}</option>
             }

@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, computed, inject, signal, viewChild, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { ConsultasTransversalesService } from '../../../core/services/consultas-transversales.service';
@@ -13,6 +13,7 @@ import { FiltrosPlegablesComponent } from '../../../shared/components/filtros-pl
 import { ErrorCargaComponent } from '../../../shared/components/error-carga/error-carga.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
+import { ModalComponent } from '../../../shared/components/modal/modal.component';
 import { HistorialEstudianteComponent } from '../../../shared/components/historial-estudiante/historial-estudiante.component';
 import { AdmisionEstudianteModalComponent } from './admision-estudiante-modal.component';
 import { CorreccionIdentidadModalComponent } from '../../../shared/components/correccion-identidad-modal/correccion-identidad-modal.component';
@@ -38,6 +39,7 @@ interface OpcionFacultad {
     FormsModule,
     BadgeComponent,
     PaginationComponent,
+    ModalComponent,
     HistorialEstudianteComponent,
     AdmisionEstudianteModalComponent,
     CorreccionIdentidadModalComponent,
@@ -136,7 +138,7 @@ interface OpcionFacultad {
                       <span class="font-semibold text-warm-900 block">{{ e.nombreCompleto }}</span>
                       <span class="text-xs text-warm-500">{{ e.correo || '—' }}</span>
                     </td>
-                    <td class="py-2 pr-3 font-mono text-xs text-warm-600">{{ e.numeroIdentificacion || '—' }}</td>
+                    <td class="py-2 pr-3 font-mono text-xs text-warm-600">{{ e.tipoIdentificacion ? e.tipoIdentificacion + ' ' : '' }}{{ e.numeroIdentificacion || '—' }}</td>
                     <td class="py-2 pr-3">
                       <span class="text-warm-900 block">{{ e.programas || '—' }}</span>
                       <span class="text-xs text-warm-500">{{ e.facultades || '—' }}</span>
@@ -177,23 +179,18 @@ interface OpcionFacultad {
         ></app-pagination>
       </section>
 
+      <!-- Ficha unificada: ventana flotante sobre la lista, con X para cerrarla (Escape y clic fuera también) -->
       @if (ficha(); as f) {
-        <section
-          #fichaPanel
-          tabindex="-1"
-          role="region"
-          aria-label="Ficha unificada del estudiante"
-          class="superficie p-6 space-y-4 outline-none focus:ring-2 focus:ring-primary-500/30"
+        <app-modal
+          [isOpen]="true"
+          [title]="f.nombreCompleto"
+          [subtitulo]="'Historial completo · ' + f.matriculas.length + ' matrículas'"
+          tamano="3xl"
+          etiquetaCerrar="Cerrar ficha"
+          (closed)="ficha.set(null)"
         >
-          <div class="flex items-start justify-between gap-3">
-            <div>
-              <h2 class="font-serif font-bold text-lg text-warm-900">{{ f.nombreCompleto }}</h2>
-              <p class="text-xs text-warm-500">Historial completo · {{ f.matriculas.length }} matrículas</p>
-            </div>
-            <button type="button" class="text-xs font-semibold text-warm-600 hover:underline" (click)="ficha.set(null)">Cerrar</button>
-          </div>
           <app-historial-estudiante [ficha]="f" />
-        </section>
+        </app-modal>
       }
 
       <!-- Modal de Admisión de Estudiantes (HU156) -->
@@ -231,7 +228,6 @@ export class AdminEstudiantesComponent implements OnInit {
   filtrosActivos = computed(() => (this.idFacultad() ? 1 : 0) + (this.estado() !== 'TODOS' ? 1 : 0));
   facultades = signal<OpcionFacultad[]>([]);
   ficha = signal<FichaUnificadaEstudiante | null>(null);
-  private readonly fichaPanel = viewChild<ElementRef<HTMLElement>>('fichaPanel');
 
   // HU156: Admisión
   readonly modalAdmisionAbierto = signal(false);
@@ -275,7 +271,6 @@ export class AdminEstudiantesComponent implements OnInit {
     this.service.getHistorialEstudiante(estudiante.idEstudiante, true).subscribe({
       next: (res) => {
         this.ficha.set(res.datos ?? null);
-        setTimeout(() => this.fichaPanel()?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' }));
       },
       error: (error: unknown) => {
         this.ficha.set(null);
@@ -322,7 +317,7 @@ export class AdminEstudiantesComponent implements OnInit {
       primerApellido,
       segundoApellido,
       numeroIdentificacion: e.numeroIdentificacion,
-      codigoTipoIdentificacion: null,
+      codigoTipoIdentificacion: e.tipoIdentificacion ?? null,
       idTipoIdentificacion: null,
     };
   }

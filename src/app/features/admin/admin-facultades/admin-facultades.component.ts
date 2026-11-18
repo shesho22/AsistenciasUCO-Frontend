@@ -2,11 +2,10 @@ import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } 
 
 import { FormsModule } from '@angular/forms';
 import { AdminManagementService } from '../../../core/services/admin-management.service';
-import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import {
   FacultadItem,
-  AsignaturaPlanItem,
+  ProgramaInstitucionDto,
 } from '../../../core/models/role-management.model';
 import { getBackendUserMessage } from '../../../core/api/errors/api-error.util';
 import { ActionMenuComponent, ActionMenuItem } from '../../../shared/components/action-menu/action-menu.component';
@@ -187,11 +186,11 @@ type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
                   <div class="grid grid-cols-2 gap-3 py-2.5 border-t border-warm-100 mb-4 bg-warm-50/50 rounded-xl px-3">
                     <div>
                       <span class="text-[10px] text-warm-500 font-semibold uppercase block">Programas</span>
-                      <span class="text-sm font-bold text-warm-900">{{ fac.totalProgramas ?? '—' }}</span>
+                      <span class="text-sm font-bold text-warm-900">{{ totalProgramasDe(fac) ?? '—' }}</span>
                     </div>
                     <div>
                       <span class="text-[10px] text-warm-500 font-semibold uppercase block">Estudiantes</span>
-                      <span class="text-sm font-bold text-warm-900">{{ fac.totalEstudiantes ?? '—' }}</span>
+                      <span class="text-sm font-bold text-warm-900">{{ totalEstudiantesDe(fac) ?? '—' }}</span>
                     </div>
                   </div>
                 </div>
@@ -203,7 +202,7 @@ type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
                     (click)="verProgramasFacultad(fac)"
                     class="flex-1 min-h-[44px] py-2 px-3 bg-primary-700 hover:bg-primary-800 text-white rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-1.5"
                   >
-                    <span>Ver Programas y Planes</span>
+                    <span>Ver Programas</span>
                   </button>
                   <app-action-menu
                     label="Más acciones de la facultad"
@@ -302,7 +301,7 @@ type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
                 [(ngModel)]="formFacultad.idDecano"
                 class="w-full px-3.5 py-2.5 rounded-xl border border-warm-200 text-sm focus:ring-2 focus:ring-primary-700/20 focus:border-primary-700 bg-white"
               >
-                <option value="">-- Seleccionar Decano(a) Titular --</option>
+                <option value="">{{ decanos().length === 0 ? '-- No hay decanos disponibles --' : '-- Seleccionar Decano(a) Titular --' }}</option>
                 @for (dec of decanos(); track dec.id) {
                   <option [value]="dec.id">
                     {{ dec.nombreCompleto || (dec.nombres + ' ' + dec.apellidos).trim() }} (CC {{ dec.numeroIdentificacion }}{{ dec.correo ? ' - ' + dec.correo : '' }})
@@ -387,7 +386,7 @@ type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
                 (ngModelChange)="decanoSeleccionadoId.set($event)"
                 class="w-full px-3.5 py-2.5 rounded-xl border border-warm-200 text-sm focus:ring-2 focus:ring-primary-700/20 focus:border-primary-700 bg-white"
               >
-                <option value="">-- Seleccionar Profesional --</option>
+                <option value="">{{ decanos().length === 0 ? '-- No hay decanos disponibles --' : '-- Seleccionar Profesional --' }}</option>
                 @for (dec of decanos(); track dec.id) {
                   <option [value]="dec.id">
                     {{ dec.nombreCompleto || (dec.nombres + ' ' + dec.apellidos).trim() }} ({{ dec.tipoIdentificacion || 'CC' }} {{ dec.numeroIdentificacion }})
@@ -439,77 +438,50 @@ type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
         </app-modal>
       }
 
-      <!-- ================= MODAL: VER PROGRAMAS Y PLANES DE ESTUDIO (HU108) ================= -->
+      <!-- ================= MODAL: VER PROGRAMAS DE LA FACULTAD (HU108) ================= -->
       @if (facultadSeleccionada()) {
         <app-modal
           [isOpen]="true"
           [title]="facultadSeleccionada()?.nombre ?? ''"
           tamano="3xl"
           etiquetaCerrar="Cerrar"
-          (closed)="facultadSeleccionada.set(null)"
+          (closed)="cerrarProgramas()"
         >
           <div modal-encabezado>
             <p class="text-xs text-warm-500 mt-0.5">
               Decano(a): <span class="font-bold text-warm-800">{{ facultadSeleccionada()?.decanoNombre || 'Titular designado' }}</span>
             </p>
             <span class="inline-block mt-2 text-xs font-semibold text-primary-800 bg-primary-50 px-2 py-0.5 rounded-md border border-primary-200">
-              Estructura Curricular
+              Estructura académica
             </span>
           </div>
 
-          <div class="space-y-6">
-            <div>
-              <h4 class="text-xs font-bold uppercase tracking-wider text-warm-500 mb-3">
-                Planes de Estudio Vigentes
-              </h4>
-              @if (planes().length === 0) {
-                <p class="text-xs text-warm-500 italic">
-                  La consulta de planes por facultad no está disponible para el administrador; use la vista de la
-                  decanatura o de coordinación.
-                </p>
-              } @else {
-                <div class="space-y-4">
-                  @for (plan of planes(); track plan.id) {
-                    <div class="p-4 rounded-2xl border border-warm-200 bg-warm-50/40 space-y-3">
-                      <div class="flex items-center justify-between">
-                        <div>
-                          <span class="text-xs font-mono font-bold text-primary-800 bg-primary-50 px-2 py-0.5 rounded-md">
-                            {{ plan.codigo }}
-                          </span>
-                          <span class="font-bold text-sm text-warm-900 ml-2">{{ plan.nombre }}</span>
-                        </div>
-                        <span class="text-xs font-bold text-warm-600">
-                          {{ plan.totalCreditos ?? '—' }} créditos
-                        </span>
-                      </div>
-
-                      <!-- Asignaturas del Plan -->
-                      <div class="pt-2 border-t border-warm-100">
-                        <span class="text-[10px] font-bold uppercase tracking-wider text-warm-400 block mb-2">
-                          Malla Curricular
-                        </span>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          @for (asig of getAsignaturasPlan(plan.id); track asig.id) {
-                            <div class="flex items-center justify-between p-2 rounded-xl bg-white border border-warm-200/80 text-xs">
-                              <span class="font-semibold text-warm-800 truncate">{{ asig.nombre }}</span>
-                              <span class="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-warm-100 text-warm-600">
-                                {{ asig.creditos }} cr.
-                              </span>
-                            </div>
-                          }
-                        </div>
-                      </div>
-                    </div>
-                  }
-                </div>
-              }
-            </div>
+          <div class="space-y-3">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-warm-500">Programas académicos</h4>
+            @if (cargandoProgramas()) {
+              <p role="status" class="text-xs text-warm-500">Cargando programas…</p>
+            } @else if (errorProgramas()) {
+              <p role="alert" class="text-xs text-danger-700">{{ errorProgramas() }}</p>
+            } @else if (programasFacultad().length === 0) {
+              <p class="text-xs text-warm-500 italic">Esta facultad aún no tiene programas académicos registrados.</p>
+            } @else {
+              <ul class="grid grid-cols-1 sm:grid-cols-2 gap-2" data-testid="programas-facultad">
+                @for (p of programasFacultad(); track p.id) {
+                  <li class="flex items-center justify-between gap-2 p-3 rounded-xl bg-white border border-warm-200/80 text-xs">
+                    <span class="font-semibold text-warm-800">{{ p.nombre }}</span>
+                    @if (p.codigo) {
+                      <span class="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-warm-100 text-warm-600">{{ p.codigo }}</span>
+                    }
+                  </li>
+                }
+              </ul>
+            }
           </div>
 
           <div modal-footer>
             <button
               type="button"
-              (click)="facultadSeleccionada.set(null)"
+              (click)="cerrarProgramas()"
               class="px-5 py-2 bg-warm-200 hover:bg-warm-300 text-warm-800 text-xs font-bold rounded-xl transition-colors"
             >
               Cerrar
@@ -522,7 +494,6 @@ type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
 })
 export class AdminFacultadesComponent implements OnInit {
   private readonly adminService = inject(AdminManagementService);
-  private readonly coordService = inject(CoordinatorManagementService);
   private readonly toast = inject(ToastService);
 
   vista = signal<VistaFacultad>('LISTA');
@@ -540,7 +511,9 @@ export class AdminFacultadesComponent implements OnInit {
   facultades = this.adminService.facultades;
   decanos = this.adminService.decanos;
   instituciones = this.adminService.instituciones;
-  planes = this.coordService.planes;
+  programasFacultad = signal<ProgramaInstitucionDto[]>([]);
+  cargandoProgramas = signal(false);
+  errorProgramas = signal<string | null>(null);
 
   facultadEnEdicion: FacultadItem | null = null;
   facultadSeleccionada = signal<FacultadItem | null>(null);
@@ -618,8 +591,12 @@ export class AdminFacultadesComponent implements OnInit {
     this.adminService.getInstituciones().subscribe();
   }
 
-  getAsignaturasPlan(planId: string): AsignaturaPlanItem[] {
-    return this.coordService.getAsignaturasPlan(planId);
+  totalProgramasDe(fac: FacultadItem): number | undefined {
+    return fac.totalProgramas;
+  }
+
+  totalEstudiantesDe(fac: FacultadItem): number | undefined {
+    return fac.totalEstudiantes;
   }
 
   tieneDecano(fac: FacultadItem): boolean {
@@ -754,8 +731,26 @@ export class AdminFacultadesComponent implements OnInit {
     });
   }
 
+  /** Programas de la facultad desde `/admin/programas` (las rutas de decano y coordinador no admiten al administrador). */
   verProgramasFacultad(fac: FacultadItem): void {
     this.facultadSeleccionada.set(fac);
+    this.programasFacultad.set([]);
+    this.errorProgramas.set(null);
+    this.cargandoProgramas.set(true);
+    this.adminService.getProgramasInstitucion({ idFacultad: fac.id, pagina: 1, tamano: 100 }).subscribe({
+      next: (res) => {
+        this.programasFacultad.set(res?.elementos ?? []);
+        this.cargandoProgramas.set(false);
+      },
+      error: (err: unknown) => {
+        this.cargandoProgramas.set(false);
+        this.errorProgramas.set(getBackendUserMessage(err, 'No fue posible cargar los programas de la facultad.'));
+      },
+    });
+  }
+
+  cerrarProgramas(): void {
+    this.facultadSeleccionada.set(null);
   }
 
   // ================= DECANATO: VINCULACIÓN / CAMBIO =================

@@ -73,7 +73,7 @@ const CLASE_CONTROL =
             />
             <label class="block text-xs font-semibold text-warm-700">Tipo de vinculación
               <select name="idTipoVinculacion" [(ngModel)]="form.idTipoVinculacion" [class]="clase">
-                <option value="">Seleccione…</option>
+                <option value="">{{ tiposVinculacion().length === 0 ? '-- No hay tipos de vinculación disponibles --' : 'Seleccione…' }}</option>
                 @for (tipo of tiposVinculacion(); track tipo.id) {
                   <option [value]="tipo.id">{{ tipo.nombre }}</option>
                 }
@@ -105,7 +105,7 @@ const CLASE_CONTROL =
             </ul>
             <label class="block text-xs font-semibold text-warm-700">Tipo de vinculación
               <select name="idTipoVinculacionExistente" [(ngModel)]="form.idTipoVinculacion" [class]="clase">
-                <option value="">Seleccione…</option>
+                <option value="">{{ tiposVinculacion().length === 0 ? '-- No hay tipos de vinculación disponibles --' : 'Seleccione…' }}</option>
                 @for (tipo of tiposVinculacion(); track tipo.id) {
                   <option [value]="tipo.id">{{ tipo.nombre }}</option>
                 }

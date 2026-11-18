@@ -105,6 +105,9 @@ describe('AdminFacultadesComponent', () => {
     // ADM-16: el administrador no consulta rutas de coordinador (planes-estudio responde 403 sin alcance de programa).
     http.expectNone(`${environment.apiUrl}/coordinador/planes-estudio`);
     http.expectNone(`${environment.apiUrl}/coordinador/periodos-academicos`);
+    http.expectNone(`${environment.apiUrl}/decano/programas`);
+    // Los totales vienen en el mismo listado de facultades: no hay una segunda consulta de indicadores.
+    http.expectNone(`${environment.apiUrl}/admin/comparativa-facultades`);
   };
 
   afterEach(() => {
@@ -148,6 +151,59 @@ describe('AdminFacultadesComponent', () => {
     expect(texto).toContain('Estudiantes0');
     expect(texto).toContain('Programas—');
     expect(texto).toContain('Estudiantes—');
+  });
+
+  it('los totales de programas y estudiantes llegan en /admin/facultades, sin consultar indicadores aparte', () => {
+    fixture.detectChanges();
+    http.expectOne(`${environment.apiUrl}/admin/facultades`).flush({
+      exitoso: true,
+      datos: [{ id: 'fac-1', nombreFacultad: 'Ingeniería', estaActivaFacultad: true, totalProgramas: 5, totalEstudiantes: 120 }],
+    });
+    http.expectOne(`${environment.apiUrl}/admin/decanos`).flush({ exitoso: true, datos: mockDecanos });
+    http.expectOne(`${environment.apiUrl}/admin/instituciones`).flush({ exitoso: true, datos: [] });
+    flushCoordinatorCatalogs();
+    fixture.detectChanges();
+
+    const texto = (fixture.nativeElement.textContent as string).replace(/\s+/g, ' ');
+    expect(texto).toContain('Programas5');
+    expect(texto).toContain('Estudiantes120');
+  });
+
+  it('"Ver Programas" lista los programas de la facultad desde /admin/programas, no desde rutas de decano o coordinador', () => {
+    fixture.detectChanges();
+    http.expectOne(`${environment.apiUrl}/admin/facultades`).flush({ exitoso: true, datos: mockFacultadesApi });
+    http.expectOne(`${environment.apiUrl}/admin/decanos`).flush({ exitoso: true, datos: mockDecanos });
+    http.expectOne(`${environment.apiUrl}/admin/instituciones`).flush({ exitoso: true, datos: [] });
+    flushCoordinatorCatalogs();
+
+    component.verProgramasFacultad(component.facultades()[0]);
+    const req = http.expectOne((r) => r.url === `${environment.apiUrl}/admin/programas`);
+    expect(req.request.params.get('idFacultad')).toBe('fac-1');
+    req.flush({
+      exitoso: true,
+      elementos: [{ id: 'p-1', codigo: 'SIS', nombre: 'Ingeniería de Sistemas', idFacultad: 'fac-1', nombreFacultad: 'Facultad de Ingeniería' }],
+      numeroPagina: 1, tamanoPagina: 100, totalElementos: 1, totalPaginas: 1,
+    });
+    fixture.detectChanges();
+
+    const lista = document.body.querySelector('[data-testid="programas-facultad"]');
+    expect(lista?.textContent).toContain('Ingeniería de Sistemas');
+    expect(component.cargandoProgramas()).toBeFalse();
+  });
+
+  it('si /admin/programas falla, el modal muestra el mensaje en lugar de quedar vacío', () => {
+    fixture.detectChanges();
+    http.expectOne(`${environment.apiUrl}/admin/facultades`).flush({ exitoso: true, datos: mockFacultadesApi });
+    http.expectOne(`${environment.apiUrl}/admin/decanos`).flush({ exitoso: true, datos: mockDecanos });
+    http.expectOne(`${environment.apiUrl}/admin/instituciones`).flush({ exitoso: true, datos: [] });
+    flushCoordinatorCatalogs();
+
+    component.verProgramasFacultad(component.facultades()[0]);
+    http.expectOne((r) => r.url === `${environment.apiUrl}/admin/programas`).flush({ message: 'x' }, { status: 500, statusText: 'Error' });
+    fixture.detectChanges();
+
+    expect(component.errorProgramas()).toBeTruthy();
+    expect(component.programasFacultad()).toEqual([]);
   });
 
   it('calcula métricas Bento Grid correctamente (Totales, Activas, Inactivas, Con Decano)', () => {
@@ -613,11 +669,11 @@ describe('AdminFacultadesComponent', () => {
       return fixture.nativeElement as HTMLElement;
     }
 
-    it('cada tarjeta muestra "Ver Programas y Planes" y un menu; Editar, Cambiar decano y Activar/Desactivar no estan sueltos', () => {
+    it('cada tarjeta muestra "Ver Programas" y un menu; Editar, Cambiar decano y Activar/Desactivar no estan sueltos', () => {
       const el = iniciar();
       const tarjeta = el.querySelector('[data-testid="acciones-facultad"]') as HTMLElement;
       expect(tarjeta.querySelectorAll('button')).toHaveSize(2);
-      expect(tarjeta.textContent).toContain('Ver Programas y Planes');
+      expect(tarjeta.textContent).toContain('Ver Programas');
       expect(tarjeta.textContent).not.toContain('Editar');
       expect(el.textContent).not.toContain('Cambiar Decano(a)');
     });
