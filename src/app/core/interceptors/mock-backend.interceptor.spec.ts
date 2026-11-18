@@ -238,6 +238,24 @@ describe('mockBackendInterceptor', () => {
     tick(300);
     expect(horEstRes?.exitoso).toBeTrue();
 
+    // ATA D6/D7: calendario semanal y solicitudes de sesión simulados
+    let calEstRes: Sobre | undefined;
+    httpClient.get<Sobre>(`${environment.apiUrl}/estudiante/sesiones/calendario`, { params: { desde: '2026-11-16', hasta: '2026-11-22' } }).subscribe((r) => (calEstRes = r));
+    tick(300);
+    expect(calEstRes?.exitoso).toBeTrue();
+
+    let calDocRes: Sobre | undefined;
+    httpClient.get<Sobre>(`${environment.apiUrl}/docente/sesiones/calendario`, { params: { desde: '2026-11-16', hasta: '2026-11-22' } }).subscribe((r) => (calDocRes = r));
+    tick(300);
+    expect(calDocRes?.exitoso).toBeTrue();
+
+    for (const ruta of ['coordinador', 'docente']) {
+      let solRes: Sobre | undefined;
+      httpClient.get<Sobre>(`${environment.apiUrl}/${ruta}/sesiones/solicitudes`, { params: { soloPendientes: 'true', pagina: '1', tamano: '1' } }).subscribe((r) => (solRes = r));
+      tick(300);
+      expect(solRes?.exitoso).toBeTrue();
+    }
+
     let matEstRes: Sobre | undefined;
     httpClient.get<Sobre>(`${environment.apiUrl}/estudiante/materias`).subscribe((r) => (matEstRes = r));
     tick(300);

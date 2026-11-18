@@ -3,6 +3,7 @@ import { inject } from '@angular/core';
 import { of, delay, throwError } from 'rxjs';
 import { mockStore } from '../mocks/mock-data-store';
 import { respuestaConsultasTransversales } from '../mocks/mock-consultas-transversales';
+import { mockSesionesCalendario } from '../mocks/mock-calendario-sesiones';
 import { respuestaIndicadores } from '../mocks/mock-indicadores';
 import { plantillasNotificacionMock } from '../mocks/mock-notificaciones';
 import {
@@ -316,6 +317,19 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   }
 
   // ================= ESTUDIANTE =================
+  // ATA D7: calendario semanal con fechas, generado a partir de las franjas del mock.
+  if (url.endsWith('/estudiante/sesiones/calendario') && method === 'GET') {
+    const datos = mockSesionesCalendario(mockStore.horariosEstudiante, req.params.get('desde') ?? '', req.params.get('hasta') ?? '');
+    return of(okResponse(datos)).pipe(delay(250));
+  }
+  if (url.endsWith('/docente/sesiones/calendario') && method === 'GET') {
+    const datos = mockSesionesCalendario(mockStore.horariosDocente, req.params.get('desde') ?? '', req.params.get('hasta') ?? '');
+    return of(okResponse(datos)).pipe(delay(250));
+  }
+  // ATA D6: bandejas de solicitudes de sesión (sin solicitudes en el mock): contadores del menú y pantallas del rol.
+  if ((url.endsWith('/coordinador/sesiones/solicitudes') || url.endsWith('/docente/sesiones/solicitudes')) && method === 'GET') {
+    return of(okPagina([], req)).pipe(delay(200));
+  }
   if (url.endsWith('/estudiante/horarios') && method === 'GET') {
     return of(okResponse(mockHorariosToDto(mockStore.horariosEstudiante))).pipe(delay(250));
   }
