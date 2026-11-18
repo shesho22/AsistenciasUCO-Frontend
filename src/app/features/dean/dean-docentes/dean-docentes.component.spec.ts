@@ -43,7 +43,7 @@ describe('DeanDocentesComponent (HU128)', () => {
       exitoso: true,
       datos: [
         {
-          idDocente: 'd-1', numeroIdentificacion: '43000111', nombreCompleto: 'María Rostagno', correo: null, activo: true,
+          idDocente: 'd-1', numeroIdentificacion: '43000111', codigoTipoIdentificacion: 'CC', nombreCompleto: 'María Rostagno', correo: null, activo: true,
           programas: 'Ingeniería de Sistemas', totalProgramas: 1, totalGrupos: 2,
         },
       ],
@@ -61,6 +61,7 @@ describe('DeanDocentesComponent (HU128)', () => {
   it('lista los docentes con sus programas y ofrece los programas de la facultad', () => {
     const texto = fixture.nativeElement.textContent as string;
     expect(texto).toContain('María Rostagno');
+    expect(texto).toContain('CC 43000111');
     expect(texto).toContain('Ingeniería de Sistemas');
     expect(texto).toContain('1 Docentes');
     expect(component.programas()).toEqual([{ id: 'p-1', nombre: 'Sistemas' }]);
@@ -142,8 +143,11 @@ describe('DeanDocentesComponent (HU136, administrador)', () => {
     http.expectOne(`${environment.apiUrl}/admin/facultades`).flush({
       exitoso: true, datos: [{ id: 'f-1', nombre: 'Ingeniería' }, { id: 'f-2', nombre: 'Derecho' }],
     });
-    http.expectOne((r) => r.url === `${environment.apiUrl}/decano/programas`).flush({
-      datos: [{ id: 'p-1', nombre: 'Sistemas', nombreFacultad: 'Ingeniería' }, { id: 'p-2', nombre: 'Derecho', nombreFacultad: 'Derecho' }],
+    // El administrador usa /admin/programas: /decano/** es exclusivo del rol Decano (403 para el administrador).
+    http.expectOne((r) => r.url === `${environment.apiUrl}/admin/programas`).flush({
+      exitoso: true,
+      elementos: [{ id: 'p-1', nombre: 'Sistemas', nombreFacultad: 'Ingeniería' }, { id: 'p-2', nombre: 'Derecho', nombreFacultad: 'Derecho' }],
+      numeroPagina: 1, tamanoPagina: 100, totalElementos: 2, totalPaginas: 1,
     });
     fixture.detectChanges();
   });
