@@ -1,12 +1,16 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
+  HostListener,
+  OnDestroy,
   OnInit,
   computed,
   inject,
   input,
   output,
   signal,
+  viewChild,
 } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
@@ -99,38 +103,60 @@ const CAMPOS_FORMULARIO = new Set([
             <label for="adm-programa" class="block text-xs font-semibold text-warm-700">
               Programa académico institucional <span class="text-danger-600">*</span>
             </label>
-            <div class="flex gap-2">
+            <div class="relative" #contenedorPrograma>
               <input id="adm-programa"
-                type="search"
-                aria-label="Buscar programa"
+                type="text"
+                role="combobox"
+                autocomplete="off"
+                aria-label="Programa académico"
+                aria-autocomplete="list"
+                aria-controls="adm-programa-lista"
+                [attr.aria-expanded]="listaAbierta()"
                 [ngModel]="busquedaPrograma()"
                 (ngModelChange)="onBusquedaProgramaChange($event)"
-                (keyup.enter)="buscarProgramas(busquedaPrograma())"
-                placeholder="Filtrar programa por código o nombre..."
-                [class]="claseInput"
+                (focus)="abrirLista()"
+                (blur)="cerrarLista()"
+                (keydown)="onTeclaPrograma($event)"
+                placeholder="Escribe o despliega para elegir un programa..."
+                [class]="claseInput + ' pr-9'"
               />
               <button
                 type="button"
-                (click)="buscarProgramas(busquedaPrograma())"
-                class="px-3 py-2 rounded-xl bg-warm-100 hover:bg-warm-200 text-xs font-semibold text-warm-700 transition-colors"
+                tabindex="-1"
+                aria-label="Mostrar programas"
+                (mousedown)="$event.preventDefault()"
+                (click)="alternarLista()"
+                class="absolute inset-y-0 right-0 px-3 text-warm-500 hover:text-warm-700"
               >
-                Buscar
+                <span aria-hidden="true" class="text-[10px]">{{ listaAbierta() ? '▲' : '▼' }}</span>
               </button>
-            </div>
 
-            <select
-              aria-label="Seleccionar programa académico"
-              [ngModel]="idPrograma()"
-              (ngModelChange)="idPrograma.set($event)"
-              [class]="claseInput"
-            >
-              <option value="">-- Selecciona un programa --</option>
-              @for (p of programas(); track p.id) {
-                <option [value]="p.id">
-                  {{ p.codigo }} · {{ p.nombre }} ({{ p.nombreFacultad }})
-                </option>
+              @if (listaAbierta()) {
+                <ul
+                  id="adm-programa-lista"
+                  role="listbox"
+                  [style]="estiloLista()"
+                  class="fixed z-[70] overflow-y-auto bg-white border border-warm-300 rounded-xl shadow-lg py-1"
+                >
+                  @for (p of programas(); track p.id; let i = $index) {
+                    <li
+                      role="option"
+                      [attr.aria-selected]="p.id === idPrograma()"
+                      (mousedown)="$event.preventDefault()"
+                      (click)="seleccionarPrograma(p)"
+                      class="px-3 py-2 text-xs cursor-pointer text-warm-800 hover:bg-primary-50"
+                      [class.bg-primary-50]="i === indiceActivo()"
+                    >
+                      {{ etiquetaPrograma(p) }}
+                    </li>
+                  } @empty {
+                    <li class="px-3 py-2 text-xs text-warm-500">
+                      {{ buscandoProgramas() ? 'Buscando…' : 'Sin programas que coincidan.' }}
+                    </li>
+                  }
+                </ul>
               }
-            </select>
+            </div>
             @if (erroresCampos()['idPrograma']) {
               <p class="text-xs text-danger-600 mt-1">{{ erroresCampos()['idPrograma'] }}</p>
             }
@@ -166,13 +192,15 @@ const CAMPOS_FORMULARIO = new Set([
     </app-modal>
   `
 })
-export class AdmisionEstudianteModalComponent implements OnInit {
+export class AdmisionEstudianteModalComponent implements OnInit, OnDestroy {
   private readonly catalog = inject(CatalogService);
   private readonly admin = inject(AdminManagementService);
   private readonly toast = inject(ToastService);
   /** DEC-073: dominio institucional vigente (llega del backend). */
   private readonly dominioCorreo = signal<string | null>(null);
   private readonly registroConfig = inject(StudentRegistrationConfigService);
+
+  private readonly contenedorPrograma = viewChild<ElementRef<HTMLElement>>('contenedorPrograma');
 
   readonly isOpen = input(true);
   /**
@@ -280,6 +308,7 @@ export class AdmisionEstudianteModalComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    document.addEventListener('scroll', this.alDesplazar, true);
     this.registroConfig.getEmailDomain().subscribe({ next: (d) => this.dominioCorreo.set(d), error: () => this.dominioCorreo.set(null) });
     this.cargarTipos();
     this.buscarProgramas('');
@@ -298,10 +327,107 @@ export class AdmisionEstudianteModalComponent implements OnInit {
     });
   }
 
+  readonly listaAbierta = signal(false);
+  readonly indiceActivo = signal(-1);
+  private temporizadorBusqueda: ReturnType<typeof setTimeout> | null = null;
+
+  etiquetaPrograma(p: ProgramaInstitucionDto): string {
+    // El código puede llegar vacío o nulo del backend: no se muestra "null ·" en ese caso.
+    const codigo = p.codigo?.trim();
+    const facultad = p.nombreFacultad?.trim();
+    return `${codigo ? codigo + ' · ' : ''}${p.nombre}${facultad ? ` (${facultad})` : ''}`;
+  }
+
+  /** Escribir filtra en el servidor (con una pequeña espera) y descarta la selección previa si el texto cambia. */
   onBusquedaProgramaChange(texto: string): void {
     this.busquedaPrograma.set(texto);
-    if (!texto.trim()) {
-      this.buscarProgramas('');
+    this.idPrograma.set('');
+    this.indiceActivo.set(-1);
+    this.listaAbierta.set(true);
+    this.posicionarLista();
+    if (this.temporizadorBusqueda) {
+      clearTimeout(this.temporizadorBusqueda);
+    }
+    this.temporizadorBusqueda = setTimeout(() => this.buscarProgramas(texto), texto.trim() ? 250 : 0);
+  }
+
+  ngOnDestroy(): void {
+    document.removeEventListener('scroll', this.alDesplazar, true);
+    if (this.temporizadorBusqueda) {
+      clearTimeout(this.temporizadorBusqueda);
+    }
+  }
+
+  /** La lista flota (position: fixed) sobre el formulario; se posiciona según el campo y se reubica al hacer scroll o redimensionar. */
+  readonly estiloLista = signal<Record<string, string>>({});
+
+  /** El scroll no burbujea: se escucha en fase de captura para reubicar la lista si se desplaza el formulario. */
+  private readonly alDesplazar = (): void => this.posicionarLista();
+
+  @HostListener('window:resize')
+  posicionarLista(): void {
+    const caja = this.contenedorPrograma()?.nativeElement;
+    if (!caja || !this.listaAbierta()) {
+      return;
+    }
+    const r = caja.getBoundingClientRect();
+    const altoDeseado = 224;
+    const abajo = window.innerHeight - r.bottom - 8;
+    const arriba = r.top - 8;
+    const haciaArriba = abajo < 140 && arriba > abajo;
+    const alto = Math.min(altoDeseado, haciaArriba ? arriba : abajo);
+    this.estiloLista.set({
+      left: `${r.left}px`,
+      width: `${r.width}px`,
+      maxHeight: `${alto}px`,
+      ...(haciaArriba ? { bottom: `${window.innerHeight - r.top + 4}px` } : { top: `${r.bottom + 4}px` }),
+    });
+  }
+
+  abrirLista(): void {
+    this.listaAbierta.set(true);
+    this.posicionarLista();
+  }
+
+  cerrarLista(): void {
+    this.listaAbierta.set(false);
+    this.indiceActivo.set(-1);
+  }
+
+  alternarLista(): void {
+    this.listaAbierta.update((v) => !v);
+    this.posicionarLista();
+  }
+
+  seleccionarPrograma(p: ProgramaInstitucionDto): void {
+    this.idPrograma.set(p.id);
+    this.busquedaPrograma.set(this.etiquetaPrograma(p));
+    this.cerrarLista();
+  }
+
+  onTeclaPrograma(evento: KeyboardEvent): void {
+    const total = this.programas().length;
+    switch (evento.key) {
+      case 'ArrowDown':
+        evento.preventDefault();
+        this.listaAbierta.set(true);
+        this.indiceActivo.update((i) => (total === 0 ? -1 : (i + 1) % total));
+        break;
+      case 'ArrowUp':
+        evento.preventDefault();
+        this.indiceActivo.update((i) => (total === 0 ? -1 : (i <= 0 ? total - 1 : i - 1)));
+        break;
+      case 'Enter': {
+        const p = this.programas()[this.indiceActivo()];
+        if (this.listaAbierta() && p) {
+          evento.preventDefault();
+          this.seleccionarPrograma(p);
+        }
+        break;
+      }
+      case 'Escape':
+        this.cerrarLista();
+        break;
     }
   }
 
