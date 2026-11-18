@@ -30,6 +30,15 @@ export const ENTIDADES_DIRECTORIO: readonly { id: EntidadDirectorio; etiqueta: s
   { id: 'grupos', etiqueta: 'Grupos' },
 ];
 
+/**
+ * MEJORAS-SERGIO 4 y 5: el documento se muestra con su tipo delante ("CC 1037…"), como en las listas del administrador.
+ * Sin tipo informado solo se muestra el número; sin número, una raya.
+ */
+export function documentoConTipo(tipo: string | null | undefined, numero: string | null | undefined): string {
+  if (!numero) return '—';
+  return tipo ? `${tipo} ${numero}` : numero;
+}
+
 interface Celda {
   texto: string;
   detalle?: string | null;
@@ -426,7 +435,7 @@ export class DeanDirectorioComponent implements OnInit, OnChanges {
           id: d.idDocente,
           celdas: [
             { texto: d.nombreCompleto, detalle: d.correo || '—' },
-            { texto: d.numeroIdentificacion || '—', mono: true },
+            { texto: documentoConTipo(d.codigoTipoIdentificacion, d.numeroIdentificacion), mono: true },
             { texto: d.programas || '—' },
             { texto: String(d.totalGrupos) },
           ],
@@ -440,7 +449,7 @@ export class DeanDirectorioComponent implements OnInit, OnChanges {
           id: e.idEstudiante,
           celdas: [
             { texto: e.nombreCompleto, detalle: e.correo || '—' },
-            { texto: e.numeroIdentificacion || '—', mono: true },
+            { texto: documentoConTipo(e.codigoTipoIdentificacion, e.numeroIdentificacion), mono: true },
             { texto: e.programas || '—' },
             { texto: String(e.totalGrupos ?? 0) },
           ],

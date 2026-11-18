@@ -155,6 +155,15 @@ describe('DeanDirectorioComponent (CULM-001)', () => {
       expect(f.componentInstance.programas()).toEqual([{ id: 'p-1', nombre: 'Sistemas' }]);
     });
 
+    it('MEJORAS-SERGIO 4: muestra el tipo de documento antes del número, como el administrador', () => {
+      const f = crear('docentes');
+      cargarDocentes(f, [{ ...docente, codigoTipoIdentificacion: 'CC' }, { ...docente, idDocente: 'd-2', codigoTipoIdentificacion: null, numeroIdentificacion: '99' }]);
+      const celdas = Array.from(el(f).querySelectorAll('tbody tr')).map((tr) => tr.textContent ?? '');
+      expect(celdas[0]).toContain('CC 43000111');
+      expect(celdas[1]).toContain('99');
+      expect(celdas[1]).not.toContain('null');
+    });
+
     it('filtra por programa, estado y texto volviendo a la primera página', () => {
       const f = crear('docentes');
       cargarDocentes(f);
@@ -236,6 +245,13 @@ describe('DeanDirectorioComponent (CULM-001)', () => {
       expect(texto(f)).toContain('Ingeniería de Sistemas');
       expect(texto(f)).toContain('Activo');
       expect(el(f).querySelector('select[aria-label="Programa"]')).toBeNull();
+    });
+
+    it('MEJORAS-SERGIO 5: muestra el tipo de documento antes del número', () => {
+      const f = crear('estudiantes');
+      http.expectOne((r) => r.url === ESTUDIANTES).flush({ exitoso: true, datos: [{ ...estudiante, codigoTipoIdentificacion: 'TI' }], total: 1 });
+      f.detectChanges();
+      expect(texto(f)).toContain('TI 1017000111');
     });
 
     it('busca por texto y filtra por estado reiniciando la página', () => {
