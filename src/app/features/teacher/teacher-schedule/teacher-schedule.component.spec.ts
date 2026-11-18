@@ -1,144 +1,24 @@
-import { apiHttpError } from '../../../core/testing/api-error.fixture';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { of, throwError } from 'rxjs';
+import { TestBed } from '@angular/core/testing';
+import { provideHttpClient, withXhr } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TeacherScheduleComponent } from './teacher-schedule.component';
-import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
-import { ToastService } from '../../../shared/components/toast/toast.component';
-import { HorarioDocenteItem } from '../../../core/models/role-management.model';
+import { environment } from '../../../../environments/environment';
 
-describe('TeacherScheduleComponent', () => {
-  let fixture: ComponentFixture<TeacherScheduleComponent>;
-  let component: TeacherScheduleComponent;
-  let claimServiceSpy: jasmine.SpyObj<AttendanceClaimService>;
-  let toastSpy: jasmine.SpyObj<ToastService>;
-
-  const mockHorarios: HorarioDocenteItem[] = [
-    {
-      id: 'h1',
-      codigoMateria: 'IS-101',
-      nombreMateria: 'Ingeniería de Software',
-      seccion: 'Grupo 01',
-      dia: 'Lunes',
-      horaInicio: '08:00',
-      horaFin: '10:00',
-      totalEstudiantes: 20,
-      colorCategory: 'emerald',
-    },
-    {
-      id: 'h2',
-      codigoMateria: 'BD-201',
-      nombreMateria: 'Bases de Datos',
-      seccion: 'Grupo 02',
-      dia: 'Miércoles',
-      horaInicio: '10:00',
-      horaFin: '12:00',
-      totalEstudiantes: 25,
-      colorCategory: 'amber',
-    },
-  ];
-
-  beforeEach(async () => {
-    claimServiceSpy = jasmine.createSpyObj('AttendanceClaimService', ['getHorarioDocente']);
-    toastSpy = jasmine.createSpyObj('ToastService', ['success', 'error', 'warning', 'info']);
-
-    claimServiceSpy.getHorarioDocente.and.returnValue(
-      of({ exitoso: true, datos: mockHorarios })
-    );
-
-    await TestBed.configureTestingModule({
+describe('TeacherScheduleComponent (ATA D7)', () => {
+  it('muestra el título y consulta el calendario del docente, no los horarios regulares', () => {
+    TestBed.configureTestingModule({
       imports: [TeacherScheduleComponent],
-      providers: [
-        { provide: AttendanceClaimService, useValue: claimServiceSpy },
-        { provide: ToastService, useValue: toastSpy },
-      ],
-    }).compileComponents();
-
-    fixture = TestBed.createComponent(TeacherScheduleComponent);
-    component = fixture.componentInstance;
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting()],
+    });
+    const http = TestBed.inject(HttpTestingController);
+    const fixture = TestBed.createComponent(TeacherScheduleComponent);
     fixture.detectChanges();
-  });
 
-  it('debe crear el componente y cargar el horario docente', () => {
-    expect(component).toBeTruthy();
-    expect(claimServiceSpy.getHorarioDocente).toHaveBeenCalled();
-    expect(component.horarios()).toHaveSize(2);
-    expect(component.isLoading()).toBeFalse();
-    expect(component.totalHorasSemanales()).toBe(4);
-  });
-
-  it('F3-DOC-06: muestra las horas sin segundos y singulariza "1 estudiante"', () => {
-    expect(component.hora('08:00:00')).toBe('08:00');
-    expect(component.hora('08:00')).toBe('08:00');
-    expect(component.hora(null)).toBe('');
-    component.horarios.set([{ ...mockHorarios[0], horaInicio: '08:00:00', horaFin: '10:00:00', totalEstudiantes: 1 }]);
-    fixture.detectChanges();
-    const t = (fixture.nativeElement.textContent as string).replace(/\s+/g, ' ');
-    expect(t).toContain('08:00–10:00');
-    expect(t).not.toContain('08:00:00');
-    expect(t).toContain('1 estudiante');
-    expect(t).not.toContain('1 estudiantes');
-  });
-
-  it('debe filtrar las clases por día correctamente', () => {
-    const clasesLunes = component.clasesPorDia('Lunes');
-    expect(clasesLunes).toHaveSize(1);
-    expect(clasesLunes[0].codigoMateria).toBe('IS-101');
-
-    const clasesMartes = component.clasesPorDia('Martes');
-    expect(clasesMartes).toHaveSize(0);
-
-    const clasesMiercoles = component.clasesPorDia('Miércoles');
-    expect(clasesMiercoles).toHaveSize(1);
-    expect(clasesMiercoles[0].codigoMateria).toBe('BD-201');
-  });
-
-  it('debe manejar error al cargar el horario', () => {
-    claimServiceSpy.getHorarioDocente.and.returnValue(throwError(() => apiHttpError(409, 'Horario no disponible para el periodo.', 'CONFLICT')));
-    component.cargarHorario();
-    expect(component.isLoading()).toBeFalse();
-    // F-DOC-005: el texto es el del backend, no uno fijo del cliente.
-    expect(toastSpy.error).toHaveBeenCalledWith('Horario no disponible para el periodo.');
-  });
-
-  // F-DOC-005: un fallo de carga no puede verse como un horario vacio ("Sin grupos este dia" / "0 Horas").
-  describe('error de carga distinguible del horario vacio', () => {
-    const el = () => fixture.nativeElement as HTMLElement;
-    const boton = () => Array.from(el().querySelectorAll('button')).find((b) => /Reintentar/.test(b.textContent ?? ''));
-
-    beforeEach(() => {
-      claimServiceSpy.getHorarioDocente.and.returnValue(throwError(() => apiHttpError(0, 'sin conexion', 'NETWORK_ERROR')));
-      component.cargarHorario();
-      fixture.detectChanges();
-    });
-
-    it('muestra una alerta con Reintentar y no la grilla vacia ni el total de horas', () => {
-      expect(el().querySelector('[role="alert"]')).not.toBeNull();
-      expect(boton()).toBeTruthy();
-      expect(el().textContent).not.toContain('Sin grupos este día');
-      expect(el().textContent).not.toContain('Horas / Semana');
-    });
-
-    it('Reintentar vuelve a pedir el horario y, si responde, pinta la grilla y retira la alerta', () => {
-      claimServiceSpy.getHorarioDocente.and.returnValue(of({ exitoso: true, datos: mockHorarios }));
-      (boton() as HTMLButtonElement).click();
-      fixture.detectChanges();
-      expect(el().querySelector('[role="alert"]')).toBeNull();
-      expect(el().textContent).toContain('4 Horas / Semana');
-    });
-
-    it('un horario realmente vacio (200 sin clases) sigue mostrando "Sin grupos este día" y sin alerta', () => {
-      claimServiceSpy.getHorarioDocente.and.returnValue(of({ exitoso: true, datos: [] }));
-      component.cargarHorario();
-      fixture.detectChanges();
-      expect(el().querySelector('[role="alert"]')).toBeNull();
-      expect(el().textContent).toContain('Sin grupos este día');
-    });
-  });
-
-  it('debe retornar estilos de clases para cada categoría de color', () => {
-    expect(component.getClaseClasses('emerald')).toContain('bg-success-50');
-    expect(component.getClaseClasses('amber')).toContain('bg-warning-50');
-    expect(component.getClaseClasses('blue')).toContain('bg-info-50');
-    expect(component.getClaseClasses('purple')).toContain('bg-category-50');
+    expect((fixture.nativeElement as HTMLElement).querySelector('h1')?.textContent).toContain('Mi Horario Académico');
+    const req = http.expectOne((r) => r.url === `${environment.apiUrl}/docente/sesiones/calendario`);
+    expect(req.request.params.has('hasta')).toBeTrue();
+    http.expectNone(`${environment.apiUrl}/docente/horarios`);
+    req.flush({ exitoso: true, datos: [] });
+    http.verify();
   });
 });
