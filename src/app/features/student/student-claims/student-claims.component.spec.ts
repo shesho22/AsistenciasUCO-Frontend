@@ -230,6 +230,74 @@ describe('StudentClaimsComponent (HU010/HU011: consulta del estudiante)', () => 
     http.expectNone((r) => r.url.includes('/archivos/'));
     expect(toastSpy.warning).toHaveBeenCalled();
   });
+
+  describe('HU015: reclamo con varios soportes', () => {
+    /** Forma real de `soportes` en GET /estudiante/reclamos; `soporteAdjunto` (deprecado) repite uno de ellos. */
+    const soportesApi = [
+      { fileId: 'file-1', nombre: 'incapacidad.pdf', tipoContenido: 'application/pdf', tamanioBytes: 2048 },
+      { fileId: 'file-2', nombre: 'formula.png', tipoContenido: 'image/png', tamanioBytes: 4096 },
+      { fileId: 'file-3', nombre: 'orden.jpg', tipoContenido: 'image/jpeg', tamanioBytes: 1024 },
+    ];
+
+    const botonesSoporte = (): HTMLButtonElement[] =>
+      Array.from((fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('[data-testid^="btn-descargar-soporte-"]'));
+
+    beforeEach(() => {
+      component.cargar();
+      http.expectOne((r) => r.url === ENDPOINT).flush({
+        exitoso: true,
+        total: 3,
+        datos: [
+          { ...reclamoApi, soportes: soportesApi },
+          { ...reclamoApi, id: 'sol-2' },
+          { ...reclamoApi, id: 'sol-3', soporteAdjunto: null, soportes: [] },
+        ],
+      });
+      fixture.detectChanges();
+    });
+
+    it('SC-08 muestra un botón de descarga por cada soporte del reclamo', () => {
+      const tarjetas = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('app-card'));
+      const porTarjeta = tarjetas.map((t) =>
+        Array.from(t.querySelectorAll('[data-testid^="btn-descargar-soporte-"]')).map((b) => (b.textContent ?? '').trim())
+      );
+      expect(porTarjeta[0]).toEqual([
+        'Descargar soporte: incapacidad.pdf',
+        'Descargar soporte: formula.png',
+        'Descargar soporte: orden.jpg',
+      ]);
+      // Reclamo anterior a la lista `soportes`: se sigue mostrando su único soporte.
+      expect(porTarjeta[1]).toEqual(['Descargar soporte: incapacidad.pdf']);
+      expect(porTarjeta[2]).toEqual([]);
+    });
+
+    it('SC-09 cada botón descarga su propio archivo (GET /archivos/{fileId})', () => {
+      const boton = botonesSoporte()[2];
+      const anchor = document.createElement('a');
+      spyOn(anchor, 'click');
+      spyOn(document, 'createElement').and.returnValue(anchor);
+      spyOn(URL, 'createObjectURL').and.returnValue('blob:x');
+      spyOn(URL, 'revokeObjectURL');
+
+      boton.click();
+      const req = http.expectOne(`${environment.apiUrl}/archivos/file-3`);
+      expect(req.request.responseType).toBe('blob');
+      req.flush(new Blob(['x']));
+
+      expect(anchor.download).toBe('orden.jpg');
+      expect(anchor.click).toHaveBeenCalled();
+      expect(toastSpy.success).toHaveBeenCalled();
+    });
+
+    it('SC-10 mientras descarga un soporte, los demás botones quedan deshabilitados', () => {
+      botonesSoporte()[0].click();
+      fixture.detectChanges();
+      expect(botonesSoporte().every((b) => b.disabled)).toBeTrue();
+      http.expectOne(`${environment.apiUrl}/archivos/file-1`).flush(new Blob(), { status: 404, statusText: 'Not Found' });
+      fixture.detectChanges();
+      expect(botonesSoporte().some((b) => b.disabled)).toBeFalse();
+    });
+  });
 });
 
 describe('AttendanceClaimService.getReclamosEstudiante (modo mock)', () => {
