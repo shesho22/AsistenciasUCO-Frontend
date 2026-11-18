@@ -379,6 +379,13 @@ describe('TomaModoSelectorComponent (CULM-001 B.2)', () => {
     expect(qr.className).toContain('min-h-[44px]');
   });
 
+  it('ATA: el selector de modo se superpone al menu lateral (z-[60], como los demas dialogos de la toma)', () => {
+    const fixture = TestBed.configureTestingModule({ imports: [TomaModoSelectorComponent] }).createComponent(TomaModoSelectorComponent);
+    fixture.detectChanges();
+    const capa = fixture.nativeElement.querySelector('[role="dialog"]') as HTMLElement;
+    expect(capa.className).toContain('z-[60]');
+  });
+
   it('B2-F-07 emite el modo elegido y permite cancelar', () => {
     const fixture = TestBed.configureTestingModule({ imports: [TomaModoSelectorComponent] }).createComponent(TomaModoSelectorComponent);
     fixture.detectChanges();
