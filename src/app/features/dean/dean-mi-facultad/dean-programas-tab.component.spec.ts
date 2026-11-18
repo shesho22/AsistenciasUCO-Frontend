@@ -37,4 +37,33 @@ describe('DeanProgramasTabComponent (CULM-001: Mi facultad / Programas)', () => 
     expect(el.querySelector('h1')).toBeNull();
     expect(el.textContent).not.toContain('Resumen de Facultad');
   });
+
+  it('MEJORAS-SERGIO 3: separa estructura, gestión y créditos en subpestañas (una sección visible a la vez)', () => {
+    TestBed.configureTestingModule({
+      imports: [DeanProgramasTabComponent],
+      providers: [provideRouter([]), provideHttpClient(withXhr()), provideHttpClientTesting()],
+    });
+    const http = TestBed.inject(HttpTestingController);
+    const fixture = TestBed.createComponent(DeanProgramasTabComponent);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+
+    const pestanas = Array.from(el.querySelectorAll('[role="tab"]')).map((b) => b.textContent?.trim());
+    expect(pestanas).toEqual(['Estructura y planes', 'Gestión de programas', 'Créditos por programa']);
+    expect(el.querySelector('app-dean-estructura')).not.toBeNull();
+    expect(el.querySelector('app-dean-programas-gestion')).toBeNull();
+    expect(el.querySelector('app-dean-programas-creditos')).toBeNull();
+
+    (el.querySelector('[data-testid="subpestana-gestion"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(el.querySelector('app-dean-estructura')).toBeNull();
+    expect(el.querySelector('app-dean-programas-gestion')).not.toBeNull();
+    expect(el.querySelector('[data-testid="subpestana-gestion"]')?.getAttribute('aria-selected')).toBe('true');
+
+    (el.querySelector('[data-testid="subpestana-creditos"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(el.querySelector('app-dean-programas-creditos')).not.toBeNull();
+    // Las peticiones de cada sección no se verifican aquí: se descartan.
+    http.match(() => true).forEach((r) => r.flush({ exitoso: true, datos: [], elementos: [], total: 0 }));
+  });
 });
