@@ -430,8 +430,10 @@ describe('SessionTomasPanelComponent: recordatorio de cierre (ATA F)', () => {
   it('al destruir el panel limpia el timer pendiente', () => {
     jasmine.clock().mockDate(new Date('2026-11-10T14:00:00Z'));
     render(sesion());
-    const limpiar = spyOn(window, 'clearTimeout').and.callThrough();
+    const panel = fixture.componentInstance as unknown as { recordatorioCierre: () => boolean };
     fixture.destroy();
-    expect(limpiar).toHaveBeenCalled();
+    // Si el timer siguiera vivo, al llegar a 15 min del cierre activaría el recordatorio.
+    jasmine.clock().tick(45 * 60_000);
+    expect(panel.recordatorioCierre()).toBeFalse();
   });
 });
