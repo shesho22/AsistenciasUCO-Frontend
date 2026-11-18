@@ -5,16 +5,19 @@ import { TeacherScheduleComponent } from './teacher-schedule.component';
 import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { HorarioDocenteItem } from '../../../core/models/role-management.model';
+import { Router } from '@angular/router';
 
 describe('TeacherScheduleComponent', () => {
   let fixture: ComponentFixture<TeacherScheduleComponent>;
   let component: TeacherScheduleComponent;
   let claimServiceSpy: jasmine.SpyObj<AttendanceClaimService>;
   let toastSpy: jasmine.SpyObj<ToastService>;
+  let routerSpy: jasmine.SpyObj<Router>;
 
   const mockHorarios: HorarioDocenteItem[] = [
     {
       id: 'h1',
+      idGrupo: 'g-1',
       codigoMateria: 'IS-101',
       nombreMateria: 'Ingeniería de Software',
       seccion: 'Grupo 01',
@@ -40,6 +43,8 @@ describe('TeacherScheduleComponent', () => {
   beforeEach(async () => {
     claimServiceSpy = jasmine.createSpyObj('AttendanceClaimService', ['getHorarioDocente']);
     toastSpy = jasmine.createSpyObj('ToastService', ['success', 'error', 'warning', 'info']);
+    routerSpy = jasmine.createSpyObj('Router', ['navigate']);
+    routerSpy.navigate.and.returnValue(Promise.resolve(true));
 
     claimServiceSpy.getHorarioDocente.and.returnValue(
       of({ exitoso: true, datos: mockHorarios })
@@ -50,6 +55,7 @@ describe('TeacherScheduleComponent', () => {
       providers: [
         { provide: AttendanceClaimService, useValue: claimServiceSpy },
         { provide: ToastService, useValue: toastSpy },
+        { provide: Router, useValue: routerSpy },
       ],
     }).compileComponents();
 
@@ -140,5 +146,17 @@ describe('TeacherScheduleComponent', () => {
     expect(component.getClaseClasses('amber')).toContain('bg-warning-50');
     expect(component.getClaseClasses('blue')).toContain('bg-info-50');
     expect(component.getClaseClasses('purple')).toContain('bg-category-50');
+  });
+
+  it('MEJORAS-SERGIO 9: al pulsar una franja lleva al docente al grupo de esa materia', () => {
+    const franjas = (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('[data-testid="franja-horario"]');
+    expect(franjas.length).toBe(2);
+    franjas[0].click();
+    expect(routerSpy.navigate).toHaveBeenCalledWith(['/app/docente/grupos'], { queryParams: { grupo: 'g-1' } });
+  });
+
+  it('MEJORAS-SERGIO 9: una franja sin grupo lleva a la lista de grupos', () => {
+    component.abrirGrupo(mockHorarios[1]);
+    expect(routerSpy.navigate).toHaveBeenCalledWith(['/app/docente/grupos'], {});
   });
 });

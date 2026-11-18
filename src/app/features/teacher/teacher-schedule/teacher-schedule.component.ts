@@ -1,5 +1,6 @@
 import { RangoHorarioPipe } from '../../../shared/pipes/fecha-hora.pipes';
 import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Router } from '@angular/router';
 
 import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
 import { HorarioDocenteItem, DiaSemana } from '../../../core/models/role-management.model';
@@ -69,7 +70,14 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
                   </div>
                 } @else {
                   @for (clase of clasesPorDia(dia); track clase.id) {
-                    <div [class]="getClaseClasses(clase.colorCategory)">
+                    <button
+                      type="button"
+                      data-testid="franja-horario"
+                      (click)="abrirGrupo(clase)"
+                      [attr.aria-label]="'Abrir el grupo ' + clase.seccion + ' de ' + clase.nombreMateria"
+                      title="Abrir la materia y el grupo"
+                      [class]="getClaseClasses(clase.colorCategory)"
+                    >
                       <div class="flex items-center justify-between text-[11px] font-semibold mb-1">
                         <span class="font-mono">{{ clase.horaInicio | rangoHorario: clase.horaFin }}</span>
                         <span class="uppercase tracking-wider px-1.5 py-0.2 rounded bg-white/80 text-[10px] font-bold">
@@ -90,7 +98,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
                           <span>{{ clase.totalEstudiantes }} {{ clase.totalEstudiantes === 1 ? 'estudiante' : 'estudiantes' }}</span>
                         </div>
                       </div>
-                    </div>
+                    </button>
                   }
                 }
               </div>
@@ -104,6 +112,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
 export class TeacherScheduleComponent implements OnInit {
   private readonly claimService = inject(AttendanceClaimService);
   private readonly toast = inject(ToastService);
+  private readonly router = inject(Router);
 
   horarios = signal<HorarioDocenteItem[]>([]);
   isLoading = signal<boolean>(true);
@@ -140,6 +149,11 @@ export class TeacherScheduleComponent implements OnInit {
     });
   }
 
+  /** MEJORAS-SERGIO 9: la franja lleva al hub del grupo (`/app/docente/grupos?grupo=<id>`, mismo enlace que usa el padrón). */
+  abrirGrupo(clase: HorarioDocenteItem): void {
+    void this.router.navigate(['/app/docente/grupos'], clase.idGrupo ? { queryParams: { grupo: clase.idGrupo } } : {});
+  }
+
   clasesPorDia(dia: DiaSemana): HorarioDocenteItem[] {
     const norm = (s: string) => (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
     const target = norm(dia);
@@ -147,7 +161,8 @@ export class TeacherScheduleComponent implements OnInit {
   }
 
   getClaseClasses(color: 'emerald' | 'amber' | 'blue' | 'purple'): string {
-    const base = 'p-3 rounded-xl border text-warm-800 transition-all shadow-xs';
+    const base =
+      'block w-full text-left p-3 rounded-xl border text-warm-800 transition-all shadow-xs cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-600';
     const colorStyles = {
       emerald: 'bg-success-50/80 border-success-200/90 hover:bg-success-100/70',
       amber: 'bg-warning-50/80 border-warning-200/90 hover:bg-warning-100/70',
