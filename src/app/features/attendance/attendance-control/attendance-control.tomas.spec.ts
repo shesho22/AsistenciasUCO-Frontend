@@ -22,7 +22,6 @@ import { AttendanceControlComponent } from './attendance-control.component';
 import { AttendanceRealtimeSyncService } from './attendance-realtime-sync.service';
 import { SessionTomasPanelComponent } from './components/session-tomas-panel.component';
 import { TomaQrProyeccionComponent } from './components/toma-qr-proyeccion.component';
-import { TomaFaltantesComponent } from './components/toma-faltantes.component';
 
 function toma(parcial: Partial<TomaAsistencia> = {}): TomaAsistencia {
   return {
@@ -237,7 +236,7 @@ describe('AttendanceControlComponent tomas (CULM-001 B.2)', () => {
     expect(c.attendanceWindowState()).not.toBe('ABIERTA');
   });
 
-  it('B2-F-11 cerrar la toma pide confirmacion, envia marcarAusentes=true y muestra los pendientes de validar en la toma', () => {
+  it('B2-F-11 cerrar la toma pide confirmacion, envia marcarAusentes=true y marca en la lista unica a los pendientes de validar', () => {
     let cerrada = false;
     tomaService.consultarTomas.and.callFake(() => of({
       exitoso: true,
@@ -256,7 +255,7 @@ describe('AttendanceControlComponent tomas (CULM-001 B.2)', () => {
     c.confirmarCierreToma(true);
     fixture.detectChanges();
     expect(tomaService.cerrarToma).toHaveBeenCalledOnceWith('toma-1', true);
-    expect(hijo(TomaFaltantesComponent)).not.toBeNull();
+    expect(tomaService.consultarFaltantes).toHaveBeenCalledWith('toma-1', 1, jasmine.any(Number));
   });
 
   it('B2-F-12 los eventos TOMA_* del grupo recargan las tomas', () => {
