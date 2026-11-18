@@ -13,10 +13,10 @@ Resumen: 74 HU con pruebas en 95 de 291 archivos de prueba.
 | HU006 | unitaria | 3 | 166 | `src/app/core/interceptors/mock-backend.interceptor.spec.ts` (37)<br>`src/app/core/services/auth.service.spec.ts` (121)<br>`src/app/features/profile/components/profile-links.component.spec.ts` (8) |
 | HU007 | unitaria | 1 | 20 | `src/app/features/student/student-courses/components/student-courses-list.component.spec.ts` (20) |
 | HU008 | unitaria | 3 | 48 | `src/app/core/interceptors/mock-backend.interceptor.spec.ts` (37)<br>`src/app/core/services/oferta-academica.service.spec.ts` (3)<br>`src/app/features/student/student-group-offer/student-group-offer.component.spec.ts` (8) |
-| HU010 | unitaria | 1 | 16 | `src/app/features/student/student-claims/student-claims.component.spec.ts` (16) |
-| HU011 | unitaria | 1 | 16 | `src/app/features/student/student-claims/student-claims.component.spec.ts` (16) |
+| HU010 | unitaria | 1 | 19 | `src/app/features/student/student-claims/student-claims.component.spec.ts` (19) |
+| HU011 | unitaria | 1 | 19 | `src/app/features/student/student-claims/student-claims.component.spec.ts` (19) |
 | HU014 | unitaria | 4 | 204 | `src/app/core/services/attendance-claim.service.spec.ts` (53)<br>`src/app/features/student/student-courses/components/student-claim-form.component.spec.ts` (28)<br>`src/app/features/student/student-courses/student-courses.component.spec.ts` (74)<br>`src/app/features/teacher/teacher-claims/teacher-claims.component.spec.ts` (49) |
-| HU015 | unitaria | 4 | 204 | `src/app/core/services/attendance-claim.service.spec.ts` (53)<br>`src/app/features/student/student-courses/components/student-claim-form.component.spec.ts` (28)<br>`src/app/features/student/student-courses/student-courses.component.spec.ts` (74)<br>`src/app/features/teacher/teacher-claims/teacher-claims.component.spec.ts` (49) |
+| HU015 | unitaria | 5 | 223 | `src/app/core/services/attendance-claim.service.spec.ts` (53)<br>`src/app/features/student/student-claims/student-claims.component.spec.ts` (19)<br>`src/app/features/student/student-courses/components/student-claim-form.component.spec.ts` (28)<br>`src/app/features/student/student-courses/student-courses.component.spec.ts` (74)<br>`src/app/features/teacher/teacher-claims/teacher-claims.component.spec.ts` (49) |
 | HU016 | unitaria | 2 | 88 | `src/app/core/services/consultas-transversales.service.spec.ts` (14)<br>`src/app/features/student/student-courses/student-courses.component.spec.ts` (74) |
 | HU018 | unitaria | 1 | 37 | `src/app/core/interceptors/mock-backend.interceptor.spec.ts` (37) |
 | HU019 | unitaria | 1 | 20 | `src/app/features/student/student-courses/components/student-courses-list.component.spec.ts` (20) |
