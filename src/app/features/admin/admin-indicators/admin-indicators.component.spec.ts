@@ -59,10 +59,14 @@ describe('AdminIndicatorsComponent', () => {
 
   afterEach(() => http.verify());
 
-  it('D.8 rotula el ausentismo como calculado por horas y muestra las horas que entrega el backend', () => {
+  it('D.8 rotula el ausentismo como calculado por horas y deja las horas del backend como detalle del porcentaje', () => {
     const t = texto();
     expect(t).toContain('Calculado por horas');
-    expect(t).toContain('18 h de falta sobre 120 h dictadas');
+    // Las horas crudas ya no se muestran sueltas (confundían): quedan como detalle en el tooltip del porcentaje.
+    expect(t).not.toContain('18 h de falta sobre 120 h dictadas');
+    expect(t).toContain('de las horas dictadas, sin justa causa');
+    const titulo = fixture.nativeElement.querySelector('[data-testid="ausentismo-facultad"]')?.getAttribute('title') ?? '';
+    expect(titulo).toContain('18 h de falta sin justa causa sobre 120 h dictadas');
     expect(fixture.nativeElement.querySelectorAll('[data-testid="nota-horas"]')).toHaveSize(2);
   });
 
