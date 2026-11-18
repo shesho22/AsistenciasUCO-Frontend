@@ -43,13 +43,6 @@ describe('CoordinatorAsistenciaComponent (CULM-001: asistencia unificada)', () =
     // CIERRE-W2A: las opciones de materia y docente del consolidado vienen del servidor
     http.expectOne((r) => r.url === `${base}/consolidado-asistencia/opciones`).flush({ exitoso: true, datos: { asignaturas: [], docentes: [] } });
     http.expectOne((r) => r.url === `${base}/revisiones-cancelacion`).flush(paginaApi([], 1, 1, 3));
-    // DEC-065 (2): bandeja de solicitudes (lista) y conteo de pendientes (una fila).
-    const solicitudes = http.match((r) => r.url === `${base}/sesiones/solicitudes`);
-    expect(solicitudes).toHaveSize(2);
-    for (const req of solicitudes) {
-      const cuenta = req.request.params.get('tamano') === '1';
-      req.flush(paginaApi([], 1, cuenta ? 1 : 20, 3));
-    }
     fixture.detectChanges();
   });
 
@@ -102,49 +95,19 @@ describe('CoordinatorAsistenciaComponent (CULM-001: asistencia unificada)', () =
     http.expectOne((r) => r.url === `${base}/alertas-tempranas`).flush({ exitoso: true, datos: [], total: 0 });
 
     fixture.componentInstance.alRecambiarPrograma();
-    const solicitudes = http.expectOne((r) => r.url === `${base}/sesiones/solicitudes`);
     const alertas = http.expectOne((r) => r.url === `${base}/alertas-tempranas`);
-    expect(solicitudes.request.method).toBe('GET');
     expect(alertas.request.method).toBe('GET');
-    solicitudes.flush(paginaApi([], 1, 1, 3));
     alertas.flush({ exitoso: true, datos: [], total: 0 });
   });
 
   it('cambiar de programa sin alertas desplegadas no consulta alertas', () => {
     fixture.componentInstance.alRecambiarPrograma();
-    http.expectOne((r) => r.url === `${base}/sesiones/solicitudes`).flush(paginaApi([], 1, 1, 3));
     expect(http.match((r) => r.url === `${base}/alertas-tempranas`)).toHaveSize(0);
   });
 
-  it('DEC-065 (2): muestra la tarjeta de solicitudes pendientes y la bandeja de solicitudes', () => {
-    const tarjetas = Array.from(el().querySelectorAll('[data-testid="kpi-card"]'));
-    const solicitudes = tarjetas.find((t) => t.textContent?.includes('Solicitudes de sesión pendientes'));
-    expect(solicitudes?.querySelector('[data-testid="kpi-valor"]')?.textContent?.trim()).toBe('3');
-    expect(el().querySelector('[data-testid="solicitudes-sesion"]')).not.toBeNull();
-    expect(el().textContent).toContain('Solicitudes de sesión');
-  });
-
-  it('DEC-065 (2): al resolver una solicitud se vuelve a contar las pendientes', () => {
-    fixture.componentInstance.contarPendientes();
-    const req = http.expectOne((r) => r.url === `${base}/sesiones/solicitudes`);
-    expect(req.request.params.get('tamano')).toBe('1');
-    req.flush(paginaApi([], 1, 1, 2));
-    expect(fixture.componentInstance.solicitudesPendientes()).toBe(2);
-  });
-
-  it('DEC-065 (2): si el conteo falla la tarjeta queda sin dato, no en cero', () => {
-    fixture.componentInstance.contarPendientes();
-    http.expectOne((r) => r.url === `${base}/sesiones/solicitudes`).flush({ message: 'x' }, { status: 500, statusText: 'Error' });
-    expect(fixture.componentInstance.solicitudesPendientes()).toBeNull();
-    fixture.detectChanges();
-    const tarjeta = Array.from(el().querySelectorAll('[data-testid="kpi-card"]')).find((t) => t.textContent?.includes('Solicitudes de sesión pendientes'));
-    expect(tarjeta?.querySelector('[data-testid="kpi-valor"]')?.textContent?.trim()).toBe('Sin datos');
-  });
-
-  it('DEC-065 (2): cambiar de programa también recuenta las pendientes', () => {
-    fixture.componentInstance.alRecambiarPrograma();
-    const req = http.expectOne((r) => r.url === `${base}/sesiones/solicitudes`);
-    expect(req.request.method).toBe('GET');
-    req.flush(paginaApi([], 1, 1, 1));
+  it('ATA D6: las solicitudes de sesión ya no viven en «Asistencia» (tienen su propia entrada de menú)', () => {
+    expect(el().querySelector('[data-testid="solicitudes-sesion"]')).toBeNull();
+    expect(el().textContent).not.toContain('Solicitudes de sesión pendientes');
+    http.expectNone((r) => r.url === `${base}/sesiones/solicitudes`);
   });
 });

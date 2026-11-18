@@ -1,4 +1,4 @@
-import { Component, signal, inject, computed, effect, ChangeDetectionStrategy, ElementRef, viewChild, DestroyRef } from '@angular/core';
+import { Component, signal, inject, computed, effect, ChangeDetectionStrategy, ElementRef, viewChild, DestroyRef, untracked } from '@angular/core';
 
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
@@ -9,6 +9,7 @@ import { ToastComponent, ToastService } from '../../shared/components/toast/toas
 import { IconComponent, IconName } from '../../shared/components/icon/icon.component';
 import { AlertaInasistenciaService } from '../../core/services/alerta-inasistencia.service';
 import { RevisionCancelacionService } from '../../core/services/revision-cancelacion.service';
+import { SolicitudesSesionMenuService } from '../../core/services/solicitudes-sesion-menu.service';
 import { ComponentesExternosService, ComponenteExterno } from '../../core/services/componentes-externos.service';
 import { environment } from '../../../environments/environment';
 
@@ -251,6 +252,7 @@ export class DashboardLayoutComponent {
   private readonly alertaService = inject(AlertaInasistenciaService, { optional: true });
   private readonly revisionService = inject(RevisionCancelacionService, { optional: true });
   private readonly externos = inject(ComponentesExternosService);
+  private readonly solicitudesMenu = inject(SolicitudesSesionMenuService);
   alertasVigentesCount = signal<number>(0);
   revisionesPendientesCount = signal<number>(0);
 
@@ -262,6 +264,12 @@ export class DashboardLayoutComponent {
       consulta.addEventListener('change', alCambiar);
       inject(DestroyRef).onDestroy(() => consulta.removeEventListener('change', alCambiar));
     }
+
+    // ATA D6: el contador de «Solicitudes de sesión» se recarga al fijar el rol y con los eventos SSE de solicitudes.
+    effect(() => {
+      const role = this.currentRole();
+      untracked(() => this.solicitudesMenu.iniciar(role));
+    });
 
     effect(() => {
       const role = this.currentRole();
@@ -386,6 +394,12 @@ export class DashboardLayoutComponent {
       icon: 'asistencia',
     },
     {
+      label: 'Solicitudes de sesión',
+      route: '/app/coordinador/solicitudes-sesion',
+      roles: ['COORDINADOR'],
+      icon: 'horarios',
+    },
+    {
       label: 'Programa',
       route: '/app/coordinador/programa',
       roles: ['COORDINADOR'],
@@ -420,6 +434,12 @@ export class DashboardLayoutComponent {
       route: '/app/asistencia',
       roles: ['DOCENTE'],
       icon: 'asistencia',
+    },
+    {
+      label: 'Solicitudes de sesión',
+      route: '/app/docente/solicitudes-sesion',
+      roles: ['DOCENTE'],
+      icon: 'horarios',
     },
     {
       label: 'Reclamos',
@@ -483,6 +503,9 @@ export class DashboardLayoutComponent {
     switch (item.route) {
       case '/app/estudiante/alertas':
         return this.alertasVigentesCount();
+      case '/app/coordinador/solicitudes-sesion':
+      case '/app/docente/solicitudes-sesion':
+        return this.solicitudesMenu.pendientes();
       case '/app/docente/grupos':
       case '/app/coordinador/revisiones-cancelacion':
         return this.revisionesPendientesCount();

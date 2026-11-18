@@ -22,6 +22,8 @@ export const REALTIME_EVENT_TYPE = {
   SESION_MANUAL_CREADA: 'SESION_MANUAL_CREADA',
   // DEC-065 (2): solicitud de sesión extraordinaria creada por el docente (audiencia: coordinador y docente del grupo)
   SESION_SOLICITUD_CREADA: 'SESION_SOLICITUD_CREADA',
+  // ATA D6: solicitud de sesión extraordinaria rechazada (audiencia: coordinador y docente titular del grupo)
+  SESION_SOLICITUD_RECHAZADA: 'SESION_SOLICITUD_RECHAZADA',
   TOMA_ABIERTA: 'TOMA_ABIERTA',
   TOMA_CERRADA: 'TOMA_CERRADA',
   ASISTENCIA_QR_ROTADO: 'ASISTENCIA_QR_ROTADO',
@@ -70,6 +72,9 @@ export interface SesionSolicitudCreadaRealtimePayload {
   docente: string;
   fechaHoraInicio: string | null;
 }
+
+/** ATA D6: mismo payload que `SESION_SOLICITUD_CREADA`. */
+export type SesionSolicitudRechazadaRealtimePayload = SesionSolicitudCreadaRealtimePayload;
 
 export type {
   AsistenciaQrRegistradaPayload,

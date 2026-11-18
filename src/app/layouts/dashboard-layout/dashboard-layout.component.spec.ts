@@ -1,9 +1,12 @@
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { signal } from '@angular/core';
 import { DashboardLayoutComponent } from './dashboard-layout.component';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../shared/components/toast/toast.component';
+import { SolicitudesSesionMenuService } from '../../core/services/solicitudes-sesion-menu.service';
 import { UserRole } from '../../core/models/user.model';
 
 describe('DashboardLayoutComponent', () => {
@@ -34,7 +37,7 @@ describe('DashboardLayoutComponent', () => {
     await TestBed.configureTestingModule({
       imports: [DashboardLayoutComponent],
       providers: [
-        provideRouter([]),
+        provideRouter([]), provideHttpClient(), provideHttpClientTesting(),
         { provide: AuthService, useValue: authServiceSpy },
         { provide: ToastService, useValue: toastServiceSpy },
       ],
@@ -107,7 +110,7 @@ describe('DashboardLayoutComponent (ESTUDIANTE, CULM-001 A.1)', () => {
     });
     await TestBed.configureTestingModule({
       imports: [DashboardLayoutComponent],
-      providers: [provideRouter([]), { provide: AuthService, useValue: auth }, { provide: ToastService, useValue: toast }],
+      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting(), { provide: AuthService, useValue: auth }, { provide: ToastService, useValue: toast }],
     }).compileComponents();
     const fixture = TestBed.createComponent(DashboardLayoutComponent);
     fixture.detectChanges();
@@ -135,7 +138,7 @@ describe('DashboardLayoutComponent (cierre de sesión sin rol fantasma)', () => 
     });
     await TestBed.configureTestingModule({
       imports: [DashboardLayoutComponent],
-      providers: [provideRouter([]), { provide: AuthService, useValue: auth }, { provide: ToastService, useValue: toast }],
+      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting(), { provide: AuthService, useValue: auth }, { provide: ToastService, useValue: toast }],
     }).compileComponents();
     const fixture = TestBed.createComponent(DashboardLayoutComponent);
     fixture.detectChanges();
@@ -178,5 +181,54 @@ describe('DashboardLayoutComponent (cierre de sesión sin rol fantasma)', () => 
     expect(overlay).not.toBeNull();
     expect(overlay?.getAttribute('role')).toBe('status');
     expect(overlay?.textContent).toContain('Cerrando sesión');
+  });
+});
+
+describe('DashboardLayoutComponent (ATA D6: Solicitudes de sesión)', () => {
+  async function montar(rol: UserRole, pendientes: number) {
+    const user = signal({ id: 'usr-4', name: 'Persona Uno', email: 'p@uco.edu.co', role: rol });
+    const auth = jasmine.createSpyObj('AuthService', ['logout'], {
+      currentUser: user.asReadonly(),
+      cerrandoSesion: signal(false).asReadonly(),
+      isMockMode: signal(false).asReadonly(),
+    });
+    const toast = jasmine.createSpyObj('ToastService', ['dismiss'], {
+      currentToast: signal({ visible: false, message: '', type: 'info' as const }).asReadonly(),
+    });
+    const menu = { pendientes: signal(pendientes), iniciar: jasmine.createSpy('iniciar'), recargar: jasmine.createSpy('recargar') };
+    await TestBed.configureTestingModule({
+      imports: [DashboardLayoutComponent],
+      providers: [
+        provideRouter([]), provideHttpClient(), provideHttpClientTesting(),
+        { provide: AuthService, useValue: auth },
+        { provide: ToastService, useValue: toast },
+        { provide: SolicitudesSesionMenuService, useValue: menu },
+      ],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(DashboardLayoutComponent);
+    fixture.detectChanges();
+    return { fixture, menu };
+  }
+
+  it('el coordinador ve «Solicitudes de sesión» con su contador y se inicia con su rol', async () => {
+    const { fixture, menu } = await montar('COORDINADOR', 4);
+    const item = fixture.componentInstance.filteredNavItems().find((i) => i.route === '/app/coordinador/solicitudes-sesion');
+    expect(item?.label).toBe('Solicitudes de sesión');
+    expect(fixture.componentInstance.contadorDe(item!)).toBe(4);
+    expect(menu.iniciar).toHaveBeenCalledWith('COORDINADOR');
+  });
+
+  it('el docente ve «Solicitudes de sesión» con su contador y se inicia con su rol', async () => {
+    const { fixture, menu } = await montar('DOCENTE', 2);
+    const item = fixture.componentInstance.filteredNavItems().find((i) => i.route === '/app/docente/solicitudes-sesion');
+    expect(item).toBeDefined();
+    expect(fixture.componentInstance.contadorDe(item!)).toBe(2);
+    expect(menu.iniciar).toHaveBeenCalledWith('DOCENTE');
+  });
+
+  it('el estudiante no ve la entrada de solicitudes', async () => {
+    const { fixture } = await montar('ESTUDIANTE', 0);
+    const rutas = fixture.componentInstance.filteredNavItems().map((i) => i.route);
+    expect(rutas.some((r) => r.includes('solicitudes-sesion'))).toBeFalse();
   });
 });

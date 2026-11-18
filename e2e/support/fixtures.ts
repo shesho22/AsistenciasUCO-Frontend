@@ -43,7 +43,7 @@ export const CUENTAS: Record<Rol, CuentaPrueba> = {
     nombre: 'Ing. Andrés Felipe López Martínez',
     inicio: /\/app\/coordinador\/programa\/docentes$/,
     encabezadoInicio: 'Programa',
-    modulos: ['Asistencia', 'Programa', 'Planes de Estudio', 'Estudiantes del Programa'],
+    modulos: ['Asistencia', 'Solicitudes de sesión', 'Programa', 'Planes de Estudio', 'Estudiantes del Programa'],
   },
   DOCENTE: {
     rol: 'DOCENTE',
@@ -51,7 +51,7 @@ export const CUENTAS: Record<Rol, CuentaPrueba> = {
     nombre: 'Dra. María Elena Rostagno',
     inicio: /\/app\/docente\/grupos$/,
     encabezadoInicio: 'Gestión Integral de Grupos y Sesiones',
-    modulos: ['Mis Grupos', 'Tomar Asistencia', 'Reclamos', 'Mis Horarios'],
+    modulos: ['Mis Grupos', 'Tomar Asistencia', 'Solicitudes de sesión', 'Reclamos', 'Mis Horarios'],
   },
   ESTUDIANTE: {
     rol: 'ESTUDIANTE',

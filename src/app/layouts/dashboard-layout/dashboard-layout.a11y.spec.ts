@@ -1,3 +1,5 @@
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
@@ -22,7 +24,7 @@ describe('DashboardLayoutComponent accesibilidad (F-TRX-014)', () => {
     });
     await TestBed.configureTestingModule({
       imports: [DashboardLayoutComponent],
-      providers: [provideRouter([]), { provide: AuthService, useValue: auth }, { provide: ToastService, useValue: toast }],
+      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting(), { provide: AuthService, useValue: auth }, { provide: ToastService, useValue: toast }],
     }).compileComponents();
     fixture = TestBed.createComponent(DashboardLayoutComponent);
     fixture.detectChanges();
@@ -114,7 +116,7 @@ describe('DashboardLayoutComponent: menu cerrado fuera del foco (movil)', () => 
     });
     TestBed.configureTestingModule({
       imports: [DashboardLayoutComponent],
-      providers: [provideRouter([]), { provide: AuthService, useValue: auth }, { provide: ToastService, useValue: toast }],
+      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting(), { provide: AuthService, useValue: auth }, { provide: ToastService, useValue: toast }],
     });
     fixture = TestBed.createComponent(DashboardLayoutComponent);
     fixture.detectChanges();
@@ -160,7 +162,7 @@ describe('DashboardLayoutComponent: menu cerrado fuera del foco (movil)', () => 
       });
       TestBed.configureTestingModule({
         imports: [DashboardLayoutComponent],
-        providers: [provideRouter([]), { provide: AuthService, useValue: auth }, { provide: ToastService, useValue: toast }],
+        providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting(), { provide: AuthService, useValue: auth }, { provide: ToastService, useValue: toast }],
       });
       fixture = TestBed.createComponent(DashboardLayoutComponent);
       fixture.detectChanges();
@@ -191,7 +193,7 @@ describe('DashboardLayoutComponent: menu cerrado fuera del foco (movil)', () => 
     });
     TestBed.configureTestingModule({
       imports: [DashboardLayoutComponent],
-      providers: [provideRouter([]), { provide: AuthService, useValue: auth }, { provide: ToastService, useValue: toast }],
+      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting(), { provide: AuthService, useValue: auth }, { provide: ToastService, useValue: toast }],
     });
     fixture = TestBed.createComponent(DashboardLayoutComponent);
     fixture.detectChanges();

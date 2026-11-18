@@ -304,6 +304,16 @@ export const routes: Routes = [
           ),
       },
       {
+        // ATA D6: la bandeja de solicitudes de sesión sale de «Asistencia» y tiene su propia entrada de menú.
+        path: 'coordinador/solicitudes-sesion',
+        canActivate: [roleGuard, coordinadorConProgramaGuard],
+        data: { roles: ['COORDINADOR'] },
+        loadComponent: () =>
+          import('./features/coordinator/coordinator-solicitudes-sesion/coordinator-solicitudes-sesion-page.component').then(
+            (m) => m.CoordinatorSolicitudesSesionPageComponent
+          ),
+      },
+      {
         // HU178: aviso único del coordinador sin programa asignado (destino de coordinadorConProgramaGuard).
         path: 'coordinador/sin-programa',
         canActivate: [roleGuard],
@@ -402,6 +412,16 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/teacher/teacher-grupos/teacher-grupos.component').then(
             (m) => m.TeacherGruposComponent
+          ),
+      },
+      {
+        // ATA D6: solicitudes de sesión extraordinaria del docente (solo lectura).
+        path: 'docente/solicitudes-sesion',
+        canActivate: [roleGuard],
+        data: { roles: ['DOCENTE'] },
+        loadComponent: () =>
+          import('./features/teacher/teacher-solicitudes-sesion/teacher-solicitudes-sesion.component').then(
+            (m) => m.TeacherSolicitudesSesionComponent
           ),
       },
       {

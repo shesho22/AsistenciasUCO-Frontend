@@ -1,3 +1,5 @@
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { signal } from '@angular/core';
@@ -12,7 +14,7 @@ describe('DashboardLayoutComponent menú de festivos (CULM-001 B.1)', () => {
     TestBed.configureTestingModule({
       imports: [DashboardLayoutComponent],
       providers: [
-        provideRouter([]),
+        provideRouter([]), provideHttpClient(), provideHttpClientTesting(),
         {
           provide: AuthService,
           useValue: jasmine.createSpyObj('AuthService', ['logout'], {
