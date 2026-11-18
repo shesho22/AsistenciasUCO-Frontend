@@ -7,6 +7,7 @@ import { ToastService } from '../../../../shared/components/toast/toast.componen
 import { environment } from '../../../../../environments/environment';
 import { paginaApi, porUrl } from '../../../../core/testing/pagina-api';
 import { PlanEstudioItem } from '../../../../core/models/role-management.model';
+import { CoordinatorManagementService } from '../../../../core/services/coordinator-management.service';
 
 describe('CoordinatorStudyPlanMeshPageComponent', () => {
   let fixture: ComponentFixture<CoordinatorStudyPlanMeshPageComponent>;
@@ -199,6 +200,25 @@ describe('CoordinatorStudyPlanMeshPageComponent', () => {
     expect(toastSpy.success).toHaveBeenCalledWith('Semestre 10 agregado al plan.');
     expect(component.selectedPlan()?.totalSemestres).toBe(10);
     expect(component.aviso()).toBeNull();
+    // MEJORAS-SERGIO 13: relee los planes (refresca la cache del servicio que usan los formularios de asignatura)
+    http.expectOne(porUrl(urlPlanes)).flush(paginaApi([{ ...mockPlan, totalSemestres: 10 }]));
+    expect(component.selectedPlan()?.totalSemestres).toBe(10);
+  });
+
+  it('MEJORAS-SERGIO 13: el semestre agregado aparece en el filtro de la malla y en la cache del servicio sin recargar la página', () => {
+    component.planes.set([{ ...mockPlan, totalSemestres: 3 }]);
+    fixture.detectChanges();
+    component.agregarSemestre();
+    http.expectOne(`${environment.apiUrl}/coordinador/planes-estudio/PLAN-SIS-2024/semestres`).flush({ exitoso: true, datos: null });
+    http.expectOne(porUrl(urlPlanes)).flush(paginaApi([{ ...mockPlan, totalSemestres: 4 }]));
+    fixture.detectChanges();
+
+    const opciones = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('select[aria-label="Filtrar la malla por semestre"] option')
+    ).map((o) => o.textContent?.trim());
+    expect(opciones).toContain('Semestre 4');
+    const servicio = TestBed.inject(CoordinatorManagementService);
+    expect(servicio.planes().find((p) => p.id === 'PLAN-SIS-2024')?.totalSemestres).toBe(4);
   });
 
   it('agregarSemestre en el máximo de 10 avisa sin llamar al backend', () => {
@@ -228,6 +248,7 @@ describe('CoordinatorStudyPlanMeshPageComponent', () => {
     const delReq = http.expectOne(`${environment.apiUrl}/coordinador/planes-estudio/PLAN-SIS-2024/semestres/10`);
     expect(delReq.request.method).toBe('DELETE');
     delReq.flush({ exitoso: true, datos: null });
+    http.expectOne(porUrl(urlPlanes)).flush(paginaApi([{ ...mockPlan, totalSemestres: 9 }]));
   });
 
   describe('malla filtrada y paginada en el servidor', () => {
@@ -301,6 +322,8 @@ describe('CoordinatorStudyPlanMeshPageComponent', () => {
     delReq.flush({ exitoso: true, datos: null });
 
     expect(toastSpy.success).toHaveBeenCalledWith('Semestre 10 vacío eliminado.');
+    expect(component.selectedPlan()?.totalSemestres).toBe(9);
+    http.expectOne(porUrl(urlPlanes)).flush(paginaApi([{ ...mockPlan, totalSemestres: 9 }]));
     expect(component.selectedPlan()?.totalSemestres).toBe(9);
   });
 
