@@ -122,10 +122,44 @@ describe('CoordinatorSubjectsComponent', () => {
     fixture.detectChanges();
   });
 
-  it('carga las materias ofertadas, las asignaturas curriculares y los inscritos del grupo inicial', () => {
+  it('carga las materias ofertadas y las asignaturas curriculares; la nómina se pide al abrir un grupo', () => {
     expect(component.courses()).toHaveSize(1);
     expect(component.listadoAsignaturas.filas()).toHaveSize(1);
-    expect(component.enrolledStudents()).toHaveSize(1);
+    expect(component.enrolledStudents()).toHaveSize(0);
+    expect(coordinatorService.getEstudiantesPorGrupo).not.toHaveBeenCalled();
+  });
+
+  describe('MEJORAS-SERGIO 11: subpestañas y nómina en ventana emergente', () => {
+    const el = () => fixture.nativeElement as HTMLElement;
+
+    it('muestra una sección a la vez: grupos del período por defecto y el catálogo en su subpestaña', () => {
+      const pestanas = Array.from(el().querySelectorAll('[role="tab"]')).map((b) => b.textContent?.trim() ?? '');
+      expect(pestanas[0]).toContain('Grupos del período');
+      expect(pestanas[1]).toContain('Catálogo curricular');
+      expect(el().textContent).toContain('Grupos y Materias Activas en el Período');
+      expect(el().textContent).not.toContain('Catálogo Curricular de Materias de la Carrera');
+
+      (el().querySelector('[data-testid="subpestana-catalogo"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(el().textContent).toContain('Catálogo Curricular de Materias de la Carrera');
+      expect(el().textContent).not.toContain('Grupos y Materias Activas en el Período');
+    });
+
+    it('«Ver inscritos» abre la nómina del grupo en una ventana y Cerrar la oculta', () => {
+      expect(el().querySelector('[data-testid="modal-inscritos"]')).toBeNull();
+      (el().querySelector('[data-testid="ver-inscritos"] button') as HTMLElement).click();
+      fixture.detectChanges();
+      expect(coordinatorService.getEstudiantesPorGrupo).toHaveBeenCalled();
+      expect(component.enrolledStudents()).toHaveSize(1);
+      const modal = el().querySelector('[data-testid="modal-inscritos"]');
+      expect(modal).not.toBeNull();
+      expect(modal?.querySelector('[data-testid="lista-inscritos"]')).not.toBeNull();
+
+      component.cerrarInscritos();
+      fixture.detectChanges();
+      expect(el().querySelector('[data-testid="modal-inscritos"]')).toBeNull();
+      expect(component.enrolledStudents()).toHaveSize(0);
+    });
   });
 
   it('no renderiza docenteName sintetizado ni controles de solicitud de cupo', () => {
@@ -146,8 +180,11 @@ describe('CoordinatorSubjectsComponent', () => {
       expect(component.totalPlanes()).toBe(4);
       const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
       expect(texto).toContain('37 grupos');
-      expect(texto).toContain('112 asignaturas');
+      expect(texto).toContain('Catálogo curricular (112)');
       expect(texto).toContain('En 4 planes de estudio');
+      component.seccion.set('catalogo');
+      fixture.detectChanges();
+      expect((fixture.nativeElement as HTMLElement).textContent).toContain('112 asignaturas');
     });
 
     it('pide al servidor la primera página con el tamaño de la pantalla y sin filtros', () => {
@@ -288,6 +325,7 @@ describe('CoordinatorSubjectsComponent', () => {
         of(pagina([asignatura('plan-1', { compartida: true }), asignatura('plan-2', { compartida: true, nombreCaracter: 'Optativa', codigoCaracter: 'OPT', nombrePrograma: 'Ingeniería de Software' })]))
       );
       component.cargarDatos();
+      component.seccion.set('catalogo');
       fixture.detectChanges();
     });
 

@@ -1,6 +1,6 @@
 import { Component, DestroyRef, OnInit, inject, signal, computed, ChangeDetectionStrategy, input } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Subject, debounceTime, switchMap, tap } from 'rxjs';
+import { Subject, debounceTime, switchMap } from 'rxjs';
 
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -25,6 +25,9 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { ListadoPaginado } from '../../../shared/utils/listado-paginado';
 import { ToastService } from '../../../shared/components/toast/toast.component';
+import { ModalComponent } from '../../../shared/components/modal/modal.component';
+import { SubpestanasComponent } from '../../../shared/components/tabs/subpestanas.component';
+import { TabItem } from '../../../shared/components/tabs/tabs-nav.component';
 
 @Component({
     selector: 'app-coordinator-subjects',
@@ -36,7 +39,9 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
     ButtonComponent,
     AvatarComponent,
     ErrorCargaComponent,
-    PaginationComponent
+    PaginationComponent,
+    ModalComponent,
+    SubpestanasComponent
 ],
     template: `
     <div class="space-y-6">
@@ -111,7 +116,10 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
         </div>
       </div>
 
-      <!-- 1. SECCIÓN: GRUPOS Y MATERIAS OFERTADAS EN EL PERÍODO -->
+      <!-- MEJORAS-SERGIO 11: grupos y catálogo en subpestañas; la nómina del grupo se abre en una ventana emergente -->
+      <app-subpestanas [tabs]="secciones()" [(activa)]="seccion" etiqueta="Secciones de materias" idPanel="panel-materias-programa" />
+      <div role="tabpanel" id="panel-materias-programa" [attr.aria-labelledby]="'subtab-' + seccion()" class="min-w-0">
+      @if (seccion() === 'grupos') {
       <div class="space-y-4">
         <div class="flex items-center justify-between">
           <div>
@@ -119,7 +127,7 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
               Grupos y Materias Activas en el Período
             </h2>
             <p class="text-xs text-warm-500">
-              Selecciona una materia para consultar su nómina de estudiantes inscritos.
+              Pulsa «Ver inscritos» para consultar la nómina de estudiantes de un grupo.
             </p>
           </div>
           <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-warm-100 text-warm-700">
@@ -142,7 +150,7 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
                     <span class="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-warm-100 text-warm-800">
                       {{ curso.code }}
                     </span>
-                    <app-badge [variant]="selectedCourseId() === curso.id ? 'info' : 'neutral'">
+                    <app-badge variant="neutral">
                       {{ curso.section }}
                     </app-badge>
                   </div>
@@ -165,12 +173,8 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
                   <span class="text-xs text-warm-500">
                     Cupos: <strong class="text-warm-900">{{ curso.enrolledStudentsCount }} / {{ cupoTexto(curso) }}</strong>
                   </span>
-                  <app-button
-                    [variant]="selectedCourseId() === curso.id ? 'primary' : 'secondary'"
-                    size="sm"
-                    (clicked)="onSelectCourse(curso.id)"
-                  >
-                    {{ selectedCourseId() === curso.id ? 'Viendo Inscritos' : 'Ver Inscritos' }}
+                  <app-button variant="secondary" size="sm" data-testid="ver-inscritos" (clicked)="onSelectCourse(curso.id)">
+                    Ver inscritos
                   </app-button>
                 </div>
               </div>
@@ -187,59 +191,7 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
         }
       </div>
 
-      <!-- Detalle de Estudiantes Inscritos en el Grupo Seleccionado (Solo Consulta) -->
-      @if (selectedCourse(); as cursoActual) {
-        <div class="superficie overflow-hidden">
-          <div class="p-5 border-b border-warm-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <div class="flex items-center gap-2">
-                <h3 class="font-serif font-bold text-lg text-warm-900">
-                  Estudiantes Inscritos en {{ cursoActual.name }}
-                </h3>
-                <span class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-warm-100 text-warm-700">
-                  {{ cursoActual.code }} • {{ cursoActual.section }}
-                </span>
-              </div>
-              <p class="text-xs text-warm-500 mt-0.5">
-                Nómina oficial del grupo (la inscripción y retiro de alumnos en los grupos es administrada directamente por el docente titular).
-              </p>
-            </div>
-            <span class="text-xs font-bold px-3 py-1 rounded-full bg-primary-50 text-primary-800 border border-primary-200 shrink-0">
-              {{ enrolledStudents().length }} / {{ cupoTexto(cursoActual) }} estudiantes
-            </span>
-          </div>
-
-          @if (enrolledStudents().length === 0) {
-            <div class="p-10 text-center text-warm-400">
-              <p class="text-sm">No hay estudiantes registrados en este grupo actualmente.</p>
-            </div>
-          } @else {
-            <div class="divide-y divide-warm-100">
-              @for (est of enrolledStudents(); track est.id) {
-                <div class="p-4 sm:p-5 flex items-center justify-between gap-4">
-                  <div class="flex items-center gap-3 min-w-0">
-                    <app-avatar [name]="est.nombreCompleto" size="md"></app-avatar>
-                    <div class="min-w-0">
-                      <h4 class="font-serif font-bold text-sm text-warm-900 truncate">
-                        {{ est.nombreCompleto }}
-                      </h4>
-                      <p class="text-xs text-warm-500">
-                        Cód. {{ est.codigo || est.documento }} • Doc. {{ est.documento }} • {{ est.programa }}
-                      </p>
-                    </div>
-                  </div>
-
-                  <app-badge [variant]="est.estadoMatricula === 'ACTIVO' ? 'success' : 'neutral'">
-                    {{ est.estadoMatricula }}
-                  </app-badge>
-                </div>
-              }
-            </div>
-          }
-        </div>
-      }
-
-      <!-- 2. SECCIÓN: CATÁLOGO CURRICULAR DE MATERIAS DE LA CARRERA -->
+      } @else {
       <div class="space-y-4">
         <div class="flex items-center justify-between">
           <div>
@@ -255,7 +207,9 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
           </span>
         </div>
 
-        @if (listadoAsignaturas.filas().length === 0) {
+        @if (errorCarga()) {
+          <app-error-carga [error]="errorCarga()!" (reintentar)="cargarDatos()" />
+        } @else if (listadoAsignaturas.filas().length === 0) {
           <div class="bg-white rounded-2xl border border-warm-200 p-10 text-center text-sm text-warm-500">
             No hay asignaturas curriculares que coincidan con los filtros seleccionados.
           </div>
@@ -325,6 +279,64 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
           />
         }
       </div>
+      }
+      </div>
+      <!-- Nómina del grupo seleccionado (solo consulta), en ventana emergente -->
+      @if (selectedCourse(); as cursoActual) {
+        <app-modal
+          [isOpen]="true"
+          [title]="'Estudiantes inscritos en ' + cursoActual.name"
+          tamano="lg"
+          etiquetaCerrar="Cerrar"
+          panelTestId="modal-inscritos"
+          (closed)="cerrarInscritos()"
+        >
+        <div class="space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-warm-100">
+            <div>
+              <span class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-warm-100 text-warm-700">
+                {{ cursoActual.code }} • {{ cursoActual.section }}
+              </span>
+              <p class="text-xs text-warm-500 mt-1">
+                Nómina oficial del grupo (la inscripción y retiro de alumnos en los grupos es administrada directamente por el docente titular).
+              </p>
+            </div>
+            <span class="text-xs font-bold px-3 py-1 rounded-full bg-primary-50 text-primary-800 border border-primary-200 shrink-0">
+              {{ enrolledStudents().length }} / {{ cupoTexto(cursoActual) }} estudiantes
+            </span>
+          </div>
+
+          @if (enrolledStudents().length === 0) {
+            <div class="p-10 text-center text-warm-400">
+              <p class="text-sm">No hay estudiantes registrados en este grupo actualmente.</p>
+            </div>
+          } @else {
+            <div class="divide-y divide-warm-100 max-h-[60vh] overflow-y-auto" data-testid="lista-inscritos">
+              @for (est of enrolledStudents(); track est.id) {
+                <div class="py-3 flex items-center justify-between gap-4">
+                  <div class="flex items-center gap-3 min-w-0">
+                    <app-avatar [name]="est.nombreCompleto" size="md"></app-avatar>
+                    <div class="min-w-0">
+                      <h4 class="font-serif font-bold text-sm text-warm-900 truncate">
+                        {{ est.nombreCompleto }}
+                      </h4>
+                      <p class="text-xs text-warm-500">
+                        Cód. {{ est.codigo || est.documento }} • Doc. {{ est.documento }} • {{ est.programa }}
+                      </p>
+                    </div>
+                  </div>
+
+                  <app-badge [variant]="est.estadoMatricula === 'ACTIVO' ? 'success' : 'neutral'">
+                    {{ est.estadoMatricula }}
+                  </app-badge>
+                </div>
+              }
+            </div>
+          }
+        </div>
+        </app-modal>
+      }
+
     </div>
   `
 })
@@ -341,8 +353,7 @@ export class CoordinatorSubjectsComponent implements OnInit {
   readonly listado = new ListadoPaginado<Course>(
     (pagina, tamano) =>
       this.courseService
-        .getCoordinatorCoursesPage({ busqueda: this.searchQuery().trim() || null, pagina, tamano })
-        .pipe(tap((res) => this.seleccionarInicial(res.elementos ?? []))),
+        .getCoordinatorCoursesPage({ busqueda: this.searchQuery().trim() || null, pagina, tamano }),
     (mensaje) => this.toast.error(mensaje)
   );
   /** Asignaturas del catálogo curricular del programa: búsqueda, carácter y paginación en el servidor. */
@@ -372,6 +383,13 @@ export class CoordinatorSubjectsComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly toast = inject(ToastService);
   private readonly errorAuxiliar = signal<LoadErrorState | null>(null);
+
+  /** MEJORAS-SERGIO 11: subpestaña visible (grupos del período o catálogo curricular). */
+  readonly seccion = signal<string>('grupos');
+  readonly secciones = computed<TabItem[]>(() => [
+    { id: 'grupos', etiqueta: `Grupos del período (${this.listado.total()})` },
+    { id: 'catalogo', etiqueta: `Catálogo curricular (${this.listadoAsignaturas.total()})` },
+  ]);
 
   selectedCourse = computed(() => {
     return this.courses().find((c) => c.id === this.selectedCourseId()) || null;
@@ -471,13 +489,15 @@ export class CoordinatorSubjectsComponent implements OnInit {
     this.listadoAsignaturas.buscar();
   }
 
-  private seleccionarInicial(grupos: Course[]): void {
-    if (grupos.length > 0 && !this.selectedCourseId()) {
-      this.onSelectCourse(grupos[0].id);
-    }
+  /** Cierra la ventana de la nómina del grupo. */
+  cerrarInscritos(): void {
+    this.selectedCourseId.set('');
+    this.enrolledStudents.set([]);
   }
 
+  /** Abre la nómina del grupo en una ventana emergente (ya no se elige un grupo al cargar la pantalla). */
   onSelectCourse(cursoId: string): void {
+    this.enrolledStudents.set([]);
     this.selectedCourseId.set(cursoId);
     this.coordinatorService.getEstudiantesPorGrupo(cursoId).subscribe({
       next: (res) => this.enrolledStudents.set(res.datos || []),
