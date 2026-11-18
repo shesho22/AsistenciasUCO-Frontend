@@ -97,7 +97,7 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
               [ngModel]="codigoCaracter()"
               (ngModelChange)="codigoCaracter.set($event)"
             >
-              <option value="">Selecciona el carácter</option>
+              <option value="">{{ caracteres().length === 0 ? '-- No hay caracteres disponibles --' : 'Selecciona el carácter' }}</option>
               @for (c of caracteres(); track c.codigo) {
                 <option [value]="c.codigo">{{ c.nombre }}</option>
               }

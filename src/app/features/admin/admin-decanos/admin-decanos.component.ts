@@ -272,7 +272,7 @@ const NOMBRE_FACULTAD_MAX = 50;
                           name="facultadInstitucion"
                           class="w-full px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                         >
-                          <option value="">-- Selecciona una institución --</option>
+                          <option value="">{{ instituciones().length === 0 ? '-- No hay instituciones disponibles --' : '-- Selecciona una institución --' }}</option>
                           @for (inst of instituciones(); track inst.id) {
                             <option [value]="inst.id">{{ inst.nombre }}</option>
                           }
@@ -289,12 +289,19 @@ const NOMBRE_FACULTAD_MAX = 50;
                         name="facultadExistente"
                         class="w-full px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                       >
-                        <option value="">-- Selecciona una facultad --</option>
+                        <option value="">{{ facultades().length === 0 ? '-- No hay facultades disponibles --' : '-- Selecciona una facultad --' }}</option>
                         @for (fac of facultades(); track fac.id) {
                           <option [value]="fac.id">{{ fac.nombre }}</option>
                         }
                       </select>
                     </app-form-field>
+                    @if (facultades().length === 0) {
+                      <p class="mt-2 text-xs text-warning-800 bg-warning-50 border border-warning-200 rounded-xl px-3 py-2" role="status" data-testid="sin-facultades-libres">
+                        {{ errorFacultades()
+                          ? 'No se pudo cargar el listado de facultades. Intenta de nuevo más tarde.'
+                          : 'No hay facultades libres: todas las facultades activas ya tienen un decano. Crea una facultad nueva o registra al decano sin facultad.' }}
+                      </p>
+                    }
                   </div>
                 }
                 @case ('SIN') {
@@ -365,6 +372,7 @@ export class AdminDecanosComponent implements OnInit {
   decanos = signal<DecanoItem[]>([]);
   tiposIdentificacion = signal<TipoIdentificacionItem[]>([]);
   facultades = signal<FacultadItem[]>([]);
+  errorFacultades = signal(false);
   readonly instituciones = this.adminService.instituciones;
 
   readonly opcionesModoFacultad: OpcionModo<ModoFacultad>[] = [
@@ -519,13 +527,20 @@ export class AdminDecanosComponent implements OnInit {
   }
 
   cargarFacultades(): void {
-    this.catalogService.getFacultades().subscribe({
+    // Solo se ofrecen las facultades activas y sin decano: una facultad con decano no puede recibir otro.
+    this.adminService.cargarFacultades().subscribe({
       next: (res) => {
-        if (res.datos) {
-          this.facultades.set(res.datos);
-        }
+        this.errorFacultades.set(false);
+        this.facultades.set(
+          (res.datos ?? [])
+            .filter((f) => f.estado !== 'INACTIVO' && !f.decanoId)
+            .map((f) => ({ id: f.id, nombre: f.nombre })),
+        );
       },
-      error: () => console.warn('Usando catálogo local de facultades.'),
+      error: () => {
+        this.facultades.set([]);
+        this.errorFacultades.set(true);
+      },
     });
   }
 

@@ -333,7 +333,7 @@ const NOMBRE_PROGRAMA_MAX = 50;
                         name="programaTipo"
                         class="w-full px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                       >
-                        <option value="">-- Selecciona un tipo --</option>
+                        <option value="">{{ tiposPrograma().length === 0 ? '-- No hay tipos de programa disponibles --' : '-- Selecciona un tipo --' }}</option>
                         @for (t of tiposPrograma(); track t.id) {
                           <option [value]="t.id">{{ t.nombre }}</option>
                         }
@@ -375,7 +375,7 @@ const NOMBRE_PROGRAMA_MAX = 50;
                         name="programaAcademico"
                         class="w-full px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                       >
-                        <option value="">-- Selecciona un programa --</option>
+                        <option value="">{{ programasAcademicos().length === 0 ? '-- No hay programas disponibles --' : '-- Selecciona un programa --' }}</option>
                         @for (prog of programasAcademicos(); track prog.id) {
                           <option [value]="prog.nombre">{{ prog.nombre }}</option>
                         }

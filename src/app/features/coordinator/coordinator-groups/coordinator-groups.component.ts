@@ -133,7 +133,7 @@ interface GrupoForm {
             @if (modo() === 'CREAR') {
               <label class="text-xs font-semibold text-warm-700">Asignatura
                 <select name="idAsignatura" [(ngModel)]="form.idAsignatura" class="mt-1 w-full px-3 py-2 border border-warm-200 rounded-xl text-sm">
-                  <option value="">Seleccione...</option>
+                  <option value="">{{ asignaturas().length === 0 ? '-- No hay asignaturas disponibles --' : 'Seleccione...' }}</option>
                   @for (a of asignaturas(); track a.id) {
                     <option [value]="a.id">{{ a.codigo }} - {{ a.nombre }}</option>
                   }
@@ -141,7 +141,7 @@ interface GrupoForm {
               </label>
               <label class="text-xs font-semibold text-warm-700">Período académico
                 <select name="idPeriodoAcademico" [(ngModel)]="form.idPeriodoAcademico" class="mt-1 w-full px-3 py-2 border border-warm-200 rounded-xl text-sm">
-                  <option value="">Seleccione...</option>
+                  <option value="">{{ periodos().length === 0 ? '-- No hay períodos disponibles --' : 'Seleccione...' }}</option>
                   @for (p of periodos(); track p.id) {
                     <option [value]="p.id">{{ p.nombre }}</option>
                   }
@@ -156,7 +156,7 @@ interface GrupoForm {
             </label>
             <label class="text-xs font-semibold text-warm-700">Docente titular
               <select name="idDocente" [(ngModel)]="form.idDocente" class="mt-1 w-full px-3 py-2 border border-warm-200 rounded-xl text-sm">
-                <option value="">Seleccione...</option>
+                <option value="">{{ docentes().length === 0 ? '-- No hay docentes disponibles --' : 'Seleccione...' }}</option>
                 @for (d of docentes(); track d.idDocente) {
                   <option [value]="d.idDocente">{{ d.nombreCompleto }}</option>
                 }

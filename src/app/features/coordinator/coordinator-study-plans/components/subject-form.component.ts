@@ -104,7 +104,7 @@ import { CREDITS_MAX, getCreditsError, getSafeTextError, NAME_MAX_LENGTH } from 
               [(ngModel)]="asigForm.area"
               class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
             >
-              <option value="">Selecciona un área</option>
+              <option value="">{{ areasActivas().length === 0 ? '-- No hay áreas disponibles --' : 'Selecciona un área' }}</option>
               @for (a of areasActivas(); track a.id) {
                 <option [value]="a.nombre">{{ a.nombre }}</option>
               }
@@ -117,7 +117,7 @@ import { CREDITS_MAX, getCreditsError, getSafeTextError, NAME_MAX_LENGTH } from 
               [(ngModel)]="asigForm.componente"
               class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
             >
-              <option value="">Selecciona un componente</option>
+              <option value="">{{ componentes().length === 0 ? '-- No hay componentes disponibles --' : 'Selecciona un componente' }}</option>
               @for (c of componentes(); track c.idComponente) {
                 <option [value]="c.nombre">{{ c.codigo }} · {{ c.nombre }}</option>
               }
@@ -130,7 +130,7 @@ import { CREDITS_MAX, getCreditsError, getSafeTextError, NAME_MAX_LENGTH } from 
               [(ngModel)]="asigForm.codigoCaracter"
               class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
             >
-              <option value="">Selecciona el carácter</option>
+              <option value="">{{ caracteres().length === 0 ? '-- No hay caracteres disponibles --' : 'Selecciona el carácter' }}</option>
               @for (c of caracteres(); track c.codigo) {
                 <option [value]="c.codigo">{{ c.nombre }}</option>
               }

@@ -163,7 +163,9 @@ describe('AdminDecanosComponent', () => {
     reqDec.error(new ProgressEvent('Network error'));
 
     expect(console.warn).toHaveBeenCalledWith('Usando catálogo local de tipos de documento.');
-    expect(console.warn).toHaveBeenCalledWith('Usando catálogo local de facultades.');
+    // Sin datos quemados: si falla el listado de facultades queda vacío y la pantalla lo indica.
+    expect(component.facultades()).toEqual([]);
+    expect(component.errorFacultades()).toBeTrue();
     // F-ADM-010: el mensaje ya no es un texto fijo; sin respuesta HTTP se usa el mensaje semántico de red.
     expect(toastService.error).toHaveBeenCalledWith('No fue posible conectar con el servidor. Verifique su conexión de red.');
     expect(toastService.warning).toHaveBeenCalledWith('No fue posible conectar con el servidor. Verifique su conexión de red.');
@@ -918,6 +920,42 @@ component.guardarDecano();
       component.modoFacultad.set('SIN');
       fixture.detectChanges();
       expect(el.querySelector('[data-testid="facultad-sin"]')).toBeTruthy();
+    });
+
+    it('vincular lista solo las facultades activas y sin decano; si no queda ninguna lo indica', () => {
+      const el = fixture.nativeElement as HTMLElement;
+      component.facultades.set([{ id: 'fac-1', nombre: 'Facultad de Ingeniería' }]);
+      component.modoFacultad.set('VINCULAR');
+      fixture.detectChanges();
+      const opciones = Array.from(el.querySelectorAll('select[name="facultadExistente"] option')).map((o) => o.textContent?.trim());
+      expect(opciones).toEqual(['-- Selecciona una facultad --', 'Facultad de Ingeniería']);
+      expect(el.querySelector('[data-testid="sin-facultades-libres"]')).toBeNull();
+
+      component.facultades.set([]);
+      fixture.detectChanges();
+      expect(el.querySelector('select[name="facultadExistente"] option')?.textContent).toContain('No hay facultades disponibles');
+      expect(el.querySelector('[data-testid="sin-facultades-libres"]')?.textContent).toContain('No hay facultades libres');
+
+      component.errorFacultades.set(true);
+      fixture.detectChanges();
+      expect(el.querySelector('[data-testid="sin-facultades-libres"]')?.textContent).toContain('No se pudo cargar');
+    });
+
+    it('cargarFacultades descarta las facultades con decano o inactivas y lee nombreFacultad del backend', () => {
+      component.cargarFacultades();
+      http.expectOne(`${environment.apiUrl}/admin/facultades`).flush({
+        exitoso: true,
+        datos: [
+          { id: 'f-1', nombreFacultad: 'Libre', estaActivaFacultad: true },
+          { id: 'f-2', nombreFacultad: 'Con decano', idDecano: 'd-1', estaActivaFacultad: true },
+          { id: 'f-3', nombreFacultad: 'Inactiva', estaActivaFacultad: false },
+        ],
+      });
+      expect(component.facultades()).toEqual([{ id: 'f-1', nombre: 'Libre' }]);
+      component.cargarFacultades();
+      http.expectOne(`${environment.apiUrl}/admin/facultades`).flush('x', { status: 500, statusText: 'Error' });
+      expect(component.facultades()).toEqual([]);
+      expect(component.errorFacultades()).toBeTrue();
     });
 
     it('errorNombreFacultad solo avisa con texto escrito fuera de 3 a 50 caracteres', () => {
