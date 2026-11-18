@@ -5,7 +5,7 @@ Una prueba cuenta para una HU cuando su archivo cita el código HU en un `descri
 paréntesis es la cantidad de casos (`it`/`test`) del archivo. Esta tabla es la columna "Pruebas (frontend)" de la
 HU-CATALOG (`AsistenciasUCO-Infra/docs/user-stories/HU-CATALOG.md`).
 
-Resumen: 74 HU con pruebas en 95 de 291 archivos de prueba.
+Resumen: 74 HU con pruebas en 95 de 299 archivos de prueba.
 
 | HU | Capa | Archivos | Casos | Pruebas |
 |---|---|---|---|---|
