@@ -51,7 +51,7 @@ describe('DashboardLayoutComponent menú de festivos (CULM-001 B.1)', () => {
     for (const suelta of SUELTAS) {
       expect(rutas).not.toContain(suelta);
     }
-    expect(rutas).toContain('/app/admin/sistema');
+    expect(rutas).toContain('/app/admin/sistema/auditoria');
   });
 
   it('los demás roles no ven la opción de configuración', () => {

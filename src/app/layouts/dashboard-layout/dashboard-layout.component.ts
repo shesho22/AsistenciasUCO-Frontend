@@ -316,10 +316,16 @@ export class DashboardLayoutComponent {
       icon: 'catalogos',
     },
     {
-      label: 'Sistema & Auditoría',
-      route: '/app/admin/sistema',
+      label: 'Auditoría',
+      route: '/app/admin/sistema/auditoria',
       roles: ['ADMINISTRADOR'],
       icon: 'sistema',
+    },
+    {
+      label: 'Cierre masivo',
+      route: '/app/admin/sistema/cierre-masivo',
+      roles: ['ADMINISTRADOR'],
+      icon: 'asistencia',
     },
     {
       label: 'Indicadores',
