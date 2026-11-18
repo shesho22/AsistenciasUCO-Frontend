@@ -3,7 +3,7 @@ import { NEVER, of, throwError } from 'rxjs';
 import { TomaAsistenciasComponent } from './toma-asistencias.component';
 import { TomaAsistenciaService } from '../../../../core/services/toma-asistencia.service';
 import { RealtimeService } from '../../../../core/realtime/realtime.service';
-import { AsistenciaToma, TomaAsistencia } from '../../../../core/models/toma-asistencia.model';
+import { AsistenciaToma, FaltanteToma, TomaAsistencia } from '../../../../core/models/toma-asistencia.model';
 import { apiHttpError } from '../../../../core/testing/api-error.fixture';
 
 function toma(parcial: Partial<TomaAsistencia> = {}): TomaAsistencia {
@@ -403,15 +403,79 @@ describe('TomaAsistenciasComponent (CULM-001 UX toma)', () => {
     expect(cierres).toEqual(['t-1']);
   });
 
-  it('en una toma manual abierta no muestra pendientes de validar; en una QR o cerrada si', () => {
-    crear();
-    expect(el('seccion-pendientes')).toBeNull();
-    fixture.destroy();
-    crear({ toma: toma({ modo: 'QR' }) });
-    expect(el('seccion-pendientes')).not.toBeNull();
-    fixture.destroy();
-    crear({ toma: toma({ estado: 'CERRADA' }) });
-    expect(el('seccion-pendientes')).not.toBeNull();
+  describe('pendientes de validar en la lista unica', () => {
+    const faltante = (id: string, parcial: Partial<FaltanteToma> = {}): FaltanteToma => ({
+      estudianteId: id, nombreCompleto: `Estudiante ${id}`, tieneRegistro: false, estado: null, marcadoAlCerrar: false, ...parcial,
+    });
+    const paginaFaltantes = (elementos: FaltanteToma[]) =>
+      of({ exitoso: true, elementos, numeroPagina: 1, tamanoPagina: 100, totalElementos: elementos.length, totalPaginas: 1 });
+
+    it('en una toma manual abierta no consulta pendientes ni ofrece el filtro "Por validar"', () => {
+      crear();
+      expect(tomas.consultarFaltantes).not.toHaveBeenCalled();
+      expect(el('aviso-por-validar')).toBeNull();
+      abrirFiltros();
+      expect(el('filtro-POR_VALIDAR')).toBeNull();
+    });
+
+    it('no hay una segunda lista: cada pendiente aparece una sola vez, señalado en su fila', () => {
+      tomas.consultarFaltantes.and.returnValue(paginaFaltantes([
+        faltante('b', { tieneRegistro: true, estado: 'SJC', marcadoAlCerrar: true }), faltante('c'),
+      ]));
+      crear({ toma: toma({ modo: 'QR', estado: 'CERRADA' }) });
+      expect(tomas.consultarFaltantes).toHaveBeenCalledWith('t-1', 1, 100);
+      expect(el('seccion-pendientes')).toBeNull();
+      const raiz = fixture.nativeElement as HTMLElement;
+      expect(raiz.querySelectorAll('[data-testid="fila-b"]')).toHaveSize(1);
+      expect(texto('por-validar-b')).toBe('Falta al cerrar · por validar');
+      expect(texto('por-validar-c')).toBe('Sin lectura QR/PIN · por validar');
+      expect(el('por-validar-a')).toBeNull();
+      expect(texto('aviso-por-validar')).toContain('2 estudiante(s) por validar');
+    });
+
+    it('un faltante con registro y sin marca de cierre se etiqueta "Por validar"', () => {
+      tomas.consultarFaltantes.and.returnValue(paginaFaltantes([faltante('b', { tieneRegistro: true, estado: 'SJC' })]));
+      crear({ toma: toma({ modo: 'QR' }) });
+      expect(texto('por-validar-b')).toBe('Por validar');
+    });
+
+    it('"Ver solo por validar" y el filtro dejan solo a los pendientes, con su conteo', () => {
+      tomas.consultarFaltantes.and.returnValue(paginaFaltantes([faltante('c')]));
+      crear({ toma: toma({ modo: 'QR' }) });
+      clic('ver-por-validar');
+      expect(el('fila-a')).toBeNull();
+      expect(el('fila-b')).toBeNull();
+      expect(el('fila-c')).not.toBeNull();
+      expect(el('ver-por-validar')).toBeNull();
+      abrirFiltros();
+      expect(texto('filtro-POR_VALIDAR')).toBe('Por validar (1)');
+      expect(el('filtro-POR_VALIDAR')!.getAttribute('aria-pressed')).toBe('true');
+    });
+
+    it('el pendiente se corrige con los botones de su fila y se guarda en el lote de la toma', () => {
+      tomas.consultarFaltantes.and.returnValue(paginaFaltantes([faltante('c')]));
+      crear({ toma: toma({ modo: 'QR' }) });
+      clic('estado-c-AN');
+      clic('guardar-toma');
+      expect(tomas.registrarAsistencias).toHaveBeenCalledOnceWith('t-1', [{ estudianteId: 'c', estado: 'AN' }]);
+    });
+
+    it('si la consulta de pendientes falla muestra el mensaje del backend sin ocultar la lista', () => {
+      tomas.consultarFaltantes.and.returnValue(throwError(() => apiHttpError(500, 'No se pudieron consultar los pendientes.')));
+      crear({ toma: toma({ modo: 'QR' }) });
+      expect(texto('toma-error')).toContain('No se pudieron consultar los pendientes.');
+      expect(el('fila-a')).not.toBeNull();
+    });
+
+    it('si la toma pasa a manual abierta se limpian los pendientes y el filtro vuelve a "Todos"', () => {
+      tomas.consultarFaltantes.and.returnValue(paginaFaltantes([faltante('c')]));
+      crear({ toma: toma({ modo: 'QR' }) });
+      clic('ver-por-validar');
+      fixture.componentRef.setInput('toma', toma({ modo: 'MANUAL' }));
+      fixture.detectChanges();
+      expect(el('por-validar-c')).toBeNull();
+      expect(el('fila-a')).not.toBeNull();
+    });
   });
 
   it('el componente no usa setInterval', () => {

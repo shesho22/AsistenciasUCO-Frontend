@@ -19,6 +19,7 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
 import {
   AsistenciaToma,
   EstadoRegistroToma,
+  FaltanteToma,
   RegistroTomaRequest,
   TomaAsistencia,
 } from '../../../../core/models/toma-asistencia.model';
@@ -26,7 +27,6 @@ import { getApiErrorCode, getApiErrorMessage } from '../../../../core/api/errors
 import { isAttendanceWindowErrorCode } from '../../../../core/utils/session-attendance-window.util';
 import { ActionMenuComponent, ActionMenuItem } from '../../../../shared/components/action-menu/action-menu.component';
 import { FiltrosPlegablesComponent } from '../../../../shared/components/filtros-plegables/filtros-plegables.component';
-import { TomaFaltantesComponent } from './toma-faltantes.component';
 import { TAMANO_PAGINA_TOMA, cargarTodasLasPaginas } from './toma-paginas.util';
 import { ClaveEstadoToma, ETIQUETA_ESTADO_TOMA, EstadoFilaToma, claveEstadoToma } from './toma-estado';
 
@@ -39,7 +39,7 @@ export interface NotificacionToma {
 }
 
 type AccionMasiva = 'PRESENTES' | 'FALTANTES';
-type FiltroEstado = 'TODOS' | ClaveEstadoToma;
+type FiltroEstado = 'TODOS' | ClaveEstadoToma | 'POR_VALIDAR';
 
 interface FilaToma {
   estudianteId: string;
@@ -49,6 +49,8 @@ interface FilaToma {
   pendiente: boolean;
   origen: string | null;
   hora: string | null;
+  /** Motivo por el que el backend lo lista como pendiente de validar (sin presencia en una toma QR o cerrada). */
+  porValidar: string | null;
 }
 
 interface ConfirmacionMasiva {
@@ -64,17 +66,20 @@ const FILTROS: readonly { clave: FiltroEstado; etiqueta: string }[] = [
   { clave: 'SIN', etiqueta: 'Sin registro' },
 ];
 
+const FILTRO_POR_VALIDAR: { clave: FiltroEstado; etiqueta: string } = { clave: 'POR_VALIDAR', etiqueta: 'Por validar' };
+
 const OPCIONES_ESTADO: readonly EstadoRegistroToma[] = ['AN', 'SJC', 'EX'];
 
 /**
  * UX de la toma: una toma = un panel. Dentro va SU lista de estudiantes con estado, origen y hora; la barra de
- * acciones fija (marcar, contador y Guardar) queda siempre a la vista, y los pendientes de validar del QR viven
- * en la misma toma. Los estados, el origen y la hora vienen del backend; lo marcado y no guardado es local.
+ * acciones fija (marcar, contador y Guardar) queda siempre a la vista. Los pendientes de validar (sin presencia en
+ * una toma QR o cerrada, según `GET /tomas/{id}/faltantes`) no forman una segunda lista: se señalan en la misma fila,
+ * con un aviso y un filtro "Por validar", y se corrigen con los mismos botones. Los estados, el origen y la hora vienen del backend; lo marcado y no guardado es local.
  */
 @Component({
     selector: 'app-toma-asistencias',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [ConfirmDialogComponent, AvatarComponent, TomaFaltantesComponent, ActionMenuComponent, FiltrosPlegablesComponent],
+    imports: [ConfirmDialogComponent, AvatarComponent, ActionMenuComponent, FiltrosPlegablesComponent],
     // La barra queda fija bajo la barra superior de escritorio (4 rem) y al tope en móvil, sin sumar CSS global.
     styles: ['.barra-fija { top: 0; } @media (min-width: 768px) { .barra-fija { top: 4rem; } }'],
     template: `
@@ -161,6 +166,29 @@ const OPCIONES_ESTADO: readonly EstadoRegistroToma[] = ['AN', 'SJC', 'EX'];
         </button>
       </div>
 
+      @if (totalPorValidar() > 0) {
+        <div
+          class="rounded-xl border border-warning-200 bg-warning-50 px-3.5 py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+          role="status"
+          data-testid="aviso-por-validar"
+        >
+          <p class="text-xs font-medium text-warning-900">
+            {{ totalPorValidar() }} estudiante(s) por validar: no lograron registrarse con el QR o el PIN.
+            Corrige su estado en la lista con Presente, Falta o Excusa y pulsa Guardar.
+          </p>
+          @if (filtro() !== 'POR_VALIDAR') {
+            <button
+              type="button"
+              data-testid="ver-por-validar"
+              (click)="filtro.set('POR_VALIDAR')"
+              class="min-h-[44px] px-3 rounded-xl border border-warning-300 bg-white text-warning-900 text-xs font-semibold hover:bg-warning-100 shrink-0"
+            >
+              Ver solo por validar
+            </button>
+          }
+        </div>
+      }
+
       <!-- Busqueda siempre visible; los filtros por estado se pliegan -->
       <app-filtros-plegables [activos]="filtro() === 'TODOS' ? 0 : 1">
         <input
@@ -174,7 +202,7 @@ const OPCIONES_ESTADO: readonly EstadoRegistroToma[] = ['AN', 'SJC', 'EX'];
           class="w-full md:w-72 bg-warm-50 text-warm-900 border border-warm-300 rounded-xl px-3 py-2 text-xs min-h-[44px] focus:outline-none focus:ring-2 focus:ring-primary-500"
         />
         <div class="flex items-center bg-warm-100/80 p-1 rounded-xl gap-1 overflow-x-auto max-w-full" role="group" aria-label="Filtrar por estado">
-          @for (f of filtros; track f.clave) {
+          @for (f of filtrosVisibles(); track f.clave) {
             <button
               type="button"
               [attr.data-testid]="'filtro-' + f.clave"
@@ -183,7 +211,7 @@ const OPCIONES_ESTADO: readonly EstadoRegistroToma[] = ['AN', 'SJC', 'EX'];
               class="whitespace-nowrap shrink-0 min-h-[36px] px-3 rounded-lg text-xs transition-all"
               [class]="filtro() === f.clave ? 'font-bold bg-white text-warm-900 shadow-xs' : 'font-medium text-warm-600 hover:text-warm-900'"
             >
-              {{ f.etiqueta }}
+              {{ f.etiqueta }}{{ f.clave === 'POR_VALIDAR' ? ' (' + totalPorValidar() + ')' : '' }}
             </button>
           }
         </div>
@@ -223,6 +251,14 @@ const OPCIONES_ESTADO: readonly EstadoRegistroToma[] = ['AN', 'SJC', 'EX'];
                       <span [attr.data-testid]="'hora-' + f.estudianteId">· {{ f.hora }}</span>
                     }
                   </p>
+                  @if (f.porValidar) {
+                    <span
+                      class="inline-block mt-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-warning-100 text-warning-900"
+                      [attr.data-testid]="'por-validar-' + f.estudianteId"
+                    >
+                      {{ f.porValidar }}
+                    </span>
+                  }
                 </div>
               </div>
               <div class="grid grid-cols-3 gap-1.5 md:w-72 shrink-0" role="group" [attr.aria-label]="'Estado de ' + f.nombre">
@@ -245,17 +281,6 @@ const OPCIONES_ESTADO: readonly EstadoRegistroToma[] = ['AN', 'SJC', 'EX'];
         </ul>
       }
 
-      <!-- Pendientes de validar (estudiantes que no lograron usar el QR / PIN) -->
-      @if (mostrarPendientes()) {
-        <div data-testid="seccion-pendientes">
-          <app-toma-faltantes
-            [tomaId]="toma().idToma"
-            [esEditable]="toma().esEditable"
-            [version]="version()"
-            (actualizado)="actualizado.emit()"
-          />
-        </div>
-      }
     </div>
 
     <app-confirm-dialog
@@ -285,10 +310,11 @@ export class TomaAsistenciasComponent {
   /** Cantidad de estudiantes marcados y aún sin guardar. */
   readonly sinGuardar = output<number>();
 
-  protected readonly filtros = FILTROS;
   protected readonly opciones = OPCIONES_ESTADO;
 
   private readonly registros = signal<AsistenciaToma[]>([]);
+  /** Pendientes de validar de la toma, por estudiante (vienen del backend). */
+  private readonly faltantes = signal<ReadonlyMap<string, FaltanteToma>>(new Map());
   private readonly locales = signal<ReadonlyMap<string, EstadoRegistroToma>>(new Map());
   protected readonly cargando = signal(false);
   protected readonly guardando = signal(false);
@@ -296,8 +322,6 @@ export class TomaAsistenciasComponent {
   protected readonly busqueda = signal('');
   protected readonly filtro = signal<FiltroEstado>('TODOS');
   protected readonly confirmacion = signal<ConfirmacionMasiva | null>(null);
-  /** Se incrementa en cada recarga de la lista para refrescar también los pendientes de validar. */
-  protected readonly version = signal(0);
 
   /** El backend decide si la toma admite cambios (`esEditable`); el cliente no lo recalcula. */
   protected readonly bloqueado = computed(() => !this.toma().esEditable || this.guardando());
@@ -341,9 +365,11 @@ export class TomaAsistenciasComponent {
   protected readonly pendientes = computed(() => this.locales().size);
   protected readonly puedeGuardar = computed(() => this.pendientes() > 0 && !this.bloqueado());
   protected readonly mostrarPendientes = computed(() => this.toma().modo === 'QR' || this.toma().estado === 'CERRADA');
+  protected readonly filtrosVisibles = computed(() => (this.mostrarPendientes() ? [...FILTROS, FILTRO_POR_VALIDAR] : FILTROS));
 
   protected readonly filas = computed<FilaToma[]>(() => {
     const locales = this.locales();
+    const faltantes = this.faltantes();
     return this.registros().map((r) => {
       const local = locales.get(r.estudianteId);
       const pendiente = local !== undefined;
@@ -355,9 +381,12 @@ export class TomaAsistenciasComponent {
         pendiente,
         origen: pendiente ? 'Manual (sin guardar)' : this.origenDe(r),
         hora: !pendiente && r.estado !== null && r.fechaRegistroUtc ? this.zona.formatTemporal(r.fechaRegistroUtc, 'time') : null,
+        porValidar: this.motivoPorValidar(faltantes.get(r.estudianteId)),
       };
     });
   });
+
+  protected readonly totalPorValidar = computed(() => this.filas().filter((f) => f.porValidar !== null).length);
 
   protected readonly marcados = computed(() => this.filas().filter((f) => f.estado !== null).length);
 
@@ -366,7 +395,8 @@ export class TomaAsistenciasComponent {
     const filtro = this.filtro();
     return this.filas().filter(
       (f) =>
-        (filtro === 'TODOS' || claveEstadoToma(f.estado) === filtro) &&
+        (filtro === 'TODOS' ||
+          (filtro === 'POR_VALIDAR' ? f.porValidar !== null : claveEstadoToma(f.estado) === filtro)) &&
         (consulta === '' || f.nombre.toLowerCase().includes(consulta))
     );
   });
@@ -422,6 +452,13 @@ export class TomaAsistenciasComponent {
     if (opcion === 'AN') return 'font-bold bg-success-600 text-white shadow-xs';
     if (opcion === 'SJC') return 'font-bold bg-danger-600 text-white shadow-xs';
     return 'font-bold bg-warning-600 text-white shadow-xs';
+  }
+
+  /** La etiqueta sale de las banderas del backend; al guardar, la recarga quita a quien ya quedó presente. */
+  private motivoPorValidar(faltante: FaltanteToma | undefined): string | null {
+    if (!faltante) return null;
+    if (faltante.marcadoAlCerrar) return 'Falta al cerrar · por validar';
+    return faltante.tieneRegistro ? 'Por validar' : 'Sin lectura QR/PIN · por validar';
   }
 
   private origenDe(registro: AsistenciaToma): string | null {
@@ -543,8 +580,23 @@ export class TomaAsistenciasComponent {
             const siguiente = new Map([...actual].filter(([id, estado]) => servidor.has(id) && servidor.get(id) !== estado));
             return siguiente.size === actual.size ? actual : siguiente;
           });
-          this.version.update((v) => v + 1);
+          this.cargarFaltantes(tomaId);
         },
+        error: (err: unknown) => this.error.set(getApiErrorMessage(err)),
+      });
+  }
+
+  /** Los pendientes de validar solo existen en una toma QR o cerrada; en una manual abierta no se consultan. */
+  private cargarFaltantes(tomaId: string): void {
+    if (!this.mostrarPendientes()) {
+      this.faltantes.set(new Map());
+      if (this.filtro() === 'POR_VALIDAR') this.filtro.set('TODOS');
+      return;
+    }
+    cargarTodasLasPaginas((pagina) => this.tomas.consultarFaltantes(tomaId, pagina, TAMANO_PAGINA_TOMA))
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (faltantes) => this.faltantes.set(new Map(faltantes.map((f) => [f.estudianteId, f] as const))),
         error: (err: unknown) => this.error.set(getApiErrorMessage(err)),
       });
   }
