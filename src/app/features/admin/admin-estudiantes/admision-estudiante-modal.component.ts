@@ -144,6 +144,8 @@ const CAMPOS_FORMULARIO = new Set([
                       [attr.aria-selected]="p.id === idPrograma()"
                       (mousedown)="$event.preventDefault()"
                       (click)="seleccionarPrograma(p)"
+                      (keydown.enter)="seleccionarPrograma(p)"
+                      tabindex="-1"
                       class="px-3 py-2 text-xs cursor-pointer text-warm-800 hover:bg-primary-50"
                       [class.bg-primary-50]="i === indiceActivo()"
                     >
