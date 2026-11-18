@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject, signal }
 import { CommonModule } from '@angular/common';
 import { Subscription, finalize } from 'rxjs';
 import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
-import { EstadoSolicitudRevision, SolicitudRevisionItem } from '../../../core/models/role-management.model';
+import { EstadoSolicitudRevision, SolicitudRevisionItem, SoporteAdjuntoItem } from '../../../core/models/role-management.model';
 import { CardComponent } from '../../../shared/components/card/card.component';
 import { BadgeComponent, BadgeVariant } from '../../../shared/components/badge/badge.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
@@ -20,7 +20,7 @@ type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
 
 /**
  * "Mis Reclamos" (HU010/HU011, consulta): solicitudes de revisión del estudiante autenticado con su estado, la
- * respuesta del docente y el soporte adjunto. El backend filtra por propietario, estado y página; el soporte se
+ * respuesta del docente y sus soportes adjuntos (HU015: todos, no solo el primero). El backend filtra por propietario, estado y página; el soporte se
  * descarga por el endpoint autenticado `GET /archivos/{fileId}` (regla PROPIETARIO de LB-004D).
  */
 @Component({
@@ -117,15 +117,22 @@ type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
                     <p class="text-sm text-warm-800">{{ reclamo.justificacionRespuesta }}</p>
                   </div>
                 }
-                @if (reclamo.soporteAdjunto; as soporte) {
-                  <button
-                    type="button"
-                    class="inline-flex items-center gap-1.5 px-3 py-2 min-h-[44px] text-xs font-semibold text-primary-800 bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-xl"
-                    [disabled]="descargando()"
-                    (click)="descargarSoporte(reclamo)"
-                  >
-                    Descargar soporte: {{ soporte.nombre }}
-                  </button>
+                @if (soportesDe(reclamo); as soportes) {
+                  @if (soportes.length > 0) {
+                    <div class="flex flex-wrap gap-2" data-testid="reclamo-soportes">
+                      @for (soporte of soportes; track soporte.fileId || $index) {
+                        <button
+                          type="button"
+                          class="inline-flex items-center gap-1.5 px-3 py-2 min-h-[44px] text-xs font-semibold text-primary-800 bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-xl"
+                          [attr.data-testid]="'btn-descargar-soporte-' + (soporte.fileId || $index)"
+                          [disabled]="descargando()"
+                          (click)="descargarSoporte(reclamo, soporte)"
+                        >
+                          Descargar soporte: {{ soporte.nombre }}
+                        </button>
+                      }
+                    </div>
+                  }
                 }
               </div>
             </app-card>
@@ -224,8 +231,14 @@ export class StudentClaimsComponent implements OnInit, OnDestroy {
       });
   }
 
-  descargarSoporte(reclamo: SolicitudRevisionItem): void {
-    const soporte = reclamo.soporteAdjunto;
+  /** HU015: todos los soportes del reclamo; en reclamos sin la lista `soportes`, el único `soporteAdjunto`. */
+  soportesDe(reclamo: SolicitudRevisionItem): SoporteAdjuntoItem[] {
+    if (reclamo.soportes && reclamo.soportes.length > 0) return reclamo.soportes;
+    return reclamo.soporteAdjunto ? [reclamo.soporteAdjunto] : [];
+  }
+
+  /** Descarga un soporte del reclamo; sin `soporte` descarga el principal (`soporteAdjunto`). */
+  descargarSoporte(reclamo: SolicitudRevisionItem, soporte: SoporteAdjuntoItem | undefined = reclamo.soporteAdjunto): void {
     if (!soporte?.fileId) {
       this.toast.warning(mensajeUi('UI_STUDENT_CLAIMS_001'));
       return;
