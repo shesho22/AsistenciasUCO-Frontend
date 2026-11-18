@@ -33,7 +33,7 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
       } @else {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           @for (plan of pagedPlanes(); track plan.id) {
-            <app-card [hoverable]="true" padding="lg">
+            <app-card class="relative hover:z-30 focus-within:z-30" [hoverable]="true" [recortar]="false" padding="lg">
               <div class="flex flex-col h-full justify-between gap-5">
                 <div class="space-y-3">
                   <div class="flex items-start justify-between gap-3">

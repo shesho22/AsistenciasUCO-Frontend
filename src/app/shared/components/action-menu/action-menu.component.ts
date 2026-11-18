@@ -70,6 +70,8 @@ export class ActionMenuComponent {
   readonly selected = output<string>();
 
   protected readonly abierto = signal(false);
+  /** MEJORAS-SERGIO 7: el panel abre hacia arriba cuando no cabe debajo del boton dentro de la ventana. */
+  protected readonly haciaArriba = signal(false);
 
   protected claseBoton(): string {
     const base =
@@ -80,7 +82,7 @@ export class ActionMenuComponent {
   }
 
   protected clasePanel(): string {
-    const lado = this.placement() === 'top' ? 'bottom-full mb-2' : 'top-full mt-2';
+    const lado = this.placement() === 'top' || this.haciaArriba() ? 'bottom-full mb-2' : 'top-full mt-2';
     return `absolute right-0 ${lado} z-40 min-w-[13rem] max-w-[calc(100vw-2rem)] rounded-xl border border-warm-200 bg-white py-1 shadow-warm-lg`;
   }
 
@@ -98,6 +100,7 @@ export class ActionMenuComponent {
   }
 
   private abrir(): void {
+    this.haciaArriba.set(this.placement() === 'bottom' && !this.cabeDebajo());
     this.abierto.set(true);
     // El menu se pinta en la deteccion de cambios que sigue al clic (antes de la proxima tarea): se enfoca la primera accion habilitada.
     setTimeout(() => this.botones()[0]?.focus(), 0);
@@ -149,6 +152,19 @@ export class ActionMenuComponent {
   @HostListener('document:click', ['$event'])
   protected alClicGlobal(ev: Event): void {
     if (this.abierto() && !this.host.nativeElement.contains(ev.target as Node)) this.abierto.set(false);
+  }
+
+  /**
+   * Alto estimado del panel (una fila de 44px por accion mas el relleno) contra el espacio libre bajo el boton. Si no cabe y
+   * arriba hay mas espacio, se abre hacia arriba para que ninguna opcion quede oculta por el borde de la ventana o de la tarjeta.
+   */
+  private cabeDebajo(): boolean {
+    const boton = this.host.nativeElement.querySelector<HTMLElement>('[data-testid="action-menu-trigger"]');
+    if (!boton || typeof window === 'undefined') return true;
+    const caja = boton.getBoundingClientRect();
+    const alto = this.items().length * 44 + 16;
+    const abajo = window.innerHeight - caja.bottom;
+    return abajo >= alto || caja.top <= abajo;
   }
 
   private botones(): HTMLButtonElement[] {

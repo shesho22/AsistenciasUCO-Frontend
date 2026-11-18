@@ -209,6 +209,23 @@ describe('ActionMenuComponent (CULM-001, patron "Mas acciones")', () => {
     expect(q('[role="menu"]')?.className).toContain('top-full');
   });
 
+  it('MEJORAS-SERGIO 7: sin espacio debajo del boton abre hacia arriba para no recortar opciones', () => {
+    crear();
+    spyOn(trigger(), 'getBoundingClientRect').and.returnValue(
+      new DOMRect(0, window.innerHeight - 50, 80, 44)
+    );
+    abrir();
+    expect(q('[role="menu"]')?.className).toContain('bottom-full');
+    expect(opciones().length).toBe(3);
+  });
+
+  it('MEJORAS-SERGIO 7: con espacio debajo sigue abriendo hacia abajo', () => {
+    crear();
+    spyOn(trigger(), 'getBoundingClientRect').and.returnValue(new DOMRect(0, 10, 80, 44));
+    abrir();
+    expect(q('[role="menu"]')?.className).toContain('top-full');
+  });
+
   it('sin acciones no renderiza el boton', () => {
     crear({ items: [] });
     expect(trigger()).toBeNull();
