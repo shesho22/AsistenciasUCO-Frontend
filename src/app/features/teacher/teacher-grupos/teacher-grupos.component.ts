@@ -27,7 +27,7 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 
 // Componentes Hijos Desacoplados
 import { TeacherGruposListComponent } from './components/teacher-grupos-list.component';
-import { SubPestanaHub, TeacherGrupoHubComponent } from './components/teacher-grupo-hub.component';
+import { SubPestanaHub, TeacherGrupoHubComponent, pestanaDeGrupo } from './components/teacher-grupo-hub.component';
 import { TeacherSesionFormComponent } from './components/teacher-sesion-form.component';
 import { TeacherMatriculaModalComponent } from './components/modals/teacher-matricula-modal.component';
 import { TeacherSesionCancelarModalComponent } from './components/modals/teacher-sesion-cancelar-modal.component';
@@ -184,7 +184,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   isLoading = signal<boolean>(true);
 
   // Hub del Grupo
-  subPestanaHub = signal<SubPestanaHub>('HOY');
+  subPestanaHub = signal<SubPestanaHub>('SABANA');
   /** CIERRE-W3M: conteos, estado temporal y sesion en curso o proxima del grupo abierto, resueltos por el servidor. */
   resumenSesiones = signal<ResumenSesionesGrupo | null>(null);
   private resumenSesionesSubscription: Subscription | null = null;
@@ -281,20 +281,21 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
 
   /**
    * HU051: `?grupo=<id>` (botón "Padrón" de la vista del grupo) abre el hub de ese grupo,
-   * donde está el retiro con motivo. Un id ajeno se ignora y queda la lista.
+   * donde está el retiro con motivo. Un id ajeno se ignora y queda la lista. `&pestana=ESTUDIANTES` abre la
+   * matrícula; una pestaña desconocida abre la planilla.
    */
   private abrirHubSolicitado(cursos: Course[]): void {
     const id = this.route?.snapshot.queryParamMap.get('grupo');
     const curso = id ? cursos.find((c) => c.id === id) : undefined;
     if (curso) {
-      this.verHubGrupo(curso);
+      this.verHubGrupo(curso, pestanaDeGrupo(this.route?.snapshot.queryParamMap.get('pestana')));
     }
   }
 
-  verHubGrupo(course: Course): void {
+  verHubGrupo(course: Course, pestana: SubPestanaHub = 'SABANA'): void {
     this.selectedCourse.set(course);
     this.vistaActual.set('HUB_GRUPO');
-    this.subPestanaHub.set('HOY');
+    this.subPestanaHub.set(pestana);
     this.paginaPadron.set(1);
     this.busquedaPadron.set('');
     this.paginaReclamosGrupo.set(1);

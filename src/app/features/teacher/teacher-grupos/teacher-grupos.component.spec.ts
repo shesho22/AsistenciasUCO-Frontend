@@ -755,6 +755,23 @@ describe('TeacherGruposComponent', () => {
     expect(sessionService.getSessionsByGroup).toHaveBeenCalled();
   });
 
+  it('ATA D9: ?grupo=<id>&pestana=ESTUDIANTES abre la matrícula; sin pestana o desconocida abre la planilla', () => {
+    const conPestana = (pestana?: string) => ({
+      snapshot: { queryParamMap: convertToParamMap(pestana === undefined ? { grupo: 'crs-1' } : { grupo: 'crs-1', pestana }) },
+    });
+    const abrirCon = (pestana?: string): string => {
+      (component as unknown as { route: unknown }).route = conPestana(pestana);
+      component.cargarGrupos();
+      return component.subPestanaHub();
+    };
+
+    expect(abrirCon('ESTUDIANTES')).toBe('ESTUDIANTES');
+    expect(abrirCon('RECLAMOS')).toBe('RECLAMOS');
+    expect(abrirCon('HOY')).toBe('SABANA');
+    expect(abrirCon('inexistente')).toBe('SABANA');
+    expect(abrirCon()).toBe('SABANA');
+  });
+
   describe('cancelar sesión y SSE (HU047, CULM-001 B.1)', () => {
     const sesion: ClassSession = {
       id: 'ses-1', courseId: 'crs-1', sessionNumber: 1, title: 'S1', date: '2026-11-10',

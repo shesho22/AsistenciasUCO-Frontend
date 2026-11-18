@@ -381,11 +381,11 @@ export class AttendanceControlComponent {
     void this.router?.navigate(['/app/docente/grupos']);
   }
 
-  /** HU051: el hub del grupo vive en la pantalla de grupos del docente. */
+  /** HU051 / ATA D9: "Padrón y retiros" abre directo la pestaña Matrícula del grupo del docente. */
   irAPadron(): void {
     const courseId = this.selectedCourseId();
     if (!courseId) return;
-    void this.router?.navigate(["/app/docente/grupos"], { queryParams: { grupo: courseId } });
+    void this.router?.navigate(["/app/docente/grupos"], { queryParams: { grupo: courseId, pestana: 'ESTUDIANTES' } });
   }
 
   irABandejaGeneralReclamos(): void {
