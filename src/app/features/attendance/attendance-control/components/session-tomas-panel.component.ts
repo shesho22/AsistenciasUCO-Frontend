@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { SessionTimeZoneService } from '../../../../core/services/session-timezone.service';
 import { TomaAsistencia, TomasSesion } from '../../../../core/models/toma-asistencia.model';
 import { detalleCancelacion, estaCancelada } from '../../../../core/models/sesion-estado.model';
@@ -6,6 +6,12 @@ import { NotificacionToma, TomaAsistenciasComponent } from './toma-asistencias.c
 import { ResumenSesionTomasComponent } from './resumen-sesion-tomas.component';
 
 const RESUMEN = 'resumen';
+
+/** ATA D4/F: minutos antes del cierre de la ventana en que se recuerda revisar las tomas (constante de presentación). */
+export const TOLERANCIA_MINUTOS = 15;
+
+/** Mayor retardo que admite `setTimeout`; un cierre más lejano no necesita recordatorio programado. */
+const MAXIMO_RETARDO_MS = 2_147_483_647;
 
 /**
  * UX de la toma: una toma = un panel. Con varias tomas se muestran como pestañas (con desplazamiento horizontal
@@ -52,6 +58,16 @@ const RESUMEN = 'resumen';
             }
           </div>
         </div>
+
+        @if (recordatorioCierre()) {
+          <p
+            class="text-xs font-medium rounded-xl px-3.5 py-2.5 border text-warning-900 bg-warning-50 border-warning-200"
+            role="status"
+            data-testid="recordatorio-cierre"
+          >
+            La sesión termina a las {{ horaCierre() }}: revisa y cierra las tomas. Al terminar se cerrarán solas y quien no tenga registro quedará con falta.
+          </p>
+        }
 
         @if (datos.tomas.length > 1) {
           <div
@@ -154,6 +170,9 @@ export class SessionTomasPanelComponent {
   private readonly seleccion = signal<string | null>(null);
   protected readonly sinGuardar = signal<Readonly<Record<string, number | undefined>>>({});
   private tomasPrevias = 0;
+  /** ATA F: se activa a `TOLERANCIA_MINUTOS` del cierre de la ventana. */
+  protected readonly recordatorioCierre = signal(false);
+  private temporizadorRecordatorio: ReturnType<typeof setTimeout> | null = null;
 
   protected readonly cancelada = computed(() => estaCancelada({ estado: this.tomasSesion()?.estado }));
   protected readonly detalle = computed(() => detalleCancelacion(this.tomasSesion()?.cancelacion));
@@ -178,6 +197,8 @@ export class SessionTomasPanelComponent {
     return null;
   });
 
+  protected readonly horaCierre = computed(() => this.zona.formatTemporal(this.tomasSesion()?.ventana.cierreUtc, 'time'));
+
   protected readonly puedeAbrir = computed(() => this.tomasSesion() !== null && this.motivo() === null && !this.abriendo());
 
   constructor() {
@@ -189,6 +210,38 @@ export class SessionTomasPanelComponent {
         this.tomasPrevias = cantidad;
       });
     });
+
+    // Recordatorio de cierre: un único setTimeout programado al instante en que empieza el aviso (sin polling).
+    effect(() => {
+      const cierre = this.ventanaAbierta() ? (this.tomasSesion()?.ventana.cierreUtc ?? null) : null;
+      untracked(() => this.programarRecordatorio(cierre));
+    });
+    inject(DestroyRef).onDestroy(() => this.limpiarRecordatorio());
+  }
+
+  private programarRecordatorio(cierreUtc: string | null): void {
+    this.limpiarRecordatorio();
+    this.recordatorioCierre.set(false);
+    const cierre = cierreUtc ? Date.parse(cierreUtc) : Number.NaN;
+    if (Number.isNaN(cierre)) return;
+    const faltante = cierre - Date.now();
+    if (faltante <= 0) return;
+    const umbral = TOLERANCIA_MINUTOS * 60_000;
+    if (faltante <= umbral) {
+      this.recordatorioCierre.set(true);
+      return;
+    }
+    const espera = faltante - umbral;
+    if (espera > MAXIMO_RETARDO_MS) return;
+    this.temporizadorRecordatorio = setTimeout(() => {
+      this.temporizadorRecordatorio = null;
+      this.recordatorioCierre.set(true);
+    }, espera);
+  }
+
+  private limpiarRecordatorio(): void {
+    if (this.temporizadorRecordatorio !== null) clearTimeout(this.temporizadorRecordatorio);
+    this.temporizadorRecordatorio = null;
   }
 
   protected horaDe(toma: TomaAsistencia): string {

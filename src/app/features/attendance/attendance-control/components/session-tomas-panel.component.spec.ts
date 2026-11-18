@@ -320,10 +320,118 @@ describe('TomaCierreDialogComponent (CULM-001 B.2)', () => {
     fixture.componentInstance.cancelar.subscribe(cancelar);
 
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('no estén marcados quedan ausentes');
-    expect((fixture.nativeElement as HTMLElement).textContent).toContain('hasta que abras la siguiente toma');
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('mientras la sesión siga abierta');
     (fixture.nativeElement.querySelector('[data-testid="cierre-confirmar"]') as HTMLButtonElement).click();
     (fixture.nativeElement.querySelector('[data-testid="cierre-cancelar"]') as HTMLButtonElement).click();
     expect(confirmar).toHaveBeenCalledOnceWith(true);
     expect(cancelar).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('SessionTomasPanelComponent: recordatorio de cierre (ATA F)', () => {
+  let fixture: ComponentFixture<SessionTomasPanelComponent>;
+  const el = (id: string) => (fixture.nativeElement as HTMLElement).querySelector(`[data-testid="${id}"]`) as HTMLElement | null;
+  const texto = (id: string) => (el(id)?.textContent ?? '').replace(/\s+/g, ' ').trim();
+
+  function render(datos: TomasSesion): void {
+    fixture = TestBed.createComponent(SessionTomasPanelComponent);
+    fixture.componentRef.setInput('tomasSesion', datos);
+    fixture.detectChanges();
+    fixture.detectChanges();
+  }
+
+  const sesion = (parcial: Partial<TomasSesion> = {}, cierreUtc: string | null = '2026-11-10T15:00:00Z', abierta = true): TomasSesion =>
+    tomasSesion({ ventana: { aperturaUtc: '2026-11-10T13:00:00Z', cierreUtc, abierta }, tomas: [toma({ estado: 'ABIERTA' })], ...parcial });
+
+  beforeEach(() => {
+    const service = jasmine.createSpyObj<TomaAsistenciaService>('TomaAsistenciaService', [
+      'consultarAsistencias', 'consultarFaltantes', 'registrarAsistencias', 'consultarResumenSesion',
+    ]);
+    service.consultarAsistencias.and.returnValue(of({ exitoso: true, elementos: [], numeroPagina: 1, tamanoPagina: 100, totalElementos: 0, totalPaginas: 1 }));
+    service.consultarFaltantes.and.returnValue(of({ exitoso: true, elementos: [], numeroPagina: 1, tamanoPagina: 100, totalElementos: 0, totalPaginas: 1 }));
+    TestBed.configureTestingModule({
+      imports: [SessionTomasPanelComponent],
+      providers: [
+        { provide: TomaAsistenciaService, useValue: service },
+        { provide: RealtimeService, useValue: { listenType: () => NEVER } },
+      ],
+    });
+    jasmine.clock().install();
+  });
+
+  afterEach(() => {
+    fixture?.destroy();
+    jasmine.clock().uninstall();
+  });
+
+  it('con más de 15 min para el cierre no muestra el banner y lo activa justo 15 min antes del cierre', () => {
+    jasmine.clock().mockDate(new Date('2026-11-10T14:00:00Z'));
+    render(sesion());
+    expect(el('recordatorio-cierre')).toBeNull();
+
+    jasmine.clock().tick(45 * 60_000 - 1);
+    fixture.detectChanges();
+    expect(el('recordatorio-cierre')).toBeNull();
+
+    jasmine.clock().tick(1);
+    fixture.detectChanges();
+    expect(el('recordatorio-cierre')).not.toBeNull();
+    expect(texto('recordatorio-cierre')).toMatch(/^La sesión termina a las \d{2}:\d{2}: revisa y cierra las tomas\. Al terminar se cerrarán solas y quien no tenga registro quedará con falta\.$/);
+  });
+
+  it('con 15 min o menos para el cierre muestra el banner de inmediato', () => {
+    jasmine.clock().mockDate(new Date('2026-11-10T14:45:00Z'));
+    render(sesion());
+    expect(el('recordatorio-cierre')).not.toBeNull();
+  });
+
+  it('con la ventana ya vencida, cerrada o sin hora de cierre válida no muestra el banner', () => {
+    jasmine.clock().mockDate(new Date('2026-11-10T15:30:00Z'));
+    render(sesion());
+    expect(el('recordatorio-cierre')).toBeNull();
+    fixture.componentRef.setInput('tomasSesion', sesion({}, '2026-11-10T15:40:00Z', false));
+    fixture.detectChanges();
+    expect(el('recordatorio-cierre')).toBeNull();
+    fixture.componentRef.setInput('tomasSesion', sesion({}, null));
+    fixture.detectChanges();
+    expect(el('recordatorio-cierre')).toBeNull();
+    fixture.componentRef.setInput('tomasSesion', sesion({}, 'no-es-fecha'));
+    fixture.detectChanges();
+    expect(el('recordatorio-cierre')).toBeNull();
+  });
+
+  it('una sesión cancelada no recuerda el cierre', () => {
+    jasmine.clock().mockDate(new Date('2026-11-10T14:50:00Z'));
+    render(sesion({ estado: 'CANCELADA' }));
+    expect(el('recordatorio-cierre')).toBeNull();
+  });
+
+  it('un cierre lejano (más del máximo de setTimeout) no programa nada', () => {
+    jasmine.clock().mockDate(new Date('2026-11-10T14:00:00Z'));
+    render(sesion({}, '2027-12-30T15:00:00Z'));
+    jasmine.clock().tick(60 * 60_000);
+    fixture.detectChanges();
+    expect(el('recordatorio-cierre')).toBeNull();
+  });
+
+  it('si el cierre cambia reprograma: el timer anterior se limpia y no activa el banner', () => {
+    jasmine.clock().mockDate(new Date('2026-11-10T14:00:00Z'));
+    render(sesion());
+    fixture.componentRef.setInput('tomasSesion', sesion({}, '2026-11-10T16:00:00Z'));
+    fixture.detectChanges();
+    jasmine.clock().tick(45 * 60_000);
+    fixture.detectChanges();
+    expect(el('recordatorio-cierre')).toBeNull();
+    jasmine.clock().tick(60 * 60_000);
+    fixture.detectChanges();
+    expect(el('recordatorio-cierre')).not.toBeNull();
+  });
+
+  it('al destruir el panel limpia el timer pendiente', () => {
+    jasmine.clock().mockDate(new Date('2026-11-10T14:00:00Z'));
+    render(sesion());
+    const limpiar = spyOn(window, 'clearTimeout').and.callThrough();
+    fixture.destroy();
+    expect(limpiar).toHaveBeenCalled();
   });
 });
