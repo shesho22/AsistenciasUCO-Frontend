@@ -7,7 +7,6 @@ import { TipoIdentificacionItem } from '../../../../core/services/catalog.servic
 import { CambioDatoPersona, DatosPersonaComponent } from '../../../../shared/components/datos-persona/datos-persona.component';
 import {
   DocenteCandidato,
-  TipoVinculacionItem,
   VincularDocenteExistentePayload,
   VincularDocenteNuevoPayload,
 } from '../../../../core/models/docente-programa.model';
@@ -71,14 +70,6 @@ const CLASE_CONTROL =
               aviso="No se asigna contraseña. El docente recibirá en su correo institucional un enlace para activar la cuenta y definir su contraseña."
               (cambio)="alCambiarDato($event)"
             />
-            <label class="block text-xs font-semibold text-warm-700">Tipo de vinculación
-              <select name="idTipoVinculacion" [(ngModel)]="form.idTipoVinculacion" [class]="clase">
-                <option value="">{{ tiposVinculacion().length === 0 ? '-- No hay tipos de vinculación disponibles --' : 'Seleccione…' }}</option>
-                @for (tipo of tiposVinculacion(); track tipo.id) {
-                  <option [value]="tipo.id">{{ tipo.nombre }}</option>
-                }
-              </select>
-            </label>
             <div class="flex justify-end gap-3 pt-3 border-t border-warm-100">
               <button type="button" (click)="solicitarCierre()" class="px-4 py-2 rounded-xl text-sm font-semibold bg-warm-100 text-warm-800 hover:bg-warm-200">Cancelar</button>
               <button type="submit" class="px-4 py-2 rounded-xl text-sm font-semibold bg-primary-700 text-white hover:bg-primary-800">Registrar y vincular</button>
@@ -103,14 +94,6 @@ const CLASE_CONTROL =
                 <li class="px-3.5 py-3 text-xs text-warm-500">Sin resultados. Escribe al menos 3 caracteres para buscar.</li>
               }
             </ul>
-            <label class="block text-xs font-semibold text-warm-700">Tipo de vinculación
-              <select name="idTipoVinculacionExistente" [(ngModel)]="form.idTipoVinculacion" [class]="clase">
-                <option value="">{{ tiposVinculacion().length === 0 ? '-- No hay tipos de vinculación disponibles --' : 'Seleccione…' }}</option>
-                @for (tipo of tiposVinculacion(); track tipo.id) {
-                  <option [value]="tipo.id">{{ tipo.nombre }}</option>
-                }
-              </select>
-            </label>
             <div class="flex justify-end gap-3 pt-3 border-t border-warm-100">
               <button type="button" (click)="solicitarCierre()" class="px-4 py-2 rounded-xl text-sm font-semibold bg-warm-100 text-warm-800 hover:bg-warm-200">Cancelar</button>
               <button type="button" (click)="enviarExistente()" class="px-4 py-2 rounded-xl text-sm font-semibold bg-primary-700 text-white hover:bg-primary-800">Vincular al programa</button>
@@ -123,7 +106,6 @@ const CLASE_CONTROL =
 })
 export class CoordinatorDocenteFormModalComponent {
   readonly tiposIdentificacion = input.required<TipoIdentificacionItem[]>();
-  readonly tiposVinculacion = input.required<TipoVinculacionItem[]>();
   readonly candidatos = input<DocenteCandidato[]>([]);
 
   readonly guardarNuevo = output<VincularDocenteNuevoPayload>();
@@ -154,7 +136,6 @@ export class CoordinatorDocenteFormModalComponent {
     primerApellido: '',
     segundoApellido: '',
     correo: '',
-    idTipoVinculacion: '',
   };
 
   /** Tipo de documento elegido o, por defecto, el primero del catalogo (nunca un identificador fijo en el cliente). */
@@ -175,9 +156,9 @@ export class CoordinatorDocenteFormModalComponent {
     const f = this.form;
     const tipoId = this.form.tipoIdentificacionId || this.tipoIdentificacionEfectivo();
     const faltantes = !tipoId || !f.numeroIdentificacion.trim() || !f.primerNombre.trim() || !f.primerApellido.trim()
-      || !f.correo.trim() || !f.idTipoVinculacion;
+      || !f.correo.trim();
     if (faltantes) {
-      this.error.set('Complete todos los campos obligatorios: documento, nombre, apellido, correo y tipo de vinculación.');
+      this.error.set('Complete todos los campos obligatorios: documento, nombre, apellido y correo.');
       return;
     }
     // DEC-073: formato de nombres, documento numerico y correo institucional antes de enviar.
@@ -198,7 +179,6 @@ export class CoordinatorDocenteFormModalComponent {
       primerNombre: f.primerNombre.trim(),
       primerApellido: f.primerApellido.trim(),
       correo: f.correo.trim(),
-      idTipoVinculacion: f.idTipoVinculacion,
     };
     if (f.segundoNombre.trim()) {
       payload.segundoNombre = f.segundoNombre.trim();
@@ -221,12 +201,12 @@ export class CoordinatorDocenteFormModalComponent {
 
   enviarExistente(): void {
     const candidato = this.candidatoSeleccionado();
-    if (!candidato || !this.form.idTipoVinculacion) {
-      this.error.set('Seleccione un docente de la lista y un tipo de vinculación.');
+    if (!candidato) {
+      this.error.set('Seleccione un docente de la lista.');
       return;
     }
     this.error.set(null);
-    this.guardarExistente.emit({ idDocente: candidato.idDocente, idTipoVinculacion: this.form.idTipoVinculacion });
+    this.guardarExistente.emit({ idDocente: candidato.idDocente });
   }
 
   solicitarCierre(): void {

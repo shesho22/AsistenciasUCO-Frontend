@@ -2,7 +2,7 @@ import { of } from 'rxjs';
 import { StudentRegistrationConfigService } from '../../../../core/services/student-registration-config.service';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { CoordinatorDocenteFormModalComponent } from './coordinator-docente-form-modal.component';
-import { DocenteCandidato, TipoVinculacionItem, VincularDocenteExistentePayload, VincularDocenteNuevoPayload } from '../../../../core/models/docente-programa.model';
+import { DocenteCandidato, VincularDocenteExistentePayload, VincularDocenteNuevoPayload } from '../../../../core/models/docente-programa.model';
 
 describe('CoordinatorDocenteFormModalComponent', () => {
   let fixture: ComponentFixture<CoordinatorDocenteFormModalComponent>;
@@ -11,10 +11,6 @@ describe('CoordinatorDocenteFormModalComponent', () => {
   const tiposId = [
     { id: 'tipo-1', tipoIdentificacion: 'CC', nombre: 'Cédula' },
     { id: 'tipo-2', tipoIdentificacion: 'CE', nombre: 'Extranjería' },
-  ];
-  const tiposVinc: TipoVinculacionItem[] = [
-    { id: 'tv-1', codigo: 'PLA', nombre: 'Planta' },
-    { id: 'tv-2', codigo: 'CAT', nombre: 'Cátedra' },
   ];
   const candidato: DocenteCandidato = {
     idDocente: 'doc-9', idUsuario: 'u-9', codigoTipoIdentificacion: 'CC', numeroIdentificacion: 123, nombreCompleto: 'Maria Rostagno',
@@ -25,7 +21,6 @@ describe('CoordinatorDocenteFormModalComponent', () => {
     fixture = TestBed.createComponent(CoordinatorDocenteFormModalComponent);
     component = fixture.componentInstance;
     fixture.componentRef.setInput('tiposIdentificacion', tiposId);
-    fixture.componentRef.setInput('tiposVinculacion', tiposVinc);
     fixture.componentRef.setInput('candidatos', []);
     fixture.detectChanges();
   });
@@ -37,20 +32,20 @@ describe('CoordinatorDocenteFormModalComponent', () => {
     component.form.primerApellido = 'Henao';
     component.form.segundoApellido = '';
     component.form.correo = 'jorge.henao@uco.edu.co';
-    component.form.idTipoVinculacion = 'tv-2';
   }
 
-  it('T-FE-03: selecciona por defecto el primer tipo del catálogo (sin GUID quemado) y el primer tipo de vinculación', () => {
+  it('T-FE-03: selecciona por defecto el primer tipo del catálogo (sin GUID quemado)', () => {
     expect(component.tipoIdentificacionEfectivo()).toBe('tipo-1');
     const fuente = CoordinatorDocenteFormModalComponent.toString();
     expect(fuente).not.toContain('A1B2C3D4');
   });
 
-  it('IDENT-002: el formulario pide tipo de vinculación, NO pide contraseña, especialidad ni departamento', () => {
+  it('IDENT-002 / MEJORAS-SERGIO-2026-11-18: el formulario NO pide contraseña, tipo de vinculación, especialidad ni departamento', () => {
     const html: string = fixture.nativeElement.innerHTML;
     expect(html).not.toContain('name="password"');
     expect(html).toContain('activar la cuenta');
-    expect(html).toContain('name="idTipoVinculacion"');
+    expect(html).not.toContain('name="idTipoVinculacion"');
+    expect(html).not.toContain('Tipo de vinculación');
     expect(html).not.toContain('especialidad');
     expect(html).not.toContain('departamento');
   });
@@ -68,7 +63,6 @@ describe('CoordinatorDocenteFormModalComponent', () => {
       primerNombre: 'Jorge',
       primerApellido: 'Henao',
       correo: 'jorge.henao@uco.edu.co',
-      idTipoVinculacion: 'tv-2',
     });
   });
 
@@ -117,7 +111,7 @@ describe('CoordinatorDocenteFormModalComponent', () => {
     expect(component.error()).toBeTruthy();
 
     llenarNuevo();
-    component.form.idTipoVinculacion = '';
+    component.form.correo = '';
     component.enviarNuevo();
     expect(emisiones).toHaveSize(0);
   });
@@ -136,7 +130,7 @@ describe('CoordinatorDocenteFormModalComponent', () => {
     expect(component.form.primerNombre).toBe('Jorge');
   });
 
-  it('T-FE-04: el modo existente busca candidatos, selecciona uno y emite idDocente + tipo de vinculación', () => {
+  it('T-FE-04: el modo existente busca candidatos, selecciona uno y emite solo idDocente', () => {
     const busquedas: string[] = [];
     let emitido: VincularDocenteExistentePayload | undefined;
     component.buscarCandidatos.subscribe((t) => busquedas.push(t));
@@ -152,13 +146,12 @@ describe('CoordinatorDocenteFormModalComponent', () => {
     expect(fixture.nativeElement.textContent).not.toContain('@'); // sin correo (D4)
 
     component.seleccionarCandidato(candidato);
-    component.form.idTipoVinculacion = 'tv-1';
     component.enviarExistente();
 
-    expect(emitido).toEqual({ idDocente: 'doc-9', idTipoVinculacion: 'tv-1' });
+    expect(emitido).toEqual({ idDocente: 'doc-9' });
   });
 
-  it('el modo existente exige seleccionar un candidato y un tipo de vinculación', () => {
+  it('el modo existente exige seleccionar un candidato', () => {
     const emisiones: VincularDocenteExistentePayload[] = [];
     component.guardarExistente.subscribe((p) => emisiones.push(p));
     component.cambiarModo('EXISTENTE');
@@ -166,18 +159,14 @@ describe('CoordinatorDocenteFormModalComponent', () => {
     component.enviarExistente();
     expect(emisiones).toHaveSize(0);
     expect(component.error()).toBeTruthy();
-
-    component.seleccionarCandidato(candidato);
-    component.form.idTipoVinculacion = '';
-    component.enviarExistente();
-    expect(emisiones).toHaveSize(0);
   });
 
   it('cambiar de modo limpia el error y la selección', () => {
     component.cambiarModo('EXISTENTE');
-    component.seleccionarCandidato(candidato);
     component.enviarExistente();
     expect(component.error()).toBeTruthy();
+    component.seleccionarCandidato(candidato);
+    component.error.set('pendiente');
 
     component.cambiarModo('NUEVO');
 

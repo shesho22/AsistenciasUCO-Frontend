@@ -14,7 +14,6 @@ import {
   FichaDocente,
   FichaDocenteFiltro,
   ResumenDocentesPrograma,
-  TipoVinculacionItem,
   VincularDocentePayload,
 } from '../models/docente-programa.model';
 import {
@@ -223,9 +222,6 @@ export class CoordinatorManagementService {
     if (filtro.estaActivo !== undefined) {
       params = params.set('estaActivo', filtro.estaActivo);
     }
-    if (filtro.idTipoVinculacion) {
-      params = params.set('idTipoVinculacion', filtro.idTipoVinculacion);
-    }
     return this.http
       .get<ApiResponse<DocentePrograma[]>>(`${environment.apiUrl}/coordinador/docentes`, { params })
       .pipe(
@@ -259,7 +255,7 @@ export class CoordinatorManagementService {
             apellidos: [d.primerApellido, d.segundoApellido].filter(Boolean).join(' '),
             correo: d.correo,
             departamento: '',
-            especialidad: d.nombreTipoVinculacion,
+            especialidad: '',
             estado: d.estaActivo ? 'ACTIVO' : 'INACTIVO',
             totalGruposAsignados: d.totalGruposPrograma,
           })
@@ -297,13 +293,9 @@ export class CoordinatorManagementService {
     return this.http.get<ApiResponse<FichaDocente>>(`${environment.apiUrl}/coordinador/docentes/${idDocente}/ficha`, { params });
   }
 
-  /** HU095: consolidado del directorio docente del programa (activos, inactivos y por tipo de vinculacion). */
+  /** HU095: consolidado del directorio docente del programa (total, activos e inactivos). */
   getResumenDocentes(): Observable<ApiResponse<ResumenDocentesPrograma>> {
     return this.http.get<ApiResponse<ResumenDocentesPrograma>>(`${environment.apiUrl}/coordinador/docentes/resumen`);
-  }
-
-  getTiposVinculacion(): Observable<TipoVinculacionItem[]> {
-    return this.http.get<TipoVinculacionItem[]>(`${environment.apiUrl}/tipos-vinculacion`);
   }
 
   // --- PLANES DE ESTUDIO ---

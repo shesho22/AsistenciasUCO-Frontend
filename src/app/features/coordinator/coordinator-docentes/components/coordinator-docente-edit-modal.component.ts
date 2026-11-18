@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnInit, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActualizarDocentePayload, DocentePrograma, TipoVinculacionItem } from '../../../../core/models/docente-programa.model';
+import { ActualizarDocentePayload, DocentePrograma } from '../../../../core/models/docente-programa.model';
 import { CorreccionDocumentoComponent } from '../../../../shared/components/correccion-documento/correccion-documento.component';
 import { EstadoCorreccionDocumento } from '../../../../core/models/correccion-identidad.model';
 import { getPersonNamesError } from '../../../../core/validation/form-fields.util';
@@ -10,7 +10,7 @@ const CLASE_CONTROL =
   'w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20';
 
 /**
- * Edicion de un docente del programa (HU092): tipo de vinculacion del vinculo y nombres de la persona.
+ * Edicion de un docente del programa (HU092): nombres de la persona (el tipo de vinculacion se retiro, MEJORAS-SERGIO-2026-11-18).
  * El correo se muestra de solo lectura (exige sincronizar la cuenta de acceso: IAM-001). HU159 (2026-11-05): el
  * documento se corrige si el parámetro lo permite; si cambia, exige motivo.
  */
@@ -35,13 +35,6 @@ const CLASE_CONTROL =
         <p class="text-xs text-warm-600 bg-warm-50 border border-warm-100 rounded-xl px-3 py-2">
           El cambio de nombres y de documento aplica a la persona en todos sus programas. El correo no se puede editar aquí.
         </p>
-        <label class="block text-xs font-semibold text-warm-700">Tipo de vinculación
-          <select name="idTipoVinculacion" [(ngModel)]="form.idTipoVinculacion" [class]="clase">
-            @for (tipo of tiposVinculacion(); track tipo.id) {
-              <option [value]="tipo.id">{{ tipo.nombre }}</option>
-            }
-          </select>
-        </label>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <label class="block text-xs font-semibold text-warm-700">Primer nombre
             <input type="text" name="primerNombre" [(ngModel)]="form.primerNombre" maxlength="50" [class]="clase" />
@@ -71,7 +64,6 @@ const CLASE_CONTROL =
 })
 export class CoordinatorDocenteEditModalComponent implements OnInit {
   readonly docente = input.required<DocentePrograma>();
-  readonly tiposVinculacion = input.required<TipoVinculacionItem[]>();
 
   readonly guardar = output<ActualizarDocentePayload>();
   readonly cerrar = output<void>();
@@ -82,7 +74,6 @@ export class CoordinatorDocenteEditModalComponent implements OnInit {
   readonly documento = signal<EstadoCorreccionDocumento>({ valido: true, documento: null, motivo: '' });
 
   form = {
-    idTipoVinculacion: '',
     primerNombre: '',
     segundoNombre: '',
     primerApellido: '',
@@ -92,7 +83,6 @@ export class CoordinatorDocenteEditModalComponent implements OnInit {
   ngOnInit(): void {
     const d = this.docente();
     this.form = {
-      idTipoVinculacion: d.idTipoVinculacion,
       primerNombre: d.primerNombre,
       segundoNombre: d.segundoNombre ?? '',
       primerApellido: d.primerApellido,
@@ -124,9 +114,6 @@ export class CoordinatorDocenteEditModalComponent implements OnInit {
     }
     if (estado.documento) {
       Object.assign(payload, estado.documento, { motivo: estado.motivo });
-    }
-    if (f.idTipoVinculacion && f.idTipoVinculacion !== actual.idTipoVinculacion) {
-      payload.idTipoVinculacion = f.idTipoVinculacion;
     }
     if (primerNombre !== actual.primerNombre) {
       payload.primerNombre = primerNombre;

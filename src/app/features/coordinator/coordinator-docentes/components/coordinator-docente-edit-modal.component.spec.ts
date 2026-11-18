@@ -3,7 +3,7 @@ import { of } from 'rxjs';
 import { CatalogService } from '../../../../core/services/catalog.service';
 import { CorreccionIdentidadService } from '../../../../core/services/correccion-identidad.service';
 import { CoordinatorDocenteEditModalComponent } from './coordinator-docente-edit-modal.component';
-import { ActualizarDocentePayload, DocentePrograma, TipoVinculacionItem } from '../../../../core/models/docente-programa.model';
+import { ActualizarDocentePayload, DocentePrograma } from '../../../../core/models/docente-programa.model';
 
 describe('CoordinatorDocenteEditModalComponent', () => {
   let fixture: ComponentFixture<CoordinatorDocenteEditModalComponent>;
@@ -12,13 +12,9 @@ describe('CoordinatorDocenteEditModalComponent', () => {
   const docente: DocentePrograma = {
     idDocentePrograma: 'dp-1', idDocente: 'doc-1', idUsuario: 'u-1', codigoTipoIdentificacion: 'CC', numeroIdentificacion: 1017555444,
     primerNombre: 'Jorge', segundoNombre: 'Luis', primerApellido: 'Henao', segundoApellido: null, nombreCompleto: 'Jorge Luis Henao',
-    correo: 'jorge@uco.edu.co', idTipoVinculacion: 'tv-1', codigoTipoVinculacion: 'PLA', nombreTipoVinculacion: 'Planta',
+    correo: 'jorge@uco.edu.co',
     fechaVinculacionUtc: '2026-10-22T10:00:00Z', totalGruposPrograma: 1, estaActivo: true,
   };
-  const tipos: TipoVinculacionItem[] = [
-    { id: 'tv-1', codigo: 'PLA', nombre: 'Planta' },
-    { id: 'tv-2', codigo: 'CAT', nombre: 'Cátedra' },
-  ];
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -31,7 +27,6 @@ describe('CoordinatorDocenteEditModalComponent', () => {
     fixture = TestBed.createComponent(CoordinatorDocenteEditModalComponent);
     component = fixture.componentInstance;
     fixture.componentRef.setInput('docente', docente);
-    fixture.componentRef.setInput('tiposVinculacion', tipos);
     fixture.detectChanges();
   });
 
@@ -39,7 +34,8 @@ describe('CoordinatorDocenteEditModalComponent', () => {
     expect(component.form.primerNombre).toBe('Jorge');
     expect(component.form.segundoNombre).toBe('Luis');
     expect(component.form.segundoApellido).toBe('');
-    expect(component.form.idTipoVinculacion).toBe('tv-1');
+    // MEJORAS-SERGIO-2026-11-18: sin tipo de vinculación
+    expect(fixture.nativeElement.querySelector('select[name="idTipoVinculacion"]')).toBeNull();
     const html: string = fixture.nativeElement.textContent;
     expect(html).toContain('1017555444');
     expect(html).toContain('jorge@uco.edu.co');
@@ -54,12 +50,11 @@ describe('CoordinatorDocenteEditModalComponent', () => {
   it('emite solo los campos modificados', () => {
     let emitido: ActualizarDocentePayload | undefined;
     component.guardar.subscribe((p) => (emitido = p));
-    component.form.idTipoVinculacion = 'tv-2';
     component.form.primerNombre = ' Nuevo ';
 
     component.enviar();
 
-    expect(emitido).toEqual({ idTipoVinculacion: 'tv-2', primerNombre: 'Nuevo' });
+    expect(emitido).toEqual({ primerNombre: 'Nuevo' });
   });
 
   it('limpiar un segundo nombre envía cadena vacía', () => {
