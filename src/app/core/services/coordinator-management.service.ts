@@ -6,6 +6,7 @@ import { ApiPageResponse, ApiResponse } from '../models/api-response.model';
 import { ApiPageResponse as PaginaApi } from '../api/models/api-page-response.model';
 import { obtenerTodasLasPaginas, paramsSinVacios } from '../api/pagination.util';
 import { CoordinatorProgramService } from './coordinator-program.service';
+import { EstudianteGrupoApiDto } from '../api/models/estudiante-grupo-api-dto.model';
 import {
   ActualizarDocentePayload,
   DocenteCandidato,
@@ -630,8 +631,9 @@ export class CoordinatorManagementService {
     return this.getEstudiantesDirectorioPagina({ page: 0, size: 1, activo }).pipe(map((p) => Number(p.totalItems ?? 0)));
   }
 
-  getEstudiantesPorGrupo(grupoId: string): Observable<ApiResponse<EstudianteDirectorioItem[]>> {
-    return this.http.get<ApiResponse<EstudianteDirectorioItem[]>>(`${environment.apiUrl}/grupos/${grupoId}/estudiantes`);
+  /** Nómina del grupo (`GET /grupos/{id}/estudiantes`): filas `EstudianteGrupoDTO` del backend (estado en `codigoEstado`/`nombreEstado`). */
+  getEstudiantesPorGrupo(grupoId: string): Observable<ApiResponse<EstudianteGrupoApiDto[]>> {
+    return this.http.get<ApiResponse<EstudianteGrupoApiDto[]>>(`${environment.apiUrl}/grupos/${grupoId}/estudiantes`);
   }
 
   // --- HU064/HU060/HU061: GRUPOS, SESIONES Y ASISTENCIAS DEL PROGRAMA (SOLO LECTURA) ---

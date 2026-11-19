@@ -1,7 +1,9 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { Observable, of, throwError } from 'rxjs';
-import { CoordinatorSubjectsComponent } from './coordinator-subjects.component';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Observable, Subject, of, throwError } from 'rxjs';
+import { CoordinatorSubjectsComponent, etiquetaEstadoInscrito } from './coordinator-subjects.component';
+import { EstudianteGrupoApiDto } from '../../../core/api/models/estudiante-grupo-api-dto.model';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { CourseService } from '../../../core/services/course.service';
 import { CoordinatorIndicatorsService } from '../../../core/services/coordinator-indicators.service';
@@ -91,14 +93,15 @@ describe('CoordinatorSubjectsComponent', () => {
       of<never>({
         exitoso: true,
         datos: [
+          // Forma real de EstudianteGrupoDTO (GET /grupos/{id}/estudiantes): el estado viaja en codigoEstado/nombreEstado.
           {
-            id: 'est-1',
+            id: 'mat-1',
+            idEstudiante: 'est-1',
             documento: '1036998877',
-            codigo: '20261001',
             nombreCompleto: 'Valentina Ríos',
             correo: 'valentina.rios@uco.edu.co',
-            programa: 'Ingeniería de Sistemas',
-            estadoMatricula: 'ACTIVO',
+            codigoEstado: 'A',
+            nombreEstado: 'activo',
           },
         ],
       } as never)
@@ -159,6 +162,108 @@ describe('CoordinatorSubjectsComponent', () => {
       fixture.detectChanges();
       expect(el().querySelector('[data-testid="modal-inscritos"]')).toBeNull();
       expect(component.enrolledStudents()).toHaveSize(0);
+    });
+
+    const abrir = (id = 'crs-1') => {
+      component.onSelectCourse(id);
+      fixture.detectChanges();
+    };
+    const modal = () => el().querySelector('[data-testid="modal-inscritos"]') as HTMLElement | null;
+    const fila = (nombre: string, codigoEstado: string, nombreEstado: string): EstudianteGrupoApiDto => ({
+      id: 'mat-' + nombre, idEstudiante: 'est-' + nombre, documento: '100', nombreCompleto: nombre, correo: '', codigoEstado, nombreEstado,
+    });
+
+    it('la fila muestra el estado real de la matrícula (codigoEstado del backend) y no una etiqueta vacía', () => {
+      abrir();
+      const badge = modal()!.querySelector('[data-testid="estado-inscrito"]');
+      expect(badge?.textContent?.trim()).toBe('Activo');
+      expect(modal()!.textContent).toContain('Doc. 1036998877');
+      expect(modal()!.textContent).not.toContain('undefined');
+    });
+
+    it('traduce los códigos del catálogo EstadoEstudianteGrupo y usa nombreEstado para uno desconocido', () => {
+      expect(etiquetaEstadoInscrito({ codigoEstado: 'A', nombreEstado: 'activo' })).toEqual({ etiqueta: 'Activo', variante: 'success' });
+      expect(etiquetaEstadoInscrito({ codigoEstado: 'CVP', nombreEstado: 'x' }).etiqueta).toBe('Cancelado por voluntad propia');
+      expect(etiquetaEstadoInscrito({ codigoEstado: 'CI', nombreEstado: 'x' })).toEqual({ etiqueta: 'Cancelado por inasistencia', variante: 'warning' });
+      expect(etiquetaEstadoInscrito({ codigoEstado: 'F', nombreEstado: 'x' }).etiqueta).toBe('Finalizado');
+      expect(etiquetaEstadoInscrito({ codigoEstado: 'ZZ', nombreEstado: 'en revisión' }).etiqueta).toBe('En revisión');
+      expect(etiquetaEstadoInscrito({}).etiqueta).toBe('Sin estado');
+    });
+
+    it('mientras la nómina carga muestra «Cargando…» y no «No hay estudiantes»', () => {
+      coordinatorService.getEstudiantesPorGrupo.and.returnValue(new Subject<never>());
+      abrir();
+      expect(component.cargandoInscritos()).toBeTrue();
+      expect(modal()!.querySelector('[data-testid="inscritos-cargando"]')?.getAttribute('role')).toBe('status');
+      expect(modal()!.textContent).not.toContain('No hay estudiantes registrados');
+    });
+
+    it('un 403/500 de la nómina se muestra como error (con Reintentar si aplica) y no como grupo vacío', () => {
+      coordinatorService.getEstudiantesPorGrupo.and.returnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
+      abrir();
+      expect(component.cargandoInscritos()).toBeFalse();
+      expect(modal()!.querySelector('[role="alert"]')).not.toBeNull();
+      expect(modal()!.textContent).not.toContain('No hay estudiantes registrados');
+      const reintentar = Array.from(modal()!.querySelectorAll('button')).find((b) => /Reintentar/.test(b.textContent ?? ''));
+      expect(reintentar).toBeTruthy();
+
+      coordinatorService.getEstudiantesPorGrupo.and.returnValue(of({ exitoso: true, datos: [fila('Ana', 'A', 'activo')] }));
+      reintentar!.click();
+      fixture.detectChanges();
+      expect(modal()!.querySelector('[role="alert"]')).toBeNull();
+      expect(component.enrolledStudents()).toHaveSize(1);
+
+      coordinatorService.getEstudiantesPorGrupo.and.returnValue(throwError(() => new HttpErrorResponse({ status: 403 })));
+      component.cargarInscritos('crs-1');
+      fixture.detectChanges();
+      expect(modal()!.querySelector('[role="alert"]')).not.toBeNull();
+      expect(modal()!.textContent).toContain('Sin autorización');
+    });
+
+    it('abrir A y luego B: la respuesta tardía de A no pisa la nómina de B', () => {
+      const cursoB: Course = { ...course, id: 'crs-2', code: 'IS-402', name: 'Bases de Datos' };
+      courseService.getCoordinatorCoursesPage.and.returnValue(of(pagina([course, cursoB])));
+      component.cargarDatos();
+      fixture.detectChanges();
+
+      const respuestaA = new Subject<never>();
+      const respuestaB = new Subject<never>();
+      coordinatorService.getEstudiantesPorGrupo.and.callFake(((id: string) => (id === 'crs-1' ? respuestaA : respuestaB)) as never);
+      abrir('crs-1');
+      abrir('crs-2');
+
+      respuestaB.next({ exitoso: true, datos: [fila('Bruno', 'A', 'activo')] } as never);
+      respuestaA.next({ exitoso: true, datos: [fila('Alicia', 'A', 'activo')] } as never);
+      fixture.detectChanges();
+
+      expect(component.selectedCourse()?.id).toBe('crs-2');
+      expect(component.enrolledStudents().map((e) => e.nombreCompleto)).toEqual(['Bruno']);
+      expect(respuestaA.observed).toBeFalse();
+    });
+
+    it('cerrar la ventana cancela la consulta pendiente', () => {
+      const pendiente = new Subject<never>();
+      coordinatorService.getEstudiantesPorGrupo.and.returnValue(pendiente);
+      abrir();
+      component.cerrarInscritos();
+      expect(pendiente.observed).toBeFalse();
+      expect(component.cargandoInscritos()).toBeFalse();
+    });
+
+    it('al cerrar, el foco vuelve al botón «Ver inscritos» que abrió la ventana', async () => {
+      const disparador = el().querySelector('[data-testid="ver-inscritos"] button') as HTMLButtonElement;
+      disparador.focus();
+      disparador.click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      expect(modal()).not.toBeNull();
+      expect(document.activeElement).not.toBe(disparador);
+
+      (modal()!.querySelector('[data-modal-cerrar]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      expect(modal()).toBeNull();
+      expect(document.activeElement).toBe(disparador);
     });
   });
 
@@ -302,6 +407,19 @@ describe('CoordinatorSubjectsComponent', () => {
       fixture.detectChanges();
       expect(texto('ocupacion-cupos')).toBe('Sin datos');
       expect(component.estadoKpis()).toBe('error');
+    });
+
+    it('un servidor sin los campos del aforo muestra «—» y no «undefined / undefined»', () => {
+      const datos = { ...kpisPrograma().datos } as Partial<KpisCoordinador>;
+      delete datos.matriculadosActivos;
+      delete datos.cupoTotal;
+      delete datos.gruposActivos;
+      delete datos.tasaAforo;
+      indicadores.consultarKpis.and.returnValue(of({ exitoso: true, datos } as ApiResponse<KpisCoordinador>));
+      component.cargarDatos();
+      fixture.detectChanges();
+      expect(texto('ocupacion-cupos')).toBe('— / —');
+      expect(texto('ocupacion-detalle')).toBe('Grupos habilitados del período');
     });
 
     it('si no se pueden cargar los programas del coordinador tampoco se afirma una ocupacion', () => {
