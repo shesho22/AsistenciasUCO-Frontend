@@ -846,6 +846,29 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     }));
     return of(okPageResponse(elementos, pagina, tamano, matriculados.length)).pipe(delay(250));
   }
+  if (url.endsWith('/estudiante/faltas-reclamables') && method === 'GET') {
+    // ATA D10: una fila por toma en falta aún reclamable; misma forma que el backend (ApiPageResponse).
+    const pagina = Math.max(1, Number(req.params.get('pagina') ?? req.params.get('numeroPagina') ?? 1));
+    const tamano = Math.min(100, Math.max(1, Number(req.params.get('tamano') ?? req.params.get('tamanoPagina') ?? 20)));
+    const base = {
+      idGrupo: 'GRP-MOCK-1',
+      nombreGrupo: 'Grupo 01',
+      idAsignatura: 'MAT-MOCK-1',
+      nombreAsignatura: 'Bases de Datos',
+      idSesion: 'SES-MOCK-1',
+      numeroSesion: 4,
+      fechaHoraInicioUtc: '2026-11-16T13:00:00Z',
+      fechaHoraFinUtc: '2026-11-16T15:00:00Z',
+      fechaLimiteReclamoUtc: '2026-11-23T15:00:00Z',
+    };
+    const filas = [
+      { ...base, idToma: 'TOM-MOCK-1', numeroToma: 1, fechaPuntoControlUtc: '2026-11-16T13:10:00Z' },
+      { ...base, idToma: 'TOM-MOCK-3', numeroToma: 3, fechaPuntoControlUtc: '2026-11-16T14:40:00Z' },
+    ];
+    return of(okPageResponse(filas.slice((pagina - 1) * tamano, pagina * tamano), pagina, tamano, filas.length)).pipe(
+      delay(250)
+    );
+  }
   if (url.endsWith('/estudiante/reclamos') && method === 'GET') {
     // HU010/HU011: misma forma que el backend (lista con `total`), filtrada por estado y paginada.
     const estado = req.params.get('estado');

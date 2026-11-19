@@ -394,6 +394,23 @@ describe('mockBackendInterceptor', () => {
     expect(revision?.exitoso).toBeTrue();
   }));
 
+  it('ATA D10: GET /estudiante/faltas-reclamables responde una página con tomas de una misma sesión (sin 501)', fakeAsync(() => {
+    auth.setMockMode(true);
+    let res: { exitoso: boolean; elementos: { idSesion: string; numeroToma: number }[]; totalElementos: number } | undefined;
+    httpClient
+      .get<typeof res>(`${environment.apiUrl}/estudiante/faltas-reclamables`, { params: { pagina: 1, tamano: 1 } })
+      .subscribe((r) => (res = r));
+    tick(400);
+    expect(res?.exitoso).toBeTrue();
+    expect(res?.totalElementos).toBe(2);
+    expect(res?.elementos.length).toBe(1);
+
+    httpClient.get<typeof res>(`${environment.apiUrl}/estudiante/faltas-reclamables`).subscribe((r) => (res = r));
+    tick(400);
+    expect(res?.elementos.map((f) => f.numeroToma)).toEqual([1, 3]);
+    expect(new Set(res?.elementos.map((f) => f.idSesion)).size).toBe(1);
+  }));
+
   it('PC: GET /docente/reclamos trae numero y punto de control de la toma reclamada y null en los de la sesión completa', fakeAsync(() => {
     auth.setMockMode(true);
     let res: SobreDatos<ReclamoDocenteMock[]> | undefined;
