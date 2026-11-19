@@ -217,6 +217,8 @@ describe('ActionMenuComponent (CULM-001, patron "Mas acciones")', () => {
 
   it('placement bottom abre hacia abajo', () => {
     crear();
+    // Fija la posicion del boton: si no, el resultado depende del alto de la ventana del navegador de pruebas.
+    spyOn(trigger(), 'getBoundingClientRect').and.returnValue(new DOMRect(0, 10, 80, 44));
     abrir();
     expect(q('[role="menu"]')?.className).toContain('top-full');
   });
