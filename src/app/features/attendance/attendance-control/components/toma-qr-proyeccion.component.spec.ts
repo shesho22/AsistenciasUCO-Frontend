@@ -228,24 +228,21 @@ describe('TomaQrProyeccionComponent (CULM-001 B.2, HU175)', () => {
     expect(qrService.rotarQr).toHaveBeenCalledOnceWith('toma-1');
   });
 
-  it('B2-F-05 Dejar de proyectar llama cerrarQr y emite; Cerrar toma emite sin llamar al backend', () => {
-    qrService.cerrarQr.and.returnValue(of({ exitoso: true, mensaje: 'ok' }));
-    const dejar = jasmine.createSpy('dejar');
+  it('ATA: sin "Dejar de proyectar"; Cerrar toma (menú) emite sin cerrar el QR en el backend', () => {
     const cerrar = jasmine.createSpy('cerrar');
-    fixture.componentInstance.dejarDeProyectar.subscribe(dejar);
     fixture.componentInstance.cerrarToma.subscribe(cerrar);
 
-    (el('qr-dejar') as HTMLButtonElement).click();
-    expect(qrService.cerrarQr).toHaveBeenCalledOnceWith('toma-1');
-    expect(dejar).toHaveBeenCalledTimes(1);
+    expect(el('qr-dejar')).toBeNull();
+    expect(el('qr-cerrar')).toBeNull();
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Dejar de proyectar');
 
     itemMenu('qr-cerrar-toma').click();
     expect(cerrar).toHaveBeenCalledTimes(1);
-    expect(qrService.cerrarQr).toHaveBeenCalledTimes(1);
+    expect(qrService.cerrarQr).not.toHaveBeenCalled();
   });
 
   it('B2-F-05 los controles tactiles miden al menos 44 px', () => {
-    expect((el('qr-dejar') as HTMLElement).className).toContain('min-h-[44px]');
+    expect((el('qr-pantalla-completa') as HTMLElement).className).toContain('min-h-[44px]');
     for (const id of ['qr-regenerar', 'qr-cerrar-toma']) {
       expect(itemMenu(id).className).toContain('min-h-[44px]');
     }
@@ -262,17 +259,17 @@ describe('TomaQrProyeccionComponent (CULM-001 B.2, HU175)', () => {
     expect(el('qr-pantalla-completa')).not.toBeNull();
   });
 
-  it('UX densidad: visibles solo Ampliar, Dejar de proyectar y el menu; Regenerar y Cerrar toma van al menu', () => {
+  it('UX densidad: visibles solo Ampliar y el menu; Regenerar y Cerrar toma van al menu', () => {
     const raiz = fixture.nativeElement as HTMLElement;
     const visibles = Array.from(raiz.querySelectorAll('header button')).filter((b) => !b.hasAttribute('role'));
-    expect(visibles).toHaveSize(3);
+    expect(visibles).toHaveSize(2);
     expect(el('qr-regenerar')).toBeNull();
     expect(el('qr-cerrar-toma')).toBeNull();
     expect(itemMenu('qr-regenerar')).not.toBeNull();
     expect(itemMenu('qr-cerrar-toma')).not.toBeNull();
   });
 
-  it('UX densidad: Escape no detiene la proyeccion (solo el boton lo hace)', () => {
+  it('UX densidad: Escape no detiene la proyeccion', () => {
     qrService.cerrarQr.calls.reset();
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
     expect(qrService.cerrarQr).not.toHaveBeenCalled();

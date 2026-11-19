@@ -652,7 +652,7 @@ describe('OverviewComponent', () => {
       fixture.detectChanges();
 
       expect(q('resumen-total-materias')?.textContent?.trim()).toBe('7');
-      expect(fixture.nativeElement.textContent).toContain('12.5 h');
+      expect(fixture.nativeElement.textContent).toContain('12 h 30 min');
       expect(q('riesgo-no-disponible')).toBeNull();
     });
 

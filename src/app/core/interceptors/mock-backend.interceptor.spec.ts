@@ -238,6 +238,24 @@ describe('mockBackendInterceptor', () => {
     tick(300);
     expect(horEstRes?.exitoso).toBeTrue();
 
+    // ATA D6/D7: calendario semanal y solicitudes de sesión simulados
+    let calEstRes: Sobre | undefined;
+    httpClient.get<Sobre>(`${environment.apiUrl}/estudiante/sesiones/calendario`, { params: { desde: '2026-11-16', hasta: '2026-11-22' } }).subscribe((r) => (calEstRes = r));
+    tick(300);
+    expect(calEstRes?.exitoso).toBeTrue();
+
+    let calDocRes: Sobre | undefined;
+    httpClient.get<Sobre>(`${environment.apiUrl}/docente/sesiones/calendario`, { params: { desde: '2026-11-16', hasta: '2026-11-22' } }).subscribe((r) => (calDocRes = r));
+    tick(300);
+    expect(calDocRes?.exitoso).toBeTrue();
+
+    for (const ruta of ['coordinador', 'docente']) {
+      let solRes: Sobre | undefined;
+      httpClient.get<Sobre>(`${environment.apiUrl}/${ruta}/sesiones/solicitudes`, { params: { soloPendientes: 'true', pagina: '1', tamano: '1' } }).subscribe((r) => (solRes = r));
+      tick(300);
+      expect(solRes?.exitoso).toBeTrue();
+    }
+
     let matEstRes: Sobre | undefined;
     httpClient.get<Sobre>(`${environment.apiUrl}/estudiante/materias`).subscribe((r) => (matEstRes = r));
     tick(300);
@@ -374,6 +392,23 @@ describe('mockBackendInterceptor', () => {
     httpClient.post<Sobre>(`${environment.apiUrl}/asistencias/revisiones`, { sesionId: 'ses-1' }).subscribe((r) => (revision = r));
     tick(400);
     expect(revision?.exitoso).toBeTrue();
+  }));
+
+  it('ATA D10: GET /estudiante/faltas-reclamables responde una página con tomas de una misma sesión (sin 501)', fakeAsync(() => {
+    auth.setMockMode(true);
+    let res: { exitoso: boolean; elementos: { idSesion: string; numeroToma: number }[]; totalElementos: number } | undefined;
+    httpClient
+      .get<typeof res>(`${environment.apiUrl}/estudiante/faltas-reclamables`, { params: { pagina: 1, tamano: 1 } })
+      .subscribe((r) => (res = r));
+    tick(400);
+    expect(res?.exitoso).toBeTrue();
+    expect(res?.totalElementos).toBe(2);
+    expect(res?.elementos.length).toBe(1);
+
+    httpClient.get<typeof res>(`${environment.apiUrl}/estudiante/faltas-reclamables`).subscribe((r) => (res = r));
+    tick(400);
+    expect(res?.elementos.map((f) => f.numeroToma)).toEqual([1, 3]);
+    expect(new Set(res?.elementos.map((f) => f.idSesion)).size).toBe(1);
   }));
 
   it('PC: GET /docente/reclamos trae numero y punto de control de la toma reclamada y null en los de la sesión completa', fakeAsync(() => {
@@ -616,17 +651,6 @@ describe('mockBackendInterceptor', () => {
     tick(250);
     expect(perfil!.datos.correo).toBe('usuario.mock@uco.edu.co');
     expect(perfil!.datos.vinculos).toHaveSize(1);
-  }));
-
-  it('HU008 MK-08 simula la oferta de grupos sin campos de solicitud de ingreso', fakeAsync(() => {
-    auth.setMockMode(true);
-    let oferta: SobreDatos<{ cuposDisponibles: number }[]> | undefined;
-    httpClient.get<SobreDatos<{ cuposDisponibles: number }[]>>(`${environment.apiUrl}/estudiante/oferta-academica`).subscribe((r) => (oferta = r));
-    tick(300);
-    expect(oferta!.datos).toHaveSize(2);
-    expect(oferta!.datos[0].cuposDisponibles).toBe(5);
-    expect('idSolicitud' + 'Abierta' in oferta!.datos[0]).toBeFalse();
-    expect('estadoSolicitud' in oferta!.datos[0]).toBeFalse();
   }));
 
   it('HU018 simula el plan de estudios del estudiante con totales coherentes y un semestre vacío', fakeAsync(() => {

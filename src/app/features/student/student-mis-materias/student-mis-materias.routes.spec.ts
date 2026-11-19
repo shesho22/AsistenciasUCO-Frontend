@@ -6,11 +6,18 @@ describe('MIS_MATERIAS_ROUTES', () => {
   const shell = cascaron.data?.['shell'] as TabsRutaShellConfig;
   const hijas = cascaron.children ?? [];
 
-  it('declara las pestañas materias, horarios, oferta y plan de estudios, con materias por defecto', () => {
-    expect(shell.tabs.map((t) => t.id)).toEqual(['materias', 'horarios', 'oferta', 'plan']);
+  it('declara las pestañas materias, horarios y plan de estudios, con materias por defecto', () => {
+    expect(shell.tabs.map((t) => t.id)).toEqual(['materias', 'horarios', 'plan']);
     expect(shell.tabs.find((t) => t.id === 'plan')?.etiqueta).toBe('Plan de estudios');
     expect(shell.base).toBe('/app/estudiante/mis-materias');
     expect(hijas[0]).toEqual(jasmine.objectContaining({ path: '', redirectTo: 'materias', pathMatch: 'full' }));
+  });
+
+  it('la pestaña oferta ya no existe y su ruta redirige a materias (HU008 descartada)', () => {
+    expect(shell.tabs.some((t) => t.id === 'oferta')).toBeFalse();
+    expect(hijas.find((r) => r.path === 'oferta')).toEqual(
+      jasmine.objectContaining({ redirectTo: 'materias', pathMatch: 'full' })
+    );
   });
 
   it('cada pestaña es una ruta hija diferida con data.tab', async () => {

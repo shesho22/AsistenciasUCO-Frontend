@@ -1,3 +1,4 @@
+import { HorasMinutosPipe } from '../../../../shared/pipes/horas-minutos.pipe';
 import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 import { SemaforoAsistenciaComponent } from '../../../../shared/components/semaforo-asistencia/semaforo-asistencia.component';
 import { Component, ChangeDetectionStrategy, input, output, inject, effect, OnDestroy } from '@angular/core';
@@ -28,7 +29,7 @@ import { ToastService } from '../../../../shared/components/toast/toast.componen
 @Component({
     selector: 'app-student-course-detail',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [EmptyStateComponent, BadgeComponent, ButtonComponent, MotivosJustificacionComponent, SesionEstadoBadgeComponent, AttendanceStatusBadgeComponent, PaginationComponent, SemaforoAsistenciaComponent],
+    imports: [HorasMinutosPipe, EmptyStateComponent, BadgeComponent, ButtonComponent, MotivosJustificacionComponent, SesionEstadoBadgeComponent, AttendanceStatusBadgeComponent, PaginationComponent, SemaforoAsistenciaComponent],
     template: `
     @if (materia()) {
       <div class="space-y-6">
@@ -103,8 +104,8 @@ import { ToastService } from '../../../../shared/components/toast/toast.componen
                 <app-attendance-status-badge [codigoPermanencia]="ind.codigoPermanencia" />
               </div>
               <div class="text-xs text-warm-500 space-y-0.5 border-t border-warm-200/80 pt-2">
-                <p data-testid="detalle-horas">{{ ind.horasFalta }} h de falta de {{ ind.horasDictadas }} h dictadas</p>
-                <p>{{ ind.horasExcusa }} h con excusa</p>
+                <p data-testid="detalle-horas">{{ ind.horasFalta | horasMinutos }} de falta de {{ ind.horasDictadas | horasMinutos }} dictadas</p>
+                <p>{{ ind.horasExcusa | horasMinutos }} con excusa</p>
                 <p>Advertencia desde {{ ind.umbralAdvertencia }}% · pérdida desde {{ ind.umbralPerdida }}%</p>
               </div>
             } @else {
@@ -169,7 +170,7 @@ import { ToastService } from '../../../../shared/components/toast/toast.componen
                       </span>
                       <span class="text-xs font-medium text-warm-500">{{ sesion.fecha }}</span>
                       @if (sesion.horasSesion !== undefined) {
-                        <span class="text-xs text-warm-500" data-testid="sesion-horas">{{ sesion.horasSesion }} h</span>
+                        <span class="text-xs text-warm-500" data-testid="sesion-horas">{{ sesion.horasSesion | horasMinutos }}</span>
                       }
                       <span class="text-warm-300">•</span>
                       <span

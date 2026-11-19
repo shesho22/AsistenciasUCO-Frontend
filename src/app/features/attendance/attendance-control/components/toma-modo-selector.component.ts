@@ -8,7 +8,7 @@ import { ModoToma } from '../../../../core/models/toma-asistencia.model';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div
-      class="fixed inset-0 z-40 flex items-end sm:items-center justify-center bg-warm-950/70 p-0 sm:p-6"
+      class="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-warm-950/70 p-0 sm:p-6"
       role="dialog"
       aria-modal="true"
       aria-label="Elegir el modo de la toma"

@@ -161,4 +161,42 @@ describe('TeacherGruposListComponent', () => {
 
     expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="grupos-vacio"]')?.textContent).toContain('Aún no tienes grupos');
   });
+  describe('decisiones por inasistencia pendientes', () => {
+    const otro: Course = { ...course, id: 'crs-2', name: 'Bases de Datos', section: 'Grupo 02' };
+    const el = (): HTMLElement => fixture.nativeElement as HTMLElement;
+    const montar = (decisiones: Map<string, number>) => {
+      fixture.componentRef.setInput('courses', [course, otro]);
+      fixture.componentRef.setInput('isLoading', false);
+      fixture.componentRef.setInput('decisionesPorGrupo', decisiones);
+      fixture.detectChanges();
+    };
+
+    it('sin decisiones pendientes no muestra aviso ni marcas', () => {
+      montar(new Map());
+      expect(el().querySelector('[data-testid="aviso-decisiones-pendientes"]')).toBeNull();
+      expect(el().querySelector('[data-testid^="decisiones-grupo-"]')).toBeNull();
+    });
+
+    it('el aviso nombra cada grupo con su total, en el orden de la lista, y la tarjeta lleva la marca', () => {
+      montar(new Map([['crs-2', 1], ['crs-1', 3], ['ajeno', 5]]));
+      const enlaces = Array.from(el().querySelectorAll('[data-testid^="ir-decisiones-"]')).map((b) => b.textContent?.replace(/\s+/g, ' ').trim());
+      expect(enlaces).toEqual(['Matemática Avanzada III · Sección A 3', 'Bases de Datos · Grupo 02 1']);
+      expect(el().querySelector('[data-testid="decisiones-grupo-crs-1"]')?.textContent?.trim()).toBe('3 decisiones pendientes');
+      expect(el().querySelector('[data-testid="decisiones-grupo-crs-2"]')?.textContent?.trim()).toBe('1 decisión pendiente');
+    });
+
+    it('el aviso y la marca de la tarjeta emiten verDecisiones sin abrir la toma de asistencia', () => {
+      montar(new Map([['crs-1', 2]]));
+      const vistos: Course[] = [];
+      const seleccionados: Course[] = [];
+      fixture.componentInstance.verDecisiones.subscribe((c) => vistos.push(c));
+      fixture.componentInstance.seleccionarGrupo.subscribe((c) => seleccionados.push(c));
+
+      (el().querySelector('[data-testid="ir-decisiones-crs-1"]') as HTMLButtonElement).click();
+      (el().querySelector('[data-testid="decisiones-grupo-crs-1"]') as HTMLButtonElement).click();
+
+      expect(vistos.map((c) => c.id)).toEqual(['crs-1', 'crs-1']);
+      expect(seleccionados).toEqual([]);
+    });
+  });
 });

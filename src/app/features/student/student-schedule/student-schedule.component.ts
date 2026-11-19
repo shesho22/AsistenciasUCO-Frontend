@@ -1,153 +1,23 @@
-import { RangoHorarioPipe } from '../../../shared/pipes/fecha-hora.pipes';
-import { Component, OnInit, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
-
-import { StudentManagementService } from '../../../core/services/student-management.service';
-import { HorarioItem, DiaSemana } from '../../../core/models/role-management.model';
-import { CardComponent } from '../../../shared/components/card/card.component';
-import { ButtonComponent } from '../../../shared/components/button/button.component';
-import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load-error.util';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
+import { HorarioSemanalComponent } from '../../../shared/components/horario-semanal/horario-semanal.component';
 
+/** ATA D7: «Mi Horario» del estudiante, semana con fechas construida con el calendario de sesiones. */
 @Component({
-    selector: 'app-student-schedule',
-    changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [PageHeaderComponent, 
-    RangoHorarioPipe,
-    CardComponent,
-    ButtonComponent
-],
-    template: `
+  selector: 'app-student-schedule',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [PageHeaderComponent, HorarioSemanalComponent],
+  template: `
     <div class="space-y-6 animate-fade-in">
-      <!-- Header Bento -->
       <app-page-header
         [enTarjeta]="true"
         etiqueta="Portal Estudiantil"
         contexto="Horario semanal"
         titulo="Mi Horario de Clases"
-        descripcion="Consulta la distribución semanal de tus clases y docentes titulares según la información registrada."
+        descripcion="Consulta tus sesiones de la semana con su fecha, docente y si son extraordinarias o están canceladas."
       />
-
-      <!-- Grilla Semanal Bento (Lunes a Viernes) -->
-      @if (isLoading()) {
-        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
-          @for (d of [1, 2, 3, 4, 5]; track d) {
-            <div class="h-80 bg-warm-100 rounded-2xl animate-pulse"></div>
-          }
-        </div>
-      } @else if (error()) {
-        <div class="bg-white p-8 rounded-2xl border border-danger-200 text-center space-y-3" role="alert" data-testid="horarios-error">
-          <p class="text-sm font-bold text-danger-800">{{ error()!.titulo }}</p>
-          <p class="text-xs text-warm-600">{{ error()!.mensaje }}</p>
-          <app-button variant="secondary" size="sm" (clicked)="cargarHorario()">Reintentar</app-button>
-        </div>
-      } @else {
-        @if (horarios().length === 0) {
-          <div class="bg-warm-50 p-4 rounded-2xl border border-warm-200 text-xs text-warm-600" data-testid="horarios-vacio">
-            No hay clases registradas en tu horario. Si esperabas verlas, consulta con tu coordinación académica.
-          </div>
-        }
-        <div [class]="diasVisibles().length === 6 ? 'grid grid-cols-1 md:grid-cols-6 gap-4' : 'grid grid-cols-1 md:grid-cols-5 gap-4'">
-          @for (dia of diasVisibles(); track dia) {
-            <div class="superficie flex flex-col overflow-hidden">
-              <!-- Encabezado del Día -->
-              <div class="p-3.5 bg-warm-50 border-b border-warm-200 flex items-center justify-between">
-                <span class="font-serif font-bold text-sm text-warm-900">{{ dia }}</span>
-                <span class="text-xs font-bold px-2 py-0.5 rounded-md bg-white border border-warm-200 text-warm-600">
-                  {{ clasesPorDia(dia).length }} clases
-                </span>
-              </div>
-
-              <!-- Bloques de Clases -->
-              <div class="p-3 flex-1 space-y-3 min-h-[280px]">
-                @if (clasesPorDia(dia).length === 0) {
-                  <div class="h-full flex flex-col items-center justify-center p-4 text-center text-warm-400">
-                    <svg class="w-8 h-8 stroke-1 mb-1.5 text-warm-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span class="text-xs font-medium">Sin clases programadas</span>
-                  </div>
-                } @else {
-                  @for (clase of clasesPorDia(dia); track clase.id) {
-                    <div [class]="getClaseClasses(clase.colorCategory)">
-                      <div class="flex items-center justify-between text-xs font-semibold mb-1">
-                        <span class="font-mono">{{ clase.horaInicio | rangoHorario: clase.horaFin }}</span>
-                        <span class="uppercase tracking-wider px-1.5 py-0.2 rounded bg-white/70 text-xs">
-                          {{ clase.grupo }}
-                        </span>
-                      </div>
-
-                      <h4 class="font-bold text-xs text-warm-900 leading-snug">
-                        {{ clase.nombreMateria }}
-                      </h4>
-
-                      <div class="mt-2 pt-2 border-t border-black/5 text-xs space-y-0.5">
-                        <div class="flex items-center gap-1.5 opacity-85">
-                          <svg class="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                          </svg>
-                          <span class="truncate">{{ clase.docente ?? 'Docente no informado' }}</span>
-                        </div>
-                      </div>
-                    </div>
-                  }
-                }
-              </div>
-            </div>
-          }
-        </div>
-      }
+      <app-horario-semanal rol="ESTUDIANTE" />
     </div>
-  `
+  `,
 })
-export class StudentScheduleComponent implements OnInit {
-  private readonly studentService = inject(StudentManagementService);
-
-  horarios = signal<HorarioItem[]>([]);
-  isLoading = signal<boolean>(true);
-  error = signal<LoadErrorState | null>(null);
-
-  diasSemana: DiaSemana[] = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
-
-  /** Lunes a viernes siempre; el sabado solo aparece si el backend entrega clases ese dia. */
-  diasVisibles = computed<DiaSemana[]>(() =>
-    this.horarios().some((h) => h.dia === 'Sábado') ? [...this.diasSemana, 'Sábado'] : this.diasSemana
-  );
-
-  ngOnInit(): void {
-    this.cargarHorario();
-  }
-
-  cargarHorario(): void {
-    this.isLoading.set(true);
-    this.error.set(null);
-    this.studentService.getHorarios().subscribe({
-      next: (res) => {
-        this.horarios.set(res.datos || []);
-        this.isLoading.set(false);
-      },
-      error: (err) => {
-        this.horarios.set([]);
-        this.error.set(classifyLoadError(err));
-        this.isLoading.set(false);
-      },
-    });
-  }
-
-  clasesPorDia(dia: DiaSemana): HorarioItem[] {
-    const norm = (s: string) => (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
-    const target = norm(dia);
-    return this.horarios().filter((h) => norm(h.dia) === target);
-  }
-
-  getClaseClasses(color: 'emerald' | 'amber' | 'blue' | 'purple'): string {
-    const base = 'p-3 rounded-xl border text-warm-800 transition-all shadow-xs';
-    const colorStyles = {
-      emerald: 'bg-success-50/80 border-success-200/90 hover:bg-success-100/70',
-      amber: 'bg-warning-50/80 border-warning-200/90 hover:bg-warning-100/70',
-      blue: 'bg-info-50/80 border-info-200/90 hover:bg-info-100/70',
-      purple: 'bg-category-50/80 border-category-200/90 hover:bg-category-100/70',
-    }[color];
-
-    return `${base} ${colorStyles}`;
-  }
-}
+export class StudentScheduleComponent {}

@@ -24,6 +24,8 @@ import { apiHttpError } from '../../../core/testing/api-error.fixture';
 import { HttpErrorResponse } from '@angular/common/http';
 import { RealtimeService } from '../../../core/realtime/realtime.service';
 import { RealtimeEvent, SesionCanceladaRealtimePayload, SesionManualCreadaRealtimePayload } from '../../../core/realtime/model/realtime-event.model';
+import { RevisionCancelacionService } from '../../../core/services/revision-cancelacion.service';
+import { RevisionCancelacion } from '../../../core/models/revision-cancelacion.model';
 
 // LB-001B.1B (DB source of truth cleanup): AS-IS #20 (docenteName hardcodeado y enviado en
 // el payload de crearGrupo/actualizarGrupo), #21 (selección de sesión activa por status) y
@@ -42,6 +44,9 @@ describe('TeacherGruposComponent', () => {
   let matrizService: jasmine.SpyObj<TeacherMatrizAsistenciaService>;
   let realtimeEvents$: Subject<RealtimeEvent<SesionCanceladaRealtimePayload | SesionManualCreadaRealtimePayload>>;
   let realtime: jasmine.SpyObj<RealtimeService>;
+  let revisiones: jasmine.SpyObj<RevisionCancelacionService>;
+  const paginaRevisiones = (elementos: Partial<RevisionCancelacion>[]) =>
+    of({ exitoso: true, elementos: elementos as RevisionCancelacion[], numeroPagina: 1, tamanoPagina: 100, totalElementos: elementos.length, totalPaginas: 1 });
 
   const course: Course = {
     id: 'crs-1',
@@ -129,10 +134,14 @@ describe('TeacherGruposComponent', () => {
       of({ exitoso: true, datos: { gruposHabilitados: 1, estudiantesActivos: 41, cupoTotal: 60, tasaOcupacion: 68.33 } })
     );
 
+    revisiones = jasmine.createSpyObj<RevisionCancelacionService>('RevisionCancelacionService', ['consultarDocente']);
+    revisiones.consultarDocente.and.returnValue(paginaRevisiones([]) as never);
+
     TestBed.configureTestingModule({
       imports: [TeacherGruposComponent],
       providers: [
         { provide: RealtimeService, useValue: realtime },
+        { provide: RevisionCancelacionService, useValue: revisiones },
         { provide: CourseService, useValue: courseService },
         { provide: SessionService, useValue: sessionService },
         { provide: GroupService, useValue: groupService },
@@ -755,6 +764,23 @@ describe('TeacherGruposComponent', () => {
     expect(sessionService.getSessionsByGroup).toHaveBeenCalled();
   });
 
+  it('ATA D9: ?grupo=<id>&pestana=ESTUDIANTES abre la matrícula; sin pestana o desconocida abre la planilla', () => {
+    const conPestana = (pestana?: string) => ({
+      snapshot: { queryParamMap: convertToParamMap(pestana === undefined ? { grupo: 'crs-1' } : { grupo: 'crs-1', pestana }) },
+    });
+    const abrirCon = (pestana?: string): string => {
+      (component as unknown as { route: unknown }).route = conPestana(pestana);
+      component.cargarGrupos();
+      return component.subPestanaHub();
+    };
+
+    expect(abrirCon('ESTUDIANTES')).toBe('ESTUDIANTES');
+    expect(abrirCon('RECLAMOS')).toBe('RECLAMOS');
+    expect(abrirCon('HOY')).toBe('SABANA');
+    expect(abrirCon('inexistente')).toBe('SABANA');
+    expect(abrirCon()).toBe('SABANA');
+  });
+
   describe('cancelar sesión y SSE (HU047, CULM-001 B.1)', () => {
     const sesion: ClassSession = {
       id: 'ses-1', courseId: 'crs-1', sessionNumber: 1, title: 'S1', date: '2026-11-10',
@@ -1052,6 +1078,52 @@ describe('TeacherGruposComponent', () => {
       gruposResumen.consultar.and.returnValue(of<never>({ exitoso: true, datos: null } as never));
       component.cargarGrupos();
       expect(component.totalEstudiantes()).toBeNull();
+    });
+  });
+  describe('decisiones por inasistencia pendientes por grupo', () => {
+    it('reparte las decisiones pendientes por grupo (idGrupo o grupo.id) y pide solo las pendientes', () => {
+      revisiones.consultarDocente.and.returnValue(
+        paginaRevisiones([
+          { id: 'r1', estado: 'PENDIENTE_DOCENTE', idGrupo: 'crs-1' },
+          { id: 'r2', estado: 'PENDIENTE_DOCENTE', grupo: { id: 'crs-1', codigo: 1, nombre: 'A' } },
+          { id: 'r3', estado: 'PENDIENTE_DOCENTE', idGrupo: 'crs-9' },
+          { id: 'r4', estado: 'PENDIENTE_DOCENTE' },
+        ]) as never
+      );
+      component.cargarDecisionesPendientes();
+
+      expect(revisiones.consultarDocente).toHaveBeenCalledWith({ soloPendientes: true, pagina: 1, tamano: 100 });
+      expect(component.decisionesPorGrupo().get('crs-1')).toBe(2);
+      expect(component.decisionesPorGrupo().get('crs-9')).toBe(1);
+      expect(component.decisionesPorGrupo().size).toBe(2);
+    });
+
+    it('si la consulta falla no marca ningún grupo', () => {
+      component.decisionesPorGrupo.set(new Map([['crs-1', 3]]));
+      revisiones.consultarDocente.and.returnValue(throwError(() => new Error('falla')) as never);
+      component.cargarDecisionesPendientes();
+      expect(component.decisionesPorGrupo().size).toBe(0);
+    });
+
+    it('la marca del grupo en la lista abre ese grupo, donde están las decisiones', () => {
+      revisiones.consultarDocente.and.returnValue(paginaRevisiones([{ id: 'r1', estado: 'PENDIENTE_DOCENTE', idGrupo: 'crs-1' }]) as never);
+      component.cargarDecisionesPendientes();
+      fixture.detectChanges();
+
+      (fixture.nativeElement.querySelector('[data-testid="decisiones-grupo-crs-1"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+
+      expect(component.vistaActual()).toBe('HUB_GRUPO');
+      expect(component.selectedCourse()?.id).toBe('crs-1');
+      expect(component.subPestanaHub()).toBe('SABANA');
+      expect(router.navigate).not.toHaveBeenCalledWith(['/app/asistencia'], jasmine.anything());
+    });
+
+    it('al volver del grupo a la lista se recalculan las decisiones pendientes', () => {
+      component.verHubGrupo(course);
+      revisiones.consultarDocente.calls.reset();
+      component.volverALista();
+      expect(revisiones.consultarDocente).toHaveBeenCalledTimes(1);
     });
   });
 });

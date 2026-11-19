@@ -284,19 +284,25 @@ describe('TomaAsistenciasComponent (CULM-001 UX toma)', () => {
     expect(boton('estado-c-AN').disabled).toBeTrue();
     expect(boton('guardar-toma').disabled).toBeTrue();
     expect(texto('toma-aviso-edicion')).toBe(
-      'Esta toma ya no se puede corregir porque se abrió la toma siguiente. Las correcciones se hacen por reclamo.'
+      'La sesión terminó: las tomas quedaron cerradas. Las correcciones se hacen por reclamo.'
     );
   });
 
   it('una toma cerrada editable con plazo informa hasta cuándo se puede corregir y deja marcar', () => {
     crear({ toma: toma({ estado: 'CERRADA', esEditable: true, editableHastaUtc: '2026-11-10T15:30:00Z' }) });
     expect(boton('estado-c-AN').disabled).toBeFalse();
-    expect(texto('toma-aviso-edicion')).toMatch(/^Puedes corregirla hasta las \d{2}:\d{2}\.$/);
+    expect(texto('toma-aviso-edicion')).toMatch(/^Puedes corregir las tomas de esta sesión hasta las \d{2}:\d{2}\.$/);
   });
 
-  it('una toma cerrada editable sin plazo explica que se puede corregir hasta abrir la siguiente', () => {
+  it('D4: una toma cerrada editable sin plazo explica que se corrige mientras dure la sesión, no hasta abrir otra toma', () => {
     crear({ toma: toma({ estado: 'CERRADA', esEditable: true, editableHastaUtc: null }) });
-    expect(texto('toma-aviso-edicion')).toBe('Puedes corregirla hasta que abras la siguiente toma.');
+    expect(texto('toma-aviso-edicion')).toBe('Puedes corregir las tomas de esta sesión mientras la sesión siga abierta.');
+    expect(texto('toma-aviso-edicion')).not.toContain('siguiente toma');
+  });
+
+  it('D4: una toma abierta no editable porque terminó la sesión muestra que las tomas quedaron cerradas', () => {
+    crear({ toma: toma({ estado: 'ABIERTA', esEditable: false }) });
+    expect(texto('toma-aviso-edicion')).toBe('La sesión terminó: las tomas quedaron cerradas. Las correcciones se hacen por reclamo.');
   });
 
   it('una toma abierta editable no muestra aviso de edición', () => {
@@ -304,9 +310,8 @@ describe('TomaAsistenciasComponent (CULM-001 UX toma)', () => {
     expect(el('toma-aviso-edicion')).toBeNull();
   });
 
-  it('TOM_012: descarta los cambios, muestra el mensaje del backend y pide recargar las tomas', () => {
-    const mensaje = 'La toma ya no se puede corregir porque se abrió la siguiente.';
-    tomas.registrarAsistencias.and.returnValue(throwError(() => apiHttpError(409, mensaje, 'TOM_012')));
+  it('D4: TOM_012 ya no lo emite ningún SP y el cliente no lo trata aparte: lo marcado se conserva para reintentar', () => {
+    tomas.registrarAsistencias.and.returnValue(throwError(() => apiHttpError(409, 'Conflicto genérico.', 'TOM_012')));
     crear({ toma: toma({ estado: 'CERRADA', esEditable: true }) });
     let actualizado = 0;
     const avisos: string[] = [];
@@ -314,9 +319,9 @@ describe('TomaAsistenciasComponent (CULM-001 UX toma)', () => {
     fixture.componentInstance.notificacion.subscribe((n) => avisos.push(`${n.tipo}:${n.texto}`));
     clic('estado-c-AN');
     clic('guardar-toma');
-    expect(avisos).toEqual([`error:${mensaje}`]);
-    expect(actualizado).toBe(1);
-    expect(texto('indicador-sin-guardar')).toContain('Todo guardado');
+    expect(avisos).toEqual(['error:Conflicto genérico.']);
+    expect(actualizado).toBe(0);
+    expect(texto('indicador-sin-guardar')).toContain('1 sin guardar');
   });
 
   it('si la toma deja de ser editable con cambios sin guardar, los descarta y avisa', () => {
@@ -433,6 +438,18 @@ describe('TomaAsistenciasComponent (CULM-001 UX toma)', () => {
       expect(texto('aviso-por-validar')).toContain('2 estudiante(s) por validar');
     });
 
+    it('ATA D4: con la sesión terminada no pide corregir: sin aviso "por validar" y las filas solo dicen el motivo', () => {
+      tomas.consultarFaltantes.and.returnValue(paginaFaltantes([
+        faltante('b', { tieneRegistro: true, estado: 'SJC', marcadoAlCerrar: true }), faltante('c'),
+        faltante('a', { tieneRegistro: true, estado: 'SJC' }),
+      ]));
+      crear({ toma: toma({ modo: 'QR', estado: 'CERRADA', esEditable: false }) });
+      expect(el('aviso-por-validar')).toBeNull();
+      expect(texto('por-validar-b')).toBe('Falta al cerrar');
+      expect(texto('por-validar-c')).toBe('Sin lectura QR/PIN');
+      expect(el('por-validar-a')).toBeNull();
+    });
+
     it('un faltante con registro y sin marca de cierre se etiqueta "Por validar"', () => {
       tomas.consultarFaltantes.and.returnValue(paginaFaltantes([faltante('b', { tieneRegistro: true, estado: 'SJC' })]));
       crear({ toma: toma({ modo: 'QR' }) });
@@ -527,6 +544,53 @@ describe('TomaAsistenciasComponent (CULM-001 UX toma)', () => {
       abrirFiltros();
       clic('filtro-SIN');
       expect(el('filtros-activos')?.textContent?.trim()).toBe('1');
+    });
+  });
+
+  describe('D8: pulsar el estado ya guardado', () => {
+    const aviso = (id: string) => texto(`ya-registrada-${id}`);
+
+    it('avisa «Ya registrada, sin cambios por guardar» sin habilitar Guardar', () => {
+      crear();
+      clic('estado-a-AN');
+      expect(aviso('a')).toBe('Ya registrada, sin cambios por guardar');
+      expect(el('ya-registrada-a')!.getAttribute('aria-live')).toBe('polite');
+      expect(boton('guardar-toma').disabled).toBeTrue();
+      expect(texto('indicador-sin-guardar')).toContain('Todo guardado');
+    });
+
+    it('el aviso solo aparece en la fila pulsada', () => {
+      crear();
+      clic('estado-a-AN');
+      expect(aviso('b')).toBe('');
+    });
+
+    it('cambiar a otro estado quita el aviso y deja el cambio sin guardar', () => {
+      crear();
+      clic('estado-a-AN');
+      clic('estado-a-SJC');
+      expect(aviso('a')).toBe('');
+      expect(texto('indicador-sin-guardar')).toContain('1 sin guardar');
+    });
+
+    it('un estado distinto del guardado no avisa', () => {
+      crear();
+      clic('estado-c-AN');
+      expect(aviso('c')).toBe('');
+    });
+
+    it('volver al estado guardado después de un cambio local revierte sin el aviso de «ya registrada»', () => {
+      crear();
+      clic('estado-b-AN');
+      clic('estado-b-SJC');
+      expect(aviso('b')).toBe('');
+      expect(texto('indicador-sin-guardar')).toContain('Todo guardado');
+    });
+
+    it('con la toma bloqueada no avisa ni cambia nada', () => {
+      crear({ toma: toma({ estado: 'CERRADA', esEditable: false }) });
+      fixture.detectChanges();
+      expect(aviso('a')).toBe('');
     });
   });
 });

@@ -3,6 +3,7 @@ import { inject } from '@angular/core';
 import { of, delay, throwError } from 'rxjs';
 import { mockStore } from '../mocks/mock-data-store';
 import { respuestaConsultasTransversales } from '../mocks/mock-consultas-transversales';
+import { mockSesionesCalendario } from '../mocks/mock-calendario-sesiones';
 import { respuestaIndicadores } from '../mocks/mock-indicadores';
 import { plantillasNotificacionMock } from '../mocks/mock-notificaciones';
 import {
@@ -316,6 +317,19 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   }
 
   // ================= ESTUDIANTE =================
+  // ATA D7: calendario semanal con fechas, generado a partir de las franjas del mock.
+  if (url.endsWith('/estudiante/sesiones/calendario') && method === 'GET') {
+    const datos = mockSesionesCalendario(mockStore.horariosEstudiante, req.params.get('desde') ?? '', req.params.get('hasta') ?? '');
+    return of(okResponse(datos)).pipe(delay(250));
+  }
+  if (url.endsWith('/docente/sesiones/calendario') && method === 'GET') {
+    const datos = mockSesionesCalendario(mockStore.horariosDocente, req.params.get('desde') ?? '', req.params.get('hasta') ?? '');
+    return of(okResponse(datos)).pipe(delay(250));
+  }
+  // ATA D6: bandejas de solicitudes de sesión (sin solicitudes en el mock): contadores del menú y pantallas del rol.
+  if ((url.endsWith('/coordinador/sesiones/solicitudes') || url.endsWith('/docente/sesiones/solicitudes')) && method === 'GET') {
+    return of(okPagina([], req)).pipe(delay(200));
+  }
   if (url.endsWith('/estudiante/horarios') && method === 'GET') {
     return of(okResponse(mockHorariosToDto(mockStore.horariosEstudiante))).pipe(delay(250));
   }
@@ -832,6 +846,29 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     }));
     return of(okPageResponse(elementos, pagina, tamano, matriculados.length)).pipe(delay(250));
   }
+  if (url.endsWith('/estudiante/faltas-reclamables') && method === 'GET') {
+    // ATA D10: una fila por toma en falta aún reclamable; misma forma que el backend (ApiPageResponse).
+    const pagina = Math.max(1, Number(req.params.get('pagina') ?? req.params.get('numeroPagina') ?? 1));
+    const tamano = Math.min(100, Math.max(1, Number(req.params.get('tamano') ?? req.params.get('tamanoPagina') ?? 20)));
+    const base = {
+      idGrupo: 'GRP-MOCK-1',
+      nombreGrupo: 'Grupo 01',
+      idAsignatura: 'MAT-MOCK-1',
+      nombreAsignatura: 'Bases de Datos',
+      idSesion: 'SES-MOCK-1',
+      numeroSesion: 4,
+      fechaHoraInicioUtc: '2026-11-16T13:00:00Z',
+      fechaHoraFinUtc: '2026-11-16T15:00:00Z',
+      fechaLimiteReclamoUtc: '2026-11-23T15:00:00Z',
+    };
+    const filas = [
+      { ...base, idToma: 'TOM-MOCK-1', numeroToma: 1, fechaPuntoControlUtc: '2026-11-16T13:10:00Z' },
+      { ...base, idToma: 'TOM-MOCK-3', numeroToma: 3, fechaPuntoControlUtc: '2026-11-16T14:40:00Z' },
+    ];
+    return of(okPageResponse(filas.slice((pagina - 1) * tamano, pagina * tamano), pagina, tamano, filas.length)).pipe(
+      delay(250)
+    );
+  }
   if (url.endsWith('/estudiante/reclamos') && method === 'GET') {
     // HU010/HU011: misma forma que el backend (lista con `total`), filtrada por estado y paginada.
     const estado = req.params.get('estado');
@@ -884,22 +921,6 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
         { rol: 'DOCENTE', idEntidad: 'prog-mock', nombreEntidad: 'Ingeniería de Sistemas', detalle: 'Cátedra', estaActivo: true },
       ],
     })).pipe(delay(200));
-  }
-  // HU008: oferta de grupos del estudiante (misma forma que el backend): solo consulta de oferta y cupos.
-  if (url.endsWith('/estudiante/oferta-academica') && method === 'GET') {
-    const oferta = [
-      { idGrupo: 'grp-oferta-1', codigoGrupo: 1, nombreGrupo: 'Grupo 1', idAsignatura: 'asg-of-1', codigoAsignatura: 'MAT301',
-        nombreAsignatura: 'Matemática Avanzada III', nombreDocente: 'Docente Mock', idPeriodoAcademico: 'PER-2026-2',
-        nombrePeriodoAcademico: '2026-2', fechaInicioPeriodo: '2026-07-20', fechaFinPeriodo: '2026-12-10', estadoPeriodo: 'VIGENTE',
-        horario: 'Lunes 08:00-10:00; Miercoles 08:00-10:00', capacidadMaxima: 35, estudiantesActivos: 30, cuposDisponibles: 5,
-        matriculado: false, tipoAsignatura: 'ESPECIFICA', transversal: false, codigoCaracter: 'OBL', nombreCaracter: 'Obligatoria' },
-      { idGrupo: 'grp-oferta-2', codigoGrupo: 2, nombreGrupo: 'Grupo 2', idAsignatura: 'asg-of-2', codigoAsignatura: 'FIS201',
-        nombreAsignatura: 'Física II', nombreDocente: 'Docente Mock', idPeriodoAcademico: 'PER-2027-1',
-        nombrePeriodoAcademico: '2027-1', fechaInicioPeriodo: '2027-01-20', fechaFinPeriodo: '2027-06-10', estadoPeriodo: 'PROXIMO',
-        horario: null, capacidadMaxima: 30, estudiantesActivos: 30, cuposDisponibles: 0, matriculado: false,
-        tipoAsignatura: 'INSTITUCIONAL', transversal: true, codigoCaracter: null, nombreCaracter: null },
-    ];
-    return of(okResponse(oferta, undefined, oferta.length)).pipe(delay(250));
   }
   // HU018: plan de estudios del estudiante por semestres (misma forma que el backend; los totales ya vienen calculados).
   if (url.endsWith('/estudiante/plan-estudio') && method === 'GET') {

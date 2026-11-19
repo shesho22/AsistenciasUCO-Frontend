@@ -1,3 +1,4 @@
+import { formatearHorasMinutos } from '../../../shared/pipes/horas-minutos.util';
 import { SemaforoAsistenciaComponent } from '../../../shared/components/semaforo-asistencia/semaforo-asistencia.component';
 import { Component, OnInit, inject, signal, ChangeDetectionStrategy, WritableSignal, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -240,12 +241,12 @@ export class ConsolidadoAsistenciaComponent implements OnInit {
 
   /**
    * Una sola cifra de inasistencia por grupo: el porcentaje por horas del consolidado con su base entre las horas
-   * dictadas (D.8), p. ej. «3,46 % · 2,25 h de 65 h». Las horas de falta son el mismo porcentaje aplicado a las horas
+   * dictadas (D.8), p. ej. «3,46 % · 2 h 15 min de 65 h». Las horas de falta son el mismo porcentaje aplicado a las horas
    * dictadas del grupo; no es otra métrica.
    */
   inasistenciaConBase(g: ConsolidadoGrupoItem): string {
     const horasFalta = (g.porcentajeInasistencia * g.horasDictadas) / 100;
-    return `${NUMERO_ES.format(g.porcentajeInasistencia)} % · ${NUMERO_ES.format(horasFalta)} h de ${NUMERO_ES.format(g.horasDictadas)} h`;
+    return `${NUMERO_ES.format(g.porcentajeInasistencia)} % · ${formatearHorasMinutos(horasFalta)} de ${formatearHorasMinutos(g.horasDictadas)}`;
   }
 
   /** Asignaturas y docentes con grupos en el ámbito del usuario para el período elegido (todos si no hay período). */

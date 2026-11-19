@@ -4,6 +4,7 @@ import {
   REALTIME_EVENT_TYPE,
   SesionCanceladaRealtimePayload,
   SesionManualCreadaRealtimePayload,
+  SesionSolicitudRechazadaRealtimePayload,
   AlertaInasistenciaRealtimePayload,
   RevisionCancelacionCreadaRealtimePayload,
   RevisionCancelacionDecididaRealtimePayload,
@@ -69,6 +70,12 @@ describe('REALTIME_EVENT_TYPE (CULM-001 B.2)', () => {
     const registrada: AsistenciaQrRegistradaPayload = { grupo: 'g', sesion: 's', toma: 't', estudiante: 'e', totalPresentes: 3 };
     expect(rotado.pin).toBe('482913');
     expect(registrada.totalPresentes).toBe(3);
+  });
+});
+
+describe('REALTIME_EVENT_TYPE (ATA D10)', () => {
+  it('declara FALTA_SESION_AVISADA', () => {
+    expect(REALTIME_EVENT_TYPE.FALTA_SESION_AVISADA).toBe('FALTA_SESION_AVISADA');
   });
 });
 
@@ -139,5 +146,19 @@ describe('REALTIME_EVENT_TYPE (CULM-001 C.1)', () => {
         payload: { grupo: 'grp-1' },
       })
     ).toBeTrue();
+  });
+});
+
+describe('REALTIME_EVENT_TYPE (ATA D6)', () => {
+  it('declara SESION_SOLICITUD_RECHAZADA con el mismo payload que SESION_SOLICITUD_CREADA', () => {
+    const payload: SesionSolicitudRechazadaRealtimePayload = {
+      grupo: 'grp-1',
+      sesion: 'ses-3',
+      fechaHoraInicio: '2026-11-20T13:00:00Z',
+      docente: 'Ana Pérez',
+    };
+
+    expect(REALTIME_EVENT_TYPE.SESION_SOLICITUD_RECHAZADA).toBe('SESION_SOLICITUD_RECHAZADA');
+    expect(Object.keys(payload).sort()).toEqual(['docente', 'fechaHoraInicio', 'grupo', 'sesion']);
   });
 });

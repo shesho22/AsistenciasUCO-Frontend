@@ -557,7 +557,7 @@ describe('AttendanceControlComponent contract corrections', () => {
     expect(component.isGroupClaimsModalOpen()).toBeFalse();
   });
 
-  it('HU051: "Padrón" abre el hub del grupo del docente', () => {
+  it('HU051/ATA D9: "Padrón y retiros" abre la matrícula del grupo del docente', () => {
     const component = createComponent([activeStudent], []);
     const navigate = jasmine.createSpy('navigate').and.resolveTo(true);
     (component as unknown as { router: unknown }).router = { navigate };
@@ -565,7 +565,7 @@ describe('AttendanceControlComponent contract corrections', () => {
 
     component.irAPadron();
 
-    expect(navigate).toHaveBeenCalledWith(['/app/docente/grupos'], { queryParams: { grupo: 'course-1' } });
+    expect(navigate).toHaveBeenCalledWith(['/app/docente/grupos'], { queryParams: { grupo: 'course-1', pestana: 'ESTUDIANTES' } });
   });
 
   it('F-DOC-S10: al seleccionar el grupo el padron y las asistencias se piden una sola vez', () => {

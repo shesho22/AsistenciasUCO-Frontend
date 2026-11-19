@@ -60,6 +60,37 @@ import { PageHeaderComponent } from '../../../../shared/components/page-header/p
         </div>
       </div>
 
+      <!-- Decisiones por inasistencia pendientes: a qué grupo corresponde el número del menú y acceso directo -->
+      @if (gruposConDecisiones().length > 0) {
+        <section
+          class="rounded-2xl border border-warning-300 bg-warning-50 p-4"
+          aria-labelledby="titulo-decisiones-pendientes"
+          data-testid="aviso-decisiones-pendientes"
+        >
+          <h2 id="titulo-decisiones-pendientes" class="text-sm font-bold text-warning-900">
+            Tienes decisiones por inasistencia pendientes
+          </h2>
+          <p class="text-xs text-warning-800 mt-0.5">
+            Estudiantes que llegaron al límite de inasistencia y esperan tu decisión. Entra al grupo para decidir.
+          </p>
+          <ul class="mt-3 flex flex-wrap gap-2">
+            @for (item of gruposConDecisiones(); track item.course.id) {
+              <li>
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-2 rounded-xl border border-warning-300 bg-white px-3 py-1.5 text-xs font-semibold text-warm-900 hover:border-warning-500 focus:outline-none focus:ring-2 focus:ring-warning-500/30"
+                  [attr.data-testid]="'ir-decisiones-' + item.course.id"
+                  (click)="verDecisiones.emit(item.course)"
+                >
+                  {{ item.course.name }} · {{ item.course.section }}
+                  <span class="rounded-full bg-warning-600 px-2 py-0.5 text-white">{{ item.total }}</span>
+                </button>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+
       <!-- Barra de Búsqueda y filtro por nivel formativo (HU058) -->
       <div class="flex flex-col sm:flex-row gap-3">
       <div class="relative flex-1">
@@ -133,6 +164,17 @@ import { PageHeaderComponent } from '../../../../shared/components/page-header/p
                       }
                     </div>
 
+                    @if (decisionesDe(course); as total) {
+                      <button
+                        type="button"
+                        class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-warning-50 text-warning-800 border border-warning-300 hover:border-warning-500"
+                        [attr.data-testid]="'decisiones-grupo-' + course.id"
+                        [attr.aria-label]="total + (total === 1 ? ' decisión pendiente' : ' decisiones pendientes') + ' en ' + course.name + '. Abrir el grupo'"
+                        (click)="$event.stopPropagation(); verDecisiones.emit(course)"
+                      >
+                        {{ total }} {{ total === 1 ? 'decisión pendiente' : 'decisiones pendientes' }}
+                      </button>
+                    }
                     @if (course.enrolledStudentsCount === undefined) {
                       <!-- Total de estudiantes desconocido: no se muestra un conteo inventado -->
                     } @else if (course.cupoMaximo) {
@@ -184,6 +226,21 @@ export class TeacherGruposListComponent {
   matricular = output<Course>();
   proyectarQr = output<Course>();
   tomarAsistencia = output<Course>();
+  /** Abre el grupo donde están las decisiones por inasistencia pendientes. */
+  verDecisiones = output<Course>();
+  /** Decisiones por inasistencia pendientes por id de grupo (las entrega el servidor; aquí solo se presentan). */
+  decisionesPorGrupo = input<ReadonlyMap<string, number>>(new Map());
+
+  /** Grupos con decisiones pendientes, en el orden de la lista de grupos. */
+  gruposConDecisiones = computed(() =>
+    this.courses()
+      .map((course) => ({ course, total: this.decisionesPorGrupo().get(course.id) ?? 0 }))
+      .filter((item) => item.total > 0)
+  );
+
+  decisionesDe(course: Course): number {
+    return this.decisionesPorGrupo().get(course.id) ?? 0;
+  }
 
   searchQuery = signal<string>('');
   nivelFormativo = signal<string>('');

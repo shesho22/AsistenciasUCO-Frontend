@@ -40,6 +40,7 @@ import { StudentCoursesListComponent } from './components/student-courses-list.c
 import { StudentCourseDetailComponent } from './components/student-course-detail.component';
 import { StudentClaimFormComponent } from './components/student-claim-form.component';
 import { StudentMatriculaCodigoModalComponent } from './components/modals/student-matricula-codigo-modal.component';
+import { StudentAsistenciaPinModalComponent } from './components/modals/student-asistencia-pin-modal.component';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
 type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO';
@@ -51,7 +52,8 @@ type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO';
     StudentCoursesListComponent,
     StudentCourseDetailComponent,
     StudentClaimFormComponent,
-    StudentMatriculaCodigoModalComponent
+    StudentMatriculaCodigoModalComponent,
+    StudentAsistenciaPinModalComponent,
 ],
     template: `
     <div class="space-y-6 animate-fade-in">
@@ -123,6 +125,13 @@ type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO';
         (submitted)="enviarMatriculaPorCodigo($event)"
         (closed)="cerrarModalMatriculaGrupo()"
       />
+
+      <!-- 8. Modal: Registro de asistencia con PIN (HU176), igual a la matrícula por código -->
+      <app-student-asistencia-pin-modal
+        [isOpen]="modalAsistenciaPinVisible()"
+        (registrado)="alRegistrarAsistenciaConPin()"
+        (closed)="modalAsistenciaPinVisible.set(false)"
+      />
     </div>
   `
 })
@@ -160,6 +169,11 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
 
   /** Materia (y grupo) que pide abrir el enlace de "Mis Alertas"; se consume al cargar las materias. */
   private enlaceMateria: { materia: string; grupo: string | null } | null = null;
+  /**
+   * ATA D10: "Faltas por reclamar" enlaza con `&sesion=<idSesion>&toma=<idToma>` para abrir directo la radicación de esa toma.
+   * Se consume con las primeras sesiones cargadas de la materia del enlace.
+   */
+  private enlaceReclamo: { sesion: string; toma: string } | null = null;
 
   // Drill-down sesiones
   selectedMateria = signal<MateriaEstudianteItem | null>(null);
@@ -192,9 +206,17 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
   /** Un reintento tecnico del mismo contenido reutiliza la correlacion; solo un exito la renueva. */
   private readonly intentoRadicacion = new RadicacionIntento();
 
-  /** HU176: el registro por PIN vive en su propia pantalla (`/app/asistencia/pin`). */
+  /** HU176: registro de asistencia con PIN en ventana emergente (la ruta `/app/asistencia/pin` se conserva para enlaces). */
+  modalAsistenciaPinVisible = signal<boolean>(false);
+
   irARegistroConPin(): void {
-    void this.router.navigate(['/app/asistencia/pin']);
+    this.modalAsistenciaPinVisible.set(true);
+  }
+
+  /** Con el detalle de una materia abierto, se recargan sus sesiones para ver la toma ya registrada. */
+  alRegistrarAsistenciaConPin(): void {
+    const materia = this.selectedMateria();
+    if (materia && this.vistaActual() === 'DETALLE') this.cargarSesiones(materia);
   }
 
   ngOnInit(): void {
@@ -220,6 +242,11 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
     if (paramMateria && isUuid(paramMateria)) {
       const paramGrupo = this.route.snapshot.queryParamMap.get('grupo');
       this.enlaceMateria = { materia: paramMateria, grupo: paramGrupo && isUuid(paramGrupo) ? paramGrupo : null };
+      const paramSesion = this.route.snapshot.queryParamMap.get('sesion');
+      const paramToma = this.route.snapshot.queryParamMap.get('toma');
+      if (paramSesion && isUuid(paramSesion) && paramToma && isUuid(paramToma)) {
+        this.enlaceReclamo = { sesion: paramSesion, toma: paramToma };
+      }
     }
   }
 
@@ -553,6 +580,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
         this.sesiones.set(res.datos ?? []);
         this.totalSesiones.set(total);
         this.loadingSesiones.set(false);
+        this.abrirReclamoDelEnlace(materia, res.datos ?? []);
       },
       error: (err) => {
         this.sesiones.set([]);
@@ -562,6 +590,31 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
         );
         this.loadingSesiones.set(false);
       },
+    });
+  }
+
+  /**
+   * ATA D10: abre la radicación de la toma pedida por el enlace, una sola vez. Si la sesión no está en la página cargada, se
+   * busca entre todas las sesiones del grupo (una sola consulta sin paginar). Solo abre una toma que el backend marcó
+   * reclamable; si no aparece o ya no lo es, el estudiante queda en el detalle de la materia.
+   */
+  private abrirReclamoDelEnlace(materia: MateriaEstudianteItem, pagina: SesionMateriaDetalle[]): void {
+    const enlace = this.enlaceReclamo;
+    this.enlaceReclamo = null;
+    if (!enlace) return;
+    const abrir = (sesiones: SesionMateriaDetalle[]): boolean => {
+      const sesion = sesiones.find((candidata) => candidata.id === enlace.sesion);
+      const toma = sesion?.tomas.find((candidata) => candidata.idToma === enlace.toma);
+      if (!sesion || !toma) return false;
+      this.iniciarReclamoToma({ sesion, toma });
+      return true;
+    };
+    if (abrir(pagina)) return;
+    this.claimService.getSesionesPorMateria(materia.id, { grupoId: materia.idGrupo }).subscribe({
+      next: (res) => {
+        if (this.selectedMateria() === materia && this.vistaActual() === 'DETALLE') abrir(res.datos ?? []);
+      },
+      error: () => undefined,
     });
   }
 

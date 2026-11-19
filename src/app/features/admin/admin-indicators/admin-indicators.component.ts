@@ -1,6 +1,6 @@
+import { HorasMinutosPipe } from '../../../shared/pipes/horas-minutos.pipe';
 import { CifraConBaseComponent } from '../../../shared/components/cifra-con-base/cifra-con-base.component';
 import { KpiCardComponent } from '../../../shared/components/kpi-card/kpi-card.component';
-import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { Observable, finalize } from 'rxjs';
 import { AdminIndicatorsService } from '../../../core/services/admin-indicators.service';
@@ -20,7 +20,7 @@ const MARGEN_IZQ = 44;
 
 @Component({
     selector: 'app-admin-indicators',
-    imports: [PageHeaderComponent, CifraConBaseComponent, KpiCardComponent, DecimalPipe, SinEntidadAsignadaComponent],
+    imports: [PageHeaderComponent, CifraConBaseComponent, KpiCardComponent, HorasMinutosPipe, SinEntidadAsignadaComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
     <section class="space-y-6">
@@ -64,7 +64,7 @@ const MARGEN_IZQ = 44;
                 <p
                   class="text-2xl font-semibold"
                   data-testid="ausentismo-facultad"
-                  [attr.title]="(f.horasFalta | number: '1.0-2') + ' h de falta sin justa causa sobre ' + (f.horasDictadas | number: '1.0-2') + ' h dictadas (horas de clase por cada estudiante matriculado)'"
+                  [attr.title]="(f.horasFalta | horasMinutos) + ' de falta sin justa causa sobre ' + (f.horasDictadas | horasMinutos) + ' dictadas (horas de clase por cada estudiante matriculado)'"
                 >{{ formatoPorcentaje(f.porcentajeAusentismo) }}</p>
                 <p class="text-xs text-warm-600">de las horas dictadas, sin justa causa</p>
                 <p class="text-xs text-warm-600">{{ f.totalEstudiantes }} estudiantes · {{ f.totalProgramas }} programas · retención {{ formatoPorcentaje(f.tasaRetencion) }}</p>
@@ -97,7 +97,7 @@ const MARGEN_IZQ = 44;
             @for (p of service.tendencia(); track p.inicioIntervalo; let i = $index) {
               @if (p.porcentajeAusentismo !== null) {
                 <circle data-testid="punto-tendencia" r="4" [attr.cx]="xPunto(i)" [attr.cy]="yPunto(p.porcentajeAusentismo)">
-                  <title>{{ p.inicioIntervalo }} – {{ p.finIntervalo }}: {{ p.porcentajeAusentismo }}% ({{ p.horasFalta }} h de {{ p.horasDictadasEstudiante }} h-estudiante)</title>
+                  <title>{{ p.inicioIntervalo }} – {{ p.finIntervalo }}: {{ p.porcentajeAusentismo }}% ({{ p.horasFalta | horasMinutos }} de {{ p.horasDictadasEstudiante | horasMinutos }} por estudiante)</title>
                 </circle>
                 <text data-testid="valor-punto" [attr.x]="xPunto(i)" [attr.y]="yPunto(p.porcentajeAusentismo) - 9" text-anchor="middle" font-size="11" font-weight="600" fill="currentColor">{{ p.porcentajeAusentismo }}%</text>
               }
