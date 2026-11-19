@@ -38,8 +38,11 @@ import { environment } from '../../../../environments/environment';
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
 import { horarioDentroDelMismoDia } from '../../../core/time/session-timezone.util';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
+import { RevisionCancelacionService } from '../../../core/services/revision-cancelacion.service';
 
 type VistaGrupos = 'LISTA' | 'HUB_GRUPO' | 'FORM_SESION';
+/** Tamaño máximo de página del servidor (PAGINACION/TAMANO_MAXIMO) para repartir las decisiones pendientes por grupo. */
+const TAMANO_PAGINA_DECISIONES = 100;
 
 @Component({
     selector: 'app-teacher-grupos',
@@ -67,6 +70,8 @@ type VistaGrupos = 'LISTA' | 'HUB_GRUPO' | 'FORM_SESION';
           (seleccionarGrupo)="tomarAsistenciaGrupo($event)"
           (matricular)="abrirModalMatriculaGrupo($event)"
           (tomarAsistencia)="tomarAsistenciaGrupo($event)"
+          [decisionesPorGrupo]="decisionesPorGrupo()"
+          (verDecisiones)="verHubGrupo($event)"
         />
       }
 
@@ -170,6 +175,7 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   private readonly toast = inject(ToastService);
   private readonly timeZone = inject(SessionTimeZoneService);
   private readonly realtime = inject(RealtimeService);
+  private readonly revisiones = inject(RevisionCancelacionService);
   private cancelacionesSub: Subscription | null = null;
   private aprobacionesSub: Subscription | null = null;
 
@@ -256,11 +262,32 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
     this.detenerEscuchaCancelaciones();
   }
 
+  /**
+   * Decisiones por inasistencia pendientes del docente por grupo: el número del menú "Mis Grupos" se reparte entre las
+   * tarjetas para llevar directo al grupo. Una sola página del tamaño máximo; sin datos o con error no se marca ningún grupo.
+   */
+  readonly decisionesPorGrupo = signal<ReadonlyMap<string, number>>(new Map());
+
+  cargarDecisionesPendientes(): void {
+    this.revisiones.consultarDocente({ soloPendientes: true, pagina: 1, tamano: TAMANO_PAGINA_DECISIONES }).subscribe({
+      next: (res) => {
+        const porGrupo = new Map<string, number>();
+        for (const revision of res.elementos ?? []) {
+          const idGrupo = revision.idGrupo ?? revision.grupo?.id;
+          if (idGrupo) porGrupo.set(idGrupo, (porGrupo.get(idGrupo) ?? 0) + 1);
+        }
+        this.decisionesPorGrupo.set(porGrupo);
+      },
+      error: () => this.decisionesPorGrupo.set(new Map()),
+    });
+  }
+
   /** CIERRE-W3I: total de estudiantes activos de sus grupos habilitados, calculado en la base (no se suma en el cliente). */
   readonly totalEstudiantes = signal<number | null>(null);
 
   cargarGrupos(): void {
     this.isLoading.set(true);
+    this.cargarDecisionesPendientes();
     this.gruposResumen.consultar().subscribe({
       next: (res) => this.totalEstudiantes.set(res.datos?.estudiantesActivos ?? null),
       error: () => this.totalEstudiantes.set(null),
@@ -310,6 +337,8 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
     this.detenerEscuchaCancelaciones();
     this.vistaActual.set('LISTA');
     this.selectedCourse.set(null);
+    // Al volver del grupo (donde pudo decidir) se recalcula a qué grupos les quedan decisiones pendientes.
+    this.cargarDecisionesPendientes();
   }
 
   cargarSesiones(courseId: string): void {
