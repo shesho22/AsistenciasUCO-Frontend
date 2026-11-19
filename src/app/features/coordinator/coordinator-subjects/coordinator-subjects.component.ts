@@ -276,7 +276,7 @@ function cifra(valor: unknown): string {
                     </div>
                     <div>
                       <span class="text-warm-400 block text-[10px]">Horas/Sem</span>
-                      <span class="font-bold text-warm-900">{{ asig.horasSemanales }}h</span>
+                      <span class="font-bold text-warm-900">{{ asig.horasSemanales === null || asig.horasSemanales === undefined ? 'Sin cargar' : asig.horasSemanales + 'h' }}</span>
                     </div>
                   </div>
                 </div>

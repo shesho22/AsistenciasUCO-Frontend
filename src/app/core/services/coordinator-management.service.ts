@@ -134,7 +134,8 @@ export function normalizarAsignaturaPlan(raw: AsignaturaPlanApiDto | null | unde
     semestre,
     area: raw?.area ?? raw?.nombreArea ?? '',
     componente: raw?.componente ?? raw?.nombreComponente ?? '',
-    horasSemanales: raw?.horasSemanales ?? 0,
+    // SES-GEN-01: nulo = la materia aún no tiene horas cargadas (antes se mostraba 0).
+    horasSemanales: raw?.horasSemanales ?? null,
     // `codigo` y `nombre` viajan tal cual en la fila (el resto de campos ya tiene su respaldo arriba).
   } as AsignaturaPlanItem;
 }
@@ -153,6 +154,8 @@ export function aSolicitudAsignatura(datos: Partial<AsignaturaPlanItem>): Record
     nombreArea: datos.area,
     nombreComponente: datos.componente,
     codigoCaracter: datos.codigoCaracter,
+    // SES-GEN-01: horas semanales de la materia (entero; 60 min de reloj). Ausente = no cambia (en el alta, queda sin cargar).
+    ...(typeof datos.horasSemanales === 'number' ? { horasSemanales: datos.horasSemanales } : {}),
   };
 }
 

@@ -154,6 +154,37 @@ describe('SubjectFormComponent (HU147 / P5)', () => {
     ]);
   });
 
+  it('SES-GEN-01: exige horas semanales enteras de 1 al tope y las emite como número', () => {
+    crear();
+    completar();
+    component.asigForm.creditos = 3;
+    const emitidos: unknown[] = [];
+    component.save.subscribe((e) => emitidos.push(e));
+
+    for (const invalida of [null, 0, -2, 2.5, 41]) {
+      component.asigForm.horasSemanales = invalida;
+      expect(component.formularioValido()).toBeFalse();
+    }
+    expect(component.errorHorasSemanales()).toContain('entre 1 y 40');
+
+    component.asigForm.horasSemanales = '4' as unknown as number;
+    expect(component.errorHorasSemanales()).toBe('');
+    expect(component.formularioValido()).toBeTrue();
+    component.guardar();
+    expect(emitidos).toEqual([jasmine.objectContaining({ datos: jasmine.objectContaining({ horasSemanales: 4 }) })]);
+  });
+
+  it('SES-GEN-01: una materia sin horas cargadas abre el formulario vacío y no se puede guardar sin completarlas', () => {
+    crear({
+      id: 'A1', planEstudioId: 'PLAN-1', codigo: 'SIS-1', nombre: 'Cálculo', creditos: 3, semestre: 1,
+      area: 'Ingeniería de Software', componente: 'Básicas', horasSemanales: null, codigoCaracter: 'OBL',
+    });
+    expect(component.asigForm.horasSemanales).toBeNull();
+    expect(component.formularioValido()).toBeFalse();
+    component.asigForm.horasSemanales = 6;
+    expect(component.formularioValido()).toBeTrue();
+  });
+
   it('en edición conserva el área y el componente que llegan del backend', () => {
     crear({
       id: 'A1', planEstudioId: 'PLAN-1', codigo: 'SIS-1', nombre: 'Cálculo', creditos: 3, semestre: 1,

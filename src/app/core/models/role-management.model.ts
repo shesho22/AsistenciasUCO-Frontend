@@ -374,7 +374,8 @@ export interface AsignaturaPlanItem {
   area: string;
   /** Nombre o código de un componente de formación real (BAS, INS, ESP; HU147). */
   componente: string;
-  horasSemanales: number;
+  /** Horas semanales de la materia (60 min de reloj). `null` = aún sin cargar: no se valida el horario del grupo contra ellas. */
+  horasSemanales: number | null;
   /** CULM-001 B2NM: vínculo asignatura-plan (N:M). */
   idSemestrePlanEstudio?: string;
   codigoCaracter?: string;

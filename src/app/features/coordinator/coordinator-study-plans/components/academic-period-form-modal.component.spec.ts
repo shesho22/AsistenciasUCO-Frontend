@@ -46,25 +46,36 @@ describe('AcademicPeriodFormModalComponent', () => {
     expect(component.errorNombre()).toBe('');
   });
 
-  it('valida inicio anterior a fin', () => {
+  it('calcula la fecha de fin: inicio + 16 semanas - 1 día (112 días)', () => {
     crear();
     component.nombre.set('2027-1');
-    component.fechaInicio.set('2027-06-01');
-    component.fechaFin.set('2027-02-01');
-    expect(component.errorFechas()).toContain('posterior');
+    expect(component.fechaFinEfectiva()).toBe('');
     expect(component.valido()).toBeFalse();
-    component.fechaFin.set('2027-06-01');
-    expect(component.errorFechas()).not.toBe('');
-    component.fechaFin.set('2027-11-30');
-    expect(component.errorFechas()).toBe('');
+    component.fechaInicio.set('2027-02-01');
+    expect(component.fechaFinEfectiva()).toBe('2027-05-23');
     expect(component.valido()).toBeTrue();
+    // cualquier día de inicio da 112 días corridos (16 de cada día de la semana)
+    component.fechaInicio.set('2027-02-03');
+    expect(component.fechaFinEfectiva()).toBe('2027-05-25');
+  });
+
+  it('el campo de fin es de solo lectura y muestra la fecha calculada', () => {
+    crear();
+    component.fechaInicio.set('2027-02-01');
+    fixture.detectChanges();
+    const fin = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="fecha-fin-periodo"]') as HTMLInputElement;
+    expect(fin.readOnly).toBeTrue();
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="ayuda-duracion-periodo"]')?.textContent).toContain('16 semanas');
   });
 
   it('no es válido si faltan fechas', () => {
     crear();
     component.nombre.set('2027-1');
     expect(component.valido()).toBeFalse();
+    // basta la fecha de inicio: la de fin se calcula sola
     component.fechaInicio.set('2027-01-01');
+    expect(component.valido()).toBeTrue();
+    component.nombre.set('');
     expect(component.valido()).toBeFalse();
   });
 
@@ -74,11 +85,10 @@ describe('AcademicPeriodFormModalComponent', () => {
     component.guardar.subscribe((d) => (emitido = d));
     component.nombre.set('  2027-1 ');
     component.fechaInicio.set('2027-02-01');
-    component.fechaFin.set('2027-06-30');
     fixture.detectChanges();
     expect(guardar().disabled).toBeFalse();
     component.enviar();
-    expect(emitido).toEqual({ nombre: '2027-1', fechaInicio: '2027-02-01', fechaFin: '2027-06-30' });
+    expect(emitido).toEqual({ nombre: '2027-1', fechaInicio: '2027-02-01', fechaFin: '2027-05-23' });
   });
 
   it('no emite si es inválido ni mientras guarda', () => {
@@ -88,7 +98,6 @@ describe('AcademicPeriodFormModalComponent', () => {
     component.enviar();
     component.nombre.set('2027-1');
     component.fechaInicio.set('2027-02-01');
-    component.fechaFin.set('2027-06-30');
     fixture.componentRef.setInput('guardando', true);
     fixture.detectChanges();
     component.enviar();
@@ -103,6 +112,24 @@ describe('AcademicPeriodFormModalComponent', () => {
     expect(component.nombre()).toBe('Período 2026-2');
     expect(component.fechaInicio()).toBe('2026-08-01');
     expect(guardar().textContent).toContain('Guardar cambios');
+  });
+
+  it('en edición de un período histórico sin cambiar el inicio conserva su fecha de fin guardada', () => {
+    crear(periodo); // 2026-08-01 .. 2026-12-15: 137 días, anterior a la regla de 16 semanas
+    expect(component.fechaFinEfectiva()).toBe('2026-12-15');
+    expect(component.periodoHistorico()).toBeTrue();
+    let emitido: PeriodoFormDatos | undefined;
+    component.guardar.subscribe((d) => (emitido = d));
+    component.nombre.set('Período 2026-2 renombrado');
+    component.enviar();
+    expect(emitido).toEqual({ nombre: 'Período 2026-2 renombrado', fechaInicio: '2026-08-01', fechaFin: '2026-12-15' });
+  });
+
+  it('en edición, si cambia el inicio, la fecha de fin pasa a ser la calculada', () => {
+    crear(periodo);
+    component.fechaInicio.set('2026-08-03');
+    expect(component.fechaFinEfectiva()).toBe('2026-11-22');
+    expect(component.periodoHistorico()).toBeFalse();
   });
 
   it('en edición usa el código si el nombre viene vacío', () => {
