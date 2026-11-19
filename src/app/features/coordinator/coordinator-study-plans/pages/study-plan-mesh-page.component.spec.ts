@@ -157,6 +157,155 @@ describe('CoordinatorStudyPlanMeshPageComponent', () => {
     expect(component.asignaturas()).toHaveSize(1);
   });
 
+  describe('HU074 activar o inactivar la asignatura', () => {
+    const urlEstado = `${environment.apiUrl}/coordinador/asignaturas/asig-1/estado`;
+    const dialogo = () => (fixture.nativeElement as HTMLElement).querySelector('[role="alertdialog"]');
+    const botonDialogo = (texto: string) =>
+      Array.from(dialogo()!.querySelectorAll('button')).find((b) => b.textContent?.includes(texto)) as HTMLButtonElement;
+    /** Los diálogos están en bloques @defer (PR #158): se resuelven antes de consultar el DOM del diálogo. */
+    const resolverDiferidos = async () => {
+      fixture.detectChanges();
+      const deferBlocks = await fixture.getDeferBlocks();
+      await Promise.all(deferBlocks.map((block) => block.render(DeferBlockState.Complete)));
+      fixture.detectChanges();
+    };
+
+    it('inactivar pide confirmación con el alcance, llama al PATCH y muestra el mensaje del backend y recarga la malla', async () => {
+      const confirmNativo = spyOn(window, 'confirm');
+      (fixture.nativeElement.querySelector('[data-accion="estado-asignatura"]') as HTMLButtonElement).click();
+      await resolverDiferidos();
+
+      const texto = dialogo()?.textContent ?? '';
+      expect(texto).toContain('Inactivar asignatura');
+      expect(texto).toContain('Algoritmos I');
+      expect(texto).toContain('no podrá usarse para crear grupos ni asociarse a planes de estudio');
+      expect(texto).toContain('Los grupos que ya existen no cambian');
+      http.expectNone(urlEstado);
+
+      botonDialogo('Inactivar asignatura').click();
+      expect(confirmNativo).not.toHaveBeenCalled();
+      const req = http.expectOne(urlEstado);
+      expect(req.request.method).toBe('PATCH');
+      expect(req.request.body).toEqual({ estaActiva: false });
+      req.flush({ exitoso: true, datos: { idAsignatura: 'asig-1', estaActivaAsignatura: false }, mensajeUsuario: 'La asignatura quedó inactiva.' });
+
+      expect(toastSpy.success).toHaveBeenCalledWith('La asignatura quedó inactiva.');
+      http.expectOne(porUrl(urlMalla)).flush(paginaApi([{ ...vinculo, estaActivaAsignatura: false }]));
+      http.expectOne(porUrl(urlPlanes)).flush(paginaApi([mockPlan]));
+      fixture.detectChanges();
+      expect(component.asignaturas()[0].estaActivaAsignatura).toBeFalse();
+      expect((fixture.nativeElement as HTMLElement).textContent).toContain('Inactiva');
+      expect((fixture.nativeElement.querySelector('[data-accion="estado-asignatura"]') as HTMLButtonElement).title).toBe('Activar asignatura');
+    });
+
+    it('activar una asignatura inactiva confirma sin estilo destructivo y envía estaActiva=true', async () => {
+      component.pedirCambioEstado({ ...component.asignaturas()[0], estaActivaAsignatura: false });
+      await resolverDiferidos();
+      expect(component.confirmacionEstado().inactivar).toBeFalse();
+      expect(dialogo()?.textContent).toContain('Activar asignatura');
+      expect(dialogo()?.textContent).toContain('Volverá a estar disponible');
+
+      botonDialogo('Activar asignatura').click();
+      const req = http.expectOne(urlEstado);
+      expect(req.request.body).toEqual({ estaActiva: true });
+      req.flush({ exitoso: true, datos: { idAsignatura: 'asig-1', estaActivaAsignatura: true }, mensajeUsuario: 'La asignatura quedó activa.' });
+      expect(toastSpy.success).toHaveBeenCalledWith('La asignatura quedó activa.');
+      http.expectOne(porUrl(urlMalla)).flush(paginaApi([vinculo]));
+      http.expectOne(porUrl(urlPlanes)).flush(paginaApi([mockPlan]));
+    });
+
+    it('la acción queda deshabilitada (aria-busy) desde que se confirma hasta que termina la recarga de la malla', () => {
+      const accion = () => fixture.nativeElement.querySelector('[data-accion="estado-asignatura"]') as HTMLButtonElement;
+      expect(accion().disabled).toBeFalse();
+
+      component.pedirCambioEstado(component.asignaturas()[0]);
+      component.confirmarCambioEstado();
+      fixture.detectChanges();
+      expect(accion().disabled).toBeTrue();
+      expect(accion().getAttribute('aria-busy')).toBe('true');
+
+      http.expectOne(urlEstado).flush({ exitoso: true, datos: { idAsignatura: 'asig-1', estaActivaAsignatura: false }, mensajeUsuario: 'La asignatura quedó inactiva.' });
+      fixture.detectChanges();
+      // El PATCH terminó, pero la malla aún se está releyendo.
+      expect(accion().disabled).toBeTrue();
+      expect(accion().getAttribute('aria-busy')).toBeNull();
+
+      http.expectOne(porUrl(urlMalla)).flush(paginaApi([{ ...vinculo, estaActivaAsignatura: false }]));
+      http.expectOne(porUrl(urlPlanes)).flush(paginaApi([mockPlan]));
+      fixture.detectChanges();
+      expect(accion().disabled).toBeFalse();
+    });
+
+    it('mientras el cambio sigue en curso no se abre otro diálogo ni se envía un segundo PATCH', async () => {
+      component.pedirCambioEstado(component.asignaturas()[0]);
+      component.confirmarCambioEstado();
+      const req = http.expectOne(urlEstado);
+
+      component.pedirCambioEstado(component.asignaturas()[0]);
+      await resolverDiferidos();
+      expect(component.asignaturaACambiarEstado()).toBeNull();
+      expect(dialogo()).toBeNull();
+      component.confirmarCambioEstado();
+      http.expectNone(urlEstado);
+
+      req.flush({ exitoso: true, datos: { idAsignatura: 'asig-1', estaActivaAsignatura: false }, mensajeUsuario: 'La asignatura quedó inactiva.' });
+      // También durante la recarga posterior.
+      component.pedirCambioEstado(component.asignaturas()[0]);
+      expect(component.asignaturaACambiarEstado()).toBeNull();
+      http.expectOne(porUrl(urlMalla)).flush(paginaApi([{ ...vinculo, estaActivaAsignatura: false }]));
+      http.expectOne(porUrl(urlPlanes)).flush(paginaApi([mockPlan]));
+      expect(toastSpy.success).toHaveBeenCalledTimes(1);
+    });
+
+    for (const [estaActivaAsignatura, respaldo] of [
+      [false, 'La asignatura quedó inactiva.'],
+      [true, 'La asignatura quedó activa.'],
+    ] as const) {
+      it(`sin mensajeUsuario muestra el respaldo del catálogo de UI (${respaldo})`, () => {
+        component.pedirCambioEstado({ ...component.asignaturas()[0], estaActivaAsignatura: !estaActivaAsignatura });
+        component.confirmarCambioEstado();
+        http.expectOne(urlEstado).flush({ exitoso: true, datos: { idAsignatura: 'asig-1', estaActivaAsignatura } });
+        expect(toastSpy.success).toHaveBeenCalledWith(respaldo);
+        http.expectOne(porUrl(urlMalla)).flush(paginaApi([{ ...vinculo, estaActivaAsignatura }]));
+        http.expectOne(porUrl(urlPlanes)).flush(paginaApi([mockPlan]));
+      });
+    }
+
+    it('cancelar la confirmación no llama al backend', async () => {
+      component.pedirCambioEstado(component.asignaturas()[0]);
+      await resolverDiferidos();
+      botonDialogo('Cancelar').click();
+      expect(component.asignaturaACambiarEstado()).toBeNull();
+      http.expectNone(urlEstado);
+    });
+
+    for (const [codigo, mensaje] of [
+      ['ASI_009', 'No puedes inactivar la asignatura: tiene grupos en el período vigente o en períodos futuros.'],
+      ['ASI_006', 'La asignatura es compartida con programas que no coordinas; solo puedes cambiar su semestre y su carácter en tu plan.'],
+    ]) {
+      it(`el rechazo 409 ${codigo} se muestra con el mensaje del backend y se relee la malla`, () => {
+        component.pedirCambioEstado(component.asignaturas()[0]);
+        component.confirmarCambioEstado();
+        // Envelope ApiErrorResponse real del backend (CONTRACT HU074): `code` propio y `message` del catálogo.
+        const envelope = {
+          timestamp: '2026-11-19T10:00:00-05:00', status: 409, error: 'Conflict', code: codigo, message: mensaje,
+          path: '/api/v1/coordinador/asignaturas/asig-1/estado', correlationId: null,
+        };
+        http.expectOne(urlEstado).flush(envelope, { status: 409, statusText: 'Conflict' });
+
+        expect(component.aviso()).toBe(mensaje);
+        expect(toastSpy.error).toHaveBeenCalledWith(mensaje);
+        expect(toastSpy.success).not.toHaveBeenCalled();
+        // Tras el error la acción sigue bloqueada hasta que termina la recarga.
+        expect(component.cambiandoEstado()).toBeTrue();
+        http.expectOne(porUrl(urlMalla)).flush(paginaApi([vinculo]));
+        http.expectOne(porUrl(urlPlanes)).flush(paginaApi([mockPlan]));
+        expect(component.cambiandoEstado()).toBeFalse();
+        expect(component.asignaturas()[0].estaActivaAsignatura).toBeUndefined();
+      });
+    }
+  });
+
   it('F-COO-005 asociar una asignatura existente abre el diálogo y, al asociar, recarga la malla', async () => {
     component.abrirAsociar();
     fixture.detectChanges();

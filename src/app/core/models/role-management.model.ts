@@ -389,6 +389,16 @@ export interface AsignaturaPlanItem {
   inpPlanEstudio?: string;
 }
 
+/**
+ * HU074: `datos` de `PATCH /coordinador/asignaturas/{id}/estado` (cuerpo `{ estaActiva }` con el estado deseado): estado
+ * real en que quedó la asignatura (mismo nombre que en la malla). El texto de confirmación (ASI_011 / ASI_012) llega en
+ * `mensajeUsuario`.
+ */
+export interface EstadoAsignaturaResultado {
+  idAsignatura: string;
+  estaActivaAsignatura: boolean;
+}
+
 /** Asignatura que aún no está en el plan: `GET /coordinador/planes-estudio/{planId}/asignaturas-asociables`. */
 export interface AsignaturaAsociable {
   idAsignatura: string;

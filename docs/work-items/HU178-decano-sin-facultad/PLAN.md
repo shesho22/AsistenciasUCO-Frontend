@@ -73,6 +73,10 @@ Como respaldo sí se usan los únicos códigos canónicos de «rol sin ámbito»
 No se bloquean las vistas que no dependen de la entidad y responden 200: Períodos Académicos y Revisiones de
 Cancelación del decano, y Revisiones de Cancelación del coordinador.
 
+> Actualización 2026-11-19: tras la prueba en pantalla, Revisiones de Cancelación del decano y del coordinador sí
+> llevan la guarda (el listado se filtra por facultad o programa y sin ámbito siempre sale vacío) y el encabezado del
+> panel oculta sus acciones rápidas. Períodos del decano sigue sin guarda. Ver `../HU178-rol-sin-ambito/`.
+
 Si el perfil falla o no informa vínculos, la navegación sigue como antes (falla abierta): el backend sigue siendo quien
 aplica la regla de ámbito.
 

@@ -255,6 +255,49 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
     expect(toast.success).toHaveBeenCalledWith('Grupo guardado.');
   });
 
+  describe('HU074 asignaturas inactivas', () => {
+    beforeEach(() => {
+      component.asignaturas.set([
+        { id: 'asig-1', codigo: 'IS-1', nombre: 'Arquitectura de Software', estaActivaAsignatura: true } as never,
+        { id: 'asig-ina', codigo: 'PRB-074', nombre: 'Prueba inactiva', estaActivaAsignatura: false } as never,
+        { id: 'asig-sin', codigo: 'IS-2', nombre: 'Sin estado informado' } as never,
+      ]);
+    });
+
+    it('crear: el combo de asignatura no ofrece las inactivas', () => {
+      component.abrirCrear();
+      fixture.detectChanges();
+      const opciones = Array.from(
+        (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLOptionElement>('select[name="idAsignatura"] option')
+      ).map((o) => o.textContent?.trim());
+      expect(opciones).toContain('IS-1 - Arquitectura de Software');
+      expect(opciones).toContain('IS-2 - Sin estado informado');
+      expect(opciones.some((o) => o?.includes('PRB-074'))).toBeFalse();
+      expect(component.asignaturasParaCrear().map((a) => a.id)).toEqual(['asig-1', 'asig-sin']);
+    });
+
+    it('crear: si todas están inactivas el combo avisa que no hay asignaturas disponibles', () => {
+      component.asignaturas.set([{ id: 'asig-ina', codigo: 'PRB-074', nombre: 'Prueba inactiva', estaActivaAsignatura: false } as never]);
+      component.abrirCrear();
+      fixture.detectChanges();
+      const combo = (fixture.nativeElement as HTMLElement).querySelector('select[name="idAsignatura"]') as HTMLSelectElement;
+      expect(combo.options).toHaveSize(1);
+      expect(combo.textContent).toContain('No hay asignaturas disponibles');
+    });
+
+    it('editar: un grupo cuya asignatura está inactiva se edita y guarda sin tocar la asignatura', () => {
+      courseService.actualizarGrupo.and.returnValue(of({ exitoso: true, mensajeUsuario: '', datos: { id: 'g1', mensajeUsuario: '' } }));
+      component.abrirEditar({ ...grupo, asignaturaId: 'asig-ina' });
+      fixture.detectChanges();
+
+      expect(component.form.idAsignatura).toBe('asig-ina');
+      expect((fixture.nativeElement as HTMLElement).querySelector('select[name="idAsignatura"]')).toBeNull();
+      component.guardar();
+      expect(toast.warning).not.toHaveBeenCalled();
+      expect(courseService.actualizarGrupo).toHaveBeenCalledWith('g1', jasmine.objectContaining({ codigo: 1, nombre: 'Grupo 1' }));
+    });
+  });
+
   it('editar: un cupo 0, negativo o con decimales avisa con el mensaje del catálogo y no envía el PUT', () => {
     // usp_actualizar_grupo ignora un cupo <= 0 y deja el anterior; sin esta validación el guardado parecía exitoso.
     for (const cupo of [0, -3, 12.5]) {

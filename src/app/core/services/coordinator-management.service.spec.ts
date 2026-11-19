@@ -442,6 +442,54 @@ describe('CoordinatorManagementService', () => {
       expect(status).toBe(409);
     });
 
+    it('HU074: cambiarEstadoAsignatura envía el estado deseado por PATCH /coordinador/asignaturas/{id}/estado y actualiza el caché de cada plan', () => {
+      service.getAsignaturasPorPlan('plan-1').subscribe();
+      http
+        .expectOne(porUrl(`${environment.apiUrl}/coordinador/planes-estudio/plan-1/asignaturas`))
+        .flush(paginaApi([{ idAsignatura: 'a-1', codigo: 'A', nombre: 'A', estaActivaAsignatura: true }, { idAsignatura: 'a-2', codigo: 'B', nombre: 'B', estaActivaAsignatura: true }]));
+
+      let mensaje: string | undefined;
+      service.cambiarEstadoAsignatura('a-1', false).subscribe((res) => (mensaje = res.mensajeUsuario));
+      const req = http.expectOne(`${environment.apiUrl}/coordinador/asignaturas/a-1/estado`);
+      expect(req.request.method).toBe('PATCH');
+      expect(req.request.body).toEqual({ estaActiva: false });
+      req.flush({ exitoso: true, datos: { idAsignatura: 'a-1', estaActivaAsignatura: false }, mensajeUsuario: 'La asignatura quedó inactiva.' });
+
+      expect(mensaje).toBe('La asignatura quedó inactiva.');
+      expect(service.getAsignaturasPlan('plan-1').map((a) => a.estaActivaAsignatura)).toEqual([false, true]);
+    });
+
+    it('HU074: activar envía estaActiva=true y el caché toma el estado real de la respuesta, no el pedido', () => {
+      service.getAsignaturasPorPlan('plan-1').subscribe();
+      http
+        .expectOne(porUrl(`${environment.apiUrl}/coordinador/planes-estudio/plan-1/asignaturas`))
+        .flush(paginaApi([{ idAsignatura: 'a-1', codigo: 'A', nombre: 'A', estaActivaAsignatura: false }]));
+
+      service.cambiarEstadoAsignatura('a-1', true).subscribe();
+      const req = http.expectOne(`${environment.apiUrl}/coordinador/asignaturas/a-1/estado`);
+      expect(req.request.body).toEqual({ estaActiva: true });
+      req.flush({ exitoso: true, datos: { idAsignatura: 'a-1', estaActivaAsignatura: true }, mensajeUsuario: 'La asignatura quedó activa.' });
+      expect(service.getAsignaturasPlan('plan-1')[0].estaActivaAsignatura).toBeTrue();
+    });
+
+    it('HU074: cambiarEstadoAsignatura propaga el 409 ASI_009 sin tocar el caché', () => {
+      service.getAsignaturasPorPlan('plan-1').subscribe();
+      http
+        .expectOne(porUrl(`${environment.apiUrl}/coordinador/planes-estudio/plan-1/asignaturas`))
+        .flush(paginaApi([{ idAsignatura: 'a-1', codigo: 'A', nombre: 'A', estaActivaAsignatura: true }]));
+
+      let status = 0;
+      service.cambiarEstadoAsignatura('a-1', false).subscribe({ error: (e) => (status = e.status) });
+      http
+        .expectOne(`${environment.apiUrl}/coordinador/asignaturas/a-1/estado`)
+        .flush(
+          { code: 'ASI_009', message: 'No puedes inactivar la asignatura: tiene grupos en el período vigente o en períodos futuros.' },
+          { status: 409, statusText: 'Conflict' }
+        );
+      expect(status).toBe(409);
+      expect(service.getAsignaturasPlan('plan-1').map((a) => [a.id, a.estaActivaAsignatura])).toEqual([['a-1', true]]);
+    });
+
     it('B2NM: buscarAsignaturasAsociables y getCaracteresAsignatura consultan los endpoints del contrato', () => {
       service.buscarAsignaturasAsociables('plan-1', { busqueda: 'soft', pagina: 2, tamano: 5 }).subscribe((p) => {
         expect(p.elementos[0].planes).toBe('Software (Plan 2024)');

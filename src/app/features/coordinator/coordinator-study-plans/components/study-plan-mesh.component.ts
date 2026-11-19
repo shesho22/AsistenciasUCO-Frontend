@@ -159,6 +159,9 @@ export interface FiltrosMalla {
                   @if (asig.compartida) {
                     <app-badge variant="neutral">Compartida</app-badge>
                   }
+                  @if (asig.estaActivaAsignatura === false) {
+                    <app-badge variant="danger">Inactiva</app-badge>
+                  }
                 </div>
 
                 <h4 class="font-serif font-bold text-base text-warm-900 leading-snug">
@@ -181,6 +184,25 @@ export interface FiltrosMalla {
                   >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    data-accion="estado-asignatura"
+                    (click)="toggleEstadoSubject.emit(asig)"
+                    [disabled]="estadoBloqueado()"
+                    [attr.aria-busy]="idEstadoEnCurso() === asig.id ? 'true' : null"
+                    [class]="
+                      'p-1 rounded disabled:opacity-50 disabled:cursor-not-allowed ' +
+                      (asig.estaActivaAsignatura === false
+                        ? 'text-primary-700 hover:text-primary-800 hover:bg-primary-50'
+                        : 'text-warning-700 hover:text-warning-800 hover:bg-warning-50')
+                    "
+                    [title]="asig.estaActivaAsignatura === false ? 'Activar asignatura' : 'Inactivar asignatura'"
+                    [attr.aria-label]="(asig.estaActivaAsignatura === false ? 'Activar' : 'Inactivar') + ' la asignatura ' + asig.nombre"
+                  >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v9m6.36-5.36a9 9 0 11-12.72 0" />
                     </svg>
                   </button>
                   <button
@@ -230,6 +252,10 @@ export class StudyPlanMeshComponent {
   pageSize = input(9);
   cargando = input(false);
   error = input<LoadErrorState | null>(null);
+  /** HU074 (doble envío): deshabilita la acción de estado mientras un cambio o la recarga de la malla siguen en curso. */
+  estadoBloqueado = input(false);
+  /** HU074: asignatura cuyo cambio de estado está en curso (su acción lleva aria-busy). */
+  idEstadoEnCurso = input<string | null>(null);
 
   back = output<void>();
   addSemester = output<void>();
@@ -238,6 +264,8 @@ export class StudyPlanMeshComponent {
   associateSubject = output<void>();
   editSubject = output<AsignaturaPlanItem>();
   removeSubject = output<AsignaturaPlanItem>();
+  /** HU074: activar o inactivar la asignatura (el contenedor confirma y llama al backend). */
+  toggleEstadoSubject = output<AsignaturaPlanItem>();
   /** Cambió la búsqueda, el semestre o el carácter: el contenedor vuelve a consultar desde la página 1. */
   filtrosChange = output<FiltrosMalla>();
   pageChange = output<number>();

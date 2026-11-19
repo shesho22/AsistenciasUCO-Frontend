@@ -133,3 +133,66 @@ describe('StudyPlanMeshComponent (certificación F3)', () => {
     expect(fixture.componentInstance.caracteresDisponibles()).toEqual([]);
   });
 });
+
+describe('StudyPlanMeshComponent (HU074 activar o inactivar asignaturas)', () => {
+  const plan: PlanEstudioItem = {
+    id: 'plan-1', codigo: 'INP-2024', nombre: 'Plan 2024', anioVigencia: 2024, programa: 'Ingeniería de Sistemas', facultad: '',
+    totalCreditos: null, totalSemestres: 8, totalAsignaturas: null, estado: 'VIGENTE', descripcion: '',
+  };
+  const fila = (id: string, estaActivaAsignatura?: boolean): AsignaturaPlanItem => ({
+    id, planEstudioId: 'plan-1', codigo: id, nombre: `Asignatura ${id}`, creditos: 3, semestre: 1, area: 'Software',
+    componente: 'ESP', horasSemanales: 0, estaActivaAsignatura,
+  });
+
+  function crear(asignaturas: AsignaturaPlanItem[]) {
+    TestBed.configureTestingModule({ imports: [StudyPlanMeshComponent] });
+    const fixture = TestBed.createComponent(StudyPlanMeshComponent);
+    fixture.componentRef.setInput('plan', plan);
+    fixture.componentRef.setInput('asignaturas', asignaturas);
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  it('la acción de la fila dice Inactivar si la asignatura está activa y Activar si está inactiva', () => {
+    const fixture = crear([fila('ACT-1', true), fila('INA-1', false), fila('SIN-1')]);
+    const acciones = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('[data-accion="estado-asignatura"]')
+    );
+    expect(acciones.map((b) => b.title)).toEqual(['Inactivar asignatura', 'Activar asignatura', 'Inactivar asignatura']);
+    expect(acciones[1].getAttribute('aria-label')).toBe('Activar la asignatura Asignatura INA-1');
+  });
+
+  it('muestra la insignia Inactiva solo en las asignaturas inactivas', () => {
+    const fixture = crear([fila('ACT-1', true), fila('INA-1', false)]);
+    const tarjetas = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('h4')).map(
+      (h) => h.closest('div.p-4')?.textContent ?? ''
+    );
+    expect(tarjetas[0]).not.toContain('Inactiva');
+    expect(tarjetas[1]).toContain('Inactiva');
+  });
+
+  it('con estadoBloqueado la acción se deshabilita y solo la fila en curso lleva aria-busy', () => {
+    const fixture = crear([fila('ACT-1', true), fila('INA-1', false)]);
+    fixture.componentRef.setInput('estadoBloqueado', true);
+    fixture.componentRef.setInput('idEstadoEnCurso', 'INA-1');
+    fixture.detectChanges();
+    const acciones = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('[data-accion="estado-asignatura"]')
+    );
+    expect(acciones.map((b) => b.disabled)).toEqual([true, true]);
+    expect(acciones.map((b) => b.getAttribute('aria-busy'))).toEqual([null, 'true']);
+
+    const emitidas: AsignaturaPlanItem[] = [];
+    fixture.componentInstance.toggleEstadoSubject.subscribe((a) => emitidas.push(a));
+    acciones[1].click();
+    expect(emitidas).toEqual([]);
+  });
+
+  it('la acción emite la asignatura al contenedor', () => {
+    const fixture = crear([fila('INA-1', false)]);
+    const emitidas: AsignaturaPlanItem[] = [];
+    fixture.componentInstance.toggleEstadoSubject.subscribe((a) => emitidas.push(a));
+    (fixture.nativeElement.querySelector('[data-accion="estado-asignatura"]') as HTMLButtonElement).click();
+    expect(emitidas.map((a) => a.id)).toEqual(['INA-1']);
+  });
+});

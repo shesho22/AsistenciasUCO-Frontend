@@ -140,6 +140,9 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
                   @if (asig.compartida) {
                     <app-badge variant="neutral" size="sm">Compartida</app-badge>
                   }
+                  @if (asig.estaActivaAsignatura === false) {
+                    <app-badge variant="danger" size="sm">Inactiva</app-badge>
+                  }
                 </div>
                 <h3 class="font-serif font-bold text-base text-warm-900">{{ asig.nombre }}</h3>
                 <p class="text-xs text-warm-500">Área: {{ asig.area }} • {{ asig.componente }}</p>
