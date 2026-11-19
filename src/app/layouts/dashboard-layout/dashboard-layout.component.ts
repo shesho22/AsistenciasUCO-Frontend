@@ -8,6 +8,9 @@ import { BadgeComponent } from '../../shared/components/badge/badge.component';
 import { ToastComponent, ToastService } from '../../shared/components/toast/toast.component';
 import { IconComponent, IconName } from '../../shared/components/icon/icon.component';
 import { AlertaInasistenciaService } from '../../core/services/alerta-inasistencia.service';
+import { FaltaReclamableService } from '../../core/services/falta-reclamable.service';
+import { REALTIME_EVENT_TYPE } from '../../core/realtime/model/realtime-event.model';
+import { RealtimeService } from '../../core/realtime/realtime.service';
 import { RevisionCancelacionService } from '../../core/services/revision-cancelacion.service';
 import { SolicitudesSesionMenuService } from '../../core/services/solicitudes-sesion-menu.service';
 import { ComponentesExternosService, ComponenteExterno } from '../../core/services/componentes-externos.service';
@@ -253,7 +256,11 @@ export class DashboardLayoutComponent {
   private readonly revisionService = inject(RevisionCancelacionService, { optional: true });
   private readonly externos = inject(ComponentesExternosService);
   private readonly solicitudesMenu = inject(SolicitudesSesionMenuService);
+  private readonly faltaService = inject(FaltaReclamableService, { optional: true });
+  private readonly realtime = inject(RealtimeService, { optional: true });
   alertasVigentesCount = signal<number>(0);
+  /** ATA D10: tomas en falta que el estudiante aún puede reclamar; se suman al número de «Mis alertas». */
+  faltasReclamablesCount = signal<number>(0);
   revisionesPendientesCount = signal<number>(0);
 
   constructor() {
@@ -269,6 +276,24 @@ export class DashboardLayoutComponent {
     effect(() => {
       const role = this.currentRole();
       untracked(() => this.solicitudesMenu.iniciar(role));
+    });
+
+    // ATA D10: el contador de faltas reclamables se recarga al fijar el rol de estudiante y con los eventos SSE (sin polling).
+    effect((onCleanup) => {
+      const role = this.currentRole();
+      if (role !== 'ESTUDIANTE' || !environment.features?.cancelacionInasistenciaEnabled) {
+        untracked(() => this.faltasReclamablesCount.set(0));
+        return;
+      }
+      untracked(() => {
+        this.recargarFaltasReclamables();
+        const suscripcion = this.realtime?.events().subscribe((evento) => {
+          if (evento?.type === REALTIME_EVENT_TYPE.FALTA_SESION_AVISADA || evento?.type === REALTIME_EVENT_TYPE.ASISTENCIAS_TOMA_ACTUALIZADAS) {
+            this.recargarFaltasReclamables();
+          }
+        });
+        onCleanup(() => suscripcion?.unsubscribe());
+      });
     });
 
     effect(() => {
@@ -296,6 +321,13 @@ export class DashboardLayoutComponent {
         });
       }
     }, { allowSignalWrites: true });
+  }
+
+  private recargarFaltasReclamables(): void {
+    this.faltaService?.contar().subscribe({
+      next: (total) => this.faltasReclamablesCount.set(total),
+      error: () => this.faltasReclamablesCount.set(0),
+    });
   }
 
   private readonly allNavItems: NavItem[] = [
@@ -502,7 +534,7 @@ export class DashboardLayoutComponent {
   contadorDe(item: NavItem): number {
     switch (item.route) {
       case '/app/estudiante/alertas':
-        return this.alertasVigentesCount();
+        return this.alertasVigentesCount() + this.faltasReclamablesCount();
       case '/app/coordinador/solicitudes-sesion':
       case '/app/docente/solicitudes-sesion':
         return this.solicitudesMenu.pendientes();
