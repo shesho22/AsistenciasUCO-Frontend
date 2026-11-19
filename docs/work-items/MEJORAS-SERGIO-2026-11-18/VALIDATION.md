@@ -40,3 +40,17 @@ Fecha: 2026-11-18. Equipo local (Windows 10, Node 24, Chrome Headless 157). Rama
 
 - Prueba manual en `localhost:4200` contra el backend real (los servidores se dejaron detenidos para que John los reinicie).
 - E2E de Playwright (no forman parte de `verify`).
+
+## Re-ejecución dirigida (cierre de BD y backend, 2026-11-18)
+
+Con la BD y el backend ya cerrados en la rama, se volvió a correr solo lo rápido (las compuertas completas quedan para el CI):
+
+| Comando | Resultado |
+|---|---|
+| `npm run lint` | OK |
+| `ng test --include=<16 specs que cambia la rama>` | **268 de 268 SUCCESS** |
+| `npm run build -- --configuration=production` | OK |
+
+Contrato del ítem 10 verificado contra el backend: `PATCH /docente/sesiones/{id}/cancelar` con `{ motivo }` responde
+`{ idSesion, idGrupo, estado, cancelacion, estudiantesNotificados }`, lo mismo que `SessionService.cancelarSesion` y el modelo
+`SesionCancelada`. El ítem 2 sigue sin cambio en el frontend (el backend ya encola `SESION_MANUAL_CREADA_ESTUDIANTE`).
