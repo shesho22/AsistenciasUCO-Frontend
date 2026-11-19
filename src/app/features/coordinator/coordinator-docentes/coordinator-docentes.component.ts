@@ -157,6 +157,7 @@ const MIN_CARACTERES_CANDIDATOS = 3;
                           type="button"
                           data-testid="ver-ficha-docente"
                           (click)="verFichaDocente(docente)"
+                          [attr.aria-label]="'Ver ficha de ' + docente.nombreCompleto"
                           class="min-h-[36px] text-xs font-semibold text-primary-800 bg-primary-50 hover:bg-primary-100 border border-primary-200 py-1.5 px-3 rounded-lg transition-colors"
                         >
                           Ver ficha
@@ -165,6 +166,7 @@ const MIN_CARACTERES_CANDIDATOS = 3;
                           type="button"
                           data-testid="editar-docente"
                           (click)="abrirEdicion(docente)"
+                          [attr.aria-label]="'Editar datos de ' + docente.nombreCompleto"
                           class="min-h-[36px] text-xs font-semibold text-warm-800 bg-white hover:bg-warm-50 border border-warm-200 py-1.5 px-3 rounded-lg transition-colors"
                         >
                           Editar datos
@@ -173,6 +175,7 @@ const MIN_CARACTERES_CANDIDATOS = 3;
                           type="button"
                           data-testid="toggle-estado"
                           (click)="solicitarCambioEstado(docente)"
+                          [attr.aria-label]="(docente.estaActivo ? 'Desactivar a ' : 'Reactivar a ') + docente.nombreCompleto"
                           [title]="docente.estaActivo ? 'Inactivar la vinculación con el programa' : 'Reactivar la vinculación con el programa'"
                           class="min-h-[36px] text-xs px-3 py-1.5 rounded-lg border border-warm-200 text-warm-700 hover:bg-warm-100 transition-colors"
                         >

@@ -149,7 +149,7 @@ type PestanaModulo = 'DIRECTORIO';
                     </td>
                     <td class="px-4 py-3 text-right whitespace-nowrap">
                       <!-- HU159: la ficha (historial y "Corregir datos") también desde el padrón del programa -->
-                      <button type="button" data-testid="ver-ficha-estudiante" (click)="abrirFicha(est)" class="min-h-[44px] px-3 text-xs text-primary-700 font-semibold hover:underline">
+                      <button type="button" data-testid="ver-ficha-estudiante" (click)="abrirFicha(est)" [attr.aria-label]="'Ver ficha de ' + est.nombreCompleto" class="min-h-[44px] px-3 text-xs text-primary-700 font-semibold hover:underline">
                         Ver ficha
                       </button>
                     </td>

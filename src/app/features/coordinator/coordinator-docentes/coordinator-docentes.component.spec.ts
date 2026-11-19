@@ -557,6 +557,23 @@ describe('CoordinatorDocentesComponent', () => {
     tick(300);
   }));
 
+  it('MEJORAS-SERGIO 12: los botones repetidos de cada fila nombran al docente en su aria-label', fakeAsync(() => {
+    crear();
+    tick(300);
+    fixture.detectChanges();
+
+    const filas = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('[data-testid="tabla-docentes"] tbody tr'));
+    expect(filas.length).toBeGreaterThan(0);
+    component.docentes().forEach((docente, i) => {
+      const fila = filas[i] as HTMLElement;
+      const etiqueta = (id: string) => fila.querySelector(`[data-testid="${id}"]`)?.getAttribute('aria-label');
+      expect(etiqueta('ver-ficha-docente')).toBe(`Ver ficha de ${docente.nombreCompleto}`);
+      expect(etiqueta('editar-docente')).toBe(`Editar datos de ${docente.nombreCompleto}`);
+      expect(etiqueta('toggle-estado')).toBe(`${docente.estaActivo ? 'Desactivar' : 'Reactivar'} a ${docente.nombreCompleto}`);
+    });
+    tick(300);
+  }));
+
   it('HU095: el consolidado se relee tras un cambio de estado y un error lo deja sin mostrar', fakeAsync(() => {
     crear();
     tick(300);

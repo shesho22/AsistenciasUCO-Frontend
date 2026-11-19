@@ -211,6 +211,12 @@ describe('CoordinatorStudentsComponent', () => {
 
     (el.querySelector('[data-testid="fila-estudiante-est-2"] [data-testid="ver-ficha-estudiante"]') as HTMLButtonElement).click();
     expect(component.estudianteFicha()?.id).toBe('est-2');
+
+    // Accesibilidad: el «Ver ficha» repetido de cada fila nombra al estudiante (WCAG 2.4.6 / 2.5.3).
+    expect(el.querySelector('[data-testid="fila-estudiante-est-1"] [data-testid="ver-ficha-estudiante"]')?.getAttribute('aria-label'))
+      .toBe('Ver ficha de Ana Sofia Gomez Rios');
+    expect(el.querySelector('[data-testid="fila-estudiante-est-2"] [data-testid="ver-ficha-estudiante"]')?.getAttribute('aria-label'))
+      .toBe('Ver ficha de Luis Perez');
   });
 
   // CULM-001 B2NM (S4): con varios programas el directorio se consulta con el programa seleccionado.
