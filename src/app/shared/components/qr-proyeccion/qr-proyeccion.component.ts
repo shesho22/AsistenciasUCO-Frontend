@@ -71,7 +71,9 @@ import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed,
             }
           </div>
         </div>
-        <div class="flex flex-wrap items-center gap-2">
+        <!-- En la tarjeta (no ampliada) los botones van en su propia fila a la izquierda y el menú abre hacia la derecha,
+             para que no lo recorte el borde de la tarjeta; ampliada, van a la derecha y el menú abre hacia la izquierda. -->
+        <div class="flex flex-wrap items-center gap-2" [class.w-full]="!ampliado()" data-testid="qr-acciones">
           <button
             type="button"
             data-testid="qr-pantalla-completa"
@@ -90,7 +92,7 @@ import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed,
               {{ etiquetaCerrar() }}
             </button>
           }
-          <app-action-menu tone="dark" label="Más acciones de la proyección" [items]="accionesMenu()" (selected)="accionElegida.emit($event)" />
+          <app-action-menu tone="dark" [alineacion]="ampliado() ? 'end' : 'start'" label="Más acciones de la proyección" [items]="accionesMenu()" (selected)="accionElegida.emit($event)" />
         </div>
       </header>
 

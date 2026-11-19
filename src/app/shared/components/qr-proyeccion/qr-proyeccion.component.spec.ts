@@ -57,6 +57,28 @@ describe('QrProyeccionComponent (CULM-001, estetica unificada de proyeccion)', (
     expect(el('qr-etiqueta')?.textContent).toContain('Matricula por QR');
   });
 
+  it('el menú Más no se sale de la tarjeta: en la tarjeta abre hacia la derecha en su propia fila; ampliado, hacia la izquierda', () => {
+    crear({ accionesMenu: [{ id: 'regenerar', label: 'Regenerar código' }] });
+    // Sin API de pantalla completa, "Ampliar" agranda dentro de la página (como en el resto de pruebas).
+    (fixture.nativeElement as { requestFullscreen?: unknown }).requestFullscreen = undefined;
+    const menu = () => (fixture.nativeElement as HTMLElement).querySelector('app-action-menu');
+    const panel = () => {
+      (menu()!.querySelector('[data-testid="action-menu-trigger"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      const clase = (menu()!.querySelector('[role="menu"]') as HTMLElement).className;
+      (menu()!.querySelector('[data-testid="action-menu-trigger"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      return clase;
+    };
+    expect(el('qr-acciones')?.className).toContain('w-full');
+    expect(panel()).toContain('left-0');
+
+    (el('qr-pantalla-completa') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(el('qr-acciones')?.className).not.toContain('w-full');
+    expect(panel()).toContain('right-0');
+  });
+
   it('por defecto muestra el QR a tamano normal (tarjeta de matricula) y ofrece Ampliar', () => {
     crear();
     const tarjeta = el('qr-tarjeta') as HTMLElement;
