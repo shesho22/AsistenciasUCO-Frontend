@@ -68,7 +68,7 @@ describe('TeacherGrupoSabanaComponent — resumen del backend (CULM-001 B.2, F-D
     const celda = fila('st-1')!.textContent!.replace(/\s+/g, ' ');
     expect(celda).toContain('15%');
     expect(celda).not.toContain('100%');
-    expect(celda).toContain('3 / 20 h');
+    expect(celda).toContain('3 h / 20 h');
     expect(fila('st-1')!.querySelector('[data-testid="semaforo-asistencia"]')!.textContent).toContain('En riesgo');
   });
 

@@ -1,3 +1,4 @@
+import { HorasMinutosPipe } from '../../../../shared/pipes/horas-minutos.pipe';
 import {
   Component,
   ChangeDetectionStrategy,
@@ -39,6 +40,7 @@ interface FilaPlanilla {
     selector: 'app-teacher-grupo-sabana',
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [
+        HorasMinutosPipe,
         CommonModule,
         AttendanceStatusBadgeComponent,
         PaginationComponent,
@@ -227,7 +229,7 @@ interface FilaPlanilla {
                   <!-- Resumen por horas: lo calcula el backend; aquí solo se pinta -->
                   @let r = resumenDe(est.idEstudiante);
                   <td class="p-3 text-center font-mono font-bold text-xs text-warm-800 bg-warm-50/40 border-r border-warm-100">
-                    {{ r ? r.horasFalta + ' / ' + r.horasDictadas + ' h' : '—' }}
+                    {{ r ? (r.horasFalta | horasMinutos) + ' / ' + (r.horasDictadas | horasMinutos) : '—' }}
                   </td>
                   <td class="p-3 text-center font-mono font-bold text-xs border-r border-warm-100 bg-warm-50/40">
                     {{ r ? r.porcentajeInasistencia + '%' : '—' }}

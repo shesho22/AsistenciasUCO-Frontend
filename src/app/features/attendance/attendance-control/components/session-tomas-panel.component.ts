@@ -1,3 +1,4 @@
+import { HorasMinutosPipe } from '../../../../shared/pipes/horas-minutos.pipe';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { SessionTimeZoneService } from '../../../../core/services/session-timezone.service';
 import { TomaAsistencia, TomasSesion } from '../../../../core/models/toma-asistencia.model';
@@ -23,7 +24,7 @@ const MAXIMO_RETARDO_MS = 2_147_483_647;
 @Component({
     selector: 'app-session-tomas-panel',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [TomaAsistenciasComponent, ResumenSesionTomasComponent, TomaCierreDialogComponent],
+    imports: [HorasMinutosPipe, TomaAsistenciasComponent, ResumenSesionTomasComponent, TomaCierreDialogComponent],
     template: `
     <section
       class="superficie p-4 sm:p-5 space-y-4"
@@ -35,7 +36,7 @@ const MAXIMO_RETARDO_MS = 2_147_483_647;
           <div>
             <h3 class="font-serif font-bold text-lg text-warm-900">Tomas de asistencia</h3>
             <p class="text-xs text-warm-600">
-              {{ datos.tomas.length }} de {{ datos.maximoTomas }} tomas · {{ datos.horasSesion }} h de sesión
+              {{ datos.tomas.length }} de {{ datos.maximoTomas }} tomas · {{ datos.horasSesion | horasMinutos }} de sesión
               @if (cancelada()) {
                 · <strong class="text-warning-800">Cancelada</strong>
                 @if (detalle()) {

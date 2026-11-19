@@ -1,3 +1,4 @@
+import { HorasMinutosPipe } from '../../../../shared/pipes/horas-minutos.pipe';
 import { RangoHorarioPipe } from '../../../../shared/pipes/fecha-hora.pipes';
 import { Component, ChangeDetectionStrategy, computed, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -12,7 +13,7 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
 @Component({
     selector: 'app-overview-student',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [RangoHorarioPipe, CommonModule, RouterLink, CardComponent, BadgeComponent, ButtonComponent, AttendanceStatusBadgeComponent],
+    imports: [RangoHorarioPipe, HorasMinutosPipe, CommonModule, RouterLink, CardComponent, BadgeComponent, ButtonComponent, AttendanceStatusBadgeComponent],
     host: {
         class: 'block w-full',
     },
@@ -42,7 +43,7 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
         <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
           <span class="text-xs text-warm-500 font-medium">Horas de falta</span>
           @if (resumen(); as r) {
-            <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ r.totalHorasFalta }} h</p>
+            <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ r.totalHorasFalta | horasMinutos }}</p>
             <span class="text-[11px] text-warm-500 font-medium">En todo el periodo</span>
           } @else {
             <p class="text-base font-serif font-bold text-warm-500 mt-1" data-testid="horas-falta-no-disponible">No disponible</p>
@@ -176,7 +177,7 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
 
                 <div class="flex items-center justify-between pt-2 border-t border-warm-100">
                   @if (mat.indicadores; as ind) {
-                    <span class="text-warm-700 font-semibold">{{ ind.horasFalta }} h de falta de {{ ind.horasDictadas }} h</span>
+                    <span class="text-warm-700 font-semibold">{{ ind.horasFalta | horasMinutos }} de falta de {{ ind.horasDictadas | horasMinutos }}</span>
                   }
                   @if (mat.estado) {
                     <app-badge [variant]="mat.estado === 'Al día' ? 'success' : 'danger'">

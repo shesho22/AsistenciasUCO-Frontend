@@ -73,7 +73,7 @@ describe('CoordinatorAsistenciaComponent (CULM-001: asistencia unificada)', () =
   });
 
   it('una sola cifra de inasistencia por grupo, con su base entre paréntesis de horas', () => {
-    expect(el().querySelector('[data-testid="inasistencia"]')?.textContent?.trim()).toBe('3,46 % · 2,25 h de 65 h');
+    expect(el().querySelector('[data-testid="inasistencia"]')?.textContent?.trim()).toBe('3,46 % · 2 h 15 min de 65 h');
     expect(el().textContent).not.toContain('% Inasistencia 3.46');
   });
 

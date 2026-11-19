@@ -511,7 +511,7 @@ describe('StudentCoursesComponent', () => {
       expect(texto).toContain('Materias Inscritas');
       expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="resumen-total-materias"]')?.textContent?.trim()).toBe('3');
       expect(texto).toContain('2');
-      expect(texto).toContain('4.5 h');
+      expect(texto).toContain('4 h 30 min');
     });
 
     it('si la consulta falla queda en null: las tarjetas dicen "No disponible", nunca cero', () => {
@@ -916,7 +916,7 @@ describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', 
   it('CIERRE-W2B: el tablero muestra las cifras del backend y la paginacion pide cada pagina al servidor', () => {
     cargar([materiaApi()], { totalMaterias: 1, materiasEnRiesgo: 1, totalHorasFalta: 3.5, totalCreditos: 3 });
     expect(fixture.nativeElement.querySelector('[data-testid="resumen-total-materias"]').textContent.trim()).toBe('1');
-    expect(texto()).toContain('3.5 h');
+    expect(texto()).toContain('3 h 30 min');
     expect(fixture.nativeElement.querySelector('[data-testid="riesgo-no-disponible"]')).toBeNull();
 
     clickTexto('Ver Detalle');

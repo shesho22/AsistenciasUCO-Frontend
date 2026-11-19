@@ -1,3 +1,5 @@
+import { formatearHorasMinutos } from '../../../../shared/pipes/horas-minutos.util';
+import { HorasMinutosPipe } from '../../../../shared/pipes/horas-minutos.pipe';
 import { Component, ChangeDetectionStrategy, computed, input, output, signal } from '@angular/core';
 
 import { AttendanceStatusBadgeComponent } from '../../../../shared/components/attendance-status-badge/attendance-status-badge.component';
@@ -41,7 +43,7 @@ interface BarraHoras {
 @Component({
     selector: 'app-student-courses-list',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [PageHeaderComponent, CardComponent, BadgeComponent, ButtonComponent, AttendanceStatusBadgeComponent, PaginationComponent],
+    imports: [HorasMinutosPipe, PageHeaderComponent, CardComponent, BadgeComponent, ButtonComponent, AttendanceStatusBadgeComponent, PaginationComponent],
     template: `
     <div class="space-y-6">
       <!-- Header Bento -->
@@ -123,7 +125,7 @@ interface BarraHoras {
           <div>
             <span class="text-xs text-warm-500 font-medium">Horas de falta</span>
             @if (resumen(); as r) {
-              <p class="text-2xl font-serif font-bold text-warm-900">{{ r.totalHorasFalta }} h</p>
+              <p class="text-2xl font-serif font-bold text-warm-900">{{ r.totalHorasFalta | horasMinutos }}</p>
             } @else {
               <p class="text-base font-serif font-bold text-warm-500" data-testid="horas-falta-no-disponible">No disponible</p>
             }
@@ -208,7 +210,7 @@ interface BarraHoras {
                       <span class="font-bold text-warm-900" data-testid="porcentaje-inasistencia">{{ ind.porcentajeInasistencia }}% de inasistencia</span>
                       <app-attendance-status-badge [codigoPermanencia]="ind.codigoPermanencia" />
                     </div>
-                    <p class="text-xs text-warm-600">{{ ind.horasFalta }} h de falta de {{ ind.horasDictadas }} h dictadas</p>
+                    <p class="text-xs text-warm-600">{{ ind.horasFalta | horasMinutos }} de falta de {{ ind.horasDictadas | horasMinutos }} dictadas</p>
                     <p class="text-xs text-warm-500">Advertencia desde {{ ind.umbralAdvertencia }}% · pérdida desde {{ ind.umbralPerdida }}%</p>
                   </div>
                 } @else {
@@ -239,15 +241,15 @@ interface BarraHoras {
                       <ul class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-warm-600" data-testid="leyenda-horas">
                         <li class="flex items-center gap-1.5">
                           <span class="inline-block w-2.5 h-2.5 rounded-full bg-primary-700" aria-hidden="true"></span>
-                          {{ barra.asistidas }} h asistidas
+                          {{ barra.asistidas | horasMinutos }} asistidas
                         </li>
                         <li class="flex items-center gap-1.5">
                           <span class="inline-block w-2.5 h-2.5 rounded-full bg-primary-300" aria-hidden="true"></span>
-                          {{ barra.dictadas }} h dictadas a la fecha
+                          {{ barra.dictadas | horasMinutos }} dictadas a la fecha
                         </li>
                         <li class="flex items-center gap-1.5">
                           <span class="inline-block w-2.5 h-2.5 rounded-full bg-warm-200 border border-warm-300" aria-hidden="true"></span>
-                          {{ barra.programadas }} h programadas
+                          {{ barra.programadas | horasMinutos }} programadas
                         </li>
                       </ul>
                     } @else if (barra.programadas === 0) {
@@ -357,7 +359,7 @@ export class StudentCoursesListComponent {
       // Lo asistido es parte de lo dictado: el tramo nunca sobresale del de las horas dictadas.
       anchoAsistidas: Math.min(porcentajeAcotado(asistidas, programadas), anchoDictadas),
       porcentajeAvance: Math.round(anchoDictadas),
-      descripcion: `Asististe a ${asistidas} h de ${dictadas} h dictadas. El grupo tiene ${programadas} h programadas.`,
+      descripcion: `Asististe a ${formatearHorasMinutos(asistidas)} de ${formatearHorasMinutos(dictadas)} dictadas. El grupo tiene ${formatearHorasMinutos(programadas)} programadas.`,
     };
   }
 
