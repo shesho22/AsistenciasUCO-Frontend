@@ -8,7 +8,7 @@
   (`/app/coordinador/planes-estudio/{planId}/malla`) con confirmación, vea cuáles están inactivas y reciba el mensaje del
   backend (éxito o rechazo 409).
 - Contrato y reglas de negocio: work item homónimo del backend (`docs/work-items/HU074-asignatura-estado/`, `CONTRACT.md`) y
-  migración 57 de la BD. Consumo del frontend en `CONTRACT.md` de esta carpeta.
+  migración 58 de la BD (renumerada desde la 57 al integrar NOTOMA-001). Consumo del frontend en `CONTRACT.md` de esta carpeta.
 
 ## AS-IS
 
