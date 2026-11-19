@@ -73,6 +73,12 @@ describe('REALTIME_EVENT_TYPE (CULM-001 B.2)', () => {
   });
 });
 
+describe('REALTIME_EVENT_TYPE (ATA D10)', () => {
+  it('declara FALTA_SESION_AVISADA', () => {
+    expect(REALTIME_EVENT_TYPE.FALTA_SESION_AVISADA).toBe('FALTA_SESION_AVISADA');
+  });
+});
+
 describe('REALTIME_EVENT_TYPE (CULM-001 C.1)', () => {
   it('C-F-16 declara los eventos de alertas y revisiones de cancelación', () => {
     expect(REALTIME_EVENT_TYPE.ALERTA_INASISTENCIA).toBe('ALERTA_INASISTENCIA');
