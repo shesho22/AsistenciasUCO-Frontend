@@ -5,6 +5,7 @@ import { TeacherScheduleComponent } from './teacher-schedule.component';
 import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { HorarioDocenteItem } from '../../../core/models/role-management.model';
+import { MOCK_HORARIOS_DOCENTE } from '../../../core/mocks/role-management.mock';
 import { Router } from '@angular/router';
 
 describe('TeacherScheduleComponent', () => {
@@ -158,5 +159,30 @@ describe('TeacherScheduleComponent', () => {
   it('MEJORAS-SERGIO 9: una franja sin grupo lleva a la lista de grupos', () => {
     component.abrirGrupo(mockHorarios[1]);
     expect(routerSpy.navigate).toHaveBeenCalledWith(['/app/docente/grupos'], {});
+  });
+
+  it('MEJORAS-SERGIO 9: la franja solo contiene contenido de frase (sin div, h4 ni p dentro del botón)', () => {
+    const franja = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('[data-testid="franja-horario"]')!;
+    expect(franja.querySelectorAll('div, h1, h2, h3, h4, h5, h6, p').length).toBe(0);
+    expect(franja.textContent).toContain('Ingeniería de Software');
+  });
+
+  it('MEJORAS-SERGIO 9: el nombre accesible incluye materia, grupo, día, horario y aula', () => {
+    const franjas = (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('[data-testid="franja-horario"]');
+    const etiqueta = franjas[0].getAttribute('aria-label') ?? '';
+    expect(etiqueta).toContain('Ingeniería de Software');
+    expect(etiqueta).toContain('Grupo 01');
+    expect(etiqueta).toContain('Lunes de 08:00 a 10:00');
+    expect(etiqueta).not.toContain('aula');
+
+    const conAula = component.etiquetaFranja({ ...mockHorarios[1], horaInicio: '10:00:00', horaFin: '12:00:00', aula: 'Bloque 3 - 201' });
+    expect(conAula).toContain('Miércoles de 10:00 a 12:00');
+    expect(conAula).toContain('aula Bloque 3 - 201');
+    expect(conAula).toContain('25 estudiantes');
+  });
+
+  it('MEJORAS-SERGIO 9: el horario mock del docente trae idGrupo en cada franja (modo mock navega al grupo)', () => {
+    expect(MOCK_HORARIOS_DOCENTE.length).toBeGreaterThan(0);
+    expect(MOCK_HORARIOS_DOCENTE.every((h) => !!h.idGrupo)).toBeTrue();
   });
 });

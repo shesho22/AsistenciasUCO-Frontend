@@ -74,30 +74,34 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
                       type="button"
                       data-testid="franja-horario"
                       (click)="abrirGrupo(clase)"
-                      [attr.aria-label]="'Abrir el grupo ' + clase.seccion + ' de ' + clase.nombreMateria"
+                      [attr.aria-label]="etiquetaFranja(clase)"
                       title="Abrir la materia y el grupo"
                       [class]="getClaseClasses(clase.colorCategory)"
                     >
-                      <div class="flex items-center justify-between text-[11px] font-semibold mb-1">
+                      <!-- Dentro de un <button> solo va contenido de frase: <span class="block">, no <div>/<h4>/<p>. -->
+                      <span class="flex items-center justify-between text-[11px] font-semibold mb-1">
                         <span class="font-mono">{{ clase.horaInicio | rangoHorario: clase.horaFin }}</span>
                         <span class="uppercase tracking-wider px-1.5 py-0.2 rounded bg-white/80 text-[10px] font-bold">
                           {{ clase.codigoMateria }}
                         </span>
-                      </div>
+                      </span>
 
-                      <h4 class="font-bold text-xs text-warm-900 leading-snug">
+                      <span class="block font-bold text-xs text-warm-900 leading-snug">
                         {{ clase.nombreMateria }}
-                      </h4>
-                      <p class="text-[10px] text-warm-500 mt-0.5">{{ clase.seccion }}</p>
+                      </span>
+                      <span class="block text-[10px] text-warm-500 mt-0.5">{{ clase.seccion }}</span>
 
-                      <div class="mt-2 pt-2 border-t border-black/5 text-[11px] space-y-0.5">
-                        <div class="flex items-center gap-1.5 opacity-85">
-                          <svg class="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <span class="block mt-2 pt-2 border-t border-black/5 text-[11px] space-y-0.5">
+                        @if (clase.aula) {
+                          <span class="block opacity-85">{{ clase.aula }}</span>
+                        }
+                        <span class="flex items-center gap-1.5 opacity-85">
+                          <svg class="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                           </svg>
                           <span>{{ clase.totalEstudiantes }} {{ clase.totalEstudiantes === 1 ? 'estudiante' : 'estudiantes' }}</span>
-                        </div>
-                      </div>
+                        </span>
+                      </span>
                     </button>
                   }
                 }
@@ -152,6 +156,20 @@ export class TeacherScheduleComponent implements OnInit {
   /** MEJORAS-SERGIO 9: la franja lleva al hub del grupo (`/app/docente/grupos?grupo=<id>`, mismo enlace que usa el padrón). */
   abrirGrupo(clase: HorarioDocenteItem): void {
     void this.router.navigate(['/app/docente/grupos'], clase.idGrupo ? { queryParams: { grupo: clase.idGrupo } } : {});
+  }
+
+  /**
+   * Nombre accesible de la franja: materia, grupo, día, horario y aula (si el backend la entrega). Antes solo decía
+   * grupo y materia, y al reemplazar el texto visible se perdían la hora y el aula.
+   */
+  etiquetaFranja(clase: HorarioDocenteItem): string {
+    const partes = [
+      `Abrir el grupo ${clase.seccion} de ${clase.nombreMateria} (${clase.codigoMateria})`,
+      `${clase.dia} de ${this.hora(clase.horaInicio)} a ${this.hora(clase.horaFin)}`,
+    ];
+    if (clase.aula) partes.push(`aula ${clase.aula}`);
+    partes.push(`${clase.totalEstudiantes} ${clase.totalEstudiantes === 1 ? 'estudiante' : 'estudiantes'}`);
+    return partes.join(', ');
   }
 
   clasesPorDia(dia: DiaSemana): HorarioDocenteItem[] {
