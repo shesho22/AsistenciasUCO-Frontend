@@ -2,8 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { TeacherMatrizAsistenciaService } from '../../../core/services/teacher-matriz-asistencia.service';
 import { TomaAsistenciaService } from '../../../core/services/toma-asistencia.service';
 import { AsistenciaQrService } from '../../../core/services/asistencia-qr.service';
-import { NEVER, Subject, of, throwError } from 'rxjs';
-import { apiHttpError } from '../../../core/testing/api-error.fixture';
+import { NEVER, Subject, of } from 'rxjs';
 import { AttendanceService } from '../../../core/services/attendance.service';
 import { CatalogService } from '../../../core/services/catalog.service';
 import { CourseService } from '../../../core/services/course.service';
@@ -18,6 +17,8 @@ import { RealtimeEvent, SesionCanceladaRealtimePayload } from '../../../core/rea
 import { AttendanceControlComponent } from './attendance-control.component';
 import { AttendanceRealtimeSyncService } from './attendance-realtime-sync.service';
 import { AttendanceControlTableComponent } from './components/attendance-control-table.component';
+import { SesionAccionesComponent } from './components/sesion-acciones.component';
+import { By } from '@angular/platform-browser';
 
 /**
  * CULM-001 B.1 (HU047): una sesión cancelada se ve como tal en la toma de asistencia, no admite tomas y el SSE
@@ -28,7 +29,7 @@ describe('AttendanceControlComponent sesión cancelada (B.1)', () => {
   let attendanceService: jasmine.SpyObj<AttendanceService>;
   let cancelaciones$: Subject<RealtimeEvent<SesionCanceladaRealtimePayload>>;
   let watchCancelaciones: jasmine.Spy;
-  let sessionService: { cancelarSesion: jasmine.Spy };
+  let sessionService: jasmine.SpyObj<SessionService>;
 
   const course = {
     id: 'group-1', code: 'MAT-1', name: 'Materia', section: '1', schedule: 'Lunes', room: 'Aula 1',
@@ -51,8 +52,7 @@ describe('AttendanceControlComponent sesión cancelada (B.1)', () => {
     localStorage.setItem('USE_MOCKS', 'false');
     cancelaciones$ = new Subject();
     const courseService = jasmine.createSpyObj<CourseService>('CourseService', ['getCurrentTeacherCourses']);
-    const sessionServiceSpy = jasmine.createSpyObj('SessionService', ['getSessionsByGroup', 'createSession', 'cancelarSesion']);
-    sessionService = sessionServiceSpy;
+    sessionService = jasmine.createSpyObj('SessionService', ['getSessionsByGroup', 'createSession', 'updateSession', 'cancelarSesion']);
     const groupService = jasmine.createSpyObj('GroupService', ['getStudentsByGroup']);
     attendanceService = jasmine.createSpyObj('AttendanceService', ['getAttendancesByGroup', 'saveBatchAttendance']);
     const realtime = jasmine.createSpyObj<AttendanceRealtimeSyncService>('AttendanceRealtimeSyncService', [
@@ -67,8 +67,8 @@ describe('AttendanceControlComponent sesión cancelada (B.1)', () => {
       'EmailVerificationService', ['resendVerification']);
 
     courseService.getCurrentTeacherCourses.and.returnValue(of<never>({ exitoso: true, datos: [course] } as never));
-    sessionServiceSpy.getSessionsByGroup.and.returnValue(
-      of({ exitoso: true, datos: [programada, cancelada], total: 2 } as never));
+    sessionService.getSessionsByGroup.and.returnValue(
+      of<never>({ exitoso: true, datos: [programada, cancelada], total: 2 } as never));
     groupService.getStudentsByGroup.and.returnValue(of({
       exitoso: true,
       datos: [{
@@ -92,7 +92,7 @@ describe('AttendanceControlComponent sesión cancelada (B.1)', () => {
       imports: [AttendanceControlComponent],
       providers: [
         { provide: CourseService, useValue: courseService },
-        { provide: SessionService, useValue: sessionServiceSpy },
+        { provide: SessionService, useValue: sessionService },
         { provide: GroupService, useValue: groupService },
         { provide: StudentService, useValue: jasmine.createSpyObj('StudentService', ['enrollStudentInGroup']) },
         { provide: AttendanceService, useValue: attendanceService },
@@ -183,62 +183,6 @@ describe('AttendanceControlComponent sesión cancelada (B.1)', () => {
     expect(getGroup()).toBe('group-1');
   });
 
-  describe('MEJORAS-SERGIO 10: cancelar una sesión desde el cronograma de /app/asistencia', () => {
-    const boton = (n: number) => (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(`[data-testid="cancelar-sesion-${n}"]`);
-
-    it('ofrece «Cancelar» solo en las sesiones no canceladas y abre el modal con motivo', () => {
-      const component = crear();
-      expect(boton(1)).not.toBeNull();
-      expect(boton(2)).toBeNull();
-      const abrirToma = spyOn(component, 'irASesionDetalle');
-
-      boton(1)!.click();
-      fixture.detectChanges();
-      expect(component.sesionACancelar()?.id).toBe('session-1');
-      expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="cancelar-panel"]')).not.toBeNull();
-      expect(abrirToma).not.toHaveBeenCalled();
-    });
-
-    it('con la cancelación registrada marca la sesión, avisa cuántos estudiantes se notificaron y cierra el modal', () => {
-      sessionService.cancelarSesion.and.returnValue(of({
-        exitoso: true,
-        datos: {
-          idSesion: 'session-1', idGrupo: 'group-1', estado: 'CANCELADA', estudiantesNotificados: 3,
-          cancelacion: { tipo: 'DOCENTE', motivo: 'Calamidad doméstica del docente', nombreFestivo: null, fechaCancelacionUtc: null },
-        },
-      }) as never);
-      const component = crear();
-      component.abrirCancelarSesion(component.sessions()[0]);
-      component.confirmarCancelarSesion('  Calamidad doméstica del docente  ');
-      fixture.detectChanges();
-
-      expect(sessionService.cancelarSesion).toHaveBeenCalledWith('session-1', 'Calamidad doméstica del docente');
-      expect(component.sessions().find((s) => s.id === 'session-1')?.estado).toBe('CANCELADA');
-      expect(component.sesionACancelar()).toBeNull();
-      expect(component.toastMessage()).toBe('Sesión cancelada. Estudiantes notificados: 3.');
-      expect(boton(1)).toBeNull();
-    });
-
-    it('un rechazo del backend (p. ej. SES_012) se muestra en el modal y la sesión no cambia', () => {
-      sessionService.cancelarSesion.and.returnValue(throwError(() => apiHttpError(409, 'La sesión ya tiene asistencia registrada.')));
-      const component = crear();
-      component.abrirCancelarSesion(component.sessions()[0]);
-      component.confirmarCancelarSesion('Motivo suficientemente largo');
-      fixture.detectChanges();
-
-      expect(component.errorCancelar()).toBe('La sesión ya tiene asistencia registrada.');
-      expect(component.sesionACancelar()?.id).toBe('session-1');
-      expect(component.enviandoCancelacion()).toBeFalse();
-      expect(component.sessions().find((s) => s.id === 'session-1')?.estado).toBe('PROGRAMADA');
-    });
-
-    it('no abre el modal para una sesión ya cancelada', () => {
-      const component = crear();
-      component.abrirCancelarSesion(component.sessions()[1]);
-      expect(component.sesionACancelar()).toBeNull();
-    });
-  });
-
   it('B1-F-18 la actualización por SSE y el bloqueo de la toma no usan polling: setInterval no se invoca', () => {
     // El modal de proyección heredado arma su propio temporizador al instanciarse (lo retira B.2); este spec
     // acota la afirmación al flujo de cancelación: se espía después de crear la pantalla.
@@ -251,5 +195,93 @@ describe('AttendanceControlComponent sesión cancelada (B.1)', () => {
 
     expect(fixture.componentInstance.attendanceWindowState()).toBe('CANCELADA');
     expect(spy).not.toHaveBeenCalled();
+  });
+
+  // Las acciones del cronograma del docente se ejecutan desde el menú "Acciones" de cada sesión del historial.
+  describe('menú "Acciones" de una sesión del historial', () => {
+    function acciones(): SesionAccionesComponent {
+      return fixture.debugElement.query(By.directive(SesionAccionesComponent)).componentInstance as SesionAccionesComponent;
+    }
+
+    it('la panorámica recibe las banderas de QR y cancelación', () => {
+      const component = crear();
+      expect(component.sessionCancelEnabled).toBeTrue();
+      expect(fixture.nativeElement.querySelector('[data-testid="acciones-sesion-1"]')).not.toBeNull();
+    });
+
+    it('"Tomar asistencia" abre la toma de esa sesión', () => {
+      const component = crear();
+      component.onAccionSesion({ accion: 'tomar', sesion: programada as never });
+      expect(component.vistaActual()).toBe('DETALLE');
+      expect(component.selectedSessionId()).toBe('session-1');
+    });
+
+    it('"Proyectar QR / PIN" lleva a la toma de esa sesión sin abrir el selector de modo (ahí se valida ventana y toma abierta)', () => {
+      const component = crear();
+      component.onAccionSesion({ accion: 'proyectar', sesion: programada as never });
+      expect(component.vistaActual()).toBe(component.sessionQrEnabled ? 'DETALLE' : 'OVERVIEW');
+      expect(component.modoSelectorAbierto()).toBeFalse();
+    });
+
+    it('una recarga que llega después de cambiar de grupo no pisa la lista del grupo vigente', () => {
+      const component = crear();
+      const lenta = new Subject<never>();
+      sessionService.getSessionsByGroup.and.returnValue(lenta as never);
+      component.recargarSesionesDelGrupo();
+      const antes = component.sessions();
+      component.selectedCourseId.set('otro-grupo');
+
+      lenta.next({ exitoso: true, datos: [], total: 0 } as never);
+
+      expect(component.sessions()).toBe(antes);
+    });
+
+    it('"Ver detalles", "Ajustar horario" y "Cancelar sesión" abren su modal para esa sesión', () => {
+      const component = crear();
+      const hijo = acciones();
+      const detalle = spyOn(hijo, 'abrirDetalle');
+      const ajuste = spyOn(hijo, 'abrirAjuste');
+      const cancelar = spyOn(hijo, 'abrirCancelar');
+
+      component.onAccionSesion({ accion: 'detalle', sesion: programada as never });
+      component.onAccionSesion({ accion: 'ajustar', sesion: programada as never });
+      component.onAccionSesion({ accion: 'cancelar', sesion: programada as never });
+
+      expect(detalle).toHaveBeenCalledOnceWith(programada as never);
+      expect(ajuste).toHaveBeenCalledOnceWith(programada as never);
+      expect(cancelar).toHaveBeenCalledOnceWith(programada as never);
+      expect(component.vistaActual()).toBe('OVERVIEW');
+    });
+
+    it('HU047: la cancelación confirmada marca la sesión con la respuesta del backend sin recargar por HTTP', () => {
+      const component = crear();
+      sessionService.getSessionsByGroup.calls.reset();
+
+      acciones().sesionCancelada.emit({
+        sesionId: 'session-1',
+        cancelacion: { tipo: 'DOCENTE', motivo: 'Paro de transporte', nombreFestivo: null, fechaCancelacionUtc: null },
+      });
+
+      const sesion = component.sessions().find((s) => s.id === 'session-1');
+      expect(sesion?.estado).toBe('CANCELADA');
+      expect(sesion?.cancelacion?.motivo).toBe('Paro de transporte');
+      expect(sessionService.getSessionsByGroup).not.toHaveBeenCalled();
+    });
+
+    it('tras ajustar el horario recarga la lista del grupo por HTTP (el PATCH no devuelve la sesión)', () => {
+      crear();
+      sessionService.getSessionsByGroup.calls.reset();
+
+      acciones().sesionActualizada.emit();
+
+      expect(sessionService.getSessionsByGroup).toHaveBeenCalledOnceWith('group-1');
+    });
+
+    it('los avisos de las acciones se muestran en el toast de la pantalla', () => {
+      const component = crear();
+      acciones().notificacion.emit({ tipo: 'success', texto: 'Horario actualizado.' });
+      expect(component.showToast()).toBeTrue();
+      expect(component.toastMessage()).toBe('Horario actualizado.');
+    });
   });
 });

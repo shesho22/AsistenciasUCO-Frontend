@@ -72,11 +72,11 @@ No se envían `tema`, `topic`, `descripcion`, `aula`, `room`, `tipo`, `status` n
 
 | Acción | Feature | UI ocultada | Método legado (sin uso desde el Golden Path) |
 |---|---|---|---|
-| QR / PIN por sesión, «Proyectar Auto-Registro», «QR Asistencia» | `sessionQrEnabled` | `TeacherGrupoSesionesComponent`, cabecera de `TeacherGrupoHubComponent`, `TeacherGruposListComponent` | `SessionService.getQrToken` |
-| Cancelar sesión | `sessionCancelEnabled` | `TeacherGrupoSesionesComponent` | `SessionService.cancelarSesion` |
+| QR / PIN por sesión, «Proyectar Auto-Registro», «QR Asistencia» | `sessionQrEnabled` | menú «Acciones» de cada sesión en `GroupSessionsOverviewComponent`, cabecera de `TeacherGrupoHubComponent`, `TeacherGruposListComponent` | `SessionService.getQrToken` |
+| Cancelar sesión | `sessionCancelEnabled` | menú «Acciones» de cada sesión en `GroupSessionsOverviewComponent` (modal de `SesionAccionesComponent`) | `SessionService.cancelarSesion` |
 | Cerrar sesión | — (sin UI) | — | `SessionService.closeSession` |
 
-Con la feature apagada los componentes ocultan el botón (input `false` por defecto) y `TeacherGruposComponent` ignora los manejadores (no se invocan `getQrToken`/`cancelarSesion`). Los métodos siguen en `SessionService` marcados `@deprecated OUT_OF_GOLDEN_PATH`. Deuda no bloqueante: definir su contrato backend antes de reactivarlos. Tampoco pertenecen al contrato y no fueron tocadas en 5A: crear/editar grupo, QR de matrícula, reclamos y sábana de `/app/docente/grupos`.
+Con la feature apagada los componentes ocultan el botón (input `false` por defecto) y quien maneja la acción no la ejecuta (`AttendanceControlComponent` para el QR y `SesionAccionesComponent` para la cancelación; no se invocan `getQrToken`/`cancelarSesion`). Los métodos siguen en `SessionService` marcados `@deprecated OUT_OF_GOLDEN_PATH`. Deuda no bloqueante: definir su contrato backend antes de reactivarlos. Tampoco pertenecen al contrato y no fueron tocadas en 5A: crear/editar grupo, QR de matrícula, reclamos y sábana de `/app/docente/grupos`.
 
 ## 5. Asistencia
 

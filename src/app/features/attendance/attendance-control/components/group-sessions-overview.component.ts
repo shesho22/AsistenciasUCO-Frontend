@@ -10,7 +10,15 @@ import { EmptyStateComponent } from '../../../../shared/components/empty-state/e
 import { SesionEstadoBadgeComponent } from '../../../../shared/components/sesion-estado-badge/sesion-estado-badge.component';
 import { findActiveOrUpcomingSession } from '../../../../core/utils/session-selection.util';
 import { SessionTimeZoneService } from '../../../../core/services/session-timezone.service';
-import { estaCancelada } from '../../../../core/models/sesion-estado.model';
+import { estaCancelada, estaPendienteAprobacion, TEXTO_SESION_PENDIENTE } from '../../../../core/models/sesion-estado.model';
+
+/** Acciones de una sesión del historial (antes en el cronograma del grupo del docente). */
+export type AccionSesion = 'tomar' | 'proyectar' | 'detalle' | 'ajustar' | 'cancelar';
+
+export interface AccionSesionEvento {
+  accion: AccionSesion;
+  sesion: ClassSession;
+}
 
 @Component({
     selector: 'app-group-sessions-overview',
@@ -191,7 +199,7 @@ import { estaCancelada } from '../../../../core/models/sesion-estado.model';
               <tbody class="divide-y divide-warm-100">
                 @for (s of sessions(); track s.id) {
                   <tr
-                    (click)="selectSession.emit(s.id)"
+                    (click)="alClicFila($event, s.id)"
                     class="hover:bg-primary-50/50 cursor-pointer transition-colors group"
                     title="Haz clic para abrir la toma de asistencia de esta sesión"
                   >
@@ -210,7 +218,15 @@ import { estaCancelada } from '../../../../core/models/sesion-estado.model';
                       <span class="font-medium text-warm-900 block truncate" [title]="s.title">
                         {{ s.title }}
                       </span>
-                      <app-sesion-estado-badge [estado]="s.estado" [cancelacion]="s.cancelacion" />
+                      <app-sesion-estado-badge
+                        [estado]="s.estado"
+                        [cancelacion]="s.cancelacion"
+                        [estadoSolicitud]="s.estadoSolicitud"
+                        [pendienteAprobacion]="s.pendienteAprobacion"
+                      />
+                      @if (esPendiente(s)) {
+                        <p class="text-[11px] text-warning-800 mt-1" [attr.data-testid]="'sesion-pendiente-' + s.sessionNumber">{{ textoPendiente }}</p>
+                      }
                     </td>
                     <td class="px-5 py-4 text-center" [attr.data-testid]="'asistentes-sesion-' + s.sessionNumber">
                       <span class="font-bold text-warm-900">
@@ -228,26 +244,14 @@ import { estaCancelada } from '../../../../core/models/sesion-estado.model';
                         </span>
                       }
                     </td>
-                    <td class="px-5 py-4 text-right space-x-1.5 whitespace-nowrap">
-                      <app-button
-                        variant="accent"
-                        size="sm"
-                        (clicked)="$event.stopPropagation(); selectSession.emit(s.id)"
-                      >
-                        Tomar Asistencia
-                      </app-button>
-                      <!-- MEJORAS-SERGIO 10 (HU047): el docente titular cancela la sesión con motivo; el backend avisa a los estudiantes -->
-                      @if (cancelEnabled() && !esCancelada(s)) {
-                        <button
-                          type="button"
-                          [attr.data-testid]="'cancelar-sesion-' + s.sessionNumber"
-                          (click)="$event.stopPropagation(); cancelarSesion.emit(s)"
-                          class="text-xs font-semibold text-danger-700 hover:text-danger-900 bg-danger-50 hover:bg-danger-100 border border-danger-200 min-h-[44px] px-3 py-1.5 rounded-lg transition-colors"
-                          title="Cancelar la sesión indicando el motivo (se notifica a los estudiantes)"
-                        >
-                          Cancelar
-                        </button>
-                      }
+                    <td class="px-5 py-4 text-right whitespace-nowrap" data-acciones-sesion [attr.data-testid]="'acciones-sesion-' + s.sessionNumber">
+                      <app-action-menu
+                        [label]="'Acciones de la sesión #' + s.sessionNumber"
+                        texto="Acciones"
+                        [flotante]="true"
+                        [items]="accionesDe(s)"
+                        (selected)="alElegirAccionSesion(s, $event)"
+                      />
                     </td>
                   </tr>
                 }
@@ -274,12 +278,49 @@ export class GroupSessionsOverviewComponent {
   /** HU051: abre el hub del grupo del docente (padrón con retiro). */
   gestionarPadron = output<void>();
   verReclamos = output<void>();
-  /** MEJORAS-SERGIO 10 (HU047): muestra «Cancelar» en cada sesión no cancelada (bandera `sessionCancelEnabled`). */
-  cancelEnabled = input<boolean>(false);
-  cancelarSesion = output<ClassSession>();
+  /** Accion elegida en el menu "Acciones" de una sesion; el padre la ejecuta. */
+  accionSesion = output<AccionSesionEvento>();
 
-  esCancelada(sesion: ClassSession): boolean {
-    return estaCancelada(sesion);
+  /** QR/PIN (HU175) y cancelacion con motivo (HU047) dependen de sus banderas. */
+  qrHabilitado = input<boolean>(false);
+  protected readonly esPendiente = estaPendienteAprobacion;
+  /** DEC-065 (2): una sesión pendiente explica por qué no se puede tomar todavía. */
+  protected readonly textoPendiente = TEXTO_SESION_PENDIENTE;
+  cancelacionHabilitada = input<boolean>(false);
+
+  /**
+   * Acciones de la sesion. Tomar asistencia y QR no aplican a una sesion cancelada o pendiente de aprobacion;
+   * una sesion cancelada no se reprograma ni se vuelve a cancelar.
+   */
+  accionesDe(s: ClassSession): ActionMenuItem[] {
+    const cancelada = estaCancelada(s);
+    const bloqueada = cancelada || estaPendienteAprobacion(s);
+    const n = s.sessionNumber;
+    const items: ActionMenuItem[] = [
+      { id: 'tomar', label: 'Tomar asistencia', testid: `accion-tomar-${n}`, disabled: bloqueada },
+    ];
+    if (this.qrHabilitado()) {
+      items.push({ id: 'proyectar', label: 'Proyectar QR / PIN', testid: `accion-proyectar-${n}`, disabled: bloqueada });
+    }
+    items.push(
+      { id: 'detalle', label: 'Ver detalles', testid: `accion-detalle-${n}` },
+      { id: 'ajustar', label: 'Ajustar horario', testid: `accion-ajustar-${n}`, disabled: cancelada }
+    );
+    if (this.cancelacionHabilitada() && !cancelada) {
+      items.push({ id: 'cancelar', label: 'Cancelar sesión', testid: `accion-cancelar-${n}`, danger: true });
+    }
+    return items;
+  }
+
+  alElegirAccionSesion(sesion: ClassSession, accion: string): void {
+    this.accionSesion.emit({ accion: accion as AccionSesion, sesion });
+  }
+
+  /** El clic en la fila abre la toma, salvo que venga del menu de acciones de esa fila. */
+  alClicFila(evento: Event, sesionId: string): void {
+    const destino = evento.target as HTMLElement | null;
+    if (destino?.closest?.('[data-acciones-sesion]')) return;
+    this.selectSession.emit(sesionId);
   }
 
   /** Acciones secundarias del grupo: se agrupan en "Mas acciones" para dejar una sola accion primaria visible. */

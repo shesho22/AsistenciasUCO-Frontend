@@ -19,9 +19,7 @@ import { EstadoCeldaAsistencia, FilaMatriz } from '../../../core/models/matriz-a
 import { Course } from '../../../core/models/course.model';
 import { ClassSession } from '../../../core/models/attendance.model';
 import { ToastService } from '../../../shared/components/toast/toast.component';
-import { mensajeUi } from '../../../core/messages/mensajes-ui';
 import { apiHttpError } from '../../../core/testing/api-error.fixture';
-import { HttpErrorResponse } from '@angular/common/http';
 import { RealtimeService } from '../../../core/realtime/realtime.service';
 import { RealtimeEvent, SesionCanceladaRealtimePayload, SesionManualCreadaRealtimePayload } from '../../../core/realtime/model/realtime-event.model';
 import { RevisionCancelacionService } from '../../../core/services/revision-cancelacion.service';
@@ -199,41 +197,18 @@ describe('TeacherGruposComponent', () => {
 
   it('B2-F-15 el QR (HU175) esta habilitado y el bloque de proyeccion con temporizador fue retirado', () => {
     expect(component.sessionQrEnabled).toBeTrue();
-    expect(component.sessionCancelEnabled).toBeTrue();
     const interno = component as unknown as Record<string, unknown>;
     for (const retirado of ['datosQr', 'segundosRestantes', 'modalProyeccionVisible', 'refrescarQrManual', 'iniciarTimerQr']) {
       expect(interno[retirado]).toBeUndefined();
     }
   });
 
-  it('B2-F-15 proyectar el QR de un grupo o de una sesion lleva a la pantalla de asistencia sin llamar al backend', () => {
+  it('B2-F-15 proyectar el QR del grupo lleva a la pantalla de asistencia sin llamar al backend', () => {
     const navigate = router.navigate.and.resolveTo(true);
-    const sesion: ClassSession = {
-      id: 'ses-1', courseId: 'crs-1', sessionNumber: 1, title: 'S',
-      date: '2026-09-10', startTime: '08:00', endTime: '10:00', records: [],
-    };
     component.verHubGrupo(course);
 
     component.proyectarQrGrupo(course);
     expect(navigate).toHaveBeenCalledWith(['/app/asistencia'], { queryParams: { courseId: course.id } });
-
-    component.proyectarSesionEspecifica(sesion);
-    expect(navigate).toHaveBeenCalledWith(['/app/asistencia'], { queryParams: { courseId: course.id, sessionId: 'ses-1' } });
-  });
-
-  it('actualizar sesión consume ApiDataResponse<Void>: éxito con solo `exitoso` recarga por HTTP', () => {
-    sessionService.updateSession.and.returnValue(of({ exitoso: true, datos: null }));
-    component.verHubGrupo(course);
-    sessionService.getSessionsByGroup.calls.reset();
-    component.abrirEditarSesion({
-      id: 'ses-1', courseId: 'crs-1', sessionNumber: 1, title: 'Editada',
-      date: '2026-09-10', startTime: '08:00', endTime: '10:00', records: [],
-    });
-
-    component.guardarSesion();
-
-    expect(sessionService.updateSession).toHaveBeenCalledTimes(1);
-    expect(sessionService.getSessionsByGroup).toHaveBeenCalledWith('crs-1');
   });
 
   // CIERRE-W3M: el hub ya no descarga padron, asistencias y sesiones completos para cruzarlos; el servidor entrega la matriz
@@ -272,71 +247,6 @@ describe('TeacherGruposComponent', () => {
     expect(matrizService.consultarResumenSesiones).toHaveBeenCalledOnceWith('crs-1');
   });
 
-  it('abrirDetalleSesionModal() pide solo la lista de esa sesion y no sintetiza AN/SJC por paridad del ID del estudiante', () => {
-    const sesionConcluida: ClassSession = {
-      id: 'ses-1',
-      courseId: 'crs-1',
-      sessionNumber: 1,
-      title: 'Sesión',
-      date: '2026-09-10',
-      startTime: '08:00',
-      endTime: '10:00',
-      records: [],
-    };
-    component.verHubGrupo(course);
-    studentService.getStudentsByGroup.and.returnValue(
-      of<never>({
-        exitoso: true,
-        datos: [
-          { idEstudiante: 'est-2', nombreCompleto: 'Estudiante Dos', documento: '002', codigoEstado: 'A' },
-          { idEstudiante: 'est-3', nombreCompleto: 'Estudiante Tres', documento: '003', codigoEstado: 'A' },
-          { idEstudiante: 'est-4', nombreCompleto: 'Retirado', documento: '004', codigoEstado: 'R' },
-        ],
-      } as never)
-    );
-    attendanceService.getAttendancesByGroup.and.returnValue(
-      of({
-        exitoso: true,
-        datos: [{ asistencia: 'a1', estudiante: 'est-2', grupo: 'crs-1', sesion: 'ses-1', presente: true, estado: 'AN', observacion: null }],
-      }) as never
-    );
-
-    component.abrirDetalleSesionModal(sesionConcluida);
-
-    expect(attendanceService.getAttendancesByGroup).toHaveBeenCalledWith('crs-1', 'ses-1');
-    const detalle = component.sesionDetalle();
-    expect(detalle?.records.map((r) => [r.studentId, r.status])).toEqual([['est-2', 'AN'], ['est-3', null]]);
-  });
-
-  it('abrirDetalleSesionModal() abre el modal sin registros mientras llegan y avisa si la consulta falla', () => {
-    const toastError = spyOn(TestBed.inject(ToastService), 'error');
-    studentService.getStudentsByGroup.and.returnValue(throwError(() => apiHttpError(409, 'No se pudo consultar el padron.', 'CONFLICT')) as never);
-
-    component.abrirDetalleSesionModal({
-      id: 'ses-1', courseId: 'crs-1', sessionNumber: 1, title: 'S', date: '2026-09-10', startTime: '08:00', endTime: '10:00', records: [],
-    });
-
-    expect(component.modalDetalleSesionVisible()).toBeTrue();
-    expect(component.sesionDetalle()?.records).toEqual([]);
-    expect(toastError).toHaveBeenCalledWith('No se pudo consultar el padron.');
-  });
-
-  it('abrirDetalleSesionModal() descarta la respuesta de una sesion que ya no es la abierta', () => {
-    const lento = new Subject<never>();
-    studentService.getStudentsByGroup.and.returnValue(lento as never);
-    attendanceService.getAttendancesByGroup.and.returnValue(of({ exitoso: true, datos: [] }) as never);
-    const sesion = (id: string): ClassSession => ({
-      id, courseId: 'crs-1', sessionNumber: 1, title: 'S', date: '2026-09-10', startTime: '08:00', endTime: '10:00', records: [],
-    });
-
-    component.abrirDetalleSesionModal(sesion('ses-1'));
-    component.cerrarDetalleSesionModal();
-    lento.next({ exitoso: true, datos: [{ idEstudiante: 'est-1', nombreCompleto: 'Ana', documento: '1', codigoEstado: 'A' }] } as never);
-    lento.complete();
-
-    expect(component.sesionDetalle()).toBeNull();
-  });
-
   it('al seleccionar un grupo de la lista, navega a la vista de asistencia del curso', () => {
     spyOn(component, 'tomarAsistenciaGrupo').and.callThrough();
     const listElement = fixture.nativeElement.querySelector('app-teacher-grupos-list');
@@ -350,144 +260,6 @@ describe('TeacherGruposComponent', () => {
     });
   });
 
-  it('guardarSesion crea una nueva sesión cuando modoFormSesion es CREAR', () => {
-    sessionService.createSession.and.returnValue(of<never>({ exitoso: true, mensaje: 'Sesión creada' } as never));
-    component.verHubGrupo(course);
-    component.abrirCrearSesionExtraordinaria();
-    component.sesionForm = {
-      title: 'Sesión de repaso',
-      date: '2026-09-15',
-      startTime: '08:00',
-      endTime: '10:00',
-      sessionNumber: 1,
-    };
-
-    component.guardarSesion();
-
-    expect(sessionService.createSession).toHaveBeenCalled();
-  });
-
-  it('DEC-065 (2): tras solicitar la sesión muestra el mensajeUsuario del backend tal cual', () => {
-    const toastSuccess = spyOn(TestBed.inject(ToastService), 'success');
-    sessionService.createSession.and.returnValue(of<never>({ exitoso: true, mensaje: 'x', mensajeUsuario: 'Solicitud enviada; queda pendiente de aprobación.' } as never));
-    component.verHubGrupo(course);
-    component.abrirCrearSesionExtraordinaria();
-    component.sesionForm = { title: 'Sesión de repaso', date: '2026-09-15', startTime: '08:00', endTime: '10:00', sessionNumber: 1 };
-
-    component.guardarSesion();
-
-    expect(toastSuccess).toHaveBeenCalledOnceWith('Solicitud enviada; queda pendiente de aprobación.');
-  });
-
-  it('DEC-065 (2): sin mensajeUsuario usa mensaje y, sin ninguno, el aviso de solicitud pendiente', () => {
-    const toastSuccess = spyOn(TestBed.inject(ToastService), 'success');
-    sessionService.createSession.and.returnValues(
-      of<never>({ exitoso: true, mensaje: 'Sesión creada' } as never),
-      of<never>({ exitoso: true } as never)
-    );
-    component.verHubGrupo(course);
-    component.abrirCrearSesionExtraordinaria();
-    component.sesionForm = { title: 'Sesión de repaso', date: '2026-09-15', startTime: '08:00', endTime: '10:00', sessionNumber: 1 };
-
-    component.guardarSesion();
-    component.guardarSesion();
-
-    expect(toastSuccess.calls.allArgs()).toEqual([
-      ['Sesión creada'],
-      ['La sesión queda pendiente hasta que el coordinador del programa la apruebe.'],
-    ]);
-  });
-
-  it('A2-F-09 un 400 SES_017 al crear una sesión muestra el message del backend, sin texto local', () => {
-    const toastError = spyOn(TestBed.inject(ToastService), 'error');
-    sessionService.createSession.and.returnValue(throwError(() => apiHttpError(400, 'La sesión se cruza con otra sesión del grupo o del docente en ese horario.', 'VALIDATION_ERROR')));
-    component.verHubGrupo(course);
-    component.abrirCrearSesionExtraordinaria();
-    component.sesionForm = { title: 'Repaso', date: '2026-09-15', startTime: '08:00', endTime: '10:00', sessionNumber: 1 };
-
-    component.guardarSesion();
-
-    expect(toastError).toHaveBeenCalledOnceWith('La sesión se cruza con otra sesión del grupo o del docente en ese horario.');
-  });
-
-  it('A2-F-09 un 400 SES_017 al editar una sesión muestra el message del backend', () => {
-    const toastError = spyOn(TestBed.inject(ToastService), 'error');
-    sessionService.updateSession.and.returnValue(throwError(() => apiHttpError(400, 'La sesión se cruza con otra sesión del grupo o del docente en ese horario.', 'VALIDATION_ERROR')));
-    component.verHubGrupo(course);
-    component.abrirEditarSesion({
-      id: 'ses-1', courseId: 'crs-1', sessionNumber: 1, title: 'Editada',
-      date: '2026-09-10', startTime: '08:00', endTime: '10:00', records: [],
-    });
-
-    component.guardarSesion();
-
-    expect(toastError).toHaveBeenCalledOnceWith('La sesión se cruza con otra sesión del grupo o del docente en ese horario.');
-  });
-
-  it('guardarSesion valida campos obligatorios antes de enviar', () => {
-    component.verHubGrupo(course);
-    component.abrirCrearSesionExtraordinaria();
-    component.sesionForm = { title: '', date: '', startTime: '', endTime: '', sessionNumber: 1 };
-    component.guardarSesion();
-    expect(sessionService.createSession).not.toHaveBeenCalled();
-
-    component.sesionForm = { title: 'Valida', date: '', startTime: '08:00', endTime: '10:00', sessionNumber: 1 };
-    component.guardarSesion();
-    expect(sessionService.createSession).not.toHaveBeenCalled();
-  });
-
-  it('DEC-072: guardarSesion no crea una sesión cuya hora de fin es anterior a la de inicio (no cruza medianoche)', () => {
-    // Antes de DEC-072 (2026-11-13) 23:30 → 01:30 se enviaba y quedaba como sesión que terminaba al día siguiente.
-    const toastWarning = spyOn(TestBed.inject(ToastService), 'warning');
-    component.verHubGrupo(course);
-    component.abrirCrearSesionExtraordinaria();
-    component.sesionForm = {
-      title: 'Sesión nocturna',
-      date: '2026-09-15',
-      startTime: '23:30',
-      endTime: '01:30',
-      sessionNumber: 1,
-    };
-
-    component.guardarSesion();
-
-    expect(sessionService.createSession).not.toHaveBeenCalled();
-    expect(toastWarning).toHaveBeenCalledOnceWith(mensajeUi('UI_SESION_HORARIO_MISMO_DIA'));
-  });
-
-  it('DEC-072: una sesión ya guardada que cruza medianoche se puede editar sin tocar su horario', () => {
-    sessionService.updateSession.and.returnValue(of({ exitoso: true, datos: null }));
-    const legado = {
-      id: 'ses-noche', courseId: 'crs-1', sessionNumber: 3, title: 'Nocturna',
-      date: '2026-09-15', startTime: '22:30', endTime: '00:35', records: [],
-    };
-    component.verHubGrupo(course);
-    component.sessions.set([legado]);
-    component.abrirEditarSesion(legado);
-    component.sesionForm = { ...component.sesionForm, title: 'Nocturna renombrada' };
-
-    component.guardarSesion();
-
-    expect(sessionService.updateSession).toHaveBeenCalledTimes(1);
-  });
-
-  it('DEC-072: al editar, cambiar el horario a uno que cruza medianoche avisa y no guarda', () => {
-    const toastWarning = spyOn(TestBed.inject(ToastService), 'warning');
-    const sesion = {
-      id: 'ses-1', courseId: 'crs-1', sessionNumber: 1, title: 'Editada',
-      date: '2026-09-10', startTime: '08:00', endTime: '10:00', records: [],
-    };
-    component.verHubGrupo(course);
-    component.sessions.set([sesion]);
-    component.abrirEditarSesion(sesion);
-    component.sesionForm = { ...component.sesionForm, startTime: '20:30', endTime: '10:00' };
-
-    component.guardarSesion();
-
-    expect(sessionService.updateSession).not.toHaveBeenCalled();
-    expect(toastWarning).toHaveBeenCalledOnceWith(mensajeUi('UI_SESION_HORARIO_MISMO_DIA'));
-  });
-
   it('permite abrir y cerrar modal de matrícula de grupo', () => {
     component.abrirModalMatriculaGrupo(course);
     expect(component.modalMatriculaGrupoVisible()).toBeTrue();
@@ -496,31 +268,6 @@ describe('TeacherGruposComponent', () => {
     component.cerrarModalMatriculaGrupo();
     expect(component.modalMatriculaGrupoVisible()).toBeFalse();
     expect(component.grupoMatricula()).toBeNull();
-  });
-
-  it('permite cancelar sesión con la bandera activa (B.1)', () => {
-    sessionService.cancelarSesion.and.returnValue(
-      of<never>({ exitoso: true, datos: { idSesion: 'ses-cancelar', idGrupo: 'crs-1', estado: 'CANCELADA', cancelacion: null, estudiantesNotificados: 0 } } as never)
-    );
-    component.verHubGrupo(course);
-    const sesion: ClassSession = {
-      id: 'ses-cancelar',
-      courseId: 'crs-1',
-      sessionNumber: 2,
-      title: 'Sesión por cancelar',
-      date: '2026-09-20',
-      startTime: '08:00',
-      endTime: '10:00',
-      records: [],
-    };
-
-    component.abrirModalCancelarSesion(sesion);
-    expect(component.modalCancelarVisible()).toBeTrue();
-    expect(component.sesionACancelar()).toBe(sesion);
-
-    component.confirmarCancelarSesionConMotivo('Incapacidad médica docente');
-    expect(sessionService.cancelarSesion).toHaveBeenCalledWith('ses-cancelar', 'Incapacidad médica docente');
-    expect(component.modalCancelarVisible()).toBeFalse();
   });
 
 
@@ -781,18 +528,10 @@ describe('TeacherGruposComponent', () => {
     expect(abrirCon()).toBe('SABANA');
   });
 
-  describe('cancelar sesión y SSE (HU047, CULM-001 B.1)', () => {
+  describe('SSE de cancelaciones y aprobaciones del grupo (HU047, CULM-001 B.1, DEC-065 (2))', () => {
     const sesion: ClassSession = {
       id: 'ses-1', courseId: 'crs-1', sessionNumber: 1, title: 'S1', date: '2026-11-10',
       startTime: '08:00', endTime: '10:00', records: [], estado: 'PROGRAMADA', cancelacion: null,
-    };
-    const respuesta = {
-      exitoso: true,
-      datos: {
-        idSesion: 'ses-1', idGrupo: 'crs-1', estado: 'CANCELADA',
-        cancelacion: { tipo: 'DOCENTE', motivo: 'Incapacidad médica del docente', nombreFestivo: null, fechaCancelacionUtc: '2026-11-10T14:00:00Z' },
-        estudiantesNotificados: 12,
-      },
     };
 
     function abrirHub(): void {
@@ -807,46 +546,6 @@ describe('TeacherGruposComponent', () => {
         payload: { grupo, sesion: id, tipo: 'DOCENTE', fechaHoraInicioUtc: null },
       };
     }
-
-    it('B1-F-20 al cancelar con éxito actualiza la sesión con la respuesta, cierra el modal y no recarga por HTTP', () => {
-      sessionService.cancelarSesion.and.returnValue(of<never>(respuesta as never));
-      abrirHub();
-      component.abrirModalCancelarSesion(sesion);
-
-      component.confirmarCancelarSesionConMotivo('  Incapacidad médica del docente  ');
-
-      expect(sessionService.cancelarSesion).toHaveBeenCalledWith('ses-1', 'Incapacidad médica del docente');
-      expect(component.sessions()[0].estado).toBe('CANCELADA');
-      expect(component.sessions()[0].cancelacion?.motivo).toBe('Incapacidad médica del docente');
-      expect(component.modalCancelarVisible()).toBeFalse();
-      expect(component.errorCancelar()).toBeNull();
-      expect(sessionService.getSessionsByGroup).not.toHaveBeenCalled();
-    });
-
-    for (const codigo of ['SES_011', 'SES_012', 'SES_013', 'SES_016']) {
-      it(`B1-F-21 ${codigo}: muestra el mensaje del backend en el modal y lo mantiene abierto`, () => {
-        const mensaje = `Mensaje del backend para ${codigo}`;
-        sessionService.cancelarSesion.and.returnValue(throwError(() => new HttpErrorResponse({
-          status: 409,
-          error: { timestamp: 't', status: 409, error: 'Conflict', code: codigo, message: mensaje, path: '/p', correlationId: null },
-        })));
-        abrirHub();
-        component.abrirModalCancelarSesion(sesion);
-
-        component.confirmarCancelarSesionConMotivo('Motivo suficientemente largo');
-
-        expect(component.errorCancelar()).toBe(mensaje);
-        expect(component.modalCancelarVisible()).toBeTrue();
-        expect(component.enviandoCancelacion()).toBeFalse();
-        expect(component.sessions()[0].estado).toBe('PROGRAMADA');
-      });
-    }
-
-    it('B1-F-21 abrir de nuevo el modal limpia el error anterior', () => {
-      component.errorCancelar.set('viejo');
-      component.abrirModalCancelarSesion(sesion);
-      expect(component.errorCancelar()).toBeNull();
-    });
 
     it('B1-F-22 al abrir el hub se conecta al stream del grupo y escucha SESION_CANCELADA', () => {
       abrirHub();
@@ -971,11 +670,8 @@ describe('TeacherGruposComponent', () => {
 
     it('B1-F-22 no usa polling para refrescar la lista', () => {
       const spy = spyOn(window, 'setInterval').and.callThrough();
-      sessionService.cancelarSesion.and.returnValue(of<never>(respuesta as never));
       abrirHub();
       realtimeEvents$.next(eventoCancelada('crs-1', 'ses-1'));
-      component.abrirModalCancelarSesion(sesion);
-      component.confirmarCancelarSesionConMotivo('Motivo suficientemente largo');
 
       expect(spy).not.toHaveBeenCalled();
     });

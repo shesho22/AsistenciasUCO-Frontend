@@ -1,6 +1,6 @@
 import type { NuevaSesionSolicitud } from './components/attendance-new-session-modal.component';
 import type { MatriculaEstudianteSolicitud } from './components/attendance-enrollment-modal.component';
-import { Component, DestroyRef, signal, computed, effect, inject, ChangeDetectionStrategy } from '@angular/core';
+import { Component, DestroyRef, signal, computed, effect, inject, viewChild, ChangeDetectionStrategy } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { Subscription, catchError, finalize, forkJoin, map, of } from 'rxjs';
@@ -49,16 +49,16 @@ import { TomaAsistenciaService } from '../../../core/services/toma-asistencia.se
 import { AsistenciaQrService } from '../../../core/services/asistencia-qr.service';
 import { ModoToma, TomaAsistencia, TomasSesion } from '../../../core/models/toma-asistencia.model';
 import { QrToma } from '../../../core/models/asistencia-qr.model';
-import { GroupSessionsOverviewComponent } from './components/group-sessions-overview.component';
+import { AccionSesionEvento, GroupSessionsOverviewComponent } from './components/group-sessions-overview.component';
+import { SesionAccionesComponent, SesionCanceladaEvento } from './components/sesion-acciones.component';
 import { GroupInfoModalComponent } from './components/group-info-modal.component';
 import { GroupClaimsModalComponent } from './components/group-claims-modal.component';
 import { TeacherMatriculaModalComponent } from '../../teacher/teacher-grupos/components/modals/teacher-matricula-modal.component';
-import { TeacherSesionCancelarModalComponent } from '../../teacher/teacher-grupos/components/modals/teacher-sesion-cancelar-modal.component';
-import { mensajeUi } from '../../../core/messages/mensajes-ui';
 import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
 import { type EstadoCargaReclamos, ResultadoAprobacionReclamo, SolicitudRevisionItem } from '../../../core/models/role-management.model';
 import { EstudianteGrupoApiDto } from '../../../core/api/models/estudiante-grupo-api-dto.model';
 import { detalleCancelacion, estaCancelada, marcarSesionCancelada } from '../../../core/models/sesion-estado.model';
+import { avisoSolicitudSesionRegistrada } from '../../../core/models/sesion-manual.util';
 import { findActiveOrUpcomingSession } from '../../../core/utils/session-selection.util';
 import {
   ATTENDANCE_WINDOW_MESSAGES,
@@ -98,10 +98,10 @@ type StudentEnrollmentField =
     TomaCierreDialogComponent,
     TomaQrProyeccionComponent,
     GroupSessionsOverviewComponent,
+    SesionAccionesComponent,
     GroupInfoModalComponent,
     GroupClaimsModalComponent,
-    TeacherMatriculaModalComponent,
-    TeacherSesionCancelarModalComponent
+    TeacherMatriculaModalComponent
 ],
     template: `
     <div class="flex flex-col gap-6 animate-fade-in max-w-7xl mx-auto pb-12 relative">
@@ -149,10 +149,20 @@ type StudentEnrollmentField =
           (verAlumnos)="abrirInfoGrupo()"
           (gestionarPadron)="irAPadron()"
           (verReclamos)="abrirReclamosGrupo()"
-          [cancelEnabled]="sessionCancelEnabled"
-          (cancelarSesion)="abrirCancelarSesion($event)"
+          [qrHabilitado]="sessionQrEnabled"
+          [cancelacionHabilitada]="sessionCancelEnabled"
+          (accionSesion)="onAccionSesion($event)"
         />
       }
+
+      <!-- 2.1. Acciones de una sesión del historial: detalles, ajuste de horario y cancelación con motivo -->
+      <app-sesion-acciones
+        [course]="currentCourse()"
+        [sessions]="sessions()"
+        (sesionActualizada)="recargarSesionesDelGrupo()"
+        (sesionCancelada)="onSesionCancelada($event)"
+        (notificacion)="mostrarNotificacion($event)"
+      />
 
       <!-- 3. VISTA DETALLE: Tabla Interactiva de Estudiantes para Toma de Asistencia -->
       @if (vistaActual() === 'DETALLE') {
@@ -240,16 +250,6 @@ type StudentEnrollmentField =
         />
       }
 
-      <!-- MEJORAS-SERGIO 10 (HU047): cancelación de una sesión con motivo desde el cronograma -->
-      <app-teacher-sesion-cancelar-modal
-        [isOpen]="sesionACancelar() !== null"
-        [sesion]="sesionACancelar()"
-        [errorMensaje]="errorCancelar()"
-        [enviando]="enviandoCancelacion()"
-        (cancelar)="confirmarCancelarSesion($event)"
-        (closed)="cerrarCancelarSesion()"
-      />
-
       <!-- 7. Modal de Información del Grupo & Alumnos Matriculados -->
       <app-group-info-modal
         [isOpen]="isGroupInfoModalOpen()"
@@ -308,12 +308,9 @@ export class AttendanceControlComponent {
   readonly sessionsEnabled = true;
   readonly attendanceEnabled = true;
   readonly sessionQrEnabled = environment.features.sessionQrEnabled;
-  /** HU047: el docente titular cancela una sesión con motivo (mismo flujo y bandera que el hub del grupo). */
+  /** HU047 (B.1): cancelar una sesión con motivo desde el menú "Acciones" del historial. */
   readonly sessionCancelEnabled = environment.features.sessionCancelEnabled;
-  /** MEJORAS-SERGIO 10: sesión cuya cancelación se está pidiendo (modal abierto) y estado del envío. */
-  readonly sesionACancelar = signal<ClassSession | null>(null);
-  readonly errorCancelar = signal<string | null>(null);
-  readonly enviandoCancelacion = signal(false);
+  private readonly accionesSesion = viewChild.required(SesionAccionesComponent);
 
   courses = signal<Course[]>([]);
   sessions = signal<ClassSession[]>([]);
@@ -413,6 +410,51 @@ export class AttendanceControlComponent {
     void this.router?.navigate(['/app/docente/reclamos']);
   }
 
+  /** Menú "Acciones" de una sesión del historial (lo que antes vivía en el cronograma del grupo del docente). */
+  onAccionSesion({ accion, sesion }: AccionSesionEvento): void {
+    switch (accion) {
+      case 'tomar':
+        this.irASesionDetalle(sesion.id);
+        break;
+      case 'proyectar':
+        // HU175: como el cronograma retirado, lleva a la toma de la sesión; ahí "Proyectar QR" respeta la ventana de
+        // asistencia y pide confirmar antes de cerrar una toma abierta (no se abre el selector de modo desde aquí).
+        if (!this.sessionQrEnabled) return;
+        this.irASesionDetalle(sesion.id);
+        break;
+      case 'detalle':
+        this.accionesSesion().abrirDetalle(sesion);
+        break;
+      case 'ajustar':
+        this.accionesSesion().abrirAjuste(sesion);
+        break;
+      case 'cancelar':
+        this.accionesSesion().abrirCancelar(sesion);
+        break;
+    }
+  }
+
+  /** El PATCH de horario no devuelve la sesión: se recarga la lista del grupo y su resumen por HTTP. */
+  recargarSesionesDelGrupo(): void {
+    const courseId = this.selectedCourseId();
+    if (!courseId) return;
+    this.sessionService.getSessionsByGroup(courseId).subscribe({
+      next: (res) => {
+        // Si el docente cambió de grupo mientras llegaba la respuesta, no se pisa la lista del grupo vigente.
+        if (this.selectedCourseId() !== courseId) return;
+        this.sessions.set(res.datos || []);
+        this.cargarResumenSesiones(courseId);
+      },
+      error: (err: unknown) => this.mostrarError(err, 'No fue posible recargar las sesiones del grupo.'),
+    });
+  }
+
+  /** HU047: la cancelación confirmada marca la sesión con la respuesta del backend, sin recargar la lista. */
+  onSesionCancelada({ sesionId, cancelacion }: SesionCanceladaEvento): void {
+    this.sessions.update((prev) => marcarSesionCancelada(prev, sesionId, cancelacion));
+    this.recargarResumenSesiones();
+  }
+
   abrirSelectorModo(): void {
     if (!this.selectedSessionId()) return;
     this.modoSelectorAbierto.set(true);
@@ -497,55 +539,6 @@ export class AttendanceControlComponent {
       },
       error: () => {
         if (this.selectedCourseId() === courseId) this.resumenSesiones.set(null);
-      },
-    });
-  }
-
-  /** MEJORAS-SERGIO 10: abre el modal de cancelación (motivo obligatorio de 10 a 500 caracteres). */
-  abrirCancelarSesion(sesion: ClassSession): void {
-    if (!this.sessionCancelEnabled || estaCancelada(sesion)) return;
-    this.errorCancelar.set(null);
-    this.enviandoCancelacion.set(false);
-    this.sesionACancelar.set(sesion);
-  }
-
-  cerrarCancelarSesion(): void {
-    this.sesionACancelar.set(null);
-    this.errorCancelar.set(null);
-    this.enviandoCancelacion.set(false);
-  }
-
-  /**
-   * HU047 (PATCH /docente/sesiones/{id}/cancelar): la BD valida titularidad, motivo y que la sesión no tenga asistencia
-   * (SES_011/012/013/016, el mensaje llega del backend y se muestra en el modal). Con la cancelación registrada el backend
-   * avisa a los estudiantes activos (SESION_CANCELADA); aquí se marca la fila y se relee el resumen del grupo.
-   */
-  confirmarCancelarSesion(motivo: string): void {
-    const sesion = this.sesionACancelar();
-    if (!this.sessionCancelEnabled || !sesion || !motivo.trim()) return;
-    this.errorCancelar.set(null);
-    this.enviandoCancelacion.set(true);
-    this.sessionService.cancelarSesion(sesion.id, motivo.trim()).subscribe({
-      next: (res) => {
-        this.enviandoCancelacion.set(false);
-        if (!res.exitoso) return;
-        const cancelacion = res.datos?.cancelacion;
-        if (cancelacion) {
-          this.sessions.update((prev) => marcarSesionCancelada(prev, sesion.id, cancelacion));
-        }
-        this.recargarResumenSesiones();
-        const notificados = res.datos?.estudiantesNotificados;
-        this.mostrarNotificacion({
-          tipo: 'success',
-          texto: notificados
-            ? mensajeUi('UI_TEACHER_GRUPOS_011', { notificados })
-            : mensajeUi('UI_COORDINATOR_SESIONES_GRUPO_001'),
-        });
-        this.cerrarCancelarSesion();
-      },
-      error: (err: unknown) => {
-        this.enviandoCancelacion.set(false);
-        this.errorCancelar.set(getApiErrorMessage(err));
       },
     });
   }
@@ -1002,7 +995,7 @@ export class AttendanceControlComponent {
         next: (res) => {
           if (res.exitoso) {
             this.toastType.set('success');
-            this.toastMessage.set(res.mensaje || 'Sesión creada exitosamente.');
+            this.toastMessage.set(res.mensajeUsuario || res.mensaje || avisoSolicitudSesionRegistrada());
             this.showToast.set(true);
             this.isNewSessionModalOpen.set(false);
 

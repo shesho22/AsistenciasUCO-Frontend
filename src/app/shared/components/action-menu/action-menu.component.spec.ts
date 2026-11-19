@@ -244,4 +244,60 @@ describe('ActionMenuComponent (CULM-001, patron "Mas acciones")', () => {
     crear({ items: [] });
     expect(trigger()).toBeNull();
   });
+
+  describe('flotante (menu dentro de una tabla con desplazamiento)', () => {
+    function rect(top: number, bottom: number, right: number): DOMRect {
+      return { top, bottom, right, left: right - 100, width: 100, height: bottom - top, x: right - 100, y: top, toJSON: () => ({}) } as DOMRect;
+    }
+
+    it('sin flotante el panel sigue anclado al boton (absolute)', () => {
+      crear();
+      abrir();
+      const panel = q('[role="menu"]') as HTMLElement;
+      expect(panel.className).toContain('absolute');
+      expect(panel.style.top).toBe('');
+    });
+
+    it('con espacio debajo, el panel fijo se abre bajo el boton y alineado a su borde derecho', () => {
+      crear({ flotante: true });
+      spyOn(trigger(), 'getBoundingClientRect').and.returnValue(rect(100, 144, window.innerWidth - 40));
+      abrir();
+      const panel = q('[role="menu"]') as HTMLElement;
+      expect(panel.className).toContain('fixed');
+      expect(panel.style.top).toBe('152px');
+      expect(panel.style.bottom).toBe('');
+      expect(panel.style.right).toBe('40px');
+    });
+
+    it('sin espacio debajo, el panel fijo se abre hacia arriba', () => {
+      crear({ flotante: true });
+      const h = window.innerHeight;
+      spyOn(trigger(), 'getBoundingClientRect').and.returnValue(rect(h - 50, h - 6, window.innerWidth - 40));
+      abrir();
+      const panel = q('[role="menu"]') as HTMLElement;
+      expect(panel.style.top).toBe('');
+      expect(panel.style.bottom).toBe('58px');
+    });
+
+    it('desplazar cualquier contenedor o cambiar el tamaño de la ventana cierra el panel flotante', () => {
+      crear({ flotante: true });
+      abrir();
+      document.body.dispatchEvent(new Event('scroll'));
+      fixture.detectChanges();
+      expect(q('[role="menu"]')).toBeNull();
+
+      abrir();
+      window.dispatchEvent(new Event('resize'));
+      fixture.detectChanges();
+      expect(q('[role="menu"]')).toBeNull();
+    });
+
+    it('el menu no flotante no se cierra al desplazar', () => {
+      crear();
+      abrir();
+      document.body.dispatchEvent(new Event('scroll'));
+      fixture.detectChanges();
+      expect(q('[role="menu"]')).not.toBeNull();
+    });
+  });
 });

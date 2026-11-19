@@ -199,4 +199,104 @@ describe('GroupSessionsOverviewComponent', () => {
     const text = (fixture.nativeElement as HTMLElement).textContent || '';
     expect(text).toContain('Cancelada');
   });
+
+  // Las acciones por sesión del cronograma del docente viven ahora en el menú "Acciones" de cada fila del historial.
+  describe('menú "Acciones" por sesión', () => {
+    const disparador = (n: number): HTMLButtonElement =>
+      (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(
+        `[data-testid="acciones-sesion-${n}"] [data-testid="action-menu-trigger"]`
+      )!;
+    const etiquetas = (): string[] =>
+      Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('[role="menuitem"]')).map((b) => b.textContent!.trim());
+    function renderConBanderas(sessions: ClassSession[], qr = true, cancelar = true): GroupSessionsOverviewComponent {
+      const comp = render(sessions);
+      fixture.componentRef.setInput('qrHabilitado', qr);
+      fixture.componentRef.setInput('cancelacionHabilitada', cancelar);
+      fixture.detectChanges();
+      return comp;
+    }
+    function abrirAcciones(n: number): void {
+      disparador(n).click();
+      fixture.detectChanges();
+    }
+
+    it('cada sesión tiene su botón "Acciones" y ya no hay un botón suelto de Tomar Asistencia', () => {
+      renderConBanderas([session(1), session(2)]);
+      expect(disparador(1).textContent).toContain('Acciones');
+      expect(disparador(1).getAttribute('aria-label')).toBe('Acciones de la sesión #1');
+      expect(disparador(2)).not.toBeNull();
+      const filas = (fixture.nativeElement as HTMLElement).querySelectorAll('tbody tr');
+      expect(Array.from(filas).some((f) => /Tomar Asistencia/.test(f.textContent ?? ''))).toBeFalse();
+    });
+
+    it('una sesión programada ofrece tomar asistencia, QR, detalles, ajustar horario y cancelar', () => {
+      renderConBanderas([session(1)]);
+      abrirAcciones(1);
+      expect(etiquetas()).toEqual(['Tomar asistencia', 'Proyectar QR / PIN', 'Ver detalles', 'Ajustar horario', 'Cancelar sesión']);
+    });
+
+    it('sin las banderas de QR y cancelación esas acciones no aparecen', () => {
+      renderConBanderas([session(1)], false, false);
+      abrirAcciones(1);
+      expect(etiquetas()).toEqual(['Tomar asistencia', 'Ver detalles', 'Ajustar horario']);
+    });
+
+    it('una sesión cancelada no se toma, no se proyecta, no se reprograma ni se vuelve a cancelar; sí muestra detalles', () => {
+      const comp = renderConBanderas([{ ...session(1), estado: 'CANCELADA' }]);
+      const items = comp.accionesDe({ ...session(1), estado: 'CANCELADA' });
+      expect(items.map((i) => [i.id, !!i.disabled])).toEqual([
+        ['tomar', true], ['proyectar', true], ['detalle', false], ['ajustar', true],
+      ]);
+    });
+
+    it('una sesión pendiente de aprobación no se toma ni se proyecta, pero sí se puede ajustar o cancelar', () => {
+      const comp = renderConBanderas([session(1)]);
+      const pendiente = { ...session(1), pendienteAprobacion: true };
+      const items = comp.accionesDe(pendiente);
+      expect(items.map((i) => [i.id, !!i.disabled])).toEqual([
+        ['tomar', true], ['proyectar', true], ['detalle', false], ['ajustar', false], ['cancelar', false],
+      ]);
+    });
+
+    it('DEC-065 (2): una sesión pendiente explica por qué no se puede tomar todavía', () => {
+      renderConBanderas([{ ...session(1), pendienteAprobacion: true }, session(2)]);
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('[data-testid="sesion-pendiente-1"]')?.textContent?.trim()).toBe('Disponible cuando la coordinación apruebe la sesión.');
+      expect(el.querySelector('[data-testid="sesion-pendiente-2"]')).toBeNull();
+    });
+
+    it('elegir una acción la emite con su sesión y no abre la toma por el clic de la fila', () => {
+      const comp = renderConBanderas([session(1), session(2)]);
+      const acciones: string[] = [];
+      const abiertas: string[] = [];
+      comp.accionSesion.subscribe((e) => acciones.push(`${e.accion}:${e.sesion.id}`));
+      comp.selectSession.subscribe((id) => abiertas.push(id));
+
+      for (const id of ['accion-detalle-2', 'accion-ajustar-2', 'accion-cancelar-2', 'accion-tomar-2', 'accion-proyectar-2']) {
+        abrirAcciones(2);
+        opcion(id).click();
+        fixture.detectChanges();
+      }
+
+      expect(acciones).toEqual(['detalle:sesion-2', 'ajustar:sesion-2', 'cancelar:sesion-2', 'tomar:sesion-2', 'proyectar:sesion-2']);
+      expect(abiertas).toEqual([]);
+    });
+
+    it('el clic en el resto de la fila sigue abriendo la toma de esa sesión', () => {
+      const comp = renderConBanderas([session(1)]);
+      const abiertas: string[] = [];
+      comp.selectSession.subscribe((id) => abiertas.push(id));
+      ((fixture.nativeElement as HTMLElement).querySelector('tbody tr td') as HTMLElement).click();
+      expect(abiertas).toEqual(['sesion-1']);
+    });
+
+    it('el panel del menú flota sobre la tabla para que no lo recorte su desplazamiento', () => {
+      renderConBanderas([session(1)]);
+      abrirAcciones(1);
+      const panel = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="acciones-sesion-1"] [role="menu"]') as HTMLElement;
+      expect(panel.className).toContain('fixed');
+      // La celda es whitespace-nowrap: el panel restablece el ajuste para que cada opcion vaya en su renglon.
+      expect(panel.className).toContain('whitespace-normal');
+    });
+  });
 });
