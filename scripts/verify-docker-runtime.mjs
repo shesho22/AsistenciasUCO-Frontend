@@ -130,6 +130,10 @@ try {
 
   const index = runDocker(['exec', container, 'cat', '/usr/share/nginx/html/index.html']);
   assert(!/<[^>]+\son[a-z]+\s*=/i.test(index), 'index.html trae un manejador de evento en linea (onload/onclick).');
+  // Con `inlineCritical: true` Beasties carga la hoja de estilos con media="print" y la activa con un <script> en linea que la
+  // CSP (script-src sin 'unsafe-inline') bloquea: la SPA queda sin estilos. Ningun <script> sin src y ningun data-beasties-media.
+  assert(!/<script(?![^>]*\ssrc=)[^>]*>/i.test(index), 'index.html trae un <script> en linea que la CSP bloquea (revise inlineCritical).');
+  assert(!/data-beasties-media/i.test(index), 'index.html carga estilos con media diferida (inlineCritical): sin el script en linea quedan sin aplicar.');
 
   const compose = runDocker(['compose', '-f', 'docker-compose.yml', 'config'], {
     env: { ...process.env, ...values },
