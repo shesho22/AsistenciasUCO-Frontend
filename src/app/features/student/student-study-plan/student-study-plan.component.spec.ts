@@ -96,7 +96,7 @@ describe('StudentStudyPlanComponent (plan de estudios del estudiante)', () => {
     expect(semestres()[0].querySelector('summary')!.textContent!.replace(/\s+/g, ' ')).toContain('2 asignaturas · 7 créditos');
     expect(semestres()[0].querySelectorAll('[data-testid="asignatura-plan"]')).toHaveSize(0);
 
-    semestres()[0].querySelector('summary')!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    semestres()[0].querySelector('summary')!.click();
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();

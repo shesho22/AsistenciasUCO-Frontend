@@ -1061,7 +1061,7 @@ describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', 
     http.expectNone((r) => r.url.includes('/asistencias/revisiones'));
   });
 
-  it('una ausencia confirmada y reclamable por el backend habilita Radicar Reclamo y abre el formulario', () => {
+  it('una ausencia confirmada y reclamable por el backend habilita Radicar Reclamo y abre el formulario', async () => {
     cargar([materiaApi()]);
     component.verDetalleCompleto(component.materias()[0]);
     http.expectOne(esSesiones(ASIGNATURA_ID)).flush({
@@ -1069,6 +1069,8 @@ describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', 
       datos: [sesionApi({ estadoAsistencia: 'AUSENTE', estadoSolicitudRevision: null, reclamable: true })],
       total: 1,
     });
+    fixture.detectChanges();
+    await fixture.whenStable();
     fixture.detectChanges();
 
     expect(component.sesiones()[0].estadoAsistencia).toBe('AUSENTE');
@@ -1078,7 +1080,7 @@ describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', 
     expect(component.sesionReclamar()?.id).toBe('d1d2d3d4-0000-4000-8000-000000000001');
   });
 
-  it('una ausencia con solicitud ya radicada no abre un segundo formulario', () => {
+  it('una ausencia con solicitud ya radicada no abre un segundo formulario', async () => {
     cargar([materiaApi()]);
     component.verDetalleCompleto(component.materias()[0]);
     http.expectOne(esSesiones(ASIGNATURA_ID)).flush({
@@ -1086,6 +1088,8 @@ describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', 
       datos: [sesionApi({ estadoAsistencia: 'AUSENTE', estadoSolicitudRevision: 'pendiente', reclamable: false })],
       total: 1,
     });
+    fixture.detectChanges();
+    await fixture.whenStable();
     fixture.detectChanges();
 
     expect(component.sesiones()[0].solicitudRevision).toBe('PENDIENTE');

@@ -89,10 +89,12 @@ const TIPOS_ASIGNATURA: Record<string, string> = {
               <details
                 class="superficie group"
                 [open]="abierto(plan, semestre)"
-                (toggle)="actualizarSemestreAbierto(plan, semestre, $event)"
                 data-testid="semestre-plan"
               >
-                <summary class="cursor-pointer list-none p-4 min-h-[44px] flex items-center justify-between gap-3">
+                <summary
+                  class="cursor-pointer list-none p-4 min-h-[44px] flex items-center justify-between gap-3"
+                  (click)="alternarSemestre(plan, semestre, $event)"
+                >
                   <div>
                     <h3 class="font-serif font-bold text-lg text-warm-900">Semestre {{ semestre.numeroSemestre }}</h3>
                     <p class="text-xs text-warm-500">
@@ -199,14 +201,13 @@ export class StudentStudyPlanComponent implements OnInit {
     return this.semestresAbiertos().has(this.claveSemestre(plan, semestre));
   }
 
-  actualizarSemestreAbierto(plan: PlanEstudioEstudiante, semestre: SemestrePlanEstudiante, evento: Event): void {
+  alternarSemestre(plan: PlanEstudioEstudiante, semestre: SemestrePlanEstudiante, evento: MouseEvent): void {
+    evento.preventDefault();
     const clave = this.claveSemestre(plan, semestre);
-    const abierto = (evento.currentTarget as HTMLDetailsElement).open;
     this.semestresAbiertos.update((actuales) => {
-      if (actuales.has(clave) === abierto) return actuales;
       const siguientes = new Set(actuales);
-      if (abierto) siguientes.add(clave);
-      else siguientes.delete(clave);
+      if (actuales.has(clave)) siguientes.delete(clave);
+      else siguientes.add(clave);
       return siguientes;
     });
   }

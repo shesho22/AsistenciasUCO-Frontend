@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, DeferBlockState, TestBed } from '@angular/core/testing';
 import { TeacherMatrizAsistenciaService } from '../../../core/services/teacher-matriz-asistencia.service';
 import { resumenSesiones } from '../../../core/testing/resumen-sesiones-grupo.fixture';
 import { NEVER, Subject, of, throwError } from 'rxjs';
@@ -139,11 +139,18 @@ describe('AttendanceControlComponent tomas (CULM-001 B.2)', () => {
     return fixture.componentInstance;
   }
 
+  async function entrarYEsperarVista(): Promise<AttendanceControlComponent> {
+    const component = entrar();
+    const [detailBlock] = await fixture.getDeferBlocks();
+    await detailBlock!.render(DeferBlockState.Complete);
+    return component;
+  }
+
   const hijo = <T>(tipo: new (...a: never[]) => T): T | null =>
     (fixture.debugElement.query((el) => el.componentInstance instanceof tipo)?.componentInstance as T) ?? null;
 
-  it('B2-F-09 al entrar a la sesion consulta sus tomas y muestra el panel', () => {
-    entrar();
+  it('B2-F-09 al entrar a la sesion consulta sus tomas y muestra el panel', async () => {
+    await entrarYEsperarVista();
     expect(tomaService.consultarTomas).toHaveBeenCalledWith('session-1');
     expect(hijo(SessionTomasPanelComponent)).not.toBeNull();
   });
@@ -190,12 +197,14 @@ describe('AttendanceControlComponent tomas (CULM-001 B.2)', () => {
     expect(c.toastType()).toBe('success');
   });
 
-  it('B2-F-09 elegir modo QR abre la toma, pide el QR y muestra la proyeccion', () => {
-    const c = entrar();
+  it('B2-F-09 elegir modo QR abre la toma, pide el QR y muestra la proyeccion', async () => {
+    const c = await entrarYEsperarVista();
     tomaService.abrirToma.and.returnValue(of({ exitoso: true, datos: toma({ modo: 'QR' }) }));
     qrService.abrirQr.and.returnValue(of({ exitoso: true, datos: qr }));
     c.onModoElegido('QR');
     fixture.detectChanges();
+    const blocks = await fixture.getDeferBlocks();
+    await blocks[5]!.render(DeferBlockState.Complete);
     expect(qrService.abrirQr).toHaveBeenCalledOnceWith('toma-1');
     expect(hijo(TomaQrProyeccionComponent)).not.toBeNull();
   });
@@ -217,10 +226,10 @@ describe('AttendanceControlComponent tomas (CULM-001 B.2)', () => {
     expect(qrService.abrirQr).not.toHaveBeenCalled();
   });
 
-  it('B2-F-10 con una toma abierta la lista y el Guardar viven en la toma; guardar envia el lote a /tomas/{id}/asistencias y no al lote legado', () => {
+  it('B2-F-10 con una toma abierta la lista y el Guardar viven en la toma; guardar envia el lote a /tomas/{id}/asistencias y no al lote legado', async () => {
     tomaService.consultarTomas.and.returnValue(of({ exitoso: true, datos: tomasSesion([toma()]) }));
     tomaService.registrarAsistencias.and.returnValue(of({ exitoso: true, datos: { idToma: 'toma-1', idSesion: 'session-1', totalRegistros: 1 } }));
-    entrar();
+    await entrarYEsperarVista();
     const el = fixture.nativeElement as HTMLElement;
     expect(el.querySelector('app-attendance-control-table')).toBeNull();
     (el.querySelector('[data-testid="marcar-todos-presentes"]') as HTMLButtonElement).click();
@@ -232,10 +241,10 @@ describe('AttendanceControlComponent tomas (CULM-001 B.2)', () => {
     expect(attendanceService.saveBatchAttendance).not.toHaveBeenCalled();
   });
 
-  it('UX-toma las notificaciones de la toma se muestran como aviso con el mensaje del backend', () => {
+  it('UX-toma las notificaciones de la toma se muestran como aviso con el mensaje del backend', async () => {
     tomaService.consultarTomas.and.returnValue(of({ exitoso: true, datos: tomasSesion([toma()]) }));
     tomaService.registrarAsistencias.and.returnValue(of({ exitoso: true, mensajeUsuario: 'Asistencia de la toma guardada.', datos: { idToma: 'toma-1', idSesion: 'session-1', totalRegistros: 1 } }));
-    const c = entrar();
+    const c = await entrarYEsperarVista();
     const el = fixture.nativeElement as HTMLElement;
     (el.querySelector('[data-testid="marcar-todos-presentes"]') as HTMLButtonElement).click();
     fixture.detectChanges();
@@ -269,7 +278,7 @@ describe('AttendanceControlComponent tomas (CULM-001 B.2)', () => {
     expect(c.attendanceWindowState()).not.toBe('ABIERTA');
   });
 
-  it('B2-F-11 cerrar la toma pide confirmacion, envia marcarAusentes=true y marca en la lista unica a los pendientes de validar', () => {
+  it('B2-F-11 cerrar la toma pide confirmacion, envia marcarAusentes=true y marca en la lista unica a los pendientes de validar', async () => {
     let cerrada = false;
     tomaService.consultarTomas.and.callFake(() => of({
       exitoso: true,
@@ -282,7 +291,7 @@ describe('AttendanceControlComponent tomas (CULM-001 B.2)', () => {
         datos: { toma: toma({ estado: 'CERRADA' }), totalAusentesMarcados: 1, totalFaltantes: 1, yaEstabaCerrada: false },
       });
     });
-    const c = entrar();
+    const c = await entrarYEsperarVista();
     c.solicitarCierreToma();
     expect(tomaService.cerrarToma).not.toHaveBeenCalled();
     c.confirmarCierreToma(true);
