@@ -223,7 +223,6 @@ type StudentEnrollmentField =
             [qr]="q"
             [grupoId]="selectedCourseId()"
             [titulo]="tituloProyeccion()"
-            (dejarDeProyectar)="dejarDeProyectar()"
             (cerrarToma)="solicitarCierreToma()"
           />
         }
