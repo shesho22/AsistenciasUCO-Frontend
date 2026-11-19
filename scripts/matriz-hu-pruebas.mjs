@@ -15,6 +15,11 @@ const salida = join(raiz, 'docs', 'testing', 'MATRIZ_HU_PRUEBAS_FRONTEND.md');
 const escribir = process.argv.includes('--write');
 const HU = /\bHU(\d{3})([A-Z]?)\b/g;
 
+// HU retiradas del alcance: no cuentan como cubiertas aunque algun archivo aun las cite; se listan aparte con la fecha.
+const RETIRADAS = new Map([
+  ['HU090', '2026-11-18 — tipo de vinculación del docente retirado (MEJORAS-SERGIO-2026-11-18, ítem 1); sus pruebas ya no aplican.'],
+]);
+
 function listar(dir, out = []) {
   if (!existsSync(dir)) return out;
   for (const nombre of readdirSync(dir)) {
@@ -37,6 +42,7 @@ for (const archivo of archivos) {
   const ruta = relative(raiz, archivo).split(sep).join('/');
   const capa = ruta.startsWith('e2e/') ? 'E2E' : 'unitaria';
   for (const codigo of codigos) {
+    if (RETIRADAS.has(codigo)) continue;
     if (!porHu.has(codigo)) porHu.set(codigo, []);
     porHu.get(codigo).push({ ruta, pruebas, capa });
   }
@@ -65,13 +71,22 @@ const md = [
   '|---|---|---|---|---|',
   ...filas,
   '',
+  '## HU retiradas',
+  '',
+  'No cuentan como cubiertas: la funcionalidad salió del alcance y sus pruebas se retiraron o dejaron de aplicar.',
+  '',
+  '| HU | Retiro |',
+  '|---|---|',
+  ...[...RETIRADAS.entries()].sort(([a], [b]) => orden(a, b)).map(([codigo, motivo]) => `| ${codigo} | ${motivo} |`),
+  '',
 ].join('\n');
 
 if (escribir) {
   mkdirSync(dirname(salida), { recursive: true });
   writeFileSync(salida, md);
   console.log(`MATRIZ_HU_PRUEBAS_WRITTEN hu=${porHu.size} archivos=${conHu}/${archivos.length}`);
-} else if (!existsSync(salida) || readFileSync(salida, 'utf8') !== md) {
+} else if (!existsSync(salida) || readFileSync(salida, 'utf8').replace(/\r\n/g, '\n') !== md) {
+  // Se compara sin el fin de línea: en Windows (core.autocrlf) la copia de trabajo queda con CRLF.
   console.error('MATRIZ_HU_PRUEBAS_FAIL docs/testing/MATRIZ_HU_PRUEBAS_FRONTEND.md no esta al dia (corre: npm run sync:matriz-hu).');
   process.exitCode = 1;
 } else {

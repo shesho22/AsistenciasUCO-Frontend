@@ -95,12 +95,11 @@ export class CoordinatorSubjectFormPageComponent implements OnInit {
       next: (res) => this.areas.set(res.datos || []),
       error: (err) => this.toast.error(getApiErrorMessage(err)),
     });
-    if (!this.selectedPlan()) {
-      this.coordService.getPlanesEstudio().subscribe({
-        next: (res) => this.planes.set(res.datos || []),
-        error: (err) => this.toast.error(getApiErrorMessage(err)),
-      });
-    }
+    // MEJORAS-SERGIO 13: siempre se relee el plan; la copia en memoria puede no tener el semestre recien agregado en la malla.
+    this.coordService.getPlanesEstudio().subscribe({
+      next: (res) => this.planes.set(res.datos || []),
+      error: (err) => this.toast.error(getApiErrorMessage(err)),
+    });
     if (id) {
       const cached = this.coordService.getAsignaturasPlan(id);
       if (cached.length > 0) {

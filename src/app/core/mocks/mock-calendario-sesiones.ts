@@ -5,6 +5,8 @@ import { mockUuid } from './student-portal-mock.adapter';
 /** Franja semanal del mock (la comparten los horarios del estudiante y del docente). */
 export interface FranjaMock {
   id: string;
+  /** MEJORAS-SERGIO 9: grupo real del mock (MOCK_COURSES) para que la franja del docente abra su hub en modo mock. */
+  idGrupo?: string;
   codigoMateria: string;
   nombreMateria: string;
   dia: DiaSemana;
@@ -48,7 +50,7 @@ export function mockSesionesCalendario(franjas: FranjaMock[], desde: string, has
       const [anio, mes, dia] = [fecha.getUTCFullYear(), fecha.getUTCMonth() + 1, fecha.getUTCDate()];
       sesiones.push({
         idSesion: mockUuid(`sesion:${franja.id}:${iso}`),
-        idGrupo: mockUuid(`grupo:${franja.codigoMateria}:${franja.grupo ?? franja.seccion ?? ''}`),
+        idGrupo: franja.idGrupo ?? mockUuid(`grupo:${franja.codigoMateria}:${franja.grupo ?? franja.seccion ?? ''}`),
         codigoGrupo: franja.grupo ?? franja.seccion ?? '01',
         nombreGrupo: `Grupo ${franja.grupo ?? franja.seccion ?? '01'}`,
         idAsignatura: mockUuid(`asignatura:${franja.codigoMateria}`),

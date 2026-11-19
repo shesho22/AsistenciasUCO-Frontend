@@ -81,4 +81,11 @@ describe('StudyPlansListComponent (CULM-001, densidad de acciones)', () => {
     fixture.detectChanges();
     expect(q('[data-testid="plan-estado"]')?.textContent).toContain('Activar plan');
   });
+
+  it('MEJORAS-SERGIO 7: la tarjeta del plan no recorta el menu "Más" (overflow visible)', () => {
+    crear([plan('a', 'VIGENTE')]);
+    const tarjeta = q('app-card > div') as HTMLElement;
+    expect(tarjeta.className).toContain('overflow-visible');
+    expect(tarjeta.className).not.toContain('overflow-hidden');
+  });
 });

@@ -9,6 +9,7 @@ import { resolveSessionInstant } from '../../../core/time/session-timezone.util'
 import { Course } from '../../../core/models/course.model';
 import { SesionEstadoBadgeComponent } from '../../../shared/components/sesion-estado-badge/sesion-estado-badge.component';
 import { SesionFacultadItem } from '../../../core/models/facultad-decano.model';
+import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { RealtimeService } from '../../../core/realtime/realtime.service';
@@ -33,7 +34,7 @@ function adaptarGrupoACurso(dto: GrupoDetalleDecanoApiDto): Course {
     selector: 'app-dean-grupo-detalle',
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: { class: 'block w-full' },
-    imports: [EmptyStateComponent, SesionEstadoBadgeComponent],
+    imports: [EmptyStateComponent, SesionEstadoBadgeComponent, PaginationComponent],
     template: `
     <div class="space-y-6 animate-fade-in">
       <!-- Barra de Retorno -->
@@ -124,33 +125,55 @@ function adaptarGrupoACurso(dto: GrupoDetalleDecanoApiDto): Course {
             causa="El docente titular aún no ha programado sesiones en este período."
           />
         } @else {
-          <div class="divide-y divide-warm-100">
-            @for (s of sessions(); track s.id) {
-              <div
-                class="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-warm-50/50 transition-colors"
-                [attr.data-testid]="'sesion-fila-' + s.id"
-              >
-                <div class="space-y-1 flex-1 min-w-0">
-                  <div class="flex flex-wrap items-center gap-2">
-                    @if (s.numeroSemana !== null) {
-                      <span class="text-xs font-mono font-bold px-2.5 py-0.5 rounded-md bg-warm-100 text-warm-800">Semana {{ s.numeroSemana }}</span>
-                    }
+          <!-- MEJORAS-SERGIO 6: tabla densa (una línea por sesión) y paginada, en lugar de una tarjeta alta por sesión -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs text-warm-800" data-testid="tabla-sesiones-grupo">
+              <thead class="bg-warm-50 border-b border-warm-200 text-[11px] font-bold text-warm-600 uppercase tracking-wider">
+                <tr>
+                  <th scope="col" class="px-4 py-2 text-left w-16">Sem.</th>
+                  <th scope="col" class="px-4 py-2 text-left">Fecha</th>
+                  <th scope="col" class="px-4 py-2 text-left">Horario</th>
+                  <th scope="col" class="px-4 py-2 text-left">Sesión</th>
+                  <th scope="col" class="px-4 py-2 text-left">Estado</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-warm-100">
+                @for (s of sesionesPagina(); track s.id) {
+                  <tr class="hover:bg-warm-50/50 transition-colors" [attr.data-testid]="'sesion-fila-' + s.id">
+                    <td class="px-4 py-2 font-mono font-bold text-warm-700">{{ s.numeroSemana ?? '—' }}</td>
                     @if (inicio(s) && fin(s)) {
-                      <span class="text-xs font-medium text-warm-600">{{ timeZone.formatTemporal(inicio(s), 'date') }}</span>
-                      <span class="text-warm-300">•</span>
-                      <span class="text-xs font-mono font-bold text-warm-800">
+                      <td class="px-4 py-2 whitespace-nowrap text-warm-700">{{ timeZone.formatTemporal(inicio(s), 'date') }}</td>
+                      <td class="px-4 py-2 whitespace-nowrap font-mono text-warm-800">
                         {{ timeZone.formatTemporal(inicio(s), 'time') }} - {{ timeZone.formatTemporal(fin(s), 'time') }}
-                      </span>
+                      </td>
                     } @else {
-                      <span class="text-xs font-semibold text-warning-800">Horario no confirmado</span>
+                      <td class="px-4 py-2 font-semibold text-warning-800" colspan="2">Horario no confirmado</td>
                     }
-                  </div>
-                  <h3 class="font-bold text-sm text-warm-900">{{ s.nombre }}</h3>
-                  <app-sesion-estado-badge [estado]="s.estado" [cancelacion]="s.cancelacion" />
-                </div>
-              </div>
-            }
+                    <td class="px-4 py-2 font-semibold text-warm-900 max-w-xs truncate" [title]="s.nombre">{{ s.nombre }}</td>
+                    <td class="px-4 py-2"><app-sesion-estado-badge [estado]="s.estado" [cancelacion]="s.cancelacion" /></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
           </div>
+          @if (sesionesIncompletas()) {
+            <p class="px-4 py-2 text-xs text-warning-800 bg-warning-50 border-t border-warning-200" role="status" data-testid="aviso-sesiones-incompletas">
+              Se muestran {{ sessions().length }} de {{ totalSesionesServidor() }} sesiones: el servidor no entregó el resto. Recarga la página para intentarlo de nuevo.
+            </p>
+          }
+          <!-- El paginador se ve siempre que haya más sesiones que el tamaño de página más pequeño, para poder volver de «50» a «10». -->
+          @if (sessions().length > tamanosSesiones[0]) {
+            <div class="p-3 border-t border-warm-100" data-testid="paginador-sesiones">
+              <app-pagination
+                [totalItems]="sessions().length"
+                [pageSize]="tamanoSesiones()"
+                [pageSizeOptions]="tamanosSesiones"
+                [currentPage]="paginaSesiones()"
+                (pageChange)="paginaSesiones.set($event)"
+                (pageSizeChange)="cambiarTamanoSesiones($event)"
+              />
+            </div>
+          }
         }
       </div>
     </div>
@@ -172,6 +195,26 @@ export class DeanGrupoDetalleComponent implements OnInit, OnDestroy {
   cargandoSesiones = signal(false);
   /** Mensaje del último error al cargar sesiones; `null` si la última carga terminó bien (aunque sea vacía). */
   errorSesiones = signal<string | null>(null);
+  /**
+   * MEJORAS-SERGIO 6: paginación local de la tabla de sesiones. Se traen TODAS las sesiones del grupo (recorriendo las
+   * páginas del servidor de 100 en 100) y la tabla las pagina en el cliente.
+   */
+  readonly tamanosSesiones = [10, 20, 50];
+  paginaSesiones = signal(1);
+  tamanoSesiones = signal(20);
+  /** `totalElementos` del servidor; si lo recibido no lo alcanza se avisa en lugar de truncar en silencio. */
+  totalSesionesServidor = signal(0);
+  sesionesIncompletas = computed(() => this.totalSesionesServidor() > this.sessions().length);
+  private subSesiones?: Subscription;
+  sesionesPagina = computed(() => {
+    const inicio = (this.paginaSesiones() - 1) * this.tamanoSesiones();
+    return this.sessions().slice(inicio, inicio + this.tamanoSesiones());
+  });
+
+  cambiarTamanoSesiones(tamano: number): void {
+    this.tamanoSesiones.set(tamano);
+    this.paginaSesiones.set(1);
+  }
   /** Mensaje del backend si falla la carga de la ficha del grupo (403/500). */
   errorGrupo = signal<string | null>(null);
 
@@ -234,6 +277,7 @@ export class DeanGrupoDetalleComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.subRealtime?.unsubscribe();
+    this.subSesiones?.unsubscribe();
     if (this.realtime) {
       this.realtime.stop();
     }
@@ -259,14 +303,19 @@ export class DeanGrupoDetalleComponent implements OnInit, OnDestroy {
     }
     this.cargandoSesiones.set(true);
     this.errorSesiones.set(null);
-    this.deanService.getSesiones({ idGrupo: id, pagina: 1, tamano: 50 }).subscribe({
+    // Una recarga (reconexión o evento en tiempo real) reemplaza a la anterior: su respuesta tardía no pisa la nueva.
+    this.subSesiones?.unsubscribe();
+    this.subSesiones = this.deanService.getTodasLasSesionesGrupo(id).subscribe({
       next: (res) => {
         this.sessions.set(res.elementos ?? []);
+        this.totalSesionesServidor.set(res.total ?? 0);
+        this.paginaSesiones.set(1);
         this.cargandoSesiones.set(false);
       },
       error: (error: unknown) => {
         const mensaje = getApiErrorMessage(error);
         this.sessions.set([]);
+        this.totalSesionesServidor.set(0);
         this.errorSesiones.set(mensaje);
         this.cargandoSesiones.set(false);
         this.toast.error(mensaje);

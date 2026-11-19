@@ -53,6 +53,8 @@ import { GroupSessionsOverviewComponent } from './components/group-sessions-over
 import { GroupInfoModalComponent } from './components/group-info-modal.component';
 import { GroupClaimsModalComponent } from './components/group-claims-modal.component';
 import { TeacherMatriculaModalComponent } from '../../teacher/teacher-grupos/components/modals/teacher-matricula-modal.component';
+import { TeacherSesionCancelarModalComponent } from '../../teacher/teacher-grupos/components/modals/teacher-sesion-cancelar-modal.component';
+import { mensajeUi } from '../../../core/messages/mensajes-ui';
 import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
 import { type EstadoCargaReclamos, ResultadoAprobacionReclamo, SolicitudRevisionItem } from '../../../core/models/role-management.model';
 import { EstudianteGrupoApiDto } from '../../../core/api/models/estudiante-grupo-api-dto.model';
@@ -98,7 +100,8 @@ type StudentEnrollmentField =
     GroupSessionsOverviewComponent,
     GroupInfoModalComponent,
     GroupClaimsModalComponent,
-    TeacherMatriculaModalComponent
+    TeacherMatriculaModalComponent,
+    TeacherSesionCancelarModalComponent
 ],
     template: `
     <div class="flex flex-col gap-6 animate-fade-in max-w-7xl mx-auto pb-12 relative">
@@ -146,6 +149,8 @@ type StudentEnrollmentField =
           (verAlumnos)="abrirInfoGrupo()"
           (gestionarPadron)="irAPadron()"
           (verReclamos)="abrirReclamosGrupo()"
+          [cancelEnabled]="sessionCancelEnabled"
+          (cancelarSesion)="abrirCancelarSesion($event)"
         />
       }
 
@@ -235,6 +240,16 @@ type StudentEnrollmentField =
         />
       }
 
+      <!-- MEJORAS-SERGIO 10 (HU047): cancelación de una sesión con motivo desde el cronograma -->
+      <app-teacher-sesion-cancelar-modal
+        [isOpen]="sesionACancelar() !== null"
+        [sesion]="sesionACancelar()"
+        [errorMensaje]="errorCancelar()"
+        [enviando]="enviandoCancelacion()"
+        (cancelar)="confirmarCancelarSesion($event)"
+        (closed)="cerrarCancelarSesion()"
+      />
+
       <!-- 7. Modal de Información del Grupo & Alumnos Matriculados -->
       <app-group-info-modal
         [isOpen]="isGroupInfoModalOpen()"
@@ -293,6 +308,12 @@ export class AttendanceControlComponent {
   readonly sessionsEnabled = true;
   readonly attendanceEnabled = true;
   readonly sessionQrEnabled = environment.features.sessionQrEnabled;
+  /** HU047: el docente titular cancela una sesión con motivo (mismo flujo y bandera que el hub del grupo). */
+  readonly sessionCancelEnabled = environment.features.sessionCancelEnabled;
+  /** MEJORAS-SERGIO 10: sesión cuya cancelación se está pidiendo (modal abierto) y estado del envío. */
+  readonly sesionACancelar = signal<ClassSession | null>(null);
+  readonly errorCancelar = signal<string | null>(null);
+  readonly enviandoCancelacion = signal(false);
 
   courses = signal<Course[]>([]);
   sessions = signal<ClassSession[]>([]);
@@ -476,6 +497,55 @@ export class AttendanceControlComponent {
       },
       error: () => {
         if (this.selectedCourseId() === courseId) this.resumenSesiones.set(null);
+      },
+    });
+  }
+
+  /** MEJORAS-SERGIO 10: abre el modal de cancelación (motivo obligatorio de 10 a 500 caracteres). */
+  abrirCancelarSesion(sesion: ClassSession): void {
+    if (!this.sessionCancelEnabled || estaCancelada(sesion)) return;
+    this.errorCancelar.set(null);
+    this.enviandoCancelacion.set(false);
+    this.sesionACancelar.set(sesion);
+  }
+
+  cerrarCancelarSesion(): void {
+    this.sesionACancelar.set(null);
+    this.errorCancelar.set(null);
+    this.enviandoCancelacion.set(false);
+  }
+
+  /**
+   * HU047 (PATCH /docente/sesiones/{id}/cancelar): la BD valida titularidad, motivo y que la sesión no tenga asistencia
+   * (SES_011/012/013/016, el mensaje llega del backend y se muestra en el modal). Con la cancelación registrada el backend
+   * avisa a los estudiantes activos (SESION_CANCELADA); aquí se marca la fila y se relee el resumen del grupo.
+   */
+  confirmarCancelarSesion(motivo: string): void {
+    const sesion = this.sesionACancelar();
+    if (!this.sessionCancelEnabled || !sesion || !motivo.trim()) return;
+    this.errorCancelar.set(null);
+    this.enviandoCancelacion.set(true);
+    this.sessionService.cancelarSesion(sesion.id, motivo.trim()).subscribe({
+      next: (res) => {
+        this.enviandoCancelacion.set(false);
+        if (!res.exitoso) return;
+        const cancelacion = res.datos?.cancelacion;
+        if (cancelacion) {
+          this.sessions.update((prev) => marcarSesionCancelada(prev, sesion.id, cancelacion));
+        }
+        this.recargarResumenSesiones();
+        const notificados = res.datos?.estudiantesNotificados;
+        this.mostrarNotificacion({
+          tipo: 'success',
+          texto: notificados
+            ? mensajeUi('UI_TEACHER_GRUPOS_011', { notificados })
+            : mensajeUi('UI_COORDINATOR_SESIONES_GRUPO_001'),
+        });
+        this.cerrarCancelarSesion();
+      },
+      error: (err: unknown) => {
+        this.enviandoCancelacion.set(false);
+        this.errorCancelar.set(getApiErrorMessage(err));
       },
     });
   }

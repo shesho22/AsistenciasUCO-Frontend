@@ -10,6 +10,7 @@ import { EmptyStateComponent } from '../../../../shared/components/empty-state/e
 import { SesionEstadoBadgeComponent } from '../../../../shared/components/sesion-estado-badge/sesion-estado-badge.component';
 import { findActiveOrUpcomingSession } from '../../../../core/utils/session-selection.util';
 import { SessionTimeZoneService } from '../../../../core/services/session-timezone.service';
+import { estaCancelada } from '../../../../core/models/sesion-estado.model';
 
 @Component({
     selector: 'app-group-sessions-overview',
@@ -235,6 +236,18 @@ import { SessionTimeZoneService } from '../../../../core/services/session-timezo
                       >
                         Tomar Asistencia
                       </app-button>
+                      <!-- MEJORAS-SERGIO 10 (HU047): el docente titular cancela la sesión con motivo; el backend avisa a los estudiantes -->
+                      @if (cancelEnabled() && !esCancelada(s)) {
+                        <button
+                          type="button"
+                          [attr.data-testid]="'cancelar-sesion-' + s.sessionNumber"
+                          (click)="$event.stopPropagation(); cancelarSesion.emit(s)"
+                          class="text-xs font-semibold text-danger-700 hover:text-danger-900 bg-danger-50 hover:bg-danger-100 border border-danger-200 min-h-[44px] px-3 py-1.5 rounded-lg transition-colors"
+                          title="Cancelar la sesión indicando el motivo (se notifica a los estudiantes)"
+                        >
+                          Cancelar
+                        </button>
+                      }
                     </td>
                   </tr>
                 }
@@ -261,6 +274,13 @@ export class GroupSessionsOverviewComponent {
   /** HU051: abre el hub del grupo del docente (padrón con retiro). */
   gestionarPadron = output<void>();
   verReclamos = output<void>();
+  /** MEJORAS-SERGIO 10 (HU047): muestra «Cancelar» en cada sesión no cancelada (bandera `sessionCancelEnabled`). */
+  cancelEnabled = input<boolean>(false);
+  cancelarSesion = output<ClassSession>();
+
+  esCancelada(sesion: ClassSession): boolean {
+    return estaCancelada(sesion);
+  }
 
   /** Acciones secundarias del grupo: se agrupan en "Mas acciones" para dejar una sola accion primaria visible. */
   readonly accionesGrupo = computed<ActionMenuItem[]>(() => {

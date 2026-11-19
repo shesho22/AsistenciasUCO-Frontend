@@ -5,6 +5,7 @@ import { environment } from '../../../environments/environment';
 import { ApiPageResponse, ApiResponse } from '../models/api-response.model';
 import { AsignaturaPlanItem, PlanEstudioItem } from '../models/role-management.model';
 import { normalizarAsignaturaPlan } from './coordinator-management.service';
+import { TodasLasPaginas, obtenerTodasLasPaginas } from '../api/pagination.util';
 import {
   EstudianteFacultadItem,
   FacultadNodo,
@@ -93,6 +94,15 @@ export class DeanFacultadService {
     tamano: number;
   }): Observable<ApiPageResponse<SesionFacultadItem>> {
     return this.http.get<ApiPageResponse<SesionFacultadItem>>(`${this.base}/sesiones`, { params: parametros(filtro) });
+  }
+
+  /**
+   * MEJORAS-SERGIO 6: todas las sesiones de un grupo, recorriendo las páginas de `GET /decano/sesiones` con el tamaño
+   * máximo que acepta el backend (100, `ConsultaPaginadaRules.TAMANO_MAXIMO`); antes se pedía una sola página de 50.
+   * `total` es el `totalElementos` del servidor, para avisar si lo recibido no lo completa.
+   */
+  getTodasLasSesionesGrupo(idGrupo: string): Observable<TodasLasPaginas<SesionFacultadItem>> {
+    return obtenerTodasLasPaginas<SesionFacultadItem>(this.http, `${this.base}/sesiones`, parametros({ idGrupo }));
   }
 }
 

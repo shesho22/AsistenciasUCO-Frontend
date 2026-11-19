@@ -2,7 +2,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { TeacherMatrizAsistenciaService } from '../../../core/services/teacher-matriz-asistencia.service';
 import { TomaAsistenciaService } from '../../../core/services/toma-asistencia.service';
 import { AsistenciaQrService } from '../../../core/services/asistencia-qr.service';
-import { NEVER, Subject, of } from 'rxjs';
+import { NEVER, Subject, of, throwError } from 'rxjs';
+import { apiHttpError } from '../../../core/testing/api-error.fixture';
 import { AttendanceService } from '../../../core/services/attendance.service';
 import { CatalogService } from '../../../core/services/catalog.service';
 import { CourseService } from '../../../core/services/course.service';
@@ -27,6 +28,7 @@ describe('AttendanceControlComponent sesión cancelada (B.1)', () => {
   let attendanceService: jasmine.SpyObj<AttendanceService>;
   let cancelaciones$: Subject<RealtimeEvent<SesionCanceladaRealtimePayload>>;
   let watchCancelaciones: jasmine.Spy;
+  let sessionService: { cancelarSesion: jasmine.Spy };
 
   const course = {
     id: 'group-1', code: 'MAT-1', name: 'Materia', section: '1', schedule: 'Lunes', room: 'Aula 1',
@@ -49,7 +51,8 @@ describe('AttendanceControlComponent sesión cancelada (B.1)', () => {
     localStorage.setItem('USE_MOCKS', 'false');
     cancelaciones$ = new Subject();
     const courseService = jasmine.createSpyObj<CourseService>('CourseService', ['getCurrentTeacherCourses']);
-    const sessionService = jasmine.createSpyObj('SessionService', ['getSessionsByGroup', 'createSession']);
+    const sessionServiceSpy = jasmine.createSpyObj('SessionService', ['getSessionsByGroup', 'createSession', 'cancelarSesion']);
+    sessionService = sessionServiceSpy;
     const groupService = jasmine.createSpyObj('GroupService', ['getStudentsByGroup']);
     attendanceService = jasmine.createSpyObj('AttendanceService', ['getAttendancesByGroup', 'saveBatchAttendance']);
     const realtime = jasmine.createSpyObj<AttendanceRealtimeSyncService>('AttendanceRealtimeSyncService', [
@@ -64,7 +67,7 @@ describe('AttendanceControlComponent sesión cancelada (B.1)', () => {
       'EmailVerificationService', ['resendVerification']);
 
     courseService.getCurrentTeacherCourses.and.returnValue(of<never>({ exitoso: true, datos: [course] } as never));
-    sessionService.getSessionsByGroup.and.returnValue(
+    sessionServiceSpy.getSessionsByGroup.and.returnValue(
       of({ exitoso: true, datos: [programada, cancelada], total: 2 } as never));
     groupService.getStudentsByGroup.and.returnValue(of({
       exitoso: true,
@@ -89,7 +92,7 @@ describe('AttendanceControlComponent sesión cancelada (B.1)', () => {
       imports: [AttendanceControlComponent],
       providers: [
         { provide: CourseService, useValue: courseService },
-        { provide: SessionService, useValue: sessionService },
+        { provide: SessionService, useValue: sessionServiceSpy },
         { provide: GroupService, useValue: groupService },
         { provide: StudentService, useValue: jasmine.createSpyObj('StudentService', ['enrollStudentInGroup']) },
         { provide: AttendanceService, useValue: attendanceService },
@@ -178,6 +181,62 @@ describe('AttendanceControlComponent sesión cancelada (B.1)', () => {
     expect(watchCancelaciones).toHaveBeenCalled();
     const getGroup = watchCancelaciones.calls.mostRecent().args[0] as () => string;
     expect(getGroup()).toBe('group-1');
+  });
+
+  describe('MEJORAS-SERGIO 10: cancelar una sesión desde el cronograma de /app/asistencia', () => {
+    const boton = (n: number) => (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(`[data-testid="cancelar-sesion-${n}"]`);
+
+    it('ofrece «Cancelar» solo en las sesiones no canceladas y abre el modal con motivo', () => {
+      const component = crear();
+      expect(boton(1)).not.toBeNull();
+      expect(boton(2)).toBeNull();
+      const abrirToma = spyOn(component, 'irASesionDetalle');
+
+      boton(1)!.click();
+      fixture.detectChanges();
+      expect(component.sesionACancelar()?.id).toBe('session-1');
+      expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="cancelar-panel"]')).not.toBeNull();
+      expect(abrirToma).not.toHaveBeenCalled();
+    });
+
+    it('con la cancelación registrada marca la sesión, avisa cuántos estudiantes se notificaron y cierra el modal', () => {
+      sessionService.cancelarSesion.and.returnValue(of({
+        exitoso: true,
+        datos: {
+          idSesion: 'session-1', idGrupo: 'group-1', estado: 'CANCELADA', estudiantesNotificados: 3,
+          cancelacion: { tipo: 'DOCENTE', motivo: 'Calamidad doméstica del docente', nombreFestivo: null, fechaCancelacionUtc: null },
+        },
+      }) as never);
+      const component = crear();
+      component.abrirCancelarSesion(component.sessions()[0]);
+      component.confirmarCancelarSesion('  Calamidad doméstica del docente  ');
+      fixture.detectChanges();
+
+      expect(sessionService.cancelarSesion).toHaveBeenCalledWith('session-1', 'Calamidad doméstica del docente');
+      expect(component.sessions().find((s) => s.id === 'session-1')?.estado).toBe('CANCELADA');
+      expect(component.sesionACancelar()).toBeNull();
+      expect(component.toastMessage()).toBe('Sesión cancelada. Estudiantes notificados: 3.');
+      expect(boton(1)).toBeNull();
+    });
+
+    it('un rechazo del backend (p. ej. SES_012) se muestra en el modal y la sesión no cambia', () => {
+      sessionService.cancelarSesion.and.returnValue(throwError(() => apiHttpError(409, 'La sesión ya tiene asistencia registrada.')));
+      const component = crear();
+      component.abrirCancelarSesion(component.sessions()[0]);
+      component.confirmarCancelarSesion('Motivo suficientemente largo');
+      fixture.detectChanges();
+
+      expect(component.errorCancelar()).toBe('La sesión ya tiene asistencia registrada.');
+      expect(component.sesionACancelar()?.id).toBe('session-1');
+      expect(component.enviandoCancelacion()).toBeFalse();
+      expect(component.sessions().find((s) => s.id === 'session-1')?.estado).toBe('PROGRAMADA');
+    });
+
+    it('no abre el modal para una sesión ya cancelada', () => {
+      const component = crear();
+      component.abrirCancelarSesion(component.sessions()[1]);
+      expect(component.sesionACancelar()).toBeNull();
+    });
   });
 
   it('B1-F-18 la actualización por SSE y el bloqueo de la toma no usan polling: setInterval no se invoca', () => {

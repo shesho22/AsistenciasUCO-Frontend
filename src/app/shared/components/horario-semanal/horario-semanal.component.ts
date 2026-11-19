@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, inject, input, signal } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
+import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { BadgeComponent } from '../badge/badge.component';
 import { ButtonComponent } from '../button/button.component';
@@ -26,7 +28,7 @@ const COLORES_CLASE = [
   selector: 'app-horario-semanal',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full' },
-  imports: [BadgeComponent, ButtonComponent, RangoHorarioPipe],
+  imports: [BadgeComponent, ButtonComponent, RangoHorarioPipe, NgTemplateOutlet],
   template: `
     <div class="space-y-4">
       <div class="flex flex-wrap items-center justify-between gap-3" data-testid="navegacion-semana">
@@ -73,31 +75,28 @@ const COLORES_CLASE = [
               </div>
               <div class="p-3 flex-1 space-y-3 min-h-[120px]">
                 @for (s of sesionesDe(dia); track s.idSesion) {
-                  <article
-                    class="p-3 rounded-xl border text-warm-800 shadow-xs"
-                    [class]="color(s)"
-                    [attr.data-testid]="'sesion-' + s.idSesion"
-                  >
-                    <div class="flex items-center justify-between gap-2 text-xs font-semibold mb-1">
-                      <span class="font-mono" [class.line-through]="s.estaCancelada">{{ s.fechaHoraInicioUtc | rangoHorario: s.fechaHoraFinUtc : zona() }}</span>
-                      <span class="uppercase tracking-wider px-1.5 rounded bg-white/70 text-xs">{{ s.nombreGrupo }}</span>
-                    </div>
-                    <h4 class="font-bold text-xs text-warm-900 leading-snug" [class.line-through]="s.estaCancelada">{{ s.nombreAsignatura }}</h4>
-                    @if (rol() === 'ESTUDIANTE' && s.nombreDocente) {
-                      <p class="text-xs text-warm-600 mt-1 truncate">{{ s.nombreDocente }}</p>
-                    }
-                    <div class="mt-2 flex flex-wrap gap-1.5">
-                      @if (s.esExtraordinaria) {
-                        <app-badge variant="info" size="sm" data-testid="etiqueta-extraordinaria">Extraordinaria</app-badge>
-                      }
-                      @if (s.estaCancelada) {
-                        <app-badge variant="danger" size="sm" data-testid="etiqueta-cancelada">Cancelada</app-badge>
-                      }
-                    </div>
-                    @if (s.estaCancelada && (s.motivoCancelacion || s.nombreDiaFestivo)) {
-                      <p class="text-xs text-warm-700 mt-1.5 break-words" data-testid="motivo-cancelacion">{{ s.motivoCancelacion || s.nombreDiaFestivo }}</p>
-                    }
-                  </article>
+                  @if (rol() === 'DOCENTE') {
+                    <!-- MEJORAS-SERGIO 9: la franja del docente abre el grupo; dentro de un <button> solo va contenido de frase. -->
+                    <button
+                      type="button"
+                      class="block w-full text-left p-3 rounded-xl border text-warm-800 shadow-xs cursor-pointer transition-all hover:brightness-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-600"
+                      [class]="color(s)"
+                      [attr.data-testid]="'sesion-' + s.idSesion"
+                      [attr.aria-label]="etiquetaFranja(s)"
+                      title="Abrir la materia y el grupo"
+                      (click)="abrirGrupo(s)"
+                    >
+                      <ng-container *ngTemplateOutlet="contenidoSesion; context: { $implicit: s }" />
+                    </button>
+                  } @else {
+                    <article
+                      class="block p-3 rounded-xl border text-warm-800 shadow-xs"
+                      [class]="color(s)"
+                      [attr.data-testid]="'sesion-' + s.idSesion"
+                    >
+                      <ng-container *ngTemplateOutlet="contenidoSesion; context: { $implicit: s }" />
+                    </article>
+                  }
                 } @empty {
                   <p class="text-xs text-warm-400 text-center py-4">Sin sesiones</p>
                 }
@@ -107,11 +106,35 @@ const COLORES_CLASE = [
         </div>
       }
     </div>
+
+    <!-- Contenido de la franja: solo contenido de frase (<span>), válido tanto en <article> como dentro del <button> del docente. -->
+    <ng-template #contenidoSesion let-s>
+      <span class="flex items-center justify-between gap-2 text-xs font-semibold mb-1">
+        <span class="font-mono" [class.line-through]="s.estaCancelada">{{ s.fechaHoraInicioUtc | rangoHorario: s.fechaHoraFinUtc : zona() }}</span>
+        <span class="uppercase tracking-wider px-1.5 rounded bg-white/70 text-xs">{{ s.nombreGrupo }}</span>
+      </span>
+      <span class="block font-bold text-xs text-warm-900 leading-snug" [class.line-through]="s.estaCancelada" data-testid="nombre-asignatura">{{ s.nombreAsignatura }}</span>
+      @if (rol() === 'ESTUDIANTE' && s.nombreDocente) {
+        <span class="block text-xs text-warm-600 mt-1 truncate">{{ s.nombreDocente }}</span>
+      }
+      <span class="mt-2 flex flex-wrap gap-1.5">
+        @if (s.esExtraordinaria) {
+          <app-badge variant="info" size="sm" data-testid="etiqueta-extraordinaria">Extraordinaria</app-badge>
+        }
+        @if (s.estaCancelada) {
+          <app-badge variant="danger" size="sm" data-testid="etiqueta-cancelada">Cancelada</app-badge>
+        }
+      </span>
+      @if (s.estaCancelada && (s.motivoCancelacion || s.nombreDiaFestivo)) {
+        <span class="block text-xs text-warm-700 mt-1.5 break-words" data-testid="motivo-cancelacion">{{ s.motivoCancelacion || s.nombreDiaFestivo }}</span>
+      }
+    </ng-template>
   `,
 })
 export class HorarioSemanalComponent implements OnInit, OnDestroy {
   private readonly servicio = inject(SesionCalendarioService);
   private readonly timeZone = inject(SessionTimeZoneService);
+  private readonly router = inject(Router);
 
   readonly rol = input.required<RolCalendario>();
 
@@ -161,6 +184,29 @@ export class HorarioSemanalComponent implements OnInit, OnDestroy {
   color(sesion: SesionCalendario): string {
     const indice = [...sesion.idAsignatura].reduce((suma, c) => suma + c.charCodeAt(0), 0) % COLORES_CLASE.length;
     return COLORES_CLASE[indice];
+  }
+
+  /** MEJORAS-SERGIO 9: la franja del docente lleva al hub del grupo (`/app/docente/grupos?grupo=<id>`, mismo enlace que usa el padrón). */
+  abrirGrupo(sesion: SesionCalendario): void {
+    void this.router.navigate(['/app/docente/grupos'], sesion.idGrupo ? { queryParams: { grupo: sesion.idGrupo } } : {});
+  }
+
+  /** Nombre accesible de la franja: materia, grupo, día y horario en la zona institucional, y su estado si aplica. */
+  etiquetaFranja(sesion: SesionCalendario): string {
+    const fecha = this.timeZone.presentTemporal(sesion.fechaHoraInicioUtc)?.date;
+    const dia = fecha ? etiquetaDia(fecha) + ' ' : '';
+    const inicio = this.timeZone.formatTemporal(sesion.fechaHoraInicioUtc, 'time');
+    const fin = this.timeZone.formatTemporal(sesion.fechaHoraFinUtc, 'time');
+    const partes = [
+      `Abrir el grupo ${sesion.nombreGrupo} de ${sesion.nombreAsignatura} (${sesion.codigoAsignatura})`,
+      `${dia}de ${inicio} a ${fin}`,
+    ];
+    if (sesion.esExtraordinaria) partes.push('extraordinaria');
+    if (sesion.estaCancelada) {
+      const motivo = sesion.motivoCancelacion || sesion.nombreDiaFestivo;
+      partes.push(motivo ? `cancelada: ${motivo}` : 'cancelada');
+    }
+    return partes.join(', ');
   }
 
   irA(semanas: number): void {

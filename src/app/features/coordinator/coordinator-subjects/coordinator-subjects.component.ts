@@ -1,6 +1,6 @@
 import { Component, DestroyRef, OnInit, inject, signal, computed, ChangeDetectionStrategy, input } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Subject, debounceTime, switchMap, tap } from 'rxjs';
+import { Subject, Subscription, debounceTime, finalize, switchMap } from 'rxjs';
 
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -11,11 +11,8 @@ import { CoordinatorProgramService } from '../../../core/services/coordinator-pr
 import { KpisCoordinador } from '../../../core/models/coordinator-indicators.model';
 import { EstadoIndicadores, TEXTO_CARGANDO, TEXTO_SIN_DATOS } from '../../../core/utils/cifra-indicador';
 import { Course } from '../../../core/models/course.model';
-import {
-  AsignaturaPlanItem,
-  CaracterAsignatura,
-  EstudianteDirectorioItem,
-} from '../../../core/models/role-management.model';
+import { AsignaturaPlanItem, CaracterAsignatura } from '../../../core/models/role-management.model';
+import { EstudianteGrupoApiDto } from '../../../core/api/models/estudiante-grupo-api-dto.model';
 import { BadgeComponent, BadgeVariant } from '../../../shared/components/badge/badge.component';
 import { ButtonComponent } from '../../../shared/components/button/button.component';
 import { AvatarComponent } from '../../../shared/components/avatar/avatar.component';
@@ -25,6 +22,36 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { ListadoPaginado } from '../../../shared/utils/listado-paginado';
 import { ToastService } from '../../../shared/components/toast/toast.component';
+import { ModalComponent } from '../../../shared/components/modal/modal.component';
+import { SubpestanasComponent } from '../../../shared/components/tabs/subpestanas.component';
+import { TabItem } from '../../../shared/components/tabs/tabs-nav.component';
+
+const ESTADOS_INSCRITO: Record<string, { etiqueta: string; variante: BadgeVariant }> = {
+  A: { etiqueta: 'Activo', variante: 'success' },
+  CVP: { etiqueta: 'Cancelado por voluntad propia', variante: 'neutral' },
+  CI: { etiqueta: 'Cancelado por inasistencia', variante: 'warning' },
+  F: { etiqueta: 'Finalizado', variante: 'info' },
+};
+
+/**
+ * Estado de una fila de la nómina (`EstudianteGrupoDTO`: `codigoEstado` y `nombreEstado`). Un código fuera del catálogo
+ * muestra el nombre que manda el backend (con mayúscula inicial); sin ninguno de los dos, «Sin estado».
+ */
+export function etiquetaEstadoInscrito(est: Partial<Pick<EstudianteGrupoApiDto, 'codigoEstado' | 'nombreEstado'>>): {
+  etiqueta: string;
+  variante: BadgeVariant;
+} {
+  const codigo = (est.codigoEstado ?? '').trim().toUpperCase();
+  const conocido = ESTADOS_INSCRITO[codigo];
+  if (conocido) return conocido;
+  const nombre = (est.nombreEstado ?? '').trim() || codigo;
+  return { etiqueta: nombre ? nombre.charAt(0).toUpperCase() + nombre.slice(1) : 'Sin estado', variante: 'neutral' };
+}
+
+/** Cifra del KPI o «—» cuando el servidor no la envía (un backend anterior a CIERRE-W3I no trae el aforo). */
+function cifra(valor: unknown): string {
+  return typeof valor === 'number' && Number.isFinite(valor) ? String(valor) : '—';
+}
 
 @Component({
     selector: 'app-coordinator-subjects',
@@ -36,7 +63,9 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
     ButtonComponent,
     AvatarComponent,
     ErrorCargaComponent,
-    PaginationComponent
+    PaginationComponent,
+    ModalComponent,
+    SubpestanasComponent
 ],
     template: `
     <div class="space-y-6">
@@ -111,7 +140,10 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
         </div>
       </div>
 
-      <!-- 1. SECCIÓN: GRUPOS Y MATERIAS OFERTADAS EN EL PERÍODO -->
+      <!-- MEJORAS-SERGIO 11: grupos y catálogo en subpestañas; la nómina del grupo se abre en una ventana emergente -->
+      <app-subpestanas [tabs]="secciones()" [(activa)]="seccion" etiqueta="Secciones de materias" idPanel="panel-materias-programa" />
+      <div role="tabpanel" id="panel-materias-programa" [attr.aria-labelledby]="'subtab-' + seccion()" class="min-w-0">
+      @if (seccion() === 'grupos') {
       <div class="space-y-4">
         <div class="flex items-center justify-between">
           <div>
@@ -119,7 +151,7 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
               Grupos y Materias Activas en el Período
             </h2>
             <p class="text-xs text-warm-500">
-              Selecciona una materia para consultar su nómina de estudiantes inscritos.
+              Pulsa «Ver inscritos» para consultar la nómina de estudiantes de un grupo.
             </p>
           </div>
           <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-warm-100 text-warm-700">
@@ -142,7 +174,7 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
                     <span class="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-warm-100 text-warm-800">
                       {{ curso.code }}
                     </span>
-                    <app-badge [variant]="selectedCourseId() === curso.id ? 'info' : 'neutral'">
+                    <app-badge variant="neutral">
                       {{ curso.section }}
                     </app-badge>
                   </div>
@@ -165,12 +197,8 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
                   <span class="text-xs text-warm-500">
                     Cupos: <strong class="text-warm-900">{{ curso.enrolledStudentsCount }} / {{ cupoTexto(curso) }}</strong>
                   </span>
-                  <app-button
-                    [variant]="selectedCourseId() === curso.id ? 'primary' : 'secondary'"
-                    size="sm"
-                    (clicked)="onSelectCourse(curso.id)"
-                  >
-                    {{ selectedCourseId() === curso.id ? 'Viendo Inscritos' : 'Ver Inscritos' }}
+                  <app-button variant="secondary" size="sm" data-testid="ver-inscritos" (clicked)="onSelectCourse(curso.id)">
+                    Ver inscritos
                   </app-button>
                 </div>
               </div>
@@ -187,59 +215,7 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
         }
       </div>
 
-      <!-- Detalle de Estudiantes Inscritos en el Grupo Seleccionado (Solo Consulta) -->
-      @if (selectedCourse(); as cursoActual) {
-        <div class="superficie overflow-hidden">
-          <div class="p-5 border-b border-warm-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <div class="flex items-center gap-2">
-                <h3 class="font-serif font-bold text-lg text-warm-900">
-                  Estudiantes Inscritos en {{ cursoActual.name }}
-                </h3>
-                <span class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-warm-100 text-warm-700">
-                  {{ cursoActual.code }} • {{ cursoActual.section }}
-                </span>
-              </div>
-              <p class="text-xs text-warm-500 mt-0.5">
-                Nómina oficial del grupo (la inscripción y retiro de alumnos en los grupos es administrada directamente por el docente titular).
-              </p>
-            </div>
-            <span class="text-xs font-bold px-3 py-1 rounded-full bg-primary-50 text-primary-800 border border-primary-200 shrink-0">
-              {{ enrolledStudents().length }} / {{ cupoTexto(cursoActual) }} estudiantes
-            </span>
-          </div>
-
-          @if (enrolledStudents().length === 0) {
-            <div class="p-10 text-center text-warm-400">
-              <p class="text-sm">No hay estudiantes registrados en este grupo actualmente.</p>
-            </div>
-          } @else {
-            <div class="divide-y divide-warm-100">
-              @for (est of enrolledStudents(); track est.id) {
-                <div class="p-4 sm:p-5 flex items-center justify-between gap-4">
-                  <div class="flex items-center gap-3 min-w-0">
-                    <app-avatar [name]="est.nombreCompleto" size="md"></app-avatar>
-                    <div class="min-w-0">
-                      <h4 class="font-serif font-bold text-sm text-warm-900 truncate">
-                        {{ est.nombreCompleto }}
-                      </h4>
-                      <p class="text-xs text-warm-500">
-                        Cód. {{ est.codigo || est.documento }} • Doc. {{ est.documento }} • {{ est.programa }}
-                      </p>
-                    </div>
-                  </div>
-
-                  <app-badge [variant]="est.estadoMatricula === 'ACTIVO' ? 'success' : 'neutral'">
-                    {{ est.estadoMatricula }}
-                  </app-badge>
-                </div>
-              }
-            </div>
-          }
-        </div>
-      }
-
-      <!-- 2. SECCIÓN: CATÁLOGO CURRICULAR DE MATERIAS DE LA CARRERA -->
+      } @else {
       <div class="space-y-4">
         <div class="flex items-center justify-between">
           <div>
@@ -255,7 +231,9 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
           </span>
         </div>
 
-        @if (listadoAsignaturas.filas().length === 0) {
+        @if (errorCarga()) {
+          <app-error-carga [error]="errorCarga()!" (reintentar)="cargarDatos()" />
+        } @else if (listadoAsignaturas.filas().length === 0) {
           <div class="bg-white rounded-2xl border border-warm-200 p-10 text-center text-sm text-warm-500">
             No hay asignaturas curriculares que coincidan con los filtros seleccionados.
           </div>
@@ -325,6 +303,71 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
           />
         }
       </div>
+      }
+      </div>
+      <!-- Nómina del grupo seleccionado (solo consulta), en ventana emergente. El modal queda montado siempre:
+           así, al cerrarse, devuelve el foco al botón «Ver inscritos» que lo abrió. -->
+      <app-modal
+        [isOpen]="selectedCourse() !== null"
+        [title]="selectedCourse() ? 'Estudiantes inscritos en ' + selectedCourse()!.name : 'Estudiantes inscritos'"
+        tamano="lg"
+        etiquetaCerrar="Cerrar"
+        panelTestId="modal-inscritos"
+        (closed)="cerrarInscritos()"
+      >
+      @if (selectedCourse(); as cursoActual) {
+        <div class="space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-warm-100">
+            <div>
+              <span class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-warm-100 text-warm-700">
+                {{ cursoActual.code }} • {{ cursoActual.section }}
+              </span>
+              <p class="text-xs text-warm-500 mt-1">
+                Nómina oficial del grupo (la inscripción y retiro de alumnos en los grupos es administrada directamente por el docente titular).
+              </p>
+            </div>
+            @if (!cargandoInscritos() && !errorInscritos()) {
+              <span class="text-xs font-bold px-3 py-1 rounded-full bg-primary-50 text-primary-800 border border-primary-200 shrink-0">
+                {{ enrolledStudents().length }} / {{ cupoTexto(cursoActual) }} estudiantes
+              </span>
+            }
+          </div>
+
+          @if (cargandoInscritos()) {
+            <p role="status" class="text-sm text-warm-500 text-center py-6" data-testid="inscritos-cargando">Cargando estudiantes inscritos…</p>
+          } @else if (errorInscritos(); as error) {
+            <app-error-carga [error]="error" (reintentar)="cargarInscritos(cursoActual.id)" />
+          } @else if (enrolledStudents().length === 0) {
+            <div class="p-10 text-center text-warm-500" data-testid="inscritos-vacio">
+              <p class="text-sm">No hay estudiantes registrados en este grupo actualmente.</p>
+            </div>
+          } @else {
+            <div class="divide-y divide-warm-100 max-h-[60vh] overflow-y-auto" data-testid="lista-inscritos">
+              @for (est of enrolledStudents(); track est.id) {
+                <div class="py-3 flex items-center justify-between gap-4">
+                  <div class="flex items-center gap-3 min-w-0">
+                    <app-avatar [name]="est.nombreCompleto" size="md"></app-avatar>
+                    <div class="min-w-0">
+                      <h4 class="font-serif font-bold text-sm text-warm-900 truncate">
+                        {{ est.nombreCompleto }}
+                      </h4>
+                      <p class="text-xs text-warm-500 break-all">
+                        Doc. {{ est.documento || '—' }}@if (est.correo) { • {{ est.correo }} }
+                      </p>
+                    </div>
+                  </div>
+
+                  <app-badge [variant]="estadoInscrito(est).variante" data-testid="estado-inscrito">
+                    {{ estadoInscrito(est).etiqueta }}
+                  </app-badge>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+      </app-modal>
+
     </div>
   `
 })
@@ -341,8 +384,7 @@ export class CoordinatorSubjectsComponent implements OnInit {
   readonly listado = new ListadoPaginado<Course>(
     (pagina, tamano) =>
       this.courseService
-        .getCoordinatorCoursesPage({ busqueda: this.searchQuery().trim() || null, pagina, tamano })
-        .pipe(tap((res) => this.seleccionarInicial(res.elementos ?? []))),
+        .getCoordinatorCoursesPage({ busqueda: this.searchQuery().trim() || null, pagina, tamano }),
     (mensaje) => this.toast.error(mensaje)
   );
   /** Asignaturas del catálogo curricular del programa: búsqueda, carácter y paginación en el servidor. */
@@ -357,8 +399,14 @@ export class CoordinatorSubjectsComponent implements OnInit {
     (mensaje) => this.toast.error(mensaje)
   );
   courses = this.listado.filas;
-  selectedCourseId = signal<string>('');
-  enrolledStudents = signal<EstudianteDirectorioItem[]>([]);
+  /** Grupo cuya nómina está abierta; se guarda el grupo (no solo su id) para que cambiar de página no cierre la ventana. */
+  readonly selectedCourse = signal<Course | null>(null);
+  enrolledStudents = signal<EstudianteGrupoApiDto[]>([]);
+  /** Estado de la consulta de la nómina: un fallo o una carga lenta no deben verse como «No hay estudiantes». */
+  readonly cargandoInscritos = signal(false);
+  readonly errorInscritos = signal<LoadErrorState | null>(null);
+  /** Consulta de nómina en curso: se cancela al abrir otro grupo o cerrar la ventana (una respuesta tardía no pisa otra). */
+  private inscritosSub: Subscription | null = null;
 
   /** Total de planes de estudio del programa (`total` del servidor). */
   totalPlanes = signal(0);
@@ -373,9 +421,12 @@ export class CoordinatorSubjectsComponent implements OnInit {
   private readonly toast = inject(ToastService);
   private readonly errorAuxiliar = signal<LoadErrorState | null>(null);
 
-  selectedCourse = computed(() => {
-    return this.courses().find((c) => c.id === this.selectedCourseId()) || null;
-  });
+  /** MEJORAS-SERGIO 11: subpestaña visible (grupos del período o catálogo curricular). */
+  readonly seccion = signal<string>('grupos');
+  readonly secciones = computed<TabItem[]>(() => [
+    { id: 'grupos', etiqueta: `Grupos del período (${this.listado.total()})` },
+    { id: 'catalogo', etiqueta: `Catálogo curricular (${this.listadoAsignaturas.total()})` },
+  ]);
 
   /** B2NM: la misma asignatura aparece una vez por plan donde está vinculada. */
   clavePlan(a: AsignaturaPlanItem): string {
@@ -394,13 +445,16 @@ export class CoordinatorSubjectsComponent implements OnInit {
     const k = this.kpis();
     if (estado === 'cargando') return TEXTO_CARGANDO;
     if (estado === 'error' || k === null) return TEXTO_SIN_DATOS;
-    return `${k.matriculadosActivos} / ${k.cupoTotal}`;
+    return `${cifra(k.matriculadosActivos)} / ${cifra(k.cupoTotal)}`;
   });
 
   readonly ocupacionDetalle = computed(() => {
     const k = this.kpis();
     if (this.estadoKpis() !== 'listo' || k === null) return 'Grupos habilitados del período';
-    return k.tasaAforo === null ? 'Sin cupo registrado en los grupos habilitados' : `${k.tasaAforo} % de ocupación · ${k.gruposActivos} grupos habilitados`;
+    if (k.tasaAforo === null) return 'Sin cupo registrado en los grupos habilitados';
+    // Campo ausente (servidor sin el aforo de CIERRE-W3I): no se afirma «sin cupo» ni se pinta «undefined».
+    if (typeof k.tasaAforo !== 'number') return 'Grupos habilitados del período';
+    return `${k.tasaAforo} % de ocupación · ${cifra(k.gruposActivos)} grupos habilitados`;
   });
 
   private tieneCupo(curso: Course): boolean {
@@ -417,6 +471,7 @@ export class CoordinatorSubjectsComponent implements OnInit {
   constructor() {
     this.listado.tamano.set(12);
     this.listadoAsignaturas.tamano.set(12);
+    this.destroyRef.onDestroy(() => this.cancelarInscritos());
     this.busqueda$.pipe(debounceTime(300), takeUntilDestroyed(this.destroyRef)).subscribe(() => {
       this.listado.buscar();
       this.listadoAsignaturas.buscar();
@@ -471,17 +526,46 @@ export class CoordinatorSubjectsComponent implements OnInit {
     this.listadoAsignaturas.buscar();
   }
 
-  private seleccionarInicial(grupos: Course[]): void {
-    if (grupos.length > 0 && !this.selectedCourseId()) {
-      this.onSelectCourse(grupos[0].id);
-    }
+  /** Cierra la ventana de la nómina del grupo. */
+  cerrarInscritos(): void {
+    this.cancelarInscritos();
+    this.selectedCourse.set(null);
+    this.enrolledStudents.set([]);
+    this.cargandoInscritos.set(false);
+    this.errorInscritos.set(null);
   }
 
+  /** Abre la nómina del grupo en una ventana emergente (ya no se elige un grupo al cargar la pantalla). */
   onSelectCourse(cursoId: string): void {
-    this.selectedCourseId.set(cursoId);
-    this.coordinatorService.getEstudiantesPorGrupo(cursoId).subscribe({
-      next: (res) => this.enrolledStudents.set(res.datos || []),
-    });
+    const curso = this.courses().find((c) => c.id === cursoId) ?? null;
+    if (!curso) return;
+    this.selectedCourse.set(curso);
+    this.cargarInscritos(cursoId);
+  }
+
+  /** Pide la nómina del grupo; cancela la consulta anterior para que solo cuente la del grupo abierto. */
+  cargarInscritos(cursoId: string): void {
+    this.cancelarInscritos();
+    this.enrolledStudents.set([]);
+    this.errorInscritos.set(null);
+    this.cargandoInscritos.set(true);
+    this.inscritosSub = this.coordinatorService
+      .getEstudiantesPorGrupo(cursoId)
+      .pipe(finalize(() => this.cargandoInscritos.set(false)))
+      .subscribe({
+        next: (res) => this.enrolledStudents.set(res.datos ?? []),
+        error: (error: unknown) => this.errorInscritos.set(classifyLoadError(error)),
+      });
+  }
+
+  private cancelarInscritos(): void {
+    this.inscritosSub?.unsubscribe();
+    this.inscritosSub = null;
+  }
+
+  /** Etiqueta y color del estado de la matrícula en el grupo (catálogo EstadoEstudianteGrupo: A, CVP, CI, F). */
+  estadoInscrito(est: EstudianteGrupoApiDto): { etiqueta: string; variante: BadgeVariant } {
+    return etiquetaEstadoInscrito(est);
   }
 
   irAMallaPlan(planId: string): void {

@@ -34,7 +34,7 @@ const ESTADOS: Record<EstadoPeriodoHistorial, { etiqueta: string; variante: Badg
     <app-modal
       [isOpen]="true"
       [title]="docente().nombreCompleto"
-      [subtitulo]="docente().codigoTipoIdentificacion + ' ' + docente().numeroIdentificacion + ' • ' + docente().correo + ' • ' + docente().nombreTipoVinculacion"
+      [subtitulo]="docente().codigoTipoIdentificacion + ' ' + docente().numeroIdentificacion + ' • ' + docente().correo"
       tamano="3xl"
       etiquetaCerrar="Cerrar ficha"
       (closed)="cerrar.emit()"

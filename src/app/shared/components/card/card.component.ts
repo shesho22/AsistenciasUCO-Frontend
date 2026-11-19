@@ -43,9 +43,12 @@ export class CardComponent {
   hoverable = input<boolean>(false);
   glass = input<boolean>(false);
   hasHeaderSlot = input<boolean>(false);
+  /** MEJORAS-SERGIO 7: en `false` el contenido puede salir de la tarjeta (menus desplegables al pie de la tarjeta). */
+  recortar = input<boolean>(true);
 
   cardClasses = computed(() => {
-    const base = 'superficie transition-all duration-300 relative overflow-hidden flex flex-col justify-between h-full w-full';
+    const recorte = this.recortar() ? 'overflow-hidden' : 'overflow-visible';
+    const base = `superficie transition-all duration-300 relative ${recorte} flex flex-col justify-between h-full w-full`;
     const glassEffect = this.glass() ? 'bg-white/95 backdrop-blur-md border-warm-200/90 shadow-warm-lg' : '';
     const hoverEffect = this.hoverable() ? 'hover:shadow-warm-md hover:-translate-y-0.5 hover:border-warm-300' : '';
 

@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { Router } from '@angular/router';
 import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@angular/common/http/testing';
 import { HorarioSemanalComponent } from './horario-semanal.component';
@@ -89,7 +90,7 @@ describe('HorarioSemanalComponent (ATA D7)', () => {
     calendario().flush({ exitoso: true, datos: [sesion({ estaCancelada: true, motivoCancelacion: 'Docente en comisión' })] });
     fixture.detectChanges();
     const tarjeta = el().querySelector('[data-testid="sesion-s-1"]') as HTMLElement;
-    expect(tarjeta.querySelector('h4')?.className).toContain('line-through');
+    expect(tarjeta.querySelector('[data-testid="nombre-asignatura"]')?.className).toContain('line-through');
     expect(tarjeta.querySelector('[data-testid="etiqueta-cancelada"]')).not.toBeNull();
     expect(tarjeta.querySelector('[data-testid="motivo-cancelacion"]')?.textContent).toContain('Docente en comisión');
   });
@@ -118,7 +119,7 @@ describe('HorarioSemanalComponent (ATA D7)', () => {
       datos: [sesion({ idSesion: 'a' }), sesion({ idSesion: 'b', fechaHoraInicioUtc: '2026-11-17T20:00:00Z' }), sesion({ idSesion: 'c', fechaHoraInicioUtc: '' })],
     });
     fixture.detectChanges();
-    expect(el().querySelectorAll('[data-testid="dia-2026-11-17"] article')).toHaveSize(2);
+    expect(el().querySelectorAll('[data-testid="dia-2026-11-17"] [data-testid^="sesion-"]')).toHaveSize(2);
     expect(component.totalSesiones()).toBe(2);
   });
 
@@ -211,5 +212,59 @@ describe('HorarioSemanalComponent (ATA D7)', () => {
     const req = calendario();
     fixture.destroy();
     expect(req.cancelled).toBeTrue();
+  });
+
+  describe('MEJORAS-SERGIO 9: la franja del docente abre el grupo', () => {
+    let navigate: jasmine.Spy;
+
+    function montarDocenteCon(datos: SesionCalendario[]): void {
+      montar('DOCENTE');
+      navigate = spyOn(TestBed.inject(Router), 'navigate').and.returnValue(Promise.resolve(true));
+      calendario('docente').flush({ exitoso: true, datos });
+      fixture.detectChanges();
+    }
+
+    it('al pulsar la franja lleva al hub del grupo de esa sesión', () => {
+      montarDocenteCon([sesion()]);
+      const franja = el().querySelector('[data-testid="sesion-s-1"]') as HTMLElement;
+      expect(franja.tagName).toBe('BUTTON');
+      franja.click();
+      expect(navigate).toHaveBeenCalledWith(['/app/docente/grupos'], { queryParams: { grupo: 'g-1' } });
+    });
+
+    it('una sesión sin grupo lleva a la lista de grupos', () => {
+      montarDocenteCon([]);
+      component.abrirGrupo(sesion({ idGrupo: '' }));
+      expect(navigate).toHaveBeenCalledWith(['/app/docente/grupos'], {});
+    });
+
+    it('la franja solo contiene contenido de frase (sin div, h4 ni p dentro del botón)', () => {
+      montarDocenteCon([sesion({ estaCancelada: true, motivoCancelacion: 'Docente en comisión' })]);
+      const franja = el().querySelector('[data-testid="sesion-s-1"]') as HTMLElement;
+      expect(franja.querySelectorAll('div, h1, h2, h3, h4, h5, h6, p, article, section').length).toBe(0);
+      expect(franja.textContent).toContain('Cálculo');
+    });
+
+    it('el nombre accesible incluye grupo, materia, día, horario y el estado de la sesión', () => {
+      montarDocenteCon([sesion()]);
+      const etiqueta = el().querySelector('[data-testid="sesion-s-1"]')?.getAttribute('aria-label') ?? '';
+      expect(etiqueta).toContain('Grupo 01');
+      expect(etiqueta).toContain('Cálculo (MAT-101)');
+      expect(etiqueta).toContain('martes');
+      expect(etiqueta).toContain('de 08:00 a 10:00');
+      expect(etiqueta).not.toContain('cancelada');
+
+      const cancelada = component.etiquetaFranja(sesion({ esExtraordinaria: true, estaCancelada: true, motivoCancelacion: 'Docente en comisión' }));
+      expect(cancelada).toContain('extraordinaria');
+      expect(cancelada).toContain('cancelada: Docente en comisión');
+      expect(component.etiquetaFranja(sesion({ estaCancelada: true }))).toMatch(/cancelada$/);
+    });
+
+    it('el estudiante sigue viendo tarjetas no interactivas', () => {
+      montar('ESTUDIANTE');
+      calendario().flush({ exitoso: true, datos: [sesion()] });
+      fixture.detectChanges();
+      expect(el().querySelector('[data-testid="sesion-s-1"]')?.tagName).toBe('ARTICLE');
+    });
   });
 });

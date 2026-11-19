@@ -26,7 +26,6 @@ describe('CoordinatorDocentesComponent', () => {
     cambiarEstadoDocente: jasmine.Spy;
     getFichaDocente: jasmine.Spy;
     getResumenDocentes: jasmine.Spy;
-    getTiposVinculacion: jasmine.Spy;
   };
   let catalogService: jasmine.SpyObj<CatalogService>;
   let toast: jasmine.SpyObj<ToastService>;
@@ -44,9 +43,6 @@ describe('CoordinatorDocentesComponent', () => {
     segundoApellido: null,
     nombreCompleto: `${nombre} Prueba`,
     correo: `${nombre.toLowerCase()}@uco.edu.co`,
-    idTipoVinculacion: 'tv-1',
-    codigoTipoVinculacion: 'CAT',
-    nombreTipoVinculacion: 'Cátedra',
     fechaVinculacionUtc: '2026-10-22T10:00:00Z',
     totalGruposPrograma: 2,
     estaActivo: activo,
@@ -87,13 +83,9 @@ describe('CoordinatorDocentesComponent', () => {
             totalDocentes: 3,
             totalActivos: 2,
             totalInactivos: 1,
-            porTipoVinculacion: [
-              { idTipoVinculacion: 'tv-1', codigoTipoVinculacion: 'CAT', nombreTipoVinculacion: 'Cátedra', totalActivos: 2, totalInactivos: 1, total: 3 },
-            ],
           },
         })
       ),
-      getTiposVinculacion: jasmine.createSpy('getTiposVinculacion').and.returnValue(of([{ id: 'tv-1', codigo: 'CAT', nombre: 'Cátedra' }])),
     };
     catalogService = jasmine.createSpyObj<CatalogService>('CatalogService', ['getTiposIdentificacion']);
     catalogService.getTiposIdentificacion.and.returnValue(
@@ -161,7 +153,6 @@ describe('CoordinatorDocentesComponent', () => {
     expect(coordService.getDocentesPrograma.calls.mostRecent().args[0]).toEqual(
       jasmine.objectContaining({ pagina: 1, tamano: 10 })
     );
-    expect(coordService.getTiposVinculacion).toHaveBeenCalled();
     expect(catalogService.getTiposIdentificacion).toHaveBeenCalled();
     expect(component.isLoading()).toBeFalse();
     expect(fixture.nativeElement.textContent).toContain('Roberto Prueba');
@@ -377,7 +368,7 @@ describe('CoordinatorDocentesComponent', () => {
     coordService.getDocentesPrograma.calls.reset();
     const payload = {
       idTipoIdentificacion: 'tipo-1', numeroIdentificacion: '1017555444', primerNombre: 'Jorge', primerApellido: 'Henao',
-      correo: 'jorge@uco.edu.co', idTipoVinculacion: 'tv-1',
+      correo: 'jorge@uco.edu.co',
     };
 
     component.guardarNuevo(payload);
@@ -397,7 +388,7 @@ describe('CoordinatorDocentesComponent', () => {
 
     component.guardarNuevo({
       idTipoIdentificacion: 'tipo-1', numeroIdentificacion: '1017555444', primerNombre: 'Jorge', primerApellido: 'Henao',
-      correo: 'jorge@uco.edu.co', idTipoVinculacion: 'tv-1',
+      correo: 'jorge@uco.edu.co',
     });
     fixture.detectChanges();
     fixture.detectChanges();
@@ -413,20 +404,20 @@ describe('CoordinatorDocentesComponent', () => {
     crear();
     tick(300);
 
-    component.guardarExistente({ idDocente: 'doc-9', idTipoVinculacion: 'tv-1' });
+    component.guardarExistente({ idDocente: 'doc-9' });
     fixture.detectChanges();
     tick(300);
 
     expect(accountAccess.consult).not.toHaveBeenCalled();
   }));
 
-  it('T-FE-04: guardarExistente envía idDocente e idTipoVinculacion', fakeAsync(() => {
+  it('T-FE-04: guardarExistente envía solo idDocente (sin tipo de vinculación)', fakeAsync(() => {
     crear();
     tick(300);
 
-    component.guardarExistente({ idDocente: 'doc-9', idTipoVinculacion: 'tv-1' });
+    component.guardarExistente({ idDocente: 'doc-9' });
 
-    expect(coordService.vincularDocente).toHaveBeenCalledWith({ idDocente: 'doc-9', idTipoVinculacion: 'tv-1' });
+    expect(coordService.vincularDocente).toHaveBeenCalledWith({ idDocente: 'doc-9' });
     tick(300); // vaciar el debounce de la recarga posterior al vinculo
   }));
 
@@ -444,7 +435,7 @@ describe('CoordinatorDocentesComponent', () => {
     tick(300);
     component.abrirFormulario();
 
-    component.guardarExistente({ idDocente: 'doc-1', idTipoVinculacion: 'tv-1' });
+    component.guardarExistente({ idDocente: 'doc-1' });
 
     expect(toast.error).toHaveBeenCalledWith('El docente ya está vinculado a este programa.');
     expect(component.formularioAbierto()).toBeTrue();
@@ -472,11 +463,11 @@ describe('CoordinatorDocentesComponent', () => {
     component.abrirEdicion(fila('doc-1', 'Roberto'));
     coordService.getDocentesPrograma.calls.reset();
 
-    component.guardarEdicion({ idTipoVinculacion: 'tv-2', primerNombre: 'Nuevo' });
+    component.guardarEdicion({ primerNombre: 'Nuevo' });
     fixture.detectChanges();
     tick(300);
 
-    expect(coordService.actualizarDocente).toHaveBeenCalledWith('doc-1', { idTipoVinculacion: 'tv-2', primerNombre: 'Nuevo' });
+    expect(coordService.actualizarDocente).toHaveBeenCalledWith('doc-1', { primerNombre: 'Nuevo' });
     expect(toast.success).toHaveBeenCalledWith('Docente actualizado.');
     expect(component.docenteEnEdicion()).toBeNull();
     expect(coordService.getDocentesPrograma).toHaveBeenCalledTimes(1);
@@ -529,7 +520,7 @@ describe('CoordinatorDocentesComponent', () => {
     expect(fixture.nativeElement.querySelector('app-coordinator-docente-ficha-modal')).toBeNull();
   }));
 
-  it('HU095: muestra el consolidado del programa y los contadores por tipo de vinculación', fakeAsync(() => {
+  it('HU095: muestra el consolidado del programa (total, activos e inactivos) sin tipos de vinculación', fakeAsync(() => {
     crear();
     tick(300);
     fixture.detectChanges();
@@ -540,39 +531,47 @@ describe('CoordinatorDocentesComponent', () => {
     expect(texto).toContain('3');
     expect(texto).toContain('2');
     expect(texto).toContain('1');
-    const chip: HTMLButtonElement = fixture.nativeElement.querySelector('[data-testid="chip-tipo-vinculacion"]');
-    expect(chip.textContent).toContain('Cátedra: 3');
+    // MEJORAS-SERGIO-2026-11-18: se retiró el tipo de vinculación (chips, filtro y columna)
+    expect(fixture.nativeElement.querySelector('[data-testid="chip-tipo-vinculacion"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('select[name="tipoVinculacionDocentes"]')).toBeNull();
+    expect(fixture.nativeElement.textContent).not.toContain('tipo de vinculación');
   }));
 
-  it('HU095: el contador de un tipo filtra el directorio en el servidor y un segundo clic quita el filtro', fakeAsync(() => {
+  it('MEJORAS-SERGIO 12: el directorio es una tabla con una fila por docente y sus acciones', fakeAsync(() => {
     crear();
     tick(300);
     fixture.detectChanges();
-    coordService.getDocentesPrograma.calls.reset();
 
-    (fixture.nativeElement.querySelector('[data-testid="chip-tipo-vinculacion"]') as HTMLButtonElement).click();
-    fixture.detectChanges();
-    tick(300);
-    expect(component.filtroTipo()).toBe('tv-1');
-    expect(component.pagina()).toBe(1);
-    expect(coordService.getDocentesPrograma).toHaveBeenCalledWith(jasmine.objectContaining({ idTipoVinculacion: 'tv-1' }));
+    const tabla = fixture.nativeElement.querySelector('[data-testid="tabla-docentes"]') as HTMLTableElement;
+    expect(tabla).not.toBeNull();
+    const filas = tabla.querySelectorAll('tbody tr');
+    expect(filas.length).toBe(component.docentes().length);
+    const primera = filas[0] as HTMLElement;
+    expect(primera.querySelector('[data-testid="ver-ficha-docente"]')).not.toBeNull();
+    expect(primera.querySelector('[data-testid="editar-docente"]')).not.toBeNull();
+    expect(primera.querySelector('[data-testid="toggle-estado"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('app-card')).toBeNull();
 
-    component.alternarTipoVinculacion('tv-1');
-    fixture.detectChanges();
+    (primera.querySelector('[data-testid="ver-ficha-docente"]') as HTMLButtonElement).click();
+    expect(component.docenteSeleccionado()).not.toBeNull();
     tick(300);
-    expect(component.filtroTipo()).toBe('');
-    expect(coordService.getDocentesPrograma.calls.mostRecent().args[0].idTipoVinculacion).toBeUndefined();
   }));
 
-  it('HU095: el selector de tipo de vinculación filtra y vuelve a la primera página', fakeAsync(() => {
+  it('MEJORAS-SERGIO 12: los botones repetidos de cada fila nombran al docente en su aria-label', fakeAsync(() => {
     crear();
     tick(300);
-    component.onPageChange(3);
-    component.onTipoVinculacionChange('tv-1');
     fixture.detectChanges();
+
+    const filas = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('[data-testid="tabla-docentes"] tbody tr'));
+    expect(filas.length).toBeGreaterThan(0);
+    component.docentes().forEach((docente, i) => {
+      const fila = filas[i] as HTMLElement;
+      const etiqueta = (id: string) => fila.querySelector(`[data-testid="${id}"]`)?.getAttribute('aria-label');
+      expect(etiqueta('ver-ficha-docente')).toBe(`Ver ficha de ${docente.nombreCompleto}`);
+      expect(etiqueta('editar-docente')).toBe(`Editar datos de ${docente.nombreCompleto}`);
+      expect(etiqueta('toggle-estado')).toBe(`${docente.estaActivo ? 'Desactivar' : 'Reactivar'} a ${docente.nombreCompleto}`);
+    });
     tick(300);
-    expect(component.pagina()).toBe(1);
-    expect(coordService.getDocentesPrograma.calls.mostRecent().args[0].idTipoVinculacion).toBe('tv-1');
   }));
 
   it('HU095: el consolidado se relee tras un cambio de estado y un error lo deja sin mostrar', fakeAsync(() => {

@@ -137,6 +137,96 @@ describe('DeanGrupoDetalleComponent', () => {
     expect(texto).toContain('08:00 - 10:00');
   });
 
+  it('MEJORAS-SERGIO 6: 39 sesiones se muestran en una tabla densa paginada de 20 en 20', () => {
+    crear();
+    const muchas = Array.from({ length: 39 }, (_, i): SesionFacultadItem => ({
+      ...sesion(`m${i + 1}`, 'crs-1', i + 1),
+      fechaHoraInicio: `2026-09-01T08:00:00`,
+      fechaHoraFin: `2026-09-01T10:00:00`,
+    }));
+    http.expectOne(peticionSesiones).flush({
+      exitoso: true, totalElementos: 39, numeroPagina: 1, tamanoPagina: 50, totalPaginas: 1, elementos: muchas,
+    });
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[data-testid="tabla-sesiones-grupo"]')).not.toBeNull();
+    expect(el.querySelectorAll('[data-testid^="sesion-fila-"]')).toHaveSize(20);
+    expect(el.textContent).toContain('39 sesiones');
+    component.paginaSesiones.set(2);
+    fixture.detectChanges();
+    expect(el.querySelectorAll('[data-testid^="sesion-fila-"]')).toHaveSize(19);
+    expect(el.querySelector('[data-testid="sesion-fila-m21"]')).not.toBeNull();
+  });
+
+  describe('MEJORAS-SERGIO 6: todas las sesiones y paginador siempre alcanzable', () => {
+    const fila = (i: number): SesionFacultadItem => ({
+      ...sesion(`p${i}`, 'crs-1', i),
+      fechaHoraInicio: '2026-09-01T08:00:00',
+      fechaHoraFin: '2026-09-01T10:00:00',
+    });
+    const paginador = () => (fixture.nativeElement as HTMLElement).querySelector('[data-testid="paginador-sesiones"]');
+
+    it('pide las sesiones con el tamaño máximo del backend (100) y recorre todas las páginas', () => {
+      crear();
+      const primera = http.expectOne((r) => peticionSesiones(r) && r.params.get('pagina') === '1');
+      expect(primera.request.params.get('tamano')).toBe('100');
+      primera.flush({
+        exitoso: true, totalElementos: 130, numeroPagina: 1, tamanoPagina: 100, totalPaginas: 2,
+        elementos: Array.from({ length: 100 }, (_, i) => fila(i + 1)),
+      });
+      const segunda = http.expectOne((r) => peticionSesiones(r) && r.params.get('pagina') === '2');
+      segunda.flush({
+        exitoso: true, totalElementos: 130, numeroPagina: 2, tamanoPagina: 100, totalPaginas: 2,
+        elementos: Array.from({ length: 30 }, (_, i) => fila(i + 101)),
+      });
+      fixture.detectChanges();
+
+      expect(component.sessions()).toHaveSize(130);
+      expect(component.sesionesIncompletas()).toBeFalse();
+      expect((fixture.nativeElement as HTMLElement).textContent).toContain('130 sesiones');
+      expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="aviso-sesiones-incompletas"]')).toBeNull();
+    });
+
+    it('con 50 por página y 39 sesiones el paginador sigue visible para volver a un tamaño menor', () => {
+      crear();
+      http.expectOne(peticionSesiones).flush({
+        exitoso: true, totalElementos: 39, numeroPagina: 1, tamanoPagina: 100, totalPaginas: 1,
+        elementos: Array.from({ length: 39 }, (_, i) => fila(i + 1)),
+      });
+      fixture.detectChanges();
+      expect(paginador()).not.toBeNull();
+
+      component.cambiarTamanoSesiones(50);
+      fixture.detectChanges();
+      expect((fixture.nativeElement as HTMLElement).querySelectorAll('[data-testid^="sesion-fila-"]')).toHaveSize(39);
+      expect(paginador()).not.toBeNull();
+      const opciones = Array.from(paginador()!.querySelectorAll('option')).map((o) => o.textContent?.trim());
+      expect(opciones.some((o) => o?.startsWith('10'))).toBeTrue();
+    });
+
+    it('con menos sesiones que el tamaño más pequeño (10) no muestra paginador', () => {
+      crear();
+      http.expectOne(peticionSesiones).flush({
+        exitoso: true, totalElementos: 4, numeroPagina: 1, tamanoPagina: 100, totalPaginas: 1,
+        elementos: Array.from({ length: 4 }, (_, i) => fila(i + 1)),
+      });
+      fixture.detectChanges();
+      expect(paginador()).toBeNull();
+    });
+
+    it('si el servidor reporta más sesiones de las recibidas lo avisa en lugar de truncar en silencio', () => {
+      crear();
+      http.expectOne(peticionSesiones).flush({
+        exitoso: true, totalElementos: 60, numeroPagina: 1, tamanoPagina: 100, totalPaginas: 1,
+        elementos: Array.from({ length: 50 }, (_, i) => fila(i + 1)),
+      });
+      fixture.detectChanges();
+      const aviso = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="aviso-sesiones-incompletas"]');
+      expect(aviso?.textContent).toContain('Se muestran 50 de 60 sesiones');
+    });
+  });
+
   it('un 200 sin sesiones del grupo se muestra como vacío legítimo, no como error', () => {
     crear();
     http.expectOne(peticionSesiones).flush({ exitoso: true, totalElementos: 0, totalPaginas: 0, numeroPagina: 1, tamanoPagina: 50, elementos: [] });

@@ -6,6 +6,7 @@ import { ApiPageResponse, ApiResponse } from '../models/api-response.model';
 import { ApiPageResponse as PaginaApi } from '../api/models/api-page-response.model';
 import { obtenerTodasLasPaginas, paramsSinVacios } from '../api/pagination.util';
 import { CoordinatorProgramService } from './coordinator-program.service';
+import { EstudianteGrupoApiDto } from '../api/models/estudiante-grupo-api-dto.model';
 import {
   ActualizarDocentePayload,
   DocenteCandidato,
@@ -14,7 +15,6 @@ import {
   FichaDocente,
   FichaDocenteFiltro,
   ResumenDocentesPrograma,
-  TipoVinculacionItem,
   VincularDocentePayload,
 } from '../models/docente-programa.model';
 import {
@@ -213,7 +213,7 @@ export class CoordinatorManagementService {
     this.getPeriodosAcademicos().subscribe({ error: () => undefined });
   }
 
-  // --- DOCENTES DEL PROGRAMA (HU062/HU063/HU089/HU090/HU091) ---
+  // --- DOCENTES DEL PROGRAMA (HU062/HU063/HU089/HU091; HU090 retirada 2026-11-18) ---
   getDocentesPrograma(filtro: DocentesProgramaFiltro): Observable<ApiResponse<DocentePrograma[]>> {
     let params = new HttpParams().set('pagina', filtro.pagina).set('tamano', filtro.tamano);
     const busqueda = filtro.busqueda?.trim();
@@ -222,9 +222,6 @@ export class CoordinatorManagementService {
     }
     if (filtro.estaActivo !== undefined) {
       params = params.set('estaActivo', filtro.estaActivo);
-    }
-    if (filtro.idTipoVinculacion) {
-      params = params.set('idTipoVinculacion', filtro.idTipoVinculacion);
     }
     return this.http
       .get<ApiResponse<DocentePrograma[]>>(`${environment.apiUrl}/coordinador/docentes`, { params })
@@ -259,7 +256,7 @@ export class CoordinatorManagementService {
             apellidos: [d.primerApellido, d.segundoApellido].filter(Boolean).join(' '),
             correo: d.correo,
             departamento: '',
-            especialidad: d.nombreTipoVinculacion,
+            especialidad: '',
             estado: d.estaActivo ? 'ACTIVO' : 'INACTIVO',
             totalGruposAsignados: d.totalGruposPrograma,
           })
@@ -297,13 +294,9 @@ export class CoordinatorManagementService {
     return this.http.get<ApiResponse<FichaDocente>>(`${environment.apiUrl}/coordinador/docentes/${idDocente}/ficha`, { params });
   }
 
-  /** HU095: consolidado del directorio docente del programa (activos, inactivos y por tipo de vinculacion). */
+  /** HU095: consolidado del directorio docente del programa (total, activos e inactivos). */
   getResumenDocentes(): Observable<ApiResponse<ResumenDocentesPrograma>> {
     return this.http.get<ApiResponse<ResumenDocentesPrograma>>(`${environment.apiUrl}/coordinador/docentes/resumen`);
-  }
-
-  getTiposVinculacion(): Observable<TipoVinculacionItem[]> {
-    return this.http.get<TipoVinculacionItem[]>(`${environment.apiUrl}/tipos-vinculacion`);
   }
 
   // --- PLANES DE ESTUDIO ---
@@ -638,8 +631,9 @@ export class CoordinatorManagementService {
     return this.getEstudiantesDirectorioPagina({ page: 0, size: 1, activo }).pipe(map((p) => Number(p.totalItems ?? 0)));
   }
 
-  getEstudiantesPorGrupo(grupoId: string): Observable<ApiResponse<EstudianteDirectorioItem[]>> {
-    return this.http.get<ApiResponse<EstudianteDirectorioItem[]>>(`${environment.apiUrl}/grupos/${grupoId}/estudiantes`);
+  /** Nómina del grupo (`GET /grupos/{id}/estudiantes`): filas `EstudianteGrupoDTO` del backend (estado en `codigoEstado`/`nombreEstado`). */
+  getEstudiantesPorGrupo(grupoId: string): Observable<ApiResponse<EstudianteGrupoApiDto[]>> {
+    return this.http.get<ApiResponse<EstudianteGrupoApiDto[]>>(`${environment.apiUrl}/grupos/${grupoId}/estudiantes`);
   }
 
   // --- HU064/HU060/HU061: GRUPOS, SESIONES Y ASISTENCIAS DEL PROGRAMA (SOLO LECTURA) ---
