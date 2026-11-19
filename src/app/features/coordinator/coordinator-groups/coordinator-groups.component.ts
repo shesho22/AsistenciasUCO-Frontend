@@ -169,7 +169,9 @@ interface GrupoForm {
             }
           </div>
 
-          <app-franjas-editor [(franjas)]="form.franjas" />
+          @defer (on immediate) {
+            <app-franjas-editor [(franjas)]="form.franjas" />
+          }
 
           <div class="flex justify-end gap-2 pt-2 border-t border-warm-100">
             <button type="button" (click)="volver()" class="px-4 py-2 rounded-xl bg-warm-50 border border-warm-200 text-sm font-semibold text-warm-700">

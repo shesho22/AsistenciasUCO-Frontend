@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { Router, Routes, provideRouter } from '@angular/router';
 import { routes } from './app.routes';
+import { AuthService } from './core/services/auth.service';
 import { roleGuard } from './core/guards/role.guard';
 import {
   RUTA_SIN_ENTIDAD,
@@ -64,7 +65,18 @@ describe('application routes', () => {
     const appRoute = routes.find((route) => route.path === 'app');
     expect(appRoute?.children?.some((r) => r.path === 'estudiante/solicitudes')).toBeFalse();
 
-    TestBed.configureTestingModule({ providers: [provideRouter(routes)] });
+    const auth = jasmine.createSpyObj<AuthService>('AuthService', [
+      'isAuthenticated',
+      'initializeSessionOnce',
+      'hasPendingAuthenticationRedirect',
+    ]);
+    auth.isAuthenticated.and.returnValue(false);
+    auth.initializeSessionOnce.and.resolveTo(false);
+    auth.hasPendingAuthenticationRedirect.and.returnValue(false);
+
+    TestBed.configureTestingModule({
+      providers: [provideRouter(routes), { provide: AuthService, useValue: auth }],
+    });
     const router = TestBed.inject(Router);
     await router.navigateByUrl('/app/estudiante/solicitudes');
     expect(router.url).toContain('/login');

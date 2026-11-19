@@ -88,12 +88,21 @@ describe('StudentStudyPlanComponent (plan de estudios del estudiante)', () => {
     expect(cifras).toEqual(['8', '3', '10', '1 asignatura · 3 créditos']);
   });
 
-  it('PL-02 lista los semestres en orden con sus asignaturas, créditos, carácter y tipo', () => {
+  it('PL-02 lista los semestres y renderiza las asignaturas al expandirlos', async () => {
     crear();
     responder([plan()]);
 
     expect(semestres().map((s) => s.querySelector('h3')!.textContent!.trim())).toEqual(['Semestre 1', 'Semestre 2', 'Semestre 8']);
     expect(semestres()[0].querySelector('summary')!.textContent!.replace(/\s+/g, ' ')).toContain('2 asignaturas · 7 créditos');
+    expect(semestres()[0].querySelectorAll('[data-testid="asignatura-plan"]')).toHaveSize(0);
+
+    semestres()[0].querySelector('summary')!.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(semestres()[0].open).toBeTrue();
+    expect(semestres()[0].querySelectorAll('[data-testid="asignatura-plan"]')).toHaveSize(2);
     const detalles = Array.from(semestres()[0].querySelectorAll('[data-testid="asignatura-detalle"]')).map((d) => d.textContent!.trim());
     expect(detalles).toEqual(['3 créditos · Obligatoria · Específica', '4 créditos · Optativa · Básica']);
     expect(semestres()[0].textContent).toContain('COD-a1');

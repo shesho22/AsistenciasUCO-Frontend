@@ -31,7 +31,7 @@ export function iniciarCatalogoMensajesUi(injector: EnvironmentInjector) {
 }
 
 export function initializeKeycloak(authService: AuthService) {
-  return () => authService.initKeycloak();
+  return () => authService.initializeSessionOnce();
 }
 
 export const appConfig: ApplicationConfig = {

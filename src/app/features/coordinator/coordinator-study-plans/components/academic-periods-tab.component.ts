@@ -111,13 +111,15 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
       }
 
       @if (mostrarModal()) {
-        <app-academic-period-form-modal
-          [periodo]="periodoEditando()"
-          [guardando]="guardando()"
-          [error]="errorGuardado()"
-          (guardar)="guardar($event)"
-          (cerrar)="cerrarFormulario()"
-        />
+        @defer (on immediate) {
+          <app-academic-period-form-modal
+            [periodo]="periodoEditando()"
+            [guardando]="guardando()"
+            [error]="errorGuardado()"
+            (guardar)="guardar($event)"
+            (cerrar)="cerrarFormulario()"
+          />
+        }
       }
     </div>
   `,

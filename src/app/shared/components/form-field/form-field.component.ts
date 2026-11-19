@@ -7,8 +7,9 @@ let fieldIdCounter = 0;
     selector: 'app-form-field',
     imports: [],
     changeDetection: ChangeDetectionStrategy.OnPush,
+    host: { class: 'block w-full' },
     template: `
-    <div class="flex flex-col gap-1.5 w-full">
+    <div class="flex flex-col gap-2 w-full">
       @if (label()) {
         <label
           [for]="fieldId()"

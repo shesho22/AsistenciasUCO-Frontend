@@ -699,9 +699,11 @@ describe('TeacherGruposComponent', () => {
     });
     const celda = (est: string) =>
       (fixture.nativeElement as HTMLElement).querySelector(`[data-testid="sabana-celda-${est}-ses-1"]`);
-    const abrirSabana = () => {
+    const abrirSabana = async () => {
       component.verHubGrupo(course);
       component.subPestanaHub.set('SABANA');
+      fixture.detectChanges();
+      await fixture.whenStable();
       fixture.detectChanges();
     };
 
@@ -718,36 +720,38 @@ describe('TeacherGruposComponent', () => {
       }));
     });
 
-    it('pide la matriz del grupo al abrir la planilla y pinta la marca del estudiante en su sesion', () => {
-      abrirSabana();
+    it('pide la matriz del grupo al abrir la planilla y pinta la marca del estudiante en su sesion', async () => {
+      await abrirSabana();
 
       expect(matrizService.consultarMatriz).toHaveBeenCalledWith('crs-1', 1, 50, '');
       expect(celda('est-1')?.textContent).toContain('SJC');
     });
 
-    it('un estudiante sin celda en esa sesion sigue mostrando "—" (nunca se inventa una marca)', () => {
-      abrirSabana();
+    it('un estudiante sin celda en esa sesion sigue mostrando "—" (nunca se inventa una marca)', async () => {
+      await abrirSabana();
 
       expect(celda('est-2')?.textContent).toContain('—');
       expect(celda('est-2')?.textContent).not.toMatch(/AN|EX|SJC/);
     });
 
-    it('un fallo al cargar la matriz muestra el mensaje del backend y no inventa marcas', () => {
+    it('un fallo al cargar la matriz muestra el mensaje del backend y no inventa marcas', async () => {
       matrizService.consultarMatriz.and.returnValue(
         throwError(() => apiHttpError(409, 'No se pudo consultar la matriz.', 'CONFLICT')) as never
       );
-      abrirSabana();
+      await abrirSabana();
 
       const aviso = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="sabana-matriz-error"]');
       expect(aviso?.textContent?.trim()).toBe('No se pudo consultar la matriz.');
       expect(celda('est-1')).toBeNull();
     });
 
-    it('al abrir otro grupo la planilla vuelve a pedir la matriz del nuevo grupo', () => {
-      abrirSabana();
+    it('al abrir otro grupo la planilla vuelve a pedir la matriz del nuevo grupo', async () => {
+      await abrirSabana();
 
       component.verHubGrupo({ ...course, id: 'crs-2' });
       component.subPestanaHub.set('SABANA');
+      fixture.detectChanges();
+      await fixture.whenStable();
       fixture.detectChanges();
 
       expect(matrizService.consultarMatriz.calls.mostRecent().args[0]).toBe('crs-2');

@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { TeacherMatrizAsistenciaService } from '../../../core/services/teacher-matriz-asistencia.service';
 import { TomaAsistenciaService } from '../../../core/services/toma-asistencia.service';
 import { AsistenciaQrService } from '../../../core/services/asistencia-qr.service';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, DeferBlockState, TestBed } from '@angular/core/testing';
 import { NEVER, of, throwError } from 'rxjs';
 import { AttendanceService } from '../../../core/services/attendance.service';
 import { CatalogService } from '../../../core/services/catalog.service';
@@ -125,6 +125,13 @@ describe('AttendanceControlComponent SES-01 ventana estricta', () => {
     return component;
   }
 
+  async function createInSessionAndWait(sessionId: string): Promise<AttendanceControlComponent> {
+    const component = createInSession(sessionId);
+    const [detailBlock] = await fixture.getDeferBlocks();
+    await detailBlock!.render(DeferBlockState.Complete);
+    return component;
+  }
+
   function table(): AttendanceControlTableComponent {
     return fixture.debugElement.query((el) => el.componentInstance instanceof AttendanceControlTableComponent)
       .componentInstance as AttendanceControlTableComponent;
@@ -135,8 +142,8 @@ describe('AttendanceControlComponent SES-01 ventana estricta', () => {
       .componentInstance as AttendanceControlHeaderComponent;
   }
 
-  it('sesión activa: controles, marcado masivo y guardado habilitados', () => {
-    const component = createInSession('session-1');
+  it('sesión activa: controles, marcado masivo y guardado habilitados', async () => {
+    const component = await createInSessionAndWait('session-1');
 
     expect(component.attendanceWindowState()).toBe('ABIERTA');
     expect(table().controlsDisabled()).toBeFalse();
@@ -151,9 +158,9 @@ describe('AttendanceControlComponent SES-01 ventana estricta', () => {
     });
   });
 
-  it('sesión futura: bloquea cambio individual, marcado masivo y guardado', () => {
+  it('sesión futura: bloquea cambio individual, marcado masivo y guardado', async () => {
     nowMs = Date.parse('2026-11-03T12:59:59Z');
-    const component = createInSession('session-1');
+    const component = await createInSessionAndWait('session-1');
 
     expect(component.attendanceWindowState()).toBe('NO_INICIADA');
     expect(table().controlsDisabled()).toBeTrue();
@@ -166,9 +173,9 @@ describe('AttendanceControlComponent SES-01 ventana estricta', () => {
     expect(attendanceService.saveBatchAttendance).not.toHaveBeenCalled();
   });
 
-  it('sesión cerrada (fin exacto): bloquea controles y muestra el mensaje de cierre', () => {
+  it('sesión cerrada (fin exacto): bloquea controles y muestra el mensaje de cierre', async () => {
     nowMs = Date.parse('2026-11-03T15:00:00Z');
-    const component = createInSession('session-1');
+    const component = await createInSessionAndWait('session-1');
 
     expect(component.attendanceWindowState()).toBe('CERRADA');
     expect(table().controlsDisabled()).toBeTrue();
@@ -178,15 +185,15 @@ describe('AttendanceControlComponent SES-01 ventana estricta', () => {
     expect(attendanceService.saveBatchAttendance).not.toHaveBeenCalled();
   });
 
-  it('procedencia INDETERMINADA: nunca habilita el registro', () => {
-    const component = createInSession('session-2');
+  it('procedencia INDETERMINADA: nunca habilita el registro', async () => {
+    const component = await createInSessionAndWait('session-2');
 
     expect(component.attendanceWindowState()).toBe('INDETERMINADA');
     expect(table().controlsDisabled()).toBeTrue();
   });
 
-  it('al cambiar de sesión recalcula la habilitación', () => {
-    const component = createInSession('session-1');
+  it('al cambiar de sesión recalcula la habilitación', async () => {
+    const component = await createInSessionAndWait('session-1');
     expect(component.attendanceWindowOpen()).toBeTrue();
 
     component.onSessionSelect('session-0');
@@ -196,8 +203,8 @@ describe('AttendanceControlComponent SES-01 ventana estricta', () => {
     expect(table().controlsDisabled()).toBeTrue();
   });
 
-  it('página abierta tras el cierre: bloquea y descarta los cambios no guardados', () => {
-    const component = createInSession('session-1');
+  it('página abierta tras el cierre: bloquea y descarta los cambios no guardados', async () => {
+    const component = await createInSessionAndWait('session-1');
     component.onStudentStatusChange({ studentId: 'student-1', status: 'SJC' });
     expect(component.students()[0].status).toBe('SJC');
     const loadsBefore = attendanceService.getAttendancesByGroup.calls.count();

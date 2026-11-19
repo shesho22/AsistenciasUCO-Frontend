@@ -305,68 +305,69 @@ function cifra(valor: unknown): string {
       </div>
       }
       </div>
-      <!-- Nómina del grupo seleccionado (solo consulta), en ventana emergente. El modal queda montado siempre:
-           así, al cerrarse, devuelve el foco al botón «Ver inscritos» que lo abrió. -->
-      <app-modal
-        [isOpen]="selectedCourse() !== null"
-        [title]="selectedCourse() ? 'Estudiantes inscritos en ' + selectedCourse()!.name : 'Estudiantes inscritos'"
-        tamano="lg"
-        etiquetaCerrar="Cerrar"
-        panelTestId="modal-inscritos"
-        (closed)="cerrarInscritos()"
-      >
-      @if (selectedCourse(); as cursoActual) {
-        <div class="space-y-3">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-warm-100">
-            <div>
-              <span class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-warm-100 text-warm-700">
-                {{ cursoActual.code }} • {{ cursoActual.section }}
-              </span>
-              <p class="text-xs text-warm-500 mt-1">
-                Nómina oficial del grupo (la inscripción y retiro de alumnos en los grupos es administrada directamente por el docente titular).
-              </p>
-            </div>
-            @if (!cargandoInscritos() && !errorInscritos()) {
-              <span class="text-xs font-bold px-3 py-1 rounded-full bg-primary-50 text-primary-800 border border-primary-200 shrink-0">
-                {{ enrolledStudents().length }} / {{ cupoTexto(cursoActual) }} estudiantes
-              </span>
-            }
-          </div>
+      <!-- La nómina se carga al primer uso y el modal permanece montado para devolver el foco al cerrarse. -->
+      @defer (when selectedCourse() !== null) {
+        <app-modal
+          [isOpen]="selectedCourse() !== null"
+          [title]="selectedCourse() ? 'Estudiantes inscritos en ' + selectedCourse()!.name : 'Estudiantes inscritos'"
+          tamano="lg"
+          etiquetaCerrar="Cerrar"
+          panelTestId="modal-inscritos"
+          (closed)="cerrarInscritos()"
+        >
+          @if (selectedCourse(); as cursoActual) {
+            <div class="space-y-3">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-warm-100">
+                <div>
+                  <span class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-warm-100 text-warm-700">
+                    {{ cursoActual.code }} • {{ cursoActual.section }}
+                  </span>
+                  <p class="text-xs text-warm-500 mt-1">
+                    Nómina oficial del grupo (la inscripción y retiro de alumnos en los grupos es administrada directamente por el docente titular).
+                  </p>
+                </div>
+                @if (!cargandoInscritos() && !errorInscritos()) {
+                  <span class="text-xs font-bold px-3 py-1 rounded-full bg-primary-50 text-primary-800 border border-primary-200 shrink-0">
+                    {{ enrolledStudents().length }} / {{ cupoTexto(cursoActual) }} estudiantes
+                  </span>
+                }
+              </div>
 
-          @if (cargandoInscritos()) {
-            <p role="status" class="text-sm text-warm-500 text-center py-6" data-testid="inscritos-cargando">Cargando estudiantes inscritos…</p>
-          } @else if (errorInscritos(); as error) {
-            <app-error-carga [error]="error" (reintentar)="cargarInscritos(cursoActual.id)" />
-          } @else if (enrolledStudents().length === 0) {
-            <div class="p-10 text-center text-warm-500" data-testid="inscritos-vacio">
-              <p class="text-sm">No hay estudiantes registrados en este grupo actualmente.</p>
-            </div>
-          } @else {
-            <div class="divide-y divide-warm-100 max-h-[60vh] overflow-y-auto" data-testid="lista-inscritos">
-              @for (est of enrolledStudents(); track est.id) {
-                <div class="py-3 flex items-center justify-between gap-4">
-                  <div class="flex items-center gap-3 min-w-0">
-                    <app-avatar [name]="est.nombreCompleto" size="md"></app-avatar>
-                    <div class="min-w-0">
-                      <h4 class="font-serif font-bold text-sm text-warm-900 truncate">
-                        {{ est.nombreCompleto }}
-                      </h4>
-                      <p class="text-xs text-warm-500 break-all">
-                        Doc. {{ est.documento || '—' }}@if (est.correo) { • {{ est.correo }} }
-                      </p>
+              @if (cargandoInscritos()) {
+                <p role="status" class="text-sm text-warm-500 text-center py-6" data-testid="inscritos-cargando">Cargando estudiantes inscritos…</p>
+              } @else if (errorInscritos(); as error) {
+                <app-error-carga [error]="error" (reintentar)="cargarInscritos(cursoActual.id)" />
+              } @else if (enrolledStudents().length === 0) {
+                <div class="p-10 text-center text-warm-500" data-testid="inscritos-vacio">
+                  <p class="text-sm">No hay estudiantes registrados en este grupo actualmente.</p>
+                </div>
+              } @else {
+                <div class="divide-y divide-warm-100 max-h-[60vh] overflow-y-auto" data-testid="lista-inscritos">
+                  @for (est of enrolledStudents(); track est.id) {
+                    <div class="py-3 flex items-center justify-between gap-4">
+                      <div class="flex items-center gap-3 min-w-0">
+                        <app-avatar [name]="est.nombreCompleto" size="md"></app-avatar>
+                        <div class="min-w-0">
+                          <h4 class="font-serif font-bold text-sm text-warm-900 truncate">
+                            {{ est.nombreCompleto }}
+                          </h4>
+                          <p class="text-xs text-warm-500 break-all">
+                            Doc. {{ est.documento || '—' }}@if (est.correo) { • {{ est.correo }} }
+                          </p>
+                        </div>
+                      </div>
+
+                      <app-badge [variant]="estadoInscrito(est).variante" data-testid="estado-inscrito">
+                        {{ estadoInscrito(est).etiqueta }}
+                      </app-badge>
                     </div>
-                  </div>
-
-                  <app-badge [variant]="estadoInscrito(est).variante" data-testid="estado-inscrito">
-                    {{ estadoInscrito(est).etiqueta }}
-                  </app-badge>
+                  }
                 </div>
               }
             </div>
           }
-        </div>
+        </app-modal>
       }
-      </app-modal>
 
     </div>
   `

@@ -195,16 +195,18 @@ export interface GrupoSesionesRef {
         </section>
       }
 
-      <app-coordinator-cancelar-sesion-modal
-        [isOpen]="sesionACancelar() !== null"
-        [nombreSesion]="sesionACancelar()?.nombre ?? ''"
-        [motivos]="motivos()"
-        [errorMotivos]="errorMotivos()"
-        [errorMensaje]="errorCancelar()"
-        [enviando]="enviandoCancelacion()"
-        (confirmado)="confirmarCancelacion($event)"
-        (closed)="cerrarCancelar()"
-      />
+      @defer (when sesionACancelar() !== null) {
+        <app-coordinator-cancelar-sesion-modal
+          [isOpen]="sesionACancelar() !== null"
+          [nombreSesion]="sesionACancelar()?.nombre ?? ''"
+          [motivos]="motivos()"
+          [errorMotivos]="errorMotivos()"
+          [errorMensaje]="errorCancelar()"
+          [enviando]="enviandoCancelacion()"
+          (confirmado)="confirmarCancelacion($event)"
+          (closed)="cerrarCancelar()"
+        />
+      }
     </div>
   `
 })

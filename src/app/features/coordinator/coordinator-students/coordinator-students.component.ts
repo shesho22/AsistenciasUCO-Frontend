@@ -162,7 +162,11 @@ type PestanaModulo = 'DIRECTORIO';
       }
 
       @if (estudianteFicha(); as e) {
-        <app-coordinator-ficha-modal [idEstudiante]="e.id" [nombre]="e.nombreCompleto" (cerrar)="estudianteFicha.set(null)" />
+        @defer (on immediate) {
+          <app-coordinator-ficha-modal [idEstudiante]="e.id" [nombre]="e.nombreCompleto" (cerrar)="estudianteFicha.set(null)" />
+        } @placeholder {
+          <span role="status" class="sr-only">Abriendo ficha del estudiante...</span>
+        }
       }
 
       <!-- Paginador del Directorio -->

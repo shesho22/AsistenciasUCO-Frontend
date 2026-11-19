@@ -34,7 +34,7 @@ export interface NuevaSesionSolicitud {
       [title]="tituloModal()"
       (closed)="closed.emit()"
     >
-      <form (submit)="onSubmit($event)" class="space-y-4">
+      <form (submit)="onSubmit($event)" class="space-y-5">
         @if (sesion()) {
           <p class="text-xs text-warm-600" data-testid="nota-ajuste-horario">
             Modifica el título, la fecha o el horario de esta sesión. Si no cambias el horario, se conservan sus instantes originales.
@@ -72,14 +72,14 @@ export interface NuevaSesionSolicitud {
             required
             maxlength="50"
             placeholder="Ej. Sesión #1 - Presentación y Fundamentos"
-            class="w-full bg-white text-warm-900 border border-warm-300 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+            class="w-full bg-white text-warm-900 border border-warm-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
           @if (nombreDemasiadoLargo()) {
             <p class="mt-1 text-xs text-danger-600" role="alert">{{ nombreLengthMessage }}</p>
           }
         </app-form-field>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <app-form-field label="Fecha de la Sesión" [required]="true">
             <input
               type="date"
@@ -87,7 +87,7 @@ export interface NuevaSesionSolicitud {
               (ngModelChange)="date.set($event)"
               name="fechaSesion"
               required
-              class="w-full bg-white text-warm-900 border border-warm-300 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+              class="w-full bg-white text-warm-900 border border-warm-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </app-form-field>
 
@@ -98,7 +98,7 @@ export interface NuevaSesionSolicitud {
               (ngModelChange)="startTime.set($event)"
               name="horaInicio"
               required
-              class="w-full bg-white text-warm-900 border border-warm-300 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+              class="w-full bg-white text-warm-900 border border-warm-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </app-form-field>
 
@@ -109,7 +109,7 @@ export interface NuevaSesionSolicitud {
               (ngModelChange)="endTime.set($event)"
               name="horaFin"
               required
-              class="w-full bg-white text-warm-900 border border-warm-300 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+              class="w-full bg-white text-warm-900 border border-warm-300 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </app-form-field>
         </div>

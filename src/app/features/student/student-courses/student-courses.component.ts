@@ -73,65 +73,81 @@ type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO';
 
       <!-- 2. Vista: Detalle de Asignatura y Sesiones -->
       @if (vistaActual() === 'DETALLE' && selectedMateria()) {
-        <app-student-course-detail
-          [materia]="selectedMateria()"
-          [sesiones]="sesiones()"
-          [totalSesiones]="totalSesiones()"
-          [pagina]="paginaSesiones()"
-          [tamano]="tamanoSesiones()"
-          [categorias]="categoriasJustificacion()"
-          [loading]="loadingSesiones()"
-          [error]="sesionesError()"
-          (paginaCambiada)="cambiarPaginaSesiones($event)"
-          (tamanoCambiado)="cambiarTamanoSesiones($event)"
-          (retry)="reintentarSesiones()"
-          (back)="volverALista()"
-          (startClaim)="iniciarReclamo($event)"
-          (startClaimToma)="iniciarReclamoToma($event)"
-          (withdrawClaim)="retirarReclamo($event)"
-        />
+        @defer (when vistaActual() === 'DETALLE' && selectedMateria() !== null) {
+          <app-student-course-detail
+            [materia]="selectedMateria()"
+            [sesiones]="sesiones()"
+            [totalSesiones]="totalSesiones()"
+            [pagina]="paginaSesiones()"
+            [tamano]="tamanoSesiones()"
+            [categorias]="categoriasJustificacion()"
+            [loading]="loadingSesiones()"
+            [error]="sesionesError()"
+            (paginaCambiada)="cambiarPaginaSesiones($event)"
+            (tamanoCambiado)="cambiarTamanoSesiones($event)"
+            (retry)="reintentarSesiones()"
+            (back)="volverALista()"
+            (startClaim)="iniciarReclamo($event)"
+            (startClaimToma)="iniciarReclamoToma($event)"
+            (withdrawClaim)="retirarReclamo($event)"
+          />
+        } @loading {
+          <div class="superficie p-6 text-sm text-warm-600" role="status" aria-live="polite">
+            Abriendo el detalle de la materia…
+          </div>
+        }
       }
 
       <!-- 3. Vista: Radicación de Reclamo / Justificación -->
       @if (vistaActual() === 'RECLAMO' && sesionReclamar() && selectedMateria()) {
-        <app-student-claim-form
-          [materia]="selectedMateria()"
-          [sesion]="sesionReclamar()"
-          [toma]="tomaReclamar()"
-          [categorias]="categoriasJustificacion()"
-          [configuracion]="configuracionReclamos()"
-          [archivo]="archivoAdjunto()"
-          [archivos]="archivosAdjuntos()"
-          [subiendo]="subiendoSoporte()"
-          [submitting]="enviandoReclamo()"
-          [errorSoporte]="errorSoporte()"
-          [errorEnvio]="errorEnvio()"
-          (back)="volverADetalle()"
-          (fileSelected)="onFileSelected($event)"
-          (adjuntar)="adjuntarArchivo($event)"
-          (removeFile)="removerAdjunto()"
-          (quitar)="removerAdjunto($event)"
-          (submitted)="enviarReclamo($event)"
-        />
+        @defer (when vistaActual() === 'RECLAMO' && sesionReclamar() !== null && selectedMateria() !== null) {
+          <app-student-claim-form
+            [materia]="selectedMateria()"
+            [sesion]="sesionReclamar()"
+            [toma]="tomaReclamar()"
+            [categorias]="categoriasJustificacion()"
+            [configuracion]="configuracionReclamos()"
+            [archivo]="archivoAdjunto()"
+            [archivos]="archivosAdjuntos()"
+            [subiendo]="subiendoSoporte()"
+            [submitting]="enviandoReclamo()"
+            [errorSoporte]="errorSoporte()"
+            [errorEnvio]="errorEnvio()"
+            (back)="volverADetalle()"
+            (fileSelected)="onFileSelected($event)"
+            (adjuntar)="adjuntarArchivo($event)"
+            (removeFile)="removerAdjunto()"
+            (quitar)="removerAdjunto($event)"
+            (submitted)="enviarReclamo($event)"
+          />
+        } @loading {
+          <div class="superficie p-6 text-sm text-warm-600" role="status" aria-live="polite">
+            Abriendo el formulario de reclamo…
+          </div>
+        }
       }
 
       <!-- 7. Modal: Matrícula a Grupo por Código o PIN -->
-      <app-student-matricula-codigo-modal
-        [isOpen]="modalMatriculaGrupoVisible()"
-        [processing]="procesandoMatriculaGrupo()"
-        [error]="errorMatriculaGrupo()"
-        [tokenInicial]="tokenPrecargado()"
-        [codigoInicial]="pinPrecargado()"
-        (submitted)="enviarMatriculaPorCodigo($event)"
-        (closed)="cerrarModalMatriculaGrupo()"
-      />
+      @defer (when modalMatriculaGrupoVisible()) {
+        <app-student-matricula-codigo-modal
+          [isOpen]="modalMatriculaGrupoVisible()"
+          [processing]="procesandoMatriculaGrupo()"
+          [error]="errorMatriculaGrupo()"
+          [tokenInicial]="tokenPrecargado()"
+          [codigoInicial]="pinPrecargado()"
+          (submitted)="enviarMatriculaPorCodigo($event)"
+          (closed)="cerrarModalMatriculaGrupo()"
+        />
+      }
 
       <!-- 8. Modal: Registro de asistencia con PIN (HU176), igual a la matrícula por código -->
-      <app-student-asistencia-pin-modal
-        [isOpen]="modalAsistenciaPinVisible()"
-        (registrado)="alRegistrarAsistenciaConPin()"
-        (closed)="modalAsistenciaPinVisible.set(false)"
-      />
+      @defer (when modalAsistenciaPinVisible()) {
+        <app-student-asistencia-pin-modal
+          [isOpen]="modalAsistenciaPinVisible()"
+          (registrado)="alRegistrarAsistenciaConPin()"
+          (closed)="modalAsistenciaPinVisible.set(false)"
+        />
+      }
     </div>
   `
 })
