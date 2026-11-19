@@ -5,7 +5,7 @@ Una prueba cuenta para una HU cuando su archivo cita el código HU en un `descri
 paréntesis es la cantidad de casos (`it`/`test`) del archivo. Esta tabla es la columna "Pruebas (frontend)" de la
 HU-CATALOG (`AsistenciasUCO-Infra/docs/user-stories/HU-CATALOG.md`).
 
-Resumen: 74 HU con pruebas en 95 de 292 archivos de prueba.
+Resumen: 73 HU con pruebas en 95 de 292 archivos de prueba.
 
 | HU | Capa | Archivos | Casos | Pruebas |
 |---|---|---|---|---|
@@ -40,12 +40,11 @@ Resumen: 74 HU con pruebas en 95 de 292 archivos de prueba.
 | HU082 | unitaria | 1 | 22 | `src/app/features/coordinator/coordinator-study-plans/pages/study-plan-mesh-page.component.spec.ts` (22) |
 | HU083 | unitaria | 2 | 75 | `src/app/core/services/coordinator-management.service.spec.ts` (53)<br>`src/app/features/coordinator/coordinator-study-plans/pages/study-plan-mesh-page.component.spec.ts` (22) |
 | HU089 | unitaria | 1 | 53 | `src/app/core/services/coordinator-management.service.spec.ts` (53) |
-| HU090 | unitaria | 1 | 53 | `src/app/core/services/coordinator-management.service.spec.ts` (53) |
 | HU091 | unitaria | 1 | 53 | `src/app/core/services/coordinator-management.service.spec.ts` (53) |
-| HU092 | unitaria | 2 | 84 | `src/app/core/services/coordinator-management.service.spec.ts` (53)<br>`src/app/features/coordinator/coordinator-docentes/coordinator-docentes.component.spec.ts` (31) |
-| HU093 | unitaria | 2 | 84 | `src/app/core/services/coordinator-management.service.spec.ts` (53)<br>`src/app/features/coordinator/coordinator-docentes/coordinator-docentes.component.spec.ts` (31) |
-| HU094 | unitaria | 3 | 93 | `src/app/core/services/coordinator-management.service.spec.ts` (53)<br>`src/app/features/coordinator/coordinator-docentes/components/coordinator-docente-ficha-modal.component.spec.ts` (9)<br>`src/app/features/coordinator/coordinator-docentes/coordinator-docentes.component.spec.ts` (31) |
-| HU095 | unitaria | 2 | 84 | `src/app/core/services/coordinator-management.service.spec.ts` (53)<br>`src/app/features/coordinator/coordinator-docentes/coordinator-docentes.component.spec.ts` (31) |
+| HU092 | unitaria | 2 | 85 | `src/app/core/services/coordinator-management.service.spec.ts` (53)<br>`src/app/features/coordinator/coordinator-docentes/coordinator-docentes.component.spec.ts` (32) |
+| HU093 | unitaria | 2 | 85 | `src/app/core/services/coordinator-management.service.spec.ts` (53)<br>`src/app/features/coordinator/coordinator-docentes/coordinator-docentes.component.spec.ts` (32) |
+| HU094 | unitaria | 3 | 94 | `src/app/core/services/coordinator-management.service.spec.ts` (53)<br>`src/app/features/coordinator/coordinator-docentes/components/coordinator-docente-ficha-modal.component.spec.ts` (9)<br>`src/app/features/coordinator/coordinator-docentes/coordinator-docentes.component.spec.ts` (32) |
+| HU095 | unitaria | 2 | 85 | `src/app/core/services/coordinator-management.service.spec.ts` (53)<br>`src/app/features/coordinator/coordinator-docentes/coordinator-docentes.component.spec.ts` (32) |
 | HU096 | unitaria | 3 | 98 | `src/app/core/interceptors/mock-backend.interceptor.spec.ts` (37)<br>`src/app/core/services/coordinator-management.service.spec.ts` (53)<br>`src/app/features/admin/admin-periodos/admin-periodos.component.spec.ts` (8) |
 | HU097 | unitaria | 1 | 8 | `src/app/features/admin/admin-periodos/admin-periodos.component.spec.ts` (8) |
 | HU098 | unitaria | 3 | 98 | `src/app/core/interceptors/mock-backend.interceptor.spec.ts` (37)<br>`src/app/core/services/coordinator-management.service.spec.ts` (53)<br>`src/app/features/admin/admin-periodos/admin-periodos.component.spec.ts` (8) |
@@ -65,7 +64,7 @@ Resumen: 74 HU con pruebas en 95 de 292 archivos de prueba.
 | HU136 | unitaria | 2 | 24 | `src/app/core/services/consultas-transversales.service.spec.ts` (14)<br>`src/app/features/dean/dean-docentes/dean-docentes.component.spec.ts` (10) |
 | HU140 | unitaria | 2 | 18 | `src/app/features/dean/dean-areas/dean-areas.component.spec.ts` (5)<br>`src/app/features/dean/dean-faculty/dean-faculty.component.spec.ts` (13) |
 | HU143 | unitaria | 5 | 69 | `src/app/core/mocks/mock-consultas-transversales.spec.ts` (8)<br>`src/app/core/services/consultas-transversales.service.spec.ts` (14)<br>`src/app/features/dean/dean-asignaturas/dean-asignaturas.component.spec.ts` (7)<br>`src/app/features/dean/dean-directorio/dean-directorio.component.spec.ts` (35)<br>`src/app/shared/utils/listado-paginado.spec.ts` (5) |
-| HU145 | unitaria | 2 | 15 | `src/app/features/dean/dean-cronograma/dean-cronograma.component.spec.ts` (7)<br>`src/app/features/dean/dean-grupo-detalle/dean-grupo-detalle.component.spec.ts` (8) |
+| HU145 | unitaria | 2 | 19 | `src/app/features/dean/dean-cronograma/dean-cronograma.component.spec.ts` (7)<br>`src/app/features/dean/dean-grupo-detalle/dean-grupo-detalle.component.spec.ts` (12) |
 | HU147 | unitaria | 4 | 36 | `src/app/core/mocks/mock-consultas-transversales.spec.ts` (8)<br>`src/app/core/services/consultas-transversales.service.spec.ts` (14)<br>`src/app/features/coordinator/coordinator-study-plans/components/subject-form.component.spec.ts` (8)<br>`src/app/features/coordinator/coordinator-study-plans/pages/subject-form-page.component.spec.ts` (6) |
 | HU150 | unitaria | 2 | 4 | `src/app/core/services/admin-management.areas.spec.ts` (2)<br>`src/app/features/admin/admin-areas/admin-areas.component.spec.ts` (2) |
 | HU154 | unitaria | 2 | 5 | `src/app/core/services/admin-management.tipos-programa.spec.ts` (2)<br>`src/app/features/admin/admin-catalogs/admin-catalogs.component.spec.ts` (3) |
@@ -83,3 +82,11 @@ Resumen: 74 HU con pruebas en 95 de 292 archivos de prueba.
 | HU176B | unitaria | 7 | 297 | `src/app/core/services/auth.service.spec.ts` (121)<br>`src/app/core/services/matricula-qr.service.spec.ts` (9)<br>`src/app/features/attendance/attendance-control/attendance-control.component.spec.ts` (35)<br>`src/app/features/public/matricula-qr/matricula-qr.component.spec.ts` (22)<br>`src/app/features/student/student-courses/components/modals/student-matricula-codigo-modal.component.spec.ts` (11)<br>`src/app/features/student/student-courses/student-courses.component.spec.ts` (74)<br>`src/app/features/teacher/teacher-grupos/components/modals/teacher-matricula-modal.component.spec.ts` (25) |
 | HU177 | unitaria | 1 | 13 | `src/app/features/auth/login/login.component.spec.ts` (13) |
 | HU178 | unitaria | 12 | 294 | `src/app/app.routes.spec.ts` (29)<br>`src/app/core/api/errors/load-error.util.spec.ts` (5)<br>`src/app/core/api/errors/sin-ambito.util.spec.ts` (2)<br>`src/app/core/guards/entidad-asignada.guard.spec.ts` (14)<br>`src/app/core/models/user.model.spec.ts` (9)<br>`src/app/core/services/auth.service.spec.ts` (121)<br>`src/app/features/admin/admin-indicators/admin-indicators.component.spec.ts` (16)<br>`src/app/features/coordinator/coordinator-indicators/coordinator-indicators.component.spec.ts` (19)<br>`src/app/features/dashboard/overview/overview.component.spec.ts` (50)<br>`src/app/features/dean/dean-indicators/dean-indicators.component.spec.ts` (19)<br>`src/app/shared/components/error-carga/error-carga.component.spec.ts` (5)<br>`src/app/shared/components/sin-entidad-asignada/sin-entidad-asignada.component.spec.ts` (5) |
+
+## HU retiradas
+
+No cuentan como cubiertas: la funcionalidad salió del alcance y sus pruebas se retiraron o dejaron de aplicar.
+
+| HU | Retiro |
+|---|---|
+| HU090 | 2026-11-18 — tipo de vinculación del docente retirado (MEJORAS-SERGIO-2026-11-18, ítem 1); sus pruebas ya no aplican. |

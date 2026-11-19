@@ -213,7 +213,7 @@ export class CoordinatorManagementService {
     this.getPeriodosAcademicos().subscribe({ error: () => undefined });
   }
 
-  // --- DOCENTES DEL PROGRAMA (HU062/HU063/HU089/HU090/HU091) ---
+  // --- DOCENTES DEL PROGRAMA (HU062/HU063/HU089/HU091; HU090 retirada 2026-11-18) ---
   getDocentesPrograma(filtro: DocentesProgramaFiltro): Observable<ApiResponse<DocentePrograma[]>> {
     let params = new HttpParams().set('pagina', filtro.pagina).set('tamano', filtro.tamano);
     const busqueda = filtro.busqueda?.trim();

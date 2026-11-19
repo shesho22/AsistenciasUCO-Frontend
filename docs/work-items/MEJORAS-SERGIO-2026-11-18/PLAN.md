@@ -43,3 +43,15 @@ común; los repositorios de BD y backend tienen su propio work item con el mismo
 
 Revertir los commits de la rama en cada repositorio. En BD ejecutar `migrations/50_..._down.sql` y luego `deploy_schema.ps1` del
 commit anterior (como en 48/49).
+
+## Correcciones de la revisión del frontend (2026-11-18)
+
+| Ítem | Hallazgo | Corrección |
+|---|---|---|
+| 11 | La nómina («Ver inscritos») no manejaba error ni carga (un 403/500 se veía como «No hay estudiantes»), una respuesta tardía de otro grupo pisaba la lista, el foco no volvía al botón al cerrar y la insignia de estado salía vacía. | `app-modal` siempre montado con `[isOpen]`; señales `cargandoInscritos`/`errorInscritos` con `role="status"` y `app-error-carga` (Reintentar); la consulta anterior se cancela (`Subscription`); las filas usan `EstudianteGrupoDTO` real (`codigoEstado` A/CVP/CI/F y `nombreEstado`). |
+| 11 | Lista de grupos vacía con contador en 1; «Ocupación de cupos» en `undefined / undefined`. | El backend actual (`CoordinadorAsistenciaProgramaController` → `ApiPageResponse`) devuelve `elementos`, igual que espera `CourseService`: el frontend es correcto y la diferencia es del jar viejo en ejecución (`datos`). `KpisCoordinadorDTO` actual trae `matriculadosActivos`, `cupoTotal`, `gruposActivos` y `tasaAforo` con esos nombres; se agrega guarda: un campo ausente se muestra «—». |
+| 6 | El paginador se ocultaba al elegir 50 por página y la consulta pedía `tamano: 50` (grupos con más sesiones quedaban truncados). | `DeanFacultadService.getTodasLasSesionesGrupo` recorre las páginas con el máximo del backend (100); el paginador se ve con más sesiones que el tamaño mínimo (10; opciones 10/20/50); aviso si lo recibido no completa `totalElementos`. |
+| 9 | `<button>` con `<div>`, `<h4>` y `<p>` dentro; `aria-label` sin hora ni aula; mock sin `idGrupo`. | Contenido de frase (`<span class="block">`), `aria-label` con materia, grupo, día, horario y aula; `MOCK_HORARIOS_DOCENTE` con `idGrupo`. |
+| 8, 12 | «Ver ficha», «Editar datos» y «Desactivar/Reactivar» repetidos sin nombre de la persona. | `aria-label` «Ver ficha de …», «Editar datos de …», «Desactivar a …» (texto visible primero). |
+| 3 | `@switch` destruía el estado de cada subpestaña de Programas. | Cada sección se monta al abrirla por primera vez y luego se oculta con `[hidden]` (conserva estado sin cargar las tres al entrar). |
+| 1 | HU090 seguía contando 53 pruebas en la matriz. | `scripts/matriz-hu-pruebas.mjs` lista HU090 como **retirada el 2026-11-18** y no la cuenta. |

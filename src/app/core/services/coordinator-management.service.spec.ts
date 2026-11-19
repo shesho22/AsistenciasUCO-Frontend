@@ -107,7 +107,7 @@ describe('CoordinatorManagementService', () => {
     httpFresco.verify();
   });
 
-  describe('Docentes del programa (HU062/HU063/HU089/HU090/HU091)', () => {
+  describe('Docentes del programa (HU062/HU063/HU089/HU091; HU090 retirada 2026-11-18)', () => {
     const fila: DocentePrograma = {
       idDocentePrograma: 'dp-1',
       idDocente: 'doc-1',

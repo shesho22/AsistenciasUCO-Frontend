@@ -54,3 +54,26 @@ Con la BD y el backend ya cerrados en la rama, se volvió a correr solo lo rápi
 Contrato del ítem 10 verificado contra el backend: `PATCH /docente/sesiones/{id}/cancelar` con `{ motivo }` responde
 `{ idSesion, idGrupo, estado, cancelacion, estudiantesNotificados }`, lo mismo que `SessionService.cancelarSesion` y el modelo
 `SesionCancelada`. El ítem 2 sigue sin cambio en el frontend (el backend ya encola `SESION_MANUAL_CREADA_ESTUDIANTE`).
+
+## Correcciones de la revisión del frontend (2026-11-18)
+
+Ver la tabla del mismo nombre en `PLAN.md`. Pruebas nuevas o ajustadas:
+
+| Ítem | Prueba |
+|---|---|
+| 11 | `coordinator-subjects.component.spec.ts`: estado real de la fila (A/CVP/CI/F, desconocido, vacío), «Cargando…» con `role="status"`, 500 con Reintentar y 403 sin él, carrera A→B (la respuesta tardía de A no pisa B y queda cancelada), cerrar cancela la consulta, el foco vuelve al botón «Ver inscritos», aforo sin campos → «— / —». |
+| 6 | `dean-grupo-detalle.component.spec.ts`: pide `tamano=100` y recorre 2 páginas (130 sesiones), paginador visible con 50 por página, oculto con menos de 10, aviso de sesiones incompletas. |
+| 9 | `teacher-schedule.component.spec.ts`: sin `div`/`h*`/`p` dentro del botón, `aria-label` con día, horario y aula, mock con `idGrupo`. |
+| 8, 12 | `coordinator-students.component.spec.ts` y `coordinator-docentes.component.spec.ts`: `aria-label` con el nombre de la fila. |
+| 3 | `dean-programas-tab.component.spec.ts`: secciones visitadas quedan ocultas (no destruidas) y volver a «Gestión» conserva la misma instancia sin nuevas peticiones. |
+
+| Comando | Resultado |
+|---|---|
+| `npm run lint` | OK |
+| `npm run lint:tokens` | OK |
+| `ng test --include=<specs de los componentes y servicios cambiados>` | **194 de 194 SUCCESS** |
+| `ng test --include=<specs vecinos: overview, dean-cronograma, pestanas-embebidas, mock-backend, dean-mi-facultad>` | **105 de 105 SUCCESS** |
+| `npm run check:matriz-hu` | PASS (73 HU; HU090 en «HU retiradas»). La comparación ya ignora CRLF de Windows. |
+| `npm run build` | OK (avisos: `CardComponent` sin uso en `StudentScheduleComponent`, ajeno a esta rama, y presupuesto inicial 505.77 kB / 500 kB; estas correcciones solo suman unos 100 B al mock del horario) |
+
+Evidencias visuales (1440x900) en `informes/evidencias/mejoras-sergio-2026-11-18/` (ver el informe de la re-verificación).
