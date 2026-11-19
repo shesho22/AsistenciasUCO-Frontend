@@ -9,6 +9,8 @@ export interface EstudianteFacultadItem {
   activo: boolean;
   programas: string | null;
   totalGrupos: number | null;
+  /** MEJORAS-SERGIO 5: sigla del tipo de documento (`CC`, `TI`…); `null` si el usuario no lo tiene. */
+  codigoTipoIdentificacion?: string | null;
 }
 
 export interface MatriculaEstudianteItem {

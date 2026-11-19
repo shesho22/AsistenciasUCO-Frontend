@@ -191,6 +191,34 @@ describe('CoordinatorStudentsComponent', () => {
     expect(component.estudianteFicha()?.id).toBe('est-1');
   });
 
+  it('MEJORAS-SERGIO 8: lista en tabla con "Ver ficha" y sin estado financiero ni promedio ponderado', () => {
+    const estudiante = {
+      id: 'est-1', documento: '1017334455', codigo: '', nombreCompleto: 'Ana Sofia Gomez Rios',
+      correo: 'ana.gomez@uco.edu.co', programa: 'Ingenieria de Sistemas', estadoMatricula: 'ACTIVO' as const,
+    };
+    component.directorio.set([estudiante, { ...estudiante, id: 'est-2', nombreCompleto: 'Luis Perez' }]);
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    const tabla = el.querySelector('[data-testid="tabla-estudiantes"]');
+    expect(tabla).not.toBeNull();
+    expect(tabla!.querySelectorAll('tbody tr')).toHaveSize(2);
+    expect(el.querySelector('[data-testid="fila-estudiante-est-1"] [data-testid="ver-ficha-estudiante"]')).not.toBeNull();
+    const texto = el.textContent ?? '';
+    expect(texto).not.toContain('Estado Financiero');
+    expect(texto).not.toContain('Al Día');
+    expect(texto).not.toContain('Promedio');
+
+    (el.querySelector('[data-testid="fila-estudiante-est-2"] [data-testid="ver-ficha-estudiante"]') as HTMLButtonElement).click();
+    expect(component.estudianteFicha()?.id).toBe('est-2');
+
+    // Accesibilidad: el «Ver ficha» repetido de cada fila nombra al estudiante (WCAG 2.4.6 / 2.5.3).
+    expect(el.querySelector('[data-testid="fila-estudiante-est-1"] [data-testid="ver-ficha-estudiante"]')?.getAttribute('aria-label'))
+      .toBe('Ver ficha de Ana Sofia Gomez Rios');
+    expect(el.querySelector('[data-testid="fila-estudiante-est-2"] [data-testid="ver-ficha-estudiante"]')?.getAttribute('aria-label'))
+      .toBe('Ver ficha de Luis Perez');
+  });
+
   // CULM-001 B2NM (S4): con varios programas el directorio se consulta con el programa seleccionado.
   it('S4 carga los programas antes de consultar y muestra el selector con varios programas', () => {
     const programa = TestBed.inject(CoordinatorProgramService);

@@ -11,9 +11,6 @@ export interface DocentePrograma {
   segundoApellido: string | null;
   nombreCompleto: string;
   correo: string;
-  idTipoVinculacion: string;
-  codigoTipoVinculacion: string;
-  nombreTipoVinculacion: string;
   fechaVinculacionUtc: string;
   totalGruposPrograma: number;
   estaActivo: boolean;
@@ -28,23 +25,16 @@ export interface DocenteCandidato {
   nombreCompleto: string;
 }
 
-export interface TipoVinculacionItem {
-  id: string;
-  codigo: string;
-  nombre: string;
-}
-
 export interface DocentesProgramaFiltro {
   pagina: number;
   tamano: number;
   busqueda?: string;
   estaActivo?: boolean;
-  idTipoVinculacion?: string;
 }
 
+/** MEJORAS-SERGIO-2026-11-18: el vinculo ya no lleva tipo de vinculacion (retirado en BD, backend y frontend). */
 export interface VincularDocenteExistentePayload {
   idDocente: string;
-  idTipoVinculacion: string;
 }
 
 export interface VincularDocenteNuevoPayload {
@@ -55,14 +45,12 @@ export interface VincularDocenteNuevoPayload {
   primerApellido: string;
   segundoApellido?: string;
   correo: string;
-  idTipoVinculacion: string;
 }
 
 export type VincularDocentePayload = VincularDocenteExistentePayload | VincularDocenteNuevoPayload;
 
 /** HU092: solo los campos presentes se modifican; "" limpia segundo nombre/apellido. Correo y documento no se editan. */
 export interface ActualizarDocentePayload {
-  idTipoVinculacion?: string;
   primerNombre?: string;
   segundoNombre?: string;
   primerApellido?: string;
@@ -111,22 +99,11 @@ export interface FichaDocente {
   totalHistorial: number;
 }
 
-/** Vinculos activos e inactivos de un tipo de vinculacion en el programa (HU095). */
-export interface ResumenTipoVinculacion {
-  idTipoVinculacion: string;
-  codigoTipoVinculacion: string;
-  nombreTipoVinculacion: string;
-  totalActivos: number;
-  totalInactivos: number;
-  total: number;
-}
-
 /** Consolidado del directorio docente del programa (`GET /coordinador/docentes/resumen`, HU095). */
 export interface ResumenDocentesPrograma {
   totalDocentes: number;
   totalActivos: number;
   totalInactivos: number;
-  porTipoVinculacion: ResumenTipoVinculacion[];
 }
 
 export interface FichaDocenteFiltro {

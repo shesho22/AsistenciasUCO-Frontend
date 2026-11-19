@@ -47,3 +47,14 @@ Reglas que se conservan:
 - Retirados: `TeacherGrupoSesionesComponent` y `TeacherSesionFormComponent` (con sus specs); sus pruebas se migraron a
   `sesion-acciones.component.spec.ts`, `attendance-new-session-modal.component.spec.ts`,
   `group-sessions-overview.component.spec.ts` y `attendance-control.cancelada.spec.ts`.
+
+## Integración con las mejoras de Sergio (#155, 2026-11-19)
+
+- El ítem 10 de `MEJORAS-SERGIO-2026-11-18` había agregado un botón «Cancelar» suelto por fila en la misma tabla, con su
+  propio modal en `AttendanceControlComponent`. Es la misma acción (HU047, mismo endpoint, motivo y avisos) que ya ofrece
+  el menú «Acciones»; para que haya un solo lugar por sesión se conserva la del menú (`SesionAccionesComponent`) y se
+  retira el botón suelto. Sus casos (solo en no canceladas, éxito con notificados, rechazo `SES_012` en el modal) quedan
+  cubiertos en `sesion-acciones.component.spec.ts`, `group-sessions-overview.component.spec.ts` y
+  `attendance-control.cancelada.spec.ts`.
+- El ítem 7 (el menú «Más» abre hacia arriba si no cabe debajo) se combina con `flotante`: los menús no flotantes usan la
+  regla del ítem 7 y el flotante calcula su posición en la ventana.

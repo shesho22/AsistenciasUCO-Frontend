@@ -330,9 +330,11 @@ export const MOCK_HORARIOS_ESTUDIANTE: HorarioItem[] = [
   },
 ];
 
+/** MEJORAS-SERGIO 9: cada franja lleva `idGrupo` (grupos de MOCK_COURSES) para que en modo mock abra el hub del grupo. */
 export const MOCK_HORARIOS_DOCENTE: HorarioDocenteItem[] = [
   {
     id: 'HDOC-001',
+    idGrupo: 'crs-1',
     codigoMateria: 'SIS-401',
     nombreMateria: 'Ingeniería de Software II',
     seccion: 'Sección A (Grupo 01)',
@@ -345,6 +347,7 @@ export const MOCK_HORARIOS_DOCENTE: HorarioDocenteItem[] = [
   },
   {
     id: 'HDOC-002',
+    idGrupo: 'crs-1',
     codigoMateria: 'SIS-401',
     nombreMateria: 'Ingeniería de Software II',
     seccion: 'Sección A (Grupo 01)',
@@ -357,6 +360,7 @@ export const MOCK_HORARIOS_DOCENTE: HorarioDocenteItem[] = [
   },
   {
     id: 'HDOC-003',
+    idGrupo: 'crs-2',
     codigoMateria: 'SIS-305',
     nombreMateria: 'Patrones de Diseño de Software',
     seccion: 'Sección B (Grupo 02)',
@@ -369,6 +373,7 @@ export const MOCK_HORARIOS_DOCENTE: HorarioDocenteItem[] = [
   },
   {
     id: 'HDOC-004',
+    idGrupo: 'crs-2',
     codigoMateria: 'SIS-305',
     nombreMateria: 'Patrones de Diseño de Software',
     seccion: 'Sección B (Grupo 02)',
@@ -381,6 +386,7 @@ export const MOCK_HORARIOS_DOCENTE: HorarioDocenteItem[] = [
   },
   {
     id: 'HDOC-005',
+    idGrupo: 'crs-3',
     codigoMateria: 'SIS-502',
     nombreMateria: 'Arquitectura Empresarial',
     seccion: 'Sección Única (Grupo 01)',
@@ -881,7 +887,6 @@ export const MOCK_ESTUDIANTES_DIRECTORIO: EstudianteDirectorioItem[] = [
     programa: 'Ingeniería de Sistemas',
     semestreActual: 4,
     estadoMatricula: 'ACTIVO',
-    promedioAcumulado: 4.5,
     gruposInscritos: ['crs-1', 'crs-2'],
   },
   {
@@ -893,7 +898,6 @@ export const MOCK_ESTUDIANTES_DIRECTORIO: EstudianteDirectorioItem[] = [
     programa: 'Ingeniería de Sistemas',
     semestreActual: 4,
     estadoMatricula: 'ACTIVO',
-    promedioAcumulado: 4.1,
     gruposInscritos: ['crs-1'],
   },
   {
@@ -905,7 +909,6 @@ export const MOCK_ESTUDIANTES_DIRECTORIO: EstudianteDirectorioItem[] = [
     programa: 'Ingeniería de Sistemas',
     semestreActual: 3,
     estadoMatricula: 'ACTIVO',
-    promedioAcumulado: 4.8,
     gruposInscritos: ['crs-2', 'crs-3'],
   },
   {
@@ -917,7 +920,6 @@ export const MOCK_ESTUDIANTES_DIRECTORIO: EstudianteDirectorioItem[] = [
     programa: 'Ingeniería Industrial',
     semestreActual: 5,
     estadoMatricula: 'ACTIVO',
-    promedioAcumulado: 3.9,
     gruposInscritos: ['crs-3'],
   },
   {
@@ -929,7 +931,6 @@ export const MOCK_ESTUDIANTES_DIRECTORIO: EstudianteDirectorioItem[] = [
     programa: 'Ingeniería de Sistemas',
     semestreActual: 6,
     estadoMatricula: 'INACTIVO',
-    promedioAcumulado: 3.6,
     gruposInscritos: [],
   },
   {
@@ -941,7 +942,6 @@ export const MOCK_ESTUDIANTES_DIRECTORIO: EstudianteDirectorioItem[] = [
     programa: 'Ingeniería de Sistemas',
     semestreActual: 2,
     estadoMatricula: 'ACTIVO',
-    promedioAcumulado: 4.3,
     gruposInscritos: ['crs-1'],
   },
 ];

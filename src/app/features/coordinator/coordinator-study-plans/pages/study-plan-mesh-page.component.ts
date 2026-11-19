@@ -177,6 +177,8 @@ export class CoordinatorStudyPlanMeshPageComponent implements OnInit {
           this.planes.update((prev) =>
             prev.map((p) => (p.id === plan.id ? { ...p, totalSemestres: nuevoTotal } : p))
           );
+          // MEJORAS-SERGIO 13: se relee el plan del servidor; tambien refresca la cache del servicio (formularios de asignatura).
+          this.recargarPlanes();
         }
       },
       error: (err) => {
@@ -204,6 +206,7 @@ export class CoordinatorStudyPlanMeshPageComponent implements OnInit {
           this.planes.update((prev) =>
             prev.map((p) => (p.id === plan.id ? { ...p, totalSemestres: nuevoTotal } : p))
           );
+          this.recargarPlanes();
         }
       },
       error: (err) => {

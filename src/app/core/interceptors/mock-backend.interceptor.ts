@@ -385,7 +385,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     mockStore.docentes = [nuevo as (typeof mockStore.docentes)[number], ...mockStore.docentes];
     return of(okResponse(nuevo, 'Docente registrado en el programa exitosamente.')).pipe(delay(300));
   }
-  // HU095: consolidado del directorio docente (activos, inactivos y por tipo de vinculacion).
+  // HU095: consolidado del directorio docente (total, activos e inactivos).
   if (url.endsWith('/coordinador/docentes/resumen') && method === 'GET') {
     const activos = mockStore.docentes.filter((d) => d.estado === 'ACTIVO').length;
     const inactivos = mockStore.docentes.length - activos;
@@ -393,10 +393,6 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
       totalDocentes: mockStore.docentes.length,
       totalActivos: activos,
       totalInactivos: inactivos,
-      porTipoVinculacion: [
-        { idTipoVinculacion: 'TV-CAT', codigoTipoVinculacion: 'CAT', nombreTipoVinculacion: 'Cátedra',
-          totalActivos: activos, totalInactivos: inactivos, total: mockStore.docentes.length },
-      ],
     })).pipe(delay(200));
   }
   // HU094: ficha del docente con historial de grupos y resumen de carga.

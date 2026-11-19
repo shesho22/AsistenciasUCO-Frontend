@@ -10,12 +10,10 @@ import {
   DocenteCandidato,
   DocentePrograma,
   ResumenDocentesPrograma,
-  TipoVinculacionItem,
   VincularDocenteExistentePayload,
   VincularDocenteNuevoPayload,
   VincularDocentePayload,
 } from '../../../core/models/docente-programa.model';
-import { CardComponent } from '../../../shared/components/card/card.component';
 import { BadgeComponent } from '../../../shared/components/badge/badge.component';
 import { ButtonComponent } from '../../../shared/components/button/button.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
@@ -41,7 +39,6 @@ const MIN_CARACTERES_CANDIDATOS = 3;
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [ModalComponent, PageHeaderComponent, 
     FormsModule,
-    CardComponent,
     BadgeComponent,
     ButtonComponent,
     PaginationComponent,
@@ -58,7 +55,7 @@ const MIN_CARACTERES_CANDIDATOS = 3;
         [conTitulo]="!embebido()"
         etiqueta="Coordinación de Programa"
         titulo="Gestión de Docentes"
-        descripcion="Directorio de docentes vinculados a su programa, con su tipo de vinculación y grupos asignados."
+        descripcion="Directorio de docentes vinculados a su programa y sus grupos asignados."
       >
         <div cabecera-acciones class="flex flex-wrap items-center gap-3">
           <app-button variant="primary" size="md" (clicked)="abrirFormulario()">Vincular docente</app-button>
@@ -69,7 +66,7 @@ const MIN_CARACTERES_CANDIDATOS = 3;
       <!-- Estado de acceso de la ultima cuenta docente creada (verificado por el backend, nunca por la SPA) -->
       <app-account-access-status [correo]="ultimaCuentaRegistrada()" />
 
-      <!-- HU095: consolidado del directorio del programa (servidor), por estado y tipo de vinculacion -->
+      <!-- HU095: consolidado del directorio del programa (servidor), por estado -->
       @if (resumen(); as r) {
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4" data-testid="resumen-docentes">
           <div class="superficie p-4">
@@ -85,22 +82,9 @@ const MIN_CARACTERES_CANDIDATOS = 3;
             <p class="text-2xl font-bold text-warm-700">{{ r.totalInactivos }}</p>
           </div>
         </div>
-        <div class="flex flex-wrap gap-2">
-          @for (tipo of r.porTipoVinculacion; track tipo.idTipoVinculacion) {
-            <button
-              type="button"
-              data-testid="chip-tipo-vinculacion"
-              (click)="alternarTipoVinculacion(tipo.idTipoVinculacion)"
-              [class]="filtroTipo() === tipo.idTipoVinculacion ? claseChipActivo : claseChip"
-              [title]="tipo.totalActivos + ' activos, ' + tipo.totalInactivos + ' inactivos'"
-            >
-              {{ tipo.nombreTipoVinculacion }}: {{ tipo.total }}
-            </button>
-          }
-        </div>
       }
 
-      <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div class="sm:col-span-2">
           <input aria-label="Buscar docente por nombre, documento o correo"
             type="text"
@@ -122,24 +106,12 @@ const MIN_CARACTERES_CANDIDATOS = 3;
           <option value="ACTIVO">Solo activos</option>
           <option value="INACTIVO">Solo inactivos</option>
         </select>
-        <select
-          [ngModel]="filtroTipo()"
-          (ngModelChange)="onTipoVinculacionChange($event)"
-          name="tipoVinculacionDocentes"
-          aria-label="Tipo de vinculación"
-          class="w-full px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20 shadow-warm-sm"
-        >
-          <option value="">Todos los tipos de vinculación</option>
-          @for (tipo of tiposVinculacion(); track tipo.id) {
-            <option [value]="tipo.id">{{ tipo.nombre }}</option>
-          }
-        </select>
       </div>
 
       @if (isLoading()) {
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div class="space-y-2">
           @for (n of [1, 2, 3, 4]; track n) {
-            <div class="h-44 bg-warm-100 rounded-2xl animate-pulse"></div>
+            <div class="h-12 bg-warm-100 rounded-xl animate-pulse"></div>
           }
         </div>
       } @else if (errorCarga()) {
@@ -150,53 +122,72 @@ const MIN_CARACTERES_CANDIDATOS = 3;
           <p class="text-xs text-warm-500 mt-1">Ajuste la búsqueda o vincule un docente al programa.</p>
         </div>
       } @else {
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-          @for (docente of docentes(); track docente.idDocentePrograma) {
-            <app-card [hoverable]="true" padding="md">
-              <div class="flex flex-col h-full justify-between gap-4">
-                <div>
-                  <div class="flex items-start justify-between gap-3 mb-2">
-                    <div class="flex items-center gap-2">
+        <!-- MEJORAS-SERGIO 12: lista en tabla (una fila por docente) con las acciones; sin tipo de vinculación -->
+        <div class="superficie overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm text-warm-800" data-testid="tabla-docentes">
+              <thead class="bg-warm-50 border-b border-warm-200 text-[11px] font-bold text-warm-600 uppercase tracking-wider">
+                <tr>
+                  <th scope="col" class="px-4 py-3 text-left">Docente</th>
+                  <th scope="col" class="px-4 py-3 text-left">Documento</th>
+                  <th scope="col" class="px-4 py-3 text-center">Grupos</th>
+                  <th scope="col" class="px-4 py-3 text-left">Estado</th>
+                  <th scope="col" class="px-4 py-3 text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-warm-100">
+                @for (docente of docentes(); track docente.idDocentePrograma) {
+                  <tr class="hover:bg-warm-50/60 transition-colors" [attr.data-testid]="'fila-docente-' + docente.idDocente">
+                    <td class="px-4 py-3">
+                      <p class="font-semibold text-warm-900">{{ docente.nombreCompleto }}</p>
+                      <p class="text-xs text-warm-500 truncate max-w-[18rem]">{{ docente.correo }}</p>
+                    </td>
+                    <td class="px-4 py-3 font-mono text-xs text-warm-700 whitespace-nowrap">{{ docente.codigoTipoIdentificacion }} {{ docente.numeroIdentificacion }}</td>
+                    <td class="px-4 py-3 text-center">
+                      <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-primary-50 text-primary-800 border border-primary-200" title="Grupos asignados en el programa">
+                        {{ docente.totalGruposPrograma }}
+                      </span>
+                    </td>
+                    <td class="px-4 py-3">
                       <app-badge [variant]="docente.estaActivo ? 'success' : 'neutral'">{{ docente.estaActivo ? 'ACTIVO' : 'INACTIVO' }}</app-badge>
-                      <app-badge variant="neutral">{{ docente.nombreTipoVinculacion }}</app-badge>
-                    </div>
-                    <button
-                      type="button"
-                      data-testid="toggle-estado"
-                      (click)="solicitarCambioEstado(docente)"
-                      [title]="docente.estaActivo ? 'Inactivar la vinculación con el programa' : 'Reactivar la vinculación con el programa'"
-                      class="text-xs px-2.5 py-1 rounded-lg border border-warm-200 text-warm-700 hover:bg-warm-100 transition-colors"
-                    >
-                      {{ docente.estaActivo ? 'Desactivar' : 'Reactivar' }}
-                    </button>
-                  </div>
-                  <h3 class="font-serif font-bold text-lg text-warm-900 leading-snug">{{ docente.nombreCompleto }}</h3>
-                  <p class="text-xs text-warm-500 mt-0.5">{{ docente.codigoTipoIdentificacion }} {{ docente.numeroIdentificacion }}</p>
-                  <p class="text-xs text-warm-600 truncate">{{ docente.correo }}</p>
-                </div>
-                <div class="flex items-center justify-between p-2.5 rounded-xl bg-warm-50 border border-warm-100">
-                  <span class="text-xs text-warm-600 font-medium">Grupos asignados en el programa:</span>
-                  <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-primary-50 text-primary-800 border border-primary-200">
-                    {{ docente.totalGruposPrograma }}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  (click)="abrirEdicion(docente)"
-                  class="w-full text-xs font-semibold text-warm-800 bg-white hover:bg-warm-50 border border-warm-200 py-1.5 px-3 rounded-xl transition-colors"
-                >
-                  Editar datos
-                </button>
-                <button
-                  type="button"
-                  (click)="verFichaDocente(docente)"
-                  class="w-full text-xs font-semibold text-primary-800 bg-primary-50 hover:bg-primary-100 border border-primary-200 py-1.5 px-3 rounded-xl transition-colors"
-                >
-                  Ver ficha e historial →
-                </button>
-              </div>
-            </app-card>
-          }
+                    </td>
+                    <td class="px-4 py-3">
+                      <div class="flex flex-wrap items-center justify-end gap-1.5">
+                        <button
+                          type="button"
+                          data-testid="ver-ficha-docente"
+                          (click)="verFichaDocente(docente)"
+                          [attr.aria-label]="'Ver ficha de ' + docente.nombreCompleto"
+                          class="min-h-[36px] text-xs font-semibold text-primary-800 bg-primary-50 hover:bg-primary-100 border border-primary-200 py-1.5 px-3 rounded-lg transition-colors"
+                        >
+                          Ver ficha
+                        </button>
+                        <button
+                          type="button"
+                          data-testid="editar-docente"
+                          (click)="abrirEdicion(docente)"
+                          [attr.aria-label]="'Editar datos de ' + docente.nombreCompleto"
+                          class="min-h-[36px] text-xs font-semibold text-warm-800 bg-white hover:bg-warm-50 border border-warm-200 py-1.5 px-3 rounded-lg transition-colors"
+                        >
+                          Editar datos
+                        </button>
+                        <button
+                          type="button"
+                          data-testid="toggle-estado"
+                          (click)="solicitarCambioEstado(docente)"
+                          [attr.aria-label]="(docente.estaActivo ? 'Desactivar a ' : 'Reactivar a ') + docente.nombreCompleto"
+                          [title]="docente.estaActivo ? 'Inactivar la vinculación con el programa' : 'Reactivar la vinculación con el programa'"
+                          class="min-h-[36px] text-xs px-3 py-1.5 rounded-lg border border-warm-200 text-warm-700 hover:bg-warm-100 transition-colors"
+                        >
+                          {{ docente.estaActivo ? 'Desactivar' : 'Reactivar' }}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
         </div>
         <app-pagination
           [totalItems]="totalDocentes()"
@@ -233,7 +224,6 @@ const MIN_CARACTERES_CANDIDATOS = 3;
       @if (docenteEnEdicion(); as enEdicion) {
         <app-coordinator-docente-edit-modal
           [docente]="enEdicion"
-          [tiposVinculacion]="tiposVinculacion()"
           (guardar)="guardarEdicion($event)"
           (cerrar)="cerrarEdicion()"
         />
@@ -242,7 +232,6 @@ const MIN_CARACTERES_CANDIDATOS = 3;
       @if (formularioAbierto()) {
         <app-coordinator-docente-form-modal
           [tiposIdentificacion]="tiposIdentificacion()"
-          [tiposVinculacion]="tiposVinculacion()"
           [candidatos]="candidatos()"
           (guardarNuevo)="guardarNuevo($event)"
           (guardarExistente)="guardarExistente($event)"
@@ -266,11 +255,7 @@ export class CoordinatorDocentesComponent implements OnInit {
 
   readonly busqueda = signal('');
   readonly filtroEstado = signal<FiltroEstado>('TODOS');
-  /** HU095: id del tipo de vinculacion filtrado (cadena vacia = todos). */
-  readonly filtroTipo = signal('');
   readonly resumen = signal<ResumenDocentesPrograma | null>(null);
-  readonly claseChip = 'px-3 py-1.5 rounded-full text-xs font-semibold border bg-white text-warm-700 border-warm-200 hover:bg-warm-50';
-  readonly claseChipActivo = 'px-3 py-1.5 rounded-full text-xs font-semibold border bg-primary-700 text-white border-primary-700';
   readonly pagina = signal(1);
   readonly tamano = signal(10);
   /** Correo de la ultima cuenta docente creada: el panel consulta su estado de acceso real. */
@@ -281,7 +266,6 @@ export class CoordinatorDocentesComponent implements OnInit {
   readonly errorCarga = signal<LoadErrorState | null>(null);
   readonly formularioAbierto = signal(false);
   readonly tiposIdentificacion = signal<TipoIdentificacionItem[]>([]);
-  readonly tiposVinculacion = signal<TipoVinculacionItem[]>([]);
   readonly candidatos = signal<DocenteCandidato[]>([]);
   readonly docenteSeleccionado = signal<DocentePrograma | null>(null);
   readonly docenteEnEdicion = signal<DocentePrograma | null>(null);
@@ -292,7 +276,6 @@ export class CoordinatorDocentesComponent implements OnInit {
     tamano: this.tamano(),
     busqueda: this.busqueda().trim() || undefined,
     estaActivo: this.estaActivoDe(this.filtroEstado()),
-    idTipoVinculacion: this.filtroTipo() || undefined,
     recarga: this.recarga(),
   }));
 
@@ -305,8 +288,8 @@ export class CoordinatorDocentesComponent implements OnInit {
           this.isLoading.set(true);
           this.errorCarga.set(null);
         }),
-        switchMap(({ pagina, tamano, busqueda, estaActivo, idTipoVinculacion }) =>
-          this.coordService.getDocentesPrograma({ pagina, tamano, busqueda, estaActivo, idTipoVinculacion }).pipe(
+        switchMap(({ pagina, tamano, busqueda, estaActivo }) =>
+          this.coordService.getDocentesPrograma({ pagina, tamano, busqueda, estaActivo }).pipe(
             catchError((error: unknown) => {
               this.errorCarga.set(classifyLoadError(error));
               this.toast.error(getApiErrorMessage(error));
@@ -333,10 +316,6 @@ export class CoordinatorDocentesComponent implements OnInit {
       next: (res) => this.tiposIdentificacion.set(res.datos ?? []),
       error: (error: unknown) => this.toast.error(getApiErrorMessage(error)),
     });
-    this.coordService.getTiposVinculacion().subscribe({
-      next: (tipos) => this.tiposVinculacion.set(tipos),
-      error: (error: unknown) => this.toast.error(getApiErrorMessage(error)),
-    });
   }
 
   reintentarCarga(): void {
@@ -351,16 +330,6 @@ export class CoordinatorDocentesComponent implements OnInit {
   onEstadoChange(estado: FiltroEstado): void {
     this.filtroEstado.set(estado);
     this.pagina.set(1);
-  }
-
-  onTipoVinculacionChange(idTipoVinculacion: string): void {
-    this.filtroTipo.set(idTipoVinculacion ?? '');
-    this.pagina.set(1);
-  }
-
-  /** Un clic en el contador de un tipo filtra por el; un segundo clic quita el filtro. */
-  alternarTipoVinculacion(idTipoVinculacion: string): void {
-    this.onTipoVinculacionChange(this.filtroTipo() === idTipoVinculacion ? '' : idTipoVinculacion);
   }
 
   onPageChange(pagina: number): void {

@@ -12,7 +12,7 @@ export interface VinculoUsuario {
   rol: RolVinculo;
   idEntidad: string;
   nombreEntidad: string;
-  /** Facultad del programa, tipo de vinculacion docente o institucion de la facultad. */
+  /** Facultad del programa (estudiante, docente o coordinador) o institucion de la facultad (decano). */
   detalle: string | null;
   estaActivo: boolean;
 }

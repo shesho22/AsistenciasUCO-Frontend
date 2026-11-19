@@ -108,6 +108,8 @@ export interface HorarioItem {
 
 export interface HorarioDocenteItem {
   id: string;
+  /** MEJORAS-SERGIO 9: grupo de la franja (`HorarioDocenteDTO.idGrupo`); lleva al hub del grupo desde el horario. */
+  idGrupo?: string;
   codigoMateria: string;
   nombreMateria: string;
   seccion: string;
@@ -423,7 +425,6 @@ export interface EstudianteDirectorioItem {
   idPrograma?: string;
   semestreActual?: number;
   estadoMatricula: 'ACTIVO' | 'INACTIVO' | 'BLOQUEADO';
-  promedioAcumulado?: number;
   gruposInscritos?: string[];
 }
 

@@ -107,7 +107,7 @@ describe('CoordinatorManagementService', () => {
     httpFresco.verify();
   });
 
-  describe('Docentes del programa (HU062/HU063/HU089/HU090/HU091)', () => {
+  describe('Docentes del programa (HU062/HU063/HU089/HU091; HU090 retirada 2026-11-18)', () => {
     const fila: DocentePrograma = {
       idDocentePrograma: 'dp-1',
       idDocente: 'doc-1',
@@ -120,9 +120,6 @@ describe('CoordinatorManagementService', () => {
       segundoApellido: null,
       nombreCompleto: 'Jorge Henao',
       correo: 'jorge.henao@uco.edu.co',
-      idTipoVinculacion: 'tv-1',
-      codigoTipoVinculacion: 'CAT',
-      nombreTipoVinculacion: 'Cátedra',
       fechaVinculacionUtc: '2026-10-22T10:00:00Z',
       totalGruposPrograma: 0,
       estaActivo: true,
@@ -130,7 +127,7 @@ describe('CoordinatorManagementService', () => {
 
     it('getDocentesPrograma consulta paginado con filtros y actualiza las señales', () => {
       service
-        .getDocentesPrograma({ pagina: 2, tamano: 5, busqueda: 'ros', estaActivo: true, idTipoVinculacion: 'tv-1' })
+        .getDocentesPrograma({ pagina: 2, tamano: 5, busqueda: 'ros', estaActivo: true })
         .subscribe((res) => expect(res.exitoso).toBeTrue());
 
       const req = http.expectOne((r) => r.url === `${environment.apiUrl}/coordinador/docentes`);
@@ -139,7 +136,8 @@ describe('CoordinatorManagementService', () => {
       expect(req.request.params.get('tamano')).toBe('5');
       expect(req.request.params.get('busqueda')).toBe('ros');
       expect(req.request.params.get('estaActivo')).toBe('true');
-      expect(req.request.params.get('idTipoVinculacion')).toBe('tv-1');
+      // MEJORAS-SERGIO-2026-11-18: el directorio ya no filtra por tipo de vinculación
+      expect(req.request.params.has('idTipoVinculacion')).toBeFalse();
       req.flush({ exitoso: true, datos: [fila], total: 12 });
 
       expect(service.docentes()).toEqual([fila]);
@@ -211,7 +209,6 @@ describe('CoordinatorManagementService', () => {
         primerNombre: 'Jorge',
         primerApellido: 'Henao',
         correo: 'jorge.henao@uco.edu.co',
-        idTipoVinculacion: 'tv-1',
       };
 
       service.vincularDocente(payload).subscribe((res) => expect(res.datos.idDocente).toBe('doc-1'));
@@ -224,8 +221,8 @@ describe('CoordinatorManagementService', () => {
       expect(service.docentes()).toEqual([]); // sin actualización optimista
     });
 
-    it('vincularDocente (existente) envía solo idDocente e idTipoVinculacion', () => {
-      const payload: VincularDocenteExistentePayload = { idDocente: 'doc-9', idTipoVinculacion: 'tv-1' };
+    it('vincularDocente (existente) envía solo idDocente (sin tipo de vinculación)', () => {
+      const payload: VincularDocenteExistentePayload = { idDocente: 'doc-9' };
 
       service.vincularDocente(payload).subscribe();
 
@@ -236,7 +233,7 @@ describe('CoordinatorManagementService', () => {
 
     it('vincularDocente propaga el 409 para que la UI muestre el mensaje del backend', () => {
       let message = '';
-      service.vincularDocente({ idDocente: 'doc-1', idTipoVinculacion: 'tv-1' }).subscribe({
+      service.vincularDocente({ idDocente: 'doc-1' }).subscribe({
         error: (e) => (message = e.error.message),
       });
 
@@ -249,7 +246,7 @@ describe('CoordinatorManagementService', () => {
     });
 
     it('actualizarDocente (HU092) envía PUT con solo los campos indicados y no toca la lista local', () => {
-      const payload: ActualizarDocentePayload = { idTipoVinculacion: 'tv-2', primerNombre: 'Nuevo', segundoApellido: '' };
+      const payload: ActualizarDocentePayload = { primerNombre: 'Nuevo', segundoApellido: '' };
 
       service.actualizarDocente('doc-1', payload).subscribe((res) => expect(res.datos.idDocente).toBe('doc-1'));
 
@@ -299,7 +296,7 @@ describe('CoordinatorManagementService', () => {
       service.getResumenDocentes().subscribe((res) => expect(res.datos.totalDocentes).toBe(3));
       const req = http.expectOne(`${environment.apiUrl}/coordinador/docentes/resumen`);
       expect(req.request.method).toBe('GET');
-      req.flush({ exitoso: true, datos: { totalDocentes: 3, totalActivos: 2, totalInactivos: 1, porTipoVinculacion: [] } });
+      req.flush({ exitoso: true, datos: { totalDocentes: 3, totalActivos: 2, totalInactivos: 1 } });
     });
 
     it('cambiarEstadoDocente propaga el 404 del backend', () => {
@@ -312,13 +309,6 @@ describe('CoordinatorManagementService', () => {
       expect(status).toBe(404);
     });
 
-    it('getTiposVinculacion consulta el catálogo de la DB', () => {
-      service.getTiposVinculacion().subscribe((tipos) => expect(tipos[0].codigo).toBe('PLA'));
-
-      const req = http.expectOne(`${environment.apiUrl}/tipos-vinculacion`);
-      expect(req.request.method).toBe('GET');
-      req.flush([{ id: 'tv-1', codigo: 'PLA', nombre: 'Planta' }]);
-    });
   });
 
   describe('Planes de Estudio y Asignaturas', () => {
@@ -740,7 +730,6 @@ describe('CoordinatorManagementService', () => {
           correo: 'lrestrepo@uco.edu.co',
           programa: 'Ingeniería de Sistemas',
           semestreActual: 4,
-          promedioAcumulado: 4.5,
           estadoMatricula: 'ACTIVO',
           gruposInscritos: ['grp-1'],
         },

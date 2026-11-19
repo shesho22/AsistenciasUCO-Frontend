@@ -103,6 +103,8 @@ export class ActionMenuComponent {
       });
     });
   }
+  /** MEJORAS-SERGIO 7: el panel abre hacia arriba cuando no cabe debajo del boton dentro de la ventana. */
+  protected readonly haciaArriba = signal(false);
 
   protected claseBoton(): string {
     const base =
@@ -116,7 +118,7 @@ export class ActionMenuComponent {
     // `whitespace-normal`: el menu puede vivir en una celda `whitespace-nowrap` y sus opciones van una por renglon.
     const comun = 'min-w-[13rem] max-w-[calc(100vw-2rem)] whitespace-normal rounded-xl border border-warm-200 bg-white py-1 shadow-warm-lg';
     if (this.flotante()) return `fixed z-50 ${comun}`;
-    const lado = this.placement() === 'top' ? 'bottom-full mb-2' : 'top-full mt-2';
+    const lado = this.placement() === 'top' || this.haciaArriba() ? 'bottom-full mb-2' : 'top-full mt-2';
     const borde = this.alineacion() === 'start' ? 'left-0' : 'right-0';
     return `absolute ${borde} ${lado} z-40 ${comun}`;
   }
@@ -161,6 +163,7 @@ export class ActionMenuComponent {
 
   private abrir(): void {
     this.calcularCoordenadas();
+    this.haciaArriba.set(this.placement() === 'bottom' && !this.cabeDebajo());
     this.abierto.set(true);
     // El menu se pinta en la deteccion de cambios que sigue al clic (antes de la proxima tarea): se enfoca la primera accion habilitada.
     setTimeout(() => this.botones()[0]?.focus(), 0);
@@ -212,6 +215,19 @@ export class ActionMenuComponent {
   @HostListener('document:click', ['$event'])
   protected alClicGlobal(ev: Event): void {
     if (this.abierto() && !this.host.nativeElement.contains(ev.target as Node)) this.abierto.set(false);
+  }
+
+  /**
+   * Alto estimado del panel (una fila de 44px por accion mas el relleno) contra el espacio libre bajo el boton. Si no cabe y
+   * arriba hay mas espacio, se abre hacia arriba para que ninguna opcion quede oculta por el borde de la ventana o de la tarjeta.
+   */
+  private cabeDebajo(): boolean {
+    const boton = this.host.nativeElement.querySelector<HTMLElement>('[data-testid="action-menu-trigger"]');
+    if (!boton || typeof window === 'undefined') return true;
+    const caja = boton.getBoundingClientRect();
+    const alto = this.items().length * 44 + 16;
+    const abajo = window.innerHeight - caja.bottom;
+    return abajo >= alto || caja.top <= abajo;
   }
 
   private botones(): HTMLButtonElement[] {

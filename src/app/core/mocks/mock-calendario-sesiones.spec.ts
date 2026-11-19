@@ -1,4 +1,5 @@
 import { FranjaMock, mockSesionesCalendario } from './mock-calendario-sesiones';
+import { MOCK_HORARIOS_DOCENTE } from './role-management.mock';
 
 describe('mockSesionesCalendario (ATA D7)', () => {
   const franjas: FranjaMock[] = [
@@ -29,5 +30,12 @@ describe('mockSesionesCalendario (ATA D7)', () => {
   it('un rango vacío o inválido no genera sesiones', () => {
     expect(mockSesionesCalendario(franjas, '', '')).toEqual([]);
     expect(mockSesionesCalendario(franjas, '2026-11-22', '2026-11-16')).toEqual([]);
+  });
+
+  it('MEJORAS-SERGIO 9: conserva el idGrupo de la franja y el horario mock del docente lo trae en cada franja', () => {
+    const [sesion] = mockSesionesCalendario([{ ...franjas[0], idGrupo: 'crs-1' }], '2026-11-16', '2026-11-22');
+    expect(sesion.idGrupo).toBe('crs-1');
+    expect(MOCK_HORARIOS_DOCENTE.length).toBeGreaterThan(0);
+    expect(MOCK_HORARIOS_DOCENTE.every((h) => !!h.idGrupo)).toBeTrue();
   });
 });
