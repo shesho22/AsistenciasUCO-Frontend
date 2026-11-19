@@ -1177,6 +1177,98 @@ describe('StudentCoursesComponent — enlace desde Mis Alertas (CERT-CULM001)', 
     http.expectNone((r) => r.url.endsWith('/sesiones'));
   });
 
+  describe('ATA D10: enlace a la radicación de una toma (?sesion&toma)', () => {
+    const SESION_ID = 'a0000000-0000-4000-8000-000000000032';
+    const OTRA_SESION_ID = 'a0000000-0000-4000-8000-000000000031';
+    const TOMA_ID = 'b0000000-0000-4000-8000-000000000003';
+    const tomaApi = (over: Record<string, unknown> = {}) => ({
+      idToma: TOMA_ID, numero: 3, fechaPuntoControlUtc: '2026-11-18T20:21:24Z', estado: 'AUSENTE', reclamable: true, ...over,
+    });
+    const sesionApi = (id: string, tomas: unknown[]) => ({
+      id, idGrupo: GRUPO_ID, numero: 32, fechaHoraInicioUtc: '2026-11-18T19:19:00Z', fechaHoraFinUtc: '2026-11-18T21:19:00Z',
+      estadoAsistencia: 'PARCIAL', reclamable: true, plazoJustificacionVigente: true, tomas,
+    });
+    const enlace = { materia: ASIGNATURA_ID, grupo: GRUPO_ID, sesion: SESION_ID, toma: TOMA_ID };
+    /** Abrir la radicación reintenta la configuración de reclamos si no se cargó (aquí llegó `null`). */
+    const atenderConfiguracionReclamos = () =>
+      http.match((r) => r.url.includes('/configuracion/reclamos')).forEach((req) => req.flush({ exitoso: true, datos: null }));
+
+    it('con la sesión en la primera página abre directo el formulario de esa toma', async () => {
+      await crear(enlace, [materiaApi()]);
+      http.expectOne(esSesiones(ASIGNATURA_ID)).flush({ exitoso: true, datos: [sesionApi(SESION_ID, [tomaApi()])], total: 1 });
+
+      expect(component.vistaActual()).toBe('RECLAMO');
+      expect(component.sesionReclamar()?.id).toBe(SESION_ID);
+      expect(component.tomaReclamar()?.idToma).toBe(TOMA_ID);
+      http.expectNone((r) => r.url.endsWith('/sesiones'));
+      atenderConfiguracionReclamos();
+    });
+
+    it('si la sesión no está en la página cargada la busca entre todas las del grupo, sin paginar', async () => {
+      await crear(enlace, [materiaApi()]);
+      http.expectOne(esSesiones(ASIGNATURA_ID)).flush({ exitoso: true, datos: [sesionApi(OTRA_SESION_ID, [])], total: 40 });
+      expect(component.vistaActual()).toBe('DETALLE');
+
+      const todas = http.expectOne(esSesiones(ASIGNATURA_ID));
+      expect(todas.request.params.has('pagina')).toBeFalse();
+      expect(todas.request.params.has('tamano')).toBeFalse();
+      expect(todas.request.params.get('grupoId')).toBe(GRUPO_ID);
+      todas.flush({ exitoso: true, datos: [sesionApi(OTRA_SESION_ID, []), sesionApi(SESION_ID, [tomaApi()])], total: 2 });
+
+      expect(component.vistaActual()).toBe('RECLAMO');
+      expect(component.tomaReclamar()?.idToma).toBe(TOMA_ID);
+      atenderConfiguracionReclamos();
+    });
+
+    it('una toma que ya no es reclamable deja al estudiante en el detalle', async () => {
+      await crear(enlace, [materiaApi()]);
+      http.expectOne(esSesiones(ASIGNATURA_ID)).flush({ exitoso: true, datos: [sesionApi(SESION_ID, [tomaApi({ reclamable: false })])], total: 1 });
+
+      expect(component.vistaActual()).toBe('DETALLE');
+      expect(component.tomaReclamar()).toBeNull();
+    });
+
+    it('si la sesión no aparece en ningún lado o la búsqueda falla, queda el detalle', async () => {
+      await crear(enlace, [materiaApi()]);
+      http.expectOne(esSesiones(ASIGNATURA_ID)).flush({ exitoso: true, datos: [], total: 0 });
+      http.expectOne(esSesiones(ASIGNATURA_ID)).flush({ exitoso: true, datos: [sesionApi(OTRA_SESION_ID, [])], total: 1 });
+      expect(component.vistaActual()).toBe('DETALLE');
+
+      TestBed.resetTestingModule();
+      await crear(enlace, [materiaApi()]);
+      http.expectOne(esSesiones(ASIGNATURA_ID)).flush({ exitoso: true, datos: [], total: 0 });
+      http.expectOne(esSesiones(ASIGNATURA_ID)).flush({ mensaje: 'falla' }, { status: 500, statusText: 'Error' });
+      expect(component.vistaActual()).toBe('DETALLE');
+    });
+
+    it('si el estudiante sale del detalle antes de la búsqueda completa, no abre el formulario', async () => {
+      await crear(enlace, [materiaApi()]);
+      http.expectOne(esSesiones(ASIGNATURA_ID)).flush({ exitoso: true, datos: [], total: 0 });
+      component.volverALista();
+      http.expectOne(esSesiones(ASIGNATURA_ID)).flush({ exitoso: true, datos: [sesionApi(SESION_ID, [tomaApi()])], total: 1 });
+
+      expect(component.vistaActual()).not.toBe('RECLAMO');
+      expect(component.tomaReclamar()).toBeNull();
+    });
+
+    it('identificadores inválidos de sesión o toma solo abren el detalle', async () => {
+      await crear({ ...enlace, toma: 'no-es-uuid' }, [materiaApi()]);
+      http.expectOne(esSesiones(ASIGNATURA_ID)).flush({ exitoso: true, datos: [sesionApi(SESION_ID, [tomaApi()])], total: 1 });
+      expect(component.vistaActual()).toBe('DETALLE');
+      http.expectNone((r) => r.url.endsWith('/sesiones'));
+    });
+
+    it('el enlace se usa una sola vez: recargar las sesiones no reabre el formulario', async () => {
+      await crear(enlace, [materiaApi()]);
+      http.expectOne(esSesiones(ASIGNATURA_ID)).flush({ exitoso: true, datos: [sesionApi(SESION_ID, [tomaApi()])], total: 1 });
+      atenderConfiguracionReclamos();
+      component.volverADetalle();
+      component.cargarSesiones(component.selectedMateria()!);
+      http.expectOne(esSesiones(ASIGNATURA_ID)).flush({ exitoso: true, datos: [sesionApi(SESION_ID, [tomaApi()])], total: 1 });
+      expect(component.vistaActual()).toBe('DETALLE');
+    });
+  });
+
   it('el enlace se usa una sola vez: recargar las materias no reabre el detalle', async () => {
     await crear({ materia: ASIGNATURA_ID }, [materiaApi()]);
     http.expectOne(esSesiones(ASIGNATURA_ID)).flush({ exitoso: true, datos: [], total: 0 });

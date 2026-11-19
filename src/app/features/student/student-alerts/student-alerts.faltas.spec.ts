@@ -104,11 +104,11 @@ describe('StudentAlertsComponent: faltas por reclamar (ATA D10)', () => {
     expect(seccion.compareDocumentPosition(tarjetaAlerta) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it('"Reclamar esta toma" abre el detalle de la materia con materia y grupo', () => {
+  it('"Reclamar esta toma" abre la radicación de esa toma (materia, grupo, sesión y toma en el enlace)', () => {
     montar([fila('t1', 1)]);
     (el().querySelector('[data-testid="btn-reclamar-toma-t1"]') as HTMLButtonElement).click();
     expect(router.navigate).toHaveBeenCalledOnceWith(['/app/estudiante/mis-materias/materias'], {
-      queryParams: { materia: 'asig-1', grupo: 'grp-1' },
+      queryParams: { materia: 'asig-1', grupo: 'grp-1', sesion: 'ses-1', toma: 't1' },
     });
   });
 

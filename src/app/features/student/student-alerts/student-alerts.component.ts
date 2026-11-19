@@ -281,7 +281,9 @@ export class StudentAlertsComponent implements OnInit {
 
   /** Lleva al detalle de la materia, donde ya se radica el reclamo de la toma. */
   reclamar(toma: FaltaReclamable): void {
-    void this.router.navigate([RUTA_MIS_MATERIAS], { queryParams: { materia: toma.idAsignatura, grupo: toma.idGrupo } });
+    void this.router.navigate([RUTA_MIS_MATERIAS], {
+      queryParams: { materia: toma.idAsignatura, grupo: toma.idGrupo, sesion: toma.idSesion, toma: toma.idToma },
+    });
   }
 
   filtrarPorGrupo(grupoId: string): void {

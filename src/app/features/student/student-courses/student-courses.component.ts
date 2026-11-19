@@ -160,6 +160,11 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
 
   /** Materia (y grupo) que pide abrir el enlace de "Mis Alertas"; se consume al cargar las materias. */
   private enlaceMateria: { materia: string; grupo: string | null } | null = null;
+  /**
+   * ATA D10: "Faltas por reclamar" enlaza con `&sesion=<idSesion>&toma=<idToma>` para abrir directo la radicación de esa toma.
+   * Se consume con las primeras sesiones cargadas de la materia del enlace.
+   */
+  private enlaceReclamo: { sesion: string; toma: string } | null = null;
 
   // Drill-down sesiones
   selectedMateria = signal<MateriaEstudianteItem | null>(null);
@@ -220,6 +225,11 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
     if (paramMateria && isUuid(paramMateria)) {
       const paramGrupo = this.route.snapshot.queryParamMap.get('grupo');
       this.enlaceMateria = { materia: paramMateria, grupo: paramGrupo && isUuid(paramGrupo) ? paramGrupo : null };
+      const paramSesion = this.route.snapshot.queryParamMap.get('sesion');
+      const paramToma = this.route.snapshot.queryParamMap.get('toma');
+      if (paramSesion && isUuid(paramSesion) && paramToma && isUuid(paramToma)) {
+        this.enlaceReclamo = { sesion: paramSesion, toma: paramToma };
+      }
     }
   }
 
@@ -553,6 +563,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
         this.sesiones.set(res.datos ?? []);
         this.totalSesiones.set(total);
         this.loadingSesiones.set(false);
+        this.abrirReclamoDelEnlace(materia, res.datos ?? []);
       },
       error: (err) => {
         this.sesiones.set([]);
@@ -562,6 +573,31 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
         );
         this.loadingSesiones.set(false);
       },
+    });
+  }
+
+  /**
+   * ATA D10: abre la radicación de la toma pedida por el enlace, una sola vez. Si la sesión no está en la página cargada, se
+   * busca entre todas las sesiones del grupo (una sola consulta sin paginar). Solo abre una toma que el backend marcó
+   * reclamable; si no aparece o ya no lo es, el estudiante queda en el detalle de la materia.
+   */
+  private abrirReclamoDelEnlace(materia: MateriaEstudianteItem, pagina: SesionMateriaDetalle[]): void {
+    const enlace = this.enlaceReclamo;
+    this.enlaceReclamo = null;
+    if (!enlace) return;
+    const abrir = (sesiones: SesionMateriaDetalle[]): boolean => {
+      const sesion = sesiones.find((candidata) => candidata.id === enlace.sesion);
+      const toma = sesion?.tomas.find((candidata) => candidata.idToma === enlace.toma);
+      if (!sesion || !toma) return false;
+      this.iniciarReclamoToma({ sesion, toma });
+      return true;
+    };
+    if (abrir(pagina)) return;
+    this.claimService.getSesionesPorMateria(materia.id, { grupoId: materia.idGrupo }).subscribe({
+      next: (res) => {
+        if (this.selectedMateria() === materia && this.vistaActual() === 'DETALLE') abrir(res.datos ?? []);
+      },
+      error: () => undefined,
     });
   }
 
