@@ -156,11 +156,18 @@ function adaptarGrupoACurso(dto: GrupoDetalleDecanoApiDto): Course {
               </tbody>
             </table>
           </div>
-          @if (sessions().length > tamanoSesiones()) {
-            <div class="p-3 border-t border-warm-100">
+          @if (sesionesIncompletas()) {
+            <p class="px-4 py-2 text-xs text-warning-800 bg-warning-50 border-t border-warning-200" role="status" data-testid="aviso-sesiones-incompletas">
+              Se muestran {{ sessions().length }} de {{ totalSesionesServidor() }} sesiones: el servidor no entregó el resto. Recarga la página para intentarlo de nuevo.
+            </p>
+          }
+          <!-- El paginador se ve siempre que haya más sesiones que el tamaño de página más pequeño, para poder volver de «50» a «10». -->
+          @if (sessions().length > tamanosSesiones[0]) {
+            <div class="p-3 border-t border-warm-100" data-testid="paginador-sesiones">
               <app-pagination
                 [totalItems]="sessions().length"
                 [pageSize]="tamanoSesiones()"
+                [pageSizeOptions]="tamanosSesiones"
                 [currentPage]="paginaSesiones()"
                 (pageChange)="paginaSesiones.set($event)"
                 (pageSizeChange)="cambiarTamanoSesiones($event)"
@@ -188,9 +195,17 @@ export class DeanGrupoDetalleComponent implements OnInit, OnDestroy {
   cargandoSesiones = signal(false);
   /** Mensaje del último error al cargar sesiones; `null` si la última carga terminó bien (aunque sea vacía). */
   errorSesiones = signal<string | null>(null);
-  /** MEJORAS-SERGIO 6: paginación local de la tabla de sesiones (el servidor entrega hasta 50 por grupo). */
+  /**
+   * MEJORAS-SERGIO 6: paginación local de la tabla de sesiones. Se traen TODAS las sesiones del grupo (recorriendo las
+   * páginas del servidor de 100 en 100) y la tabla las pagina en el cliente.
+   */
+  readonly tamanosSesiones = [10, 20, 50];
   paginaSesiones = signal(1);
   tamanoSesiones = signal(20);
+  /** `totalElementos` del servidor; si lo recibido no lo alcanza se avisa en lugar de truncar en silencio. */
+  totalSesionesServidor = signal(0);
+  sesionesIncompletas = computed(() => this.totalSesionesServidor() > this.sessions().length);
+  private subSesiones?: Subscription;
   sesionesPagina = computed(() => {
     const inicio = (this.paginaSesiones() - 1) * this.tamanoSesiones();
     return this.sessions().slice(inicio, inicio + this.tamanoSesiones());
@@ -262,6 +277,7 @@ export class DeanGrupoDetalleComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.subRealtime?.unsubscribe();
+    this.subSesiones?.unsubscribe();
     if (this.realtime) {
       this.realtime.stop();
     }
@@ -287,15 +303,19 @@ export class DeanGrupoDetalleComponent implements OnInit, OnDestroy {
     }
     this.cargandoSesiones.set(true);
     this.errorSesiones.set(null);
-    this.deanService.getSesiones({ idGrupo: id, pagina: 1, tamano: 50 }).subscribe({
+    // Una recarga (reconexión o evento en tiempo real) reemplaza a la anterior: su respuesta tardía no pisa la nueva.
+    this.subSesiones?.unsubscribe();
+    this.subSesiones = this.deanService.getTodasLasSesionesGrupo(id).subscribe({
       next: (res) => {
         this.sessions.set(res.elementos ?? []);
+        this.totalSesionesServidor.set(res.total ?? 0);
         this.paginaSesiones.set(1);
         this.cargandoSesiones.set(false);
       },
       error: (error: unknown) => {
         const mensaje = getApiErrorMessage(error);
         this.sessions.set([]);
+        this.totalSesionesServidor.set(0);
         this.errorSesiones.set(mensaje);
         this.cargandoSesiones.set(false);
         this.toast.error(mensaje);
