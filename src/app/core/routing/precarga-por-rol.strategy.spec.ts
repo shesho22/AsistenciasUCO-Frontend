@@ -12,7 +12,10 @@ describe('PrecargaPorRolStrategy', () => {
   let cargar: jasmine.Spy<() => ReturnType<typeof of>>;
 
   const docente = { id: 'u-1', name: 'María', email: 'm@uco.edu.co', role: 'DOCENTE', roles: ['DOCENTE', 'COORDINADOR'] } as unknown as User;
-  const ruta = (roles?: string[]): Route => ({ path: 'x', data: roles ? { roles } : undefined });
+  const ruta = (roles?: string[], precargar = false): Route => ({
+    path: 'x',
+    data: { ...(roles ? { roles } : {}), ...(precargar ? { precargar: true } : {}) },
+  });
 
   /** Ejecuta la precarga y avanza el reloj lo suficiente para que el navegador "quede desocupado". */
   const precargar = (route: Route): unknown[] => {
@@ -35,33 +38,40 @@ describe('PrecargaPorRolStrategy', () => {
 
   it('sin sesión no precarga nada', fakeAsync(() => {
     expect(precargar(ruta())).toEqual([]);
-    expect(precargar(ruta(['DOCENTE']))).toEqual([]);
+    expect(precargar(ruta(['DOCENTE'], true))).toEqual([]);
     expect(cargar).not.toHaveBeenCalled();
   }));
 
-  it('precarga las rutas de cualquiera de los roles efectivos del usuario', fakeAsync(() => {
+  it('con sesión no descarga rutas si no están marcadas para precargar', fakeAsync(() => {
     usuario.set(docente);
-    expect(precargar(ruta(['DOCENTE']))).toEqual(['modulo']);
-    expect(precargar(ruta(['COORDINADOR', 'DECANO']))).toEqual(['modulo']);
+    expect(precargar(ruta(['DOCENTE']))).toEqual([]);
+    expect(precargar(ruta())).toEqual([]);
+    expect(cargar).not.toHaveBeenCalled();
+  }));
+
+  it('precarga en ocio las rutas marcadas para cualquiera de los roles efectivos', fakeAsync(() => {
+    usuario.set(docente);
+    expect(precargar(ruta(['DOCENTE'], true))).toEqual(['modulo']);
+    expect(precargar(ruta(['COORDINADOR', 'DECANO'], true))).toEqual(['modulo']);
     expect(cargar).toHaveBeenCalledTimes(2);
   }));
 
   it('nunca descarga las pantallas de otros roles', fakeAsync(() => {
     usuario.set(docente);
-    expect(precargar(ruta(['ESTUDIANTE']))).toEqual([]);
-    expect(precargar(ruta(['ADMINISTRADOR', 'DECANO']))).toEqual([]);
+    expect(precargar(ruta(['ESTUDIANTE'], true))).toEqual([]);
+    expect(precargar(ruta(['ADMINISTRADOR', 'DECANO'], true))).toEqual([]);
     expect(cargar).not.toHaveBeenCalled();
   }));
 
-  it('con sesión precarga las rutas sin roles (shell, panel, perfil e hijas de una sección permitida)', fakeAsync(() => {
+  it('requiere la marca explícita también en rutas sin roles', fakeAsync(() => {
     usuario.set(docente);
-    expect(precargar(ruta())).toEqual(['modulo']);
-    expect(precargar(ruta([]))).toEqual(['modulo']);
+    expect(precargar(ruta(undefined, true))).toEqual(['modulo']);
+    expect(precargar(ruta([], true))).toEqual(['modulo']);
   }));
 
   it('espera a que el navegador esté desocupado antes de descargar', fakeAsync(() => {
     usuario.set(docente);
-    estrategia.preload(ruta(['DOCENTE']), cargar).subscribe();
+    estrategia.preload(ruta(['DOCENTE'], true), cargar).subscribe();
     expect(cargar).not.toHaveBeenCalled();
     tick(ESPERA_MAXIMA_OCIO_MS + 50);
     expect(cargar).toHaveBeenCalledTimes(1);

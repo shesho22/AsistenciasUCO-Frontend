@@ -24,12 +24,11 @@ export function cuandoEsteDesocupado(): Observable<void> {
 }
 
 /**
- * Precarga, en segundo plano y con el navegador desocupado, el código de las pantallas del rol con el que se inició sesión,
- * para que la primera visita a cada menú no espere la descarga. El router la vuelve a evaluar en cada navegación, así que
- * tras el inicio de sesión (o un cambio de rol) precarga lo que falte.
+ * Precarga en segundo plano solo las rutas marcadas explícitamente con `data.precargar: true`.
+ * La mayoría de pantallas se descarga cuando el usuario la visita para no competir con el render de la pantalla actual.
  * - Sin sesión no precarga nada (la pantalla de inicio no necesita las del aplicativo).
  * - Una ruta con `data.roles` se precarga solo si alguno es rol efectivo del usuario; las de otros roles nunca se descargan.
- * - Una ruta sin `data.roles` (shell, panel, perfil o hijas de una sección ya permitida) se precarga.
+ * - Una ruta sin `data.roles` también debe tener `data.precargar: true`.
  * Es solo rendimiento: la autorización sigue en los guards y en el backend.
  */
 @Injectable({ providedIn: 'root' })
@@ -37,6 +36,7 @@ export class PrecargaPorRolStrategy implements PreloadingStrategy {
   private readonly auth = inject(AuthService);
 
   preload(route: Route, load: () => Observable<unknown>): Observable<unknown> {
+    if (route.data?.['precargar'] !== true) return EMPTY;
     const usuario = this.auth.currentUser();
     if (!usuario) return EMPTY;
     const permitidos = route.data?.['roles'] as readonly UserRole[] | undefined;

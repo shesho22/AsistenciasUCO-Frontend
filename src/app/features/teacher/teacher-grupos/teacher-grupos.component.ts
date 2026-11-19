@@ -66,53 +66,63 @@ const TAMANO_PAGINA_DECISIONES = 100;
 
       <!-- 3. VISTA HUB INTEGRAL DEL GRUPO -->
       @if (vistaActual() === 'HUB_GRUPO' && selectedCourse()) {
-        <app-teacher-grupo-hub
-          [selectedCourse]="selectedCourse()"
-          [sessions]="sessions()"
-          [resumenSesiones]="resumenSesiones()"
-          [loadingSessions]="loadingSessions()"
-          [reclamos]="reclamosGrupo()"
-          [totalReclamos]="totalReclamosGrupo()"
-          [paginaReclamos]="paginaReclamosGrupo()"
-          [tamanoReclamos]="tamanoReclamosGrupo"
-          [padronPagina]="padronPagina()"
-          [totalEstudiantes]="totalPadron()"
-          [paginaPadron]="paginaPadron()"
-          [tamanoPadron]="tamanoPadron()"
-          [busquedaPadron]="busquedaPadron()"
-          [cargandoPadron]="cargandoPadron()"
-          [estadoCargaReclamos]="estadoCargaReclamos()"
-          [sessionQrEnabled]="sessionQrEnabled"
-          [(subPestanaHub)]="subPestanaHub"
-          (volver)="volverALista()"
-          (irAsistencia)="tomarAsistenciaGrupo($event)"
-          (proyectarQr)="proyectarQrGrupo($event)"
-          (matricular)="abrirModalMatriculaGrupo($event)"
-          (retirarEstudiante)="abrirModalRetiro($event)"
-          (irReclamos)="irAGestionReclamos()"
-          (reintentarReclamos)="reintentarCargaReclamosGrupo()"
-          (paginaReclamosChange)="cambiarPaginaReclamosGrupo($event)"
-          (paginaPadronChange)="cambiarPaginaPadron($event)"
-          (tamanoPadronChange)="cambiarTamanoPadron($event)"
-          (busquedaPadronChange)="cambiarBusquedaPadron($event)"
-        />
+        @defer (when vistaActual() === 'HUB_GRUPO' && selectedCourse() !== null) {
+          <app-teacher-grupo-hub
+            [selectedCourse]="selectedCourse()"
+            [sessions]="sessions()"
+            [resumenSesiones]="resumenSesiones()"
+            [loadingSessions]="loadingSessions()"
+            [reclamos]="reclamosGrupo()"
+            [totalReclamos]="totalReclamosGrupo()"
+            [paginaReclamos]="paginaReclamosGrupo()"
+            [tamanoReclamos]="tamanoReclamosGrupo"
+            [padronPagina]="padronPagina()"
+            [totalEstudiantes]="totalPadron()"
+            [paginaPadron]="paginaPadron()"
+            [tamanoPadron]="tamanoPadron()"
+            [busquedaPadron]="busquedaPadron()"
+            [cargandoPadron]="cargandoPadron()"
+            [estadoCargaReclamos]="estadoCargaReclamos()"
+            [sessionQrEnabled]="sessionQrEnabled"
+            [(subPestanaHub)]="subPestanaHub"
+            (volver)="volverALista()"
+            (irAsistencia)="tomarAsistenciaGrupo($event)"
+            (proyectarQr)="proyectarQrGrupo($event)"
+            (matricular)="abrirModalMatriculaGrupo($event)"
+            (retirarEstudiante)="abrirModalRetiro($event)"
+            (irReclamos)="irAGestionReclamos()"
+            (reintentarReclamos)="reintentarCargaReclamosGrupo()"
+            (paginaReclamosChange)="cambiarPaginaReclamosGrupo($event)"
+            (paginaPadronChange)="cambiarPaginaPadron($event)"
+            (tamanoPadronChange)="cambiarTamanoPadron($event)"
+            (busquedaPadronChange)="cambiarBusquedaPadron($event)"
+          />
+        } @loading {
+          <div class="superficie p-6 text-sm text-warm-600" role="status" aria-live="polite">
+            Abriendo el grupo…
+          </div>
+        }
       }
 
       <!-- 4. MODALES DESACOPLADOS (las acciones por sesión viven en el historial de la toma de asistencia) -->
-      <app-teacher-matricula-modal
-        [isOpen]="modalMatriculaGrupoVisible()"
-        [curso]="grupoMatricula()"
-        (closed)="cerrarModalMatriculaGrupo()"
-        (matriculado)="cargarEstudiantesGrupo($event)"
-      />
+      @defer (when modalMatriculaGrupoVisible()) {
+        <app-teacher-matricula-modal
+          [isOpen]="modalMatriculaGrupoVisible()"
+          [curso]="grupoMatricula()"
+          (closed)="cerrarModalMatriculaGrupo()"
+          (matriculado)="cargarEstudiantesGrupo($event)"
+        />
+      }
 
-      <app-teacher-retiro-estudiante-modal
-        [isOpen]="estudianteARetirar() !== null"
-        [grupoId]="selectedCourse()?.id ?? null"
-        [estudiante]="estudianteARetirar()"
-        (retirado)="onEstudianteRetirado()"
-        (closed)="estudianteARetirar.set(null)"
-      />
+      @defer (when estudianteARetirar() !== null) {
+        <app-teacher-retiro-estudiante-modal
+          [isOpen]="estudianteARetirar() !== null"
+          [grupoId]="selectedCourse()?.id ?? null"
+          [estudiante]="estudianteARetirar()"
+          (retirado)="onEstudianteRetirado()"
+          (closed)="estudianteARetirar.set(null)"
+        />
+      }
     </div>
   `
 })

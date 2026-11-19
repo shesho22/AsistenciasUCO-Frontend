@@ -97,7 +97,11 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
       </div>
 
       @if (estudianteFicha(); as e) {
-        <app-coordinator-ficha-modal [idEstudiante]="e.idEstudiante" [nombre]="e.nombreCompleto" (cerrar)="cerrarFicha()" />
+        @defer (on immediate) {
+          <app-coordinator-ficha-modal [idEstudiante]="e.idEstudiante" [nombre]="e.nombreCompleto" (cerrar)="cerrarFicha()" />
+        } @placeholder {
+          <span role="status" class="sr-only">Abriendo ficha del estudiante...</span>
+        }
       }
       }
       }

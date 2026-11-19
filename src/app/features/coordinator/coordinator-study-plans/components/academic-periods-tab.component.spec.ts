@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, DeferBlockState, TestBed } from '@angular/core/testing';
 import { AcademicPeriodsTabComponent } from './academic-periods-tab.component';
 import { PeriodoAcademicoItem } from '../../../../core/models/role-management.model';
 
@@ -24,10 +24,13 @@ describe('AcademicPeriodsTabComponent', () => {
     fixture.detectChanges();
   });
 
-  it('DEC-065: crear abre el dialogo sin datos precargados y emite CREAR', () => {
+  it('DEC-065: crear abre el dialogo sin datos precargados y emite CREAR', async () => {
     const emitidos: unknown[] = [];
     component.savePeriodo.subscribe((e) => emitidos.push(e));
     component.abrirCrear();
+    fixture.detectChanges();
+    const deferBlocks = await fixture.getDeferBlocks();
+    await Promise.all(deferBlocks.map((block) => block.render(DeferBlockState.Complete)));
     fixture.detectChanges();
     expect(component.mostrarModal()).toBeTrue();
     expect(component.periodoEditando()).toBeNull();
@@ -38,10 +41,13 @@ describe('AcademicPeriodsTabComponent', () => {
     expect(component.mostrarModal()).toBeTrue();
   });
 
-  it('editar abre el dialogo con el periodo y emite EDITAR con su id', () => {
+  it('editar abre el dialogo con el periodo y emite EDITAR con su id', async () => {
     const emitidos: unknown[] = [];
     component.savePeriodo.subscribe((e) => emitidos.push(e));
     component.abrirEditar(periodo(1));
+    fixture.detectChanges();
+    const deferBlocks = await fixture.getDeferBlocks();
+    await Promise.all(deferBlocks.map((block) => block.render(DeferBlockState.Complete)));
     fixture.detectChanges();
     expect(texto()).toContain('Modificar período académico');
     const datos = { nombre: '2026-1', fechaInicio: '2026-01-02', fechaFin: '2026-06-02' };

@@ -191,6 +191,10 @@ export class AuthService implements OnDestroy {
    */
   private refreshInFlight: Promise<boolean> | null = null;
   private baselineRenewalStarted = false;
+  /** Shared only by the app initializer and authGuard for this document's startup restoration. */
+  private startupSessionPromise: Promise<boolean> | null = null;
+  /** True while a silent OIDC full-page navigation is taking the browser to the identity provider. */
+  private authenticationRedirectPending = false;
   private readonly navigator = inject(BrowserNavigator);
 
   // ── BroadcastChannel multi-pestaña ────────────────────────────────────────
@@ -276,16 +280,25 @@ export class AuthService implements OnDestroy {
   }
 
   /**
-   * Inicialización de sesión al arrancar la app (APP_INITIALIZER).
-   *
-   * En modo real: con access token vigente en memoria no hace nada. Sin él
-   * (típicamente tras F5, que reinicia los signals) intenta restaurar la sesión
-   * con el refresh token de memoria o, si no hay, el de sessionStorage. Si el
-   * refresh falla limpia toda credencial residual y retorna false; no navega:
-   * el guard resuelve la ruta si realmente no hay sesión.
-   * En modo mock: usa rol inicial DOCENTE sin leer de localStorage.
+   * Punto común del arranque: APP_INITIALIZER y authGuard esperan la misma restauración para que la navegación
+   * protegida no envíe al usuario a /login mientras el estado aún está vacío.
    */
-  async initKeycloak(): Promise<boolean> {
+  initializeSessionOnce(): Promise<boolean> {
+    this.startupSessionPromise ??= this.initKeycloak();
+    return this.startupSessionPromise;
+  }
+
+  /** Inicializa/restaura la sesión. Puede invocarse de nuevo fuera del arranque (p. ej. durante callbacks OIDC). */
+  initKeycloak(): Promise<boolean> {
+    return this.initializeSession();
+  }
+
+  /** Indica que el arranque ya inició una redirección OIDC silenciosa de página completa. */
+  hasPendingAuthenticationRedirect(): boolean {
+    return this.authenticationRedirectPending;
+  }
+
+  private async initializeSession(): Promise<boolean> {
     if (this.mockModeSignal()) {
       const initialRole: UserRole = 'DOCENTE';
       this.loginAsMockUser(initialRole, false);
@@ -359,6 +372,7 @@ export class AuthService implements OnDestroy {
       await this.redirectToBaselineAuthorize(true, this.currentReturnPath());
       return false;
     } catch {
+      this.authenticationRedirectPending = false;
       clearPending();
       this.replaceBaselineUrl('/login');
       this.authError.set(this.resolveAuthMessage('AUTH_NETWORK_ERROR'));
@@ -466,6 +480,7 @@ export class AuthService implements OnDestroy {
     // La URL del QR (con su token) solo se conserva en sessionStorage; nunca viaja al IdP.
     if (esRutaAsistenciaQr(returnUrl)) guardarRetornoQr(returnUrl);
     savePending({ state, verifier, returnUrl: safeInternalPath(returnUrl), silent, createdAt: Date.now() });
+    if (silent) this.authenticationRedirectPending = true;
     this.navigator.assign(buildAuthorizeUrl(this.baselineConfig(), { state, challenge, silent }));
   }
 

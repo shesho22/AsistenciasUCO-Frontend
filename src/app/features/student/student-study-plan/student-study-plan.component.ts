@@ -89,6 +89,7 @@ const TIPOS_ASIGNATURA: Record<string, string> = {
               <details
                 class="superficie group"
                 [open]="abierto(plan, semestre)"
+                (toggle)="actualizarSemestreAbierto(plan, semestre, $event)"
                 data-testid="semestre-plan"
               >
                 <summary class="cursor-pointer list-none p-4 min-h-[44px] flex items-center justify-between gap-3">
@@ -108,32 +109,34 @@ const TIPOS_ASIGNATURA: Record<string, string> = {
                   </div>
                 </summary>
 
-                @if (semestre.asignaturas.length === 0) {
-                  <p class="px-4 pb-4 text-sm text-warm-600" data-testid="semestre-vacio">
-                    Este semestre aún no tiene asignaturas registradas.
-                  </p>
-                } @else {
-                  <ul class="px-4 pb-4 grid gap-3 sm:grid-cols-2">
-                    @for (asignatura of semestre.asignaturas; track asignatura.idAsignatura) {
-                      <li class="p-3 rounded-xl bg-warm-50 border border-warm-200" data-testid="asignatura-plan">
-                        <div class="flex items-start justify-between gap-2">
-                          <div class="min-w-0">
-                            @if (asignatura.codigo) {
-                              <p class="text-xs font-mono text-warm-500">{{ asignatura.codigo }}</p>
+                @if (abierto(plan, semestre) || semestre.asignaturas.length === 0) {
+                  @if (semestre.asignaturas.length === 0) {
+                    <p class="px-4 pb-4 text-sm text-warm-600" data-testid="semestre-vacio">
+                      Este semestre aún no tiene asignaturas registradas.
+                    </p>
+                  } @else {
+                    <ul class="px-4 pb-4 grid gap-3 sm:grid-cols-2">
+                      @for (asignatura of semestre.asignaturas; track asignatura.idAsignatura) {
+                        <li class="p-3 rounded-xl bg-warm-50 border border-warm-200" data-testid="asignatura-plan">
+                          <div class="flex items-start justify-between gap-2">
+                            <div class="min-w-0">
+                              @if (asignatura.codigo) {
+                                <p class="text-xs font-mono text-warm-500">{{ asignatura.codigo }}</p>
+                              }
+                              <p class="text-sm font-bold text-warm-900">{{ asignatura.nombre }}</p>
+                            </div>
+                            @if (asignatura.cursando) {
+                              <app-badge variant="success" size="sm" data-testid="insignia-cursando">Cursando</app-badge>
                             }
-                            <p class="text-sm font-bold text-warm-900">{{ asignatura.nombre }}</p>
                           </div>
-                          @if (asignatura.cursando) {
-                            <app-badge variant="success" size="sm" data-testid="insignia-cursando">Cursando</app-badge>
+                          <p class="text-xs text-warm-600 mt-1" data-testid="asignatura-detalle">{{ detalle(asignatura) }}</p>
+                          @if (asignatura.cursando && asignatura.nombreGrupoCursando) {
+                            <p class="text-xs text-warm-500 mt-0.5">Grupo: {{ asignatura.nombreGrupoCursando }}</p>
                           }
-                        </div>
-                        <p class="text-xs text-warm-600 mt-1" data-testid="asignatura-detalle">{{ detalle(asignatura) }}</p>
-                        @if (asignatura.cursando && asignatura.nombreGrupoCursando) {
-                          <p class="text-xs text-warm-500 mt-0.5">Grupo: {{ asignatura.nombreGrupoCursando }}</p>
-                        }
-                      </li>
-                    }
-                  </ul>
+                        </li>
+                      }
+                    </ul>
+                  }
                 }
               </details>
             }
@@ -147,6 +150,8 @@ export class StudentStudyPlanComponent implements OnInit {
   private readonly planService = inject(PlanEstudioEstudianteService);
 
   readonly planes = signal<PlanEstudioEstudiante[]>([]);
+  /** Semestres cuyo contenido está montado: evita crear las tarjetas de asignaturas que siguen cerradas. */
+  readonly semestresAbiertos = signal<ReadonlySet<string>>(new Set());
   readonly cargando = signal(false);
   readonly error = signal('');
 
@@ -161,9 +166,24 @@ export class StudentStudyPlanComponent implements OnInit {
       .consultar()
       .pipe(finalize(() => this.cargando.set(false)))
       .subscribe({
-        next: (res) => this.planes.set(res.datos ?? []),
+        next: (res) => {
+          const planes = res.datos ?? [];
+          this.planes.set(planes);
+          this.semestresAbiertos.set(
+            new Set(
+              planes.flatMap((plan) =>
+                plan.semestres
+                  .filter((semestre) =>
+                    semestre.asignaturas.some((asignatura) => asignatura.cursando) || plan.semestres.length === 1
+                  )
+                  .map((semestre) => this.claveSemestre(plan, semestre))
+              )
+            )
+          );
+        },
         error: (error: unknown) => {
           this.planes.set([]);
+          this.semestresAbiertos.set(new Set());
           this.error.set(getApiErrorMessage(error));
         },
       });
@@ -176,7 +196,23 @@ export class StudentStudyPlanComponent implements OnInit {
 
   /** Se abre solo lo que le interesa de entrada: los semestres donde cursa algo, o el único semestre del plan. */
   abierto(plan: PlanEstudioEstudiante, semestre: SemestrePlanEstudiante): boolean {
-    return this.cursandoEn(semestre) > 0 || plan.semestres.length === 1;
+    return this.semestresAbiertos().has(this.claveSemestre(plan, semestre));
+  }
+
+  actualizarSemestreAbierto(plan: PlanEstudioEstudiante, semestre: SemestrePlanEstudiante, evento: Event): void {
+    const clave = this.claveSemestre(plan, semestre);
+    const abierto = (evento.currentTarget as HTMLDetailsElement).open;
+    this.semestresAbiertos.update((actuales) => {
+      if (actuales.has(clave) === abierto) return actuales;
+      const siguientes = new Set(actuales);
+      if (abierto) siguientes.add(clave);
+      else siguientes.delete(clave);
+      return siguientes;
+    });
+  }
+
+  private claveSemestre(plan: PlanEstudioEstudiante, semestre: SemestrePlanEstudiante): string {
+    return `${plan.idPlanEstudio}:${semestre.idSemestrePlanEstudio}`;
   }
 
   plural(cantidad: number, singular: string, plural: string): string {

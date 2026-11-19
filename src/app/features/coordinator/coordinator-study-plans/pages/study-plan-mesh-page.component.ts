@@ -51,21 +51,25 @@ const MAX_SEMESTRES = 10;
           (editSubject)="abrirEditarAsignatura($event)"
           (removeSubject)="quitarDelPlan($event)"
         />
-        <app-associate-subject-dialog
-          [plan]="plan"
-          [abierto]="dialogoAsociarAbierto()"
-          (asociada)="alAsociar()"
-          (cerrado)="dialogoAsociarAbierto.set(false)"
-        />
-        <app-confirm-dialog
-          [isOpen]="asignaturaAQuitar() !== null"
-          title="Quitar asignatura del plan"
-          [message]="'¿Quitar «' + (asignaturaAQuitar()?.nombre ?? '') + '» de este plan de estudio?'"
-          confirmLabel="Quitar del plan"
-          [destructive]="true"
-          (confirmed)="confirmarQuitar()"
-          (cancelled)="asignaturaAQuitar.set(null)"
-        />
+        @defer (when dialogoAsociarAbierto()) {
+          <app-associate-subject-dialog
+            [plan]="plan"
+            [abierto]="dialogoAsociarAbierto()"
+            (asociada)="alAsociar()"
+            (cerrado)="dialogoAsociarAbierto.set(false)"
+          />
+        }
+        @defer (when asignaturaAQuitar() !== null) {
+          <app-confirm-dialog
+            [isOpen]="asignaturaAQuitar() !== null"
+            title="Quitar asignatura del plan"
+            [message]="'¿Quitar «' + (asignaturaAQuitar()?.nombre ?? '') + '» de este plan de estudio?'"
+            confirmLabel="Quitar del plan"
+            [destructive]="true"
+            (confirmed)="confirmarQuitar()"
+            (cancelled)="asignaturaAQuitar.set(null)"
+          />
+        }
       } @else {
         <div class="superficie p-12 text-center space-y-3">
           <p class="text-sm text-warm-500">Cargando malla curricular del plan de estudio...</p>
