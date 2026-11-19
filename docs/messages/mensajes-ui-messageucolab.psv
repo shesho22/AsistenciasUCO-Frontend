@@ -124,6 +124,8 @@ UI_STUDY_PLAN_MESH_PAGE_001|UI115|Funcional|Información|UI_STUDY_PLAN_MESH_PAGE
 UI_STUDY_PLAN_MESH_PAGE_002|UI116|Funcional|Información|UI_STUDY_PLAN_MESH_PAGE_002|Asignatura quitada del plan.
 UI_STUDY_PLAN_MESH_PAGE_003|UI117|Funcional|Información|UI_STUDY_PLAN_MESH_PAGE_003|Semestre {semestre} agregado al plan.
 UI_STUDY_PLAN_MESH_PAGE_004|UI118|Funcional|Información|UI_STUDY_PLAN_MESH_PAGE_004|Semestre {semestre} vacío eliminado.
+UI_STUDY_PLAN_MESH_PAGE_005|UI143|Funcional|Información|UI_STUDY_PLAN_MESH_PAGE_005|La asignatura quedó inactiva.
+UI_STUDY_PLAN_MESH_PAGE_006|UI144|Funcional|Información|UI_STUDY_PLAN_MESH_PAGE_006|La asignatura quedó activa.
 UI_SUBJECT_FORM_PAGE_001|UI119|Funcional|Información|UI_SUBJECT_FORM_PAGE_001|Asignatura registrada en el plan.
 UI_SUBJECT_FORM_PAGE_002|UI120|Funcional|Información|UI_SUBJECT_FORM_PAGE_002|Asignatura modificada.
 UI_TEACHER_CLAIMS_001|UI121|Funcional|Información|UI_TEACHER_CLAIMS_001|Reclamo procesado.

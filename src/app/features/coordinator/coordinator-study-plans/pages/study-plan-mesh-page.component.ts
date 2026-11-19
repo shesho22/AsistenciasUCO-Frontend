@@ -50,6 +50,9 @@ const MAX_SEMESTRES = 10;
           (associateSubject)="abrirAsociar()"
           (editSubject)="abrirEditarAsignatura($event)"
           (removeSubject)="quitarDelPlan($event)"
+          [estadoBloqueado]="cambiandoEstado()"
+          [idEstadoEnCurso]="idEstadoEnCurso()"
+          (toggleEstadoSubject)="pedirCambioEstado($event)"
         />
         @defer (when dialogoAsociarAbierto()) {
           <app-associate-subject-dialog
@@ -68,6 +71,17 @@ const MAX_SEMESTRES = 10;
             [destructive]="true"
             (confirmed)="confirmarQuitar()"
             (cancelled)="asignaturaAQuitar.set(null)"
+          />
+        }
+        @defer (when asignaturaACambiarEstado() !== null) {
+          <app-confirm-dialog
+            [isOpen]="asignaturaACambiarEstado() !== null"
+            [title]="confirmacionEstado().titulo"
+            [message]="confirmacionEstado().mensaje"
+            [confirmLabel]="confirmacionEstado().titulo"
+            [destructive]="confirmacionEstado().inactivar"
+            (confirmed)="confirmarCambioEstado()"
+            (cancelled)="asignaturaACambiarEstado.set(null)"
           />
         }
       } @else {
@@ -128,6 +142,37 @@ export class CoordinatorStudyPlanMeshPageComponent implements OnInit {
 
   dialogoAsociarAbierto = signal(false);
   asignaturaAQuitar = signal<AsignaturaPlanItem | null>(null);
+  /** HU074: asignatura a la que se le pide confirmar el cambio de estado. */
+  asignaturaACambiarEstado = signal<AsignaturaPlanItem | null>(null);
+  /** HU074: asignatura cuyo PATCH de estado está en curso (aria-busy en su acción). */
+  idEstadoEnCurso = signal<string | null>(null);
+  /**
+   * HU074 (doble envío): la acción de estado queda deshabilitada desde que se confirma hasta que termina la recarga de la
+   * malla (éxito o error). `recargarMalla` marca `listado.cargando` en el mismo tick en que se libera `idEstadoEnCurso`, así
+   * que no hay hueco entre el PATCH y la recarga. También se bloquea mientras la malla carga por otra causa: sus filas aún
+   * no muestran el estado real.
+   */
+  cambiandoEstado = computed(() => this.idEstadoEnCurso() !== null || this.listado.cargando());
+
+  /** HU074: textos del diálogo según el estado actual (sin estado informado se trata como activa). */
+  confirmacionEstado = computed(() => {
+    const asig = this.asignaturaACambiarEstado();
+    const nombre = asig?.nombre ?? '';
+    const inactivar = asig?.estaActivaAsignatura !== false;
+    return inactivar
+      ? {
+          inactivar,
+          titulo: 'Inactivar asignatura',
+          mensaje:
+            `¿Inactivar «${nombre}»? Mientras esté inactiva no podrá usarse para crear grupos ni asociarse a planes de estudio. ` +
+            'Los grupos que ya existen no cambian.',
+        }
+      : {
+          inactivar,
+          titulo: 'Activar asignatura',
+          mensaje: `¿Activar «${nombre}»? Volverá a estar disponible para crear grupos y asociarse a planes de estudio.`,
+        };
+  });
 
   ngOnInit(): void {
     const id = this.effectivePlanId();
@@ -251,6 +296,46 @@ export class CoordinatorStudyPlanMeshPageComponent implements OnInit {
       },
       error: (err) => this.mostrarRechazo(getApiErrorMessage(err)),
     });
+  }
+
+  /** HU074: pide confirmación (ConfirmDialogComponent) antes de activar o inactivar la asignatura. */
+  pedirCambioEstado(asig: AsignaturaPlanItem): void {
+    // Doble envío: mientras un cambio de estado o la recarga siguen en curso no se abre otro diálogo.
+    if (this.cambiandoEstado() || this.asignaturaACambiarEstado() !== null) return;
+    this.aviso.set(null);
+    this.asignaturaACambiarEstado.set(asig);
+  }
+
+  /**
+   * HU074: pide al backend el estado DESEADO (Inactivar → false, Activar → true; idempotente) y muestra ASI_011 / ASI_012
+   * de `mensajeUsuario` o, si no llega, el respaldo del catálogo de UI según el estado real devuelto. Los rechazos 409
+   * (ASI_009, ASI_006) se muestran con su mensaje. En ambos casos se relee la malla para ver el estado real.
+   */
+  confirmarCambioEstado(): void {
+    const asig = this.asignaturaACambiarEstado();
+    this.asignaturaACambiarEstado.set(null);
+    if (!asig || this.cambiandoEstado()) return;
+    const estaActiva = asig.estaActivaAsignatura === false;
+    this.idEstadoEnCurso.set(asig.id);
+    this.coordService.cambiarEstadoAsignatura(asig.id, estaActiva).subscribe({
+      next: (res) => {
+        const quedoActiva = res.datos?.estaActivaAsignatura ?? estaActiva;
+        this.toast.success(
+          res.mensajeUsuario || mensajeUi(quedoActiva ? 'UI_STUDY_PLAN_MESH_PAGE_006' : 'UI_STUDY_PLAN_MESH_PAGE_005')
+        );
+        this.terminarCambioEstado();
+      },
+      error: (err) => {
+        this.mostrarRechazo(getApiErrorMessage(err));
+        this.terminarCambioEstado();
+      },
+    });
+  }
+
+  /** HU074: libera la acción y relee la malla; `listado.cargando` mantiene el bloqueo hasta que la recarga termina. */
+  private terminarCambioEstado(): void {
+    this.recargarMalla();
+    this.idEstadoEnCurso.set(null);
   }
 
   private recargarMalla(): void {

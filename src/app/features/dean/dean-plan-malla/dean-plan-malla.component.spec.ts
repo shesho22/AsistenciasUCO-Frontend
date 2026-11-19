@@ -99,6 +99,23 @@ describe('DeanPlanMallaComponent (HU108, B2NM)', () => {
     expect(texto).toContain('Optativa');
     expect(texto).toContain('Compartida');
     expect(component.caracteres().map((c) => c.codigo)).toEqual(['OBL', 'OPT']);
+    expect(texto).not.toContain('Inactiva');
+  });
+
+  it('HU074 marca con la insignia Inactiva (solo lectura) la asignatura inactiva', () => {
+    crear();
+    http.expectOne(`${API}/decano/estructura`).flush({ exitoso: true, datos: estructura });
+    http
+      .expectOne(porUrl(urlMalla))
+      .flush(paginaApi([asignaturasApi[0], { ...asignaturasApi[1], estaActivaAsignatura: false }], 1, 9));
+    fixture.detectChanges();
+
+    const tarjetas = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('h3')).map(
+      (h) => h.parentElement?.parentElement?.textContent ?? ''
+    );
+    expect(tarjetas.filter((t) => t.includes('Inactiva')).length).toBe(1);
+    expect(tarjetas.find((t) => t.includes('Inactiva'))).toContain('Estructuras de Datos');
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-accion="estado-asignatura"]')).toBeNull();
   });
 
   it('el semestre, el carácter y la página se filtran en el servidor', () => {

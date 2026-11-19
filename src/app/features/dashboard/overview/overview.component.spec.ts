@@ -515,6 +515,70 @@ describe('OverviewComponent', () => {
       expect(component.isLoading()).toBeFalse();
     });
 
+    describe('encabezado (ajuste de la prueba en pantalla del 2026-11-19)', () => {
+      const hero = (el: HTMLElement) => el.querySelector('app-overview-hero') as HTMLElement;
+
+      it('sin facultad, el encabezado del decano no ofrece «Gestionar Coordinadores» ni promete gestionar la facultad', async () => {
+        const el = await crear('DECANO', []);
+        const h = hero(el);
+
+        expect(h.querySelector('[data-testid="hero-accion-decano-coordinadores"]')).toBeNull();
+        expect(h.querySelector('a[href="/app/decano/mi-facultad/coordinadores"]')).toBeNull();
+        expect(h.textContent).not.toContain('Gestionar Coordinadores');
+        expect(h.textContent).toContain('Decanatura — Sin entidad.');
+        expect(h.textContent).not.toContain('Gestiona los programas académicos');
+        expect(el.querySelector('[data-testid="decano-sin-facultad"]')).not.toBeNull();
+      });
+
+      it('con facultad, el encabezado del decano conserva «Gestionar Coordinadores» y la frase completa', async () => {
+        const el = await crear('DECANO', [{ rol: 'DECANO', nombreEntidad: 'Facultad de Ciencias' }]);
+        const enlace = hero(el).querySelector('[data-testid="hero-accion-decano-coordinadores"]');
+
+        expect(enlace?.getAttribute('href')).toBe('/app/decano/mi-facultad/coordinadores');
+        expect(hero(el).textContent).toContain('Gestiona los programas académicos');
+      });
+
+      it('sin programa, el encabezado del coordinador no ofrece «Gestionar Docentes» ni «Planes de Estudio y Malla»', async () => {
+        const el = await crear('COORDINADOR', []);
+        const h = hero(el);
+
+        expect(h.querySelector('[data-testid="hero-accion-coordinador-docentes"]')).toBeNull();
+        expect(h.querySelector('[data-testid="hero-accion-coordinador-planes"]')).toBeNull();
+        expect(h.textContent).not.toContain('Gestionar Docentes');
+        expect(h.textContent).not.toContain('Planes de Estudio y Malla');
+        expect(h.textContent).toContain('Coordinación Académica — Sin entidad.');
+        expect(h.textContent).not.toContain('Administra la planta docente');
+        expect(el.querySelector('[data-testid="coordinador-sin-programa"]')).not.toBeNull();
+      });
+
+      it('con programa, el encabezado del coordinador conserva sus dos acciones y la frase completa', async () => {
+        const el = await crear('COORDINADOR', [{ rol: 'COORDINADOR', nombreEntidad: 'Derecho' }]);
+        const h = hero(el);
+
+        expect(h.querySelector('[data-testid="hero-accion-coordinador-docentes"]')?.getAttribute('href')).toBe(
+          '/app/coordinador/programa/docentes'
+        );
+        expect(h.querySelector('[data-testid="hero-accion-coordinador-planes"]')?.getAttribute('href')).toBe(
+          '/app/coordinador/planes-estudio'
+        );
+        expect(h.textContent).toContain('Administra la planta docente');
+      });
+
+      it('si el perfil aún no informa vínculos no se presume la falta: el encabezado conserva las acciones', async () => {
+        const el = await crear('COORDINADOR', undefined);
+
+        expect(component.heroSinEntidad()).toBeFalse();
+        expect(hero(el).querySelector('[data-testid="hero-accion-coordinador-docentes"]')).not.toBeNull();
+      });
+
+      it('cuenta la entidad del rol activo: un vínculo de coordinador no cubre la facultad del decano', async () => {
+        const el = await crear('DECANO', [{ rol: 'COORDINADOR', nombreEntidad: 'Derecho' }]);
+
+        expect(component.heroSinEntidad()).toBeTrue();
+        expect(hero(el).querySelector('[data-testid="hero-accion-decano-coordinadores"]')).toBeNull();
+      });
+    });
+
     it('con su facultad en el perfil carga el panel del decano como siempre', async () => {
       const el = await crear('DECANO', [{ rol: 'DECANO', nombreEntidad: 'Facultad de Ciencias' }]);
 

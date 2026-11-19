@@ -142,6 +142,8 @@ export const MENSAJES_UI = {
   UI_STUDY_PLAN_MESH_PAGE_002: 'Asignatura quitada del plan.',
   UI_STUDY_PLAN_MESH_PAGE_003: 'Semestre {semestre} agregado al plan.',
   UI_STUDY_PLAN_MESH_PAGE_004: 'Semestre {semestre} vacío eliminado.',
+  UI_STUDY_PLAN_MESH_PAGE_005: 'La asignatura quedó inactiva.',
+  UI_STUDY_PLAN_MESH_PAGE_006: 'La asignatura quedó activa.',
   UI_SUBJECT_FORM_PAGE_001: 'Asignatura registrada en el plan.',
   UI_SUBJECT_FORM_PAGE_002: 'Asignatura modificada.',
   UI_TEACHER_CLAIMS_001: 'Reclamo procesado.',

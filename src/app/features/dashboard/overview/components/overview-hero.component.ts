@@ -37,10 +37,18 @@ import { UserRole } from '../../../../core/models/user.model';
               Panel de Control Institucional. Supervisa la estructura académica, decanaturas y auditoría del campus universitario.
             }
             @case ('DECANO') {
-              Decanatura — {{ department() }}. Gestiona los programas académicos, coordinadores asignados y el seguimiento de facultad.
+              @if (sinEntidadAsignada()) {
+                Decanatura — {{ department() }}.
+              } @else {
+                Decanatura — {{ department() }}. Gestiona los programas académicos, coordinadores asignados y el seguimiento de facultad.
+              }
             }
             @case ('COORDINADOR') {
-              Coordinación Académica — {{ department() }}. Administra la planta docente adscrita y consulta los planes de estudio del programa.
+              @if (sinEntidadAsignada()) {
+                Coordinación Académica — {{ department() }}.
+              } @else {
+                Coordinación Académica — {{ department() }}. Administra la planta docente adscrita y consulta los planes de estudio del programa.
+              }
             }
             @case ('DOCENTE') {
               Panel Docente. Gestiona tus asignaturas asignadas, realiza el control de asistencia en tiempo real y revisa las justificaciones de estudiantes.
@@ -65,32 +73,38 @@ import { UserRole } from '../../../../core/models/user.model';
               </a>
             }
             @case ('DECANO') {
-              <a routerLink="/app/decano/mi-facultad/coordinadores">
-                <app-button variant="accent" size="md">
-                  <svg class="w-4 h-4 mr-1.5 text-warm-950 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                  Gestionar Coordinadores
-                </app-button>
-              </a>
+              <!-- HU178: sin facultad, «Gestionar Coordinadores» solo llevaría al aviso; el aviso del panel lo explica. -->
+              @if (!sinEntidadAsignada()) {
+                <a routerLink="/app/decano/mi-facultad/coordinadores" data-testid="hero-accion-decano-coordinadores">
+                  <app-button variant="accent" size="md">
+                    <svg class="w-4 h-4 mr-1.5 text-warm-950 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    Gestionar Coordinadores
+                  </app-button>
+                </a>
+              }
             }
             @case ('COORDINADOR') {
-              <a routerLink="/app/coordinador/programa/docentes">
-                <app-button variant="accent" size="md">
-                  <svg class="w-4 h-4 mr-1.5 text-warm-950 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                  </svg>
-                  Gestionar Docentes
-                </app-button>
-              </a>
-              <a routerLink="/app/coordinador/planes-estudio">
-                <app-button variant="secondary" size="md">
-                  <svg class="w-4 h-4 mr-1.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
-                  Planes de Estudio y Malla
-                </app-button>
-              </a>
+              <!-- HU178: sin programa, estas acciones solo llevarían al aviso; el aviso del panel lo explica. -->
+              @if (!sinEntidadAsignada()) {
+                <a routerLink="/app/coordinador/programa/docentes" data-testid="hero-accion-coordinador-docentes">
+                  <app-button variant="accent" size="md">
+                    <svg class="w-4 h-4 mr-1.5 text-warm-950 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                    Gestionar Docentes
+                  </app-button>
+                </a>
+                <a routerLink="/app/coordinador/planes-estudio" data-testid="hero-accion-coordinador-planes">
+                  <app-button variant="secondary" size="md">
+                    <svg class="w-4 h-4 mr-1.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                    Planes de Estudio y Malla
+                  </app-button>
+                </a>
+              }
             }
             @case ('DOCENTE') {
               <a routerLink="/app/asistencia">
@@ -145,4 +159,9 @@ export class OverviewHeroComponent {
   institutionName = input<string>('Universidad Católica de Oriente');
   department = input<string | undefined>('');
   pendingClaimsCount = input<number | null>(0);
+  /**
+   * HU178: el rol activo (decano o coordinador) no tiene su facultad o programa. Oculta las acciones rápidas que solo
+   * llevarían al aviso y recorta la frase descriptiva para no prometer gestiones que no puede hacer.
+   */
+  sinEntidadAsignada = input<boolean>(false);
 }

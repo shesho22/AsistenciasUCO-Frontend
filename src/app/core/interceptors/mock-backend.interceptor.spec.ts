@@ -7,6 +7,7 @@ import { environment } from '../../../environments/environment';
 import { AuthService } from '../services/auth.service';
 import { mockBackendInterceptor } from './mock-backend.interceptor';
 import { mockStore } from '../mocks/mock-data-store';
+import { MOCK_ASIGNATURAS_PLAN } from '../mocks/role-management.mock';
 
 /** Sobre que devuelve el backend simulado; cada prueba lee solo estos campos. */
 interface Sobre {
@@ -670,6 +671,70 @@ describe('mockBackendInterceptor', () => {
     expect(plan.creditosCursando).toBe(3);
     expect(plan.totalSemestres).toBe(3);
   }));
+
+  describe('HU074 estado de la asignatura en el mock', () => {
+    let copia: typeof mockStore.asignaturasPlan;
+    const api = environment.apiUrl;
+    type Resultado = SobreDatos<{ estaActivaAsignatura: boolean }> & { mensajeUsuario?: string };
+
+    beforeEach(() => {
+      auth.setMockMode(true);
+      copia = structuredClone(mockStore.asignaturasPlan);
+      // Otra prueba (B2NM, desvincular) quita la primera asignatura del plan; se parte de la malla semilla.
+      mockStore.asignaturasPlan = structuredClone(MOCK_ASIGNATURAS_PLAN);
+    });
+
+    // Se restaura aunque falle una expectativa, para no contaminar las demás pruebas del mock.
+    afterEach(() => {
+      mockStore.asignaturasPlan = copia;
+    });
+
+    const malla = () => {
+      let pagina: SobrePagina<{ idAsignatura: string; estaActivaAsignatura: boolean }> | undefined;
+      httpClient
+        .get<SobrePagina<{ idAsignatura: string; estaActivaAsignatura: boolean }>>(`${api}/coordinador/planes-estudio/PLAN-SIS-2024/asignaturas`, { params: { tamano: 100 } })
+        .subscribe((r) => (pagina = r));
+      tick(300);
+      return pagina!.elementos.find((a) => a.idAsignatura === 'ASIG-01-02');
+    };
+    const pedir = (id: string, cuerpo: object) => {
+      let resultado: Resultado | undefined;
+      httpClient.patch<Resultado>(`${api}/coordinador/asignaturas/${id}/estado`, cuerpo).subscribe((r) => (resultado = r));
+      tick(300);
+      return resultado!;
+    };
+
+    it('deja el estado pedido, lo refleja en la malla y rechaza la compartida con ASI_006', fakeAsync(() => {
+      let resultado = pedir('ASIG-01-02', { estaActiva: false });
+      expect(resultado.datos.estaActivaAsignatura).toBeFalse();
+      expect(resultado.mensajeUsuario).toBe('La asignatura quedó inactiva.');
+      expect(malla()?.estaActivaAsignatura).toBeFalse();
+
+      resultado = pedir('ASIG-01-02', { estaActiva: true });
+      expect(resultado.datos.estaActivaAsignatura).toBeTrue();
+      expect(resultado.mensajeUsuario).toBe('La asignatura quedó activa.');
+      expect(malla()?.estaActivaAsignatura).toBeTrue();
+
+      let error: HttpErrorResponse | undefined;
+      httpClient.patch(`${api}/coordinador/asignaturas/ASIG-01-01/estado`, { estaActiva: false }).subscribe({ error: (e) => (error = e) });
+      tick(300);
+      expect(error?.status).toBe(409);
+      expect(error?.error.code).toBe('ASI_006');
+    }));
+
+    it('es idempotente: pedir dos veces el mismo estado no lo revierte', fakeAsync(() => {
+      pedir('ASIG-01-02', { estaActiva: false });
+      const segunda = pedir('ASIG-01-02', { estaActiva: false });
+      expect(segunda.datos.estaActivaAsignatura).toBeFalse();
+      expect(segunda.mensajeUsuario).toBe('La asignatura quedó inactiva.');
+      expect(malla()?.estaActivaAsignatura).toBeFalse();
+    }));
+
+    it('sin cuerpo alterna el estado, como el backend', fakeAsync(() => {
+      expect(pedir('ASIG-01-02', {}).datos.estaActivaAsignatura).toBeFalse();
+      expect(pedir('ASIG-01-02', {}).datos.estaActivaAsignatura).toBeTrue();
+    }));
+  });
 
   it('B2NM el mock responde páginas, asociables, carácter y programas del grupo con la forma del backend', fakeAsync(() => {
     auth.setMockMode(true);
