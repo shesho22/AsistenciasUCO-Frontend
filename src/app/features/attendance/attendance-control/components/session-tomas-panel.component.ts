@@ -1,11 +1,19 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
+import { HorasMinutosPipe } from '../../../../shared/pipes/horas-minutos.pipe';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { SessionTimeZoneService } from '../../../../core/services/session-timezone.service';
 import { TomaAsistencia, TomasSesion } from '../../../../core/models/toma-asistencia.model';
 import { detalleCancelacion, estaCancelada } from '../../../../core/models/sesion-estado.model';
 import { NotificacionToma, TomaAsistenciasComponent } from './toma-asistencias.component';
 import { ResumenSesionTomasComponent } from './resumen-sesion-tomas.component';
+import { TomaCierreDialogComponent } from './toma-cierre-dialog.component';
 
 const RESUMEN = 'resumen';
+
+/** ATA D4/F: minutos antes del cierre de la ventana en que se recuerda revisar las tomas (constante de presentación). */
+export const TOLERANCIA_MINUTOS = 15;
+
+/** Mayor retardo que admite `setTimeout`; un cierre más lejano no necesita recordatorio programado. */
+const MAXIMO_RETARDO_MS = 2_147_483_647;
 
 /**
  * UX de la toma: una toma = un panel. Con varias tomas se muestran como pestañas (con desplazamiento horizontal
@@ -16,7 +24,7 @@ const RESUMEN = 'resumen';
 @Component({
     selector: 'app-session-tomas-panel',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [TomaAsistenciasComponent, ResumenSesionTomasComponent],
+    imports: [HorasMinutosPipe, TomaAsistenciasComponent, ResumenSesionTomasComponent, TomaCierreDialogComponent],
     template: `
     <section
       class="superficie p-4 sm:p-5 space-y-4"
@@ -28,7 +36,7 @@ const RESUMEN = 'resumen';
           <div>
             <h3 class="font-serif font-bold text-lg text-warm-900">Tomas de asistencia</h3>
             <p class="text-xs text-warm-600">
-              {{ datos.tomas.length }} de {{ datos.maximoTomas }} tomas · {{ datos.horasSesion }} h de sesión
+              {{ datos.tomas.length }} de {{ datos.maximoTomas }} tomas · {{ datos.horasSesion | horasMinutos }} de sesión
               @if (cancelada()) {
                 · <strong class="text-warning-800">Cancelada</strong>
                 @if (detalle()) {
@@ -41,7 +49,7 @@ const RESUMEN = 'resumen';
             <button
               type="button"
               data-testid="nueva-toma"
-              (click)="nuevaToma.emit()"
+              (click)="solicitarNuevaToma()"
               [disabled]="!puedeAbrir()"
               class="min-h-[44px] px-5 rounded-xl bg-primary-700 text-white text-sm font-semibold hover:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -53,9 +61,19 @@ const RESUMEN = 'resumen';
           </div>
         </div>
 
+        @if (recordatorioCierre()) {
+          <p
+            class="text-xs font-medium rounded-xl px-3.5 py-2.5 border text-warning-900 bg-warning-50 border-warning-200"
+            role="status"
+            data-testid="recordatorio-cierre"
+          >
+            La sesión termina a las {{ horaCierre() }}: revisa y cierra las tomas. Al terminar se cerrarán solas y quien no tenga registro quedará con falta.
+          </p>
+        }
+
         @if (datos.tomas.length > 1) {
           <div
-            class="flex gap-1 overflow-x-auto border-b border-warm-200 px-1"
+            class="flex gap-1 overflow-x-auto sm:flex-wrap sm:overflow-visible border-b border-warm-200 px-1"
             role="tablist"
             aria-label="Tomas de la sesión"
             data-testid="tabs-tomas"
@@ -133,6 +151,17 @@ const RESUMEN = 'resumen';
             <app-resumen-sesion-tomas [tomas]="datos.tomas" [sesionId]="datos.idSesion" />
           </div>
         }
+        @if (confirmandoNueva() && tomaAbierta(); as abierta) {
+          <div data-testid="nueva-toma-dialogo">
+            <app-toma-cierre-dialog
+              modo="nueva"
+              [numeroToma]="abierta.numero"
+              [sinGuardar]="(sinGuardar()[abierta.idToma] ?? 0) > 0"
+              (confirmar)="confirmarNueva()"
+              (cancelar)="confirmandoNueva.set(false)"
+            />
+          </div>
+        }
       } @else {
         <div class="h-16 rounded-xl bg-warm-100 animate-pulse" data-testid="panel-tomas-cargando"></div>
       }
@@ -154,6 +183,9 @@ export class SessionTomasPanelComponent {
   private readonly seleccion = signal<string | null>(null);
   protected readonly sinGuardar = signal<Readonly<Record<string, number | undefined>>>({});
   private tomasPrevias = 0;
+  /** ATA F: se activa a `TOLERANCIA_MINUTOS` del cierre de la ventana. */
+  protected readonly recordatorioCierre = signal(false);
+  private temporizadorRecordatorio: ReturnType<typeof setTimeout> | null = null;
 
   protected readonly cancelada = computed(() => estaCancelada({ estado: this.tomasSesion()?.estado }));
   protected readonly detalle = computed(() => detalleCancelacion(this.tomasSesion()?.cancelacion));
@@ -172,11 +204,16 @@ export class SessionTomasPanelComponent {
     const datos = this.tomasSesion();
     if (!datos) return null;
     if (this.cancelada()) return 'La sesión está cancelada; no se pueden abrir tomas.';
-    if (datos.tomas.some((t) => t.estado === 'ABIERTA')) return 'Hay una toma abierta; ciérrala para abrir otra.';
     if (datos.tomas.length >= datos.maximoTomas) return `Se alcanzó el máximo de ${datos.maximoTomas} tomas por sesión.`;
     if (!datos.ventana.abierta) return 'La ventana de asistencia de la sesión está cerrada.';
     return null;
   });
+
+  protected readonly tomaAbierta = computed(() => this.tomasSesion()?.tomas.find((t) => t.estado === 'ABIERTA') ?? null);
+  /** ATA D9: confirmación previa cuando "Nueva toma" va a cerrar la toma abierta. */
+  protected readonly confirmandoNueva = signal(false);
+
+  protected readonly horaCierre = computed(() => this.zona.formatTemporal(this.tomasSesion()?.ventana.cierreUtc, 'time'));
 
   protected readonly puedeAbrir = computed(() => this.tomasSesion() !== null && this.motivo() === null && !this.abriendo());
 
@@ -189,10 +226,58 @@ export class SessionTomasPanelComponent {
         this.tomasPrevias = cantidad;
       });
     });
+
+    // Si la toma abierta desaparece (cierre automático o de otro dispositivo), la confirmación pendiente ya no aplica.
+    effect(() => {
+      if (!this.tomaAbierta()) untracked(() => this.confirmandoNueva.set(false));
+    });
+
+    // Recordatorio de cierre: un único setTimeout programado al instante en que empieza el aviso (sin polling).
+    effect(() => {
+      const cierre = this.ventanaAbierta() ? (this.tomasSesion()?.ventana.cierreUtc ?? null) : null;
+      untracked(() => this.programarRecordatorio(cierre));
+    });
+    inject(DestroyRef).onDestroy(() => this.limpiarRecordatorio());
+  }
+
+  private programarRecordatorio(cierreUtc: string | null): void {
+    this.limpiarRecordatorio();
+    this.recordatorioCierre.set(false);
+    const cierre = cierreUtc ? Date.parse(cierreUtc) : Number.NaN;
+    if (Number.isNaN(cierre)) return;
+    const faltante = cierre - Date.now();
+    if (faltante <= 0) return;
+    const umbral = TOLERANCIA_MINUTOS * 60_000;
+    if (faltante <= umbral) {
+      this.recordatorioCierre.set(true);
+      return;
+    }
+    const espera = faltante - umbral;
+    if (espera > MAXIMO_RETARDO_MS) return;
+    this.temporizadorRecordatorio = setTimeout(() => {
+      this.temporizadorRecordatorio = null;
+      this.recordatorioCierre.set(true);
+    }, espera);
+  }
+
+  private limpiarRecordatorio(): void {
+    if (this.temporizadorRecordatorio !== null) clearTimeout(this.temporizadorRecordatorio);
+    this.temporizadorRecordatorio = null;
   }
 
   protected horaDe(toma: TomaAsistencia): string {
     return this.zona.formatTemporal(toma.fechaPuntoControlUtc, 'time');
+  }
+
+  /** Con una toma abierta pide confirmación (el servidor la cierra al abrir la nueva); sin ella abre directo. */
+  protected solicitarNuevaToma(): void {
+    if (this.tomaAbierta()) this.confirmandoNueva.set(true);
+    else this.nuevaToma.emit();
+  }
+
+  protected confirmarNueva(): void {
+    this.confirmandoNueva.set(false);
+    this.nuevaToma.emit();
   }
 
   protected seleccionar(id: string): void {

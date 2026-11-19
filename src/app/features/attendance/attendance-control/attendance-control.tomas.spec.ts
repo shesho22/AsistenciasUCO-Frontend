@@ -157,6 +157,39 @@ describe('AttendanceControlComponent tomas (CULM-001 B.2)', () => {
     expect(qrService.abrirQr).not.toHaveBeenCalled();
   });
 
+  it('ATA D9 si el servidor cerro la toma anterior, el aviso dice cuantos ausentes se marcaron y la toma nueva', () => {
+    const c = entrar();
+    tomaService.abrirToma.and.returnValue(of({
+      exitoso: true,
+      datos: toma({ numero: 3, tomaCerradaAnterior: { idToma: 'toma-prev', numero: 2, totalAusentesMarcados: 5 } }),
+    }));
+    c.onModoElegido('MANUAL');
+    expect(c.toastType()).toBe('success');
+    expect(c.toastMessage()).toBe('Se cerró la toma 2 (5 ausentes) y se abrió la toma 3.');
+    expect(c.showToast()).toBeTrue();
+  });
+
+  it('ATA D9 con un solo ausente marcado usa el singular', () => {
+    const c = entrar();
+    tomaService.abrirToma.and.returnValue(of({
+      exitoso: true,
+      datos: toma({ numero: 2, tomaCerradaAnterior: { idToma: 'toma-prev', numero: 1, totalAusentesMarcados: 1 } }),
+    }));
+    c.onModoElegido('MANUAL');
+    expect(c.toastMessage()).toBe('Se cerró la toma 1 (1 ausente) y se abrió la toma 2.');
+  });
+
+  it('ATA D9 sin toma cerrada anterior (null o ausente) el aviso es el de apertura normal', () => {
+    const c = entrar();
+    tomaService.abrirToma.and.returnValue(of({ exitoso: true, datos: toma({ numero: 1, tomaCerradaAnterior: null }) }));
+    c.onModoElegido('MANUAL');
+    expect(c.toastMessage()).toBe('Se abrió la toma 1.');
+    tomaService.abrirToma.and.returnValue(of({ exitoso: true, datos: toma({ numero: 2 }) }));
+    c.onModoElegido('MANUAL');
+    expect(c.toastMessage()).toBe('Se abrió la toma 2.');
+    expect(c.toastType()).toBe('success');
+  });
+
   it('B2-F-09 elegir modo QR abre la toma, pide el QR y muestra la proyeccion', () => {
     const c = entrar();
     tomaService.abrirToma.and.returnValue(of({ exitoso: true, datos: toma({ modo: 'QR' }) }));

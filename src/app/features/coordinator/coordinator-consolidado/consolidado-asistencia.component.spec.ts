@@ -190,16 +190,16 @@ describe('ConsolidadoAsistenciaComponent (HU061)', () => {
     const el = (f: ComponentFixture<ConsolidadoAsistenciaComponent>) => f.nativeElement as HTMLElement;
     const paginaVacia = { elementos: [], numeroPagina: 1, tamanoPagina: 50, totalElementos: 0, totalPaginas: 0 };
 
-    it('muestra una sola cifra de inasistencia con su base: «3,46 % · 2,25 h de 65 h»', () => {
+    it('muestra una sola cifra de inasistencia con su base: «3,46 % · 2 h 15 min de 65 h»', () => {
       const fixture = crear(false);
       listar(fixture, 'coordinador', [{ ...grupo('ASG-1', 'Cálculo', 'DOC-1'), porcentajeInasistencia: 3.46, horasDictadas: 65 }]);
-      expect(el(fixture).querySelector('[data-testid="inasistencia"]')?.textContent?.trim()).toBe('3,46 % · 2,25 h de 65 h');
+      expect(el(fixture).querySelector('[data-testid="inasistencia"]')?.textContent?.trim()).toBe('3,46 % · 2 h 15 min de 65 h');
     });
 
-    it('sin horas dictadas la base es 0 h y no se inventa otra cifra', () => {
+    it('sin horas dictadas la base es 0 min y no se inventa otra cifra', () => {
       const fixture = crear(false);
       listar(fixture, 'coordinador', [{ ...grupo('ASG-1', 'Cálculo', null), porcentajeInasistencia: 0, horasDictadas: 0 }]);
-      expect(el(fixture).querySelector('[data-testid="inasistencia"]')?.textContent?.trim()).toBe('0 % · 0 h de 0 h');
+      expect(el(fixture).querySelector('[data-testid="inasistencia"]')?.textContent?.trim()).toBe('0 % · 0 min de 0 min');
     });
 
     it('el decano expande una fila y ve las sesiones del grupo desde GET /decano/sesiones?idGrupo=', () => {

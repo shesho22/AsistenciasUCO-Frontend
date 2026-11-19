@@ -166,7 +166,8 @@ const OPCIONES_ESTADO: readonly EstadoRegistroToma[] = ['AN', 'SJC', 'EX'];
         </button>
       </div>
 
-      @if (totalPorValidar() > 0) {
+      <!-- ATA D4: con la sesión terminada ya no se corrige aquí (solo por reclamo); el aviso no pide hacerlo. -->
+      @if (totalPorValidar() > 0 && toma().esEditable) {
         <div
           class="rounded-xl border border-warning-200 bg-warning-50 px-3.5 py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
           role="status"
@@ -251,6 +252,7 @@ const OPCIONES_ESTADO: readonly EstadoRegistroToma[] = ['AN', 'SJC', 'EX'];
                       <span [attr.data-testid]="'hora-' + f.estudianteId">· {{ f.hora }}</span>
                     }
                   </p>
+                  <p class="text-xs font-medium text-info-700" aria-live="polite" [attr.data-testid]="'ya-registrada-' + f.estudianteId">{{ yaRegistrada().has(f.estudianteId) ? 'Ya registrada, sin cambios por guardar' : '' }}</p>
                   @if (f.porValidar) {
                     <span
                       class="inline-block mt-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-warning-100 text-warning-900"
@@ -316,6 +318,8 @@ export class TomaAsistenciasComponent {
   /** Pendientes de validar de la toma, por estudiante (vienen del backend). */
   private readonly faltantes = signal<ReadonlyMap<string, FaltanteToma>>(new Map());
   private readonly locales = signal<ReadonlyMap<string, EstadoRegistroToma>>(new Map());
+  /** ATA D8: estudiantes cuyo estado ya guardado se volvió a pulsar sin cambio. */
+  protected readonly yaRegistrada = signal<ReadonlySet<string>>(new Set());
   protected readonly cargando = signal(false);
   protected readonly guardando = signal(false);
   protected readonly error = signal<string | null>(null);
@@ -331,15 +335,13 @@ export class TomaAsistenciasComponent {
   /** Explica hasta cuándo se puede corregir la toma, o por qué ya no. Una toma abierta no necesita aviso. */
   protected readonly avisoEdicion = computed<string | null>(() => {
     const toma = this.toma();
+    if (!toma.esEditable) return 'La sesión terminó: las tomas quedaron cerradas. Las correcciones se hacen por reclamo.';
+    if (toma.estado !== 'CERRADA') return null;
+    // ATA D4: `editableHastaUtc` es el fin de la ventana de la sesión (todas sus tomas se corrigen hasta entonces).
     const hasta = toma.editableHastaUtc ? this.zona.formatTemporal(toma.editableHastaUtc, 'time') : null;
-    if (toma.esEditable) {
-      if (toma.estado !== 'CERRADA') return null;
-      return hasta ? `Puedes corregirla hasta las ${hasta}.` : 'Puedes corregirla hasta que abras la siguiente toma.';
-    }
-    if (hasta) return `El plazo para corregir esta toma terminó a las ${hasta}. Las correcciones se hacen por reclamo.`;
-    return toma.estado === 'CERRADA'
-      ? 'Esta toma ya no se puede corregir porque se abrió la toma siguiente. Las correcciones se hacen por reclamo.'
-      : 'Esta toma no admite cambios en este momento: la lista es solo de consulta.';
+    return hasta
+      ? `Puedes corregir las tomas de esta sesión hasta las ${hasta}.`
+      : 'Puedes corregir las tomas de esta sesión mientras la sesión siga abierta.';
   });
 
   /** Acciones secundarias de la toma (la barra fija conserva solo marcar todos presentes y Guardar). */
@@ -457,8 +459,11 @@ export class TomaAsistenciasComponent {
   /** La etiqueta sale de las banderas del backend; al guardar, la recarga quita a quien ya quedó presente. */
   private motivoPorValidar(faltante: FaltanteToma | undefined): string | null {
     if (!faltante) return null;
-    if (faltante.marcadoAlCerrar) return 'Falta al cerrar · por validar';
-    return faltante.tieneRegistro ? 'Por validar' : 'Sin lectura QR/PIN · por validar';
+    // ATA D4: si la toma ya no admite cambios, la fila solo explica el motivo (no invita a validar).
+    const sufijo = this.toma().esEditable ? ' · por validar' : '';
+    if (faltante.marcadoAlCerrar) return `Falta al cerrar${sufijo}`;
+    if (faltante.tieneRegistro) return this.toma().esEditable ? 'Por validar' : null;
+    return `Sin lectura QR/PIN${sufijo}`;
   }
 
   private origenDe(registro: AsistenciaToma): string | null {
@@ -468,6 +473,13 @@ export class TomaAsistenciasComponent {
 
   protected fijar(estudianteId: string, estado: EstadoRegistroToma): void {
     if (this.bloqueado()) return;
+    // ATA D8: pulsar el estado ya guardado, sin cambio local, no genera pendiente: se avisa en la propia fila.
+    const guardado = this.registros().find((r) => r.estudianteId === estudianteId)?.estado;
+    if (guardado === estado && !this.locales().has(estudianteId)) {
+      this.yaRegistrada.set(new Set([estudianteId]));
+      return;
+    }
+    this.yaRegistrada.set(new Set());
     this.aplicar([[estudianteId, estado]]);
   }
 
@@ -556,7 +568,7 @@ export class TomaAsistenciasComponent {
         error: (err: unknown) => {
           this.notificacion.emit({ tipo: 'error', texto: getApiErrorMessage(err) || 'No fue posible guardar la asistencia.' });
           const codigo = getApiErrorCode(err);
-          if (isAttendanceWindowErrorCode(codigo) || codigo === 'TOM_012') {
+          if (isAttendanceWindowErrorCode(codigo)) {
             // El backend es la autoridad temporal: lo marcado vuelve al estado persistido.
             this.locales.set(new Map());
             this.actualizado.emit();

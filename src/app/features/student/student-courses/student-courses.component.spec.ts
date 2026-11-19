@@ -511,7 +511,7 @@ describe('StudentCoursesComponent', () => {
       expect(texto).toContain('Materias Inscritas');
       expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="resumen-total-materias"]')?.textContent?.trim()).toBe('3');
       expect(texto).toContain('2');
-      expect(texto).toContain('4.5 h');
+      expect(texto).toContain('4 h 30 min');
     });
 
     it('si la consulta falla queda en null: las tarjetas dicen "No disponible", nunca cero', () => {
@@ -693,9 +693,21 @@ describe('StudentCoursesComponent', () => {
     expect(toastSpy.error).toHaveBeenCalledWith('Solo se puede retirar una solicitud de revisión pendiente.');
   });
 
-  it('B2-F-17 "Registrar asistencia con PIN" lleva a /app/asistencia/pin (F-EST-005, F-EST-017)', () => {
+  it('B2-F-17 "Registrar asistencia con PIN" abre la ventana emergente del PIN sin salir de Mis Materias (F-EST-005, F-EST-017)', () => {
     component.irARegistroConPin();
-    expect(routerSpy.navigate).toHaveBeenCalledOnceWith(['/app/asistencia/pin']);
+    expect(component.modalAsistenciaPinVisible()).toBeTrue();
+    expect(routerSpy.navigate).not.toHaveBeenCalled();
+  });
+
+  it('HU176: registrar con PIN recarga las sesiones solo si hay una materia abierta en el detalle', () => {
+    const cargar = spyOn(component, 'cargarSesiones');
+    component.alRegistrarAsistenciaConPin();
+    expect(cargar).not.toHaveBeenCalled();
+
+    component.selectedMateria.set(mockMaterias[0]);
+    component.vistaActual.set('DETALLE');
+    component.alRegistrarAsistenciaConPin();
+    expect(cargar).toHaveBeenCalledOnceWith(mockMaterias[0]);
   });
 
   it('HU176B: registra la matrícula con el PIN de 6 dígitos usando el servicio de matrícula por QR', () => {
@@ -904,7 +916,7 @@ describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', 
   it('CIERRE-W2B: el tablero muestra las cifras del backend y la paginacion pide cada pagina al servidor', () => {
     cargar([materiaApi()], { totalMaterias: 1, materiasEnRiesgo: 1, totalHorasFalta: 3.5, totalCreditos: 3 });
     expect(fixture.nativeElement.querySelector('[data-testid="resumen-total-materias"]').textContent.trim()).toBe('1');
-    expect(texto()).toContain('3.5 h');
+    expect(texto()).toContain('3 h 30 min');
     expect(fixture.nativeElement.querySelector('[data-testid="riesgo-no-disponible"]')).toBeNull();
 
     clickTexto('Ver Detalle');
@@ -1175,6 +1187,98 @@ describe('StudentCoursesComponent — enlace desde Mis Alertas (CERT-CULM001)', 
     await crear({ materia: 'no-es-uuid', grupo: GRUPO_ID }, [materiaApi()]);
     expect(component.selectedMateria()).toBeNull();
     http.expectNone((r) => r.url.endsWith('/sesiones'));
+  });
+
+  describe('ATA D10: enlace a la radicación de una toma (?sesion&toma)', () => {
+    const SESION_ID = 'a0000000-0000-4000-8000-000000000032';
+    const OTRA_SESION_ID = 'a0000000-0000-4000-8000-000000000031';
+    const TOMA_ID = 'b0000000-0000-4000-8000-000000000003';
+    const tomaApi = (over: Record<string, unknown> = {}) => ({
+      idToma: TOMA_ID, numero: 3, fechaPuntoControlUtc: '2026-11-18T20:21:24Z', estado: 'AUSENTE', reclamable: true, ...over,
+    });
+    const sesionApi = (id: string, tomas: unknown[]) => ({
+      id, idGrupo: GRUPO_ID, numero: 32, fechaHoraInicioUtc: '2026-11-18T19:19:00Z', fechaHoraFinUtc: '2026-11-18T21:19:00Z',
+      estadoAsistencia: 'PARCIAL', reclamable: true, plazoJustificacionVigente: true, tomas,
+    });
+    const enlace = { materia: ASIGNATURA_ID, grupo: GRUPO_ID, sesion: SESION_ID, toma: TOMA_ID };
+    /** Abrir la radicación reintenta la configuración de reclamos si no se cargó (aquí llegó `null`). */
+    const atenderConfiguracionReclamos = () =>
+      http.match((r) => r.url.includes('/configuracion/reclamos')).forEach((req) => req.flush({ exitoso: true, datos: null }));
+
+    it('con la sesión en la primera página abre directo el formulario de esa toma', async () => {
+      await crear(enlace, [materiaApi()]);
+      http.expectOne(esSesiones(ASIGNATURA_ID)).flush({ exitoso: true, datos: [sesionApi(SESION_ID, [tomaApi()])], total: 1 });
+
+      expect(component.vistaActual()).toBe('RECLAMO');
+      expect(component.sesionReclamar()?.id).toBe(SESION_ID);
+      expect(component.tomaReclamar()?.idToma).toBe(TOMA_ID);
+      http.expectNone((r) => r.url.endsWith('/sesiones'));
+      atenderConfiguracionReclamos();
+    });
+
+    it('si la sesión no está en la página cargada la busca entre todas las del grupo, sin paginar', async () => {
+      await crear(enlace, [materiaApi()]);
+      http.expectOne(esSesiones(ASIGNATURA_ID)).flush({ exitoso: true, datos: [sesionApi(OTRA_SESION_ID, [])], total: 40 });
+      expect(component.vistaActual()).toBe('DETALLE');
+
+      const todas = http.expectOne(esSesiones(ASIGNATURA_ID));
+      expect(todas.request.params.has('pagina')).toBeFalse();
+      expect(todas.request.params.has('tamano')).toBeFalse();
+      expect(todas.request.params.get('grupoId')).toBe(GRUPO_ID);
+      todas.flush({ exitoso: true, datos: [sesionApi(OTRA_SESION_ID, []), sesionApi(SESION_ID, [tomaApi()])], total: 2 });
+
+      expect(component.vistaActual()).toBe('RECLAMO');
+      expect(component.tomaReclamar()?.idToma).toBe(TOMA_ID);
+      atenderConfiguracionReclamos();
+    });
+
+    it('una toma que ya no es reclamable deja al estudiante en el detalle', async () => {
+      await crear(enlace, [materiaApi()]);
+      http.expectOne(esSesiones(ASIGNATURA_ID)).flush({ exitoso: true, datos: [sesionApi(SESION_ID, [tomaApi({ reclamable: false })])], total: 1 });
+
+      expect(component.vistaActual()).toBe('DETALLE');
+      expect(component.tomaReclamar()).toBeNull();
+    });
+
+    it('si la sesión no aparece en ningún lado o la búsqueda falla, queda el detalle', async () => {
+      await crear(enlace, [materiaApi()]);
+      http.expectOne(esSesiones(ASIGNATURA_ID)).flush({ exitoso: true, datos: [], total: 0 });
+      http.expectOne(esSesiones(ASIGNATURA_ID)).flush({ exitoso: true, datos: [sesionApi(OTRA_SESION_ID, [])], total: 1 });
+      expect(component.vistaActual()).toBe('DETALLE');
+
+      TestBed.resetTestingModule();
+      await crear(enlace, [materiaApi()]);
+      http.expectOne(esSesiones(ASIGNATURA_ID)).flush({ exitoso: true, datos: [], total: 0 });
+      http.expectOne(esSesiones(ASIGNATURA_ID)).flush({ mensaje: 'falla' }, { status: 500, statusText: 'Error' });
+      expect(component.vistaActual()).toBe('DETALLE');
+    });
+
+    it('si el estudiante sale del detalle antes de la búsqueda completa, no abre el formulario', async () => {
+      await crear(enlace, [materiaApi()]);
+      http.expectOne(esSesiones(ASIGNATURA_ID)).flush({ exitoso: true, datos: [], total: 0 });
+      component.volverALista();
+      http.expectOne(esSesiones(ASIGNATURA_ID)).flush({ exitoso: true, datos: [sesionApi(SESION_ID, [tomaApi()])], total: 1 });
+
+      expect(component.vistaActual()).not.toBe('RECLAMO');
+      expect(component.tomaReclamar()).toBeNull();
+    });
+
+    it('identificadores inválidos de sesión o toma solo abren el detalle', async () => {
+      await crear({ ...enlace, toma: 'no-es-uuid' }, [materiaApi()]);
+      http.expectOne(esSesiones(ASIGNATURA_ID)).flush({ exitoso: true, datos: [sesionApi(SESION_ID, [tomaApi()])], total: 1 });
+      expect(component.vistaActual()).toBe('DETALLE');
+      http.expectNone((r) => r.url.endsWith('/sesiones'));
+    });
+
+    it('el enlace se usa una sola vez: recargar las sesiones no reabre el formulario', async () => {
+      await crear(enlace, [materiaApi()]);
+      http.expectOne(esSesiones(ASIGNATURA_ID)).flush({ exitoso: true, datos: [sesionApi(SESION_ID, [tomaApi()])], total: 1 });
+      atenderConfiguracionReclamos();
+      component.volverADetalle();
+      component.cargarSesiones(component.selectedMateria()!);
+      http.expectOne(esSesiones(ASIGNATURA_ID)).flush({ exitoso: true, datos: [sesionApi(SESION_ID, [tomaApi()])], total: 1 });
+      expect(component.vistaActual()).toBe('DETALLE');
+    });
   });
 
   it('el enlace se usa una sola vez: recargar las materias no reabre el detalle', async () => {

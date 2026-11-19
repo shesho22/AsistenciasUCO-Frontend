@@ -33,6 +33,18 @@ describe('ActionMenuComponent (CULM-001, patron "Mas acciones")', () => {
 
   beforeEach(() => TestBed.configureTestingModule({ imports: [ActionMenuComponent] }));
 
+  it('alinea el panel al borde derecho por defecto y al izquierdo con alineacion="start"', () => {
+    crear();
+    abrir();
+    expect(q('[role="menu"]')!.className).toContain('right-0');
+    expect(q('[role="menu"]')!.className).not.toContain('left-0');
+
+    crear({ alineacion: 'start' });
+    abrir();
+    expect(q('[role="menu"]')!.className).toContain('left-0');
+    expect(q('[role="menu"]')!.className).not.toContain('right-0');
+  });
+
   it('declara OnPush', () => {
     const meta = (ActionMenuComponent as unknown as { ɵcmp: { onPush: boolean } }).ɵcmp;
     expect(meta.onPush).toBeTrue();

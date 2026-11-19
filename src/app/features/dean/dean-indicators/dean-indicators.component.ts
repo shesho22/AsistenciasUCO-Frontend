@@ -1,5 +1,5 @@
+import { HorasMinutosPipe } from '../../../shared/pipes/horas-minutos.pipe';
 import { KpiCardComponent } from '../../../shared/components/kpi-card/kpi-card.component';
-import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, inject, input, signal } from '@angular/core';
 import { DeanIndicatorsService } from '../../../core/services/dean-indicators.service';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
@@ -13,7 +13,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
 
 @Component({
     selector: 'app-dean-indicators',
-    imports: [PageHeaderComponent, KpiCardComponent, DecimalPipe, PaginationComponent, SinEntidadAsignadaComponent, ErrorCargaComponent],
+    imports: [PageHeaderComponent, KpiCardComponent, HorasMinutosPipe, PaginationComponent, SinEntidadAsignadaComponent, ErrorCargaComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
     <section class="space-y-6">
@@ -46,7 +46,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
                   <span class="font-medium">{{ p.nombrePrograma }}@if (!p.estaActivoPrograma) { <span class="ml-2 text-xs text-neutral-500">Inactivo</span> }</span>
                   <span>{{ formatoPorcentaje(p.porcentajeAusentismo) }} · {{ p.totalEstudiantes }} estudiantes</span>
                 </div>
-                <p class="text-xs text-neutral-500">{{ p.horasFalta | number: '1.0-2' }} h de falta sobre {{ p.horasDictadas | number: '1.0-2' }} h dictadas</p>
+                <p class="text-xs text-neutral-500">{{ p.horasFalta | horasMinutos }} de falta sobre {{ p.horasDictadas | horasMinutos }} dictadas</p>
                 <div class="h-3 w-full rounded bg-neutral-100">
                   <div class="h-3 rounded bg-danger-500" data-testid="barra-ausentismo" [style.width]="anchoBarra(p.porcentajeAusentismo)"></div>
                 </div>

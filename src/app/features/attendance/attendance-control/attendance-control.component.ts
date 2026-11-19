@@ -228,7 +228,6 @@ type StudentEnrollmentField =
             [qr]="q"
             [grupoId]="selectedCourseId()"
             [titulo]="tituloProyeccion()"
-            (dejarDeProyectar)="dejarDeProyectar()"
             (cerrarToma)="solicitarCierreToma()"
           />
         }
@@ -402,11 +401,11 @@ export class AttendanceControlComponent {
     void this.router?.navigate(['/app/docente/grupos']);
   }
 
-  /** HU051: el hub del grupo vive en la pantalla de grupos del docente. */
+  /** HU051 / ATA D9: "Padrón y retiros" abre directo la pestaña Matrícula del grupo del docente. */
   irAPadron(): void {
     const courseId = this.selectedCourseId();
     if (!courseId) return;
-    void this.router?.navigate(["/app/docente/grupos"], { queryParams: { grupo: courseId } });
+    void this.router?.navigate(["/app/docente/grupos"], { queryParams: { grupo: courseId, pestana: 'ESTUDIANTES' } });
   }
 
   irABandejaGeneralReclamos(): void {
@@ -430,10 +429,20 @@ export class AttendanceControlComponent {
       .subscribe({
         next: (res) => {
           this.cargarTomas(sesionId);
+          this.avisarAperturaToma(res.datos);
           if (modo === 'QR') this.proyectarQr(res.datos);
         },
         error: (err: unknown) => this.mostrarError(err, 'No fue posible abrir la toma.'),
       });
+  }
+
+  /** ATA D9: el servidor informa si cerró la toma anterior; el cliente solo presenta esas cifras. */
+  private avisarAperturaToma(nueva: TomaAsistencia): void {
+    const anterior = nueva.tomaCerradaAnterior;
+    const texto = anterior
+      ? `Se cerró la toma ${anterior.numero} (${anterior.totalAusentesMarcados} ${anterior.totalAusentesMarcados === 1 ? 'ausente' : 'ausentes'}) y se abrió la toma ${nueva.numero}.`
+      : `Se abrió la toma ${nueva.numero}.`;
+    this.mostrarNotificacion({ tipo: 'success', texto });
   }
 
   onSeleccionarToma(toma: TomaAsistencia): void {

@@ -1,5 +1,6 @@
 import { ApplicationConfig, EnvironmentInjector, ErrorHandler, provideBrowserGlobalErrorListeners, provideZoneChangeDetection, inject, provideAppInitializer } from '@angular/core';
-import { provideRouter, withComponentInputBinding } from '@angular/router';
+import { provideRouter, withComponentInputBinding, withPreloading } from '@angular/router';
+import { PrecargaPorRolStrategy } from './core/routing/precarga-por-rol.strategy';
 import { provideHttpClient, withInterceptors, withXsrfConfiguration, withXhr } from '@angular/common/http';
 import { routes } from './app.routes';
 import { environment } from '../environments/environment';
@@ -39,7 +40,8 @@ export const appConfig: ApplicationConfig = {
     // VAL OBS-14: errores no capturados (incluidos los de ventana y promesas) pasan por el manejador global.
     provideBrowserGlobalErrorListeners(),
     { provide: ErrorHandler, useClass: GlobalErrorHandler },
-    provideRouter(routes, withComponentInputBinding()),
+    // Precarga en segundo plano solo las pantallas del rol con sesión (rendimiento; la autorización sigue en guards y backend).
+    provideRouter(routes, withComponentInputBinding(), withPreloading(PrecargaPorRolStrategy)),
     provideHttpClient(withXhr(), 
       withInterceptors([
         correlationInterceptor,

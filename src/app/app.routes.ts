@@ -304,6 +304,16 @@ export const routes: Routes = [
           ),
       },
       {
+        // ATA D6: la bandeja de solicitudes de sesión sale de «Asistencia» y tiene su propia entrada de menú.
+        path: 'coordinador/solicitudes-sesion',
+        canActivate: [roleGuard, coordinadorConProgramaGuard],
+        data: { roles: ['COORDINADOR'] },
+        loadComponent: () =>
+          import('./features/coordinator/coordinator-solicitudes-sesion/coordinator-solicitudes-sesion-page.component').then(
+            (m) => m.CoordinatorSolicitudesSesionPageComponent
+          ),
+      },
+      {
         // HU178: aviso único del coordinador sin programa asignado (destino de coordinadorConProgramaGuard).
         path: 'coordinador/sin-programa',
         canActivate: [roleGuard],
@@ -405,6 +415,16 @@ export const routes: Routes = [
           ),
       },
       {
+        // ATA D6: solicitudes de sesión extraordinaria del docente (solo lectura).
+        path: 'docente/solicitudes-sesion',
+        canActivate: [roleGuard],
+        data: { roles: ['DOCENTE'] },
+        loadComponent: () =>
+          import('./features/teacher/teacher-solicitudes-sesion/teacher-solicitudes-sesion.component').then(
+            (m) => m.TeacherSolicitudesSesionComponent
+          ),
+      },
+      {
         path: 'docente/horarios',
         canActivate: [roleGuard],
         data: { roles: ['DOCENTE'] },
@@ -435,7 +455,7 @@ export const routes: Routes = [
       { path: 'estudiante/horarios', redirectTo: 'estudiante/mis-materias/horarios', pathMatch: 'full' },
       { path: 'estudiante/materias', redirectTo: 'estudiante/mis-materias/materias', pathMatch: 'full' },
       {
-        // Mis materias: pestañas materias, horarios y oferta (/app/estudiante/mis-materias/:pestaña).
+        // Mis materias: pestañas materias, horarios y plan (/app/estudiante/mis-materias/:pestaña).
         path: 'estudiante/mis-materias',
         canActivate: [roleGuard],
         data: { roles: ['ESTUDIANTE'] },
@@ -453,7 +473,7 @@ export const routes: Routes = [
             (m) => m.StudentClaimsComponent
           ),
       },
-      { path: 'estudiante/oferta', redirectTo: 'estudiante/mis-materias/oferta', pathMatch: 'full' },
+      { path: 'estudiante/oferta', redirectTo: 'estudiante/mis-materias/materias', pathMatch: 'full' },
       {
         path: 'acceso-denegado',
         data: { codigo: 403 },

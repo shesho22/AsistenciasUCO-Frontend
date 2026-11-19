@@ -1,3 +1,5 @@
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { signal } from '@angular/core';
@@ -51,7 +53,7 @@ describe('DashboardLayoutComponent - Cancelación por Inasistencia C.1 (C-F-58..
     TestBed.configureTestingModule({
       imports: [DashboardLayoutComponent],
       providers: [
-        provideRouter([]),
+        provideRouter([]), provideHttpClient(), provideHttpClientTesting(),
         { provide: AuthService, useValue: authServiceSpy },
         { provide: ToastService, useValue: toastServiceSpy },
         { provide: AlertaInasistenciaService, useValue: alertaServiceSpy },

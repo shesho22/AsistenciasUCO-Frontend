@@ -1,3 +1,5 @@
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { signal } from '@angular/core';
@@ -24,7 +26,7 @@ describe('DashboardLayoutComponent menu simplificado (CULM-001 UX)', () => {
     TestBed.configureTestingModule({
       imports: [DashboardLayoutComponent],
       providers: [
-        provideRouter([]),
+        provideRouter([]), provideHttpClient(), provideHttpClientTesting(),
         {
           provide: AuthService,
           useValue: jasmine.createSpyObj('AuthService', ['logout'], {
@@ -96,7 +98,7 @@ describe('DashboardLayoutComponent menu simplificado (CULM-001 UX)', () => {
     }
   });
 
-  it('estudiante: Mis materias unifica materias, horarios y oferta; se mantienen alertas y reclamos', () => {
+  it('estudiante: Mis materias unifica materias, horarios y plan de estudios; se mantienen alertas y reclamos', () => {
     const c = crear('ESTUDIANTE');
     const r = rutas(c);
     expect(r).toContain('/app/estudiante/mis-materias');

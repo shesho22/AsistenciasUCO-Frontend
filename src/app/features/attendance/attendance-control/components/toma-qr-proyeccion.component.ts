@@ -55,11 +55,8 @@ const ESTADOS_SIN_CANAL: ReadonlySet<RealtimeConnectionState> = new Set<Realtime
       [ciclo]="ciclo()"
       [margenVigiaSegundos]="margenVigiaSegundos"
       (rotacionVencida)="alVencerRotacion($event)"
-      etiquetaCerrar="Dejar de proyectar"
-      testidCerrar="qr-dejar"
-      [cerrarConEscape]="false"
+      [mostrarCerrar]="false"
       [accionesMenu]="acciones()"
-      (cerrar)="dejarDeProyectarClick()"
       (accionElegida)="alElegirAccion($event)"
     >
       <div avisos class="space-y-2">
@@ -96,7 +93,10 @@ export class TomaQrProyeccionComponent {
   /** Programa seleccionado en grupos mixtos (opcional). */
   readonly programa = input<string | null>(null);
 
-  readonly dejarDeProyectar = output<void>();
+  /**
+   * ATA: se retiró "Dejar de proyectar" (cerraba el QR y al volver a proyectar el contador parecía reiniciado). La
+   * proyección termina al cerrar la toma (menú "Más") o cuando la cierra el servidor.
+   */
   readonly cerrarToma = output<void>();
 
   private readonly qrRecibido = signal<QrToma | null>(null);
@@ -237,13 +237,6 @@ export class TomaQrProyeccionComponent {
         this.regenerando.set(false);
         this.error.set(getApiErrorMessage(err));
       },
-    });
-  }
-
-  protected dejarDeProyectarClick(): void {
-    this.qrService.cerrarQr(this.toma().idToma).subscribe({
-      next: () => this.dejarDeProyectar.emit(),
-      error: (err: unknown) => this.error.set(getApiErrorMessage(err)),
     });
   }
 }

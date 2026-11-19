@@ -175,7 +175,7 @@ describe('StudentCoursesListComponent: barra de horas de la materia (HU019)', ()
 
     const barra = el(fixture, 'barra-horas-tramos')!;
     expect(barra.getAttribute('role')).toBe('img');
-    expect(barra.getAttribute('aria-label')).toBe('Asististe a 0.33 h de 4.97 h dictadas. El grupo tiene 8.97 h programadas.');
+    expect(barra.getAttribute('aria-label')).toBe('Asististe a 20 min de 4 h 58 min dictadas. El grupo tiene 8 h 58 min programadas.');
     expect(el(fixture, 'avance-curso')!.textContent).toContain('55% del curso dictado');
     expect(el(fixture, 'leyenda-horas')!.querySelectorAll('li')).toHaveSize(3);
   });
@@ -228,7 +228,7 @@ describe('StudentCoursesListComponent — tarjetas del resumen del backend (CIER
     const fixture = render({ totalMaterias: 5, materiasEnRiesgo: 2, totalHorasFalta: 7.25, totalCreditos: 14 });
 
     expect(el(fixture, 'resumen-total-materias')!.textContent!.trim()).toBe('5');
-    expect(fixture.nativeElement.textContent).toContain('7.25 h');
+    expect(fixture.nativeElement.textContent).toContain('7 h 15 min');
     expect(el(fixture, 'riesgo-no-disponible')).toBeNull();
     expect(el(fixture, 'horas-falta-no-disponible')).toBeNull();
   });
@@ -254,6 +254,6 @@ describe('StudentCoursesListComponent — tarjetas del resumen del backend (CIER
     const fixture = render({ totalMaterias: 2, materiasEnRiesgo: 0, totalHorasFalta: 0, totalCreditos: 6 });
 
     expect(el(fixture, 'riesgo-no-disponible')).toBeNull();
-    expect(fixture.nativeElement.textContent).toContain('0 h');
+    expect(fixture.nativeElement.textContent).toContain('0 min');
   });
 });

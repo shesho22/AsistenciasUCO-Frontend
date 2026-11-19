@@ -66,6 +66,8 @@ export class ActionMenuComponent {
   readonly placement = input<'bottom' | 'top'>('bottom');
   /** `dark` para botones sobre cabeceras oscuras. */
   readonly tone = input<'light' | 'dark'>('light');
+  /** Borde del botón con el que se alinea el panel: `end` (derecho, por defecto) o `start` (izquierdo, para botones a la izquierda de un contenedor que recorta). */
+  readonly alineacion = input<'start' | 'end'>('end');
 
   readonly selected = output<string>();
 
@@ -83,7 +85,8 @@ export class ActionMenuComponent {
 
   protected clasePanel(): string {
     const lado = this.placement() === 'top' || this.haciaArriba() ? 'bottom-full mb-2' : 'top-full mt-2';
-    return `absolute right-0 ${lado} z-40 min-w-[13rem] max-w-[calc(100vw-2rem)] rounded-xl border border-warm-200 bg-white py-1 shadow-warm-lg`;
+    const borde = this.alineacion() === 'start' ? 'left-0' : 'right-0';
+    return `absolute ${borde} ${lado} z-40 min-w-[13rem] max-w-[calc(100vw-2rem)] rounded-xl border border-warm-200 bg-white py-1 shadow-warm-lg`;
   }
 
   protected alternar(): void {
