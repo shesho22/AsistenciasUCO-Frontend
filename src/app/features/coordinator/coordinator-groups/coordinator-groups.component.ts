@@ -133,8 +133,8 @@ interface GrupoForm {
             @if (modo() === 'CREAR') {
               <label class="text-xs font-semibold text-warm-700">Asignatura
                 <select name="idAsignatura" [(ngModel)]="form.idAsignatura" class="mt-1 w-full px-3 py-2 border border-warm-200 rounded-xl text-sm">
-                  <option value="">{{ asignaturas().length === 0 ? '-- No hay asignaturas disponibles --' : 'Seleccione...' }}</option>
-                  @for (a of asignaturas(); track a.id) {
+                  <option value="">{{ asignaturasParaCrear().length === 0 ? '-- No hay asignaturas disponibles --' : 'Seleccione...' }}</option>
+                  @for (a of asignaturasParaCrear(); track a.id) {
                     <option [value]="a.id">{{ a.codigo }} - {{ a.nombre }}</option>
                   }
                 </select>
@@ -202,6 +202,11 @@ export class CoordinatorGroupsComponent implements OnInit {
   cargando = this.listado.cargando;
   errorCarga = this.listado.error;
   asignaturas = signal<AsignaturaPlanItem[]>([]);
+  /**
+   * HU074: el combo de «Nuevo grupo» no ofrece asignaturas inactivas (el backend las rechaza con 409 ASI_010). La malla trae
+   * `estaActivaAsignatura`; sin el dato se ofrece. La edición no muestra este combo: la asignatura del grupo no cambia.
+   */
+  asignaturasParaCrear = computed(() => this.asignaturas().filter((a) => a.estaActivaAsignatura !== false));
   periodos = signal<PeriodoAcademicoItem[]>([]);
   docentes = signal<DocentePrograma[]>([]);
   /** Fallo al cargar las asignaturas, docentes o periodos del formulario: se muestra con reintento, no como listas vacías. */

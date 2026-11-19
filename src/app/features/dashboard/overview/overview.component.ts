@@ -78,6 +78,7 @@ import { OverviewStudentComponent } from './components/overview-student.componen
         [institutionName]="user().institutionName"
         [department]="user().department"
         [pendingClaimsCount]="pendingClaimsCount()"
+        [sinEntidadAsignada]="heroSinEntidad()"
       />
 
       <!-- 2. Dashboard Especializado por Rol -->
@@ -148,6 +149,11 @@ export class OverviewComponent implements OnInit {
   decanoSinFacultad = computed(() => sinEntidadAsignada(this.user(), 'DECANO'));
   /** HU178: el perfil confirmó que el coordinador no tiene programa asignado. */
   coordinadorSinPrograma = computed(() => sinEntidadAsignada(this.user(), 'COORDINADOR'));
+  /** HU178: al rol activo le falta su entidad; el encabezado no ofrece acciones que solo llevarían al aviso. */
+  heroSinEntidad = computed(() => {
+    const rol = this.userRole();
+    return (rol === 'DECANO' && this.decanoSinFacultad()) || (rol === 'COORDINADOR' && this.coordinadorSinPrograma());
+  });
 
   // Próxima Clase Reactiva
   horariosDocente = signal<HorarioDocenteItem[]>([]);

@@ -272,10 +272,11 @@ export const routes: Routes = [
             (m) => m.DeanPeriodosComponent
           ),
       },
-      // CULM-001 C.1: revisiones de cancelación de matrícula por pérdida de inasistencia (decano)
+      // CULM-001 C.1: revisiones de cancelación de matrícula por pérdida de inasistencia (decano).
+      // HU178: el listado se filtra por la facultad del decano; sin facultad lleva al aviso del rol.
       {
         path: 'decano/revisiones-cancelacion',
-        canActivate: [roleGuard],
+        canActivate: [roleGuard, decanoConFacultadGuard],
         data: { roles: ['DECANO'], rol: 'DECANO' },
         loadComponent: () =>
           import('./features/shared/revisiones-resolucion/revisiones-resolucion.component').then(
@@ -394,10 +395,11 @@ export const routes: Routes = [
             './features/coordinator/coordinator-students/coordinator-students.component'
           ).then((m) => m.CoordinatorStudentsComponent),
       },
-      // CULM-001 C.1: revisiones de cancelación de matrícula por pérdida de inasistencia (coordinador)
+      // CULM-001 C.1: revisiones de cancelación de matrícula por pérdida de inasistencia (coordinador).
+      // HU178: el listado se filtra por el programa del coordinador; sin programa lleva al aviso del rol.
       {
         path: 'coordinador/revisiones-cancelacion',
-        canActivate: [roleGuard],
+        canActivate: [roleGuard, coordinadorConProgramaGuard],
         data: { roles: ['COORDINADOR'], rol: 'COORDINADOR' },
         loadComponent: () =>
           import('./features/shared/revisiones-resolucion/revisiones-resolucion.component').then(

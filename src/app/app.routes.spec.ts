@@ -299,6 +299,8 @@ describe('application routes', () => {
       'decano/directorio',
       'decano/grupos/:grupoId',
       'decano/programas/:planId',
+      // Ajuste 2026-11-19: el listado de revisiones se filtra por la facultad; sin ella nunca habría datos.
+      'decano/revisiones-cancelacion',
     ]) {
       it(`${dest} exige que el decano tenga facultad (después de la regla de rol)`, () => {
         const guards = ruta(dest)?.canActivate ?? [];
@@ -308,11 +310,11 @@ describe('application routes', () => {
       });
     }
 
-    for (const dest of ['decano/periodos', 'decano/revisiones-cancelacion']) {
-      it(`${dest} no depende de la facultad y no se bloquea`, () => {
-        expect(ruta(dest)?.canActivate ?? []).not.toContain(decanoConFacultadGuard);
-      });
-    }
+    it('decano/periodos (calendario institucional) no depende de la facultad y no se bloquea', () => {
+      const guards = ruta('decano/periodos')?.canActivate ?? [];
+      expect(guards).toContain(roleGuard);
+      expect(guards).not.toContain(decanoConFacultadGuard);
+    });
 
     for (const dest of [
       'coordinador/programa',
@@ -324,6 +326,9 @@ describe('application routes', () => {
       'coordinador/planes-estudio/:planId/asignaturas/nueva',
       'coordinador/planes-estudio/:planId/asignaturas/:asignaturaId/editar',
       'coordinador/estudiantes',
+      'coordinador/solicitudes-sesion',
+      // Ajuste 2026-11-19: el listado de revisiones se filtra por el programa; sin él nunca habría datos.
+      'coordinador/revisiones-cancelacion',
     ]) {
       it(`${dest} exige que el coordinador tenga programa (después de la regla de rol)`, () => {
         const guards = ruta(dest)?.canActivate ?? [];
@@ -332,10 +337,6 @@ describe('application routes', () => {
         expect(guards.indexOf(roleGuard)).toBeLessThan(guards.indexOf(coordinadorConProgramaGuard));
       });
     }
-
-    it('coordinador/revisiones-cancelacion no depende del programa y no se bloquea', () => {
-      expect(ruta('coordinador/revisiones-cancelacion')?.canActivate ?? []).not.toContain(coordinadorConProgramaGuard);
-    });
 
     for (const [rol, guard] of [
       ['DECANO', decanoConFacultadGuard],

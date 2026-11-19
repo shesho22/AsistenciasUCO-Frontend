@@ -26,6 +26,7 @@ import {
   AreaConocimientoItem,
   AsignaturaAsociable,
   CaracterAsignatura,
+  EstadoAsignaturaResultado,
 } from '../models/role-management.model';
 import { EstudiantePaginaApiDto } from '../api/models/estudiante-api-dto.model';
 import { AsistenciaSesionItem, SesionGrupoItem } from '../models/asistencia-programa.model';
@@ -446,6 +447,36 @@ export class CoordinatorManagementService {
               ...mapa,
               [planId]: (mapa[planId] || []).filter((a) => a.id !== asigId),
             }));
+          }
+        })
+      );
+  }
+
+  /**
+   * HU074: deja la asignatura (no el vínculo con el plan) en el estado pedido y devuelve el estado real en que quedó.
+   * Envía `{ estaActiva }` con el estado DESEADO: es idempotente (si ya estaba así, el backend responde 200 sin cambio y
+   * con el mismo mensaje), así un doble envío o un reintento no deshace la acción. 200 trae ASI_011 / ASI_012 en
+   * `mensajeUsuario`; 409 ASI_009 (grupos vigentes o futuros) y ASI_006 (compartida con programas que el coordinador no
+   * coordina) llegan con el mensaje del catálogo para getApiErrorMessage. La asignatura es una sola en todos los planes:
+   * el caché de cada plan que la tenga se actualiza con `datos.estaActivaAsignatura` (estado real, no el pedido).
+   */
+  cambiarEstadoAsignatura(idAsignatura: string, estaActiva: boolean): Observable<ApiResponse<EstadoAsignaturaResultado>> {
+    return this.http
+      .patch<ApiResponse<EstadoAsignaturaResultado>>(`${environment.apiUrl}/coordinador/asignaturas/${idAsignatura}/estado`, {
+        estaActiva,
+      })
+      .pipe(
+        tap((res) => {
+          const estado = res.datos?.estaActivaAsignatura;
+          if (res.exitoso && typeof estado === 'boolean') {
+            this.asignaturasSignal.update((mapa) =>
+              Object.fromEntries(
+                Object.entries(mapa).map(([plan, lista]) => [
+                  plan,
+                  lista.map((a) => (a.id === idAsignatura ? { ...a, estaActivaAsignatura: estado } : a)),
+                ])
+              )
+            );
           }
         })
       );

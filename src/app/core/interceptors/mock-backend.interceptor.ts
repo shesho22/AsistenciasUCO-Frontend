@@ -80,14 +80,17 @@ function okPagina<T>(elementos: T[], req: { params: { get(nombre: string): strin
 }
 
 /** Vínculo asignatura-plan del mock con carácter y semestre como los entrega el backend. */
-function vinculoMock(a: { id: string; codigo: string; nombre: string; creditos: number; semestre: number; area?: string; componente?: string }, planId: string) {
+function vinculoMock(
+  a: { id: string; codigo: string; nombre: string; creditos: number; semestre: number; area?: string; componente?: string; estaActivaAsignatura?: boolean },
+  planId: string
+) {
   const compartida = a.codigo === 'SIS-101';
   return {
     idAsignatura: a.id, codigo: a.codigo, nombre: a.nombre, credito: a.creditos, nombreArea: a.area ?? '', nombreComponente: a.componente ?? '',
     idPlanEstudio: planId, inpPlanEstudio: '2024', idPrograma: 'PRG-MOCK-1', nombrePrograma: 'Ingeniería de Sistemas',
     idSemestrePlanEstudio: `SEM-${planId}-${a.semestre}`, numeroSemestre: a.semestre, codigoSemestre: `S${a.semestre}`,
     codigoCaracter: a.semestre % 2 === 0 ? 'OPT' : 'OBL', nombreCaracter: a.semestre % 2 === 0 ? 'Optativa' : 'Obligatoria',
-    estaActivoVinculo: true, estaActivaAsignatura: true, compartida,
+    estaActivoVinculo: true, estaActivaAsignatura: a.estaActivaAsignatura !== false, compartida,
   };
 }
 
@@ -455,6 +458,28 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     const asigId = segments.at(-1);
     mockStore.asignaturasPlan[planId] = (mockStore.asignaturasPlan[planId] || []).filter((a) => a.id !== asigId);
     return of(okResponse(null, 'Asignatura quitada del plan.')).pipe(delay(200));
+  }
+  // HU074: deja la asignatura en el estado pedido (`{ estaActiva }`, idempotente: si ya estaba así responde 200 sin cambio;
+  // sin cuerpo alterna, como el backend) en todos los planes que la tienen. La compartida (SIS-101, ver vinculoMock) simula
+  // el rechazo ASI_006 al inactivarla, con el texto del catálogo.
+  const estadoAsignatura = /\/coordinador\/asignaturas\/([^/]+)\/estado$/.exec(url);
+  if (estadoAsignatura && method === 'PATCH') {
+    const idAsignatura = estadoAsignatura[1];
+    const actual = Object.values(mockStore.asignaturasPlan).flat().find((a) => a.id === idAsignatura);
+    const estabaActiva = actual?.estaActivaAsignatura !== false;
+    const pedido = (req.body as { estaActiva?: unknown } | null)?.estaActiva;
+    const quedaActiva = typeof pedido === 'boolean' ? pedido : !estabaActiva;
+    if (actual?.codigo === 'SIS-101' && estabaActiva && !quedaActiva) {
+      return throwError(() => new HttpErrorResponse({ status: 409, error: {
+        code: 'ASI_006',
+        message: 'La asignatura es compartida con programas que no coordinas; solo puedes cambiar su semestre y su carácter en tu plan.',
+      } }));
+    }
+    for (const [planId, lista] of Object.entries(mockStore.asignaturasPlan)) {
+      mockStore.asignaturasPlan[planId] = lista.map((a) => (a.id === idAsignatura ? { ...a, estaActivaAsignatura: quedaActiva } : a));
+    }
+    const mensaje = quedaActiva ? 'La asignatura quedó activa.' : 'La asignatura quedó inactiva.';
+    return of(okResponse({ idAsignatura, estaActivaAsignatura: quedaActiva }, mensaje)).pipe(delay(200));
   }
   if (/\/grupos\/[^/]+\/programas$/.test(url) && method === 'GET') {
     return of(okResponse([{ idPrograma: 'PRG-MOCK-1', nombrePrograma: 'Ingeniería de Sistemas', idPlanEstudio: 'PLAN-1', inpPlanEstudio: '2024' }])).pipe(delay(150));
