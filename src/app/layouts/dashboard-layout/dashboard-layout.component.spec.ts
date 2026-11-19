@@ -98,7 +98,7 @@ describe('DashboardLayoutComponent', () => {
 });
 
 describe('DashboardLayoutComponent (ESTUDIANTE, CULM-001 A.1)', () => {
-  it('F-RED-03 el menú del estudiante ya no ofrece Solicitudes de Ingreso y la oferta de grupos vive dentro de Mis Materias', async () => {
+  it('F-RED-03 el menú del estudiante ya no ofrece Solicitudes de Ingreso y la oferta de grupos ya no existe (HU008 descartada)', async () => {
     const user = signal({ id: 'usr-2', name: 'Est Uno', email: 'est@uco.edu.co', role: 'ESTUDIANTE' as UserRole });
     const auth = jasmine.createSpyObj('AuthService', ['logout'], {
       currentUser: user.asReadonly(),
@@ -118,7 +118,7 @@ describe('DashboardLayoutComponent (ESTUDIANTE, CULM-001 A.1)', () => {
     const items = fixture.componentInstance.filteredNavItems();
     expect(items.some((i) => i.route === '/app/estudiante/solicitudes')).toBeFalse();
     expect(items.some((i) => i.label.includes('Solicitudes de Ingreso'))).toBeFalse();
-    // CULM-001 UX: la oferta de grupos pasa a ser una pestaña de Mis Materias (/app/estudiante/mis-materias/oferta).
+    // HU008 descartada: ya no hay oferta de grupos del estudiante.
     expect(items.some((i) => i.label === 'Oferta de Grupos')).toBeFalse();
     expect(items.some((i) => i.route === '/app/estudiante/mis-materias')).toBeTrue();
   });

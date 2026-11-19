@@ -98,7 +98,7 @@ describe('DashboardLayoutComponent menu simplificado (CULM-001 UX)', () => {
     }
   });
 
-  it('estudiante: Mis materias unifica materias, horarios y oferta; se mantienen alertas y reclamos', () => {
+  it('estudiante: Mis materias unifica materias, horarios y plan de estudios; se mantienen alertas y reclamos', () => {
     const c = crear('ESTUDIANTE');
     const r = rutas(c);
     expect(r).toContain('/app/estudiante/mis-materias');

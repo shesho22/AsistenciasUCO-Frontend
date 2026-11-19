@@ -455,7 +455,7 @@ export const routes: Routes = [
       { path: 'estudiante/horarios', redirectTo: 'estudiante/mis-materias/horarios', pathMatch: 'full' },
       { path: 'estudiante/materias', redirectTo: 'estudiante/mis-materias/materias', pathMatch: 'full' },
       {
-        // Mis materias: pestañas materias, horarios y oferta (/app/estudiante/mis-materias/:pestaña).
+        // Mis materias: pestañas materias, horarios y plan (/app/estudiante/mis-materias/:pestaña).
         path: 'estudiante/mis-materias',
         canActivate: [roleGuard],
         data: { roles: ['ESTUDIANTE'] },
@@ -473,7 +473,7 @@ export const routes: Routes = [
             (m) => m.StudentClaimsComponent
           ),
       },
-      { path: 'estudiante/oferta', redirectTo: 'estudiante/mis-materias/oferta', pathMatch: 'full' },
+      { path: 'estudiante/oferta', redirectTo: 'estudiante/mis-materias/materias', pathMatch: 'full' },
       {
         path: 'acceso-denegado',
         data: { codigo: 403 },

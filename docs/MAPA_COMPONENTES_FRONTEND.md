@@ -83,11 +83,8 @@ Control centralizado de sesiones y registro de asistencia en aula.
 - **Mis Reclamos (HU010/HU011, consulta):**
   - **Ruta:** `/app/estudiante/reclamos` (menú ESTUDIANTE "Mis Reclamos")
   - **Componente:** `StudentClaimsComponent` (`features/student/student-claims`): solicitudes propias con estado, respuesta del docente y soporte; filtro por estado y paginación del servidor; descarga del soporte por `GET /archivos/{fileId}`. Si el reclamo es de una toma muestra "Toma N · HH:mm" y, al aprobarse, "Aprobado: estuvo presente" o "Aprobado: ausencia justificada".
-- **Oferta de Grupos (HU008):**
-  - **Ruta:** `/app/estudiante/oferta` (menú ESTUDIANTE "Oferta de Grupos")
-  - **Componente:** `StudentGroupOfferComponent` (`features/student/student-group-offer`): grupos de su programa y transversales con cupos y horario. Solo consulta (HU008): para matricularse se usa el QR o PIN del docente o la matrícula manual.
 - **Plan de Estudios (HU018):**
-  - **Ruta:** `/app/estudiante/mis-materias/plan` (cuarta pestaña de "Mis materias")
+  - **Ruta:** `/app/estudiante/mis-materias/plan` (tercera pestaña de "Mis materias")
   - **Componente:** `StudentStudyPlanComponent` (`features/student/student-study-plan`): planes activos de los programas del estudiante, con un acordeón por semestre, los créditos y el carácter de cada asignatura y la marca "Cursando". Solo consulta, con `PlanEstudioEstudianteService` (`GET /estudiante/plan-estudio`).
 - **Barra de horas de cada materia (HU019):** `StudentCoursesListComponent` muestra en cada tarjeta las horas asistidas, las dictadas a la fecha y las programadas del grupo (`horasProgramadas` de `GET /estudiante/materias`), junto a los créditos.
 

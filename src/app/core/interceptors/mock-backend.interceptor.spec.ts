@@ -653,17 +653,6 @@ describe('mockBackendInterceptor', () => {
     expect(perfil!.datos.vinculos).toHaveSize(1);
   }));
 
-  it('HU008 MK-08 simula la oferta de grupos sin campos de solicitud de ingreso', fakeAsync(() => {
-    auth.setMockMode(true);
-    let oferta: SobreDatos<{ cuposDisponibles: number }[]> | undefined;
-    httpClient.get<SobreDatos<{ cuposDisponibles: number }[]>>(`${environment.apiUrl}/estudiante/oferta-academica`).subscribe((r) => (oferta = r));
-    tick(300);
-    expect(oferta!.datos).toHaveSize(2);
-    expect(oferta!.datos[0].cuposDisponibles).toBe(5);
-    expect('idSolicitud' + 'Abierta' in oferta!.datos[0]).toBeFalse();
-    expect('estadoSolicitud' in oferta!.datos[0]).toBeFalse();
-  }));
-
   it('HU018 simula el plan de estudios del estudiante con totales coherentes y un semestre vacío', fakeAsync(() => {
     auth.setMockMode(true);
     let planes: SobreDatos<PlanEstudianteMock[]> & { total: number } | undefined;

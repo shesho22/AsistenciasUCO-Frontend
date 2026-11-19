@@ -922,22 +922,6 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
       ],
     })).pipe(delay(200));
   }
-  // HU008: oferta de grupos del estudiante (misma forma que el backend): solo consulta de oferta y cupos.
-  if (url.endsWith('/estudiante/oferta-academica') && method === 'GET') {
-    const oferta = [
-      { idGrupo: 'grp-oferta-1', codigoGrupo: 1, nombreGrupo: 'Grupo 1', idAsignatura: 'asg-of-1', codigoAsignatura: 'MAT301',
-        nombreAsignatura: 'Matemática Avanzada III', nombreDocente: 'Docente Mock', idPeriodoAcademico: 'PER-2026-2',
-        nombrePeriodoAcademico: '2026-2', fechaInicioPeriodo: '2026-07-20', fechaFinPeriodo: '2026-12-10', estadoPeriodo: 'VIGENTE',
-        horario: 'Lunes 08:00-10:00; Miercoles 08:00-10:00', capacidadMaxima: 35, estudiantesActivos: 30, cuposDisponibles: 5,
-        matriculado: false, tipoAsignatura: 'ESPECIFICA', transversal: false, codigoCaracter: 'OBL', nombreCaracter: 'Obligatoria' },
-      { idGrupo: 'grp-oferta-2', codigoGrupo: 2, nombreGrupo: 'Grupo 2', idAsignatura: 'asg-of-2', codigoAsignatura: 'FIS201',
-        nombreAsignatura: 'Física II', nombreDocente: 'Docente Mock', idPeriodoAcademico: 'PER-2027-1',
-        nombrePeriodoAcademico: '2027-1', fechaInicioPeriodo: '2027-01-20', fechaFinPeriodo: '2027-06-10', estadoPeriodo: 'PROXIMO',
-        horario: null, capacidadMaxima: 30, estudiantesActivos: 30, cuposDisponibles: 0, matriculado: false,
-        tipoAsignatura: 'INSTITUCIONAL', transversal: true, codigoCaracter: null, nombreCaracter: null },
-    ];
-    return of(okResponse(oferta, undefined, oferta.length)).pipe(delay(250));
-  }
   // HU018: plan de estudios del estudiante por semestres (misma forma que el backend; los totales ya vienen calculados).
   if (url.endsWith('/estudiante/plan-estudio') && method === 'GET') {
     const asignatura = (codigo: string, nombre: string, creditos: number, extra: Record<string, unknown> = {}) => ({

@@ -3,12 +3,11 @@ import { TabsRutaShellComponent, TabsRutaShellConfig } from '../../../shared/com
 
 const SHELL: TabsRutaShellConfig = {
   titulo: 'Mis materias',
-  descripcion: 'Tus materias, tus horarios, la oferta de grupos y tu plan de estudios en un solo lugar.',
+  descripcion: 'Tus materias, tus horarios y tu plan de estudios en un solo lugar.',
   base: '/app/estudiante/mis-materias',
   tabs: [
     { id: 'materias', etiqueta: 'Materias' },
     { id: 'horarios', etiqueta: 'Horarios' },
-    { id: 'oferta', etiqueta: 'Oferta de grupos' },
     { id: 'plan', etiqueta: 'Plan de estudios' },
   ],
   porDefecto: 'materias',
@@ -34,12 +33,8 @@ export const MIS_MATERIAS_ROUTES: Routes = [
         loadComponent: () =>
           import('../student-schedule/student-schedule.component').then((m) => m.StudentScheduleComponent),
       },
-      {
-        path: 'oferta',
-        data: { tab: 'oferta' },
-        loadComponent: () =>
-          import('../student-group-offer/student-group-offer.component').then((m) => m.StudentGroupOfferComponent),
-      },
+      // HU008 descartada (ADDENDUM ATA, K.3): la antigua pestaña de oferta de grupos lleva a Materias.
+      { path: 'oferta', pathMatch: 'full', redirectTo: 'materias' },
       {
         // Estructura curricular por semestres de los planes activos del estudiante.
         path: 'plan',

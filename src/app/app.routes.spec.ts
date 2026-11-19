@@ -254,7 +254,7 @@ describe('application routes', () => {
       ['admin/configuracion/mensajes', 'admin/mensajes'],
       ['estudiante/materias', 'estudiante/mis-materias/materias'],
       ['estudiante/horarios', 'estudiante/mis-materias/horarios'],
-      ['estudiante/oferta', 'estudiante/mis-materias/oferta'],
+      ['estudiante/oferta', 'estudiante/mis-materias/materias'],
     ];
     for (const [antigua, nueva] of redirecciones) {
       if (antigua === 'admin/configuracion/mensajes') continue;
