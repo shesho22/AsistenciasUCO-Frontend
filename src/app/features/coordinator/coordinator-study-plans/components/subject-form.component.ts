@@ -88,12 +88,15 @@ import { CREDITS_MAX, getCreditsError, getSafeTextError, NAME_MAX_LENGTH } from 
             />
           </app-form-field>
 
-          <app-form-field label="Horas Semanales Presenciales" [required]="true">
+          <app-form-field label="Horas Semanales Presenciales (60 min)" [required]="true" [errorMessage]="errorHorasSemanales()">
             <input
               type="number"
+              name="horasSemanales"
               [(ngModel)]="asigForm.horasSemanales"
               min="1"
-              max="20"
+              [attr.max]="maxHorasSemanales"
+              step="1"
+              placeholder="Obligatorio, entero"
               class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
             />
           </app-form-field>
@@ -184,7 +187,7 @@ export class SubjectFormComponent implements OnInit {
     semestre: number;
     area: string;
     componente: string;
-    horasSemanales: number;
+    horasSemanales: number | null;
     codigoCaracter: string;
   } = {
     codigo: '',
@@ -209,7 +212,8 @@ export class SubjectFormComponent implements OnInit {
         semestre: asig.semestre,
         area: asig.area,
         componente: asig.componente,
-        horasSemanales: asig.horasSemanales,
+        // SES-GEN-01: una materia sin horas cargadas abre el formulario vacío; el coordinador las completa.
+        horasSemanales: asig.horasSemanales ?? null,
         codigoCaracter: asig.codigoCaracter ?? '',
       };
     }
@@ -218,6 +222,8 @@ export class SubjectFormComponent implements OnInit {
 
   readonly maxTexto = NAME_MAX_LENGTH;
   readonly maxCreditos = CREDITS_MAX;
+  /** Tope de ASIGNATURA/HORAS_SEMANALES_MAXIMO en la DB (que es quien lo valida, ASI_009). */
+  readonly maxHorasSemanales = 40;
 
   /** DEC-073: código y nombre en texto seguro (sin < > ni comillas); vacío si es válido o aún no se escribió. */
   errorCodigo(): string {
@@ -234,7 +240,16 @@ export class SubjectFormComponent implements OnInit {
     return c === null || `${c}`.trim() === '' ? '' : getCreditsError(c) ?? '';
   }
 
-  /** Código, nombre, área, componente, créditos enteros de 1 a 10 y un semestre del plan. */
+  /** SES-GEN-01: horas semanales enteras de 1 al tope (60 min de reloj); vacío mientras no se escriban. */
+  errorHorasSemanales(): string {
+    const h = this.asigForm.horasSemanales;
+    if (h === null || `${h}`.trim() === '') return '';
+    return Number.isInteger(Number(h)) && Number(h) >= 1 && Number(h) <= this.maxHorasSemanales
+      ? ''
+      : `Las horas semanales deben ser un entero entre 1 y ${this.maxHorasSemanales}.`;
+  }
+
+  /** Código, nombre, área, componente, créditos enteros de 1 a 10, horas semanales enteras y un semestre del plan. */
   formularioValido(): boolean {
     const f = this.asigForm;
     const creditos = Number(f.creditos);
@@ -245,6 +260,9 @@ export class SubjectFormComponent implements OnInit {
       !!f.componente &&
       !!f.codigoCaracter &&
       f.creditos !== null &&
+      f.horasSemanales !== null &&
+      `${f.horasSemanales}`.trim() !== '' &&
+      !this.errorHorasSemanales() &&
       Number.isInteger(creditos) &&
       getCreditsError(f.creditos) === null &&
       !this.errorCodigo() &&
@@ -256,7 +274,7 @@ export class SubjectFormComponent implements OnInit {
   guardar(): void {
     if (!this.formularioValido()) return;
     this.save.emit({
-      datos: { ...this.asigForm, creditos: Number(this.asigForm.creditos) },
+      datos: { ...this.asigForm, creditos: Number(this.asigForm.creditos), horasSemanales: Number(this.asigForm.horasSemanales) },
       id: this.asignatura()?.id,
     });
   }

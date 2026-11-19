@@ -149,7 +149,7 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
               </div>
 
               <div class="flex items-center justify-between pt-2 border-t border-warm-100 text-xs">
-                <span class="text-warm-500">{{ asig.horasSemanales }} h/sem</span>
+                <span class="text-warm-500">{{ asig.horasSemanales === null || asig.horasSemanales === undefined ? 'Horas sin cargar' : asig.horasSemanales + ' h/sem' }}</span>
                 <span class="px-2 py-0.5 rounded-md bg-warm-100 text-warm-800 font-bold">
                   {{ asig.creditos }} créditos
                 </span>

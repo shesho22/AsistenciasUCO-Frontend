@@ -7,6 +7,21 @@ import { getSafeTextError } from '../../../../core/validation/form-fields.util';
 
 export const PERIODO_NOMBRE_MINIMO = 3;
 export const PERIODO_NOMBRE_MAXIMO = 50;
+/** El semestre dura siempre 16 semanas = 112 días corridos (PERIODO/SEMANAS_DURACION); la DB es quien lo impone (PER_011). */
+export const PERIODO_SEMANAS = 16;
+
+/** Suma días a una fecha `yyyy-MM-dd` sin depender de la zona horaria del navegador. */
+export function sumarDias(fechaIso: string, dias: number): string {
+  const [anio, mes, dia] = fechaIso.split('-').map(Number);
+  if (!anio || !mes || !dia) return '';
+  const fecha = new Date(Date.UTC(anio, mes - 1, dia + dias));
+  return fecha.toISOString().slice(0, 10);
+}
+
+/** Fecha de fin de un semestre que empieza en `inicio`: inicio + 16 semanas - 1 día. */
+export function fechaFinDelSemestre(inicio: string): string {
+  return inicio ? sumarDias(inicio, PERIODO_SEMANAS * 7 - 1) : '';
+}
 
 export interface PeriodoFormDatos {
   nombre: string;
@@ -45,20 +60,29 @@ export interface PeriodoFormDatos {
               class="w-full px-3 py-2 bg-white border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-700/20 focus:border-primary-700"
             />
           </app-form-field>
-          <app-form-field label="Fecha de fin" [required]="true" [errorMessage]="errorFechas()">
+          <app-form-field label="Fecha de fin (se calcula sola)">
             <input
               name="fechaFin"
               type="date"
-              [ngModel]="fechaFin()"
-              (ngModelChange)="fechaFin.set($event)"
-              class="w-full px-3 py-2 bg-white border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-700/20 focus:border-primary-700"
+              data-testid="fecha-fin-periodo"
+              [ngModel]="fechaFinEfectiva()"
+              readonly
+              tabindex="-1"
+              class="w-full px-3 py-2 bg-warm-50 border border-warm-200 rounded-xl text-sm text-warm-700"
             />
           </app-form-field>
         </div>
 
-        <p class="text-xs text-warm-500">
+        <p class="text-xs text-warm-500" data-testid="ayuda-duracion-periodo">
+          El semestre dura siempre {{ semanas }} semanas ({{ semanas * 7 }} días): elige solo la fecha de inicio y la de fin se calcula sola.
           El estado (planeación, activo o cerrado) se calcula con las fechas del período.
         </p>
+        @if (periodoHistorico()) {
+          <p class="text-xs text-warm-600 bg-warm-50 border border-warm-200 rounded-xl px-3 py-2" data-testid="aviso-periodo-historico">
+            Este período dura {{ duracionActualDias() }} días porque se creó antes de la regla de {{ semanas }} semanas. Se conserva tal cual
+            mientras no cambies la fecha de inicio; si la cambias, pasará a durar {{ semanas }} semanas.
+          </p>
+        }
 
         @if (error()) {
           <p class="text-xs font-semibold text-danger-600" role="alert">{{ error() }}</p>
@@ -90,9 +114,34 @@ export class AcademicPeriodFormModalComponent implements OnInit {
 
   readonly nombre = signal('');
   readonly fechaInicio = signal('');
+  /** Fecha de fin guardada del período que se edita (vacía al crear). */
   readonly fechaFin = signal('');
+  readonly semanas = PERIODO_SEMANAS;
 
   readonly esEdicion = computed(() => this.periodo() !== null);
+
+  /**
+   * Fecha de fin que se muestra y se envía: la calculada (inicio + 16 semanas - 1 día). Si se edita un período histórico que no cumple la
+   * regla y NO se cambia su fecha de inicio, se conserva su fin guardado (la DB solo valida la duración cuando cambian las fechas).
+   */
+  readonly fechaFinEfectiva = computed(() => {
+    const actual = this.periodo();
+    if (actual && actual.fechaInicio === this.fechaInicio() && this.fechaFin()) return this.fechaFin();
+    return fechaFinDelSemestre(this.fechaInicio());
+  });
+
+  readonly duracionActualDias = computed(() => {
+    const inicio = this.fechaInicio();
+    const fin = this.fechaFin();
+    if (!inicio || !fin) return 0;
+    return Math.round((Date.parse(fin) - Date.parse(inicio)) / 86_400_000) + 1;
+  });
+
+  /** Período existente cuya duración no es la del semestre vigente y cuya fecha de inicio no se ha cambiado. */
+  readonly periodoHistorico = computed(() => {
+    const actual = this.periodo();
+    return !!actual && actual.fechaInicio === this.fechaInicio() && this.duracionActualDias() > 0 && this.duracionActualDias() !== PERIODO_SEMANAS * 7;
+  });
 
   readonly errorNombre = computed(() => {
     const largo = this.nombre().trim().length;
@@ -103,20 +152,7 @@ export class AcademicPeriodFormModalComponent implements OnInit {
     return getSafeTextError(this.nombre(), 'Nombre del período', { maxLength: PERIODO_NOMBRE_MAXIMO }) ?? '';
   });
 
-  readonly errorFechas = computed(() => {
-    const inicio = this.fechaInicio();
-    const fin = this.fechaFin();
-    return inicio && fin && inicio >= fin ? 'La fecha de fin debe ser posterior a la de inicio.' : '';
-  });
-
-  readonly valido = computed(
-    () =>
-      this.nombre().trim().length > 0 &&
-      !this.errorNombre() &&
-      !!this.fechaInicio() &&
-      !!this.fechaFin() &&
-      !this.errorFechas(),
-  );
+  readonly valido = computed(() => this.nombre().trim().length > 0 && !this.errorNombre() && !!this.fechaInicio() && !!this.fechaFinEfectiva());
 
   ngOnInit(): void {
     const actual = this.periodo();
@@ -132,7 +168,7 @@ export class AcademicPeriodFormModalComponent implements OnInit {
     this.guardar.emit({
       nombre: this.nombre().trim(),
       fechaInicio: this.fechaInicio(),
-      fechaFin: this.fechaFin(),
+      fechaFin: this.fechaFinEfectiva(),
     });
   }
 

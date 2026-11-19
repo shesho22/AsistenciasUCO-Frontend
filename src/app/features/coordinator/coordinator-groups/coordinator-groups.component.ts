@@ -7,6 +7,7 @@ import { CourseService, GrupoCoordinadorPayload } from '../../../core/services/c
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { Course, FranjaHorario } from '../../../core/models/course.model';
 import { AsignaturaPlanItem, PeriodoAcademicoItem } from '../../../core/models/role-management.model';
+import { PrevisualizacionHorarioGrupo, minutosAHoras } from '../../../core/models/horario-grupo.model';
 import { DocentePrograma } from '../../../core/models/docente-programa.model';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
@@ -169,9 +170,92 @@ interface GrupoForm {
             }
           </div>
 
+          @if (modo() === 'CREAR' && asignaturaElegida(); as materia) {
+            <p class="text-xs text-warm-600" data-testid="horas-materia">
+              @if (materia.horasSemanales === null || materia.horasSemanales === undefined) {
+                Esta materia aún no tiene horas semanales cargadas: el horario no se valida contra ellas.
+              } @else {
+                Esta materia se ve {{ materia.horasSemanales }} h por semana: las franjas deben sumar exactamente {{ materia.horasSemanales }} h (cada hora son 60 minutos).
+              }
+            </p>
+          }
+
           @defer (on immediate) {
             <app-franjas-editor [(franjas)]="form.franjas" />
           }
+
+          <section class="rounded-2xl border border-warm-200 bg-warm-50/60 p-4 space-y-3" data-testid="panel-previsualizacion" aria-live="polite">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h3 class="font-semibold text-sm text-warm-900">Sesiones del semestre</h3>
+                <p class="text-xs text-warm-600">Calcula todas las sesiones del período con este horario y muestra los conflictos antes de guardar.</p>
+              </div>
+              <button type="button" data-testid="calcular-sesiones" (click)="previsualizar()" [disabled]="previsualizando()"
+                class="px-3.5 py-2 rounded-xl bg-white border border-primary-700 text-xs font-semibold text-primary-700 disabled:opacity-60">
+                {{ previsualizando() ? 'Calculando...' : 'Calcular sesiones del semestre' }}
+              </button>
+            </div>
+
+            @if (errorPrevision(); as fallo) {
+              <p role="alert" data-testid="error-previsualizacion" class="text-xs font-semibold text-danger-700 bg-danger-50 border border-danger-200 rounded-xl px-3 py-2">{{ fallo }}</p>
+            }
+
+            @if (resultado(); as r) {
+              @if (previsualizacionDesactualizada()) {
+                <p class="text-xs font-semibold text-warning-800 bg-warning-50 border border-warning-200 rounded-xl px-3 py-2" data-testid="previsualizacion-desactualizada">
+                  Cambiaste el horario o los datos del grupo: vuelve a calcular las sesiones.
+                </p>
+              }
+              <dl class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs" data-testid="resumen-previsualizacion">
+                <div><dt class="text-warm-500">Período</dt><dd class="font-semibold text-warm-900">{{ r.periodo.nombre }} ({{ r.periodo.semanasPeriodo }} semanas)</dd></div>
+                <div><dt class="text-warm-500">Franjas por semana</dt><dd class="font-semibold text-warm-900">{{ r.resumenSemanal.franjasPorSemana }}</dd></div>
+                <div><dt class="text-warm-500">Horas por semana</dt><dd class="font-semibold text-warm-900">{{ horas(r.resumenSemanal.minutosSemanales) }}@if (r.resumenSemanal.minutosSemanalesMateria !== null) { de {{ horas(r.resumenSemanal.minutosSemanalesMateria) }} }</dd></div>
+                <div><dt class="text-warm-500">Sesiones del período</dt><dd class="font-semibold text-warm-900">{{ r.resumenPeriodo.sesionesCalendario }}</dd></div>
+                <div><dt class="text-warm-500">Se programan</dt><dd class="font-semibold text-warm-900">{{ r.resumenPeriodo.sesionesProgramadas }} ({{ horas(r.resumenPeriodo.minutosProgramados) }})</dd></div>
+                <div><dt class="text-warm-500">Caen en festivo</dt><dd class="font-semibold text-warm-900">{{ r.resumenPeriodo.sesionesEnFestivo }} ({{ horas(r.resumenPeriodo.minutosPerdidosFestivo) }})</dd></div>
+                <div><dt class="text-warm-500">Ya no se pueden programar</dt><dd class="font-semibold text-warm-900">{{ r.resumenPeriodo.sesionesNoProgramables }} ({{ horas(r.resumenPeriodo.minutosNoProgramables) }})</dd></div>
+                <div><dt class="text-warm-500">Horas esperadas de la materia</dt><dd class="font-semibold text-warm-900">{{ horas(r.resumenPeriodo.minutosEsperadosMateria) }}</dd></div>
+              </dl>
+
+              @if (r.cambioSobreGrupoExistente; as cambio) {
+                <p class="text-xs text-warm-700" data-testid="cambio-grupo-existente">
+                  Sobre el grupo actual: se conservan {{ cambio.sesionesConservadas }} sesiones ({{ horas(cambio.minutosConservados) }}) ya dictadas o con asistencia,
+                  se crean {{ cambio.sesionesFuturasQueSeCrean }} y se retiran {{ cambio.sesionesFuturasQueSeRetiran }}.
+                </p>
+              }
+
+              @if (r.conflictos.length > 0) {
+                <ul class="space-y-1.5" data-testid="conflictos-previsualizacion">
+                  @for (c of r.conflictos; track $index) {
+                    <li class="text-xs rounded-xl px-3 py-2 border"
+                      [class]="c.severidad === 'BLOQUEANTE' ? 'text-danger-700 bg-danger-50 border-danger-200 font-semibold' : c.severidad === 'ADVERTENCIA' ? 'text-warning-800 bg-warning-50 border-warning-200' : 'text-warm-700 bg-white border-warm-200'">
+                      <span class="font-bold">{{ c.severidad === 'BLOQUEANTE' ? 'No se puede guardar:' : c.severidad === 'ADVERTENCIA' ? 'Atención:' : 'Información:' }}</span> {{ c.mensaje }}
+                    </li>
+                  }
+                </ul>
+              } @else {
+                <p class="text-xs font-semibold text-success-700" data-testid="sin-conflictos">Sin conflictos: el horario se puede guardar.</p>
+              }
+
+              <details class="text-xs">
+                <summary class="cursor-pointer font-semibold text-primary-700">Ver las {{ r.sesiones.length }} sesiones</summary>
+                <div class="mt-2 max-h-64 overflow-auto rounded-xl border border-warm-200 bg-white">
+                  <table class="w-full">
+                    <thead class="bg-warm-50 text-warm-600 text-left"><tr><th scope="col" class="px-3 py-1.5">#</th><th scope="col" class="px-3 py-1.5">Semana</th><th scope="col" class="px-3 py-1.5">Fecha</th><th scope="col" class="px-3 py-1.5">Hora</th><th scope="col" class="px-3 py-1.5">Estado</th></tr></thead>
+                    <tbody>
+                      @for (s of r.sesiones; track s.numero) {
+                        <tr class="border-t border-warm-100" [class.text-warm-400]="s.estado === 'NO_PROGRAMABLE_POR_FECHA'">
+                          <td class="px-3 py-1.5">{{ s.numero }}</td><td class="px-3 py-1.5">{{ s.numeroSemana }}</td><td class="px-3 py-1.5">{{ s.fecha }}</td>
+                          <td class="px-3 py-1.5">{{ s.horaInicio }}-{{ s.horaFin }}</td>
+                          <td class="px-3 py-1.5">{{ estadoSesion(s.estado) }}@if (s.nombreFestivo) { ({{ s.nombreFestivo }}) }</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+            }
+          </section>
 
           <div class="flex justify-end gap-2 pt-2 border-t border-warm-100">
             <button type="button" (click)="volver()" class="px-4 py-2 rounded-xl bg-warm-50 border border-warm-200 text-sm font-semibold text-warm-700">
@@ -215,6 +299,11 @@ export class CoordinatorGroupsComponent implements OnInit {
   errorCatalogos = signal<LoadErrorState | null>(null);
   /** Rechazo del backend al guardar (p. ej. cruce de horario del docente): se muestra en el formulario, además del aviso. */
   errorGuardado = signal<string | null>(null);
+  /** SES-GEN-01: previsualización del calendario de sesiones del horario propuesto (solo lectura; la confirmación vuelve a validar todo). */
+  readonly resultado = signal<PrevisualizacionHorarioGrupo | null>(null);
+  readonly previsualizando = signal(false);
+  readonly errorPrevision = signal<string | null>(null);
+  private claveCalculada = '';
   private grupoEditado: string | null = null;
   private readonly nombresDocente = computed(() => new Map(this.docentes().map((d) => [d.idDocente, d.nombreCompleto])));
 
@@ -282,6 +371,72 @@ export class CoordinatorGroupsComponent implements OnInit {
       .subscribe((res) => this.periodos.set(res.datos ?? []));
   }
 
+  readonly horas = minutosAHoras;
+
+  /** Materia elegida en el formulario de un grupo nuevo (para mostrar sus horas semanales). */
+  asignaturaElegida(): AsignaturaPlanItem | null {
+    return this.asignaturas().find((a) => a.id === this.form.idAsignatura) ?? null;
+  }
+
+  /** Datos que determinan la previsualización: si cambian, el resultado mostrado ya no corresponde. */
+  private claveForm(): string {
+    return JSON.stringify([this.grupoEditado, this.form.idAsignatura, this.form.idPeriodoAcademico, this.form.idDocente,
+      this.form.franjas.map((f) => [f.dia, f.horaInicio, f.horaFin])]);
+  }
+
+  previsualizacionDesactualizada(): boolean {
+    return this.resultado() !== null && this.claveForm() !== this.claveCalculada;
+  }
+
+  estadoSesion(estado: string): string {
+    return estado === 'CANCELADA_POR_FESTIVO' ? 'Cancelada por festivo' : estado === 'NO_PROGRAMABLE_POR_FECHA' ? 'Ya inició el período' : 'Programada';
+  }
+
+  /** Pide al backend el calendario de sesiones del horario propuesto (sin guardar nada). */
+  previsualizar(): void {
+    const error = this.errorPrevisualizable();
+    if (error) {
+      this.errorPrevision.set(error);
+      return;
+    }
+    this.errorPrevision.set(null);
+    this.previsualizando.set(true);
+    const clave = this.claveForm();
+    this.courseService
+      .previsualizarHorarioGrupo({
+        idGrupo: this.modo() === 'EDITAR' ? (this.grupoEditado as string) : undefined,
+        idAsignatura: this.modo() === 'CREAR' ? this.form.idAsignatura : undefined,
+        idPeriodoAcademico: this.modo() === 'CREAR' ? this.form.idPeriodoAcademico : undefined,
+        idDocente: this.form.idDocente || undefined,
+        franjas: this.form.franjas.map((f) => ({ dia: f.dia, horaInicio: f.horaInicio, horaFin: f.horaFin })),
+      })
+      .subscribe({
+        next: (res) => {
+          this.previsualizando.set(false);
+          if (res.exitoso && res.datos) {
+            this.resultado.set(res.datos);
+            this.claveCalculada = clave;
+          } else {
+            this.errorPrevision.set(res.mensajeUsuario || 'No fue posible calcular las sesiones del semestre.');
+          }
+        },
+        error: (err: unknown) => {
+          this.previsualizando.set(false);
+          this.errorPrevision.set(getApiErrorMessage(err) || 'No fue posible calcular las sesiones del semestre.');
+        },
+      });
+  }
+
+  /** Lo mínimo para poder calcular: materia, período y docente (grupo nuevo) y al menos una franja válida. */
+  private errorPrevisualizable(): string | null {
+    if (this.modo() === 'CREAR' && (!this.form.idAsignatura || !this.form.idPeriodoAcademico)) {
+      return 'Seleccione la asignatura y el período académico para calcular las sesiones.';
+    }
+    if (!this.form.idDocente) return 'Seleccione el docente titular para calcular las sesiones.';
+    if (this.form.franjas.length === 0) return 'Defina al menos una franja del horario.';
+    return validarFranjas(this.form.franjas);
+  }
+
   nombreDocente(idDocente: string | undefined): string {
     return (idDocente && this.nombresDocente().get(idDocente)) || 'Sin asignar';
   }
@@ -291,6 +446,7 @@ export class CoordinatorGroupsComponent implements OnInit {
     this.grupoEditado = null;
     this.form = this.formVacio();
     this.errorGuardado.set(null);
+    this.limpiarPrevisualizacion();
     this.vista.set('FORM');
   }
 
@@ -307,7 +463,14 @@ export class CoordinatorGroupsComponent implements OnInit {
       franjas: (grupo.franjas ?? []).map((f) => ({ ...f })),
     };
     this.errorGuardado.set(null);
+    this.limpiarPrevisualizacion();
     this.vista.set('FORM');
+  }
+
+  private limpiarPrevisualizacion(): void {
+    this.resultado.set(null);
+    this.errorPrevision.set(null);
+    this.claveCalculada = '';
   }
 
   volver(): void {
@@ -387,6 +550,10 @@ export class CoordinatorGroupsComponent implements OnInit {
     if (this.modo() === 'EDITAR' && !cupoValidoOVacio(this.form.cupoMaximo)) {
       // usp_actualizar_grupo ignora un cupo <= 0 y deja el anterior: sin esta validación el guardado parecía exitoso.
       return mensajeUi('UI_COORDINATOR_GROUPS_004');
+    }
+    // SES-GEN-01: todo grupo nace con horario y con sus sesiones; un editor vaciado ya no se envía como «sin horario».
+    if (this.form.franjas.length === 0) {
+      return 'Defina al menos una franja del horario: el grupo se crea con su horario y sus sesiones.';
     }
     return validarFranjas(this.form.franjas);
   }

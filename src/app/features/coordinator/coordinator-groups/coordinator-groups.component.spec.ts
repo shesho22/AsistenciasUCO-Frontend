@@ -7,6 +7,7 @@ import { CourseService } from '../../../core/services/course.service';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { Course } from '../../../core/models/course.model';
+import { PrevisualizacionHorarioGrupo } from '../../../core/models/horario-grupo.model';
 
 describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
   let fixture: ComponentFixture<CoordinatorGroupsComponent>;
@@ -40,7 +41,7 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
   });
 
   beforeEach(async () => {
-    courseService = jasmine.createSpyObj('CourseService', ['getCoordinatorCoursesPage', 'crearGrupo', 'actualizarGrupo']);
+    courseService = jasmine.createSpyObj('CourseService', ['getCoordinatorCoursesPage', 'crearGrupo', 'actualizarGrupo', 'previsualizarHorarioGrupo']);
     coordinatorService = jasmine.createSpyObj('CoordinatorManagementService', [
       'getPlanesEstudio',
       'getAsignaturasPorPlan',
@@ -319,6 +320,131 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
     expect(courseService.actualizarGrupo).toHaveBeenCalledWith('g1', jasmine.objectContaining({ cupoMaximo: undefined }));
   });
 
+  /** Previsualización de ejemplo: 2 franjas de 2 h = 4 h por semana, 32 sesiones en 16 semanas, 2 cancelan por festivo. */
+  const previsualizacion = (conflictos: PrevisualizacionHorarioGrupo['conflictos'] = []): PrevisualizacionHorarioGrupo => ({
+    idGrupo: null,
+    asignatura: { id: 'asig-1', codigo: 'IS-1', nombre: 'Arquitectura de Software', horasSemanales: 4 },
+    periodo: { id: 'per-1', nombre: '2027-1', fechaInicio: '2027-02-03', fechaFin: '2027-05-25', diasPeriodo: 112, semanasPeriodo: 16, estado: 'PLANEACION' },
+    zonaHoraria: 'America/Bogota',
+    franjas: [
+      { codigoDia: 'LU', nombreDia: 'Lunes', horaInicio: '08:00', horaFin: '10:00', minutos: 120 },
+      { codigoDia: 'MI', nombreDia: 'Miércoles', horaInicio: '08:00', horaFin: '10:00', minutos: 120 },
+    ],
+    resumenSemanal: { franjasPorSemana: 2, minutosSemanales: 240, minutosSemanalesMateria: 240, diferenciaMinutos: 0, coincideConMateria: true },
+    resumenPeriodo: {
+      sesionesCalendario: 32, sesionesProgramadas: 30, sesionesEnFestivo: 2, sesionesNoProgramables: 0, minutosCalendario: 3840,
+      minutosProgramados: 3600, minutosPerdidosFestivo: 240, minutosNoProgramables: 0, minutosEsperadosMateria: 3840, diferenciaMinutos: -240,
+      cubreTotalEsperado: false,
+    },
+    festivos: [{ fecha: '2027-03-22', nombre: 'Festivo', sesionesAfectadas: 1 }],
+    sesiones: [{
+      numero: 1, numeroSemana: 1, fecha: '2027-02-03', horaInicio: '08:00', horaFin: '10:00', fechaHoraInicioUtc: '2027-02-03T13:00:00Z',
+      fechaHoraFinUtc: '2027-02-03T15:00:00Z', minutos: 120, estado: 'PROGRAMADA', nombreFestivo: null,
+    }],
+    cambioSobreGrupoExistente: null,
+    conflictos,
+    puedeConfirmar: conflictos.every((c) => c.severidad !== 'BLOQUEANTE'),
+  });
+
+  function llenarGrupoNuevo(): void {
+    component.abrirCrear();
+    component.form.idAsignatura = 'asig-1';
+    component.form.idPeriodoAcademico = 'per-1';
+    component.form.codigo = 3;
+    component.form.nombre = 'Grupo 3';
+    component.form.idDocente = 'doc-1';
+    component.form.franjas = [{ dia: 'LU', horaInicio: '08:00', horaFin: '10:00' }, { dia: 'MI', horaInicio: '08:00', horaFin: '10:00' }];
+  }
+
+  it('SES-GEN-01: un grupo nuevo no se guarda sin al menos una franja y no se envía «sin horario»', () => {
+    llenarGrupoNuevo();
+    component.form.franjas = [];
+    component.guardar();
+    expect(courseService.crearGrupo).not.toHaveBeenCalled();
+    expect(toast.warning).toHaveBeenCalledWith(jasmine.stringContaining('al menos una franja'));
+  });
+
+  it('SES-GEN-01: editar un grupo tampoco envía franjas vacías (el editor vaciado ya no significa «sin horario»)', () => {
+    component.abrirEditar(grupo);
+    component.form.franjas = [];
+    component.guardar();
+    expect(courseService.actualizarGrupo).not.toHaveBeenCalled();
+    expect(toast.warning).toHaveBeenCalledWith(jasmine.stringContaining('al menos una franja'));
+  });
+
+  it('SES-GEN-01: calcula las sesiones del semestre con el horario propuesto y muestra el resumen y los conflictos', () => {
+    courseService.previsualizarHorarioGrupo.and.returnValue(of({
+      exitoso: true,
+      datos: previsualizacion([
+        { codigo: 'HOR_011', severidad: 'INFORMATIVO', mensaje: '4 h caen en días festivos (2 sesión(es)); esas sesiones quedan canceladas.', franja: null },
+        { codigo: 'HOR_006', severidad: 'BLOQUEANTE', mensaje: 'Las horas semanales no coinciden.', franja: null },
+      ]),
+    }));
+    llenarGrupoNuevo();
+    fixture.detectChanges();
+
+    component.previsualizar();
+    fixture.detectChanges();
+
+    expect(courseService.previsualizarHorarioGrupo).toHaveBeenCalledWith({
+      idGrupo: undefined,
+      idAsignatura: 'asig-1',
+      idPeriodoAcademico: 'per-1',
+      idDocente: 'doc-1',
+      franjas: [{ dia: 'LU', horaInicio: '08:00', horaFin: '10:00' }, { dia: 'MI', horaInicio: '08:00', horaFin: '10:00' }],
+    });
+    const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(texto).toContain('32'); // sesiones del período
+    expect(texto).toContain('4 h de 4 h'); // horas por semana frente a las de la materia
+    expect(texto).toContain('No se puede guardar:');
+    expect(texto).toContain('Las horas semanales no coinciden.');
+    expect(component.previsualizacionDesactualizada()).toBeFalse();
+  });
+
+  it('SES-GEN-01: si el horario cambia después de calcular, avisa que hay que volver a calcular', () => {
+    courseService.previsualizarHorarioGrupo.and.returnValue(of({ exitoso: true, datos: previsualizacion() }));
+    llenarGrupoNuevo();
+    component.previsualizar();
+    expect(component.previsualizacionDesactualizada()).toBeFalse();
+
+    component.form.franjas = [{ dia: 'MA', horaInicio: '08:00', horaFin: '10:00' }];
+    fixture.detectChanges();
+    expect(component.previsualizacionDesactualizada()).toBeTrue();
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="previsualizacion-desactualizada"]')).not.toBeNull();
+  });
+
+  it('SES-GEN-01: sin docente, sin materia o sin franjas no pide el cálculo y lo explica', () => {
+    component.abrirCrear();
+    component.previsualizar();
+    expect(courseService.previsualizarHorarioGrupo).not.toHaveBeenCalled();
+    expect(component.errorPrevision()).toContain('asignatura y el período');
+
+    llenarGrupoNuevo();
+    component.form.idDocente = '';
+    component.previsualizar();
+    expect(component.errorPrevision()).toContain('docente');
+    expect(courseService.previsualizarHorarioGrupo).not.toHaveBeenCalled();
+  });
+
+  it('SES-GEN-01: al editar, la previsualización va por el grupo existente (la DB toma materia y período del grupo)', () => {
+    courseService.previsualizarHorarioGrupo.and.returnValue(of({ exitoso: true, datos: previsualizacion() }));
+    component.abrirEditar(grupo);
+    component.previsualizar();
+    expect(courseService.previsualizarHorarioGrupo).toHaveBeenCalledWith(jasmine.objectContaining({
+      idGrupo: 'g1', idAsignatura: undefined, idPeriodoAcademico: undefined, idDocente: 'doc-1',
+    }));
+  });
+
+  it('SES-GEN-01: muestra el rechazo del backend al calcular (p. ej. período no vigente)', () => {
+    courseService.previsualizarHorarioGrupo.and.returnValue(throwError(() => new HttpErrorResponse({
+      status: 409, error: { exitoso: false, code: 'PER_010', mensajeUsuario: 'El período académico 2025-1 no está vigente.' },
+    })));
+    llenarGrupoNuevo();
+    component.previsualizar();
+    expect(component.errorPrevision()).toContain('2025-1');
+    expect(component.previsualizando()).toBeFalse();
+  });
+
   it('cupoValidoOVacio acepta vacío o enteros >= 1', () => {
     expect(cupoValidoOVacio(null)).toBeTrue();
     expect(cupoValidoOVacio(undefined)).toBeTrue();
@@ -332,7 +458,7 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
 
   it('muestra el mensaje del backend cuando rechaza (p. ej. HOR_002) y conserva el formulario', () => {
     courseService.actualizarGrupo.and.returnValue(throwError(() => ({ error: { mensajeUsuario: 'cruce' } })));
-    component.abrirEditar({ ...grupo, code: undefined, cupoMaximo: undefined, docenteId: 'doc-1', franjas: undefined });
+    component.abrirEditar({ ...grupo, code: undefined, cupoMaximo: undefined, docenteId: 'doc-1' });
     component.form.codigo = 1;
     component.guardar();
     expect(toast.error).toHaveBeenCalled();
