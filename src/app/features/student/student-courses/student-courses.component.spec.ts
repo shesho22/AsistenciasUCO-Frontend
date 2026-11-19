@@ -693,9 +693,21 @@ describe('StudentCoursesComponent', () => {
     expect(toastSpy.error).toHaveBeenCalledWith('Solo se puede retirar una solicitud de revisión pendiente.');
   });
 
-  it('B2-F-17 "Registrar asistencia con PIN" lleva a /app/asistencia/pin (F-EST-005, F-EST-017)', () => {
+  it('B2-F-17 "Registrar asistencia con PIN" abre la ventana emergente del PIN sin salir de Mis Materias (F-EST-005, F-EST-017)', () => {
     component.irARegistroConPin();
-    expect(routerSpy.navigate).toHaveBeenCalledOnceWith(['/app/asistencia/pin']);
+    expect(component.modalAsistenciaPinVisible()).toBeTrue();
+    expect(routerSpy.navigate).not.toHaveBeenCalled();
+  });
+
+  it('HU176: registrar con PIN recarga las sesiones solo si hay una materia abierta en el detalle', () => {
+    const cargar = spyOn(component, 'cargarSesiones');
+    component.alRegistrarAsistenciaConPin();
+    expect(cargar).not.toHaveBeenCalled();
+
+    component.selectedMateria.set(mockMaterias[0]);
+    component.vistaActual.set('DETALLE');
+    component.alRegistrarAsistenciaConPin();
+    expect(cargar).toHaveBeenCalledOnceWith(mockMaterias[0]);
   });
 
   it('HU176B: registra la matrícula con el PIN de 6 dígitos usando el servicio de matrícula por QR', () => {

@@ -40,6 +40,7 @@ import { StudentCoursesListComponent } from './components/student-courses-list.c
 import { StudentCourseDetailComponent } from './components/student-course-detail.component';
 import { StudentClaimFormComponent } from './components/student-claim-form.component';
 import { StudentMatriculaCodigoModalComponent } from './components/modals/student-matricula-codigo-modal.component';
+import { StudentAsistenciaPinModalComponent } from './components/modals/student-asistencia-pin-modal.component';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
 type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO';
@@ -51,7 +52,8 @@ type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO';
     StudentCoursesListComponent,
     StudentCourseDetailComponent,
     StudentClaimFormComponent,
-    StudentMatriculaCodigoModalComponent
+    StudentMatriculaCodigoModalComponent,
+    StudentAsistenciaPinModalComponent,
 ],
     template: `
     <div class="space-y-6 animate-fade-in">
@@ -122,6 +124,13 @@ type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO';
         [codigoInicial]="pinPrecargado()"
         (submitted)="enviarMatriculaPorCodigo($event)"
         (closed)="cerrarModalMatriculaGrupo()"
+      />
+
+      <!-- 8. Modal: Registro de asistencia con PIN (HU176), igual a la matrícula por código -->
+      <app-student-asistencia-pin-modal
+        [isOpen]="modalAsistenciaPinVisible()"
+        (registrado)="alRegistrarAsistenciaConPin()"
+        (closed)="modalAsistenciaPinVisible.set(false)"
       />
     </div>
   `
@@ -197,9 +206,17 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
   /** Un reintento tecnico del mismo contenido reutiliza la correlacion; solo un exito la renueva. */
   private readonly intentoRadicacion = new RadicacionIntento();
 
-  /** HU176: el registro por PIN vive en su propia pantalla (`/app/asistencia/pin`). */
+  /** HU176: registro de asistencia con PIN en ventana emergente (la ruta `/app/asistencia/pin` se conserva para enlaces). */
+  modalAsistenciaPinVisible = signal<boolean>(false);
+
   irARegistroConPin(): void {
-    void this.router.navigate(['/app/asistencia/pin']);
+    this.modalAsistenciaPinVisible.set(true);
+  }
+
+  /** Con el detalle de una materia abierto, se recargan sus sesiones para ver la toma ya registrada. */
+  alRegistrarAsistenciaConPin(): void {
+    const materia = this.selectedMateria();
+    if (materia && this.vistaActual() === 'DETALLE') this.cargarSesiones(materia);
   }
 
   ngOnInit(): void {
