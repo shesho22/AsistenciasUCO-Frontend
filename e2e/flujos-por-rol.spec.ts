@@ -19,7 +19,7 @@ test.describe('Administrador', () => {
     await expect(dialogo).toBeVisible();
     await dialogo.getByLabel(/Nombre del período/).fill('2027-2');
     await dialogo.getByLabel(/Fecha de inicio/).fill('2027-08-01');
-    await dialogo.getByLabel(/Fecha de fin/).fill('2027-12-10');
+    await expect(dialogo.getByTestId('fecha-fin-periodo')).toHaveValue('2027-11-20');
     await dialogo.getByRole('button', { name: 'Crear período' }).click();
 
     await expect(main.getByText('4 Períodos')).toBeVisible();

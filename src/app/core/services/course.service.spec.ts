@@ -282,7 +282,7 @@ describe('CourseService', () => {
     postReq.flush({ exitoso: true, datos: { id: 'grp-nuevo', mensajeUsuario: 'ok' } });
   });
 
-  it('F3: crearGrupo sin período (la DB toma el más reciente); DEC-065 (4) retiró la oferta del docente', () => {
+  it('crearGrupo no inventa el período ni el horario: el backend los exige (DEC-065 (4): solo el coordinador crea grupos)', () => {
     service
       .crearGrupo({ idAsignatura: 'asig-1', codigo: 4, nombre: 'Grupo 4', idDocente: 'doc-1' })
       .subscribe((res) => expect(res.exitoso).toBeTrue());
@@ -290,6 +290,23 @@ describe('CourseService', () => {
     expect(postReq.request.body.idPeriodoAcademico).toBeUndefined();
     expect(postReq.request.body.idDocente).toBe('doc-1');
     postReq.flush({ exitoso: true, datos: { id: 'grp-docente', mensajeUsuario: 'ok' } });
+  });
+
+  it('SES-GEN-01: previsualizarHorarioGrupo envía POST /coordinador/grupos/previsualizacion-horario con los datos del grupo y sus franjas', () => {
+    service
+      .previsualizarHorarioGrupo({
+        idAsignatura: 'asig-1',
+        idPeriodoAcademico: 'per-1',
+        idDocente: 'doc-1',
+        franjas: [{ dia: 'LU', horaInicio: '08:00', horaFin: '10:00' }, { dia: 'MI', horaInicio: '08:00', horaFin: '10:00' }],
+      })
+      .subscribe((res) => expect(res.datos?.resumenPeriodo.sesionesCalendario).toBe(32));
+    const req = http.expectOne(`${environment.apiUrl}/coordinador/grupos/previsualizacion-horario`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body.idAsignatura).toBe('asig-1');
+    expect(req.request.body.idGrupo).toBeUndefined();
+    expect(req.request.body.franjas).toHaveSize(2);
+    req.flush({ exitoso: true, datos: { resumenPeriodo: { sesionesCalendario: 32 } } });
   });
 
   it('F1: actualizarGrupo envía PUT /grupos/{id}; sin franjas el horario no viaja', () => {

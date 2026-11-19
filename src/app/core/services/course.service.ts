@@ -11,6 +11,7 @@ import { ApiPageResponse } from '../api/models/api-page-response.model';
 import { obtenerTodasLasPaginas, paramsSinVacios } from '../api/pagination.util';
 import { HorarioDocenteApiDto } from '../api/models/horario-docente-api-dto.model';
 import { Course, FranjaHorario } from '../models/course.model';
+import { PrevisualizacionHorarioGrupo, PrevisualizarHorarioPayload } from '../models/horario-grupo.model';
 import { MOCK_COURSES } from '../mocks/course.mock';
 
 @Injectable({
@@ -268,6 +269,7 @@ export class CourseService {
       }).pipe(delay(250));
     }
 
+    // SES-GEN-01: todo grupo nace con horario y con sus sesiones; el backend rechaza (400) una creación sin franjas.
     return this.http.post<ApiResponse<{ id: string; mensajeUsuario: string }>>(`${environment.apiUrl}/grupos`, {
       idAsignatura: payload.idAsignatura,
       idPeriodoAcademico: payload.idPeriodoAcademico,
@@ -275,6 +277,20 @@ export class CourseService {
       nombre: payload.nombre,
       idDocente: payload.idDocente,
       franjas: toFranjasRequest(payload.franjas),
+    });
+  }
+
+  /**
+   * SES-GEN-01: calcula, sin escribir nada, las sesiones del semestre, las horas y los conflictos de un horario propuesto. Mismas reglas
+   * y misma definición de ranuras que la confirmación (que vuelve a validar todo): `puedeConfirmar` solo informa.
+   */
+  previsualizarHorarioGrupo(payload: PrevisualizarHorarioPayload): Observable<ApiResponse<PrevisualizacionHorarioGrupo>> {
+    return this.http.post<ApiResponse<PrevisualizacionHorarioGrupo>>(`${environment.apiUrl}/coordinador/grupos/previsualizacion-horario`, {
+      idGrupo: payload.idGrupo,
+      idAsignatura: payload.idAsignatura,
+      idPeriodoAcademico: payload.idPeriodoAcademico,
+      idDocente: payload.idDocente,
+      franjas: payload.franjas,
     });
   }
 
@@ -341,7 +357,7 @@ export class CourseService {
   }
 }
 
-/** Cuerpo de crear/actualizar grupo (F1; el docente solo crea, F3). */
+/** Cuerpo de crear/actualizar grupo (F1). Crear exige al menos una franja (SES-GEN-01); en actualizar, sin franjas el horario no cambia. */
 export interface GrupoCoordinadorPayload {
   idAsignatura?: string;
   idPeriodoAcademico?: string;

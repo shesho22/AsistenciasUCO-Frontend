@@ -361,6 +361,22 @@ describe('CoordinatorManagementService', () => {
       expect(asig.idSemestrePlanEstudio).toBe('sem-1');
     });
 
+    it('SES-GEN-01: una materia sin horas cargadas llega con horasSemanales nulo (no 0) y las horas viajan al guardar', () => {
+      expect(normalizarAsignaturaPlan({ idAsignatura: 'a-1', codigo: 'X', nombre: 'Y', credito: 3 }).horasSemanales).toBeNull();
+      expect(normalizarAsignaturaPlan({ idAsignatura: 'a-1', codigo: 'X', nombre: 'Y', credito: 3, horasSemanales: 4 }).horasSemanales).toBe(4);
+      service.crearAsignaturaPlan('plan-1', { codigo: 'X', nombre: 'Y', creditos: 3, semestre: 2, area: 'A', componente: 'C', codigoCaracter: 'OBL', horasSemanales: 4 }).subscribe();
+      const req = http.expectOne(`${environment.apiUrl}/coordinador/planes-estudio/plan-1/asignaturas`);
+      expect(req.request.body.horasSemanales).toBe(4);
+      req.flush({ exitoso: true, datos: { id: 'a-1' } });
+    });
+
+    it('SES-GEN-01: sin horas semanales el cuerpo no las incluye (el backend las deja sin cargar o sin cambio)', () => {
+      service.crearAsignaturaPlan('plan-1', { codigo: 'X', nombre: 'Y', creditos: 3, semestre: 2, area: 'A', componente: 'C', horasSemanales: null }).subscribe();
+      const req = http.expectOne(`${environment.apiUrl}/coordinador/planes-estudio/plan-1/asignaturas`);
+      expect('horasSemanales' in req.request.body).toBeFalse();
+      req.flush({ exitoso: true, datos: { id: 'a-1' } });
+    });
+
     it('B2NM: aSolicitudAsignatura envía codigoCaracter al crear una asignatura', () => {
       service.crearAsignaturaPlan('plan-1', { codigo: 'X', nombre: 'Y', creditos: 3, semestre: 2, area: 'A', componente: 'C', codigoCaracter: 'OBL' }).subscribe();
       const req = http.expectOne(`${environment.apiUrl}/coordinador/planes-estudio/plan-1/asignaturas`);
