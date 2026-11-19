@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, HostListener, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, HostListener, effect, inject, input, output, signal } from '@angular/core';
 
 export interface ActionMenuItem {
   id: string;
@@ -35,7 +35,16 @@ export interface ActionMenuItem {
         <span>{{ texto() }}</span>
       </button>
       @if (abierto()) {
-        <div role="menu" tabindex="-1" [attr.aria-label]="label()" [class]="clasePanel()" (keydown)="alTeclear($event)">
+        <div
+          role="menu"
+          tabindex="-1"
+          [attr.aria-label]="label()"
+          [class]="clasePanel()"
+          [style.top.px]="coordenadas()?.top ?? null"
+          [style.bottom.px]="coordenadas()?.bottom ?? null"
+          [style.right.px]="coordenadas()?.right ?? null"
+          (keydown)="alTeclear($event)"
+        >
           @for (item of items(); track item.id) {
             <button
               type="button"
@@ -44,7 +53,7 @@ export interface ActionMenuItem {
               [attr.data-testid]="item.testid ?? null"
               [disabled]="item.disabled ?? false"
               (click)="elegir(item)"
-              class="w-full text-left px-4 py-2.5 min-h-[44px] text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none"
+              class="block w-full text-left px-4 py-2.5 min-h-[44px] text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none"
               [class]="item.danger ? 'text-danger-700 hover:bg-danger-50 focus:bg-danger-50' : 'text-warm-800 hover:bg-warm-100 focus:bg-warm-100'"
             >
               {{ item.label }}
@@ -68,10 +77,32 @@ export class ActionMenuComponent {
   readonly tone = input<'light' | 'dark'>('light');
   /** Borde del botón con el que se alinea el panel: `end` (derecho, por defecto) o `start` (izquierdo, para botones a la izquierda de un contenedor que recorta). */
   readonly alineacion = input<'start' | 'end'>('end');
+  /**
+   * `true` dentro de contenedores que recortan (tablas con `overflow`): el panel se posiciona respecto a la ventana,
+   * debajo del boton o encima si abajo no cabe, y se cierra al desplazar o redimensionar.
+   */
+  readonly flotante = input<boolean>(false);
 
   readonly selected = output<string>();
 
   protected readonly abierto = signal(false);
+  /** Posicion del panel flotante en la ventana; `null` cuando el panel no flota. */
+  protected readonly coordenadas = signal<{ top: number | null; bottom: number | null; right: number } | null>(null);
+
+  constructor() {
+    // El panel flotante no sigue al boton: cualquier desplazamiento (tambien el de la tabla o del contenedor
+    // principal, por eso en captura) o cambio de tamano de la ventana lo cierra.
+    effect((onCleanup) => {
+      if (!this.abierto() || !this.flotante()) return;
+      const cerrar = (): void => this.abierto.set(false);
+      window.addEventListener('scroll', cerrar, true);
+      window.addEventListener('resize', cerrar);
+      onCleanup(() => {
+        window.removeEventListener('scroll', cerrar, true);
+        window.removeEventListener('resize', cerrar);
+      });
+    });
+  }
 
   protected claseBoton(): string {
     const base =
@@ -82,9 +113,37 @@ export class ActionMenuComponent {
   }
 
   protected clasePanel(): string {
+    // `whitespace-normal`: el menu puede vivir en una celda `whitespace-nowrap` y sus opciones van una por renglon.
+    const comun = 'min-w-[13rem] max-w-[calc(100vw-2rem)] whitespace-normal rounded-xl border border-warm-200 bg-white py-1 shadow-warm-lg';
+    if (this.flotante()) return `fixed z-50 ${comun}`;
     const lado = this.placement() === 'top' ? 'bottom-full mb-2' : 'top-full mt-2';
     const borde = this.alineacion() === 'start' ? 'left-0' : 'right-0';
-    return `absolute ${borde} ${lado} z-40 min-w-[13rem] max-w-[calc(100vw-2rem)] rounded-xl border border-warm-200 bg-white py-1 shadow-warm-lg`;
+    return `absolute ${borde} ${lado} z-40 ${comun}`;
+  }
+
+  /** Alto aproximado del panel: una fila de 44 px por accion mas el relleno. */
+  private altoEstimadoPanel(): number {
+    return this.items().length * 44 + 16;
+  }
+
+  private calcularCoordenadas(): void {
+    if (!this.flotante()) {
+      this.coordenadas.set(null);
+      return;
+    }
+    const boton = this.host.nativeElement.querySelector<HTMLElement>('[data-testid="action-menu-trigger"]');
+    if (!boton) return;
+    const rect = boton.getBoundingClientRect();
+    const margen = 8;
+    const right = Math.max(margen, window.innerWidth - rect.right);
+    const cabeAbajo = window.innerHeight - rect.bottom >= this.altoEstimadoPanel() + margen;
+    const prefiereArriba = this.placement() === 'top' && rect.top >= this.altoEstimadoPanel() + margen;
+    const arriba = prefiereArriba || (!cabeAbajo && rect.top > window.innerHeight - rect.bottom);
+    this.coordenadas.set(
+      arriba
+        ? { top: null, bottom: window.innerHeight - rect.top + margen, right }
+        : { top: rect.bottom + margen, bottom: null, right }
+    );
   }
 
   protected alternar(): void {
@@ -101,6 +160,7 @@ export class ActionMenuComponent {
   }
 
   private abrir(): void {
+    this.calcularCoordenadas();
     this.abierto.set(true);
     // El menu se pinta en la deteccion de cambios que sigue al clic (antes de la proxima tarea): se enfoca la primera accion habilitada.
     setTimeout(() => this.botones()[0]?.focus(), 0);

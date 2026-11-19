@@ -255,28 +255,30 @@ describe('TeacherGrupoHubComponent', () => {
       expect(el().querySelector('app-teacher-grupo-sabana')).not.toBeNull();
     });
 
-    it('ofrece planilla, cronograma, reclamos y matricula, sin pestaña de horario', () => {
+    it('ofrece planilla, reclamos y matricula; el cronograma vive en el historial de la toma de asistencia', () => {
       abrir();
       const tabs = Array.from(el().querySelectorAll('[data-testid="hub-grupo-tabs"] [role="tab"]')).map((t) => t.textContent!.replace(/\s+/g, ' ').trim());
-      expect(tabs).toHaveSize(4);
+      expect(tabs).toHaveSize(3);
       expect(tabs[0]).toContain('Planilla');
-      expect(tabs[1]).toContain('Cronograma');
-      expect(tabs[2]).toContain('Reclamos');
-      expect(tabs[3]).toContain('Matrícula');
+      expect(tabs[1]).toContain('Reclamos');
+      expect(tabs[2]).toContain('Matrícula');
+      expect(q('[data-testid="hub-tab-sesiones"]')).toBeNull();
+      expect(el().textContent).not.toContain('Cronograma');
       expect(el().querySelector('app-teacher-grupo-horarios')).toBeNull();
     });
 
     it('cambiar de pestaña del grupo muestra su contenido', () => {
       abrir();
-      (q('[data-testid="hub-tab-sesiones"]') as HTMLButtonElement).click();
+      (q('[data-testid="hub-tab-estudiantes"]') as HTMLButtonElement).click();
       fixture.detectChanges();
-      expect(fixture.componentInstance.subPestanaHub()).toBe('SESIONES');
-      expect(el().querySelector('app-teacher-grupo-sesiones')).not.toBeNull();
+      expect(fixture.componentInstance.subPestanaHub()).toBe('ESTUDIANTES');
+      expect(el().querySelector('app-teacher-grupo-estudiantes')).not.toBeNull();
     });
 
-    it('pestanaDeGrupo acepta las cuatro pestañas y devuelve Planilla para lo desconocido', () => {
+    it('pestanaDeGrupo acepta las tres pestañas y devuelve Planilla para lo desconocido o retirado', () => {
       expect(pestanaDeGrupo('ESTUDIANTES')).toBe('ESTUDIANTES');
-      expect(pestanaDeGrupo('SESIONES')).toBe('SESIONES');
+      // Un enlace viejo a la pestaña Cronograma (retirada el 2026-11-18) abre la planilla.
+      expect(pestanaDeGrupo('SESIONES')).toBe('SABANA');
       expect(pestanaDeGrupo('RECLAMOS')).toBe('RECLAMOS');
       expect(pestanaDeGrupo('SABANA')).toBe('SABANA');
       expect(pestanaDeGrupo('HOY')).toBe('SABANA');
@@ -296,14 +298,6 @@ describe('TeacherGrupoHubComponent', () => {
     it('sin resumen del servidor no inventa conteos', () => {
       abrir([pasada, enCurso, proxima], null);
       expect((q('[data-testid="hub-conteo-sesiones"]') as HTMLElement).textContent!.replace(/\s+/g, ' ').trim()).toContain('Sesiones: —');
-    });
-
-    it('las pestañas del grupo ya no muestran el total de sesiones como badge', () => {
-      abrir();
-      fixture.componentInstance.subPestanaHub.set('SESIONES');
-      fixture.detectChanges();
-      const tab = q('[data-testid="hub-tab-sesiones"]') as HTMLElement;
-      expect(tab.textContent).not.toMatch(/\d/);
     });
 
     it('la barra de pestañas tiene scroll horizontal propio para movil', () => {
@@ -339,7 +333,7 @@ describe('TeacherGrupoHubComponent', () => {
 
     it('en otra pestaña distinta de la Planilla, sin pendientes, no muestra la tarjeta ni el estado vacío', () => {
       abrir([]);
-      fixture.componentRef.setInput('subPestanaHub', 'SESIONES');
+      fixture.componentRef.setInput('subPestanaHub', 'RECLAMOS');
       fixture.detectChanges();
       expect(el().querySelector('[data-testid="decisiones-tarjeta"]')).toBeNull();
       expect(el().querySelector('[data-testid="decisiones-vacio"]')).toBeNull();

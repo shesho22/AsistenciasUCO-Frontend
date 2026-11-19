@@ -17,6 +17,8 @@ import { RealtimeEvent, SesionCanceladaRealtimePayload } from '../../../core/rea
 import { AttendanceControlComponent } from './attendance-control.component';
 import { AttendanceRealtimeSyncService } from './attendance-realtime-sync.service';
 import { AttendanceControlTableComponent } from './components/attendance-control-table.component';
+import { SesionAccionesComponent } from './components/sesion-acciones.component';
+import { By } from '@angular/platform-browser';
 
 /**
  * CULM-001 B.1 (HU047): una sesión cancelada se ve como tal en la toma de asistencia, no admite tomas y el SSE
@@ -27,6 +29,7 @@ describe('AttendanceControlComponent sesión cancelada (B.1)', () => {
   let attendanceService: jasmine.SpyObj<AttendanceService>;
   let cancelaciones$: Subject<RealtimeEvent<SesionCanceladaRealtimePayload>>;
   let watchCancelaciones: jasmine.Spy;
+  let sessionService: jasmine.SpyObj<SessionService>;
 
   const course = {
     id: 'group-1', code: 'MAT-1', name: 'Materia', section: '1', schedule: 'Lunes', room: 'Aula 1',
@@ -49,7 +52,7 @@ describe('AttendanceControlComponent sesión cancelada (B.1)', () => {
     localStorage.setItem('USE_MOCKS', 'false');
     cancelaciones$ = new Subject();
     const courseService = jasmine.createSpyObj<CourseService>('CourseService', ['getCurrentTeacherCourses']);
-    const sessionService = jasmine.createSpyObj('SessionService', ['getSessionsByGroup', 'createSession']);
+    sessionService = jasmine.createSpyObj('SessionService', ['getSessionsByGroup', 'createSession', 'updateSession', 'cancelarSesion']);
     const groupService = jasmine.createSpyObj('GroupService', ['getStudentsByGroup']);
     attendanceService = jasmine.createSpyObj('AttendanceService', ['getAttendancesByGroup', 'saveBatchAttendance']);
     const realtime = jasmine.createSpyObj<AttendanceRealtimeSyncService>('AttendanceRealtimeSyncService', [
@@ -65,7 +68,7 @@ describe('AttendanceControlComponent sesión cancelada (B.1)', () => {
 
     courseService.getCurrentTeacherCourses.and.returnValue(of<never>({ exitoso: true, datos: [course] } as never));
     sessionService.getSessionsByGroup.and.returnValue(
-      of({ exitoso: true, datos: [programada, cancelada], total: 2 } as never));
+      of<never>({ exitoso: true, datos: [programada, cancelada], total: 2 } as never));
     groupService.getStudentsByGroup.and.returnValue(of({
       exitoso: true,
       datos: [{
@@ -192,5 +195,93 @@ describe('AttendanceControlComponent sesión cancelada (B.1)', () => {
 
     expect(fixture.componentInstance.attendanceWindowState()).toBe('CANCELADA');
     expect(spy).not.toHaveBeenCalled();
+  });
+
+  // Las acciones del cronograma del docente se ejecutan desde el menú "Acciones" de cada sesión del historial.
+  describe('menú "Acciones" de una sesión del historial', () => {
+    function acciones(): SesionAccionesComponent {
+      return fixture.debugElement.query(By.directive(SesionAccionesComponent)).componentInstance as SesionAccionesComponent;
+    }
+
+    it('la panorámica recibe las banderas de QR y cancelación', () => {
+      const component = crear();
+      expect(component.sessionCancelEnabled).toBeTrue();
+      expect(fixture.nativeElement.querySelector('[data-testid="acciones-sesion-1"]')).not.toBeNull();
+    });
+
+    it('"Tomar asistencia" abre la toma de esa sesión', () => {
+      const component = crear();
+      component.onAccionSesion({ accion: 'tomar', sesion: programada as never });
+      expect(component.vistaActual()).toBe('DETALLE');
+      expect(component.selectedSessionId()).toBe('session-1');
+    });
+
+    it('"Proyectar QR / PIN" lleva a la toma de esa sesión sin abrir el selector de modo (ahí se valida ventana y toma abierta)', () => {
+      const component = crear();
+      component.onAccionSesion({ accion: 'proyectar', sesion: programada as never });
+      expect(component.vistaActual()).toBe(component.sessionQrEnabled ? 'DETALLE' : 'OVERVIEW');
+      expect(component.modoSelectorAbierto()).toBeFalse();
+    });
+
+    it('una recarga que llega después de cambiar de grupo no pisa la lista del grupo vigente', () => {
+      const component = crear();
+      const lenta = new Subject<never>();
+      sessionService.getSessionsByGroup.and.returnValue(lenta as never);
+      component.recargarSesionesDelGrupo();
+      const antes = component.sessions();
+      component.selectedCourseId.set('otro-grupo');
+
+      lenta.next({ exitoso: true, datos: [], total: 0 } as never);
+
+      expect(component.sessions()).toBe(antes);
+    });
+
+    it('"Ver detalles", "Ajustar horario" y "Cancelar sesión" abren su modal para esa sesión', () => {
+      const component = crear();
+      const hijo = acciones();
+      const detalle = spyOn(hijo, 'abrirDetalle');
+      const ajuste = spyOn(hijo, 'abrirAjuste');
+      const cancelar = spyOn(hijo, 'abrirCancelar');
+
+      component.onAccionSesion({ accion: 'detalle', sesion: programada as never });
+      component.onAccionSesion({ accion: 'ajustar', sesion: programada as never });
+      component.onAccionSesion({ accion: 'cancelar', sesion: programada as never });
+
+      expect(detalle).toHaveBeenCalledOnceWith(programada as never);
+      expect(ajuste).toHaveBeenCalledOnceWith(programada as never);
+      expect(cancelar).toHaveBeenCalledOnceWith(programada as never);
+      expect(component.vistaActual()).toBe('OVERVIEW');
+    });
+
+    it('HU047: la cancelación confirmada marca la sesión con la respuesta del backend sin recargar por HTTP', () => {
+      const component = crear();
+      sessionService.getSessionsByGroup.calls.reset();
+
+      acciones().sesionCancelada.emit({
+        sesionId: 'session-1',
+        cancelacion: { tipo: 'DOCENTE', motivo: 'Paro de transporte', nombreFestivo: null, fechaCancelacionUtc: null },
+      });
+
+      const sesion = component.sessions().find((s) => s.id === 'session-1');
+      expect(sesion?.estado).toBe('CANCELADA');
+      expect(sesion?.cancelacion?.motivo).toBe('Paro de transporte');
+      expect(sessionService.getSessionsByGroup).not.toHaveBeenCalled();
+    });
+
+    it('tras ajustar el horario recarga la lista del grupo por HTTP (el PATCH no devuelve la sesión)', () => {
+      crear();
+      sessionService.getSessionsByGroup.calls.reset();
+
+      acciones().sesionActualizada.emit();
+
+      expect(sessionService.getSessionsByGroup).toHaveBeenCalledOnceWith('group-1');
+    });
+
+    it('los avisos de las acciones se muestran en el toast de la pantalla', () => {
+      const component = crear();
+      acciones().notificacion.emit({ tipo: 'success', texto: 'Horario actualizado.' });
+      expect(component.showToast()).toBeTrue();
+      expect(component.toastMessage()).toBe('Horario actualizado.');
+    });
   });
 });

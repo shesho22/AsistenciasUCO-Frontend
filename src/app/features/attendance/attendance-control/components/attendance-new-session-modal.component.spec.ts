@@ -1,6 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { AttendanceNewSessionModalComponent } from './attendance-new-session-modal.component';
 import { mensajeUi } from '../../../../core/messages/mensajes-ui';
+import { ClassSession } from '../../../../core/models/attendance.model';
+import { SessionTimeZoneService } from '../../../../core/services/session-timezone.service';
 
 describe('AttendanceNewSessionModalComponent', () => {
   let fixture: ComponentFixture<AttendanceNewSessionModalComponent>;
@@ -103,5 +105,108 @@ describe('AttendanceNewSessionModalComponent nombre 1..50', () => {
     fixture.componentInstance.title.set('x'.repeat(50));
     fixture.componentInstance.onSubmit(new Event('submit'));
     expect(emitted).toHaveSize(1);
+  });
+});
+
+// Ajustar horario desde el menú "Acciones" del historial (antes en el cronograma del grupo del docente).
+describe('AttendanceNewSessionModalComponent: ajustar horario de una sesión', () => {
+  let fixture: ComponentFixture<AttendanceNewSessionModalComponent>;
+  const sesion = (extra: Partial<ClassSession> = {}): ClassSession => ({
+    id: 'ses-1', courseId: 'crs-1', sessionNumber: 3, title: 'Sesión guardada',
+    date: '2026-09-10', startTime: '08:00', endTime: '10:00', records: [], ...extra,
+  });
+
+  // La zona manual se guarda en el navegador: se vuelve a la automática para no afectar otras pruebas.
+  afterEach(() => TestBed.inject(SessionTimeZoneService).setAutomatic());
+
+  function abrir(s: ClassSession, zona?: string): AttendanceNewSessionModalComponent {
+    TestBed.configureTestingModule({ imports: [AttendanceNewSessionModalComponent] });
+    if (zona) TestBed.inject(SessionTimeZoneService).setManualTimeZone(zona);
+    fixture = TestBed.createComponent(AttendanceNewSessionModalComponent);
+    fixture.componentRef.setInput('sesion', s);
+    fixture.componentRef.setInput('isOpen', true);
+    fixture.detectChanges();
+    return fixture.componentInstance;
+  }
+
+  it('precarga título, fecha y horario de la sesión y cambia el título y el botón', () => {
+    const modal = abrir(sesion());
+    const texto = (fixture.nativeElement as HTMLElement).ownerDocument.body.textContent ?? '';
+
+    expect(modal.title()).toBe('Sesión guardada');
+    expect([modal.date(), modal.startTime(), modal.endTime()]).toEqual(['2026-09-10', '08:00', '10:00']);
+    expect(modal.tituloModal()).toBe('Ajustar horario de la Sesión #3');
+    expect(texto).toContain('Guardar horario');
+    expect(texto).not.toContain(mensajeUi('UI_SESION_SOLICITUD_REGISTRADA'));
+  });
+
+  it('emite los cambios del formulario', () => {
+    const modal = abrir(sesion());
+    const emitidos: unknown[] = [];
+    modal.submitted.subscribe((p) => emitidos.push(p));
+
+    modal.startTime.set('09:00');
+    modal.endTime.set('11:00');
+    modal.onSubmit(new Event('submit'));
+
+    expect(emitidos).toEqual([{ date: '2026-09-10', startTime: '09:00', endTime: '11:00', title: 'Sesión guardada' }]);
+  });
+
+  it('DEC-072: una sesión guardada que cruza medianoche se puede renombrar sin tocar su horario', () => {
+    const modal = abrir(sesion({ startTime: '22:30', endTime: '00:35', title: 'Nocturna' }));
+    const emitidos: unknown[] = [];
+    modal.submitted.subscribe((p) => emitidos.push(p));
+
+    modal.title.set('Nocturna renombrada');
+    expect(modal.horarioInvalido()).toBeFalse();
+    modal.onSubmit(new Event('submit'));
+
+    expect(emitidos).toHaveSize(1);
+  });
+
+  it('DEC-072: cambiar el horario a uno que cruza medianoche lo marca inválido y no emite', () => {
+    const modal = abrir(sesion());
+    const emitidos: unknown[] = [];
+    modal.submitted.subscribe((p) => emitidos.push(p));
+
+    modal.startTime.set('20:30');
+    modal.endTime.set('10:00');
+    fixture.detectChanges();
+    modal.onSubmit(new Event('submit'));
+
+    expect(modal.horarioInvalido()).toBeTrue();
+    expect(emitidos).toEqual([]);
+  });
+
+  it('si la zona horaria cambia con el formulario abierto, recarga el horario en la zona nueva, conserva el título y avisa', () => {
+    const modal = abrir(
+      sesion({ fechaHoraInicio: '2026-09-10T13:00:00Z', fechaHoraFin: '2026-09-10T15:00:00Z', estadoTemporal: 'CONFIRMADA' } as Partial<ClassSession>),
+      'America/Bogota'
+    );
+    const zonas = TestBed.inject(SessionTimeZoneService);
+    expect([modal.startTime(), modal.endTime()]).toEqual(['08:00', '10:00']);
+    modal.title.set('Título editado');
+    modal.startTime.set('09:15');
+    const body = (fixture.nativeElement as HTMLElement).ownerDocument.body;
+    expect(body.querySelector('[data-testid="aviso-zona-cambiada"]')).toBeNull();
+
+    zonas.setManualTimeZone('Europe/Madrid');
+    fixture.detectChanges();
+
+    expect(modal.title()).toBe('Título editado');
+    expect([modal.date(), modal.startTime(), modal.endTime()]).toEqual(['2026-09-10', '15:00', '17:00']);
+    expect(body.querySelector('[data-testid="aviso-zona-cambiada"]')?.textContent?.trim()).toBe(mensajeUi('UI_TEACHER_GRUPOS_007'));
+  });
+
+  it('DEC-065 (2): al crear (sin sesión) avisa que la sesión queda como solicitud pendiente', () => {
+    TestBed.configureTestingModule({ imports: [AttendanceNewSessionModalComponent] });
+    fixture = TestBed.createComponent(AttendanceNewSessionModalComponent);
+    fixture.componentRef.setInput('isOpen', true);
+    fixture.detectChanges();
+    const body = (fixture.nativeElement as HTMLElement).ownerDocument.body;
+
+    expect(body.querySelector('[data-testid="nota-solicitud-sesion"]')?.textContent?.trim())
+      .toBe(mensajeUi('UI_SESION_SOLICITUD_REGISTRADA'));
+    expect(fixture.componentInstance.tituloModal()).toBe('Crear Nueva Sesión de Clase');
   });
 });

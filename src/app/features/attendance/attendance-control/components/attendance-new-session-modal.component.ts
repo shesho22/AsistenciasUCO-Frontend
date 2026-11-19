@@ -1,10 +1,12 @@
-import { Component, ChangeDetectionStrategy, input, output, signal, effect, inject, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, output, signal, effect, inject, computed, untracked } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { FormFieldComponent } from '../../../../shared/components/form-field/form-field.component';
 import { Course } from '../../../../core/models/course.model';
+import { ClassSession } from '../../../../core/models/attendance.model';
+import { avisoSolicitudSesionRegistrada } from '../../../../core/models/sesion-manual.util';
 import {
   SESSION_NAME_LENGTH_MESSAGE,
   SESSION_NAME_MAX_LENGTH,
@@ -29,11 +31,15 @@ export interface NuevaSesionSolicitud {
     template: `
     <app-modal
       [isOpen]="isOpen()"
-      title="Crear Nueva Sesión de Clase"
+      [title]="tituloModal()"
       (closed)="closed.emit()"
     >
       <form (submit)="onSubmit($event)" class="space-y-4">
-        @if (course(); as c) {
+        @if (sesion()) {
+          <p class="text-xs text-warm-600" data-testid="nota-ajuste-horario">
+            Modifica el título, la fecha o el horario de esta sesión. Si no cambias el horario, se conservan sus instantes originales.
+          </p>
+        } @else if (course(); as c) {
           <p class="text-xs text-warm-600">
             Crea una nueva sesión para <span class="font-semibold text-warm-800">{{ c.name }}</span> ({{ c.code ? c.code + ' - ' : '' }}{{ c.section }}).
           </p>
@@ -42,9 +48,20 @@ export interface NuevaSesionSolicitud {
             Crea una nueva sesión de clase en el cronograma académico del grupo.
           </p>
         }
+        @if (!sesion()) {
+          <!-- DEC-065 (2): la sesión que crea el docente es una solicitud que aprueba la coordinación. -->
+          <p class="text-xs text-warning-800 bg-warning-50 border border-warning-200 rounded-lg px-3 py-2" data-testid="nota-solicitud-sesion">
+            {{ notaSolicitud() }}
+          </p>
+        }
         <p class="text-[11px] text-primary-800 bg-primary-50 border border-primary-100 rounded-lg px-3 py-2">
           Las fechas y horas se interpretan en la zona IANA activa: <strong>{{ timeZone.zone() }}</strong>.
         </p>
+        @if (avisoZona(); as aviso) {
+          <p role="alert" data-testid="aviso-zona-cambiada" class="text-xs text-warning-800 bg-warning-50 border border-warning-200 rounded-lg px-3 py-2">
+            {{ aviso }}
+          </p>
+        }
 
         <app-form-field label="Título de la Sesión" [required]="true">
           <input
@@ -117,7 +134,7 @@ export interface NuevaSesionSolicitud {
             [disabled]="isCreating() || nombreInvalido() || !date() || horarioInvalido()"
             (clicked)="onSubmit($event)"
           >
-            Crear Sesión
+            {{ sesion() ? 'Guardar horario' : 'Crear Sesión' }}
           </app-button>
         </div>
       </form>
@@ -128,6 +145,27 @@ export class AttendanceNewSessionModalComponent {
   isOpen = input.required<boolean>();
   course = input<Course | null | undefined>(null);
   isCreating = input<boolean>(false);
+  /** Con una sesión el modal ajusta su horario (precargado en la zona activa); sin ella crea una nueva. */
+  sesion = input<ClassSession | null>(null);
+
+  readonly notaSolicitud = computed(() => avisoSolicitudSesionRegistrada());
+
+  readonly tituloModal = computed(() => {
+    const sesion = this.sesion();
+    return sesion ? `Ajustar horario de la Sesión #${sesion.sessionNumber}` : 'Crear Nueva Sesión de Clase';
+  });
+
+  /** Horario precargado al ajustar una sesión; `null` al crear. */
+  private horarioOriginal: { date: string; startTime: string; endTime: string } | null = null;
+
+  /** Al ajustar, true si la fecha y las horas siguen siendo las de la sesión guardada. */
+  horarioSinCambios(): boolean {
+    const original = this.horarioOriginal;
+    return !!original
+      && original.date === this.date()
+      && original.startTime === this.startTime()
+      && original.endTime === this.endTime();
+  }
 
   date = signal<string>('');
   startTime = signal<string>('08:00');
@@ -137,8 +175,12 @@ export class AttendanceNewSessionModalComponent {
   readonly nombreLengthMessage = SESSION_NAME_LENGTH_MESSAGE;
   readonly horarioMensaje = computed(() => mensajeUi('UI_SESION_HORARIO_MISMO_DIA'));
 
-  /** DEC-072: la sesión no cruza la medianoche; con fin menor o igual al inicio no se puede crear. */
+  /**
+   * DEC-072: la sesión no cruza la medianoche; con fin menor o igual al inicio no se puede guardar.
+   * Una sesión ya guardada que la cruza se puede ajustar sin tocar su horario.
+   */
   horarioInvalido(): boolean {
+    if (this.horarioSinCambios()) return false;
     return !horarioDentroDelMismoDia(this.startTime(), this.endTime());
   }
 
@@ -155,15 +197,58 @@ export class AttendanceNewSessionModalComponent {
 
   readonly timeZone = inject(SessionTimeZoneService);
 
+  /** Aviso cuando la zona horaria cambia mientras se ajusta una sesión (se recarga su horario en la zona nueva). */
+  readonly avisoZona = signal<string | null>(null);
+  /** Qué se cargó en el formulario abierto (`'NUEVA'` al crear) y en qué zona; `null` con el modal cerrado. */
+  private cargado: { clave: string; zona: string } | null = null;
+
   constructor() {
     effect(() => {
-      if (this.isOpen()) {
-        this.title.set('');
-        this.date.set(this.timeZone.currentDate());
-        this.startTime.set('08:00');
-        this.endTime.set('10:00');
-      }
-    }, { allowSignalWrites: true });
+      const abierto = this.isOpen();
+      const sesion = this.sesion();
+      const zona = this.timeZone.zone();
+      untracked(() => {
+        if (!abierto) {
+          this.cargado = null;
+          this.avisoZona.set(null);
+          return;
+        }
+        const clave = sesion?.id ?? 'NUEVA';
+        const mismaCarga = this.cargado?.clave === clave;
+        if (mismaCarga && this.cargado?.zona === zona) return;
+        if (sesion) {
+          this.cargarHorario(sesion);
+          if (mismaCarga) {
+            // La zona cambió con el formulario abierto: el horario se vuelve a mostrar en la zona nueva y se conserva
+            // el título escrito; el docente lo revisa antes de guardar.
+            this.avisoZona.set(mensajeUi('UI_TEACHER_GRUPOS_007'));
+          } else {
+            this.title.set(sesion.title);
+            this.avisoZona.set(null);
+          }
+        } else if (!mismaCarga) {
+          this.horarioOriginal = null;
+          this.title.set('');
+          this.date.set(this.timeZone.currentDate());
+          this.startTime.set('08:00');
+          this.endTime.set('10:00');
+        }
+        this.cargado = { clave, zona };
+      });
+    });
+  }
+
+  /** Precarga la fecha y las horas de la sesión en la zona activa. */
+  private cargarHorario(sesion: ClassSession): void {
+    const original = {
+      date: this.timeZone.displaySessionDate(sesion),
+      startTime: this.timeZone.displaySessionStartTime(sesion),
+      endTime: this.timeZone.displaySessionEndTime(sesion),
+    };
+    this.horarioOriginal = original;
+    this.date.set(original.date);
+    this.startTime.set(original.startTime);
+    this.endTime.set(original.endTime);
   }
 
   onSubmit(e: Event): void {

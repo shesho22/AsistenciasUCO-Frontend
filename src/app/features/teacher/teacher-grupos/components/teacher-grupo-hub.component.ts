@@ -4,7 +4,6 @@ import { ActionMenuComponent, ActionMenuItem } from '../../../../shared/componen
 import { Course } from '../../../../core/models/course.model';
 import { ClassSession } from '../../../../core/models/attendance.model';
 import { DEFINICION_CONTEO_SESIONES, ResumenSesionesGrupo, textoResumenSesiones } from '../../../../core/models/resumen-sesiones-grupo.model';
-import { TeacherGrupoSesionesComponent } from './teacher-grupo-sesiones.component';
 import { TeacherGrupoEstudiantesComponent } from './teacher-grupo-estudiantes.component';
 import { TeacherGrupoReclamosComponent } from './teacher-grupo-reclamos.component';
 import { EstudianteGrupoItem } from '../../../../core/models/estudiante-grupo-item.model';
@@ -12,8 +11,11 @@ import { SolicitudRevisionItem, type EstadoCargaReclamos } from '../../../../cor
 import { TeacherGrupoSabanaComponent } from './teacher-grupo-sabana.component';
 import { TeacherGrupoDecisionesComponent } from './teacher-grupo-decisiones.component';
 
-/** Pestañas del grupo; el grupo abre en la planilla (ATA D9: se retiró el modo "Hoy"). */
-export type SubPestanaHub = 'SABANA' | 'SESIONES' | 'RECLAMOS' | 'ESTUDIANTES';
+/**
+ * Pestañas del grupo; el grupo abre en la planilla (ATA D9: se retiró el modo "Hoy"). El cronograma y sus acciones por
+ * sesión viven en «Historial y Cronograma de Sesiones» de /app/asistencia (2026-11-18): un `?pestana=SESIONES` viejo abre la planilla.
+ */
+export type SubPestanaHub = 'SABANA' | 'RECLAMOS' | 'ESTUDIANTES';
 
 interface PestanaGrupo {
   id: SubPestanaHub;
@@ -23,7 +25,6 @@ interface PestanaGrupo {
 
 const PESTANAS_GRUPO: readonly PestanaGrupo[] = [
   { id: 'SABANA', etiqueta: 'Planilla', testid: 'hub-tab-sabana' },
-  { id: 'SESIONES', etiqueta: 'Cronograma', testid: 'hub-tab-sesiones' },
   { id: 'RECLAMOS', etiqueta: 'Reclamos', testid: 'hub-tab-reclamos' },
   { id: 'ESTUDIANTES', etiqueta: 'Matrícula', testid: 'hub-tab-estudiantes' },
 ];
@@ -39,7 +40,6 @@ export function pestanaDeGrupo(valor: string | null | undefined): SubPestanaHub 
   imports: [
     CommonModule,
     ActionMenuComponent,
-    TeacherGrupoSesionesComponent,
     TeacherGrupoEstudiantesComponent,
     TeacherGrupoReclamosComponent,
     TeacherGrupoSabanaComponent,
@@ -112,7 +112,7 @@ export function pestanaDeGrupo(valor: string | null | undefined): SubPestanaHub 
           (decisionRegistrada)="marcarRefresco()"
         />
 
-        <!-- Planilla, cronograma, reclamos y matricula -->
+        <!-- Planilla, reclamos y matricula (el cronograma vive en el historial de la toma de asistencia) -->
         <div
           class="flex border-b border-warm-200 gap-2 bg-white px-4 pt-2 rounded-t-2xl shadow-xs overflow-x-auto max-w-full"
           role="tablist"
@@ -149,21 +149,6 @@ export function pestanaDeGrupo(valor: string | null | undefined): SubPestanaHub 
             [sessions]="sessions()"
             [cargando]="loadingSessions()"
             [refresco]="refrescoPlanilla()"
-          />
-        }
-
-        @if (subPestanaHub() === 'SESIONES') {
-          <app-teacher-grupo-sesiones
-            [sessions]="sessions()"
-            [loading]="loadingSessions()"
-            [qrEnabled]="sessionQrEnabled()"
-            [cancelEnabled]="sessionCancelEnabled()"
-            (programarExtraordinaria)="programarExtraordinaria.emit()"
-            (tomarAsistencia)="tomarAsistenciaSesion.emit($event)"
-            (proyectar)="proyectarSesion.emit($event)"
-            (verDetalle)="verDetalleSesion.emit($event)"
-            (ajustarHorario)="ajustarHorarioSesion.emit($event)"
-            (cancelar)="cancelarSesion.emit($event)"
           />
         }
 
@@ -234,9 +219,8 @@ export class TeacherGrupoHubComponent {
   busquedaPadron = input<string>('');
   cargandoPadron = input<boolean>(false);
   estadoCargaReclamos = input<EstadoCargaReclamos>('IDLE');
-  // OUT_OF_GOLDEN_PATH: acciones de sesión sin contrato backend; ocultas salvo feature explícita.
+  // HU175: el QR de asistencia del grupo (menú "Más") depende de su bandera.
   sessionQrEnabled = input<boolean>(false);
-  sessionCancelEnabled = input<boolean>(false);
 
   subPestanaHub = model<SubPestanaHub>('SABANA');
 
@@ -260,15 +244,9 @@ export class TeacherGrupoHubComponent {
 
   volver = output<void>();
   irAsistencia = output<Course>();
-  tomarAsistenciaSesion = output<ClassSession>();
   proyectarQr = output<Course>();
   matricular = output<Course>();
   /** HU051: el docente pide retirar a un estudiante activo del padrón. */
   retirarEstudiante = output<EstudianteGrupoItem>();
-  programarExtraordinaria = output<void>();
-  proyectarSesion = output<ClassSession>();
-  verDetalleSesion = output<ClassSession>();
-  ajustarHorarioSesion = output<ClassSession>();
-  cancelarSesion = output<ClassSession>();
   irReclamos = output<void>();
 }

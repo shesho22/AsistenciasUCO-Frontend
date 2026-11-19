@@ -1,9 +1,8 @@
 import { Component, OnInit, OnDestroy, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subscription, forkJoin } from 'rxjs';
-import { AttendanceService } from '../../../core/services/attendance.service';
-import { avisoSolicitudSesionRegistrada, mensajeSolicitudAprobada, mensajeSolicitudRechazadaOCancelada } from '../../../core/models/sesion-manual.util';
+import { Subscription } from 'rxjs';
+import { mensajeSolicitudAprobada, mensajeSolicitudRechazadaOCancelada } from '../../../core/models/sesion-manual.util';
 import { RealtimeService } from '../../../core/realtime/realtime.service';
 import { REALTIME_EVENT_TYPE, SesionCanceladaRealtimePayload, SesionManualCreadaRealtimePayload } from '../../../core/realtime/model/realtime-event.model';
 import { estaPendienteAprobacion, marcarSesionAprobada, marcarSesionCancelada } from '../../../core/models/sesion-estado.model';
@@ -14,7 +13,6 @@ import { SessionService } from '../../../core/services/session.service';
 import { GroupService } from '../../../core/services/group.service';
 import { StudentService } from '../../../core/services/student.service';
 import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
-import { AttendanceMapper } from '../../../core/mappers/attendance.mapper';
 import { TeacherGruposResumenService } from '../../../core/services/teacher-grupos-resumen.service';
 import { TeacherMatrizAsistenciaService } from '../../../core/services/teacher-matriz-asistencia.service';
 import { ResumenSesionesGrupo } from '../../../core/models/resumen-sesiones-grupo.model';
@@ -28,19 +26,13 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 // Componentes Hijos Desacoplados
 import { TeacherGruposListComponent } from './components/teacher-grupos-list.component';
 import { SubPestanaHub, TeacherGrupoHubComponent, pestanaDeGrupo } from './components/teacher-grupo-hub.component';
-import { TeacherSesionFormComponent } from './components/teacher-sesion-form.component';
 import { TeacherMatriculaModalComponent } from './components/modals/teacher-matricula-modal.component';
-import { TeacherSesionCancelarModalComponent } from './components/modals/teacher-sesion-cancelar-modal.component';
-import { TeacherSesionDetalleModalComponent } from './components/modals/teacher-sesion-detalle-modal.component';
 import { TeacherRetiroEstudianteModalComponent } from './components/modals/teacher-retiro-estudiante-modal.component';
-import { getSessionNameError } from '../../../core/validation/session-name.util';
 import { environment } from '../../../../environments/environment';
-import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
-import { horarioDentroDelMismoDia } from '../../../core/time/session-timezone.util';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
 import { RevisionCancelacionService } from '../../../core/services/revision-cancelacion.service';
 
-type VistaGrupos = 'LISTA' | 'HUB_GRUPO' | 'FORM_SESION';
+type VistaGrupos = 'LISTA' | 'HUB_GRUPO';
 /** Tamaño máximo de página del servidor (PAGINACION/TAMANO_MAXIMO) para repartir las decisiones pendientes por grupo. */
 const TAMANO_PAGINA_DECISIONES = 100;
 
@@ -50,10 +42,7 @@ const TAMANO_PAGINA_DECISIONES = 100;
     imports: [
     TeacherGruposListComponent,
     TeacherGrupoHubComponent,
-    TeacherSesionFormComponent,
     TeacherMatriculaModalComponent,
-    TeacherSesionCancelarModalComponent,
-    TeacherSesionDetalleModalComponent,
     TeacherRetiroEstudianteModalComponent
 ],
     template: `
@@ -94,18 +83,11 @@ const TAMANO_PAGINA_DECISIONES = 100;
           [cargandoPadron]="cargandoPadron()"
           [estadoCargaReclamos]="estadoCargaReclamos()"
           [sessionQrEnabled]="sessionQrEnabled"
-          [sessionCancelEnabled]="sessionCancelEnabled"
           [(subPestanaHub)]="subPestanaHub"
           (volver)="volverALista()"
           (irAsistencia)="tomarAsistenciaGrupo($event)"
-          (tomarAsistenciaSesion)="tomarAsistenciaSesionEspecifica($event)"
           (proyectarQr)="proyectarQrGrupo($event)"
           (matricular)="abrirModalMatriculaGrupo($event)"
-          (programarExtraordinaria)="abrirCrearSesionExtraordinaria()"
-          (proyectarSesion)="proyectarSesionEspecifica($event)"
-          (verDetalleSesion)="abrirDetalleSesionModal($event)"
-          (ajustarHorarioSesion)="abrirEditarSesion($event)"
-          (cancelarSesion)="abrirModalCancelarSesion($event)"
           (retirarEstudiante)="abrirModalRetiro($event)"
           (irReclamos)="irAGestionReclamos()"
           (reintentarReclamos)="reintentarCargaReclamosGrupo()"
@@ -116,32 +98,12 @@ const TAMANO_PAGINA_DECISIONES = 100;
         />
       }
 
-      <!-- 4. VISTA FORMULARIO SESIÓN EXTRAORDINARIA / REPROGRAMACIÓN -->
-      @if (vistaActual() === 'FORM_SESION' && selectedCourse()) {
-        <app-teacher-sesion-form
-          [modo]="modoFormSesion"
-          [codigoCurso]="selectedCourse()?.code || ''"
-          [(form)]="sesionForm"
-          (cancelar)="volverASesiones()"
-          (guardar)="guardarSesion()"
-        />
-      }
-
-      <!-- 5. MODALES DESACOPLADOS -->
+      <!-- 4. MODALES DESACOPLADOS (las acciones por sesión viven en el historial de la toma de asistencia) -->
       <app-teacher-matricula-modal
         [isOpen]="modalMatriculaGrupoVisible()"
         [curso]="grupoMatricula()"
         (closed)="cerrarModalMatriculaGrupo()"
         (matriculado)="cargarEstudiantesGrupo($event)"
-      />
-
-      <app-teacher-sesion-cancelar-modal
-        [isOpen]="modalCancelarVisible()"
-        [sesion]="sesionACancelar()"
-        [errorMensaje]="errorCancelar()"
-        [enviando]="enviandoCancelacion()"
-        (cancelar)="confirmarCancelarSesionConMotivo($event)"
-        (closed)="cerrarModalCancelar()"
       />
 
       <app-teacher-retiro-estudiante-modal
@@ -151,12 +113,6 @@ const TAMANO_PAGINA_DECISIONES = 100;
         (retirado)="onEstudianteRetirado()"
         (closed)="estudianteARetirar.set(null)"
       />
-
-      <app-teacher-sesion-detalle-modal
-        [isOpen]="modalDetalleSesionVisible()"
-        [sesion]="sesionDetalle()"
-        (closed)="cerrarDetalleSesionModal()"
-      />
     </div>
   `
 })
@@ -164,7 +120,6 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   private readonly courseService = inject(CourseService);
   private readonly catalogService = inject(CatalogService);
   private readonly sessionService = inject(SessionService);
-  private readonly attendanceService = inject(AttendanceService);
   private readonly groupService = inject(GroupService);
   private readonly studentService = inject(StudentService);
   private readonly resumenSesionesService = inject(TeacherMatrizAsistenciaService);
@@ -173,15 +128,13 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute, { optional: true });
   private readonly toast = inject(ToastService);
-  private readonly timeZone = inject(SessionTimeZoneService);
   private readonly realtime = inject(RealtimeService);
   private readonly revisiones = inject(RevisionCancelacionService);
   private cancelacionesSub: Subscription | null = null;
   private aprobacionesSub: Subscription | null = null;
 
-  // QR (HU175, CULM-001 B.2) y cancelación (HU047, B.1) tienen contrato.
+  // QR (HU175, CULM-001 B.2). La cancelación con motivo (HU047) vive en el menú "Acciones" del historial de la toma.
   readonly sessionQrEnabled = environment.features.sessionQrEnabled;
-  readonly sessionCancelEnabled = environment.features.sessionCancelEnabled;
 
   vistaActual = signal<VistaGrupos>('LISTA');
   courses = signal<Course[]>([]);
@@ -212,39 +165,18 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   private reclamosGrupoRequestId = 0;
   private grupoReclamosActivo: string | null = null;
 
-  // Modal Detalle Sesión (Historial)
-  modalDetalleSesionVisible = signal<boolean>(false);
-  sesionDetalle = signal<ClassSession | null>(null);
-
   // Matrícula por Grupo
   modalMatriculaGrupoVisible = signal<boolean>(false);
   grupoMatricula = signal<Course | null>(null);
 
-  // Cancelar Sesión
-  modalCancelarVisible = signal<boolean>(false);
-  sesionACancelar = signal<ClassSession | null>(null);
-  /** Mensaje del backend (SES_011/012/013/016) mostrado dentro del modal; el modal sigue abierto. */
-  errorCancelar = signal<string | null>(null);
-  enviandoCancelacion = signal<boolean>(false);
   /** HU051: estudiante cuyo retiro se está confirmando (null = modal cerrado). */
   estudianteARetirar = signal<{ idEstudiante: string; nombreCompleto?: string } | null>(null);
 
-  // Formularios (DEC-065 (4): el docente no crea grupos; solo el coordinador)
+  // Grupo abierto en el hub (DEC-065 (4): el docente no crea grupos; solo el coordinador)
   selectedCourse = signal<Course | null>(null);
 
-  modoFormSesion: 'CREAR' | 'EDITAR' = 'CREAR';
   sessions = signal<ClassSession[]>([]);
   loadingSessions = signal<boolean>(false);
-  selectedSessionId: string | null = null;
-
-  sesionForm = {
-    title: '',
-    date: '',
-    startTime: '08:00',
-    endTime: '10:00',
-    sessionNumber: 1,
-  };
-  private sesionFormTimeZone: string | null = null;
 
   ngOnInit(): void {
     this.cargarGrupos();
@@ -528,128 +460,6 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
     return 'SERVER_ERROR';
   }
 
-  abrirCrearSesionExtraordinaria(): void {
-    this.modoFormSesion = 'CREAR';
-    this.selectedSessionId = null;
-    this.sesionForm = {
-      title: 'Sesión Extraordinaria de Refuerzo',
-      date: this.timeZone.currentDate(),
-      startTime: '14:00',
-      endTime: '16:00',
-      sessionNumber: this.sessions().length + 1,
-    };
-    this.sesionFormTimeZone = this.timeZone.zone();
-    this.vistaActual.set('FORM_SESION');
-  }
-
-  abrirEditarSesion(sesion: ClassSession): void {
-    this.modoFormSesion = 'EDITAR';
-    this.selectedSessionId = sesion.id;
-    this.sesionForm = {
-      title: sesion.title,
-      date: sesion.date,
-      startTime: sesion.startTime,
-      endTime: sesion.endTime,
-      sessionNumber: sesion.sessionNumber,
-    };
-    this.sesionFormTimeZone = this.timeZone.zone();
-    this.vistaActual.set('FORM_SESION');
-  }
-
-  volverASesiones(): void {
-    this.vistaActual.set('HUB_GRUPO');
-    this.subPestanaHub.set('SESIONES');
-    this.selectedSessionId = null;
-  }
-
-  /** En edición, true si el horario del formulario es el de la sesión guardada (se conservan sus instantes). */
-  private horarioSesionSinCambios(): boolean {
-    if (this.modoFormSesion !== 'EDITAR') return false;
-    const original = this.sessions().find((session) => session.id === this.selectedSessionId);
-    return !!original
-      && this.timeZone.displaySessionDate(original) === this.sesionForm.date
-      && this.timeZone.displaySessionStartTime(original) === this.sesionForm.startTime
-      && this.timeZone.displaySessionEndTime(original) === this.sesionForm.endTime;
-  }
-
-  guardarSesion(): void {
-    const course = this.selectedCourse();
-    if (!course) return;
-
-    const nombreError = getSessionNameError(this.sesionForm.title);
-    if (nombreError) {
-      this.toast.warning(nombreError);
-      return;
-    }
-    if (!this.sesionForm.date) {
-      this.toast.warning(mensajeUi('UI_TEACHER_GRUPOS_005'));
-      return;
-    }
-    if (!this.sesionForm.startTime || !this.sesionForm.endTime) {
-      this.toast.warning(mensajeUi('UI_TEACHER_GRUPOS_006'));
-      return;
-    }
-    if (this.modoFormSesion === 'EDITAR' && this.sesionFormTimeZone !== this.timeZone.zone()) {
-      const original = this.sessions().find((session) => session.id === this.selectedSessionId);
-      if (original) {
-        this.sesionForm = {
-          ...this.sesionForm,
-          date: this.timeZone.displaySessionDate(original),
-          startTime: this.timeZone.displaySessionStartTime(original),
-          endTime: this.timeZone.displaySessionEndTime(original),
-        };
-      }
-      this.sesionFormTimeZone = this.timeZone.zone();
-      this.toast.warning(mensajeUi('UI_TEACHER_GRUPOS_007'));
-      return;
-    }
-    if (!this.horarioSesionSinCambios() && !horarioDentroDelMismoDia(this.sesionForm.startTime, this.sesionForm.endTime)) {
-      // DEC-072: la sesión no cruza la medianoche. Una sesión ya guardada que la cruza se puede editar sin tocar su horario.
-      this.toast.warning(mensajeUi('UI_SESION_HORARIO_MISMO_DIA'));
-      return;
-    }
-    if (this.modoFormSesion === 'CREAR') {
-      this.sessionService
-        .createSession(course.id, {
-          title: this.sesionForm.title.trim(),
-          date: this.sesionForm.date,
-          startTime: this.sesionForm.startTime,
-          endTime: this.sesionForm.endTime,
-        })
-        .subscribe({
-          next: (res) => {
-            if (res.exitoso) {
-              // DEC-065 (2): la sesión queda como solicitud pendiente; el mensaje lo entrega el backend.
-              this.toast.success(res.mensajeUsuario || res.mensaje || avisoSolicitudSesionRegistrada());
-              this.cargarSesiones(course.id);
-              this.volverASesiones();
-            }
-          },
-          error: (err: unknown) => this.toast.error(getApiErrorMessage(err)),
-        });
-    } else if (this.selectedSessionId) {
-      this.sessionService
-        .updateSession(course.id, this.selectedSessionId, {
-          title: this.sesionForm.title.trim(),
-          date: this.sesionForm.date,
-          startTime: this.sesionForm.startTime,
-          endTime: this.sesionForm.endTime,
-          originalSession: this.sessions().find((session) => session.id === this.selectedSessionId),
-        })
-        .subscribe({
-          next: (res) => {
-            // PUT devuelve ApiDataResponse<Void>: solo `exitoso`; el listado se recarga por HTTP.
-            if (res.exitoso) {
-              this.toast.success(mensajeUi('UI_TEACHER_GRUPOS_008'));
-              this.cargarSesiones(course.id);
-              this.volverASesiones();
-            }
-          },
-          error: (err: unknown) => this.toast.error(getApiErrorMessage(err)),
-        });
-    }
-  }
-
   abrirModalRetiro(estudiante: EstudianteGrupoItem): void {
     const idEstudiante = estudiante?.idEstudiante ?? estudiante?.studentId;
     if (!idEstudiante) {
@@ -707,48 +517,6 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
     this.realtime.stop();
   }
 
-  abrirModalCancelarSesion(sesion: ClassSession): void {
-    if (!this.sessionCancelEnabled) return;
-    this.errorCancelar.set(null);
-    this.sesionACancelar.set(sesion);
-    this.modalCancelarVisible.set(true);
-  }
-
-  cerrarModalCancelar(): void {
-    this.modalCancelarVisible.set(false);
-    this.sesionACancelar.set(null);
-    this.errorCancelar.set(null);
-    this.enviandoCancelacion.set(false);
-  }
-
-  confirmarCancelarSesionConMotivo(motivo: string): void {
-    const sesion = this.sesionACancelar();
-    if (!this.sessionCancelEnabled || !sesion || !motivo.trim()) return;
-
-    this.errorCancelar.set(null);
-    this.enviandoCancelacion.set(true);
-    this.sessionService.cancelarSesion(sesion.id, motivo.trim()).subscribe({
-      next: (res) => {
-        this.enviandoCancelacion.set(false);
-        if (!res.exitoso) return;
-        const cancelacion = res.datos?.cancelacion;
-        if (cancelacion) {
-          this.sessions.update((prev) => marcarSesionCancelada(prev, sesion.id, cancelacion));
-          this.cargarResumenSesiones(sesion.courseId);
-        }
-        const notificados = res.datos?.estudiantesNotificados;
-        this.toast.success(
-          notificados ? mensajeUi('UI_TEACHER_GRUPOS_011', { notificados }) : mensajeUi('UI_COORDINATOR_SESIONES_GRUPO_001')
-        );
-        this.cerrarModalCancelar();
-      },
-      error: (err: unknown) => {
-        this.enviandoCancelacion.set(false);
-        this.errorCancelar.set(getApiErrorMessage(err));
-      },
-    });
-  }
-
   abrirModalMatriculaGrupo(course: Course): void {
     this.grupoMatricula.set(course);
     this.modalMatriculaGrupoVisible.set(true);
@@ -765,27 +533,8 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
     void this.router.navigate(['/app/asistencia'], { queryParams: { courseId: course.id } });
   }
 
-  proyectarSesionEspecifica(sesion: ClassSession): void {
-    const course = this.selectedCourse();
-    if (!this.sessionQrEnabled || !course) return;
-    void this.router.navigate(['/app/asistencia'], {
-      queryParams: { courseId: course.id, sessionId: sesion.id },
-    });
-  }
-
   tomarAsistenciaGrupo(course: Course): void {
     void this.router.navigate(['/app/asistencia'], { queryParams: { courseId: course.id } });
-  }
-
-  tomarAsistenciaSesionEspecifica(sesion: ClassSession): void {
-    const course = this.selectedCourse();
-    if (!course) return;
-    void this.router.navigate(['/app/asistencia'], {
-      queryParams: {
-        courseId: course.id,
-        sessionId: sesion.id,
-      },
-    });
   }
 
   irAGestionReclamos(): void {
@@ -796,28 +545,4 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
     void this.router.navigate(['/app/asistencia']);
   }
 
-  /**
-   * Detalle de UNA sesion: la lista de estudiantes y su marca se piden solo para la sesion elegida (acotada al cupo), como en la
-   * toma de asistencia; ya no se cruza el grupo completo. Sin registro del backend la marca queda en null: nunca se inventa.
-   */
-  abrirDetalleSesionModal(sesion: ClassSession): void {
-    this.sesionDetalle.set({ ...sesion, records: [] });
-    this.modalDetalleSesionVisible.set(true);
-    forkJoin({
-      estudiantes: this.studentService.getStudentsByGroup(sesion.courseId),
-      asistencias: this.attendanceService.getAttendancesByGroup(sesion.courseId, sesion.id),
-    }).subscribe({
-      next: ({ estudiantes, asistencias }) => {
-        const activos = (estudiantes?.datos ?? []).filter((e) => e.codigoEstado === 'A');
-        if (this.sesionDetalle()?.id !== sesion.id) return;
-        this.sesionDetalle.set({ ...sesion, records: AttendanceMapper.fromGroupStudentsAndAttendances(activos, asistencias?.datos ?? []) });
-      },
-      error: (err: unknown) => this.toast.error(getApiErrorMessage(err)),
-    });
-  }
-
-  cerrarDetalleSesionModal(): void {
-    this.modalDetalleSesionVisible.set(false);
-    this.sesionDetalle.set(null);
-  }
 }
