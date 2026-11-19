@@ -132,29 +132,33 @@ import { CoordinatorAprobarSolicitudModalComponent } from './coordinator-aprobar
         (pageSizeChange)="onTamano($event)"
       />
 
-      <app-coordinator-aprobar-solicitud-modal
-        [isOpen]="aAprobar() !== null"
-        [nombreSesion]="aAprobar()?.nombreSesion ?? ''"
-        [errorMensaje]="errorResolucion()"
-        [enviando]="enviando()"
-        (confirmado)="confirmarAprobacion($event)"
-        (closed)="cerrarDialogos()"
-      />
+      @defer (when aAprobar() !== null) {
+        <app-coordinator-aprobar-solicitud-modal
+          [isOpen]="aAprobar() !== null"
+          [nombreSesion]="aAprobar()?.nombreSesion ?? ''"
+          [errorMensaje]="errorResolucion()"
+          [enviando]="enviando()"
+          (confirmado)="confirmarAprobacion($event)"
+          (closed)="cerrarDialogos()"
+        />
+      }
 
-      <app-coordinator-cancelar-sesion-modal
-        [isOpen]="aRechazar() !== null"
-        [nombreSesion]="aRechazar()?.nombreSesion ?? ''"
-        [titulo]="'Rechazar solicitud ' + (aRechazar()?.nombreSesion ?? '')"
-        [nota]="'La sesión queda rechazada y se notifica al docente. Los estudiantes no reciben aviso.'"
-        textoConfirmar="Rechazar solicitud"
-        textoEnviando="Rechazando…"
-        [motivos]="motivos()"
-        [errorMotivos]="errorMotivos()"
-        [errorMensaje]="errorResolucion()"
-        [enviando]="enviando()"
-        (confirmado)="confirmarRechazo($event)"
-        (closed)="cerrarDialogos()"
-      />
+      @defer (when aRechazar() !== null) {
+        <app-coordinator-cancelar-sesion-modal
+          [isOpen]="aRechazar() !== null"
+          [nombreSesion]="aRechazar()?.nombreSesion ?? ''"
+          [titulo]="'Rechazar solicitud ' + (aRechazar()?.nombreSesion ?? '')"
+          [nota]="'La sesión queda rechazada y se notifica al docente. Los estudiantes no reciben aviso.'"
+          textoConfirmar="Rechazar solicitud"
+          textoEnviando="Rechazando…"
+          [motivos]="motivos()"
+          [errorMotivos]="errorMotivos()"
+          [errorMensaje]="errorResolucion()"
+          [enviando]="enviando()"
+          (confirmado)="confirmarRechazo($event)"
+          (closed)="cerrarDialogos()"
+        />
+      }
     </section>
   `,
 })

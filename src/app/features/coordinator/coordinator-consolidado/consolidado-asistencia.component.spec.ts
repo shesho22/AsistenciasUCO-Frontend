@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, DeferBlockState, TestBed } from '@angular/core/testing';
 import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ActivatedRoute } from '@angular/router';
@@ -202,7 +202,7 @@ describe('ConsolidadoAsistenciaComponent (HU061)', () => {
       expect(el(fixture).querySelector('[data-testid="inasistencia"]')?.textContent?.trim()).toBe('0 % · 0 min de 0 min');
     });
 
-    it('el decano expande una fila y ve las sesiones del grupo desde GET /decano/sesiones?idGrupo=', () => {
+    it('el decano expande una fila y ve las sesiones del grupo desde GET /decano/sesiones?idGrupo=', async () => {
       const fixture = crear(true);
       listar(fixture, 'decano', [grupo('ASG-1', 'Cálculo', 'DOC-1')]);
       const boton = el(fixture).querySelector('[data-testid="expandir-G-ASG-1"]') as HTMLButtonElement;
@@ -210,6 +210,9 @@ describe('ConsolidadoAsistenciaComponent (HU061)', () => {
       expect(el(fixture).querySelector('[data-testid="sesiones-G-ASG-1"]')).toBeNull();
 
       boton.click();
+      fixture.detectChanges();
+      const deferBlocks = await fixture.getDeferBlocks();
+      await Promise.all(deferBlocks.map((block) => block.render(DeferBlockState.Complete)));
       fixture.detectChanges();
       const req = http.expectOne((r) => r.url === `${api}/decano/sesiones`);
       expect(req.request.params.get('idGrupo')).toBe('G-ASG-1');
@@ -227,10 +230,13 @@ describe('ConsolidadoAsistenciaComponent (HU061)', () => {
       expect(boton.getAttribute('aria-expanded')).toBe('false');
     });
 
-    it('el coordinador expande una fila y ve las sesiones de su grupo con la opción de cancelar', () => {
+    it('el coordinador expande una fila y ve las sesiones de su grupo con la opción de cancelar', async () => {
       const fixture = crear(false);
       listar(fixture, 'coordinador', [grupo('ASG-1', 'Cálculo', 'DOC-1')]);
       (el(fixture).querySelector('[data-testid="expandir-G-ASG-1"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      const deferBlocks = await fixture.getDeferBlocks();
+      await Promise.all(deferBlocks.map((block) => block.render(DeferBlockState.Complete)));
       fixture.detectChanges();
       http.expectOne((r) => r.url === `${api}/coordinador/grupos/G-ASG-1/sesiones`).flush({
         exitoso: true, total: 1,
@@ -242,13 +248,19 @@ describe('ConsolidadoAsistenciaComponent (HU061)', () => {
       expect(detalle?.querySelector('[data-testid="cancelar-sesion"]')).not.toBeNull();
     });
 
-    it('solo una fila queda expandida: abrir otra cierra la anterior', () => {
+    it('solo una fila queda expandida: abrir otra cierra la anterior', async () => {
       const fixture = crear(true);
       listar(fixture, 'decano', [grupo('ASG-1', 'Cálculo', 'DOC-1'), grupo('ASG-2', 'Álgebra', 'DOC-1')]);
       (el(fixture).querySelector('[data-testid="expandir-G-ASG-1"]') as HTMLButtonElement).click();
       fixture.detectChanges();
+      const firstRowBlocks = await fixture.getDeferBlocks();
+      await Promise.all(firstRowBlocks.map((block) => block.render(DeferBlockState.Complete)));
+      fixture.detectChanges();
       http.expectOne((r) => r.url === `${api}/decano/sesiones`).flush(paginaVacia);
       (el(fixture).querySelector('[data-testid="expandir-G-ASG-2"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      const secondRowBlocks = await fixture.getDeferBlocks();
+      await Promise.all(secondRowBlocks.map((block) => block.render(DeferBlockState.Complete)));
       fixture.detectChanges();
       http.expectOne((r) => r.url === `${api}/decano/sesiones`).flush(paginaVacia);
       fixture.detectChanges();
@@ -256,10 +268,13 @@ describe('ConsolidadoAsistenciaComponent (HU061)', () => {
       expect(el(fixture).querySelector('[data-testid="sesiones-G-ASG-2"]')).not.toBeNull();
     });
 
-    it('filtrar contrae la fila expandida', () => {
+    it('filtrar contrae la fila expandida', async () => {
       const fixture = crear(true);
       listar(fixture, 'decano', [grupo('ASG-1', 'Cálculo', 'DOC-1')]);
       (el(fixture).querySelector('[data-testid="expandir-G-ASG-1"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      const deferBlocks = await fixture.getDeferBlocks();
+      await Promise.all(deferBlocks.map((block) => block.render(DeferBlockState.Complete)));
       fixture.detectChanges();
       http.expectOne((r) => r.url === `${api}/decano/sesiones`).flush(paginaVacia);
       const component = fixture.componentInstance;

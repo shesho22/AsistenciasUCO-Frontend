@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, DeferBlockState, TestBed } from '@angular/core/testing';
 import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
@@ -108,9 +108,12 @@ describe('CoordinatorStudyPlanMeshPageComponent', () => {
     expect(el.textContent).toContain('Nueva asignatura');
   });
 
-  it('F-COO-005 quitar del plan pide confirmación, llama al DELETE y recarga la malla y los planes', () => {
+  it('F-COO-005 quitar del plan pide confirmación, llama al DELETE y recarga la malla y los planes', async () => {
     const confirmNativo = spyOn(window, 'confirm');
     (fixture.nativeElement.querySelector('[title="Desvincular del plan"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    const deferBlocks = await fixture.getDeferBlocks();
+    await Promise.all(deferBlocks.map((block) => block.render(DeferBlockState.Complete)));
     fixture.detectChanges();
     const dialogo = (fixture.nativeElement as HTMLElement).querySelector('[role="alertdialog"]');
     expect(dialogo?.textContent).toContain('Algoritmos I');
@@ -129,8 +132,11 @@ describe('CoordinatorStudyPlanMeshPageComponent', () => {
     expect(component.asignaturas()).toEqual([]);
   });
 
-  it('F-COO-005 si se cancela la confirmación no se llama al backend', () => {
+  it('F-COO-005 si se cancela la confirmación no se llama al backend', async () => {
     component.quitarDelPlan(component.asignaturas()[0]);
+    fixture.detectChanges();
+    const deferBlocks = await fixture.getDeferBlocks();
+    await Promise.all(deferBlocks.map((block) => block.render(DeferBlockState.Complete)));
     fixture.detectChanges();
     const cancelar = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('[role="alertdialog"] button')).find((b) => b.textContent?.includes('Cancelar')) as HTMLButtonElement;
     cancelar.click();
@@ -156,11 +162,18 @@ describe('CoordinatorStudyPlanMeshPageComponent', () => {
     const dialogo = () => (fixture.nativeElement as HTMLElement).querySelector('[role="alertdialog"]');
     const botonDialogo = (texto: string) =>
       Array.from(dialogo()!.querySelectorAll('button')).find((b) => b.textContent?.includes(texto)) as HTMLButtonElement;
+    /** Los diálogos están en bloques @defer (PR #158): se resuelven antes de consultar el DOM del diálogo. */
+    const resolverDiferidos = async () => {
+      fixture.detectChanges();
+      const deferBlocks = await fixture.getDeferBlocks();
+      await Promise.all(deferBlocks.map((block) => block.render(DeferBlockState.Complete)));
+      fixture.detectChanges();
+    };
 
-    it('inactivar pide confirmación con el alcance, llama al PATCH y muestra el mensaje del backend y recarga la malla', () => {
+    it('inactivar pide confirmación con el alcance, llama al PATCH y muestra el mensaje del backend y recarga la malla', async () => {
       const confirmNativo = spyOn(window, 'confirm');
       (fixture.nativeElement.querySelector('[data-accion="estado-asignatura"]') as HTMLButtonElement).click();
-      fixture.detectChanges();
+      await resolverDiferidos();
 
       const texto = dialogo()?.textContent ?? '';
       expect(texto).toContain('Inactivar asignatura');
@@ -185,9 +198,9 @@ describe('CoordinatorStudyPlanMeshPageComponent', () => {
       expect((fixture.nativeElement.querySelector('[data-accion="estado-asignatura"]') as HTMLButtonElement).title).toBe('Activar asignatura');
     });
 
-    it('activar una asignatura inactiva confirma sin estilo destructivo y envía estaActiva=true', () => {
+    it('activar una asignatura inactiva confirma sin estilo destructivo y envía estaActiva=true', async () => {
       component.pedirCambioEstado({ ...component.asignaturas()[0], estaActivaAsignatura: false });
-      fixture.detectChanges();
+      await resolverDiferidos();
       expect(component.confirmacionEstado().inactivar).toBeFalse();
       expect(dialogo()?.textContent).toContain('Activar asignatura');
       expect(dialogo()?.textContent).toContain('Volverá a estar disponible');
@@ -223,13 +236,13 @@ describe('CoordinatorStudyPlanMeshPageComponent', () => {
       expect(accion().disabled).toBeFalse();
     });
 
-    it('mientras el cambio sigue en curso no se abre otro diálogo ni se envía un segundo PATCH', () => {
+    it('mientras el cambio sigue en curso no se abre otro diálogo ni se envía un segundo PATCH', async () => {
       component.pedirCambioEstado(component.asignaturas()[0]);
       component.confirmarCambioEstado();
       const req = http.expectOne(urlEstado);
 
       component.pedirCambioEstado(component.asignaturas()[0]);
-      fixture.detectChanges();
+      await resolverDiferidos();
       expect(component.asignaturaACambiarEstado()).toBeNull();
       expect(dialogo()).toBeNull();
       component.confirmarCambioEstado();
@@ -258,9 +271,9 @@ describe('CoordinatorStudyPlanMeshPageComponent', () => {
       });
     }
 
-    it('cancelar la confirmación no llama al backend', () => {
+    it('cancelar la confirmación no llama al backend', async () => {
       component.pedirCambioEstado(component.asignaturas()[0]);
-      fixture.detectChanges();
+      await resolverDiferidos();
       botonDialogo('Cancelar').click();
       expect(component.asignaturaACambiarEstado()).toBeNull();
       http.expectNone(urlEstado);
@@ -293,8 +306,11 @@ describe('CoordinatorStudyPlanMeshPageComponent', () => {
     }
   });
 
-  it('F-COO-005 asociar una asignatura existente abre el diálogo y, al asociar, recarga la malla', () => {
+  it('F-COO-005 asociar una asignatura existente abre el diálogo y, al asociar, recarga la malla', async () => {
     component.abrirAsociar();
+    fixture.detectChanges();
+    const deferBlocks = await fixture.getDeferBlocks();
+    await Promise.all(deferBlocks.map((block) => block.render(DeferBlockState.Complete)));
     fixture.detectChanges();
     expect(component.dialogoAsociarAbierto()).toBeTrue();
     http.expectOne(`${environment.apiUrl}/coordinador/caracteres-asignatura`).flush({ exitoso: true, datos: [] });

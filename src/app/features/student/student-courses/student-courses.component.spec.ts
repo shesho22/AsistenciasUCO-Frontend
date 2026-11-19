@@ -547,9 +547,11 @@ describe('StudentCoursesComponent', () => {
     });
   });
 
-  it('HU005/HU016: carga los motivos de justificación del catálogo y los muestra en el detalle', () => {
+  it('HU005/HU016: carga los motivos de justificación del catálogo y los muestra en el detalle', async () => {
     expect(component.categoriasJustificacion()).toEqual(CATEGORIAS);
     component.verDetalleCompleto(mockMaterias[0]);
+    fixture.detectChanges();
+    await fixture.whenStable();
     fixture.detectChanges();
     const motivos = fixture.nativeElement.querySelector('[data-testid="motivos-justificacion"]') as HTMLElement;
     expect(motivos).withContext('bloque de motivos').not.toBeNull();
@@ -738,10 +740,12 @@ describe('StudentCoursesComponent', () => {
     expect(component.procesandoMatriculaGrupo()).toBeFalse();
   });
 
-  it('MQR_001: un PIN inexistente (404) muestra el mensaje del backend dentro del modal y se limpia al reintentar o cerrar', () => {
+  it('MQR_001: un PIN inexistente (404) muestra el mensaje del backend dentro del modal y se limpia al reintentar o cerrar', async () => {
     matriculaQrSpy.matricularAutenticado.and.returnValue(
       throwError(() => apiHttpError(404, 'El código de matrícula no es válido o ya no está disponible. Solicítale al docente uno nuevo.')));
     component.abrirModalMatriculaGrupo();
+    fixture.detectChanges();
+    await fixture.whenStable();
     fixture.detectChanges();
     component.enviarMatriculaPorCodigo('000000');
     fixture.detectChanges();
@@ -873,9 +877,11 @@ describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', 
     expect(texto()).toContain('No informado');
   });
 
-  it('Ver Detalle consulta /materias/{idAsignatura}/sesiones con el UUID y la URL nunca contiene undefined', () => {
+  it('Ver Detalle consulta /materias/{idAsignatura}/sesiones con el UUID y la URL nunca contiene undefined', async () => {
     cargar([materiaApi()]);
     clickTexto('Ver Detalle');
+    await fixture.whenStable();
+    fixture.detectChanges();
 
     const req = http.expectOne(esSesiones(ASIGNATURA_ID));
     expect(req.request.method).toBe('GET');
@@ -913,13 +919,15 @@ describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', 
     expect(component.totalSesiones()).toBe(1);
   });
 
-  it('CIERRE-W2B: el tablero muestra las cifras del backend y la paginacion pide cada pagina al servidor', () => {
+  it('CIERRE-W2B: el tablero muestra las cifras del backend y la paginacion pide cada pagina al servidor', async () => {
     cargar([materiaApi()], { totalMaterias: 1, materiasEnRiesgo: 1, totalHorasFalta: 3.5, totalCreditos: 3 });
     expect(fixture.nativeElement.querySelector('[data-testid="resumen-total-materias"]').textContent.trim()).toBe('1');
     expect(texto()).toContain('3 h 30 min');
     expect(fixture.nativeElement.querySelector('[data-testid="riesgo-no-disponible"]')).toBeNull();
 
     clickTexto('Ver Detalle');
+    await fixture.whenStable();
+    fixture.detectChanges();
     http.expectOne(esSesiones(ASIGNATURA_ID)).flush({
       exitoso: true,
       total: 23,
@@ -937,9 +945,11 @@ describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', 
     expect(component.totalSesiones()).toBe(23);
   });
 
-  it('una respuesta 200 con cero sesiones muestra estado vacio, sin error', () => {
+  it('una respuesta 200 con cero sesiones muestra estado vacio, sin error', async () => {
     cargar([materiaApi()]);
     clickTexto('Ver Detalle');
+    await fixture.whenStable();
+    fixture.detectChanges();
     http.expectOne(esSesiones(ASIGNATURA_ID)).flush({ exitoso: true, datos: [], total: 0 });
     fixture.detectChanges();
 
@@ -956,9 +966,11 @@ describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', 
     ['red caida (status 0)', 0, 'RED'],
   ];
   for (const [nombre, status, kind] of casosError) {
-    it(`un ${nombre} se muestra como error ${kind} y NO como "0 sesiones registradas"`, () => {
+    it(`un ${nombre} se muestra como error ${kind} y NO como "0 sesiones registradas"`, async () => {
       cargar([materiaApi()]);
       clickTexto('Ver Detalle');
+      await fixture.whenStable();
+      fixture.detectChanges();
       const req = http.expectOne(esSesiones(ASIGNATURA_ID));
       if (status === 0) {
         req.error(new ProgressEvent('error'));
@@ -980,9 +992,11 @@ describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', 
     });
   }
 
-  it('Reintentar vuelve a consultar y recupera las sesiones', () => {
+  it('Reintentar vuelve a consultar y recupera las sesiones', async () => {
     cargar([materiaApi()]);
     clickTexto('Ver Detalle');
+    await fixture.whenStable();
+    fixture.detectChanges();
     http.expectOne(esSesiones(ASIGNATURA_ID)).flush(null, { status: 500, statusText: 'err' });
     fixture.detectChanges();
 
@@ -1047,7 +1061,7 @@ describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', 
     http.expectNone((r) => r.url.includes('/asistencias/revisiones'));
   });
 
-  it('una ausencia confirmada y reclamable por el backend habilita Radicar Reclamo y abre el formulario', () => {
+  it('una ausencia confirmada y reclamable por el backend habilita Radicar Reclamo y abre el formulario', async () => {
     cargar([materiaApi()]);
     component.verDetalleCompleto(component.materias()[0]);
     http.expectOne(esSesiones(ASIGNATURA_ID)).flush({
@@ -1055,6 +1069,8 @@ describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', 
       datos: [sesionApi({ estadoAsistencia: 'AUSENTE', estadoSolicitudRevision: null, reclamable: true })],
       total: 1,
     });
+    fixture.detectChanges();
+    await fixture.whenStable();
     fixture.detectChanges();
 
     expect(component.sesiones()[0].estadoAsistencia).toBe('AUSENTE');
@@ -1064,7 +1080,7 @@ describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', 
     expect(component.sesionReclamar()?.id).toBe('d1d2d3d4-0000-4000-8000-000000000001');
   });
 
-  it('una ausencia con solicitud ya radicada no abre un segundo formulario', () => {
+  it('una ausencia con solicitud ya radicada no abre un segundo formulario', async () => {
     cargar([materiaApi()]);
     component.verDetalleCompleto(component.materias()[0]);
     http.expectOne(esSesiones(ASIGNATURA_ID)).flush({
@@ -1072,6 +1088,8 @@ describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', 
       datos: [sesionApi({ estadoAsistencia: 'AUSENTE', estadoSolicitudRevision: 'pendiente', reclamable: false })],
       total: 1,
     });
+    fixture.detectChanges();
+    await fixture.whenStable();
     fixture.detectChanges();
 
     expect(component.sesiones()[0].solicitudRevision).toBe('PENDIENTE');

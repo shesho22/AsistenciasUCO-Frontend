@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, DeferBlockState, TestBed } from '@angular/core/testing';
 import { Observable, Subject, of, throwError } from 'rxjs';
 import { signal } from '@angular/core';
 import { provideRouter } from '@angular/router';
@@ -269,7 +269,7 @@ describe('OverviewComponent', () => {
     }).compileComponents();
   });
 
-  function createComponentWithRole(role: UserRole) {
+  async function createComponentWithRole(role: UserRole): Promise<void> {
     currentUserSignal.set({
       ...mockUserDocente,
       role,
@@ -277,10 +277,13 @@ describe('OverviewComponent', () => {
     fixture = TestBed.createComponent(OverviewComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
+    const deferBlocks = await fixture.getDeferBlocks();
+    await Promise.all(deferBlocks.map((block) => block.render(DeferBlockState.Complete)));
+    fixture.detectChanges();
   }
 
-  it('debe inicializarse correctamente para rol DOCENTE', () => {
-    createComponentWithRole('DOCENTE');
+  it('debe inicializarse correctamente para rol DOCENTE', async () => {
+    await createComponentWithRole('DOCENTE');
     expect(component).toBeTruthy();
     expect(claimServiceSpy.getHorarioDocente).toHaveBeenCalled();
     expect(courseServiceSpy.getTeacherCourses).toHaveBeenCalled();
@@ -292,70 +295,70 @@ describe('OverviewComponent', () => {
     expect(component.isLoading()).toBeFalse();
   });
 
-  it('DOCENTE: si el resumen de grupos falla no se inventa un total (null, la tarjeta muestra el guion)', () => {
+  it('DOCENTE: si el resumen de grupos falla no se inventa un total (null, la tarjeta muestra el guion)', async () => {
     gruposResumenSpy.consultar.and.returnValue(throwError(() => ({ status: 403 })));
-    createComponentWithRole('DOCENTE');
+    await createComponentWithRole('DOCENTE');
     expect(component.totalStudentsCount()).toBeNull();
     expect(component.courses).toHaveSize(1);
   });
 
-  it('DOCENTE: una respuesta sin datos deja el total en blanco', () => {
+  it('DOCENTE: una respuesta sin datos deja el total en blanco', async () => {
     gruposResumenSpy.consultar.and.returnValue(of<never>({ exitoso: true, datos: null } as never));
-    createComponentWithRole('DOCENTE');
+    await createComponentWithRole('DOCENTE');
     expect(component.totalStudentsCount()).toBeNull();
   });
 
-  it('usa el total del servidor y no la longitud de la primera página para el contador de pendientes', () => {
+  it('usa el total del servidor y no la longitud de la primera página para el contador de pendientes', async () => {
     claimServiceSpy.getReclamosDocente.and.returnValue(of({ exitoso: true, datos: [], total: 42 }));
-    createComponentWithRole('DOCENTE');
+    await createComponentWithRole('DOCENTE');
     expect(component.pendingClaimsCount()).toBe(42);
   });
 
-  it('cae a la longitud de datos si el servidor no informa total', () => {
+  it('cae a la longitud de datos si el servidor no informa total', async () => {
     claimServiceSpy.getReclamosDocente.and.returnValue(of({ exitoso: true, datos: [{ id: 'r1' } as never] }));
-    createComponentWithRole('DOCENTE');
+    await createComponentWithRole('DOCENTE');
     expect(component.pendingClaimsCount()).toBe(1);
   });
 
-  it('deja el contador vacío (null) cuando la consulta de reclamos falla', () => {
+  it('deja el contador vacío (null) cuando la consulta de reclamos falla', async () => {
     claimServiceSpy.getReclamosDocente.and.returnValue(throwError(() => ({ status: 501 })));
-    createComponentWithRole('DOCENTE');
+    await createComponentWithRole('DOCENTE');
     expect(component.pendingClaimsCount()).toBeNull();
     expect(component.isLoading()).toBeFalse();
   });
 
-  it('debe manejar error al cargar cursos del docente', () => {
+  it('debe manejar error al cargar cursos del docente', async () => {
     courseServiceSpy.getTeacherCourses.and.returnValue(throwError(() => new Error('Error')));
-    createComponentWithRole('DOCENTE');
+    await createComponentWithRole('DOCENTE');
     expect(component.isLoading()).toBeFalse();
   });
 
   const texto = (testid: string): string =>
     ((fixture.nativeElement as HTMLElement).querySelector(`[data-testid="${testid}"]`)?.textContent ?? '').trim();
 
-  it('debe inicializarse correctamente para rol ADMINISTRADOR', () => {
-    createComponentWithRole('ADMINISTRADOR');
+  it('debe inicializarse correctamente para rol ADMINISTRADOR', async () => {
+    await createComponentWithRole('ADMINISTRADOR');
     expect(adminServiceSpy.getDecanos).toHaveBeenCalled();
     expect(component.decanos()).toHaveSize(1);
     expect(component.adminEstado()).toBe('listo');
     expect(component.isLoading()).toBeFalse();
   });
 
-  it('ADMIN: la tarjeta del decano muestra "Asignado" solo cuando hay fecha de asignación', () => {
-    createComponentWithRole('ADMINISTRADOR');
+  it('ADMIN: la tarjeta del decano muestra "Asignado" solo cuando hay fecha de asignación', async () => {
+    await createComponentWithRole('ADMINISTRADOR');
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
     expect(el.textContent).toContain('Asignado: 2025-01-01');
 
     adminServiceSpy.getDecanos.and.returnValue(of({ exitoso: true, datos: [{ ...component.decanos()[0], fechaAsignacion: '' }] }) as never);
-    createComponentWithRole('ADMINISTRADOR');
+    await createComponentWithRole('ADMINISTRADOR');
     fixture.detectChanges();
     expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Asignado:');
   });
 
-  it('ADMIN: las facultades activas y los decanos salen del servidor, no del conjunto de decanos listados', () => {
+  it('ADMIN: las facultades activas y los decanos salen del servidor, no del conjunto de decanos listados', async () => {
     // El directorio trae un solo decano; la institucion tiene 3 facultades activas (una sin decano en la lista) y 3 decanos.
-    createComponentWithRole('ADMINISTRADOR');
+    await createComponentWithRole('ADMINISTRADOR');
     expect(adminIndicatorsSpy.consultarKpis).toHaveBeenCalled();
     expect(component.decanos()).toHaveSize(1);
     expect(texto('facultades-activas')).toBe('3');
@@ -365,29 +368,29 @@ describe('OverviewComponent', () => {
     expect(texto('asistencia-campus')).toBe('96.54%');
   });
 
-  it('ADMIN: mientras los indicadores no llegan no se pinta un cero', () => {
+  it('ADMIN: mientras los indicadores no llegan no se pinta un cero', async () => {
     adminIndicatorsSpy.consultarKpis.and.returnValue(new Observable(() => undefined));
-    createComponentWithRole('ADMINISTRADOR');
+    await createComponentWithRole('ADMINISTRADOR');
     expect(component.adminEstado()).toBe('cargando');
     expect(texto('facultades-activas')).toBe('Cargando…');
     expect(texto('programas')).toBe('Cargando…');
   });
 
-  it('F3-ADM-02: sin porcentajeAsistencia la tarjeta de campus muestra Sin datos, no 100%', () => {
+  it('F3-ADM-02: sin porcentajeAsistencia la tarjeta de campus muestra Sin datos, no 100%', async () => {
     adminIndicatorsSpy.consultarKpis.and.returnValue(of({ exitoso: true, datos: { totalProgramas: 4, porcentajeAsistencia: null } as never }));
-    createComponentWithRole('ADMINISTRADOR');
+    await createComponentWithRole('ADMINISTRADOR');
     expect(texto('asistencia-campus')).toBe('Sin datos');
   });
 
-  it('ADMIN: sin total (null) la tarjeta de programas muestra Sin datos, no 0 ni 1', () => {
+  it('ADMIN: sin total (null) la tarjeta de programas muestra Sin datos, no 0 ni 1', async () => {
     adminIndicatorsSpy.consultarKpis.and.returnValue(of({ exitoso: true, datos: { totalProgramas: null } as never }));
-    createComponentWithRole('ADMINISTRADOR');
+    await createComponentWithRole('ADMINISTRADOR');
     expect(texto('programas')).toBe('Sin datos');
   });
 
-  it('ADMIN: si la consulta de indicadores falla las tarjetas quedan en Sin datos y los decanos cargan', () => {
+  it('ADMIN: si la consulta de indicadores falla las tarjetas quedan en Sin datos y los decanos cargan', async () => {
     adminIndicatorsSpy.consultarKpis.and.returnValue(throwError(() => ({ status: 403 })));
-    createComponentWithRole('ADMINISTRADOR');
+    await createComponentWithRole('ADMINISTRADOR');
     expect(component.adminEstado()).toBe('error');
     expect(component.adminKpis()).toBeNull();
     expect(texto('facultades-activas')).toBe('Sin datos');
@@ -395,14 +398,14 @@ describe('OverviewComponent', () => {
     expect(component.isLoading()).toBeFalse();
   });
 
-  it('ADMIN: una respuesta sin datos se trata como fallo', () => {
+  it('ADMIN: una respuesta sin datos se trata como fallo', async () => {
     adminIndicatorsSpy.consultarKpis.and.returnValue(of<never>({ exitoso: true, datos: null } as never));
-    createComponentWithRole('ADMINISTRADOR');
+    await createComponentWithRole('ADMINISTRADOR');
     expect(component.adminEstado()).toBe('error');
   });
 
-  it('F3-COO-01: la tarjeta fija de 92% se reemplaza por estudiantes en riesgo de /coordinador/indicadores y el rotulo dice Registrados', () => {
-    createComponentWithRole('COORDINADOR');
+  it('F3-COO-01: la tarjeta fija de 92% se reemplaza por estudiantes en riesgo de /coordinador/indicadores y el rotulo dice Registrados', async () => {
+    await createComponentWithRole('COORDINADOR');
     const el = fixture.nativeElement as HTMLElement;
     expect(texto('estudiantes-riesgo')).toBe('3');
     expect(el.textContent).toContain('Estudiantes Registrados');
@@ -410,14 +413,14 @@ describe('OverviewComponent', () => {
     expect(el.textContent).not.toContain('92%');
   });
 
-  it('debe manejar error al cargar decanos para rol ADMINISTRADOR', () => {
+  it('debe manejar error al cargar decanos para rol ADMINISTRADOR', async () => {
     adminServiceSpy.getDecanos.and.returnValue(throwError(() => new Error('Error')));
-    createComponentWithRole('ADMINISTRADOR');
+    await createComponentWithRole('ADMINISTRADOR');
     expect(component.isLoading()).toBeFalse();
   });
 
-  it('debe inicializarse correctamente para rol DECANO', () => {
-    createComponentWithRole('DECANO');
+  it('debe inicializarse correctamente para rol DECANO', async () => {
+    await createComponentWithRole('DECANO');
     expect(deanServiceSpy.getCoordinadores).toHaveBeenCalled();
     expect(component.coordinadores()).toHaveSize(1);
     expect(component.deanEstado()).toBe('listo');
@@ -426,49 +429,49 @@ describe('OverviewComponent', () => {
     expect(el.textContent).not.toContain('Semestre 2026-II');
   });
 
-  it('DECANO: coordinadores, docentes, grupos y periodo son los del servidor, no los de la lista de coordinadores', () => {
+  it('DECANO: coordinadores, docentes, grupos y periodo son los del servidor, no los de la lista de coordinadores', async () => {
     // La lista trae un coordinador con 10 docentes; el servidor cuenta 4 coordinadores y 37 docentes sin repetir (DASH-13).
-    createComponentWithRole('DECANO');
+    await createComponentWithRole('DECANO');
     expect(texto('coordinadores')).toBe('4');
     expect(texto('docentes')).toBe('37');
     expect(texto('grupos')).toBe('5');
     expect(texto('periodo')).toBe('2026-2');
   });
 
-  it('F-DEC-01: mientras llegan los indicadores no se afirma "Sin período vigente"', () => {
+  it('F-DEC-01: mientras llegan los indicadores no se afirma "Sin período vigente"', async () => {
     deanIndicatorsSpy.consultarKpis.and.returnValue(new Observable(() => undefined));
-    createComponentWithRole('DECANO');
+    await createComponentWithRole('DECANO');
     expect(component.deanEstado()).toBe('cargando');
     expect(texto('grupos')).toBe('Cargando…');
     expect(texto('periodo')).toBe('Cargando…');
     expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Sin período vigente');
   });
 
-  it('F-DEC-01: "Sin período vigente" solo si el servidor respondió sin período', () => {
+  it('F-DEC-01: "Sin período vigente" solo si el servidor respondió sin período', async () => {
     deanIndicatorsSpy.consultarKpis.and.returnValue(
       of({ exitoso: true, datos: { gruposActivos: 0, nombrePeriodoAcademico: null, totalCoordinadores: 1, totalDocentes: 0, porcentajeAsistencia: null } as never })
     );
-    createComponentWithRole('DECANO');
+    await createComponentWithRole('DECANO');
     expect(texto('periodo')).toBe('Sin período vigente');
     expect(texto('grupos')).toBe('0');
   });
 
-  it('DECANO: la tarjeta de asistencia refleja el porcentaje que entrega el backend y no un valor fijo', () => {
-    createComponentWithRole('DECANO');
+  it('DECANO: la tarjeta de asistencia refleja el porcentaje que entrega el backend y no un valor fijo', async () => {
+    await createComponentWithRole('DECANO');
     expect(deanIndicatorsSpy.consultarKpis).toHaveBeenCalled();
     expect(texto('asistencia')).toBe('82.86%');
     expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('94%');
   });
 
-  it('DECANO: sin porcentaje (null) la tarjeta muestra Sin datos, no 0%', () => {
+  it('DECANO: sin porcentaje (null) la tarjeta muestra Sin datos, no 0%', async () => {
     deanIndicatorsSpy.consultarKpis.and.returnValue(of({ exitoso: true, datos: { porcentajeAsistencia: null } as never }));
-    createComponentWithRole('DECANO');
+    await createComponentWithRole('DECANO');
     expect(texto('asistencia')).toBe('Sin datos');
   });
 
-  it('DECANO: si la consulta de indicadores falla las tarjetas quedan en Sin datos y el resto de la vista carga', () => {
+  it('DECANO: si la consulta de indicadores falla las tarjetas quedan en Sin datos y el resto de la vista carga', async () => {
     deanIndicatorsSpy.consultarKpis.and.returnValue(throwError(() => ({ status: 403 })));
-    createComponentWithRole('DECANO');
+    await createComponentWithRole('DECANO');
     expect(component.deanEstado()).toBe('error');
     expect(component.deanKpis()).toBeNull();
     expect(component.coordinadores()).toHaveSize(1);
@@ -478,29 +481,32 @@ describe('OverviewComponent', () => {
     expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Sin período vigente');
   });
 
-  it('DECANO: una respuesta sin datos se trata como fallo', () => {
+  it('DECANO: una respuesta sin datos se trata como fallo', async () => {
     deanIndicatorsSpy.consultarKpis.and.returnValue(of<never>({ exitoso: true, datos: null } as never));
-    createComponentWithRole('DECANO');
+    await createComponentWithRole('DECANO');
     expect(component.deanEstado()).toBe('error');
   });
 
-  it('debe manejar error al cargar coordinadores para rol DECANO', () => {
+  it('debe manejar error al cargar coordinadores para rol DECANO', async () => {
     deanServiceSpy.getCoordinadores.and.returnValue(throwError(() => new Error('Error')));
-    createComponentWithRole('DECANO');
+    await createComponentWithRole('DECANO');
     expect(component.isLoading()).toBeFalse();
   });
 
   describe('HU178: decano sin facultad y coordinador sin programa', () => {
-    function crear(role: 'DECANO' | 'COORDINADOR', vinculos: User['vinculos']) {
+    async function crear(role: 'DECANO' | 'COORDINADOR', vinculos: User['vinculos']): Promise<HTMLElement> {
       currentUserSignal.set({ ...mockUserDocente, role, department: 'Sin entidad', vinculos });
       fixture = TestBed.createComponent(OverviewComponent);
       component = fixture.componentInstance;
       fixture.detectChanges();
+      const deferBlocks = await fixture.getDeferBlocks();
+      await Promise.all(deferBlocks.map((block) => block.render(DeferBlockState.Complete)));
+      fixture.detectChanges();
       return fixture.nativeElement as HTMLElement;
     }
 
-    it('al decano sin facultad le muestra el aviso y no consulta datos de facultad que responderían 403', () => {
-      const el = crear('DECANO', []);
+    it('al decano sin facultad le muestra el aviso y no consulta datos de facultad que responderían 403', async () => {
+      const el = await crear('DECANO', []);
 
       expect(el.querySelector('[data-testid="decano-sin-facultad"]')).not.toBeNull();
       expect(el.querySelector('app-overview-dean')).toBeNull();
@@ -512,8 +518,8 @@ describe('OverviewComponent', () => {
     describe('encabezado (ajuste de la prueba en pantalla del 2026-11-19)', () => {
       const hero = (el: HTMLElement) => el.querySelector('app-overview-hero') as HTMLElement;
 
-      it('sin facultad, el encabezado del decano no ofrece «Gestionar Coordinadores» ni promete gestionar la facultad', () => {
-        const el = crear('DECANO', []);
+      it('sin facultad, el encabezado del decano no ofrece «Gestionar Coordinadores» ni promete gestionar la facultad', async () => {
+        const el = await crear('DECANO', []);
         const h = hero(el);
 
         expect(h.querySelector('[data-testid="hero-accion-decano-coordinadores"]')).toBeNull();
@@ -524,16 +530,16 @@ describe('OverviewComponent', () => {
         expect(el.querySelector('[data-testid="decano-sin-facultad"]')).not.toBeNull();
       });
 
-      it('con facultad, el encabezado del decano conserva «Gestionar Coordinadores» y la frase completa', () => {
-        const el = crear('DECANO', [{ rol: 'DECANO', nombreEntidad: 'Facultad de Ciencias' }]);
+      it('con facultad, el encabezado del decano conserva «Gestionar Coordinadores» y la frase completa', async () => {
+        const el = await crear('DECANO', [{ rol: 'DECANO', nombreEntidad: 'Facultad de Ciencias' }]);
         const enlace = hero(el).querySelector('[data-testid="hero-accion-decano-coordinadores"]');
 
         expect(enlace?.getAttribute('href')).toBe('/app/decano/mi-facultad/coordinadores');
         expect(hero(el).textContent).toContain('Gestiona los programas académicos');
       });
 
-      it('sin programa, el encabezado del coordinador no ofrece «Gestionar Docentes» ni «Planes de Estudio y Malla»', () => {
-        const el = crear('COORDINADOR', []);
+      it('sin programa, el encabezado del coordinador no ofrece «Gestionar Docentes» ni «Planes de Estudio y Malla»', async () => {
+        const el = await crear('COORDINADOR', []);
         const h = hero(el);
 
         expect(h.querySelector('[data-testid="hero-accion-coordinador-docentes"]')).toBeNull();
@@ -545,8 +551,8 @@ describe('OverviewComponent', () => {
         expect(el.querySelector('[data-testid="coordinador-sin-programa"]')).not.toBeNull();
       });
 
-      it('con programa, el encabezado del coordinador conserva sus dos acciones y la frase completa', () => {
-        const el = crear('COORDINADOR', [{ rol: 'COORDINADOR', nombreEntidad: 'Derecho' }]);
+      it('con programa, el encabezado del coordinador conserva sus dos acciones y la frase completa', async () => {
+        const el = await crear('COORDINADOR', [{ rol: 'COORDINADOR', nombreEntidad: 'Derecho' }]);
         const h = hero(el);
 
         expect(h.querySelector('[data-testid="hero-accion-coordinador-docentes"]')?.getAttribute('href')).toBe(
@@ -558,31 +564,31 @@ describe('OverviewComponent', () => {
         expect(h.textContent).toContain('Administra la planta docente');
       });
 
-      it('si el perfil aún no informa vínculos no se presume la falta: el encabezado conserva las acciones', () => {
-        const el = crear('COORDINADOR', undefined);
+      it('si el perfil aún no informa vínculos no se presume la falta: el encabezado conserva las acciones', async () => {
+        const el = await crear('COORDINADOR', undefined);
 
         expect(component.heroSinEntidad()).toBeFalse();
         expect(hero(el).querySelector('[data-testid="hero-accion-coordinador-docentes"]')).not.toBeNull();
       });
 
-      it('cuenta la entidad del rol activo: un vínculo de coordinador no cubre la facultad del decano', () => {
-        const el = crear('DECANO', [{ rol: 'COORDINADOR', nombreEntidad: 'Derecho' }]);
+      it('cuenta la entidad del rol activo: un vínculo de coordinador no cubre la facultad del decano', async () => {
+        const el = await crear('DECANO', [{ rol: 'COORDINADOR', nombreEntidad: 'Derecho' }]);
 
         expect(component.heroSinEntidad()).toBeTrue();
         expect(hero(el).querySelector('[data-testid="hero-accion-decano-coordinadores"]')).toBeNull();
       });
     });
 
-    it('con su facultad en el perfil carga el panel del decano como siempre', () => {
-      const el = crear('DECANO', [{ rol: 'DECANO', nombreEntidad: 'Facultad de Ciencias' }]);
+    it('con su facultad en el perfil carga el panel del decano como siempre', async () => {
+      const el = await crear('DECANO', [{ rol: 'DECANO', nombreEntidad: 'Facultad de Ciencias' }]);
 
       expect(el.querySelector('[data-testid="decano-sin-facultad"]')).toBeNull();
       expect(el.querySelector('app-overview-dean')).not.toBeNull();
       expect(deanServiceSpy.getCoordinadores).toHaveBeenCalled();
     });
 
-    it('al coordinador sin programa le muestra el aviso y no consulta datos de programa que responderían 403', () => {
-      const el = crear('COORDINADOR', []);
+    it('al coordinador sin programa le muestra el aviso y no consulta datos de programa que responderían 403', async () => {
+      const el = await crear('COORDINADOR', []);
 
       expect(el.querySelector('[data-testid="coordinador-sin-programa"]')).not.toBeNull();
       expect(el.querySelector('app-overview-coordinator')).toBeNull();
@@ -594,8 +600,8 @@ describe('OverviewComponent', () => {
       expect(component.isLoading()).toBeFalse();
     });
 
-    it('con su programa en el perfil carga el panel del coordinador como siempre', () => {
-      const el = crear('COORDINADOR', [{ rol: 'COORDINADOR', nombreEntidad: 'Derecho' }]);
+    it('con su programa en el perfil carga el panel del coordinador como siempre', async () => {
+      const el = await crear('COORDINADOR', [{ rol: 'COORDINADOR', nombreEntidad: 'Derecho' }]);
 
       expect(el.querySelector('[data-testid="coordinador-sin-programa"]')).toBeNull();
       expect(el.querySelector('app-overview-coordinator')).not.toBeNull();
@@ -603,8 +609,8 @@ describe('OverviewComponent', () => {
     });
   });
 
-  it('debe inicializarse correctamente para rol COORDINADOR', () => {
-    createComponentWithRole('COORDINADOR');
+  it('debe inicializarse correctamente para rol COORDINADOR', async () => {
+    await createComponentWithRole('COORDINADOR');
     expect(coordinatorServiceSpy.getPlanesEstudio).toHaveBeenCalled();
     expect(coordinatorServiceSpy.getDocentes).toHaveBeenCalled();
     expect(component.planesEstudio()).toHaveSize(1);
@@ -613,9 +619,9 @@ describe('OverviewComponent', () => {
     expect(component.isLoading()).toBeFalse();
   });
 
-  it('F-COORD-01: los estudiantes registrados salen del servidor y no se descarga el directorio completo', () => {
+  it('F-COORD-01: los estudiantes registrados salen del servidor y no se descarga el directorio completo', async () => {
     // El directorio de la primera pagina trae 1 docente; el padron real del programa es 5007.
-    createComponentWithRole('COORDINADOR');
+    await createComponentWithRole('COORDINADOR');
     expect(coordinatorServiceSpy.getEstudiantesDirectorio).not.toHaveBeenCalled();
     expect(texto('estudiantes')).toBe('5007');
     expect(texto('docentes')).toBe('12');
@@ -623,7 +629,7 @@ describe('OverviewComponent', () => {
     expect(texto('periodo')).toBe('2026-2');
   });
 
-  it('F-COORD-01: los indicadores se piden con el programa ya resuelto (antes de consultar, cargar el programa)', () => {
+  it('F-COORD-01: los indicadores se piden con el programa ya resuelto (antes de consultar, cargar el programa)', async () => {
     const orden: string[] = [];
     coordinatorProgramSpy.cargar.and.callFake(() => {
       orden.push('programa');
@@ -633,42 +639,42 @@ describe('OverviewComponent', () => {
       orden.push('indicadores');
       return of({ exitoso: true, datos: { estudiantesRegistrados: 5007 } as never });
     });
-    createComponentWithRole('COORDINADOR');
+    await createComponentWithRole('COORDINADOR');
     expect(orden).toEqual(['programa', 'indicadores']);
   });
 
-  it('F-COORD-01: mientras llegan los indicadores el padron no se muestra como 0', () => {
+  it('F-COORD-01: mientras llegan los indicadores el padron no se muestra como 0', async () => {
     coordinatorIndicatorsSpy.consultarKpis.and.returnValue(new Observable(() => undefined));
-    createComponentWithRole('COORDINADOR');
+    await createComponentWithRole('COORDINADOR');
     expect(component.coordEstado()).toBe('cargando');
     expect(texto('estudiantes')).toBe('Cargando…');
   });
 
-  it('F-COORD-01: si los indicadores fallan se muestra Sin datos y no 0', () => {
+  it('F-COORD-01: si los indicadores fallan se muestra Sin datos y no 0', async () => {
     coordinatorIndicatorsSpy.consultarKpis.and.returnValue(throwError(() => ({ status: 400 })));
-    createComponentWithRole('COORDINADOR');
+    await createComponentWithRole('COORDINADOR');
     expect(component.coordEstado()).toBe('error');
     expect(texto('estudiantes')).toBe('Sin datos');
     expect(texto('estudiantes-riesgo')).toBe('Sin datos');
   });
 
-  it('COORDINADOR: si no se pueden resolver los programas no se consultan indicadores y se muestra Sin datos', () => {
+  it('COORDINADOR: si no se pueden resolver los programas no se consultan indicadores y se muestra Sin datos', async () => {
     coordinatorProgramSpy.cargar.and.returnValue(throwError(() => ({ status: 403 })));
-    createComponentWithRole('COORDINADOR');
+    await createComponentWithRole('COORDINADOR');
     expect(coordinatorIndicatorsSpy.consultarKpis).not.toHaveBeenCalled();
     expect(coordinadorSesionesSpy.contarPendientes).not.toHaveBeenCalled();
     expect(component.coordEstado()).toBe('error');
     expect(component.solicitudesSesionPendientes()).toBeNull();
   });
 
-  it('COORDINADOR: una respuesta de indicadores sin datos se trata como fallo', () => {
+  it('COORDINADOR: una respuesta de indicadores sin datos se trata como fallo', async () => {
     coordinatorIndicatorsSpy.consultarKpis.and.returnValue(of<never>({ exitoso: true, datos: null } as never));
-    createComponentWithRole('COORDINADOR');
+    await createComponentWithRole('COORDINADOR');
     expect(component.coordEstado()).toBe('error');
   });
 
-  it('DEC-065 (2): el coordinador ve las solicitudes de sesión pendientes de su programa con enlace a Asistencia', () => {
-    createComponentWithRole('COORDINADOR');
+  it('DEC-065 (2): el coordinador ve las solicitudes de sesión pendientes de su programa con enlace a Asistencia', async () => {
+    await createComponentWithRole('COORDINADOR');
     fixture.detectChanges();
 
     expect(coordinadorSesionesSpy.contarPendientes).toHaveBeenCalledWith('prog-1');
@@ -678,23 +684,23 @@ describe('OverviewComponent', () => {
     expect(fixture.nativeElement.querySelector('[data-testid="solicitudes-sesion-valor"]').textContent.trim()).toBe('4');
   });
 
-  it('DEC-065 (2): si el conteo falla la tarjeta muestra «Sin datos», no un cero', () => {
+  it('DEC-065 (2): si el conteo falla la tarjeta muestra «Sin datos», no un cero', async () => {
     coordinadorSesionesSpy.contarPendientes.and.returnValue(throwError(() => new Error('500')));
-    createComponentWithRole('COORDINADOR');
+    await createComponentWithRole('COORDINADOR');
     fixture.detectChanges();
 
     expect(component.solicitudesSesionPendientes()).toBeNull();
     expect(fixture.nativeElement.querySelector('[data-testid="solicitudes-sesion-valor"]').textContent.trim()).toBe('Sin datos');
   });
 
-  it('debe manejar error al cargar docentes para rol COORDINADOR', () => {
+  it('debe manejar error al cargar docentes para rol COORDINADOR', async () => {
     coordinatorServiceSpy.getDocentes.and.returnValue(throwError(() => new Error('Error')));
-    createComponentWithRole('COORDINADOR');
+    await createComponentWithRole('COORDINADOR');
     expect(component.isLoading()).toBeFalse();
   });
 
-  it('debe inicializarse correctamente para rol ESTUDIANTE', () => {
-    createComponentWithRole('ESTUDIANTE');
+  it('debe inicializarse correctamente para rol ESTUDIANTE', async () => {
+    await createComponentWithRole('ESTUDIANTE');
     expect(studentServiceSpy.getHorarios).toHaveBeenCalled();
     expect(studentServiceSpy.getMaterias).toHaveBeenCalled();
     expect(component.materias()).toHaveSize(1);
@@ -707,12 +713,12 @@ describe('OverviewComponent', () => {
   describe('indicadores del estudiante desde el backend (CIERRE-W2B, F-EST-01)', () => {
     const q = (id: string): HTMLElement | null => fixture.nativeElement.querySelector(`[data-testid="${id}"]`);
 
-    it('el tablero muestra las cifras del resumen del backend, sin contar ni sumar las materias del cliente', () => {
+    it('el tablero muestra las cifras del resumen del backend, sin contar ni sumar las materias del cliente', async () => {
       studentServiceSpy.getMaterias.and.returnValue(of({ exitoso: true, datos: [crearMateria(), crearMateria({ idGrupo: 'otro', claveGrupo: 'otro' })] }));
       studentServiceSpy.getResumenMaterias.and.returnValue(
         of({ exitoso: true, datos: { totalMaterias: 7, materiasEnRiesgo: 3, totalHorasFalta: 12.5, totalCreditos: 20 } })
       );
-      createComponentWithRole('ESTUDIANTE');
+      await createComponentWithRole('ESTUDIANTE');
       fixture.detectChanges();
 
       expect(q('resumen-total-materias')?.textContent?.trim()).toBe('7');
@@ -720,9 +726,9 @@ describe('OverviewComponent', () => {
       expect(q('riesgo-no-disponible')).toBeNull();
     });
 
-    it('si el resumen falla, las tarjetas dicen "No disponible" y no muestran un 0 inventado', () => {
+    it('si el resumen falla, las tarjetas dicen "No disponible" y no muestran un 0 inventado', async () => {
       studentServiceSpy.getResumenMaterias.and.returnValue(throwError(() => new Error('500')));
-      createComponentWithRole('ESTUDIANTE');
+      await createComponentWithRole('ESTUDIANTE');
       fixture.detectChanges();
 
       expect(component.studentResumen()).toBeNull();
@@ -732,20 +738,20 @@ describe('OverviewComponent', () => {
       expect(q('resumen-total-materias')).toBeNull();
     });
 
-    it('sin umbrales configurados (riesgo nulo) el riesgo es "No disponible" aunque haya materias', () => {
+    it('sin umbrales configurados (riesgo nulo) el riesgo es "No disponible" aunque haya materias', async () => {
       studentServiceSpy.getResumenMaterias.and.returnValue(
         of({ exitoso: true, datos: { totalMaterias: 2, materiasEnRiesgo: null, totalHorasFalta: 1, totalCreditos: 6 } })
       );
-      createComponentWithRole('ESTUDIANTE');
+      await createComponentWithRole('ESTUDIANTE');
       fixture.detectChanges();
 
       expect(q('riesgo-no-disponible')).not.toBeNull();
       expect(q('resumen-total-materias')?.textContent?.trim()).toBe('2');
     });
 
-    it('mientras las materias no responden no se afirma "No tienes materias inscritas"', () => {
+    it('mientras las materias no responden no se afirma "No tienes materias inscritas"', async () => {
       studentServiceSpy.getMaterias.and.returnValue(new Subject<never>().asObservable());
-      createComponentWithRole('ESTUDIANTE');
+      await createComponentWithRole('ESTUDIANTE');
       fixture.detectChanges();
 
       expect(component.estadoMateriasEstudiante()).toBe('CARGANDO');
@@ -754,9 +760,9 @@ describe('OverviewComponent', () => {
       expect(q('resumen-total-materias')?.textContent?.trim()).toBe('1');
     });
 
-    it('si las materias fallan se informa el error y no el estado vacio', () => {
+    it('si las materias fallan se informa el error y no el estado vacio', async () => {
       studentServiceSpy.getMaterias.and.returnValue(throwError(() => new Error('Error')));
-      createComponentWithRole('ESTUDIANTE');
+      await createComponentWithRole('ESTUDIANTE');
       fixture.detectChanges();
 
       expect(component.estadoMateriasEstudiante()).toBe('ERROR');
@@ -765,36 +771,36 @@ describe('OverviewComponent', () => {
       expect(q('materias-vacio')).toBeNull();
     });
 
-    it('con la consulta resuelta y cero materias si se muestra el estado vacio', () => {
+    it('con la consulta resuelta y cero materias si se muestra el estado vacio', async () => {
       studentServiceSpy.getMaterias.and.returnValue(of({ exitoso: true, datos: [] }));
       studentServiceSpy.getResumenMaterias.and.returnValue(
         of({ exitoso: true, datos: { totalMaterias: 0, materiasEnRiesgo: 0, totalHorasFalta: 0, totalCreditos: 0 } })
       );
-      createComponentWithRole('ESTUDIANTE');
+      await createComponentWithRole('ESTUDIANTE');
       fixture.detectChanges();
 
       expect(q('materias-vacio')).not.toBeNull();
       expect(q('resumen-total-materias')?.textContent?.trim()).toBe('0');
     });
 
-    it('una respuesta con exitoso=false no se toma por lista vacia: queda en error', () => {
+    it('una respuesta con exitoso=false no se toma por lista vacia: queda en error', async () => {
       studentServiceSpy.getMaterias.and.returnValue(of({ exitoso: false, datos: [] }));
-      createComponentWithRole('ESTUDIANTE');
+      await createComponentWithRole('ESTUDIANTE');
 
       expect(component.estadoMateriasEstudiante()).toBe('ERROR');
     });
   });
 
-  it('debe manejar fallback de cálculo de próxima clase con courses si no hay horariosDocente', () => {
-    createComponentWithRole('DOCENTE');
+  it('debe manejar fallback de cálculo de próxima clase con courses si no hay horariosDocente', async () => {
+    await createComponentWithRole('DOCENTE');
     component.horariosDocente.set([]);
     component.courses = mockCourses;
     component.recalcularProximaClase();
     expect(component).toBeTruthy();
   });
 
-  it('debe manejar fallback de cálculo de próxima clase con materias si no hay horariosEstudiante', () => {
-    createComponentWithRole('ESTUDIANTE');
+  it('debe manejar fallback de cálculo de próxima clase con materias si no hay horariosEstudiante', async () => {
+    await createComponentWithRole('ESTUDIANTE');
     component.horariosEstudiante.set([]);
     component.materias.set(mockMaterias);
     component.recalcularProximaClase();

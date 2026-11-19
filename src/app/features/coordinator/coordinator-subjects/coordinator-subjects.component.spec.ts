@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { ComponentFixture, DeferBlockState, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Observable, Subject, of, throwError } from 'rxjs';
@@ -148,9 +148,12 @@ describe('CoordinatorSubjectsComponent', () => {
       expect(el().textContent).not.toContain('Grupos y Materias Activas en el Período');
     });
 
-    it('«Ver inscritos» abre la nómina del grupo en una ventana y Cerrar la oculta', () => {
+    it('«Ver inscritos» abre la nómina del grupo en una ventana y Cerrar la oculta', async () => {
       expect(el().querySelector('[data-testid="modal-inscritos"]')).toBeNull();
       (el().querySelector('[data-testid="ver-inscritos"] button') as HTMLElement).click();
+      fixture.detectChanges();
+      const deferBlocks = await fixture.getDeferBlocks();
+      await Promise.all(deferBlocks.map((block) => block.render(DeferBlockState.Complete)));
       fixture.detectChanges();
       expect(coordinatorService.getEstudiantesPorGrupo).toHaveBeenCalled();
       expect(component.enrolledStudents()).toHaveSize(1);
@@ -164,8 +167,11 @@ describe('CoordinatorSubjectsComponent', () => {
       expect(component.enrolledStudents()).toHaveSize(0);
     });
 
-    const abrir = (id = 'crs-1') => {
+    const abrir = async (id = 'crs-1') => {
       component.onSelectCourse(id);
+      fixture.detectChanges();
+      const deferBlocks = await fixture.getDeferBlocks();
+      await Promise.all(deferBlocks.map((block) => block.render(DeferBlockState.Complete)));
       fixture.detectChanges();
     };
     const modal = () => el().querySelector('[data-testid="modal-inscritos"]') as HTMLElement | null;
@@ -173,8 +179,8 @@ describe('CoordinatorSubjectsComponent', () => {
       id: 'mat-' + nombre, idEstudiante: 'est-' + nombre, documento: '100', nombreCompleto: nombre, correo: '', codigoEstado, nombreEstado,
     });
 
-    it('la fila muestra el estado real de la matrícula (codigoEstado del backend) y no una etiqueta vacía', () => {
-      abrir();
+    it('la fila muestra el estado real de la matrícula (codigoEstado del backend) y no una etiqueta vacía', async () => {
+      await abrir();
       const badge = modal()!.querySelector('[data-testid="estado-inscrito"]');
       expect(badge?.textContent?.trim()).toBe('Activo');
       expect(modal()!.textContent).toContain('Doc. 1036998877');
@@ -190,17 +196,17 @@ describe('CoordinatorSubjectsComponent', () => {
       expect(etiquetaEstadoInscrito({}).etiqueta).toBe('Sin estado');
     });
 
-    it('mientras la nómina carga muestra «Cargando…» y no «No hay estudiantes»', () => {
+    it('mientras la nómina carga muestra «Cargando…» y no «No hay estudiantes»', async () => {
       coordinatorService.getEstudiantesPorGrupo.and.returnValue(new Subject<never>());
-      abrir();
+      await abrir();
       expect(component.cargandoInscritos()).toBeTrue();
       expect(modal()!.querySelector('[data-testid="inscritos-cargando"]')?.getAttribute('role')).toBe('status');
       expect(modal()!.textContent).not.toContain('No hay estudiantes registrados');
     });
 
-    it('un 403/500 de la nómina se muestra como error (con Reintentar si aplica) y no como grupo vacío', () => {
+    it('un 403/500 de la nómina se muestra como error (con Reintentar si aplica) y no como grupo vacío', async () => {
       coordinatorService.getEstudiantesPorGrupo.and.returnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
-      abrir();
+      await abrir();
       expect(component.cargandoInscritos()).toBeFalse();
       expect(modal()!.querySelector('[role="alert"]')).not.toBeNull();
       expect(modal()!.textContent).not.toContain('No hay estudiantes registrados');
@@ -220,7 +226,7 @@ describe('CoordinatorSubjectsComponent', () => {
       expect(modal()!.textContent).toContain('Sin autorización');
     });
 
-    it('abrir A y luego B: la respuesta tardía de A no pisa la nómina de B', () => {
+    it('abrir A y luego B: la respuesta tardía de A no pisa la nómina de B', async () => {
       const cursoB: Course = { ...course, id: 'crs-2', code: 'IS-402', name: 'Bases de Datos' };
       courseService.getCoordinatorCoursesPage.and.returnValue(of(pagina([course, cursoB])));
       component.cargarDatos();
@@ -229,8 +235,8 @@ describe('CoordinatorSubjectsComponent', () => {
       const respuestaA = new Subject<never>();
       const respuestaB = new Subject<never>();
       coordinatorService.getEstudiantesPorGrupo.and.callFake(((id: string) => (id === 'crs-1' ? respuestaA : respuestaB)) as never);
-      abrir('crs-1');
-      abrir('crs-2');
+      await abrir('crs-1');
+      await abrir('crs-2');
 
       respuestaB.next({ exitoso: true, datos: [fila('Bruno', 'A', 'activo')] } as never);
       respuestaA.next({ exitoso: true, datos: [fila('Alicia', 'A', 'activo')] } as never);
@@ -241,10 +247,10 @@ describe('CoordinatorSubjectsComponent', () => {
       expect(respuestaA.observed).toBeFalse();
     });
 
-    it('cerrar la ventana cancela la consulta pendiente', () => {
+    it('cerrar la ventana cancela la consulta pendiente', async () => {
       const pendiente = new Subject<never>();
       coordinatorService.getEstudiantesPorGrupo.and.returnValue(pendiente);
-      abrir();
+      await abrir();
       component.cerrarInscritos();
       expect(pendiente.observed).toBeFalse();
       expect(component.cargandoInscritos()).toBeFalse();
@@ -255,7 +261,9 @@ describe('CoordinatorSubjectsComponent', () => {
       disparador.focus();
       disparador.click();
       fixture.detectChanges();
-      await fixture.whenStable();
+      const deferBlocks = await fixture.getDeferBlocks();
+      await Promise.all(deferBlocks.map((block) => block.render(DeferBlockState.Complete)));
+      fixture.detectChanges();
       expect(modal()).not.toBeNull();
       expect(document.activeElement).not.toBe(disparador);
 

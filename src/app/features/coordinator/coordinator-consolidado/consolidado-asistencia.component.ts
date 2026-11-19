@@ -140,9 +140,17 @@ const NUMERO_ES = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 2 });
                     <tr [id]="'sesiones-grupo-' + g.idGrupo" [attr.data-testid]="'sesiones-' + g.idGrupo" class="bg-warm-50/60">
                       <td colspan="13" class="p-3">
                         @if (comoDecano) {
-                          <app-dean-sesiones-grupo [idGrupo]="g.idGrupo" />
+                          @defer (on immediate) {
+                            <app-dean-sesiones-grupo [idGrupo]="g.idGrupo" />
+                          } @placeholder {
+                            <p role="status" class="py-3 text-center text-sm text-warm-500">Cargando sesiones del grupo...</p>
+                          }
                         } @else {
-                          <app-coordinator-sesiones-grupo [grupo]="{ id: g.idGrupo, nombre: g.nombreGrupo || 'Grupo ' + g.codigoGrupo, nombreAsignatura: g.nombreAsignatura || '' }" />
+                          @defer (on immediate) {
+                            <app-coordinator-sesiones-grupo [grupo]="{ id: g.idGrupo, nombre: g.nombreGrupo || 'Grupo ' + g.codigoGrupo, nombreAsignatura: g.nombreAsignatura || '' }" />
+                          } @placeholder {
+                            <p role="status" class="py-3 text-center text-sm text-warm-500">Cargando sesiones del grupo...</p>
+                          }
                         }
                       </td>
                     </tr>

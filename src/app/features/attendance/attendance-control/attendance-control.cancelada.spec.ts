@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, DeferBlockState, TestBed } from '@angular/core/testing';
 import { TeacherMatrizAsistenciaService } from '../../../core/services/teacher-matriz-asistencia.service';
 import { TomaAsistenciaService } from '../../../core/services/toma-asistencia.service';
 import { AsistenciaQrService } from '../../../core/services/asistencia-qr.service';
@@ -148,8 +148,10 @@ describe('AttendanceControlComponent sesión cancelada (B.1)', () => {
     expect(opciones.find((o) => o.value === 'session-1')?.disabled).toBeFalsy();
   });
 
-  it('B1-F-16 una sesión cancelada seleccionada bloquea controles, marcado masivo y guardado sin llamar al backend', () => {
+  it('B1-F-16 una sesión cancelada seleccionada bloquea controles, marcado masivo y guardado sin llamar al backend', async () => {
     const component = crear('session-2');
+    const [detailBlock] = await fixture.getDeferBlocks();
+    await detailBlock!.render(DeferBlockState.Complete);
 
     expect(component.attendanceWindowState()).toBe('CANCELADA');
     expect(table().controlsDisabled()).toBeTrue();

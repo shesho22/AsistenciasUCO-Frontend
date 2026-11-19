@@ -166,116 +166,134 @@ type StudentEnrollmentField =
 
       <!-- 3. VISTA DETALLE: Tabla Interactiva de Estudiantes para Toma de Asistencia -->
       @if (vistaActual() === 'DETALLE') {
-        <app-session-tomas-panel
-          [tomasSesion]="tomasSesionActual()"
-          [abriendo]="abriendoToma()"
-          (nuevaToma)="abrirSelectorModo()"
-          (proyectarQr)="onSeleccionarToma($event)"
-          (cerrarToma)="solicitarCierreToma()"
-          (actualizado)="recargarSesionActual()"
-          (notificacion)="mostrarNotificacion($event)"
-        />
-
-        <!-- Sin tomas la sesión usa el lote de la sesión (toma implícita); con tomas, cada toma trae su lista -->
-        @if (!hayTomas()) {
-          <app-attendance-control-table
-            [students]="students()"
-            [isLoading]="isLoadingSession()"
-            [isSaving]="isSaving()"
-            [sessionsEnabled]="sessionsEnabled"
-            [attendanceEnabled]="attendanceEnabled"
-            [attendanceWindowState]="attendanceWindowState()"
-            [cancelacion]="$safeNavigationMigration(currentSession()?.cancelacion)"
-            (statusChange)="onStudentStatusChange($event)"
-            (openExcuseModal)="openExcuseModal($event)"
-            (saveAttendance)="saveAttendance()"
+        @defer (when vistaActual() === 'DETALLE') {
+          <app-session-tomas-panel
+            [tomasSesion]="tomasSesionActual()"
+            [abriendo]="abriendoToma()"
+            (nuevaToma)="abrirSelectorModo()"
+            (proyectarQr)="onSeleccionarToma($event)"
+            (cerrarToma)="solicitarCierreToma()"
+            (actualizado)="recargarSesionActual()"
+            (notificacion)="mostrarNotificacion($event)"
           />
+
+          <!-- Sin tomas la sesión usa el lote de la sesión (toma implícita); con tomas, cada toma trae su lista -->
+          @if (!hayTomas()) {
+            <app-attendance-control-table
+              [students]="students()"
+              [isLoading]="isLoadingSession()"
+              [isSaving]="isSaving()"
+              [sessionsEnabled]="sessionsEnabled"
+              [attendanceEnabled]="attendanceEnabled"
+              [attendanceWindowState]="attendanceWindowState()"
+              [cancelacion]="$safeNavigationMigration(currentSession()?.cancelacion)"
+              (statusChange)="onStudentStatusChange($event)"
+              (openExcuseModal)="openExcuseModal($event)"
+              (saveAttendance)="saveAttendance()"
+            />
+          }
+        } @placeholder {
+          <div class="min-h-32 rounded-2xl bg-warm-100" role="status" aria-label="Cargando la toma de asistencia"></div>
         }
       }
 
       <!-- 4. Modal de Matrícula de Estudiante -->
-      <app-attendance-enrollment-modal
-        [isOpen]="isRegisterModalOpen()"
-        [grupoId]="selectedCourseId()"
-        [isEnrolling]="isEnrolling()"
-        [docTypeOptions]="docTypeOptions()"
-        [fieldErrors]="studentFieldErrors()"
-        [emailDomain]="emailDomain()"
-        (submitted)="onRegisterStudentSubmit($event)"
-        (clearFieldError)="onClearStudentFieldError($event)"
-        (closed)="isRegisterModalOpen.set(false)"
-      />
+      @defer (when isRegisterModalOpen()) {
+        <app-attendance-enrollment-modal
+          [isOpen]="isRegisterModalOpen()"
+          [grupoId]="selectedCourseId()"
+          [isEnrolling]="isEnrolling()"
+          [docTypeOptions]="docTypeOptions()"
+          [fieldErrors]="studentFieldErrors()"
+          [emailDomain]="emailDomain()"
+          (submitted)="onRegisterStudentSubmit($event)"
+          (clearFieldError)="onClearStudentFieldError($event)"
+          (closed)="isRegisterModalOpen.set(false)"
+        />
+      }
 
       <!-- 4.1. Modal de QR / PIN de Matrícula al Grupo -->
-      <app-teacher-matricula-modal
-        [isOpen]="isMatriculaQrModalOpen()"
-        [curso]="currentCourse() || null"
-        (closed)="isMatriculaQrModalOpen.set(false)"
-        (matriculado)="onEstudianteMatriculado($event)"
-      />
+      @defer (when isMatriculaQrModalOpen()) {
+        <app-teacher-matricula-modal
+          [isOpen]="isMatriculaQrModalOpen()"
+          [curso]="currentCourse() || null"
+          (closed)="isMatriculaQrModalOpen.set(false)"
+          (matriculado)="onEstudianteMatriculado($event)"
+        />
+      }
 
       <!-- 5. Modal de Creación de Sesión -->
-      <app-attendance-new-session-modal
-        [isOpen]="isNewSessionModalOpen()"
-        [course]="currentCourse()"
-        [isCreating]="isCreatingSession()"
-        (submitted)="onCreateSessionSubmit($event)"
-        (closed)="isNewSessionModalOpen.set(false)"
-      />
+      @defer (when isNewSessionModalOpen()) {
+        <app-attendance-new-session-modal
+          [isOpen]="isNewSessionModalOpen()"
+          [course]="currentCourse()"
+          [isCreating]="isCreatingSession()"
+          (submitted)="onCreateSessionSubmit($event)"
+          (closed)="isNewSessionModalOpen.set(false)"
+        />
+      }
 
       <!-- 6. Modo de la toma, proyección del QR y cierre (CULM-001 B.2) -->
-      @if (modoSelectorAbierto()) {
+      @defer (when modoSelectorAbierto()) {
         <app-toma-modo-selector
           [qrHabilitado]="sessionQrEnabled"
           (modoElegido)="onModoElegido($event)"
           (cancelar)="modoSelectorAbierto.set(false)"
         />
       }
-      @if (tomaProyectada(); as proyectada) {
-        @if (qrActual(); as q) {
-          <app-toma-qr-proyeccion
-            [toma]="proyectada"
-            [qr]="q"
-            [grupoId]="selectedCourseId()"
-            [titulo]="tituloProyeccion()"
-            (cerrarToma)="solicitarCierreToma()"
+      @defer (when tomaProyectada() !== null && qrActual() !== null) {
+        @if (tomaProyectada(); as proyectada) {
+          @if (qrActual(); as q) {
+            <app-toma-qr-proyeccion
+              [toma]="proyectada"
+              [qr]="q"
+              [grupoId]="selectedCourseId()"
+              [titulo]="tituloProyeccion()"
+              (cerrarToma)="solicitarCierreToma()"
+            />
+          }
+        }
+      }
+      @defer (when cierrePendiente()) {
+        @if (cierrePendiente() && tomaAbierta(); as abierta) {
+          <app-toma-cierre-dialog
+            [numeroToma]="abierta.numero"
+            (confirmar)="confirmarCierreToma($event)"
+            (cancelar)="cierrePendiente.set(false)"
           />
         }
       }
-      @if (cierrePendiente() && tomaAbierta(); as abierta) {
-        <app-toma-cierre-dialog
-          [numeroToma]="abierta.numero"
-          (confirmar)="confirmarCierreToma($event)"
-          (cancelar)="cierrePendiente.set(false)"
+
+      <!-- 7. Modal de Información del Grupo & Alumnos Matriculados -->
+      @defer (when isGroupInfoModalOpen()) {
+        <app-group-info-modal
+          [isOpen]="isGroupInfoModalOpen()"
+          [course]="currentCourse()"
+          [students]="groupStudents()"
+          [isLoading]="isLoadingGroupStudents()"
+          [resendingStudentId]="resendingStudentId()"
+          (resendVerification)="onResendVerification($event)"
+          (closed)="isGroupInfoModalOpen.set(false)"
         />
       }
 
-      <!-- 7. Modal de Información del Grupo & Alumnos Matriculados -->
-      <app-group-info-modal
-        [isOpen]="isGroupInfoModalOpen()"
-        [course]="currentCourse()"
-        [students]="groupStudents()"
-        [isLoading]="isLoadingGroupStudents()"
-        [resendingStudentId]="resendingStudentId()"
-        (resendVerification)="onResendVerification($event)"
-        (closed)="isGroupInfoModalOpen.set(false)"
-      />
-
       <!-- 8. Modal de Reclamos y Justificaciones del Grupo -->
-      <app-group-claims-modal
-        [isOpen]="isGroupClaimsModalOpen()"
-        [course]="currentCourse()"
-        [reclamos]="reclamosGrupo()"
-        [totalReclamos]="totalReclamosGrupo()"
-        [pagina]="paginaReclamosGrupo()"
-        [tamano]="tamanoReclamosGrupo"
-        [estadoCarga]="estadoCargaReclamos()"
-        (paginaChange)="cambiarPaginaReclamos($event)"
-        (closed)="isGroupClaimsModalOpen.set(false)"
-        (resolver)="resolverReclamoGrupo($event)"
-        (reintentar)="reintentarCargaReclamos()"
-        (irABandejaGeneral)="irABandejaGeneralReclamos()"
-      />
+      @defer (when isGroupClaimsModalOpen()) {
+        <app-group-claims-modal
+          [isOpen]="isGroupClaimsModalOpen()"
+          [course]="currentCourse()"
+          [reclamos]="reclamosGrupo()"
+          [totalReclamos]="totalReclamosGrupo()"
+          [pagina]="paginaReclamosGrupo()"
+          [tamano]="tamanoReclamosGrupo"
+          [estadoCarga]="estadoCargaReclamos()"
+          (paginaChange)="cambiarPaginaReclamos($event)"
+          (closed)="isGroupClaimsModalOpen.set(false)"
+          (resolver)="resolverReclamoGrupo($event)"
+          (reintentar)="reintentarCargaReclamos()"
+          (irABandejaGeneral)="irABandejaGeneralReclamos()"
+        />
+      }
       <!-- Feedback Toast -->
       <app-toast
         [visible]="showToast()"

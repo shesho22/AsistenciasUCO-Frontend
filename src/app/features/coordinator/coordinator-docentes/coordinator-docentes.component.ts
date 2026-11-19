@@ -199,45 +199,61 @@ const MIN_CARACTERES_CANDIDATOS = 3;
       }
 
       @if (docenteSeleccionado(); as seleccionado) {
-        <app-coordinator-docente-ficha-modal [docente]="seleccionado" (cerrar)="cerrarFichaDocente()" />
+        @defer (on immediate) {
+          <app-coordinator-docente-ficha-modal [docente]="seleccionado" (cerrar)="cerrarFichaDocente()" />
+        } @placeholder {
+          <span role="status" class="sr-only">Abriendo ficha del docente...</span>
+        }
       }
 
       @if (docentePendienteEstado(); as pendiente) {
-        <app-modal
-          [isOpen]="true"
-          [title]="pendiente.estaActivo ? 'Inactivar vinculación' : 'Reactivar vinculación'"
-          tamano="md"
-          (closed)="cancelarCambioEstado()"
-        >
-          <p class="text-sm text-warm-700">
-            {{ pendiente.estaActivo
-                ? 'El docente ' + pendiente.nombreCompleto + ' dejará de poder ser asignado como titular de nuevos grupos de este programa. Sus grupos actuales y su cuenta de acceso no cambian.'
-                : 'El docente ' + pendiente.nombreCompleto + ' volverá a poder ser asignado como titular de grupos de este programa.' }}
-          </p>
-          <button modal-footer type="button" (click)="cancelarCambioEstado()" class="px-4 py-2 rounded-xl text-sm font-semibold bg-warm-100 text-warm-800 hover:bg-warm-200">Cancelar</button>
-          <button modal-footer type="button" data-testid="confirmar-estado" (click)="confirmarCambioEstado()" class="px-4 py-2 rounded-xl text-sm font-semibold bg-primary-700 text-white hover:bg-primary-800">
-            {{ pendiente.estaActivo ? 'Inactivar' : 'Reactivar' }}
-          </button>
-        </app-modal>
+        @defer (on immediate) {
+          <app-modal
+            [isOpen]="true"
+            [title]="pendiente.estaActivo ? 'Inactivar vinculación' : 'Reactivar vinculación'"
+            tamano="md"
+            (closed)="cancelarCambioEstado()"
+          >
+            <p class="text-sm text-warm-700">
+              {{ pendiente.estaActivo
+                  ? 'El docente ' + pendiente.nombreCompleto + ' dejará de poder ser asignado como titular de nuevos grupos de este programa. Sus grupos actuales y su cuenta de acceso no cambian.'
+                  : 'El docente ' + pendiente.nombreCompleto + ' volverá a poder ser asignado como titular de grupos de este programa.' }}
+            </p>
+            <button modal-footer type="button" (click)="cancelarCambioEstado()" class="px-4 py-2 rounded-xl text-sm font-semibold bg-warm-100 text-warm-800 hover:bg-warm-200">Cancelar</button>
+            <button modal-footer type="button" data-testid="confirmar-estado" (click)="confirmarCambioEstado()" class="px-4 py-2 rounded-xl text-sm font-semibold bg-primary-700 text-white hover:bg-primary-800">
+              {{ pendiente.estaActivo ? 'Inactivar' : 'Reactivar' }}
+            </button>
+          </app-modal>
+        } @placeholder {
+          <span role="status" class="sr-only">Abriendo confirmación...</span>
+        }
       }
 
       @if (docenteEnEdicion(); as enEdicion) {
-        <app-coordinator-docente-edit-modal
-          [docente]="enEdicion"
-          (guardar)="guardarEdicion($event)"
-          (cerrar)="cerrarEdicion()"
-        />
+        @defer (on immediate) {
+          <app-coordinator-docente-edit-modal
+            [docente]="enEdicion"
+            (guardar)="guardarEdicion($event)"
+            (cerrar)="cerrarEdicion()"
+          />
+        } @placeholder {
+          <span role="status" class="sr-only">Abriendo formulario de edición...</span>
+        }
       }
 
       @if (formularioAbierto()) {
-        <app-coordinator-docente-form-modal
-          [tiposIdentificacion]="tiposIdentificacion()"
-          [candidatos]="candidatos()"
-          (guardarNuevo)="guardarNuevo($event)"
-          (guardarExistente)="guardarExistente($event)"
-          (buscarCandidatos)="buscarCandidatos($event)"
-          (cerrar)="cerrarFormulario()"
-        />
+        @defer (on immediate) {
+          <app-coordinator-docente-form-modal
+            [tiposIdentificacion]="tiposIdentificacion()"
+            [candidatos]="candidatos()"
+            (guardarNuevo)="guardarNuevo($event)"
+            (guardarExistente)="guardarExistente($event)"
+            (buscarCandidatos)="buscarCandidatos($event)"
+            (cerrar)="cerrarFormulario()"
+          />
+        } @placeholder {
+          <span role="status" class="sr-only">Abriendo formulario de vinculación...</span>
+        }
       }
     </div>
   `

@@ -54,30 +54,36 @@ const MAX_SEMESTRES = 10;
           [idEstadoEnCurso]="idEstadoEnCurso()"
           (toggleEstadoSubject)="pedirCambioEstado($event)"
         />
-        <app-associate-subject-dialog
-          [plan]="plan"
-          [abierto]="dialogoAsociarAbierto()"
-          (asociada)="alAsociar()"
-          (cerrado)="dialogoAsociarAbierto.set(false)"
-        />
-        <app-confirm-dialog
-          [isOpen]="asignaturaAQuitar() !== null"
-          title="Quitar asignatura del plan"
-          [message]="'¿Quitar «' + (asignaturaAQuitar()?.nombre ?? '') + '» de este plan de estudio?'"
-          confirmLabel="Quitar del plan"
-          [destructive]="true"
-          (confirmed)="confirmarQuitar()"
-          (cancelled)="asignaturaAQuitar.set(null)"
-        />
-        <app-confirm-dialog
-          [isOpen]="asignaturaACambiarEstado() !== null"
-          [title]="confirmacionEstado().titulo"
-          [message]="confirmacionEstado().mensaje"
-          [confirmLabel]="confirmacionEstado().titulo"
-          [destructive]="confirmacionEstado().inactivar"
-          (confirmed)="confirmarCambioEstado()"
-          (cancelled)="asignaturaACambiarEstado.set(null)"
-        />
+        @defer (when dialogoAsociarAbierto()) {
+          <app-associate-subject-dialog
+            [plan]="plan"
+            [abierto]="dialogoAsociarAbierto()"
+            (asociada)="alAsociar()"
+            (cerrado)="dialogoAsociarAbierto.set(false)"
+          />
+        }
+        @defer (when asignaturaAQuitar() !== null) {
+          <app-confirm-dialog
+            [isOpen]="asignaturaAQuitar() !== null"
+            title="Quitar asignatura del plan"
+            [message]="'¿Quitar «' + (asignaturaAQuitar()?.nombre ?? '') + '» de este plan de estudio?'"
+            confirmLabel="Quitar del plan"
+            [destructive]="true"
+            (confirmed)="confirmarQuitar()"
+            (cancelled)="asignaturaAQuitar.set(null)"
+          />
+        }
+        @defer (when asignaturaACambiarEstado() !== null) {
+          <app-confirm-dialog
+            [isOpen]="asignaturaACambiarEstado() !== null"
+            [title]="confirmacionEstado().titulo"
+            [message]="confirmacionEstado().mensaje"
+            [confirmLabel]="confirmacionEstado().titulo"
+            [destructive]="confirmacionEstado().inactivar"
+            (confirmed)="confirmarCambioEstado()"
+            (cancelled)="asignaturaACambiarEstado.set(null)"
+          />
+        }
       } @else {
         <div class="superficie p-12 text-center space-y-3">
           <p class="text-sm text-warm-500">Cargando malla curricular del plan de estudio...</p>

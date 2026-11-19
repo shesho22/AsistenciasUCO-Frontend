@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { ComponentFixture, DeferBlockState, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -53,6 +53,14 @@ describe('CoordinatorDocentesComponent', () => {
   function crear(): void {
     fixture = TestBed.createComponent(CoordinatorDocentesComponent);
     component = fixture.componentInstance;
+    fixture.detectChanges();
+  }
+
+  async function esperarListaYRenderizarDialogo(): Promise<void> {
+    await new Promise<void>((resolve) => setTimeout(resolve, 320));
+    fixture.detectChanges();
+    const deferBlocks = await fixture.getDeferBlocks();
+    await Promise.all(deferBlocks.map((block) => block.render(DeferBlockState.Complete)));
     fixture.detectChanges();
   }
 
@@ -232,9 +240,9 @@ describe('CoordinatorDocentesComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('No se encontraron docentes');
   }));
 
-  it('HU093: el botón de estado está habilitado y solo pide confirmación; no llama al servicio todavía', fakeAsync(() => {
+  it('HU093: el botón de estado está habilitado y solo pide confirmación; no llama al servicio todavía', async () => {
     crear();
-    tick(300);
+    await esperarListaYRenderizarDialogo();
     fixture.detectChanges();
 
     const boton = fixture.debugElement.query(By.css('[data-testid="toggle-estado"]'));
@@ -242,12 +250,12 @@ describe('CoordinatorDocentesComponent', () => {
     expect((boton.nativeElement as HTMLButtonElement).disabled).toBeFalse();
 
     (boton.nativeElement as HTMLButtonElement).click();
-    fixture.detectChanges();
+    await esperarListaYRenderizarDialogo();
 
     expect(component.docentePendienteEstado()).not.toBeNull();
     expect(coordService.cambiarEstadoDocente).not.toHaveBeenCalled();
     expect(fixture.nativeElement.querySelector('[data-testid="confirmar-estado"]')).toBeTruthy();
-  }));
+  });
 
   it('HU093: confirmar inactivación llama al servicio con el nuevo estado y recarga desde el servidor', fakeAsync(() => {
     crear();
@@ -322,18 +330,18 @@ describe('CoordinatorDocentesComponent', () => {
     expect(coordService.getDocentesPrograma).not.toHaveBeenCalled();
   }));
 
-  it('abre y cierra el formulario de vinculación', fakeAsync(() => {
+  it('abre y cierra el formulario de vinculación', async () => {
     crear();
-    tick(300);
+    await esperarListaYRenderizarDialogo();
 
     component.abrirFormulario();
-    fixture.detectChanges();
+    await esperarListaYRenderizarDialogo();
     expect(fixture.nativeElement.querySelector('app-coordinator-docente-form-modal')).toBeTruthy();
 
     component.cerrarFormulario();
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('app-coordinator-docente-form-modal')).toBeNull();
-  }));
+  });
 
   it('T-FE-04: buscarCandidatos exige 3 caracteres y consulta al backend', fakeAsync(() => {
     crear();
@@ -441,13 +449,13 @@ describe('CoordinatorDocentesComponent', () => {
     expect(component.formularioAbierto()).toBeTrue();
   }));
 
-  it('HU092: abrirEdicion/cerrarEdicion controlan el modal de edición', fakeAsync(() => {
+  it('HU092: abrirEdicion/cerrarEdicion controlan el modal de edición', async () => {
     crear();
-    tick(300);
+    await esperarListaYRenderizarDialogo();
     const docente = fila('doc-1', 'Roberto');
 
     component.abrirEdicion(docente);
-    fixture.detectChanges();
+    await esperarListaYRenderizarDialogo();
     expect(component.docenteEnEdicion()).toBe(docente);
     expect(fixture.nativeElement.querySelector('app-coordinator-docente-edit-modal')).toBeTruthy();
 
@@ -455,7 +463,7 @@ describe('CoordinatorDocentesComponent', () => {
     fixture.detectChanges();
     expect(component.docenteEnEdicion()).toBeNull();
     expect(fixture.nativeElement.querySelector('app-coordinator-docente-edit-modal')).toBeNull();
-  }));
+  });
 
   it('HU092: guardarEdicion actualiza, avisa, cierra y recarga desde el servidor (sin actualización optimista)', fakeAsync(() => {
     crear();
@@ -502,14 +510,14 @@ describe('CoordinatorDocentesComponent', () => {
     expect(coordService.actualizarDocente).not.toHaveBeenCalled();
   }));
 
-  it('HU094: la ficha se consulta al servidor solo al abrirla y cerrarFichaDocente la oculta', fakeAsync(() => {
+  it('HU094: la ficha se consulta al servidor solo al abrirla y cerrarFichaDocente la oculta', async () => {
     crear();
-    tick(300);
+    await esperarListaYRenderizarDialogo();
     expect(coordService.getFichaDocente).not.toHaveBeenCalled();
     const docente = fila('doc-1', 'Roberto');
 
     component.verFichaDocente(docente);
-    fixture.detectChanges();
+    await esperarListaYRenderizarDialogo();
     expect(component.docenteSeleccionado()).toBe(docente);
     expect(coordService.getFichaDocente).toHaveBeenCalledWith('doc-1', { pagina: 1, tamano: 5 });
     expect(fixture.nativeElement.querySelector('app-coordinator-docente-ficha-modal')).not.toBeNull();
@@ -518,7 +526,7 @@ describe('CoordinatorDocentesComponent', () => {
     fixture.detectChanges();
     expect(component.docenteSeleccionado()).toBeNull();
     expect(fixture.nativeElement.querySelector('app-coordinator-docente-ficha-modal')).toBeNull();
-  }));
+  });
 
   it('HU095: muestra el consolidado del programa (total, activos e inactivos) sin tipos de vinculación', fakeAsync(() => {
     crear();

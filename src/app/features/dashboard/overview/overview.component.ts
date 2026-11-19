@@ -84,13 +84,21 @@ import { OverviewStudentComponent } from './components/overview-student.componen
       <!-- 2. Dashboard Especializado por Rol -->
       @switch (userRole()) {
         @case ('ADMINISTRADOR') {
-          <app-overview-admin [decanos]="decanos()" [kpis]="adminKpis()" [estado]="adminEstado()" />
+          @defer (on immediate) {
+            <app-overview-admin [decanos]="decanos()" [kpis]="adminKpis()" [estado]="adminEstado()" />
+          } @placeholder {
+            <div class="min-h-56 rounded-2xl bg-white animate-pulse" aria-hidden="true"></div>
+          }
         }
         @case ('DECANO') {
           @if (decanoSinFacultad()) {
             <app-sin-entidad-asignada rol="DECANO" />
           } @else {
-            <app-overview-dean [coordinadores]="coordinadores()" [kpis]="deanKpis()" [estado]="deanEstado()" />
+            @defer (on immediate) {
+              <app-overview-dean [coordinadores]="coordinadores()" [kpis]="deanKpis()" [estado]="deanEstado()" />
+            } @placeholder {
+              <div class="min-h-56 rounded-2xl bg-white animate-pulse" aria-hidden="true"></div>
+            }
           }
         }
         @case ('COORDINADOR') {
@@ -107,21 +115,29 @@ import { OverviewStudentComponent } from './components/overview-student.componen
           }
         }
         @case ('DOCENTE') {
-          <app-overview-teacher
-            [courses]="courses"
-            [totalStudentsCount]="totalStudentsCount()"
-            [pendingClaimsCount]="pendingClaimsCount()"
-            [proximaClase]="proximaClase()"
-            [isLoading]="isLoading()"
-          />
+          @defer (on immediate) {
+            <app-overview-teacher
+              [courses]="courses"
+              [totalStudentsCount]="totalStudentsCount()"
+              [pendingClaimsCount]="pendingClaimsCount()"
+              [proximaClase]="proximaClase()"
+              [isLoading]="isLoading()"
+            />
+          } @placeholder {
+            <div class="min-h-56 rounded-2xl bg-white animate-pulse" aria-hidden="true"></div>
+          }
         }
         @case ('ESTUDIANTE') {
-          <app-overview-student
-            [materias]="materias()"
-            [estadoMaterias]="estadoMateriasEstudiante()"
-            [resumen]="studentResumen()"
-            [proximaClase]="proximaClase()"
-          />
+          @defer (on immediate) {
+            <app-overview-student
+              [materias]="materias()"
+              [estadoMaterias]="estadoMateriasEstudiante()"
+              [resumen]="studentResumen()"
+              [proximaClase]="proximaClase()"
+            />
+          } @placeholder {
+            <div class="min-h-56 rounded-2xl bg-white animate-pulse" aria-hidden="true"></div>
+          }
         }
       }
     </div>
