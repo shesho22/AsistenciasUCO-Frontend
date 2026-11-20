@@ -45,13 +45,13 @@ import { EstadoIndicadores, textoCifra, textoPeriodo } from '../../../../core/ut
           <span class="text-[11px] text-warm-500 font-medium">Indicador del programa</span>
         </div>
         <a
-          routerLink="/app/coordinador/asistencia"
+          routerLink="/app/coordinador/solicitudes-sesion"
           data-testid="solicitudes-sesion-pendientes"
           class="superficie p-5 flex flex-col justify-between h-full min-h-[120px] hover:bg-warm-50 transition-colors"
         >
           <span class="text-xs text-warm-500 font-medium">Solicitudes de sesión pendientes</span>
           <p class="text-2xl font-serif font-bold text-warning-700 mt-1" data-testid="solicitudes-sesion-valor">{{ solicitudesSesionPendientes() === null ? 'Sin datos' : solicitudesSesionPendientes() }}</p>
-          <span class="text-[11px] text-primary-700 font-medium">Revisar en Asistencia →</span>
+          <span class="text-[11px] text-primary-700 font-medium">Revisar solicitudes →</span>
         </a>
       </section>
 
@@ -101,7 +101,7 @@ import { EstadoIndicadores, textoCifra, textoPeriodo } from '../../../../core/ut
                   <app-badge [variant]="plan.estado === 'VIGENTE' ? 'success' : 'warning'" size="sm">{{ plan.estado }}</app-badge>
                 </td>
                 <td class="text-right whitespace-nowrap">
-                  <a routerLink="/app/coordinador/planes-estudio">
+                  <a [routerLink]="['/app/coordinador/planes-estudio', plan.id, 'malla']">
                     <app-button variant="ghost" size="sm">Explorar Plan de Estudio</app-button>
                   </a>
                 </td>
@@ -137,7 +137,7 @@ import { EstadoIndicadores, textoCifra, textoPeriodo } from '../../../../core/ut
                   Grupos a cargo: <strong class="text-warm-900">{{ docente.totalGruposAsignados }}</strong>
                 </p>
               </div>
-              <a routerLink="/app/coordinador/programa/docentes" class="w-full">
+              <a routerLink="/app/coordinador/programa/docentes" [queryParams]="{ busqueda: docente.numeroIdentificacion }" class="w-full">
                 <app-button variant="ghost" size="sm" [fullWidth]="true">
                   Ver Perfil y Carga
                 </app-button>

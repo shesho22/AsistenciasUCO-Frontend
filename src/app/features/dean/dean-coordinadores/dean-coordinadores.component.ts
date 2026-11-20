@@ -1,4 +1,5 @@
 import { Component, OnInit, inject, signal, ChangeDetectionStrategy, input } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DeanManagementService } from '../../../core/services/dean-management.service';
@@ -459,6 +460,7 @@ export class DeanCoordinadoresComponent implements OnInit {
   alElegirAccion(id: string): void {
     if (id === 'registrar') this.abrirFormularioRegistro();
   }
+  private readonly route = inject(ActivatedRoute, { optional: true });
   private readonly searchQuerySig = signal('');
   private readonly selectedEstadoSig = signal('TODOS');
   currentPage = signal(1);
@@ -519,6 +521,9 @@ export class DeanCoordinadoresComponent implements OnInit {
 
 
   ngOnInit(): void {
+    // Acceso rápido del panel («Administrar Coordinación»): abre la lista ya filtrada por el correo del coordinador.
+    const busquedaEnlace = this.route?.snapshot?.queryParamMap?.get('busqueda')?.trim();
+    if (busquedaEnlace) this.searchQuerySig.set(busquedaEnlace);
     this.cargarTiposIdentificacion();
     this.cargarProgramasAcademicos();
     this.cargarCatalogosPrograma();

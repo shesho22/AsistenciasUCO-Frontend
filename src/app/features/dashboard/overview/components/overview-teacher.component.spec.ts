@@ -31,7 +31,8 @@ describe('OverviewTeacherComponent (F-DOC-S02)', () => {
     expect(el.querySelector('app-tabla-datos table')).toBeTruthy();
     expect(el.querySelector('app-card')).toBeNull();
     expect(el.querySelectorAll('tr[data-testid="overview-docente-curso-fila"]').length).toBe(15);
-    expect(el.querySelector('tr[data-testid="overview-docente-curso-fila"] a')?.getAttribute('href')).toBe('/app/asistencia');
+    // Intencional: «Acceder a Sesiones y Asistencia» abre el grupo de la fila, no el primero de la lista.
+    expect(el.querySelector('tr[data-testid="overview-docente-curso-fila"] a')?.getAttribute('href')).toBe('/app/asistencia?courseId=g-0');
 
     fixture.componentInstance.pagina.set(2);
     fixture.detectChanges();

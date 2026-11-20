@@ -550,8 +550,10 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
     void this.router.navigate(['/app/asistencia'], { queryParams: { courseId: course.id } });
   }
 
+  /** Desde el hub de un grupo, la bandeja de reclamos se abre acotada a ese grupo. */
   irAGestionReclamos(): void {
-    void this.router.navigate(['/app/docente/reclamos']);
+    const grupo = this.selectedCourse()?.id;
+    void this.router.navigate(['/app/docente/reclamos'], grupo ? { queryParams: { grupo } } : {});
   }
 
   irATomaAsistencia(): void {

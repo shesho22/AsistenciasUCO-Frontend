@@ -1,3 +1,4 @@
+import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { ComponentFixture, DeferBlockState, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { By } from '@angular/platform-browser';
@@ -185,6 +186,27 @@ describe('CoordinatorDocentesComponent', () => {
     expect(coordService.getDocentesPrograma.calls.mostRecent().args[0]).toEqual(
       jasmine.objectContaining({ busqueda: 'ros', pagina: 1 })
     );
+  }));
+
+  it('acceso rápido del panel: ?busqueda=<documento> abre la lista ya filtrada por ese docente', fakeAsync(() => {
+    TestBed.configureTestingModule({
+      providers: [{ provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap({ busqueda: ' 1017000001 ' }) } } }],
+    });
+    crear();
+    tick(300);
+
+    expect(component.busqueda()).toBe('1017000001');
+    expect(coordService.getDocentesPrograma.calls.mostRecent().args[0]).toEqual(
+      jasmine.objectContaining({ busqueda: '1017000001', pagina: 1 })
+    );
+  }));
+
+  it('sin ?busqueda la lista de docentes abre sin filtro', fakeAsync(() => {
+    crear();
+    tick(300);
+
+    expect(component.busqueda()).toBe('');
+    expect(coordService.getDocentesPrograma.calls.mostRecent().args[0].busqueda).toBeUndefined();
   }));
 
   it('el filtro de estado se envía como estaActivo y reinicia la página', fakeAsync(() => {

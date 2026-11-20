@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal, input } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 
 import { FormsModule } from '@angular/forms';
@@ -269,7 +270,9 @@ export class CoordinatorDocentesComponent implements OnInit {
   readonly docentes = this.coordService.docentes;
   readonly totalDocentes = this.coordService.totalDocentes;
 
-  readonly busqueda = signal('');
+  private readonly route = inject(ActivatedRoute, { optional: true });
+  /** Acceso rápido del panel («Ver Perfil y Carga»): `?busqueda=<documento>` abre la lista ya filtrada. */
+  readonly busqueda = signal(this.route?.snapshot?.queryParamMap?.get('busqueda')?.trim() ?? '');
   readonly filtroEstado = signal<FiltroEstado>('TODOS');
   readonly resumen = signal<ResumenDocentesPrograma | null>(null);
   readonly pagina = signal(1);

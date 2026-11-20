@@ -1,3 +1,4 @@
+import { convertToParamMap } from '@angular/router';
 import { StudentRegistrationConfigService } from '../../../core/services/student-registration-config.service';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient, withXhr } from '@angular/common/http';
@@ -106,6 +107,24 @@ describe('AdminDecanosComponent', () => {
     const reqDec = http.expectOne(`${environment.apiUrl}/admin/decanos`);
     reqDec.flush({ exitoso: true, datos: mockDecanos });
   }
+
+  it('acceso rápido del panel: ?busqueda=<facultad> abre la lista ya filtrada por esa facultad', () => {
+    (component as unknown as { route: unknown }).route = {
+      snapshot: { queryParamMap: convertToParamMap({ busqueda: ' Facultad de Ingeniería ' }) },
+    };
+    fixture.detectChanges();
+    satisfyInitRequests();
+
+    expect(component.busqueda()).toBe('Facultad de Ingeniería');
+    expect(component.filteredDecanos().every((d) => (d.facultad || d.nombreFacultad || '').includes('Ingeniería'))).toBeTrue();
+  });
+
+  it('sin ?busqueda la lista abre sin filtro', () => {
+    fixture.detectChanges();
+    satisfyInitRequests();
+
+    expect(component.busqueda()).toBe('');
+  });
 
   it('debe crearse y cargar datos iniciales correctamente', () => {
     fixture.detectChanges();

@@ -95,7 +95,7 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
               <p class="text-xs text-warning-700">Revisa las solicitudes radicadas por estudiantes antes de que expiren los plazos de corte.</p>
             </div>
           </div>
-          <a routerLink="/app/docente/reclamos" class="shrink-0">
+          <a routerLink="/app/docente/reclamos" [queryParams]="{ estado: 'P' }" class="shrink-0">
             <app-button variant="accent" size="sm">
               Revisar Reclamos Ahora →
             </app-button>
@@ -147,7 +147,7 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
           </div>
 
           <div class="shrink-0 w-full sm:w-auto flex items-center justify-end gap-2">
-            <a routerLink="/app/asistencia" class="w-full sm:w-auto">
+            <a routerLink="/app/asistencia" [queryParams]="pc.idGrupo ? { courseId: pc.idGrupo } : null" class="w-full sm:w-auto">
               <app-button variant="accent" size="sm" [fullWidth]="true">
                 Tomar Asistencia →
               </app-button>
@@ -205,7 +205,7 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
                     </span>
                   </td>
                   <td class="text-right whitespace-nowrap">
-                    <a routerLink="/app/asistencia">
+                    <a routerLink="/app/asistencia" [queryParams]="{ courseId: course.id }">
                       <app-button variant="secondary" size="sm">Acceder a Sesiones y Asistencia</app-button>
                     </a>
                   </td>

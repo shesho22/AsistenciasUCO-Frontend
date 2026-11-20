@@ -95,6 +95,7 @@ import { EstadoIndicadores, textoCifra, textoPeriodo } from '../../../../core/ut
                   <td class="text-right">
                     <a
                       routerLink="/app/decano/mi-facultad/coordinadores"
+                      [queryParams]="{ busqueda: coord.correo }"
                       class="inline-flex items-center rounded-xl border border-warm-200 bg-white px-3 py-1.5 text-xs font-semibold text-warm-800 hover:bg-warm-50 whitespace-nowrap"
                     >
                       Administrar Coordinación

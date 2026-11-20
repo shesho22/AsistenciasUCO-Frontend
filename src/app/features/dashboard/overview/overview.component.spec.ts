@@ -362,7 +362,10 @@ describe('OverviewComponent', () => {
     const filas = el.querySelectorAll('app-tabla-datos tbody tr[data-testid="decano-fila"]');
     expect(filas).toHaveSize(1);
     expect(el.querySelector('app-overview-admin app-card')).toBeNull();
-    expect(filas[0].querySelector('a[href="/app/admin/decanos"]')?.textContent).toContain('Gestionar Decano');
+    // Intencional: «Gestionar Decano» ya no abre la lista completa, sino la lista filtrada por la facultad de la fila.
+    const enlace = filas[0].querySelector('a[href^="/app/admin/decanos"]');
+    expect(enlace?.textContent).toContain('Gestionar Decano');
+    expect(enlace?.getAttribute('href')).toBe('/app/admin/decanos?busqueda=Facultad%20de%20Ingenier%C3%ADa');
   });
 
   it('ADMIN: las facultades activas y los decanos salen del servidor, no del conjunto de decanos listados', async () => {
@@ -686,14 +689,16 @@ describe('OverviewComponent', () => {
     expect(component.coordEstado()).toBe('error');
   });
 
-  it('DEC-065 (2): el coordinador ve las solicitudes de sesión pendientes de su programa con enlace a Asistencia', async () => {
+  it('DEC-065 (2): el coordinador ve las solicitudes de sesión pendientes de su programa con enlace a la bandeja de solicitudes', async () => {
     await createComponentWithRole('COORDINADOR');
     fixture.detectChanges();
 
     expect(coordinadorSesionesSpy.contarPendientes).toHaveBeenCalledWith('prog-1');
     expect(component.solicitudesSesionPendientes()).toBe(4);
     const tarjeta: HTMLAnchorElement | null = fixture.nativeElement.querySelector('[data-testid="solicitudes-sesion-pendientes"]');
-    expect(tarjeta?.getAttribute('href')).toBe('/app/coordinador/asistencia');
+    // Intencional: las solicitudes de sesión salieron de «Asistencia» (ATA D6); la tarjeta abre su bandeja propia.
+    expect(tarjeta?.getAttribute('href')).toBe('/app/coordinador/solicitudes-sesion');
+    expect(tarjeta?.textContent).toContain('Revisar solicitudes');
     expect(fixture.nativeElement.querySelector('[data-testid="solicitudes-sesion-valor"]').textContent.trim()).toBe('4');
   });
 
@@ -818,5 +823,79 @@ describe('OverviewComponent', () => {
     component.materias.set(mockMaterias);
     component.recalcularProximaClase();
     expect(component).toBeTruthy();
+  });
+
+  describe('accesos rápidos con destino preciso', () => {
+    const href = (selector: string): string | null =>
+      (fixture.nativeElement as HTMLElement).querySelector(selector)?.getAttribute('href') ?? null;
+
+    it('DOCENTE: «Tomar Asistencia Ahora» y la tarjeta de próxima clase abren el grupo de la próxima clase', async () => {
+      claimServiceSpy.getHorarioDocente.and.returnValue(
+        of({ exitoso: true, datos: [{ ...mockHorarioDocente[0], idGrupo: 'grupo-proximo' }] })
+      );
+      await createComponentWithRole('DOCENTE');
+
+      expect(component.proximaClase()?.idGrupo).toBe('grupo-proximo');
+      const el = fixture.nativeElement as HTMLElement;
+      const hero = el.querySelector('app-overview-hero a[href^="/app/asistencia"]');
+      expect(hero?.textContent).toContain('Tomar Asistencia Ahora');
+      expect(hero?.getAttribute('href')).toBe('/app/asistencia?courseId=grupo-proximo');
+      const tarjeta = el.querySelector('app-overview-teacher a[href^="/app/asistencia?courseId=grupo-proximo"]');
+      expect(tarjeta?.textContent).toContain('Tomar Asistencia');
+    });
+
+    it('DOCENTE: sin horario con grupo no se inventa un grupo (el destino abre su vista general)', async () => {
+      await createComponentWithRole('DOCENTE');
+
+      expect(component.proximaClase()?.idGrupo).toBeUndefined();
+      expect(href('app-overview-hero a[href^="/app/asistencia"]')).toBe('/app/asistencia');
+    });
+
+    it('DOCENTE: sin horario del servidor la clase sale de los cursos y lleva el id del grupo del curso', async () => {
+      claimServiceSpy.getHorarioDocente.and.returnValue(of({ exitoso: true, datos: [] }));
+      await createComponentWithRole('DOCENTE');
+
+      expect(component.proximaClase()?.idGrupo).toBe('c1');
+      expect(href('app-overview-hero a[href^="/app/asistencia"]')).toBe('/app/asistencia?courseId=c1');
+    });
+
+    it('DOCENTE: «Revisar Reclamos» abre la bandeja filtrada por pendientes cuando hay pendientes', async () => {
+      await createComponentWithRole('DOCENTE');
+
+      expect(href('app-overview-hero a[href^="/app/docente/reclamos"]')).toBe('/app/docente/reclamos?estado=P');
+      expect(href('app-overview-teacher a[href^="/app/docente/reclamos"]')).toBe('/app/docente/reclamos?estado=P');
+    });
+
+    it('DOCENTE: sin pendientes «Revisar Reclamos» abre la bandeja completa', async () => {
+      claimServiceSpy.getReclamosDocente.and.returnValue(of({ exitoso: true, datos: [], total: 0 }));
+      await createComponentWithRole('DOCENTE');
+
+      expect(href('app-overview-hero a[href^="/app/docente/reclamos"]')).toBe('/app/docente/reclamos');
+    });
+
+    it('ESTUDIANTE: «Ver Desglose de Sesiones y Reclamar» abre la materia y el grupo de la tarjeta', async () => {
+      await createComponentWithRole('ESTUDIANTE');
+
+      const materia = mockMaterias[0];
+      const enlace = (fixture.nativeElement as HTMLElement).querySelector('app-overview-student app-card a[href^="/app/estudiante/materias"]');
+      expect(enlace?.textContent).toContain('Ver Desglose de Sesiones y Reclamar');
+      expect(enlace?.getAttribute('href')).toBe(`/app/estudiante/materias?materia=${materia.id}&grupo=${materia.idGrupo}`);
+    });
+
+    it('COORDINADOR: «Explorar Plan de Estudio» abre la malla del plan y «Ver Perfil y Carga» filtra por el documento del docente', async () => {
+      await createComponentWithRole('COORDINADOR');
+
+      expect(href('tr[data-testid="overview-plan-fila"] a')).toBe('/app/coordinador/planes-estudio/plan-1/malla');
+      const perfil = (fixture.nativeElement as HTMLElement).querySelector('app-overview-coordinator a[href^="/app/coordinador/programa/docentes?"]');
+      expect(perfil?.getAttribute('href')).toBe('/app/coordinador/programa/docentes?busqueda=789');
+    });
+
+    it('DECANO: «Administrar Coordinación» filtra la lista por el correo del coordinador de la fila', async () => {
+      await createComponentWithRole('DECANO');
+
+      expect(href('tr[data-testid="programa-coordinador-fila"] a')).toBe(
+        '/app/decano/mi-facultad/coordinadores?busqueda=coord@uco.edu.co'
+      );
+    });
   });
 });

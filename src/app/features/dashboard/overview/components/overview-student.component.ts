@@ -188,7 +188,7 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
               </div>
 
               <div card-footer class="mt-4 pt-3 border-t border-warm-100 flex items-center justify-end">
-                <a routerLink="/app/estudiante/materias" class="w-full">
+                <a routerLink="/app/estudiante/materias" [queryParams]="{ materia: mat.id, grupo: mat.idGrupo }" class="w-full">
                   <app-button variant="secondary" size="sm" [fullWidth]="true">
                     Ver Desglose de Sesiones y Reclamar
                   </app-button>

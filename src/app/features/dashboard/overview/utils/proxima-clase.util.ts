@@ -1,6 +1,8 @@
 export interface ProximaClaseInfo {
   materia: string;
   codigo: string;
+  /** Grupo de la clase; los accesos rápidos lo llevan al destino (p. ej. `/app/asistencia?courseId=`). */
+  idGrupo?: string;
   /** Ausente para el docente: HorarioDocente no entrega aula (no se sintetiza). */
   aula?: string;
   subtitulo: string;
@@ -15,6 +17,7 @@ export interface ProximaClaseInfo {
 }
 
 export interface ClaseHorarioItem {
+  idGrupo?: string;
   codigoMateria: string;
   nombreMateria: string;
   dia: string;
@@ -233,6 +236,7 @@ export function calcularProximaClaseDesdeItems(
   return {
     materia: elegido.item.nombreMateria,
     codigo: elegido.item.codigoMateria,
+    idGrupo: elegido.item.idGrupo,
     aula: elegido.item.aula,
     subtitulo: elegido.item.subtitulo,
     dia: cleanDia,

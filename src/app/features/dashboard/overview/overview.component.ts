@@ -78,6 +78,7 @@ import { OverviewStudentComponent } from './components/overview-student.componen
         [institutionName]="user().institutionName"
         [department]="user().department"
         [pendingClaimsCount]="pendingClaimsCount()"
+        [grupoProximaClase]="proximaClase()?.idGrupo ?? null"
         [sinEntidadAsignada]="heroSinEntidad()"
       />
 
@@ -406,6 +407,7 @@ export class OverviewComponent implements OnInit {
       if (hd && hd.length > 0) {
         for (const h of hd) {
           items.push({
+            idGrupo: h.idGrupo,
             codigoMateria: h.codigoMateria,
             nombreMateria: h.nombreMateria,
             dia: h.dia,
@@ -419,6 +421,7 @@ export class OverviewComponent implements OnInit {
           const parsed = parseScheduleString(c.schedule);
           for (const p of parsed) {
             items.push({
+              idGrupo: c.id,
               codigoMateria: c.code ?? '',
               nombreMateria: c.name,
               dia: p.dia,
@@ -434,6 +437,7 @@ export class OverviewComponent implements OnInit {
       if (he && he.length > 0) {
         for (const h of he) {
           items.push({
+            idGrupo: h.idGrupo,
             codigoMateria: h.codigoMateria,
             nombreMateria: h.nombreMateria,
             dia: h.dia,
@@ -450,6 +454,7 @@ export class OverviewComponent implements OnInit {
           const parsed = parseScheduleString(m.horario);
           for (const p of parsed) {
             items.push({
+              idGrupo: m.idGrupo,
               codigoMateria: m.codigo ?? m.nombre,
               nombreMateria: m.nombre,
               dia: p.dia,

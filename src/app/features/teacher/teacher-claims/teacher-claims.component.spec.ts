@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
+import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { HttpErrorResponse, provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Subject, of, throwError } from 'rxjs';
@@ -765,5 +766,67 @@ describe('TeacherClaimsComponent — bandeja paginada y detalle (HU035/HU036)', 
       downloadBtns[0].click();
       expect(component.descargarSoporte).toHaveBeenCalledWith(soportes[0]);
     });
+  });
+});
+
+describe('TeacherClaimsComponent — enlaces de acceso rápido (?estado, ?grupo)', () => {
+  const GRUPO = '3f0c1d2e-0000-4000-8000-0000000000aa';
+  let claimServiceSpy: jasmine.SpyObj<AttendanceClaimService>;
+
+  function crear(query: Record<string, string>): { fixture: ComponentFixture<TeacherClaimsComponent>; component: TeacherClaimsComponent } {
+    claimServiceSpy = jasmine.createSpyObj('AttendanceClaimService', ['getReclamosDocente', 'getDetalleReclamoDocente', 'resolverReclamo', 'descargarSoporte']);
+    claimServiceSpy.getReclamosDocente.and.returnValue(of({ exitoso: true, datos: [], total: 0 }));
+    TestBed.configureTestingModule({
+      imports: [TeacherClaimsComponent],
+      providers: [
+        { provide: AttendanceClaimService, useValue: claimServiceSpy },
+        { provide: ToastService, useValue: jasmine.createSpyObj('ToastService', ['success', 'error', 'warning', 'info']) },
+        { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap(query) } } },
+      ],
+    });
+    const fixture = TestBed.createComponent(TeacherClaimsComponent);
+    fixture.detectChanges();
+    return { fixture, component: fixture.componentInstance };
+  }
+
+  it('?estado=P abre la bandeja filtrada por pendientes', () => {
+    const { component } = crear({ estado: 'P' });
+
+    expect(component.estadoFiltro()).toBe('P');
+    expect((claimServiceSpy.getReclamosDocente.calls.argsFor(0) as unknown[])[0]).toEqual(jasmine.objectContaining({ estado: 'P' }));
+  });
+
+  it('?grupo=<id> acota la bandeja a ese grupo, lo informa y «Ver todas» lo quita', () => {
+    const { fixture, component } = crear({ grupo: GRUPO });
+
+    expect(component.grupoFiltro()).toBe(GRUPO);
+    expect((claimServiceSpy.getReclamosDocente.calls.argsFor(0) as unknown[])[0]).toEqual(jasmine.objectContaining({ grupoId: GRUPO }));
+    const aviso = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="filtro-grupo-activo"]');
+    expect(aviso?.textContent).toContain('grupo seleccionado');
+
+    component.quitarFiltroGrupo();
+    fixture.detectChanges();
+
+    expect(component.grupoFiltro()).toBeNull();
+    // La última consulta de la lista (la de tamaño 1 solo cuenta pendientes) ya no lleva el grupo.
+    const consultasLista = (claimServiceSpy.getReclamosDocente.calls.allArgs() as unknown as unknown[][])
+      .map((args) => args[0] as { tamano: number; grupoId?: string })
+      .filter((filtro) => filtro.tamano > 1);
+    expect(consultasLista.at(-1)?.grupoId).toBeUndefined();
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="filtro-grupo-activo"]')).toBeNull();
+  });
+
+  it('un estado o un grupo inválidos se ignoran (sin filtro)', () => {
+    const { component } = crear({ estado: 'X', grupo: 'no-es-uuid' });
+
+    expect(component.estadoFiltro()).toBe('TODOS');
+    expect(component.grupoFiltro()).toBeNull();
+  });
+
+  it('sin parámetros la bandeja abre completa', () => {
+    const { component } = crear({});
+
+    expect(component.estadoFiltro()).toBe('TODOS');
+    expect(component.grupoFiltro()).toBeNull();
   });
 });

@@ -1,6 +1,8 @@
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { Component, OnDestroy, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 
+import { ActivatedRoute } from '@angular/router';
+import { isUuid } from '../../../core/utils/uuid.util';
 import { Subject, Subscription, debounceTime, distinctUntilChanged, finalize } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
@@ -74,6 +76,13 @@ const BUSQUEDA_ESPERA_MS = 300;
             </span>
           </div>
         </app-page-header>
+
+        @if (grupoFiltro()) {
+          <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-primary-200 bg-primary-50 px-4 py-2 text-xs text-primary-900" data-testid="filtro-grupo-activo">
+            <span>Mostrando solo las justificaciones del grupo seleccionado.</span>
+            <button type="button" class="min-h-[44px] font-bold underline" (click)="quitarFiltroGrupo()">Ver todas</button>
+          </div>
+        }
 
         <!-- Filtros y Búsqueda -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -437,6 +446,7 @@ export class TeacherClaimsComponent implements OnInit, OnDestroy {
   private readonly claimService = inject(AttendanceClaimService);
   private readonly toast = inject(ToastService);
   private readonly zona = inject(SessionTimeZoneService);
+  private readonly route = inject(ActivatedRoute, { optional: true });
 
   vistaActual = signal<VistaDocenteReclamos>('BANDEJA');
   reclamos = signal<SolicitudRevisionItem[]>([]);
@@ -446,6 +456,8 @@ export class TeacherClaimsComponent implements OnInit, OnDestroy {
   listState = signal<ReclamosListState>('LOADING');
   searchQuery = signal<string>('');
   estadoFiltro = signal<EstadoFiltroReclamos>('TODOS');
+  /** Grupo al que se acotó la bandeja desde un acceso rápido (`?grupo=`); `null` = todos los grupos. */
+  grupoFiltro = signal<string | null>(null);
   pagina = signal<number>(1);
   /** Bloque E: 15 por página por defecto (15/30/50); el servidor acepta hasta 100 por página. */
   tamano = signal<number>(TAMANO_PAGINA_TABLA);
@@ -483,6 +495,22 @@ export class TeacherClaimsComponent implements OnInit, OnDestroy {
       this.pagina.set(1);
       this.cargarReclamos();
     });
+    this.aplicarEnlace();
+    this.cargarReclamos();
+  }
+
+  /** Los accesos rápidos abren la bandeja ya acotada: `?estado=P|A|R` y `?grupo=<idGrupo>`; un valor desconocido se ignora. */
+  private aplicarEnlace(): void {
+    const params = this.route?.snapshot?.queryParamMap;
+    const estado = params?.get('estado');
+    if (estado === 'P' || estado === 'A' || estado === 'R') this.estadoFiltro.set(estado);
+    const grupo = params?.get('grupo');
+    if (isUuid(grupo)) this.grupoFiltro.set(grupo);
+  }
+
+  quitarFiltroGrupo(): void {
+    this.grupoFiltro.set(null);
+    this.pagina.set(1);
     this.cargarReclamos();
   }
 
@@ -532,6 +560,7 @@ export class TeacherClaimsComponent implements OnInit, OnDestroy {
         pagina: this.pagina(),
         tamano: this.tamano(),
         busqueda: this.searchQuery().trim() || undefined,
+        grupoId: this.grupoFiltro() ?? undefined,
       })
       .subscribe({
         next: (res) => {

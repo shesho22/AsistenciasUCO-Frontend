@@ -98,6 +98,7 @@ import { EstadoIndicadores, textoCifra } from '../../../../core/utils/cifra-indi
                 <td class="text-right">
                   <a
                     routerLink="/app/admin/decanos"
+                    [queryParams]="{ busqueda: decano.facultad }"
                     class="inline-flex items-center rounded-xl border border-warm-200 bg-white px-3 py-1.5 text-xs font-semibold text-warm-800 hover:bg-warm-50 whitespace-nowrap"
                   >
                     Gestionar Decano

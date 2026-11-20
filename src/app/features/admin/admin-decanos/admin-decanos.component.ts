@@ -1,4 +1,5 @@
 import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminManagementService } from '../../../core/services/admin-management.service';
@@ -387,6 +388,7 @@ export class AdminDecanosComponent implements OnInit {
   isSubmitting = signal<boolean>(false);
 
   busqueda = signal('');
+  private readonly route = inject(ActivatedRoute, { optional: true });
   estado = signal<FiltroEstado>('TODOS');
   /** Filtros aplicados fuera de la busqueda: alimenta la insignia del boton "Filtros". */
   filtrosActivos = computed(() => (this.estado() !== 'TODOS' ? 1 : 0));
@@ -506,6 +508,9 @@ export class AdminDecanosComponent implements OnInit {
 
 
   ngOnInit(): void {
+    // Acceso rápido del panel («Gestionar Decano»): abre la lista ya filtrada por la facultad.
+    const busquedaEnlace = this.route?.snapshot?.queryParamMap?.get('busqueda')?.trim();
+    if (busquedaEnlace) this.busqueda.set(busquedaEnlace);
     this.cargarTiposIdentificacion();
     this.cargarFacultades();
     this.cargarInstituciones();

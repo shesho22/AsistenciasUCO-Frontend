@@ -203,6 +203,23 @@ describe('TeacherGruposComponent', () => {
     }
   });
 
+  it('«Gestionar reclamos» del hub abre la bandeja acotada al grupo del hub (antes abría todos los grupos)', () => {
+    const navigate = router.navigate.and.resolveTo(true);
+    component.verHubGrupo(course);
+
+    component.irAGestionReclamos();
+
+    expect(navigate).toHaveBeenCalledWith(['/app/docente/reclamos'], { queryParams: { grupo: course.id } });
+  });
+
+  it('sin grupo seleccionado «Gestionar reclamos» abre la bandeja completa', () => {
+    const navigate = router.navigate.and.resolveTo(true);
+
+    component.irAGestionReclamos();
+
+    expect(navigate).toHaveBeenCalledWith(['/app/docente/reclamos'], {});
+  });
+
   it('B2-F-15 proyectar el QR del grupo lleva a la pantalla de asistencia sin llamar al backend', () => {
     const navigate = router.navigate.and.resolveTo(true);
     component.verHubGrupo(course);
