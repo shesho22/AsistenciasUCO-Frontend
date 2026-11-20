@@ -537,10 +537,13 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
     this.grupoMatricula.set(null);
   }
 
-  /** HU175: la proyección del QR vive en la pantalla de asistencia (toma en modo QR). */
+  /**
+   * HU175: la proyección del QR vive en la pantalla de asistencia (toma en modo QR). `accion=proyectar-qr` le pide a esa
+   * pantalla proyectar la toma QR abierta de la sesión en curso u ofrecer de una vez el selector de modo.
+   */
   proyectarQrGrupo(course: Course): void {
     if (!this.sessionQrEnabled) return;
-    void this.router.navigate(['/app/asistencia'], { queryParams: { courseId: course.id } });
+    void this.router.navigate(['/app/asistencia'], { queryParams: { courseId: course.id, accion: 'proyectar-qr' } });
   }
 
   tomarAsistenciaGrupo(course: Course): void {

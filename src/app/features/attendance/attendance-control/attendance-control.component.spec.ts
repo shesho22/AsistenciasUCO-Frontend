@@ -591,6 +591,52 @@ describe('AttendanceControlComponent contract corrections', () => {
     expect(component.isGroupClaimsModalOpen()).toBeTrue();
   });
 
+  describe('Proyectar Auto-Registro (accion=proyectar-qr)', () => {
+    type ConAccion = { accionPendiente: 'PROYECTAR_QR' | null; atenderAccionPendiente(d: unknown): void };
+    const tomas = (tomasLista: unknown[], abierta: boolean, cancelacion: unknown = null) => ({
+      idSesion: 'session-1', estado: 'EN_CURSO', cancelacion, ventana: { abierta }, horasSesion: 2, maximoTomas: 3, tomas: tomasLista,
+    });
+
+    it('con la ventana abierta y sin toma QR abre el selector de modo una sola vez', () => {
+      const component = createComponent([activeStudent], []);
+      component.selectedSessionId.set('session-1');
+      const c = component as unknown as ConAccion;
+      c.accionPendiente = 'PROYECTAR_QR';
+
+      c.atenderAccionPendiente(tomas([], true));
+      expect(component.modoSelectorAbierto()).toBeTrue();
+
+      component.modoSelectorAbierto.set(false);
+      c.atenderAccionPendiente(tomas([], true));
+      expect(component.modoSelectorAbierto()).toBeFalse();
+    });
+
+    it('con una toma QR abierta la proyecta sin abrir el selector', () => {
+      const component = createComponent([activeStudent], []);
+      const qr = TestBed.inject(AsistenciaQrService);
+      const abrirQr = spyOn(qr, 'abrirQr').and.returnValue(NEVER);
+      const c = component as unknown as ConAccion;
+      c.accionPendiente = 'PROYECTAR_QR';
+
+      c.atenderAccionPendiente(tomas([{ idToma: 't-1', estado: 'ABIERTA', modo: 'QR' }], true));
+
+      expect(abrirQr).toHaveBeenCalledOnceWith('t-1');
+      expect(component.modoSelectorAbierto()).toBeFalse();
+    });
+
+    it('fuera de la ventana de toma avisa y no abre nada', () => {
+      const component = createComponent([activeStudent], []);
+      const c = component as unknown as ConAccion;
+      c.accionPendiente = 'PROYECTAR_QR';
+
+      c.atenderAccionPendiente(tomas([], false));
+
+      expect(component.modoSelectorAbierto()).toBeFalse();
+      expect(component.showToast()).toBeTrue();
+      expect(component.toastMessage()).toContain('no está en su horario de toma');
+    });
+  });
+
   it('HU176B: al matricularse un estudiante por QR refresca el listado solo si el listado del grupo está abierto', () => {
     const component = createComponent([activeStudent], []);
     groupService.getStudentsByGroup.calls.reset();

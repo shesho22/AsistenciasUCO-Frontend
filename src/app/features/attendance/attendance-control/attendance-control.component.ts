@@ -357,6 +357,12 @@ export class AttendanceControlComponent {
 
   // CULM-001 B.2: tomas de la sesión, proyección del QR y faltantes.
   tomasSesion = signal<TomasSesion | null>(null);
+  /**
+   * «Proyectar Auto-Registro» desde Mis grupos llega con `accion=proyectar-qr`: al cargar las tomas de la sesión elegida
+   * (la en curso o la próxima) se proyecta la toma QR abierta o, si la ventana está abierta, se ofrece el selector de modo.
+   * Se atiende una sola vez.
+   */
+  private accionPendiente: 'PROYECTAR_QR' | null = null;
   /** Resumen por horas del grupo (backend): alimenta los KPIs de la panorámica. */
   /** CIERRE-W3M: estado temporal, conteos por sesion, en riesgo y promedio del grupo, resueltos por el servidor. */
   resumenSesiones = signal<ResumenSesionesGrupo | null>(null);
@@ -571,6 +577,7 @@ export class AttendanceControlComponent {
       next: (res) => {
         if (this.selectedSessionId() !== sesionId) return;
         this.tomasSesion.set(res.datos);
+        this.atenderAccionPendiente(res.datos);
         const proyectada = this.tomaProyectada();
         if (!proyectada) return;
         const actual = res.datos.tomas.find((t) => t.idToma === proyectada.idToma);
@@ -583,6 +590,23 @@ export class AttendanceControlComponent {
       },
       error: () => this.tomasSesion.set(null),
     });
+  }
+
+  private atenderAccionPendiente(datos: TomasSesion): void {
+    if (this.accionPendiente !== 'PROYECTAR_QR') return;
+    this.accionPendiente = null;
+    if (!this.sessionQrEnabled) return;
+    const tomaQrAbierta = datos.tomas.find((t) => t.estado === 'ABIERTA' && t.modo === 'QR');
+    if (tomaQrAbierta) {
+      this.proyectarQr(tomaQrAbierta);
+    } else if (datos.ventana.abierta && !datos.cancelacion) {
+      this.abrirSelectorModo();
+    } else {
+      this.mostrarNotificacion({
+        tipo: 'info',
+        texto: 'La sesión del grupo no está en su horario de toma. Elige una sesión en curso para proyectar el código QR.',
+      });
+    }
   }
 
   mostrarNotificacion(notificacion: NotificacionToma): void {
@@ -778,6 +802,7 @@ export class AttendanceControlComponent {
           if (courses.length > 0) {
             const queryCourseId = this.route?.snapshot?.queryParamMap?.get('courseId');
             const querySessionId = this.route?.snapshot?.queryParamMap?.get('sessionId');
+            if (this.route?.snapshot?.queryParamMap?.get('accion') === 'proyectar-qr') this.accionPendiente = 'PROYECTAR_QR';
             const targetCourseId =
               queryCourseId && courses.some((c) => c.id === queryCourseId)
                 ? queryCourseId

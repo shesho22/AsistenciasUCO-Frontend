@@ -208,7 +208,8 @@ describe('TeacherGruposComponent', () => {
     component.verHubGrupo(course);
 
     component.proyectarQrGrupo(course);
-    expect(navigate).toHaveBeenCalledWith(['/app/asistencia'], { queryParams: { courseId: course.id } });
+    // Proyectar Auto-Registro pide a la pantalla de asistencia proyectar el QR (o el selector de modo) de una vez.
+    expect(navigate).toHaveBeenCalledWith(['/app/asistencia'], { queryParams: { courseId: course.id, accion: 'proyectar-qr' } });
   });
 
   // CIERRE-W3M: el hub ya no descarga padron, asistencias y sesiones completos para cruzarlos; el servidor entrega la matriz
