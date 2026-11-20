@@ -6,7 +6,11 @@ import { DeanFacultadService, planesDeLaEstructura } from '../../../core/service
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { PlanEstudioItem } from '../../../core/models/role-management.model';
 import { BadgeComponent } from '../../../shared/components/badge/badge.component';
-import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
+import {
+  TablaDatosComponent,
+  TAMANO_PAGINA_TABLA,
+  paginarEnCliente,
+} from '../../../shared/components/tabla-datos/tabla-datos.component';
 import { DeanProgramasGestionComponent } from './components/dean-programas-gestion.component';
 import { DeanProgramasCreditosComponent } from './components/dean-programas-creditos.component';
 import { ConsultasTransversalesService } from '../../../core/services/consultas-transversales.service';
@@ -21,9 +25,9 @@ const TAMANO_CREDITOS = 100;
     selector: 'app-dean-programas',
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: { class: 'block w-full' },
-    imports: [PageHeaderComponent, FormsModule, BadgeComponent, PaginationComponent, DeanProgramasGestionComponent, DeanProgramasCreditosComponent],
+    imports: [PageHeaderComponent, FormsModule, BadgeComponent, TablaDatosComponent, DeanProgramasGestionComponent, DeanProgramasCreditosComponent],
     template: `
-    <div class="space-y-6 animate-fade-in">
+    <div class="space-y-4 animate-fade-in">
       <!-- Header Bento -->
       <app-page-header
         [enTarjeta]="true"
@@ -31,7 +35,7 @@ const TAMANO_CREDITOS = 100;
         etiqueta="Decanatura Institucional"
         contexto="Estructura Curricular"
         titulo="Programas Académicos y Planes de Estudio"
-        descripcion="Consulta los programas académicos adscritos a la facultad, sus créditos, semestres y mallas curriculares."
+        descripcion="Consulta los programas académicos adscritos a la facultad, sus créditos, semestres y planes de estudio."
       >
         <div cabecera-acciones class="flex items-center gap-2.5">
           <span class="px-3.5 py-2 rounded-xl bg-primary-50 text-xs font-bold text-primary-800 border border-primary-200">
@@ -103,76 +107,73 @@ const TAMANO_CREDITOS = 100;
         </svg>
       </div>
 
-      <!-- Grid de Programas y Planes -->
+      <!-- Tabla de Planes de Estudio -->
       @if (errorEstructura()) {
         <div class="bg-white rounded-2xl border border-danger-200 p-12 text-center shadow-warm-sm" role="alert">
           <p class="text-sm font-semibold text-danger-700">No fue posible cargar los planes de estudio de la facultad.</p>
           <p class="text-xs text-danger-700 mt-1">{{ errorEstructura() }}</p>
         </div>
-      } @else if (cargandoEstructura()) {
-        <div class="superficie p-12 text-center" role="status">
-          <p class="text-sm text-warm-500">Cargando planes de estudio…</p>
-        </div>
-      } @else if (pagedPlanes().length === 0) {
-        <div class="superficie p-12 text-center">
-          <p class="text-sm text-warm-500">No se encontraron planes de estudio registrados.</p>
-        </div>
       } @else {
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          @for (plan of pagedPlanes(); track plan.id) {
-            <div class="superficie p-5 hover:border-primary-300 transition-all flex flex-col justify-between h-full space-y-3">
-              <div>
-                <div class="flex items-center justify-between gap-2 mb-1.5">
-                  <span class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-warm-100 text-warm-800">
-                    {{ plan.codigo }}
-                  </span>
-                  <app-badge [variant]="plan.estado === 'VIGENTE' ? 'success' : 'neutral'" size="sm">
-                    {{ plan.estado }}
-                  </app-badge>
-                </div>
-                <h2 class="font-serif font-bold text-base text-warm-900">{{ plan.nombre }}</h2>
-                <p class="text-xs text-warm-500 mt-0.5">{{ plan.programa }} • Vigencia {{ plan.anioVigencia }}</p>
-              </div>
-
-              <div class="grid grid-cols-3 gap-2 py-2.5 border-y border-warm-100 text-xs text-warm-700 bg-warm-50/60 rounded-xl px-3 text-center">
-                <div>
-                  <span class="text-[10px] text-warm-400 font-bold uppercase block">Créditos</span>
-                  <span class="font-bold text-warm-900">{{ totalesDe(plan.id)?.totalCreditos ?? '—' }}</span>
-                </div>
-                <div>
-                  <span class="text-[10px] text-warm-400 font-bold uppercase block">Semestres</span>
-                  <span class="font-bold text-warm-900">{{ plan.totalSemestres }}</span>
-                </div>
-                <div>
-                  <span class="text-[10px] text-warm-400 font-bold uppercase block">Asignaturas</span>
-                  <span class="font-bold text-warm-900">{{ totalesDe(plan.id)?.totalAsignaturas ?? '—' }}</span>
-                </div>
-              </div>
-
-              <div class="pt-1">
-                <button
-                  type="button"
-                  (click)="verPlanEstudio(plan)"
-                  class="w-full py-2 px-3 bg-primary-50 hover:bg-primary-100 text-primary-900 rounded-xl text-xs font-bold border border-primary-200 transition-colors inline-flex items-center justify-center gap-1.5"
-                >
-                  <svg class="w-3.5 h-3.5 text-primary-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  Ver Plan de Estudios & Asignaturas →
-                </button>
-              </div>
-            </div>
-          }
-        </div>
-
-        @if (planesFiltrados().length > pageSize()) {
-          <app-pagination
-            [totalItems]="planesFiltrados().length"
-            [pageSize]="pageSize()"
-            [currentPage]="currentPage()"
-            (pageChange)="currentPage.set($event)"
-          />
+        @if (cargandoEstructura()) {
+          <p class="sr-only" role="status">Cargando planes de estudio…</p>
         }
+        <app-tabla-datos
+          etiqueta="Planes de estudio de la facultad"
+          [columnas]="9"
+          anchoMinimo="64rem"
+          [cargando]="cargandoEstructura()"
+          [vacio]="planesFiltrados().length === 0"
+          mensajeVacio="No se encontraron planes de estudio registrados."
+          [paginada]="true"
+          [totalItems]="planesFiltrados().length"
+          [pagina]="currentPage()"
+          [tamanoPagina]="pageSize()"
+          (paginaChange)="currentPage.set($event)"
+          (tamanoPaginaChange)="cambiarTamanoPagina($event)"
+        >
+          <thead>
+            <tr>
+              <th scope="col">Código</th>
+              <th scope="col">Plan de estudios</th>
+              <th scope="col">Programa</th>
+              <th scope="col">Vigencia</th>
+              <th scope="col" class="text-right">Créditos</th>
+              <th scope="col" class="text-right">Semestres</th>
+              <th scope="col" class="text-right">Asignaturas</th>
+              <th scope="col">Estado</th>
+              <th scope="col"><span class="sr-only">Acciones</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (!cargandoEstructura()) {
+              @for (plan of pagedPlanes(); track plan.id) {
+                <tr data-testid="plan-fila">
+                  <td class="font-mono text-xs font-bold text-warm-800 whitespace-nowrap">{{ plan.codigo }}</td>
+                  <td class="font-semibold text-warm-900">{{ plan.nombre }}</td>
+                  <td>{{ plan.programa }}</td>
+                  <td class="whitespace-nowrap">{{ plan.anioVigencia }}</td>
+                  <td class="text-right tabular-nums">{{ totalesDe(plan.id)?.totalCreditos ?? '—' }}</td>
+                  <td class="text-right tabular-nums">{{ plan.totalSemestres }}</td>
+                  <td class="text-right tabular-nums">{{ totalesDe(plan.id)?.totalAsignaturas ?? '—' }}</td>
+                  <td>
+                    <app-badge [variant]="plan.estado === 'VIGENTE' ? 'success' : 'neutral'" size="sm">
+                      {{ plan.estado }}
+                    </app-badge>
+                  </td>
+                  <td class="text-right">
+                    <button
+                      type="button"
+                      (click)="verPlanEstudio(plan)"
+                      class="py-1.5 px-3 bg-primary-50 hover:bg-primary-100 text-primary-900 rounded-xl text-xs font-bold border border-primary-200 transition-colors whitespace-nowrap"
+                    >
+                      Ver Plan de Estudios & Asignaturas →
+                    </button>
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </app-tabla-datos>
       }
       }
     </div>
@@ -196,7 +197,7 @@ export class DeanProgramasComponent implements OnInit {
   );
   filtroTexto = signal('');
   currentPage = signal(1);
-  pageSize = signal(6);
+  pageSize = signal(TAMANO_PAGINA_TABLA);
 
   planesVigentes = computed(() =>
     this.planes().filter((p) => p.estado === 'VIGENTE').length
@@ -232,11 +233,12 @@ export class DeanProgramasComponent implements OnInit {
     );
   });
 
-  pagedPlanes = computed(() => {
-    const list = this.planesFiltrados();
-    const start = (this.currentPage() - 1) * this.pageSize();
-    return list.slice(start, start + this.pageSize());
-  });
+  pagedPlanes = computed(() => paginarEnCliente(this.planesFiltrados(), this.currentPage(), this.pageSize()));
+
+  cambiarTamanoPagina(tamano: number): void {
+    this.pageSize.set(tamano);
+    this.currentPage.set(1);
+  }
 
   /** HU108: los planes salen de la estructura de la facultad del decano (la ruta del coordinador no admite DECANO). */
   ngOnInit(): void {

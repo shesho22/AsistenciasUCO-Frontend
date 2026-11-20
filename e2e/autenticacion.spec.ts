@@ -6,7 +6,7 @@ test.describe('Login', () => {
   test('muestra el formulario institucional y valida los campos obligatorios', async ({ page }) => {
     await page.goto('/login');
 
-    await expect(page.getByRole('heading', { name: 'Gestió Asistencia UCO' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Gestión Asistencia UCO' })).toBeVisible();
     await page.getByRole('button', { name: 'Ingresar al Sistema' }).click();
 
     await expect(page.getByText('Los campos Correo Institucional y Contraseña son obligatorios.')).toBeVisible();

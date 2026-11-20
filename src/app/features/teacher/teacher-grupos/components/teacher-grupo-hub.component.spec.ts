@@ -260,7 +260,7 @@ describe('TeacherGrupoHubComponent', () => {
       const tabs = Array.from(el().querySelectorAll('[data-testid="hub-grupo-tabs"] [role="tab"]')).map((t) => t.textContent!.replace(/\s+/g, ' ').trim());
       expect(tabs).toHaveSize(3);
       expect(tabs[0]).toContain('Planilla');
-      expect(tabs[1]).toContain('Reclamos');
+      expect(tabs[1]).toContain('Justificaciones');
       expect(tabs[2]).toContain('Matrícula');
       expect(q('[data-testid="hub-tab-sesiones"]')).toBeNull();
       expect(el().textContent).not.toContain('Cronograma');

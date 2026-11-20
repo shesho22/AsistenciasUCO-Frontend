@@ -36,7 +36,7 @@ function adaptarGrupoACurso(dto: GrupoDetalleDecanoApiDto): Course {
     host: { class: 'block w-full' },
     imports: [EmptyStateComponent, SesionEstadoBadgeComponent, PaginationComponent],
     template: `
-    <div class="space-y-6 animate-fade-in">
+    <div class="space-y-4 animate-fade-in">
       <!-- Barra de Retorno -->
       <div class="superficie flex items-center justify-between p-4">
         <button
@@ -66,7 +66,7 @@ function adaptarGrupoACurso(dto: GrupoDetalleDecanoApiDto): Course {
 
       @if (errorGrupo() === null ? selectedCourse() : null; as curso) {
         <!-- Ficha Resumen del Grupo -->
-        <div class="superficie p-6 grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="superficie p-4 grid grid-cols-1 md:grid-cols-4 gap-4">
           <div class="md:col-span-3 space-y-2">
             <div class="flex items-center gap-2">
               <span class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-primary-50 text-primary-800 border border-primary-200">

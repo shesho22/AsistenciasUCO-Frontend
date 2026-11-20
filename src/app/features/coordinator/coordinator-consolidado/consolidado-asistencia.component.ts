@@ -1,3 +1,4 @@
+import { TAMANO_PAGINA_TABLA, TAMANOS_PAGINA_TABLA } from '../../../shared/components/tabla-datos/tabla-datos.component';
 import { formatearHorasMinutos } from '../../../shared/pipes/horas-minutos.util';
 import { SemaforoAsistenciaComponent } from '../../../shared/components/semaforo-asistencia/semaforo-asistencia.component';
 import { Component, OnInit, inject, signal, ChangeDetectionStrategy, WritableSignal, input } from '@angular/core';
@@ -31,7 +32,8 @@ const NUMERO_ES = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 2 });
     host: { class: 'block w-full' },
     imports: [PageHeaderComponent, CommonModule, FormsModule, PaginationComponent, ErrorCargaComponent, DeanSesionesGrupoComponent, CoordinatorSesionesGrupoComponent, SemaforoAsistenciaComponent],
     template: `
-    <div class="space-y-6 animate-fade-in">
+    <div class="space-y-4 animate-fade-in">
+      @if (!embebido()) {
       <app-page-header
         [enTarjeta]="true"
         [conTitulo]="!embebido()"
@@ -43,32 +45,36 @@ const NUMERO_ES = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 2 });
           {{ comoDecano ? 'Grupos de los programas de tu facultad' : 'Grupos de tu programa' }} por cohorte (período), materia y docente.
           <span data-testid="nota-horas">Calculado por horas dictadas.</span>
         </p>
-        <span cabecera-acciones class="px-3.5 py-2 rounded-xl bg-warm-100 text-xs font-bold text-warm-800 border border-warm-200">{{ listado.total() }} Grupos</span>
       </app-page-header>
+      } @else {
+        <p class="text-xs text-warm-600" data-testid="nota-horas">Calculado por horas dictadas.</p>
+      }
 
-      <section class="superficie p-6 space-y-4">
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <section class="superficie p-4 space-y-3">
+        <!-- Filtros y conteo de grupos en una sola linea (F, 2026-11-19): la tabla queda visible sin desplazar a 1366x768. -->
+        <div class="grid grid-cols-1 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-center gap-3">
           <select aria-label="Cohorte (período académico)" [ngModel]="idPeriodo()" (ngModelChange)="cambiarPeriodo($event)"
-            class="px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-800">
+            class="px-3 py-2 bg-white border border-warm-200 rounded-xl text-sm text-warm-800">
             <option value="">Todas las cohortes</option>
             @for (p of periodos(); track p.id) {
               <option [value]="p.id">{{ p.nombre || p.codigo }}</option>
             }
           </select>
           <select aria-label="Materia" [ngModel]="idAsignatura()" (ngModelChange)="filtrar(idAsignatura, $event)"
-            class="px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-800">
+            class="px-3 py-2 bg-white border border-warm-200 rounded-xl text-sm text-warm-800">
             <option value="">Todas las materias</option>
             @for (a of asignaturas(); track a.id) {
               <option [value]="a.id">{{ a.nombre }}</option>
             }
           </select>
           <select aria-label="Docente" [ngModel]="idDocente()" (ngModelChange)="filtrar(idDocente, $event)"
-            class="px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-800">
+            class="px-3 py-2 bg-white border border-warm-200 rounded-xl text-sm text-warm-800">
             <option value="">Todos los docentes</option>
             @for (d of docentes(); track d.id) {
               <option [value]="d.id">{{ d.nombre }}</option>
             }
           </select>
+          <span data-testid="conteo-grupos" class="justify-self-start sm:justify-self-end px-3 py-2 rounded-xl bg-warm-100 text-xs font-bold text-warm-800 border border-warm-200 whitespace-nowrap">{{ listado.total() }} {{ listado.total() === 1 ? 'Grupo' : 'Grupos' }}</span>
         </div>
 
         @if (listado.error() && !listado.cargando()) {
@@ -170,6 +176,7 @@ const NUMERO_ES = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 2 });
           [totalItems]="listado.total()"
           [totalPages]="listado.totalPaginas()"
           [pageSize]="listado.tamano()"
+          [pageSizeOptions]="tamanosPagina"
           [currentPage]="listado.pagina()"
           (pageChange)="expandido.set(null); listado.irAPagina($event)"
           (pageSizeChange)="listado.cambiarTamano($event)"
@@ -188,6 +195,8 @@ export class ConsolidadoAsistenciaComponent implements OnInit {
 
   /** Un solo grupo expandido a la vez: el stream en tiempo real de sesiones es uno por pantalla. */
   readonly expandido = signal<string | null>(null);
+  /** Bloque F (2026-11-19): mismos tamaños que las demás tablas (15 por defecto). */
+  readonly tamanosPagina = [...TAMANOS_PAGINA_TABLA];
   idPeriodo = signal('');
   idAsignatura = signal('');
   idDocente = signal('');
@@ -213,6 +222,7 @@ export class ConsolidadoAsistenciaComponent implements OnInit {
   );
 
   ngOnInit(): void {
+    this.listado.tamano.set(TAMANO_PAGINA_TABLA);
     this.listado.cargar();
     this.cargarOpciones();
     this.coordinador.getPeriodosAcademicos().subscribe({

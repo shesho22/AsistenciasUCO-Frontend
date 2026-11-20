@@ -147,10 +147,13 @@ describe('AdminFacultadesComponent', () => {
 
     const texto = (fixture.nativeElement.textContent as string).replace(/\s+/g, ' ');
     expect(texto).not.toContain('320');
-    expect(texto).toContain('Programas0');
-    expect(texto).toContain('Estudiantes0');
-    expect(texto).toContain('Programas—');
-    expect(texto).toContain('Estudiantes—');
+    // Columnas de la tabla: Facultad, Decano(a), Programas, Estudiantes, ...
+    const celdas = (fila: number) =>
+      Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('[data-testid="facultad-fila"]')[fila].querySelectorAll('td')).map(
+        (td) => (td.textContent ?? '').trim()
+      );
+    expect(celdas(0).slice(2, 4)).toEqual(['0', '0']);
+    expect(celdas(1).slice(2, 4)).toEqual(['—', '—']);
   });
 
   it('los totales de programas y estudiantes llegan en /admin/facultades, sin consultar indicadores aparte', () => {
@@ -164,9 +167,10 @@ describe('AdminFacultadesComponent', () => {
     flushCoordinatorCatalogs();
     fixture.detectChanges();
 
-    const texto = (fixture.nativeElement.textContent as string).replace(/\s+/g, ' ');
-    expect(texto).toContain('Programas5');
-    expect(texto).toContain('Estudiantes120');
+    const celdas = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('[data-testid="facultad-fila"] td')).map(
+      (td) => (td.textContent ?? '').trim()
+    );
+    expect(celdas.slice(2, 4)).toEqual(['5', '120']);
   });
 
   it('"Ver Programas" lista los programas de la facultad desde /admin/programas, no desde rutas de decano o coordinador', () => {
@@ -188,6 +192,8 @@ describe('AdminFacultadesComponent', () => {
 
     const lista = document.body.querySelector('[data-testid="programas-facultad"]');
     expect(lista?.textContent).toContain('Ingeniería de Sistemas');
+    expect(lista?.querySelectorAll('tbody tr[data-testid="programa-facultad-fila"]')).toHaveSize(1);
+    expect(lista?.querySelector('tbody tr')?.textContent).toContain('SIS');
     expect(component.cargandoProgramas()).toBeFalse();
   });
 
@@ -668,6 +674,36 @@ describe('AdminFacultadesComponent', () => {
       fixture.detectChanges();
       return fixture.nativeElement as HTMLElement;
     }
+
+    it('bloque E: las facultades se listan en una tabla, una fila por facultad, con estado y acciones en la fila', () => {
+      const el = iniciar();
+      const filas = el.querySelectorAll('app-tabla-datos tbody tr[data-testid="facultad-fila"]');
+      expect(filas).toHaveSize(2);
+      expect(filas[0].textContent).toContain('Facultad de Ingeniería');
+      expect(filas[0].textContent).toContain('Dr. Roberto Gómez');
+      expect(filas[0].textContent).toContain('320');
+      expect(filas[0].querySelector('app-badge')?.textContent).toContain('ACTIVO');
+      expect(filas[0].querySelector('[data-testid="acciones-facultad"]')).not.toBeNull();
+      expect(component.pageSize()).toBe(15);
+    });
+
+    it('bloque E: pagina de 15 en 15 y vuelve a la página 1 al cambiar el tamaño', () => {
+      iniciar();
+      adminService.cargarFacultades().subscribe();
+      http.expectOne(`${environment.apiUrl}/admin/facultades`).flush({
+        exitoso: true,
+        datos: Array.from({ length: 17 }, (_, i) => ({ ...mockFacultadesApi[0], id: `f-${i}`, nombreFacultad: `Facultad ${i}` })),
+      });
+      http.match(() => true).forEach((r) => r.flush({ exitoso: true, datos: [] }));
+      fixture.detectChanges();
+      expect((fixture.nativeElement as HTMLElement).querySelectorAll('[data-testid="facultad-fila"]')).toHaveSize(15);
+      expect(component.pagedFacultades()).toHaveSize(15);
+      component.currentPage.set(2);
+      expect(component.pagedFacultades()).toHaveSize(2);
+      component.cambiarTamanoPagina(30);
+      expect(component.currentPage()).toBe(1);
+      expect(component.pagedFacultades()).toHaveSize(17);
+    });
 
     it('cada tarjeta muestra "Ver Programas" y un menu; Editar, Cambiar decano y Activar/Desactivar no estan sueltos', () => {
       const el = iniciar();

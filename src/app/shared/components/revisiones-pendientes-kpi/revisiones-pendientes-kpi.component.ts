@@ -33,12 +33,12 @@ const PRESENTACION: Record<'DOCENTE' | 'COORDINADOR', Presentacion> = {
   imports: [RouterLink, KpiCardComponent],
   template: `
     @if (habilitado) {
-      <div data-testid="revisiones-pendientes-kpi">
+      <div data-testid="revisiones-pendientes-kpi" class="h-full">
         <app-kpi-card [etiqueta]="vista().etiqueta" [valor]="total()" [descripcion]="vista().descripcion">
           <a
             [routerLink]="vista().ruta"
             data-testid="revisiones-pendientes-enlace"
-            class="mt-2 inline-flex min-h-[44px] items-center text-xs font-bold text-primary-800 underline hover:text-primary-950"
+            class="mt-1 inline-flex min-h-[44px] items-center text-xs font-bold text-primary-800 underline hover:text-primary-950"
           >{{ vista().enlaceTexto }}</a>
         </app-kpi-card>
       </div>

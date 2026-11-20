@@ -72,7 +72,7 @@ type ViewState = 'loading' | 'ready' | 'error' | 'unauthorized' | 'forbidden';
   imports: [PageHeaderComponent, CommonModule, EmptyStateComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="superficie p-6">
+    <section class="superficie p-4">
       <app-page-header class="mb-5" contexto="Security Baseline" titulo="Administración de seguridad">
         <p cabecera-detalle class="text-sm text-warm-600 mt-1">
           Recursos, roles, perfiles y asignaciones de <strong>AsistenciasUCO</strong>.

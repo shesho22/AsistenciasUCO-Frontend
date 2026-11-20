@@ -78,7 +78,7 @@ describe('StudentCourseDetailComponent — Tiempo real y estado CI (CULM-001 C.1
     expect(realtimeSpy.startForGroup).toHaveBeenCalledWith('grp-1');
   });
 
-  it('C-F-48 recarga ante reconexión y eventos SSE (exactamente 3 emisiones)', () => {
+  it('C-F-48 recarga ante eventos SSE; la reconexión la atiende solo el contenedor (PERF-EST-MM)', () => {
     spyOn(component.retry, 'emit');
 
     fixture.componentRef.setInput('materia', materiaActiva);
@@ -90,10 +90,11 @@ describe('StudentCourseDetailComponent — Tiempo real y estado CI (CULM-001 C.1
     connectionState$.next('CONNECTED');
     expect(component.retry.emit).toHaveBeenCalledTimes(0);
 
-    // 3. Reconexión: RECONNECTING -> CONNECTED
+    // 3. Reconexión: RECONNECTING -> CONNECTED. El detalle ya no emite retry: la recarga la hace solo el contenedor
+    // (antes se pedían las sesiones dos veces por reconexión).
     connectionState$.next('RECONNECTING');
     connectionState$.next('CONNECTED');
-    expect(component.retry.emit).toHaveBeenCalledTimes(1);
+    expect(component.retry.emit).toHaveBeenCalledTimes(0);
 
     // 4. Evento de sesión actualizada
     events$.next({
@@ -103,7 +104,7 @@ describe('StudentCourseDetailComponent — Tiempo real y estado CI (CULM-001 C.1
       correlationId: null,
       payload: { grupo: 'grp-1', sesion: 's-1', totalRegistros: 20 },
     });
-    expect(component.retry.emit).toHaveBeenCalledTimes(2);
+    expect(component.retry.emit).toHaveBeenCalledTimes(1);
   });
 
   it('C-F-49 ante evento ALERTA_INASISTENCIA muestra notificación toast', () => {

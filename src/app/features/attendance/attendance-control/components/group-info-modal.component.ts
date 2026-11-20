@@ -1,7 +1,12 @@
 import { EstudianteGrupoItem } from '../../../../core/models/estudiante-grupo-item.model';
-import { Component, ChangeDetectionStrategy, input, output } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, output, computed, effect, signal, untracked } from '@angular/core';
 
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
+import {
+  TablaDatosComponent,
+  TAMANO_PAGINA_TABLA,
+  paginarEnCliente,
+} from '../../../../shared/components/tabla-datos/tabla-datos.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
 import { Course } from '../../../../core/models/course.model';
@@ -9,7 +14,7 @@ import { Course } from '../../../../core/models/course.model';
 @Component({
     selector: 'app-group-info-modal',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [ModalComponent, ButtonComponent, BadgeComponent],
+    imports: [ModalComponent, ButtonComponent, BadgeComponent, TablaDatosComponent],
     template: `
     <app-modal
       [isOpen]="isOpen()"
@@ -59,13 +64,7 @@ import { Course } from '../../../../core/models/course.model';
             <span class="text-[11px] text-warm-500">Padrón oficial del curso</span>
           </div>
 
-          @if (isLoading()) {
-            <div class="space-y-2 py-4">
-              @for (n of [1, 2, 3]; track n) {
-                <div class="h-10 bg-warm-100 rounded-xl animate-pulse"></div>
-              }
-            </div>
-          } @else if (students().length === 0) {
+          @if (!isLoading() && students().length === 0) {
             <div class="py-8 text-center text-warm-400 bg-warm-50/50 rounded-2xl border border-dashed border-warm-200">
               <svg class="w-8 h-8 mx-auto mb-2 text-warm-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
@@ -73,43 +72,63 @@ import { Course } from '../../../../core/models/course.model';
               <p class="text-xs">No hay estudiantes matriculados en este grupo todavía.</p>
             </div>
           } @else {
-            <div class="max-h-60 overflow-y-auto divide-y divide-warm-100 border border-warm-200 rounded-xl bg-white">
-              @for (st of students(); track st.id || st.idEstudiante || st.studentId; let idx = $index) {
-                <div class="p-3 flex items-center justify-between gap-3 hover:bg-warm-50/60 transition-colors">
-                  <div class="flex items-center gap-2.5 min-w-0">
-                    <span class="w-5 text-right font-mono text-[11px] text-warm-400 font-semibold">{{ idx + 1 }}</span>
-                    <div class="min-w-0">
-                      <p class="font-bold text-xs text-warm-900 truncate">
+            <app-tabla-datos
+              etiqueta="Estudiantes matriculados"
+              [columnas]="6"
+              anchoMinimo="46rem"
+              alturaMaxima="18rem"
+              [filasEsqueleto]="3"
+              [cargando]="isLoading()"
+              [paginada]="true"
+              [totalItems]="students().length"
+              [pagina]="pagina()"
+              [tamanoPagina]="tamanoPagina()"
+              (paginaChange)="pagina.set($event)"
+              (tamanoPaginaChange)="cambiarTamano($event)"
+            >
+              <thead>
+                <tr>
+                  <th scope="col" class="text-right">#</th>
+                  <th scope="col">Estudiante</th>
+                  <th scope="col">Documento</th>
+                  <th scope="col">Correo</th>
+                  <th scope="col">Estado</th>
+                  <th scope="col" class="text-right"><span class="sr-only">Acciones</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                @if (!isLoading()) {
+                  @for (st of estudiantesPagina(); track st.id || st.idEstudiante || st.studentId; let idx = $index) {
+                    <tr data-testid="grupo-info-estudiante">
+                      <td class="text-right font-mono text-[11px] text-warm-400 font-semibold">{{ (pagina() - 1) * tamanoPagina() + idx + 1 }}</td>
+                      <td class="font-bold text-xs text-warm-900">
                         {{ st.nombreCompleto || st.studentName || (st.nombres ? st.nombres + ' ' + (st.apellidos || '') : 'Estudiante') }}
-                      </p>
-                      <div class="flex items-center gap-2 text-[11px] text-warm-500 font-mono">
-                        <span>Doc: {{ st.documento || st.studentCode || st.numeroIdentificacion || 'N/A' }}</span>
-                        @if (st.correo) {
-                          <span class="text-warm-300">•</span>
-                          <span class="font-sans truncate text-warm-600">{{ st.correo }}</span>
+                      </td>
+                      <td class="text-[11px] text-warm-500 font-mono whitespace-nowrap">{{ st.documento || st.studentCode || st.numeroIdentificacion || 'N/A' }}</td>
+                      <td class="text-[11px] text-warm-600">{{ st.correo || '—' }}</td>
+                      <td class="whitespace-nowrap">
+                        <span class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-success-50 text-success-700 border border-success-200">
+                          {{ st.nombreEstado || st.codigoEstado || 'Matriculado' }}
+                        </span>
+                      </td>
+                      <td class="text-right whitespace-nowrap">
+                        @if (st.idEstudiante) {
+                          <button
+                            type="button"
+                            class="px-2 py-0.5 text-[10px] font-bold rounded-md border border-primary-200 text-primary-800 bg-white hover:bg-primary-50 disabled:opacity-50"
+                            [attr.data-testid]="'resend-verification-' + st.idEstudiante"
+                            [disabled]="resendingStudentId() !== ''"
+                            (click)="resendVerification.emit(st.idEstudiante)"
+                          >
+                            {{ resendingStudentId() === st.idEstudiante ? 'Enviando…' : 'Reenviar enlace' }}
+                          </button>
                         }
-                      </div>
-                    </div>
-                  </div>
-                  <div class="flex items-center gap-2 shrink-0">
-                    @if (st.idEstudiante) {
-                      <button
-                        type="button"
-                        class="px-2 py-0.5 text-[10px] font-bold rounded-md border border-primary-200 text-primary-800 bg-white hover:bg-primary-50 disabled:opacity-50"
-                        [attr.data-testid]="'resend-verification-' + st.idEstudiante"
-                        [disabled]="resendingStudentId() !== ''"
-                        (click)="resendVerification.emit(st.idEstudiante)"
-                      >
-                        {{ resendingStudentId() === st.idEstudiante ? 'Enviando…' : 'Reenviar enlace' }}
-                      </button>
-                    }
-                    <span class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-success-50 text-success-700 border border-success-200">
-                      {{ st.nombreEstado || st.codigoEstado || 'Matriculado' }}
-                    </span>
-                  </div>
-                </div>
-              }
-            </div>
+                      </td>
+                    </tr>
+                  }
+                }
+              </tbody>
+            </app-tabla-datos>
           }
         </div>
 
@@ -133,4 +152,22 @@ export class GroupInfoModalComponent {
 
   closed = output<void>();
   resendVerification = output<string>();
+
+  /** Padrón del modal en tabla paginada en el cliente (15 por defecto, 15/30/50). */
+  readonly pagina = signal(1);
+  readonly tamanoPagina = signal(TAMANO_PAGINA_TABLA);
+  readonly estudiantesPagina = computed(() => paginarEnCliente(this.students(), this.pagina(), this.tamanoPagina()));
+
+  constructor() {
+    // Otro grupo u otro padrón: se vuelve a la primera página.
+    effect(() => {
+      this.students();
+      untracked(() => this.pagina.set(1));
+    });
+  }
+
+  cambiarTamano(tamano: number): void {
+    this.tamanoPagina.set(tamano);
+    this.pagina.set(1);
+  }
 }

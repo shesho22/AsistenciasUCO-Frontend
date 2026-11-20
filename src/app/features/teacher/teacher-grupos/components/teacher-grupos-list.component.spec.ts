@@ -103,16 +103,61 @@ describe('TeacherGruposListComponent', () => {
     expect(fixture.componentInstance.filteredCourses()).toHaveSize(1);
   });
 
-  it('emite seleccionarGrupo al hacer clic en la tarjeta del grupo', () => {
+  it('emite seleccionarGrupo al pulsar el nombre del grupo o «Ver Grupo» en su fila', () => {
     spyOn(fixture.componentInstance.seleccionarGrupo, 'emit');
     fixture.componentRef.setInput('courses', [course]);
     fixture.componentRef.setInput('isLoading', false);
     fixture.detectChanges();
 
-    const card = fixture.nativeElement.querySelector('app-card');
-    card.dispatchEvent(new Event('click'));
+    const fila = (fixture.nativeElement as HTMLElement).querySelector('tr[data-testid="grupo-fila"]') as HTMLElement;
+    (fila.querySelector('td button') as HTMLButtonElement).click();
+    (fila.querySelector('[data-testid="ver-grupo-crs-1"] button') as HTMLButtonElement).click();
 
+    expect(fixture.componentInstance.seleccionarGrupo.emit).toHaveBeenCalledTimes(2);
     expect(fixture.componentInstance.seleccionarGrupo.emit).toHaveBeenCalledWith(course);
+  });
+
+  describe('bloque E: tabla de grupos', () => {
+    const filas = (): NodeListOf<HTMLTableRowElement> =>
+      (fixture.nativeElement as HTMLElement).querySelectorAll('tr[data-testid="grupo-fila"]');
+
+    it('renderiza una tabla con una fila por grupo y sin tarjetas', () => {
+      fixture.componentRef.setInput('courses', [course, { ...course, id: 'crs-2', name: 'Bases de Datos' }]);
+      fixture.componentRef.setInput('isLoading', false);
+      fixture.detectChanges();
+
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('app-tabla-datos table')).toBeTruthy();
+      expect(el.querySelector('app-card')).toBeNull();
+      expect(filas().length).toBe(2);
+      expect(filas()[0].textContent).toContain('MAT-301');
+      expect(filas()[0].textContent).toContain('32 / 35 cupos');
+      expect(filas()[0].textContent).toContain('Lun, Mié 08:00 - 10:00 AM');
+    });
+
+    it('pagina de 15 en 15 y vuelve a la página 1 al buscar', () => {
+      const muchos = Array.from({ length: 17 }, (_, i) => ({ ...course, id: `crs-${i}`, name: `Grupo ${i}` }));
+      fixture.componentRef.setInput('courses', muchos);
+      fixture.componentRef.setInput('isLoading', false);
+      fixture.detectChanges();
+      expect(filas().length).toBe(15);
+
+      fixture.componentInstance.pagina.set(2);
+      fixture.detectChanges();
+      expect(filas().length).toBe(2);
+
+      fixture.componentInstance.searchQuery.set('grupo 1');
+      fixture.detectChanges();
+      expect(fixture.componentInstance.pagina()).toBe(1);
+    });
+
+    it('mientras carga no pinta filas de grupos', () => {
+      fixture.componentRef.setInput('courses', [course]);
+      fixture.componentRef.setInput('isLoading', true);
+      fixture.detectChanges();
+      expect(filas().length).toBe(0);
+      expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="tabla-datos-esqueleto"]')).toBeTruthy();
+    });
   });
 
   it('HU058: filtra por nivel formativo con el catálogo real y muestra el tipo en la tarjeta', () => {
@@ -151,7 +196,7 @@ describe('TeacherGruposListComponent', () => {
 
     const vacio = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="grupos-vacio"]');
     expect(vacio?.textContent).toContain('Ningún grupo coincide');
-    expect((fixture.nativeElement as HTMLElement).querySelectorAll('app-card')).toHaveSize(0);
+    expect((fixture.nativeElement as HTMLElement).querySelectorAll('tr[data-testid="grupo-fila"]')).toHaveSize(0);
   });
 
   it('F-DOC-S01: sin grupos asignados indica que aun no hay grupos', () => {
@@ -177,10 +222,14 @@ describe('TeacherGruposListComponent', () => {
       expect(el().querySelector('[data-testid^="decisiones-grupo-"]')).toBeNull();
     });
 
-    it('el aviso nombra cada grupo con su total, en el orden de la lista, y la tarjeta lleva la marca', () => {
+    it('el aviso nombra cada grupo con su total, en el orden de la lista, y la fila del grupo lleva la marca', () => {
       montar(new Map([['crs-2', 1], ['crs-1', 3], ['ajeno', 5]]));
-      const enlaces = Array.from(el().querySelectorAll('[data-testid^="ir-decisiones-"]')).map((b) => b.textContent?.replace(/\s+/g, ' ').trim());
-      expect(enlaces).toEqual(['Matemática Avanzada III · Sección A 3', 'Bases de Datos · Grupo 02 1']);
+      const filasAviso = Array.from(el().querySelectorAll('tr[data-testid="aviso-decisiones-fila"]')).map((f) =>
+        Array.from(f.querySelectorAll('td')).slice(0, 2).map((td) => td.textContent?.replace(/\s+/g, ' ').trim())
+      );
+      expect(filasAviso).toEqual([['Matemática Avanzada III · Sección A', '3'], ['Bases de Datos · Grupo 02', '1']]);
+      expect(el().querySelectorAll('[data-testid^="ir-decisiones-"]').length).toBe(2);
+      expect(el().querySelector('[data-testid="ir-decisiones-crs-1"]')?.getAttribute('aria-label')).toBe('Decidir en Matemática Avanzada III · Sección A');
       expect(el().querySelector('[data-testid="decisiones-grupo-crs-1"]')?.textContent?.trim()).toBe('3 decisiones pendientes');
       expect(el().querySelector('[data-testid="decisiones-grupo-crs-2"]')?.textContent?.trim()).toBe('1 decisión pendiente');
     });

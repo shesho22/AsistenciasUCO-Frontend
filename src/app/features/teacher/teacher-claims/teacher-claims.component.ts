@@ -12,13 +12,16 @@ import {
   ResultadoAprobacionReclamo,
   SoporteAdjuntoItem,
 } from '../../../core/models/role-management.model';
-import { CardComponent } from '../../../shared/components/card/card.component';
+import {
+  TablaDatosComponent,
+  TAMANO_PAGINA_TABLA,
+  TAMANOS_PAGINA_TABLA,
+} from '../../../shared/components/tabla-datos/tabla-datos.component';
 import { BadgeComponent, BadgeVariant } from '../../../shared/components/badge/badge.component';
 import { ButtonComponent } from '../../../shared/components/button/button.component';
 import { FormFieldComponent } from '../../../shared/components/form-field/form-field.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { AvatarComponent } from '../../../shared/components/avatar/avatar.component';
-import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { getApiErrorCode, getApiErrorMessage, getApiErrorResponse } from '../../../core/api/errors/api-error.util';
 import { etiquetaEstadoReclamo, etiquetaResultadoAprobacion, varianteEstadoReclamo } from '../../../core/utils/reclamo-estado.util';
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
@@ -46,15 +49,14 @@ const BUSQUEDA_ESPERA_MS = 300;
     imports: [PageHeaderComponent, 
     EmptyStateComponent,
     FormsModule,
-    CardComponent,
+    TablaDatosComponent,
     BadgeComponent,
     ButtonComponent,
     FormFieldComponent,
-    AvatarComponent,
-    PaginationComponent
+    AvatarComponent
 ],
     template: `
-    <div class="space-y-6 animate-fade-in">
+    <div class="space-y-4 animate-fade-in">
       <!-- 1. VISTA: BANDEJA GENERAL DE RECLAMOS -->
       @if (vistaActual() === 'BANDEJA') {
         <!-- Header Bento -->
@@ -62,7 +64,7 @@ const BUSQUEDA_ESPERA_MS = 300;
           [enTarjeta]="true"
           etiqueta="Gestión Docente"
           contexto="Bandeja de Novedades"
-          titulo="Reclamos y Justificaciones de Asistencia"
+          titulo="Justificaciones de Asistencia"
           descripcion="Selecciona una solicitud para abrir su vista completa de revisión, examinar el caso del estudiante y decidir la justificación."
         >
           <!-- Indicador de Pendientes -->
@@ -79,7 +81,7 @@ const BUSQUEDA_ESPERA_MS = 300;
             <div class="relative">
               <input
                 type="text"
-                aria-label="Buscar reclamos por estudiante, materia o motivo"
+                aria-label="Buscar justificaciones por estudiante, materia o motivo"
                 [value]="searchQuery()"
                 (input)="onBuscar($event)"
                 placeholder="Buscar por estudiante, materia o motivo..."
@@ -93,12 +95,12 @@ const BUSQUEDA_ESPERA_MS = 300;
 
           <div>
             <select
-              aria-label="Filtrar reclamos por estado"
+              aria-label="Filtrar justificaciones por estado"
               [value]="estadoFiltro()"
               (change)="onEstadoChange($event)"
               class="w-full px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 shadow-warm-sm"
             >
-              <option value="TODOS">Todos los reclamos</option>
+              <option value="TODOS">Todas las justificaciones</option>
               <option value="P">Solo Pendientes</option>
               <option value="A">Solo Aprobados</option>
               <option value="R">Solo Rechazados</option>
@@ -106,129 +108,117 @@ const BUSQUEDA_ESPERA_MS = 300;
           </div>
         </div>
 
-        <!-- Listado de Reclamos -->
-        @if (isLoading()) {
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-            @for (n of [1, 2, 3, 4]; track n) {
-              <div class="h-56 bg-warm-100 rounded-2xl animate-pulse"></div>
-            }
-          </div>
-        } @else if (listState() !== 'LOADED') {
+        <!-- Listado de Justificaciones -->
+        @if (!isLoading() && listState() !== 'LOADED') {
           <div class="bg-danger-50 border border-danger-200 rounded-2xl p-6 text-center text-sm text-danger-900 space-y-3" role="alert">
             <p>{{ listStateMessage() }}</p>
             @if (listState() === 'NETWORK_ERROR' || listState() === 'SERVER_ERROR') {
               <app-button variant="secondary" size="sm" (clicked)="cargarReclamos()">Reintentar</app-button>
             }
           </div>
-        } @else if (reclamos().length === 0) {
-          <div class="superficie p-12 text-center">
-            <div class="w-12 h-12 rounded-full bg-warm-100 text-warm-400 flex items-center justify-center mx-auto mb-3">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
+        } @else if (!isLoading() && reclamos().length === 0) {
+          <div class="superficie p-6 text-center">
             <app-empty-state
-              title="No hay reclamos en esta categoría"
+              title="No hay justificaciones en esta categoría"
               description="Todas las solicitudes de asistencia se encuentran al día."
-              causa="Cambia de pestaña para revisar los reclamos en otros estados."
+              causa="Cambia el filtro de estado para revisar las justificaciones en otros estados."
             />
           </div>
         } @else {
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-            @for (reclamo of reclamos(); track reclamo.id) {
-              <app-card [hoverable]="true" padding="md">
-                <div class="flex flex-col h-full justify-between gap-4">
-                  <div>
-                    <div class="flex flex-wrap items-start justify-between gap-2 mb-2">
-                      <div class="flex flex-wrap items-center gap-2">
-                        <span class="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-warm-100 text-warm-700">
-                          {{ reclamo.folio }}
-                        </span>
-                        @if (reclamo.categoria) {
-                          <span class="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-warning-50 text-warning-900 border border-warning-200">
-                            {{ categoriaTexto(reclamo.categoria) }}
-                          </span>
-                        }
-                        @if (reclamo.soporteAdjunto) {
-                          <span class="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-md bg-primary-50 text-primary-800 border border-primary-200" title="Tiene soporte documental anexo">
-                            <svg class="w-3 h-3 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                            </svg>
-                            Soporte
-                          </span>
-                        }
-                        <app-badge [variant]="getReclamoBadgeVariant(reclamo.estadoSolicitud)">
-                          {{ etiquetaEstado(reclamo.estadoSolicitud) }}
-                        </app-badge>
-                      </div>
-
-                      <span class="text-[11px] text-warm-400">
-                        {{ reclamo.fechaSolicitud }}
-                      </span>
-                    </div>
-
-                    <!-- Datos Estudiante -->
-                    <div class="flex items-center gap-3 my-2">
-                      <app-avatar [name]="reclamo.estudianteNombre" size="md"></app-avatar>
-
-                      <div class="min-w-0">
-                        <h3 class="font-serif font-bold text-base text-warm-900 truncate">
-                          {{ reclamo.estudianteNombre }}
-                        </h3>
-                        <p class="text-xs text-warm-500 truncate">{{ reclamo.estudianteCorreo }}</p>
-                      </div>
-                    </div>
-
-                    <!-- Resumen del Curso -->
-                    <div class="p-2.5 rounded-xl bg-warm-50 border border-warm-100 text-xs space-y-1 my-2">
-                      <div class="flex items-center justify-between">
-                        <span class="font-semibold text-warm-900">{{ reclamo.materiaNombre }}</span>
-                        <span class="font-bold text-warm-600">Grupo {{ reclamo.grupo }}</span>
-                      </div>
-                      <div class="flex items-center justify-between text-warm-600">
-                        <span>Sesión #{{ reclamo.sesionNumero }} ({{ reclamo.fechaSesion }})</span>
-                      </div>
-                      @if (textoTomaTarjeta(reclamo); as toma) {
-                        <div class="font-semibold text-warm-900" data-testid="tarjeta-toma">{{ toma }}</div>
-                      }
-                    </div>
-
-                    <p class="text-xs text-warm-700 line-clamp-2 italic mt-2">
-                      "{{ reclamo.justificacionSolicitud }}"
-                    </p>
-                  </div>
-
-                  <div class="flex items-center justify-between pt-3 border-t border-warm-100">
-                    <span class="text-xs text-warm-400">
-                      {{ reclamo.estadoSolicitud === 'PENDIENTE' ? 'Pendiente de evaluación' : (reclamo.estadoSolicitud === 'RETIRADA' ? 'Retirada por el estudiante' : 'Evaluado') }}
-                    </span>
-                    <app-button
-                      variant="secondary"
-                      size="sm"
-                      (clicked)="abrirVistaResolucion(reclamo)"
-                    >
-                      <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
-                      Revisar en Detalle
-                    </app-button>
-                  </div>
-                </div>
-              </app-card>
-            }
-          </div>
-        }
-
-        @if (listState() === 'LOADED' && total() > 0) {
-          <app-pagination
+          <app-tabla-datos
+            etiqueta="Justificaciones de asistencia"
+            [columnas]="6"
+            anchoMinimo="64rem"
+            [filasEsqueleto]="6"
+            [cargando]="isLoading()"
+            [paginada]="true"
             [totalItems]="total()"
-            [pageSize]="tamano()"
-            [currentPage]="pagina()"
-            [showPageSizeSelector]="true"
-            (pageChange)="cambiarPagina($event)"
-            (pageSizeChange)="cambiarTamano($event)"
-          />
+            [pagina]="pagina()"
+            [tamanoPagina]="tamano()"
+            [tamanosPagina]="tamanosPagina"
+            (paginaChange)="cambiarPagina($event)"
+            (tamanoPaginaChange)="cambiarTamano($event)"
+          >
+            <thead>
+              <tr>
+                <th scope="col">Estudiante</th>
+                <th scope="col">Asignatura y sesión</th>
+                <th scope="col">Justificación</th>
+                <th scope="col">Radicado</th>
+                <th scope="col">Estado</th>
+                <th scope="col" class="text-right"><span class="sr-only">Acciones</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (!isLoading()) {
+                @for (reclamo of reclamos(); track reclamo.id) {
+                  <tr data-testid="justificacion-fila">
+                    <td>
+                      <div class="flex items-center gap-2.5">
+                        <app-avatar [name]="reclamo.estudianteNombre" size="sm"></app-avatar>
+                        <div class="min-w-0">
+                          <p class="font-semibold text-warm-900">{{ reclamo.estudianteNombre }}</p>
+                          <p class="text-xs text-warm-500">{{ reclamo.estudianteCorreo }}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="text-xs">
+                      <p class="font-semibold text-warm-900">{{ reclamo.materiaNombre }}</p>
+                      <p class="text-warm-600">Grupo {{ reclamo.grupo }} · Sesión #{{ reclamo.sesionNumero }} ({{ reclamo.fechaSesion }})</p>
+                      @if (textoTomaTarjeta(reclamo); as toma) {
+                        <p class="font-semibold text-warm-900" data-testid="tarjeta-toma">{{ toma }}</p>
+                      }
+                    </td>
+                    <td class="min-w-[16rem]">
+                      @if (reclamo.categoria || reclamo.soporteAdjunto) {
+                        <div class="flex flex-wrap items-center gap-1.5 mb-1">
+                          @if (reclamo.categoria) {
+                            <span class="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-warning-50 text-warning-900 border border-warning-200">
+                              {{ categoriaTexto(reclamo.categoria) }}
+                            </span>
+                          }
+                          @if (reclamo.soporteAdjunto) {
+                            <span class="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-md bg-primary-50 text-primary-800 border border-primary-200" title="Tiene soporte documental anexo">
+                              <svg class="w-3 h-3 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                              </svg>
+                              Soporte
+                            </span>
+                          }
+                        </div>
+                      }
+                      <p class="text-xs text-warm-700 line-clamp-2 italic">"{{ reclamo.justificacionSolicitud }}"</p>
+                    </td>
+                    <td class="whitespace-nowrap text-xs">
+                      <span class="font-mono font-bold px-2 py-0.5 rounded-md bg-warm-100 text-warm-700">{{ reclamo.folio }}</span>
+                      <p class="mt-1 text-warm-500">{{ reclamo.fechaSolicitud }}</p>
+                    </td>
+                    <td class="whitespace-nowrap">
+                      <app-badge [variant]="getReclamoBadgeVariant(reclamo.estadoSolicitud)">
+                        {{ etiquetaEstado(reclamo.estadoSolicitud) }}
+                      </app-badge>
+                      <p class="mt-1 text-xs text-warm-400">
+                        {{ reclamo.estadoSolicitud === 'PENDIENTE' ? 'Pendiente de evaluación' : (reclamo.estadoSolicitud === 'RETIRADA' ? 'Retirada por el estudiante' : 'Evaluado') }}
+                      </p>
+                    </td>
+                    <td class="text-right whitespace-nowrap">
+                      <app-button
+                        variant="secondary"
+                        size="sm"
+                        (clicked)="abrirVistaResolucion(reclamo)"
+                      >
+                        <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        Revisar en Detalle
+                      </app-button>
+                    </td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </app-tabla-datos>
         }
       }
 
@@ -244,7 +234,7 @@ const BUSQUEDA_ESPERA_MS = 300;
             <svg class="w-4 h-4 text-warm-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
-            Volver a la Bandeja de Reclamos
+            Volver a la Bandeja de Justificaciones
           </button>
 
           <span class="text-xs font-mono font-bold px-2.5 py-1 rounded-md bg-warm-100 text-warm-800">
@@ -252,7 +242,7 @@ const BUSQUEDA_ESPERA_MS = 300;
           </span>
         </div>
 
-        <div class="superficie p-6 sm:p-8 max-w-4xl mx-auto space-y-6">
+        <div class="superficie p-4 sm:p-8 max-w-4xl mx-auto space-y-4">
           <!-- Encabezado con estado -->
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-warm-100">
             <div>
@@ -397,7 +387,7 @@ const BUSQUEDA_ESPERA_MS = 300;
                   <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                   </svg>
-                  Rechazar Reclamo
+                  Rechazar Justificación
                 </app-button>
 
                 @if (selectedReclamo()?.idToma) {
@@ -457,7 +447,9 @@ export class TeacherClaimsComponent implements OnInit, OnDestroy {
   searchQuery = signal<string>('');
   estadoFiltro = signal<EstadoFiltroReclamos>('TODOS');
   pagina = signal<number>(1);
-  tamano = signal<number>(10);
+  /** Bloque E: 15 por página por defecto (15/30/50); el servidor acepta hasta 100 por página. */
+  tamano = signal<number>(TAMANO_PAGINA_TABLA);
+  readonly tamanosPagina = [...TAMANOS_PAGINA_TABLA];
   /** Total del servidor para el filtro vigente (no la longitud de la página cargada). */
   total = signal<number>(0);
   /** Total del servidor de solicitudes pendientes (`estado=P`); `null` mientras no se conoce. */

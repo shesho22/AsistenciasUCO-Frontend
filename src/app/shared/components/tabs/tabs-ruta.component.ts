@@ -35,7 +35,7 @@ export interface TabRuta {
               ? 'border-primary-700 text-primary-800 font-bold border-b-2'
               : 'text-warm-500 hover:text-warm-700'
           "
-          class="min-h-[44px] px-4 py-3 text-sm whitespace-nowrap shrink-0 transition-colors"
+          class="min-h-[44px] px-3 sm:px-4 py-3 text-sm whitespace-nowrap shrink-0 transition-colors"
         >
           {{ tab.etiqueta }}
         </button>

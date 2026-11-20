@@ -5,7 +5,8 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, resolve, sep } from 'node:path';
 
 const root = resolve(process.cwd(), 'src');
-const excluded = new Set(['styles.css', 'index.html'].map((f) => resolve(root, f)));
+// styles/uco-tokens.css: tokens oficiales del Manual de diseno institucional UCO v8.0 (hex del manual, copiados tal cual).
+const excluded = new Set(['styles.css', 'index.html', 'styles/uco-tokens.css'].map((f) => resolve(root, f)));
 const exts = ['.ts', '.html', '.css'];
 
 // 'neutral' no se incluye: es un token semantico propio definido en @theme (la paleta por defecto fue anulada).

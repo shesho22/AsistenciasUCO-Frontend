@@ -1,4 +1,4 @@
-# Gestió Asistencia UCO - Frontend
+# Gestión Asistencia UCO - Frontend
 
 Aplicativo web institucional desarrollado en **Angular 22 (Standalone Components, Signals & Reactive Architecture)** para la gestión y control de asistencias, oferta académica, gobernanza curricular y auditoría de la **Universidad Católica de Oriente (UCO)**.
 
@@ -25,6 +25,17 @@ Diseñado para cumplir con la totalidad de las **174 Historias de Usuario (HU001
    - **Avatares Deterministas**: Generación automática de avatares con la letra inicial del nombre y paleta cromática armónica de la UCO (sin URLs externas ni fotos de prueba).
    - **Búsqueda y Paginación Modular (`app-pagination`)**: Búsqueda predictiva instantánea con selector de registros por página (5, 10, 20, 50) y elipsis numérica.
    - **Estandarización de Ancho**: Diseño fluido y responsivo en todas las pantallas (`space-y-6 animate-fade-in`), adaptado tanto a monitores de escritorio como a dispositivos móviles.
+
+4. **Identidad visual UCO (Manual de diseño institucional UCO v8.0, incorporado el 2026-11-19)**:
+   - **Origen:** `src/styles/uco-tokens.css` copia tal cual los tokens oficiales del manual (`--uco-verde #008b50`, `--uco-amarillo #ffca00`, `--uco-azul #1d3475`, `--uco-verde-oscuro #024426`, `--uco-turquesa #04b5ac`, `--uco-naranja #e28210` y sus colores de texto). `src/styles.css` (`@theme`) sigue siendo la única fuente de verdad de las clases y referencia esos tokens con `var()`.
+   - **Escalas:** `primary` = verde (500 oficial; texto blanco solo desde 600), `accent`/`warning` = amarillo (con texto negro), `danger` = naranja (sin rojo; sobre naranja sólido el texto es negro), `info` = azul, `category` = turquesa. Asistencia: presente verde, ausente naranja, excusa azul, riesgo amarillo, inactivo gris.
+   - **Tipografía autoalojada:** Montserrat para títulos (`font-serif` / `font-titulos`) y Poppins para el texto (`font-sans`), con `@fontsource` (sin CDN).
+   - **Foco visible:** anillo de 2px en verde con separación de 2px; amarillo sobre superficies verde oscuro (`foco-sobre-oscuro`).
+   - **Contraste WCAG 2.1 AA:** `npm run lint:tokens` incluye `scripts/check-contraste-wcag.mjs`, que falla si un par fondo/texto queda por debajo de 4.5:1 (3:1 para texto grande y foco).
+   - El logo y el favicon (`public/logo.svg`, `public/favicon.svg`) siguen pendientes; no cambian con este ajuste.
+5. **Listados en tablas y espaciado compacto (2026-11-19)**:
+   - Los listados que crecen con los datos (facultades, festivos, planes, asignaturas, grupos, padrón, justificaciones, reclamos, alertas, historial de sesiones...) se muestran en tablas con `<app-tabla-datos>` (`src/app/shared/components/tabla-datos`): cabecera fija al desplazar, ancho mínimo con desplazamiento horizontal en pantallas angostas (el texto no se encoge), filas de esqueleto que conservan la altura mientras carga, estado como etiqueta de color y paginación de 15 por defecto (15/30/50). Siguen como tarjetas los conjuntos pequeños o con tope y algunas vistas a propósito (Mis materias del estudiante, panel del estudiante, acordeón de materias matriculadas, árbol de la estructura del decano, toma de asistencia y su vista móvil).
+   - Espaciado compacto en toda la app: contenido principal `p-3 sm:p-4 lg:p-6`, secciones `space-y-4`, tarjetas `superficie p-4`, encabezado de página más bajo y tarjetas KPI más cortas. Detalle en `docs/sistema-diseno-tokens.md`.
 
 ---
 

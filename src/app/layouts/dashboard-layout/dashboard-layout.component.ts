@@ -60,8 +60,8 @@ interface NavItem {
       <!-- Mobile Top Navbar -->
       <header class="md:hidden bg-white border-b border-warm-200 px-4 py-3 flex items-center justify-between shrink-0 sticky top-0 z-30 shadow-warm-sm">
         <div class="flex items-center gap-2.5">
-          <img src="logo.svg" alt="Gestió Asistencia Logo" class="w-8 h-8 object-contain shrink-0" />
-          <span class="font-serif font-bold text-warm-900 text-lg">Gestió Asistencia</span>
+          <img src="logo.svg" alt="Gestión Asistencia Logo" class="w-8 h-8 object-contain shrink-0" />
+          <span class="font-serif font-bold text-warm-900 text-lg">Gestión Asistencia</span>
         </div>
         <button
           #botonMenu
@@ -99,10 +99,10 @@ interface NavItem {
         <!-- Brand Header -->
         <div class="p-5 flex items-center justify-between border-b border-warm-200/80 shrink-0">
           <div class="flex items-center gap-3">
-            <img src="logo.svg" alt="Gestió Asistencia Logo" class="w-9 h-9 object-contain shrink-0" />
+            <img src="logo.svg" alt="Gestión Asistencia Logo" class="w-9 h-9 object-contain shrink-0" />
             @if (!isCollapsed()) {
               <div>
-                <h1 class="font-serif font-bold text-warm-900 text-base leading-tight tracking-tight">Gestió Asistencia</h1>
+                <h1 class="font-serif font-bold text-warm-900 text-base leading-tight tracking-tight">Gestión Asistencia</h1>
                 <p class="text-[10px] uppercase font-bold text-primary-700 tracking-wider">Universidad Católica de Oriente</p>
               </div>
             }
@@ -225,7 +225,7 @@ interface NavItem {
         </div>
 
         <!-- Page View Container -->
-        <div class="p-4 sm:p-6 lg:p-8 flex-1">
+        <div class="p-3 sm:p-4 lg:p-6 flex-1">
           <router-outlet></router-outlet>
         </div>
       </main>
@@ -344,7 +344,7 @@ export class DashboardLayoutComponent {
       icon: 'estudiantes',
     },
     {
-      label: 'Estructura',
+      label: 'Organigrama',
       route: '/app/admin/estructura',
       roles: ['ADMINISTRADOR'],
       icon: 'facultad',
@@ -474,7 +474,7 @@ export class DashboardLayoutComponent {
       icon: 'horarios',
     },
     {
-      label: 'Reclamos',
+      label: 'Justificaciones',
       route: '/app/docente/reclamos',
       roles: ['DOCENTE'],
       icon: 'reclamos',

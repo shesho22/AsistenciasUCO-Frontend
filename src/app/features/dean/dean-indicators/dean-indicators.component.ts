@@ -1,6 +1,6 @@
 import { HorasMinutosPipe } from '../../../shared/pipes/horas-minutos.pipe';
 import { KpiCardComponent } from '../../../shared/components/kpi-card/kpi-card.component';
-import { ChangeDetectionStrategy, Component, OnInit, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal } from '@angular/core';
 import { DeanIndicatorsService } from '../../../core/services/dean-indicators.service';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load-error.util';
@@ -9,14 +9,20 @@ import { RolSinAmbito, rolSinAmbito } from '../../../core/api/errors/sin-ambito.
 import { SinEntidadAsignadaComponent } from '../../../shared/components/sin-entidad-asignada/sin-entidad-asignada.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
+import { BadgeComponent } from '../../../shared/components/badge/badge.component';
+import {
+  TablaDatosComponent,
+  TAMANO_PAGINA_TABLA,
+  paginarEnCliente,
+} from '../../../shared/components/tabla-datos/tabla-datos.component';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 @Component({
     selector: 'app-dean-indicators',
-    imports: [PageHeaderComponent, KpiCardComponent, HorasMinutosPipe, PaginationComponent, SinEntidadAsignadaComponent, ErrorCargaComponent],
+    imports: [PageHeaderComponent, KpiCardComponent, HorasMinutosPipe, PaginationComponent, SinEntidadAsignadaComponent, ErrorCargaComponent, TablaDatosComponent, BadgeComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
-    <section class="space-y-6">
+    <section class="space-y-4">
       @if (sinAmbito(); as rol) {
         <app-sin-entidad-asignada [rol]="rol" />
       } @else {
@@ -32,27 +38,58 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
       <div class="rounded-xl border border-neutral-100 bg-white p-4">
         <h2 class="text-lg font-semibold">Ausentismo por programa</h2>
         <p class="mb-3 text-xs text-neutral-500" data-testid="nota-horas">Calculado por horas dictadas.</p>
-        @if (cargandoComparativa()) {
-          <p class="py-6 text-center text-sm text-neutral-500" role="status" data-testid="comparativa-cargando">Cargando programas…</p>
-        } @else if (errorComparativa(); as e) {
+        @if (errorComparativa(); as e) {
           <app-error-carga [error]="e" (reintentar)="cargarComparativa()" />
-        } @else if (service.comparativa().length === 0) {
+        } @else if (!cargandoComparativa() && service.comparativa().length === 0) {
           <p class="py-6 text-center text-sm text-neutral-500">No hay programas en esta facultad.</p>
         } @else {
-          <ul class="space-y-3">
-            @for (p of service.comparativa(); track p.idPrograma) {
-              <li>
-                <div class="flex items-center justify-between text-sm">
-                  <span class="font-medium">{{ p.nombrePrograma }}@if (!p.estaActivoPrograma) { <span class="ml-2 text-xs text-neutral-500">Inactivo</span> }</span>
-                  <span>{{ formatoPorcentaje(p.porcentajeAusentismo) }} · {{ p.totalEstudiantes }} estudiantes</span>
-                </div>
-                <p class="text-xs text-neutral-500">{{ p.horasFalta | horasMinutos }} de falta sobre {{ p.horasDictadas | horasMinutos }} dictadas</p>
-                <div class="h-3 w-full rounded bg-neutral-100">
-                  <div class="h-3 rounded bg-danger-500" data-testid="barra-ausentismo" [style.width]="anchoBarra(p.porcentajeAusentismo)"></div>
-                </div>
-              </li>
-            }
-          </ul>
+          @if (cargandoComparativa()) {
+            <p class="sr-only" role="status" data-testid="comparativa-cargando">Cargando programas…</p>
+          }
+          <app-tabla-datos
+            etiqueta="Ausentismo por programa"
+            [columnas]="5"
+            anchoMinimo="48rem"
+            [cargando]="cargandoComparativa()"
+            [paginada]="true"
+            [totalItems]="service.comparativa().length"
+            [pagina]="paginaComparativa()"
+            [tamanoPagina]="tamanoComparativa()"
+            (paginaChange)="paginaComparativa.set($event)"
+            (tamanoPaginaChange)="cambiarTamanoComparativa($event)"
+          >
+            <thead>
+              <tr>
+                <th scope="col">Programa</th>
+                <th scope="col" class="text-right">Ausentismo</th>
+                <th scope="col">Horas de falta / dictadas</th>
+                <th scope="col" class="text-right">Estudiantes</th>
+                <th scope="col" class="w-40">Ausentismo relativo</th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (!cargandoComparativa()) {
+                @for (p of comparativaPagina(); track p.idPrograma) {
+                  <tr data-testid="programa-ausentismo-fila">
+                    <td class="font-medium text-warm-900">
+                      {{ p.nombrePrograma }}
+                      @if (!p.estaActivoPrograma) {
+                        <app-badge class="ml-2" variant="neutral" size="sm" [dot]="false">Inactivo</app-badge>
+                      }
+                    </td>
+                    <td class="text-right font-semibold tabular-nums">{{ formatoPorcentaje(p.porcentajeAusentismo) }}</td>
+                    <td class="text-xs text-warm-600 whitespace-nowrap">{{ p.horasFalta | horasMinutos }} de falta sobre {{ p.horasDictadas | horasMinutos }} dictadas</td>
+                    <td class="text-right tabular-nums">{{ p.totalEstudiantes }}</td>
+                    <td>
+                      <div class="h-3 w-full min-w-24 rounded bg-neutral-100" aria-hidden="true">
+                        <div class="h-3 rounded bg-danger-500" data-testid="barra-ausentismo" [style.width]="anchoBarra(p.porcentajeAusentismo)"></div>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </app-tabla-datos>
         }
       </div>
 
@@ -143,6 +180,16 @@ export class DeanIndicatorsComponent implements OnInit {
    * mientras llega se muestra "Cargando" y si falla, el error con su reintento (antes ambos casos se veían como "vacío").
    */
   readonly cargandoComparativa = signal(true);
+  readonly paginaComparativa = signal(1);
+  readonly tamanoComparativa = signal(TAMANO_PAGINA_TABLA);
+  readonly comparativaPagina = computed(() =>
+    paginarEnCliente(this.service.comparativa(), this.paginaComparativa(), this.tamanoComparativa()),
+  );
+
+  cambiarTamanoComparativa(tamano: number): void {
+    this.tamanoComparativa.set(tamano);
+    this.paginaComparativa.set(1);
+  }
   readonly errorComparativa = signal<LoadErrorState | null>(null);
   readonly tamano = 10;
   readonly pagina = signal(1);

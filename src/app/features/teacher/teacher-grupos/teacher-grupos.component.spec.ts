@@ -283,7 +283,7 @@ describe('TeacherGruposComponent', () => {
 
     expect(component.estudianteARetirar()).toBeNull();
     // CIERRE-W3M: se recarga la pagina del padron (servidor) y el resumen del grupo (cambian los activos); no el padron completo.
-    expect(studentService.getPadronGrupoPagina).toHaveBeenCalledOnceWith('crs-1', { pagina: 1, tamano: 12, busqueda: '' });
+    expect(studentService.getPadronGrupoPagina).toHaveBeenCalledOnceWith('crs-1', { pagina: 1, tamano: 15, busqueda: '' });
     expect(matrizService.consultarResumenSesiones).toHaveBeenCalledOnceWith('crs-1');
     expect(studentService.getStudentsByGroup).not.toHaveBeenCalled();
   });
@@ -313,7 +313,7 @@ describe('TeacherGruposComponent', () => {
 
       component.verHubGrupo({ ...course, id: GROUP_A });
 
-      expect(claimService.getReclamosDocentePorGrupo).toHaveBeenCalledOnceWith(GROUP_A, { pagina: 1, tamano: 10 });
+      expect(claimService.getReclamosDocentePorGrupo).toHaveBeenCalledOnceWith(GROUP_A, { pagina: 1, tamano: 15 });
       expect(component.reclamosGrupo().map((item) => item.id)).toEqual(['a-1']);
       expect(component.totalReclamosGrupo()).toBe(23);
       expect(component.estadoCargaReclamos()).toBe('LOADED');
@@ -327,12 +327,12 @@ describe('TeacherGruposComponent', () => {
       component.cambiarPaginaReclamosGrupo(3);
 
       expect(component.paginaReclamosGrupo()).toBe(3);
-      expect(claimService.getReclamosDocentePorGrupo).toHaveBeenCalledOnceWith(GROUP_A, { pagina: 3, tamano: 10 });
+      expect(claimService.getReclamosDocentePorGrupo).toHaveBeenCalledOnceWith(GROUP_A, { pagina: 3, tamano: 15 });
     });
 
     it('si la página pedida quedó vacía pero hay reclamos, retrocede a la última', () => {
       claimService.getReclamosDocentePorGrupo.and.callFake((_grupo, paginacion) =>
-        of(paginacion.pagina === 3 ? pagina([], 12) : pagina([claim('a-9', GROUP_A)], 12))
+        of(paginacion.pagina === 3 ? pagina([], 20) : pagina([claim('a-9', GROUP_A)], 20))
       );
       component.verHubGrupo({ ...course, id: GROUP_A });
 
@@ -350,7 +350,7 @@ describe('TeacherGruposComponent', () => {
       component.verHubGrupo({ ...course, id: GROUP_B });
 
       expect(component.paginaReclamosGrupo()).toBe(1);
-      expect(claimService.getReclamosDocentePorGrupo.calls.mostRecent().args).toEqual([GROUP_B, { pagina: 1, tamano: 10 }]);
+      expect(claimService.getReclamosDocentePorGrupo.calls.mostRecent().args).toEqual([GROUP_B, { pagina: 1, tamano: 15 }]);
     });
 
     it('descarta la respuesta pendiente del grupo anterior al cambiar rápidamente', () => {
@@ -377,7 +377,7 @@ describe('TeacherGruposComponent', () => {
       component.verHubGrupo(grupo);
       component.cargarReclamosGrupo(GROUP_A);
 
-      expect(claimService.getReclamosDocentePorGrupo).toHaveBeenCalledOnceWith(GROUP_A, { pagina: 1, tamano: 10 });
+      expect(claimService.getReclamosDocentePorGrupo).toHaveBeenCalledOnceWith(GROUP_A, { pagina: 1, tamano: 15 });
     });
 
     it('distingue 403, 501, red y error HTTP de una lista vacía', () => {
@@ -412,12 +412,12 @@ describe('TeacherGruposComponent', () => {
       totalPaginas: Math.ceil(total / 12),
     });
 
-    it('al abrir el hub pide la primera página (12) sin búsqueda y guarda total y filas', () => {
+    it('al abrir el hub pide la primera página (15) sin búsqueda y guarda total y filas', () => {
       studentService.getPadronGrupoPagina.and.returnValue(of(paginaPadron(12, 30)));
 
       component.verHubGrupo(course);
 
-      expect(studentService.getPadronGrupoPagina).toHaveBeenCalledOnceWith(course.id, { pagina: 1, tamano: 12, busqueda: '' });
+      expect(studentService.getPadronGrupoPagina).toHaveBeenCalledOnceWith(course.id, { pagina: 1, tamano: 15, busqueda: '' });
       expect(component.padronPagina()).toHaveSize(12);
       expect(component.totalPadron()).toBe(30);
       expect(component.cargandoPadron()).toBeFalse();
@@ -429,7 +429,7 @@ describe('TeacherGruposComponent', () => {
       studentService.getPadronGrupoPagina.calls.reset();
 
       component.cambiarPaginaPadron(3);
-      expect(studentService.getPadronGrupoPagina.calls.mostRecent().args).toEqual([course.id, { pagina: 3, tamano: 12, busqueda: '' }]);
+      expect(studentService.getPadronGrupoPagina.calls.mostRecent().args).toEqual([course.id, { pagina: 3, tamano: 15, busqueda: '' }]);
 
       component.cambiarTamanoPadron(24);
       expect(studentService.getPadronGrupoPagina.calls.mostRecent().args).toEqual([course.id, { pagina: 1, tamano: 24, busqueda: '' }]);
@@ -451,7 +451,7 @@ describe('TeacherGruposComponent', () => {
 
     it('si la página pedida quedó vacía pero hay matrículas, retrocede a la última', () => {
       studentService.getPadronGrupoPagina.and.callFake((_grupo, filtro) =>
-        of(filtro.pagina === 5 ? { ...paginaPadron(0, 30, 5) } : paginaPadron(6, 30, 3))
+        of(filtro.pagina === 5 ? { ...paginaPadron(0, 40, 5) } : paginaPadron(6, 40, 3))
       );
       component.verHubGrupo(course);
 
@@ -479,7 +479,7 @@ describe('TeacherGruposComponent', () => {
 
       component.verHubGrupo({ ...course, id: 'otro-grupo' });
 
-      expect(studentService.getPadronGrupoPagina.calls.mostRecent().args).toEqual(['otro-grupo', { pagina: 1, tamano: 12, busqueda: '' }]);
+      expect(studentService.getPadronGrupoPagina.calls.mostRecent().args).toEqual(['otro-grupo', { pagina: 1, tamano: 15, busqueda: '' }]);
     });
 
     it('CIERRE-W3M: ya no se descarga el padrón completo; la planilla pide su página al servidor', () => {

@@ -40,12 +40,12 @@ describe('StudentAlertsComponent: faltas por reclamar (ATA D10)', () => {
     asignatura: { id: 'asig-1', nombre: 'Bases de datos' },
   } as AlertaInasistencia;
 
-  function montar(filas: FaltaReclamable[], alertasVigentes: AlertaInasistencia[] = [], totalPaginas = 1): void {
+  function montar(filas: FaltaReclamable[], alertasVigentes: AlertaInasistencia[] = [], totalPaginas = 1, total = filas.length): void {
     eventos = new Subject<RealtimeEvent>();
     alertas = jasmine.createSpyObj('AlertaInasistenciaService', ['consultar']);
     alertas.consultar.and.returnValue(of({ exitoso: true, elementos: alertasVigentes, numeroPagina: 1, tamanoPagina: 20, totalElementos: alertasVigentes.length, totalPaginas: 1 }));
     faltas = jasmine.createSpyObj('FaltaReclamableService', ['consultar']);
-    faltas.consultar.and.returnValue(of(pagina(filas, totalPaginas, filas.length)));
+    faltas.consultar.and.returnValue(of(pagina(filas, totalPaginas, total)));
     router = jasmine.createSpyObj('Router', ['navigate']);
     TestBed.configureTestingModule({
       imports: [StudentAlertsComponent],
@@ -82,10 +82,13 @@ describe('StudentAlertsComponent: faltas por reclamar (ATA D10)', () => {
     expect(el().querySelector('[data-testid="sin-alertas-porcentaje"]')).toBeTruthy();
   });
 
-  it('una tarjeta por sesión con materia, grupo, horario, límite y una fila por toma', () => {
+  it('una fila de tabla por sesión con materia, grupo, horario, límite y una entrada por toma', () => {
     montar([fila('t1', 1), fila('t3', 3), fila('t9', 1, 'ses-2')]);
     expect(el().querySelectorAll('[data-testid^="falta-card-"]').length).toBe(2);
     const tarjeta = el().querySelector('[data-testid="falta-card-ses-1"]') as HTMLElement;
+    expect(tarjeta.tagName).toBe('TR');
+    expect(tarjeta.closest('app-tabla-datos')).not.toBeNull();
+    expect(el().querySelector('article')).toBeNull();
     expect(tarjeta.textContent).toContain('Bases de datos');
     expect(tarjeta.textContent).toContain('G01');
     expect(tarjeta.textContent).toContain('Sesión 4');
@@ -122,11 +125,24 @@ describe('StudentAlertsComponent: faltas por reclamar (ATA D10)', () => {
     expect(component.faltasTotal()).toBe(0);
   });
 
-  it('con más de una página muestra la paginación y pide la página elegida', () => {
-    montar([fila('t1', 1)], [], 3);
-    expect(el().querySelector('app-pagination')).toBeTruthy();
+  it('con más de una página muestra la paginación (15 por defecto) y pide la página elegida', () => {
+    montar([fila('t1', 1)], [], 3, 40);
+    expect(faltas.consultar).toHaveBeenCalledWith({ pagina: 1, tamano: 15 });
+    expect(el().querySelector('[data-testid="faltas-reclamables"] app-pagination')).toBeTruthy();
     component.cambiarPaginaFaltas(2);
-    expect(faltas.consultar).toHaveBeenCalledWith({ pagina: 2, tamano: 20 });
+    expect(faltas.consultar).toHaveBeenCalledWith({ pagina: 2, tamano: 15 });
+  });
+
+  it('bloque E: cambiar el tamaño de página (15/30/50) vuelve a la página 1', () => {
+    montar([fila('t1', 1)], [], 3, 40);
+    const opciones = Array.from(
+      (el().querySelector('[data-testid="faltas-reclamables"] select[aria-label="Resultados por página"]') as HTMLSelectElement).options
+    ).map((o) => o.value);
+    expect(opciones).toEqual(['15', '30', '50']);
+    component.cambiarPaginaFaltas(2);
+    component.cambiarTamanoFaltas(30);
+    expect(component.faltasPagina()).toBe(1);
+    expect(faltas.consultar).toHaveBeenCalledWith({ pagina: 1, tamano: 30 });
   });
 
   it('con una sola página no muestra la paginación', () => {

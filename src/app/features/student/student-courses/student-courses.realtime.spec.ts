@@ -35,7 +35,7 @@ describe('StudentCoursesComponent - avisos en tiempo real (DEC-064)', () => {
     });
     realtime.events.and.returnValue(events$.asObservable());
     claims = jasmine.createSpyObj<AttendanceClaimService>('AttendanceClaimService', [
-      'subirSoporte', 'crearReclamo', 'getSesionesPorMateria', 'eliminarReclamo', 'getConfiguracionReclamos',
+      'subirSoporte', 'crearReclamo', 'getSesionesPorMateria', 'invalidarSesionesMateria', 'eliminarReclamo', 'getConfiguracionReclamos',
     ]);
     claims.getSesionesPorMateria.and.returnValue(of({ exitoso: true, datos: [], total: 0 }) as never);
     claims.getConfiguracionReclamos.and.returnValue(of({ exitoso: true, datos: null }) as never);
@@ -89,6 +89,8 @@ describe('StudentCoursesComponent - avisos en tiempo real (DEC-064)', () => {
   it('SESION_CANCELADA del grupo recarga sin avisar; la reconexión también recarga', () => {
     events$.next(evento('SESION_CANCELADA', { grupo: materia.idGrupo, sesion: 's', tipo: 'COORDINADOR', fechaHoraInicioUtc: null }));
     expect(claims.getSesionesPorMateria).toHaveBeenCalledTimes(1);
+    // PERF-EST-MM: la página guardada se descarta antes de recargar.
+    expect(claims.invalidarSesionesMateria).toHaveBeenCalledWith(materia.id);
     expect(toast.info).not.toHaveBeenCalled();
 
     estado$.next('RECONNECTING');

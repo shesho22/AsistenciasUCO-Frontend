@@ -97,7 +97,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FormsModule, IconComponent, PaginationComponent],
     template: `
-    <div class="space-y-6">
+    <div class="space-y-4">
       <!-- ================= HEADER & BREADCRUMB ================= -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -184,7 +184,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
 
         <!-- ================= TAB 1: PLANTILLAS ================= -->
         @if (tabActiva() === 'PLANTILLAS') {
-          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
             <!-- Left Column: Master List (4 cols) -->
             <div class="superficie lg:col-span-4 p-4 space-y-3">
               <div class="flex items-center justify-between pb-2 border-b border-warm-100">
@@ -479,7 +479,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
 
         <!-- ================= TAB 2: COLA OUTBOX ================= -->
         @if (tabActiva() === 'COLA_OUTBOX') {
-          <div class="space-y-6">
+          <div class="space-y-4">
             <!-- Top Bento Grid with 5 KPI Cards -->
             <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
               <!-- Entregadas -->
@@ -677,7 +677,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
 
         <!-- ================= TAB 3: CANAL SMTP ================= -->
         @if (tabActiva() === 'CANAL_SMTP') {
-          <div class="space-y-6">
+          <div class="space-y-4">
             <!-- Architecture & Decoupling Status Card -->
             <div class="superficie p-5 space-y-4">
               <div class="flex items-center justify-between pb-3 border-b border-warm-100">
@@ -724,7 +724,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
             </div>
 
             <!-- SMTP Connection Diagnostic & Live Test Grid -->
-            <div class="grid grid-cols-1 gap-6 items-start">
+            <div class="grid grid-cols-1 gap-4 items-start">
               <!-- Card: Live Test Email -->
               <div class="superficie p-5 space-y-4">
                 <div class="pb-3 border-b border-warm-100">

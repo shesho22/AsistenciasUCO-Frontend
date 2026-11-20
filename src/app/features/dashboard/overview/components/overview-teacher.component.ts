@@ -1,9 +1,13 @@
 import { RangoHorarioPipe } from '../../../../shared/pipes/fecha-hora.pipes';
-import { Component, ChangeDetectionStrategy, input } from '@angular/core';
+import { Component, ChangeDetectionStrategy, computed, effect, input, signal, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { RevisionesPendientesKpiComponent } from '../../../../shared/components/revisiones-pendientes-kpi/revisiones-pendientes-kpi.component';
-import { CardComponent } from '../../../../shared/components/card/card.component';
+import {
+  TablaDatosComponent,
+  TAMANO_PAGINA_TABLA,
+  paginarEnCliente,
+} from '../../../../shared/components/tabla-datos/tabla-datos.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { Course } from '../../../../core/models/course.model';
 import { ProximaClaseInfo } from '../utils/proxima-clase.util';
@@ -11,12 +15,12 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
 @Component({
   selector: 'app-overview-teacher',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RevisionesPendientesKpiComponent, RangoHorarioPipe, CommonModule, RouterLink, CardComponent, ButtonComponent],
+  imports: [RevisionesPendientesKpiComponent, RangoHorarioPipe, CommonModule, RouterLink, TablaDatosComponent, ButtonComponent],
   host: {
     class: 'block w-full',
   },
   template: `
-    <div class="space-y-6">
+    <div class="space-y-4">
       <!-- Revisiones de cancelación por inasistencia: conteo global con enlace directo (DEC-065) -->
       <div class="max-w-sm">
         <app-revisiones-pendientes-kpi rol="DOCENTE" />
@@ -164,51 +168,52 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
           </a>
         </div>
 
-        @if (isLoading()) {
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            @for (item of [1, 2, 3]; track item) {
-              <div class="bg-white p-6 rounded-2xl border border-warm-200 animate-pulse space-y-4">
-                <div class="h-4 w-3/4 bg-warm-200 rounded"></div>
-                <div class="h-3 w-1/2 bg-warm-200 rounded"></div>
-                <div class="h-10 w-full bg-warm-200 rounded-xl mt-4"></div>
-              </div>
-            }
-          </div>
-        } @else {
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            @for (course of courses(); track course.id) {
-              <app-card [hoverable]="true" [title]="course.name" [subtitle]="subtituloCurso(course)">
-                <div class="space-y-3 my-2 text-xs text-warm-700">
-                  <div class="flex items-center gap-2">
-                    <svg class="w-4 h-4 text-primary-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span class="font-medium text-warm-800">{{ course.schedule }}</span>
-                  </div>
-
-                  <div class="flex items-center justify-between pt-3 border-t border-warm-100">
-                    <span class="text-warm-500 font-medium">Alumnos Matriculados:</span>
+        <app-tabla-datos
+          etiqueta="Mis asignaturas habilitadas"
+          [columnas]="5"
+          anchoMinimo="48rem"
+          [filasEsqueleto]="3"
+          [cargando]="isLoading()"
+          [vacio]="courses().length === 0"
+          mensajeVacio="No tienes asignaturas programadas para el día de hoy."
+          [paginada]="true"
+          [totalItems]="courses().length"
+          [pagina]="pagina()"
+          [tamanoPagina]="tamanoPagina()"
+          (paginaChange)="pagina.set($event)"
+          (tamanoPaginaChange)="cambiarTamano($event)"
+        >
+          <thead>
+            <tr>
+              <th scope="col">Asignatura</th>
+              <th scope="col">Código y grupo</th>
+              <th scope="col">Horario</th>
+              <th scope="col">Alumnos matriculados</th>
+              <th scope="col"><span class="sr-only">Acciones</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (!isLoading()) {
+              @for (course of cursosPagina(); track course.id) {
+                <tr data-testid="overview-docente-curso-fila">
+                  <td class="font-semibold text-warm-900">{{ course.name }}</td>
+                  <td class="text-warm-600 whitespace-nowrap">{{ subtituloCurso(course) }}</td>
+                  <td class="text-warm-800">{{ course.schedule }}</td>
+                  <td class="whitespace-nowrap">
                     <span class="font-bold text-warm-900 bg-warm-100 px-2.5 py-0.5 rounded-full text-xs">
                       {{ course.enrolledStudentsCount }} alumnos
                     </span>
-                  </div>
-                </div>
-
-                <div card-footer class="mt-4 pt-3 border-t border-warm-100 flex items-center justify-end">
-                  <a routerLink="/app/asistencia" class="w-full">
-                    <app-button variant="secondary" size="sm" [fullWidth]="true">
-                      Acceder a Sesiones y Asistencia
-                    </app-button>
-                  </a>
-                </div>
-              </app-card>
-            } @empty {
-              <div class="md:col-span-3 bg-white p-12 rounded-2xl border border-warm-200 text-center space-y-3">
-                <p class="text-xs text-warm-500">No tienes asignaturas programadas para el día de hoy.</p>
-              </div>
+                  </td>
+                  <td class="text-right whitespace-nowrap">
+                    <a routerLink="/app/asistencia">
+                      <app-button variant="secondary" size="sm">Acceder a Sesiones y Asistencia</app-button>
+                    </a>
+                  </td>
+                </tr>
+              }
             }
-          </div>
-        }
+          </tbody>
+        </app-tabla-datos>
       </section>
     </div>
   `,
@@ -220,6 +225,24 @@ export class OverviewTeacherComponent {
   pendingClaimsCount = input<number | null>(0);
   proximaClase = input<ProximaClaseInfo | null>(null);
   isLoading = input<boolean>(false);
+
+  /** Paginacion en el cliente de la tabla de asignaturas (15 por defecto, 15/30/50). */
+  readonly pagina = signal(1);
+  readonly tamanoPagina = signal(TAMANO_PAGINA_TABLA);
+  readonly cursosPagina = computed(() => paginarEnCliente(this.courses(), this.pagina(), this.tamanoPagina()));
+
+  constructor() {
+    // Si cambia la lista de cursos se vuelve a la primera pagina.
+    effect(() => {
+      this.courses();
+      untracked(() => this.pagina.set(1));
+    });
+  }
+
+  cambiarTamano(tamano: number): void {
+    this.tamanoPagina.set(tamano);
+    this.pagina.set(1);
+  }
 
   /** Codigo y grupo; sin codigo solo el grupo (nunca el literal "undefined"). */
   subtituloCurso(course: Course): string {

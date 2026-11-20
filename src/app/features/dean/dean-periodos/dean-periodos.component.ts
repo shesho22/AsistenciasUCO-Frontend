@@ -7,14 +7,19 @@ import { PeriodoAcademicoItem } from '../../../core/models/role-management.model
 import { BadgeComponent } from '../../../shared/components/badge/badge.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
+import {
+  TablaDatosComponent,
+  TAMANO_PAGINA_TABLA,
+  paginarEnCliente,
+} from '../../../shared/components/tabla-datos/tabla-datos.component';
 
 @Component({
     selector: 'app-dean-periodos',
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: { class: 'block w-full' },
-    imports: [PageHeaderComponent, FormsModule, BadgeComponent],
+    imports: [PageHeaderComponent, FormsModule, BadgeComponent, TablaDatosComponent],
     template: `
-    <div class="space-y-6 animate-fade-in">
+    <div class="space-y-4 animate-fade-in">
       <!-- Header Bento -->
       <app-page-header
         [enTarjeta]="true"
@@ -42,7 +47,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
         <input aria-label="Buscar período académico"
           type="text"
           [ngModel]="filtroTexto()"
-          (ngModelChange)="filtroTexto.set($event)"
+          (ngModelChange)="filtroTexto.set($event); pagina.set(1)"
           placeholder="Buscar período por código o nombre..."
           class="w-full pl-10 pr-4 py-2.5 bg-white border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
         />
@@ -51,7 +56,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
         </svg>
       </div>
 
-      <!-- Grid de Períodos -->
+      <!-- Tabla de Períodos -->
       @if (errorPeriodos()) {
         <div class="bg-white rounded-2xl border border-danger-200 p-12 text-center shadow-warm-sm" role="alert">
           <p class="text-sm font-semibold text-danger-700">No fue posible cargar los períodos académicos.</p>
@@ -60,38 +65,50 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
             Reintentar
           </button>
         </div>
-      } @else if (periodosFiltrados().length === 0) {
-        <div class="superficie p-12 text-center">
-          <p class="text-sm text-warm-500">No se encontraron períodos académicos registrados.</p>
-        </div>
       } @else {
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-          @for (p of periodosFiltrados(); track p.id) {
-            <div class="superficie p-5 space-y-3 flex flex-col justify-between h-full">
-              <div>
-                <div class="flex items-center justify-between gap-2 mb-2">
-                  <span class="text-xs font-mono font-bold px-2.5 py-1 rounded-md bg-warm-100 text-warm-800">
-                    {{ p.codigo }}
-                  </span>
-                  <app-badge [variant]="p.estado === 'ACTIVO' ? 'success' : (p.estado === 'PLANEACION' ? 'warning' : 'neutral')">
-                    {{ p.estado }}
-                  </app-badge>
-                </div>
-                <h2 class="font-bold text-base text-warm-900">{{ p.nombre }}</h2>
-                <div class="space-y-1 text-xs text-warm-600 pt-2 border-t border-warm-100 mt-2">
-                  <p>Inicio: <strong>{{ p.fechaInicio }}</strong></p>
-                  <p>Finalización: <strong>{{ p.fechaFin }}</strong></p>
-                </div>
-              </div>
-
-              @if (p.esActual) {
-                <div class="p-2 bg-success-50 rounded-xl border border-success-200 text-center">
-                  <span class="text-[11px] font-bold text-success-800">● Período Académico en Curso</span>
-                </div>
-              }
-            </div>
-          }
-        </div>
+        <app-tabla-datos
+          etiqueta="Períodos académicos"
+          [columnas]="5"
+          anchoMinimo="44rem"
+          [vacio]="periodosFiltrados().length === 0"
+          mensajeVacio="No se encontraron períodos académicos registrados."
+          [paginada]="true"
+          [totalItems]="periodosFiltrados().length"
+          [pagina]="pagina()"
+          [tamanoPagina]="tamanoPagina()"
+          (paginaChange)="pagina.set($event)"
+          (tamanoPaginaChange)="cambiarTamano($event)"
+        >
+          <thead>
+            <tr>
+              <th scope="col">Código</th>
+              <th scope="col">Nombre</th>
+              <th scope="col">Inicio</th>
+              <th scope="col">Finalización</th>
+              <th scope="col">Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of periodosPagina(); track p.id) {
+              <tr data-testid="periodo-fila">
+                <td class="font-mono text-xs font-bold text-warm-800 whitespace-nowrap">{{ p.codigo }}</td>
+                <td class="font-semibold text-warm-900">{{ p.nombre }}</td>
+                <td class="whitespace-nowrap">{{ p.fechaInicio }}</td>
+                <td class="whitespace-nowrap">{{ p.fechaFin }}</td>
+                <td>
+                  <div class="flex flex-wrap items-center gap-1.5">
+                    <app-badge [variant]="p.estado === 'ACTIVO' ? 'success' : (p.estado === 'PLANEACION' ? 'warning' : 'neutral')" size="sm">
+                      {{ p.estado }}
+                    </app-badge>
+                    @if (p.esActual) {
+                      <app-badge variant="success" size="sm" data-testid="periodo-en-curso">En curso</app-badge>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </app-tabla-datos>
       }
     </div>
   `
@@ -105,13 +122,23 @@ export class DeanPeriodosComponent implements OnInit {
   /** Mensaje del último error HTTP; `null` si la última carga fue exitosa (aunque vacía). */
   errorPeriodos = signal<string | null>(null);
 
+  /** Más recientes primero (por fecha de inicio). */
   periodosFiltrados = computed(() => {
     const q = this.filtroTexto().toLowerCase().trim();
-    if (!q) return this.periodos();
-    return this.periodos().filter(
-      (p) => p.codigo.toLowerCase().includes(q) || p.nombre.toLowerCase().includes(q)
-    );
+    const lista = q
+      ? this.periodos().filter((p) => p.codigo.toLowerCase().includes(q) || p.nombre.toLowerCase().includes(q))
+      : this.periodos();
+    return [...lista].sort((a, b) => (b.fechaInicio ?? '').localeCompare(a.fechaInicio ?? ''));
   });
+
+  pagina = signal(1);
+  tamanoPagina = signal(TAMANO_PAGINA_TABLA);
+  periodosPagina = computed(() => paginarEnCliente(this.periodosFiltrados(), this.pagina(), this.tamanoPagina()));
+
+  cambiarTamano(tamano: number): void {
+    this.tamanoPagina.set(tamano);
+    this.pagina.set(1);
+  }
 
   ngOnInit(): void {
     this.cargar();

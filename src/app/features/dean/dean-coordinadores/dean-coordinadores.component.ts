@@ -9,7 +9,6 @@ import { ActualizarCoordinadorPayload, CoordinadorItem, ResultadoGestionCoordina
 import { ApiResponse } from '../../../core/models/api-response.model';
 import { DeanCoordinadorEditModalComponent } from './components/dean-coordinador-edit-modal.component';
 import { DeanCoordinadorEstadoModalComponent } from './components/dean-coordinador-estado-modal.component';
-import { CardComponent } from '../../../shared/components/card/card.component';
 import { BadgeComponent } from '../../../shared/components/badge/badge.component';
 import { ActionMenuComponent, ActionMenuItem } from '../../../shared/components/action-menu/action-menu.component';
 import { SelectorModoComponent, OpcionModo } from '../../../shared/components/selector-modo/selector-modo.component';
@@ -19,7 +18,7 @@ import { CambioDatoPersona, DatosPersonaComponent } from '../../../shared/compon
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { UserPickerModalComponent, UserPickerItem } from '../../../shared/components/user-picker-modal/user-picker-modal.component';
 import { datosDePersonaSeleccionada } from '../../../shared/components/user-picker-modal/datos-persona-seleccionada';
-import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
+import { TablaDatosComponent, TAMANO_PAGINA_TABLA } from '../../../shared/components/tabla-datos/tabla-datos.component';
 import { AccountAccessStatusComponent } from '../../../shared/components/account-access-status/account-access-status.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 import {
@@ -47,20 +46,19 @@ const NOMBRE_PROGRAMA_MAX = 50;
     ActionMenuComponent,
     CommonModule,
     FormsModule,
-    CardComponent,
     BadgeComponent,
     ButtonComponent,
     FormFieldComponent,
     DatosPersonaComponent,
     UserPickerModalComponent,
     AccountAccessStatusComponent,
-    PaginationComponent,
+    TablaDatosComponent,
     DeanCoordinadorEditModalComponent,
     DeanCoordinadorEstadoModalComponent,
     SelectorModoComponent,
   ],
   template: `
-    <div class="space-y-6 animate-fade-in">
+    <div class="space-y-4 animate-fade-in">
       <!-- 1. VISTA: LISTA DE COORDINADORES -->
       @if (vistaActual() === 'LISTA') {
         <!-- Header Bento -->
@@ -122,20 +120,14 @@ const NOMBRE_PROGRAMA_MAX = 50;
           </div>
         </div>
 
-        <!-- Grid de Coordinadores -->
-        @if (isLoading()) {
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-            @for (n of [1, 2, 3, 4]; track n) {
-              <div class="h-44 bg-warm-100 rounded-2xl animate-pulse"></div>
-            }
-          </div>
-        } @else if (errorCarga() !== null) {
+        <!-- Tabla de Coordinadores -->
+        @if (errorCarga() !== null) {
           <div class="bg-white rounded-2xl border border-danger-200 p-12 text-center shadow-warm-sm" role="alert">
             <h3 class="text-base font-semibold text-danger-700">No fue posible cargar los coordinadores</h3>
             <p class="text-xs text-danger-700 mt-1">{{ errorCarga() }}</p>
             <button type="button" (click)="cargarCoordinadores()" class="mt-4 min-h-[44px] px-4 text-xs font-semibold rounded-xl border border-danger-200 text-danger-700 hover:bg-danger-50">Reintentar</button>
           </div>
-        } @else if (coordinadores().length === 0) {
+        } @else if (!isLoading() && coordinadores().length === 0) {
           <div class="superficie p-12 text-center">
             <div class="w-12 h-12 rounded-full bg-warm-100 text-warm-400 flex items-center justify-center mx-auto mb-3">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -146,22 +138,55 @@ const NOMBRE_PROGRAMA_MAX = 50;
             <p class="text-xs text-warm-500 mt-1">Verifica los filtros o asigna un nuevo coordinador.</p>
           </div>
         } @else {
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-            @for (coord of coordinadores(); track coord.id) {
-              <app-card [hoverable]="true" padding="md">
-                <div class="flex flex-col h-full justify-between gap-4">
-                  <div>
-                    <div class="flex items-start justify-between gap-3 mb-2">
-                      <div class="flex items-center gap-2">
-                        <span class="text-xs font-mono font-semibold px-2 py-0.5 rounded-md bg-warm-100 text-warm-700">
-                          COORD-{{ coord.numeroIdentificacion }}
-                        </span>
-                        <app-badge [variant]="coord.estado === 'ACTIVO' ? 'success' : 'neutral'">
-                          {{ coord.estado }}
-                        </app-badge>
-                      </div>
-
-                      <div class="flex items-center gap-2">
+          <app-tabla-datos
+            etiqueta="Coordinadores de programa"
+            [columnas]="8"
+            anchoMinimo="68rem"
+            [cargando]="isLoading()"
+            [paginada]="true"
+            [totalItems]="totalCoordinadores()"
+            [pagina]="currentPage()"
+            [tamanoPagina]="pageSize()"
+            (paginaChange)="irAPagina($event)"
+            (tamanoPaginaChange)="onPageSizeChange($event)"
+          >
+            <thead>
+              <tr>
+                <th scope="col">Coordinador(a)</th>
+                <th scope="col">Identificación</th>
+                <th scope="col">Programa</th>
+                <th scope="col">Correo</th>
+                <th scope="col" class="text-right">Docentes activos</th>
+                <th scope="col" class="text-right">Grupos gestionados</th>
+                <th scope="col">Estado</th>
+                <th scope="col"><span class="sr-only">Acciones</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (!isLoading()) {
+                @for (coord of coordinadores(); track coord.id) {
+                  <tr data-testid="coordinador-fila">
+                    <td>
+                      <span class="block font-semibold text-warm-900">{{ coord.nombres }} {{ coord.apellidos }}</span>
+                      <span class="block text-[11px] font-mono text-warm-500">COORD-{{ coord.numeroIdentificacion }}</span>
+                    </td>
+                    <td class="whitespace-nowrap">{{ coord.tipoIdentificacion || 'CC' }} {{ coord.numeroIdentificacion }}</td>
+                    <td>
+                      <span class="block font-medium text-primary-700">{{ coord.programaAcademico }}</span>
+                      @if (coord.facultad) {
+                        <span class="block text-xs text-warm-500">{{ coord.facultad }}</span>
+                      }
+                    </td>
+                    <td class="text-warm-700">{{ coord.correo }}</td>
+                    <td class="text-right tabular-nums">{{ coord.totalDocentes ?? '—' }}</td>
+                    <td class="text-right tabular-nums">{{ coord.totalGrupos ?? '—' }}</td>
+                    <td>
+                      <app-badge [variant]="coord.estado === 'ACTIVO' ? 'success' : 'neutral'" size="sm">
+                        {{ coord.estado }}
+                      </app-badge>
+                    </td>
+                    <td>
+                      <div class="flex items-center justify-end gap-2">
                         <button
                           type="button"
                           (click)="abrirEdicion(coord)"
@@ -172,64 +197,17 @@ const NOMBRE_PROGRAMA_MAX = 50;
                         <button
                           type="button"
                           (click)="toggleEstado(coord)"
-                          class="text-xs px-2.5 py-1 rounded-lg border border-warm-200 hover:bg-warm-100 text-warm-700 transition-colors"
+                          class="text-xs px-2.5 py-1 rounded-lg border border-warm-200 hover:bg-warm-100 text-warm-700 transition-colors whitespace-nowrap"
                         >
                           {{ coord.estado === 'ACTIVO' ? 'Desactivar' : 'Reactivar' }}
                         </button>
                       </div>
-                    </div>
-
-                    <h3 class="font-serif font-bold text-lg text-warm-900 leading-snug">
-                      {{ coord.nombres }} {{ coord.apellidos }}
-                    </h3>
-                    <div class="flex items-center gap-1.5 mt-1">
-                      <span class="text-xs font-semibold text-primary-700 bg-primary-50 px-2 py-0.5 rounded-md">
-                        {{ coord.programaAcademico }}
-                      </span>
-                    </div>
-                    @if (coord.facultad) {
-                      <p class="text-xs text-warm-500 mt-1">{{ coord.facultad }}</p>
-                    }
-                  </div>
-
-                  <!-- Métricas Bento -->
-                  <div class="grid grid-cols-2 gap-2 p-2.5 rounded-xl bg-warm-50 border border-warm-100">
-                    <div class="text-center">
-                      <span class="block text-base font-bold text-warm-900 font-serif">{{ coord.totalDocentes ?? '—' }}</span>
-                      <span class="text-[11px] text-warm-500">Docentes activos</span>
-                    </div>
-                    <div class="text-center border-l border-warm-200">
-                      <span class="block text-base font-bold text-primary-700 font-serif">{{ coord.totalGrupos ?? '—' }}</span>
-                      <span class="text-[11px] text-warm-500">Grupos gestionados</span>
-                    </div>
-                  </div>
-
-                  <div class="space-y-1 pt-2 border-t border-warm-100 text-xs text-warm-600">
-                    <div class="flex items-center gap-2">
-                      <svg class="w-3.5 h-3.5 text-warm-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
-                      </svg>
-                      <span>{{ coord.tipoIdentificacion || 'CC' }} {{ coord.numeroIdentificacion }}</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                      <svg class="w-3.5 h-3.5 text-warm-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                      </svg>
-                      <span class="truncate">{{ coord.correo }}</span>
-                    </div>
-                  </div>
-                </div>
-              </app-card>
-            }
-          </div>
-          <app-pagination
-            [totalItems]="totalCoordinadores()"
-            [pageSize]="pageSize()"
-            [currentPage]="currentPage()"
-            [pageSizeOptions]="[6, 10, 20]"
-            (pageChange)="irAPagina($event)"
-            (pageSizeChange)="onPageSizeChange($event)"
-          />
+                    </td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </app-tabla-datos>
         }
       }
 
@@ -253,7 +231,7 @@ const NOMBRE_PROGRAMA_MAX = 50;
           </span>
         </div>
 
-        <div class="superficie p-6 sm:p-8 max-w-3xl mx-auto space-y-6">
+        <div class="superficie p-4 sm:p-8 max-w-3xl mx-auto space-y-4">
           <div>
             <h2 class="font-serif font-bold text-2xl text-warm-900">
               Asignar Nuevo Coordinador de Programa
@@ -484,7 +462,7 @@ export class DeanCoordinadoresComponent implements OnInit {
   private readonly searchQuerySig = signal('');
   private readonly selectedEstadoSig = signal('TODOS');
   currentPage = signal(1);
-  pageSize = signal(6);
+  pageSize = signal(TAMANO_PAGINA_TABLA);
 
   get searchQuery(): string {
     return this.searchQuerySig();

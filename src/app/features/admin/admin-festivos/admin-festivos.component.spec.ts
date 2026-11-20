@@ -63,7 +63,7 @@ function sesionFestivo(n: number): SesionFestivoConAsistencia {
 }
 
 function pagina(elementos: SesionFestivoConAsistencia[], numeroPagina = 1, total = elementos.length): ApiPageResponse<SesionFestivoConAsistencia> {
-  return { exitoso: true, elementos, numeroPagina, tamanoPagina: 20, totalElementos: total, totalPaginas: Math.ceil(total / 20) };
+  return { exitoso: true, elementos, numeroPagina, tamanoPagina: 15, totalElementos: total, totalPaginas: Math.ceil(total / 15) };
 }
 
 describe('AdminFestivosComponent (CULM-001 B.1, pantalla 3.7)', () => {
@@ -153,17 +153,18 @@ describe('AdminFestivosComponent (CULM-001 B.1, pantalla 3.7)', () => {
     expect(service.consultar).toHaveBeenCalledOnceWith(2028);
   });
 
-  it('B1-F-32 pagina los festivos con PaginationComponent', () => {
+  it('B1-F-32 pagina los festivos en la tabla compartida (15 por página, 15/30/50)', () => {
     crear();
     expect(el().querySelector('app-pagination')).not.toBeNull();
-    expect(qa('[data-testid^="festivo-fila-"]')).toHaveSize(10);
+    expect(qa('[data-testid^="festivo-fila-"]')).toHaveSize(15);
 
     component.onPaginaFestivos(2);
     fixture.detectChanges();
 
-    expect(qa('[data-testid^="festivo-fila-"]')).toHaveSize(9);
-    component.onTamanoFestivos(20);
+    expect(qa('[data-testid^="festivo-fila-"]')).toHaveSize(4);
+    component.onTamanoFestivos(30);
     fixture.detectChanges();
+    expect(component.paginaFestivos()).toBe(1);
     expect(qa('[data-testid^="festivo-fila-"]')).toHaveSize(19);
   });
 
@@ -313,13 +314,13 @@ describe('AdminFestivosComponent (CULM-001 B.1, pantalla 3.7)', () => {
       fixture.detectChanges();
     }
 
-    it('B1-F-36 no consulta hasta abrir la pestaña y entonces pide la página 1 de 20', () => {
+    it('B1-F-36 no consulta hasta abrir la pestaña y entonces pide la página 1 de 15', () => {
       crear();
       expect(service.sesionesConAsistencia).not.toHaveBeenCalled();
 
       abrirPestana();
 
-      expect(service.sesionesConAsistencia).toHaveBeenCalledOnceWith(anioActual, 1, 20);
+      expect(service.sesionesConAsistencia).toHaveBeenCalledOnceWith(anioActual, 1, 15);
       const fila = q('sesion-festivo-fila-ses-1')!;
       expect(fila.textContent).toContain('Cálculo');
       expect(fila.textContent).toContain('Ana Docente');
@@ -335,7 +336,20 @@ describe('AdminFestivosComponent (CULM-001 B.1, pantalla 3.7)', () => {
 
       component.onPaginaSesiones(2);
 
-      expect(service.sesionesConAsistencia).toHaveBeenCalledWith(anioActual, 2, 20);
+      expect(service.sesionesConAsistencia).toHaveBeenCalledWith(anioActual, 2, 15);
+
+      component.onTamanoSesiones(30);
+      expect(component.paginaSesiones()).toBe(1);
+      expect(service.sesionesConAsistencia).toHaveBeenCalledWith(anioActual, 1, 30);
+    });
+
+    it('B1-F-36 las sesiones se listan como filas de una tabla', () => {
+      crear();
+      abrirPestana();
+      const tabla = q('sesiones-festivo-tabla')!;
+      expect(tabla.querySelector('table')).not.toBeNull();
+      expect(tabla.querySelectorAll('tbody tr[data-testid^="sesion-festivo-fila-"]')).toHaveSize(2);
+      expect(el().querySelector('article')).toBeNull();
     });
 
     it('B1-F-36 cambiar de año refresca la pestaña abierta', () => {
@@ -346,7 +360,7 @@ describe('AdminFestivosComponent (CULM-001 B.1, pantalla 3.7)', () => {
       (q('anio-siguiente') as HTMLButtonElement).click();
       fixture.detectChanges();
 
-      expect(service.sesionesConAsistencia).toHaveBeenCalledOnceWith(anioActual + 1, 1, 20);
+      expect(service.sesionesConAsistencia).toHaveBeenCalledOnceWith(anioActual + 1, 1, 15);
     });
 
     it('B1-F-36 estado vacío cuando ninguna sesión en festivo tiene asistencia', () => {
@@ -366,13 +380,14 @@ describe('AdminFestivosComponent (CULM-001 B.1, pantalla 3.7)', () => {
     });
   });
 
-  it('B1-F-37 móvil primero: tabla solo desde md, tarjetas en pantallas estrechas y objetivos de 44 px', () => {
+  it('B1-F-37 una sola tabla en todas las pantallas (sin tarjetas) y objetivos de 44 px', () => {
     crear();
 
-    expect(q('festivos-tabla')!.className).toContain('hidden');
-    expect(q('festivos-tabla')!.className).toContain('md:block');
-    expect(q('festivos-tarjetas')!.className).toContain('md:hidden');
-    expect(qa(`[data-testid^="festivo-card-"]`)).toHaveSize(10);
+    const tabla = q('festivos-tabla')!;
+    expect(tabla.tagName.toLowerCase()).toBe('app-tabla-datos');
+    expect(tabla.querySelectorAll('tbody tr[data-testid^="festivo-fila-"]')).toHaveSize(15);
+    expect(q('festivos-tarjetas')).toBeNull();
+    expect(el().querySelector('article')).toBeNull();
     for (const id of ['recargar-anio', 'anio-actual', 'anio-siguiente', 'tab-festivos', 'tab-sesiones']) {
       expect(q(id)!.className).toContain('min-h-[44px]');
     }

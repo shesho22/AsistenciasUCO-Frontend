@@ -9,7 +9,11 @@ import { Router } from '@angular/router';
 import { AlertaInasistenciaService } from '../../../core/services/alerta-inasistencia.service';
 import { AlertaInasistencia } from '../../../core/models/alerta-inasistencia.model';
 import { BadgeComponent } from '../../../shared/components/badge/badge.component';
-import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
+import {
+  TablaDatosComponent,
+  TAMANO_PAGINA_TABLA,
+  TAMANOS_PAGINA_TABLA,
+} from '../../../shared/components/tabla-datos/tabla-datos.component';
 import { FaltaReclamableService } from '../../../core/services/falta-reclamable.service';
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
 import { FaltaReclamable, FaltasReclamablesSesion } from '../../../core/models/falta-reclamable.model';
@@ -26,9 +30,7 @@ const EVENTOS_QUE_RECARGAN_FALTAS: readonly string[] = [
   REALTIME_EVENT_TYPE.ASISTENCIAS_TOMA_ACTUALIZADAS,
 ];
 
-const TAMANO_FALTAS = 20;
-
-/** Agrupa las filas (una por toma) en una tarjeta por sesión; solo presentación, conserva el orden recibido. */
+/** Agrupa las filas (una por toma) en una fila de la tabla por sesión; solo presentación, conserva el orden recibido. */
 export function agruparFaltasPorSesion(filas: readonly FaltaReclamable[]): FaltasReclamablesSesion[] {
   const porSesion = new Map<string, FaltasReclamablesSesion>();
   for (const fila of filas) {
@@ -55,10 +57,10 @@ export function agruparFaltasPorSesion(filas: readonly FaltaReclamable[]): Falta
 
 @Component({
     selector: 'app-student-alerts',
-    imports: [PageHeaderComponent, EmptyStateComponent, FechaHoraCortaPipe, FormsModule, BadgeComponent, SemaforoAsistenciaComponent, PaginationComponent],
+    imports: [PageHeaderComponent, EmptyStateComponent, FechaHoraCortaPipe, FormsModule, BadgeComponent, SemaforoAsistenciaComponent, TablaDatosComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
-    <div class="space-y-6 animate-fade-in max-w-4xl mx-auto">
+    <div class="space-y-4 animate-fade-in max-w-4xl mx-auto">
       <app-page-header
         [enTarjeta]="true"
         etiqueta="Portal Estudiante"
@@ -81,64 +83,73 @@ export function agruparFaltasPorSesion(filas: readonly FaltaReclamable[]): Falta
               Tomas en las que quedaste ausente y aún puedes reclamar si tu asistencia es correcta.
             </p>
           </div>
-          @for (sesion of faltasSesiones(); track sesion.idSesion) {
-            <article
-              [attr.data-testid]="'falta-card-' + sesion.idSesion"
-              class="bg-white rounded-2xl border border-warning-300 p-5 sm:p-6 shadow-warm-sm space-y-4"
-            >
-              <div class="flex flex-col gap-1 border-b border-warm-100 pb-3">
-                <div class="flex items-center gap-2 flex-wrap">
-                  <span class="text-sm font-bold text-warm-900">{{ sesion.nombreAsignatura }}</span>
-                  <span class="text-xs text-warm-500">• {{ sesion.nombreGrupo }}</span>
-                </div>
-                <p class="text-xs text-warm-700" data-testid="falta-horario">
-                  Sesión {{ sesion.numeroSesion }} · {{ zona.formatTemporal(sesion.fechaHoraInicioUtc, 'date') }}
-                  · {{ zona.formatTemporal(sesion.fechaHoraInicioUtc, 'time') }}–{{ zona.formatTemporal(sesion.fechaHoraFinUtc, 'time') }}
-                </p>
-                <p class="text-xs font-semibold text-warning-800" data-testid="falta-limite">
-                  Puedes reclamar hasta {{ zona.formatTemporal(sesion.fechaLimiteReclamoUtc) }}
-                </p>
-              </div>
-              <ul class="space-y-2">
-                @for (toma of sesion.tomas; track toma.idToma) {
-                  <li class="flex flex-col sm:flex-row sm:items-center justify-between gap-2" [attr.data-testid]="'falta-toma-' + toma.idToma">
-                    <span class="text-sm text-warm-800">
-                      Toma {{ toma.numeroToma }} · {{ zona.formatTemporal(toma.fechaPuntoControlUtc, 'time') }}
-                    </span>
-                    <button
-                      type="button"
-                      [attr.data-testid]="'btn-reclamar-toma-' + toma.idToma"
-                      (click)="reclamar(toma)"
-                      class="min-h-[44px] px-4 py-2.5 bg-warm-100 hover:bg-warm-200 text-warm-900 font-semibold text-xs rounded-xl transition-colors"
-                    >
-                      Reclamar esta toma
-                    </button>
-                  </li>
-                }
-              </ul>
-            </article>
-          }
-          @if (faltasTotalPaginas() > 1) {
-            <app-pagination
-              [totalItems]="faltasTotal()"
-              [pageSize]="tamanoFaltas"
-              [currentPage]="faltasPagina()"
-              [showPageSizeSelector]="false"
-              (pageChange)="cambiarPaginaFaltas($event)"
-            />
-          }
+          <app-tabla-datos
+            etiqueta="Faltas por reclamar"
+            [etiquetaVisible]="false"
+            [columnas]="4"
+            anchoMinimo="48rem"
+            [paginada]="faltasTotal() > tamanosPagina[0]"
+            [totalItems]="faltasTotal()"
+            [pagina]="faltasPagina()"
+            [tamanoPagina]="tamanoFaltas()"
+            [totalPaginas]="faltasTotalPaginas()"
+            [tamanosPagina]="tamanosPagina"
+            (paginaChange)="cambiarPaginaFaltas($event)"
+            (tamanoPaginaChange)="cambiarTamanoFaltas($event)"
+          >
+            <thead>
+              <tr>
+                <th scope="col">Materia</th>
+                <th scope="col">Sesión</th>
+                <th scope="col">Plazo para reclamar</th>
+                <th scope="col">Tomas</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (sesion of faltasSesiones(); track sesion.idSesion) {
+                <tr class="align-top" [attr.data-testid]="'falta-card-' + sesion.idSesion">
+                  <td>
+                    <span class="block text-sm font-bold text-warm-900">{{ sesion.nombreAsignatura }}</span>
+                    <span class="block text-xs text-warm-500">{{ sesion.nombreGrupo }}</span>
+                  </td>
+                  <td class="text-xs text-warm-700" data-testid="falta-horario">
+                    Sesión {{ sesion.numeroSesion }} · {{ zona.formatTemporal(sesion.fechaHoraInicioUtc, 'date') }}
+                    · {{ zona.formatTemporal(sesion.fechaHoraInicioUtc, 'time') }}–{{ zona.formatTemporal(sesion.fechaHoraFinUtc, 'time') }}
+                  </td>
+                  <td class="text-xs font-semibold text-warning-800" data-testid="falta-limite">
+                    Puedes reclamar hasta {{ zona.formatTemporal(sesion.fechaLimiteReclamoUtc) }}
+                  </td>
+                  <td>
+                    <ul class="space-y-1">
+                      @for (toma of sesion.tomas; track toma.idToma) {
+                        <li class="flex flex-wrap items-center justify-between gap-2" [attr.data-testid]="'falta-toma-' + toma.idToma">
+                          <span class="text-sm text-warm-800 whitespace-nowrap">
+                            Toma {{ toma.numeroToma }} · {{ zona.formatTemporal(toma.fechaPuntoControlUtc, 'time') }}
+                          </span>
+                          <button
+                            type="button"
+                            [attr.data-testid]="'btn-reclamar-toma-' + toma.idToma"
+                            (click)="reclamar(toma)"
+                            class="min-h-[36px] px-3 py-1.5 bg-warm-100 hover:bg-warm-200 text-warm-900 font-semibold text-xs rounded-lg transition-colors whitespace-nowrap"
+                          >
+                            Reclamar esta toma
+                          </button>
+                        </li>
+                      }
+                    </ul>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </app-tabla-datos>
         </section>
       }
 
-      @if (cargando()) {
-        <div class="bg-white p-12 rounded-2xl border border-warm-200 text-center text-sm text-warm-500">
-          Cargando alertas…
-        </div>
-      } @else if (alertas().length === 0 && faltasSesiones().length > 0) {
+      @if (!cargando() && alertas().length === 0 && faltasSesiones().length > 0) {
         <p class="text-sm text-warm-600" data-testid="sin-alertas-porcentaje">
           No tienes alertas vigentes por porcentaje de inasistencia.
         </p>
-      } @else if (alertas().length === 0) {
+      } @else if (!cargando() && alertas().length === 0) {
         <app-empty-state
           variant="info"
           title="¡Excelente! No tienes alertas vigentes"
@@ -146,58 +157,74 @@ export function agruparFaltasPorSesion(filas: readonly FaltaReclamable[]): Falta
           causa="Las alertas aparecen al superar el umbral de advertencia de inasistencia."
         />
       } @else {
-        <div class="space-y-4">
-          @for (alerta of alertas(); track alerta.id) {
-            <article
-              [attr.data-testid]="'alerta-card-' + alerta.id"
-              class="bg-white rounded-2xl border p-5 sm:p-6 shadow-warm-sm space-y-4 transition-all"
-              [class.border-warning-300]="alerta.tipo === 'ADVERTENCIA' || alerta.tipo === 'RIESGO'"
-              [class.border-danger-300]="alerta.tipo === 'PERDIDA'"
-              [class.border-warm-200]="!alerta.tipo || (alerta.tipo !== 'ADVERTENCIA' && alerta.tipo !== 'RIESGO' && alerta.tipo !== 'PERDIDA')"
-            >
-              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-warm-100 pb-3">
-                <div class="flex items-center gap-2 flex-wrap">
-                  <app-badge [variant]="alerta.tipo === 'PERDIDA' ? 'danger' : 'warning'">
-                    {{ alerta.nombreTipo || (alerta.tipo === 'PERDIDA' ? 'Pérdida por inasistencia' : 'Riesgo de pérdida') }}
-                  </app-badge>
-                  <span class="text-xs font-bold text-warm-900">
-                    {{ alerta.asignatura?.nombre || alerta.nombreAsignatura || 'Asignatura' }}
-                  </span>
-                  @if (alerta.grupo?.nombre || alerta.nombreGrupo) {
-                    <span class="text-xs text-warm-500">
-                      • {{ alerta.grupo?.nombre || alerta.nombreGrupo }}
+        <app-tabla-datos
+          etiqueta="Alertas de asistencia"
+          [etiquetaVisible]="false"
+          [columnas]="6"
+          anchoMinimo="56rem"
+          [cargando]="cargando()"
+          [filasEsqueleto]="3"
+          [paginada]="!cargando() && totalElementos() > tamanosPagina[0]"
+          [totalItems]="totalElementos()"
+          [pagina]="paginaAlertas()"
+          [tamanoPagina]="tamanoAlertas()"
+          [tamanosPagina]="tamanosPagina"
+          (paginaChange)="cambiarPaginaAlertas($event)"
+          (tamanoPaginaChange)="cambiarTamanoAlertas($event)"
+        >
+          <thead>
+            <tr>
+              <th scope="col">Alerta</th>
+              <th scope="col">Materia</th>
+              <th scope="col">Inasistencia</th>
+              <th scope="col">Detalle</th>
+              <th scope="col">Fecha</th>
+              <th scope="col"><span class="sr-only">Acciones</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (!cargando()) {
+              @for (alerta of alertas(); track alerta.id) {
+                <tr class="align-top" [attr.data-testid]="'alerta-card-' + alerta.id">
+                  <td>
+                    <app-badge [variant]="alerta.tipo === 'PERDIDA' ? 'danger' : 'warning'">
+                      {{ alerta.nombreTipo || (alerta.tipo === 'PERDIDA' ? 'Pérdida por inasistencia' : 'Riesgo de pérdida') }}
+                    </app-badge>
+                  </td>
+                  <td>
+                    <span class="block text-xs font-bold text-warm-900">
+                      {{ alerta.asignatura?.nombre || alerta.nombreAsignatura || 'Asignatura' }}
                     </span>
-                  }
-                </div>
-
-                <div class="text-xs font-bold" [class.text-danger-700]="alerta.tipo === 'PERDIDA'" [class.text-warning-800]="alerta.tipo !== 'PERDIDA'">
-                  Inasistencia acumulada: {{ alerta.porcentajeActual ?? alerta.porcentajeCruce ?? 0 }}%
-                  <app-semaforo-asistencia [codigoPermanencia]="alerta.codigoPermanenciaActual" [porcentaje]="alerta.porcentajeActual ?? alerta.porcentajeCruce" />
-                </div>
-              </div>
-
-              <p class="text-sm text-warm-800 leading-relaxed">
-                {{ alerta.mensaje }}
-              </p>
-
-              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
-                <span class="text-xs text-warm-400" [attr.title]="alerta.fechaCruceUtc || alerta.fechaGeneracion">
-                  {{ alerta.fechaCruceUtc || alerta.fechaGeneracion | fechaHoraCorta }}
-                </span>
-
-                <button
-                  type="button"
-                  [attr.data-testid]="'btn-ver-materia-' + alerta.id"
-                  (click)="verMateria(alerta)"
-                  class="min-h-[44px] px-4 py-2.5 bg-warm-100 hover:bg-warm-200 text-warm-900 font-semibold text-xs rounded-xl transition-colors flex items-center justify-center gap-2"
-                >
-                  <span>Ver detalle de la materia</span>
-                  <span>→</span>
-                </button>
-              </div>
-            </article>
-          }
-        </div>
+                    @if (alerta.grupo?.nombre || alerta.nombreGrupo) {
+                      <span class="block text-xs text-warm-500">{{ alerta.grupo?.nombre || alerta.nombreGrupo }}</span>
+                    }
+                  </td>
+                  <td class="whitespace-nowrap">
+                    <div class="text-xs font-bold" [class.text-danger-700]="alerta.tipo === 'PERDIDA'" [class.text-warning-800]="alerta.tipo !== 'PERDIDA'">
+                      {{ alerta.porcentajeActual ?? alerta.porcentajeCruce ?? 0 }}%
+                      <app-semaforo-asistencia [codigoPermanencia]="alerta.codigoPermanenciaActual" [porcentaje]="alerta.porcentajeActual ?? alerta.porcentajeCruce" />
+                    </div>
+                  </td>
+                  <td class="min-w-[16rem] text-sm text-warm-800 leading-relaxed">{{ alerta.mensaje }}</td>
+                  <td class="whitespace-nowrap text-xs text-warm-500" [attr.title]="alerta.fechaCruceUtc || alerta.fechaGeneracion">
+                    {{ alerta.fechaCruceUtc || alerta.fechaGeneracion | fechaHoraCorta }}
+                  </td>
+                  <td class="text-right">
+                    <button
+                      type="button"
+                      [attr.data-testid]="'btn-ver-materia-' + alerta.id"
+                      (click)="verMateria(alerta)"
+                      class="min-h-[44px] px-3 py-2 bg-warm-100 hover:bg-warm-200 text-warm-900 font-semibold text-xs rounded-xl transition-colors inline-flex items-center justify-center gap-2 whitespace-nowrap"
+                    >
+                      <span>Ver detalle de la materia</span>
+                      <span aria-hidden="true">→</span>
+                    </button>
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </app-tabla-datos>
       }
     </div>
   `
@@ -215,7 +242,12 @@ export class StudentAlertsComponent implements OnInit {
   grupoFiltro = signal<string>('');
   totalElementos = signal<number>(0);
 
-  readonly tamanoFaltas = TAMANO_FALTAS;
+  /** Bloque E: tamaños de página de las tablas (15/30/50; el backend admite hasta 100). */
+  readonly tamanosPagina = [...TAMANOS_PAGINA_TABLA];
+  readonly paginaAlertas = signal(1);
+  readonly tamanoAlertas = signal(TAMANO_PAGINA_TABLA);
+  /** Tamaño de página de faltas: cuenta tomas (filas del backend), no sesiones. */
+  readonly tamanoFaltas = signal(TAMANO_PAGINA_TABLA);
   readonly faltas = signal<FaltaReclamable[]>([]);
   readonly faltasPagina = signal(1);
   readonly faltasTotal = signal(0);
@@ -238,8 +270,8 @@ export class StudentAlertsComponent implements OnInit {
     this.cargando.set(true);
     const filtro: { soloVigentes: boolean; grupoId?: string; pagina: number; tamano: number } = {
       soloVigentes: true,
-      pagina: 1,
-      tamano: 20,
+      pagina: this.paginaAlertas(),
+      tamano: this.tamanoAlertas(),
     };
     if (this.grupoFiltro()) {
       filtro.grupoId = this.grupoFiltro();
@@ -260,7 +292,7 @@ export class StudentAlertsComponent implements OnInit {
   }
 
   cargarFaltas(): void {
-    this.faltaService.consultar({ pagina: this.faltasPagina(), tamano: TAMANO_FALTAS }).subscribe({
+    this.faltaService.consultar({ pagina: this.faltasPagina(), tamano: this.tamanoFaltas() }).subscribe({
       next: (res) => {
         this.faltas.set(res.elementos ?? []);
         this.faltasTotal.set(Number(res.totalElementos ?? 0));
@@ -279,6 +311,23 @@ export class StudentAlertsComponent implements OnInit {
     this.cargarFaltas();
   }
 
+  cambiarTamanoFaltas(tamano: number): void {
+    this.tamanoFaltas.set(tamano);
+    this.faltasPagina.set(1);
+    this.cargarFaltas();
+  }
+
+  cambiarPaginaAlertas(pagina: number): void {
+    this.paginaAlertas.set(pagina);
+    this.cargar();
+  }
+
+  cambiarTamanoAlertas(tamano: number): void {
+    this.tamanoAlertas.set(tamano);
+    this.paginaAlertas.set(1);
+    this.cargar();
+  }
+
   /** Lleva al detalle de la materia, donde ya se radica el reclamo de la toma. */
   reclamar(toma: FaltaReclamable): void {
     void this.router.navigate([RUTA_MIS_MATERIAS], {
@@ -288,6 +337,7 @@ export class StudentAlertsComponent implements OnInit {
 
   filtrarPorGrupo(grupoId: string): void {
     this.grupoFiltro.set(grupoId);
+    this.paginaAlertas.set(1);
     this.cargar();
   }
 

@@ -16,7 +16,7 @@ import { mensajeUi } from '../../../../core/messages/mensajes-ui';
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FormsModule, ButtonComponent, FormFieldComponent],
     template: `
-    <div class="space-y-6">
+    <div class="space-y-4">
       <div class="superficie flex items-center justify-between p-4">
         <button
           type="button"
@@ -34,14 +34,14 @@ import { mensajeUi } from '../../../../core/messages/mensajes-ui';
         </span>
       </div>
 
-      <div class="superficie p-6 sm:p-8 max-w-3xl mx-auto space-y-6">
+      <div class="superficie p-4 sm:p-8 max-w-3xl mx-auto space-y-4">
         <div>
           <h2 class="font-serif font-bold text-2xl text-warm-900">
             {{ modo() === 'CREAR' ? 'Registro de Nuevo Plan de Estudio' : 'Edición de Plan de Estudio' }}
           </h2>
           <p class="text-sm text-warm-600 mt-1">
             El plan se registra para tu programa académico con su INP (año de vigencia). Los semestres, las asignaturas y
-            los créditos se configuran después en la malla curricular.
+            los créditos se configuran después en el plan de estudio.
           </p>
         </div>
 

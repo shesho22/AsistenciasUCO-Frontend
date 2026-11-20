@@ -19,12 +19,12 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
     imports: [PageHeaderComponent, EmptyStateComponent, KpiCardComponent, PaginationComponent, CoordinatorFichaModalComponent, CoordinatorProgramSelectorComponent, SemaforoAsistenciaComponent, SinEntidadAsignadaComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
-    <section class="space-y-6">
+    <section class="space-y-4">
       @if (sinAmbito(); as rol) {
         <app-sin-entidad-asignada [rol]="rol" />
       } @else {
       @if (parte() !== 'alertas') {
-        <header class="space-y-3">
+        <header class="space-y-2">
           <app-coordinator-program-selector (programaCambiado)="cambiarPrograma()" />
           @if (!embebido()) {
             <app-page-header titulo="Indicadores del programa" />
@@ -36,7 +36,9 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
       }
 
       @if (parte() !== 'alertas' && service.kpis(); as k) {
-        <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <!-- [kpi-extra]: tarjeta adicional del contenedor (p. ej. «Revisiones por resolver»), ocupa la primera columna en dos filas. -->
+        <div class="grid grid-cols-2 gap-3 lg:grid-cols-4" [class.xl:grid-cols-5]="conKpiExtra()">
+          <ng-content select="[kpi-extra]" />
           <app-kpi-card etiqueta="Estudiantes" [valor]="k.totalEstudiantes" />
           <app-kpi-card etiqueta="Estudiantes en riesgo" [valor]="k.estudiantesRiesgo" />
           <app-kpi-card etiqueta="Estudiantes en pérdida" [valor]="k.estudiantesPerdida" />
@@ -129,6 +131,8 @@ export class CoordinatorIndicatorsComponent implements OnInit {
   readonly embebido = input(false);
   /** Qué mostrar: las tarjetas (`kpis`), las alertas tempranas (`alertas`) o ambas (`todo`). */
   readonly parte = input<'todo' | 'kpis' | 'alertas'>('todo');
+  /** El contenedor proyecta una tarjeta en [kpi-extra]: la rejilla pasa a 5 columnas en pantallas anchas. */
+  readonly conKpiExtra = input(false);
   /** Emite al elegir otro programa, para que la pantalla que lo aloja recargue lo que no es suyo. */
   readonly programaCambiado = output<void>();
 

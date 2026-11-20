@@ -3,12 +3,12 @@ import { TabsRutaShellComponent, TabsRutaShellConfig } from '../../../shared/com
 
 const SHELL: TabsRutaShellConfig = {
   titulo: 'Mis materias',
-  descripcion: 'Tus materias, tus horarios y tu plan de estudios en un solo lugar.',
+  descripcion: 'Tus materias, tus horarios y tus materias matriculadas por semestre en un solo lugar.',
   base: '/app/estudiante/mis-materias',
   tabs: [
     { id: 'materias', etiqueta: 'Materias' },
     { id: 'horarios', etiqueta: 'Horarios' },
-    { id: 'plan', etiqueta: 'Plan de estudios' },
+    { id: 'plan', etiqueta: 'Materias matriculadas' },
   ],
   porDefecto: 'materias',
 };

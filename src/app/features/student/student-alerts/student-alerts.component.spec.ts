@@ -52,9 +52,11 @@ describe('StudentAlertsComponent (CULM-001 C.1 §4.3, §4.8)', () => {
     fixture.detectChanges();
   });
 
-  it('C-F-42 renderiza las tarjetas con el mensaje del backend y datos de la materia', () => {
+  it('C-F-42 renderiza una fila de tabla por alerta con el mensaje del backend y datos de la materia', () => {
     const card = fixture.nativeElement.querySelector('[data-testid="alerta-card-alt-1"]') as HTMLElement;
     expect(card).toBeTruthy();
+    expect(card.tagName).toBe('TR');
+    expect(fixture.nativeElement.querySelectorAll('app-tabla-datos tbody tr[data-testid^="alerta-card-"]').length).toBe(1);
     expect(card.textContent).toContain(mockAlerta.mensaje);
     expect(card.textContent).toContain('Bases de datos');
     expect(card.textContent).toContain('16%');
@@ -93,6 +95,27 @@ describe('StudentAlertsComponent (CULM-001 C.1 §4.3, §4.8)', () => {
     component.filtrarPorGrupo('grp-2');
     fixture.detectChanges();
     expect(serviceMock.consultar).toHaveBeenCalledWith(jasmine.objectContaining({ grupoId: 'grp-2' }));
+  });
+
+  it('bloque E: pide 15 alertas por página, pagina en el servidor y reinicia la página al filtrar o cambiar el tamaño', () => {
+    expect(serviceMock.consultar).toHaveBeenCalledWith(jasmine.objectContaining({ pagina: 1, tamano: 15 }));
+    // Con una sola página no se muestra la paginación.
+    expect(fixture.nativeElement.querySelector('app-pagination')).toBeNull();
+
+    serviceMock.consultar.and.returnValue(
+      of({ exitoso: true, elementos: [mockAlerta], numeroPagina: 1, tamanoPagina: 15, totalElementos: 40, totalPaginas: 3 })
+    );
+    component.cambiarPaginaAlertas(2);
+    fixture.detectChanges();
+    expect(serviceMock.consultar).toHaveBeenCalledWith(jasmine.objectContaining({ pagina: 2, tamano: 15 }));
+    expect(fixture.nativeElement.querySelector('app-pagination')).not.toBeNull();
+
+    component.cambiarTamanoAlertas(30);
+    expect(serviceMock.consultar).toHaveBeenCalledWith(jasmine.objectContaining({ pagina: 1, tamano: 30 }));
+
+    component.cambiarPaginaAlertas(2);
+    component.filtrarPorGrupo('grp-3');
+    expect(component.paginaAlertas()).toBe(1);
   });
 
   describe('"Ver detalle de la materia" (CERT-CULM001)', () => {

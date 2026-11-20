@@ -20,7 +20,7 @@ import { CategoriaJustificacionItem } from '../../../../core/models/consultas-tr
     imports: [FormsModule, ButtonComponent, FormFieldComponent],
     template: `
     @if (sesion() && materia()) {
-      <div class="space-y-6">
+      <div class="space-y-4">
         <!-- Barra Superior de Retorno -->
         <div class="superficie flex items-center justify-between p-4">
           <button
@@ -39,7 +39,7 @@ import { CategoriaJustificacionItem } from '../../../../core/models/consultas-tr
           </span>
         </div>
 
-        <div class="superficie p-6 sm:p-8 max-w-3xl mx-auto space-y-6">
+        <div class="superficie p-4 sm:p-8 max-w-3xl mx-auto space-y-4">
           <div>
             <h2 class="font-serif font-bold text-2xl text-warm-900">
               Solicitud de Revisión y Justificación de Asistencia

@@ -12,7 +12,7 @@ import { CREDITS_MAX, getCreditsError, getSafeTextError, NAME_MAX_LENGTH } from 
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FormsModule, ButtonComponent, FormFieldComponent],
     template: `
-    <div class="space-y-6">
+    <div class="space-y-4">
       <div class="superficie flex items-center justify-between p-4">
         <button
           type="button"
@@ -22,7 +22,7 @@ import { CREDITS_MAX, getCreditsError, getSafeTextError, NAME_MAX_LENGTH } from 
           <svg class="w-4 h-4 text-warm-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
-          Volver a Malla Curricular
+          Volver al Plan de Estudio
         </button>
 
         <span class="text-xs font-bold text-primary-800 bg-primary-50 border border-primary-200 px-3 py-1 rounded-full">
@@ -30,7 +30,7 @@ import { CREDITS_MAX, getCreditsError, getSafeTextError, NAME_MAX_LENGTH } from 
         </span>
       </div>
 
-      <div class="superficie p-6 sm:p-8 max-w-2xl mx-auto space-y-6">
+      <div class="superficie p-4 sm:p-8 max-w-2xl mx-auto space-y-4">
         <div>
           <h2 class="font-serif font-bold text-2xl text-warm-900">
             {{ modo() === 'CREAR' ? 'Registro de Asignatura en el Plan' : 'Edición de Asignatura Curricular' }}

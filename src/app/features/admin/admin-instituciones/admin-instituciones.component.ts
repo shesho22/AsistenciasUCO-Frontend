@@ -24,7 +24,7 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [CardComponent, BadgeComponent],
     template: `
-    <div class="space-y-6 animate-fade-in">
+    <div class="space-y-4 animate-fade-in">
       <!-- Encabezado -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

@@ -3,6 +3,7 @@ import { provideHttpClient, withXhr } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Router } from '@angular/router';
 import { DeanAreasComponent } from './dean-areas.component';
+import { AdminManagementService } from '../../../core/services/admin-management.service';
 import { environment } from '../../../../environments/environment';
 
 describe('DeanAreasComponent', () => {
@@ -48,6 +49,40 @@ describe('DeanAreasComponent', () => {
 
     component.filtroTexto.set('Software');
     expect(component.areasFiltradas()).toHaveSize(1);
+  });
+
+  it('bloque E: lista las áreas en una tabla con una fila por área, código, nombre y estado', () => {
+    const el = fixture.nativeElement as HTMLElement;
+    const filas = el.querySelectorAll('app-tabla-datos tbody tr[data-testid="area-fila"]');
+    expect(filas).toHaveSize(2);
+    expect(filas[0].textContent).toContain('AREA-SOFT');
+    expect(filas[0].textContent).toContain('Ingeniería de Software');
+    expect(filas[0].querySelector('app-badge')?.textContent).toContain('ACTIVO');
+  });
+
+  it('bloque E: pagina de 15 en 15 y vuelve a la página 1 al filtrar', () => {
+    TestBed.inject(AdminManagementService).cargarAreas().subscribe();
+    http.expectOne(`${environment.apiUrl}/admin/areas`).flush({
+      exitoso: true,
+      datos: Array.from({ length: 17 }, (_, i) => ({ id: `a-${i}`, codigo: `A-${i}`, nombre: `Área ${i}`, activa: true })),
+    });
+    fixture.detectChanges();
+    const filas = () => (fixture.nativeElement as HTMLElement).querySelectorAll('[data-testid="area-fila"]');
+    expect(filas()).toHaveSize(15);
+    component.pagina.set(2);
+    fixture.detectChanges();
+    expect(filas()).toHaveSize(2);
+    component.cambiarTamano(30);
+    fixture.detectChanges();
+    expect(filas()).toHaveSize(17);
+  });
+
+  it('bloque E: sin coincidencias la tabla muestra el mensaje vacío', () => {
+    component.filtroTexto.set('zzz');
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="tabla-datos-vacia"]')?.textContent).toContain(
+      'No se encontraron áreas de conocimiento.'
+    );
   });
 
   // HU020/HU140 descartadas (2026-11-06): sedes y espacios físicos no se piden; la pantalla no los consulta ni los muestra.

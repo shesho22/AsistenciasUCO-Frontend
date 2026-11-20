@@ -8,7 +8,7 @@ import { BadgeComponent, BadgeVariant } from '../../../../shared/components/badg
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
 import { ErrorCargaComponent } from '../../../../shared/components/error-carga/error-carga.component';
-import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
+import { TAMANO_PAGINA_TABLA, TablaDatosComponent } from '../../../../shared/components/tabla-datos/tabla-datos.component';
 
 /** Filtros de la malla que el servidor aplica (búsqueda, semestre y código de carácter). */
 export interface FiltrosMalla {
@@ -20,9 +20,9 @@ export interface FiltrosMalla {
 @Component({
     selector: 'app-study-plan-mesh',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [FormsModule, BadgeComponent, ButtonComponent, ErrorCargaComponent, PaginationComponent],
+    imports: [FormsModule, BadgeComponent, ButtonComponent, ErrorCargaComponent, TablaDatosComponent],
     template: `
-    <div class="space-y-6">
+    <div class="space-y-4">
       <div class="superficie flex items-center justify-between p-4">
         <button
           type="button"
@@ -41,7 +41,7 @@ export interface FiltrosMalla {
       </div>
 
       <!-- Banner Resumen y Acciones Curriculares -->
-      <div class="superficie p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div class="superficie p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div class="space-y-1">
           <div class="flex items-center gap-2">
             <app-badge [variant]="getPlanBadgeVariant(plan().estado)">
@@ -92,7 +92,7 @@ export interface FiltrosMalla {
       <!-- Filtros de Asignaturas -->
       <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <div class="sm:col-span-2 relative">
-          <input aria-label="Buscar asignatura en la malla"
+          <input aria-label="Buscar asignatura en el plan de estudio"
             type="text"
             [ngModel]="searchAsignatura()"
             (ngModelChange)="onBusqueda($event)"
@@ -105,7 +105,7 @@ export interface FiltrosMalla {
         </div>
 
         <div>
-          <select aria-label="Filtrar la malla por semestre"
+          <select aria-label="Filtrar el plan de estudio por semestre"
             [ngModel]="selectedSemestre()"
             (ngModelChange)="onSemestre($event)"
             class="w-full px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20 shadow-warm-sm"
@@ -118,7 +118,7 @@ export interface FiltrosMalla {
         </div>
 
         <div>
-          <select aria-label="Filtrar la malla por carácter"
+          <select aria-label="Filtrar el plan de estudio por carácter"
             [ngModel]="selectedCaracter()"
             (ngModelChange)="onCaracter($event)"
             class="w-full px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20 shadow-warm-sm"
@@ -134,53 +134,73 @@ export interface FiltrosMalla {
       <!-- Malla Curricular en Tarjetas -->
       @if (error() && !cargando()) {
         <app-error-carga [error]="error()!" (reintentar)="reintentar.emit()" />
-      } @else if (asignaturas().length === 0 && !cargando()) {
-        <div class="superficie p-12 text-center">
-          <p class="text-sm text-warm-500">No hay asignaturas registradas para este filtro o semestre.</p>
-        </div>
       } @else {
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <app-tabla-datos
+          etiqueta="Asignaturas del plan de estudio"
+          [columnas]="8"
+          anchoMinimo="64rem"
+          [cargando]="cargando()"
+          [filasEsqueleto]="6"
+          [vacio]="asignaturas().length === 0"
+          mensajeVacio="No hay asignaturas registradas para este filtro o semestre."
+          [paginada]="true"
+          [totalItems]="totalAsignaturas()"
+          [pagina]="pagina()"
+          [tamanoPagina]="pageSize()"
+          (paginaChange)="pageChange.emit($event)"
+          (tamanoPaginaChange)="pageSizeChange.emit($event)"
+        >
+          <thead>
+            <tr>
+              <th scope="col">Código</th>
+              <th scope="col">Asignatura</th>
+              <th scope="col">Semestre</th>
+              <th scope="col">Carácter</th>
+              <th scope="col">Área</th>
+              <th scope="col">Componente</th>
+              <th scope="col" class="text-right">Créditos</th>
+              <th scope="col"><span class="sr-only">Acciones</span></th>
+            </tr>
+          </thead>
+          @if (!cargando()) {
+          <tbody>
           @for (asig of asignaturas(); track asig.id) {
-            <div class="p-4 rounded-2xl bg-white border border-warm-200/90 shadow-warm-sm flex flex-col justify-between gap-3 hover:border-primary-400/80 transition-all">
-              <div class="space-y-2">
-                <div class="flex items-center justify-between">
-                  <span class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-warm-100 text-warm-800">
-                    {{ asig.codigo }}
+            <tr data-testid="malla-asignatura-fila">
+              <td class="whitespace-nowrap">
+                <span class="rounded bg-warm-100 px-2 py-0.5 font-mono text-xs font-bold text-warm-800">{{ asig.codigo }}</span>
+              </td>
+              <td class="min-w-[14rem]">
+                <span class="font-semibold text-warm-900">{{ asig.nombre }}</span>
+                @if (asig.compartida || asig.estaActivaAsignatura === false) {
+                  <span class="mt-1 flex flex-wrap gap-1">
+                    @if (asig.compartida) {
+                      <app-badge variant="neutral" size="sm">Compartida</app-badge>
+                    }
+                    @if (asig.estaActivaAsignatura === false) {
+                      <app-badge variant="danger" size="sm">Inactiva</app-badge>
+                    }
                   </span>
-                  <span class="text-xs font-bold text-primary-800 bg-primary-50 px-2 py-0.5 rounded-full border border-primary-200">
-                    Semestre {{ asig.semestre }}
-                  </span>
-                </div>
-
-                <div class="flex flex-wrap items-center gap-1">
-                  @if (asig.nombreCaracter) {
-                    <app-badge [variant]="asig.codigoCaracter === 'OPT' ? 'success' : 'info'">{{ asig.nombreCaracter }}</app-badge>
-                  }
-                  @if (asig.compartida) {
-                    <app-badge variant="neutral">Compartida</app-badge>
-                  }
-                  @if (asig.estaActivaAsignatura === false) {
-                    <app-badge variant="danger">Inactiva</app-badge>
-                  }
-                </div>
-
-                <h4 class="font-serif font-bold text-base text-warm-900 leading-snug">
-                  {{ asig.nombre }}
-                </h4>
-
-                <div class="text-xs space-y-1 text-warm-600">
-                  <p><span class="text-warm-400 font-medium">Área:</span> {{ asig.area }}</p>
-                  <p><span class="text-warm-400 font-medium">Componente:</span> {{ asig.componente }}</p>
-                </div>
-              </div>
-
-              <div class="flex items-center justify-between pt-2.5 border-t border-warm-100 text-xs">
-                <div class="flex items-center gap-1.5">
+                }
+              </td>
+              <td class="whitespace-nowrap">Semestre {{ asig.semestre }}</td>
+              <td>
+                @if (asig.nombreCaracter) {
+                  <app-badge [variant]="asig.codigoCaracter === 'OPT' ? 'success' : 'info'" size="sm">{{ asig.nombreCaracter }}</app-badge>
+                } @else {
+                  <span class="text-warm-400">—</span>
+                }
+              </td>
+              <td class="text-xs text-warm-700">{{ asig.area }}</td>
+              <td class="text-xs text-warm-700">{{ asig.componente }}</td>
+              <td class="text-right tabular-nums font-semibold text-warm-900">{{ asig.creditos }}</td>
+              <td class="text-right">
+                <div class="flex items-center justify-end gap-1.5">
                   <button
                     type="button"
                     (click)="editSubject.emit(asig)"
                     class="p-1 text-warm-500 hover:text-primary-700 rounded hover:bg-warm-100"
                     title="Modificar asignatura"
+                    [attr.aria-label]="'Modificar la asignatura ' + asig.nombre"
                   >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -217,25 +237,12 @@ export interface FiltrosMalla {
                     </svg>
                   </button>
                 </div>
-
-                <span class="font-bold text-warm-900 bg-warm-100 px-2 py-0.5 rounded">
-                  {{ asig.creditos }} Créditos
-                </span>
-              </div>
-            </div>
+              </td>
+            </tr>
           }
-        </div>
-
-        @if (totalAsignaturas() > pageSize()) {
-          <div class="mt-6 flex justify-center">
-            <app-pagination
-              [currentPage]="pagina()"
-              [totalItems]="totalAsignaturas()"
-              [pageSize]="pageSize()"
-              (pageChange)="pageChange.emit($event)"
-            />
-          </div>
-        }
+          </tbody>
+          }
+        </app-tabla-datos>
       }
     </div>
   `
@@ -249,7 +256,7 @@ export class StudyPlanMeshComponent {
   /** Total real de asignaturas del filtro (`totalElementos` del servidor). */
   totalAsignaturas = input(0);
   pagina = input(1);
-  pageSize = input(9);
+  pageSize = input(TAMANO_PAGINA_TABLA);
   cargando = input(false);
   error = input<LoadErrorState | null>(null);
   /** HU074 (doble envío): deshabilita la acción de estado mientras un cambio o la recarga de la malla siguen en curso. */
@@ -269,6 +276,8 @@ export class StudyPlanMeshComponent {
   /** Cambió la búsqueda, el semestre o el carácter: el contenedor vuelve a consultar desde la página 1. */
   filtrosChange = output<FiltrosMalla>();
   pageChange = output<number>();
+  /** Cambió el tamaño de página (15/30/50): el contenedor vuelve a consultar desde la página 1. */
+  pageSizeChange = output<number>();
   reintentar = output<void>();
 
   searchAsignatura = signal('');

@@ -19,7 +19,7 @@ import { AvatarComponent } from '../../../shared/components/avatar/avatar.compon
 import { ErrorCargaComponent } from '../../../shared/components/error-carga/error-carga.component';
 import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load-error.util';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
-import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
+import { TAMANO_PAGINA_TABLA, TablaDatosComponent, paginarEnCliente } from '../../../shared/components/tabla-datos/tabla-datos.component';
 import { ListadoPaginado } from '../../../shared/utils/listado-paginado';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { ModalComponent } from '../../../shared/components/modal/modal.component';
@@ -63,12 +63,12 @@ function cifra(valor: unknown): string {
     ButtonComponent,
     AvatarComponent,
     ErrorCargaComponent,
-    PaginationComponent,
+    TablaDatosComponent,
     ModalComponent,
     SubpestanasComponent
 ],
     template: `
-    <div class="space-y-6">
+    <div class="space-y-4">
       <!-- Header Bento -->
       <app-page-header
         [enTarjeta]="true"
@@ -100,9 +100,9 @@ function cifra(valor: unknown): string {
           <span class="text-[11px] text-primary-700 font-medium">Activos en el período</span>
         </div>
         <div class="superficie p-4">
-          <span class="text-xs text-warm-500 font-medium">Asignaturas en Malla Curricular</span>
+          <span class="text-xs text-warm-500 font-medium">Asignaturas en el Plan de Estudio</span>
           <p class="text-2xl font-serif font-bold text-success-700 mt-1">{{ listadoAsignaturas.total() }}</p>
-          <span class="text-[11px] text-warm-500">En {{ totalPlanes() }} planes de estudio</span>
+          <span class="text-[11px] text-warm-500">En {{ totalPlanes() }} {{ totalPlanes() === 1 ? 'plan' : 'planes' }} de estudio</span>
         </div>
         <div class="superficie p-4">
           <span class="text-xs text-warm-500 font-medium">Ocupación de Cupos</span>
@@ -155,63 +155,63 @@ function cifra(valor: unknown): string {
             </p>
           </div>
           <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-warm-100 text-warm-700">
-            {{ listado.total() }} grupos
+            {{ listado.total() }} {{ listado.total() === 1 ? 'grupo' : 'grupos' }}
           </span>
         </div>
 
         @if (errorCarga()) {
           <app-error-carga [error]="errorCarga()!" (reintentar)="cargarDatos()" />
-        } @else if (listado.filas().length === 0) {
-          <div class="bg-white rounded-2xl border border-warm-200 p-10 text-center text-sm text-warm-500">
-            No se encontraron grupos ofertados que coincidan con la búsqueda.
-          </div>
         } @else {
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            @for (curso of courses(); track curso.id) {
-              <div class="superficie p-6 flex flex-col h-full justify-between gap-3">
-                <div>
-                  <div class="flex items-start justify-between gap-2 mb-2">
-                    <span class="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-warm-100 text-warm-800">
-                      {{ curso.code }}
-                    </span>
-                    <app-badge variant="neutral">
-                      {{ curso.section }}
-                    </app-badge>
-                  </div>
-
-                  <h3 class="font-serif font-bold text-base text-warm-900 leading-snug">
-                    {{ curso.name }}
-                  </h3>
-
-                  <div class="mt-3 space-y-1.5 text-xs text-warm-600">
-                    <div class="flex items-center gap-2">
-                      <svg class="w-3.5 h-3.5 text-warm-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span>{{ curso.schedule }}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="pt-3 border-t border-warm-100 flex items-center justify-between gap-2">
-                  <span class="text-xs text-warm-500">
-                    Cupos: <strong class="text-warm-900">{{ curso.enrolledStudentsCount }} / {{ cupoTexto(curso) }}</strong>
-                  </span>
-                  <app-button variant="secondary" size="sm" data-testid="ver-inscritos" (clicked)="onSelectCourse(curso.id)">
-                    Ver inscritos
-                  </app-button>
-                </div>
-              </div>
-            }
-          </div>
-          <app-pagination
+          <app-tabla-datos
+            etiqueta="Grupos y materias activas en el período"
+            [columnas]="6"
+            anchoMinimo="50rem"
+            [cargando]="listado.cargando()"
+            [vacio]="listado.filas().length === 0"
+            mensajeVacio="No se encontraron grupos ofertados que coincidan con la búsqueda."
+            [paginada]="true"
             [totalItems]="listado.total()"
-            [totalPages]="listado.totalPaginas()"
-            [pageSize]="listado.tamano()"
-            [currentPage]="listado.pagina()"
-            (pageChange)="listado.irAPagina($event)"
-            (pageSizeChange)="listado.cambiarTamano($event)"
-          />
+            [totalPaginas]="listado.totalPaginas()"
+            [pagina]="listado.pagina()"
+            [tamanoPagina]="listado.tamano()"
+            (paginaChange)="listado.irAPagina($event)"
+            (tamanoPaginaChange)="listado.cambiarTamano($event)"
+          >
+            <thead>
+              <tr>
+                <th scope="col">Código</th>
+                <th scope="col">Materia</th>
+                <th scope="col">Grupo</th>
+                <th scope="col">Horario</th>
+                <th scope="col" class="text-right">Cupos</th>
+                <th scope="col"><span class="sr-only">Acciones</span></th>
+              </tr>
+            </thead>
+            @if (!listado.cargando()) {
+              <tbody>
+                @for (curso of courses(); track curso.id) {
+                  <tr data-testid="grupo-programa-fila">
+                    <td class="whitespace-nowrap">
+                      <span class="rounded-md bg-warm-100 px-2 py-0.5 font-mono text-xs font-bold text-warm-800">{{ curso.code }}</span>
+                    </td>
+                    <td class="min-w-[12rem] font-semibold text-warm-900">{{ curso.name }}</td>
+                    <td class="whitespace-nowrap">
+                      <app-badge variant="neutral" size="sm">{{ curso.section }}</app-badge>
+                    </td>
+                    <td class="min-w-[10rem] text-xs text-warm-700">{{ curso.schedule }}</td>
+                    <td class="whitespace-nowrap text-right tabular-nums">
+                      <strong class="text-warm-900">{{ curso.enrolledStudentsCount }} / {{ cupoTexto(curso) }}</strong>
+                    </td>
+                    <td class="whitespace-nowrap text-right">
+                      <app-button variant="secondary" size="sm" data-testid="ver-inscritos" (clicked)="onSelectCourse(curso.id)">
+                        Ver inscritos
+                      </app-button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            }
+          </app-tabla-datos>
         }
       </div>
 
@@ -227,80 +227,83 @@ function cifra(valor: unknown): string {
             </p>
           </div>
           <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-warm-100 text-warm-700">
-            {{ listadoAsignaturas.total() }} asignaturas
+            {{ listadoAsignaturas.total() }} {{ listadoAsignaturas.total() === 1 ? 'asignatura' : 'asignaturas' }}
           </span>
         </div>
 
         @if (errorCarga()) {
           <app-error-carga [error]="errorCarga()!" (reintentar)="cargarDatos()" />
-        } @else if (listadoAsignaturas.filas().length === 0) {
-          <div class="bg-white rounded-2xl border border-warm-200 p-10 text-center text-sm text-warm-500">
-            No hay asignaturas curriculares que coincidan con los filtros seleccionados.
-          </div>
         } @else {
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            @for (asig of listadoAsignaturas.filas(); track clavePlan(asig)) {
-              <div class="superficie p-6 flex flex-col h-full justify-between gap-3">
-                <div>
-                  <div class="flex items-start justify-between gap-2 mb-2">
-                    <span class="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-warm-100 text-warm-800">
-                      {{ asig.codigo }}
-                    </span>
-                    <div class="flex flex-wrap items-center justify-end gap-1">
-                      @if (asig.compartida) {
-                        <app-badge variant="info">Compartida</app-badge>
-                      }
-                      <app-badge [variant]="getTipoBadgeVariant(asig.nombreCaracter ?? asig.componente)">
-                        {{ asig.nombreCaracter ?? asig.componente }}
-                      </app-badge>
-                    </div>
-                  </div>
-
-                  <h3 class="font-serif font-bold text-base text-warm-900 leading-snug">
-                    {{ asig.nombre }}
-                  </h3>
-                  @if (asig.nombrePrograma) {
-                    <p class="text-xs text-warm-500 mt-1">
-                      {{ asig.nombrePrograma }}@if (asig.inpPlanEstudio) { · Plan {{ asig.inpPlanEstudio }} }
-                    </p>
-                  }
-
-                  <div class="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-warm-50 text-xs border border-warm-100 mt-3 text-center">
-                    <div>
-                      <span class="text-warm-400 block text-[10px]">Semestre</span>
-                      <span class="font-bold text-warm-900">{{ asig.semestre }}°</span>
-                    </div>
-                    <div>
-                      <span class="text-warm-400 block text-[10px]">Créditos</span>
-                      <span class="font-bold text-warm-900">{{ asig.creditos }}</span>
-                    </div>
-                    <div>
-                      <span class="text-warm-400 block text-[10px]">Horas/Sem</span>
-                      <span class="font-bold text-warm-900">{{ asig.horasSemanales === null || asig.horasSemanales === undefined ? 'Sin cargar' : asig.horasSemanales + 'h' }}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="pt-2 border-t border-warm-100 flex items-center justify-end text-xs">
-                  <button
-                    type="button"
-                    (click)="irAMallaPlan(asig.planEstudioId)"
-                    class="text-primary-700 hover:text-primary-900 font-semibold shrink-0 ml-2"
-                  >
-                    Ver Malla →
-                  </button>
-                </div>
-              </div>
-            }
-          </div>
-          <app-pagination
+          <app-tabla-datos
+            etiqueta="Catálogo curricular de materias de la carrera"
+            [columnas]="7"
+            anchoMinimo="56rem"
+            [cargando]="listadoAsignaturas.cargando()"
+            [vacio]="listadoAsignaturas.filas().length === 0"
+            mensajeVacio="No hay asignaturas curriculares que coincidan con los filtros seleccionados."
+            [paginada]="true"
             [totalItems]="listadoAsignaturas.total()"
-            [totalPages]="listadoAsignaturas.totalPaginas()"
-            [pageSize]="listadoAsignaturas.tamano()"
-            [currentPage]="listadoAsignaturas.pagina()"
-            (pageChange)="listadoAsignaturas.irAPagina($event)"
-            (pageSizeChange)="listadoAsignaturas.cambiarTamano($event)"
-          />
+            [totalPaginas]="listadoAsignaturas.totalPaginas()"
+            [pagina]="listadoAsignaturas.pagina()"
+            [tamanoPagina]="listadoAsignaturas.tamano()"
+            (paginaChange)="listadoAsignaturas.irAPagina($event)"
+            (tamanoPaginaChange)="listadoAsignaturas.cambiarTamano($event)"
+          >
+            <thead>
+              <tr>
+                <th scope="col">Código</th>
+                <th scope="col">Asignatura</th>
+                <th scope="col">Carácter</th>
+                <th scope="col" class="text-right">Semestre</th>
+                <th scope="col" class="text-right">Créditos</th>
+                <th scope="col" class="text-right">Horas/Sem</th>
+                <th scope="col"><span class="sr-only">Acciones</span></th>
+              </tr>
+            </thead>
+            @if (!listadoAsignaturas.cargando()) {
+              <tbody>
+                @for (asig of listadoAsignaturas.filas(); track clavePlan(asig)) {
+                  <tr data-testid="asignatura-catalogo-fila">
+                    <td class="whitespace-nowrap">
+                      <span class="rounded-md bg-warm-100 px-2 py-0.5 font-mono text-xs font-bold text-warm-800">{{ asig.codigo }}</span>
+                    </td>
+                    <td class="min-w-[14rem]">
+                      <span class="block font-semibold text-warm-900">{{ asig.nombre }}</span>
+                      @if (asig.nombrePrograma) {
+                        <span class="block text-xs text-warm-500">
+                          {{ asig.nombrePrograma }}@if (asig.inpPlanEstudio) { · Plan {{ asig.inpPlanEstudio }} }
+                        </span>
+                      }
+                    </td>
+                    <td>
+                      <span class="flex flex-wrap items-center gap-1">
+                        <app-badge size="sm" [variant]="getTipoBadgeVariant(asig.nombreCaracter ?? asig.componente)">
+                          {{ asig.nombreCaracter ?? asig.componente }}
+                        </app-badge>
+                        @if (asig.compartida) {
+                          <app-badge variant="info" size="sm">Compartida</app-badge>
+                        }
+                      </span>
+                    </td>
+                    <td class="text-right tabular-nums">{{ asig.semestre }}°</td>
+                    <td class="text-right tabular-nums">{{ asig.creditos }}</td>
+                    <td class="whitespace-nowrap text-right tabular-nums">
+                      {{ asig.horasSemanales === null || asig.horasSemanales === undefined ? 'Sin cargar' : asig.horasSemanales + 'h' }}
+                    </td>
+                    <td class="whitespace-nowrap text-right text-xs">
+                      <button
+                        type="button"
+                        (click)="irAMallaPlan(asig.planEstudioId)"
+                        class="font-semibold text-primary-700 hover:text-primary-900"
+                      >
+                        Ver Plan de Estudio →
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            }
+          </app-tabla-datos>
         }
       </div>
       }
@@ -328,7 +331,7 @@ function cifra(valor: unknown): string {
                 </div>
                 @if (!cargandoInscritos() && !errorInscritos()) {
                   <span class="text-xs font-bold px-3 py-1 rounded-full bg-primary-50 text-primary-800 border border-primary-200 shrink-0">
-                    {{ enrolledStudents().length }} / {{ cupoTexto(cursoActual) }} estudiantes
+                    {{ enrolledStudents().length }} / {{ cupoTexto(cursoActual) }} {{ enrolledStudents().length === 1 ? 'estudiante' : 'estudiantes' }}
                   </span>
                 }
               </div>
@@ -342,27 +345,47 @@ function cifra(valor: unknown): string {
                   <p class="text-sm">No hay estudiantes registrados en este grupo actualmente.</p>
                 </div>
               } @else {
-                <div class="divide-y divide-warm-100 max-h-[60vh] overflow-y-auto" data-testid="lista-inscritos">
-                  @for (est of enrolledStudents(); track est.id) {
-                    <div class="py-3 flex items-center justify-between gap-4">
-                      <div class="flex items-center gap-3 min-w-0">
-                        <app-avatar [name]="est.nombreCompleto" size="md"></app-avatar>
-                        <div class="min-w-0">
-                          <h4 class="font-serif font-bold text-sm text-warm-900 truncate">
-                            {{ est.nombreCompleto }}
-                          </h4>
-                          <p class="text-xs text-warm-500 break-all">
-                            Doc. {{ est.documento || '—' }}@if (est.correo) { • {{ est.correo }} }
-                          </p>
-                        </div>
-                      </div>
-
-                      <app-badge [variant]="estadoInscrito(est).variante" data-testid="estado-inscrito">
-                        {{ estadoInscrito(est).etiqueta }}
-                      </app-badge>
-                    </div>
-                  }
-                </div>
+                <app-tabla-datos
+                  data-testid="lista-inscritos"
+                  etiqueta="Estudiantes inscritos en el grupo"
+                  [columnas]="4"
+                  anchoMinimo="40rem"
+                  alturaMaxima="60vh"
+                  [paginada]="true"
+                  [totalItems]="enrolledStudents().length"
+                  [pagina]="paginaInscritos()"
+                  [tamanoPagina]="tamanoInscritos()"
+                  (paginaChange)="paginaInscritos.set($event)"
+                  (tamanoPaginaChange)="cambiarTamanoInscritos($event)"
+                >
+                  <thead>
+                    <tr>
+                      <th scope="col">Estudiante</th>
+                      <th scope="col">Documento</th>
+                      <th scope="col">Correo</th>
+                      <th scope="col">Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (est of inscritosPagina(); track est.id) {
+                      <tr data-testid="inscrito-fila">
+                        <td>
+                          <span class="flex min-w-0 items-center gap-2">
+                            <app-avatar [name]="est.nombreCompleto" size="sm"></app-avatar>
+                            <span class="font-semibold text-warm-900">{{ est.nombreCompleto }}</span>
+                          </span>
+                        </td>
+                        <td class="whitespace-nowrap tabular-nums">Doc. {{ est.documento || '—' }}</td>
+                        <td class="text-xs text-warm-600 break-all">{{ est.correo || '—' }}</td>
+                        <td>
+                          <app-badge size="sm" [variant]="estadoInscrito(est).variante" data-testid="estado-inscrito">
+                            {{ estadoInscrito(est).etiqueta }}
+                          </app-badge>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </app-tabla-datos>
               }
             </div>
           }
@@ -408,6 +431,17 @@ export class CoordinatorSubjectsComponent implements OnInit {
   readonly errorInscritos = signal<LoadErrorState | null>(null);
   /** Consulta de nómina en curso: se cancela al abrir otro grupo o cerrar la ventana (una respuesta tardía no pisa otra). */
   private inscritosSub: Subscription | null = null;
+  /** Bloque E: la nómina llega completa; se pagina en el cliente (15 por defecto, 15/30/50). */
+  readonly paginaInscritos = signal(1);
+  readonly tamanoInscritos = signal(TAMANO_PAGINA_TABLA);
+  readonly inscritosPagina = computed(() =>
+    paginarEnCliente(this.enrolledStudents(), this.paginaInscritos(), this.tamanoInscritos()),
+  );
+
+  cambiarTamanoInscritos(tamano: number): void {
+    this.tamanoInscritos.set(tamano);
+    this.paginaInscritos.set(1);
+  }
 
   /** Total de planes de estudio del programa (`total` del servidor). */
   totalPlanes = signal(0);
@@ -455,7 +489,7 @@ export class CoordinatorSubjectsComponent implements OnInit {
     if (k.tasaAforo === null) return 'Sin cupo registrado en los grupos habilitados';
     // Campo ausente (servidor sin el aforo de CIERRE-W3I): no se afirma «sin cupo» ni se pinta «undefined».
     if (typeof k.tasaAforo !== 'number') return 'Grupos habilitados del período';
-    return `${k.tasaAforo} % de ocupación · ${cifra(k.gruposActivos)} grupos habilitados`;
+    return `${k.tasaAforo} % de ocupación · ${cifra(k.gruposActivos)} ${k.gruposActivos === 1 ? 'grupo habilitado' : 'grupos habilitados'}`;
   });
 
   private tieneCupo(curso: Course): boolean {
@@ -470,8 +504,8 @@ export class CoordinatorSubjectsComponent implements OnInit {
   readonly errorCarga = computed(() => this.listado.error() ?? this.listadoAsignaturas.error() ?? this.errorAuxiliar());
 
   constructor() {
-    this.listado.tamano.set(12);
-    this.listadoAsignaturas.tamano.set(12);
+    this.listado.tamano.set(TAMANO_PAGINA_TABLA);
+    this.listadoAsignaturas.tamano.set(TAMANO_PAGINA_TABLA);
     this.destroyRef.onDestroy(() => this.cancelarInscritos());
     this.busqueda$.pipe(debounceTime(300), takeUntilDestroyed(this.destroyRef)).subscribe(() => {
       this.listado.buscar();
@@ -548,6 +582,7 @@ export class CoordinatorSubjectsComponent implements OnInit {
   cargarInscritos(cursoId: string): void {
     this.cancelarInscritos();
     this.enrolledStudents.set([]);
+    this.paginaInscritos.set(1);
     this.errorInscritos.set(null);
     this.cargandoInscritos.set(true);
     this.inscritosSub = this.coordinatorService

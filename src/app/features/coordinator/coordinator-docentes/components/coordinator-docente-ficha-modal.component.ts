@@ -10,11 +10,11 @@ import {
   ResumenCargaDocente,
 } from '../../../../core/models/docente-programa.model';
 import { BadgeComponent, BadgeVariant } from '../../../../shared/components/badge/badge.component';
-import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
+import { TAMANO_PAGINA_TABLA, TablaDatosComponent } from '../../../../shared/components/tabla-datos/tabla-datos.component';
 import { getApiErrorMessage } from '../../../../core/api/errors/api-error.util';
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
 
-const TAMANO_POR_DEFECTO = 5;
+const TAMANO_POR_DEFECTO = TAMANO_PAGINA_TABLA;
 
 const ESTADOS: Record<EstadoPeriodoHistorial, { etiqueta: string; variante: BadgeVariant }> = {
   VIGENTE: { etiqueta: 'Vigente', variante: 'success' },
@@ -29,7 +29,7 @@ const ESTADOS: Record<EstadoPeriodoHistorial, { etiqueta: string; variante: Badg
 @Component({
     selector: 'app-coordinator-docente-ficha-modal',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [ModalComponent, CifraConBaseComponent, DatePipe, BadgeComponent, PaginationComponent],
+    imports: [ModalComponent, CifraConBaseComponent, DatePipe, BadgeComponent, TablaDatosComponent],
     template: `
     <app-modal
       [isOpen]="true"
@@ -70,44 +70,62 @@ const ESTADOS: Record<EstadoPeriodoHistorial, { etiqueta: string; variante: Badg
         }
 
         <h4 class="font-serif font-bold text-base text-warm-900">Historial de grupos en el programa</h4>
-        @if (cargando()) {
-          <div class="space-y-2">
-            @for (n of [1, 2, 3]; track n) {
-              <div class="h-16 bg-warm-100 rounded-2xl animate-pulse"></div>
-            }
-          </div>
-        } @else if (historial().length === 0) {
-          <p class="p-6 text-center text-xs text-warm-400 bg-warm-50 rounded-2xl border border-warm-100">
-            El docente no tiene grupos registrados en este programa.
-          </p>
-        } @else {
-          @for (grupo of historial(); track grupo.idGrupo) {
-            <div class="p-4 rounded-2xl border border-warm-200 bg-white" data-testid="grupo-historial">
-              <div class="flex items-start justify-between gap-3">
-                <div>
-                  <span class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-warm-100 text-warm-800 mr-2">{{ grupo.codigoGrupo }}</span>
-                  <span class="text-xs font-semibold text-warm-500">{{ grupo.nombreGrupo }}</span>
-                  <h5 class="font-bold text-sm text-warm-900 mt-1">{{ grupo.nombreAsignatura }}</h5>
-                </div>
-                <app-badge [variant]="varianteEstado(grupo.estadoPeriodo)">{{ etiquetaEstado(grupo.estadoPeriodo) }}</app-badge>
-              </div>
-              <p class="text-xs text-warm-600 mt-1">
-                {{ grupo.nombrePeriodoAcademico }} ({{ grupo.fechaInicioPeriodo | date: 'mediumDate' }} – {{ grupo.fechaFinPeriodo | date: 'mediumDate' }})
-              </p>
-              <p class="text-xs text-warm-600 mt-0.5">
-                <app-cifra-con-base [valor]="grupo.estudiantesActivos" [base]="grupo.capacidadMaxima" etiquetaBase="cupos" /> • {{ grupo.estudiantesFinalizados }} finalizaron •
-                {{ grupo.estudiantesCanceladosVoluntad + grupo.estudiantesCanceladosInasistencia }} cancelaron
-              </p>
-            </div>
+        <app-tabla-datos
+          etiqueta="Historial de grupos en el programa"
+          [columnas]="6"
+          anchoMinimo="46rem"
+          alturaMaxima="55vh"
+          [cargando]="cargando()"
+          [filasEsqueleto]="3"
+          [vacio]="historial().length === 0"
+          mensajeVacio="El docente no tiene grupos registrados en este programa."
+          [paginada]="true"
+          [totalItems]="totalHistorial()"
+          [pagina]="pagina()"
+          [tamanoPagina]="tamano()"
+          (paginaChange)="cambiarPagina($event)"
+          (tamanoPaginaChange)="cambiarTamano($event)"
+        >
+          <thead>
+            <tr>
+              <th scope="col">Grupo</th>
+              <th scope="col">Asignatura</th>
+              <th scope="col">Período</th>
+              <th scope="col">Estudiantes</th>
+              <th scope="col" class="text-right">Finalizaron / Cancelaron</th>
+              <th scope="col">Estado</th>
+            </tr>
+          </thead>
+          @if (!cargando()) {
+            <tbody>
+              @for (grupo of historial(); track grupo.idGrupo) {
+                <tr data-testid="grupo-historial">
+                  <td class="whitespace-nowrap">
+                    <span class="rounded bg-warm-100 px-2 py-0.5 font-mono text-xs font-bold text-warm-800">{{ grupo.codigoGrupo }}</span>
+                    <span class="mt-0.5 block text-xs font-semibold text-warm-500">{{ grupo.nombreGrupo }}</span>
+                  </td>
+                  <td class="min-w-[10rem] font-semibold text-warm-900">{{ grupo.nombreAsignatura }}</td>
+                  <td class="text-xs text-warm-700">
+                    <span class="block font-semibold">{{ grupo.nombrePeriodoAcademico }}</span>
+                    <span class="block whitespace-nowrap text-warm-500">
+                      {{ grupo.fechaInicioPeriodo | date: 'mediumDate' }} – {{ grupo.fechaFinPeriodo | date: 'mediumDate' }}
+                    </span>
+                  </td>
+                  <td class="whitespace-nowrap text-xs">
+                    <app-cifra-con-base [valor]="grupo.estudiantesActivos" [base]="grupo.capacidadMaxima" etiquetaBase="cupos" />
+                  </td>
+                  <td class="whitespace-nowrap text-right text-xs tabular-nums">
+                    {{ grupo.estudiantesFinalizados }} finalizaron •
+                    {{ grupo.estudiantesCanceladosVoluntad + grupo.estudiantesCanceladosInasistencia }} cancelaron
+                  </td>
+                  <td>
+                    <app-badge size="sm" [variant]="varianteEstado(grupo.estadoPeriodo)">{{ etiquetaEstado(grupo.estadoPeriodo) }}</app-badge>
+                  </td>
+                </tr>
+              }
+            </tbody>
           }
-          <app-pagination
-            [totalItems]="totalHistorial()"
-            [pageSize]="tamano()"
-            [currentPage]="pagina()"
-            [showPageSizeSelector]="false"
-            (pageChange)="cambiarPagina($event)"
-          />
-        }
+        </app-tabla-datos>
       </div>
     </app-modal>
   `
@@ -133,6 +151,12 @@ export class CoordinatorDocenteFichaModalComponent implements OnInit {
 
   cambiarPagina(pagina: number): void {
     this.pagina.set(pagina);
+    this.cargar();
+  }
+
+  cambiarTamano(tamano: number): void {
+    this.tamano.set(tamano);
+    this.pagina.set(1);
     this.cargar();
   }
 

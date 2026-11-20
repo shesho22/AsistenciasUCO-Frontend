@@ -24,7 +24,7 @@ import { PerfilInstitucionalStore, TEXTO_SIN_REGISTRAR } from './perfil-instituc
     ProfileLinksComponent
 ],
     template: `
-    <div class="space-y-6 animate-fade-in">
+    <div class="space-y-4 animate-fade-in">
       <!-- Barra Superior de Navegación "Atrás" -->
       <div class="superficie flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-5">
         <div class="flex items-center gap-3">
@@ -52,10 +52,10 @@ import { PerfilInstitucionalStore, TEXTO_SIN_REGISTRAR } from './perfil-instituc
       </div>
 
       <!-- Layout Bento del Perfil -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <!-- Columna 1: Tarjeta de Resumen Visual e Identidad -->
-        <div class="lg:col-span-1 space-y-6">
-          <div class="superficie p-6 text-center space-y-4">
+        <div class="lg:col-span-1 space-y-4">
+          <div class="superficie p-4 text-center space-y-4">
             <!-- Icono con la Letra del Nombre (Reactivo en tiempo real) -->
             <div class="flex justify-center pt-2">
               <app-avatar [name]="computedFullName()" size="xl"></app-avatar>
@@ -102,10 +102,10 @@ import { PerfilInstitucionalStore, TEXTO_SIN_REGISTRAR } from './perfil-instituc
         </div>
 
         <!-- Columna 2: Información Personal e Institucional -->
-        <div class="lg:col-span-2 space-y-6">
-          <form class="space-y-6">
+        <div class="lg:col-span-2 space-y-4">
+          <form class="space-y-4">
             <!-- Bloque 1: Datos Personales (Modo Consulta) -->
-            <div class="superficie p-6 sm:p-7 space-y-5">
+            <div class="superficie p-4 sm:p-7 space-y-5">
               <div class="border-b border-warm-100 pb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                   <h3 class="font-serif font-bold text-lg text-warm-900">
@@ -146,7 +146,7 @@ import { PerfilInstitucionalStore, TEXTO_SIN_REGISTRAR } from './perfil-instituc
             </div>
 
             <!-- Bloque 2: Información Institucional (Solo Lectura) -->
-            <div class="superficie p-6 sm:p-7 space-y-4">
+            <div class="superficie p-4 sm:p-7 space-y-4">
               <div class="border-b border-warm-100 pb-3 flex items-center justify-between">
                 <div>
                   <h3 class="font-serif font-bold text-lg text-warm-900">

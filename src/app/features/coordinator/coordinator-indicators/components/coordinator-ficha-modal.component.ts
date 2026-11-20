@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, OnInit, inject, input, output, sign
 import { CoordinatorIndicatorsService } from '../../../../core/services/coordinator-indicators.service';
 import { BitacoraSesion, FichaEstudiante } from '../../../../core/models/coordinator-indicators.model';
 import { getApiErrorMessage } from '../../../../core/api/errors/api-error.util';
-import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
+import { TAMANO_PAGINA_TABLA, TablaDatosComponent } from '../../../../shared/components/tabla-datos/tabla-datos.component';
 import { SessionTimeZoneService } from '../../../../core/services/session-timezone.service';
 import { CorreccionIdentidadService } from '../../../../core/services/correccion-identidad.service';
 import { CorregirIdentidadPayload, IdentidadActual } from '../../../../core/models/correccion-identidad.model';
@@ -13,7 +13,7 @@ import { ModalComponent } from '../../../../shared/components/modal/modal.compon
 
 @Component({
     selector: 'app-coordinator-ficha-modal',
-    imports: [ModalComponent, PaginationComponent, CorreccionIdentidadModalComponent],
+    imports: [ModalComponent, TablaDatosComponent, CorreccionIdentidadModalComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
     <app-modal [isOpen]="true" [title]="'Ficha de ' + nombre()" tamano="3xl" etiquetaCerrar="Cerrar" (closed)="cancelar()">
@@ -70,26 +70,45 @@ import { ModalComponent } from '../../../../shared/components/modal/modal.compon
 
       <h3 class="mb-2 text-sm font-semibold text-neutral-900">Bitácora de asistencia</h3>
       <p class="mb-2 text-xs text-neutral-500">Horas en {{ timeZone.zoneLabel() }}.</p>
-      <ol class="mb-3 space-y-2">
-        @for (s of bitacora(); track s.idSesion + s.idGrupo) {
-          <li class="rounded-lg border border-neutral-100 p-3 text-sm">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <span class="font-medium">{{ s.nombreAsignatura }} · {{ s.nombreSesion }}</span>
-              <span class="text-xs text-neutral-500">{{ timeZone.formatTemporal(s.fechaHoraInicio) }}</span>
-            </div>
-            <p class="text-neutral-700">
-              {{ etiquetaAsistencia(s.asistio) }}@if (s.nombreRazonCausa) { · {{ s.nombreRazonCausa }} }
-            </p>
-          </li>
-        }
-      </ol>
-      <app-pagination
+      <app-tabla-datos
+        etiqueta="Bitácora de asistencia"
+        [columnas]="4"
+        anchoMinimo="38rem"
+        alturaMaxima="50vh"
+        [cargando]="cargandoBitacora()"
+        [filasEsqueleto]="4"
+        [vacio]="bitacora().length === 0"
+        mensajeVacio="No hay sesiones registradas en la bitácora."
+        [paginada]="true"
         [totalItems]="totalBitacora()"
-        [pageSize]="tamano"
-        [currentPage]="pagina()"
-        [showPageSizeSelector]="false"
-        (pageChange)="onPageChange($event)"
-      />
+        [pagina]="pagina()"
+        [tamanoPagina]="tamano()"
+        (paginaChange)="onPageChange($event)"
+        (tamanoPaginaChange)="cambiarTamano($event)"
+      >
+        <thead>
+          <tr>
+            <th scope="col">Fecha y hora</th>
+            <th scope="col">Asignatura</th>
+            <th scope="col">Sesión</th>
+            <th scope="col">Asistencia</th>
+          </tr>
+        </thead>
+        @if (!cargandoBitacora()) {
+          <tbody>
+            @for (s of bitacora(); track s.idSesion + s.idGrupo) {
+              <tr data-testid="bitacora-fila">
+                <td class="whitespace-nowrap text-xs text-warm-600 tabular-nums">{{ timeZone.formatTemporal(s.fechaHoraInicio) }}</td>
+                <td class="font-medium text-warm-900">{{ s.nombreAsignatura }}</td>
+                <td>{{ s.nombreSesion }}</td>
+                <td>
+                  {{ etiquetaAsistencia(s.asistio) }}@if (s.nombreRazonCausa) { · {{ s.nombreRazonCausa }} }
+                </td>
+              </tr>
+            }
+          </tbody>
+        }
+      </app-tabla-datos>
     </app-modal>
   `
 })
@@ -103,7 +122,8 @@ export class CoordinatorFichaModalComponent implements OnInit {
   readonly nombre = input<string>('');
   readonly cerrar = output<void>();
 
-  readonly tamano = 10;
+  readonly tamano = signal(TAMANO_PAGINA_TABLA);
+  readonly cargandoBitacora = signal(true);
   readonly ficha = signal<FichaEstudiante | null>(null);
   readonly bitacora = signal<BitacoraSesion[]>([]);
   readonly totalBitacora = signal(0);
@@ -167,6 +187,12 @@ export class CoordinatorFichaModalComponent implements OnInit {
     this.cargarBitacora();
   }
 
+  cambiarTamano(tamano: number): void {
+    this.tamano.set(tamano);
+    this.pagina.set(1);
+    this.cargarBitacora();
+  }
+
   cancelar(): void {
     this.cerrar.emit();
   }
@@ -181,12 +207,17 @@ export class CoordinatorFichaModalComponent implements OnInit {
   }
 
   private cargarBitacora(): void {
-    this.service.consultarBitacora(this.idEstudiante(), this.pagina(), this.tamano).subscribe({
+    this.cargandoBitacora.set(true);
+    this.service.consultarBitacora(this.idEstudiante(), this.pagina(), this.tamano()).subscribe({
       next: (r) => {
-        this.bitacora.set(r.datos);
+        this.bitacora.set(r.datos ?? []);
         this.totalBitacora.set(r.total ?? 0);
+        this.cargandoBitacora.set(false);
       },
-      error: (e) => this.error.set(getApiErrorMessage(e)),
+      error: (e) => {
+        this.error.set(getApiErrorMessage(e));
+        this.cargandoBitacora.set(false);
+      },
     });
   }
 }

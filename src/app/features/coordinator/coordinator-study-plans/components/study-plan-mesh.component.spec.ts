@@ -63,7 +63,7 @@ describe('StudyPlanMeshComponent (certificación F3)', () => {
       { busqueda: '', semestre: 3, caracter: '' },
       { busqueda: '', semestre: 3, caracter: 'OPT' },
     ]);
-    expect(fixture.nativeElement.querySelectorAll('h4')).toHaveSize(2);
+    expect(fixture.nativeElement.querySelectorAll('tr[data-testid="malla-asignatura-fila"]')).toHaveSize(2);
   });
 
   it('la búsqueda se emite con retardo y un solo aviso por ráfaga de teclas', fakeAsync(() => {
@@ -132,6 +132,39 @@ describe('StudyPlanMeshComponent (certificación F3)', () => {
 
     expect(fixture.componentInstance.caracteresDisponibles()).toEqual([]);
   });
+
+  it('bloque E: muestra una tabla con una fila por asignatura y oculta las filas mientras carga', () => {
+    TestBed.configureTestingModule({ imports: [StudyPlanMeshComponent] });
+    const fixture = TestBed.createComponent(StudyPlanMeshComponent);
+    fixture.componentRef.setInput('plan', plan);
+    fixture.componentRef.setInput('asignaturas', [asignatura('A-1', 3), asignatura('A-2', 4)]);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('app-tabla-datos table')).not.toBeNull();
+    const filas = el.querySelectorAll('tbody tr[data-testid="malla-asignatura-fila"]');
+    expect(filas).toHaveSize(2);
+    expect(filas[0].textContent).toContain('Asignatura A-1');
+    expect(filas[0].textContent).toContain('Semestre 8');
+
+    fixture.componentRef.setInput('cargando', true);
+    fixture.detectChanges();
+    expect(el.querySelectorAll('tr[data-testid="malla-asignatura-fila"]')).toHaveSize(0);
+    expect(el.querySelector('[data-testid="tabla-datos-esqueleto"]')).not.toBeNull();
+  });
+
+  it('bloque E: por defecto pagina de a 15 y propaga el cambio de tamaño al contenedor', () => {
+    TestBed.configureTestingModule({ imports: [StudyPlanMeshComponent] });
+    const fixture = TestBed.createComponent(StudyPlanMeshComponent);
+    fixture.componentRef.setInput('plan', plan);
+    fixture.componentRef.setInput('asignaturas', [asignatura('A-1', 3)]);
+    fixture.componentRef.setInput('totalAsignaturas', 40);
+    fixture.detectChanges();
+    expect(fixture.componentInstance.pageSize()).toBe(15);
+    const tamanos: number[] = [];
+    fixture.componentInstance.pageSizeChange.subscribe((n) => tamanos.push(n));
+    fixture.debugElement.query(By.directive(PaginationComponent)).componentInstance.pageSizeChange.emit(30);
+    expect(tamanos).toEqual([30]);
+  });
 });
 
 describe('StudyPlanMeshComponent (HU074 activar o inactivar asignaturas)', () => {
@@ -164,8 +197,8 @@ describe('StudyPlanMeshComponent (HU074 activar o inactivar asignaturas)', () =>
 
   it('muestra la insignia Inactiva solo en las asignaturas inactivas', () => {
     const fixture = crear([fila('ACT-1', true), fila('INA-1', false)]);
-    const tarjetas = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('h4')).map(
-      (h) => h.closest('div.p-4')?.textContent ?? ''
+    const tarjetas = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('tr[data-testid="malla-asignatura-fila"]')).map(
+      (fila) => fila.textContent ?? ''
     );
     expect(tarjetas[0]).not.toContain('Inactiva');
     expect(tarjetas[1]).toContain('Inactiva');

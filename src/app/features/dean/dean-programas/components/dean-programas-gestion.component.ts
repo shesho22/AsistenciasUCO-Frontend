@@ -61,7 +61,7 @@ import { mensajeUi } from '../../../../core/messages/mensajes-ui';
       </div>
 
       @if (service.programas().length === 0) {
-        <div class="superficie p-8 text-center" [attr.role]="service.cargando() ? 'status' : null">
+        <div class="superficie p-5 text-center" [attr.role]="service.cargando() ? 'status' : null">
           <p class="text-sm text-warm-500">
             {{ service.cargando() ? 'Cargando programas...' : 'No hay programas académicos para los filtros indicados.' }}
           </p>

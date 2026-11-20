@@ -104,7 +104,7 @@ type StudentEnrollmentField =
     TeacherMatriculaModalComponent
 ],
     template: `
-    <div class="flex flex-col gap-6 animate-fade-in max-w-7xl mx-auto pb-12 relative">
+    <div class="flex flex-col gap-4 animate-fade-in max-w-7xl mx-auto pb-12 relative">
       <!-- 1. Encabezado y Selectores de Curso / Sesión -->
       <app-attendance-control-header
         [sessionsEnabled]="sessionsEnabled"
@@ -389,7 +389,7 @@ export class AttendanceControlComponent {
   reclamosGrupo = signal<SolicitudRevisionItem[]>([]);
   totalReclamosGrupo = signal<number>(0);
   paginaReclamosGrupo = signal<number>(1);
-  readonly tamanoReclamosGrupo = 10;
+  readonly tamanoReclamosGrupo = 15;
   /** Total de reclamos PENDIENTES del grupo según el servidor (`total` de una consulta de una fila). */
   pendingClaimsCount = signal<number>(0);
   estadoCargaReclamos = signal<EstadoCargaReclamos>('IDLE');
@@ -737,7 +737,7 @@ export class AttendanceControlComponent {
             }
           } else {
             this.toastType.set('error');
-            this.toastMessage.set(res.mensajeUsuario || 'No se pudo resolver el reclamo.');
+            this.toastMessage.set(res.mensajeUsuario || 'No se pudo resolver la justificación.');
             this.showToast.set(true);
           }
         },

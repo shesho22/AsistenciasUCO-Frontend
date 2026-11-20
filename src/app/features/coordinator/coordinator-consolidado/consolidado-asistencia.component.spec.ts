@@ -291,8 +291,16 @@ describe('ConsolidadoAsistenciaComponent (HU061)', () => {
       fixture.componentRef.setInput('embebido', true);
       fixture.detectChanges();
       expect(el(fixture).querySelector('h1')).toBeNull();
-      expect(el(fixture).textContent).toContain('1 Grupos');
+      expect(el(fixture).querySelector('[data-testid="conteo-grupos"]')?.textContent?.trim()).toBe('1 Grupo');
       expect(el(fixture).textContent).toContain('Cálculo');
+    });
+
+    it('bloque F: pagina de 15 en 15 con opciones 15/30/50, como las demás tablas', () => {
+      const fixture = crear(true);
+      listar(fixture, 'decano', [grupo('ASG-1', 'Cálculo', 'DOC-1')]);
+      expect(fixture.componentInstance.listado.tamano()).toBe(15);
+      const opciones = Array.from(el(fixture).querySelectorAll('app-pagination option')).map((o) => o.textContent?.trim());
+      expect(opciones).toEqual(['15', '30', '50']);
     });
   });
 

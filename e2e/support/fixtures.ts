@@ -27,7 +27,7 @@ export const CUENTAS: Record<Rol, CuentaPrueba> = {
     nombre: 'Carlos Alberto Restrepo',
     inicio: /\/app\/admin\/personas\/decanos$/,
     encabezadoInicio: 'Gestión de Decanos',
-    modulos: ['Personas', 'Estructura', 'Configuración', 'Indicadores'],
+    modulos: ['Personas', 'Organigrama', 'Configuración', 'Indicadores'],
   },
   DECANO: {
     rol: 'DECANO',
@@ -51,7 +51,7 @@ export const CUENTAS: Record<Rol, CuentaPrueba> = {
     nombre: 'Dra. María Elena Rostagno',
     inicio: /\/app\/docente\/grupos$/,
     encabezadoInicio: 'Gestión Integral de Grupos y Sesiones',
-    modulos: ['Mis Grupos', 'Tomar Asistencia', 'Solicitudes de sesión', 'Reclamos', 'Mis Horarios'],
+    modulos: ['Mis Grupos', 'Tomar Asistencia', 'Solicitudes de sesión', 'Justificaciones', 'Mis Horarios'],
   },
   ESTUDIANTE: {
     rol: 'ESTUDIANTE',

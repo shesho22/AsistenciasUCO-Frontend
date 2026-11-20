@@ -68,22 +68,25 @@ test.describe('Coordinador', () => {
 });
 
 test.describe('Docente', () => {
-  test('revisa la bandeja de reclamos de sus estudiantes', async ({ page }) => {
+  test('revisa la bandeja de justificaciones de sus estudiantes', async ({ page }) => {
     await iniciarSesion(page, 'DOCENTE');
-    await abrirModulo(page, 'Reclamos');
+    await abrirModulo(page, 'Justificaciones');
 
     const main = page.getByRole('main');
-    await expect(main.getByRole('heading', { level: 1, name: 'Reclamos y Justificaciones de Asistencia' })).toBeVisible();
+    await expect(main.getByRole('heading', { level: 1, name: 'Justificaciones de Asistencia' })).toBeVisible();
+    // Bloque E: la bandeja es una tabla (una fila por justificación).
+    const tabla = main.getByRole('table', { name: 'Justificaciones de asistencia' });
+    await expect(tabla.getByTestId('justificacion-fila')).toHaveCount(3);
     await expect(main.getByRole('button', { name: 'Revisar en Detalle' })).toHaveCount(3);
-    await expect(main.getByRole('heading', { level: 3, name: 'Carlos Andrés Zapata Gómez' })).toBeVisible();
+    await expect(tabla.getByRole('row', { name: /Carlos Andrés Zapata Gómez/ })).toBeVisible();
 
-    await expect(main.getByRole('heading', { level: 3, name: 'Mateo Botero Hincapié' })).toBeVisible();
-    // PC (puntos de control): la tarjeta muestra la toma reclamada.
+    await expect(tabla.getByRole('row', { name: /Mateo Botero Hincapié/ })).toBeVisible();
+    // PC (puntos de control): la fila muestra la toma reclamada.
     await expect(main.getByTestId('tarjeta-toma').filter({ hasText: 'Toma 2 · 04:00' })).toBeVisible();
     await expect(main.getByText('Pendiente de evaluación')).toHaveCount(2);
     await expect(main.getByText('Evaluado', { exact: true })).toHaveCount(1);
     // El filtro por estado y el detalle del reclamo dependen de rutas que el mock no simula (ver VALIDATION.md).
-    await expect(main.getByRole('combobox', { name: 'Filtrar reclamos por estado' })).toBeVisible();
+    await expect(main.getByRole('combobox', { name: 'Filtrar justificaciones por estado' })).toBeVisible();
   });
 
   test('abre el control de asistencia con sus grupos', async ({ page }) => {

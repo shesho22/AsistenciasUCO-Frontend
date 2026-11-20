@@ -11,12 +11,9 @@ import {
 import { AdminFestivosService } from '../../../core/services/admin-festivos.service';
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
 import { ModalComponent } from '../../../shared/components/modal/modal.component';
-import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
+import { TablaDatosComponent, TAMANO_PAGINA_TABLA, paginarEnCliente } from '../../../shared/components/tabla-datos/tabla-datos.component';
 
 type Pestana = 'FESTIVOS' | 'SESIONES';
-
-/** Tamaño de página de las sesiones en festivo (la paginación la hace el servidor). */
-const TAMANO_SESIONES = 20;
 
 /** Atribución mínima mientras no hay respuesta del backend (la fuente de la atribución es `FESTIVOS/ATRIBUCION_*`). */
 const ATRIBUCION_RESPALDO: AtribucionFestivos = {
@@ -33,9 +30,9 @@ const ANIO_VALIDO = /^\d{4}$/;
 @Component({
     selector: 'app-admin-festivos',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [PaginationComponent, ModalComponent],
+    imports: [TablaDatosComponent, ModalComponent],
     template: `
-    <div class="space-y-6 animate-fade-in">
+    <div class="space-y-4 animate-fade-in">
       <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <div class="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1">Administración Institucional</div>
@@ -181,49 +178,37 @@ const ANIO_VALIDO = /^\d{4}$/;
               <p class="text-sm mt-1">Use «Recargar año» para obtenerlos.</p>
             </div>
           } @else {
-            <!-- Tabla (md en adelante) -->
-            <div data-testid="festivos-tabla" class="hidden md:block bg-white border border-warm-200 rounded-2xl overflow-hidden">
-              <table class="w-full text-left text-sm">
-                <thead class="bg-warm-50 text-warm-600 text-xs uppercase tracking-wider">
-                  <tr>
-                    <th scope="col" class="px-4 py-3">Fecha</th>
-                    <th scope="col" class="px-4 py-3">Día</th>
-                    <th scope="col" class="px-4 py-3">Nombre</th>
-                    <th scope="col" class="px-4 py-3">Fuente</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-warm-100">
-                  @for (f of festivosPagina(); track f.fecha) {
-                    <tr [attr.data-testid]="'festivo-fila-' + f.fecha" [class.opacity-60]="!f.estaActivo">
-                      <td class="px-4 py-3 font-mono text-warm-900">{{ fechaLegible(f.fecha) }}</td>
-                      <td class="px-4 py-3 text-warm-700 capitalize">{{ diaSemana(f.fecha) }}</td>
-                      <td class="px-4 py-3 font-semibold text-warm-900">{{ f.nombre }}</td>
-                      <td class="px-4 py-3 text-warm-600">{{ f.fuente }}</td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-            <!-- Tarjetas (móvil) -->
-            <div data-testid="festivos-tarjetas" class="md:hidden space-y-2">
-              @for (f of festivosPagina(); track f.fecha) {
-                <article [attr.data-testid]="'festivo-card-' + f.fecha" class="bg-white border border-warm-200 rounded-2xl p-4" [class.opacity-60]="!f.estaActivo">
-                  <p class="font-semibold text-warm-900 break-words">{{ f.nombre }}</p>
-                  <p class="text-sm text-warm-700">
-                    <span class="capitalize">{{ diaSemana(f.fecha) }}</span>, {{ fechaLegible(f.fecha) }}
-                  </p>
-                  <p class="text-xs text-warm-500 mt-1">{{ f.fuente }}</p>
-                </article>
-              }
-            </div>
-            <app-pagination
+            <app-tabla-datos
+              data-testid="festivos-tabla"
+              [etiqueta]="'Festivos de ' + d.anio"
+              [columnas]="4"
+              anchoMinimo="40rem"
+              [paginada]="true"
               [totalItems]="d.festivos.length"
-              [pageSize]="tamanoFestivos()"
-              [currentPage]="paginaFestivos()"
-              [pageSizeOptions]="[10, 20, 50]"
-              (pageChange)="onPaginaFestivos($event)"
-              (pageSizeChange)="onTamanoFestivos($event)"
-            ></app-pagination>
+              [pagina]="paginaFestivos()"
+              [tamanoPagina]="tamanoFestivos()"
+              (paginaChange)="onPaginaFestivos($event)"
+              (tamanoPaginaChange)="onTamanoFestivos($event)"
+            >
+              <thead>
+                <tr>
+                  <th scope="col">Fecha</th>
+                  <th scope="col">Día</th>
+                  <th scope="col">Nombre</th>
+                  <th scope="col">Fuente</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (f of festivosPagina(); track f.fecha) {
+                  <tr [attr.data-testid]="'festivo-fila-' + f.fecha" [class.opacity-60]="!f.estaActivo">
+                    <td class="font-mono text-warm-900 whitespace-nowrap">{{ fechaLegible(f.fecha) }}</td>
+                    <td class="text-warm-700 capitalize">{{ diaSemana(f.fecha) }}</td>
+                    <td class="font-semibold text-warm-900">{{ f.nombre }}</td>
+                    <td class="text-warm-600">{{ f.fuente }}</td>
+                  </tr>
+                }
+              </tbody>
+            </app-tabla-datos>
           }
         }
       } @else {
@@ -231,14 +216,7 @@ const ANIO_VALIDO = /^\d{4}$/;
           <p class="text-sm text-warm-600">
             Sesiones en festivo con asistencia registrada (no se cancelaron). El docente titular decide cómo corregirlas.
           </p>
-          @if (cargandoSesiones()) {
-            <div data-testid="sesiones-cargando" role="status" class="space-y-3" aria-live="polite">
-              <span class="sr-only">Cargando sesiones…</span>
-              @for (n of [1, 2, 3]; track n) {
-                <div class="h-14 bg-warm-100 rounded-xl animate-pulse"></div>
-              }
-            </div>
-          } @else if (errorSesiones()) {
+          @if (errorSesiones()) {
             <div data-testid="sesiones-error" role="alert" class="bg-danger-50 border border-danger-200 text-danger-800 rounded-2xl p-5 space-y-3">
               <p class="font-semibold">No fue posible cargar las sesiones.</p>
               <p class="text-sm break-words">{{ errorSesiones() }}</p>
@@ -251,54 +229,49 @@ const ANIO_VALIDO = /^\d{4}$/;
                 Reintentar
               </button>
             </div>
-          } @else if (sesiones().length === 0) {
+          } @else if (!cargandoSesiones() && sesiones().length === 0) {
             <div data-testid="sesiones-vacio" role="status" class="p-10 text-center text-warm-600 bg-white border border-dashed border-warm-300 rounded-2xl">
               <p class="font-semibold text-warm-900">Ninguna sesión en festivo de {{ anio() }} tiene asistencia registrada.</p>
             </div>
           } @else {
-            <div class="hidden md:block bg-white border border-warm-200 rounded-2xl overflow-hidden">
-              <table class="w-full text-left text-sm">
-                <thead class="bg-warm-50 text-warm-600 text-xs uppercase tracking-wider">
-                  <tr>
-                    <th scope="col" class="px-4 py-3">Fecha</th>
-                    <th scope="col" class="px-4 py-3">Festivo</th>
-                    <th scope="col" class="px-4 py-3">Asignatura · Grupo</th>
-                    <th scope="col" class="px-4 py-3">Docente</th>
-                    <th scope="col" class="px-4 py-3 text-right">Tomas</th>
-                    <th scope="col" class="px-4 py-3 text-right">Registros</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-warm-100">
+            <app-tabla-datos
+              data-testid="sesiones-festivo-tabla"
+              etiqueta="Sesiones en festivo con asistencia registrada"
+              [columnas]="6"
+              anchoMinimo="52rem"
+              [cargando]="cargandoSesiones()"
+              [paginada]="true"
+              [totalItems]="totalSesiones()"
+              [pagina]="paginaSesiones()"
+              [tamanoPagina]="tamanoSesiones()"
+              (paginaChange)="onPaginaSesiones($event)"
+              (tamanoPaginaChange)="onTamanoSesiones($event)"
+            >
+              <thead>
+                <tr>
+                  <th scope="col">Fecha</th>
+                  <th scope="col">Festivo</th>
+                  <th scope="col">Asignatura · Grupo</th>
+                  <th scope="col">Docente</th>
+                  <th scope="col" class="text-right">Tomas</th>
+                  <th scope="col" class="text-right">Registros</th>
+                </tr>
+              </thead>
+              <tbody>
+                @if (!cargandoSesiones()) {
                   @for (s of sesiones(); track s.idSesion) {
                     <tr [attr.data-testid]="'sesion-festivo-fila-' + s.idSesion">
-                      <td class="px-4 py-3 font-mono text-warm-900">{{ fechaLegible(s.fecha) }}</td>
-                      <td class="px-4 py-3 text-warm-800">{{ s.nombreFestivo }}</td>
-                      <td class="px-4 py-3 text-warm-900">{{ s.nombreAsignatura }} · {{ s.nombreGrupo }}</td>
-                      <td class="px-4 py-3 text-warm-700">{{ s.nombreDocente }}</td>
-                      <td class="px-4 py-3 text-right font-mono">{{ s.totalTomas }}</td>
-                      <td class="px-4 py-3 text-right font-mono">{{ s.totalRegistros }}</td>
+                      <td class="font-mono text-warm-900 whitespace-nowrap">{{ fechaLegible(s.fecha) }}</td>
+                      <td class="text-warm-800">{{ s.nombreFestivo }}</td>
+                      <td class="text-warm-900">{{ s.nombreAsignatura }} · {{ s.nombreGrupo }}</td>
+                      <td class="text-warm-700">{{ s.nombreDocente }}</td>
+                      <td class="text-right font-mono">{{ s.totalTomas }}</td>
+                      <td class="text-right font-mono">{{ s.totalRegistros }}</td>
                     </tr>
                   }
-                </tbody>
-              </table>
-            </div>
-            <div class="md:hidden space-y-2">
-              @for (s of sesiones(); track s.idSesion) {
-                <article [attr.data-testid]="'sesion-festivo-card-' + s.idSesion" class="bg-white border border-warm-200 rounded-2xl p-4 space-y-1">
-                  <p class="font-semibold text-warm-900 break-words">{{ s.nombreAsignatura }} · {{ s.nombreGrupo }}</p>
-                  <p class="text-sm text-warm-700">{{ s.nombreFestivo }} · {{ fechaLegible(s.fecha) }}</p>
-                  <p class="text-xs text-warm-600">{{ s.nombreDocente }}</p>
-                  <p class="text-xs text-warm-600">Tomas: {{ s.totalTomas }} · Registros: {{ s.totalRegistros }}</p>
-                </article>
-              }
-            </div>
-            <app-pagination
-              [totalItems]="totalSesiones()"
-              [pageSize]="tamanoSesiones"
-              [currentPage]="paginaSesiones()"
-              [showPageSizeSelector]="false"
-              (pageChange)="onPaginaSesiones($event)"
-            ></app-pagination>
+                }
+              </tbody>
+            </app-tabla-datos>
           }
         </section>
       }
@@ -352,7 +325,6 @@ export class AdminFestivosComponent implements OnInit {
   readonly timeZone = inject(SessionTimeZoneService);
 
   readonly anioActual = new Date().getFullYear();
-  readonly tamanoSesiones = TAMANO_SESIONES;
 
   readonly anio = signal<number>(this.anioActual);
   readonly anioTexto = signal<string>(String(this.anioActual));
@@ -363,11 +335,13 @@ export class AdminFestivosComponent implements OnInit {
   readonly cargando = signal<boolean>(false);
   readonly error = signal<string | null>(null);
   readonly paginaFestivos = signal<number>(1);
-  readonly tamanoFestivos = signal<number>(10);
+  readonly tamanoFestivos = signal<number>(TAMANO_PAGINA_TABLA);
 
   readonly sesiones = signal<SesionFestivoConAsistencia[]>([]);
   readonly totalSesiones = signal<number>(0);
   readonly paginaSesiones = signal<number>(1);
+  /** Tamaño de página de las sesiones en festivo (la paginación la hace el servidor; acepta cualquier tamaño). */
+  readonly tamanoSesiones = signal<number>(TAMANO_PAGINA_TABLA);
   readonly cargandoSesiones = signal<boolean>(false);
   readonly errorSesiones = signal<string | null>(null);
 
@@ -378,9 +352,7 @@ export class AdminFestivosComponent implements OnInit {
 
   readonly atribucion = computed<AtribucionFestivos>(() => this.datos()?.atribucion ?? ATRIBUCION_RESPALDO);
   readonly festivosPagina = computed<DiaFestivo[]>(() => {
-    const festivos = this.datos()?.festivos ?? [];
-    const inicio = (this.paginaFestivos() - 1) * this.tamanoFestivos();
-    return festivos.slice(inicio, inicio + this.tamanoFestivos());
+    return paginarEnCliente(this.datos()?.festivos ?? [], this.paginaFestivos(), this.tamanoFestivos());
   });
 
   private consulta: Subscription | null = null;
@@ -456,7 +428,7 @@ export class AdminFestivosComponent implements OnInit {
     this.cargandoSesiones.set(true);
     this.errorSesiones.set(null);
     this.consultaSesiones = this.service
-      .sesionesConAsistencia(this.anio(), this.paginaSesiones(), TAMANO_SESIONES)
+      .sesionesConAsistencia(this.anio(), this.paginaSesiones(), this.tamanoSesiones())
       .subscribe({
         next: (res) => {
           this.sesiones.set(res.elementos);
@@ -483,6 +455,12 @@ export class AdminFestivosComponent implements OnInit {
 
   onPaginaSesiones(pagina: number): void {
     this.paginaSesiones.set(pagina);
+    this.cargarSesiones();
+  }
+
+  onTamanoSesiones(tamano: number): void {
+    this.tamanoSesiones.set(tamano);
+    this.paginaSesiones.set(1);
     this.cargarSesiones();
   }
 

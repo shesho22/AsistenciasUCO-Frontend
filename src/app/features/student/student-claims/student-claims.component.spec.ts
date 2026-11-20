@@ -57,7 +57,7 @@ describe('StudentClaimsComponent (HU010/HU011: consulta del estudiante)', () => 
 
     const req = http.expectOne((r) => r.url === ENDPOINT);
     expect(req.request.params.get('pagina')).toBe('1');
-    expect(req.request.params.get('tamano')).toBe('10');
+    expect(req.request.params.get('tamano')).toBe('15');
     expect(req.request.params.has('estado')).toBeFalse();
     req.flush({
       exitoso: true,
@@ -68,6 +68,28 @@ describe('StudentClaimsComponent (HU010/HU011: consulta del estudiante)', () => 
   });
 
   afterEach(() => http.verify());
+
+  it('bloque E: una tabla con una fila por solicitud, 15 por página y opciones 15/30/50', () => {
+    const el = fixture.nativeElement as HTMLElement;
+    const filas = el.querySelectorAll('app-tabla-datos tbody tr[data-testid^="reclamo-fila-"]');
+    expect(filas.length).toBe(2);
+    expect(filas[0].getAttribute('data-testid')).toBe('reclamo-fila-sol-1');
+    expect(el.querySelector('app-card')).toBeNull();
+    expect(filas[0].querySelector('[data-accion="retirar-reclamo"]')).not.toBeNull();
+    expect(component.tamano()).toBe(15);
+    const opciones = Array.from((el.querySelector('select[aria-label="Resultados por página"]') as HTMLSelectElement).options).map((o) => o.value);
+    expect(opciones).toEqual(['15', '30', '50']);
+  });
+
+  it('bloque E: mientras carga muestra el esqueleto de la tabla y ninguna fila', () => {
+    component.onPagina(2);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[data-testid="reclamos-cargando"]')).not.toBeNull();
+    expect(el.querySelector('[data-testid="tabla-datos-esqueleto"]')).not.toBeNull();
+    expect(el.querySelectorAll('tr[data-testid^="reclamo-fila-"]').length).toBe(0);
+    http.expectOne((r) => r.url === ENDPOINT).flush({ exitoso: true, total: 0, datos: [] });
+  });
 
   it('SC-01 lista mis solicitudes con estado, materia, sesión, respuesta y soporte', () => {
     const texto = fixture.nativeElement.textContent as string;
@@ -149,9 +171,9 @@ describe('StudentClaimsComponent (HU010/HU011: consulta del estudiante)', () => 
   it('SC-03 paginación y tamaño', () => {
     component.onPagina(2);
     expect(http.expectOne((r) => r.url === ENDPOINT).request.params.get('pagina')).toBe('2');
-    component.onTamano(20);
+    component.onTamano(30);
     const req = http.expectOne((r) => r.url === ENDPOINT);
-    expect(req.request.params.get('tamano')).toBe('20');
+    expect(req.request.params.get('tamano')).toBe('30');
     expect(req.request.params.get('pagina')).toBe('1');
   });
 
@@ -257,7 +279,7 @@ describe('StudentClaimsComponent (HU010/HU011: consulta del estudiante)', () => 
     });
 
     it('SC-08 muestra un botón de descarga por cada soporte del reclamo', () => {
-      const tarjetas = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('app-card'));
+      const tarjetas = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('tr[data-testid^="reclamo-fila-"]'));
       const porTarjeta = tarjetas.map((t) =>
         Array.from(t.querySelectorAll('[data-testid^="btn-descargar-soporte-"]')).map((b) => (b.textContent ?? '').trim())
       );

@@ -1,5 +1,6 @@
 import { consumirRetornoQr, esRutaAsistenciaQr, guardarRetornoQr } from '../utils/qr-return-url.util';
-import { Injectable, OnDestroy, inject, signal, computed } from '@angular/core';
+import { Injectable, OnDestroy, inject, signal, computed, effect } from '@angular/core';
+import { EstudiantePortalCacheService } from './estudiante-portal-cache.service';
 import { Router } from '@angular/router';
 import { Observable, of } from 'rxjs';
 import { ApiResponse } from '../models/api-response.model';
@@ -152,6 +153,8 @@ function isValidUuid(value: unknown): value is string {
 })
 export class AuthService implements OnDestroy {
   private readonly router = inject(Router);
+  /** PERF-EST-MM: la caché del portal del estudiante pertenece al usuario autenticado; se vacía al cambiar o cerrar sesión. */
+  private readonly estudiantePortalCache = inject(EstudiantePortalCacheService);
 
   // ── Signals públicos ──────────────────────────────────────────────────────
   currentUser = signal<User | null>(null);
@@ -208,6 +211,7 @@ export class AuthService implements OnDestroy {
   }
 
   constructor() {
+    effect(() => this.estudiantePortalCache.asegurarPropietario(this.currentUser()?.id ?? null));
     // Limpieza defensiva: eliminar claves residuales de versiones anteriores.
     this.purgeLegacyStorage();
     if (this.isBaselineMode()) {

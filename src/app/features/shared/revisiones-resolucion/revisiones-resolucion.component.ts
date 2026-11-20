@@ -56,7 +56,7 @@ export const ESTADOS_FILTRABLES: ReadonlyArray<{ codigo: EstadoRevisionCancelaci
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="space-y-6 animate-fade-in">
+    <div class="space-y-4 animate-fade-in">
       <app-page-header
         [enTarjeta]="true"
         [etiqueta]="esDecano() ? 'Decanatura' : 'Coordinación'"

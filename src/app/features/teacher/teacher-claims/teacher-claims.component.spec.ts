@@ -422,16 +422,29 @@ describe('TeacherClaimsComponent — bandeja paginada y detalle (HU035/HU036)', 
     const req = listaReq();
     expect(req.request.method).toBe('GET');
     expect(req.request.params.get('pagina')).toBe('1');
-    expect(req.request.params.get('tamano')).toBe('10');
+    expect(req.request.params.get('tamano')).toBe('15');
     req.flush({ exitoso: true, datos: [fila(ID_1)], total: 25 });
     http.expectOne((r) => r.url === LISTA && r.params.get('estado') === 'P').flush({ exitoso: true, datos: [], total: 7 });
     fixture.detectChanges();
 
     const paginador = fixture.debugElement.query(By.directive(PaginationComponent)).componentInstance as PaginationComponent;
     expect(paginador.totalItems()).toBe(25);
-    expect(paginador.pageSize()).toBe(10);
+    expect(paginador.pageSize()).toBe(15);
     expect(paginador.currentPage()).toBe(1);
     expect(component.total()).toBe(25);
+  });
+
+  it('bloque E: la bandeja es una tabla con una fila por justificación y el selector ofrece 15/30/50', () => {
+    cargarInicial([fila(ID_1), fila(ID_2)], 2, 2);
+
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('app-card')).toBeNull();
+    const filas = el.querySelectorAll('app-tabla-datos tbody tr[data-testid="justificacion-fila"]');
+    expect(filas).toHaveSize(2);
+    expect(filas[0].textContent).toContain('Estudiante 1');
+    expect(filas[0].querySelector('app-button')?.textContent).toContain('Revisar en Detalle');
+    const paginador = fixture.debugElement.query(By.directive(PaginationComponent)).componentInstance as PaginationComponent;
+    expect(paginador.pageSizeOptions()).toEqual([15, 30, 50]);
   });
 
   it('cambiar de página o de tamaño recarga desde el servidor', () => {
@@ -440,18 +453,18 @@ describe('TeacherClaimsComponent — bandeja paginada y detalle (HU035/HU036)', 
     component.cambiarPagina(2);
     const pagina2 = listaReq();
     expect(pagina2.request.params.get('pagina')).toBe('2');
-    expect(pagina2.request.params.get('tamano')).toBe('10');
+    expect(pagina2.request.params.get('tamano')).toBe('15');
     pagina2.flush({ exitoso: true, datos: [fila(ID_2)], total: 25 });
     http.expectOne((r) => r.url === LISTA && r.params.get('estado') === 'P').flush({ exitoso: true, datos: [], total: 7 });
 
-    component.cambiarTamano(20);
+    component.cambiarTamano(30);
     const nuevoTamano = listaReq();
     expect(nuevoTamano.request.params.get('pagina')).toBe('1');
-    expect(nuevoTamano.request.params.get('tamano')).toBe('20');
+    expect(nuevoTamano.request.params.get('tamano')).toBe('30');
     nuevoTamano.flush({ exitoso: true, datos: [fila(ID_1)], total: 25 });
     http.expectOne((r) => r.url === LISTA && r.params.get('estado') === 'P').flush({ exitoso: true, datos: [], total: 7 });
     expect(component.pagina()).toBe(1);
-    expect(component.tamano()).toBe(20);
+    expect(component.tamano()).toBe(30);
   });
 
   it('FE-02 el filtro de estado es reactivo: nueva petición con estado=P, página 1 y lista actualizada', () => {
@@ -493,7 +506,7 @@ describe('TeacherClaimsComponent — bandeja paginada y detalle (HU035/HU036)', 
 
   it('FE-04 abrir una solicitud consulta el detalle y muestra la causal real', () => {
     cargarInicial([fila(ID_1)], 1, 1);
-    const boton = fixture.nativeElement.querySelector('app-card app-button button') as HTMLButtonElement;
+    const boton = fixture.nativeElement.querySelector('tr[data-testid="justificacion-fila"] app-button button') as HTMLButtonElement;
     boton.click();
 
     const req = http.expectOne(`${LISTA}/${ID_1}`);
@@ -541,7 +554,7 @@ describe('TeacherClaimsComponent — bandeja paginada y detalle (HU035/HU036)', 
 
     expect(component.listState()).toBe('SERVER_ERROR');
     expect(fixture.nativeElement.textContent).toContain(component.listStateMessage());
-    expect(fixture.nativeElement.textContent).not.toContain('No hay reclamos en esta categoría');
+    expect(fixture.nativeElement.textContent).not.toContain('No hay justificaciones en esta categoría');
   });
 
   // F-DOC-005 / error sin salida: un fallo de carga debe anunciarse (role=alert) y ofrecer reintento.
@@ -668,7 +681,12 @@ describe('TeacherClaimsComponent — bandeja paginada y detalle (HU035/HU036)', 
       http.expectOne((r) => r.url === LISTA && r.params.get('estado') === 'P').flush({ exitoso: true, datos: [], total: 1 });
       fixture.detectChanges();
       expect(component.reclamos()).toEqual([]);
-      expect(fixture.nativeElement.textContent).toContain('No hay reclamos en esta categoría');
+      expect(fixture.nativeElement.textContent).toContain('No hay justificaciones en esta categoría');
+      // Un solo icono en el estado vacío y el texto habla del filtro de estado (no de pestañas).
+      const vacio = (fixture.nativeElement as HTMLElement).querySelector('app-empty-state')?.parentElement as HTMLElement;
+      expect(vacio.querySelectorAll('svg').length).toBe(1);
+      expect(fixture.nativeElement.textContent).toContain('Cambia el filtro de estado');
+      expect(fixture.nativeElement.textContent).not.toContain('Cambia de pestaña');
 
       escribir('');
       tick(300);
@@ -681,7 +699,7 @@ describe('TeacherClaimsComponent — bandeja paginada y detalle (HU035/HU036)', 
     it('con el filtro Pendientes y una búsqueda activa el contador de pendientes se consulta aparte (no es el total filtrado)', fakeAsync(() => {
       cargarInicial([fila(ID_1)], 1, 9);
       component.cambiarEstado('P');
-      http.expectOne((r) => r.url === LISTA && r.params.get('estado') === 'P' && r.params.get('tamano') === '10')
+      http.expectOne((r) => r.url === LISTA && r.params.get('estado') === 'P' && r.params.get('tamano') === '15')
         .flush({ exitoso: true, datos: [fila(ID_1)], total: 9 });
 
       escribir('ana');

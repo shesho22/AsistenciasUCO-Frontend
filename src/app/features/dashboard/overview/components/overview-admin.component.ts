@@ -1,10 +1,14 @@
 import { CifraConBaseComponent } from '../../../../shared/components/cifra-con-base/cifra-con-base.component';
-import { Component, ChangeDetectionStrategy, input } from '@angular/core';
+import { Component, ChangeDetectionStrategy, computed, input, signal } from '@angular/core';
 
 import { RouterLink } from '@angular/router';
-import { CardComponent } from '../../../../shared/components/card/card.component';
 import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
+import {
+  TablaDatosComponent,
+  TAMANO_PAGINA_TABLA,
+  paginarEnCliente,
+} from '../../../../shared/components/tabla-datos/tabla-datos.component';
 import { DecanoItem } from '../../../../core/models/role-management.model';
 import { KpisInstitucion } from '../../../../core/models/admin-indicators.model';
 import { EstadoIndicadores, textoCifra } from '../../../../core/utils/cifra-indicador';
@@ -12,12 +16,12 @@ import { EstadoIndicadores, textoCifra } from '../../../../core/utils/cifra-indi
 @Component({
     selector: 'app-overview-admin',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CifraConBaseComponent, RouterLink, CardComponent, BadgeComponent, ButtonComponent],
+    imports: [CifraConBaseComponent, RouterLink, BadgeComponent, ButtonComponent, TablaDatosComponent],
     host: {
         class: 'block w-full',
     },
     template: `
-    <div class="space-y-6">
+    <div class="space-y-4">
       <!-- KPIs Administrador -->
       <section class="grid grid-cols-2 lg:grid-cols-4 gap-4" [attr.aria-busy]="estado() === 'cargando'">
         <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
@@ -58,46 +62,51 @@ import { EstadoIndicadores, textoCifra } from '../../../../core/utils/cifra-indi
           </a>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          @for (decano of decanos(); track decano.id) {
-            <app-card [hoverable]="true" [title]="decano.facultad" [subtitle]="decano.nombres + ' ' + decano.apellidos">
-              <div class="space-y-3 my-2 text-xs text-warm-700">
-                <div class="flex items-center gap-2">
-                  <svg class="w-4 h-4 text-primary-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                  <span class="font-medium text-warm-800">{{ decano.correo }}</span>
-                </div>
-                @if (decano.fechaAsignacion) {
-                  <div class="flex items-center gap-2">
-                    <svg class="w-4 h-4 text-primary-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <span class="text-warm-600">Asignado: {{ decano.fechaAsignacion }}</span>
-                  </div>
-                }
-                <div class="pt-2 border-t border-warm-100 flex items-center justify-between">
-                  <span class="text-warm-500 font-medium">Estado institucional:</span>
-                  <app-badge [variant]="decano.estado === 'ACTIVO' ? 'success' : 'neutral'">
-                    {{ decano.estado }}
-                  </app-badge>
-                </div>
-              </div>
-
-              <div card-footer class="mt-4 pt-3 border-t border-warm-100 flex items-center justify-end">
-                <a routerLink="/app/admin/decanos" class="w-full">
-                  <app-button variant="secondary" size="sm" [fullWidth]="true">
+        <app-tabla-datos
+          etiqueta="Directorio de facultades y decanaturas"
+          [columnas]="6"
+          anchoMinimo="56rem"
+          [vacio]="decanos().length === 0"
+          mensajeVacio="No se encontraron decanos registrados en la institución."
+          [paginada]="true"
+          [totalItems]="decanos().length"
+          [pagina]="pagina()"
+          [tamanoPagina]="tamanoPagina()"
+          (paginaChange)="pagina.set($event)"
+          (tamanoPaginaChange)="cambiarTamano($event)"
+        >
+          <thead>
+            <tr>
+              <th scope="col">Facultad</th>
+              <th scope="col">Decano(a)</th>
+              <th scope="col">Correo</th>
+              <th scope="col">Asignado</th>
+              <th scope="col">Estado</th>
+              <th scope="col"><span class="sr-only">Acciones</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (decano of decanosPagina(); track decano.id) {
+              <tr data-testid="decano-fila">
+                <td class="font-semibold text-warm-900">{{ decano.facultad }}</td>
+                <td>{{ decano.nombres + ' ' + decano.apellidos }}</td>
+                <td class="text-warm-700">{{ decano.correo }}</td>
+                <td class="text-warm-600 whitespace-nowrap" data-testid="decano-asignado">{{ decano.fechaAsignacion || '—' }}</td>
+                <td>
+                  <app-badge [variant]="decano.estado === 'ACTIVO' ? 'success' : 'neutral'" size="sm">{{ decano.estado }}</app-badge>
+                </td>
+                <td class="text-right">
+                  <a
+                    routerLink="/app/admin/decanos"
+                    class="inline-flex items-center rounded-xl border border-warm-200 bg-white px-3 py-1.5 text-xs font-semibold text-warm-800 hover:bg-warm-50 whitespace-nowrap"
+                  >
                     Gestionar Decano
-                  </app-button>
-                </a>
-              </div>
-            </app-card>
-          } @empty {
-            <div class="col-span-3 bg-white p-12 rounded-2xl border border-warm-200 text-center space-y-3">
-              <p class="text-xs text-warm-500">No se encontraron decanos registrados en la institución.</p>
-            </div>
-          }
-        </div>
+                  </a>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </app-tabla-datos>
       </section>
     </div>
   `
@@ -108,6 +117,15 @@ export class OverviewAdminComponent {
   /** CIERRE-W3I: indicadores de la institución calculados en la base (GET /admin/indicadores). */
   kpis = input<KpisInstitucion | null>(null);
   estado = input<EstadoIndicadores>('cargando');
+
+  readonly pagina = signal(1);
+  readonly tamanoPagina = signal(TAMANO_PAGINA_TABLA);
+  readonly decanosPagina = computed(() => paginarEnCliente(this.decanos(), this.pagina(), this.tamanoPagina()));
+
+  cambiarTamano(tamano: number): void {
+    this.tamanoPagina.set(tamano);
+    this.pagina.set(1);
+  }
 
   texto(valor: number | null | undefined, sufijo = ''): string {
     return textoCifra(valor, this.estado(), sufijo);

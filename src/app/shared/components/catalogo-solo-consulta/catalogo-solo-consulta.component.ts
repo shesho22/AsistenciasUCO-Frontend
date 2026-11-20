@@ -18,7 +18,7 @@ export interface FilaCatalogo {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="space-y-6 animate-fade-in">
+    <div class="space-y-4 animate-fade-in">
       @if (seccion()) {
         <div>
           <h2 class="text-lg font-bold font-serif text-warm-900">{{ titulo() }}</h2>

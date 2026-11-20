@@ -9,7 +9,12 @@ import {
 } from '../../../core/models/role-management.model';
 import { getBackendUserMessage } from '../../../core/api/errors/api-error.util';
 import { ActionMenuComponent, ActionMenuItem } from '../../../shared/components/action-menu/action-menu.component';
-import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
+import {
+  TablaDatosComponent,
+  TAMANO_PAGINA_TABLA,
+  paginarEnCliente,
+} from '../../../shared/components/tabla-datos/tabla-datos.component';
+import { BadgeComponent } from '../../../shared/components/badge/badge.component';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
 import { getSafeTextError } from '../../../core/validation/form-fields.util';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
@@ -21,9 +26,9 @@ type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
 @Component({
     selector: 'app-admin-facultades',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [ModalComponent, PageHeaderComponent, FormsModule, PaginationComponent, ActionMenuComponent],
+    imports: [ModalComponent, PageHeaderComponent, FormsModule, TablaDatosComponent, BadgeComponent, ActionMenuComponent],
     template: `
-    <div class="space-y-6 animate-fade-in">
+    <div class="space-y-4 animate-fade-in">
       <!-- ================= HEADER & BREADCRUMB ================= -->
       <app-page-header
         etiqueta="Administración Institucional"
@@ -113,7 +118,7 @@ type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
             <input aria-label="Buscar facultad por nombre"
               type="text"
               [ngModel]="filtroTexto()"
-              (ngModelChange)="filtroTexto.set($event)"
+              (ngModelChange)="filtroTexto.set($event); currentPage.set(1)"
               placeholder="Buscar facultad por nombre o decano..."
               class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-warm-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-700/20 focus:border-primary-700 bg-white"
             />
@@ -126,7 +131,7 @@ type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
           <div class="flex items-center gap-2">
             <select aria-label="Filtrar facultades por estado"
               [ngModel]="filtroEstado()"
-              (ngModelChange)="filtroEstado.set($event)"
+              (ngModelChange)="filtroEstado.set($event); currentPage.set(1)"
               class="px-3 py-2.5 rounded-xl border border-warm-200 text-xs font-semibold bg-white text-warm-800 focus:outline-none focus:ring-2 focus:ring-primary-700/20"
             >
               <option value="TODOS">Todos los estados</option>
@@ -148,89 +153,64 @@ type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
             <p class="text-xs text-warm-500 mt-1">Prueba con otros términos de búsqueda o ajusta los filtros.</p>
           </div>
         } @else {
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            @for (fac of pagedFacultades(); track fac.id) {
-              <div class="superficie p-5 hover:shadow-warm-md transition-all flex flex-col justify-between h-full">
-                <div>
-                  <!-- Encabezado de Tarjeta -->
-                  <div class="flex items-start justify-between gap-3 mb-2.5">
-                    <h3 class="font-serif font-bold text-warm-900 text-base leading-snug">{{ fac.nombre }}</h3>
-                    <span
-                      class="text-xs font-semibold px-2.5 py-0.5 rounded-full shrink-0"
-                      [class]="fac.estado === 'ACTIVO' ? 'bg-success-100 text-success-800' : 'bg-danger-100 text-danger-800'"
-                    >
-                      {{ fac.estado }}
-                    </span>
-                  </div>
-
-                  <!-- SECCIÓN DECANATO: ASIGNACIÓN Y GOBIERNO INSTITUCIONAL -->
-                  <div class="p-3.5 rounded-xl border mb-4 bg-warm-50/70 border-warm-200/80">
-                    <div class="flex items-center justify-between mb-1.5">
-                      <span class="text-[10px] font-bold uppercase tracking-wider text-warm-500">
-                        Decanatura
-                      </span>
-                      <span class="text-[10px] font-semibold text-success-700 bg-success-50 px-2 py-0.5 rounded-full border border-success-200">
-                        Titular Asignado
-                      </span>
+          <app-tabla-datos
+            etiqueta="Facultades"
+            [columnas]="6"
+            anchoMinimo="54rem"
+            [paginada]="true"
+            [totalItems]="facultadesFiltradas().length"
+            [pagina]="currentPage()"
+            [tamanoPagina]="pageSize()"
+            (paginaChange)="currentPage.set($event)"
+            (tamanoPaginaChange)="cambiarTamanoPagina($event)"
+          >
+            <thead>
+              <tr>
+                <th scope="col">Facultad</th>
+                <th scope="col">Decano(a) titular</th>
+                <th scope="col" class="text-right">Programas</th>
+                <th scope="col" class="text-right">Estudiantes</th>
+                <th scope="col">Estado</th>
+                <th scope="col"><span class="sr-only">Acciones</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (fac of pagedFacultades(); track fac.id) {
+                <tr data-testid="facultad-fila">
+                  <td class="font-semibold text-warm-900">{{ fac.nombre }}</td>
+                  <td>{{ fac.decanoNombre || '—' }}</td>
+                  <td class="text-right tabular-nums">{{ totalProgramasDe(fac) ?? '—' }}</td>
+                  <td class="text-right tabular-nums">{{ totalEstudiantesDe(fac) ?? '—' }}</td>
+                  <td>
+                    <app-badge [variant]="fac.estado === 'ACTIVO' ? 'success' : 'danger'" size="sm">{{ fac.estado }}</app-badge>
+                  </td>
+                  <td>
+                    <!-- Una accion primaria y el resto en "Mas" -->
+                    <div class="flex items-center justify-end gap-2" data-testid="acciones-facultad">
+                      <button
+                        type="button"
+                        (click)="verProgramasFacultad(fac)"
+                        class="min-h-[36px] py-1.5 px-3 bg-primary-700 hover:bg-primary-800 text-white rounded-xl text-xs font-semibold transition-colors whitespace-nowrap"
+                      >
+                        Ver Programas
+                      </button>
+                      <app-action-menu
+                        label="Más acciones de la facultad"
+                        [items]="accionesFacultad(fac)"
+                        (selected)="alElegirAccionFacultad(fac, $event)"
+                      />
                     </div>
-
-                    <div class="flex items-center gap-2 mb-2">
-                      <svg aria-hidden="true" class="w-4 h-4 text-warm-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                      <p class="text-xs font-bold text-warm-900 truncate">{{ fac.decanoNombre }}</p>
-                    </div>
-                  </div>
-
-                  <!-- Métricas Académicas -->
-                  <div class="grid grid-cols-2 gap-3 py-2.5 border-t border-warm-100 mb-4 bg-warm-50/50 rounded-xl px-3">
-                    <div>
-                      <span class="text-[10px] text-warm-500 font-semibold uppercase block">Programas</span>
-                      <span class="text-sm font-bold text-warm-900">{{ totalProgramasDe(fac) ?? '—' }}</span>
-                    </div>
-                    <div>
-                      <span class="text-[10px] text-warm-500 font-semibold uppercase block">Estudiantes</span>
-                      <span class="text-sm font-bold text-warm-900">{{ totalEstudiantesDe(fac) ?? '—' }}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Botonera de Acciones: una primaria y el resto en "Mas" -->
-                <div class="flex items-center gap-2 pt-2" data-testid="acciones-facultad">
-                  <button
-                    type="button"
-                    (click)="verProgramasFacultad(fac)"
-                    class="flex-1 min-h-[44px] py-2 px-3 bg-primary-700 hover:bg-primary-800 text-white rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-1.5"
-                  >
-                    <span>Ver Programas</span>
-                  </button>
-                  <app-action-menu
-                    label="Más acciones de la facultad"
-                    [items]="accionesFacultad(fac)"
-                    (selected)="alElegirAccionFacultad(fac, $event)"
-                  />
-                </div>
-              </div>
-            }
-          </div>
-
-          <!-- Paginación -->
-          @if (facultadesFiltradas().length > pageSize()) {
-            <div class="mt-6 flex justify-center">
-              <app-pagination
-                [currentPage]="currentPage()"
-                [totalItems]="facultadesFiltradas().length"
-                [pageSize]="pageSize()"
-                (pageChange)="currentPage.set($event)"
-              />
-            </div>
-          }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </app-tabla-datos>
         }
       }
 
       <!-- ================= 2. FORMULARIO: CREAR / EDITAR FACULTAD ================= -->
       @if (vista() === 'FORM') {
-        <div class="superficie p-6 sm:p-8 max-w-xl mx-auto space-y-6">
+        <div class="superficie p-4 sm:p-8 max-w-xl mx-auto space-y-4">
           <div class="flex items-center justify-between pb-4 border-b border-warm-100">
             <div>
               <h2 class="text-xl font-serif font-bold text-warm-900">
@@ -465,16 +445,25 @@ type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
             } @else if (programasFacultad().length === 0) {
               <p class="text-xs text-warm-500 italic">Esta facultad aún no tiene programas académicos registrados.</p>
             } @else {
-              <ul class="grid grid-cols-1 sm:grid-cols-2 gap-2" data-testid="programas-facultad">
-                @for (p of programasFacultad(); track p.id) {
-                  <li class="flex items-center justify-between gap-2 p-3 rounded-xl bg-white border border-warm-200/80 text-xs">
-                    <span class="font-semibold text-warm-800">{{ p.nombre }}</span>
-                    @if (p.codigo) {
-                      <span class="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-warm-100 text-warm-600">{{ p.codigo }}</span>
+              <div class="tabla-contenedor max-h-[50vh]" data-testid="programas-facultad">
+                <table class="tabla">
+                  <caption class="sr-only">Programas académicos de la facultad</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Programa</th>
+                      <th scope="col">Código</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (p of programasFacultad(); track p.id) {
+                      <tr data-testid="programa-facultad-fila">
+                        <td class="font-semibold text-warm-800">{{ p.nombre }}</td>
+                        <td class="font-mono text-xs text-warm-600">{{ p.codigo || '—' }}</td>
+                      </tr>
                     }
-                  </li>
-                }
-              </ul>
+                  </tbody>
+                </table>
+              </div>
             }
           </div>
 
@@ -506,7 +495,7 @@ export class AdminFacultadesComponent implements OnInit {
   filtroTexto = signal('');
   filtroEstado = signal<FiltroEstadoFacultad>('TODOS');
   currentPage = signal(1);
-  pageSize = signal(6);
+  pageSize = signal(TAMANO_PAGINA_TABLA);
 
   facultades = this.adminService.facultades;
   decanos = this.adminService.decanos;
@@ -573,11 +562,12 @@ export class AdminFacultadesComponent implements OnInit {
     });
   });
 
-  pagedFacultades = computed(() => {
-    const list = this.facultadesFiltradas();
-    const start = (this.currentPage() - 1) * this.pageSize();
-    return list.slice(start, start + this.pageSize());
-  });
+  pagedFacultades = computed(() => paginarEnCliente(this.facultadesFiltradas(), this.currentPage(), this.pageSize()));
+
+  cambiarTamanoPagina(tamano: number): void {
+    this.pageSize.set(tamano);
+    this.currentPage.set(1);
+  }
 
   decanoSeleccionadoObjeto = computed(() => {
     const id = this.decanoSeleccionadoId();
@@ -690,7 +680,7 @@ export class AdminFacultadesComponent implements OnInit {
     }
   }
 
-  /** Acciones secundarias de la tarjeta; la primaria visible es "Ver Programas y Planes". */
+  /** Acciones secundarias de la fila; la primaria visible es "Ver Programas y Planes". */
   accionesFacultad(fac: FacultadItem): ActionMenuItem[] {
     return [
       { id: 'editar', label: 'Editar', testid: 'facultad-editar' },

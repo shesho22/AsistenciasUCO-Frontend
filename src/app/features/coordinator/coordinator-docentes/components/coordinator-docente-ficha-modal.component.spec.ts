@@ -76,7 +76,7 @@ describe('CoordinatorDocenteFichaModalComponent', () => {
   it('FM-01 consulta la ficha del docente con la primera pagina al abrir', () => {
     crear();
 
-    expect(coordService.getFichaDocente).toHaveBeenCalledWith('doc-1', { pagina: 1, tamano: 5 });
+    expect(coordService.getFichaDocente).toHaveBeenCalledWith('doc-1', { pagina: 1, tamano: 15 });
     expect(component.cargando()).toBeFalse();
     expect(component.totalHistorial()).toBe(12);
   });
@@ -103,7 +103,19 @@ describe('CoordinatorDocenteFichaModalComponent', () => {
     component.cambiarPagina(2);
 
     expect(component.pagina()).toBe(2);
-    expect(coordService.getFichaDocente).toHaveBeenCalledWith('doc-1', { pagina: 2, tamano: 5 });
+    expect(coordService.getFichaDocente).toHaveBeenCalledWith('doc-1', { pagina: 2, tamano: 15 });
+  });
+
+  it('bloque E: el historial es una tabla con una fila por grupo y el tamaño de página reconsulta desde la 1', () => {
+    crear();
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.querySelector('app-tabla-datos table')).not.toBeNull();
+    expect(el.querySelectorAll('tbody tr[data-testid="grupo-historial"]')).toHaveSize(3);
+
+    component.cambiarPagina(2);
+    component.cambiarTamano(30);
+    expect(component.pagina()).toBe(1);
+    expect(coordService.getFichaDocente).toHaveBeenCalledWith('doc-1', { pagina: 1, tamano: 30 });
   });
 
   it('FM-04 sin grupos muestra el estado vacio', () => {

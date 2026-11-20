@@ -128,7 +128,7 @@ UI_STUDY_PLAN_MESH_PAGE_005|UI143|Funcional|Información|UI_STUDY_PLAN_MESH_PAGE
 UI_STUDY_PLAN_MESH_PAGE_006|UI144|Funcional|Información|UI_STUDY_PLAN_MESH_PAGE_006|La asignatura quedó activa.
 UI_SUBJECT_FORM_PAGE_001|UI119|Funcional|Información|UI_SUBJECT_FORM_PAGE_001|Asignatura registrada en el plan.
 UI_SUBJECT_FORM_PAGE_002|UI120|Funcional|Información|UI_SUBJECT_FORM_PAGE_002|Asignatura modificada.
-UI_TEACHER_CLAIMS_001|UI121|Funcional|Información|UI_TEACHER_CLAIMS_001|Reclamo procesado.
+UI_TEACHER_CLAIMS_001|UI121|Funcional|Información|UI_TEACHER_CLAIMS_001|Justificación procesada.
 UI_TEACHER_CLAIMS_002|UI122|Funcional|Información|UI_TEACHER_CLAIMS_002|Este soporte no contiene un fileId descargable en el contrato actual.
 UI_TEACHER_GRUPO_DECISIONES_001|UI123|Funcional|Información|UI_TEACHER_GRUPO_DECISIONES_001|Un estudiante cruzó el umbral de cancelación: revisa Decisiones pendientes
 UI_TEACHER_GRUPOS_001|UI124|Funcional|Información|UI_TEACHER_GRUPOS_001|Error al cargar grupos.

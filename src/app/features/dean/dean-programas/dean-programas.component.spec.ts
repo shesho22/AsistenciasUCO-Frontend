@@ -128,6 +128,32 @@ describe('DeanProgramasComponent', () => {
     component.verPlanEstudio(mockPlanes[0]);
     expect(routerSpy.navigate).toHaveBeenCalledWith(['/app/decano/programas', 'PLAN-SIS-2024']);
   });
+
+  it('bloque E: los planes se listan en una tabla (una fila por plan) con créditos, semestres, asignaturas y estado', () => {
+    const el = fixture.nativeElement as HTMLElement;
+    const filas = el.querySelectorAll('app-tabla-datos tbody tr[data-testid="plan-fila"]');
+    expect(filas).toHaveSize(2);
+    expect(filas[0].textContent).toContain('INP-20241');
+    expect(filas[0].textContent).toContain('Ingeniería de Sistemas');
+    expect(filas[0].textContent).toContain('7');
+    expect(filas[0].querySelector('app-badge')?.textContent).toContain('VIGENTE');
+    expect(component.pageSize()).toBe(15);
+    (filas[0].querySelector('button') as HTMLButtonElement).click();
+    expect(routerSpy.navigate).toHaveBeenCalledWith(['/app/decano/programas', 'PLAN-SIS-2024']);
+  });
+
+  it('bloque E: pagina los planes de 15 en 15 y el filtro vuelve a la página 1', () => {
+    const base = component.planes()[0];
+    component.planes.set(Array.from({ length: 17 }, (_, i) => ({ ...base, id: `PL-${i}`, codigo: `INP-${i}` })));
+    fixture.detectChanges();
+    const filas = () => (fixture.nativeElement as HTMLElement).querySelectorAll('[data-testid="plan-fila"]');
+    expect(filas()).toHaveSize(15);
+    component.currentPage.set(2);
+    fixture.detectChanges();
+    expect(filas()).toHaveSize(2);
+    component.onFiltroChange('INP-1');
+    expect(component.currentPage()).toBe(1);
+  });
 });
 
 describe('DeanProgramasComponent sin estructura', () => {

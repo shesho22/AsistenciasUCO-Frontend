@@ -58,7 +58,7 @@ const NOMBRE_FACULTAD_MAX = 50;
     SelectorModoComponent,
   ],
   template: `
-    <div class="space-y-6 animate-fade-in">
+    <div class="space-y-4 animate-fade-in">
       <!-- 1. VISTA: LISTA DE DECANOS -->
       @if (vistaActual() === 'LISTA') {
         <app-page-header
@@ -84,7 +84,7 @@ const NOMBRE_FACULTAD_MAX = 50;
         <!-- Estado de acceso de la ultima cuenta registrada (verificado por el backend, nunca por la SPA) -->
         <app-account-access-status [correo]="ultimaCuentaRegistrada()" />
 
-        <section class="superficie p-6 space-y-4">
+        <section class="superficie p-4 space-y-4">
           <app-filtros-plegables [activos]="filtrosActivos()">
             <div buscar>
               <input
@@ -194,7 +194,7 @@ const NOMBRE_FACULTAD_MAX = 50;
           </span>
         </div>
 
-        <div class="superficie p-6 sm:p-8 max-w-3xl mx-auto space-y-6">
+        <div class="superficie p-4 sm:p-8 max-w-3xl mx-auto space-y-4">
           <div>
             <h2 class="font-serif font-bold text-2xl text-warm-900">
               Registrar Nuevo Decano

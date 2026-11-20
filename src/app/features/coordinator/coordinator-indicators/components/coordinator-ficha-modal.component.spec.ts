@@ -47,9 +47,14 @@ describe('CoordinatorFichaModalComponent', () => {
     http.expectOne(`${base}/ficha`).flush({ exitoso: true, datos: ficha });
     const req = http.expectOne((r) => r.url === `${base}/bitacora`);
     expect(req.request.params.get('pagina')).toBe('1');
-    expect(req.request.params.get('tamano')).toBe('10');
+    expect(req.request.params.get('tamano')).toBe('15');
     req.flush({ exitoso: true, datos: [sesion(7, null), sesion(6, true), sesion(5, false)], total: 25 });
     fixture.detectChanges();
+
+    // Bloque E: la bitácora es una tabla con una fila por sesión.
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('app-tabla-datos table')).not.toBeNull();
+    expect(el.querySelectorAll('tbody tr[data-testid="bitacora-fila"]')).toHaveSize(3);
 
     const t = texto();
     expect(t).toContain('ana@uco.edu.co');
@@ -123,6 +128,13 @@ describe('CoordinatorFichaModalComponent', () => {
     const req = http.expectOne((r) => r.url === `${base}/bitacora`);
     expect(req.request.params.get('pagina')).toBe('3');
     req.flush({ exitoso: true, datos: [], total: 25 });
+
+    // Bloque E: cambiar el tamaño de página vuelve a la página 1 con el nuevo tamaño.
+    component.cambiarTamano(30);
+    const req2 = http.expectOne((r) => r.url === `${base}/bitacora`);
+    expect(req2.request.params.get('pagina')).toBe('1');
+    expect(req2.request.params.get('tamano')).toBe('30');
+    req2.flush({ exitoso: true, datos: [], total: 25 });
   });
 
   it('T-FE-04 un 404 muestra el mensaje del servidor y no inventa datos', () => {

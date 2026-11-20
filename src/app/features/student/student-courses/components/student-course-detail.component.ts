@@ -17,22 +17,21 @@ import {
 } from '../../../../core/models/role-management.model';
 import { LoadErrorState } from '../../../../core/api/errors/load-error.util';
 import { CategoriaJustificacionItem } from '../../../../core/models/consultas-transversales.model';
-import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
+import { TablaDatosComponent, TAMANO_PAGINA_TABLA, TAMANOS_PAGINA_TABLA } from '../../../../shared/components/tabla-datos/tabla-datos.component';
 import { detalleExcusaSesion, etiquetaEstadoSesion } from '../../../../core/utils/estado-sesion-estudiante.util';
 import { etiquetaResultadoAprobacion } from '../../../../core/utils/reclamo-estado.util';
 import { MotivosJustificacionComponent } from './motivos-justificacion.component';
 import { RealtimeService } from '../../../../core/realtime/realtime.service';
-import { onRealtimeReconnect } from '../../../../core/realtime/realtime-reconnect-trigger';
 import { REALTIME_EVENT_TYPE } from '../../../../core/realtime/model/realtime-event.model';
 import { ToastService } from '../../../../shared/components/toast/toast.component';
 
 @Component({
     selector: 'app-student-course-detail',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [HorasMinutosPipe, EmptyStateComponent, BadgeComponent, ButtonComponent, MotivosJustificacionComponent, SesionEstadoBadgeComponent, AttendanceStatusBadgeComponent, PaginationComponent, SemaforoAsistenciaComponent],
+    imports: [HorasMinutosPipe, EmptyStateComponent, BadgeComponent, ButtonComponent, MotivosJustificacionComponent, SesionEstadoBadgeComponent, AttendanceStatusBadgeComponent, TablaDatosComponent, SemaforoAsistenciaComponent],
     template: `
     @if (materia()) {
-      <div class="space-y-6">
+      <div class="space-y-4">
         <!-- Barra Superior de Navegación "Atrás" -->
         <div class="superficie flex items-center justify-between p-4">
           <button
@@ -55,7 +54,7 @@ import { ToastService } from '../../../../shared/components/toast/toast.componen
         </div>
 
         <!-- Ficha Resumen de la Asignatura -->
-        <div class="superficie p-6 grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="superficie p-4 grid grid-cols-1 md:grid-cols-4 gap-4">
           <div class="md:col-span-3 space-y-2">
             <div class="flex items-center gap-2">
               @if (materia()?.creditos) {
@@ -135,13 +134,7 @@ import { ToastService } from '../../../../shared/components/toast/toast.componen
             }
           </div>
 
-          @if (loading()) {
-            <div class="p-6 space-y-3">
-              @for (n of [1, 2, 3, 4]; track n) {
-                <div class="h-16 bg-warm-100 rounded-xl animate-pulse"></div>
-              }
-            </div>
-          } @else if (error()) {
+          @if (error() && !loading()) {
             <div class="p-10 text-center space-y-3" role="alert" data-testid="sesiones-error">
               <p class="text-sm font-bold text-danger-800">{{ error()!.titulo }}</p>
               <p class="text-xs text-warm-600">{{ error()!.mensaje }}</p>
@@ -149,7 +142,7 @@ import { ToastService } from '../../../../shared/components/toast/toast.componen
                 <app-button variant="secondary" size="sm" (clicked)="retry.emit()">Reintentar</app-button>
               }
             </div>
-          } @else if (sesiones().length === 0) {
+          } @else if (!loading() && sesiones().length === 0) {
             <div data-testid="sesiones-vacio">
               <app-empty-state
                 title="No hay sesiones registradas para este grupo."
@@ -157,189 +150,206 @@ import { ToastService } from '../../../../shared/components/toast/toast.componen
               />
             </div>
           } @else {
-            <div class="divide-y divide-warm-100">
-              @for (sesion of sesiones(); track sesion.id) {
-                <div
-                  class="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-warm-50/50 transition-colors"
-                  [attr.data-testid]="'sesion-' + sesion.id"
-                >
-                  <div class="space-y-1.5 flex-1 min-w-0">
-                    <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
-                      <span class="text-xs font-mono font-bold px-2.5 py-1 rounded-md bg-warm-100 text-warm-800">
-                        Sesión #{{ sesion.numeroSesion }}
-                      </span>
-                      <span class="text-xs font-medium text-warm-500">{{ sesion.fecha }}</span>
-                      @if (sesion.horasSesion !== undefined) {
-                        <span class="text-xs text-warm-500" data-testid="sesion-horas">{{ sesion.horasSesion | horasMinutos }}</span>
-                      }
-                      <span class="text-warm-300">•</span>
-                      <span
-                        class="text-xs text-warm-600"
-                        [attr.title]="sesion.temporalidad === 'SIN_ZONA' ? 'El servidor entregó la hora sin zona horaria; se muestra sin convertir.' : null"
-                      >{{ sesion.horario }}{{ sesion.temporalidad === 'SIN_ZONA' ? ' (sin zona)' : '' }}</span>
-                    </div>
-
-                    <h4 class="font-bold text-sm text-warm-900 leading-snug">
-                      {{ sesion.tema }}
-                    </h4>
-
-                    @if (sesion.estado !== 'CANCELADA' && textoPlazo(sesion); as plazo) {
-                      <p
-                        class="text-xs font-medium"
-                        [class.text-warm-600]="sesion.plazoJustificacionVigente !== false"
-                        [class.text-danger-700]="sesion.plazoJustificacionVigente === false"
-                        [id]="'plazo-' + sesion.id"
-                        data-testid="sesion-plazo"
-                      >{{ plazo }}</p>
-                    }
-
-                    @if (sesion.justificacionEstudiante) {
-                      <div class="p-3 rounded-xl bg-warm-50 border border-warm-200 text-xs text-warm-700 mt-1 space-y-1">
-                        <div class="flex items-center gap-2">
-                          @if (sesion.categoriaReclamo) {
-                            <span class="px-2 py-0.5 rounded-md bg-warning-100/80 text-warning-900 font-semibold text-xs">
-                              {{ sesion.categoriaReclamo }}
-                            </span>
-                          }
-                          @if (sesion.soporteAdjuntoNombre) {
-                            <span class="inline-flex items-center gap-1 text-primary-700 font-medium text-xs bg-primary-50 px-2 py-0.5 rounded-md border border-primary-200/60">
-                              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                              </svg>
-                              {{ sesion.soporteAdjuntoNombre }}
-                            </span>
+            <app-tabla-datos
+              class="p-3 sm:p-4"
+              etiqueta="Historial de sesiones"
+              [columnas]="6"
+              anchoMinimo="64rem"
+              [cargando]="loading()"
+              [paginada]="!loading()"
+              [totalItems]="totalSesiones()"
+              [pagina]="pagina()"
+              [tamanoPagina]="tamano()"
+              [tamanosPagina]="tamanosPagina"
+              (paginaChange)="paginaCambiada.emit($event)"
+              (tamanoPaginaChange)="tamanoCambiado.emit($event)"
+            >
+              <thead>
+                <tr>
+                  <th scope="col">Sesión</th>
+                  <th scope="col">Fecha y horario</th>
+                  <th scope="col">Asistencia</th>
+                  <th scope="col">Tomas</th>
+                  <th scope="col">Plazo y reclamo</th>
+                  <th scope="col"><span class="sr-only">Acciones</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                @if (!loading()) {
+                  @for (sesion of sesiones(); track sesion.id) {
+                    <tr class="align-top" [attr.data-testid]="'sesion-' + sesion.id">
+                      <td class="min-w-[12rem]">
+                        <span class="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-warm-100 text-warm-800 whitespace-nowrap">
+                          Sesión #{{ sesion.numeroSesion }}
+                        </span>
+                        <p class="mt-1 font-semibold text-sm text-warm-900 leading-snug">{{ sesion.tema }}</p>
+                      </td>
+                      <td class="whitespace-nowrap text-xs text-warm-600">
+                        <span class="block font-medium text-warm-800">{{ sesion.fecha }}</span>
+                        <span
+                          class="block"
+                          [attr.title]="sesion.temporalidad === 'SIN_ZONA' ? 'El servidor entregó la hora sin zona horaria; se muestra sin convertir.' : null"
+                        >{{ sesion.horario }}{{ sesion.temporalidad === 'SIN_ZONA' ? ' (sin zona)' : '' }}</span>
+                        @if (sesion.horasSesion !== undefined) {
+                          <span class="block text-warm-500" data-testid="sesion-horas">{{ sesion.horasSesion | horasMinutos }}</span>
+                        }
+                      </td>
+                      <td>
+                        <div class="flex flex-wrap items-center gap-1.5">
+                          @if (sesion.estado === 'CANCELADA') {
+                            <app-sesion-estado-badge [estado]="sesion.estado" [cancelacion]="sesion.cancelacion" />
+                          } @else if (sesion.estadoAsistencia !== 'NO_DISPONIBLE') {
+                            <app-badge
+                              [variant]="getAsistenciaBadgeVariant(sesion.estadoAsistencia)"
+                              size="md"
+                              [attr.title]="sesion.estadoAsistencia === 'PARCIAL' ? 'Asististe a una parte de la clase: en alguna toma quedaste ausente.' : null"
+                              [attr.data-testid]="'estado-' + sesion.id"
+                            >
+                              {{ etiquetaEstado(sesion) }}
+                            </app-badge>
+                            @if (detalleExcusa(sesion); as excusa) {
+                              <span class="text-xs text-warm-600" data-testid="sesion-excusa">· {{ excusa }}</span>
+                            }
+                          } @else {
+                            <span
+                              class="text-xs font-medium px-2.5 py-1 rounded-lg border border-warm-200 bg-warm-50 text-warm-500"
+                              data-testid="estado-no-disponible"
+                              title="Aún no hay un registro de asistencia confirmado para esta sesión; no se puede radicar revisión."
+                            >Sin registro</span>
                           }
                         </div>
-                        <p class="italic text-warm-800">
-                          <strong class="font-semibold text-warm-900">Justificación enviada:</strong> "{{ sesion.justificacionEstudiante }}"
-                        </p>
-                      </div>
-                    }
-
-                    @if (sesion.respuestaDocente) {
-                      <div class="p-2.5 rounded-xl bg-primary-50 border border-primary-200 text-xs text-primary-900 mt-1">
-                        <strong class="text-primary-800">Respuesta del docente:</strong> "{{ sesion.respuestaDocente }}"
-                      </div>
-                    }
-
-                    @if (sesion.estado !== 'CANCELADA' && sesion.tomas.length > 0) {
-                      <details class="mt-1 text-xs" [attr.data-testid]="'tomas-' + sesion.id" [open]="tomasAbiertas(sesion)">
-                        <summary class="cursor-pointer min-h-[36px] inline-flex items-center font-semibold text-primary-800">
-                          Tomas ({{ sesion.tomas.length }})
-                        </summary>
-                        <ul class="mt-1 space-y-1.5">
-                          @for (toma of sesion.tomas; track toma.idToma) {
-                            <li
-                              class="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-warm-200 bg-warm-50 px-2.5 py-1.5"
-                              [attr.data-testid]="'toma-' + toma.idToma"
-                            >
-                              <span class="font-semibold text-warm-900">Toma {{ toma.numero }} · {{ toma.horaPuntoControl }}</span>
-                              <span [class]="clasesEstadoToma(toma.estado)" class="font-medium" data-testid="toma-estado">{{ etiquetaEstadoToma(toma.estado) }}</span>
-                              @if (toma.estadoSolicitudRevision; as solicitud) {
-                                <span [class]="getReclamoStatusClasses(solicitud)" class="font-bold px-2 py-0.5 rounded-md border" data-testid="toma-reclamo">
-                                  {{ etiquetaReclamoToma(toma) }}
-                                </span>
-                              } @else if (toma.reclamable && sesion.plazoJustificacionVigente !== false && materia()?.estadoMatricula !== 'CI') {
-                                <button
-                                  type="button"
-                                  data-testid="btn-reclamar-toma"
-                                  [attr.aria-label]="'Reclamar la toma ' + toma.numero + ' de la sesión ' + sesion.numeroSesion"
-                                  (click)="startClaimToma.emit({ sesion, toma })"
-                                  class="inline-flex items-center justify-center min-h-[36px] px-3 py-1 text-xs font-semibold rounded-lg border border-primary-300 bg-primary-50 text-primary-900 hover:bg-primary-100"
-                                >Reclamar esta toma</button>
+                      </td>
+                      <td class="min-w-[14rem] text-xs">
+                        @if (sesion.estado !== 'CANCELADA' && sesion.tomas.length > 0) {
+                          <details [attr.data-testid]="'tomas-' + sesion.id" [open]="tomasAbiertas(sesion)">
+                            <summary class="cursor-pointer min-h-[32px] inline-flex items-center font-semibold text-primary-800">
+                              Tomas ({{ sesion.tomas.length }})
+                            </summary>
+                            <ul class="mt-1 space-y-1">
+                              @for (toma of sesion.tomas; track toma.idToma) {
+                                <li
+                                  class="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md border border-warm-200 bg-warm-50 px-2 py-1"
+                                  [attr.data-testid]="'toma-' + toma.idToma"
+                                >
+                                  <span class="font-semibold text-warm-900">Toma {{ toma.numero }} · {{ toma.horaPuntoControl }}</span>
+                                  <span [class]="clasesEstadoToma(toma.estado)" class="font-medium" data-testid="toma-estado">{{ etiquetaEstadoToma(toma.estado) }}</span>
+                                  @if (toma.estadoSolicitudRevision; as solicitud) {
+                                    <span [class]="getReclamoStatusClasses(solicitud)" class="font-bold px-2 py-0.5 rounded-md border" data-testid="toma-reclamo">
+                                      {{ etiquetaReclamoToma(toma) }}
+                                    </span>
+                                  } @else if (toma.reclamable && sesion.plazoJustificacionVigente !== false && materia()?.estadoMatricula !== 'CI') {
+                                    <button
+                                      type="button"
+                                      data-testid="btn-reclamar-toma"
+                                      [attr.aria-label]="'Reclamar la toma ' + toma.numero + ' de la sesión ' + sesion.numeroSesion"
+                                      (click)="startClaimToma.emit({ sesion, toma })"
+                                      class="inline-flex items-center justify-center min-h-[32px] px-2.5 py-1 text-xs font-semibold rounded-lg border border-primary-300 bg-primary-50 text-primary-900 hover:bg-primary-100"
+                                    >Reclamar esta toma</button>
+                                  }
+                                </li>
                               }
-                            </li>
+                            </ul>
+                          </details>
+                        } @else {
+                          <span class="text-warm-400" aria-hidden="true">—</span>
+                        }
+                      </td>
+                      <td class="min-w-[14rem] text-xs space-y-1.5">
+                        @if (sesion.estado !== 'CANCELADA' && textoPlazo(sesion); as plazo) {
+                          <p
+                            class="font-medium"
+                            [class.text-warm-600]="sesion.plazoJustificacionVigente !== false"
+                            [class.text-danger-700]="sesion.plazoJustificacionVigente === false"
+                            [id]="'plazo-' + sesion.id"
+                            data-testid="sesion-plazo"
+                          >{{ plazo }}</p>
+                        }
+                        @if (sesion.estadoReclamo) {
+                          <span
+                            [class]="getReclamoStatusClasses(sesion.estadoReclamo)"
+                            class="inline-block text-xs font-bold px-2 py-0.5 rounded-md border"
+                          >
+                            {{ sesion.estadoReclamo === 'RETIRADA' ? 'Retirada' : 'Reclamo ' + sesion.estadoReclamo }}
+                          </span>
+                        } @else if (sesion.tomas.length === 0 && sesion.solicitudRevision) {
+                          <span
+                            class="inline-block text-xs font-bold px-2 py-0.5 rounded-md border border-warm-200 bg-warm-50 text-warm-700"
+                            data-testid="solicitud-existente"
+                          >Solicitud de revisión: {{ etiquetaSolicitud(sesion.solicitudRevision) }}</span>
+                        }
+                        @if (sesion.justificacionEstudiante) {
+                          <div class="space-y-1 text-warm-700">
+                            @if (sesion.categoriaReclamo || sesion.soporteAdjuntoNombre) {
+                              <div class="flex flex-wrap items-center gap-1.5">
+                                @if (sesion.categoriaReclamo) {
+                                  <span class="px-2 py-0.5 rounded-md bg-warning-100/80 text-warning-900 font-semibold text-xs">
+                                    {{ sesion.categoriaReclamo }}
+                                  </span>
+                                }
+                                @if (sesion.soporteAdjuntoNombre) {
+                                  <span class="inline-flex items-center gap-1 text-primary-700 font-medium text-xs bg-primary-50 px-2 py-0.5 rounded-md border border-primary-200/60">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                    </svg>
+                                    {{ sesion.soporteAdjuntoNombre }}
+                                  </span>
+                                }
+                              </div>
+                            }
+                            <p class="italic text-warm-800">
+                              <strong class="font-semibold text-warm-900">Justificación enviada:</strong> "{{ sesion.justificacionEstudiante }}"
+                            </p>
+                          </div>
+                        }
+                        @if (sesion.respuestaDocente) {
+                          <p class="text-primary-900">
+                            <strong class="text-primary-800">Respuesta del docente:</strong> "{{ sesion.respuestaDocente }}"
+                          </p>
+                        }
+                      </td>
+                      <td class="text-right whitespace-nowrap">
+                        @if (sesion.estadoReclamo === 'PENDIENTE') {
+                          <button
+                            type="button"
+                            (click)="withdrawClaim.emit(sesion)"
+                            class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-danger-700 bg-danger-50 hover:bg-danger-100 border border-danger-200 rounded-lg transition-colors"
+                            title="Retirar solicitud de revisión pendiente"
+                          >
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            Retirar
+                          </button>
+                        } @else if (!sesion.estadoReclamo && !(sesion.tomas.length === 0 && sesion.solicitudRevision)) {
+                          @if (sesion.tomas.length === 0 && sesion.reclamable && sesion.estado !== 'CANCELADA' && sesion.plazoJustificacionVigente === false) {
+                            <button
+                              type="button"
+                              aria-disabled="true"
+                              title="El plazo para justificar esta inasistencia ya no está vigente."
+                              [attr.aria-describedby]="'plazo-' + sesion.id"
+                              class="inline-flex items-center justify-center min-h-[36px] px-3 py-1.5 text-xs font-medium rounded-xl border border-warm-200 bg-warm-100 text-warm-500 cursor-not-allowed"
+                              data-testid="radicar-bloqueado"
+                            >Radicar Reclamo</button>
+                          } @else if (sesion.tomas.length === 0 && sesion.reclamable && sesion.estado !== 'CANCELADA' && materia()?.estadoMatricula !== 'CI') {
+                            <app-button
+                              variant="primary"
+                              size="sm"
+                              data-testid="btn-iniciar-reclamo"
+                              (clicked)="startClaim.emit(sesion)"
+                            >
+                              <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                              </svg>
+                              Radicar Reclamo
+                            </app-button>
                           }
-                        </ul>
-                      </details>
-                    }
-                  </div>
-
-                  <!-- Estado y Botón de Reclamación / Retiro -->
-                  <div class="flex flex-wrap items-center gap-2 shrink-0 sm:self-center">
-                    @if (sesion.estado === 'CANCELADA') {
-                      <app-sesion-estado-badge [estado]="sesion.estado" [cancelacion]="sesion.cancelacion" />
-                    } @else if (sesion.estadoAsistencia !== 'NO_DISPONIBLE') {
-                      <app-badge
-                        [variant]="getAsistenciaBadgeVariant(sesion.estadoAsistencia)"
-                        size="md"
-                        [attr.title]="sesion.estadoAsistencia === 'PARCIAL' ? 'Asististe a una parte de la clase: en alguna toma quedaste ausente.' : null"
-                        [attr.data-testid]="'estado-' + sesion.id"
-                      >
-                        {{ etiquetaEstado(sesion) }}
-                      </app-badge>
-                      @if (detalleExcusa(sesion); as excusa) {
-                        <span class="text-xs text-warm-600" data-testid="sesion-excusa">· {{ excusa }}</span>
-                      }
-                    } @else {
-                      <span
-                        class="text-xs font-medium px-2.5 py-1 rounded-lg border border-warm-200 bg-warm-50 text-warm-500"
-                        data-testid="estado-no-disponible"
-                        title="Aún no hay un registro de asistencia confirmado para esta sesión; no se puede radicar revisión."
-                      >Sin registro</span>
-                    }
-
-                    @if (sesion.estadoReclamo) {
-                      <span
-                        [class]="getReclamoStatusClasses(sesion.estadoReclamo)"
-                        class="text-xs font-bold px-2.5 py-1 rounded-lg border"
-                      >
-                        {{ sesion.estadoReclamo === 'RETIRADA' ? 'Retirada' : 'Reclamo ' + sesion.estadoReclamo }}
-                      </span>
-
-                      @if (sesion.estadoReclamo === 'PENDIENTE') {
-                        <button
-                          type="button"
-                          (click)="withdrawClaim.emit(sesion)"
-                          class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-danger-700 bg-danger-50 hover:bg-danger-100 border border-danger-200 rounded-lg transition-colors"
-                          title="Retirar solicitud de revisión pendiente"
-                        >
-                          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                          Retirar
-                        </button>
-                      }
-                    } @else if (sesion.tomas.length === 0 && sesion.solicitudRevision) {
-                      <span
-                        class="text-xs font-bold px-2.5 py-1 rounded-lg border border-warm-200 bg-warm-50 text-warm-700"
-                        data-testid="solicitud-existente"
-                      >Solicitud de revisión: {{ etiquetaSolicitud(sesion.solicitudRevision) }}</span>
-                    } @else if (sesion.tomas.length === 0 && sesion.reclamable && sesion.estado !== 'CANCELADA' && sesion.plazoJustificacionVigente === false) {
-                      <button
-                        type="button"
-                        aria-disabled="true"
-                        title="El plazo para justificar esta inasistencia ya no está vigente."
-                        [attr.aria-describedby]="'plazo-' + sesion.id"
-                        class="inline-flex items-center justify-center min-h-[36px] px-3 py-1.5 text-xs font-medium rounded-xl border border-warm-200 bg-warm-100 text-warm-500 cursor-not-allowed"
-                        data-testid="radicar-bloqueado"
-                      >Radicar Reclamo</button>
-                    } @else if (sesion.tomas.length === 0 && sesion.reclamable && sesion.estado !== 'CANCELADA' && materia()?.estadoMatricula !== 'CI') {
-                      <app-button
-                        variant="primary"
-                        size="sm"
-                        data-testid="btn-iniciar-reclamo"
-                        (clicked)="startClaim.emit(sesion)"
-                      >
-                        <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
-                        Radicar Reclamo
-                      </app-button>
-                    }
-                  </div>
-                </div>
-              }
-            </div>
-            <app-pagination
-              [totalItems]="totalSesiones()"
-              [pageSize]="tamano()"
-              [currentPage]="pagina()"
-              [showPageSizeSelector]="true"
-              [pageSizeOptions]="[10, 20, 50]"
-              (pageChange)="paginaCambiada.emit($event)"
-              (pageSizeChange)="tamanoCambiado.emit($event)"
-            />
+                        }
+                      </td>
+                    </tr>
+                  }
+                }
+              </tbody>
+            </app-tabla-datos>
           }
         </div>
       </div>
@@ -357,7 +367,9 @@ export class StudentCourseDetailComponent implements OnDestroy {
   /** Total de sesiones del grupo (del backend, no el de la pagina). */
   totalSesiones = input<number>(0);
   pagina = input<number>(1);
-  tamano = input<number>(10);
+  tamano = input<number>(TAMANO_PAGINA_TABLA);
+  /** El backend acepta cualquier tamano hasta PAGINACION/TAMANO_MAXIMO (100): se ofrecen 15/30/50 (bloque E). */
+  readonly tamanosPagina = [...TAMANOS_PAGINA_TABLA];
   /** HU016: catálogo de motivos de justificación (solo consulta). */
   categorias = input<CategoriaJustificacionItem[]>([]);
   loading = input<boolean>(false);
@@ -388,12 +400,8 @@ export class StudentCourseDetailComponent implements OnDestroy {
 
     const sub = new Subscription();
 
-    sub.add(
-      onRealtimeReconnect(this.realtime.connectionState$).subscribe(() => {
-        this.retry.emit();
-      })
-    );
-
+    // PERF-EST-MM: la recarga al reconectar el canal la hace solo el contenedor (StudentCoursesComponent); repetirla aquí
+    // pedía las sesiones dos veces en cada reconexión.
     const events$ = this.realtime.events ? this.realtime.events() : this.realtime.listenType?.(REALTIME_EVENT_TYPE.ASISTENCIAS_SESION_ACTUALIZADAS);
     if (events$) {
       sub.add(

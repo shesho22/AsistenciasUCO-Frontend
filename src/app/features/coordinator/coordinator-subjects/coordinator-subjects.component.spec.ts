@@ -60,7 +60,7 @@ describe('CoordinatorSubjectsComponent', () => {
     }) as unknown as AsignaturaPlanItem;
 
   /** Página del servidor (`totalElementos` es el total real aunque la página traiga menos filas). */
-  const pagina = <T,>(elementos: T[], totalElementos = elementos.length, numeroPagina = 1, tamanoPagina = 12) => ({
+  const pagina = <T,>(elementos: T[], totalElementos = elementos.length, numeroPagina = 1, tamanoPagina = 15) => ({
     exitoso: true,
     elementos,
     numeroPagina,
@@ -300,9 +300,18 @@ describe('CoordinatorSubjectsComponent', () => {
       expect((fixture.nativeElement as HTMLElement).textContent).toContain('112 asignaturas');
     });
 
+    it('con un solo grupo los contadores van en singular', () => {
+      courseService.getCoordinatorCoursesPage.and.returnValue(of(pagina([course], 1)));
+      component.cargarDatos();
+      fixture.detectChanges();
+      const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
+      expect(texto).toMatch(/\b1 grupo\b/);
+      expect(texto).not.toContain('1 grupos');
+    });
+
     it('pide al servidor la primera página con el tamaño de la pantalla y sin filtros', () => {
-      expect(courseService.getCoordinatorCoursesPage).toHaveBeenCalledWith({ busqueda: null, pagina: 1, tamano: 12 });
-      expect(coordinatorService.getAsignaturasPrograma).toHaveBeenCalledWith({ busqueda: null, caracter: null, pagina: 1, tamano: 12 });
+      expect(courseService.getCoordinatorCoursesPage).toHaveBeenCalledWith({ busqueda: null, pagina: 1, tamano: 15 });
+      expect(coordinatorService.getAsignaturasPrograma).toHaveBeenCalledWith({ busqueda: null, caracter: null, pagina: 1, tamano: 15 });
     });
 
     it('la búsqueda viaja al servidor (con espera) para grupos y asignaturas y vuelve a la página 1', fakeAsync(() => {
@@ -314,8 +323,8 @@ describe('CoordinatorSubjectsComponent', () => {
       tick(300);
 
       expect(courseService.getCoordinatorCoursesPage).toHaveBeenCalledTimes(1);
-      expect(courseService.getCoordinatorCoursesPage).toHaveBeenCalledWith({ busqueda: 'calculo', pagina: 1, tamano: 12 });
-      expect(coordinatorService.getAsignaturasPrograma).toHaveBeenCalledWith({ busqueda: 'calculo', caracter: null, pagina: 1, tamano: 12 });
+      expect(courseService.getCoordinatorCoursesPage).toHaveBeenCalledWith({ busqueda: 'calculo', pagina: 1, tamano: 15 });
+      expect(coordinatorService.getAsignaturasPrograma).toHaveBeenCalledWith({ busqueda: 'calculo', caracter: null, pagina: 1, tamano: 15 });
     }));
 
     it('el filtro de carácter usa el CÓDIGO del catálogo y lo resuelve el servidor, no las filas cargadas', () => {
@@ -327,10 +336,10 @@ describe('CoordinatorSubjectsComponent', () => {
       coordinatorService.getAsignaturasPrograma.calls.reset();
       component.onCaracter('OPT');
       expect(component.filtroTipoAsignatura()).toBe('OPT');
-      expect(coordinatorService.getAsignaturasPrograma).toHaveBeenCalledWith({ busqueda: null, caracter: 'OPT', pagina: 1, tamano: 12 });
+      expect(coordinatorService.getAsignaturasPrograma).toHaveBeenCalledWith({ busqueda: null, caracter: 'OPT', pagina: 1, tamano: 15 });
 
       component.onCaracter('');
-      expect(coordinatorService.getAsignaturasPrograma).toHaveBeenCalledWith({ busqueda: null, caracter: null, pagina: 1, tamano: 12 });
+      expect(coordinatorService.getAsignaturasPrograma).toHaveBeenCalledWith({ busqueda: null, caracter: null, pagina: 1, tamano: 15 });
     });
 
     it('ir a otra página de grupos o de asignaturas pide esa página al servidor', () => {
@@ -340,8 +349,48 @@ describe('CoordinatorSubjectsComponent', () => {
       component.listado.irAPagina(3);
       component.listadoAsignaturas.irAPagina(2);
 
-      expect(courseService.getCoordinatorCoursesPage).toHaveBeenCalledWith({ busqueda: null, pagina: 3, tamano: 12 });
-      expect(coordinatorService.getAsignaturasPrograma).toHaveBeenCalledWith({ busqueda: null, caracter: null, pagina: 2, tamano: 12 });
+      expect(courseService.getCoordinatorCoursesPage).toHaveBeenCalledWith({ busqueda: null, pagina: 3, tamano: 15 });
+      expect(coordinatorService.getAsignaturasPrograma).toHaveBeenCalledWith({ busqueda: null, caracter: null, pagina: 2, tamano: 15 });
+    });
+  });
+
+  describe('bloque E: listas en tabla', () => {
+    const el = () => fixture.nativeElement as HTMLElement;
+
+    it('los grupos del período se muestran en una tabla con una fila por grupo y conservan «Ver inscritos»', () => {
+      expect(el().querySelector('app-tabla-datos table')).not.toBeNull();
+      const filas = el().querySelectorAll('tbody tr[data-testid="grupo-programa-fila"]');
+      expect(filas).toHaveSize(1);
+      expect(filas[0].textContent).toContain('Arquitectura de Software');
+      expect(filas[0].textContent).toContain('28 / 35');
+      expect(filas[0].querySelector('[data-testid="ver-inscritos"]')).not.toBeNull();
+    });
+
+    it('el catálogo curricular se muestra en una tabla con una fila por asignatura', () => {
+      (el().querySelector('[data-testid="subpestana-catalogo"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      const filas = el().querySelectorAll('tbody tr[data-testid="asignatura-catalogo-fila"]');
+      expect(filas).toHaveSize(1);
+      expect(filas[0].textContent).toContain('Obligatoria');
+      expect(filas[0].textContent).toContain('Ver Plan de Estudio');
+    });
+
+    it('la nómina del grupo es una tabla paginada de a 15 en el cliente', async () => {
+      const estudiantes = Array.from({ length: 20 }, (_, i) => ({
+        id: `mat-${i}`, idEstudiante: `est-${i}`, documento: `${1000 + i}`, nombreCompleto: `Estudiante ${i}`, correo: '',
+        codigoEstado: 'A', nombreEstado: 'activo',
+      }));
+      coordinatorService.getEstudiantesPorGrupo.and.returnValue(of<never>({ exitoso: true, datos: estudiantes } as never));
+      component.onSelectCourse('crs-1');
+      fixture.detectChanges();
+      const deferBlocks = await fixture.getDeferBlocks();
+      await Promise.all(deferBlocks.map((block) => block.render(DeferBlockState.Complete)));
+      fixture.detectChanges();
+      const modal = el().querySelector('[data-testid="modal-inscritos"]') as HTMLElement;
+      expect(modal.querySelectorAll('tr[data-testid="inscrito-fila"]')).toHaveSize(15);
+      component.paginaInscritos.set(2);
+      fixture.detectChanges();
+      expect(modal.querySelectorAll('tr[data-testid="inscrito-fila"]')).toHaveSize(5);
     });
   });
 
@@ -463,9 +512,9 @@ describe('CoordinatorSubjectsComponent', () => {
       expect(texto).toContain('Optativa');
     });
 
-    it('Ver Malla navega al plan de la fila', () => {
+    it('Ver Plan de Estudio navega al plan de la fila', () => {
       const navSpy = spyOn(router, 'navigate').and.returnValue(Promise.resolve(true));
-      const botones = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('button')).filter((b) => b.textContent?.includes('Ver Malla'));
+      const botones = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('button')).filter((b) => b.textContent?.includes('Ver Plan de Estudio'));
       expect(botones).toHaveSize(2);
       (botones[1] as HTMLButtonElement).click();
       expect(navSpy).toHaveBeenCalledWith(['/app/coordinador/planes-estudio', 'plan-2', 'malla']);

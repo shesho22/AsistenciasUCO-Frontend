@@ -171,6 +171,35 @@ describe('AttendanceClaimService', () => {
     const ASIGNATURA = 'e2f3a4b5-0000-0000-0000-000000000001';
     const GRUPO = 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d';
 
+    it('PERF-EST-MM: guarda la primera página por materia y grupo, la reemite al instante y revalida; invalidar la descarta', () => {
+      const url = `${environment.apiUrl}/estudiante/materias/${ASIGNATURA}/sesiones`;
+      const fila = (numero: number) => ({
+        id: 'd1d2d3d4-0000-4000-8000-000000000001', nombre: 'S', numero, codigo: 'SES-01', numeroSemana: 1, idGrupo: GRUPO,
+        codigoGrupo: 'G1', nombreGrupo: 'Grupo 001', fechaHoraInicio: '2026-10-19T13:00:00Z', fechaHoraFin: '2026-10-19T15:00:00Z',
+      });
+      const pagina1 = { pagina: 1, tamano: 10, grupoId: GRUPO };
+
+      service.getSesionesPorMateria(ASIGNATURA, pagina1).subscribe();
+      http.expectOne((r) => r.url === url).flush({ exitoso: true, total: 1, datos: [fila(1)] });
+
+      const nombres: number[] = [];
+      service.getSesionesPorMateria(ASIGNATURA, pagina1).subscribe((res) => nombres.push(res.datos[0].numeroSesion));
+      expect(nombres).toEqual([1]);
+      http.expectOne((r) => r.url === url).flush({ exitoso: true, total: 1, datos: [fila(2)] });
+      expect(nombres).toEqual([1, 2]);
+
+      // La página 2 nunca se guarda.
+      service.getSesionesPorMateria(ASIGNATURA, { ...pagina1, pagina: 2 }).subscribe();
+      http.expectOne((r) => r.url === url && r.params.get('pagina') === '2').flush({ exitoso: true, total: 1, datos: [] });
+
+      service.invalidarSesionesMateria(ASIGNATURA);
+      const trasInvalidar: number[] = [];
+      service.getSesionesPorMateria(ASIGNATURA, pagina1).subscribe((res) => trasInvalidar.push(res.datos[0]?.numeroSesion));
+      expect(trasInvalidar).toEqual([]);
+      http.expectOne((r) => r.url === url).flush({ exitoso: true, total: 1, datos: [fila(3)] });
+      expect(trasInvalidar).toEqual([3]);
+    });
+
     it('consulta la ruta con el UUID de la asignatura y adapta las sesiones', () => {
       let sesiones: SesionMateriaDetalle[] = [];
       service.getSesionesPorMateria(ASIGNATURA).subscribe((res) => (sesiones = res.datos));

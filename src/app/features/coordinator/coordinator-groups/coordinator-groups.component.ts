@@ -49,7 +49,7 @@ interface GrupoForm {
     host: { class: 'block w-full' },
     imports: [PageHeaderComponent, FormsModule, FranjasEditorComponent, PaginationComponent, ErrorCargaComponent],
     template: `
-    <div class="space-y-6 animate-fade-in">
+    <div class="space-y-4 animate-fade-in">
       <app-page-header
         [enTarjeta]="true"
         [conTitulo]="!embebido()"
@@ -117,7 +117,7 @@ interface GrupoForm {
       }
 
       @if (vista() === 'FORM') {
-        <form class="superficie p-6 space-y-5 max-w-3xl" (ngSubmit)="guardar()">
+        <form class="superficie p-4 space-y-5 max-w-3xl" (ngSubmit)="guardar()">
           <h2 class="font-serif font-bold text-xl text-warm-900">{{ modo() === 'CREAR' ? 'Nuevo grupo' : 'Editar grupo' }}</h2>
 
           @if (errorGuardado(); as mensaje) {

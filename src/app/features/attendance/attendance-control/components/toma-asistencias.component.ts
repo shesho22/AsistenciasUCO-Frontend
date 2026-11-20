@@ -335,7 +335,7 @@ export class TomaAsistenciasComponent {
   /** Explica hasta cuándo se puede corregir la toma, o por qué ya no. Una toma abierta no necesita aviso. */
   protected readonly avisoEdicion = computed<string | null>(() => {
     const toma = this.toma();
-    if (!toma.esEditable) return 'La sesión terminó: las tomas quedaron cerradas. Las correcciones se hacen por reclamo.';
+    if (!toma.esEditable) return 'La sesión terminó: las tomas quedaron cerradas. Las correcciones se hacen por justificación.';
     if (toma.estado !== 'CERRADA') return null;
     // ATA D4: `editableHastaUtc` es el fin de la ventana de la sesión (todas sus tomas se corrigen hasta entonces).
     const hasta = toma.editableHastaUtc ? this.zona.formatTemporal(toma.editableHastaUtc, 'time') : null;
@@ -452,8 +452,8 @@ export class TomaAsistenciasComponent {
   protected clasesOpcion(actual: EstadoFilaToma, opcion: EstadoRegistroToma): string {
     if (actual !== opcion) return 'font-medium bg-warm-100 text-warm-700 hover:bg-warm-200';
     if (opcion === 'AN') return 'font-bold bg-success-600 text-white shadow-xs';
-    if (opcion === 'SJC') return 'font-bold bg-danger-600 text-white shadow-xs';
-    return 'font-bold bg-warning-600 text-white shadow-xs';
+    if (opcion === 'SJC') return 'font-bold bg-danger-500 text-black shadow-xs';
+    return 'font-bold bg-warning-500 text-black shadow-xs';
   }
 
   /** La etiqueta sale de las banderas del backend; al guardar, la recarga quita a quien ya quedó presente. */

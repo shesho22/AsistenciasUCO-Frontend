@@ -14,7 +14,7 @@ import { mensajeUi } from '../../../../core/messages/mensajes-ui';
     host: { class: 'block w-full' },
     imports: [StudyPlanFormComponent],
     template: `
-    <div class="space-y-6 animate-fade-in">
+    <div class="space-y-4 animate-fade-in">
       @if (modo() === 'CREAR' || selectedPlan()) {
         <app-study-plan-form
           [modo]="modo()"

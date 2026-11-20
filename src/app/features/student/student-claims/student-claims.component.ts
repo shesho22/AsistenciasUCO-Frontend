@@ -7,7 +7,11 @@ import { EstadoSolicitudRevision, SolicitudRevisionItem, SoporteAdjuntoItem } fr
 import { CardComponent } from '../../../shared/components/card/card.component';
 import { BadgeComponent, BadgeVariant } from '../../../shared/components/badge/badge.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
-import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
+import {
+  TablaDatosComponent,
+  TAMANO_PAGINA_TABLA,
+  TAMANOS_PAGINA_TABLA,
+} from '../../../shared/components/tabla-datos/tabla-datos.component';
 import { getApiErrorMessage, getApiSuccessMessage } from '../../../core/api/errors/api-error.util';
 import { etiquetaEstadoReclamo, etiquetaResultadoAprobacion, varianteEstadoReclamo } from '../../../core/utils/reclamo-estado.util';
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
@@ -26,9 +30,9 @@ type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
 @Component({
     selector: 'app-student-claims',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [PageHeaderComponent, EmptyStateComponent, CommonModule, CardComponent, BadgeComponent, PaginationComponent, ButtonComponent],
+    imports: [PageHeaderComponent, EmptyStateComponent, CommonModule, CardComponent, BadgeComponent, TablaDatosComponent, ButtonComponent],
     template: `
-    <div class="space-y-6 animate-fade-in">
+    <div class="space-y-4 animate-fade-in">
       <app-page-header
         alineacion="final"
         titulo="Mis Reclamos"
@@ -49,13 +53,7 @@ type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
         </label>
       </app-page-header>
 
-      @if (isLoading()) {
-        <div class="space-y-4" role="status" aria-live="polite" aria-label="Cargando solicitudes" data-testid="reclamos-cargando">
-          @for (n of [1, 2, 3]; track n) {
-            <div class="h-32 bg-warm-100 rounded-2xl animate-pulse"></div>
-          }
-        </div>
-      } @else if (errorCarga()) {
+      @if (errorCarga() && !isLoading()) {
         <app-card>
           <div class="py-6 text-center space-y-3" role="alert" data-testid="reclamos-error">
             <p class="text-sm font-bold text-danger-800">{{ errorCarga()!.titulo }}</p>
@@ -63,29 +61,100 @@ type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
             <app-button variant="secondary" size="sm" (clicked)="cargar()">Reintentar</app-button>
           </div>
         </app-card>
-      } @else if (reclamos().length === 0) {
+      } @else if (!isLoading() && reclamos().length === 0) {
         <app-empty-state
           variant="search"
           title="No tienes solicitudes de revisión con este filtro"
           causa="Cambia el filtro de estado o radica una solicitud desde el detalle de tu materia."
         />
       } @else {
-        <div class="space-y-4">
-          @for (reclamo of reclamos(); track reclamo.id) {
-            <app-card>
-              <div class="space-y-3">
-                <div class="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <p class="font-semibold text-warm-900">{{ reclamo.materiaNombre }}</p>
-                    <p class="text-xs text-warm-600">
-                      {{ reclamo.materiaCodigo }} · {{ reclamo.grupo }} · Sesión {{ reclamo.sesionNumero }}
+        @if (isLoading()) {
+          <p class="sr-only" role="status" aria-live="polite" data-testid="reclamos-cargando">Cargando solicitudes</p>
+        }
+        <app-tabla-datos
+          etiqueta="Mis solicitudes de revisión"
+          [etiquetaVisible]="false"
+          [columnas]="6"
+          anchoMinimo="64rem"
+          [cargando]="isLoading()"
+          [paginada]="!isLoading()"
+          [totalItems]="total()"
+          [pagina]="pagina()"
+          [tamanoPagina]="tamano()"
+          [tamanosPagina]="tamanosPagina"
+          (paginaChange)="onPagina($event)"
+          (tamanoPaginaChange)="onTamano($event)"
+        >
+          <thead>
+            <tr>
+              <th scope="col">Materia</th>
+              <th scope="col">Sesión</th>
+              <th scope="col">Estado</th>
+              <th scope="col">Justificación y respuesta</th>
+              <th scope="col">Soportes</th>
+              <th scope="col"><span class="sr-only">Acciones</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (!isLoading()) {
+              @for (reclamo of reclamos(); track reclamo.id) {
+                <tr class="align-top" [attr.data-testid]="'reclamo-fila-' + reclamo.id">
+                  <td class="min-w-[11rem]">
+                    <span class="block font-semibold text-warm-900">{{ reclamo.materiaNombre }}</span>
+                    <span class="block text-xs text-warm-600">{{ reclamo.materiaCodigo }} · {{ reclamo.grupo }}</span>
+                  </td>
+                  <td class="text-xs text-warm-600 whitespace-nowrap">
+                    <span class="block text-warm-800">
+                      Sesión {{ reclamo.sesionNumero }}
                       @if (reclamo.fechaSesion) {
                         ({{ reclamo.fechaSesion }})
                       }
-                    </p>
-                  </div>
-                  <div class="flex items-center gap-2">
+                    </span>
+                    @if (textoToma(reclamo); as toma) {
+                      <span class="block font-semibold text-warm-800" data-testid="reclamo-toma">{{ toma }}</span>
+                    }
+                    <span class="block text-warm-500">Radicada el {{ reclamo.fechaSolicitud | date: 'dd/MM/yyyy' }}</span>
+                  </td>
+                  <td>
                     <app-badge [variant]="badgeVariant(reclamo.estadoSolicitud)">{{ etiqueta(reclamo.estadoSolicitud) }}</app-badge>
+                    @if (textoResultado(reclamo); as resultado) {
+                      <p class="mt-1 text-xs font-bold text-success-800" data-testid="reclamo-resultado">{{ resultado }}</p>
+                    }
+                  </td>
+                  <td class="min-w-[16rem] space-y-1.5">
+                    <div>
+                      <span class="block text-xs font-bold uppercase tracking-wider text-warm-700">Mi justificación</span>
+                      <p class="text-sm text-warm-800">{{ reclamo.justificacionSolicitud }}</p>
+                    </div>
+                    @if (reclamo.justificacionRespuesta) {
+                      <div>
+                        <span class="block text-xs font-bold uppercase tracking-wider text-warm-700">Respuesta del docente</span>
+                        <p class="text-sm text-warm-800">{{ reclamo.justificacionRespuesta }}</p>
+                      </div>
+                    }
+                  </td>
+                  <td class="min-w-[12rem]">
+                    @if (soportesDe(reclamo); as soportes) {
+                      @if (soportes.length > 0) {
+                        <div class="flex flex-col items-start gap-1.5" data-testid="reclamo-soportes">
+                          @for (soporte of soportes; track soporte.fileId || $index) {
+                            <button
+                              type="button"
+                              class="inline-flex items-center gap-1.5 px-2.5 py-1.5 min-h-[36px] text-xs font-semibold text-primary-800 bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-lg text-left"
+                              [attr.data-testid]="'btn-descargar-soporte-' + (soporte.fileId || $index)"
+                              [disabled]="descargando()"
+                              (click)="descargarSoporte(reclamo, soporte)"
+                            >
+                              Descargar soporte: {{ soporte.nombre }}
+                            </button>
+                          }
+                        </div>
+                      } @else {
+                        <span class="text-xs text-warm-400">Sin soportes</span>
+                      }
+                    }
+                  </td>
+                  <td class="text-right">
                     @if (reclamo.estadoSolicitud === 'PENDIENTE') {
                       <button
                         type="button"
@@ -98,54 +167,12 @@ type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
                         Retirar
                       </button>
                     }
-                  </div>
-                </div>
-                @if (textoToma(reclamo); as toma) {
-                  <p class="text-xs font-semibold text-warm-800" data-testid="reclamo-toma">{{ toma }}</p>
-                }
-                @if (textoResultado(reclamo); as resultado) {
-                  <p class="text-xs font-bold text-success-800" data-testid="reclamo-resultado">{{ resultado }}</p>
-                }
-                <p class="text-xs text-warm-500">Radicada el {{ reclamo.fechaSolicitud | date: 'dd/MM/yyyy' }}</p>
-                <div>
-                  <span class="text-xs font-bold uppercase tracking-wider text-warm-700">Mi justificación</span>
-                  <p class="text-sm text-warm-800">{{ reclamo.justificacionSolicitud }}</p>
-                </div>
-                @if (reclamo.justificacionRespuesta) {
-                  <div>
-                    <span class="text-xs font-bold uppercase tracking-wider text-warm-700">Respuesta del docente</span>
-                    <p class="text-sm text-warm-800">{{ reclamo.justificacionRespuesta }}</p>
-                  </div>
-                }
-                @if (soportesDe(reclamo); as soportes) {
-                  @if (soportes.length > 0) {
-                    <div class="flex flex-wrap gap-2" data-testid="reclamo-soportes">
-                      @for (soporte of soportes; track soporte.fileId || $index) {
-                        <button
-                          type="button"
-                          class="inline-flex items-center gap-1.5 px-3 py-2 min-h-[44px] text-xs font-semibold text-primary-800 bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-xl"
-                          [attr.data-testid]="'btn-descargar-soporte-' + (soporte.fileId || $index)"
-                          [disabled]="descargando()"
-                          (click)="descargarSoporte(reclamo, soporte)"
-                        >
-                          Descargar soporte: {{ soporte.nombre }}
-                        </button>
-                      }
-                    </div>
-                  }
-                }
-              </div>
-            </app-card>
-          }
-        </div>
-        <app-pagination
-          [totalItems]="total()"
-          [pageSize]="tamano()"
-          [currentPage]="pagina()"
-          [showPageSizeSelector]="true"
-          (pageChange)="onPagina($event)"
-          (pageSizeChange)="onTamano($event)"
-        />
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </app-tabla-datos>
       }
     </div>
   `
@@ -159,7 +186,9 @@ export class StudentClaimsComponent implements OnInit, OnDestroy {
   readonly reclamos = signal<SolicitudRevisionItem[]>([]);
   readonly total = signal(0);
   readonly pagina = signal(1);
-  readonly tamano = signal(10);
+  readonly tamano = signal(TAMANO_PAGINA_TABLA);
+  /** Bloque E: 15/30/50 por página (el backend admite hasta 100). */
+  readonly tamanosPagina = [...TAMANOS_PAGINA_TABLA];
   readonly estadoFiltro = signal<EstadoFiltro>('TODOS');
   readonly isLoading = signal(false);
   readonly errorCarga = signal<LoadErrorState | null>(null);

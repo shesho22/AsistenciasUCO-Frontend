@@ -35,11 +35,11 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
           </div>
         }
         <ng-content select="[cabecera-previa]" />
-        <h1 class="font-serif font-bold text-2xl sm:text-3xl text-warm-900 tracking-tight" [attr.data-testid]="tituloTestId()">
+        <h1 class="font-serif font-bold text-xl sm:text-2xl text-warm-900 tracking-tight" [attr.data-testid]="tituloTestId()">
           {{ titulo() }}
         </h1>
         @if (descripcion()) {
-          <p class="text-sm text-warm-600 mt-1">{{ descripcion() }}</p>
+          <p class="text-sm text-warm-600 mt-0.5">{{ descripcion() }}</p>
         }
         <ng-content select="[cabecera-detalle]" />
       </div>
@@ -66,9 +66,9 @@ export class PageHeaderComponent {
   readonly conTitulo = input<boolean>(true);
 
   protected readonly contenedorClases = computed(() => {
-    const base = 'flex flex-col sm:flex-row sm:justify-between gap-4';
+    const base = 'flex flex-col sm:flex-row sm:justify-between gap-3';
     const alinear = this.alineacion() === 'final' ? 'sm:items-end' : 'sm:items-center';
-    const tarjeta = this.enTarjeta() ? 'superficie p-6' : '';
+    const tarjeta = this.enTarjeta() ? 'superficie p-4' : '';
     return `${base} ${alinear} ${tarjeta}`.trim();
   });
 }

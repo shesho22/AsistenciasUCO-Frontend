@@ -6,9 +6,9 @@ describe('MIS_MATERIAS_ROUTES', () => {
   const shell = cascaron.data?.['shell'] as TabsRutaShellConfig;
   const hijas = cascaron.children ?? [];
 
-  it('declara las pestañas materias, horarios y plan de estudios, con materias por defecto', () => {
+  it('declara las pestañas materias, horarios y materias matriculadas (plan de estudios), con materias por defecto', () => {
     expect(shell.tabs.map((t) => t.id)).toEqual(['materias', 'horarios', 'plan']);
-    expect(shell.tabs.find((t) => t.id === 'plan')?.etiqueta).toBe('Plan de estudios');
+    expect(shell.tabs.find((t) => t.id === 'plan')?.etiqueta).toBe('Materias matriculadas');
     expect(shell.base).toBe('/app/estudiante/mis-materias');
     expect(hijas[0]).toEqual(jasmine.objectContaining({ path: '', redirectTo: 'materias', pathMatch: 'full' }));
   });
