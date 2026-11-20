@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminManagementService } from '../../../core/services/admin-management.service';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
@@ -8,6 +9,9 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
+import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load-error.util';
+import { ErrorCargaComponent } from '../../../shared/components/error-carga/error-carga.component';
+import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
 /**
@@ -17,7 +21,7 @@ import { mensajeUi } from '../../../core/messages/mensajes-ui';
 @Component({
   selector: 'app-admin-cierre-masivo',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PageHeaderComponent, EmptyStateComponent, FormsModule, ConfirmDialogComponent],
+  imports: [PageHeaderComponent, EmptyStateComponent, FormsModule, ConfirmDialogComponent, DatePipe, ErrorCargaComponent, PaginationComponent],
   template: `
     <div class="space-y-4">
       <app-page-header
@@ -89,11 +93,11 @@ import { mensajeUi } from '../../../core/messages/mensajes-ui';
               </tr>
             </thead>
             <tbody class="divide-y divide-warm-100">
-              @for (rep of reportesCierre(); track rep.id) {
+              @for (rep of reportesPagina(); track rep.id) {
                 <tr class="hover:bg-warm-50/70 transition-colors">
                   <td class="px-5 py-4 font-mono text-xs font-bold text-primary-800">{{ rep.id }}</td>
                   <td class="px-5 py-4 font-bold text-warm-900">{{ rep.periodoCodigo }}</td>
-                  <td class="px-5 py-4 text-xs text-warm-600">{{ rep.fechaEjecucion }}</td>
+                  <td class="px-5 py-4 text-xs text-warm-600">{{ rep.fechaEjecucion | date: 'dd/MM/yyyy HH:mm' }}</td>
                   <td class="px-5 py-4 text-center font-bold text-warm-900">{{ rep.totalEstudiantesProcesados }}</td>
                   <td class="px-5 py-4 text-center text-warm-700">{{ rep.totalMateriasAfectadas }}</td>
                   <td class="px-5 py-4 text-center font-bold text-success-700">
@@ -113,7 +117,7 @@ import { mensajeUi } from '../../../core/messages/mensajes-ui';
                   <td colspan="8" class="px-5 py-4">
                     <app-empty-state
                       title="Aún no hay cierres masivos"
-                      description="El historial de cierres no está disponible en esta pantalla. Tras ejecutar un cierre, consulte su resultado en Trazabilidad y Auditoría."
+                      description="Todavía no se ha ejecutado ningún cierre masivo de período. Cuando se ejecute uno, su resultado aparecerá aquí."
                       causa="Se llena cuando se ejecuta el primer cierre masivo de un período."
                     />
                   </td>
@@ -122,6 +126,21 @@ import { mensajeUi } from '../../../core/messages/mensajes-ui';
             </tbody>
           </table>
         </div>
+        @if (errorHistorial(); as error) {
+          <div class="mt-3">
+            <app-error-carga [error]="error" (reintentar)="cargarHistorial()" />
+          </div>
+        }
+        @if (reportesCierre().length > tamanoPagina()) {
+          <app-pagination
+            class="mt-3 block"
+            [totalItems]="reportesCierre().length"
+            [pageSize]="tamanoPagina()"
+            [currentPage]="pagina()"
+            (pageChange)="pagina.set($event)"
+            (pageSizeChange)="cambiarTamano($event)"
+          />
+        }
       </div>
 
       <app-confirm-dialog
@@ -147,6 +166,14 @@ export class AdminCierreMasivoComponent implements OnInit {
   cierrePendiente = signal<boolean>(false);
 
   reportesCierre = this.adminService.reportesCierre;
+  pagina = signal(1);
+  tamanoPagina = signal(10);
+  errorHistorial = signal<LoadErrorState | null>(null);
+  /** El backend entrega el historial completo: la paginación de la tabla se hace aquí, sobre esa lista. */
+  reportesPagina = computed(() => {
+    const inicio = (this.pagina() - 1) * this.tamanoPagina();
+    return this.reportesCierre().slice(inicio, inicio + this.tamanoPagina());
+  });
   periodos = this.coordService.periodos;
 
   private readonly sincronizarPeriodo = effect(() => {
@@ -156,6 +183,23 @@ export class AdminCierreMasivoComponent implements OnInit {
   ngOnInit(): void {
     this.coordService.cargarPeriodosAcademicosBase();
     this.actualizarPeriodoSeleccionado();
+    this.cargarHistorial();
+  }
+
+  cargarHistorial(): void {
+    this.errorHistorial.set(null);
+    this.adminService
+      .cargarHistorialCierres()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => this.pagina.set(1),
+        error: (err: unknown) => this.errorHistorial.set(classifyLoadError(err)),
+      });
+  }
+
+  cambiarTamano(tamano: number): void {
+    this.tamanoPagina.set(tamano);
+    this.pagina.set(1);
   }
 
   private actualizarPeriodoSeleccionado(): void {
@@ -197,6 +241,7 @@ export class AdminCierreMasivoComponent implements OnInit {
           this.isProcesandoCierre.set(false);
           const mensajeExito = res?.mensajeUsuario || `Cierre masivo del período ${codigoPeriodo} solicitado correctamente.`;
           this.toast.success(mensajeExito);
+          this.cargarHistorial();
         },
         error: (err: unknown) => {
           this.isProcesandoCierre.set(false);

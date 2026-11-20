@@ -22,7 +22,7 @@ describe('AdminCierreMasivoComponent - Cierre Masivo RCN_012 (C-F-57)', () => {
 
     adminServiceSpy = jasmine.createSpyObj<AdminManagementService>(
       'AdminManagementService',
-      ['cargarParametros', 'ejecutarCierreMasivo'],
+      ['cargarParametros', 'ejecutarCierreMasivo', 'cargarHistorialCierres'],
       {
         parametros: signal([]).asReadonly(),
         reportesCierre: signal([]).asReadonly(),
@@ -39,6 +39,8 @@ describe('AdminCierreMasivoComponent - Cierre Masivo RCN_012 (C-F-57)', () => {
         totalPaginas: 0,
       } as never)
     );
+
+    adminServiceSpy.cargarHistorialCierres.and.returnValue(of({ exitoso: true, datos: [] }));
 
     coordServiceSpy = jasmine.createSpyObj<CoordinatorManagementService>(
       'CoordinatorManagementService',
