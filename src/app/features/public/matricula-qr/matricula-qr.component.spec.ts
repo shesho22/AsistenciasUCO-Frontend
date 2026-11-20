@@ -114,6 +114,48 @@ describe('MatriculaQrComponent (HU176B, página pública)', () => {
     expect(q('matricula-mensaje')?.textContent).toContain('Solo desde la red Wi-Fi del campus.');
   });
 
+  it('DEC-078: en un grupo compartido pide el programa antes de crear la cuenta y lo envía en el registro', async () => {
+    await crear({ t: TOKEN });
+    servicio.validar.and.returnValue(of({ ...curso, programasElegibles: [
+      { idPrograma: 'prg-a', nombre: 'Administración' }, { idPrograma: 'prg-b', nombre: 'Sistemas' }] }));
+    component.reiniciar();
+    component.pin.set('482913');
+    component.validarPin();
+    fixture.detectChanges();
+
+    const select = q('matricula-programa') as HTMLSelectElement;
+    expect(Array.from(select.options).map((o) => o.textContent?.trim())).toEqual(['Seleccione...', 'Administración', 'Sistemas']);
+    expect((q('matricula-crear') as HTMLButtonElement).disabled).toBeTrue();
+
+    component.programaId.set('prg-b');
+    fixture.detectChanges();
+    expect((q('matricula-crear') as HTMLButtonElement).disabled).toBeFalse();
+    component.mostrarRegistro();
+    llenarFormulario();
+    expect(component.formularioCompleto()).toBeTrue();
+    component.registrar();
+
+    expect(servicio.registrar.calls.mostRecent().args[0].idPrograma).toBe('prg-b');
+  });
+
+  it('DEC-078: con sesión envía el programa elegido; sin elegir, solo la credencial', async () => {
+    await crear({ t: TOKEN }, true);
+    component.matricularConSesion();
+    expect(servicio.matricularAutenticado).toHaveBeenCalledOnceWith({ token: TOKEN });
+
+    servicio.matricularAutenticado.calls.reset();
+    component['credencial'] = { token: TOKEN };
+    component.programaId.set('prg-a');
+    component.matricularConSesion();
+    expect(servicio.matricularAutenticado).toHaveBeenCalledOnceWith({ token: TOKEN }, 'prg-a');
+  });
+
+  it('DEC-078: sin programas elegibles no muestra el selector y no exige programa', async () => {
+    await crear({ t: TOKEN });
+    expect(q('matricula-programa')).toBeNull();
+    expect(component.programaListo()).toBeTrue();
+  });
+
   it('T-FE-03: crear cuenta registra con el token y muestra el usuario, sin token de sesión', async () => {
     await crear({ t: TOKEN });
     component.mostrarRegistro();

@@ -1,3 +1,4 @@
+import { CursoMatriculaQr } from '../../../core/models/matricula-qr.model';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { HttpErrorResponse, HttpRequest, withXhr } from '@angular/common/http';
@@ -474,7 +475,7 @@ describe('StudentCoursesComponent', () => {
     routerSpy = jasmine.createSpyObj('Router', ['navigate']);
     routerSpy.navigate.and.resolveTo(true);
     toastSpy = jasmine.createSpyObj('ToastService', ['success', 'error', 'info', 'warning']);
-    matriculaQrSpy = jasmine.createSpyObj('MatriculaQrService', ['matricularAutenticado']);
+    matriculaQrSpy = jasmine.createSpyObj('MatriculaQrService', ['matricularAutenticado', 'validar']);
     studentServiceSpy.getMaterias.and.returnValue(of({ exitoso: true, datos: mockMaterias }));
     studentServiceSpy.getResumenMaterias.and.returnValue(of({ exitoso: true, datos: RESUMEN }));
     claimServiceSpy.getSesionesPorMateria.and.returnValue(of({ exitoso: true, datos: mockSesiones, total: mockSesiones.length }));
@@ -738,6 +739,29 @@ describe('StudentCoursesComponent', () => {
     expect(component.errorMatriculaGrupo()).toBe('Solo desde la red Wi-Fi del campus.');
     expect(component.modalMatriculaGrupoVisible()).toBeTrue();
     expect(component.procesandoMatriculaGrupo()).toBeFalse();
+  });
+
+  it('DEC-078: con MQR_008 pide los programas del grupo compartido y reenvía la matrícula con el programa elegido', () => {
+    matriculaQrSpy.matricularAutenticado.and.returnValue(
+      throwError(() => apiHttpError(409, 'Elige el programa al que perteneces.', 'MQR_008')));
+    matriculaQrSpy.validar.and.returnValue(of({ programasElegibles: [{ idPrograma: 'prg-a', nombre: 'Administración' }] } as unknown as CursoMatriculaQr));
+    component.abrirModalMatriculaGrupo();
+    component.enviarMatriculaPorCodigo('482913');
+
+    expect(matriculaQrSpy.validar).toHaveBeenCalledOnceWith({ pin: '482913' });
+    expect(component.programasMatriculaGrupo()).toEqual([{ idPrograma: 'prg-a', nombre: 'Administración' }]);
+    expect(component.errorMatriculaGrupo()).toBe('Elige el programa al que perteneces.');
+
+    matriculaQrSpy.matricularAutenticado.and.returnValue(of({ idGrupo: 'g-1' }));
+    component.enviarMatriculaPorCodigo({ pin: '482913', idPrograma: 'prg-a' });
+    expect(matriculaQrSpy.matricularAutenticado).toHaveBeenCalledWith({ pin: '482913' }, 'prg-a');
+    expect(component.programasMatriculaGrupo()).toEqual([]);
+  });
+
+  it('DEC-078: otro rechazo distinto de MQR_008 no pide los programas', () => {
+    matriculaQrSpy.matricularAutenticado.and.returnValue(throwError(() => apiHttpError(409, 'Ya estás matriculado.', 'MQR_004')));
+    component.enviarMatriculaPorCodigo('482913');
+    expect(matriculaQrSpy.validar).not.toHaveBeenCalled();
   });
 
   it('MQR_001: un PIN inexistente (404) muestra el mensaje del backend dentro del modal y se limpia al reintentar o cerrar', async () => {

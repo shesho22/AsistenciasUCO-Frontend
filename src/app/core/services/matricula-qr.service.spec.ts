@@ -122,6 +122,14 @@ describe('MatriculaQrService (HU176B)', () => {
     expect(idGrupo).toBe('g-1');
   });
 
+  it('DEC-078: matricularAutenticado envía el programa elegido junto con la credencial', () => {
+    service.matricularAutenticado({ token: 'T', pin: '482913' }, 'prg-a').subscribe();
+
+    const req = http.expectOne(`${environment.apiUrl}/estudiante/matricular-grupo`);
+    expect(req.request.body).toEqual({ token: 'T', idPrograma: 'prg-a' });
+    req.flush({ exitoso: true, datos: { idGrupo: 'g-1' } });
+  });
+
   it('propaga el error del backend sin transformarlo', () => {
     let status = 0;
     service.validar({ pin: '000000' }).subscribe({ error: (e) => (status = e.status) });

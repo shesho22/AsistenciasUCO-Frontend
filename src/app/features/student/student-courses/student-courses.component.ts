@@ -39,10 +39,15 @@ import { mensajeSesionManualCreada } from '../../../core/models/sesion-manual.ut
 import { StudentCoursesListComponent } from './components/student-courses-list.component';
 import { StudentCourseDetailComponent } from './components/student-course-detail.component';
 import { StudentClaimFormComponent } from './components/student-claim-form.component';
-import { StudentMatriculaCodigoModalComponent } from './components/modals/student-matricula-codigo-modal.component';
+import { EnvioMatriculaCodigo, StudentMatriculaCodigoModalComponent } from './components/modals/student-matricula-codigo-modal.component';
+import { ProgramaElegibleMatriculaQr } from '../../../core/models/matricula-qr.model';
+
 import { StudentAsistenciaPinModalComponent } from './components/modals/student-asistencia-pin-modal.component';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
 import { TAMANO_PAGINA_TABLA } from '../../../shared/components/tabla-datos/tabla-datos.component';
+
+/** DEC-078: codigo canonico del backend cuando el estudiante debe elegir su programa en un grupo compartido. */
+const CODIGO_ELEGIR_PROGRAMA = 'MQR_008';
 
 type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO';
 
@@ -136,6 +141,7 @@ type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO';
           [error]="errorMatriculaGrupo()"
           [tokenInicial]="tokenPrecargado()"
           [codigoInicial]="pinPrecargado()"
+          [programas]="programasMatriculaGrupo()"
           (submitted)="enviarMatriculaPorCodigo($event)"
           (closed)="cerrarModalMatriculaGrupo()"
         />
@@ -179,6 +185,8 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
   procesandoMatriculaGrupo = signal<boolean>(false);
   /** Mensaje del backend ante un rechazo de la matrícula por código; se muestra dentro del modal. */
   errorMatriculaGrupo = signal<string | null>(null);
+  /** DEC-078: programas del grupo compartido para que el estudiante elija el suyo (vacío si no aplica). */
+  programasMatriculaGrupo = signal<ProgramaElegibleMatriculaQr[]>([]);
   /** PIN que trae el login (`?matricula=<PIN>`); el modal lo muestra precargado. */
   pinPrecargado = signal<string>('');
   /** Token QR que trae el login (`?t=<TOKEN>`); F-EST-012. */
@@ -771,6 +779,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
 
   abrirModalMatriculaGrupo(): void {
     this.errorMatriculaGrupo.set(null);
+    this.programasMatriculaGrupo.set([]);
     this.modalMatriculaGrupoVisible.set(true);
   }
 
@@ -779,10 +788,12 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
     this.modalMatriculaGrupoVisible.set(false);
   }
 
-  enviarMatriculaPorCodigo(dato: string | { token?: string; pin?: string }): void {
+  enviarMatriculaPorCodigo(dato: EnvioMatriculaCodigo): void {
     let credencial: { token?: string; pin?: string };
+    let idPrograma: string | undefined;
     if (typeof dato === 'object' && dato !== null) {
-      credencial = dato;
+      credencial = dato.token ? { token: dato.token } : { pin: dato.pin };
+      idPrograma = dato.idPrograma;
     } else {
       const pin = String(dato || '').trim();
       if (!/^\d{6}$/.test(pin)) {
@@ -795,9 +806,13 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
 
     this.errorMatriculaGrupo.set(null);
     this.procesandoMatriculaGrupo.set(true);
-    this.matriculaQrService.matricularAutenticado(credencial).subscribe({
+    const envio = idPrograma
+      ? this.matriculaQrService.matricularAutenticado(credencial, idPrograma)
+      : this.matriculaQrService.matricularAutenticado(credencial);
+    envio.subscribe({
       next: (resultado) => {
         this.procesandoMatriculaGrupo.set(false);
+        this.programasMatriculaGrupo.set([]);
         this.toast.success(getApiSuccessMessage(resultado, mensajeUi('UI_STUDENT_COURSES_005')));
         this.cerrarModalMatriculaGrupo();
         this.studentService.invalidarCacheMaterias();
@@ -808,7 +823,19 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
         const mensaje = getApiErrorMessage(err);
         this.errorMatriculaGrupo.set(mensaje);
         this.toast.error(mensaje);
+        // DEC-078: grupo compartido y el estudiante aún no pertenece a ninguno de sus programas: se piden los programas
+        // del grupo para que elija el suyo y vuelva a confirmar (el mensaje del backend ya lo explica).
+        if (getApiErrorCode(err) === CODIGO_ELEGIR_PROGRAMA) {
+          this.cargarProgramasMatricula(credencial);
+        }
       },
+    });
+  }
+
+  private cargarProgramasMatricula(credencial: { token?: string; pin?: string }): void {
+    this.matriculaQrService.validar(credencial).subscribe({
+      next: (curso) => this.programasMatriculaGrupo.set(curso.programasElegibles ?? []),
+      error: (err: unknown) => this.errorMatriculaGrupo.set(getApiErrorMessage(err)),
     });
   }
 }
