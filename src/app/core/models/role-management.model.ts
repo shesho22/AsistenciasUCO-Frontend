@@ -434,7 +434,7 @@ export interface EstudianteDirectorioItem {
   correo: string;
   programa: string;
   idPrograma?: string;
-  semestreActual?: number;
+  semestreActual?: number | null;
   estadoMatricula: 'ACTIVO' | 'INACTIVO' | 'BLOQUEADO';
   gruposInscritos?: string[];
 }

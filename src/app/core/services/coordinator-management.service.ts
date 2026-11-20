@@ -28,7 +28,7 @@ import {
   CaracterAsignatura,
   EstadoAsignaturaResultado,
 } from '../models/role-management.model';
-import { EstudiantePaginaApiDto } from '../api/models/estudiante-api-dto.model';
+import { EstudiantePaginaApiDto, EstudianteResumenApiDto } from '../api/models/estudiante-api-dto.model';
 import { AsistenciaSesionItem, SesionGrupoItem } from '../models/asistencia-programa.model';
 
 /** Plan de estudio tal como llega del backend (HU081-HU083) o ya con la forma de la pantalla. */
@@ -94,6 +94,7 @@ export function normalizarEstudianteDirectorio(raw: EstudianteDirectorioApiDto |
     correo: raw?.correo ?? '',
     programa: raw?.nombrePrograma ?? raw?.programa ?? '',
     idPrograma: raw?.idPrograma,
+    ...(raw?.semestreActual != null ? { semestreActual: raw.semestreActual } : {}),
     estadoMatricula: raw?.estadoMatricula ?? 'ACTIVO',
   };
 }
@@ -635,6 +636,9 @@ export class CoordinatorManagementService {
                 nombreCompleto: item.nombreCompleto,
                 correo: item.correo,
                 estaActivoUsuario: item.estadoMatricula === 'ACTIVO',
+                ...(item.idPrograma ? { idPrograma: item.idPrograma } : {}),
+                nombrePrograma: item.programa,
+                semestreActual: item.semestreActual ?? null,
               }));
             const totalItems = filtered.length;
             return {
@@ -648,16 +652,40 @@ export class CoordinatorManagementService {
         );
     }
 
-    const params: Record<string, string> = {
-      page: String(query.page),
-      size: String(query.size),
-    };
-    if (query.nombre) params['nombre'] = query.nombre;
-    if (query.numeroIdentificacion) params['numeroIdentificacion'] = query.numeroIdentificacion;
-    if (query.activo !== undefined) params['activo'] = String(query.activo);
-    const programaId = this.programaIdActual();
-    if (programaId) params['programaId'] = programaId;
-    return this.http.get<EstudiantePaginaApiDto>(`${environment.apiUrl}/estudiantes`, { params });
+    // Fuente real: GET /coordinador/estudiantes (paginado en el servidor; trae programa y semestre del vínculo).
+    let params = paramsPrograma(this.programaIdActual())
+      .set('pagina', query.page + 1)
+      .set('tamano', query.size);
+    const busqueda = query.nombre || query.numeroIdentificacion;
+    if (busqueda) params = params.set('busqueda', busqueda);
+    if (query.activo !== undefined) params = params.set('estaActivo', query.activo);
+    return this.http
+      .get<ApiPageResponse<EstudianteResumenApiDto>>(`${environment.apiUrl}/coordinador/estudiantes`, { params })
+      .pipe(
+        map((pagina) => ({
+          // El listado del programa no trae el estado del usuario: el filtro `estaActivo` es el único dato disponible.
+          items: (pagina.elementos ?? []).map((e) => ({ ...e, estaActivoUsuario: e.estaActivoUsuario ?? query.activo ?? true })),
+          totalItems: pagina.totalElementos ?? 0,
+          totalPages: pagina.totalPaginas ?? 0,
+          page: query.page,
+          size: query.size,
+        }))
+      );
+  }
+
+  /**
+   * Fija o limpia (`null`) el semestre del estudiante en un programa del coordinador.
+   * 403 SEC_002, 404 EST_008, 400 EST_009 (rango): el mensaje lo entrega el backend.
+   */
+  actualizarSemestreEstudiante(
+    idEstudiante: string,
+    idPrograma: string,
+    semestreActual: number | null
+  ): Observable<ApiResponse<{ semestreActual: number | null }>> {
+    return this.http.put<ApiResponse<{ semestreActual: number | null }>>(
+      `${environment.apiUrl}/coordinador/estudiantes/${idEstudiante}/programas/${idPrograma}/semestre`,
+      { semestreActual }
+    );
   }
 
   /** Total de estudiantes del programa activos o inactivos: lo cuenta el servidor (`totalItems` con el filtro `activo`, página de uno). */

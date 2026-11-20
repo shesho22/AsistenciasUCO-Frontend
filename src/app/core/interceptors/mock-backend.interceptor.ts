@@ -507,9 +507,15 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   if (url.endsWith('/coordinador/estudiantes') && method === 'GET') {
     const estudiantes = mockStore.estudiantesDirectorio.map((e) => ({
       id: e.id, idUsuario: e.id, numeroIdentificacion: Number(e.documento) || 0, nombreCompleto: e.nombreCompleto, correo: e.correo,
-      idPrograma: 'PRG-MOCK-1', nombrePrograma: e.programa,
+      idPrograma: 'PRG-MOCK-1', nombrePrograma: e.programa, semestreActual: e.semestreActual ?? null,
     }));
     return of(okPagina(estudiantes, req)).pipe(delay(200));
+  }
+  if (/\/coordinador\/estudiantes\/[^/]+\/programas\/[^/]+\/semestre$/.test(url) && method === 'PUT') {
+    const idEstudiante = url.split('/')[url.split('/').indexOf('estudiantes') + 1];
+    const semestreActual = (req.body as { semestreActual: number | null }).semestreActual ?? null;
+    mockStore.estudiantesDirectorio = mockStore.estudiantesDirectorio.map((e) => (e.id === idEstudiante ? { ...e, semestreActual } : e));
+    return of(okResponse({ semestreActual }, 'Semestre del estudiante actualizado.')).pipe(delay(200));
   }
   if (url.endsWith('/coordinador/planes-estudio') && method === 'POST') {
     const body = req.body as Partial<PlanEstudioItem>;

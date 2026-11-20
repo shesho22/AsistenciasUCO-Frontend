@@ -13,6 +13,11 @@ export interface EstudianteResumenApiDto {
   nombreCompleto: string;
   correo: string;
   estaActivoUsuario: boolean;
+
+  /** `GET /coordinador/estudiantes`: programa del vínculo y semestre (nulo = no informado). */
+  idPrograma?: string;
+  nombrePrograma?: string;
+  semestreActual?: number | null;
 }
 
 export interface EstudiantePaginaApiDto {
