@@ -30,7 +30,6 @@ export function cupoValidoOVacio(cupo: number | string | null | undefined): bool
 
 interface GrupoForm {
   idAsignatura: string;
-  idPeriodoAcademico: string;
   codigo: number | null;
   nombre: string;
   idDocente: string;
@@ -140,14 +139,16 @@ interface GrupoForm {
                   }
                 </select>
               </label>
-              <label class="text-xs font-semibold text-warm-700">Período académico
-                <select name="idPeriodoAcademico" [(ngModel)]="form.idPeriodoAcademico" class="mt-1 w-full px-3 py-2 border border-warm-200 rounded-xl text-sm">
-                  <option value="">{{ periodos().length === 0 ? '-- No hay períodos disponibles --' : 'Seleccione...' }}</option>
-                  @for (p of periodos(); track p.id) {
-                    <option [value]="p.id">{{ p.nombre }}</option>
+              <!-- DEC-076: el período no se elige; el grupo se crea en el período en curso (estado ACTIVO que calcula la base). -->
+              <div class="text-xs font-semibold text-warm-700">Período académico
+                <p data-testid="periodo-creacion" class="mt-1 w-full px-3 py-2 border border-warm-100 bg-warm-50 rounded-xl text-sm font-normal text-warm-800">
+                  @if (periodoCreacion(); as periodo) {
+                    {{ periodo.nombre }} (en curso)
+                  } @else {
+                    Se asignará el próximo período en planeación
                   }
-                </select>
-              </label>
+                </p>
+              </div>
             }
             <label class="text-xs font-semibold text-warm-700">Código del grupo
               <input name="codigo" type="number" min="1" step="1" [(ngModel)]="form.codigo" class="mt-1 w-full px-3 py-2 border border-warm-200 rounded-xl text-sm" />
@@ -294,6 +295,11 @@ export class CoordinatorGroupsComponent implements OnInit {
    */
   asignaturasParaCrear = computed(() => this.asignaturas().filter((a) => a.estaActivaAsignatura !== false));
   periodos = signal<PeriodoAcademicoItem[]>([]);
+  /**
+   * DEC-076: período en el que se crea el grupo: el que el servidor marca como ACTIVO (vigente hoy). Sin uno en curso no se
+   * envía período y la base toma el próximo en PLANEACION. Un período ya terminado no recibe grupos (la base responde PER_010).
+   */
+  readonly periodoCreacion = computed(() => this.periodos().find((p) => p.estado === 'ACTIVO') ?? null);
   docentes = signal<DocentePrograma[]>([]);
   /** Fallo al cargar las asignaturas, docentes o periodos del formulario: se muestra con reintento, no como listas vacías. */
   errorCatalogos = signal<LoadErrorState | null>(null);
@@ -380,7 +386,7 @@ export class CoordinatorGroupsComponent implements OnInit {
 
   /** Datos que determinan la previsualización: si cambian, el resultado mostrado ya no corresponde. */
   private claveForm(): string {
-    return JSON.stringify([this.grupoEditado, this.form.idAsignatura, this.form.idPeriodoAcademico, this.form.idDocente,
+    return JSON.stringify([this.grupoEditado, this.form.idAsignatura, this.periodoCreacion()?.id, this.form.idDocente,
       this.form.franjas.map((f) => [f.dia, f.horaInicio, f.horaFin])]);
   }
 
@@ -406,7 +412,7 @@ export class CoordinatorGroupsComponent implements OnInit {
       .previsualizarHorarioGrupo({
         idGrupo: this.modo() === 'EDITAR' ? (this.grupoEditado as string) : undefined,
         idAsignatura: this.modo() === 'CREAR' ? this.form.idAsignatura : undefined,
-        idPeriodoAcademico: this.modo() === 'CREAR' ? this.form.idPeriodoAcademico : undefined,
+        idPeriodoAcademico: this.modo() === 'CREAR' ? this.periodoCreacion()?.id : undefined,
         idDocente: this.form.idDocente || undefined,
         franjas: this.form.franjas.map((f) => ({ dia: f.dia, horaInicio: f.horaInicio, horaFin: f.horaFin })),
       })
@@ -427,10 +433,16 @@ export class CoordinatorGroupsComponent implements OnInit {
       });
   }
 
-  /** Lo mínimo para poder calcular: materia, período y docente (grupo nuevo) y al menos una franja válida. */
+  /**
+   * Lo mínimo para poder calcular: materia, período en curso y docente (grupo nuevo) y al menos una franja válida. DEC-076: sin
+   * período en curso no hay calendario que previsualizar (el grupo se creará en el próximo período en planeación).
+   */
   private errorPrevisualizable(): string | null {
-    if (this.modo() === 'CREAR' && (!this.form.idAsignatura || !this.form.idPeriodoAcademico)) {
-      return 'Seleccione la asignatura y el período académico para calcular las sesiones.';
+    if (this.modo() === 'CREAR' && !this.form.idAsignatura) {
+      return 'Seleccione la asignatura para calcular las sesiones.';
+    }
+    if (this.modo() === 'CREAR' && !this.periodoCreacion()) {
+      return 'No hay un período en curso para calcular las sesiones; el grupo se creará en el próximo período en planeación.';
     }
     if (!this.form.idDocente) return 'Seleccione el docente titular para calcular las sesiones.';
     if (this.form.franjas.length === 0) return 'Defina al menos una franja del horario.';
@@ -455,7 +467,6 @@ export class CoordinatorGroupsComponent implements OnInit {
     this.grupoEditado = grupo.id;
     this.form = {
       idAsignatura: grupo.asignaturaId ?? '',
-      idPeriodoAcademico: '',
       codigo: grupo.code ? Number(grupo.code) : null,
       nombre: grupo.section,
       idDocente: grupo.docenteId ?? '',
@@ -496,7 +507,7 @@ export class CoordinatorGroupsComponent implements OnInit {
         ? this.courseService.crearGrupo({
             ...payload,
             idAsignatura: this.form.idAsignatura,
-            idPeriodoAcademico: this.form.idPeriodoAcademico,
+            idPeriodoAcademico: this.periodoCreacion()?.id,
           })
         : this.courseService.actualizarGrupo(this.grupoEditado as string, {
             ...payload,
@@ -530,8 +541,8 @@ export class CoordinatorGroupsComponent implements OnInit {
 
   /** Validaciones de formato antes de llamar al backend (las reglas de negocio las confirma la DB). */
   validar(): string | null {
-    if (this.modo() === 'CREAR' && (!this.form.idAsignatura || !this.form.idPeriodoAcademico)) {
-      return 'Seleccione la asignatura y el período académico.';
+    if (this.modo() === 'CREAR' && !this.form.idAsignatura) {
+      return 'Seleccione la asignatura.';
     }
     if (!this.form.codigo || Number(this.form.codigo) < 1 || !this.form.nombre.trim()) {
       return 'El código y el nombre del grupo son obligatorios.';
@@ -561,7 +572,6 @@ export class CoordinatorGroupsComponent implements OnInit {
   private formVacio(): GrupoForm {
     return {
       idAsignatura: '',
-      idPeriodoAcademico: '',
       codigo: null,
       nombre: '',
       idDocente: '',

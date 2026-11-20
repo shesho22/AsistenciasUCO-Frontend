@@ -257,7 +257,7 @@ export class CourseService {
   /**
    * F1/F3: crea un grupo (POST /grupos, COORDINADOR o el propio DOCENTE) con su horario semanal en la misma transacción.
    * El body sigue el contrato real de CrearGrupoRequest; `franjas` vacío o ausente = grupo sin horario. Sin
-   * `idPeriodoAcademico` la DB toma el período más reciente.
+   * `idPeriodoAcademico` la DB toma el período en curso o, si no hay, el próximo en planeación (DEC-076).
    */
   crearGrupo(payload: GrupoCoordinadorPayload): Observable<ApiResponse<{ id: string; mensajeUsuario: string }>> {
     if (environment.useMocks) {

@@ -60,7 +60,16 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
     coordinatorService.getDocentesPrograma.and.returnValue(
       of({ exitoso: true, datos: [{ idDocente: 'doc-1', nombreCompleto: 'Ana Pérez' } as never] })
     );
-    coordinatorService.getPeriodosAcademicos.and.returnValue(of({ exitoso: true, datos: [{ id: 'per-1', nombre: '2026-2' } as never] }));
+    coordinatorService.getPeriodosAcademicos.and.returnValue(
+      of({
+        exitoso: true,
+        datos: [
+          { id: 'per-0', nombre: '2026-1', estado: 'CERRADO' } as never,
+          { id: 'per-1', nombre: '2026-2', estado: 'ACTIVO' } as never,
+          { id: 'per-2', nombre: '2027-1', estado: 'PLANEACION' } as never,
+        ],
+      })
+    );
 
     await TestBed.configureTestingModule({
       imports: [CoordinatorGroupsComponent],
@@ -80,7 +89,7 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
     expect(component.listado.filas()).toEqual([grupo]);
     expect(component.asignaturas().map((a) => a.id)).toEqual(['asig-1']);
     expect(component.docentes()).toHaveSize(1);
-    expect(component.periodos()).toHaveSize(1);
+    expect(component.periodos()).toHaveSize(3);
     expect(component.nombreDocente('doc-1')).toBe('Ana Pérez');
     expect(component.nombreDocente(undefined)).toBe('Sin asignar');
     expect(fixture.nativeElement.textContent).toContain('Lunes 08:00-10:00');
@@ -168,10 +177,9 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
     expect(component.form.franjas).toHaveSize(1);
 
     component.guardar();
-    expect(toast.warning).toHaveBeenCalledWith('Seleccione la asignatura y el período académico.');
+    expect(toast.warning).toHaveBeenCalledWith('Seleccione la asignatura.');
 
     component.form.idAsignatura = 'asig-1';
-    component.form.idPeriodoAcademico = 'per-1';
     component.guardar();
     expect(toast.warning).toHaveBeenCalledWith('El código y el nombre del grupo son obligatorios.');
 
@@ -200,10 +208,36 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
     expect(courseService.getCoordinatorCoursesPage).toHaveBeenCalledTimes(2);
   });
 
+  // DEC-076: el período no se elige; se muestra el que el servidor marca como ACTIVO y se envía su id.
+  it('DEC-076: sin selector de período, muestra el período en curso y lo envía al crear', () => {
+    fixture.nativeElement.querySelector('[data-testid="nuevo-grupo"]').click();
+    fixture.detectChanges();
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.querySelector('select[name="idPeriodoAcademico"]')).toBeNull();
+    expect(el.querySelector('[data-testid="periodo-creacion"]')?.textContent).toContain('2026-2 (en curso)');
+
+    courseService.crearGrupo.and.returnValue(of({ exitoso: true, mensajeUsuario: 'Grupo creado.', datos: { id: 'g9', mensajeUsuario: '' } }));
+    Object.assign(component.form, { idAsignatura: 'a', codigo: 9, nombre: 'G9', idDocente: 'd' });
+    component.guardar();
+    expect(courseService.crearGrupo.calls.mostRecent().args[0].idPeriodoAcademico).toBe('per-1');
+  });
+
+  it('DEC-076: sin período en curso no envía período (la base toma el próximo en planeación) y lo explica', () => {
+    component.periodos.set([{ id: 'per-2', nombre: '2027-1', estado: 'PLANEACION' } as never]);
+    component.abrirCrear();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[data-testid="periodo-creacion"]')?.textContent).toContain('próximo período en planeación');
+
+    courseService.crearGrupo.and.returnValue(of({ exitoso: true, mensajeUsuario: 'Grupo creado.', datos: { id: 'g10', mensajeUsuario: '' } }));
+    Object.assign(component.form, { idAsignatura: 'a', codigo: 10, nombre: 'G10', idDocente: 'd' });
+    component.guardar();
+    expect(courseService.crearGrupo.calls.mostRecent().args[0].idPeriodoAcademico).toBeUndefined();
+  });
+
   // DEC-073: el código es un entero positivo y el nombre, texto seguro.
   it('DEC-073: valida código entero y nombre sin < > ni comillas antes de llamar al backend', () => {
     component.abrirCrear();
-    Object.assign(component.form, { idAsignatura: 'a', idPeriodoAcademico: 'p', codigo: 1.5, nombre: 'G', idDocente: 'd' });
+    Object.assign(component.form, { idAsignatura: 'a', codigo: 1.5, nombre: 'G', idDocente: 'd' });
     expect(component.validar()).toBe('El código del grupo debe ser un número entero mayor que cero.');
 
     Object.assign(component.form, { codigo: 2, nombre: 'Grupo <b>A</b>' });
@@ -215,7 +249,7 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
 
   it('valida horas y franjas que se cruzan antes de llamar al backend', () => {
     component.abrirCrear();
-    Object.assign(component.form, { idAsignatura: 'a', idPeriodoAcademico: 'p', codigo: 1, nombre: 'G', idDocente: 'd' });
+    Object.assign(component.form, { idAsignatura: 'a', codigo: 1, nombre: 'G', idDocente: 'd' });
 
     component.form.franjas = [{ dia: 'LU', horaInicio: '10:00', horaFin: '08:00' }];
     component.guardar();
@@ -349,7 +383,6 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
   function llenarGrupoNuevo(): void {
     component.abrirCrear();
     component.form.idAsignatura = 'asig-1';
-    component.form.idPeriodoAcademico = 'per-1';
     component.form.codigo = 3;
     component.form.nombre = 'Grupo 3';
     component.form.idDocente = 'doc-1';
@@ -417,7 +450,15 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
     component.abrirCrear();
     component.previsualizar();
     expect(courseService.previsualizarHorarioGrupo).not.toHaveBeenCalled();
-    expect(component.errorPrevision()).toContain('asignatura y el período');
+    expect(component.errorPrevision()).toContain('asignatura');
+
+    // DEC-076: sin período en curso no hay calendario que previsualizar.
+    llenarGrupoNuevo();
+    component.periodos.set([{ id: 'per-2', nombre: '2027-1', estado: 'PLANEACION' } as never]);
+    component.previsualizar();
+    expect(component.errorPrevision()).toContain('No hay un período en curso');
+    expect(courseService.previsualizarHorarioGrupo).not.toHaveBeenCalled();
+    component.periodos.set([{ id: 'per-1', nombre: '2026-2', estado: 'ACTIVO' } as never]);
 
     llenarGrupoNuevo();
     component.form.idDocente = '';
@@ -483,7 +524,7 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
       },
     })));
     component.abrirCrear();
-    component.form = { ...component.form, idAsignatura: 'a-1', idPeriodoAcademico: 'p-1', codigo: 3, nombre: 'Grupo 03', idDocente: 'doc-1' };
+    component.form = { ...component.form, idAsignatura: 'a-1', codigo: 3, nombre: 'Grupo 03', idDocente: 'doc-1' };
     component.guardar();
     fixture.detectChanges();
 
