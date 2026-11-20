@@ -19,10 +19,10 @@ import { CardComponent } from '../../../shared/components/card/card.component';
         <!-- Encabezado Institucional -->
         <div class="mb-6 text-center space-y-2">
           <div class="inline-flex p-3.5 rounded-2xl bg-warm-100/90 border border-warm-200/80 mb-1 shadow-warm-sm">
-            <img src="logo.svg" alt="Gestió Asistencia Logo" class="w-11 h-11 object-contain shrink-0" />
+            <img src="logo.svg" alt="Gestión Asistencia Logo" class="w-11 h-11 object-contain shrink-0" />
           </div>
           <h2 class="font-serif font-bold text-2xl sm:text-3xl text-warm-900 tracking-tight">
-            Gestió Asistencia UCO
+            Gestión Asistencia UCO
           </h2>
           <p class="text-xs text-warm-600 max-w-sm mx-auto leading-relaxed">
             Ingresa con tus credenciales institucionales para acceder a la gestión de asistencia académica.

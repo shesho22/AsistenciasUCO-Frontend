@@ -37,7 +37,7 @@ type PestanaModulo = 'DIRECTORIO';
     ErrorCargaComponent
 ],
     template: `
-    <div class="space-y-6">
+    <div class="space-y-4">
       <app-coordinator-program-selector (programaCambiado)="alCambiarPrograma()" />
       <!-- Header Bento -->
       <app-page-header

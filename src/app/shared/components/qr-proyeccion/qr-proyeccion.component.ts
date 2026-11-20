@@ -100,7 +100,7 @@ import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed,
 
       <main
         class="grid items-center justify-items-center"
-        [class]="ampliado() ? 'flex-1 gap-6 p-3 sm:p-6 lg:grid-cols-[auto_minmax(0,1fr)]' : 'gap-5 p-5 sm:grid-cols-2'"
+        [class]="ampliado() ? 'flex-1 gap-4 p-3 sm:p-6 lg:grid-cols-[auto_minmax(0,1fr)]' : 'gap-5 p-5 sm:grid-cols-2'"
       >
         <div
           data-testid="qr-tarjeta"

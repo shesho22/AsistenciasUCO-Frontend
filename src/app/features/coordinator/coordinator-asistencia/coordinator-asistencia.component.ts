@@ -16,17 +16,16 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
   host: { class: 'block w-full' },
   imports: [PageHeaderComponent, CoordinatorIndicatorsComponent, ConsolidadoAsistenciaComponent, RevisionesPendientesKpiComponent],
   template: `
-    <div class="space-y-5 min-w-0">
+    <div class="space-y-4 min-w-0">
       <app-page-header
         titulo="Asistencia del programa"
         descripcion="Indicadores del programa y consolidado por grupo; despliega un grupo para ver sus sesiones."
       />
 
-      <div class="max-w-sm">
-        <app-revisiones-pendientes-kpi rol="COORDINADOR" />
-      </div>
-
-      <app-coordinator-indicators parte="kpis" [embebido]="true" (programaCambiado)="alRecambiarPrograma()" />
+      <!-- F (2026-11-19): «Revisiones por resolver» va dentro de la fila de indicadores, no en una tarjeta aparte. -->
+      <app-coordinator-indicators parte="kpis" [embebido]="true" [conKpiExtra]="true" (programaCambiado)="alRecambiarPrograma()">
+        <app-revisiones-pendientes-kpi kpi-extra rol="COORDINADOR" class="col-span-2 lg:col-span-1 xl:row-span-2 empty:hidden" />
+      </app-coordinator-indicators>
 
       <app-consolidado-asistencia [embebido]="true" />
 

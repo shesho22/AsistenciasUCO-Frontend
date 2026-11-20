@@ -28,7 +28,7 @@ export interface AccionSesionEvento {
         class: 'block w-full'
     },
     template: `
-    <div class="space-y-6 animate-fade-in">
+    <div class="space-y-4 animate-fade-in">
       <!-- 1. BENTO GRID DE KPIs GLOBALES DEL GRUPO -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- KPI 1: Sesiones Registradas -->
@@ -331,7 +331,7 @@ export class GroupSessionsOverviewComponent {
       { id: 'matricular', label: 'Matricular estudiante', testid: 'grupo-matricular' },
       { id: 'alumnos', label: 'Info y alumnos', testid: 'grupo-alumnos' },
       { id: 'padron', label: 'Padrón y retiros', testid: 'padron' },
-      { id: 'reclamos', label: pendientes > 0 ? `Reclamos (${pendientes})` : 'Reclamos', testid: 'grupo-reclamos' },
+      { id: 'reclamos', label: pendientes > 0 ? `Justificaciones (${pendientes})` : 'Justificaciones', testid: 'grupo-reclamos' },
     ];
   });
   readonly textoMenu = computed(() => (this.totalReclamosPendientes() > 0 ? `Más (${this.totalReclamosPendientes()})` : 'Más'));

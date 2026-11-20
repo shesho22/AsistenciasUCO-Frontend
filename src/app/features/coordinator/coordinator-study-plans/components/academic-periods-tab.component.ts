@@ -1,18 +1,20 @@
 import { Component, ChangeDetectionStrategy, input, output, signal, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { PeriodoAcademicoItem } from '../../../../core/models/role-management.model';
-import { CardComponent } from '../../../../shared/components/card/card.component';
 import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { AcademicPeriodFormModalComponent, PeriodoFormDatos } from './academic-period-form-modal.component';
-import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
+import {
+  TAMANO_PAGINA_TABLA,
+  TablaDatosComponent,
+  paginarEnCliente,
+} from '../../../../shared/components/tabla-datos/tabla-datos.component';
 
 @Component({
   selector: 'app-academic-periods-tab',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, CardComponent, BadgeComponent, ButtonComponent, PaginationComponent, AcademicPeriodFormModalComponent],
+  imports: [BadgeComponent, ButtonComponent, TablaDatosComponent, AcademicPeriodFormModalComponent],
   template: `
-    <div class="space-y-6">
+    <div class="space-y-4">
       <div class="superficie flex items-center justify-between p-5">
         <div>
           <h3 class="font-serif font-bold text-lg text-warm-900">Calendario de Períodos Académicos</h3>
@@ -31,50 +33,64 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
         }
       </div>
 
-      <!-- Grid de Períodos -->
-      @if (pagedPeriodos().length === 0) {
-        <div class="superficie p-12 text-center">
-          <p class="text-sm text-warm-500">No hay períodos académicos registrados.</p>
-        </div>
-      } @else {
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <!-- Tabla de Períodos (más reciente primero) -->
+      <app-tabla-datos
+        etiqueta="Períodos académicos"
+        [columnas]="soloLectura() ? 5 : 6"
+        anchoMinimo="44rem"
+        [vacio]="periodos().length === 0"
+        mensajeVacio="No hay períodos académicos registrados."
+        [paginada]="true"
+        [totalItems]="periodos().length"
+        [pagina]="currentPage()"
+        [tamanoPagina]="pageSize()"
+        (paginaChange)="currentPage.set($event)"
+        (tamanoPaginaChange)="cambiarTamano($event)"
+      >
+        <thead>
+          <tr>
+            <th scope="col">Código</th>
+            <th scope="col">Período</th>
+            <th scope="col">Fecha de inicio</th>
+            <th scope="col">Fecha de cierre</th>
+            <th scope="col">Estado</th>
+            @if (!soloLectura()) {
+              <th scope="col"><span class="sr-only">Acciones</span></th>
+            }
+          </tr>
+        </thead>
+        <tbody>
           @for (periodo of pagedPeriodos(); track periodo.id) {
-            <app-card [hoverable]="true" padding="md">
-              <div class="space-y-4">
-                <div class="flex items-start justify-between gap-2">
-                  <div class="flex items-center gap-2">
-                    <span class="text-xs font-mono font-bold px-2.5 py-1 rounded-md bg-warm-100 text-warm-800">
-                      {{ periodo.codigo }}
-                    </span>
-                    @if (periodo.esActual) {
-                      <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-primary-100 text-primary-800">
-                        ACTUAL
-                      </span>
-                    }
-                  </div>
-
-                  <app-badge [variant]="periodo.estado === 'ACTIVO' ? 'success' : (periodo.estado === 'PLANEACION' ? 'warning' : 'danger')">
-                    {{ periodo.estado }}
-                  </app-badge>
-                </div>
-
-                <div>
-                  <h4 class="font-serif font-bold text-base text-warm-900">{{ periodo.nombre }}</h4>
-                </div>
-
-                <div class="p-3 rounded-xl bg-warm-50 border border-warm-100 text-xs space-y-1.5">
-                  <div class="flex items-center justify-between">
-                    <span class="text-warm-500">Fecha de Inicio:</span>
-                    <strong class="text-warm-900">{{ periodo.fechaInicio }}</strong>
-                  </div>
-                  <div class="flex items-center justify-between">
-                    <span class="text-warm-500">Fecha de Cierre:</span>
-                    <strong class="text-warm-900">{{ periodo.fechaFin }}</strong>
-                  </div>
-                </div>
-
-                @if (!soloLectura()) {
-                <div class="flex items-center justify-between pt-2 border-t border-warm-100 text-xs">
+            <tr data-testid="periodo-fila">
+              <td class="whitespace-nowrap">
+                <span class="inline-block rounded-md bg-warm-100 px-2 py-0.5 font-mono text-xs font-bold text-warm-800">{{ periodo.codigo }}</span>
+              </td>
+              <td>
+                <span class="font-semibold text-warm-900">{{ periodo.nombre }}</span>
+                @if (periodo.esActual) {
+                  <span class="ml-2 rounded bg-primary-100 px-2 py-0.5 text-[10px] font-bold text-primary-800">ACTUAL</span>
+                }
+              </td>
+              <td class="whitespace-nowrap tabular-nums">{{ periodo.fechaInicio }}</td>
+              <td class="whitespace-nowrap tabular-nums">{{ periodo.fechaFin }}</td>
+              <td>
+                <app-badge
+                  size="sm"
+                  [variant]="periodo.estado === 'ACTIVO' ? 'success' : (periodo.estado === 'PLANEACION' ? 'warning' : 'danger')"
+                >
+                  {{ periodo.estado }}
+                </app-badge>
+              </td>
+              @if (!soloLectura()) {
+                <td class="text-right whitespace-nowrap text-xs">
+                  <button
+                    type="button"
+                    (click)="abrirEditar(periodo)"
+                    class="mr-3 font-medium text-warm-600 hover:text-warm-950"
+                    title="Modificar fechas del período"
+                  >
+                    Editar Fechas
+                  </button>
                   <button
                     type="button"
                     (click)="deletePeriodo.emit(periodo)"
@@ -83,32 +99,12 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
                   >
                     Eliminar
                   </button>
-                  <button
-                    type="button"
-                    (click)="abrirEditar(periodo)"
-                    class="text-warm-600 hover:text-warm-950 font-medium"
-                    title="Modificar fechas del período"
-                  >
-                    Editar Fechas
-                  </button>
-                </div>
-                }
-              </div>
-            </app-card>
+                </td>
+              }
+            </tr>
           }
-        </div>
-
-        @if (periodos().length > pageSize()) {
-          <div class="mt-6 flex justify-center">
-            <app-pagination
-              [currentPage]="currentPage()"
-              [totalItems]="periodos().length"
-              [pageSize]="pageSize()"
-              (pageChange)="currentPage.set($event)"
-            />
-          </div>
-        }
-      }
+        </tbody>
+      </app-tabla-datos>
 
       @if (mostrarModal()) {
         @defer (on immediate) {
@@ -138,16 +134,22 @@ export class AcademicPeriodsTabComponent {
   deletePeriodo = output<PeriodoAcademicoItem>();
 
   currentPage = signal(1);
-  pageSize = signal(6);
+  pageSize = signal(TAMANO_PAGINA_TABLA);
 
   mostrarModal = signal(false);
   periodoEditando = signal<PeriodoAcademicoItem | null>(null);
 
-  pagedPeriodos = computed(() => {
-    const list = this.periodos();
-    const start = (this.currentPage() - 1) * this.pageSize();
-    return list.slice(start, start + this.pageSize());
-  });
+  /** Más reciente primero (por fecha de inicio ISO); la lista original no tenía orden elegido por el usuario. */
+  periodosOrdenados = computed(() =>
+    [...this.periodos()].sort((a, b) => (b.fechaInicio ?? '').localeCompare(a.fechaInicio ?? '')),
+  );
+
+  pagedPeriodos = computed(() => paginarEnCliente(this.periodosOrdenados(), this.currentPage(), this.pageSize()));
+
+  cambiarTamano(tamano: number): void {
+    this.pageSize.set(tamano);
+    this.currentPage.set(1);
+  }
 
   abrirCrear(): void {
     this.periodoEditando.set(null);

@@ -20,6 +20,40 @@ describe('OverviewTeacherComponent (F-DOC-S02)', () => {
     expect(fixture.componentInstance.subtituloCurso(curso({ code: '-' }))).toBe('Grupo 001');
   });
 
+  it('bloque E: las asignaturas se muestran en una tabla (una fila por curso) paginada de 15 en 15', () => {
+    TestBed.configureTestingModule({ imports: [OverviewTeacherComponent], providers: [provideRouter([])] });
+    const fixture = TestBed.createComponent(OverviewTeacherComponent);
+    const cursos = Array.from({ length: 17 }, (_, i) => curso({ id: `g-${i}`, name: `Curso ${i}` }));
+    fixture.componentRef.setInput('courses', cursos);
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('app-tabla-datos table')).toBeTruthy();
+    expect(el.querySelector('app-card')).toBeNull();
+    expect(el.querySelectorAll('tr[data-testid="overview-docente-curso-fila"]').length).toBe(15);
+    expect(el.querySelector('tr[data-testid="overview-docente-curso-fila"] a')?.getAttribute('href')).toBe('/app/asistencia');
+
+    fixture.componentInstance.pagina.set(2);
+    fixture.detectChanges();
+    expect(el.querySelectorAll('tr[data-testid="overview-docente-curso-fila"]').length).toBe(2);
+  });
+
+  it('bloque E: mientras carga no pinta filas de cursos y sin cursos muestra el mensaje vacío', () => {
+    TestBed.configureTestingModule({ imports: [OverviewTeacherComponent], providers: [provideRouter([])] });
+    const fixture = TestBed.createComponent(OverviewTeacherComponent);
+    fixture.componentRef.setInput('courses', [curso({})]);
+    fixture.componentRef.setInput('isLoading', true);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelectorAll('tr[data-testid="overview-docente-curso-fila"]').length).toBe(0);
+    expect(el.querySelector('[data-testid="tabla-datos-esqueleto"]')).toBeTruthy();
+
+    fixture.componentRef.setInput('courses', []);
+    fixture.componentRef.setInput('isLoading', false);
+    fixture.detectChanges();
+    expect(el.querySelector('[data-testid="tabla-datos-vacia"]')?.textContent).toContain('No tienes asignaturas programadas');
+  });
+
   it('DEC-065: muestra el KPI de revisiones pendientes de decisión con enlace a los grupos', () => {
     TestBed.configureTestingModule({ imports: [OverviewTeacherComponent], providers: [provideRouter([])] });
     const fixture = TestBed.createComponent(OverviewTeacherComponent);

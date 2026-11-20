@@ -73,7 +73,7 @@ describe('DeanPlanMallaComponent (HU108, B2NM)', () => {
     http.expectOne(`${API}/decano/estructura`).flush({ exitoso: true, datos: estructura });
     const req = http.expectOne(porUrl(urlMalla));
     expect(req.request.params.get('pagina')).toBe('1');
-    expect(req.request.params.get('tamano')).toBe('9');
+    expect(req.request.params.get('tamano')).toBe('15');
     req.flush(paginaApi(asignaturasApi, 1, 9));
     http.expectNone(`${API}/coordinador/planes-estudio`);
     fixture.detectChanges();
@@ -85,7 +85,34 @@ describe('DeanPlanMallaComponent (HU108, B2NM)', () => {
     expect(component.asignaturas()[0].creditos).toBe(4);
     expect(component.asignaturas()[0].area).toBe('Software');
     expect(fixture.nativeElement.textContent).toContain('10 semestres');
-    expect(fixture.nativeElement.textContent).toContain('2 asignaturas en la malla');
+    expect(fixture.nativeElement.textContent).toContain('2 asignaturas en el plan de estudio');
+  });
+
+  it('bloque E: las asignaturas del plan se listan en una tabla, una fila por asignatura', () => {
+    crear();
+    http.expectOne(`${API}/decano/estructura`).flush({ exitoso: true, datos: estructura });
+    http.expectOne(porUrl(urlMalla)).flush(paginaApi(asignaturasApi, 1, 15));
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    const filas = el.querySelectorAll('app-tabla-datos tbody tr[data-testid="asignatura-plan-fila"]');
+    expect(filas).toHaveSize(2);
+    expect(filas[0].textContent).toContain('SIS-101');
+    expect(filas[0].textContent).toContain('Algoritmos I');
+    expect(filas[0].textContent).toContain('Semestre 1');
+    expect(el.querySelector('h3')).toBeNull();
+  });
+
+  it('bloque E: cambiar el tamaño de página (15/30/50) consulta al servidor desde la página 1', () => {
+    crear();
+    http.expectOne(`${API}/decano/estructura`).flush({ exitoso: true, datos: estructura });
+    http.expectOne(porUrl(urlMalla)).flush(paginaApi(asignaturasApi, 1, 15));
+    component.currentPage.set(2);
+    component.onPageSizeChange(30);
+    const req = http.expectOne(porUrl(urlMalla));
+    expect(req.request.params.get('pagina')).toBe('1');
+    expect(req.request.params.get('tamano')).toBe('30');
+    req.flush(paginaApi(asignaturasApi, 1, 30));
   });
 
   it('muestra la insignia de carácter y marca la asignatura compartida', () => {
@@ -110,8 +137,8 @@ describe('DeanPlanMallaComponent (HU108, B2NM)', () => {
       .flush(paginaApi([asignaturasApi[0], { ...asignaturasApi[1], estaActivaAsignatura: false }], 1, 9));
     fixture.detectChanges();
 
-    const tarjetas = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('h3')).map(
-      (h) => h.parentElement?.parentElement?.textContent ?? ''
+    const tarjetas = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('[data-testid="asignatura-plan-fila"]')).map(
+      (fila) => fila.textContent ?? ''
     );
     expect(tarjetas.filter((t) => t.includes('Inactiva')).length).toBe(1);
     expect(tarjetas.find((t) => t.includes('Inactiva'))).toContain('Estructuras de Datos');

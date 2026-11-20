@@ -1,8 +1,7 @@
 import { Component, ChangeDetectionStrategy, computed, input } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { RevisionesPendientesKpiComponent } from '../../../../shared/components/revisiones-pendientes-kpi/revisiones-pendientes-kpi.component';
-import { CardComponent } from '../../../../shared/components/card/card.component';
+import { TablaDatosComponent } from '../../../../shared/components/tabla-datos/tabla-datos.component';
 import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { DocenteItem, PlanEstudioItem } from '../../../../core/models/role-management.model';
@@ -12,12 +11,12 @@ import { EstadoIndicadores, textoCifra, textoPeriodo } from '../../../../core/ut
 @Component({
   selector: 'app-overview-coordinator',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RevisionesPendientesKpiComponent, CommonModule, RouterLink, CardComponent, BadgeComponent, ButtonComponent],
+  imports: [RevisionesPendientesKpiComponent, RouterLink, TablaDatosComponent, BadgeComponent, ButtonComponent],
   host: {
     class: 'block w-full',
   },
   template: `
-    <div class="space-y-6">
+    <div class="space-y-4">
       <!-- Revisiones de cancelación por inasistencia: conteo global con enlace directo (DEC-065) -->
       <div class="max-w-sm">
         <app-revisiones-pendientes-kpi rol="COORDINADOR" />
@@ -61,52 +60,55 @@ import { EstadoIndicadores, textoCifra, textoPeriodo } from '../../../../core/ut
         <div class="flex items-center justify-between">
           <div>
             <h2 class="font-serif text-xl sm:text-2xl font-bold text-warm-900">Planes de Estudio del Programa</h2>
-            <p class="text-xs text-warm-500">Malla curricular, créditos aprobados y asignaturas de la carrera</p>
+            <p class="text-xs text-warm-500">Plan de estudio, créditos aprobados y asignaturas de la carrera</p>
           </div>
           <a routerLink="/app/coordinador/planes-estudio">
-            <app-button variant="secondary" size="sm">Ver Malla Completa →</app-button>
+            <app-button variant="secondary" size="sm">Ver Plan de Estudio Completo →</app-button>
           </a>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          @for (plan of planesEstudio(); track plan.id) {
-            <app-card [hoverable]="true" [title]="plan.nombre" [subtitle]="plan.codigo + ' • Vigencia ' + plan.anioVigencia">
-              <div class="space-y-3 my-2 text-xs text-warm-700">
-                <div class="grid grid-cols-3 gap-2 bg-warm-50 p-3 rounded-xl">
-                  <div class="text-center">
-                    <span class="block text-warm-400 text-[10px]">Créditos</span>
-                    <span class="font-bold text-warm-900 text-sm">{{ plan.totalCreditos }}</span>
-                  </div>
-                  <div class="text-center">
-                    <span class="block text-warm-400 text-[10px]">Duración</span>
-                    <span class="font-bold text-warm-900 text-sm">{{ plan.totalSemestres }} Sem.</span>
-                  </div>
-                  <div class="text-center">
-                    <span class="block text-warm-400 text-[10px]">Estado</span>
-                    <span class="font-bold text-xs" [ngClass]="plan.estado === 'VIGENTE' ? 'text-success-700' : 'text-warning-700'">
-                      {{ plan.estado }}
-                    </span>
-                  </div>
-                </div>
-                <p class="text-[11px] text-warm-500 italic">
-                  {{ plan.descripcion }}
-                </p>
-              </div>
-
-              <div card-footer class="mt-4 pt-3 border-t border-warm-100 flex items-center justify-end">
-                <a routerLink="/app/coordinador/planes-estudio" class="w-full">
-                  <app-button variant="secondary" size="sm" [fullWidth]="true">
-                    Explorar Malla Curricular
-                  </app-button>
-                </a>
-              </div>
-            </app-card>
-          } @empty {
-            <div class="col-span-2 bg-white p-12 rounded-2xl border border-warm-200 text-center space-y-3">
-              <p class="text-xs text-warm-500">No hay planes de estudio registrados para este programa.</p>
-            </div>
-          }
-        </div>
+        <app-tabla-datos
+          etiqueta="Planes de estudio del programa"
+          [columnas]="6"
+          anchoMinimo="48rem"
+          [vacio]="planesEstudio().length === 0"
+          mensajeVacio="No hay planes de estudio registrados para este programa."
+        >
+          <thead>
+            <tr>
+              <th scope="col">Plan de estudio</th>
+              <th scope="col">Vigencia</th>
+              <th scope="col" class="text-right">Créditos</th>
+              <th scope="col" class="text-right">Duración</th>
+              <th scope="col">Estado</th>
+              <th scope="col"><span class="sr-only">Acciones</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (plan of planesEstudio(); track plan.id) {
+              <tr data-testid="overview-plan-fila">
+                <td>
+                  <span class="block font-semibold text-warm-900">{{ plan.nombre }}</span>
+                  <span class="block text-xs text-warm-500">{{ plan.codigo }}</span>
+                  @if (plan.descripcion) {
+                    <span class="block max-w-md text-[11px] italic text-warm-500 line-clamp-2">{{ plan.descripcion }}</span>
+                  }
+                </td>
+                <td class="whitespace-nowrap">{{ plan.anioVigencia }}</td>
+                <td class="text-right tabular-nums">{{ plan.totalCreditos }}</td>
+                <td class="text-right whitespace-nowrap">{{ plan.totalSemestres }} Sem.</td>
+                <td>
+                  <app-badge [variant]="plan.estado === 'VIGENTE' ? 'success' : 'warning'" size="sm">{{ plan.estado }}</app-badge>
+                </td>
+                <td class="text-right whitespace-nowrap">
+                  <a routerLink="/app/coordinador/planes-estudio">
+                    <app-button variant="ghost" size="sm">Explorar Plan de Estudio</app-button>
+                  </a>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </app-tabla-datos>
       </section>
 
       <!-- Planta Docente Adscrita -->
@@ -121,7 +123,7 @@ import { EstadoIndicadores, textoCifra, textoPeriodo } from '../../../../core/ut
           </a>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           @for (docente of docentes().slice(0, 3); track docente.id) {
             <div class="superficie p-5 flex flex-col justify-between space-y-4">
               <div class="space-y-2">

@@ -148,6 +148,7 @@ const COMPONENTES: ComponenteFormacionItem[] = [
   { idComponente: 'CMP-BAS', codigo: 'BAS', nombre: 'Básicas', totalAsignaturas: 1 },
   { idComponente: 'CMP-ESP', codigo: 'ESP', nombre: 'Específicas', totalAsignaturas: 1 },
   { idComponente: 'CMP-INS', codigo: 'INS', nombre: 'Institucionales', totalAsignaturas: 0 },
+  { idComponente: 'CMP-ELE', codigo: 'ELE', nombre: 'Electivas', totalAsignaturas: 0 },
 ];
 
 /** Como el backend: busca por subcadena en los campos indicados y respeta `estaActivo`; el interceptor pagina. */

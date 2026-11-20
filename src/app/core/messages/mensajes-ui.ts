@@ -146,7 +146,7 @@ export const MENSAJES_UI = {
   UI_STUDY_PLAN_MESH_PAGE_006: 'La asignatura quedó activa.',
   UI_SUBJECT_FORM_PAGE_001: 'Asignatura registrada en el plan.',
   UI_SUBJECT_FORM_PAGE_002: 'Asignatura modificada.',
-  UI_TEACHER_CLAIMS_001: 'Reclamo procesado.',
+  UI_TEACHER_CLAIMS_001: 'Justificación procesada.',
   UI_TEACHER_CLAIMS_002: 'Este soporte no contiene un fileId descargable en el contrato actual.',
   UI_TEACHER_GRUPO_DECISIONES_001: 'Un estudiante cruzó el umbral de cancelación: revisa Decisiones pendientes',
   UI_TEACHER_GRUPOS_001: 'Error al cargar grupos.',

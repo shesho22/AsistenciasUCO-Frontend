@@ -49,7 +49,7 @@ interface FilaPlanilla {
         RevisionDecisionModalComponent,
     ],
     template: `
-    <div class="bg-white rounded-b-2xl border-x border-b border-warm-200 shadow-warm-sm p-6 space-y-6">
+    <div class="bg-white rounded-b-2xl border-x border-b border-warm-200 shadow-warm-sm p-6 space-y-4">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-warm-100">
         <div>
           <div class="flex items-center gap-2 mb-1">

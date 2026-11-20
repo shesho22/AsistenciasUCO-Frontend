@@ -70,14 +70,27 @@ describe('AcademicPeriodsTabComponent', () => {
     expect(texto()).not.toContain('Editar Fechas');
   });
 
-  it('pagina y muestra el estado vacio', () => {
-    fixture.componentRef.setInput('periodos', Array.from({ length: 8 }, (_, i) => periodo(i + 1)));
+  it('pagina de a 15 y muestra el estado vacio', () => {
+    fixture.componentRef.setInput('periodos', Array.from({ length: 20 }, (_, i) => periodo(i + 1)));
     fixture.detectChanges();
-    expect(component.pagedPeriodos()).toHaveSize(6);
+    expect(component.pagedPeriodos()).toHaveSize(15);
+    expect((fixture.nativeElement as HTMLElement).querySelectorAll('tr[data-testid="periodo-fila"]')).toHaveSize(15);
     component.currentPage.set(2);
-    expect(component.pagedPeriodos()).toHaveSize(2);
+    expect(component.pagedPeriodos()).toHaveSize(5);
     fixture.componentRef.setInput('periodos', []);
     fixture.detectChanges();
     expect(texto()).toContain('No hay períodos académicos registrados.');
+  });
+
+  it('bloque E: muestra una tabla con una fila por periodo, la mas reciente primero', () => {
+    const viejo = { ...periodo(1), id: 'viejo', nombre: '2025-2', fechaInicio: '2025-07-01' };
+    const nuevo = { ...periodo(2), id: 'nuevo', nombre: '2027-1', fechaInicio: '2027-02-01' };
+    fixture.componentRef.setInput('periodos', [viejo, nuevo]);
+    fixture.detectChanges();
+    const filas = (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLElement>('app-tabla-datos tbody tr[data-testid="periodo-fila"]');
+    expect(filas).toHaveSize(2);
+    expect(filas[0].textContent).toContain('2027-1');
+    expect(filas[0].textContent).toContain('Editar Fechas');
+    expect(filas[0].textContent).toContain('Eliminar');
   });
 });

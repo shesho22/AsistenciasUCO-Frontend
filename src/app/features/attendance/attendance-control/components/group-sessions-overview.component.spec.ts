@@ -161,7 +161,7 @@ describe('GroupSessionsOverviewComponent', () => {
     const el = fixture.nativeElement as HTMLElement;
     expect(el.querySelector('[data-testid="action-menu-trigger"]')?.textContent).toContain('3');
     abrirMenu();
-    expect(opcion('grupo-reclamos').textContent).toContain('Reclamos (3)');
+    expect(opcion('grupo-reclamos').textContent).toContain('Justificaciones (3)');
   });
 
   it('UX densidad: sin sesiones usa el estado vacio compartido con su accion de crear la primera', () => {

@@ -226,9 +226,11 @@ describe('CoordinatorStudyPlanMeshPageComponent', () => {
 
       http.expectOne(urlEstado).flush({ exitoso: true, datos: { idAsignatura: 'asig-1', estaActivaAsignatura: false }, mensajeUsuario: 'La asignatura quedó inactiva.' });
       fixture.detectChanges();
-      // El PATCH terminó, pero la malla aún se está releyendo.
-      expect(accion().disabled).toBeTrue();
-      expect(accion().getAttribute('aria-busy')).toBeNull();
+      // El PATCH terminó, pero la malla aún se está releyendo: la tabla (bloque E) muestra filas de esqueleto y no ofrece
+      // ninguna acción de estado hasta que llegan las filas con el estado real.
+      expect(component.cambiandoEstado()).toBeTrue();
+      expect(accion()).toBeNull();
+      expect(fixture.nativeElement.querySelector('[data-testid="tabla-datos-esqueleto"]')).not.toBeNull();
 
       http.expectOne(porUrl(urlMalla)).flush(paginaApi([{ ...vinculo, estaActivaAsignatura: false }]));
       http.expectOne(porUrl(urlPlanes)).flush(paginaApi([mockPlan]));
@@ -372,7 +374,7 @@ describe('CoordinatorStudyPlanMeshPageComponent', () => {
     fixture.detectChanges();
 
     const opciones = Array.from(
-      (fixture.nativeElement as HTMLElement).querySelectorAll('select[aria-label="Filtrar la malla por semestre"] option')
+      (fixture.nativeElement as HTMLElement).querySelectorAll('select[aria-label="Filtrar el plan de estudio por semestre"] option')
     ).map((o) => o.textContent?.trim());
     expect(opciones).toContain('Semestre 4');
     const servicio = TestBed.inject(CoordinatorManagementService);
@@ -417,8 +419,8 @@ describe('CoordinatorStudyPlanMeshPageComponent', () => {
       expect(req.request.params.get('caracter')).toBe('OBL');
       expect(req.request.params.get('busqueda')).toBe('algoritmos');
       expect(req.request.params.get('pagina')).toBe('1');
-      expect(req.request.params.get('tamano')).toBe('9');
-      req.flush(paginaApi([vinculo], 1, 9, 25));
+      expect(req.request.params.get('tamano')).toBe('15');
+      req.flush(paginaApi([vinculo], 1, 15, 25));
       fixture.detectChanges();
 
       expect(component.listado.total()).toBe(25);

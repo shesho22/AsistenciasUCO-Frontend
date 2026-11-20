@@ -519,7 +519,7 @@ describe('CoordinatorDocentesComponent', () => {
     component.verFichaDocente(docente);
     await esperarListaYRenderizarDialogo();
     expect(component.docenteSeleccionado()).toBe(docente);
-    expect(coordService.getFichaDocente).toHaveBeenCalledWith('doc-1', { pagina: 1, tamano: 5 });
+    expect(coordService.getFichaDocente).toHaveBeenCalledWith('doc-1', { pagina: 1, tamano: 15 });
     expect(fixture.nativeElement.querySelector('app-coordinator-docente-ficha-modal')).not.toBeNull();
 
     component.cerrarFichaDocente();

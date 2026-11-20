@@ -1,7 +1,11 @@
-import { Component, ChangeDetectionStrategy, input, output, signal, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, output, signal, computed, effect, untracked } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
-import { CardComponent } from '../../../../shared/components/card/card.component';
+import {
+  TablaDatosComponent,
+  TAMANO_PAGINA_TABLA,
+  paginarEnCliente,
+} from '../../../../shared/components/tabla-datos/tabla-datos.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
@@ -12,9 +16,9 @@ import { PageHeaderComponent } from '../../../../shared/components/page-header/p
 @Component({
     selector: 'app-teacher-grupos-list',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [PageHeaderComponent, FormsModule, CardComponent, ButtonComponent, BadgeComponent, EmptyStateComponent],
+    imports: [PageHeaderComponent, FormsModule, TablaDatosComponent, ButtonComponent, BadgeComponent, EmptyStateComponent],
     template: `
-    <div class="space-y-6 animate-fade-in">
+    <div class="space-y-4 animate-fade-in">
       <!-- Header Bento -->
       <app-page-header
         [enTarjeta]="true"
@@ -73,21 +77,42 @@ import { PageHeaderComponent } from '../../../../shared/components/page-header/p
           <p class="text-xs text-warning-800 mt-0.5">
             Estudiantes que llegaron al límite de inasistencia y esperan tu decisión. Entra al grupo para decidir.
           </p>
-          <ul class="mt-3 flex flex-wrap gap-2">
-            @for (item of gruposConDecisiones(); track item.course.id) {
-              <li>
-                <button
-                  type="button"
-                  class="inline-flex items-center gap-2 rounded-xl border border-warning-300 bg-white px-3 py-1.5 text-xs font-semibold text-warm-900 hover:border-warning-500 focus:outline-none focus:ring-2 focus:ring-warning-500/30"
-                  [attr.data-testid]="'ir-decisiones-' + item.course.id"
-                  (click)="verDecisiones.emit(item.course)"
-                >
-                  {{ item.course.name }} · {{ item.course.section }}
-                  <span class="rounded-full bg-warning-600 px-2 py-0.5 text-white">{{ item.total }}</span>
-                </button>
-              </li>
-            }
-          </ul>
+          <app-tabla-datos
+            class="mt-3"
+            etiqueta="Grupos con decisiones por inasistencia pendientes"
+            [columnas]="3"
+            anchoMinimo="26rem"
+            alturaMaxima="18rem"
+          >
+            <thead>
+              <tr>
+                <th scope="col">Grupo</th>
+                <th scope="col" class="text-right">Pendientes</th>
+                <th scope="col"><span class="sr-only">Acciones</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of gruposConDecisiones(); track item.course.id) {
+                <tr data-testid="aviso-decisiones-fila">
+                  <td class="font-semibold text-warm-900">{{ item.course.name }} · {{ item.course.section }}</td>
+                  <td class="text-right">
+                    <span class="rounded-full bg-warning-500 px-2 py-0.5 text-xs font-bold text-black">{{ item.total }}</span>
+                  </td>
+                  <td class="text-right whitespace-nowrap">
+                    <button
+                      type="button"
+                      class="inline-flex items-center gap-1 rounded-xl border border-warning-300 bg-white px-3 py-1 text-xs font-semibold text-warm-900 hover:border-warning-500 focus:outline-none focus:ring-2 focus:ring-warning-500/30"
+                      [attr.data-testid]="'ir-decisiones-' + item.course.id"
+                      [attr.aria-label]="'Decidir en ' + item.course.name + ' · ' + item.course.section"
+                      (click)="verDecisiones.emit(item.course)"
+                    >
+                      Decidir →
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </app-tabla-datos>
         </section>
       }
 
@@ -121,14 +146,8 @@ import { PageHeaderComponent } from '../../../../shared/components/page-header/p
       }
       </div>
 
-      <!-- Tarjetas de Grupos -->
-      @if (isLoading()) {
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-          @for (n of [1, 2, 3, 4]; track n) {
-            <div class="h-60 bg-warm-100 rounded-2xl animate-pulse"></div>
-          }
-        </div>
-      } @else if (filteredCourses().length === 0) {
+      <!-- Tabla de Grupos -->
+      @if (!isLoading() && filteredCourses().length === 0) {
         <div data-testid="grupos-vacio">
           @if (courses().length === 0) {
             <app-empty-state title="Aún no tienes grupos asignados" description="Cuando tengas grupos a tu cargo aparecerán aquí." />
@@ -141,42 +160,58 @@ import { PageHeaderComponent } from '../../../../shared/components/page-header/p
           }
         </div>
       } @else {
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-          @for (course of filteredCourses(); track course.id) {
-            <app-card
-              [hoverable]="true"
-              padding="md"
-              (click)="seleccionarGrupo.emit(course)"
-              class="cursor-pointer transition-all hover:border-primary-300 group block"
-            >
-              <div class="flex flex-col h-full justify-between gap-4">
-                <div>
-                  <div class="flex items-start justify-between gap-3 mb-2">
+        <app-tabla-datos
+          etiqueta="Mis grupos"
+          [columnas]="5"
+          anchoMinimo="54rem"
+          [filasEsqueleto]="4"
+          [cargando]="isLoading()"
+          [paginada]="true"
+          [totalItems]="filteredCourses().length"
+          [pagina]="pagina()"
+          [tamanoPagina]="tamanoPagina()"
+          (paginaChange)="pagina.set($event)"
+          (tamanoPaginaChange)="cambiarTamano($event)"
+        >
+          <thead>
+            <tr>
+              <th scope="col">Asignatura</th>
+              <th scope="col">Código y grupo</th>
+              <th scope="col">Horario</th>
+              <th scope="col">Estudiantes</th>
+              <th scope="col" class="text-right"><span class="sr-only">Acciones</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (!isLoading()) {
+              @for (course of gruposPagina(); track course.id) {
+                <tr data-testid="grupo-fila">
+                  <td>
+                    <button
+                      type="button"
+                      class="text-left font-serif font-bold text-base text-warm-900 leading-snug hover:text-primary-800 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30 rounded"
+                      [attr.aria-label]="'Ver grupo ' + course.name + ' · ' + course.section"
+                      (click)="seleccionarGrupo.emit(course)"
+                    >
+                      {{ course.name }}
+                    </button>
+                    @if (course.nombreTipoPrograma) {
+                      <span class="block text-xs font-semibold uppercase text-warm-500">{{ course.nombreTipoPrograma }}</span>
+                    }
+                  </td>
+                  <td class="whitespace-nowrap">
                     <div class="flex items-center gap-2">
                       @if (course.code) {
-                        <span class="text-xs font-mono font-bold px-2.5 py-1 rounded-md bg-warm-100 text-warm-800 group-hover:bg-primary-50 group-hover:text-primary-800 transition-colors">
-                          {{ course.code }}
-                        </span>
+                        <span class="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-warm-100 text-warm-800">{{ course.code }}</span>
                       }
-                      <app-badge variant="neutral">{{ course.section }}</app-badge>
-                      @if (course.nombreTipoPrograma) {
-                        <span class="text-xs font-semibold uppercase text-warm-500">{{ course.nombreTipoPrograma }}</span>
-                      }
+                      <app-badge variant="neutral" size="sm">{{ course.section }}</app-badge>
                     </div>
-
-                    @if (decisionesDe(course); as total) {
-                      <button
-                        type="button"
-                        class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-warning-50 text-warning-800 border border-warning-300 hover:border-warning-500"
-                        [attr.data-testid]="'decisiones-grupo-' + course.id"
-                        [attr.aria-label]="total + (total === 1 ? ' decisión pendiente' : ' decisiones pendientes') + ' en ' + course.name + '. Abrir el grupo'"
-                        (click)="$event.stopPropagation(); verDecisiones.emit(course)"
-                      >
-                        {{ total }} {{ total === 1 ? 'decisión pendiente' : 'decisiones pendientes' }}
-                      </button>
-                    }
+                  </td>
+                  <td class="text-xs text-warm-700 font-medium">{{ course.schedule || 'Sin horario asignado' }}</td>
+                  <td class="whitespace-nowrap">
                     @if (course.enrolledStudentsCount === undefined) {
                       <!-- Total de estudiantes desconocido: no se muestra un conteo inventado -->
+                      <span class="text-warm-400">—</span>
                     } @else if (course.cupoMaximo) {
                       <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-success-50 text-success-700 border border-success-200">
                         {{ course.enrolledStudentsCount }} / {{ course.cupoMaximo }} cupos
@@ -186,29 +221,36 @@ import { PageHeaderComponent } from '../../../../shared/components/page-header/p
                         {{ course.enrolledStudentsCount }} inscritos
                       </span>
                     }
-                  </div>
-
-                  <h3 class="font-serif font-bold text-xl text-warm-900 group-hover:text-primary-950 transition-colors leading-snug">
-                    {{ course.name }}
-                  </h3>
-                </div>
-
-                <!-- Información del Horario -->
-                <div class="p-3 rounded-xl bg-warm-50 border border-warm-100 text-xs text-warm-700 flex items-center justify-between">
-                  <div class="flex items-center gap-2">
-                    <svg class="w-4 h-4 text-warm-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span class="font-medium">{{ course.schedule || 'Sin horario asignado' }}</span>
-                  </div>
-                  <span class="text-xs font-semibold text-primary-700 group-hover:underline">
-                    Ver Grupo →
-                  </span>
-                </div>
-              </div>
-            </app-card>
-          }
-        </div>
+                  </td>
+                  <td class="text-right">
+                    <div class="flex items-center justify-end gap-2">
+                      @if (decisionesDe(course); as total) {
+                        <button
+                          type="button"
+                          class="whitespace-nowrap text-xs font-bold px-2.5 py-0.5 rounded-full bg-warning-50 text-warning-800 border border-warning-300 hover:border-warning-500"
+                          [attr.data-testid]="'decisiones-grupo-' + course.id"
+                          [attr.aria-label]="total + (total === 1 ? ' decisión pendiente' : ' decisiones pendientes') + ' en ' + course.name + '. Abrir el grupo'"
+                          (click)="verDecisiones.emit(course)"
+                        >
+                          {{ total }} {{ total === 1 ? 'decisión pendiente' : 'decisiones pendientes' }}
+                        </button>
+                      }
+                      <app-button
+                        variant="secondary"
+                        size="sm"
+                        class="whitespace-nowrap"
+                        [attr.data-testid]="'ver-grupo-' + course.id"
+                        (clicked)="seleccionarGrupo.emit(course)"
+                      >
+                        Ver Grupo →
+                      </app-button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </app-tabla-datos>
       }
     </div>
   `
@@ -263,6 +305,24 @@ export class TeacherGruposListComponent {
         c.section.toLowerCase().includes(q)
     );
   });
+
+  /** Paginación en el cliente de la tabla de grupos (15 por defecto, 15/30/50). */
+  readonly pagina = signal(1);
+  readonly tamanoPagina = signal(TAMANO_PAGINA_TABLA);
+  readonly gruposPagina = computed(() => paginarEnCliente(this.filteredCourses(), this.pagina(), this.tamanoPagina()));
+
+  constructor() {
+    // Al cambiar la búsqueda, el nivel formativo o la lista se vuelve a la primera página.
+    effect(() => {
+      this.filteredCourses();
+      untracked(() => this.pagina.set(1));
+    });
+  }
+
+  cambiarTamano(tamano: number): void {
+    this.tamanoPagina.set(tamano);
+    this.pagina.set(1);
+  }
 
   getPorcentajeCupo(course: Course): number {
     // Sin cupo máximo informado no se inventa uno (antes 35): la barra queda en 0.

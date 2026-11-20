@@ -95,14 +95,31 @@ describe('AdminIndicatorsComponent', () => {
     expect(component.formatoPorcentaje(33.33)).toBe('33.33%');
   });
 
-  it('T-FE-03 la comparativa muestra una tarjeta por facultad con la cifra recibida y señala la inactiva', () => {
+  it('T-FE-03 la comparativa muestra una fila de tabla por facultad con la cifra recibida y señala la inactiva', () => {
     const tarjetas = (fixture.nativeElement as HTMLElement).querySelectorAll('[data-testid="tarjeta-facultad"]');
     expect(tarjetas).toHaveSize(2);
+    expect(Array.from(tarjetas).every((t) => t.tagName === 'TR' && t.closest('app-tabla-datos') !== null)).toBeTrue();
+    expect((fixture.nativeElement as HTMLElement).querySelector('article[data-testid="tarjeta-facultad"]')).toBeNull();
     expect(texto()).toContain('Ingenieria');
     expect(texto()).toContain('Facultad Cerrada');
     expect(texto()).toContain('Inactiva');
   });
 
+
+  it('T-FE-03 la tabla de facultades pagina en el cliente de 15 en 15', () => {
+    const muchas = Array.from({ length: 17 }, (_, n) => ({ ...f1, idFacultad: `f-${n}`, nombreFacultad: `Facultad ${n}` }));
+    component.service.comparativa.set(muchas);
+    fixture.detectChanges();
+    const filas = () => (fixture.nativeElement as HTMLElement).querySelectorAll('[data-testid="tarjeta-facultad"]');
+    expect(filas()).toHaveSize(15);
+    component.paginaComparativa.set(2);
+    fixture.detectChanges();
+    expect(filas()).toHaveSize(2);
+    component.cambiarTamanoComparativa(30);
+    fixture.detectChanges();
+    expect(component.paginaComparativa()).toBe(1);
+    expect(filas()).toHaveSize(17);
+  });
   it('T-FE-04 la gráfica dibuja un punto por intervalo con dato, proporcional al valor recibido, y deja hueco donde es nulo', () => {
     const circulos = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('[data-testid="punto-tendencia"]')) as SVGElement[];
     expect(circulos).toHaveSize(2);

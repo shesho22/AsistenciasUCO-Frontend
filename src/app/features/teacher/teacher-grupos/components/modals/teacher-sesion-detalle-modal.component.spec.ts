@@ -43,6 +43,29 @@ describe('TeacherSesionDetalleModalComponent', () => {
     expect('room' in fixture.componentInstance).toBeFalse();
   });
 
+  it('bloque E: sin registros muestra el mensaje vacío de la tabla', () => {
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="tabla-datos-vacia"]')?.textContent)
+      .toContain('Sin registros individuales para esta sesión.');
+  });
+
+  it('bloque E: los registros son filas de una tabla paginada de 15 en 15', () => {
+    const records = Array.from({ length: 17 }, (_, i) => ({
+      studentId: `e-${i}`, studentName: `Estudiante ${i}`, studentCode: `C${i}`, status: i === 0 ? ('AN' as const) : null,
+    }));
+    fixture.componentRef.setInput('sesion', { ...sesion, records } as ClassSession);
+    fixture.detectChanges();
+
+    const filas = () =>
+      (fixture.nativeElement as HTMLElement).querySelectorAll('app-tabla-datos tbody tr[data-testid="sesion-detalle-registro"]');
+    expect(filas().length).toBe(15);
+    expect(filas()[0].textContent).toContain('Estudiante 0');
+    expect(filas()[0].textContent).toContain('Presente');
+
+    fixture.componentInstance.pagina.set(2);
+    fixture.detectChanges();
+    expect(filas().length).toBe(2);
+  });
+
   it('mapea explicitamente null y estados reales de asistencia', () => {
     expect(fixture.componentInstance.statusLabel(null)).toBe('Sin registrar');
     expect(fixture.componentInstance.statusLabel('AN')).toBe('Presente');

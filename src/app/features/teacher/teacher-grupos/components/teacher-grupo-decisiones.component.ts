@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  computed,
   effect,
   inject,
   input,
@@ -24,6 +25,11 @@ import { SemaforoAsistenciaComponent } from '../../../../shared/components/semaf
 import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 import { FechaCortaPipe } from '../../../../shared/pipes/fecha-hora.pipes';
 import { RevisionDecisionModalComponent } from '../../revision-cancelacion/revision-decision-modal.component';
+import {
+  TablaDatosComponent,
+  TAMANO_PAGINA_TABLA,
+  paginarEnCliente,
+} from '../../../../shared/components/tabla-datos/tabla-datos.component';
 
 
 /**
@@ -35,7 +41,7 @@ import { RevisionDecisionModalComponent } from '../../revision-cancelacion/revis
 @Component({
   selector: 'app-teacher-grupo-decisiones',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DecimalPipe, FechaCortaPipe, SemaforoAsistenciaComponent, EmptyStateComponent, RevisionDecisionModalComponent],
+  imports: [DecimalPipe, FechaCortaPipe, SemaforoAsistenciaComponent, EmptyStateComponent, RevisionDecisionModalComponent, TablaDatosComponent],
   template: `
     @if (error(); as msg) {
       <div class="p-3.5 rounded-xl bg-danger-50 border border-danger-200 text-xs text-danger-800" role="alert">{{ msg }}</div>
@@ -56,34 +62,68 @@ import { RevisionDecisionModalComponent } from '../../revision-cancelacion/revis
             Estos estudiantes superaron el límite de inasistencia. Decide si mantienes su matrícula o propones la cancelación al coordinador.
           </p>
         </div>
-        <ul class="divide-y divide-warm-100">
-          @for (rev of pendientes(); track rev.id) {
-            <li class="px-5 py-3.5 flex flex-wrap items-center justify-between gap-3" data-testid="decision-fila">
-              <div class="min-w-0 space-y-1">
-                <p class="font-bold text-warm-900 truncate">{{ nombre(rev) }}</p>
-                @if (rev.numeroIdentificacionEstudiante) {
-                  <p class="text-xs font-mono text-warm-500" data-testid="decision-documento">{{ rev.numeroIdentificacionEstudiante }}</p>
-                }
-                <p class="flex flex-wrap items-center gap-2 text-xs text-warm-600">
-                  <app-semaforo-asistencia [codigoPermanencia]="rev.codigoPermanenciaActual" [porcentaje]="porcentaje(rev)" />
-                  <span>
-                    {{ porcentaje(rev) | number: '1.1-2' }} % de inasistencia
-                    @if (rev.umbralPerdida !== null && rev.umbralPerdida !== undefined) { (límite {{ rev.umbralPerdida }} %) }
-                  </span>
-                  @if (rev.fechaCreacionUtc) {
-                    <span data-testid="decision-fecha">· Cruzó el umbral el {{ rev.fechaCreacionUtc | fechaCorta }}</span>
-                  }
-                </p>
-              </div>
-              <button
-                type="button"
-                data-testid="decision-decidir"
-                (click)="abrir(rev)"
-                class="min-h-[44px] px-4 py-2 bg-primary-700 hover:bg-primary-800 text-white rounded-xl text-sm font-bold shadow-xs transition-colors"
-              >Decidir</button>
-            </li>
-          }
-        </ul>
+        <div class="p-3">
+          <app-tabla-datos
+            etiqueta="Decisiones pendientes por inasistencia"
+            [columnas]="5"
+            anchoMinimo="48rem"
+            [paginada]="true"
+            [totalItems]="pendientesOrdenadas().length"
+            [pagina]="pagina()"
+            [tamanoPagina]="tamanoPagina()"
+            (paginaChange)="pagina.set($event)"
+            (tamanoPaginaChange)="cambiarTamano($event)"
+          >
+            <thead>
+              <tr>
+                <th scope="col">Estudiante</th>
+                <th scope="col">Documento</th>
+                <th scope="col">Inasistencia</th>
+                <th scope="col">Cruzó el umbral</th>
+                <th scope="col" class="text-right"><span class="sr-only">Acciones</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (rev of pendientesPagina(); track rev.id) {
+                <tr data-testid="decision-fila">
+                  <td class="font-bold text-warm-900">{{ nombre(rev) }}</td>
+                  <td class="whitespace-nowrap">
+                    @if (rev.numeroIdentificacionEstudiante) {
+                      <span class="text-xs font-mono text-warm-500" data-testid="decision-documento">{{ rev.numeroIdentificacionEstudiante }}</span>
+                    } @else {
+                      <span class="text-warm-400">—</span>
+                    }
+                  </td>
+                  <td>
+                    <div class="flex flex-wrap items-center gap-2 text-xs text-warm-600">
+                      <app-semaforo-asistencia [codigoPermanencia]="rev.codigoPermanenciaActual" [porcentaje]="porcentaje(rev)" />
+                      <span>
+                        {{ porcentaje(rev) | number: '1.1-2' }} % de inasistencia
+                        @if (rev.umbralPerdida !== null && rev.umbralPerdida !== undefined) { (límite {{ rev.umbralPerdida }} %) }
+                      </span>
+                    </div>
+                  </td>
+                  <td class="text-xs text-warm-600 whitespace-nowrap">
+                    @if (rev.fechaCreacionUtc) {
+                      <span data-testid="decision-fecha">{{ rev.fechaCreacionUtc | fechaCorta }}</span>
+                    } @else {
+                      <span class="text-warm-400">—</span>
+                    }
+                  </td>
+                  <td class="text-right">
+                    <button
+                      type="button"
+                      data-testid="decision-decidir"
+                      [attr.aria-label]="'Decidir sobre ' + nombre(rev)"
+                      (click)="abrir(rev)"
+                      class="px-4 py-1.5 bg-primary-700 hover:bg-primary-800 text-white rounded-xl text-sm font-bold shadow-xs transition-colors"
+                    >Decidir</button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </app-tabla-datos>
+        </div>
       </section>
     } @else if (mostrarVacio() && !error()) {
       <app-empty-state
@@ -123,10 +163,26 @@ export class TeacherGrupoDecisionesComponent {
   protected readonly nombre = nombreEstudianteRevision;
   protected readonly porcentaje = porcentajeRevision;
 
+  /** Tabla (bloque E): la más reciente primero (fecha en que cruzó el umbral) y paginación en el cliente 15/30/50. */
+  protected readonly pagina = signal(1);
+  protected readonly tamanoPagina = signal(TAMANO_PAGINA_TABLA);
+  protected readonly pendientesOrdenadas = computed(() =>
+    [...this.pendientes()].sort((a, b) => (b.fechaCreacionUtc ?? '').localeCompare(a.fechaCreacionUtc ?? ''))
+  );
+  protected readonly pendientesPagina = computed(() =>
+    paginarEnCliente(this.pendientesOrdenadas(), this.pagina(), this.tamanoPagina())
+  );
+
+  protected cambiarTamano(tamano: number): void {
+    this.tamanoPagina.set(tamano);
+    this.pagina.set(1);
+  }
+
   constructor() {
     effect(() => {
       const grupo = this.grupoId();
       untracked(() => {
+        this.pagina.set(1);
         if (!grupo) {
           this.pendientes.set([]);
           return;
@@ -156,6 +212,9 @@ export class TeacherGrupoDecisionesComponent {
         next: (res) => {
           this.error.set(null);
           this.pendientes.set(res.elementos ?? []);
+          // Si al recargar quedan menos filas, no se queda en una página que ya no existe.
+          const ultima = Math.max(1, Math.ceil(this.pendientes().length / this.tamanoPagina()));
+          if (this.pagina() > ultima) this.pagina.set(ultima);
         },
         error: (err: unknown) => {
           this.pendientes.set([]);

@@ -344,16 +344,25 @@ describe('OverviewComponent', () => {
     expect(component.isLoading()).toBeFalse();
   });
 
-  it('ADMIN: la tarjeta del decano muestra "Asignado" solo cuando hay fecha de asignación', async () => {
+  it('ADMIN: la fila del decano muestra la fecha de asignación solo cuando la hay', async () => {
     await createComponentWithRole('ADMINISTRADOR');
     fixture.detectChanges();
-    const el = fixture.nativeElement as HTMLElement;
-    expect(el.textContent).toContain('Asignado: 2025-01-01');
+    expect(texto('decano-asignado')).toBe('2025-01-01');
 
     adminServiceSpy.getDecanos.and.returnValue(of({ exitoso: true, datos: [{ ...component.decanos()[0], fechaAsignacion: '' }] }) as never);
     await createComponentWithRole('ADMINISTRADOR');
     fixture.detectChanges();
-    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Asignado:');
+    expect(texto('decano-asignado')).toBe('—');
+  });
+
+  it('ADMIN: el directorio de facultades y decanaturas es una tabla con una fila por decano', async () => {
+    await createComponentWithRole('ADMINISTRADOR');
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const filas = el.querySelectorAll('app-tabla-datos tbody tr[data-testid="decano-fila"]');
+    expect(filas).toHaveSize(1);
+    expect(el.querySelector('app-overview-admin app-card')).toBeNull();
+    expect(filas[0].querySelector('a[href="/app/admin/decanos"]')?.textContent).toContain('Gestionar Decano');
   });
 
   it('ADMIN: las facultades activas y los decanos salen del servidor, no del conjunto de decanos listados', async () => {
@@ -423,6 +432,10 @@ describe('OverviewComponent', () => {
     await createComponentWithRole('DECANO');
     expect(deanServiceSpy.getCoordinadores).toHaveBeenCalled();
     expect(component.coordinadores()).toHaveSize(1);
+    const filas = (fixture.nativeElement as HTMLElement).querySelectorAll('app-tabla-datos tbody tr[data-testid="programa-coordinador-fila"]');
+    expect(filas).toHaveSize(1);
+    expect(filas[0].textContent).toContain('Sistemas');
+    expect((fixture.nativeElement as HTMLElement).querySelector('app-overview-dean app-card')).toBeNull();
     expect(component.deanEstado()).toBe('listo');
     expect(component.isLoading()).toBeFalse();
     const el = fixture.nativeElement as HTMLElement;

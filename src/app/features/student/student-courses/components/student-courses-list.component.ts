@@ -45,12 +45,12 @@ interface BarraHoras {
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [HorasMinutosPipe, PageHeaderComponent, CardComponent, BadgeComponent, ButtonComponent, AttendanceStatusBadgeComponent, PaginationComponent],
     template: `
-    <div class="space-y-6">
+    <div class="space-y-4">
       <!-- Header Bento -->
       <app-page-header
         [enTarjeta]="true"
         etiqueta="Portal Estudiantil"
-        contexto="Plan de Estudios"
+        contexto="Materias matriculadas"
         titulo="Gestión de Mis Materias"
         descripcion="Selecciona una asignatura para abrir su vista completa de sesiones, revisar tu registro de asistencia y radicar justificaciones."
       >

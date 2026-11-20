@@ -15,6 +15,7 @@ const TIPOS_ASIGNATURA: Record<string, string> = {
   ESPECIFICA: 'Específica',
   BASICA: 'Básica',
   INSTITUCIONAL: 'Institucional',
+  ELECTIVA: 'Electiva',
 };
 
 /**
@@ -27,29 +28,29 @@ const TIPOS_ASIGNATURA: Record<string, string> = {
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [PageHeaderComponent, CardComponent, BadgeComponent, ButtonComponent],
     template: `
-    <div class="space-y-6 animate-fade-in">
+    <div class="space-y-4 animate-fade-in">
       <app-page-header
-        titulo="Plan de estudios"
+        titulo="Materias matriculadas"
         descripcion="La estructura de tu programa por semestres, con los créditos de cada asignatura y las que cursas hoy."
       />
 
       @if (cargando()) {
         <div class="space-y-3" aria-busy="true" data-testid="plan-cargando">
-          <p class="text-sm text-warm-600">Cargando tu plan de estudios...</p>
+          <p class="text-sm text-warm-600">Cargando tus materias matriculadas...</p>
           @for (n of [1, 2, 3]; track n) {
             <div class="h-16 bg-warm-100 rounded-2xl animate-pulse"></div>
           }
         </div>
       } @else if (error()) {
         <div class="bg-white p-8 rounded-2xl border border-danger-200 text-center space-y-3" role="alert" data-testid="plan-error">
-          <p class="text-sm font-bold text-danger-800">No pudimos cargar tu plan de estudios</p>
+          <p class="text-sm font-bold text-danger-800">No pudimos cargar tus materias matriculadas</p>
           <p class="text-xs text-warm-600">{{ error() }}</p>
           <app-button variant="secondary" size="sm" (clicked)="cargar()">Reintentar</app-button>
         </div>
       } @else if (planes().length === 0) {
         <app-card>
           <p class="text-sm text-warm-600 text-center py-6" data-testid="plan-vacio">
-            Tus programas aún no tienen un plan de estudios activo. Si crees que es un error, consulta con la coordinación de tu programa.
+            Aún no tienes materias matriculadas activas. Si crees que es un error, consulta con la coordinación de tu programa.
           </p>
         </app-card>
       } @else {
@@ -59,7 +60,7 @@ const TIPOS_ASIGNATURA: Record<string, string> = {
               <div>
                 <h2 class="font-serif font-bold text-xl text-warm-900" [id]="'plan-' + plan.idPlanEstudio">{{ plan.nombrePrograma }}</h2>
                 @if (plan.inp !== null) {
-                  <p class="text-xs text-warm-500">Plan de estudios {{ plan.inp }}</p>
+                  <p class="text-xs text-warm-500">Versión {{ plan.inp }}</p>
                 }
               </div>
               <dl class="grid grid-cols-2 sm:grid-cols-4 gap-3">

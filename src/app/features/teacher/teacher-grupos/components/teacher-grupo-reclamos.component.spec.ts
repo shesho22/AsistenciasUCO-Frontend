@@ -30,7 +30,7 @@ describe('TeacherGrupoReclamosComponent', () => {
   it('debe crearse en estado vacío correctamente', () => {
     fixture.detectChanges();
     expect(component).toBeTruthy();
-    expect(fixture.nativeElement.textContent).toContain('No hay justificaciones ni reclamos pendientes');
+    expect(fixture.nativeElement.textContent).toContain('No hay justificaciones para este grupo ni solicitudes pendientes');
   });
 
   it('renderiza la lista de reclamos cuando se suministran', () => {
@@ -41,6 +41,31 @@ describe('TeacherGrupoReclamosComponent', () => {
     expect(text).toContain('Laura Gómez');
     expect(text).toContain('Incapacidad médica EPS');
     expect(text).toContain('Pendiente');
+  });
+
+  it('bloque E: muestra las justificaciones en una tabla, una fila por solicitud, con la toma reclamada', () => {
+    fixture.componentRef.setInput('reclamos', [
+      { ...mockReclamos[0], folio: 'REC-1', numeroToma: 2 },
+      { ...mockReclamos[0], id: 'rec-2', folio: 'REC-2', estudianteNombre: 'Pedro Ruiz' },
+    ]);
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    const filas = el.querySelectorAll('app-tabla-datos tbody tr[data-testid="grupo-reclamo-fila"]');
+    expect(filas).toHaveSize(2);
+    expect(filas[0].textContent).toContain('REC-1');
+    expect(filas[0].textContent).toContain('Laura Gómez');
+    expect(filas[0].querySelector('[data-testid="grupo-reclamo-toma"]')?.textContent).toContain('Toma 2');
+    expect(filas[1].querySelector('[data-testid="grupo-reclamo-toma"]')).toBeNull();
+  });
+
+  it('bloque E: mientras carga no pinta filas y muestra el esqueleto de la tabla', () => {
+    fixture.componentRef.setInput('reclamos', mockReclamos);
+    fixture.componentRef.setInput('estadoCarga', 'LOADING');
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelectorAll('tr[data-testid="grupo-reclamo-fila"]')).toHaveSize(0);
+    expect(el.querySelector('[data-testid="tabla-datos-esqueleto"]')).toBeTruthy();
   });
 
   it('A2-F-07 un reclamo RETIRADA muestra la insignia "Retirada" en estilo neutro, no como rechazado', () => {
@@ -73,7 +98,7 @@ describe('TeacherGrupoReclamosComponent', () => {
     const paginador = fixture.debugElement.query(By.directive(PaginationComponent)).componentInstance as PaginationComponent;
     expect(paginador.totalItems()).toBe(45);
     expect(paginador.currentPage()).toBe(2);
-    expect(paginador.pageSize()).toBe(10);
+    expect(paginador.pageSize()).toBe(15);
     paginador.pageChange.emit(3);
 
     expect(pagina).toHaveBeenCalledOnceWith(3);
@@ -101,8 +126,8 @@ describe('TeacherGrupoReclamosComponent', () => {
   it('no declara una lista vacía antes de una respuesta válida', () => {
     fixture.componentRef.setInput('estadoCarga', 'LOADING');
     fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('Cargando reclamos');
-    expect(fixture.nativeElement.textContent).not.toContain('No hay reclamos para este grupo');
+    expect(fixture.nativeElement.textContent).toContain('Cargando justificaciones');
+    expect(fixture.nativeElement.textContent).not.toContain('No hay justificaciones para este grupo');
   });
 
   it('distingue 501, 403 y fallo de conexión y permite reintentar', () => {
@@ -124,6 +149,6 @@ describe('TeacherGrupoReclamosComponent', () => {
   it('solo muestra vacío cuando la consulta completa se cargó correctamente', () => {
     fixture.componentRef.setInput('estadoCarga', 'LOADED');
     fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('No hay reclamos para este grupo');
+    expect(fixture.nativeElement.textContent).toContain('No hay justificaciones para este grupo');
   });
 });

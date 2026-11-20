@@ -81,6 +81,26 @@ describe('DeanCoordinadoresComponent UX (F-DEC-004, F-DEC-007, F-DEC-S04, F-COO-
     expect(component.totalCoordinadores()).toBe(6);
   });
 
+  it('bloque E: los coordinadores se listan en una tabla (una fila por coordinador, 15 por página) con sus acciones', () => {
+    iniciar([coord(1), coord(2)]);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const filas = el.querySelectorAll('app-tabla-datos tbody tr[data-testid="coordinador-fila"]');
+    expect(filas).toHaveSize(2);
+    expect(el.querySelector('app-card')).toBeNull();
+    expect(filas[0].textContent).toContain('Nombre1 Apellido1');
+    expect(filas[0].textContent).toContain('Sistemas');
+    expect(filas[0].textContent).toContain('COORD-1001');
+    const editar = spyOn(component, 'abrirEdicion');
+    const estado = spyOn(component, 'toggleEstado');
+    const botones = Array.from(filas[0].querySelectorAll('button'));
+    botones.find((b) => b.textContent?.includes('Editar'))!.click();
+    botones.find((b) => b.textContent?.includes('Desactivar'))!.click();
+    expect(editar).toHaveBeenCalledTimes(1);
+    expect(estado).toHaveBeenCalledTimes(1);
+    expect(component.pageSize()).toBe(15);
+  });
+
   it('el buscador y el filtro de estado tienen nombre accesible', () => {
     iniciar([coord(1)]);
     const el = fixture.nativeElement as HTMLElement;

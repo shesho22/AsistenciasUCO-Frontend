@@ -341,10 +341,12 @@ describe('StudentCourseDetailComponent', () => {
       expect(fixture.nativeElement.textContent).not.toContain('Radicar Reclamo');
     });
 
-    it('B1-F-25 móvil: la fila apila el contenido en pantallas estrechas (flex-col) y envuelve las etiquetas', () => {
+    it('B1-F-25 móvil (bloque E): la sesión es una fila de la tabla, que se desplaza en horizontal en pantallas estrechas', () => {
       const fila = fixture.nativeElement.querySelector('[data-testid="sesion-ses-c"]') as HTMLElement;
-      expect(fila.className).toContain('flex-col');
-      expect(fila.className).toContain('sm:flex-row');
+      expect(fila.tagName).toBe('TR');
+      const tabla = fila.closest('table') as HTMLTableElement;
+      expect(tabla.style.minWidth).toBe('64rem');
+      expect(tabla.closest('.tabla-contenedor')).not.toBeNull();
     });
   });
 
@@ -402,11 +404,39 @@ describe('StudentCourseDetailComponent', () => {
 
       (fixture.nativeElement.querySelector('button[aria-label="Página siguiente"]') as HTMLButtonElement).click();
       const selector = fixture.nativeElement.querySelector('select[aria-label="Resultados por página"]') as HTMLSelectElement;
-      selector.value = '20';
+      selector.value = '30';
       selector.dispatchEvent(new Event('change'));
 
       expect(paginas).toEqual([2]);
-      expect(tamanos).toEqual([20]);
+      expect(tamanos).toEqual([30]);
+    });
+
+    it('bloque E: una tabla con una fila por sesión, 15 por página por defecto y opciones 15/30/50', () => {
+      fixture.componentRef.setInput('materia', mockMateria);
+      fixture.componentRef.setInput('sesiones', mockSesiones);
+      fixture.componentRef.setInput('totalSesiones', 40);
+      fixture.detectChanges();
+
+      const filas = (fixture.nativeElement as HTMLElement).querySelectorAll('app-tabla-datos tbody tr[data-testid^="sesion-ses"]');
+      expect(filas.length).toBe(2);
+      expect(component.tamano()).toBe(15);
+      const opciones = Array.from(
+        (fixture.nativeElement.querySelector('select[aria-label="Resultados por página"]') as HTMLSelectElement).options
+      ).map((o) => o.value);
+      expect(opciones).toEqual(['15', '30', '50']);
+      const cabeceras = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('thead th')).map((th) => th.textContent!.trim());
+      expect(cabeceras).toEqual(['Sesión', 'Fecha y horario', 'Asistencia', 'Tomas', 'Plazo y reclamo', 'Acciones']);
+    });
+
+    it('bloque E: mientras carga muestra filas de esqueleto de la tabla y ninguna sesión', () => {
+      fixture.componentRef.setInput('materia', mockMateria);
+      fixture.componentRef.setInput('sesiones', mockSesiones);
+      fixture.componentRef.setInput('loading', true);
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('[data-testid="tabla-datos-esqueleto"]')).not.toBeNull();
+      expect(fixture.nativeElement.querySelectorAll('[data-testid^="sesion-ses"]').length).toBe(0);
+      expect(fixture.nativeElement.querySelector('[data-testid="sesiones-vacio"]')).toBeNull();
     });
   });
 });

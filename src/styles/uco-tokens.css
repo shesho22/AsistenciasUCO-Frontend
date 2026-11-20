@@ -1,0 +1,6 @@
+/*
+ * Tokens oficiales de identidad de la Universidad Catolica de Oriente.
+ * Origen: Manual de diseno institucional UCO v8.0, incorporado el 2026-11-19 (decision de John).
+ * Este archivo se copia tal cual del manual: no se editan sus valores. src/styles.css (@theme) los referencia con var().
+ */
+:root{--uco-verde:#008b50;--uco-amarillo:#ffca00;--uco-azul:#1d3475;--uco-verde-oscuro:#024426;--uco-turquesa:#04b5ac;--uco-naranja:#e28210;--uco-sobre-verde:#000000;--uco-sobre-verde-oscuro:#ffffff;--uco-sobre-amarillo:#000000;--uco-sobre-azul:#ffffff;--uco-sobre-turquesa:#000000;--uco-sobre-naranja:#000000;--uco-fuente-titulos:'Montserrat',system-ui,sans-serif;--uco-fuente-texto:'Poppins',system-ui,sans-serif;}

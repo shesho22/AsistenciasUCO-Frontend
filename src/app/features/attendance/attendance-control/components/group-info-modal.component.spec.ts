@@ -29,6 +29,34 @@ describe('GroupInfoModalComponent (IDENT-001 reenvio de verificacion)', () => {
     expect(host().querySelectorAll('[data-testid^="resend-verification-"]')).toHaveSize(2);
   });
 
+  it('bloque E: el padron es una tabla con una fila por estudiante', () => {
+    const filas = host().querySelectorAll('app-tabla-datos tbody tr[data-testid="grupo-info-estudiante"]');
+    expect(filas).toHaveSize(3);
+    expect(filas[0].textContent).toContain('Ada Lovelace');
+    expect(filas[0].textContent).toContain('ada@uco.edu.co');
+    expect(filas[0].querySelector('[data-testid="resend-verification-est-1"]')).not.toBeNull();
+  });
+
+  it('bloque E: pagina de 15 en 15 y numera las filas de forma continua', () => {
+    const muchos = Array.from({ length: 17 }, (_, i) => ({ id: `m-${i}`, nombreCompleto: `Estudiante ${i}`, documento: `${i}` }));
+    fixture.componentRef.setInput('students', muchos);
+    fixture.detectChanges();
+    const filas = () => host().querySelectorAll('tr[data-testid="grupo-info-estudiante"]');
+    expect(filas()).toHaveSize(15);
+
+    component.pagina.set(2);
+    fixture.detectChanges();
+    expect(filas()).toHaveSize(2);
+    expect(filas()[0].querySelector('td')?.textContent?.trim()).toBe('16');
+  });
+
+  it('bloque E: mientras carga no pinta filas', () => {
+    fixture.componentRef.setInput('isLoading', true);
+    fixture.detectChanges();
+    expect(host().querySelectorAll('tr[data-testid="grupo-info-estudiante"]')).toHaveSize(0);
+    expect(host().querySelector('[data-testid="tabla-datos-esqueleto"]')).not.toBeNull();
+  });
+
   it('emite el idEstudiante al pulsar el boton', () => {
     const emitidos: string[] = [];
     component.resendVerification.subscribe((id) => emitidos.push(id));

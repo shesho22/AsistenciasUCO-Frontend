@@ -8,16 +8,16 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { DeanFacultadService, planesDeLaEstructura } from '../../../core/services/dean-facultad.service';
 import { PlanEstudioItem, AsignaturaPlanItem } from '../../../core/models/role-management.model';
 import { BadgeComponent } from '../../../shared/components/badge/badge.component';
-import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
+import { TablaDatosComponent, TAMANO_PAGINA_TABLA } from '../../../shared/components/tabla-datos/tabla-datos.component';
 import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 
 @Component({
     selector: 'app-dean-plan-malla',
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: { class: 'block w-full' },
-    imports: [FormsModule, BadgeComponent, PaginationComponent],
+    imports: [FormsModule, BadgeComponent, TablaDatosComponent],
     template: `
-    <div class="space-y-6 animate-fade-in">
+    <div class="space-y-4 animate-fade-in">
       <!-- Barra de Retorno -->
       <div class="superficie flex items-center justify-between p-4">
         <button
@@ -40,7 +40,7 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
 
       @if (selectedPlan(); as plan) {
         <!-- Ficha del Plan de Estudios -->
-        <div class="superficie p-6 space-y-4">
+        <div class="superficie p-4 space-y-4">
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <div class="flex items-center gap-2 mb-1">
@@ -52,7 +52,7 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
               </div>
               <h1 class="font-serif font-bold text-2xl text-warm-900">{{ plan.nombre }}</h1>
               <p class="text-xs text-warm-600 mt-1">
-                {{ plan.totalSemestres }} semestres • {{ totalAsignaturas() }} asignaturas en la malla
+                {{ plan.totalSemestres }} semestres • {{ totalAsignaturas() }} asignaturas en el plan de estudio
               </p>
             </div>
           </div>
@@ -111,63 +111,62 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
         </div>
       </div>
 
-      <!-- Listado de Asignaturas del Plan -->
-      @if (cargando()) {
-        <div class="superficie p-12 text-center" role="status">
-          <p class="text-sm text-warm-500">Cargando la malla del plan…</p>
-        </div>
-      } @else if (asignaturas().length === 0) {
-        <div class="superficie p-12 text-center">
-          <p class="text-sm text-warm-500">No hay asignaturas registradas para este filtro.</p>
-        </div>
-      } @else {
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          @for (asig of asignaturas(); track asig.id) {
-            <div class="superficie p-4 flex flex-col justify-between gap-3">
-              <div class="space-y-1.5">
-                <div class="flex items-center justify-between gap-2">
-                  <span class="font-mono font-bold text-xs px-2 py-0.5 rounded bg-warm-100 text-primary-800">
-                    {{ asig.codigo }}
-                  </span>
-                  <span class="text-xs font-bold text-primary-800 bg-primary-50 px-2 py-0.5 rounded-full border border-primary-200">
-                    Semestre {{ asig.semestre }}
-                  </span>
-                </div>
-                <div class="flex flex-wrap items-center gap-1">
-                  @if (asig.nombreCaracter) {
-                    <app-badge [variant]="asig.codigoCaracter === 'OPT' ? 'success' : 'info'" size="sm">{{ asig.nombreCaracter }}</app-badge>
-                  }
-                  @if (asig.compartida) {
-                    <app-badge variant="neutral" size="sm">Compartida</app-badge>
-                  }
-                  @if (asig.estaActivaAsignatura === false) {
-                    <app-badge variant="danger" size="sm">Inactiva</app-badge>
-                  }
-                </div>
-                <h3 class="font-serif font-bold text-base text-warm-900">{{ asig.nombre }}</h3>
-                <p class="text-xs text-warm-500">Área: {{ asig.area }} • {{ asig.componente }}</p>
-              </div>
-
-              <div class="flex items-center justify-between pt-2 border-t border-warm-100 text-xs">
-                <span class="text-warm-500">{{ asig.horasSemanales === null || asig.horasSemanales === undefined ? 'Horas sin cargar' : asig.horasSemanales + ' h/sem' }}</span>
-                <span class="px-2 py-0.5 rounded-md bg-warm-100 text-warm-800 font-bold">
-                  {{ asig.creditos }} créditos
-                </span>
-              </div>
-            </div>
+      <!-- Tabla de Asignaturas del Plan -->
+      <app-tabla-datos
+        etiqueta="Asignaturas del plan de estudio"
+        [columnas]="7"
+        anchoMinimo="60rem"
+        [cargando]="cargando()"
+        [vacio]="asignaturas().length === 0"
+        mensajeVacio="No hay asignaturas registradas para este filtro."
+        [paginada]="true"
+        [totalItems]="totalAsignaturas()"
+        [pagina]="currentPage()"
+        [tamanoPagina]="pageSize()"
+        (paginaChange)="onPageChange($event)"
+        (tamanoPaginaChange)="onPageSizeChange($event)"
+      >
+        <thead>
+          <tr>
+            <th scope="col">Código</th>
+            <th scope="col">Asignatura</th>
+            <th scope="col">Semestre</th>
+            <th scope="col">Área · Componente</th>
+            <th scope="col">Carácter</th>
+            <th scope="col" class="text-right">Horas/sem</th>
+            <th scope="col" class="text-right">Créditos</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (!cargando()) {
+            @for (asig of asignaturas(); track asig.id) {
+              <tr data-testid="asignatura-plan-fila">
+                <td class="font-mono text-xs font-bold text-primary-800 whitespace-nowrap">{{ asig.codigo }}</td>
+                <td class="font-semibold text-warm-900">{{ asig.nombre }}</td>
+                <td class="whitespace-nowrap">Semestre {{ asig.semestre }}</td>
+                <td class="text-warm-600">{{ asig.area }} · {{ asig.componente }}</td>
+                <td>
+                  <div class="flex flex-wrap items-center gap-1">
+                    @if (asig.nombreCaracter) {
+                      <app-badge [variant]="asig.codigoCaracter === 'OPT' ? 'success' : 'info'" size="sm">{{ asig.nombreCaracter }}</app-badge>
+                    }
+                    @if (asig.compartida) {
+                      <app-badge variant="neutral" size="sm">Compartida</app-badge>
+                    }
+                    @if (asig.estaActivaAsignatura === false) {
+                      <app-badge variant="danger" size="sm">Inactiva</app-badge>
+                    }
+                  </div>
+                </td>
+                <td class="text-right whitespace-nowrap text-warm-600">
+                  {{ asig.horasSemanales === null || asig.horasSemanales === undefined ? 'Horas sin cargar' : asig.horasSemanales + ' h/sem' }}
+                </td>
+                <td class="text-right tabular-nums font-bold text-warm-900">{{ asig.creditos }}</td>
+              </tr>
+            }
           }
-        </div>
-
-        @if (totalAsignaturas() > pageSize()) {
-          <app-pagination
-            [totalItems]="totalAsignaturas()"
-            [pageSize]="pageSize()"
-            [currentPage]="currentPage()"
-            [showPageSizeSelector]="false"
-            (pageChange)="onPageChange($event)"
-          />
-        }
-      }
+        </tbody>
+      </app-tabla-datos>
     </div>
   `
 })
@@ -192,7 +191,8 @@ export class DeanPlanMallaComponent implements OnInit {
   semestreSeleccionado = signal<number>(0);
   caracterSeleccionado = signal('');
   currentPage = signal(1);
-  pageSize = signal(9);
+  /** Paginación en el servidor (acepta cualquier tamaño hasta 100). */
+  pageSize = signal(TAMANO_PAGINA_TABLA);
 
   /** Caracteres vistos en la malla (el decano no tiene el catálogo del coordinador): código y nombre del backend. */
   private readonly caracteresVistos = signal<Record<string, string>>({});
@@ -288,6 +288,12 @@ export class DeanPlanMallaComponent implements OnInit {
 
   onPageChange(pagina: number): void {
     this.currentPage.set(pagina);
+    this.cargarMalla();
+  }
+
+  onPageSizeChange(tamano: number): void {
+    this.pageSize.set(tamano);
+    this.currentPage.set(1);
     this.cargarMalla();
   }
 

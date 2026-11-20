@@ -59,8 +59,33 @@ Los tokens solidos `attendance-present` (3.8), `-excused` (4.1) y `-risk` (3.2) 
 ## Tipografia
 
 - `--font-sans`: texto general y UI. `--font-serif`: titulares y cifras destacadas.
-- La carga de las fuentes (`@import url(...)` de Google Fonts) esta al inicio de `src/styles.css`, junto a las variables. Cambiar de fuente = editar ese archivo; `index.html` no la declara.
+- Desde el 2026-11-19 (Manual de diseno institucional UCO v8.0) las fuentes son Montserrat (titulos, `--font-serif` / `--font-titulos`) y Poppins (texto, `--font-sans`), autoalojadas con paquetes `@fontsource` importados al inicio de `src/styles.css` (sin CDN ni Google Fonts). Cambiar de fuente = cambiar esos paquetes e imports; `index.html` no la declara.
 
 ## Logo e iconos
 
 `public/logo.svg` y `public/favicon.svg` **no** se derivan de los tokens: al cambiar la identidad se reemplazan a mano.
+
+## Tablas de datos (bloque E, 2026-11-19)
+
+- Componente: `app-tabla-datos` (`src/app/shared/components/tabla-datos/tabla-datos.component.ts`). Se le proyectan `<thead>` y `<tbody>` (y `<colgroup>` si hace falta) y aporta:
+  - **Cabecera fija:** el marco tiene altura maxima (`alturaMaxima`, 70vh por defecto) y los `th` son `sticky`.
+  - **Tamano estable:** mientras `cargando` dibuja filas de esqueleto y reserva la altura que tenia la tabla, asi la vista no salta al paginar, filtrar o recargar. `fija` activa `table-layout: fixed` para anchos de columna estables.
+  - **Pantallas angostas:** `anchoMinimo` (40rem por defecto) hace que la tabla se desplace de lado en vez de encoger el texto.
+  - **Vacio:** `vacio` + `mensajeVacio` pintan una fila con el mensaje.
+  - **Paginacion:** `paginada` muestra `app-pagination` con 15 por pagina por defecto y opciones 15/30/50 (`TAMANO_PAGINA_TABLA`, `TAMANOS_PAGINA_TABLA`). Para listas en memoria se usa `paginarEnCliente(items, pagina, tamano)` y se vuelve a la pagina 1 al filtrar.
+  - **Accesibilidad:** region desplazable con `aria-label`, `tabindex="0"` y `caption` oculto; `aria-busy` mientras carga.
+- Utilidades CSS en `src/styles.css`: `tabla-contenedor` (marco con desplazamiento) y `tabla` (cabecera pegajosa en `bg-warm-100`, celdas `px-3 py-2`, fila resaltada al pasar el mouse) para tablas que no usan el componente.
+- Reglas: el estado va como etiqueta de color (`app-badge` o el badge de estado del dominio); los `data-testid` de cada elemento van en el `<tr>` y los de las acciones en sus botones; orden mas reciente primero cuando hay fechas.
+
+## Espaciado compacto (bloque F, 2026-11-19)
+
+| Elemento | Antes | Ahora |
+|---|---|---|
+| Contenido principal (`dashboard-layout`) | `p-4 sm:p-6 lg:p-8` | `p-3 sm:p-4 lg:p-6` |
+| Separacion entre secciones | `space-y-6` / `space-y-8` | `space-y-4` / `space-y-5` |
+| Tarjeta de seccion | `superficie p-6` / `p-8` | `superficie p-4` / `p-5` |
+| Rejillas de tarjetas | `gap-6` | `gap-4` |
+| Encabezado de pagina (`app-page-header`) | h1 `text-2xl sm:text-3xl`, `gap-4`, en tarjeta `p-6` | h1 `text-xl sm:text-2xl`, `gap-3`, en tarjeta `p-4` |
+| Tarjeta KPI (`app-kpi-card`) | `p-4`, valor `text-2xl` | `px-4 py-3`, valor `text-xl`; ocupa todo el alto de su celda |
+
+Coordinador, «Asistencia del programa»: «Revisiones por resolver» ocupa la primera columna de la fila de indicadores (dos filas de alto en pantallas anchas, ranura `[kpi-extra]` de `app-coordinator-indicators`) y el contador «N Grupos» va en la misma linea que los filtros del consolidado, para que la tabla de grupos se vea sin desplazar a 1366x768.

@@ -18,7 +18,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
     host: { class: 'block w-full' },
     imports: [PageHeaderComponent, RouterLink, BadgeComponent],
     template: `
-    <div class="space-y-6 animate-fade-in">
+    <div class="space-y-4 animate-fade-in">
       <app-page-header
         [enTarjeta]="true"
         [conTitulo]="!embebido()"
@@ -37,7 +37,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
       }
 
       @for (f of facultades(); track f.id) {
-        <section class="superficie p-6 space-y-4">
+        <section class="superficie p-4 space-y-4">
           @if (!embebido()) {
           <div class="flex items-center justify-between gap-3">
             <div>
@@ -75,8 +75,8 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
                             <a
                               [routerLink]="['/app/decano/programas', pl.id]"
                               class="text-xs font-semibold text-primary-700 hover:underline"
-                              [attr.aria-label]="'Ver la malla del plan ' + (pl.inp ?? '')"
-                            >Ver malla →</a>
+                              [attr.aria-label]="'Ver el plan de estudio ' + (pl.inp ?? '')"
+                            >Ver plan de estudio →</a>
                             <app-badge [variant]="pl.activo ? 'success' : 'neutral'">{{ pl.activo ? 'Vigente' : 'Inactivo' }}</app-badge>
                           </span>
                         </li>

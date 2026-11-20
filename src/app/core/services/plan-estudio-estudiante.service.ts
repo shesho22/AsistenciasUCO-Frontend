@@ -11,7 +11,7 @@ export interface AsignaturaPlanEstudiante {
   codigo: string | null;
   nombre: string;
   creditos: number | null;
-  /** ESPECIFICA (propia del programa), BASICA o INSTITUCIONAL (transversales). */
+  /** ESPECIFICA (propia del programa), BASICA o INSTITUCIONAL (transversales), o ELECTIVA (COMP-ELE). */
   tipoAsignatura: string | null;
   codigoCaracter: string | null;
   nombreCaracter: string | null;

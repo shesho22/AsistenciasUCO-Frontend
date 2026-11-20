@@ -7,7 +7,7 @@ import { Course } from '../../../../core/models/course.model';
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [],
     template: `
-    <div class="bg-white rounded-b-2xl border-x border-b border-warm-200 shadow-warm-sm p-6 space-y-6">
+    <div class="bg-white rounded-b-2xl border-x border-b border-warm-200 shadow-warm-sm p-6 space-y-4">
       <div>
         <h3 class="font-serif font-bold text-lg text-warm-900">Distribución Horaria</h3>
         <p class="text-xs text-warm-500">Parámetros operativos de la franja lectiva semanal y ocupación del grupo.</p>

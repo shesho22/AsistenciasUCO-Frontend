@@ -35,16 +35,16 @@ describe('StudyPlansListComponent (CULM-001, densidad de acciones)', () => {
 
   beforeEach(() => TestBed.configureTestingModule({ imports: [StudyPlansListComponent] }));
 
-  it('cada tarjeta deja "Malla & Asignaturas" visible y un menu; Editar y Activar/Inactivar no estan sueltos', () => {
+  it('cada tarjeta deja "Plan de Estudio & Asignaturas" visible y un menu; Editar y Activar/Inactivar no estan sueltos', () => {
     crear([plan('a', 'VIGENTE')]);
     const acciones = q('[data-testid="acciones-plan"]') as HTMLElement;
     expect(acciones.querySelectorAll('button')).toHaveSize(2);
-    expect(acciones.textContent).toContain('Malla & Asignaturas');
+    expect(acciones.textContent).toContain('Plan de Estudio & Asignaturas');
     expect(acciones.textContent).not.toContain('Editar');
     expect(acciones.textContent).not.toContain('Inactivar');
   });
 
-  it('"Malla & Asignaturas" emite viewMalla con el plan', () => {
+  it('"Plan de Estudio & Asignaturas" emite viewMalla con el plan', () => {
     const p = plan('a', 'VIGENTE');
     crear([p]);
     const emitidos: PlanEstudioItem[] = [];
@@ -82,10 +82,34 @@ describe('StudyPlansListComponent (CULM-001, densidad de acciones)', () => {
     expect(q('[data-testid="plan-estado"]')?.textContent).toContain('Activar plan');
   });
 
-  it('MEJORAS-SERGIO 7: la tarjeta del plan no recorta el menu "Más" (overflow visible)', () => {
+  it('MEJORAS-SERGIO 7: el menu "Más" flota para que el marco desplazable de la tabla no lo recorte', () => {
     crear([plan('a', 'VIGENTE')]);
-    const tarjeta = q('app-card > div') as HTMLElement;
-    expect(tarjeta.className).toContain('overflow-visible');
-    expect(tarjeta.className).not.toContain('overflow-hidden');
+    abrirMenu();
+    const panel = q('[role="menu"]');
+    expect(panel).withContext('panel del menu abierto').not.toBeNull();
+    expect(panel!.className).toContain('fixed');
+  });
+
+  it('bloque E: muestra una tabla con una fila por plan y conserva los testids de acciones', () => {
+    crear([plan('a', 'VIGENTE'), plan('b', 'INACTIVO')]);
+    expect(q('app-tabla-datos table')).not.toBeNull();
+    expect(root().querySelectorAll('tbody tr[data-testid="plan-fila"]')).toHaveSize(2);
+    expect(root().querySelectorAll('tr[data-testid="plan-fila"] [data-testid="acciones-plan"]')).toHaveSize(2);
+    expect(root().querySelectorAll('tr[data-testid="plan-fila"] [data-testid="plan-malla"]')).toHaveSize(2);
+    expect(q('app-card')).toBeNull();
+  });
+
+  it('bloque E: pagina de a 15 en el cliente', () => {
+    const muchos = Array.from({ length: 20 }, (_, i) => plan(`p${i}`, 'VIGENTE'));
+    crear(muchos);
+    expect(root().querySelectorAll('tr[data-testid="plan-fila"]')).toHaveSize(15);
+    component.currentPage.set(2);
+    fixture.detectChanges();
+    expect(root().querySelectorAll('tr[data-testid="plan-fila"]')).toHaveSize(5);
+  });
+
+  it('bloque E: sin planes muestra el mensaje vacio de la tabla', () => {
+    crear([]);
+    expect(q('[data-testid="tabla-datos-vacia"]')?.textContent).toContain('No hay planes de estudio registrados.');
   });
 });

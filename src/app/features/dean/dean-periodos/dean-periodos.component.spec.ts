@@ -59,6 +59,36 @@ describe('DeanPeriodosComponent', () => {
     component.filtroTexto.set('2026-2');
     expect(component.periodosFiltrados()).toHaveSize(1);
   });
+
+  it('bloque E: muestra los períodos en una tabla (una fila por período) con estado y marca de período en curso', () => {
+    const el = fixture.nativeElement as HTMLElement;
+    const filas = el.querySelectorAll('app-tabla-datos tbody tr[data-testid="periodo-fila"]');
+    expect(filas).toHaveSize(1);
+    expect(filas[0].textContent).toContain('2026-2');
+    expect(filas[0].textContent).toContain('2026-07-15');
+    expect(filas[0].textContent).toContain('2026-11-30');
+    expect(filas[0].querySelector('[data-testid="periodo-en-curso"]')).not.toBeNull();
+  });
+
+  it('bloque E: ordena del más reciente al más antiguo y pagina de 15 en 15', () => {
+    const muchos: PeriodoAcademicoItem[] = Array.from({ length: 17 }, (_, i) => ({
+      id: `per-${i}`,
+      codigo: `P-${String(i).padStart(2, '0')}`,
+      nombre: `Período ${i}`,
+      fechaInicio: `20${String(10 + i).padStart(2, '0')}-01-15`,
+      fechaFin: `20${String(10 + i).padStart(2, '0')}-06-15`,
+      estado: 'CERRADO',
+      esActual: false,
+    }));
+    component.periodos.set(muchos);
+    fixture.detectChanges();
+    expect(component.periodosFiltrados()[0].id).toBe('per-16');
+    const filas = () => (fixture.nativeElement as HTMLElement).querySelectorAll('[data-testid="periodo-fila"]');
+    expect(filas()).toHaveSize(15);
+    component.pagina.set(2);
+    fixture.detectChanges();
+    expect(filas()).toHaveSize(2);
+  });
 });
 
 

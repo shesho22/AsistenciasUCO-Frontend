@@ -20,8 +20,8 @@ describe('GroupClaimsModalComponent APP-05 states', () => {
     fixture.componentRef.setInput('estadoCarga', 'LOADING');
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.textContent).toContain('Cargando reclamos');
-    expect(fixture.nativeElement.textContent).not.toContain('No hay reclamos ni justificaciones para este grupo');
+    expect(fixture.nativeElement.textContent).toContain('Cargando justificaciones');
+    expect(fixture.nativeElement.textContent).not.toContain('No hay justificaciones para este grupo');
     expect(fixture.nativeElement.querySelector('[data-testid="group-claims-count"]').textContent.trim()).toBe('Cargando…');
   });
 
@@ -49,7 +49,7 @@ describe('GroupClaimsModalComponent APP-05 states', () => {
   it('muestra el vacío solo después de cargar el conjunto completo', () => {
     fixture.componentRef.setInput('estadoCarga', 'LOADED');
     fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('No hay reclamos para este grupo');
+    expect(fixture.nativeElement.textContent).toContain('No hay justificaciones para este grupo');
     expect(fixture.nativeElement.querySelector('[data-testid="group-claims-count"]').textContent.trim()).toBe('0 Registros');
   });
 });
@@ -79,6 +79,30 @@ describe('GroupClaimsModalComponent: resolución por toma', () => {
       { id: 'rec-12345678', accion: 'APROBADA', resultado: 'PRESENTE' },
       { id: 'rec-12345678', accion: 'APROBADA', resultado: 'JUSTIFICADA' },
     ]);
+  });
+
+  it('bloque E: cada justificación es una fila de la tabla con sus acciones', () => {
+    fixture.componentRef.setInput('reclamos', [
+      reclamo({ idToma: 'toma-2', numeroToma: 2 }),
+      reclamo({ id: 'rec-2', estudianteNombre: 'Luis', estadoSolicitud: 'APROBADA', justificacionRespuesta: 'Válida' }),
+    ]);
+    fixture.detectChanges();
+
+    const filas = fixture.nativeElement.querySelectorAll('app-tabla-datos tbody tr[data-testid="grupo-reclamo-fila"]') as NodeListOf<HTMLElement>;
+    expect(filas).toHaveSize(2);
+    expect(filas[0].textContent).toContain('Ana');
+    expect(filas[0].querySelector('[data-testid="grupo-reclamo-toma"]')).toBeTruthy();
+    expect(filas[0].querySelector('[data-testid="aprobar-justificada"]')).toBeTruthy();
+    expect(filas[1].querySelector('[data-testid="aprobar-justificada"]')).toBeNull();
+    expect(filas[1].textContent).toContain('Respuesta:');
+  });
+
+  it('bloque E: durante la carga no pinta filas, solo el esqueleto de la tabla', () => {
+    fixture.componentRef.setInput('reclamos', [reclamo({})]);
+    fixture.componentRef.setInput('estadoCarga', 'LOADING');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelectorAll('tr[data-testid="grupo-reclamo-fila"]')).toHaveSize(0);
+    expect(fixture.nativeElement.querySelector('[data-testid="tabla-datos-esqueleto"]')).toBeTruthy();
   });
 
   it('sin toma oculta "Estuvo presente"', () => {

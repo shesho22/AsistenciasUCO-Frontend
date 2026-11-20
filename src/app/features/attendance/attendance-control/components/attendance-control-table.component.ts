@@ -340,11 +340,11 @@ export class AttendanceControlTableComponent {
     }
     if (target === 'SJC') {
       return isSelected
-        ? 'py-1.5 px-2 rounded-xl text-[11px] font-bold bg-danger-600 text-white shadow-xs'
+        ? 'py-1.5 px-2 rounded-xl text-[11px] font-bold bg-danger-500 text-black shadow-xs'
         : 'py-1.5 px-2 rounded-xl text-[11px] font-medium bg-warm-100 text-warm-700';
     }
     return isSelected
-      ? 'py-1.5 px-2 rounded-xl text-[11px] font-bold bg-warning-600 text-white shadow-xs'
+      ? 'py-1.5 px-2 rounded-xl text-[11px] font-bold bg-warning-500 text-black shadow-xs'
       : 'py-1.5 px-2 rounded-xl text-[11px] font-medium bg-warm-100 text-warm-700';
   }
 
@@ -362,11 +362,11 @@ export class AttendanceControlTableComponent {
     }
     if (target === 'SJC') {
       return isSelected
-        ? 'px-3 py-1.5 rounded-lg text-xs font-bold bg-danger-600 text-white shadow-xs transition-all'
+        ? 'px-3 py-1.5 rounded-lg text-xs font-bold bg-danger-500 text-black shadow-xs transition-all'
         : 'px-3 py-1.5 rounded-lg text-xs font-medium text-warm-600 hover:text-warm-900 transition-all';
     }
     return isSelected
-      ? 'px-3 py-1.5 rounded-lg text-xs font-bold bg-warning-600 text-white shadow-xs transition-all'
+      ? 'px-3 py-1.5 rounded-lg text-xs font-bold bg-warning-500 text-black shadow-xs transition-all'
       : 'px-3 py-1.5 rounded-lg text-xs font-medium text-warm-600 hover:text-warm-900 transition-all';
   }
 

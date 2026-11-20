@@ -277,14 +277,14 @@ describe('TomaAsistenciasComponent (CULM-001 UX toma)', () => {
     expect(texto('indicador-sin-guardar')).toContain('Todo guardado');
   });
 
-  it('una toma cerrada que ya no es editable deshabilita los controles y explica que se corrige por reclamo', () => {
+  it('una toma cerrada que ya no es editable deshabilita los controles y explica que se corrige por justificación', () => {
     crear({ toma: toma({ estado: 'CERRADA', esEditable: false }) });
     expect(boton('marcar-todos-presentes').disabled).toBeTrue();
     expect(itemMenu('marcar-faltantes')!.disabled).toBeTrue();
     expect(boton('estado-c-AN').disabled).toBeTrue();
     expect(boton('guardar-toma').disabled).toBeTrue();
     expect(texto('toma-aviso-edicion')).toBe(
-      'La sesión terminó: las tomas quedaron cerradas. Las correcciones se hacen por reclamo.'
+      'La sesión terminó: las tomas quedaron cerradas. Las correcciones se hacen por justificación.'
     );
   });
 
@@ -302,7 +302,7 @@ describe('TomaAsistenciasComponent (CULM-001 UX toma)', () => {
 
   it('D4: una toma abierta no editable porque terminó la sesión muestra que las tomas quedaron cerradas', () => {
     crear({ toma: toma({ estado: 'ABIERTA', esEditable: false }) });
-    expect(texto('toma-aviso-edicion')).toBe('La sesión terminó: las tomas quedaron cerradas. Las correcciones se hacen por reclamo.');
+    expect(texto('toma-aviso-edicion')).toBe('La sesión terminó: las tomas quedaron cerradas. Las correcciones se hacen por justificación.');
   });
 
   it('una toma abierta editable no muestra aviso de edición', () => {

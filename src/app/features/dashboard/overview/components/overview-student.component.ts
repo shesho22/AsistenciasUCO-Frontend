@@ -18,7 +18,7 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
         class: 'block w-full',
     },
     template: `
-    <div class="space-y-6">
+    <div class="space-y-4">
       <!-- KPIs Estudiante -->
       <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
@@ -147,7 +147,7 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
           </a>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           @for (mat of materias(); track mat.claveGrupo) {
             <app-card [hoverable]="true" [title]="mat.nombre" [subtitle]="mat.codigo ? mat.codigo + ' • ' + mat.grupo : mat.grupo">
               <div class="space-y-4 my-2 text-xs text-warm-700">

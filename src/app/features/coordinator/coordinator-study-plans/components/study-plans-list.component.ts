@@ -1,22 +1,25 @@
 import { Component, ChangeDetectionStrategy, input, output, signal, computed } from '@angular/core';
 
 import { PlanEstudioItem } from '../../../../core/models/role-management.model';
-import { CardComponent } from '../../../../shared/components/card/card.component';
 import { BadgeComponent, BadgeVariant } from '../../../../shared/components/badge/badge.component';
 import { ActionMenuComponent, ActionMenuItem } from '../../../../shared/components/action-menu/action-menu.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
-import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
+import {
+  TAMANO_PAGINA_TABLA,
+  TablaDatosComponent,
+  paginarEnCliente,
+} from '../../../../shared/components/tabla-datos/tabla-datos.component';
 
 @Component({
     selector: 'app-study-plans-list',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [CardComponent, BadgeComponent, ButtonComponent, PaginationComponent, ActionMenuComponent],
+    imports: [BadgeComponent, ButtonComponent, TablaDatosComponent, ActionMenuComponent],
     template: `
-    <div class="space-y-6">
+    <div class="space-y-4">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 class="font-serif font-bold text-xl text-warm-900">Planes Curriculares Registrados</h2>
-          <p class="text-xs text-warm-500">Listado institucional de programas y mallas curriculares vigentes.</p>
+          <p class="text-xs text-warm-500">Listado institucional de programas y planes de estudio vigentes.</p>
         </div>
         <app-button variant="primary" size="md" (clicked)="createPlan.emit()">
           <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -26,86 +29,65 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
         </app-button>
       </div>
 
-      @if (pagedPlanes().length === 0) {
-        <div class="superficie p-12 text-center">
-          <p class="text-sm text-warm-500">No hay planes de estudio registrados.</p>
-        </div>
-      } @else {
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <app-tabla-datos
+        etiqueta="Planes curriculares registrados"
+        [columnas]="7"
+        anchoMinimo="62rem"
+        [vacio]="planes().length === 0"
+        mensajeVacio="No hay planes de estudio registrados."
+        [paginada]="true"
+        [totalItems]="planes().length"
+        [pagina]="currentPage()"
+        [tamanoPagina]="pageSize()"
+        (paginaChange)="currentPage.set($event)"
+        (tamanoPaginaChange)="cambiarTamano($event)"
+      >
+        <thead>
+          <tr>
+            <th scope="col">Plan de estudio</th>
+            <th scope="col">Vigencia</th>
+            <th scope="col" class="text-right">Créditos</th>
+            <th scope="col" class="text-right">Duración</th>
+            <th scope="col" class="text-right">Asignaturas</th>
+            <th scope="col">Estado</th>
+            <th scope="col"><span class="sr-only">Acciones</span></th>
+          </tr>
+        </thead>
+        <tbody>
           @for (plan of pagedPlanes(); track plan.id) {
-            <app-card class="relative hover:z-30 focus-within:z-30" [hoverable]="true" [recortar]="false" padding="lg">
-              <div class="flex flex-col h-full justify-between gap-5">
-                <div class="space-y-3">
-                  <div class="flex items-start justify-between gap-3">
-                    <div class="flex items-center gap-2">
-                      <span class="text-xs font-mono font-bold px-2.5 py-1 rounded-md bg-warm-100 text-warm-800">
-                        {{ plan.codigo }}
-                      </span>
-                      <app-badge [variant]="getPlanBadgeVariant(plan.estado)">
-                        {{ plan.estado }}
-                      </app-badge>
-                    </div>
-
-                    <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-primary-50 text-primary-800 border border-primary-200">
-                      Año {{ plan.anioVigencia }}
-                    </span>
-                  </div>
-
-                  <div>
-                    <h3 class="font-serif font-bold text-xl text-warm-900 leading-snug">
-                      {{ plan.nombre }}
-                    </h3>
-                    <p class="text-xs font-semibold text-primary-700 mt-0.5">
-                      {{ plan.programa }} • {{ plan.facultad }}
-                    </p>
-                  </div>
-
-                  <p class="text-xs text-warm-600 leading-relaxed line-clamp-2">
-                    {{ plan.descripcion }}
-                  </p>
-
-                  <!-- Métricas Curriculares Bento -->
-                  <div class="grid grid-cols-3 gap-2.5 p-3 rounded-xl bg-warm-50 border border-warm-100 text-center">
-                    <div>
-                      <span class="text-[11px] text-warm-400 block font-medium">Créditos</span>
-                      <strong class="font-serif text-lg font-bold text-warm-900">{{ plan.totalCreditos ?? '—' }}</strong>
-                    </div>
-                    <div class="border-x border-warm-200">
-                      <span class="text-[11px] text-warm-400 block font-medium">Duración</span>
-                      <strong class="font-serif text-lg font-bold text-warm-900">{{ plan.totalSemestres }} Sem.</strong>
-                    </div>
-                    <div>
-                      <span class="text-[11px] text-warm-400 block font-medium">Asignaturas</span>
-                      <strong class="font-serif text-lg font-bold text-primary-800">{{ plan.totalAsignaturas ?? '—' }}</strong>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="flex items-center justify-between gap-2 pt-3 border-t border-warm-100" data-testid="acciones-plan">
+            <tr data-testid="plan-fila">
+              <td class="min-w-[16rem]">
+                <span class="inline-block rounded-md bg-warm-100 px-2 py-0.5 font-mono text-xs font-bold text-warm-800">{{ plan.codigo }}</span>
+                <span class="mt-1 block font-semibold text-warm-900">{{ plan.nombre }}</span>
+                <span class="block text-xs font-medium text-primary-700">{{ plan.programa }} • {{ plan.facultad }}</span>
+                @if (plan.descripcion) {
+                  <span class="block max-w-md text-xs text-warm-500 line-clamp-2">{{ plan.descripcion }}</span>
+                }
+              </td>
+              <td class="whitespace-nowrap">Año {{ plan.anioVigencia }}</td>
+              <td class="text-right tabular-nums">{{ plan.totalCreditos ?? '—' }}</td>
+              <td class="text-right whitespace-nowrap">{{ plan.totalSemestres }} Sem.</td>
+              <td class="text-right tabular-nums">{{ plan.totalAsignaturas ?? '—' }}</td>
+              <td>
+                <app-badge [variant]="getPlanBadgeVariant(plan.estado)" size="sm">{{ plan.estado }}</app-badge>
+              </td>
+              <td class="text-right">
+                <div class="flex items-center justify-end gap-2 whitespace-nowrap" data-testid="acciones-plan">
                   <app-button variant="primary" size="sm" data-testid="plan-malla" (clicked)="viewMalla.emit(plan)">
-                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                    </svg>
-                    Malla & Asignaturas
+                    Plan de Estudio & Asignaturas
                   </app-button>
-                  <app-action-menu label="Más acciones del plan" [items]="accionesPlan(plan)" (selected)="alElegirAccion(plan, $event)" />
+                  <app-action-menu
+                    label="Más acciones del plan"
+                    [flotante]="true"
+                    [items]="accionesPlan(plan)"
+                    (selected)="alElegirAccion(plan, $event)"
+                  />
                 </div>
-              </div>
-            </app-card>
+              </td>
+            </tr>
           }
-        </div>
-
-        @if (planes().length > pageSize()) {
-          <div class="mt-6 flex justify-center">
-            <app-pagination
-              [currentPage]="currentPage()"
-              [totalItems]="planes().length"
-              [pageSize]="pageSize()"
-              (pageChange)="currentPage.set($event)"
-            />
-          </div>
-        }
-      }
+        </tbody>
+      </app-tabla-datos>
     </div>
   `
 })
@@ -130,13 +112,14 @@ export class StudyPlansListComponent {
   }
 
   currentPage = signal(1);
-  pageSize = signal(6);
+  pageSize = signal(TAMANO_PAGINA_TABLA);
 
-  pagedPlanes = computed(() => {
-    const list = this.planes();
-    const start = (this.currentPage() - 1) * this.pageSize();
-    return list.slice(start, start + this.pageSize());
-  });
+  pagedPlanes = computed(() => paginarEnCliente(this.planes(), this.currentPage(), this.pageSize()));
+
+  cambiarTamano(tamano: number): void {
+    this.pageSize.set(tamano);
+    this.currentPage.set(1);
+  }
 
   getPlanBadgeVariant(estado: PlanEstudioItem['estado']): BadgeVariant {
     switch (estado) {

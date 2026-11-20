@@ -33,7 +33,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
             type="button"
             data-testid="cierre-confirmar"
             (click)="confirmar.emit(true)"
-            class="min-h-[44px] px-5 rounded-xl bg-danger-600 text-white text-sm font-semibold hover:bg-danger-700"
+            class="min-h-[44px] px-5 rounded-xl bg-danger-500 text-black text-sm font-semibold hover:bg-danger-400"
           >
             {{ modo() === 'nueva' ? 'Cerrar y abrir nueva toma' : 'Cerrar toma' }}
           </button>

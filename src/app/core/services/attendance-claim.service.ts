@@ -12,6 +12,7 @@ import { SesionMateriaEstudianteApiDto } from '../api/models/estudiante-portal-a
 import { BYPASS_GLOBAL_ERROR_TOAST } from '../interceptors/error.interceptor';
 import { isUuid } from '../utils/uuid.util';
 import { SessionTimeZoneService } from './session-timezone.service';
+import { EstudiantePortalCacheService } from './estudiante-portal-cache.service';
 import {
   ConfiguracionReclamosDTO,
   DetalleReclamoDocenteItem,
@@ -82,6 +83,7 @@ export class AttendanceClaimService {
   private readonly http = inject(HttpClient);
 
   private readonly sessionTimeZone = inject(SessionTimeZoneService);
+  private readonly portalCache = inject(EstudiantePortalCacheService);
 
   getConfiguracionReclamos(): Observable<ApiDataResponse<ConfiguracionReclamosDTO>> {
     return this.http
@@ -226,7 +228,7 @@ export class AttendanceClaimService {
     if (paginacion?.pagina !== undefined) params = params.set('pagina', paginacion.pagina);
     if (paginacion?.tamano !== undefined) params = params.set('tamano', paginacion.tamano);
     if (paginacion?.grupoId !== undefined) params = params.set('grupoId', paginacion.grupoId);
-    return this.http
+    const consulta$ = this.http
       .get<ApiListResponse<SesionMateriaEstudianteApiDto>>(
         `${environment.apiUrl}/estudiante/materias/${materiaId}/sesiones`,
         { params, context: new HttpContext().set(BYPASS_GLOBAL_ERROR_TOAST, true) }
@@ -239,6 +241,16 @@ export class AttendanceClaimService {
           return { exitoso: res.exitoso, datos, total: res.total };
         })
       );
+    // PERF-EST-MM: la primera pagina de cada materia y grupo se guarda en memoria; se muestra al instante y se revalida.
+    const esPrimeraPagina = (paginacion?.pagina ?? 1) === 1 && paginacion?.tamano !== undefined;
+    return esPrimeraPagina
+      ? this.portalCache.obtener(EstudiantePortalCacheService.claveSesiones(materiaId, paginacion?.grupoId, paginacion?.tamano), consulta$)
+      : consulta$;
+  }
+
+  /** Descarta la primera pagina guardada de las sesiones de la materia (tras un reclamo, una toma o un evento en vivo). */
+  invalidarSesionesMateria(materiaId: string): void {
+    this.portalCache.invalidarSesiones(materiaId);
   }
 
   /**

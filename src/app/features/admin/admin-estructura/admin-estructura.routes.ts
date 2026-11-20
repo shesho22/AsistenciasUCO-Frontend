@@ -2,7 +2,7 @@ import { Routes } from '@angular/router';
 import { TabsRutaShellComponent, TabsRutaShellConfig } from '../../../shared/components/tabs/tabs-ruta-shell.component';
 
 const SHELL: TabsRutaShellConfig = {
-  titulo: 'Estructura',
+  titulo: 'Organigrama',
   descripcion: 'Facultades e instituciones de educación superior.',
   base: '/app/admin/estructura',
   tabs: [

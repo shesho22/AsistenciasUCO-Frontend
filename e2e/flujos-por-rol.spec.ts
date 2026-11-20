@@ -11,7 +11,8 @@ test.describe('Administrador', () => {
     const main = page.getByRole('main');
     await expect(main.getByRole('heading', { level: 1, name: 'Períodos Académicos' })).toBeVisible();
     await expect(main.getByText('3 Períodos')).toBeVisible();
-    await expect(main.getByRole('heading', { name: 'Segundo Semestre Académico 2026' })).toBeVisible();
+    // Bloque E (2026-11-19): los periodos se listan en una tabla; cada periodo es una fila.
+    await expect(main.getByRole('row', { name: /Segundo Semestre Académico 2026/ })).toBeVisible();
 
     await main.getByRole('button', { name: '+ Nuevo Período Académico' }).click();
     // PR #91: el alta se hace en el diálogo "Nuevo período académico" (academic-period-form-modal).
@@ -61,29 +62,32 @@ test.describe('Coordinador', () => {
     await expect(tabla.getByRole('row', { name: /Estructuras de Datos Grupo 02/ })).toContainText('97.78%');
 
     await main.getByRole('combobox', { name: 'Materia' }).selectOption({ label: 'Cálculo Diferencial' });
-    await expect(main.getByText('1 Grupos').or(main.getByText('1 Grupo', { exact: true }))).toBeVisible();
+    await expect(main.getByTestId('conteo-grupos')).toHaveText(/^\s*1 Grupos?\s*$/);
     await expect(tabla.getByRole('row', { name: /Estructuras de Datos Grupo 02/ })).toHaveCount(0);
     await expect(tabla.getByRole('row', { name: /Cálculo Diferencial Grupo 01/ })).toBeVisible();
   });
 });
 
 test.describe('Docente', () => {
-  test('revisa la bandeja de reclamos de sus estudiantes', async ({ page }) => {
+  test('revisa la bandeja de justificaciones de sus estudiantes', async ({ page }) => {
     await iniciarSesion(page, 'DOCENTE');
-    await abrirModulo(page, 'Reclamos');
+    await abrirModulo(page, 'Justificaciones');
 
     const main = page.getByRole('main');
-    await expect(main.getByRole('heading', { level: 1, name: 'Reclamos y Justificaciones de Asistencia' })).toBeVisible();
+    await expect(main.getByRole('heading', { level: 1, name: 'Justificaciones de Asistencia' })).toBeVisible();
+    // Bloque E: la bandeja es una tabla (una fila por justificación).
+    const tabla = main.getByRole('table', { name: 'Justificaciones de asistencia' });
+    await expect(tabla.getByTestId('justificacion-fila')).toHaveCount(3);
     await expect(main.getByRole('button', { name: 'Revisar en Detalle' })).toHaveCount(3);
-    await expect(main.getByRole('heading', { level: 3, name: 'Carlos Andrés Zapata Gómez' })).toBeVisible();
+    await expect(tabla.getByRole('row', { name: /Carlos Andrés Zapata Gómez/ })).toBeVisible();
 
-    await expect(main.getByRole('heading', { level: 3, name: 'Mateo Botero Hincapié' })).toBeVisible();
-    // PC (puntos de control): la tarjeta muestra la toma reclamada.
+    await expect(tabla.getByRole('row', { name: /Mateo Botero Hincapié/ })).toBeVisible();
+    // PC (puntos de control): la fila muestra la toma reclamada.
     await expect(main.getByTestId('tarjeta-toma').filter({ hasText: 'Toma 2 · 04:00' })).toBeVisible();
     await expect(main.getByText('Pendiente de evaluación')).toHaveCount(2);
     await expect(main.getByText('Evaluado', { exact: true })).toHaveCount(1);
     // El filtro por estado y el detalle del reclamo dependen de rutas que el mock no simula (ver VALIDATION.md).
-    await expect(main.getByRole('combobox', { name: 'Filtrar reclamos por estado' })).toBeVisible();
+    await expect(main.getByRole('combobox', { name: 'Filtrar justificaciones por estado' })).toBeVisible();
   });
 
   test('abre el control de asistencia con sus grupos', async ({ page }) => {
@@ -120,7 +124,7 @@ test.describe('Estudiante', () => {
     await abrirModulo(page, 'Mis Materias');
 
     const main = page.getByRole('main');
-    await main.getByRole('tab', { name: 'Materias' }).click();
+    await main.getByRole('tab', { name: 'Materias', exact: true }).click();
     await expect(main.getByRole('heading', { level: 1, name: 'Gestión de Mis Materias' })).toBeVisible();
     await main.getByRole('button', { name: 'Ver Detalle' }).first().click();
     await expect(main.getByRole('heading', { level: 2, name: 'Ingeniería de Software II' })).toBeVisible();

@@ -46,7 +46,7 @@ const TAMANO_PAGINA_DECISIONES = 100;
     TeacherRetiroEstudianteModalComponent
 ],
     template: `
-    <div class="space-y-6 animate-fade-in">
+    <div class="space-y-4 animate-fade-in">
       <!-- 1. VISTA LISTA PRINCIPAL -->
       @if (vistaActual() === 'LISTA') {
         <app-teacher-grupos-list
@@ -98,7 +98,7 @@ const TAMANO_PAGINA_DECISIONES = 100;
             (busquedaPadronChange)="cambiarBusquedaPadron($event)"
           />
         } @loading {
-          <div class="superficie p-6 text-sm text-warm-600" role="status" aria-live="polite">
+          <div class="superficie p-4 text-sm text-warm-600" role="status" aria-live="polite">
             Abriendo el grupo…
           </div>
         }
@@ -161,12 +161,12 @@ export class TeacherGruposComponent implements OnInit, OnDestroy {
   /** CIERRE-W1A: `reclamosGrupo` es la página vigente que filtra y pagina el servidor; el total es el del servidor. */
   totalReclamosGrupo = signal<number>(0);
   paginaReclamosGrupo = signal<number>(1);
-  readonly tamanoReclamosGrupo = 10;
+  readonly tamanoReclamosGrupo = 15;
   /** CIERRE-W1A: página del padrón (pestaña Matrícula) y su búsqueda, resueltas por el servidor. */
   padronPagina = signal<EstudianteGrupoItem[]>([]);
   totalPadron = signal<number | null>(null);
   paginaPadron = signal<number>(1);
-  tamanoPadron = signal<number>(12);
+  tamanoPadron = signal<number>(15);
   busquedaPadron = signal<string>('');
   cargandoPadron = signal<boolean>(false);
   private padronSubscription: Subscription | null = null;

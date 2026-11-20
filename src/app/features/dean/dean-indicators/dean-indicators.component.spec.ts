@@ -103,6 +103,29 @@ describe('DeanIndicatorsComponent', () => {
     expect(component.anchoBarra(15.15)).toBe('15.15%');
   });
 
+  it('bloque E: la comparativa es una tabla con una fila por programa y la barra queda como celda', () => {
+    const el = fixture.nativeElement as HTMLElement;
+    const filas = el.querySelectorAll('app-tabla-datos tbody tr[data-testid="programa-ausentismo-fila"]');
+    expect(filas).toHaveSize(2);
+    expect(filas[0].querySelector('td [data-testid="barra-ausentismo"]')).not.toBeNull();
+    expect(el.querySelector('ul li [data-testid="barra-ausentismo"]')).toBeNull();
+  });
+
+  it('bloque E: la comparativa pagina en el cliente de 15 en 15', () => {
+    const base = component.service.comparativa()[0];
+    component.service.comparativa.set(Array.from({ length: 17 }, (_, i) => ({ ...base, idPrograma: `p-${i}`, nombrePrograma: `Programa ${i}` })));
+    fixture.detectChanges();
+    const filas = () => (fixture.nativeElement as HTMLElement).querySelectorAll('[data-testid="programa-ausentismo-fila"]');
+    expect(filas()).toHaveSize(15);
+    component.paginaComparativa.set(2);
+    fixture.detectChanges();
+    expect(filas()).toHaveSize(2);
+    component.cambiarTamanoComparativa(30);
+    fixture.detectChanges();
+    expect(component.paginaComparativa()).toBe(1);
+    expect(filas()).toHaveSize(17);
+  });
+
   it('T-FE-03 un programa sin datos muestra "Sin datos" y no un 0 inventado', () => {
     expect(texto()).toContain('Sin datos');
   });

@@ -20,7 +20,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
   host: { class: 'block w-full' },
   imports: [PageHeaderComponent, CommonModule, AcademicPeriodsTabComponent, ConfirmDialogComponent],
   template: `
-    <div class="space-y-6 animate-fade-in">
+    <div class="space-y-4 animate-fade-in">
       <app-page-header
         [enTarjeta]="true"
         etiqueta="Administración Institucional"

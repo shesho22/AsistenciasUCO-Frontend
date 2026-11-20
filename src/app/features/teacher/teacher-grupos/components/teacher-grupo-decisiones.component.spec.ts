@@ -80,6 +80,28 @@ describe('TeacherGrupoDecisionesComponent', () => {
     expect(texto).toContain('22.5');
   });
 
+  it('bloque E: las decisiones son filas de una tabla, la más reciente primero, paginadas de 15 en 15', () => {
+    const muchas = Array.from({ length: 17 }, (_, i) => ({
+      ...revision,
+      id: `rev-${i}`,
+      estudiante: { id: `e${i}`, nombreCompleto: `Estudiante ${i}` },
+      fechaCreacionUtc: `2026-11-${String(i + 1).padStart(2, '0')}T10:00:00Z`,
+    }));
+    servicio.consultarDocente.and.returnValue(of(pagina(muchas)));
+    crear();
+
+    const filas = () => el().querySelectorAll('app-tabla-datos tbody tr[data-testid="decision-fila"]');
+    expect(filas()).toHaveSize(15);
+    expect(filas()[0].textContent).toContain('Estudiante 16');
+    expect(filas()[0].querySelector('[data-testid="decision-decidir"]')).toBeTruthy();
+    expect(filas()[0].querySelector('[data-testid="decision-documento"]')?.textContent).toContain('1020304050');
+
+    (fixture.componentInstance as unknown as { pagina: { set(n: number): void } }).pagina.set(2);
+    fixture.detectChanges();
+    expect(filas()).toHaveSize(2);
+    expect(filas()[1].textContent).toContain('Estudiante 0');
+  });
+
   it('CIERRE-W3I el semáforo de la decisión es el nivel que clasifica el servidor (codigoPermanenciaActual)', () => {
     servicio.consultarDocente.and.returnValue(
       of(pagina([{ ...revision, id: 'r-rojo', codigoPermanenciaActual: 'PERDIDA' }, { ...revision, id: 'r-sin', codigoPermanenciaActual: null }]))

@@ -8,7 +8,7 @@ import { HorarioSemanalComponent } from '../../../shared/components/horario-sema
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [PageHeaderComponent, HorarioSemanalComponent],
   template: `
-    <div class="space-y-6 animate-fade-in">
+    <div class="space-y-4 animate-fade-in">
       <app-page-header
         [enTarjeta]="true"
         etiqueta="Carga Docente"

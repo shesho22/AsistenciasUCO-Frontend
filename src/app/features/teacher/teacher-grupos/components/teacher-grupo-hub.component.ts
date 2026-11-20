@@ -25,7 +25,7 @@ interface PestanaGrupo {
 
 const PESTANAS_GRUPO: readonly PestanaGrupo[] = [
   { id: 'SABANA', etiqueta: 'Planilla', testid: 'hub-tab-sabana' },
-  { id: 'RECLAMOS', etiqueta: 'Reclamos', testid: 'hub-tab-reclamos' },
+  { id: 'RECLAMOS', etiqueta: 'Justificaciones', testid: 'hub-tab-reclamos' },
   { id: 'ESTUDIANTES', etiqueta: 'Matrícula', testid: 'hub-tab-estudiantes' },
 ];
 
@@ -64,7 +64,7 @@ export function pestanaDeGrupo(valor: string | null | undefined): SubPestanaHub 
         </div>
 
         <!-- Ficha de Encabezado Bento del Grupo -->
-        <div class="superficie p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="superficie p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div class="space-y-1.5 min-w-0">
             <div class="flex flex-wrap items-center gap-2">
               @if (selectedCourse()?.code) {
@@ -210,12 +210,12 @@ export class TeacherGrupoHubComponent {
   /** Total de reclamos del grupo según el servidor; `reclamos` es solo la página vigente. */
   totalReclamos = input<number | null>(null);
   paginaReclamos = input<number>(1);
-  tamanoReclamos = input<number>(10);
+  tamanoReclamos = input<number>(15);
   /** Padrón de la pestaña Matrícula: página, total y filtros del servidor (el padrón completo sigue en `estudiantes` para la planilla). */
   padronPagina = input<EstudianteGrupoItem[]>([]);
   totalEstudiantes = input<number | null>(null);
   paginaPadron = input<number>(1);
-  tamanoPadron = input<number>(12);
+  tamanoPadron = input<number>(15);
   busquedaPadron = input<string>('');
   cargandoPadron = input<boolean>(false);
   estadoCargaReclamos = input<EstadoCargaReclamos>('IDLE');

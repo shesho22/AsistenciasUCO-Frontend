@@ -162,16 +162,16 @@ describe('DeanCoordinadoresComponent', () => {
     component.irAPagina(2);
     const pagina2 = http.expectOne(porUrl(`${environment.apiUrl}/decano/coordinadores`));
     expect(pagina2.request.params.get('pagina')).toBe('2');
-    expect(pagina2.request.params.get('tamano')).toBe('6');
+    expect(pagina2.request.params.get('tamano')).toBe('15');
     pagina2.flush(paginaApi([mockCoordinadores[0]], 2, 6, 250));
     expect(component.totalCoordinadores()).toBe(250);
 
-    component.onPageSizeChange(20);
+    component.onPageSizeChange(30);
     const tamano = http.expectOne(porUrl(`${environment.apiUrl}/decano/coordinadores`));
     expect(tamano.request.params.get('pagina')).toBe('1');
-    expect(tamano.request.params.get('tamano')).toBe('20');
-    tamano.flush(paginaApi(mockCoordinadores, 1, 20, 250));
-    expect(component.pageSize()).toBe(20);
+    expect(tamano.request.params.get('tamano')).toBe('30');
+    tamano.flush(paginaApi(mockCoordinadores, 1, 30, 250));
+    expect(component.pageSize()).toBe(30);
   });
 
   it('abrirFormularioRegistro cambia la vista a REGISTRO', () => {

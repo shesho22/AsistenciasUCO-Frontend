@@ -10,6 +10,12 @@ import { RolSinAmbito, rolSinAmbito } from '../../../core/api/errors/sin-ambito.
 import { SinEntidadAsignadaComponent } from '../../../shared/components/sin-entidad-asignada/sin-entidad-asignada.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
+import { BadgeComponent } from '../../../shared/components/badge/badge.component';
+import {
+  TablaDatosComponent,
+  TAMANO_PAGINA_TABLA,
+  paginarEnCliente,
+} from '../../../shared/components/tabla-datos/tabla-datos.component';
 
 /** Dimensiones del lienzo SVG (solo presentación; los valores a graficar los entrega el backend). */
 const ANCHO = 600;
@@ -20,10 +26,10 @@ const MARGEN_IZQ = 44;
 
 @Component({
     selector: 'app-admin-indicators',
-    imports: [PageHeaderComponent, CifraConBaseComponent, KpiCardComponent, HorasMinutosPipe, SinEntidadAsignadaComponent],
+    imports: [PageHeaderComponent, CifraConBaseComponent, KpiCardComponent, HorasMinutosPipe, SinEntidadAsignadaComponent, TablaDatosComponent, BadgeComponent],
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
-    <section class="space-y-6">
+    <section class="space-y-4">
       @if (sinAmbito(); as rol) {
         <app-sin-entidad-asignada [rol]="rol" />
       } @else {
@@ -57,20 +63,51 @@ const MARGEN_IZQ = 44;
         @if (service.comparativa().length === 0 && !cargando()) {
           <p class="py-6 text-center text-sm text-warm-600">No hay facultades en esta institución.</p>
         } @else {
-          <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-            @for (f of service.comparativa(); track f.idFacultad) {
-              <article class="rounded-xl border border-warm-200 p-4" data-testid="tarjeta-facultad">
-                <p class="font-medium">{{ f.nombreFacultad }}@if (!f.estaActivaFacultad) { <span class="ml-2 text-xs text-warm-600">Inactiva</span> }</p>
-                <p
-                  class="text-2xl font-semibold"
-                  data-testid="ausentismo-facultad"
-                  [attr.title]="(f.horasFalta | horasMinutos) + ' de falta sin justa causa sobre ' + (f.horasDictadas | horasMinutos) + ' dictadas (horas de clase por cada estudiante matriculado)'"
-                >{{ formatoPorcentaje(f.porcentajeAusentismo) }}</p>
-                <p class="text-xs text-warm-600">de las horas dictadas, sin justa causa</p>
-                <p class="text-xs text-warm-600">{{ f.totalEstudiantes }} estudiantes · {{ f.totalProgramas }} programas · retención {{ formatoPorcentaje(f.tasaRetencion) }}</p>
-              </article>
-            }
-          </div>
+          <p class="mb-2 text-xs text-warm-600">Ausentismo: porcentaje de las horas dictadas, sin justa causa.</p>
+          <app-tabla-datos
+            etiqueta="Ausentismo por facultad"
+            [columnas]="5"
+            anchoMinimo="40rem"
+            [cargando]="cargandoComparativa()"
+            [paginada]="true"
+            [totalItems]="service.comparativa().length"
+            [pagina]="paginaComparativa()"
+            [tamanoPagina]="tamanoComparativa()"
+            (paginaChange)="paginaComparativa.set($event)"
+            (tamanoPaginaChange)="cambiarTamanoComparativa($event)"
+          >
+            <thead>
+              <tr>
+                <th scope="col">Facultad</th>
+                <th scope="col" class="text-right">Ausentismo</th>
+                <th scope="col" class="text-right">Estudiantes</th>
+                <th scope="col" class="text-right">Programas</th>
+                <th scope="col" class="text-right">Retención</th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (!cargandoComparativa()) {
+                @for (f of comparativaPagina(); track f.idFacultad) {
+                  <tr data-testid="tarjeta-facultad">
+                    <td class="font-medium text-warm-900">
+                      {{ f.nombreFacultad }}
+                      @if (!f.estaActivaFacultad) {
+                        <app-badge class="ml-2" variant="neutral" size="sm" [dot]="false">Inactiva</app-badge>
+                      }
+                    </td>
+                    <td
+                      class="text-right font-semibold tabular-nums text-warm-900"
+                      data-testid="ausentismo-facultad"
+                      [attr.title]="(f.horasFalta | horasMinutos) + ' de falta sin justa causa sobre ' + (f.horasDictadas | horasMinutos) + ' dictadas (horas de clase por cada estudiante matriculado)'"
+                    >{{ formatoPorcentaje(f.porcentajeAusentismo) }}</td>
+                    <td class="text-right tabular-nums">{{ f.totalEstudiantes }}</td>
+                    <td class="text-right tabular-nums">{{ f.totalProgramas }}</td>
+                    <td class="text-right tabular-nums">{{ formatoPorcentaje(f.tasaRetencion) }}</td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </app-tabla-datos>
         }
       </div>
 
@@ -136,6 +173,13 @@ export class AdminIndicatorsComponent implements OnInit {
   private readonly pendientes = signal(0);
   readonly cargando = computed(() => this.pendientes() > 0);
   readonly granularidad = signal<GranularidadTendencia>('SEMANA');
+  /** Esqueleto de la tabla solo en la primera carga (no al recargar la tendencia). */
+  readonly cargandoComparativa = computed(() => this.cargando() && this.service.comparativa().length === 0);
+  readonly paginaComparativa = signal(1);
+  readonly tamanoComparativa = signal(TAMANO_PAGINA_TABLA);
+  readonly comparativaPagina = computed(() =>
+    paginarEnCliente(this.service.comparativa(), this.paginaComparativa(), this.tamanoComparativa()),
+  );
   /** Variacion (pp) del ausentismo por horas entre los dos ultimos intervalos con dato; sin periodo previo se oculta. */
   readonly variacionAusentismo = computed<number | null>(() => {
     const valores = this.service
@@ -157,7 +201,13 @@ export class AdminIndicatorsComponent implements OnInit {
   }
 
   actualizar(): void {
+    this.paginaComparativa.set(1);
     this.cargar();
+  }
+
+  cambiarTamanoComparativa(tamano: number): void {
+    this.tamanoComparativa.set(tamano);
+    this.paginaComparativa.set(1);
   }
 
   cambiarGranularidad(valor: GranularidadTendencia): void {

@@ -9,15 +9,15 @@ import { RouterOutlet } from '@angular/router';
     template: `
     <div class="min-h-dvh flex flex-col md:flex-row bg-warm-50">
       <!-- Left Panel: Branding & Aurora Graphic Banner (Desktop Only) -->
-      <div class="hidden lg:flex lg:w-5/12 bg-primary-950 p-12 flex-col justify-between relative overflow-hidden text-white">
+      <div class="foco-sobre-oscuro hidden lg:flex lg:w-5/12 bg-primary-950 p-12 flex-col justify-between relative overflow-hidden text-white">
         <!-- Ambient Radial Light -->
         <div class="absolute -top-32 -left-32 w-96 h-96 bg-primary-600/30 rounded-full blur-3xl"></div>
         <div class="absolute bottom-0 right-0 w-80 h-80 bg-accent-500/20 rounded-full blur-3xl"></div>
 
         <div class="relative z-10">
           <div class="flex items-center gap-3">
-            <img src="logo.svg" alt="Gestió Asistencia Logo" class="w-10 h-10 object-contain shrink-0 shadow-warm-sm rounded-xl" />
-            <span class="font-serif text-2xl font-bold tracking-tight text-white">Gestió Asistencia</span>
+            <img src="logo.svg" alt="Gestión Asistencia Logo" class="w-10 h-10 object-contain shrink-0 shadow-warm-sm rounded-xl" />
+            <span class="font-serif text-2xl font-bold tracking-tight text-white">Gestión Asistencia</span>
           </div>
         </div>
 
@@ -37,7 +37,7 @@ import { RouterOutlet } from '@angular/router';
         <!-- Mobile Header (Mobile Only) -->
         <div class="lg:hidden flex items-center gap-2.5 mb-6 sm:mb-8">
           <img src="logo.svg" alt="Logo" class="w-10 h-10 object-contain shrink-0 rounded-xl" />
-          <span class="font-serif text-2xl font-bold text-warm-900">Gestió Asistencia</span>
+          <span class="font-serif text-2xl font-bold text-warm-900">Gestión Asistencia</span>
         </div>
 
         <div class="w-full max-w-md">

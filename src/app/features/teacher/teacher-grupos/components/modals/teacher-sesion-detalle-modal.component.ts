@@ -1,14 +1,19 @@
-import { Component, ChangeDetectionStrategy, input, output, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, output, inject, computed, effect, signal, untracked } from '@angular/core';
 
 import { ModalComponent } from '../../../../../shared/components/modal/modal.component';
 import { ButtonComponent } from '../../../../../shared/components/button/button.component';
+import {
+  TablaDatosComponent,
+  TAMANO_PAGINA_TABLA,
+  paginarEnCliente,
+} from '../../../../../shared/components/tabla-datos/tabla-datos.component';
 import { ClassSession } from '../../../../../core/models/attendance.model';
 import { SessionTimeZoneService } from '../../../../../core/services/session-timezone.service';
 
 @Component({
     selector: 'app-teacher-sesion-detalle-modal',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [ModalComponent, ButtonComponent],
+    imports: [ModalComponent, ButtonComponent, TablaDatosComponent],
     template: `
     <app-modal
       [isOpen]="isOpen()"
@@ -43,28 +48,41 @@ import { SessionTimeZoneService } from '../../../../../core/services/session-tim
               </h5>
             </div>
 
-            @if ((sesion()?.records || []).length === 0) {
-              <p class="text-xs text-warm-500 text-center py-4 bg-warm-50/50 rounded-xl">
-                Sin registros individuales para esta sesión.
-              </p>
-            } @else {
-              <div class="max-h-56 overflow-y-auto space-y-1.5 border border-warm-200 rounded-xl p-2 bg-warm-50/30">
-                @for (rec of sesion()?.records || []; track rec.studentId) {
-                  <div class="flex items-center justify-between p-2 rounded-lg bg-white border border-warm-100 text-xs">
-                    <div>
-                      <p class="font-bold text-warm-900">{{ rec.studentName }}</p>
-                      <p class="text-[10px] text-warm-500 font-mono">{{ rec.studentCode }}</p>
-                    </div>
-                    <span
-                      class="px-2 py-0.5 font-bold rounded-full text-[10px]"
-                      [class]="statusBadgeClasses(rec.status)"
-                    >
-                      {{ statusLabel(rec.status) }}
-                    </span>
-                  </div>
+            <app-tabla-datos
+              etiqueta="Registro de asistencias de la sesión"
+              [columnas]="3"
+              anchoMinimo="24rem"
+              alturaMaxima="20rem"
+              [vacio]="registros().length === 0"
+              mensajeVacio="Sin registros individuales para esta sesión."
+              [paginada]="true"
+              [totalItems]="registros().length"
+              [pagina]="pagina()"
+              [tamanoPagina]="tamanoPagina()"
+              (paginaChange)="pagina.set($event)"
+              (tamanoPaginaChange)="cambiarTamano($event)"
+            >
+              <thead>
+                <tr>
+                  <th scope="col">Estudiante</th>
+                  <th scope="col">Código</th>
+                  <th scope="col">Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (rec of registrosPagina(); track rec.studentId) {
+                  <tr data-testid="sesion-detalle-registro">
+                    <td class="font-bold text-warm-900 text-xs">{{ rec.studentName }}</td>
+                    <td class="text-xs text-warm-500 font-mono whitespace-nowrap">{{ rec.studentCode }}</td>
+                    <td class="whitespace-nowrap">
+                      <span class="px-2 py-0.5 font-bold rounded-full text-[10px]" [class]="statusBadgeClasses(rec.status)">
+                        {{ statusLabel(rec.status) }}
+                      </span>
+                    </td>
+                  </tr>
                 }
-              </div>
-            }
+              </tbody>
+            </app-tabla-datos>
           </div>
         </div>
       }
@@ -82,6 +100,25 @@ export class TeacherSesionDetalleModalComponent {
   isOpen = input.required<boolean>();
   sesion = input<ClassSession | null>(null);
   closed = output<void>();
+
+  /** Registros de la sesión en tabla paginada en el cliente (15 por defecto, 15/30/50). */
+  readonly registros = computed(() => this.sesion()?.records ?? []);
+  readonly pagina = signal(1);
+  readonly tamanoPagina = signal(TAMANO_PAGINA_TABLA);
+  readonly registrosPagina = computed(() => paginarEnCliente(this.registros(), this.pagina(), this.tamanoPagina()));
+
+  constructor() {
+    // Otra sesión: se vuelve a la primera página.
+    effect(() => {
+      this.sesion();
+      untracked(() => this.pagina.set(1));
+    });
+  }
+
+  cambiarTamano(tamano: number): void {
+    this.tamanoPagina.set(tamano);
+    this.pagina.set(1);
+  }
 
   statusLabel(status: ClassSession['records'][number]['status']): string {
     switch (status) {

@@ -16,7 +16,7 @@ import { mensajeUi } from '../../../../core/messages/mensajes-ui';
     host: { class: 'block w-full' },
     imports: [SubjectFormComponent],
     template: `
-    <div class="space-y-6 animate-fade-in">
+    <div class="space-y-4 animate-fade-in">
       @if (selectedPlan(); as plan) {
         @if (modo() === 'CREAR' || selectedAsignatura()) {
           <app-subject-form

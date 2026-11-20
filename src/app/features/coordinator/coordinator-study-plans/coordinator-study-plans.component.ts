@@ -15,14 +15,14 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
     host: { class: 'block w-full' },
     imports: [PageHeaderComponent, StudyPlansListComponent],
     template: `
-    <div class="space-y-6 animate-fade-in">
+    <div class="space-y-4 animate-fade-in">
       <!-- Header Bento -->
       <app-page-header
         [enTarjeta]="true"
         etiqueta="Coordinación de Programa"
         contexto="Gestión Curricular"
-        titulo="Planes de Estudio y Mallas Curriculares"
-        descripcion="Administra planes de estudio, mallas por semestres y asignaturas de tu coordinación."
+        titulo="Planes de Estudio"
+        descripcion="Administra los planes de estudio de tu coordinación, sus semestres y asignaturas."
       >
         <div cabecera-acciones class="flex flex-wrap items-center gap-2.5">
           <button

@@ -36,7 +36,7 @@ const RUTA_POR_DEFECTO = '/app/admin/configuracion/parametros';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="superficie p-6" aria-labelledby="titulo-parametros">
+    <section class="superficie p-4" aria-labelledby="titulo-parametros">
       <div class="mb-5">
         <p class="text-xs font-bold uppercase tracking-wider text-primary-700">Catálogo de Parámetros</p>
         <h2 id="titulo-parametros" class="mt-1 text-xl font-bold text-warm-900">Administración de parámetros</h2>

@@ -1,9 +1,13 @@
 import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
-import { Component, ChangeDetectionStrategy, computed, input } from '@angular/core';
+import { Component, ChangeDetectionStrategy, computed, input, signal } from '@angular/core';
 
 import { RouterLink } from '@angular/router';
-import { CardComponent } from '../../../../shared/components/card/card.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
+import {
+  TablaDatosComponent,
+  TAMANO_PAGINA_TABLA,
+  paginarEnCliente,
+} from '../../../../shared/components/tabla-datos/tabla-datos.component';
 import { CoordinadorItem } from '../../../../core/models/role-management.model';
 import { KpisDecano } from '../../../../core/models/dean-indicators.model';
 import { EstadoIndicadores, textoCifra, textoPeriodo } from '../../../../core/utils/cifra-indicador';
@@ -11,12 +15,12 @@ import { EstadoIndicadores, textoCifra, textoPeriodo } from '../../../../core/ut
 @Component({
     selector: 'app-overview-dean',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [EmptyStateComponent, RouterLink, CardComponent, ButtonComponent],
+    imports: [EmptyStateComponent, RouterLink, ButtonComponent, TablaDatosComponent],
     host: {
         class: 'block w-full',
     },
     template: `
-    <div class="space-y-6">
+    <div class="space-y-4">
       <!-- KPIs Decano -->
       <section class="grid grid-cols-2 lg:grid-cols-4 gap-4" [attr.aria-busy]="estado() === 'cargando'">
         <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
@@ -53,45 +57,54 @@ import { EstadoIndicadores, textoCifra, textoPeriodo } from '../../../../core/ut
           </a>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          @for (coord of coordinadores(); track coord.id) {
-            <app-card [hoverable]="true" [title]="coord.programaAcademico" [subtitle]="coord.nombres + ' ' + coord.apellidos">
-              <div class="space-y-3 my-2 text-xs text-warm-700">
-                <div class="flex items-center gap-2">
-                  <svg class="w-4 h-4 text-primary-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                  <span class="font-medium text-warm-800">{{ coord.correo }}</span>
-                </div>
-                <div class="grid grid-cols-2 gap-2 pt-2 border-t border-warm-100">
-                  <div class="bg-warm-50 p-2 rounded-lg text-center">
-                    <span class="block text-warm-500 text-[10px]">Docentes</span>
-                    <span class="font-bold text-warm-900 text-sm">{{ coord.totalDocentes ?? '—' }}</span>
-                  </div>
-                  <div class="bg-warm-50 p-2 rounded-lg text-center">
-                    <span class="block text-warm-500 text-[10px]">Grupos</span>
-                    <span class="font-bold text-warm-900 text-sm">{{ coord.totalGrupos ?? '—' }}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div card-footer class="mt-4 pt-3 border-t border-warm-100 flex items-center justify-end">
-                <a routerLink="/app/decano/mi-facultad/coordinadores" class="w-full">
-                  <app-button variant="secondary" size="sm" [fullWidth]="true">
-                    Administrar Coordinación
-                  </app-button>
-                </a>
-              </div>
-            </app-card>
-          } @empty {
-            <div class="col-span-3">
-              <app-empty-state
-                title="No hay coordinadores asignados en esta facultad."
-                causa="Asigna un coordinador a cada programa desde la gestión de coordinadores."
-              />
-            </div>
-          }
-        </div>
+        @if (coordinadores().length === 0) {
+          <app-empty-state
+            title="No hay coordinadores asignados en esta facultad."
+            causa="Asigna un coordinador a cada programa desde la gestión de coordinadores."
+          />
+        } @else {
+          <app-tabla-datos
+            etiqueta="Programas académicos de la facultad"
+            [columnas]="6"
+            anchoMinimo="52rem"
+            [paginada]="true"
+            [totalItems]="coordinadores().length"
+            [pagina]="pagina()"
+            [tamanoPagina]="tamanoPagina()"
+            (paginaChange)="pagina.set($event)"
+            (tamanoPaginaChange)="cambiarTamano($event)"
+          >
+            <thead>
+              <tr>
+                <th scope="col">Programa</th>
+                <th scope="col">Coordinador(a)</th>
+                <th scope="col">Correo</th>
+                <th scope="col" class="text-right">Docentes</th>
+                <th scope="col" class="text-right">Grupos</th>
+                <th scope="col"><span class="sr-only">Acciones</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (coord of coordinadoresPagina(); track coord.id) {
+                <tr data-testid="programa-coordinador-fila">
+                  <td class="font-semibold text-warm-900">{{ coord.programaAcademico }}</td>
+                  <td>{{ coord.nombres + ' ' + coord.apellidos }}</td>
+                  <td class="text-warm-700">{{ coord.correo }}</td>
+                  <td class="text-right tabular-nums">{{ coord.totalDocentes ?? '—' }}</td>
+                  <td class="text-right tabular-nums">{{ coord.totalGrupos ?? '—' }}</td>
+                  <td class="text-right">
+                    <a
+                      routerLink="/app/decano/mi-facultad/coordinadores"
+                      class="inline-flex items-center rounded-xl border border-warm-200 bg-white px-3 py-1.5 text-xs font-semibold text-warm-800 hover:bg-warm-50 whitespace-nowrap"
+                    >
+                      Administrar Coordinación
+                    </a>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </app-tabla-datos>
+        }
       </section>
     </div>
   `
@@ -102,6 +115,15 @@ export class OverviewDeanComponent {
   /** CIERRE-W3I: indicadores de la facultad calculados en la base (GET /decano/indicadores). */
   kpis = input<KpisDecano | null>(null);
   estado = input<EstadoIndicadores>('cargando');
+
+  readonly pagina = signal(1);
+  readonly tamanoPagina = signal(TAMANO_PAGINA_TABLA);
+  readonly coordinadoresPagina = computed(() => paginarEnCliente(this.coordinadores(), this.pagina(), this.tamanoPagina()));
+
+  cambiarTamano(tamano: number): void {
+    this.tamanoPagina.set(tamano);
+    this.pagina.set(1);
+  }
 
   /**
    * F-DEC-01: "Sin período vigente" solo se afirma cuando el servidor respondió y no hay período; mientras carga o si falló

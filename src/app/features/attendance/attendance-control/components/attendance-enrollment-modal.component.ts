@@ -122,7 +122,7 @@ export interface MatriculaEstudianteSolicitud {
                 <span class="w-2 h-2 rounded-full bg-success-500 animate-pulse"></span>
                 Estudiante Institucional Detectado
               </span>
-              <span class="text-[11px] text-success-600 bg-success-100 px-2 py-0.5 rounded-md font-medium">UCO Activo</span>
+              <span class="text-[11px] text-success-700 bg-success-100 px-2 py-0.5 rounded-md font-medium">UCO Activo</span>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 text-xs text-warm-800">

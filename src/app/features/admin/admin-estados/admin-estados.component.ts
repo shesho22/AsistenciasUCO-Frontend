@@ -22,7 +22,7 @@ export function filasDe(estados: EstadoSistemaItem[], catalogo: EstadoSistemaIte
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [CatalogoSoloConsultaComponent],
     template: `
-    <div class="space-y-8 animate-fade-in">
+    <div class="space-y-5 animate-fade-in">
       <div>
         <div class="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1">Administración Institucional</div>
         <h2 class="text-2xl font-bold font-serif text-warm-900">Estados del Sistema</h2>

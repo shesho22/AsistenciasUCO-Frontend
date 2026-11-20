@@ -70,7 +70,7 @@ import { OverviewStudentComponent } from './components/overview-student.componen
     OverviewStudentComponent,
   ],
   template: `
-    <div class="flex flex-col gap-6 animate-fade-in">
+    <div class="flex flex-col gap-4 animate-fade-in">
       <!-- 1. Hero Banner Adaptativo -->
       <app-overview-hero
         [userRole]="userRole()"

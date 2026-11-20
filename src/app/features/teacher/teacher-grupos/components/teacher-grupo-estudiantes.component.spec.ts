@@ -79,11 +79,29 @@ describe('TeacherGrupoEstudiantesComponent', () => {
   });
 
   it('muestra estado cargando cuando cargando es true', () => {
+    fixture.componentRef.setInput('estudiantes', mockEstudiantes);
     fixture.componentRef.setInput('cargando', true);
     fixture.detectChanges();
 
     const text = fixture.nativeElement.textContent;
     expect(text).not.toContain('No hay estudiantes');
+    expect(fixture.nativeElement.querySelectorAll('[data-testid="padron-fila"]')).toHaveSize(0);
+    expect(fixture.nativeElement.querySelector('[data-testid="tabla-datos-esqueleto"]')).toBeTruthy();
+  });
+
+  it('bloque E: el padrón es una tabla con una fila por estudiante (nombre, documento, estado, acción)', () => {
+    fixture.componentRef.setInput('estudiantes', [
+      { id: 'm-1', idEstudiante: 'est-1', nombreCompleto: 'Ana Gómez', documento: '1017001', codigoEstado: 'A', nombreEstado: 'activo' },
+      { id: 'm-2', idEstudiante: 'est-2', nombreCompleto: 'Luis Ruiz', documento: '1017003', codigoEstado: 'I', nombreEstado: 'inactivo' },
+    ]);
+    fixture.detectChanges();
+
+    const filas = fixture.nativeElement.querySelectorAll('app-tabla-datos tbody tr[data-testid="padron-fila"]') as NodeListOf<HTMLTableRowElement>;
+    expect(filas).toHaveSize(2);
+    const celdas = Array.from(filas[0].cells).map((c) => c.textContent?.trim());
+    expect(celdas.slice(0, 3)).toEqual(['Ana Gómez', '1017001', 'Activo']);
+    expect(filas[0].querySelector('button[data-accion="retirar"]')).toBeTruthy();
+    expect(filas[1].querySelector('button[data-accion="retirar"]')).toBeNull();
   });
 
   // CIERRE-W1A: la página, el total y la búsqueda las entrega el servidor; el componente no recorta ni filtra el padrón.
@@ -98,7 +116,7 @@ describe('TeacherGrupoEstudiantesComponent', () => {
     const paginador = fixture.debugElement.query(By.directive(PaginationComponent)).componentInstance as PaginationComponent;
     expect(paginador.totalItems()).toBe(30);
     expect(paginador.currentPage()).toBe(2);
-    expect(paginador.pageSize()).toBe(12);
+    expect(paginador.pageSize()).toBe(15);
     expect(fixture.nativeElement.textContent).toContain('30 de');
   });
 

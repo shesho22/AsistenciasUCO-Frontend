@@ -21,7 +21,7 @@ const ETIQUETA_ROL: Record<RolVinculo, string> = {
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [BadgeComponent],
     template: `
-    <div class="superficie p-6 sm:p-7 space-y-4" data-testid="perfil-institucional">
+    <div class="superficie p-4 sm:p-7 space-y-4" data-testid="perfil-institucional">
       <div class="border-b border-warm-100 pb-3">
         <h3 class="font-serif font-bold text-lg text-warm-900">Expediente y vínculos institucionales</h3>
         <p class="text-xs text-warm-500">Información registrada en el sistema académico (solo lectura).</p>

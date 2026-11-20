@@ -47,7 +47,7 @@ interface OpcionFacultad {
     FiltrosPlegablesComponent
 ],
     template: `
-    <div class="space-y-6 animate-fade-in">
+    <div class="space-y-4 animate-fade-in">
       <app-page-header
         [enTarjeta]="true"
         etiqueta="Administración"
@@ -67,7 +67,7 @@ interface OpcionFacultad {
         </div>
       </app-page-header>
 
-      <section class="superficie p-6 space-y-4">
+      <section class="superficie p-4 space-y-4">
         <app-filtros-plegables [activos]="filtrosActivos()">
           <div buscar class="flex gap-2">
             <input

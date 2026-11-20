@@ -14,7 +14,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
     host: { class: 'block w-full' },
     imports: [PageHeaderComponent, AcademicPeriodsTabComponent],
     template: `
-    <div class="space-y-6 animate-fade-in">
+    <div class="space-y-4 animate-fade-in">
       <!-- Header Bento -->
       <app-page-header
         [enTarjeta]="true"

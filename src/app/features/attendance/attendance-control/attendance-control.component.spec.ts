@@ -628,7 +628,7 @@ describe('AttendanceControlComponent contract corrections', () => {
 
       component.abrirReclamosGrupo();
 
-      expect(attendanceClaimService.getReclamosDocentePorGrupo).toHaveBeenCalledWith(GROUP_A, { pagina: 1, tamano: 10 });
+      expect(attendanceClaimService.getReclamosDocentePorGrupo).toHaveBeenCalledWith(GROUP_A, { pagina: 1, tamano: 15 });
       expect(attendanceClaimService.getReclamosDocentePorGrupo).toHaveBeenCalledWith(GROUP_A, { pagina: 1, tamano: 1, estado: 'P' });
       expect(component.reclamosGrupo().map((item) => item.id)).toEqual(['a-1', 'a-2']);
       expect(component.totalReclamosGrupo()).toBe(12);
@@ -646,15 +646,15 @@ describe('AttendanceControlComponent contract corrections', () => {
       component.cambiarPaginaReclamos(3);
 
       expect(component.paginaReclamosGrupo()).toBe(3);
-      expect(attendanceClaimService.getReclamosDocentePorGrupo).toHaveBeenCalledWith(GROUP_A, { pagina: 3, tamano: 10 });
+      expect(attendanceClaimService.getReclamosDocentePorGrupo).toHaveBeenCalledWith(GROUP_A, { pagina: 3, tamano: 15 });
     });
 
     it('si la página pedida quedó fuera de rango (se resolvieron reclamos), retrocede a la última página', () => {
       const component = createComponent([activeStudent], []);
       attendanceClaimService.getReclamosDocentePorGrupo.and.callFake((_grupo, paginacion) =>
         paginacion.pagina === 3
-          ? of({ exitoso: true, datos: [], total: 12 })
-          : of({ exitoso: true, datos: [claim('a-9')], total: 12 })
+          ? of({ exitoso: true, datos: [], total: 20 })
+          : of({ exitoso: true, datos: [claim('a-9')], total: 20 })
       );
       component.selectedCourseId.set(GROUP_A);
       component.abrirReclamosGrupo();

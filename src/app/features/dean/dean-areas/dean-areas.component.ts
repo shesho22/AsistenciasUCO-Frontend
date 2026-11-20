@@ -4,14 +4,19 @@ import { FormsModule } from '@angular/forms';
 import { AdminManagementService } from '../../../core/services/admin-management.service';
 import { BadgeComponent } from '../../../shared/components/badge/badge.component';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
+import {
+  TablaDatosComponent,
+  TAMANO_PAGINA_TABLA,
+  paginarEnCliente,
+} from '../../../shared/components/tabla-datos/tabla-datos.component';
 
 @Component({
     selector: 'app-dean-areas',
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: { class: 'block w-full' },
-    imports: [PageHeaderComponent, FormsModule, BadgeComponent],
+    imports: [PageHeaderComponent, FormsModule, BadgeComponent, TablaDatosComponent],
     template: `
-    <div class="space-y-6 animate-fade-in">
+    <div class="space-y-4 animate-fade-in">
       <!-- Header Bento -->
       <app-page-header
         [enTarjeta]="true"
@@ -55,7 +60,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
         <input aria-label="Buscar área de conocimiento"
           type="text"
           [ngModel]="filtroTexto()"
-          (ngModelChange)="filtroTexto.set($event)"
+          (ngModelChange)="filtroTexto.set($event); pagina.set(1)"
           placeholder="Filtrar áreas por nombre o código..."
           class="w-full pl-10 pr-4 py-2.5 bg-white border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
         />
@@ -71,26 +76,41 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
           <div class="bg-white rounded-2xl border border-danger-200 p-8 text-center shadow-warm-sm" role="alert">
             <p class="text-sm text-danger-700">No fue posible cargar las áreas de conocimiento.</p>
           </div>
-        } @else if (areasFiltradas().length === 0) {
-          <div class="superficie p-8 text-center">
-            <p class="text-sm text-warm-500">No se encontraron áreas de conocimiento.</p>
-          </div>
         } @else {
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            @for (a of areasFiltradas(); track a.id) {
-              <div class="bg-white p-4 rounded-xl border border-warm-200 shadow-warm-sm space-y-2 flex flex-col justify-between h-full">
-                <div class="flex items-center justify-between">
-                  <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-warm-100 text-warm-700 w-fit">
-                    {{ a.codigo }}
-                  </span>
-                  <app-badge [variant]="a.activa ? 'success' : 'neutral'" size="sm">
-                    {{ a.activa ? 'ACTIVO' : 'INACTIVO' }}
-                  </app-badge>
-                </div>
-                <h3 class="font-bold text-sm text-warm-900">{{ a.nombre }}</h3>
-              </div>
-            }
-          </div>
+          <app-tabla-datos
+            etiqueta="Áreas de conocimiento"
+            [columnas]="3"
+            anchoMinimo="36rem"
+            [vacio]="areasFiltradas().length === 0"
+            mensajeVacio="No se encontraron áreas de conocimiento."
+            [paginada]="true"
+            [totalItems]="areasFiltradas().length"
+            [pagina]="pagina()"
+            [tamanoPagina]="tamanoPagina()"
+            (paginaChange)="pagina.set($event)"
+            (tamanoPaginaChange)="cambiarTamano($event)"
+          >
+            <thead>
+              <tr>
+                <th scope="col">Código</th>
+                <th scope="col">Nombre</th>
+                <th scope="col">Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (a of areasPagina(); track a.id) {
+                <tr data-testid="area-fila">
+                  <td class="font-mono text-xs font-bold text-warm-700 whitespace-nowrap">{{ a.codigo }}</td>
+                  <td class="font-semibold text-warm-900">{{ a.nombre }}</td>
+                  <td>
+                    <app-badge [variant]="a.activa ? 'success' : 'neutral'" size="sm">
+                      {{ a.activa ? 'ACTIVO' : 'INACTIVO' }}
+                    </app-badge>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </app-tabla-datos>
         }
       </div>
 
@@ -119,6 +139,15 @@ export class DeanAreasComponent implements OnInit {
         a.nombre.toLowerCase().includes(q)
     );
   });
+
+  pagina = signal(1);
+  tamanoPagina = signal(TAMANO_PAGINA_TABLA);
+  areasPagina = computed(() => paginarEnCliente(this.areasFiltradas(), this.pagina(), this.tamanoPagina()));
+
+  cambiarTamano(tamano: number): void {
+    this.tamanoPagina.set(tamano);
+    this.pagina.set(1);
+  }
 
   ngOnInit(): void {
     this.adminService.cargarAreas().subscribe({ error: () => this.errorAreas.set(true) });

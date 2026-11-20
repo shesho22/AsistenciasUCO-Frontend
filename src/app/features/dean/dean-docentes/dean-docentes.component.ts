@@ -36,7 +36,7 @@ interface OpcionFacultad {
     host: { class: 'block w-full' },
     imports: [PageHeaderComponent, CommonModule, FormsModule, BadgeComponent, PaginationComponent, ErrorCargaComponent],
     template: `
-    <div class="space-y-6 animate-fade-in">
+    <div class="space-y-4 animate-fade-in">
       <app-page-header
         [enTarjeta]="true"
         [etiqueta]="comoAdministrador ? 'Administración' : 'Decanatura'"
@@ -49,7 +49,7 @@ interface OpcionFacultad {
         <span cabecera-acciones class="px-3.5 py-2 rounded-xl bg-warm-100 text-xs font-bold text-warm-800 border border-warm-200">{{ listado.total() }} Docentes</span>
       </app-page-header>
 
-      <section class="superficie p-6 space-y-4">
+      <section class="superficie p-4 space-y-4">
         <div class="grid grid-cols-1 gap-3" [ngClass]="comoAdministrador ? 'sm:grid-cols-6' : 'sm:grid-cols-4'">
           <input
             type="text"

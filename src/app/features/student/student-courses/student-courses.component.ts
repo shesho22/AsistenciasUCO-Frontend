@@ -42,6 +42,7 @@ import { StudentClaimFormComponent } from './components/student-claim-form.compo
 import { StudentMatriculaCodigoModalComponent } from './components/modals/student-matricula-codigo-modal.component';
 import { StudentAsistenciaPinModalComponent } from './components/modals/student-asistencia-pin-modal.component';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
+import { TAMANO_PAGINA_TABLA } from '../../../shared/components/tabla-datos/tabla-datos.component';
 
 type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO';
 
@@ -56,7 +57,7 @@ type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO';
     StudentAsistenciaPinModalComponent,
 ],
     template: `
-    <div class="space-y-6 animate-fade-in">
+    <div class="space-y-4 animate-fade-in">
       <!-- 1. Vista: Lista Principal de Materias -->
       @if (vistaActual() === 'LISTA') {
         <app-student-courses-list
@@ -92,7 +93,7 @@ type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO';
             (withdrawClaim)="retirarReclamo($event)"
           />
         } @loading {
-          <div class="superficie p-6 text-sm text-warm-600" role="status" aria-live="polite">
+          <div class="superficie p-4 text-sm text-warm-600" role="status" aria-live="polite">
             Abriendo el detalle de la materia…
           </div>
         }
@@ -121,7 +122,7 @@ type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO';
             (submitted)="enviarReclamo($event)"
           />
         } @loading {
-          <div class="superficie p-6 text-sm text-warm-600" role="status" aria-live="polite">
+          <div class="superficie p-4 text-sm text-warm-600" role="status" aria-live="polite">
             Abriendo el formulario de reclamo…
           </div>
         }
@@ -198,7 +199,8 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
   /** Total de sesiones del grupo seleccionado (del backend, no el de la pagina). */
   totalSesiones = signal<number>(0);
   paginaSesiones = signal<number>(1);
-  tamanoSesiones = signal<number>(10);
+  /** Bloque E: la tabla de sesiones arranca en 15 por pagina (15/30/50; el backend admite hasta 100). */
+  tamanoSesiones = signal<number>(TAMANO_PAGINA_TABLA);
   loadingSesiones = signal<boolean>(false);
   sesionesError = signal<LoadErrorState | null>(null);
 
@@ -232,7 +234,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
   /** Con el detalle de una materia abierto, se recargan sus sesiones para ver la toma ya registrada. */
   alRegistrarAsistenciaConPin(): void {
     const materia = this.selectedMateria();
-    if (materia && this.vistaActual() === 'DETALLE') this.cargarSesiones(materia);
+    if (materia && this.vistaActual() === 'DETALLE') this.recargarSesionesFrescas(materia);
   }
 
   ngOnInit(): void {
@@ -353,17 +355,17 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
     this.realtime.startForGroup(grupoId);
 
     const sub = new Subscription();
-    sub.add(onRealtimeReconnect(this.realtime.connectionState$).subscribe(() => this.cargarSesiones(materia)));
+    sub.add(onRealtimeReconnect(this.realtime.connectionState$).subscribe(() => this.recargarSesionesFrescas(materia)));
     sub.add(
       this.realtime.events().subscribe((evt: RealtimeEvent) => {
         if (evt.type === REALTIME_EVENT_TYPE.SESION_MANUAL_CREADA) {
           const payload = evt.payload as SesionManualCreadaRealtimePayload;
           if (payload?.grupo !== grupoId) return;
           this.toast.info(mensajeSesionManualCreada(payload, this.sessionTimeZone.formatTemporal(payload.fechaHoraInicio)));
-          this.cargarSesiones(materia);
+          this.recargarSesionesFrescas(materia);
         } else if (evt.type === REALTIME_EVENT_TYPE.SESION_CANCELADA) {
           const payload = evt.payload as SesionCanceladaRealtimePayload;
-          if (payload?.grupo === grupoId) this.cargarSesiones(materia);
+          if (payload?.grupo === grupoId) this.recargarSesionesFrescas(materia);
         }
       })
     );
@@ -560,7 +562,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
       next: (res) => {
         if (res.exitoso) {
           this.toast.success(getApiSuccessMessage(res, mensajeUi('UI_STUDENT_CLAIMS_002')));
-          this.cargarSesiones(materia);
+          this.recargarSesionesFrescas(materia);
         }
       },
       error: (err) => this.toast.error(getApiErrorMessage(err)),
@@ -573,6 +575,15 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
    * guarda en `sesionesError`. Si la pagina pedida quedo fuera de rango (p. ej. se cancelo una sesion), se vuelve a pedir la
    * ultima pagina que existe.
    */
+  /**
+   * PERF-EST-MM: tras un cambio conocido (evento en vivo, reconexión, reclamo radicado o retirado, asistencia con PIN) la
+   * página guardada en caché ya no sirve: se descarta antes de recargar para no mostrar un instante el dato viejo.
+   */
+  private recargarSesionesFrescas(materia: MateriaEstudianteItem): void {
+    this.claimService.invalidarSesionesMateria(materia.id);
+    this.cargarSesiones(materia);
+  }
+
   cargarSesiones(materia: MateriaEstudianteItem): void {
     this.sesionesError.set(null);
     if (!isUuid(materia.id)) {
@@ -645,9 +656,10 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
     this.reintentarSesiones();
   }
 
+  /** Reintento manual o aviso del detalle (asistencia actualizada, revisión resuelta, alerta): siempre con datos frescos. */
   reintentarSesiones(): void {
     const materia = this.selectedMateria();
-    if (materia) this.cargarSesiones(materia);
+    if (materia) this.recargarSesionesFrescas(materia);
   }
 
   enviarReclamo(event: { categoria: CategoriaJustificacion; justificacion: string }): void {
@@ -719,13 +731,13 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
             this.intentoRadicacion.reiniciar();
             this.toast.success(getApiSuccessMessage(res, mensajeUi('UI_STUDENT_COURSES_002')));
             this.volverADetalle();
-            this.cargarSesiones(materia);
+            this.recargarSesionesFrescas(materia);
           }
         },
         error: (err) => {
           if (this.resultadoIncierto(err)) {
             // El servidor pudo haber persistido la solicitud: se refresca el estado real y el reintento conserva la correlacion.
-            this.cargarSesiones(materia);
+            this.recargarSesionesFrescas(materia);
           }
           if ((err as { status?: number })?.status === 404 && this.archivoAdjunto()) {
             // El soporte ya no esta disponible para radicar (inexistente, ajeno o ya usado): hay que volver a adjuntarlo.
@@ -738,7 +750,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
           if (codigo === 'ERR_TOMA_NO_RECLAMABLE' || codigo === 'ERR_RECLAMO_TOMA_DUPLICADO') {
             // La toma cambió o ya tiene reclamo: se muestra el mensaje del backend y se refresca el estado real.
             this.errorEnvio.set(getApiErrorMessage(err));
-            this.cargarSesiones(materia);
+            this.recargarSesionesFrescas(materia);
             return;
           }
           if (codigo === 'ERR_PLAZO_JUSTIFICACION_VENCIDO') {
@@ -788,6 +800,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
         this.procesandoMatriculaGrupo.set(false);
         this.toast.success(getApiSuccessMessage(resultado, mensajeUi('UI_STUDENT_COURSES_005')));
         this.cerrarModalMatriculaGrupo();
+        this.studentService.invalidarCacheMaterias();
         this.cargarMaterias();
       },
       error: (err) => {

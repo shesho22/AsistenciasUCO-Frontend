@@ -2,13 +2,13 @@ import { Component, ChangeDetectionStrategy, OnDestroy, input, output } from '@a
 import { Subject, Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
 
 import { Course } from '../../../../core/models/course.model';
-import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
+import { TablaDatosComponent } from '../../../../shared/components/tabla-datos/tabla-datos.component';
 import { EstudianteGrupoItem } from '../../../../core/models/estudiante-grupo-item.model';
 
 @Component({
     selector: 'app-teacher-grupo-estudiantes',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [PaginationComponent],
+    imports: [TablaDatosComponent],
     template: `
     <div class="bg-white rounded-b-2xl border-x border-b border-warm-200 shadow-warm-sm p-6 space-y-5">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-warm-100">
@@ -31,63 +31,70 @@ import { EstudianteGrupoItem } from '../../../../core/models/estudiante-grupo-it
         class="w-full px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-900 placeholder-warm-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
       />
 
-      @if (cargando()) {
-        <div class="p-6 space-y-3">
-          @for (n of [1, 2, 3]; track n) {
-            <div class="h-12 bg-warm-100 rounded-xl animate-pulse"></div>
-          }
-        </div>
-      } @else if (estudiantes().length === 0) {
-        <div class="p-12 text-center text-warm-400">
-          <p class="text-sm">
-            @if (busqueda().trim()) {
-              Ningún estudiante del grupo coincide con la búsqueda.
-            } @else {
-              No hay estudiantes matriculados en este grupo actualmente.
-            }
-          </p>
-        </div>
-      } @else {
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-          @for (est of estudiantes(); track est.idEstudiante || est.studentId || est.id) {
-            <div data-testid="padron-fila" class="p-3.5 rounded-xl bg-warm-50 border border-warm-200 flex items-center justify-between gap-3">
-              <div class="min-w-0">
-                <p class="font-bold text-xs text-warm-900 truncate">
+      <app-tabla-datos
+        etiqueta="Padrón de estudiantes matriculados"
+        [columnas]="4"
+        anchoMinimo="40rem"
+        [filasEsqueleto]="5"
+        [cargando]="cargando()"
+        [vacio]="estudiantes().length === 0"
+        [mensajeVacio]="
+          busqueda().trim()
+            ? 'Ningún estudiante del grupo coincide con la búsqueda.'
+            : 'No hay estudiantes matriculados en este grupo actualmente.'
+        "
+        [paginada]="true"
+        [totalItems]="totalEstudiantes() ?? estudiantes().length"
+        [pagina]="pagina()"
+        [tamanoPagina]="tamano()"
+        [tamanosPagina]="tamanosPagina"
+        (paginaChange)="paginaChange.emit($event)"
+        (tamanoPaginaChange)="tamanoChange.emit($event)"
+      >
+        <thead>
+          <tr>
+            <th scope="col">Estudiante</th>
+            <th scope="col">Documento</th>
+            <th scope="col">Estado</th>
+            <th scope="col" class="text-right"><span class="sr-only">Acciones</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (!cargando()) {
+            @for (est of estudiantes(); track est.idEstudiante || est.studentId || est.id) {
+              <tr data-testid="padron-fila">
+                <td class="font-semibold text-warm-900">
                   {{ est.nombreCompleto || est.studentName || est.nombres + ' ' + est.apellidos }}
-                </p>
-                <p class="text-xs font-mono text-warm-500">
-                  Doc / ID: {{ est.documento || est.studentCode || est.numeroIdentificacion || 'N/A' }}
-                </p>
-              </div>
-              <div class="flex flex-col items-end gap-1.5 shrink-0">
-                @if (esActivo(est)) {
-                  <span class="px-2 py-0.5 text-xs font-bold rounded-full bg-success-100 text-success-800">Activo</span>
-                  <button
-                    type="button"
-                    data-accion="retirar"
-                    (click)="retirar.emit(est)"
-                    class="px-3 py-2 min-h-[44px] text-xs font-semibold rounded-lg text-danger-700 bg-danger-50 hover:bg-danger-100 border border-danger-200"
-                  >
-                    Retirar
-                  </button>
-                } @else {
-                  <span class="px-2 py-0.5 text-xs font-bold rounded-full bg-warm-200 text-warm-700">
-                    {{ est.nombreEstado || 'Inactivo' }}
-                  </span>
-                }
-              </div>
-            </div>
+                </td>
+                <td class="font-mono text-xs text-warm-600 whitespace-nowrap">
+                  {{ est.documento || est.studentCode || est.numeroIdentificacion || 'N/A' }}
+                </td>
+                <td>
+                  @if (esActivo(est)) {
+                    <span class="px-2 py-0.5 text-xs font-bold rounded-full bg-success-100 text-success-800">Activo</span>
+                  } @else {
+                    <span class="px-2 py-0.5 text-xs font-bold rounded-full bg-warm-200 text-warm-700">
+                      {{ est.nombreEstado || 'Inactivo' }}
+                    </span>
+                  }
+                </td>
+                <td class="text-right">
+                  @if (esActivo(est)) {
+                    <button
+                      type="button"
+                      data-accion="retirar"
+                      (click)="retirar.emit(est)"
+                      class="px-3 py-1.5 text-xs font-semibold rounded-lg text-danger-700 bg-danger-50 hover:bg-danger-100 border border-danger-200"
+                    >
+                      Retirar
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
           }
-        </div>
-        <app-pagination
-          [totalItems]="totalEstudiantes() ?? estudiantes().length"
-          [pageSize]="tamano()"
-          [currentPage]="pagina()"
-          [pageSizeOptions]="[12, 24, 48]"
-          (pageChange)="paginaChange.emit($event)"
-          (pageSizeChange)="tamanoChange.emit($event)"
-        />
-      }
+        </tbody>
+      </app-tabla-datos>
     </div>
   `
 })
@@ -97,10 +104,16 @@ export class TeacherGrupoEstudiantesComponent implements OnDestroy {
   /** Total de matrículas que cumplen la búsqueda según el servidor; sin él se usa la longitud de `estudiantes`. */
   totalEstudiantes = input<number | null>(null);
   pagina = input<number>(1);
-  tamano = input<number>(12);
+  tamano = input<number>(15);
   busqueda = input<string>('');
   cargando = input<boolean>(false);
   curso = input<Course | null>(null);
+
+  /**
+   * Tamaños de página del padrón. El tamaño inicial (15) lo fija el padre y lo pide al servidor, así que el selector
+   * conserva los múltiplos de 12 para que el valor vigente siempre sea una de las opciones.
+   */
+  readonly tamanosPagina = [15, 30, 50];
 
   readonly paginaChange = output<number>();
   readonly tamanoChange = output<number>();

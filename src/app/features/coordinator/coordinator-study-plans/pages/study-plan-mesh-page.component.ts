@@ -6,6 +6,7 @@ import { PlanEstudioItem, AsignaturaPlanItem, CaracterAsignatura } from '../../.
 import { ToastService } from '../../../../shared/components/toast/toast.component';
 import { getApiErrorMessage } from '../../../../core/api/errors/api-error.util';
 import { ListadoPaginado } from '../../../../shared/utils/listado-paginado';
+import { TAMANO_PAGINA_TABLA } from '../../../../shared/components/tabla-datos/tabla-datos.component';
 import { FiltrosMalla, StudyPlanMeshComponent } from '../components/study-plan-mesh.component';
 import { ConfirmDialogComponent } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { AssociateSubjectDialogComponent } from '../components/associate-subject-dialog.component';
@@ -20,7 +21,7 @@ const MAX_SEMESTRES = 10;
     host: { class: 'block w-full' },
     imports: [StudyPlanMeshComponent, AssociateSubjectDialogComponent, ConfirmDialogComponent],
     template: `
-    <div class="space-y-6 animate-fade-in">
+    <div class="space-y-4 animate-fade-in">
       @if (aviso(); as mensaje) {
         <div
           role="alert"
@@ -42,6 +43,7 @@ const MAX_SEMESTRES = 10;
           [error]="listado.error()"
           (filtrosChange)="alCambiarFiltros($event)"
           (pageChange)="listado.irAPagina($event)"
+          (pageSizeChange)="listado.cambiarTamano($event)"
           (reintentar)="listado.reintentar()"
           (back)="volver()"
           (addSemester)="agregarSemestre()"
@@ -86,7 +88,7 @@ const MAX_SEMESTRES = 10;
         }
       } @else {
         <div class="superficie p-12 text-center space-y-3">
-          <p class="text-sm text-warm-500">Cargando malla curricular del plan de estudio...</p>
+          <p class="text-sm text-warm-500">Cargando el plan de estudio...</p>
           <button
             type="button"
             (click)="volver()"
@@ -176,7 +178,7 @@ export class CoordinatorStudyPlanMeshPageComponent implements OnInit {
 
   ngOnInit(): void {
     const id = this.effectivePlanId();
-    this.listado.tamano.set(9);
+    this.listado.tamano.set(TAMANO_PAGINA_TABLA);
     // Siempre se recarga del servidor: la copia en memoria puede tener un total de semestres desactualizado.
     this.recargarPlanes();
     this.coordService.getCaracteresAsignatura().subscribe({

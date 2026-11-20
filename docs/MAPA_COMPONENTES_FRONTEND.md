@@ -180,6 +180,7 @@ Aplicado en Admin (`a3bbebc`), Decano y Coordinador (`UX-006`). Usarlo cuando un
 | `CorreccionIdentidadModalComponent` | `app-correccion-identidad-modal` | HU159: corrección de nombres, apellidos y documento con motivo obligatorio (estudiante desde la ficha del coordinador, decano desde Decanos del administrador). |
 | `AvatarComponent` | `app-avatar` | Avatar de usuario con iniciales o fotografía y anillos de color por rol. |
 | `PaginationComponent` | `app-pagination` | Controles de paginación para consultas con `ApiPageResponse<T>`. |
+| `TablaDatosComponent` | `app-tabla-datos` | Tabla de listados: cabecera fija, ancho mínimo con desplazamiento horizontal, esqueleto que conserva la altura, mensaje de vacío y paginación 15/30/50 (`paginarEnCliente` para listas en memoria). |
 | `ToastComponent` | `app-toast` | Notificaciones flotantes reactivas. |
 | `SkeletonComponent` | `app-skeleton` | Efectos shimmer para estados de carga (`isLoading`). |
 | `EmptyStateComponent` | `app-empty-state` | Ilustración y mensaje cuando una lista o consulta no arroja datos. |

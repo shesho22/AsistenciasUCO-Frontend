@@ -675,7 +675,7 @@ export const MOCK_PLANES_ESTUDIO: PlanEstudioItem[] = [
   {
     id: 'PLAN-SIS-2024',
     codigo: 'P-SIS-24',
-    nombre: 'Plan de Estudios 2024 — Malla Curricular por Competencias',
+    nombre: 'Plan de Estudios 2024 — Por Competencias',
     anioVigencia: 2024,
     programa: 'Ingeniería de Sistemas',
     facultad: 'Facultad de Ingeniería',
@@ -683,7 +683,7 @@ export const MOCK_PLANES_ESTUDIO: PlanEstudioItem[] = [
     totalSemestres: 10,
     totalAsignaturas: 54,
     estado: 'VIGENTE',
-    descripcion: 'Malla curricular orientada al desarrollo de software empresarial, arquitectura cloud, IA y ciberseguridad.',
+    descripcion: 'Plan de estudio orientado al desarrollo de software empresarial, arquitectura cloud, IA y ciberseguridad.',
   },
   {
     id: 'PLAN-SIS-2020',

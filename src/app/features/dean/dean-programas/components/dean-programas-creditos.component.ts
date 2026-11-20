@@ -21,7 +21,7 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [FormsModule, BadgeComponent, ErrorCargaComponent, PaginationComponent],
     template: `
-    <section class="superficie p-6 space-y-4" aria-label="Programas y créditos">
+    <section class="superficie p-4 space-y-4" aria-label="Programas y créditos">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h2 class="font-serif font-bold text-lg text-warm-900">Programas y Créditos</h2>

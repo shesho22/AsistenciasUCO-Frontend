@@ -83,7 +83,7 @@ describe('StudentStudyPlanComponent (plan de estudios del estudiante)', () => {
     expect(el().querySelector('[data-testid="plan-cargando"]')).toBeNull();
     expect(el().querySelectorAll('[data-testid="plan-estudio"]')).toHaveSize(1);
     expect(texto()).toContain('Ingeniería de Sistemas');
-    expect(texto()).toContain('Plan de estudios 2024');
+    expect(texto()).toContain('Versión 2024');
     const cifras = Array.from(el().querySelectorAll('dl dd')).map((dd) => dd.textContent!.replace(/\s+/g, ' ').trim());
     expect(cifras).toEqual(['8', '3', '10', '1 asignatura · 3 créditos']);
   });
@@ -138,7 +138,7 @@ describe('StudentStudyPlanComponent (plan de estudios del estudiante)', () => {
     crear();
     responder([]);
 
-    expect(el().querySelector('[data-testid="plan-vacio"]')!.textContent).toContain('aún no tienen un plan de estudios activo');
+    expect(el().querySelector('[data-testid="plan-vacio"]')!.textContent).toContain('Aún no tienes materias matriculadas activas');
     expect(el().querySelector('[data-testid="plan-error"]')).toBeNull();
     expect(el().querySelectorAll('[data-testid="plan-estudio"]')).toHaveSize(0);
   });
@@ -173,12 +173,13 @@ describe('StudentStudyPlanComponent (plan de estudios del estudiante)', () => {
       semestres: [semestre(1, [
         asignatura('x1', { codigo: null, creditos: null, nombreCaracter: null, tipoAsignatura: 'OTRO' }),
         asignatura('x2', { creditos: 1, nombreCaracter: null, tipoAsignatura: 'INSTITUCIONAL', cursando: true }),
+        asignatura('x3', { creditos: 2, nombreCaracter: null, tipoAsignatura: 'ELECTIVA' }),
       ])],
     })]);
 
-    expect(texto()).not.toContain('Plan de estudios null');
+    expect(texto()).not.toContain('Versión null');
     const detalles = Array.from(el().querySelectorAll('[data-testid="asignatura-detalle"]')).map((d) => d.textContent!.trim());
-    expect(detalles).toEqual(['Sin información de créditos', '1 crédito · Institucional']);
+    expect(detalles).toEqual(['Sin información de créditos', '1 crédito · Institucional', '2 créditos · Electiva']);
     expect(el().querySelector('[data-testid="asignatura-plan"]')!.textContent).not.toContain('COD-');
     expect(texto()).not.toContain('Grupo:');
     expect(texto()).not.toContain('null');

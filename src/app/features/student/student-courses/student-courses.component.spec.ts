@@ -58,7 +58,7 @@ describe('StudentCoursesComponent — soporte y radicación (LB-004D FE-01..FE-0
 
   beforeEach(() => {
     claims = jasmine.createSpyObj<AttendanceClaimService>('AttendanceClaimService', [
-      'subirSoporte', 'crearReclamo', 'getSesionesPorMateria', 'eliminarReclamo', 'getConfiguracionReclamos',
+      'subirSoporte', 'crearReclamo', 'getSesionesPorMateria', 'invalidarSesionesMateria', 'eliminarReclamo', 'getConfiguracionReclamos',
     ]);
     claims.getSesionesPorMateria.and.returnValue(of({ exitoso: true, datos: [], total: 0 }) as never);
     claims.getConfiguracionReclamos.and.returnValue(of({
@@ -458,8 +458,8 @@ describe('StudentCoursesComponent', () => {
   ];
 
   beforeEach(async () => {
-    studentServiceSpy = jasmine.createSpyObj('StudentManagementService', ['getMaterias', 'getResumenMaterias']);
-    claimServiceSpy = jasmine.createSpyObj('AttendanceClaimService', ['getSesionesPorMateria', 'crearReclamo', 'eliminarReclamo', 'subirSoporte', 'getConfiguracionReclamos']);
+    studentServiceSpy = jasmine.createSpyObj('StudentManagementService', ['getMaterias', 'getResumenMaterias', 'invalidarCacheMaterias']);
+    claimServiceSpy = jasmine.createSpyObj('AttendanceClaimService', ['getSesionesPorMateria', 'invalidarSesionesMateria', 'crearReclamo', 'eliminarReclamo', 'subirSoporte', 'getConfiguracionReclamos']);
     claimServiceSpy.getConfiguracionReclamos.and.returnValue(of({
       exitoso: true,
       datos: {
@@ -583,7 +583,7 @@ describe('StudentCoursesComponent', () => {
     component.verDetalleCompleto(mockMaterias[0]);
     expect(component.vistaActual()).toBe('DETALLE');
     expect(component.selectedMateria()?.id).toBe(ASIGNATURA_ID);
-    expect(claimServiceSpy.getSesionesPorMateria).toHaveBeenCalledWith(ASIGNATURA_ID, { pagina: 1, tamano: 10, grupoId: mockMaterias[0].idGrupo });
+    expect(claimServiceSpy.getSesionesPorMateria).toHaveBeenCalledWith(ASIGNATURA_ID, { pagina: 1, tamano: 15, grupoId: mockMaterias[0].idGrupo });
     expect(component.sesiones()).toHaveSize(1);
     expect(component.totalSesiones()).toBe(1);
     component.volverALista();
@@ -613,17 +613,17 @@ describe('StudentCoursesComponent', () => {
       component.cambiarPaginaSesiones(3);
 
       expect(component.paginaSesiones()).toBe(3);
-      expect(claimServiceSpy.getSesionesPorMateria).toHaveBeenCalledWith(ASIGNATURA_ID, { pagina: 3, tamano: 10, grupoId: mockMaterias[0].idGrupo });
+      expect(claimServiceSpy.getSesionesPorMateria).toHaveBeenCalledWith(ASIGNATURA_ID, { pagina: 3, tamano: 15, grupoId: mockMaterias[0].idGrupo });
     });
 
     it('cambiar el tamano vuelve a la pagina 1 y lo pide al backend', () => {
       component.verDetalleCompleto(mockMaterias[0]);
       component.cambiarPaginaSesiones(4);
-      component.cambiarTamanoSesiones(20);
+      component.cambiarTamanoSesiones(30);
 
-      expect(component.tamanoSesiones()).toBe(20);
+      expect(component.tamanoSesiones()).toBe(30);
       expect(component.paginaSesiones()).toBe(1);
-      expect(claimServiceSpy.getSesionesPorMateria).toHaveBeenCalledWith(ASIGNATURA_ID, { pagina: 1, tamano: 20, grupoId: mockMaterias[0].idGrupo });
+      expect(claimServiceSpy.getSesionesPorMateria).toHaveBeenCalledWith(ASIGNATURA_ID, { pagina: 1, tamano: 30, grupoId: mockMaterias[0].idGrupo });
     });
 
     it('ver otro detalle reinicia la pagina en 1', () => {
@@ -637,13 +637,13 @@ describe('StudentCoursesComponent', () => {
 
     it('una pagina fuera de rango (se cancelo una sesion) vuelve a pedir la ultima que existe', () => {
       claimServiceSpy.getSesionesPorMateria.and.callFake(((_id: string, p: { pagina: number }) =>
-        of(p.pagina > 2 ? { exitoso: true, datos: [], total: 14 } : { exitoso: true, datos: mockSesiones, total: 14 })) as never);
+        of(p.pagina > 2 ? { exitoso: true, datos: [], total: 20 } : { exitoso: true, datos: mockSesiones, total: 20 })) as never);
       component.verDetalleCompleto(mockMaterias[0]);
       component.cambiarPaginaSesiones(5);
 
       expect(component.paginaSesiones()).toBe(2);
       expect(component.sesiones()).toHaveSize(1);
-      expect(component.totalSesiones()).toBe(14);
+      expect(component.totalSesiones()).toBe(20);
     });
 
     it('un error HTTP no se presenta como "0 sesiones": deja error y total en cero', () => {
@@ -907,7 +907,7 @@ describe('StudentCoursesComponent — contrato real y estados de carga (HTTP)', 
     const req = http.expectOne(esSesiones(ASIGNATURA_ID));
     expect(req.request.params.get('grupoId')).toBe(GRUPO_2_ID);
     expect(req.request.params.get('pagina')).toBe('1');
-    expect(req.request.params.get('tamano')).toBe('10');
+    expect(req.request.params.get('tamano')).toBe('15');
     // El backend ya entrega solo las del grupo pedido: el cliente muestra lo que llega, sin filtrar.
     req.flush({
       exitoso: true,

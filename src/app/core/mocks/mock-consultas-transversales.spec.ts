@@ -77,7 +77,7 @@ describe('respuestaConsultasTransversales (mock HU112/HU128/HU143/HU157)', () =>
     expect(respuestaConsultasTransversales(get(categorias), categorias)?.total).toBe(6);
 
     const componentes = '/api/v1/coordinador/componentes-formacion';
-    expect(respuestaConsultasTransversales(get(componentes), componentes)?.total).toBe(3);
+    expect(respuestaConsultasTransversales(get(componentes), componentes)?.total).toBe(4); // BAS, ESP, INS y ELE (COMP-ELE)
   });
 
   it('no responde otras rutas ni otros métodos', () => {

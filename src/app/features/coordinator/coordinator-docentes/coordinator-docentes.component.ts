@@ -49,7 +49,7 @@ const MIN_CARACTERES_CANDIDATOS = 3;
     ErrorCargaComponent
 ],
     template: `
-    <div class="space-y-6 animate-fade-in">
+    <div class="space-y-4 animate-fade-in">
       <app-page-header
         [enTarjeta]="true"
         [conTitulo]="!embebido()"
