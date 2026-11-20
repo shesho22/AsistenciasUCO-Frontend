@@ -679,4 +679,40 @@ describe('AdminManagementService', () => {
       },
     });
   });
+
+  it('consultarCambiosParametro pide la página del historial a GET /admin/parametros/{id}/cambios', () => {
+    service.consultarCambiosParametro('param-1', 2, 5).subscribe((res) => {
+      expect(res.totalElementos).toBe(7);
+      expect(res.elementos[0].motivo).toBe('Ajuste de política');
+    });
+    const req = http.expectOne((r) => r.url === `${environment.apiUrl}/admin/parametros/param-1/cambios`);
+    expect(req.request.method).toBe('GET');
+    expect(req.request.params.get('pagina')).toBe('2');
+    expect(req.request.params.get('tamano')).toBe('5');
+    req.flush({
+      exitoso: true,
+      elementos: [{ id: 'c1', valorAnterior: '20', valorNuevo: '25', motivo: 'Ajuste de política', fechaCambioUtc: '2026-11-01T10:00:00Z' }],
+      numeroPagina: 2,
+      tamanoPagina: 5,
+      totalElementos: 7,
+      totalPaginas: 2,
+    });
+  });
+
+  it('cargarHistorialCierres lee GET /admin/cierre-masivo/historial y actualiza la señal', () => {
+    service.cargarHistorialCierres().subscribe((res) => expect(res.datos.length).toBe(1));
+    const req = http.expectOne(`${environment.apiUrl}/admin/cierre-masivo/historial`);
+    expect(req.request.method).toBe('GET');
+    req.flush({ exitoso: true, datos: [{ id: 'r1', periodoCodigo: '2026-2' }], total: 1 });
+    expect(service.reportesCierre()).toHaveSize(1);
+  });
+
+  it('cargarHistorialCierres tolera un cuerpo vacío', () => {
+    service.cargarHistorialCierres().subscribe((res) => {
+      expect(res.exitoso).toBeTrue();
+      expect(res.datos).toEqual([]);
+    });
+    http.expectOne(`${environment.apiUrl}/admin/cierre-masivo/historial`).flush(null);
+    expect(service.reportesCierre()).toEqual([]);
+  });
 });

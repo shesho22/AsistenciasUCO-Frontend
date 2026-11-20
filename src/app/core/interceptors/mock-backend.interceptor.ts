@@ -230,6 +230,26 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     const param = mockStore.parametros.find((p) => p.id === id);
     return of(okResponse(param, 'Parámetro actualizado.')).pipe(delay(150));
   }
+  if (url.endsWith('/admin/cierre-masivo/historial') && method === 'GET') {
+    return of(okResponse(mockStore.reportesCierre)).pipe(delay(150));
+  }
+  if (/\/admin\/parametros\/[^/]+\/cambios$/.test(url) && method === 'GET') {
+    return of(
+      new HttpResponse({
+        status: 200,
+        body: { exitoso: true, elementos: [], numeroPagina: 1, tamanoPagina: 10, totalElementos: 0, totalPaginas: 1 },
+      })
+    ).pipe(delay(150));
+  }
+  if (url.includes('/admin/parametros/') && method === 'PUT') {
+    const id = url.split('/').pop()!;
+    const body = req.body as { valor?: string };
+    mockStore.parametros = mockStore.parametros.map((p) =>
+      p.id === id ? { ...p, valor: body.valor as string, ultimaModificacion: new Date().toISOString().slice(0, 16) } : p
+    );
+    const param = mockStore.parametros.find((p) => p.id === id);
+    return of(okResponse(param, 'Parámetro actualizado.')).pipe(delay(150));
+  }
   if (url.endsWith('/admin/cierre-masivo') && method === 'POST') {
     const body = req.body as { idPeriodoAcademico?: string } | null;
     const nuevoReporte = {

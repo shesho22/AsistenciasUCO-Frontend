@@ -11,6 +11,7 @@ import {
   ParametroAdminDto,
   ParametroActualizadoDto,
   ActualizarParametroRequest,
+  CambioParametroDto,
   CierrePeriodoReporte,
   InstitucionItem,
   ProgramaInstitucionDto,
@@ -329,7 +330,33 @@ export class AdminManagementService {
     );
   }
 
+  /** Historial de cambios de un parámetro (`GET /admin/parametros/{id}/cambios`), del más reciente al más antiguo. */
+  consultarCambiosParametro(
+    id: string,
+    pagina = 1,
+    tamano = 10
+  ): Observable<ApiPageResponse<CambioParametroDto>> {
+    const params = new HttpParams().set('pagina', String(pagina)).set('tamano', String(tamano));
+    return this.http.get<ApiPageResponse<CambioParametroDto>>(
+      `${environment.apiUrl}/admin/parametros/${id}/cambios`,
+      { params }
+    );
+  }
+
   // ================= CIERRE MASIVO =================
+  /** Historial de cierres masivos (`GET /admin/cierre-masivo/historial`); el backend devuelve la lista completa. */
+  cargarHistorialCierres(): Observable<ApiResponse<CierrePeriodoReporte[]>> {
+    return this.http
+      .get<ApiResponse<CierrePeriodoReporte[]> | null>(`${environment.apiUrl}/admin/cierre-masivo/historial`)
+      .pipe(
+        map((res) => {
+          const datos = res?.datos ?? [];
+          this._reportesCierre.set(datos);
+          return { ...(res ?? { exitoso: true }), exitoso: res?.exitoso ?? true, datos } as ApiResponse<CierrePeriodoReporte[]>;
+        })
+      );
+  }
+
   ejecutarCierreMasivo(idPeriodoAcademico: string, periodoCodigo: string = ''): Observable<ApiResponse<void>> {
     return this.http.post<ApiResponse<void>>(`${environment.apiUrl}/admin/cierre-masivo`, {
       idPeriodoAcademico,

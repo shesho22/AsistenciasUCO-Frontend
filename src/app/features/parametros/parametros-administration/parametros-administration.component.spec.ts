@@ -1,5 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
+import { of } from 'rxjs';
+import { AdminManagementService } from '../../../core/services/admin-management.service';
 import { Router, provideRouter } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { User } from '../../../core/models/user.model';
@@ -43,6 +45,7 @@ describe('ParametrosAdministrationComponent', () => {
     startBaselineLogin: jasmine.Spy;
   };
   let loaderSpy: jasmine.Spy;
+  let adminService: jasmine.SpyObj<AdminManagementService>;
   let mountSpy: jasmine.Spy;
   let unmountSpy: jasmine.Spy;
   let ready: Deferred<void>;
@@ -111,11 +114,17 @@ describe('ParametrosAdministrationComponent', () => {
       .createSpy('loader')
       .and.callFake(() => Promise.resolve({ mount: mountSpy } as unknown as ParametrosAdminModule));
 
+    adminService = jasmine.createSpyObj<AdminManagementService>('AdminManagementService', ['cargarParametros']);
+    adminService.cargarParametros.and.returnValue(
+      of({ exitoso: true, elementos: [], datos: [], numeroPagina: 1, tamanoPagina: 10, totalElementos: 0, totalPaginas: 1 })
+    );
+
     await TestBed.configureTestingModule({
       imports: [ParametrosAdministrationComponent],
       providers: [
         provideRouter([]),
         { provide: AuthService, useValue: authService },
+        { provide: AdminManagementService, useValue: adminService },
         { provide: PARAMETROS_ADMIN_LOADER, useValue: loaderSpy },
       ],
     }).compileComponents();
@@ -232,6 +241,43 @@ describe('ParametrosAdministrationComponent', () => {
 
     expect(mountSpy).toHaveBeenCalledTimes(1);
     expect(component.state()).toBe('ready');
+  });
+
+  it('al fallar la descarga del módulo muestra la lista de respaldo de parámetros', async () => {
+    loaderSpy.and.returnValue(Promise.reject(new TypeError('Failed to fetch dynamically imported module')));
+
+    await createComponent();
+
+    expect((fixture.nativeElement as HTMLElement).querySelector('app-parametros-respaldo')).toBeTruthy();
+    expect(adminService.cargarParametros).toHaveBeenCalledTimes(1);
+  });
+
+  it('sin el UUID de la aplicación (no configurado) también ofrece la lista de respaldo', async () => {
+    setEnv({ SECURITY_PROVIDER: 'baseline' });
+
+    await createComponent();
+
+    expect(component.state()).toBe('misconfigured');
+    expect((fixture.nativeElement as HTMLElement).querySelector('app-parametros-respaldo')).toBeTruthy();
+  });
+
+  it('con el micro frontend cargado no muestra la lista de respaldo', async () => {
+    await createComponent();
+    ready.resolve();
+    await settle();
+
+    expect(component.state()).toBe('ready');
+    expect((fixture.nativeElement as HTMLElement).querySelector('app-parametros-respaldo')).toBeNull();
+    expect(adminService.cargarParametros).not.toHaveBeenCalled();
+  });
+
+  it('el rol sin permiso (forbidden) no recibe la lista de respaldo', async () => {
+    authService.currentUser.set({ ...adminUser, role: 'DOCENTE' as User['role'] });
+
+    await createComponent();
+
+    expect(component.state()).toBe('forbidden');
+    expect((fixture.nativeElement as HTMLElement).querySelector('app-parametros-respaldo')).toBeNull();
   });
 
   it('muestra el error cuando mount rechaza las opciones (TypeError síncrono)', async () => {

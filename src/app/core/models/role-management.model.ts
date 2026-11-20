@@ -545,6 +545,18 @@ export interface ActualizarParametroRequest {
   motivo: string;
 }
 
+/** `CambioParametroDTO` del backend: un renglón del historial de cambios de un parámetro. */
+export interface CambioParametroDto {
+  id: string;
+  valorAnterior: string | null;
+  valorNuevo: string | null;
+  motivo: string | null;
+  idUsuarioEjecutor?: string | null;
+  nombreEjecutor?: string | null;
+  idCorrelacion?: string | null;
+  fechaCambioUtc: string;
+}
+
 export interface RegistroAuditoriaItem {
   id: string;
   timestamp: string;
