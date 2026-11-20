@@ -11,7 +11,8 @@ test.describe('Administrador', () => {
     const main = page.getByRole('main');
     await expect(main.getByRole('heading', { level: 1, name: 'Períodos Académicos' })).toBeVisible();
     await expect(main.getByText('3 Períodos')).toBeVisible();
-    await expect(main.getByRole('heading', { name: 'Segundo Semestre Académico 2026' })).toBeVisible();
+    // Bloque E (2026-11-19): los periodos se listan en una tabla; cada periodo es una fila.
+    await expect(main.getByRole('row', { name: /Segundo Semestre Académico 2026/ })).toBeVisible();
 
     await main.getByRole('button', { name: '+ Nuevo Período Académico' }).click();
     // PR #91: el alta se hace en el diálogo "Nuevo período académico" (academic-period-form-modal).
@@ -61,7 +62,7 @@ test.describe('Coordinador', () => {
     await expect(tabla.getByRole('row', { name: /Estructuras de Datos Grupo 02/ })).toContainText('97.78%');
 
     await main.getByRole('combobox', { name: 'Materia' }).selectOption({ label: 'Cálculo Diferencial' });
-    await expect(main.getByText('1 Grupos').or(main.getByText('1 Grupo', { exact: true }))).toBeVisible();
+    await expect(main.getByTestId('conteo-grupos')).toHaveText(/^\s*1 Grupos?\s*$/);
     await expect(tabla.getByRole('row', { name: /Estructuras de Datos Grupo 02/ })).toHaveCount(0);
     await expect(tabla.getByRole('row', { name: /Cálculo Diferencial Grupo 01/ })).toBeVisible();
   });
@@ -123,7 +124,7 @@ test.describe('Estudiante', () => {
     await abrirModulo(page, 'Mis Materias');
 
     const main = page.getByRole('main');
-    await main.getByRole('tab', { name: 'Materias' }).click();
+    await main.getByRole('tab', { name: 'Materias', exact: true }).click();
     await expect(main.getByRole('heading', { level: 1, name: 'Gestión de Mis Materias' })).toBeVisible();
     await main.getByRole('button', { name: 'Ver Detalle' }).first().click();
     await expect(main.getByRole('heading', { level: 2, name: 'Ingeniería de Software II' })).toBeVisible();

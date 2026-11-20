@@ -243,8 +243,9 @@
 }
 
 /* Sobre superficies verde oscuro (panel del login) el anillo de foco es amarillo para conservar el contraste. */
-@utility foco-sobre-oscuro {
-  & :focus-visible {
+/* Reglas con selector de clase explicito (no @utility con &, regla Sonar css:S8776); en la capa utilities como antes. */
+@layer utilities {
+  .foco-sobre-oscuro :focus-visible {
     outline-color: var(--color-accent-500);
   }
 }
@@ -269,22 +270,24 @@
   overscroll-behavior-x: contain;
 }
 
-@utility tabla {
-  @apply w-full border-separate border-spacing-0 text-left text-sm text-warm-800;
+@layer utilities {
+  .tabla {
+    @apply w-full border-separate border-spacing-0 text-left text-sm text-warm-800;
+  }
 
-  & thead th {
+  .tabla thead th {
     @apply sticky top-0 z-10 border-b border-warm-200 bg-warm-100 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-warm-700 whitespace-nowrap;
   }
 
-  & tbody td {
+  .tabla tbody td {
     @apply border-b border-warm-100 px-3 py-2 align-middle;
   }
 
-  & tbody tr:last-child td {
+  .tabla tbody tr:last-child td {
     @apply border-b-0;
   }
 
-  & tbody tr:hover td {
+  .tabla tbody tr:hover td {
     @apply bg-warm-50;
   }
 }
