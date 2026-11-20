@@ -234,7 +234,7 @@ type StudentEnrollmentField =
       }
 
       <!-- 6. Modo de la toma, proyección del QR y cierre (CULM-001 B.2) -->
-      @defer (when modoSelectorAbierto()) {
+      @if (modoSelectorAbierto()) {
         <app-toma-modo-selector
           [qrHabilitado]="sessionQrEnabled"
           (modoElegido)="onModoElegido($event)"

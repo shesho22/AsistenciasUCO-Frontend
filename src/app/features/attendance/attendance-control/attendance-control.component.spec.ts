@@ -635,6 +635,28 @@ describe('AttendanceControlComponent contract corrections', () => {
       expect(component.showToast()).toBeTrue();
       expect(component.toastMessage()).toContain('no está en su horario de toma');
     });
+  // Regresión 2026-11-19: con `@defer (when ...)` el selector se pintaba una vez y no volvía a ocultarse al elegir el
+  // modo o cancelar; se quedaba encima de la proyección del QR. Debe mostrarse y ocultarse con el signal.
+  it('el selector de modo de toma desaparece del DOM al elegir el modo y al cancelar', () => {
+    const component = createComponent([activeStudent], []);
+    const selector = () => fixture.nativeElement.querySelector('app-toma-modo-selector');
+    component.selectedSessionId.set('session-1');
+
+    component.abrirSelectorModo();
+    fixture.detectChanges();
+    expect(selector()).not.toBeNull();
+
+    component.modoSelectorAbierto.set(false);
+    fixture.detectChanges();
+    expect(selector()).toBeNull();
+
+    component.abrirSelectorModo();
+    fixture.detectChanges();
+    expect(selector()).not.toBeNull();
+
+    component.onModoElegido('MANUAL');
+    fixture.detectChanges();
+    expect(selector()).toBeNull();
   });
 
   it('HU176B: al matricularse un estudiante por QR refresca el listado solo si el listado del grupo está abierto', () => {
