@@ -877,7 +877,7 @@ describe('OverviewComponent', () => {
       await createComponentWithRole('ESTUDIANTE');
 
       const materia = mockMaterias[0];
-      const enlace = (fixture.nativeElement as HTMLElement).querySelector('app-overview-student app-card a[href^="/app/estudiante/materias"]');
+      const enlace = (fixture.nativeElement as HTMLElement).querySelector('app-overview-student tbody a[href^="/app/estudiante/materias"]');
       expect(enlace?.textContent).toContain('Ver Desglose de Sesiones y Reclamar');
       expect(enlace?.getAttribute('href')).toBe(`/app/estudiante/materias?materia=${materia.id}&grupo=${materia.idGrupo}`);
     });
