@@ -404,6 +404,33 @@
   }
 }
 
+/*
+ * Variante compacta de tabla-tarjetas (bajo md): cada fila es una tarjeta corta de 2 columnas con etiqueta y valor
+ * pequenos. tc-ancho ocupa todo el ancho; tc-esquina deja el control (p. ej. expandir) en la esquina superior derecha.
+ */
+@media (width < 48rem) {
+  .tabla-tarjetas-compacta tbody tr {
+    @apply relative m-2 grid grid-cols-2 gap-x-3 gap-y-0.5 px-3 py-2;
+  }
+
+  .tabla-tarjetas-compacta tbody td {
+    @apply min-w-0 py-0.5 text-sm break-words;
+  }
+
+  .tabla-tarjetas-compacta tbody td.tc-ancho {
+    grid-column: 1 / -1;
+    @apply pr-10;
+  }
+
+  .tabla-tarjetas-compacta tbody td.tc-esquina {
+    @apply absolute top-1 right-1 z-10 w-auto p-0;
+  }
+
+  .tabla-tarjetas-compacta tbody td[data-label]::before {
+    @apply text-[10px];
+  }
+}
+
 /* Toast Animations */
 @keyframes toastEnter {
   0% {

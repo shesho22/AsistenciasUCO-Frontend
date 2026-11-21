@@ -83,7 +83,7 @@ const NUMERO_ES = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 2 });
           <p class="text-sm text-warm-500 text-center py-6">No hay grupos con asistencia para los filtros seleccionados.</p>
         } @else {
           <div class="tabla-scroll" role="region" tabindex="0" aria-label="Consolidado de asistencia por grupo">
-            <table class="tabla-tarjetas w-full min-w-[64rem] text-sm" data-testid="consolidado-tabla">
+            <table class="tabla-tarjetas tabla-tarjetas-compacta w-full min-w-[64rem] text-sm" data-testid="consolidado-tabla">
               <thead>
                 <tr class="text-left text-xs uppercase tracking-wider text-warm-500 border-b border-warm-100">
                   <th scope="col" class="col-fija w-9 min-w-9 py-2 pr-1"><span class="sr-only">Sesiones del grupo</span></th>
@@ -104,7 +104,7 @@ const NUMERO_ES = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 2 });
               <tbody>
                 @for (g of listado.filas(); track g.idGrupo) {
                   <tr class="border-b border-warm-50" [class.bg-primary-50]="expandido() === g.idGrupo">
-                    <td class="col-fija w-9 min-w-9 py-2 pr-1" [class.bg-primary-50]="expandido() === g.idGrupo">
+                    <td class="col-fija tc-esquina w-9 min-w-9 py-2 pr-1" [class.bg-primary-50]="expandido() === g.idGrupo">
                       <button
                         type="button"
                         class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-warm-700 hover:bg-warm-100 focus-visible:ring-2 focus-visible:ring-primary-600 outline-none"
@@ -115,22 +115,22 @@ const NUMERO_ES = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 2 });
                         (click)="alternar(g.idGrupo)"
                       >{{ expandido() === g.idGrupo ? '▾' : '▸' }}</button>
                     </td>
-                    <td class="col-fija col-fija-2 py-2 pr-3 pl-1" [class.bg-primary-50]="expandido() === g.idGrupo" data-label="Materia / Grupo">
+                    <td class="col-fija col-fija-2 tc-ancho py-2 pr-3 pl-1" [class.bg-primary-50]="expandido() === g.idGrupo" data-label="Materia / Grupo">
                       <span class="font-semibold text-warm-900 block">{{ g.nombreAsignatura || '—' }}</span>
                       <span class="text-xs text-warm-500">{{ g.nombreGrupo || 'Grupo ' + g.codigoGrupo }}{{ comoDecano && g.nombrePrograma ? ' · ' + g.nombrePrograma : '' }}</span>
                     </td>
-                    <td class="py-2 pr-3 text-warm-700" data-label="Cohorte">{{ g.nombrePeriodoAcademico || '—' }}</td>
+                    <td class="py-2 pr-3 text-warm-700 max-md:hidden" data-label="Cohorte">{{ g.nombrePeriodoAcademico || '—' }}</td>
                     <td class="py-2 pr-3 text-warm-700" data-label="Docente">{{ g.nombreDocente || 'Sin docente' }}</td>
-                    <td class="py-2 pr-3 text-right text-warm-700" data-label="Activos">{{ g.estudiantesActivos }}</td>
-                    <td class="py-2 pr-3 text-right text-warm-700" data-label="Sesiones ejecutadas">{{ g.sesionesEjecutadas }}</td>
+                    <td class="py-2 pr-3 text-right text-warm-700 max-md:hidden" data-label="Activos">{{ g.estudiantesActivos }}</td>
+                    <td class="py-2 pr-3 text-right text-warm-700 max-md:hidden" data-label="Sesiones ejecutadas">{{ g.sesionesEjecutadas }}</td>
                     <td class="py-2 pr-3 text-right font-semibold text-warm-900" data-label="% Asistencia">{{ g.porcentajeAsistencia | number: '1.0-2' }}%</td>
                     <td class="py-2 pr-3 text-right whitespace-nowrap" data-label="% Inasistencia" data-testid="inasistencia" [class]="conAdvertencia(g) ? 'text-danger-700 font-semibold' : 'text-warm-700'">
                       {{ inasistenciaConBase(g) }}
                       <app-semaforo-asistencia [codigoPermanencia]="g.codigoPermanencia" [porcentaje]="g.porcentajeInasistencia" [compacto]="true" />
                     </td>
-                    <td class="py-2 pr-3 text-right text-warm-700" data-label="% Excusa">{{ g.porcentajeExcusa | number: '1.0-2' }}%</td>
-                    <td class="py-2 pr-3 text-right text-warm-700" data-label="% Sin registro">{{ g.porcentajeSinRegistro | number: '1.0-2' }}%</td>
-                    <td class="py-2 pr-3 min-w-[8rem]" data-label="Distribución">
+                    <td class="py-2 pr-3 text-right text-warm-700 max-md:hidden" data-label="% Excusa">{{ g.porcentajeExcusa | number: '1.0-2' }}%</td>
+                    <td class="py-2 pr-3 text-right text-warm-700 max-md:hidden" data-label="% Sin registro">{{ g.porcentajeSinRegistro | number: '1.0-2' }}%</td>
+                    <td class="py-2 pr-3 min-w-[8rem] max-md:hidden" data-label="Distribución">
                       <div class="flex h-3 w-full overflow-hidden rounded bg-warm-100" role="img" data-testid="barra-distribucion"
                         [attr.aria-label]="'Asistencia ' + g.porcentajeAsistencia + '%, inasistencia ' + g.porcentajeInasistencia + '%, excusa ' + g.porcentajeExcusa + '%, sin registro ' + g.porcentajeSinRegistro + '%'">
                         <span class="h-3 bg-success-600" data-testid="segmento-asistencia" [style.width.%]="g.porcentajeAsistencia"></span>
@@ -144,7 +144,7 @@ const NUMERO_ES = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 2 });
                   </tr>
                   @if (expandido() === g.idGrupo) {
                     <tr [id]="'sesiones-grupo-' + g.idGrupo" [attr.data-testid]="'sesiones-' + g.idGrupo" class="bg-warm-50/60">
-                      <td colspan="13" class="p-3">
+                      <td colspan="13" class="tc-ancho p-3">
                         @if (comoDecano) {
                           @defer (on immediate) {
                             <app-dean-sesiones-grupo [idGrupo]="g.idGrupo" />
