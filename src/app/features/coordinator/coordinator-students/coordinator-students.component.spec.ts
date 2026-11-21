@@ -269,6 +269,16 @@ describe('CoordinatorStudentsComponent', () => {
       expect(el().textContent).toContain('Ingenieria de Sistemas');
     });
 
+    it('con el filtro "Todos los estados" un estudiante inactivo se muestra INACTIVO', () => {
+      component.filtroEstadoDirectorio.set('TODOS');
+      cargar([
+        resumen({ idPrograma: 'p-1', nombrePrograma: 'Sistemas', estaActivoUsuario: false }),
+        resumen({ id: 'est-2', idPrograma: 'p-1', nombrePrograma: 'Sistemas', estaActivoUsuario: true }),
+      ]);
+      expect(coordinatorService.getEstudiantesDirectorioPagina.calls.mostRecent().args[0]).not.toEqual(jasmine.objectContaining({ activo: jasmine.anything() }));
+      expect(component.directorio().map((e) => e.estadoMatricula)).toEqual(['INACTIVO', 'ACTIVO']);
+    });
+
     it('editar semestre con éxito actualiza la fila y muestra el mensaje del backend', () => {
       const toast = TestBed.inject(ToastService);
       spyOn(toast, 'success');

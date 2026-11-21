@@ -508,6 +508,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     const estudiantes = mockStore.estudiantesDirectorio.map((e) => ({
       id: e.id, idUsuario: e.id, numeroIdentificacion: Number(e.documento) || 0, nombreCompleto: e.nombreCompleto, correo: e.correo,
       idPrograma: 'PRG-MOCK-1', nombrePrograma: e.programa, semestreActual: e.semestreActual ?? null,
+      estaActivoUsuario: e.estadoMatricula === 'ACTIVO',
     }));
     return of(okPagina(estudiantes, req)).pipe(delay(200));
   }

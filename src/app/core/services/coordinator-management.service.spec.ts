@@ -840,6 +840,17 @@ describe('CoordinatorManagementService', () => {
       delReq.flush({ exitoso: true, datos: { planEstudioId: 'plan-1', semestreEliminado: 10 } });
     });
 
+    it('getEstudiantesDirectorioPagina conserva estaActivoUsuario del backend sobre el filtro y lo infiere solo si falta', () => {
+      let items: { estaActivoUsuario: boolean }[] = [];
+      service.getEstudiantesDirectorioPagina({ page: 0, size: 10 }).subscribe((res) => (items = res.items));
+      http.expectOne((req) => req.url === `${environment.apiUrl}/coordinador/estudiantes`).flush({
+        exitoso: true,
+        elementos: [{ id: '1', estaActivoUsuario: false }, { id: '2', estaActivoUsuario: true }, { id: '3' }],
+        numeroPagina: 1, tamanoPagina: 10, totalElementos: 3, totalPaginas: 1,
+      });
+      expect(items.map((i) => i.estaActivoUsuario)).toEqual([false, true, true]);
+    });
+
     it('getEstudiantesDirectorioPagina y getEstudiantesPorGrupo funcionan', () => {
       service.getEstudiantesDirectorioPagina({ page: 0, size: 10, nombre: 'Laura', activo: true }).subscribe((res) => {
         expect(res.items).toHaveSize(1);
