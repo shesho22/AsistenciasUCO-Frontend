@@ -41,9 +41,9 @@ const COLORES_CLASE = [
       </div>
 
       @if (cargando()) {
-        <div class="grid grid-cols-1 md:grid-cols-4 xl:grid-cols-7 gap-4" data-testid="horario-cargando">
+        <div class="space-y-2" data-testid="horario-cargando">
           @for (d of dias(); track d) {
-            <div class="h-64 bg-warm-100 rounded-2xl animate-pulse"></div>
+            <div class="h-16 bg-warm-100 rounded-2xl animate-pulse"></div>
           }
         </div>
       } @else if (error()) {
@@ -58,28 +58,29 @@ const COLORES_CLASE = [
             No hay sesiones programadas esta semana.
           </div>
         }
-        <div class="grid grid-cols-1 md:grid-cols-4 xl:grid-cols-7 gap-4">
+        <!-- Agenda semanal compacta: una fila por dia (etiqueta a la izquierda desde md, encima en movil) con sus franjas en rejilla. -->
+        <div class="space-y-2">
           @for (dia of dias(); track dia) {
             <section
-              class="superficie flex flex-col overflow-hidden"
+              class="superficie flex flex-col md:flex-row overflow-hidden"
               [class.ring-2]="dia === hoy()"
               [class.ring-primary-500]="dia === hoy()"
               [attr.data-testid]="'dia-' + dia"
               [attr.aria-label]="etiqueta(dia)"
             >
-              <div class="p-3 bg-warm-50 border-b border-warm-200 flex items-center justify-between gap-2">
+              <div class="px-3 py-2 md:w-44 md:shrink-0 bg-warm-50 border-b md:border-b-0 md:border-r border-warm-200 flex items-center justify-between md:justify-start gap-2">
                 <span class="font-serif font-bold text-sm text-warm-900 capitalize">{{ etiqueta(dia) }}</span>
                 <span class="text-xs font-bold px-2 py-0.5 rounded-md bg-white border border-warm-200 text-warm-600">
                   {{ sesionesDe(dia).length }}
                 </span>
               </div>
-              <div class="p-3 flex-1 space-y-3 min-h-[120px]">
+              <div class="p-2 flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2 items-start content-center">
                 @for (s of sesionesDe(dia); track s.idSesion) {
                   @if (rol() === 'DOCENTE') {
                     <!-- MEJORAS-SERGIO 9: la franja del docente abre el grupo; dentro de un <button> solo va contenido de frase. -->
                     <button
                       type="button"
-                      class="block w-full text-left p-3 rounded-xl border text-warm-800 shadow-xs cursor-pointer transition-all hover:brightness-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-600"
+                      class="block w-full text-left p-2.5 rounded-xl border text-warm-800 shadow-xs cursor-pointer transition-all hover:brightness-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-600"
                       [class]="color(s)"
                       [attr.data-testid]="'sesion-' + s.idSesion"
                       [attr.aria-label]="etiquetaFranja(s)"
@@ -90,7 +91,7 @@ const COLORES_CLASE = [
                     </button>
                   } @else {
                     <article
-                      class="block p-3 rounded-xl border text-warm-800 shadow-xs"
+                      class="block p-2.5 rounded-xl border text-warm-800 shadow-xs"
                       [class]="color(s)"
                       [attr.data-testid]="'sesion-' + s.idSesion"
                     >
@@ -98,7 +99,7 @@ const COLORES_CLASE = [
                     </article>
                   }
                 } @empty {
-                  <p class="text-xs text-warm-400 text-center py-4">Sin sesiones</p>
+                  <p class="text-xs text-warm-400 py-1 sm:col-span-2 xl:col-span-3">Sin sesiones</p>
                 }
               </div>
             </section>
@@ -115,9 +116,9 @@ const COLORES_CLASE = [
       </span>
       <span class="block font-bold text-xs text-warm-900 leading-snug" [class.line-through]="s.estaCancelada" data-testid="nombre-asignatura">{{ s.nombreAsignatura }}</span>
       @if (rol() === 'ESTUDIANTE' && s.nombreDocente) {
-        <span class="block text-xs text-warm-600 mt-1 truncate">{{ s.nombreDocente }}</span>
+        <span class="block text-xs text-warm-600 mt-0.5 break-words">{{ s.nombreDocente }}</span>
       }
-      <span class="mt-2 flex flex-wrap gap-1.5">
+      <span class="mt-1 flex flex-wrap gap-1.5 empty:hidden">
         @if (s.esExtraordinaria) {
           <app-badge variant="info" size="sm" data-testid="etiqueta-extraordinaria">Extraordinaria</app-badge>
         }
