@@ -431,6 +431,22 @@
   }
 }
 
+/*
+ * Objetivos tactiles (P3, 2026-11-21): en pantallas tactiles o angostas, los controles del contenido principal miden al
+ * menos 2.5rem (40 px) de alto, para que no queden por debajo de los 32 px minimos. Los controles ocultos
+ * visualmente (sr-only) y las casillas nativas no se tocan; sus etiquetas ya ofrecen el area de pulsacion.
+ */
+@media (pointer: coarse), (width < 48rem) {
+  #contenido-principal :is(button, [role='button'], summary, select):not(.sr-only):not(.tap-libre),
+  #contenido-principal a:is(.inline-flex, .flex):not(.sr-only):not(.tap-libre) {
+    min-height: 2.5rem;
+  }
+
+  #contenido-principal button:not(.sr-only):not(.tap-libre) {
+    min-width: 2.5rem;
+  }
+}
+
 /* Toast Animations */
 @keyframes toastEnter {
   0% {
