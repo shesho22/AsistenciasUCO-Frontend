@@ -79,6 +79,7 @@ interface GrupoForm {
                   <th scope="col" class="px-4 py-3">Asignatura</th>
                   <th scope="col" class="px-4 py-3">Grupo</th>
                   <th scope="col" class="px-4 py-3">Docente</th>
+                  <th scope="col" class="px-4 py-3">Responsable</th>
                   <th scope="col" class="px-4 py-3">Horario semanal</th>
                   <th scope="col" class="px-4 py-3">Cupo</th>
                   <th scope="col" class="px-4 py-3"></th>
@@ -90,12 +91,19 @@ interface GrupoForm {
                     <td class="px-4 py-3 font-medium text-warm-900">{{ grupo.name }}</td>
                     <td class="px-4 py-3">{{ grupo.section }}</td>
                     <td class="px-4 py-3">{{ nombreDocente(grupo.docenteId) }}</td>
+                    <td class="px-4 py-3" data-testid="programa-responsable">{{ grupo.nombreProgramaResponsable || 'Sin programa responsable' }}</td>
                     <td class="px-4 py-3">{{ grupo.schedule || 'Sin horario' }}</td>
                     <td class="px-4 py-3">{{ grupo.enrolledStudentsCount ?? 0 }} / {{ grupo.cupoMaximo ?? '-' }}</td>
                     <td class="px-4 py-3 text-right">
-                      <button type="button" class="text-xs font-semibold text-primary-700 hover:underline" (click)="abrirEditar(grupo)">
-                        Editar
-                      </button>
+                      @if (grupo.esResponsable === true) {
+                        <button type="button" class="text-xs font-semibold text-primary-700 hover:underline" (click)="abrirEditar(grupo)">
+                          Editar
+                        </button>
+                      } @else {
+                        <span class="text-xs text-warm-600" data-testid="gestiona-otro-programa">
+                          {{ grupo.nombreProgramaResponsable ? 'Lo gestiona ' + grupo.nombreProgramaResponsable : 'Sin programa responsable' }}
+                        </span>
+                      }
                     </td>
                   </tr>
                 }

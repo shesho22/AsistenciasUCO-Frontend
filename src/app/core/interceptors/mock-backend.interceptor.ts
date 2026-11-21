@@ -743,6 +743,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
         idDocente: 'DOC-1', capacidadMaxima: 30, estudiantesActivos: 2, cuposDisponibles: 28, habilitado: true,
         inicioPeriodo: '2026-01-20', finPeriodo: '2026-06-05',
         franjas: [{ codigoDia: 'LU', nombreDia: 'Lunes', horaInicio: '07:00', horaFin: '09:00' }],
+        idProgramaResponsable: 'PRG-MOCK-1', nombreProgramaResponsable: 'Ingeniería de Sistemas', esResponsable: true,
       },
     ].filter((g) => !busqueda || g.nombre.toLowerCase().includes(busqueda) || g.nombreAsignatura.toLowerCase().includes(busqueda) || String(g.codigo).includes(busqueda));
     return of(okPagina(grupos, req)).pipe(delay(200));

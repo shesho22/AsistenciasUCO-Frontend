@@ -577,4 +577,51 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
     component.listado.cambiarTamano(25);
     expect(courseService.getCoordinatorCoursesPage).toHaveBeenCalledWith({ pagina: 1, tamano: 25 });
   });
+
+  describe('DEC-077: programa responsable', () => {
+    const filaTexto = (): { responsable: string[]; botones: number; notas: string[] } => {
+      const el = fixture.nativeElement as HTMLElement;
+      return {
+        responsable: Array.from(el.querySelectorAll('[data-testid="programa-responsable"]')).map((n) => n.textContent!.trim()),
+        botones: Array.from(el.querySelectorAll('tbody button')).filter((b) => b.textContent!.trim() === 'Editar').length,
+        notas: Array.from(el.querySelectorAll('[data-testid="gestiona-otro-programa"]')).map((n) => n.textContent!.trim()),
+      };
+    };
+
+    it('muestra el programa responsable y Editar solo cuando esResponsable es true', () => {
+      courseService.getCoordinatorCoursesPage.and.returnValue(of(paginaGrupos([
+        { ...grupo, id: 'a', nombreProgramaResponsable: 'Ingeniería de Sistemas', esResponsable: true },
+      ])));
+      component.listado.cargar();
+      fixture.detectChanges();
+      const r = filaTexto();
+      expect(r.responsable).toEqual(['Ingeniería de Sistemas']);
+      expect(r.botones).toBe(1);
+      expect(r.notas).toEqual([]);
+    });
+
+    it('en grupos de otro programa oculta Editar y muestra la nota "Lo gestiona <programa>"', () => {
+      courseService.getCoordinatorCoursesPage.and.returnValue(of(paginaGrupos([
+        { ...grupo, id: 'b', nombreProgramaResponsable: 'Derecho', esResponsable: false },
+      ])));
+      component.listado.cargar();
+      fixture.detectChanges();
+      const r = filaTexto();
+      expect(r.responsable).toEqual(['Derecho']);
+      expect(r.botones).toBe(0);
+      expect(r.notas).toEqual(['Lo gestiona Derecho']);
+    });
+
+    it('sin programa responsable muestra "Sin programa responsable" y no ofrece Editar', () => {
+      courseService.getCoordinatorCoursesPage.and.returnValue(of(paginaGrupos([
+        { ...grupo, id: 'c', nombreProgramaResponsable: null, esResponsable: false },
+      ])));
+      component.listado.cargar();
+      fixture.detectChanges();
+      const r = filaTexto();
+      expect(r.responsable).toEqual(['Sin programa responsable']);
+      expect(r.botones).toBe(0);
+      expect(r.notas).toEqual(['Sin programa responsable']);
+    });
+  });
 });

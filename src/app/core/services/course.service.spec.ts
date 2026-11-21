@@ -464,6 +464,18 @@ describe('CourseService', () => {
     expect(courses[1].docenteId).toBeUndefined();
     expect(courses[1].cupoMaximo).toBeUndefined();
     expect(courses[1].franjas).toEqual([]);
+    expect(courses[1].esResponsable).toBeFalse();
+    expect(courses[1].nombreProgramaResponsable).toBeNull();
+  });
+
+  it('getCoordinatorCoursesPage mapea el programa responsable y esResponsable (DEC-077)', () => {
+    let courses: Course[] = [];
+    service.getCoordinatorCoursesPage({ pagina: 1, tamano: 10 }).subscribe((res) => (courses = res.elementos));
+    http.expectOne(porUrl(`${environment.apiUrl}/coordinador/grupos`)).flush(paginaApi([
+      grupoProgramaApi({ idProgramaResponsable: 'p1', nombreProgramaResponsable: 'Derecho', esResponsable: true }),
+    ]));
+    expect(courses[0].nombreProgramaResponsable).toBe('Derecho');
+    expect(courses[0].esResponsable).toBeTrue();
   });
 
   it('getCoordinatorCoursesPage propaga el error HTTP sin inventar grupos', () => {

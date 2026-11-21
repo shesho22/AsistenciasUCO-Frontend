@@ -877,11 +877,13 @@ describe('mockBackendInterceptor', () => {
   describe('CIERRE-W2A: el simulador respeta los parámetros nuevos del coordinador', () => {
     it('GET /coordinador/grupos responde ApiPageResponse con franjas y filtra por búsqueda', fakeAsync(() => {
       auth.setMockMode(true);
-      let todos: SobrePagina<{ nombreAsignatura: string; franjas: unknown[] }> | undefined;
+      let todos: SobrePagina<{ nombreAsignatura: string; franjas: unknown[]; nombreProgramaResponsable: string; esResponsable: boolean }> | undefined;
       httpClient.get<typeof todos>(`${environment.apiUrl}/coordinador/grupos`, { params: { pagina: 1, tamano: 10 } }).subscribe((r) => (todos = r));
       tick(250);
       expect(todos!.totalElementos).toBe(1);
       expect(todos!.elementos[0].franjas).toHaveSize(1);
+      expect(todos!.elementos[0].nombreProgramaResponsable).toBe('Ingeniería de Sistemas');
+      expect(todos!.elementos[0].esResponsable).toBeTrue();
 
       let ninguno: SobrePagina<unknown> | undefined;
       httpClient.get<typeof ninguno>(`${environment.apiUrl}/coordinador/grupos`, { params: { busqueda: 'zzz' } }).subscribe((r) => (ninguno = r));

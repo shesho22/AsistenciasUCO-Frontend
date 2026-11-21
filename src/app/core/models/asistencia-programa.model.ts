@@ -16,6 +16,11 @@ export interface GrupoProgramaItem {
   finPeriodo: string | null;
   /** Horario semanal del grupo (CIERRE-W2A), de lunes a domingo; vacío si aún no tiene horario. */
   franjas?: { codigoDia: string; nombreDia?: string | null; horaInicio: string; horaFin: string }[];
+  /** DEC-077: programa responsable del grupo (único que lo gestiona); null si no tiene. */
+  idProgramaResponsable?: string | null;
+  nombreProgramaResponsable?: string | null;
+  /** DEC-077: true solo si el coordinador autenticado es el del programa responsable. */
+  esResponsable?: boolean;
 }
 
 export interface SesionGrupoItem {

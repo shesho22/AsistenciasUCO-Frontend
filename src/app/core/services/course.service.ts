@@ -179,6 +179,8 @@ export class CourseService {
         docenteId: grupo.idDocente ?? undefined,
         enrolledStudentsCount: grupo.estudiantesActivos ?? undefined,
         cupoMaximo: grupo.capacidadMaxima ?? undefined,
+        nombreProgramaResponsable: grupo.nombreProgramaResponsable ?? null,
+        esResponsable: grupo.esResponsable === true,
         colorCategory: colors[index % colors.length],
       };
     });
