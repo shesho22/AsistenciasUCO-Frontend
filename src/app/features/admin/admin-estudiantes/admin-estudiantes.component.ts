@@ -18,6 +18,7 @@ import { HistorialEstudianteComponent } from '../../../shared/components/histori
 import { AdmisionEstudianteModalComponent } from './admision-estudiante-modal.component';
 import { CorreccionIdentidadModalComponent } from '../../../shared/components/correccion-identidad-modal/correccion-identidad-modal.component';
 import { FiltroEstado, ListadoPaginado, estadoComoFiltro } from '../../../shared/utils/listado-paginado';
+import { resumirLista } from '../../../shared/utils/resumen-lista';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
@@ -119,7 +120,7 @@ interface OpcionFacultad {
         } @else if (listado.filas().length === 0) {
           <p class="text-sm text-warm-500 text-center py-6">No hay estudiantes que coincidan con la búsqueda.</p>
         } @else {
-          <div class="relative overflow-x-auto">
+          <div class="relative tabla-scroll">
             <table class="w-full text-sm">
               <thead>
                 <tr class="text-left text-xs uppercase tracking-wider text-warm-500 border-b border-warm-100">
@@ -139,9 +140,17 @@ interface OpcionFacultad {
                       <span class="text-xs text-warm-500">{{ e.correo || '—' }}</span>
                     </td>
                     <td class="py-2 pr-3 font-mono text-xs text-warm-600">{{ e.tipoIdentificacion ? e.tipoIdentificacion + ' ' : '' }}{{ e.numeroIdentificacion || '—' }}</td>
-                    <td class="py-2 pr-3">
-                      <span class="text-warm-900 block">{{ e.programas || '—' }}</span>
-                      <span class="text-xs text-warm-500">{{ e.facultades || '—' }}</span>
+                    <td class="max-w-[18rem] py-2 pr-3" [attr.title]="e.programas || null" data-testid="celda-programas">
+                      @let progs = resumen(e.programas);
+                      @let facs = resumen(e.facultades);
+                      <span class="line-clamp-2 text-warm-900 block">{{ progs.principal || '—' }}</span>
+                      <span class="line-clamp-1 text-xs text-warm-500" [attr.title]="e.facultades || null">{{ facs.principal || '—' }}</span>
+                      @if (progs.adicionales > 0 || facs.adicionales > 0) {
+                        <span class="mt-0.5 inline-block rounded-full bg-warm-100 px-2 py-0.5 text-[11px] font-semibold text-warm-700" data-testid="programas-mas">
+                          @if (progs.adicionales > 0) { +{{ progs.adicionales }} {{ progs.adicionales === 1 ? 'programa' : 'programas' }} }
+                          @else { +{{ facs.adicionales }} {{ facs.adicionales === 1 ? 'facultad' : 'facultades' }} }
+                        </span>
+                      }
                     </td>
                     <td class="py-2 pr-3 text-warm-700">{{ e.totalGrupos }}</td>
                     <td class="py-2 pr-3">
@@ -216,6 +225,9 @@ interface OpcionFacultad {
   `
 })
 export class AdminEstudiantesComponent implements OnInit {
+  /** Resumen compacto (principal + N mas) de programas/facultades; la lista completa va en el tooltip y en la ficha. */
+  readonly resumen = resumirLista;
+
   private readonly service = inject(ConsultasTransversalesService);
   private readonly admin = inject(AdminManagementService);
   private readonly correccionIdentidad = inject(CorreccionIdentidadService);
