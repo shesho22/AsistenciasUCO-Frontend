@@ -122,4 +122,36 @@ describe('PaginationComponent', () => {
     expect(el.querySelector('button[aria-current="page"]')?.getAttribute('aria-label')).toBe('Página 3');
     expect(el.querySelector('select')?.getAttribute('aria-label')).toBe('Resultados por página');
   });
+
+  it('ofrece una forma compacta "Página X de Y" para pantallas estrechas', () => {
+    fixture.componentRef.setInput('totalItems', 100);
+    fixture.componentRef.setInput('pageSize', 10);
+    fixture.componentRef.setInput('currentPage', 4);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const compacta = el.querySelector('[data-testid="pagina-compacta"]') as HTMLElement;
+    expect(compacta.textContent?.replace(/\s+/g, ' ').trim()).toBe('Página 4 de 10');
+    expect(compacta.classList.contains('sm:hidden')).toBeTrue();
+  });
+
+  it('oculta numeros y extremos en pantallas estrechas y conserva Anterior/Siguiente', () => {
+    fixture.componentRef.setInput('totalItems', 100);
+    fixture.componentRef.setInput('pageSize', 10);
+    fixture.componentRef.setInput('currentPage', 4);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('button[aria-label="Primera página"]')?.classList.contains('max-sm:hidden')).toBeTrue();
+    expect(el.querySelector('button[aria-label="Última página"]')?.classList.contains('max-sm:hidden')).toBeTrue();
+    expect(el.querySelector('button[aria-label="Página 4"]')?.parentElement?.classList.contains('max-sm:hidden')).toBeTrue();
+    expect(el.querySelector('button[aria-label="Página anterior"]')?.classList.contains('max-sm:hidden')).toBeFalse();
+    expect(el.querySelector('button[aria-label="Página siguiente"]')?.classList.contains('max-sm:hidden')).toBeFalse();
+  });
+
+  it('el selector de tamano de pagina envuelve en lugar de ocultarse', () => {
+    fixture.componentRef.setInput('totalItems', 100);
+    fixture.detectChanges();
+    const caja = (fixture.nativeElement as HTMLElement).querySelector('select')?.parentElement as HTMLElement;
+    expect(caja.classList.contains('flex-wrap')).toBeTrue();
+    expect(caja.classList.contains('hidden')).toBeFalse();
+  });
 });

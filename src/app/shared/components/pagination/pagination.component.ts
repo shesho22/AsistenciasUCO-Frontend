@@ -7,9 +7,9 @@ import { Component, ChangeDetectionStrategy, input, output, computed } from '@an
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
     @if (totalItems() > 0) {
-      <nav aria-label="Paginación" class="superficie flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 text-xs text-warm-600">
+      <nav aria-label="Paginación" class="superficie flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 text-xs text-warm-600 max-w-full">
         <!-- Resumen de Conteo -->
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 min-w-0">
           <span>
             Mostrando
             <strong class="font-bold text-warm-900">{{ startIndex() + 1 }}</strong>
@@ -22,7 +22,7 @@ import { Component, ChangeDetectionStrategy, input, output, computed } from '@an
 
           <!-- Selector de tamaño de página -->
           @if (showPageSizeSelector()) {
-            <div class="hidden sm:flex items-center gap-1.5 ml-3 pl-3 border-l border-warm-200">
+            <div class="flex flex-wrap items-center gap-1.5 sm:ml-3 sm:pl-3 sm:border-l border-warm-200">
               <span class="text-warm-400">Por página:</span>
               <select
                 aria-label="Resultados por página"
@@ -39,13 +39,13 @@ import { Component, ChangeDetectionStrategy, input, output, computed } from '@an
         </div>
 
         <!-- Controles de Navegación -->
-        <div class="flex items-center gap-1">
+        <div class="flex items-center justify-center gap-1 max-w-full">
           <!-- Botón Primera Página -->
           <button
             type="button"
             (click)="goToPage(1)"
             [disabled]="currentPage() === 1"
-            class="min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded-lg border border-warm-200 text-warm-500 hover:text-warm-900 hover:bg-warm-100 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+            class="max-sm:hidden min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded-lg border border-warm-200 text-warm-500 hover:text-warm-900 hover:bg-warm-100 disabled:opacity-40 disabled:pointer-events-none transition-colors"
             title="Primera página"
             aria-label="Primera página"
           >
@@ -65,7 +65,8 @@ import { Component, ChangeDetectionStrategy, input, output, computed } from '@an
           </button>
 
           <!-- Números de Página Visibles -->
-          <div class="flex items-center gap-1 mx-1">
+          <p class="sm:hidden px-2 text-xs font-medium text-warm-700 whitespace-nowrap" data-testid="pagina-compacta" aria-live="polite">Página {{ currentPage() }} de {{ paginasTotales() }}</p>
+          <div class="max-sm:hidden flex items-center gap-1 mx-1">
             @for (p of visiblePages(); track p) {
               @if (p === -1) {
                 <span class="px-1 text-warm-400" aria-hidden="true">...</span>
@@ -101,7 +102,7 @@ import { Component, ChangeDetectionStrategy, input, output, computed } from '@an
             type="button"
             (click)="goToPage(paginasTotales())"
             [disabled]="currentPage() >= paginasTotales()"
-            class="min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded-lg border border-warm-200 text-warm-500 hover:text-warm-900 hover:bg-warm-100 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+            class="max-sm:hidden min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded-lg border border-warm-200 text-warm-500 hover:text-warm-900 hover:bg-warm-100 disabled:opacity-40 disabled:pointer-events-none transition-colors"
             title="Última página"
             aria-label="Última página"
           >
