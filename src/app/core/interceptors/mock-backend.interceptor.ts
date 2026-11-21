@@ -6,6 +6,7 @@ import { respuestaConsultasTransversales } from '../mocks/mock-consultas-transve
 import { mockSesionesCalendario } from '../mocks/mock-calendario-sesiones';
 import { respuestaIndicadores } from '../mocks/mock-indicadores';
 import { respuestaSeguimiento } from '../mocks/mock-seguimiento';
+import { MOCK_DOCUMENT_TYPES } from '../services/catalog.service';
 import { responderCatalogosAdminMock } from '../mocks/mock-catalogos-admin';
 import { plantillasNotificacionMock } from '../mocks/mock-notificaciones';
 import {
@@ -658,6 +659,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     ['/tipos-programa', TIPOS_PROGRAMA_MOCK],
     ['/modalidades-programa', MODALIDADES_PROGRAMA_MOCK],
     ['/jornadas-programa', JORNADAS_PROGRAMA_MOCK],
+    ['/tipos-identificacion', MOCK_DOCUMENT_TYPES],
   ] as const) {
     if (!url.includes('/admin/') && url.split('?')[0].endsWith(sufijo) && method === 'GET') {
       return of(new HttpResponse({ status: 200, body: catalogo })).pipe(delay(150));
