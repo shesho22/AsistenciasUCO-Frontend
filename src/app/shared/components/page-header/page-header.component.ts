@@ -18,7 +18,7 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
       @if (conTitulo()) {
       <div class="min-w-0">
         @if (etiqueta() || contexto()) {
-          <div class="flex flex-wrap items-center gap-2 mb-1">
+          <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 mb-0.5">
             @if (etiqueta()) {
               <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary-100 text-primary-900 border border-primary-200">
                 {{ etiqueta() }}
@@ -39,12 +39,12 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
           {{ titulo() }}
         </h1>
         @if (descripcion()) {
-          <p class="text-sm text-warm-600 mt-0.5">{{ descripcion() }}</p>
+          <p class="text-xs sm:text-sm text-warm-600 mt-0.5 line-clamp-2 sm:line-clamp-none">{{ descripcion() }}</p>
         }
         <ng-content select="[cabecera-detalle]" />
       </div>
       }
-      <div class="flex flex-wrap items-center gap-3 empty:hidden">
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3 empty:hidden">
         <ng-content select="[cabecera-acciones]" />
       </div>
     </div>
@@ -66,9 +66,9 @@ export class PageHeaderComponent {
   readonly conTitulo = input<boolean>(true);
 
   protected readonly contenedorClases = computed(() => {
-    const base = 'flex flex-col sm:flex-row sm:justify-between gap-3';
+    const base = 'flex flex-col sm:flex-row sm:justify-between gap-2 sm:gap-3';
     const alinear = this.alineacion() === 'final' ? 'sm:items-end' : 'sm:items-center';
-    const tarjeta = this.enTarjeta() ? 'superficie p-4' : '';
+    const tarjeta = this.enTarjeta() ? 'superficie px-3 py-2 sm:p-4' : '';
     return `${base} ${alinear} ${tarjeta}`.trim();
   });
 }

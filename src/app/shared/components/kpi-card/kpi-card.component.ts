@@ -12,15 +12,15 @@ export type SentidoMejora = 'menor-mejor' | 'mayor-mejor';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <article class="superficie h-full px-4 py-3" data-testid="kpi-card">
-      <p class="text-xs text-warm-600" data-testid="kpi-etiqueta">{{ etiqueta() }}</p>
-      <p class="text-xl font-semibold leading-tight" data-testid="kpi-valor">{{ valorTexto() }}@if (unidad() && valorTexto() !== sinDato) {<span class="text-base font-medium text-warm-600" data-testid="kpi-unidad">{{ unidad() }}</span>}</p>
+    <article class="superficie h-full px-3 py-2 sm:px-4" data-testid="kpi-card">
+      <p class="text-xs leading-snug text-warm-600" data-testid="kpi-etiqueta">{{ etiqueta() }}</p>
+      <p class="text-lg font-semibold leading-tight" data-testid="kpi-valor">{{ valorTexto() }}@if (unidad() && valorTexto() !== sinDato) {<span class="text-base font-medium text-warm-600" data-testid="kpi-unidad">{{ unidad() }}</span>}</p>
       @if (descripcion()) {
         <p class="text-xs text-warm-600" data-testid="kpi-descripcion">{{ descripcion() }}</p>
       }
       <ng-content />
       @if (variacionVista(); as v) {
-        <p class="mt-1 inline-flex items-center gap-1 text-xs font-semibold" [class]="v.clases" data-testid="kpi-variacion" [attr.data-tono]="v.tono" [attr.aria-label]="v.aria">
+        <p class="mt-0.5 inline-flex items-center gap-1 text-xs font-semibold" [class]="v.clases" data-testid="kpi-variacion" [attr.data-tono]="v.tono" [attr.aria-label]="v.aria">
           @if (v.direccion === 'sube') {
             <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 4l6 9H4z" /></svg>
           } @else if (v.direccion === 'baja') {
