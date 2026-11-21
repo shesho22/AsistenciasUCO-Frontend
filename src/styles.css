@@ -340,6 +340,28 @@
   }
 }
 
+/*
+ * Columnas fijas a la izquierda (col-fija, col-fija-2) dentro de tabla-scroll: permanecen visibles al desplazar de lado.
+ * Solo desde md; bajo md la tabla se presenta como tarjetas. col-fija-2 se ubica tras una primera columna de 2.25rem.
+ */
+@media (width >= 48rem) {
+  .tabla-scroll .col-fija {
+    position: sticky;
+    left: 0;
+    z-index: 5;
+    background-color: var(--color-white);
+  }
+
+  .tabla-scroll .col-fija-2 {
+    left: 2.25rem;
+  }
+
+  .tabla-scroll thead th.col-fija {
+    z-index: 20;
+    background-color: var(--color-warm-100);
+  }
+}
+
 /* En modo tarjetas (bajo md) no hay encabezado visible: sin limite de alto ni desplazamiento vertical propio. */
 @media (width < 48rem) {
   .tabla-contenedor:has(.tabla-tarjetas),

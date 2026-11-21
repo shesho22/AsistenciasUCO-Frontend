@@ -82,13 +82,13 @@ const NUMERO_ES = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 2 });
         } @else if (listado.filas().length === 0 && !listado.cargando()) {
           <p class="text-sm text-warm-500 text-center py-6">No hay grupos con asistencia para los filtros seleccionados.</p>
         } @else {
-          <div class="overflow-x-auto">
-            <table class="tabla-tarjetas w-full text-sm" data-testid="consolidado-tabla">
+          <div class="tabla-scroll" role="region" tabindex="0" aria-label="Consolidado de asistencia por grupo">
+            <table class="tabla-tarjetas w-full min-w-[64rem] text-sm" data-testid="consolidado-tabla">
               <thead>
                 <tr class="text-left text-xs uppercase tracking-wider text-warm-500 border-b border-warm-100">
-                  <th scope="col" class="py-2 pr-1 w-8"><span class="sr-only">Sesiones del grupo</span></th>
+                  <th scope="col" class="col-fija w-9 min-w-9 py-2 pr-1"><span class="sr-only">Sesiones del grupo</span></th>
+                  <th scope="col" class="col-fija col-fija-2 py-2 pr-3 pl-1">Materia / Grupo</th>
                   <th scope="col" class="py-2 pr-3">Cohorte</th>
-                  <th scope="col" class="py-2 pr-3">Materia / Grupo</th>
                   <th scope="col" class="py-2 pr-3">Docente</th>
                   <th scope="col" class="py-2 pr-3 text-right">Activos</th>
                   <th scope="col" class="py-2 pr-3 text-right" title="Sesiones ya vencidas con asistencia registrada; las programadas a futuro no cuentan.">Sesiones ejecutadas</th>
@@ -104,7 +104,7 @@ const NUMERO_ES = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 2 });
               <tbody>
                 @for (g of listado.filas(); track g.idGrupo) {
                   <tr class="border-b border-warm-50" [class.bg-primary-50]="expandido() === g.idGrupo">
-                    <td class="py-2 pr-1">
+                    <td class="col-fija w-9 min-w-9 py-2 pr-1" [class.bg-primary-50]="expandido() === g.idGrupo">
                       <button
                         type="button"
                         class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-warm-700 hover:bg-warm-100 focus-visible:ring-2 focus-visible:ring-primary-600 outline-none"
@@ -115,11 +115,11 @@ const NUMERO_ES = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 2 });
                         (click)="alternar(g.idGrupo)"
                       >{{ expandido() === g.idGrupo ? '▾' : '▸' }}</button>
                     </td>
-                    <td class="py-2 pr-3 text-warm-700" data-label="Cohorte">{{ g.nombrePeriodoAcademico || '—' }}</td>
-                    <td class="py-2 pr-3" data-label="Materia / Grupo">
+                    <td class="col-fija col-fija-2 py-2 pr-3 pl-1" [class.bg-primary-50]="expandido() === g.idGrupo" data-label="Materia / Grupo">
                       <span class="font-semibold text-warm-900 block">{{ g.nombreAsignatura || '—' }}</span>
                       <span class="text-xs text-warm-500">{{ g.nombreGrupo || 'Grupo ' + g.codigoGrupo }}{{ comoDecano && g.nombrePrograma ? ' · ' + g.nombrePrograma : '' }}</span>
                     </td>
+                    <td class="py-2 pr-3 text-warm-700" data-label="Cohorte">{{ g.nombrePeriodoAcademico || '—' }}</td>
                     <td class="py-2 pr-3 text-warm-700" data-label="Docente">{{ g.nombreDocente || 'Sin docente' }}</td>
                     <td class="py-2 pr-3 text-right text-warm-700" data-label="Activos">{{ g.estudiantesActivos }}</td>
                     <td class="py-2 pr-3 text-right text-warm-700" data-label="Sesiones ejecutadas">{{ g.sesionesEjecutadas }}</td>

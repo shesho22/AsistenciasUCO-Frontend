@@ -125,6 +125,21 @@ describe('ConsolidadoAsistenciaComponent (HU061)', () => {
     expect(rotulos).toContain('Pérdida');
   });
 
+  it('P1 movil/escritorio: marco con desplazamiento propio (encabezado fijo) y columnas de expandir y materia fijas a la izquierda', () => {
+    const fixture = crear(false);
+    http
+      .expectOne((r) => r.url === `${api}/coordinador/consolidado-asistencia`)
+      .flush({ exitoso: true, datos: [grupo('ASG-1', 'Cálculo', 'DOC-1')], total: 1 });
+    fixture.detectChanges();
+    const tabla = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="consolidado-tabla"]') as HTMLElement;
+    expect(tabla.parentElement?.classList).toContain('tabla-scroll');
+    expect(tabla.parentElement?.getAttribute('role')).toBe('region');
+    const fijas = Array.from(tabla.querySelectorAll('tbody tr:first-child td.col-fija'));
+    expect(fijas.length).toBe(2);
+    expect(fijas[1].getAttribute('data-label')).toBe('Materia / Grupo');
+    expect(tabla.querySelectorAll('thead th.col-fija').length).toBe(2);
+  });
+
   it('D.8 muestra Excusa y Sin registro con la barra apilada de cuatro segmentos y la nota de horas', () => {
     const fixture = crear(false);
     http
