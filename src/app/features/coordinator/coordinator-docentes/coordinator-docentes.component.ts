@@ -69,18 +69,18 @@ const MIN_CARACTERES_CANDIDATOS = 3;
 
       <!-- HU095: consolidado del directorio del programa (servidor), por estado -->
       @if (resumen(); as r) {
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4" data-testid="resumen-docentes">
-          <div class="superficie p-4">
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4" data-testid="resumen-docentes">
+          <div class="superficie px-3 py-2 sm:p-4">
             <p class="text-xs font-semibold text-warm-500 uppercase">Docentes vinculados</p>
-            <p class="text-2xl font-bold text-warm-900">{{ r.totalDocentes }}</p>
+            <p class="text-xl font-bold text-warm-900">{{ r.totalDocentes }}</p>
           </div>
-          <div class="superficie p-4">
+          <div class="superficie px-3 py-2 sm:p-4">
             <p class="text-xs font-semibold text-success-700 uppercase">Activos</p>
-            <p class="text-2xl font-bold text-success-800">{{ r.totalActivos }}</p>
+            <p class="text-xl font-bold text-success-800">{{ r.totalActivos }}</p>
           </div>
-          <div class="superficie p-4">
+          <div class="superficie px-3 py-2 sm:p-4">
             <p class="text-xs font-semibold text-warm-500 uppercase">Inactivos</p>
-            <p class="text-2xl font-bold text-warm-700">{{ r.totalInactivos }}</p>
+            <p class="text-xl font-bold text-warm-700">{{ r.totalInactivos }}</p>
           </div>
         </div>
       }

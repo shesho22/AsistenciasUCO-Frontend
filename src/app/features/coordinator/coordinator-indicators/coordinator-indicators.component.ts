@@ -37,7 +37,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
 
       @if (parte() !== 'alertas' && service.kpis(); as k) {
         <!-- [kpi-extra]: tarjeta adicional del contenedor (p. ej. «Revisiones por resolver»), ocupa la primera columna en dos filas. -->
-        <div class="grid grid-cols-2 gap-3 lg:grid-cols-4" [class.xl:grid-cols-5]="conKpiExtra()">
+        <div class="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4" [class.xl:grid-cols-5]="conKpiExtra()">
           <ng-content select="[kpi-extra]" />
           <app-kpi-card etiqueta="Estudiantes" [valor]="k.totalEstudiantes" />
           <app-kpi-card etiqueta="Estudiantes en riesgo" [valor]="k.estudiantesRiesgo" />

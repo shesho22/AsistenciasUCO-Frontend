@@ -19,37 +19,37 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
     template: `
     <div class="space-y-4">
       <!-- KPIs Estudiante -->
-      <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
+      <section class="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+        <div class="superficie px-3 py-2 sm:px-4 sm:py-3 flex flex-col justify-between h-full">
           <span class="text-xs text-warm-500 font-medium">Materias Matriculadas</span>
           @if (resumen(); as r) {
-            <p class="text-2xl font-serif font-bold text-warm-900 mt-1" data-testid="resumen-total-materias">{{ r.totalMaterias }}</p>
+            <p class="text-xl font-serif font-bold text-warm-900 mt-0.5" data-testid="resumen-total-materias">{{ r.totalMaterias }}</p>
           } @else {
             <p class="text-base font-serif font-bold text-warm-500 mt-1" data-testid="materias-no-disponible">No disponible</p>
           }
           <span class="text-[11px] text-primary-700 font-medium">Semestre 2026-II</span>
         </div>
-        <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
+        <div class="superficie px-3 py-2 sm:px-4 sm:py-3 flex flex-col justify-between h-full">
           <span class="text-xs text-warm-500 font-medium">Materias en riesgo</span>
           @if (materiasEnRiesgo() !== null) {
-            <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ materiasEnRiesgo() }}</p>
+            <p class="text-xl font-serif font-bold text-warm-900 mt-0.5">{{ materiasEnRiesgo() }}</p>
             <span class="text-[11px] text-warm-500 font-medium">Según la inasistencia por horas</span>
           } @else {
             <p class="text-base font-serif font-bold text-warm-500 mt-1" data-testid="riesgo-no-disponible">No disponible</p>
             <span class="text-[11px] text-warm-500 font-medium">Sin datos de asistencia consolidados</span>
           }
         </div>
-        <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
+        <div class="superficie px-3 py-2 sm:px-4 sm:py-3 flex flex-col justify-between h-full">
           <span class="text-xs text-warm-500 font-medium">Horas de falta</span>
           @if (resumen(); as r) {
-            <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ r.totalHorasFalta | horasMinutos }}</p>
+            <p class="text-xl font-serif font-bold text-warm-900 mt-0.5">{{ r.totalHorasFalta | horasMinutos }}</p>
             <span class="text-[11px] text-warm-500 font-medium">En todo el periodo</span>
           } @else {
             <p class="text-base font-serif font-bold text-warm-500 mt-1" data-testid="horas-falta-no-disponible">No disponible</p>
             <span class="text-[11px] text-warm-500 font-medium">Sin datos de asistencia consolidados</span>
           }
         </div>
-        <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]"
+        <div class="superficie px-3 py-2 sm:px-4 sm:py-3 flex flex-col justify-between h-full"
              [ngClass]="{'border-primary-300 bg-primary-50/30 ring-1 ring-primary-400/20': $safeNavigationMigration(proximaClase()?.enCurso), 'border-primary-200/60': proximaClase() && !proximaClase()?.enCurso}">
           <div class="flex items-center justify-between">
             <span class="text-xs text-warm-500 font-medium">Próxima Clase</span>

@@ -52,11 +52,11 @@ const TAMANO_CREDITOS = 100;
 
       @if (!embebido()) {
       <!-- KPIs Bento -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="superficie p-4 flex items-center justify-between">
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4">
+        <div class="superficie px-3 py-2 sm:p-4 flex items-center justify-between">
           <div>
             <span class="text-xs text-warm-500 font-medium">Planes Registrados</span>
-            <p class="text-2xl font-serif font-bold text-warm-900">{{ cargandoEstructura() ? '—' : planes().length }}</p>
+            <p class="text-xl font-serif font-bold text-warm-900">{{ cargandoEstructura() ? '—' : planes().length }}</p>
           </div>
           <div class="w-11 h-11 rounded-xl bg-primary-50 text-primary-700 flex items-center justify-center shrink-0">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -65,10 +65,10 @@ const TAMANO_CREDITOS = 100;
           </div>
         </div>
 
-        <div class="superficie p-4 flex items-center justify-between">
+        <div class="superficie px-3 py-2 sm:p-4 flex items-center justify-between">
           <div>
             <span class="text-xs text-warm-500 font-medium">Planes Vigentes</span>
-            <p class="text-2xl font-serif font-bold text-success-700">{{ cargandoEstructura() ? '—' : planesVigentes() }}</p>
+            <p class="text-xl font-serif font-bold text-success-700">{{ cargandoEstructura() ? '—' : planesVigentes() }}</p>
           </div>
           <div class="w-11 h-11 rounded-xl bg-success-50 text-success-700 flex items-center justify-center shrink-0">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -77,10 +77,10 @@ const TAMANO_CREDITOS = 100;
           </div>
         </div>
 
-        <div class="superficie p-4 flex items-center justify-between">
+        <div class="superficie px-3 py-2 sm:p-4 flex items-center justify-between">
           <div>
             <span class="text-xs text-warm-500 font-medium">Total Asignaturas</span>
-            <p class="text-2xl font-serif font-bold text-primary-800">{{ totalAsignaturasTexto() }}</p>
+            <p class="text-xl font-serif font-bold text-primary-800">{{ totalAsignaturasTexto() }}</p>
           </div>
           <div class="w-11 h-11 rounded-xl bg-accent-100 text-accent-800 flex items-center justify-center shrink-0">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

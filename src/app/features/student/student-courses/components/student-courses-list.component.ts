@@ -82,8 +82,8 @@ interface BarraHoras {
       </app-page-header>
 
       <!-- Métricas Generales -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="superficie p-4 flex items-center gap-4">
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4">
+        <div class="superficie px-3 py-2 sm:p-4 flex items-center gap-4">
           <div class="w-11 h-11 rounded-xl bg-primary-50 text-primary-700 flex items-center justify-center shrink-0">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
@@ -92,14 +92,14 @@ interface BarraHoras {
           <div>
             <span class="text-xs text-warm-500 font-medium">Materias Inscritas</span>
             @if (resumen(); as r) {
-              <p class="text-2xl font-serif font-bold text-warm-900" data-testid="resumen-total-materias">{{ r.totalMaterias }}</p>
+              <p class="text-xl font-serif font-bold text-warm-900" data-testid="resumen-total-materias">{{ r.totalMaterias }}</p>
             } @else {
               <p class="text-base font-serif font-bold text-warm-500" data-testid="materias-no-disponible">No disponible</p>
             }
           </div>
         </div>
 
-        <div class="superficie p-4 flex items-center gap-4">
+        <div class="superficie px-3 py-2 sm:p-4 flex items-center gap-4">
           <div class="w-11 h-11 rounded-xl bg-success-50 text-success-700 flex items-center justify-center shrink-0">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -108,14 +108,14 @@ interface BarraHoras {
           <div>
             <span class="text-xs text-warm-500 font-medium">Materias en riesgo</span>
             @if (materiasEnRiesgo() !== null) {
-              <p class="text-2xl font-serif font-bold text-warm-900">{{ materiasEnRiesgo() }}</p>
+              <p class="text-xl font-serif font-bold text-warm-900">{{ materiasEnRiesgo() }}</p>
             } @else {
               <p class="text-base font-serif font-bold text-warm-500" data-testid="riesgo-no-disponible">No disponible</p>
             }
           </div>
         </div>
 
-        <div class="superficie p-4 flex items-center gap-4">
+        <div class="superficie px-3 py-2 sm:p-4 flex items-center gap-4">
           <div class="w-11 h-11 rounded-xl bg-warning-50 text-warning-700 flex items-center justify-center shrink-0">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -124,7 +124,7 @@ interface BarraHoras {
           <div>
             <span class="text-xs text-warm-500 font-medium">Horas de falta</span>
             @if (resumen(); as r) {
-              <p class="text-2xl font-serif font-bold text-warm-900">{{ r.totalHorasFalta | horasMinutos }}</p>
+              <p class="text-xl font-serif font-bold text-warm-900">{{ r.totalHorasFalta | horasMinutos }}</p>
             } @else {
               <p class="text-base font-serif font-bold text-warm-500" data-testid="horas-falta-no-disponible">No disponible</p>
             }

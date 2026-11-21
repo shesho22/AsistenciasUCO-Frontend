@@ -49,10 +49,7 @@ type PestanaModulo = 'DIRECTORIO';
         titulo="Estudiantes del Programa"
         descripcion="Consulta la información académica e institucional de todos los estudiantes adscritos a la carrera."
       >
-        <div cabecera-acciones class="flex flex-wrap items-center gap-3">
-          <span class="px-3.5 py-2 rounded-xl bg-primary-50 text-primary-900 text-xs font-bold border border-primary-200">
-            {{ totalDirectorio() }} Estudiantes Registrados
-          </span>
+        <div cabecera-acciones class="flex flex-wrap items-center gap-2">
           <app-button variant="secondary" size="sm" (clicked)="irAMaterias()">
             Ver Materias del Programa →
           </app-button>
@@ -60,20 +57,20 @@ type PestanaModulo = 'DIRECTORIO';
       </app-page-header>
 
       <!-- KPIs Rápidos del Padrón Estudiantil -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="superficie p-4">
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4">
+        <div class="superficie px-3 py-2 sm:p-4">
           <span class="text-xs text-warm-500 font-medium">Total en el Programa</span>
-          <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ totalDirectorio() }}</p>
+          <p class="text-xl font-serif font-bold text-warm-900 mt-0.5">{{ totalDirectorio() }}</p>
           <span class="text-[11px] text-warm-500">Estudiantes encontrados</span>
         </div>
-        <div class="superficie p-4">
+        <div class="superficie px-3 py-2 sm:p-4">
           <span class="text-xs text-warm-500 font-medium">Activos en el Programa</span>
-          <p class="text-2xl font-serif font-bold text-success-700 mt-1">{{ totalActivos() }}</p>
+          <p class="text-xl font-serif font-bold text-success-700 mt-0.5">{{ totalActivos() }}</p>
           <span class="text-[11px] text-success-700">Matrícula académica vigente</span>
         </div>
-        <div class="superficie p-4">
+        <div class="superficie px-3 py-2 sm:p-4">
           <span class="text-xs text-warm-500 font-medium">Inactivos en el Programa</span>
-          <p class="text-2xl font-serif font-bold text-warm-700 mt-1">{{ totalInactivos() }}</p>
+          <p class="text-xl font-serif font-bold text-warm-700 mt-0.5">{{ totalInactivos() }}</p>
           <span class="text-[11px] text-warm-500">Sin matrícula activa en el período</span>
         </div>
       </div>

@@ -42,11 +42,11 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
       </app-page-header>
 
       <!-- KPIs Bento -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-xs flex items-center justify-between">
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4">
+        <div class="bg-white px-3 py-2 sm:p-4 rounded-2xl border border-warm-200 shadow-warm-xs flex items-center justify-between">
           <div>
             <span class="text-xs font-bold uppercase tracking-wider text-warm-500">Total Planes</span>
-            <div class="text-2xl font-bold font-serif text-warm-900 mt-1">{{ totalPlanes() }}</div>
+            <div class="text-xl font-bold font-serif text-warm-900 mt-0.5">{{ totalPlanes() }}</div>
             <p class="text-[11px] text-warm-500 mt-0.5">Registrados en el programa</p>
           </div>
           <div class="p-2.5 rounded-xl bg-primary-50 text-primary-700">
@@ -56,10 +56,10 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
           </div>
         </div>
 
-        <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-xs flex items-center justify-between">
+        <div class="bg-white px-3 py-2 sm:p-4 rounded-2xl border border-warm-200 shadow-warm-xs flex items-center justify-between">
           <div>
             <span class="text-xs font-bold uppercase tracking-wider text-warm-500">Planes Vigentes</span>
-            <div class="text-2xl font-bold font-serif text-success-700 mt-1">{{ totalVigentes() }}</div>
+            <div class="text-xl font-bold font-serif text-success-700 mt-0.5">{{ totalVigentes() }}</div>
             <p class="text-[11px] text-warm-500 mt-0.5">Activos para cohortes actuales</p>
           </div>
           <div class="p-2.5 rounded-xl bg-success-50 text-success-700">
@@ -69,10 +69,10 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
           </div>
         </div>
 
-        <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-xs flex items-center justify-between">
+        <div class="bg-white px-3 py-2 sm:p-4 rounded-2xl border border-warm-200 shadow-warm-xs flex items-center justify-between">
           <div>
             <span class="text-xs font-bold uppercase tracking-wider text-warm-500">Asignaturas Vinculadas</span>
-            <div class="text-2xl font-bold font-serif text-primary-800 mt-1">{{ totalAsignaturasVinculadas() }}</div>
+            <div class="text-xl font-bold font-serif text-primary-800 mt-0.5">{{ totalAsignaturasVinculadas() }}</div>
             <p class="text-[11px] text-warm-500 mt-0.5">Acumulado en planes curriculares</p>
           </div>
           <div class="p-2.5 rounded-xl bg-accent-100 text-accent-800">

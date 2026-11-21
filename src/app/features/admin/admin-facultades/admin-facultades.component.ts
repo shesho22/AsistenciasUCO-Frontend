@@ -53,9 +53,9 @@ type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
 
       <!-- ================= BENTO GRID OVERVIEW (SOLO EN VISTA LISTA) ================= -->
       @if (vista() === 'LISTA') {
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
           <!-- Total Facultades -->
-          <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-xs">
+          <div class="bg-white px-3 py-2 sm:p-4 rounded-2xl border border-warm-200 shadow-warm-xs">
             <div class="flex items-center justify-between mb-2">
               <span class="text-xs font-bold uppercase tracking-wider text-warm-500">Total Facultades</span>
               <div class="p-2 rounded-xl bg-primary-50 text-primary-700">
@@ -64,12 +64,12 @@ type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
                 </svg>
               </div>
             </div>
-            <div class="text-2xl font-bold font-serif text-warm-900">{{ facultades().length }}</div>
+            <div class="text-xl font-bold font-serif text-warm-900">{{ facultades().length }}</div>
             <p class="text-[11px] text-warm-500 mt-1">Registradas institucionalmente</p>
           </div>
 
           <!-- Facultades Activas -->
-          <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-xs">
+          <div class="bg-white px-3 py-2 sm:p-4 rounded-2xl border border-warm-200 shadow-warm-xs">
             <div class="flex items-center justify-between mb-2">
               <span class="text-xs font-bold uppercase tracking-wider text-warm-500">Activas</span>
               <div class="p-2 rounded-xl bg-success-50 text-success-700">
@@ -78,12 +78,12 @@ type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
                 </svg>
               </div>
             </div>
-            <div class="text-2xl font-bold font-serif text-success-800">{{ totalActivas() }}</div>
+            <div class="text-xl font-bold font-serif text-success-800">{{ totalActivas() }}</div>
             <p class="text-[11px] text-warm-500 mt-1">En operación académica</p>
           </div>
 
           <!-- Facultades Inactivas -->
-          <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-xs">
+          <div class="bg-white px-3 py-2 sm:p-4 rounded-2xl border border-warm-200 shadow-warm-xs">
             <div class="flex items-center justify-between mb-2">
               <span class="text-xs font-bold uppercase tracking-wider text-warm-500">Inactivas</span>
               <div class="p-2 rounded-xl bg-warning-50 text-warning-700">
@@ -92,12 +92,12 @@ type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
                 </svg>
               </div>
             </div>
-            <div class="text-2xl font-bold font-serif text-warning-800">{{ totalInactivas() }}</div>
+            <div class="text-xl font-bold font-serif text-warning-800">{{ totalInactivas() }}</div>
             <p class="text-[11px] text-warm-500 mt-1">Fuera de oferta académica</p>
           </div>
 
           <!-- Con Decano Titular -->
-          <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-xs">
+          <div class="bg-white px-3 py-2 sm:p-4 rounded-2xl border border-warm-200 shadow-warm-xs">
             <div class="flex items-center justify-between mb-2">
               <span class="text-xs font-bold uppercase tracking-wider text-warm-500">Decanaturas</span>
               <div class="p-2 rounded-xl bg-info-50 text-info-700">
@@ -106,7 +106,7 @@ type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
                 </svg>
               </div>
             </div>
-            <div class="text-2xl font-bold font-serif text-info-900">{{ totalConDecano() }}</div>
+            <div class="text-xl font-bold font-serif text-info-900">{{ totalConDecano() }}</div>
             <p class="text-[11px] text-warm-500 mt-1">Titulares designados</p>
           </div>
         </div>

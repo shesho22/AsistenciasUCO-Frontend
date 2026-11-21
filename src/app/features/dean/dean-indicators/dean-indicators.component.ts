@@ -30,7 +30,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
       </header>
 
       @if (service.kpis(); as k) {
-        <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div class="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
           <app-kpi-card etiqueta="Programas" [valor]="k.totalProgramas" />
           <app-kpi-card etiqueta="Estudiantes con matrícula activa" [valor]="k.totalEstudiantes" />
           <app-kpi-card etiqueta="En riesgo" [valor]="k.estudiantesRiesgo" />
