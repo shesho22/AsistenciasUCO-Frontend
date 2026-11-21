@@ -34,8 +34,6 @@ export const MENSAJES_UI = {
   API_ERROR_VALIDATION_ERROR: 'Los datos enviados no son válidos. Verifique los campos del formulario.',
   // Avisos de las pantallas (toasts).
   UI_ADMIN_AUDITORIA_001: 'ID de correlación copiado al portapapeles.',
-  UI_ADMIN_CATALOGOS_001: 'Registro guardado.',
-  UI_ADMIN_CATALOGOS_002: 'Estado actualizado.',
   UI_ADMIN_DECANOS_001: 'Los datos se corrigieron; la cuenta de acceso queda pendiente de sincronizar.',
   UI_ADMIN_DECANOS_002: 'Los datos del decano fueron corregidos.',
   UI_ADMIN_DECANOS_003: 'Estado actualizado.',

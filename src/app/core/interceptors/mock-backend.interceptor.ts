@@ -221,7 +221,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   }
 
   // ================= ADMIN: CATÁLOGOS ADMINISTRABLES =================
-  const catalogoAdmin = responderCatalogosAdminMock(url, method, req.body);
+  const catalogoAdmin = responderCatalogosAdminMock(url, method);
   if (catalogoAdmin) {
     return catalogoAdmin as ReturnType<HttpInterceptorFn>;
   }

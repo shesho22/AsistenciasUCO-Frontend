@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { Router, Routes, provideRouter } from '@angular/router';
+import { Router, Routes, UrlTree, provideRouter } from '@angular/router';
 import { routes } from './app.routes';
 import { AuthService } from './core/services/auth.service';
 import { roleGuard } from './core/guards/role.guard';
@@ -206,7 +206,6 @@ describe('application routes', () => {
 
     const antiguas: Array<[string, string]> = [
       ['admin/catalogos', 'catalogos'],
-      ['admin/estados', 'estados'],
       ['admin/festivos', 'festivos'],
       ['admin/correos', 'correo'],
       ['admin/areas', 'areas'],
@@ -218,6 +217,14 @@ describe('application routes', () => {
         expect(ruta$?.redirectTo).toBe(`admin/configuracion/${tab}`);
       });
     }
+
+    it('admin/estados redirige a los catálogos del sistema con los estados preseleccionados', () => {
+      const ruta$ = appChildren().find((route) => route.path === 'admin/estados');
+      expect(ruta$?.loadComponent).toBeUndefined();
+      TestBed.configureTestingModule({ providers: [provideRouter([])] });
+      const destino = TestBed.runInInjectionContext(() => (ruta$?.redirectTo as () => UrlTree)());
+      expect(TestBed.inject(Router).serializeUrl(destino)).toBe('/app/admin/configuracion/catalogos?catalogo=estados-reclamo');
+    });
 
     it('/app/admin/configuracion carga sus rutas hijas de forma diferida', () => {
       const cfg = appChildren().find((route) => route.path === 'admin/configuracion');

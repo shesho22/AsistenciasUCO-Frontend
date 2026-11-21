@@ -1,4 +1,4 @@
-/** Categoría de justificación del catálogo administrable (`/admin/categorias-justificacion`). */
+/** Categoría de justificación del catálogo predefinido (`GET /admin/categorias-justificacion`, solo consulta). */
 export interface CategoriaJustificacionAdmin {
   id: string;
   codigo: string;
@@ -8,20 +8,7 @@ export interface CategoriaJustificacionAdmin {
   estaActivo: boolean;
 }
 
-export interface CategoriaJustificacionCrear {
-  codigo: string;
-  nombre: string;
-  descripcion?: string;
-  requiereSoporte: boolean;
-}
-
-export interface CategoriaJustificacionEditar {
-  nombre: string;
-  descripcion?: string;
-  requiereSoporte: boolean;
-}
-
-/** Motivo de cancelación de sesión del catálogo administrable (`/admin/motivos-cancelacion-sesion`). */
+/** Motivo de cancelación de sesión del catálogo predefinido (`GET /admin/motivos-cancelacion-sesion`, solo consulta). */
 export interface MotivoCancelacionSesionAdmin {
   id: string;
   codigo: string;
@@ -30,29 +17,9 @@ export interface MotivoCancelacionSesionAdmin {
   estaActivo: boolean;
 }
 
-export interface MotivoCancelacionCrear {
-  codigo: string;
-  nombre: string;
-  orden?: number;
-}
-
-export interface MotivoCancelacionEditar {
-  nombre: string;
-  orden: number;
-}
-
-/** Listado completo (activos e inactivos) de un catálogo administrable. */
+/** Listado completo (activos e inactivos) de un catálogo predefinido. */
 export interface ListaCatalogoAdmin<T> {
   exitoso: boolean;
   datos: T[];
   total: number;
-}
-
-export interface CatalogoIdResultado {
-  id: string;
-}
-
-export interface CatalogoEstadoResultado {
-  id: string;
-  estaActivo: boolean;
 }

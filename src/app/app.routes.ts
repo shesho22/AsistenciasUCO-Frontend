@@ -1,4 +1,5 @@
-import { Routes } from '@angular/router';
+import { inject } from '@angular/core';
+import { Router, Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { roleGuard } from './core/guards/role.guard';
 import {
@@ -163,7 +164,11 @@ export const routes: Routes = [
           ),
       },
       { path: 'admin/catalogos', redirectTo: 'admin/configuracion/catalogos', pathMatch: 'full' },
-      { path: 'admin/estados', redirectTo: 'admin/configuracion/estados', pathMatch: 'full' },
+      {
+        path: 'admin/estados',
+        pathMatch: 'full',
+        redirectTo: () => inject(Router).parseUrl('/app/admin/configuracion/catalogos?catalogo=estados-reclamo'),
+      },
       { path: 'admin/festivos', redirectTo: 'admin/configuracion/festivos', pathMatch: 'full' },
       {
         // Sistema: pestañas auditoría y cierre masivo, cada una con su vista (/app/admin/sistema/:pestaña).
