@@ -63,7 +63,7 @@ const CLAVES: readonly ClaveEstadoToma[] = ['AN', 'SJC', 'EX', 'SIN'];
       @if (cargando() && filas().length === 0) {
         <div class="h-24 rounded-xl bg-warm-100 animate-pulse"></div>
       } @else {
-        <div class="overflow-x-auto rounded-2xl border border-warm-200 bg-white" data-testid="matriz-scroll">
+        <div class="tabla-scroll rounded-2xl border border-warm-200 bg-white" data-testid="matriz-scroll">
           <table class="w-full text-left text-xs text-warm-700">
             <thead class="bg-warm-100/70 border-b border-warm-200 text-[11px] font-bold text-warm-600">
               <tr>

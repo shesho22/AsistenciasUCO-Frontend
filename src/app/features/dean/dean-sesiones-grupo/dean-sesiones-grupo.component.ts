@@ -33,7 +33,7 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
             Horas en {{ timeZone.zoneLabel() }}.
           }
         </p>
-        <div class="overflow-x-auto">
+        <div class="tabla-scroll">
           <table class="w-full text-sm">
             <thead>
               <tr class="text-left text-xs uppercase tracking-wider text-warm-500 border-b border-warm-100">

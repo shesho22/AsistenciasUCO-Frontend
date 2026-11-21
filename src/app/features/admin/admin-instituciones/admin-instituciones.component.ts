@@ -50,7 +50,7 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
             <p class="text-xs text-warm-500 mt-1">Actualmente no existen registros institucionales configurados en el sistema.</p>
           </div>
         } @else {
-          <div class="overflow-x-auto">
+          <div class="tabla-scroll">
             <table class="w-full text-left text-sm">
               <thead class="bg-warm-50 border-b border-warm-200 text-xs font-bold text-warm-600 uppercase tracking-wider">
                 <tr>

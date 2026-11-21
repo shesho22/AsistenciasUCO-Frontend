@@ -77,7 +77,7 @@ export interface GrupoSesionesRef {
                 Horas en {{ timeZone.zoneLabel() }}.
               }
             </p>
-            <div class="overflow-x-auto">
+            <div class="tabla-scroll">
               <table class="w-full text-sm">
                 <thead>
                   <tr class="text-left text-xs uppercase tracking-wider text-warm-500 border-b border-warm-100">
@@ -160,7 +160,7 @@ export interface GrupoSesionesRef {
           } @else if (asistencias().length === 0 && !cargandoAsistencias()) {
             <p class="text-sm text-warm-500 text-center py-6">No hay registros de asistencia para esta sesión.</p>
           } @else {
-            <div class="overflow-x-auto">
+            <div class="tabla-scroll">
               <table class="w-full text-sm">
                 <thead>
                   <tr class="text-left text-xs uppercase tracking-wider text-warm-500 border-b border-warm-100">

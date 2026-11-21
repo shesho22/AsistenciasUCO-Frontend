@@ -203,7 +203,7 @@ describe('CoordinatorStudentsComponent', () => {
     const el = fixture.nativeElement as HTMLElement;
     const tabla = el.querySelector('[data-testid="tabla-estudiantes"]') as HTMLElement;
     expect(tabla.classList).toContain('tabla-tarjetas');
-    expect(tabla.closest('[role="region"]')?.classList).toContain('overflow-x-auto');
+    expect(tabla.closest('[role="region"]')?.classList).toContain('tabla-scroll');
     expect(tabla.querySelector('tbody td.col-acciones')).not.toBeNull();
     expect(tabla.querySelectorAll('tbody td[data-label]').length).toBe(6);
   });

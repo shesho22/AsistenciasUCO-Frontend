@@ -427,7 +427,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
                     <span class="text-xs text-warm-400">{{ tpl.versiones.length }} versión(es)</span>
                   </div>
 
-                  <div class="overflow-x-auto">
+                  <div class="tabla-scroll">
                     <table class="w-full text-left text-xs">
                       <thead class="bg-warm-50 text-warm-600 uppercase text-[10px] font-bold">
                         <tr>
@@ -586,7 +586,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
 
             <!-- Queue Table -->
             <div class="superficie overflow-hidden">
-              <div class="overflow-x-auto">
+              <div class="tabla-scroll">
                 <table class="w-full text-left text-xs">
                   <thead class="bg-warm-50 text-warm-600 uppercase text-[10px] font-bold border-b border-warm-200">
                     <tr>

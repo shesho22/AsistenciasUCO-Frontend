@@ -78,7 +78,7 @@ import { mensajeUi } from '../../../core/messages/mensajes-ui';
       <div>
         <h3 class="text-base font-bold text-warm-900 mb-3">Historial de Cierres Masivos Realizados</h3>
 
-        <div class="superficie overflow-x-auto">
+        <div class="superficie tabla-scroll">
           <table class="w-full text-left text-sm">
             <thead class="bg-warm-50 border-b border-warm-200 text-xs font-bold text-warm-600 uppercase tracking-wider">
               <tr>

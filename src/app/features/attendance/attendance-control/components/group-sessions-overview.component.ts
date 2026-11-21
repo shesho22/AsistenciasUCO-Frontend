@@ -185,7 +185,7 @@ export interface AccionSesionEvento {
             </app-empty-state>
           </div>
         } @else {
-          <div class="overflow-x-auto">
+          <div class="tabla-scroll">
             <table class="w-full text-left text-xs text-warm-800">
               <thead class="bg-warm-50 border-b border-warm-200 text-[11px] font-bold text-warm-600 uppercase tracking-wider">
                 <tr>

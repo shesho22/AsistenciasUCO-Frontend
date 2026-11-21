@@ -179,7 +179,7 @@ import {
         <!-- VISTA ESCRITORIO (>=640px Tabla de Alta Densidad) -->
         <div class="hidden sm:block">
           <app-card padding="none">
-            <div class="overflow-x-auto">
+            <div class="tabla-scroll">
               <table class="w-full text-left text-xs text-warm-700">
                 <thead class="bg-warm-100/70 border-b border-warm-200 uppercase text-[11px] font-bold text-warm-600 tracking-wider">
                   <tr>

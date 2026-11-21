@@ -125,7 +125,7 @@ const MIN_CARACTERES_CANDIDATOS = 3;
       } @else {
         <!-- MEJORAS-SERGIO 12: lista en tabla (una fila por docente) con las acciones; sin tipo de vinculación -->
         <div class="superficie overflow-hidden">
-          <div class="overflow-x-auto">
+          <div class="tabla-scroll">
             <table class="w-full text-sm text-warm-800" data-testid="tabla-docentes">
               <thead class="bg-warm-50 border-b border-warm-200 text-[11px] font-bold text-warm-600 uppercase tracking-wider">
                 <tr>

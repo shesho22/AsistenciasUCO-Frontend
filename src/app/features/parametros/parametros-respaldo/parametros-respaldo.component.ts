@@ -76,7 +76,7 @@ const TAMANO_HISTORIAL = 10;
         <app-error-carga [error]="error" (reintentar)="cargar()" />
       }
 
-      <div class="superficie overflow-x-auto">
+      <div class="superficie tabla-scroll">
         <table class="w-full text-left text-sm" [attr.aria-busy]="cargando()">
           <thead class="border-b border-warm-200 bg-warm-50 text-xs font-bold uppercase tracking-wider text-warm-600">
             <tr>
@@ -226,7 +226,7 @@ const TAMANO_HISTORIAL = 10;
         } @else if (cambios().length === 0 && !cargandoHistorial()) {
           <app-empty-state title="Sin cambios registrados" description="Este parámetro todavía no ha sido modificado." />
         } @else {
-          <div class="overflow-x-auto">
+          <div class="tabla-scroll">
             <table class="w-full text-left text-xs">
               <thead class="border-b border-warm-200 bg-warm-50 font-bold uppercase tracking-wider text-warm-600">
                 <tr>

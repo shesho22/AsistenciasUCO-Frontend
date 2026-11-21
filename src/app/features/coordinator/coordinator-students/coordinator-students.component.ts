@@ -117,7 +117,7 @@ type PestanaModulo = 'DIRECTORIO';
         <!-- MEJORAS-SERGIO 8: lista en tabla (una fila por estudiante) con la acción "Ver ficha"; sin estado financiero ni promedio,
              que el sistema no administra -->
         <div class="superficie overflow-hidden">
-          <div class="overflow-x-auto max-w-full" role="region" tabindex="0" aria-label="Estudiantes del programa">
+          <div class="tabla-scroll max-w-full" role="region" tabindex="0" aria-label="Estudiantes del programa">
             <table class="tabla-tarjetas w-full text-sm text-warm-800" data-testid="tabla-estudiantes">
               <thead class="bg-warm-50 border-b border-warm-200 text-[11px] font-bold text-warm-600 uppercase tracking-wider">
                 <tr>

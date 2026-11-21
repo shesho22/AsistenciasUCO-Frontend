@@ -126,7 +126,7 @@ function adaptarGrupoACurso(dto: GrupoDetalleDecanoApiDto): Course {
           />
         } @else {
           <!-- MEJORAS-SERGIO 6: tabla densa (una línea por sesión) y paginada, en lugar de una tarjeta alta por sesión -->
-          <div class="overflow-x-auto">
+          <div class="tabla-scroll">
             <table class="w-full text-xs text-warm-800" data-testid="tabla-sesiones-grupo">
               <thead class="bg-warm-50 border-b border-warm-200 text-[11px] font-bold text-warm-600 uppercase tracking-wider">
                 <tr>

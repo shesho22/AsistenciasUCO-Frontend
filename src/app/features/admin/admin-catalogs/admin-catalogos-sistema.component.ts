@@ -101,7 +101,7 @@ interface EstadoCarga {
         </div>
       </div>
 
-      <div class="border-t border-warm-100 overflow-x-auto" data-testid="catalogo-contenido">
+      <div class="border-t border-warm-100 tabla-scroll" data-testid="catalogo-contenido">
         <table class="tabla-tarjetas w-full text-sm">
           <caption class="sr-only">{{ seleccionado().etiqueta }}</caption>
           <thead class="bg-warm-50 text-xs uppercase text-warm-600">

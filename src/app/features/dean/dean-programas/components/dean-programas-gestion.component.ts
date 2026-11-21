@@ -67,7 +67,7 @@ import { mensajeUi } from '../../../../core/messages/mensajes-ui';
           </p>
         </div>
       } @else {
-        <div class="superficie relative overflow-x-auto">
+        <div class="superficie relative tabla-scroll">
           <table class="min-w-full text-sm">
             <thead class="bg-warm-50 text-xs uppercase text-warm-500">
               <tr>

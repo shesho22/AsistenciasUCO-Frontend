@@ -153,7 +153,7 @@ describe('AdminCatalogosSistemaComponent (vista única, solo consulta)', () => {
   it('la tabla usa tabla-tarjetas y su contenedor hace scroll propio (móvil sin scroll de página)', async () => {
     const { el } = await abrir();
     expect(el.querySelector('table')?.classList).toContain('tabla-tarjetas');
-    expect(el.querySelector('[data-testid="catalogo-contenido"]')?.className).toContain('overflow-x-auto');
+    expect(el.querySelector('[data-testid="catalogo-contenido"]')?.className).toContain('tabla-scroll');
     expect(el.querySelector('tbody td')?.getAttribute('data-label')).toBe('Código');
   });
 

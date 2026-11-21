@@ -57,7 +57,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
               Horas en {{ timeZone.zoneLabel() }}.
             }
           </p>
-          <div class="overflow-x-auto">
+          <div class="tabla-scroll">
             <table class="tabla-tarjetas w-full text-sm" data-testid="cronograma-tabla">
               <thead>
                 <tr class="text-left text-xs uppercase tracking-wider text-warm-500 border-b border-warm-100">

@@ -124,7 +124,7 @@ export function rangoUtc(desde: string, hasta: string): { desde: string; hasta: 
         } @else if (listado.filas().length === 0) {
           <p class="text-sm text-warm-500 text-center py-6">No hay eventos de auditoría en el rango y filtros seleccionados.</p>
         } @else {
-          <div class="overflow-x-auto">
+          <div class="tabla-scroll">
             <table class="w-full text-left text-sm">
               <thead class="bg-warm-50 border-b border-warm-200 text-xs font-bold text-warm-600 uppercase tracking-wider">
                 <tr>

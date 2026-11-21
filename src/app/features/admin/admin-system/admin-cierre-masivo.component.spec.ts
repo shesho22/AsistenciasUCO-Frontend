@@ -111,7 +111,7 @@ describe('AdminCierreMasivoComponent (F-ADM-006, F-ADM-007, F-ADM-014)', () => {
     expect(component.porcentaje(0, 0)).toBe('—');
     expect(component.porcentaje(1, 4)).toBe('25.0%');
     expect(el().textContent).not.toContain('NaN');
-    expect(el().querySelector('table')?.parentElement?.className).toContain('overflow-x-auto');
+    expect(el().querySelector('table')?.parentElement?.className).toContain('tabla-scroll');
     expect(el().textContent).toContain('Aún no hay cierres masivos');
   });
 

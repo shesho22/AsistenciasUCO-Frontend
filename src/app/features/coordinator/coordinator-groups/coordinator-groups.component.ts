@@ -65,7 +65,7 @@ interface GrupoForm {
       </app-page-header>
 
       @if (vista() === 'LISTA') {
-        <div class="superficie overflow-x-auto">
+        <div class="superficie tabla-scroll">
           @if (cargando()) {
             <p class="p-6 text-sm text-warm-500">Cargando grupos...</p>
           } @else if (errorCarga()) {

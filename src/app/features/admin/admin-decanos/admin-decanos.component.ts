@@ -116,7 +116,7 @@ const NOMBRE_FACULTAD_MAX = 50;
           } @else if (filteredDecanos().length === 0) {
             <p class="text-sm text-warm-500 text-center py-6">No hay decanos que coincidan con la búsqueda.</p>
           } @else {
-            <div class="relative overflow-x-auto">
+            <div class="tabla-scroll">
               <table class="w-full text-sm">
                 <thead>
                   <tr class="text-left text-xs uppercase tracking-wider text-warm-500 border-b border-warm-100">

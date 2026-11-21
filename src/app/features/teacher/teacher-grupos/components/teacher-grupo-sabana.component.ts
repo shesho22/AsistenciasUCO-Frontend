@@ -127,7 +127,7 @@ interface FilaPlanilla {
           </p>
         }
         <!-- Tabla Matriz con Scroll Horizontal Fluido -->
-        <div class="overflow-x-auto border border-warm-200 rounded-2xl shadow-xs">
+        <div class="tabla-scroll border border-warm-200 rounded-2xl shadow-xs">
           <table class="w-full text-left border-collapse text-xs">
             <thead>
               <tr class="bg-warm-100/80 border-b border-warm-200 text-warm-800 uppercase tracking-wider text-xs">
