@@ -105,7 +105,7 @@ export const ESTADOS_FILTRABLES: ReadonlyArray<{ codigo: EstadoRevisionCancelaci
       }
 
       @if (cargando()) {
-        <div class="bg-white p-12 rounded-2xl border border-warm-200 text-center text-sm text-warm-500">
+        <div class="bg-white p-4 rounded-2xl border border-warm-200 text-center text-sm text-warm-500">
           Cargando revisiones…
         </div>
       } @else if (revisiones().length === 0) {

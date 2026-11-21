@@ -58,7 +58,7 @@ import {
 
       <!-- Tabla de Períodos -->
       @if (errorPeriodos()) {
-        <div class="bg-white rounded-2xl border border-danger-200 p-12 text-center shadow-warm-sm" role="alert">
+        <div class="bg-white rounded-2xl border border-danger-200 p-4 text-center shadow-warm-sm" role="alert">
           <p class="text-sm font-semibold text-danger-700">No fue posible cargar los períodos académicos.</p>
           <p class="text-xs text-danger-700 mt-1">{{ errorPeriodos() }}</p>
           <button type="button" (click)="cargar()" class="mt-3 text-xs font-semibold px-3 py-1.5 rounded-lg border border-danger-200 hover:bg-danger-50">

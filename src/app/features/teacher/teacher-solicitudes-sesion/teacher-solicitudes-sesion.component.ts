@@ -31,7 +31,7 @@ import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load
     RangoHorarioPipe,
   ],
   template: `
-    <div class="space-y-5 min-w-0">
+    <div class="space-y-4 min-w-0">
       <app-page-header
         titulo="Solicitudes de sesión"
         descripcion="Estado de las sesiones extraordinarias que has pedido a tu coordinación."

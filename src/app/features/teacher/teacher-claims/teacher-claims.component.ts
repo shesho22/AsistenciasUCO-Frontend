@@ -119,14 +119,14 @@ const BUSQUEDA_ESPERA_MS = 300;
 
         <!-- Listado de Justificaciones -->
         @if (!isLoading() && listState() !== 'LOADED') {
-          <div class="bg-danger-50 border border-danger-200 rounded-2xl p-6 text-center text-sm text-danger-900 space-y-3" role="alert">
+          <div class="bg-danger-50 border border-danger-200 rounded-2xl p-4 text-center text-sm text-danger-900 space-y-3" role="alert">
             <p>{{ listStateMessage() }}</p>
             @if (listState() === 'NETWORK_ERROR' || listState() === 'SERVER_ERROR') {
               <app-button variant="secondary" size="sm" (clicked)="cargarReclamos()">Reintentar</app-button>
             }
           </div>
         } @else if (!isLoading() && reclamos().length === 0) {
-          <div class="superficie p-6 text-center">
+          <div class="superficie p-4 text-center">
             <app-empty-state
               title="No hay justificaciones en esta categoría"
               description="Todas las solicitudes de asistencia se encuentran al día."

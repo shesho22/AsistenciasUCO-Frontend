@@ -82,7 +82,7 @@ export function paginarEnCliente<T>(items: readonly T[], pagina: number, tamano:
         } @else if (vacio()) {
           <tbody>
             <tr>
-              <td [attr.colspan]="columnas()" class="py-8 text-center text-sm text-warm-600" data-testid="tabla-datos-vacia">
+              <td [attr.colspan]="columnas()" class="py-4 text-center text-sm text-warm-600" data-testid="tabla-datos-vacia">
                 {{ mensajeVacio() }}
               </td>
             </tr>

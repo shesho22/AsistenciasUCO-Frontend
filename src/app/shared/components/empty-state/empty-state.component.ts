@@ -9,7 +9,7 @@ export type EmptyStateVariant = 'neutral' | 'search' | 'info' | 'error';
     changeDetection: ChangeDetectionStrategy.OnPush,
     template: `
     <div
-      class="flex flex-col items-center justify-center p-8 sm:p-12 text-center rounded-2xl border border-dashed border-warm-300 bg-white/60 min-h-[220px]"
+      class="flex flex-col items-center justify-center p-4 sm:p-6 text-center rounded-2xl border border-dashed border-warm-300 bg-white/60"
       role="status"
     >
       <!-- Icon Container con Badge Esférico -->
@@ -22,7 +22,7 @@ export type EmptyStateVariant = 'neutral' | 'search' | 'info' | 'error';
       </div>
 
       <!-- Título con jerarquía tipográfica estricta -->
-      <h3 class="font-serif font-bold text-lg text-warm-900 mt-4 tracking-tight">
+      <h3 class="font-serif font-bold text-base text-warm-900 mt-2 tracking-tight">
         {{ title() }}
       </h3>
 
@@ -39,7 +39,7 @@ export type EmptyStateVariant = 'neutral' | 'search' | 'info' | 'error';
       }
 
       <!-- Slot para Botón de Llamada a la Acción (CTA) -->
-      <div class="mt-5 flex items-center gap-3">
+      <div class="mt-3 flex items-center gap-3 empty:hidden">
         @if (accionTexto()) {
           <button
             type="button"
