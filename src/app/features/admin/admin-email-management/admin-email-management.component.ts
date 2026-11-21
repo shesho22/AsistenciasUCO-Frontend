@@ -204,28 +204,36 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
                 <svg class="w-4 h-4 text-warm-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
               </div>
 
-              <!-- List of Template Cards -->
-              <div class="space-y-2 max-h-[640px] overflow-y-auto pr-1">
-                @for (tpl of plantillasFiltradas(); track tpl.tipo) {
-                  <button
-                    type="button"
-                    (click)="seleccionarPlantilla(tpl)"
-                    [class]="selectedTipo() === tpl.tipo ? 'border-primary-600 bg-primary-50/60 shadow-xs' : 'border-warm-200 bg-white hover:bg-warm-50/80'"
-                    class="w-full text-left p-3 rounded-xl border transition-all cursor-pointer flex flex-col gap-1.5"
-                  >
-                    <div class="flex items-center justify-between gap-2">
-                      <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary-100 text-primary-800 font-mono">
-                        {{ tpl.tipo }}
-                      </span>
-                      <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-warm-100 text-warm-700">
-                        v{{ tpl.versionActiva }}
-                      </span>
-                    </div>
-                    <div class="font-bold text-xs text-warm-900 leading-tight">
-                      {{ getMetadata(tpl.tipo).titulo }}
-                    </div>
-                  </button>
-                }
+              <!-- Lista maestra compacta: una fila por tipo, con encabezado fijo -->
+              <div class="tabla-scroll" role="region" tabindex="0" aria-label="Catálogo de notificaciones">
+                <table class="w-full text-xs" data-testid="plantillas-tabla">
+                  <thead>
+                    <tr class="text-left uppercase tracking-wider text-warm-500 border-b border-warm-100">
+                      <th scope="col" class="py-1.5 pr-2">Notificación</th>
+                      <th scope="col" class="py-1.5 text-right">Versión</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (tpl of plantillasFiltradas(); track tpl.tipo) {
+                      <tr class="border-b border-warm-50" [class.bg-primary-50]="selectedTipo() === tpl.tipo">
+                        <td class="p-0">
+                          <button
+                            type="button"
+                            (click)="seleccionarPlantilla(tpl)"
+                            [attr.aria-pressed]="selectedTipo() === tpl.tipo"
+                            class="w-full min-h-10 text-left py-1.5 pr-2 cursor-pointer hover:bg-warm-50/80 focus-visible:ring-2 focus-visible:ring-primary-600 outline-none"
+                          >
+                            <span class="block font-bold text-warm-900 leading-tight">{{ getMetadata(tpl.tipo).titulo }}</span>
+                            <span class="block font-mono text-[10px] text-primary-800">{{ tpl.tipo }}</span>
+                          </button>
+                        </td>
+                        <td class="py-1.5 text-right whitespace-nowrap">
+                          <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-warm-100 text-warm-700">v{{ tpl.versionActiva }}</span>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
               </div>
             </div>
 
