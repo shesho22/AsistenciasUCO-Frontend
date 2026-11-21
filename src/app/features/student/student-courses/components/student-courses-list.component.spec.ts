@@ -68,8 +68,8 @@ describe('StudentCoursesListComponent — indicadores por horas (CULM-001 B.2)',
   });
 });
 
+describe('StudentCoursesListComponent: paginacion y vacio (F-EST-013, F-EST-015)', () => {
   it('pagina las materias de a 12 y el estado vacio es compacto, de ancho completo y sin columnas', () => {
-  it('pagina las materias de a 12 y el estado vacio ocupa dos columnas solo desde md', () => {
     const fixture = TestBed.createComponent(StudentCoursesListComponent);
     fixture.componentRef.setInput('isLoading', false);
     fixture.componentRef.setInput('materias', []);
