@@ -64,7 +64,11 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
           </select>
         </div>
 
-        @if (service.alertas().length === 0) {
+        @if (cargandoAlertas()) {
+          <p role="status" class="py-6 text-center text-sm text-neutral-600" data-testid="alertas-cargando">Cargando alertas tempranas...</p>
+        } @else if (errorAlertas(); as mensaje) {
+          <app-empty-state variant="error" title="No se pudieron cargar las alertas tempranas." [causa]="mensaje" data-testid="alertas-error" />
+        } @else if (service.alertas().length === 0) {
           <app-empty-state
             variant="info"
             title="No hay estudiantes con alerta en este período."
@@ -141,6 +145,9 @@ export class CoordinatorIndicatorsComponent implements OnInit {
   readonly filtroNombre = signal('');
   readonly filtroSemaforo = signal<SemaforoAlerta | null>(null);
   readonly estudianteFicha = signal<AlertaTemprana | null>(null);
+  readonly cargandoAlertas = signal(false);
+  /** Mensaje del backend cuando falla la consulta de alertas; null si no hay error. */
+  readonly errorAlertas = signal<string | null>(null);
 
   ngOnInit(): void {
     // S4: se conocen los programas del coordinador antes de pedir cifras, para enviar siempre programaId.
@@ -188,6 +195,8 @@ export class CoordinatorIndicatorsComponent implements OnInit {
   }
 
   private cargarAlertas(): void {
+    this.cargandoAlertas.set(true);
+    this.errorAlertas.set(null);
     this.service
       .consultarAlertas({
         pagina: this.pagina(),
@@ -195,6 +204,13 @@ export class CoordinatorIndicatorsComponent implements OnInit {
         semaforo: this.filtroSemaforo() ?? undefined,
         nombre: this.filtroNombre() || undefined,
       })
-      .subscribe({ error: this.fallo });
+      .subscribe({
+        next: () => this.cargandoAlertas.set(false),
+        error: (e: unknown) => {
+          this.cargandoAlertas.set(false);
+          if (!rolSinAmbito(e)) this.errorAlertas.set(getApiErrorMessage(e));
+          this.fallo(e);
+        },
+      });
   }
 }

@@ -305,6 +305,16 @@ export const routes: Routes = [
           ),
       },
       {
+        // P2: indicadores y alertas tempranas del programa con su propia entrada de menú (antes redirigía a Asistencia).
+        path: 'coordinador/indicadores',
+        canActivate: [roleGuard, coordinadorConProgramaGuard],
+        data: { roles: ['COORDINADOR'] },
+        loadComponent: () =>
+          import('./features/coordinator/coordinator-indicators/coordinator-indicators.component').then(
+            (m) => m.CoordinatorIndicatorsComponent
+          ),
+      },
+      {
         // ATA D6: la bandeja de solicitudes de sesión sale de «Asistencia» y tiene su propia entrada de menú.
         path: 'coordinador/solicitudes-sesion',
         canActivate: [roleGuard, coordinadorConProgramaGuard],
@@ -331,7 +341,6 @@ export const routes: Routes = [
       { path: 'coordinador/periodos', redirectTo: 'coordinador/programa/periodos', pathMatch: 'full' },
       { path: 'coordinador/asistencias', redirectTo: 'coordinador/asistencia', pathMatch: 'full' },
       { path: 'coordinador/consolidado-asistencia', redirectTo: 'coordinador/asistencia', pathMatch: 'full' },
-      { path: 'coordinador/indicadores', redirectTo: 'coordinador/asistencia', pathMatch: 'full' },
       {
         path: 'coordinador/planes-estudio',
         canActivate: [roleGuard, coordinadorConProgramaGuard],

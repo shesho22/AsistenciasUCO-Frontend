@@ -426,6 +426,12 @@ export class DashboardLayoutComponent {
       icon: 'asistencia',
     },
     {
+      label: 'Indicadores',
+      route: '/app/coordinador/indicadores',
+      roles: ['COORDINADOR'],
+      icon: 'dashboard',
+    },
+    {
       label: 'Solicitudes de sesión',
       route: '/app/coordinador/solicitudes-sesion',
       roles: ['COORDINADOR'],

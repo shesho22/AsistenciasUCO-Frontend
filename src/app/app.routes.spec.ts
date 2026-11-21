@@ -95,7 +95,7 @@ describe('application routes', () => {
       });
     }
 
-    for (const dest of ['coordinador/programa', 'coordinador/asistencia']) {
+    for (const dest of ['coordinador/programa', 'coordinador/asistencia', 'coordinador/indicadores']) {
       it(`${dest} autoriza solo al COORDINADOR`, () => {
         const r = ruta(dest);
         expect(r?.canActivate?.length).toBeGreaterThan(0);
@@ -125,7 +125,6 @@ describe('application routes', () => {
       ['coordinador/periodos', 'coordinador/programa/periodos'],
       ['coordinador/asistencias', 'coordinador/asistencia'],
       ['coordinador/consolidado-asistencia', 'coordinador/asistencia'],
-      ['coordinador/indicadores', 'coordinador/asistencia'],
     ];
     for (const [antigua, destino] of [...decanoAntiguas, ...coordinadorAntiguas]) {
       it(`${antigua} solo redirige a ${destino}`, () => {
@@ -331,6 +330,7 @@ describe('application routes', () => {
     for (const dest of [
       'coordinador/programa',
       'coordinador/asistencia',
+      'coordinador/indicadores',
       'coordinador/planes-estudio',
       'coordinador/planes-estudio/nuevo',
       'coordinador/planes-estudio/:planId/editar',

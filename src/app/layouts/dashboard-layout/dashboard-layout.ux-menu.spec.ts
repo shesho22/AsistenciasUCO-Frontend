@@ -110,6 +110,12 @@ describe('DashboardLayoutComponent menu simplificado (CULM-001 UX)', () => {
     expect(etiquetas(c)).toContain('Mis Materias');
   });
 
+  it('coordinador: Indicadores tiene su propia entrada de menu', () => {
+    const c = crear('COORDINADOR');
+    expect(rutas(c)).toContain('/app/coordinador/indicadores');
+    expect(etiquetas(c)).toContain('Indicadores');
+  });
+
   it('los demas roles no ven Seguridad ni Mensajes aunque el proveedor sea baseline', () => {
     for (const role of ['DOCENTE', 'ESTUDIANTE', 'COORDINADOR', 'DECANO'] as UserRole[]) {
       TestBed.resetTestingModule();
