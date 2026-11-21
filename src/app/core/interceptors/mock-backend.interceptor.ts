@@ -5,6 +5,7 @@ import { mockStore } from '../mocks/mock-data-store';
 import { respuestaConsultasTransversales } from '../mocks/mock-consultas-transversales';
 import { mockSesionesCalendario } from '../mocks/mock-calendario-sesiones';
 import { respuestaIndicadores } from '../mocks/mock-indicadores';
+import { respuestaSeguimiento } from '../mocks/mock-seguimiento';
 import { plantillasNotificacionMock } from '../mocks/mock-notificaciones';
 import {
   JORNADAS_PROGRAMA_MOCK,
@@ -576,6 +577,18 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   const indicadores = respuestaIndicadores(method, url);
   if (indicadores) {
     return of(okResponse(indicadores.datos)).pipe(delay(200));
+  }
+
+  // ================= SEGUIMIENTO: ALERTAS TEMPRANAS, COMPARATIVA DE PROGRAMAS Y AFORO DE GRUPOS =================
+  const seguimiento = respuestaSeguimiento(req, url);
+  if (seguimiento) {
+    if (seguimiento.esPaginada && Array.isArray(seguimiento.datos)) {
+      const pagina = Number(req.params.get('pagina') ?? 1);
+      const tamano = Number(req.params.get('tamano') ?? 10);
+      const inicio = (pagina - 1) * tamano;
+      return of(okPageResponse(seguimiento.datos.slice(inicio, inicio + tamano), pagina, tamano, seguimiento.total)).pipe(delay(200));
+    }
+    return of(okResponse(seguimiento.datos)).pipe(delay(200));
   }
 
   // ================= DECANO Y ADMINISTRADOR: CONSULTAS TRANSVERSALES (HU112/HU128/HU143/HU157) =================
