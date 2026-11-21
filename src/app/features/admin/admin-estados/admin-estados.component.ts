@@ -31,7 +31,7 @@ export function filasDe(estados: EstadoSistemaItem[], catalogo: EstadoSistemaIte
       <app-catalogo-solo-consulta
         [seccion]="true"
         [conEstado]="false"
-        titulo="Estados de reclamos de asistencia (P, A, R)"
+        titulo="Estados de reclamos de asistencia"
         descripcion="Estados de las solicitudes de revisión (reclamos) de asistencia."
         vacio="No hay estados de solicitud registrados."
         [filas]="solicitudes()"
