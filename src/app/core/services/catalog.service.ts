@@ -52,8 +52,8 @@ export class CatalogService {
   getTiposPrograma(): Observable<CatalogoPrograma[]> {
     if (environment.useFrontendMocks) {
       return of([
-        { id: 'TP-PRE', codigo: 'PRE', nombre: 'pregrado' },
-        { id: 'TP-POS', codigo: 'POS', nombre: 'postgrado' },
+        { id: 'TP-PRE', codigo: 'PRE', nombre: 'Pregrado' },
+        { id: 'TP-POS', codigo: 'POS', nombre: 'Posgrado' },
       ]).pipe(delay(150));
     }
     return this.http.get<CatalogoPrograma[]>(`${environment.apiUrl}/tipos-programa`);

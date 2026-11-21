@@ -71,7 +71,7 @@ describe('respuestaConsultasTransversales (mock HU112/HU128/HU143/HU157)', () =>
     expect(respuestaConsultasTransversales(todas, auditoria)?.total).toBe(2);
 
     const estados = '/api/v1/admin/estados';
-    expect(respuestaConsultasTransversales(get(estados), estados)?.total).toBe(5);
+    expect(respuestaConsultasTransversales(get(estados), estados)?.total).toBe(6);
 
     const categorias = '/api/v1/categorias-justificacion';
     expect(respuestaConsultasTransversales(get(categorias), categorias)?.total).toBe(6);

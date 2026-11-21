@@ -127,11 +127,12 @@ const AUDITORIA: EventoAuditoriaItem[] = [
 
 /** HU155: estados de negocio del seed. */
 const ESTADOS: EstadoSistemaItem[] = [
-  { catalogo: 'SOLICITUD', id: 'EST-P', codigo: 'P', nombre: 'pendiente' },
-  { catalogo: 'SOLICITUD', id: 'EST-A', codigo: 'A', nombre: 'aceptada' },
-  { catalogo: 'SOLICITUD', id: 'EST-R', codigo: 'R', nombre: 'rechazada' },
-  { catalogo: 'ESTUDIANTE_GRUPO', id: 'EEG-A', codigo: 'A', nombre: 'activo' },
-  { catalogo: 'ESTUDIANTE_GRUPO', id: 'EEG-CI', codigo: 'CI', nombre: 'cancelado por inasistencia' },
+  { catalogo: 'SOLICITUD', id: 'EST-P', codigo: 'P', nombre: 'Pendiente' },
+  { catalogo: 'SOLICITUD', id: 'EST-A', codigo: 'A', nombre: 'Aceptada' },
+  { catalogo: 'SOLICITUD', id: 'EST-R', codigo: 'R', nombre: 'Rechazada' },
+  { catalogo: 'SOLICITUD', id: 'EST-X', codigo: 'X', nombre: 'Retirada' },
+  { catalogo: 'ESTUDIANTE_GRUPO', id: 'EEG-A', codigo: 'A', nombre: 'Activo' },
+  { catalogo: 'ESTUDIANTE_GRUPO', id: 'EEG-CI', codigo: 'CI', nombre: 'Cancelado por inasistencia' },
 ];
 
 /** HU005/HU016: categorías de justificación del seed. */
