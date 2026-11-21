@@ -89,6 +89,12 @@ describe('CoordinatorIndicatorsComponent', () => {
     expect(component.service.totalAlertas()).toBe(12);
   });
 
+  it('P1 movil: la tabla de alertas va en un marco con desplazamiento propio (no desplaza el main) y encabezado fijo', () => {
+    const tabla = fixture.nativeElement.querySelector('table') as HTMLElement;
+    expect(tabla.parentElement?.classList).toContain('tabla-scroll');
+    expect(tabla.parentElement?.getAttribute('role')).toBe('region');
+  });
+
   it('T-FE-03 cambiar de página vuelve a consultar el backend con esa página', () => {
     component.onPageChange(2);
     const req = http.expectOne((r) => r.url === `${base}/alertas-tempranas`);

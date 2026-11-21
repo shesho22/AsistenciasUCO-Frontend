@@ -75,7 +75,8 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
             causa="Ningún estudiante del programa supera el umbral de advertencia con los filtros actuales."
           />
         } @else {
-          <table class="w-full text-left text-sm">
+          <div class="tabla-scroll" role="region" tabindex="0" aria-label="Alertas tempranas de estudiantes">
+          <table class="w-full min-w-[34rem] text-left text-sm">
             <thead class="text-xs uppercase text-neutral-500">
               <tr><th scope="col" class="py-2">Estudiante</th><th scope="col">Inasistencia</th><th scope="col">Faltas</th><th scope="col">Estado</th><th scope="col">Semáforo</th><th scope="col"></th></tr>
             </thead>
@@ -92,6 +93,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
               }
             </tbody>
           </table>
+          </div>
         }
         <app-pagination
           [totalItems]="service.totalAlertas()"

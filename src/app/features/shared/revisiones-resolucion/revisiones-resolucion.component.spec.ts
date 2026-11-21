@@ -142,6 +142,13 @@ describe('RevisionesResolucionComponent (CULM-001 C.1 §4.5, §4.8)', () => {
     expect(fixture.nativeElement.querySelector('[data-testid="rev-motivo-docente"]').textContent).toContain('Ausencias constantes');
   });
 
+  it('P1 movil: la tabla va en un marco tabla-scroll y las acciones del encabezado se pliegan en vez de ensanchar la pagina', () => {
+    inicializar('DECANO');
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[data-testid="rev-tabla"]')?.parentElement?.classList).toContain('tabla-scroll');
+    expect(el.querySelector('[cabecera-acciones]')?.classList).toContain('flex-wrap');
+  });
+
   it('P2 responsive: la tabla pasa a tarjetas bajo md y las acciones del coordinador quedan fijas a la derecha', () => {
     inicializar('COORDINADOR');
     const tabla = fixture.nativeElement.querySelector('[data-testid="rev-tabla"]') as HTMLElement;

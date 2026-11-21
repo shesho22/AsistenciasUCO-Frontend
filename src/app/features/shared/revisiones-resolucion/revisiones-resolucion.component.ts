@@ -66,7 +66,7 @@ export const ESTADOS_FILTRABLES: ReadonlyArray<{ codigo: EstadoRevisionCancelaci
           ? 'Consulta de las revisiones de cancelación de matrícula por inasistencia de los grupos de tu facultad. La decisión final la toma el coordinador del programa.'
           : 'Decide si se cancela la matrícula de los estudiantes que el docente propuso cancelar por pérdida de inasistencia.'"
       >
-        <div cabecera-acciones class="flex items-center gap-3">
+        <div cabecera-acciones class="flex max-w-full flex-wrap items-center gap-3">
           @if (esDecano()) {
             <label class="flex items-center gap-2 text-xs font-medium text-warm-700">
               <span>Estado</span>
@@ -94,7 +94,7 @@ export const ESTADOS_FILTRABLES: ReadonlyArray<{ codigo: EstadoRevisionCancelaci
               <span>Solo pendientes</span>
             </label>
           }
-          <span class="px-3 py-1.5 rounded-xl bg-warm-100 text-xs font-bold text-warm-800 border border-warm-200">
+          <span class="px-3 py-1.5 rounded-xl bg-warm-100 text-xs font-bold text-warm-800 border border-warm-200 whitespace-nowrap">
             {{ totalElementos() }} {{ totalElementos() === 1 ? 'registro' : 'registros' }}
           </span>
         </div>
@@ -118,7 +118,7 @@ export const ESTADOS_FILTRABLES: ReadonlyArray<{ codigo: EstadoRevisionCancelaci
         />
       } @else {
         <div class="superficie overflow-hidden">
-          <div class="overflow-x-auto">
+          <div class="tabla-scroll">
             <table class="tabla-tarjetas w-full text-left text-sm" data-testid="rev-tabla">
               <thead class="bg-warm-50 border-b border-warm-200 text-xs font-bold text-warm-600 uppercase tracking-wider">
                 <tr>
