@@ -34,12 +34,13 @@ describe('DeanAforoComponent', () => {
     aforoReq().flush({ exitoso: true, datos: [grupo, { ...grupo, idGrupo: 'g-2', grupoEstaHabilitado: false, tasaAforo: null }], total: 2 });
     fixture.detectChanges();
     expect(el().querySelectorAll('[data-testid="aforo-fila"]').length).toBe(2);
-    expect(el().querySelectorAll('[data-testid="aforo-tarjeta"]').length).toBe(2);
+    // Una sola presentacion responsiva: ya no hay tarjetas duplicadas junto a la tabla.
+    expect(el().querySelectorAll('[data-testid="aforo-tarjeta"]').length).toBe(0);
     expect(el().textContent).toContain('Estructuras de Datos');
     expect(el().textContent).toContain('50%');
     expect(el().textContent).toContain('Sin datos');
     expect(el().textContent).toContain('No habilitado');
-    expect(el().querySelector('[data-testid="aforo-tarjetas"]')?.className).toContain('md:hidden');
+    expect(el().querySelector('[data-testid="aforo-tarjetas"]')).toBeNull();
   });
 
   it('muestra el estado vacío', () => {

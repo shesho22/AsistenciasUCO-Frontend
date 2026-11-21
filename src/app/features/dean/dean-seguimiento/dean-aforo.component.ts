@@ -8,7 +8,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
 
 /**
  * Pestaña «Aforo» de Seguimiento del decano: cupo, matriculados y cupos disponibles por grupo (GET /decano/aforo-grupos,
- * paginado en el servidor), con filtro por programa. En pantallas angostas cada grupo es una tarjeta.
+ * paginado en el servidor), con filtro por programa. Una sola tabla con encabezado fijo; en pantallas angostas cada fila es una tarjeta compacta.
  */
 @Component({
   selector: 'app-dean-aforo',
@@ -40,8 +40,9 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
       } @else if (service.aforo().length === 0) {
         <p class="py-6 text-center text-sm text-neutral-500" data-testid="aforo-vacio">No hay grupos para los filtros seleccionados.</p>
       } @else {
-        <div class="hidden md:block tabla-contenedor" role="region" tabindex="0" aria-label="Aforo de grupos">
-          <table class="tabla min-w-[48rem]">
+        <!-- Una sola presentación: tabla con encabezado fijo; bajo md cada fila es una tarjeta compacta (tabla-tarjetas). -->
+        <div class="tabla-scroll" role="region" tabindex="0" aria-label="Aforo de grupos">
+          <table class="tabla tabla-tarjetas tabla-tarjetas-compacta min-w-[48rem]">
             <caption class="sr-only">Aforo de grupos</caption>
             <thead>
               <tr>
@@ -53,42 +54,23 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
             <tbody>
               @for (g of service.aforo(); track g.idGrupo) {
                 <tr data-testid="aforo-fila">
-                  <td>
-                    {{ g.codigoGrupo }}
+                  <td class="tc-ancho" data-label="Grupo">
+                    <span class="md:hidden font-semibold">{{ g.nombreAsignatura }} · Grupo {{ g.codigoGrupo }}</span>
+                    <span class="hidden md:inline">{{ g.codigoGrupo }}</span>
                     @if (!g.grupoEstaHabilitado) {
                       <app-badge class="ml-2" variant="neutral" size="sm" [dot]="false">No habilitado</app-badge>
                     }
                   </td>
-                  <td>{{ g.nombreAsignatura }}</td>
-                  <td>{{ g.programas.join(', ') }}</td>
-                  <td class="text-right tabular-nums">{{ g.cupoMaximo }}</td>
-                  <td class="text-right tabular-nums">{{ g.matriculadosActivos }}</td>
-                  <td class="text-right tabular-nums">{{ g.cuposDisponibles }}</td>
-                  <td class="text-right font-semibold tabular-nums">{{ porcentaje(g.tasaAforo) }}</td>
+                  <td class="max-md:hidden">{{ g.nombreAsignatura }}</td>
+                  <td class="tc-ancho" data-label="Programa">{{ g.programas.join(', ') }}</td>
+                  <td class="text-right tabular-nums" data-label="Cupo">{{ g.cupoMaximo }}</td>
+                  <td class="text-right tabular-nums" data-label="Matriculados">{{ g.matriculadosActivos }}</td>
+                  <td class="text-right tabular-nums" data-label="Disponibles">{{ g.cuposDisponibles }}</td>
+                  <td class="text-right font-semibold tabular-nums" data-label="Aforo">{{ porcentaje(g.tasaAforo) }}</td>
                 </tr>
               }
             </tbody>
           </table>
-        </div>
-
-        <div class="space-y-3 md:hidden" data-testid="aforo-tarjetas">
-          @for (g of service.aforo(); track g.idGrupo) {
-            <article class="superficie p-4 space-y-2" data-testid="aforo-tarjeta">
-              <h3 class="text-sm font-semibold text-warm-900">
-                {{ g.nombreAsignatura }} · Grupo {{ g.codigoGrupo }}
-                @if (!g.grupoEstaHabilitado) {
-                  <app-badge class="ml-2" variant="neutral" size="sm" [dot]="false">No habilitado</app-badge>
-                }
-              </h3>
-              <p class="text-xs text-warm-600">{{ g.programas.join(', ') }}</p>
-              <dl class="grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
-                <dt class="text-warm-600">Cupo</dt><dd class="text-right tabular-nums">{{ g.cupoMaximo }}</dd>
-                <dt class="text-warm-600">Matriculados</dt><dd class="text-right tabular-nums">{{ g.matriculadosActivos }}</dd>
-                <dt class="text-warm-600">Disponibles</dt><dd class="text-right tabular-nums">{{ g.cuposDisponibles }}</dd>
-                <dt class="text-warm-600">Aforo</dt><dd class="text-right font-semibold tabular-nums">{{ porcentaje(g.tasaAforo) }}</dd>
-              </dl>
-            </article>
-          }
         </div>
         <app-pagination
           [totalItems]="service.totalAforo()"
