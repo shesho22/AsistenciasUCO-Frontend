@@ -505,21 +505,9 @@ export class AuthService implements OnDestroy {
     }
   }
 
-  private homePathForRole(role: UserRole): string {
-    switch (role) {
-      case 'ADMINISTRADOR':
-        return '/app/admin/decanos';
-      case 'DECANO':
-        return '/app/decano/mi-facultad/coordinadores';
-      case 'COORDINADOR':
-        return '/app/coordinador/programa/docentes';
-      case 'DOCENTE':
-        return '/app/docente/grupos';
-      case 'ESTUDIANTE':
-        return '/app/estudiante/horarios';
-      default:
-        return '/app/dashboard';
-    }
+  /** Aterrizaje posterior al login: el Panel principal para todos los roles (P3 C5). */
+  private homePathForRole(_role: UserRole): string {
+    return '/app/dashboard';
   }
 
   async loginWithCredentials(usernameInput: string, passwordInput: string): Promise<User> {
@@ -726,26 +714,7 @@ export class AuthService implements OnDestroy {
   }
 
   navigateForRole(role: UserRole): void {
-    switch (role) {
-      case 'ADMINISTRADOR':
-        void this.router.navigate(['/app/admin/decanos']);
-        break;
-      case 'DECANO':
-        void this.router.navigate(['/app/decano/mi-facultad/coordinadores']);
-        break;
-      case 'COORDINADOR':
-        void this.router.navigate(['/app/coordinador/programa/docentes']);
-        break;
-      case 'DOCENTE':
-        void this.router.navigate(['/app/docente/grupos']);
-        break;
-      case 'ESTUDIANTE':
-        void this.router.navigate(['/app/estudiante/horarios']);
-        break;
-      default:
-        void this.router.navigate(['/app/dashboard']);
-        break;
-    }
+    void this.router.navigate([this.homePathForRole(role)]);
   }
 
   login(): Observable<ApiResponse<User | null>> {

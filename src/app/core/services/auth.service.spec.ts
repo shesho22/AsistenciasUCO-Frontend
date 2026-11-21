@@ -1311,21 +1311,12 @@ describe('AuthService', () => {
   });
 
   describe('navegación por rol', () => {
-    it('navega a la ruta correcta para cada rol institucional', () => {
-      service.navigateForRole('ADMINISTRADOR');
-      expect(routerSpy.navigate).toHaveBeenCalledWith(['/app/admin/decanos']);
-
-      service.navigateForRole('DECANO');
-      expect(routerSpy.navigate).toHaveBeenCalledWith(['/app/decano/mi-facultad/coordinadores']);
-
-      service.navigateForRole('COORDINADOR');
-      expect(routerSpy.navigate).toHaveBeenCalledWith(['/app/coordinador/programa/docentes']);
-
-      service.navigateForRole('DOCENTE');
-      expect(routerSpy.navigate).toHaveBeenCalledWith(['/app/docente/grupos']);
-
-      service.navigateForRole('ESTUDIANTE');
-      expect(routerSpy.navigate).toHaveBeenCalledWith(['/app/estudiante/horarios']);
+    it('todos los roles aterrizan en el Panel principal (/app/dashboard)', () => {
+      for (const rol of ['ADMINISTRADOR', 'DECANO', 'COORDINADOR', 'DOCENTE', 'ESTUDIANTE'] as const) {
+        routerSpy.navigate.calls.reset();
+        service.navigateForRole(rol);
+        expect(routerSpy.navigate).toHaveBeenCalledWith(['/app/dashboard']);
+      }
     });
   });
 
