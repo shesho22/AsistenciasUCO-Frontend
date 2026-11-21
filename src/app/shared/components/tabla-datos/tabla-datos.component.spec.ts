@@ -53,6 +53,14 @@ describe('TablaDatosComponent', () => {
     expect(el().querySelector('table caption')?.textContent).toContain('Prueba');
   });
 
+  it('usa por defecto el marco con desplazamiento propio y alto maximo (cabecera fija) y deja la paginacion fuera', () => {
+    const region = el().querySelector('[role="region"]') as HTMLElement;
+    expect(region.classList.contains('tabla-contenedor')).toBeTrue();
+    expect(region.style.maxHeight).toBe('var(--tabla-alto-max)');
+    expect(region.querySelector('app-pagination')).toBeNull();
+    expect(el().querySelector('app-pagination')).toBeTruthy();
+  });
+
   it('muestra filas de esqueleto mientras carga y marca aria-busy', () => {
     host.cargando.set(true);
     fixture.detectChanges();

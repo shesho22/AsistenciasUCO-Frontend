@@ -117,8 +117,11 @@ export class TablaDatosComponent {
   readonly mensajeVacio = input<string>('No hay registros para mostrar.');
   /** Ancho minimo de la tabla; por debajo de el aparece desplazamiento horizontal. */
   readonly anchoMinimo = input<string>('40rem');
-  /** Altura maxima del marco; por encima de ella la tabla se desplaza con la cabecera fija. */
-  readonly alturaMaxima = input<string>('70vh');
+  /**
+   * Altura maxima del marco; por encima de ella la tabla se desplaza con la cabecera fija (sticky).
+   * Por defecto usa el token --tabla-alto-max; pasar 'none' para no limitar el alto (sin desplazamiento vertical propio).
+   */
+  readonly alturaMaxima = input<string>('var(--tabla-alto-max)');
   /** Usa table-layout fixed (anchos de columna estables definidos en colgroup o en los th). */
   readonly fija = input<boolean>(false);
   /** Bajo md cada fila se muestra como tarjeta apilada (las celdas llevan `data-label` con su rotulo). */
