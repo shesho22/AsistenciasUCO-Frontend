@@ -28,7 +28,7 @@ import {
   CaracterAsignatura,
   EstadoAsignaturaResultado,
 } from '../models/role-management.model';
-import { EstudiantePaginaApiDto, EstudianteResumenApiDto } from '../api/models/estudiante-api-dto.model';
+import { EstudianteDirectorioCoordinadorApiDto, EstudianteDirectorioPaginaApiDto } from '../api/models/estudiante-api-dto.model';
 import { AsistenciaSesionItem, SesionGrupoItem } from '../models/asistencia-programa.model';
 
 /** Plan de estudio tal como llega del backend (HU081-HU083) o ya con la forma de la pantalla. */
@@ -611,7 +611,7 @@ export class CoordinatorManagementService {
 
   getEstudiantesDirectorioPagina(
     query: DirectorioEstudiantesQuery
-  ): Observable<EstudiantePaginaApiDto> {
+  ): Observable<EstudianteDirectorioPaginaApiDto> {
     if (environment.useFrontendMocks) {
       return this.http
         .get<ApiPageResponse<EstudianteDirectorioItem>>(`${environment.apiUrl}/coordinador/estudiantes`)
@@ -660,7 +660,7 @@ export class CoordinatorManagementService {
     if (busqueda) params = params.set('busqueda', busqueda);
     if (query.activo !== undefined) params = params.set('estaActivo', query.activo);
     return this.http
-      .get<ApiPageResponse<EstudianteResumenApiDto>>(`${environment.apiUrl}/coordinador/estudiantes`, { params })
+      .get<ApiPageResponse<EstudianteDirectorioCoordinadorApiDto>>(`${environment.apiUrl}/coordinador/estudiantes`, { params })
       .pipe(
         map((pagina) => ({
           // El listado del programa no trae el estado del usuario: el filtro `estaActivo` es el único dato disponible.

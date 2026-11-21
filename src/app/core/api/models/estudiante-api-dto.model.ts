@@ -13,12 +13,22 @@ export interface EstudianteResumenApiDto {
   nombreCompleto: string;
   correo: string;
   estaActivoUsuario: boolean;
+}
 
-  /** `GET /coordinador/estudiantes`: programa del vínculo y semestre (nulo = no informado). */
+/**
+ * `GET /coordinador/estudiantes` (fuera del Golden Path): el resumen del estudiante más el programa del vínculo y el
+ * semestre actual (nulo = no informado). Tipo propio para no alterar `EstudianteResumen` del contrato congelado.
+ */
+export interface EstudianteDirectorioCoordinadorApiDto extends EstudianteResumenApiDto {
   idPrograma?: string;
   nombrePrograma?: string;
   semestreActual?: number | null;
 }
+
+/** Página del directorio del coordinador: misma forma que `EstudiantePaginaApiDto` con el elemento ampliado. */
+export type EstudianteDirectorioPaginaApiDto = Omit<EstudiantePaginaApiDto, 'items'> & {
+  items: EstudianteDirectorioCoordinadorApiDto[];
+};
 
 export interface EstudiantePaginaApiDto {
   items: EstudianteResumenApiDto[];

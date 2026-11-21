@@ -15,7 +15,7 @@ import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load
 import { Subject, EMPTY } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, finalize, switchMap } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { EstudianteResumenApiDto } from '../../../core/api/models/estudiante-api-dto.model';
+import { EstudianteDirectorioCoordinadorApiDto } from '../../../core/api/models/estudiante-api-dto.model';
 import { CoordinatorProgramService } from '../../../core/services/coordinator-program.service';
 import { CoordinatorProgramSelectorComponent } from '../shared/coordinator-program-selector.component';
 import { CoordinatorFichaModalComponent } from '../coordinator-indicators/components/coordinator-ficha-modal.component';
@@ -417,7 +417,7 @@ export class CoordinatorStudentsComponent implements OnInit {
     void this.router.navigate(['/app/coordinador/programa/materias']);
   }
 
-  private toDirectoryItem(item: EstudianteResumenApiDto): EstudianteDirectorioItem {
+  private toDirectoryItem(item: EstudianteDirectorioCoordinadorApiDto): EstudianteDirectorioItem {
     return {
       id: item.id,
       documento: String(item.numeroIdentificacion),
