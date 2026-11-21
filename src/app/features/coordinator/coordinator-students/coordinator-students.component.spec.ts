@@ -193,6 +193,21 @@ describe('CoordinatorStudentsComponent', () => {
     expect(component.estudianteFicha()?.id).toBe('est-1');
   });
 
+  it('P3 C3: la tabla no ensancha la página (contenedor con desplazamiento propio, tarjetas bajo md y acciones fijas)', () => {
+    const estudiante = {
+      id: 'est-1', documento: '1017334455', codigo: '', nombreCompleto: 'Ana Sofia Gomez Rios',
+      correo: 'ana.gomez@uco.edu.co', programa: 'Ingenieria de Sistemas', estadoMatricula: 'ACTIVO' as const, idPrograma: 'prg-1',
+    };
+    component.directorio.set([estudiante]);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const tabla = el.querySelector('[data-testid="tabla-estudiantes"]') as HTMLElement;
+    expect(tabla.classList).toContain('tabla-tarjetas');
+    expect(tabla.closest('[role="region"]')?.classList).toContain('overflow-x-auto');
+    expect(tabla.querySelector('tbody td.col-acciones')).not.toBeNull();
+    expect(tabla.querySelectorAll('tbody td[data-label]').length).toBe(6);
+  });
+
   it('MEJORAS-SERGIO 8: lista en tabla con "Ver ficha" y sin estado financiero ni promedio ponderado', () => {
     const estudiante = {
       id: 'est-1', documento: '1017334455', codigo: '', nombreCompleto: 'Ana Sofia Gomez Rios',

@@ -117,8 +117,8 @@ type PestanaModulo = 'DIRECTORIO';
         <!-- MEJORAS-SERGIO 8: lista en tabla (una fila por estudiante) con la acción "Ver ficha"; sin estado financiero ni promedio,
              que el sistema no administra -->
         <div class="superficie overflow-hidden">
-          <div class="overflow-x-auto">
-            <table class="w-full text-sm text-warm-800" data-testid="tabla-estudiantes">
+          <div class="overflow-x-auto max-w-full" role="region" tabindex="0" aria-label="Estudiantes del programa">
+            <table class="tabla-tarjetas w-full text-sm text-warm-800" data-testid="tabla-estudiantes">
               <thead class="bg-warm-50 border-b border-warm-200 text-[11px] font-bold text-warm-600 uppercase tracking-wider">
                 <tr>
                   <th scope="col" class="px-4 py-3 text-left">Estudiante</th>
@@ -126,13 +126,13 @@ type PestanaModulo = 'DIRECTORIO';
                   <th scope="col" class="px-4 py-3 text-left">Semestre</th>
                   <th scope="col" class="px-4 py-3 text-left">Programa</th>
                   <th scope="col" class="px-4 py-3 text-left">Estado</th>
-                  <th scope="col" class="px-4 py-3 text-right"><span class="sr-only">Acciones</span></th>
+                  <th scope="col" class="col-acciones bg-warm-50 px-4 py-3 text-right"><span class="sr-only">Acciones</span></th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-warm-100">
                 @for (est of paginatedDirectorio(); track est.id) {
                   <tr class="hover:bg-warm-50/60 transition-colors" [attr.data-testid]="'fila-estudiante-' + est.id">
-                    <td class="px-4 py-3">
+                    <td class="px-4 py-3" data-label="Estudiante">
                       <div class="flex items-center gap-3 min-w-0">
                         <app-avatar [name]="est.nombreCompleto" size="sm"></app-avatar>
                         <div class="min-w-0">
@@ -141,15 +141,16 @@ type PestanaModulo = 'DIRECTORIO';
                         </div>
                       </div>
                     </td>
-                    <td class="px-4 py-3 font-mono text-xs text-warm-700 whitespace-nowrap">{{ est.documento }}</td>
-                    <td class="px-4 py-3 text-xs whitespace-nowrap"><span data-testid="semestre-estudiante">{{ est.semestreActual ? est.semestreActual + '°' : 'No informado' }}</span></td>
-                    <td class="px-4 py-3 text-xs max-w-[14rem] truncate" [title]="est.programa">{{ est.programa || 'No informado' }}</td>
-                    <td class="px-4 py-3">
+                    <td class="px-4 py-3 font-mono text-xs text-warm-700 whitespace-nowrap" data-label="Documento">{{ est.documento }}</td>
+                    <td class="px-4 py-3 text-xs whitespace-nowrap" data-label="Semestre"><span data-testid="semestre-estudiante">{{ est.semestreActual ? est.semestreActual + '°' : 'No informado' }}</span></td>
+                    <td class="px-4 py-3 text-xs max-w-[9rem] xl:max-w-[14rem] truncate max-md:max-w-none" data-label="Programa" [title]="est.programa">{{ est.programa || 'No informado' }}</td>
+                    <td class="px-4 py-3" data-label="Estado">
                       <app-badge [variant]="est.estadoMatricula === 'ACTIVO' ? 'success' : (est.estadoMatricula === 'BLOQUEADO' ? 'danger' : 'neutral')">
                         {{ est.estadoMatricula }}
                       </app-badge>
                     </td>
-                    <td class="px-4 py-3 text-right whitespace-nowrap">
+                    <td class="col-acciones bg-white px-3 py-2 text-right" data-label="Acciones">
+                      <div class="flex flex-col items-end lg:flex-row lg:justify-end max-md:items-start max-md:flex-row max-md:flex-wrap">
                       @if (est.idPrograma) {
                         <button type="button" data-testid="editar-semestre" (click)="abrirEdicionSemestre(est)" [attr.aria-label]="'Editar semestre de ' + est.nombreCompleto" class="min-h-[44px] px-3 text-xs text-primary-700 font-semibold hover:underline">
                           Editar semestre
@@ -159,6 +160,7 @@ type PestanaModulo = 'DIRECTORIO';
                       <button type="button" data-testid="ver-ficha-estudiante" (click)="abrirFicha(est)" [attr.aria-label]="'Ver ficha de ' + est.nombreCompleto" class="min-h-[44px] px-3 text-xs text-primary-700 font-semibold hover:underline">
                         Ver ficha
                       </button>
+                      </div>
                     </td>
                   </tr>
                 }
