@@ -65,6 +65,21 @@ describe('TeacherSolicitudesSesionComponent (ATA D6)', () => {
     expect(component.variante('PENDIENTE')).toBe('warning');
   });
 
+  it('C6: muestra quién resuelve la solicitud según los nombres recibidos (ambos, solo programa, ninguno)', () => {
+    fixture.detectChanges();
+    listado().flush(paginaApi([
+      solicitud({ idSesion: 'a', nombreCoordinadorResolutor: 'Luis Gómez', nombreProgramaResponsable: 'Ingeniería de Sistemas' }),
+      solicitud({ idSesion: 'b', nombreCoordinadorResolutor: null, nombreProgramaResponsable: 'Ingeniería de Sistemas' }),
+      solicitud({ idSesion: 'c', nombreCoordinadorResolutor: null, nombreProgramaResponsable: null }),
+    ]));
+    fixture.detectChanges();
+    const linea = (id: string) => el().querySelector(`[data-testid="solicitud-${id}"] [data-testid="solicitud-resolutor"]`)?.textContent?.trim();
+    expect(linea('a')).toBe('La resuelve: Luis Gómez (Coordinación de Ingeniería de Sistemas)');
+    expect(linea('b')).toBe('La resuelve: Coordinación de Ingeniería de Sistemas');
+    expect(linea('c')).toBeUndefined();
+    expect(component.lineaResolutor(solicitud({ nombreCoordinadorResolutor: 'Luis Gómez' }))).toBe('La resuelve: Luis Gómez');
+  });
+
   it('sin pendientes ofrece ver todas y al hacerlo consulta soloPendientes=false', () => {
     fixture.detectChanges();
     listado().flush(paginaApi([]));
