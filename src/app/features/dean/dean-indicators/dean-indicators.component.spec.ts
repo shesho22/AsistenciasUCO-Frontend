@@ -53,6 +53,18 @@ describe('DeanIndicatorsComponent', () => {
 
   afterEach(() => http.verify());
 
+  it('P2 responsive: las tablas de comparativa y aforo pasan a tarjetas bajo md con rótulos por celda', () => {
+    const el = fixture.nativeElement as HTMLElement;
+    const comparativa = el.querySelector('app-tabla-datos table') as HTMLElement;
+    expect(comparativa.classList).toContain('tabla-tarjetas');
+    expect(Array.from(comparativa.querySelectorAll('tbody tr:first-child td[data-label]')).map((td) => td.getAttribute('data-label')))
+      .toEqual(['Programa', 'Ausentismo', 'Horas de falta / dictadas', 'Estudiantes', 'Ausentismo relativo']);
+    const aforo = el.querySelector('[data-testid="aforo-tabla"]') as HTMLElement;
+    expect(aforo.classList).toContain('tabla-tarjetas');
+    expect(aforo.closest('.tabla-contenedor')).not.toBeNull();
+    expect(aforo.querySelectorAll('tbody tr:first-child td[data-label]').length).toBe(7);
+  });
+
   it('D.8 rotula el ausentismo por programa como calculado por horas y muestra las horas del backend', () => {
     const t = texto();
     expect(t).toContain('Calculado por horas');

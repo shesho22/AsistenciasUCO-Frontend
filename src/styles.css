@@ -292,6 +292,57 @@
   }
 }
 
+/*
+ * Tablas adaptables (P2). Dos recursos para las tablas de listado:
+ * - col-acciones: deja la columna de acciones pegada al borde derecho mientras la tabla se desplaza de lado, para que
+ *   los botones nunca queden fuera de la vista (la celda y su encabezado llevan ademas un fondo opaco, p. ej. bg-white).
+ * - tabla-tarjetas: por debajo de md cada fila se presenta como una tarjeta apilada (el encabezado queda solo para
+ *   lectores de pantalla y cada celda con `data-label` muestra su rotulo); desde md es la tabla normal.
+ */
+@layer utilities {
+  .col-acciones {
+    @apply sticky right-0 border-l border-warm-200;
+  }
+
+  .tabla thead th.col-acciones {
+    @apply z-20;
+  }
+}
+
+@media (width < 48rem) {
+  .tabla-tarjetas {
+    display: block;
+    min-width: 0 !important;
+  }
+
+  .tabla-tarjetas thead {
+    @apply sr-only;
+  }
+
+  .tabla-tarjetas tbody,
+  .tabla-tarjetas tbody tr,
+  .tabla-tarjetas tbody td {
+    display: block;
+  }
+
+  .tabla-tarjetas tbody tr {
+    @apply m-3 rounded-xl border border-warm-200 bg-white p-3 shadow-warm-sm;
+  }
+
+  .tabla-tarjetas tbody td {
+    @apply border-b-0 px-0 py-1 text-left;
+  }
+
+  .tabla-tarjetas tbody td[data-label]::before {
+    content: attr(data-label);
+    @apply block text-[11px] font-semibold uppercase tracking-wide text-warm-600;
+  }
+
+  .tabla-tarjetas tbody td.col-acciones {
+    @apply static border-l-0 bg-transparent pt-2;
+  }
+}
+
 /* Toast Animations */
 @keyframes toastEnter {
   0% {

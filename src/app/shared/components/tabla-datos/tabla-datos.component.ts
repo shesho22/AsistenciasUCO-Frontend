@@ -43,6 +43,7 @@ export function paginarEnCliente<T>(items: readonly T[], pagina: number, tamano:
  * - Desplazamiento horizontal en pantallas angostas: `anchoMinimo` evita que el texto se encoja.
  * - Mientras `cargando` muestra filas de esqueleto y conserva la altura que tenia, para que la vista no salte
  *   al cambiar de pagina, filtrar o recargar.
+ * - `tarjetasEnMovil`: bajo md las filas se apilan como tarjetas; `col-acciones` en el th y el td mantiene visibles las acciones.
  * - Paginacion opcional (15 por defecto, 15/30/50) con `app-pagination`; se muestra si `totalItems` > 0
  *   y `paginada` es verdadero.
  */
@@ -62,7 +63,7 @@ export function paginarEnCliente<T>(items: readonly T[], pagina: number, tamano:
       [style.max-height]="alturaMaxima()"
       [style.min-height]="alturaReservada()"
     >
-      <table class="tabla" [class.table-fixed]="fija()" [style.min-width]="anchoMinimo()">
+      <table class="tabla" [class.table-fixed]="fija()" [class.tabla-tarjetas]="tarjetasEnMovil()" [style.min-width]="anchoMinimo()">
         @if (etiquetaVisible()) {
           <caption class="sr-only">{{ etiqueta() }}</caption>
         }
@@ -120,6 +121,8 @@ export class TablaDatosComponent {
   readonly alturaMaxima = input<string>('70vh');
   /** Usa table-layout fixed (anchos de columna estables definidos en colgroup o en los th). */
   readonly fija = input<boolean>(false);
+  /** Bajo md cada fila se muestra como tarjeta apilada (las celdas llevan `data-label` con su rotulo). */
+  readonly tarjetasEnMovil = input<boolean>(false);
 
   readonly paginada = input<boolean>(false);
   readonly totalItems = input<number>(0);

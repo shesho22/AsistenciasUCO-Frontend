@@ -100,6 +100,15 @@ describe('StudentAlertsComponent: faltas por reclamar (ATA D10)', () => {
     expect(tarjeta.textContent).toContain('Reclamar esta toma');
   });
 
+  it('P2 responsive: la tabla de faltas pasa a tarjetas bajo md y la columna de tomas (con el botón) queda fija', () => {
+    montar([fila('t1', 1)]);
+    const tabla = el().querySelector('[data-testid="faltas-reclamables"] table') as HTMLElement;
+    expect(tabla.classList).toContain('tabla-tarjetas');
+    const fila1 = el().querySelector('[data-testid="falta-card-ses-1"]') as HTMLElement;
+    expect(Array.from(fila1.querySelectorAll('td[data-label]')).map((td) => td.getAttribute('data-label'))).toEqual(['Materia', 'Sesión', 'Plazo para reclamar', 'Tomas']);
+    expect(fila1.querySelector('td.col-acciones [data-testid="btn-reclamar-toma-t1"]')).not.toBeNull();
+  });
+
   it('la sección va antes de las alertas de porcentaje', () => {
     montar([fila('t1', 1)], [alerta]);
     const seccion = el().querySelector('[data-testid="faltas-reclamables"]') as HTMLElement;

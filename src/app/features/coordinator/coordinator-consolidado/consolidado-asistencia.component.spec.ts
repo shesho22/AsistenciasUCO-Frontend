@@ -111,6 +111,20 @@ describe('ConsolidadoAsistenciaComponent (HU061)', () => {
     expect(fixture.componentInstance.docentes()).toEqual(OPCIONES.docentes);
   });
 
+  it('P2 responsive: la tabla pasa a tarjetas bajo md y cada celda de la fila lleva su rótulo', () => {
+    const fixture = crear(false);
+    http
+      .expectOne((r) => r.url === `${api}/coordinador/consolidado-asistencia`)
+      .flush({ exitoso: true, datos: [grupo('ASG-1', 'Cálculo', 'DOC-1')], total: 1 });
+    fixture.detectChanges();
+    const tabla = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="consolidado-tabla"]') as HTMLElement;
+    expect(tabla.classList).toContain('tabla-tarjetas');
+    const rotulos = Array.from(tabla.querySelectorAll('tbody tr:first-child td[data-label]')).map((td) => td.getAttribute('data-label'));
+    expect(rotulos).toContain('Materia / Grupo');
+    expect(rotulos).toContain('% Inasistencia');
+    expect(rotulos).toContain('Pérdida');
+  });
+
   it('D.8 muestra Excusa y Sin registro con la barra apilada de cuatro segmentos y la nota de horas', () => {
     const fixture = crear(false);
     http

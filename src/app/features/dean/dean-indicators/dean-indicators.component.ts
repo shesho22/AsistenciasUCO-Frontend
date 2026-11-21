@@ -50,6 +50,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
             etiqueta="Ausentismo por programa"
             [columnas]="5"
             anchoMinimo="48rem"
+            [tarjetasEnMovil]="true"
             [cargando]="cargandoComparativa()"
             [paginada]="true"
             [totalItems]="service.comparativa().length"
@@ -71,16 +72,16 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
               @if (!cargandoComparativa()) {
                 @for (p of comparativaPagina(); track p.idPrograma) {
                   <tr data-testid="programa-ausentismo-fila">
-                    <td class="font-medium text-warm-900">
+                    <td class="font-medium text-warm-900" data-label="Programa">
                       {{ p.nombrePrograma }}
                       @if (!p.estaActivoPrograma) {
                         <app-badge class="ml-2" variant="neutral" size="sm" [dot]="false">Inactivo</app-badge>
                       }
                     </td>
-                    <td class="text-right font-semibold tabular-nums">{{ formatoPorcentaje(p.porcentajeAusentismo) }}</td>
-                    <td class="text-xs text-warm-600 whitespace-nowrap">{{ p.horasFalta | horasMinutos }} de falta sobre {{ p.horasDictadas | horasMinutos }} dictadas</td>
-                    <td class="text-right tabular-nums">{{ p.totalEstudiantes }}</td>
-                    <td>
+                    <td class="text-right font-semibold tabular-nums" data-label="Ausentismo">{{ formatoPorcentaje(p.porcentajeAusentismo) }}</td>
+                    <td class="text-xs text-warm-600 whitespace-nowrap max-md:whitespace-normal" data-label="Horas de falta / dictadas">{{ p.horasFalta | horasMinutos }} de falta sobre {{ p.horasDictadas | horasMinutos }} dictadas</td>
+                    <td class="text-right tabular-nums" data-label="Estudiantes">{{ p.totalEstudiantes }}</td>
+                    <td data-label="Ausentismo relativo">
                       <div class="h-3 w-full min-w-24 rounded bg-neutral-100" aria-hidden="true">
                         <div class="h-3 rounded bg-danger-500" data-testid="barra-ausentismo" [style.width]="anchoBarra(p.porcentajeAusentismo)"></div>
                       </div>
@@ -126,24 +127,26 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
         @if (service.aforo().length === 0) {
           <p class="py-6 text-center text-sm text-neutral-500">No hay grupos para los filtros seleccionados.</p>
         } @else {
-          <table class="w-full text-left text-sm">
-            <thead class="text-xs uppercase text-neutral-500">
+          <div class="tabla-contenedor" role="region" tabindex="0" aria-label="Aforo de grupos">
+          <table class="tabla tabla-tarjetas min-w-[48rem]" data-testid="aforo-tabla">
+            <thead>
               <tr><th scope="col" class="py-2">Grupo</th><th scope="col">Asignatura</th><th scope="col">Programa</th><th scope="col">Cupo</th><th scope="col">Matriculados</th><th scope="col">Disponibles</th><th scope="col">Aforo</th></tr>
             </thead>
             <tbody>
               @for (g of service.aforo(); track g.idGrupo) {
-                <tr class="border-t border-neutral-100">
-                  <td class="py-2">{{ g.codigoGrupo }}</td>
-                  <td>{{ g.nombreAsignatura }}</td>
-                  <td>{{ g.programas.join(', ') }}</td>
-                  <td>{{ g.cupoMaximo }}</td>
-                  <td>{{ g.matriculadosActivos }}</td>
-                  <td>{{ g.cuposDisponibles }}</td>
-                  <td>{{ formatoPorcentaje(g.tasaAforo) }}</td>
+                <tr>
+                  <td class="py-2" data-label="Grupo">{{ g.codigoGrupo }}</td>
+                  <td data-label="Asignatura">{{ g.nombreAsignatura }}</td>
+                  <td data-label="Programa">{{ g.programas.join(', ') }}</td>
+                  <td data-label="Cupo">{{ g.cupoMaximo }}</td>
+                  <td data-label="Matriculados">{{ g.matriculadosActivos }}</td>
+                  <td data-label="Disponibles">{{ g.cuposDisponibles }}</td>
+                  <td data-label="Aforo">{{ formatoPorcentaje(g.tasaAforo) }}</td>
                 </tr>
               }
             </tbody>
           </table>
+          </div>
         }
         <app-pagination
           [totalItems]="service.totalAforo()"

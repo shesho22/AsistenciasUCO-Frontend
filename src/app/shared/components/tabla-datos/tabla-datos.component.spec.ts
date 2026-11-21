@@ -77,6 +77,14 @@ describe('TablaDatosComponent', () => {
     expect(TAMANOS_PAGINA_TABLA).toEqual([15, 30, 50]);
   });
 
+  it('tarjetasEnMovil activa la clase que apila las filas como tarjetas bajo md (apagada por defecto)', () => {
+    expect(el().querySelector('table')?.classList).not.toContain('tabla-tarjetas');
+    const f2 = TestBed.createComponent(TablaDatosComponent);
+    f2.componentRef.setInput('tarjetasEnMovil', true);
+    f2.detectChanges();
+    expect((f2.nativeElement as HTMLElement).querySelector('table')?.classList).toContain('tabla-tarjetas');
+  });
+
   it('paginarEnCliente devuelve la porcion de la pagina', () => {
     const datos = Array.from({ length: 40 }, (_, i) => i);
     expect(paginarEnCliente(datos, 1, 15)).toEqual(datos.slice(0, 15));
