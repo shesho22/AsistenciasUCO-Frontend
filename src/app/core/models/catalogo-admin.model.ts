@@ -5,7 +5,6 @@ export interface CategoriaJustificacionAdmin {
   nombre: string;
   descripcion: string | null;
   requiereSoporte: boolean;
-  estaActivo: boolean;
 }
 
 /** Motivo de cancelación de sesión del catálogo predefinido (`GET /admin/motivos-cancelacion-sesion`, solo consulta). */

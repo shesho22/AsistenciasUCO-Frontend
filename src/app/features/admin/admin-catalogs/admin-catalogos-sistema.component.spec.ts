@@ -41,8 +41,8 @@ describe('AdminCatalogosSistemaComponent (vista única, solo consulta)', () => {
         exitoso: true,
         total: 2,
         datos: [
-          { id: 'c-1', codigo: 'MED', nombre: 'Incapacidad médica', descripcion: 'Expedida por salud', requiereSoporte: true, estaActivo: true },
-          { id: 'c-2', codigo: 'CAL', nombre: 'Calamidad', descripcion: null, requiereSoporte: false, estaActivo: false },
+          { id: 'c-1', codigo: 'MED', nombre: 'Incapacidad médica', descripcion: 'Expedida por salud', requiereSoporte: true },
+          { id: 'c-2', codigo: 'CAL', nombre: 'Calamidad', descripcion: null, requiereSoporte: false },
         ],
       })
     );
@@ -103,7 +103,8 @@ describe('AdminCatalogosSistemaComponent (vista única, solo consulta)', () => {
     await harness.fixture.whenStable();
     harness.detectChanges();
     expect(router.url).toBe('/catalogos?catalogo=categorias-justificacion');
-    expect(cabeceras(el)).toEqual(['Código', 'Nombre', 'Descripción', 'Requiere soporte', 'Estado']);
+    // Las categorías son fijas de la semilla: el GET no trae estado (DEC-079 rechazada).
+    expect(cabeceras(el)).toEqual(['Código', 'Nombre', 'Descripción', 'Requiere soporte']);
     expect(celdas(el)).toContain('Expedida por salud');
     expect(celdas(el)).toContain('—');
     expect(celdas(el)).toContain('Sí');

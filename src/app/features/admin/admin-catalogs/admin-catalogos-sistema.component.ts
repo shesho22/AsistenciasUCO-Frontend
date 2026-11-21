@@ -50,7 +50,6 @@ export const CATALOGOS_SISTEMA: readonly DefinicionCatalogo[] = [
     vacio: 'No hay categorías de justificación registradas.',
     descripcion: true,
     requiereSoporte: true,
-    estado: true,
   },
   { id: 'motivos-cancelacion', etiqueta: 'Motivos de cancelación', vacio: 'No hay motivos de cancelación registrados.', orden: true, estado: true },
   { id: 'estados-reclamo', etiqueta: 'Estados de reclamos', vacio: 'No hay estados de solicitud registrados.' },
@@ -224,7 +223,6 @@ export class AdminCatalogosSistemaComponent implements OnInit {
             nombre: c.nombre,
             descripcion: c.descripcion,
             requiereSoporte: c.requiereSoporte,
-            activo: c.estaActivo,
           }))
         ),
       error: (err) => this.fallar('categorias-justificacion', err),

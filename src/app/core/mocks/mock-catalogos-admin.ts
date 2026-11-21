@@ -4,9 +4,9 @@ import { CategoriaJustificacionAdmin, MotivoCancelacionSesionAdmin } from '../mo
 
 /** Catálogos predefinidos de solo consulta (solo modo mock). */
 const categorias: CategoriaJustificacionAdmin[] = [
-  { id: 'cat-1', codigo: 'MED', nombre: 'Incapacidad médica', descripcion: 'Incapacidad expedida por una entidad de salud.', requiereSoporte: true, estaActivo: true },
-  { id: 'cat-2', codigo: 'CAL', nombre: 'Calamidad doméstica', descripcion: null, requiereSoporte: true, estaActivo: true },
-  { id: 'cat-3', codigo: 'INS', nombre: 'Representación institucional', descripcion: 'Actividad oficial de la universidad.', requiereSoporte: false, estaActivo: false },
+  { id: 'cat-1', codigo: 'MED', nombre: 'Incapacidad médica', descripcion: 'Incapacidad expedida por una entidad de salud.', requiereSoporte: true },
+  { id: 'cat-2', codigo: 'CAL', nombre: 'Calamidad doméstica', descripcion: null, requiereSoporte: true },
+  { id: 'cat-3', codigo: 'INS', nombre: 'Representación institucional', descripcion: 'Actividad oficial de la universidad.', requiereSoporte: false },
 ];
 
 const motivos: MotivoCancelacionSesionAdmin[] = [
