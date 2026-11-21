@@ -21,9 +21,9 @@ const ETIQUETA_ROL: Record<RolVinculo, string> = {
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [BadgeComponent],
     template: `
-    <div class="superficie p-4 sm:p-7 space-y-4" data-testid="perfil-institucional">
+    <div class="superficie p-3 sm:p-4 space-y-3" data-testid="perfil-institucional">
       <div class="border-b border-warm-100 pb-3">
-        <h3 class="font-serif font-bold text-lg text-warm-900">Expediente y vínculos institucionales</h3>
+        <h3 class="font-serif font-bold text-base text-warm-900">Expediente y vínculos institucionales</h3>
         <p class="text-xs text-warm-500">Información registrada en el sistema académico (solo lectura).</p>
       </div>
 
@@ -40,12 +40,12 @@ const ETIQUETA_ROL: Record<RolVinculo, string> = {
         </p>
       } @else {
         @if (perfil(); as p) {
-        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-          <div class="p-3 rounded-xl bg-warm-50 border border-warm-100">
+        <dl class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2 text-xs">
+          <div class="p-2.5 rounded-xl bg-warm-50 border border-warm-100">
             <dt class="text-warm-500">Documento</dt>
             <dd class="font-mono font-semibold text-warm-900" data-testid="perfil-expediente-documento">{{ identificacion().documento }}</dd>
           </div>
-          <div class="p-3 rounded-xl bg-warm-50 border border-warm-100">
+          <div class="p-2.5 rounded-xl bg-warm-50 border border-warm-100">
             <dt class="text-warm-500">Correo institucional</dt>
             <dd class="font-semibold text-warm-900 break-all">
               {{ p.correo || 'Sin registrar' }}
@@ -54,11 +54,11 @@ const ETIQUETA_ROL: Record<RolVinculo, string> = {
               }
             </dd>
           </div>
-          <div class="p-3 rounded-xl bg-warm-50 border border-warm-100">
+          <div class="p-2.5 rounded-xl bg-warm-50 border border-warm-100">
             <dt class="text-warm-500">Nombre registrado</dt>
             <dd class="font-semibold text-warm-900">{{ p.nombreCompleto || 'Sin registrar' }}</dd>
           </div>
-          <div class="p-3 rounded-xl bg-warm-50 border border-warm-100">
+          <div class="p-2.5 rounded-xl bg-warm-50 border border-warm-100">
             <dt class="text-warm-500">Estado de la cuenta</dt>
             <dd><app-badge [variant]="p.estaActivo ? 'success' : 'neutral'">{{ p.estaActivo ? 'ACTIVA' : 'INACTIVA' }}</app-badge></dd>
           </div>
@@ -68,9 +68,9 @@ const ETIQUETA_ROL: Record<RolVinculo, string> = {
         @if (p.vinculos.length === 0) {
           <p class="text-xs text-warm-500">No tienes vínculos académicos registrados.</p>
         } @else {
-          <ul class="space-y-2">
+          <ul class="grid grid-cols-1 xl:grid-cols-2 gap-2">
             @for (v of p.vinculos; track v.rol + v.idEntidad) {
-              <li class="flex items-start justify-between gap-3 p-3 rounded-xl border border-warm-200" data-testid="vinculo">
+              <li class="flex items-start justify-between gap-3 p-2.5 rounded-xl border border-warm-200" data-testid="vinculo">
                 <div class="min-w-0">
                   <p class="text-xs text-warm-500">{{ etiqueta(v.rol) }}</p>
                   <p class="font-semibold text-sm text-warm-900">{{ v.nombreEntidad }}</p>

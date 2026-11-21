@@ -26,7 +26,7 @@ import { PerfilInstitucionalStore, TEXTO_SIN_REGISTRAR } from './perfil-instituc
     template: `
     <div class="space-y-4 animate-fade-in">
       <!-- Barra Superior de Navegación "Atrás" -->
-      <div class="superficie flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-5">
+      <div class="superficie flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-4">
         <div class="flex items-center gap-3">
           <app-button variant="secondary" size="sm" (click)="goBack()">
             <svg class="w-4 h-4 mr-1.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -52,12 +52,12 @@ import { PerfilInstitucionalStore, TEXTO_SIN_REGISTRAR } from './perfil-instituc
       </div>
 
       <!-- Layout Bento del Perfil -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 items-start">
         <!-- Columna 1: Tarjeta de Resumen Visual e Identidad -->
         <div class="lg:col-span-1 space-y-4">
-          <div class="superficie p-4 text-center space-y-4">
+          <div class="superficie p-3 sm:p-4 text-center space-y-3">
             <!-- Icono con la Letra del Nombre (Reactivo en tiempo real) -->
-            <div class="flex justify-center pt-2">
+            <div class="flex justify-center">
               <app-avatar [name]="computedFullName()" size="xl"></app-avatar>
             </div>
 
@@ -82,33 +82,18 @@ import { PerfilInstitucionalStore, TEXTO_SIN_REGISTRAR } from './perfil-instituc
                 <span class="text-warm-500">Documento:</span>
                 <span class="font-mono font-semibold text-warm-800" data-testid="perfil-resumen-documento">{{ identificacion().documento }}</span>
               </div>
-              <div class="flex items-center justify-between">
-                <span class="text-warm-500">Rol:</span>
-                <span class="font-semibold text-warm-900">{{ currentRole() }}</span>
-              </div>
-            </div>
-
-            <div class="p-3 bg-primary-50/60 rounded-xl border border-primary-100 text-left">
-              <div class="flex items-start gap-2 text-xs text-primary-900">
-                <svg class="w-4 h-4 text-primary-700 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <p class="text-[11px] leading-relaxed text-primary-800">
-                  Tu avatar se genera automáticamente con la letra inicial de tu nombre y el color de identidad institucional.
-                </p>
-              </div>
             </div>
           </div>
         </div>
 
         <!-- Columna 2: Información Personal e Institucional -->
         <div class="lg:col-span-2 space-y-4">
-          <form class="space-y-4">
+          <form class="space-y-3">
             <!-- Bloque 1: Datos Personales (Modo Consulta) -->
-            <div class="superficie p-4 sm:p-7 space-y-5">
-              <div class="border-b border-warm-100 pb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div class="superficie p-3 sm:p-4 space-y-3">
+              <div class="border-b border-warm-100 pb-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <div>
-                  <h3 class="font-serif font-bold text-lg text-warm-900">
+                  <h3 class="font-serif font-bold text-base text-warm-900">
                     Información Personal y de Contacto
                   </h3>
                   <p class="text-xs text-warm-500">
@@ -122,23 +107,23 @@ import { PerfilInstitucionalStore, TEXTO_SIN_REGISTRAR } from './perfil-instituc
               </div>
 
               <!-- Modo Consulta: HU006 es solo lectura -->
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div class="bg-warm-50/70 p-3.5 rounded-xl border border-warm-200/80">
+              <div class="grid grid-cols-2 xl:grid-cols-4 gap-2">
+                <div class="bg-warm-50/70 p-2.5 rounded-xl border border-warm-200/80">
                   <span class="text-warm-500 block text-[10px] uppercase font-bold tracking-wider">Primer Nombre</span>
                   <span class="font-bold text-warm-900 text-sm mt-0.5 block">{{ formModel.primerNombre || '—' }}</span>
                 </div>
 
-                <div class="bg-warm-50/70 p-3.5 rounded-xl border border-warm-200/80">
+                <div class="bg-warm-50/70 p-2.5 rounded-xl border border-warm-200/80">
                   <span class="text-warm-500 block text-[10px] uppercase font-bold tracking-wider">Segundo Nombre</span>
                   <span class="font-semibold text-warm-900 text-sm mt-0.5 block">{{ formModel.segundoNombre || '—' }}</span>
                 </div>
 
-                <div class="bg-warm-50/70 p-3.5 rounded-xl border border-warm-200/80">
+                <div class="bg-warm-50/70 p-2.5 rounded-xl border border-warm-200/80">
                   <span class="text-warm-500 block text-[10px] uppercase font-bold tracking-wider">Primer Apellido</span>
                   <span class="font-bold text-warm-900 text-sm mt-0.5 block">{{ formModel.primerApellido || '—' }}</span>
                 </div>
 
-                <div class="bg-warm-50/70 p-3.5 rounded-xl border border-warm-200/80">
+                <div class="bg-warm-50/70 p-2.5 rounded-xl border border-warm-200/80">
                   <span class="text-warm-500 block text-[10px] uppercase font-bold tracking-wider">Segundo Apellido</span>
                   <span class="font-semibold text-warm-900 text-sm mt-0.5 block">{{ formModel.segundoApellido || '—' }}</span>
                 </div>
@@ -146,10 +131,10 @@ import { PerfilInstitucionalStore, TEXTO_SIN_REGISTRAR } from './perfil-instituc
             </div>
 
             <!-- Bloque 2: Información Institucional (Solo Lectura) -->
-            <div class="superficie p-4 sm:p-7 space-y-4">
-              <div class="border-b border-warm-100 pb-3 flex items-center justify-between">
+            <div class="superficie p-3 sm:p-4 space-y-3">
+              <div class="border-b border-warm-100 pb-2 flex items-center justify-between gap-2">
                 <div>
-                  <h3 class="font-serif font-bold text-lg text-warm-900">
+                  <h3 class="font-serif font-bold text-base text-warm-900">
                     Datos Institucionales y de Acceso
                   </h3>
                   <p class="text-xs text-warm-500">
@@ -161,7 +146,7 @@ import { PerfilInstitucionalStore, TEXTO_SIN_REGISTRAR } from './perfil-instituc
                 </span>
               </div>
 
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2 text-xs">
                 <div class="bg-warm-50 p-3 rounded-xl border border-warm-200/70">
                   <span class="text-warm-500 block text-[10px] uppercase font-bold">Correo Institucional</span>
                   <span class="font-semibold text-warm-900 font-mono text-xs" data-testid="perfil-correo-institucional">{{ correoVisible() }}</span>
@@ -189,12 +174,6 @@ import { PerfilInstitucionalStore, TEXTO_SIN_REGISTRAR } from './perfil-instituc
               </div>
             </div>
 
-            <!-- Acción del Formulario -->
-            <div class="flex flex-wrap items-center justify-end gap-3 pt-2">
-              <app-button variant="secondary" size="md" type="button" (click)="goBack()">
-                Volver al Panel
-              </app-button>
-            </div>
           </form>
 
           <!-- HU006: expediente y vinculos institucionales leidos de la DB (GET /usuarios/perfil) -->
