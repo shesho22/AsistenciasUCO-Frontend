@@ -19,7 +19,7 @@ export const CONFIGURACION_ROUTES: Routes = [
       {
         path: 'catalogos',
         data: { tab: 'catalogos' },
-        loadComponent: () => import('../admin-catalogs/admin-catalogs.component').then((m) => m.AdminCatalogsComponent),
+        loadComponent: () => import('../admin-catalogs/admin-catalogos-gestion.component').then((m) => m.AdminCatalogosGestionComponent),
       },
       {
         path: 'estados',

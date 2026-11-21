@@ -21,6 +21,8 @@ API_ERROR_RESOURCE_NOT_FOUND|UI018|Funcional|Error|API_ERROR_RESOURCE_NOT_FOUND|
 API_ERROR_UNAUTHORIZED|UI019|Funcional|Error|API_ERROR_UNAUTHORIZED|Su sesión institucional ha caducado. Por favor inicie sesión nuevamente.
 API_ERROR_VALIDATION_ERROR|UI020|Funcional|Error|API_ERROR_VALIDATION_ERROR|Los datos enviados no son válidos. Verifique los campos del formulario.
 UI_ADMIN_AUDITORIA_001|UI021|Funcional|Información|UI_ADMIN_AUDITORIA_001|ID de correlación copiado al portapapeles.
+UI_ADMIN_CATALOGOS_001|UI145|Funcional|Información|UI_ADMIN_CATALOGOS_001|Registro guardado.
+UI_ADMIN_CATALOGOS_002|UI146|Funcional|Información|UI_ADMIN_CATALOGOS_002|Estado actualizado.
 UI_ADMIN_DECANOS_001|UI022|Funcional|Información|UI_ADMIN_DECANOS_001|Los datos se corrigieron; la cuenta de acceso queda pendiente de sincronizar.
 UI_ADMIN_DECANOS_002|UI023|Funcional|Información|UI_ADMIN_DECANOS_002|Los datos del decano fueron corregidos.
 UI_ADMIN_DECANOS_003|UI024|Funcional|Información|UI_ADMIN_DECANOS_003|Estado actualizado.

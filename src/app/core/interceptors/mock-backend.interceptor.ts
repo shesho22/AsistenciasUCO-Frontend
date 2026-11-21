@@ -6,6 +6,7 @@ import { respuestaConsultasTransversales } from '../mocks/mock-consultas-transve
 import { mockSesionesCalendario } from '../mocks/mock-calendario-sesiones';
 import { respuestaIndicadores } from '../mocks/mock-indicadores';
 import { respuestaSeguimiento } from '../mocks/mock-seguimiento';
+import { responderCatalogosAdminMock } from '../mocks/mock-catalogos-admin';
 import { plantillasNotificacionMock } from '../mocks/mock-notificaciones';
 import {
   JORNADAS_PROGRAMA_MOCK,
@@ -216,6 +217,12 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   // ================= ADMIN: ÁREAS DE CONOCIMIENTO =================
   if (url.endsWith('/admin/areas') && method === 'GET') {
     return of(okResponse(mockStore.areasConocimiento)).pipe(delay(200));
+  }
+
+  // ================= ADMIN: CATÁLOGOS ADMINISTRABLES =================
+  const catalogoAdmin = responderCatalogosAdminMock(url, method, req.body);
+  if (catalogoAdmin) {
+    return catalogoAdmin as ReturnType<HttpInterceptorFn>;
   }
 
   // ================= ADMIN: PARÁMETROS, AUDITORÍA Y CIERRE MASIVO =================
