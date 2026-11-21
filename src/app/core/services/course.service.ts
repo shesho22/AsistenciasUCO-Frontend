@@ -13,12 +13,14 @@ import { HorarioDocenteApiDto } from '../api/models/horario-docente-api-dto.mode
 import { Course, FranjaHorario } from '../models/course.model';
 import { PrevisualizacionHorarioGrupo, PrevisualizarHorarioPayload } from '../models/horario-grupo.model';
 import { MOCK_COURSES } from '../mocks/course.mock';
+import { AttendanceClaimService } from './attendance-claim.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class CourseService {
   private readonly http = inject(HttpClient);
+  private readonly claimService = inject(AttendanceClaimService);
 
   private readonly coursesSignal = signal<Course[]>([...MOCK_COURSES]);
 
@@ -48,8 +50,8 @@ export class CourseService {
       this.http.get<ApiListResponse<AsignaturaDocenteApiDto>>(
         `${environment.apiUrl}/docente/asignaturas`
       ),
-      this.http
-        .get<ApiListResponse<HorarioDocenteApiDto>>(`${environment.apiUrl}/docente/horarios`)
+      this.claimService
+        .getHorarioDocente<HorarioDocenteApiDto>()
         .pipe(catchError(() => of(null))),
     ]).pipe(
       map(([asignaciones, horarios]) => {
