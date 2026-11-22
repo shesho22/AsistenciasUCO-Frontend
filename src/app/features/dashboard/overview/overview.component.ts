@@ -43,7 +43,6 @@ import {
   HorarioDocenteItem,
   HorarioItem,
 } from '../../../core/models/role-management.model';
-import { MOCK_USERS_BY_ROLE } from '../../../core/mocks/user.mock';
 import {
   ProximaClaseInfo,
   ClaseHorarioItem,
@@ -73,13 +72,14 @@ import { OverviewStudentComponent } from './components/overview-student.componen
     OverviewStudentComponent,
   ],
   template: `
+    @if (user(); as usuario) {
     <div class="flex flex-col gap-4 animate-fade-in">
       <!-- 1. Hero Banner Adaptativo -->
       <app-overview-hero
         [userRole]="userRole()"
-        [userName]="user().name"
-        [institutionName]="user().institutionName"
-        [department]="user().department"
+        [userName]="usuario.name"
+        [institutionName]="usuario.institutionName"
+        [department]="usuario.department"
         [pendingClaimsCount]="pendingClaimsCount()"
         [grupoProximaClase]="proximaClase()?.idGrupo ?? null"
         [sinEntidadAsignada]="heroSinEntidad()"
@@ -145,6 +145,7 @@ import { OverviewStudentComponent } from './components/overview-student.componen
         }
       }
     </div>
+    }
   `,
 })
 export class OverviewComponent implements OnInit {
@@ -164,12 +165,18 @@ export class OverviewComponent implements OnInit {
   private readonly teacherResumen = inject(TeacherGruposResumenService);
   private readonly destroyRef = inject(DestroyRef);
 
-  user = computed(() => this.authService.currentUser() || MOCK_USERS_BY_ROLE.DOCENTE);
+  user = computed(() => this.authService.currentUser());
   userRole = computed<UserRole>(() => this.user()?.role || 'DOCENTE');
   /** HU178: el perfil confirmó que el decano no tiene facultad asignada. */
-  decanoSinFacultad = computed(() => sinEntidadAsignada(this.user(), 'DECANO'));
+  decanoSinFacultad = computed(() => {
+    const usuario = this.user();
+    return usuario ? sinEntidadAsignada(usuario, 'DECANO') : false;
+  });
   /** HU178: el perfil confirmó que el coordinador no tiene programa asignado. */
-  coordinadorSinPrograma = computed(() => sinEntidadAsignada(this.user(), 'COORDINADOR'));
+  coordinadorSinPrograma = computed(() => {
+    const usuario = this.user();
+    return usuario ? sinEntidadAsignada(usuario, 'COORDINADOR') : false;
+  });
   /** HU178: al rol activo le falta su entidad; el encabezado no ofrece acciones que solo llevarían al aviso. */
   heroSinEntidad = computed(() => {
     const rol = this.userRole();
@@ -218,6 +225,11 @@ export class OverviewComponent implements OnInit {
   isLoading = signal<boolean>(true);
 
   ngOnInit(): void {
+    // Sin sesión no hay rol que consultar: la vista queda vacía en lugar de simular un usuario.
+    if (!this.user()) {
+      this.isLoading.set(false);
+      return;
+    }
     this.loadDataForRole(this.userRole());
   }
 

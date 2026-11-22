@@ -207,7 +207,8 @@ export class AuthService implements OnDestroy {
     // Persistir ambos estados evita que un USE_MOCKS=true definido por runtime
     // reaparezca al eliminar la preferencia local durante el mismo arranque.
     localStorage.setItem('USE_MOCKS', String(enabled));
-    this.mockModeSignal.set(enabled);
+    // En producción el modo simulado no existe (sus datos no viajan en el bundle).
+    this.mockModeSignal.set(enabled && !environment.production);
   }
 
   constructor() {
