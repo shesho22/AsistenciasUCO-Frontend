@@ -64,8 +64,9 @@ test.describe('Coordinador', () => {
 
     const tabla = main.getByRole('table');
     await expect(tabla.getByRole('columnheader', { name: '% Asistencia' })).toBeVisible();
-    await expect(tabla.getByRole('row', { name: /Cálculo Diferencial Grupo 01/ })).toContainText('93.75%');
-    await expect(tabla.getByRole('row', { name: /Estructuras de Datos Grupo 02/ })).toContainText('97.78%');
+    // H-15: con el locale es-CO registrado el pipe number usa coma decimal.
+    await expect(tabla.getByRole('row', { name: /Cálculo Diferencial Grupo 01/ })).toContainText('93,75%');
+    await expect(tabla.getByRole('row', { name: /Estructuras de Datos Grupo 02/ })).toContainText('97,78%');
 
     await main.getByRole('combobox', { name: 'Materia' }).selectOption({ label: 'Cálculo Diferencial' });
     await expect(main.getByTestId('conteo-grupos')).toHaveText(/^\s*1 Grupos?\s*$/);
