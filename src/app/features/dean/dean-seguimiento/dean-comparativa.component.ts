@@ -16,7 +16,7 @@ import { TablaDatosComponent, TAMANO_PAGINA_TABLA, paginarEnCliente } from '../.
  */
 @Component({
   selector: 'app-dean-comparativa',
-  imports: [PageHeaderComponent, TablaDatosComponent, PaginationComponent, ErrorCargaComponent, BadgeComponent, HorasMinutosPipe],
+  imports: [PageHeaderComponent, TablaDatosComponent, PaginationComponent, ErrorCargaComponent, BadgeComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="space-y-4">
