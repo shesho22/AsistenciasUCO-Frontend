@@ -1,4 +1,6 @@
-import { ApplicationConfig, EnvironmentInjector, ErrorHandler, provideBrowserGlobalErrorListeners, provideZoneChangeDetection, inject, provideAppInitializer } from '@angular/core';
+import { registerLocaleData } from '@angular/common';
+import localeEsCo from '@angular/common/locales/es-CO';
+import { ApplicationConfig, EnvironmentInjector, ErrorHandler, LOCALE_ID, provideBrowserGlobalErrorListeners, provideZoneChangeDetection, inject, provideAppInitializer } from '@angular/core';
 import { provideRouter, withComponentInputBinding, withPreloading } from '@angular/router';
 import { PrecargaPorRolStrategy } from './core/routing/precarga-por-rol.strategy';
 import { provideHttpClient, withInterceptors, withXsrfConfiguration, withXhr } from '@angular/common/http';
@@ -13,6 +15,9 @@ import { AuthService } from './core/services/auth.service';
 import { REALTIME_TRANSPORT } from './core/realtime/contract/realtime-transport';
 import { FetchSseRealtimeTransport } from './core/realtime/adapter/sse/fetch-sse-realtime-transport';
 import { GlobalErrorHandler } from './core/errors/global-error-handler';
+
+// H-15: fechas y números del pipe `date` en español de Colombia (sin esto salen en inglés: "Jan 5, 2026").
+registerLocaleData(localeEsCo);
 
 /**
  * VAL MSG-06 / EST-10 / INT-003: el servicio y la tabla de codigos remotos solo se descargan si los textos del catalogo
@@ -36,6 +41,7 @@ export function initializeKeycloak(authService: AuthService) {
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    { provide: LOCALE_ID, useValue: 'es-CO' },
     provideZoneChangeDetection({ eventCoalescing: true }),
     // VAL OBS-14: errores no capturados (incluidos los de ventana y promesas) pasan por el manejador global.
     provideBrowserGlobalErrorListeners(),
