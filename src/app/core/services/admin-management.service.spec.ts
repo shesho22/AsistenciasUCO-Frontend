@@ -466,13 +466,13 @@ describe('AdminManagementService', () => {
   });
 
   it('ejecutarCierreMasivo funciona correctamente', () => {
-    service.ejecutarCierreMasivo('per-1', '2026-1').subscribe((res) => {
+    service.ejecutarCierreMasivo('per-1').subscribe((res) => {
       expect(res.exitoso).toBeTrue();
     });
 
     const postReq = http.expectOne(`${environment.apiUrl}/admin/cierre-masivo`);
     expect(postReq.request.method).toBe('POST');
-    expect(postReq.request.body).toEqual({ idPeriodoAcademico: 'per-1', periodoCodigo: '2026-1' });
+    expect(postReq.request.body).toEqual({ idPeriodoAcademico: 'per-1' });
     postReq.flush({ exitoso: true, datos: null });
   });
 

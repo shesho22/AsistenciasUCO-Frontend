@@ -79,8 +79,16 @@ describe('AdminCierreMasivoComponent (F-ADM-006, F-ADM-007, F-ADM-014)', () => {
     expect(adminServiceSpy.ejecutarCierreMasivo).not.toHaveBeenCalled();
     expect(nativo).not.toHaveBeenCalled();
     component.confirmarCierre();
-    expect(adminServiceSpy.ejecutarCierreMasivo).toHaveBeenCalledWith('per-1', '2026-2');
+    expect(adminServiceSpy.ejecutarCierreMasivo).toHaveBeenCalledWith('per-1');
     expect(component.cierrePendiente()).toBeFalse();
+  });
+
+  it('FE-1: el diálogo de confirmación nombra el período y no muestra su identificador', () => {
+    component.iniciarCierreSemestral();
+    fixture.detectChanges();
+    const texto = el().querySelector('[role="alertdialog"]')?.textContent ?? '';
+    expect(texto).toContain(component.nombrePeriodoSeleccionado());
+    expect(texto).not.toContain('per-1');
   });
 
   it('F-ADM-005: selecciona por defecto el período con esVigente === true', () => {

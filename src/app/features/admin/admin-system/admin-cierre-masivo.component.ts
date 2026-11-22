@@ -41,7 +41,7 @@ import { mensajeUi } from '../../../core/messages/mensajes-ui';
           </p>
         </div>
 
-        <div class="bg-white/10 backdrop-blur-sm border border-white/20 p-4 rounded-xl flex flex-col items-center gap-3 shrink-0">
+        <div class="bg-white/10 backdrop-blur-sm border border-white/20 p-4 rounded-xl flex flex-col items-center gap-3 w-full md:w-auto md:shrink-0 min-w-0">
           <label for="cierre-periodo" class="text-xs font-bold text-white uppercase">Período para Cierre</label>
           @if (periodos().length === 0) {
             <p class="text-xs text-warm-300">No hay períodos académicos registrados para realizar el cierre.</p>
@@ -49,7 +49,7 @@ import { mensajeUi } from '../../../core/messages/mensajes-ui';
             <select
               id="cierre-periodo"
               [(ngModel)]="periodoSeleccionadoCierre"
-              class="px-4 py-2 rounded-lg bg-white text-warm-900 text-xs font-bold focus:outline-none"
+              class="w-full max-w-full min-w-0 px-4 py-2 rounded-lg bg-white text-warm-900 text-xs font-bold focus:outline-none"
             >
               @for (p of periodos(); track p.id) {
                 <option [value]="p.id">{{ p.nombre }} ({{ p.codigo }})</option>
@@ -146,7 +146,7 @@ import { mensajeUi } from '../../../core/messages/mensajes-ui';
       <app-confirm-dialog
         [isOpen]="cierrePendiente()"
         title="Cierre masivo definitivo"
-        [message]="'¿Confirma ejecutar el cierre masivo definitivo de asistencia para el período ' + periodoSeleccionadoCierre + '? Esta acción es irreversible y consolidará los registros de inasistencia de todos los estudiantes.'"
+        [message]="'¿Confirma ejecutar el cierre masivo definitivo de asistencia para el período ' + nombrePeriodoSeleccionado() + '? Esta acción es irreversible y consolidará los registros de inasistencia de todos los estudiantes.'"
         confirmLabel="Ejecutar cierre"
         [destructive]="true"
         (confirmed)="confirmarCierre()"
@@ -212,6 +212,12 @@ export class AdminCierreMasivoComponent implements OnInit {
     }
   }
 
+  /** Nombre legible del período elegido (nunca el identificador interno). */
+  nombrePeriodoSeleccionado(): string {
+    const p = this.periodos().find((x) => x.id === this.periodoSeleccionadoCierre || x.codigo === this.periodoSeleccionadoCierre);
+    return p ? `${p.nombre} (${p.codigo})` : '';
+  }
+
   porcentaje(parte: number, total: number): string {
     return total > 0 ? `${((parte / total) * 100).toFixed(1)}%` : '—';
   }
@@ -234,7 +240,7 @@ export class AdminCierreMasivoComponent implements OnInit {
 
     this.isProcesandoCierre.set(true);
     this.adminService
-      .ejecutarCierreMasivo(idPeriodo, codigoPeriodo)
+      .ejecutarCierreMasivo(idPeriodo)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (res) => {

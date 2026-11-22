@@ -357,10 +357,10 @@ export class AdminManagementService {
       );
   }
 
-  ejecutarCierreMasivo(idPeriodoAcademico: string, periodoCodigo: string = ''): Observable<ApiResponse<void>> {
+  /** `POST /admin/cierre-masivo`: el contrato solo acepta `idPeriodoAcademico` (el backend rechaza campos extra). */
+  ejecutarCierreMasivo(idPeriodoAcademico: string): Observable<ApiResponse<void>> {
     return this.http.post<ApiResponse<void>>(`${environment.apiUrl}/admin/cierre-masivo`, {
       idPeriodoAcademico,
-      periodoCodigo,
     });
   }
 
