@@ -140,6 +140,15 @@ describe('AcademicPeriodFormModalComponent', () => {
     expect(component.periodoHistorico()).toBeFalse();
   });
 
+  it('en edición precarga el nombre tal cual lo guardó el backend, sin el prefijo de presentación "Período "', () => {
+    crear({ ...periodo, nombreOriginal: '2026-2' });
+    expect(component.nombre()).toBe('2026-2');
+    let emitido: unknown;
+    component.guardar.subscribe((v) => (emitido = v));
+    component.enviar();
+    expect(emitido).toEqual({ nombre: '2026-2', fechaInicio: '2026-08-01', fechaFin: '2026-12-15' });
+  });
+
   it('en edición usa el código si el nombre viene vacío', () => {
     crear({ ...periodo, nombre: '' });
     expect(component.nombre()).toBe('2026-2');

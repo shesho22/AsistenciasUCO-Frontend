@@ -171,7 +171,7 @@ export class AcademicPeriodFormModalComponent implements OnInit {
   ngOnInit(): void {
     const actual = this.periodo();
     if (actual) {
-      this.nombre.set(actual.nombre || actual.codigo);
+      this.nombre.set(actual.nombreOriginal || actual.nombre || actual.codigo);
       this.fechaInicio.set(actual.fechaInicio);
       this.fechaFin.set(actual.fechaFin);
     }

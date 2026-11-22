@@ -443,6 +443,8 @@ export interface PeriodoAcademicoItem {
   id: string;
   codigo: string;
   nombre: string;
+  /** Nombre tal cual lo guarda el backend (sin el prefijo de presentación); es el que se precarga al editar. */
+  nombreOriginal?: string;
   fechaInicio: string;
   fechaFin: string;
   fechaLimiteNotas?: string;

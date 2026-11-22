@@ -113,6 +113,7 @@ export function normalizarPeriodoAcademico(raw: PeriodoAcademicoApiDto | null | 
     id: raw?.id as string,
     codigo: raw?.idInstitucion !== undefined ? String(raw?.nombre ?? '') : String(raw?.codigo ?? raw?.nombre ?? ''),
     nombre: raw?.idInstitucion !== undefined ? `Período ${raw?.nombre ?? ''}` : String(raw?.nombre ?? ''),
+    ...(raw?.idInstitucion !== undefined ? { nombreOriginal: String(raw?.nombre ?? '') } : {}),
     fechaInicio,
     fechaFin,
     fechaLimiteNotas: raw?.fechaLimiteNotas,

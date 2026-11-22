@@ -91,6 +91,14 @@ describe('AdminCierreMasivoComponent (F-ADM-006, F-ADM-007, F-ADM-014)', () => {
     expect(texto).not.toContain('per-1');
   });
 
+  it('el nombre del período elegido no repite el nombre ni el código', () => {
+    (coordServiceSpy as unknown as { _periodosSignal: { set(v: unknown): void } })._periodosSignal.set([
+      { id: 'per-x', codigo: 'VAL-ADM A', nombre: 'Período VAL-ADM A', fechaInicio: '', fechaFin: '', estado: 'ACTIVO', esActual: true },
+    ]);
+    component.periodoSeleccionadoCierre = 'per-x';
+    expect(component.nombrePeriodoSeleccionado()).toBe('Período VAL-ADM A');
+  });
+
   it('F-ADM-005: selecciona por defecto el período con esVigente === true', () => {
     const periodosConVigente = [
       { id: '3f0c1d2e-0000-4000-8000-000000000001', codigo: '2026-1', nombre: 'P1', fechaInicio: '2026-01-01', fechaFin: '2026-06-01', estado: 'FINALIZADO' as const, esVigente: false },

@@ -559,6 +559,7 @@ describe('CoordinatorManagementService', () => {
       const periodo = service.periodos()[0];
       expect(periodo.codigo).toBe('2026-2');
       expect(periodo.nombre).toBe('Período 2026-2');
+      expect(periodo.nombreOriginal).toBe('2026-2');
     });
 
     it('normalizarPeriodoAcademico conserva el estado que resolvió el backend y no lo deduce con el reloj (CIERRE-W2A)', () => {

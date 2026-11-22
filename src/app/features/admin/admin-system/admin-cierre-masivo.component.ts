@@ -52,7 +52,7 @@ import { mensajeUi } from '../../../core/messages/mensajes-ui';
               class="w-full max-w-full min-w-0 px-4 py-2 rounded-lg bg-white text-warm-900 text-xs font-bold focus:outline-none"
             >
               @for (p of periodos(); track p.id) {
-                <option [value]="p.id">{{ p.nombre }} ({{ p.codigo }})</option>
+                <option [value]="p.id">{{ etiquetaPeriodo(p) }}</option>
               }
             </select>
           }
@@ -215,7 +215,12 @@ export class AdminCierreMasivoComponent implements OnInit {
   /** Nombre legible del período elegido (nunca el identificador interno). */
   nombrePeriodoSeleccionado(): string {
     const p = this.periodos().find((x) => x.id === this.periodoSeleccionadoCierre || x.codigo === this.periodoSeleccionadoCierre);
-    return p ? `${p.nombre} (${p.codigo})` : '';
+    return p ? this.etiquetaPeriodo(p) : '';
+  }
+
+  /** El nombre ya incluye el código (p. ej. "Período 2026-2"): se muestra una sola vez. */
+  etiquetaPeriodo(p: { nombre: string; codigo: string }): string {
+    return p.nombre.includes(p.codigo) ? p.nombre : `${p.nombre} (${p.codigo})`;
   }
 
   porcentaje(parte: number, total: number): string {
