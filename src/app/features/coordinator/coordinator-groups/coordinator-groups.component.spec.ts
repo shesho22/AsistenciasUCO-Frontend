@@ -92,6 +92,9 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
     expect(component.periodos()).toHaveSize(3);
     expect(component.nombreDocente('doc-1')).toBe('Ana Pérez');
     expect(component.nombreDocente(undefined)).toBe('Sin asignar');
+    // El nombre que entrega el backend manda; el listado del programa es solo respaldo.
+    expect(component.nombreDocente('doc-1', 'Luis Mora')).toBe('Luis Mora');
+    expect(component.nombreDocente('doc-x', null)).toBe('Sin asignar');
     expect(fixture.nativeElement.textContent).toContain('Lunes 08:00-10:00');
     expect(coordinatorService.getDocentesPrograma).toHaveBeenCalledWith({ pagina: 1, tamano: 100, estaActivo: true });
   });

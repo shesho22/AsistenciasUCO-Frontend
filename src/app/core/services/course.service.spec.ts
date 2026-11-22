@@ -468,6 +468,17 @@ describe('CourseService', () => {
     expect(courses[1].nombreProgramaResponsable).toBeNull();
   });
 
+  it('getCoordinatorCoursesPage toma el nombre del docente que entrega el backend', () => {
+    let courses: Course[] = [];
+    service.getCoordinatorCoursesPage({ pagina: 1, tamano: 10 }).subscribe((res) => (courses = res.elementos));
+    http.expectOne(porUrl(`${environment.apiUrl}/coordinador/grupos`)).flush(paginaApi([
+      grupoProgramaApi({ nombreDocente: 'Ana Pérez' }),
+      grupoProgramaApi({ nombreDocente: null }),
+    ]));
+    expect(courses[0].docenteName).toBe('Ana Pérez');
+    expect(courses[1].docenteName).toBeUndefined();
+  });
+
   it('getCoordinatorCoursesPage mapea el programa responsable y esResponsable (DEC-077)', () => {
     let courses: Course[] = [];
     service.getCoordinatorCoursesPage({ pagina: 1, tamano: 10 }).subscribe((res) => (courses = res.elementos));

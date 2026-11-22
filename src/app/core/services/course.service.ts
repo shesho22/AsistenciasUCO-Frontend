@@ -179,6 +179,7 @@ export class CourseService {
         franjas,
         asignaturaId: grupo.idAsignatura ?? undefined,
         docenteId: grupo.idDocente ?? undefined,
+        docenteName: grupo.nombreDocente ?? undefined,
         enrolledStudentsCount: grupo.estudiantesActivos ?? undefined,
         cupoMaximo: grupo.capacidadMaxima ?? undefined,
         nombreProgramaResponsable: grupo.nombreProgramaResponsable ?? null,

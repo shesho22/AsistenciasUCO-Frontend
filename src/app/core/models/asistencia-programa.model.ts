@@ -8,6 +8,8 @@ export interface GrupoProgramaItem {
   idAsignatura: string | null;
   nombreAsignatura: string;
   idDocente: string | null;
+  /** Nombre del docente titular que entrega el backend; null si no hay o no es visible para el coordinador. */
+  nombreDocente?: string | null;
   capacidadMaxima: number | null;
   estudiantesActivos: number | null;
   cuposDisponibles: number | null;

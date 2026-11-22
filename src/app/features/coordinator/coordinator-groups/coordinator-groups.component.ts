@@ -90,7 +90,7 @@ interface GrupoForm {
                   <tr class="border-t border-warm-100">
                     <td class="px-4 py-3 font-medium text-warm-900">{{ grupo.name }}</td>
                     <td class="px-4 py-3">{{ grupo.section }}</td>
-                    <td class="px-4 py-3">{{ nombreDocente(grupo.docenteId) }}</td>
+                    <td class="px-4 py-3">{{ nombreDocente(grupo.docenteId, grupo.docenteName) }}</td>
                     <td class="px-4 py-3" data-testid="programa-responsable">{{ grupo.nombreProgramaResponsable || 'Sin programa responsable' }}</td>
                     <td class="px-4 py-3">{{ grupo.schedule || 'Sin horario' }}</td>
                     <td class="px-4 py-3">{{ grupo.enrolledStudentsCount ?? 0 }} / {{ grupo.cupoMaximo ?? '-' }}</td>
@@ -468,8 +468,9 @@ export class CoordinatorGroupsComponent implements OnInit {
     return validarFranjas(this.form.franjas);
   }
 
-  nombreDocente(idDocente: string | undefined): string {
-    return (idDocente && this.nombresDocente().get(idDocente)) || 'Sin asignar';
+  /** El nombre lo entrega el backend; solo si viene vacío se resuelve contra los docentes del programa. */
+  nombreDocente(idDocente: string | undefined, nombreBackend?: string | null): string {
+    return nombreBackend || (idDocente && this.nombresDocente().get(idDocente)) || 'Sin asignar';
   }
 
   abrirCrear(): void {
