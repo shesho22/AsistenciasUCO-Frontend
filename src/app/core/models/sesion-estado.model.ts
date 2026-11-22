@@ -7,7 +7,8 @@ export type EstadoSesion = 'PROGRAMADA' | 'CANCELADA';
  */
 export type EstadoSolicitudSesion = 'PENDIENTE' | 'APROBADA' | 'RECHAZADA';
 
-export type TipoCancelacionSesion = 'DOCENTE' | 'FESTIVO' | 'COORDINADOR';
+/** `RECESO` (DEC-081): cancelación automática por un día de receso académico del período; su `motivo` ya trae el prefijo. */
+export type TipoCancelacionSesion = 'DOCENTE' | 'FESTIVO' | 'COORDINADOR' | 'RECESO';
 
 /** Detalle de la cancelación; `null` en la sesión cuando no está cancelada. */
 export interface CancelacionSesion {
@@ -35,7 +36,8 @@ export function estaCancelada(sesion: { estado?: EstadoSesion | null } | null | 
 }
 
 /**
- * Texto de apoyo de una sesión cancelada: "Día festivo: <nombre>" o el motivo del docente.
+ * Texto de apoyo de una sesión cancelada: "Día festivo: <nombre>" o el motivo (docente, coordinación o receso académico,
+ * este último ya con su prefijo desde el backend).
  * Solo compone valores entregados por el backend; no los traduce ni los interpreta.
  */
 export function detalleCancelacion(cancelacion: CancelacionSesion | null | undefined): string {

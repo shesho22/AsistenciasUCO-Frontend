@@ -47,6 +47,12 @@ describe('sesion-estado.model (CULM-001 B.1)', () => {
     expect(detalleCancelacion(undefined)).toBe('');
   });
 
+  it('DEC-081 detalleCancelacion muestra el motivo del receso tal como lo entrega el backend (sin tratar «festivo»)', () => {
+    const receso: CancelacionSesion = { tipo: 'RECESO', motivo: 'Receso académico: Semana Santa', nombreFestivo: null, fechaCancelacionUtc: null };
+    expect(detalleCancelacion(receso)).toBe('Receso académico: Semana Santa');
+    expect(detalleCancelacion({ ...receso, motivo: null })).toBe('');
+  });
+
   it('B1-F-07 marcarSesionCancelada actualiza solo la sesión indicada y no muta la lista original', () => {
     const lista: Fila[] = [
       { id: 'a', estado: 'PROGRAMADA', cancelacion: null },

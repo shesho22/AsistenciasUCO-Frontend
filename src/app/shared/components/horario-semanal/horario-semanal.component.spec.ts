@@ -105,6 +105,21 @@ describe('HorarioSemanalComponent (ATA D7)', () => {
     expect(el().querySelector('[data-testid="motivo-cancelacion"]')?.textContent).toContain('Día de la Independencia');
   });
 
+  it('DEC-081: una cancelación automática por receso muestra su motivo, no una etiqueta de festivo', () => {
+    montar('ESTUDIANTE');
+    calendario().flush({
+      exitoso: true,
+      datos: [sesion({ estaCancelada: true, esCancelacionAutomatica: true, nombreDiaFestivo: null, motivoCancelacion: 'Receso académico: Semana Santa' })],
+    });
+    fixture.detectChanges();
+    const tarjeta = el().querySelector('[data-testid="sesion-s-1"]') as HTMLElement;
+    expect(tarjeta.querySelector('[data-testid="motivo-cancelacion"]')?.textContent).toContain('Receso académico: Semana Santa');
+    expect(tarjeta.textContent).not.toContain('festivo');
+    expect(component.etiquetaFranja(sesion({ estaCancelada: true, esCancelacionAutomatica: true, motivoCancelacion: 'Receso académico: Semana Santa' }))).toContain(
+      'cancelada: Receso académico: Semana Santa',
+    );
+  });
+
   it('una cancelada sin motivo ni festivo no pinta el párrafo de motivo', () => {
     montar('ESTUDIANTE');
     calendario().flush({ exitoso: true, datos: [sesion({ estaCancelada: true })] });

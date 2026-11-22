@@ -44,7 +44,7 @@ export interface ResumenSesionesGrupo {
 export const DEFINICION_CONTEO_SESIONES =
   'Programadas: todas las sesiones del grupo, incluidas las ya dictadas y las canceladas. ' +
   'Ejecutadas: sesiones no canceladas cuya hora de fin ya pasó. ' +
-  'Canceladas: sesiones canceladas por el docente, la coordinación o un día festivo.';
+  'Canceladas: sesiones canceladas por el docente, la coordinación, un día festivo o un receso académico.';
 
 const plural = (n: number, singular: string, pluralForma: string): string => `${n} ${n === 1 ? singular : pluralForma}`;
 
