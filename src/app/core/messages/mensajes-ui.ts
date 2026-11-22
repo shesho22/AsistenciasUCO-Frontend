@@ -100,6 +100,8 @@ export const MENSAJES_UI = {
   // HU178: aviso para el coordinador que aún no tiene programa asignado (estado informativo, no un error).
   UI_COORDINATOR_SIN_PROGRAMA_001: 'Aún no tiene un programa asignado',
   UI_COORDINATOR_SIN_PROGRAMA_002: 'Solicítelo al decano de su facultad. Cuando lo tenga, aquí verá los datos de su programa.',
+  UI_DEAN_COMPARATIVA_001: '{falta} de falta sobre {base} del período',
+  UI_DEAN_COMPARATIVA_002: '{falta} de falta sobre {base} dictadas',
   UI_DEAN_COORDINADORES_001: 'El cambio se guardó. La cuenta de acceso se sincronizará pronto.',
   UI_DEAN_COORDINADORES_002: 'Cambio guardado.',
   UI_DEAN_COORDINADORES_004: 'El campo Contraseña Inicial IAM es obligatorio.',

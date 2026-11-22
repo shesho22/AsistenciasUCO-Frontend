@@ -5,6 +5,8 @@ import { ErrorCargaComponent } from '../../../shared/components/error-carga/erro
 import { BadgeComponent } from '../../../shared/components/badge/badge.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
+import { ComparativaPrograma } from '../../../core/models/dean-indicators.model';
+import { mensajeUi } from '../../../core/messages/mensajes-ui';
 import { HorasMinutosPipe } from '../../../shared/pipes/horas-minutos.pipe';
 import { TablaDatosComponent, TAMANO_PAGINA_TABLA, paginarEnCliente } from '../../../shared/components/tabla-datos/tabla-datos.component';
 
@@ -46,7 +48,7 @@ import { TablaDatosComponent, TAMANO_PAGINA_TABLA, paginarEnCliente } from '../.
               <tr>
                 <th scope="col">Programa</th>
                 <th scope="col" class="text-right">Ausentismo</th>
-                <th scope="col">Horas de falta / dictadas</th>
+                <th scope="col">Horas de falta</th>
                 <th scope="col" class="text-right">Estudiantes</th>
                 <th scope="col" class="text-right">En riesgo</th>
                 <th scope="col" class="text-right">En pérdida</th>
@@ -63,7 +65,7 @@ import { TablaDatosComponent, TAMANO_PAGINA_TABLA, paginarEnCliente } from '../.
                     }
                   </td>
                   <td class="text-right font-semibold tabular-nums">{{ porcentaje(p.porcentajeAusentismo) }}</td>
-                  <td class="text-xs text-warm-600 whitespace-nowrap">{{ p.horasFalta | horasMinutos }} de falta sobre {{ p.horasDictadas | horasMinutos }} dictadas</td>
+                  <td class="text-xs text-warm-600 whitespace-nowrap">{{ textoHoras(p) }}</td>
                   <td class="text-right tabular-nums">{{ p.totalEstudiantes }}</td>
                   <td class="text-right tabular-nums">{{ p.estudiantesRiesgo }}</td>
                   <td class="text-right tabular-nums">{{ p.estudiantesPerdida }}</td>
@@ -90,7 +92,7 @@ import { TablaDatosComponent, TAMANO_PAGINA_TABLA, paginarEnCliente } from '../.
                 <dt class="text-warm-600">En pérdida</dt><dd class="text-right tabular-nums">{{ p.estudiantesPerdida }}</dd>
                 <dt class="text-warm-600">Retención</dt><dd class="text-right tabular-nums">{{ porcentaje(p.tasaRetencion) }}</dd>
               </dl>
-              <p class="text-xs text-warm-600">{{ p.horasFalta | horasMinutos }} de falta sobre {{ p.horasDictadas | horasMinutos }} dictadas</p>
+              <p class="text-xs text-warm-600">{{ textoHoras(p) }}</p>
             </article>
           }
           <app-pagination
@@ -108,12 +110,22 @@ import { TablaDatosComponent, TAMANO_PAGINA_TABLA, paginarEnCliente } from '../.
 export class DeanComparativaComponent implements OnInit {
   readonly embebido = input(false);
   readonly service = inject(DeanIndicatorsService);
+  private readonly formato = new HorasMinutosPipe();
 
   readonly cargando = signal(true);
   readonly error = signal<LoadErrorState | null>(null);
   readonly pagina = signal(1);
   readonly tamano = signal(TAMANO_PAGINA_TABLA);
   readonly filas = computed(() => paginarEnCliente(this.service.comparativa(), this.pagina(), this.tamano()));
+
+  /** ATA D2: el % se calcula sobre las horas del período; sin ese dato se conserva la base anterior (horas dictadas). */
+  textoHoras(p: ComparativaPrograma): string {
+    const base = p.horasPeriodo ?? p.horasDictadas;
+    return mensajeUi(p.horasPeriodo == null ? 'UI_DEAN_COMPARATIVA_002' : 'UI_DEAN_COMPARATIVA_001', {
+      falta: this.formato.transform(p.horasFalta),
+      base: this.formato.transform(base),
+    });
+  }
 
   ngOnInit(): void {
     this.cargar();

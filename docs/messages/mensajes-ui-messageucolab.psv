@@ -85,6 +85,8 @@ UI_COORDINATOR_SOLICITUDES_SESION_002|UI075|Funcional|Información|UI_COORDINATO
 UI_COORDINATOR_STUDY_PLANS_001|UI076|Funcional|Información|UI_COORDINATOR_STUDY_PLANS_001|Estado del plan de estudio actualizado.
 UI_COORDINATOR_SIN_PROGRAMA_001|UI138|Funcional|Información|UI_COORDINATOR_SIN_PROGRAMA_001|Aún no tiene un programa asignado
 UI_COORDINATOR_SIN_PROGRAMA_002|UI139|Funcional|Información|UI_COORDINATOR_SIN_PROGRAMA_002|Solicítelo al decano de su facultad. Cuando lo tenga, aquí verá los datos de su programa.
+UI_DEAN_COMPARATIVA_001|UI153|Funcional|Información|UI_DEAN_COMPARATIVA_001|{falta} de falta sobre {base} del período
+UI_DEAN_COMPARATIVA_002|UI154|Funcional|Información|UI_DEAN_COMPARATIVA_002|{falta} de falta sobre {base} dictadas
 UI_DEAN_COORDINADORES_001|UI077|Funcional|Información|UI_DEAN_COORDINADORES_001|El cambio se guardó. La cuenta de acceso se sincronizará pronto.
 UI_DEAN_COORDINADORES_002|UI078|Funcional|Información|UI_DEAN_COORDINADORES_002|Cambio guardado.
 UI_DEAN_COORDINADORES_004|UI079|Funcional|Información|UI_DEAN_COORDINADORES_004|El campo Contraseña Inicial IAM es obligatorio.

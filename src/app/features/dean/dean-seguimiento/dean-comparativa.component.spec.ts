@@ -31,6 +31,18 @@ describe('DeanComparativaComponent', () => {
     expect(el().querySelector('[data-testid="comparativa-cargando"]')).toBeNull();
   });
 
+  it('ATA D2: con horasPeriodo la etiqueta dice "del período" y usa esa base; sin él conserva "dictadas"', () => {
+    http.expectOne(url).flush({ exitoso: true, datos: [
+      programa('p-1', 'Sistemas', { horasPeriodo: 480 }),
+      programa('p-2', 'Industrial'),
+    ] });
+    fixture.detectChanges();
+    const celdas = Array.from(el().querySelectorAll('[data-testid="comparativa-fila"] td.text-xs')).map((c) => (c.textContent ?? '').replace(/\s+/g, ' ').trim());
+    expect(celdas[0]).toContain('sobre 480 h del período');
+    expect(celdas[0]).not.toContain('dictadas');
+    expect(celdas[1]).toContain('sobre 120 h dictadas');
+  });
+
   it('muestra los programas lado a lado en la tabla y como tarjetas en pantallas angostas', () => {
     http.expectOne(url).flush({ exitoso: true, datos: [programa('p-1', 'Sistemas'), programa('p-2', 'Industrial', { estaActivoPrograma: false, porcentajeAusentismo: null })] });
     fixture.detectChanges();
