@@ -146,7 +146,7 @@ import { mensajeUi } from '../../../core/messages/mensajes-ui';
       <app-confirm-dialog
         [isOpen]="cierrePendiente()"
         title="Cierre masivo definitivo"
-        [message]="'¿Confirma ejecutar el cierre masivo definitivo de asistencia para el período ' + nombrePeriodoSeleccionado() + '? Esta acción es irreversible y consolidará los registros de inasistencia de todos los estudiantes.'"
+        [message]="'¿Confirma ejecutar el cierre masivo definitivo de asistencia para el ' + periodoEnConfirmacion() + '? Esta acción es irreversible y consolidará los registros de inasistencia de todos los estudiantes.'"
         confirmLabel="Ejecutar cierre"
         [destructive]="true"
         (confirmed)="confirmarCierre()"
@@ -216,6 +216,12 @@ export class AdminCierreMasivoComponent implements OnInit {
   nombrePeriodoSeleccionado(): string {
     const p = this.periodos().find((x) => x.id === this.periodoSeleccionadoCierre || x.codigo === this.periodoSeleccionadoCierre);
     return p ? this.etiquetaPeriodo(p) : '';
+  }
+
+  /** Texto del período en la confirmación: evita "período Período X" cuando el nombre ya trae la palabra. */
+  periodoEnConfirmacion(): string {
+    const nombre = this.nombrePeriodoSeleccionado();
+    return /^per[ií]odo\s/i.test(nombre) ? nombre : `período ${nombre}`;
   }
 
   /** El nombre ya incluye el código (p. ej. "Período 2026-2"): se muestra una sola vez. */

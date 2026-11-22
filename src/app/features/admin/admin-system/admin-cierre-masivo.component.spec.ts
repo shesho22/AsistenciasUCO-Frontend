@@ -99,6 +99,21 @@ describe('AdminCierreMasivoComponent (F-ADM-006, F-ADM-007, F-ADM-014)', () => {
     expect(component.nombrePeriodoSeleccionado()).toBe('Período VAL-ADM A');
   });
 
+  it('la confirmación no repite la palabra "período" cuando el nombre ya la trae', () => {
+    (coordServiceSpy as unknown as { _periodosSignal: { set(v: unknown): void } })._periodosSignal.set([
+      { id: 'per-x', codigo: 'VAL-ADM A', nombre: 'Período VAL-ADM A', fechaInicio: '', fechaFin: '', estado: 'ACTIVO', esActual: true },
+      { id: 'per-y', codigo: '2026-9', nombre: '2026-9', fechaInicio: '', fechaFin: '', estado: 'ACTIVO', esActual: false },
+    ]);
+    component.periodoSeleccionadoCierre = 'per-x';
+    component.iniciarCierreSemestral();
+    fixture.detectChanges();
+    const texto = el().querySelector('[role="alertdialog"]')?.textContent ?? '';
+    expect(texto).toContain('para el Período VAL-ADM A?');
+    expect(texto).not.toMatch(/per[ií]odo per[ií]odo/i);
+    component.periodoSeleccionadoCierre = 'per-y';
+    expect(component.periodoEnConfirmacion()).toBe('período 2026-9');
+  });
+
   it('F-ADM-005: selecciona por defecto el período con esVigente === true', () => {
     const periodosConVigente = [
       { id: '3f0c1d2e-0000-4000-8000-000000000001', codigo: '2026-1', nombre: 'P1', fechaInicio: '2026-01-01', fechaFin: '2026-06-01', estado: 'FINALIZADO' as const, esVigente: false },
