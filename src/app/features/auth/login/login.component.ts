@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../core/services/auth.service';
 import { ButtonComponent } from '../../../shared/components/button/button.component';
 import { CardComponent } from '../../../shared/components/card/card.component';
+import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
 @Component({
     selector: 'app-login',
@@ -216,7 +217,7 @@ export class LoginComponent {
         this.authService.startBaselineLogin();
       } catch {
         this.isLoading.set(false);
-        this.errorMessage.set('No se pudo iniciar el acceso institucional. Puedes reintentar.');
+        this.errorMessage.set(mensajeUi('UI_LOGIN_001'));
       }
       return;
     }
@@ -225,21 +226,21 @@ export class LoginComponent {
     const trimmedPassword = this.password.trim();
 
     if (!trimmedUsername && !trimmedPassword) {
-      this.errorMessage.set('Los campos Correo Institucional y Contraseña son obligatorios.');
+      this.errorMessage.set(mensajeUi('UI_LOGIN_002'));
       return;
     }
     if (!trimmedUsername) {
-      this.errorMessage.set('El campo Correo Institucional es obligatorio.');
+      this.errorMessage.set(mensajeUi('UI_LOGIN_003'));
       return;
     }
     if (!trimmedPassword) {
-      this.errorMessage.set('El campo Contraseña es obligatorio.');
+      this.errorMessage.set(mensajeUi('UI_LOGIN_004'));
       return;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(trimmedUsername)) {
-      this.errorMessage.set('El campo Correo Institucional debe tener un formato de correo válido (ej. usuario@uco.edu.co).');
+      this.errorMessage.set(mensajeUi('UI_LOGIN_005'));
       return;
     }
 

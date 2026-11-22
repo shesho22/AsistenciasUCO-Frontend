@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, viewChild, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, computed, inject, signal, viewChild, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { PeriodoAcademicoItem } from '../../../core/models/role-management.model';
@@ -71,7 +71,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
       <app-confirm-dialog
         [isOpen]="periodoPorEliminar() !== null"
         title="Eliminar período académico"
-        [message]="'¿Eliminar el período ' + (periodoPorEliminar()?.codigo ?? '') + '? Solo es posible si no tiene grupos ni sesiones.'"
+        [message]="mensajeEliminar()"
         confirmLabel="Eliminar período"
         [destructive]="true"
         (confirmed)="confirmarEliminacion()"
@@ -95,6 +95,7 @@ export class AdminPeriodosComponent implements OnInit {
   protected readonly fecha = fechaCorta;
   /** Período pendiente de confirmación en el diálogo de eliminación (HU098). */
   periodoPorEliminar = signal<PeriodoAcademicoItem | null>(null);
+  mensajeEliminar = computed(() => mensajeUi('UI_ADMIN_PERIODOS_006', { codigo: this.periodoPorEliminar()?.codigo ?? '' }));
 
   ngOnInit(): void {
     this.cargarPeriodos();

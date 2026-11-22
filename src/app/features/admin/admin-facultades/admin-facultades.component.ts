@@ -631,7 +631,7 @@ export class AdminFacultadesComponent implements OnInit {
     this.intentoGuardar.set(true);
     if (this.guardando()) return;
     if (!idDecano) {
-      this.errorGuardado.set('Seleccione el decano titular de la facultad.');
+      this.errorGuardado.set(mensajeUi('UI_ADMIN_FACULTADES_009'));
       return;
     }
     if (!nombre || nombre.length < 3 || this.nombreDuplicado() || getSafeTextError(nombre, 'Nombre de la Facultad')) return;

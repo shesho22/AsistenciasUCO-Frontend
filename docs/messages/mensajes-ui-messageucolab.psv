@@ -58,11 +58,13 @@ UI_ADMIN_FACULTADES_005|UI055|Funcional|Información|UI_ADMIN_FACULTADES_005|No 
 UI_ADMIN_FACULTADES_006|UI056|Funcional|Información|UI_ADMIN_FACULTADES_006|Facultad activada correctamente.
 UI_ADMIN_FACULTADES_007|UI057|Funcional|Información|UI_ADMIN_FACULTADES_007|Facultad desactivada correctamente.
 UI_ADMIN_FACULTADES_008|UI058|Funcional|Información|UI_ADMIN_FACULTADES_008|Decano(a) {decano} asignado(a) exitosamente a {facultad}.
+UI_ADMIN_FACULTADES_009|UI155|Funcional|Información|UI_ADMIN_FACULTADES_009|Selecciona el decano titular de la facultad.
 UI_ADMIN_PERIODOS_001|UI059|Funcional|Información|UI_ADMIN_PERIODOS_001|Período académico guardado.
 UI_ADMIN_PERIODOS_002|UI060|Funcional|Información|UI_ADMIN_PERIODOS_002|Período {codigo} eliminado.
 UI_ADMIN_PERIODOS_003|UI061|Funcional|Información|UI_ADMIN_PERIODOS_003|No se pudo guardar el período académico.
 UI_ADMIN_PERIODOS_004|UI145|Funcional|Información|UI_ADMIN_PERIODOS_004|Período creado y días de receso registrados.
 UI_ADMIN_PERIODOS_005|UI146|Funcional|Información|UI_ADMIN_PERIODOS_005|El período se creó, pero algunos días de receso no se registraron.
+UI_ADMIN_PERIODOS_006|UI156|Funcional|Información|UI_ADMIN_PERIODOS_006|¿Eliminar el período {codigo}? Solo es posible si no tiene grupos ni sesiones.
 UI_ADMIN_RECESOS_001|UI147|Funcional|Información|UI_ADMIN_RECESOS_001|Día de receso registrado.
 UI_ADMIN_RECESOS_002|UI148|Funcional|Información|UI_ADMIN_RECESOS_002|No se pudo registrar el día de receso.
 UI_ADMIN_RECESOS_003|UI149|Funcional|Información|UI_ADMIN_RECESOS_003|Día de receso retirado.
@@ -74,6 +76,11 @@ UI_ADMISION_ESTUDIANTE_MODAL_002|UI064|Funcional|Información|UI_ADMISION_ESTUDI
 UI_COORDINATOR_DOCENTES_001|UI065|Funcional|Información|UI_COORDINATOR_DOCENTES_001|Estado del docente actualizado.
 UI_COORDINATOR_DOCENTES_002|UI066|Funcional|Información|UI_COORDINATOR_DOCENTES_002|Docente actualizado.
 UI_COORDINATOR_DOCENTES_003|UI067|Funcional|Información|UI_COORDINATOR_DOCENTES_003|Docente vinculado al programa.
+UI_COORDINATOR_DOCENTES_004|UI157|Funcional|Información|UI_COORDINATOR_DOCENTES_004|El primer nombre y el primer apellido no pueden quedar vacíos.
+UI_COORDINATOR_DOCENTES_005|UI158|Funcional|Información|UI_COORDINATOR_DOCENTES_005|Revisa el documento y el motivo de la corrección.
+UI_COORDINATOR_DOCENTES_006|UI159|Funcional|Información|UI_COORDINATOR_DOCENTES_006|No hay cambios para guardar.
+UI_COORDINATOR_DOCENTES_007|UI160|Funcional|Información|UI_COORDINATOR_DOCENTES_007|Completa todos los campos obligatorios: documento, nombre, apellido y correo.
+UI_COORDINATOR_DOCENTES_008|UI161|Funcional|Información|UI_COORDINATOR_DOCENTES_008|Selecciona un docente de la lista.
 UI_COORDINATOR_GROUPS_001|UI068|Funcional|Información|UI_COORDINATOR_GROUPS_001|No fue posible cargar los grupos.
 UI_COORDINATOR_GROUPS_002|UI069|Funcional|Información|UI_COORDINATOR_GROUPS_002|Grupo guardado.
 UI_COORDINATOR_GROUPS_003|UI070|Funcional|Información|UI_COORDINATOR_GROUPS_003|No fue posible guardar el grupo.
@@ -105,6 +112,11 @@ UI_DEAN_SIN_FACULTAD_002|UI137|Funcional|Información|UI_DEAN_SIN_FACULTAD_002|S
 UI_ERROR_GLOBAL_001|UI090|Funcional|Error|UI_ERROR_GLOBAL_001|Ocurrió un error inesperado. Si se repite, recarga la página y reporta el código de referencia.
 UI_ERROR_REFERENCIA|UI091|Funcional|Error|UI_ERROR_REFERENCIA|Código de referencia: {id}
 UI_ERROR_INTERCEPTOR_001|UI092|Funcional|Error|UI_ERROR_INTERCEPTOR_001|Acceso denegado: No cuenta con los permisos necesarios para realizar esta acción.
+UI_LOGIN_001|UI162|Funcional|Información|UI_LOGIN_001|No se pudo iniciar el acceso institucional. Puedes reintentar.
+UI_LOGIN_002|UI163|Funcional|Información|UI_LOGIN_002|Los campos Correo Institucional y Contraseña son obligatorios.
+UI_LOGIN_003|UI164|Funcional|Información|UI_LOGIN_003|El campo Correo Institucional es obligatorio.
+UI_LOGIN_004|UI165|Funcional|Información|UI_LOGIN_004|El campo Contraseña es obligatorio.
+UI_LOGIN_005|UI166|Funcional|Información|UI_LOGIN_005|El campo Correo Institucional debe tener un formato de correo válido (ej. usuario@uco.edu.co).
 UI_PARAMETRO_EDICION_MODAL_001|UI093|Funcional|Información|UI_PARAMETRO_EDICION_MODAL_001|Parámetro actualizado exitosamente.
 UI_ROLE_GUARD_001|UI094|Funcional|Información|UI_ROLE_GUARD_001|Acceso denegado: No cuenta con los permisos necesarios para acceder a esta sección.
 UI_SESION_HORARIO_MISMO_DIA|UI095|Funcional|Información|UI_SESION_HORARIO_MISMO_DIA|La hora de fin debe ser posterior a la de inicio; una sesión no puede pasar de la medianoche.
@@ -151,6 +163,8 @@ UI_TEACHER_GRUPOS_011|UI130|Funcional|Información|UI_TEACHER_GRUPOS_011|Sesión
 UI_TEACHER_MATRICULA_MODAL_001|UI131|Funcional|Información|UI_TEACHER_MATRICULA_MODAL_001|La matrícula por código quedó cerrada.
 UI_TEACHER_MATRICULA_MODAL_002|UI132|Funcional|Información|UI_TEACHER_MATRICULA_MODAL_002|PIN de matrícula copiado al portapapeles.
 UI_TEACHER_MATRICULA_MODAL_003|UI133|Funcional|Información|UI_TEACHER_MATRICULA_MODAL_003|Enlace de matrícula copiado al portapapeles.
+UI_TEACHER_RETIRO_ESTUDIANTE_MODAL_003|UI167|Funcional|Información|UI_TEACHER_RETIRO_ESTUDIANTE_MODAL_003|El motivo del retiro es obligatorio.
+UI_TEACHER_RETIRO_ESTUDIANTE_MODAL_004|UI168|Funcional|Información|UI_TEACHER_RETIRO_ESTUDIANTE_MODAL_004|El motivo no puede superar {maximo} caracteres.
 UI_TEACHER_REVISION_DECISION_MODAL_001|UI142|Funcional|Información|UI_TEACHER_REVISION_DECISION_MODAL_001|No hay acciones disponibles para esta revisión: el caso no espera tu decisión.
 UI_TEACHER_RETIRO_ESTUDIANTE_MODAL_001|UI134|Funcional|Información|UI_TEACHER_RETIRO_ESTUDIANTE_MODAL_001|{nombre} fue retirado del grupo.
 UI_TEACHER_RETIRO_ESTUDIANTE_MODAL_002|UI135|Funcional|Información|UI_TEACHER_RETIRO_ESTUDIANTE_MODAL_002|El estudiante fue retirado del grupo.

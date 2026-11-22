@@ -759,7 +759,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
           if ((err as { status?: number })?.status === 404 && this.archivoAdjunto()) {
             // El soporte ya no esta disponible para radicar (inexistente, ajeno o ya usado): hay que volver a adjuntarlo.
             this.archivoAdjunto.set(null);
-            this.errorSoporte.set('El soporte adjunto ya no está disponible. Adjúntalo nuevamente para radicar.');
+            this.errorSoporte.set(mensajeUi('UI_STUDENT_COURSES_003'));
             this.toast.error(mensajeUi('UI_STUDENT_COURSES_003'));
             return;
           }
