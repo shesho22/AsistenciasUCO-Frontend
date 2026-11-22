@@ -50,6 +50,16 @@ export class MatriculaQrService {
       .pipe(map((response) => response.datos));
   }
 
+  /**
+   * Estudiante con sesion iniciada: igual que `validar`, pero `programasElegibles` es la interseccion entre sus programas y los del
+   * grupo (la matricula por QR/PIN exige un programa comun, como la manual).
+   */
+  validarComoEstudiante(credencial: CredencialMatricula): Observable<CursoMatriculaQr> {
+    return this.http
+      .post<ApiDataResponse<CursoMatriculaQr>>(`${environment.apiUrl}/estudiante/matricula-qr/validar`, soloCredencial(credencial))
+      .pipe(map((response) => response.datos));
+  }
+
   registrar(payload: RegistroMatriculaQrPayload): Observable<MatriculaQrResultado> {
     return this.http
       .post<ApiDataResponse<MatriculaQrResultado>>(`${environment.apiUrl}/public/matricula-qr/registro`, payload)

@@ -83,6 +83,15 @@ describe('MatriculaQrService (HU176B)', () => {
     });
   });
 
+  it('validarComoEstudiante usa el endpoint autenticado y envia solo la credencial', () => {
+    service.validarComoEstudiante({ pin: '482913' }).subscribe();
+
+    const req = http.expectOne(`${environment.apiUrl}/estudiante/matricula-qr/validar`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ pin: '482913' });
+    req.flush({ exitoso: true, datos: { programasElegibles: [] } });
+  });
+
   it('validar con PIN envia solo el PIN', () => {
     service.validar({ pin: '482913' }).subscribe();
 

@@ -475,7 +475,7 @@ describe('StudentCoursesComponent', () => {
     routerSpy = jasmine.createSpyObj('Router', ['navigate']);
     routerSpy.navigate.and.resolveTo(true);
     toastSpy = jasmine.createSpyObj('ToastService', ['success', 'error', 'info', 'warning']);
-    matriculaQrSpy = jasmine.createSpyObj('MatriculaQrService', ['matricularAutenticado', 'validar']);
+    matriculaQrSpy = jasmine.createSpyObj('MatriculaQrService', ['matricularAutenticado', 'validarComoEstudiante']);
     studentServiceSpy.getMaterias.and.returnValue(of({ exitoso: true, datos: mockMaterias }));
     studentServiceSpy.getResumenMaterias.and.returnValue(of({ exitoso: true, datos: RESUMEN }));
     claimServiceSpy.getSesionesPorMateria.and.returnValue(of({ exitoso: true, datos: mockSesiones, total: mockSesiones.length }));
@@ -744,11 +744,11 @@ describe('StudentCoursesComponent', () => {
   it('DEC-078: con MQR_008 pide los programas del grupo compartido y reenvía la matrícula con el programa elegido', () => {
     matriculaQrSpy.matricularAutenticado.and.returnValue(
       throwError(() => apiHttpError(409, 'Elige el programa al que perteneces.', 'MQR_008')));
-    matriculaQrSpy.validar.and.returnValue(of({ programasElegibles: [{ idPrograma: 'prg-a', nombre: 'Administración' }] } as unknown as CursoMatriculaQr));
+    matriculaQrSpy.validarComoEstudiante.and.returnValue(of({ programasElegibles: [{ idPrograma: 'prg-a', nombre: 'Administración' }] } as unknown as CursoMatriculaQr));
     component.abrirModalMatriculaGrupo();
     component.enviarMatriculaPorCodigo('482913');
 
-    expect(matriculaQrSpy.validar).toHaveBeenCalledOnceWith({ pin: '482913' });
+    expect(matriculaQrSpy.validarComoEstudiante).toHaveBeenCalledOnceWith({ pin: '482913' });
     expect(component.programasMatriculaGrupo()).toEqual([{ idPrograma: 'prg-a', nombre: 'Administración' }]);
     expect(component.errorMatriculaGrupo()).toBe('Elige el programa al que perteneces.');
 
@@ -767,14 +767,26 @@ describe('StudentCoursesComponent', () => {
     matriculaQrSpy.matricularAutenticado.and.returnValue(throwError(() => err));
     component.enviarMatriculaPorCodigo('482913');
 
-    expect(matriculaQrSpy.validar).not.toHaveBeenCalled();
+    expect(matriculaQrSpy.validarComoEstudiante).not.toHaveBeenCalled();
     expect(component.programasMatriculaGrupo()).toEqual([{ idPrograma: 'prg-a', nombre: 'Administración' }]);
+  });
+
+  it('EST_010: un estudiante sin programa comun con el grupo ve el mensaje del backend en el modal y no se le piden programas', () => {
+    const mensaje = 'El estudiante no pertenece a ningún programa de este grupo.';
+    matriculaQrSpy.matricularAutenticado.and.returnValue(throwError(() => apiHttpError(409, mensaje, 'EST_010')));
+    component.abrirModalMatriculaGrupo();
+    component.enviarMatriculaPorCodigo('482913');
+
+    expect(component.errorMatriculaGrupo()).toBe(mensaje);
+    expect(component.modalMatriculaGrupoVisible()).toBeTrue();
+    expect(component.programasMatriculaGrupo()).toEqual([]);
+    expect(matriculaQrSpy.validarComoEstudiante).not.toHaveBeenCalled();
   });
 
   it('DEC-078: otro rechazo distinto de MQR_008 no pide los programas', () => {
     matriculaQrSpy.matricularAutenticado.and.returnValue(throwError(() => apiHttpError(409, 'Ya estás matriculado.', 'MQR_004')));
     component.enviarMatriculaPorCodigo('482913');
-    expect(matriculaQrSpy.validar).not.toHaveBeenCalled();
+    expect(matriculaQrSpy.validarComoEstudiante).not.toHaveBeenCalled();
   });
 
   it('MQR_001: un PIN inexistente (404) muestra el mensaje del backend dentro del modal y se limpia al reintentar o cerrar', async () => {
@@ -1210,7 +1222,7 @@ describe('StudentCoursesComponent — enlace desde Mis Alertas (CERT-CULM001)', 
     const PROGRAMA = 'd1d2d3d4-0000-4000-8000-0000000000c1';
     await crear({ matricula: '482913', programa: PROGRAMA }, [materiaApi()]);
 
-    const req = http.expectOne(`${environment.apiUrl}/public/matricula-qr/validar`);
+    const req = http.expectOne(`${environment.apiUrl}/estudiante/matricula-qr/validar`);
     expect(req.request.body).toEqual({ pin: '482913' });
     req.flush({ exitoso: true, datos: { programasElegibles: [{ idPrograma: PROGRAMA, nombre: 'Psicología' }] } });
     expect(component.programaPrecargado()).toBe(PROGRAMA);

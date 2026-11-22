@@ -860,7 +860,7 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
   }
 
   private cargarProgramasMatricula(credencial: { token?: string; pin?: string }): void {
-    this.matriculaQrService.validar(credencial).subscribe({
+    this.matriculaQrService.validarComoEstudiante(credencial).subscribe({
       next: (curso) => this.programasMatriculaGrupo.set(curso.programasElegibles ?? []),
       error: (err: unknown) => this.errorMatriculaGrupo.set(getApiErrorMessage(err)),
     });
