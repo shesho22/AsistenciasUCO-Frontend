@@ -758,6 +758,19 @@ describe('StudentCoursesComponent', () => {
     expect(component.programasMatriculaGrupo()).toEqual([]);
   });
 
+  it('DEC-078: con MQR_008 usa programasElegibles del error y no llama a validar', () => {
+    const base = apiHttpError(409, 'Elige el programa.', 'MQR_008');
+    const err = new HttpErrorResponse({
+      status: 409,
+      error: { ...base.error, programasElegibles: [{ idPrograma: 'prg-a', nombre: 'Administración' }, { nada: 1 }] },
+    });
+    matriculaQrSpy.matricularAutenticado.and.returnValue(throwError(() => err));
+    component.enviarMatriculaPorCodigo('482913');
+
+    expect(matriculaQrSpy.validar).not.toHaveBeenCalled();
+    expect(component.programasMatriculaGrupo()).toEqual([{ idPrograma: 'prg-a', nombre: 'Administración' }]);
+  });
+
   it('DEC-078: otro rechazo distinto de MQR_008 no pide los programas', () => {
     matriculaQrSpy.matricularAutenticado.and.returnValue(throwError(() => apiHttpError(409, 'Ya estás matriculado.', 'MQR_004')));
     component.enviarMatriculaPorCodigo('482913');
@@ -1192,6 +1205,17 @@ describe('StudentCoursesComponent — enlace desde Mis Alertas (CERT-CULM001)', 
   }
 
   afterEach(() => http.verify());
+
+  it('DEC-078: con ?matricula y ?programa pide los programas del grupo y preselecciona el elegido en la página pública', async () => {
+    const PROGRAMA = 'd1d2d3d4-0000-4000-8000-0000000000c1';
+    await crear({ matricula: '482913', programa: PROGRAMA }, [materiaApi()]);
+
+    const req = http.expectOne(`${environment.apiUrl}/public/matricula-qr/validar`);
+    expect(req.request.body).toEqual({ pin: '482913' });
+    req.flush({ exitoso: true, datos: { programasElegibles: [{ idPrograma: PROGRAMA, nombre: 'Psicología' }] } });
+    expect(component.programaPrecargado()).toBe(PROGRAMA);
+    expect(component.programasMatriculaGrupo()).toEqual([{ idPrograma: PROGRAMA, nombre: 'Psicología' }]);
+  });
 
   it('con ?materia y ?grupo abre el detalle de esa materia en ese grupo', async () => {
     await crear({ materia: ASIGNATURA_ID, grupo: GRUPO_2_ID }, [

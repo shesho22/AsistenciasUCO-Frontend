@@ -97,6 +97,8 @@ export class StudentMatriculaCodigoModalComponent {
   codigoInicial = input<string>('');
   /** DEC-078: programas del grupo compartido entre los que elige el estudiante (vacío si no aplica). */
   programas = input<ProgramaElegibleMatriculaQr[]>([]);
+  /** DEC-078: programa que el estudiante ya había elegido antes del login; se preselecciona si es uno de los elegibles. */
+  programaInicial = input<string>('');
   codigo = signal<string>('');
   programaId = signal<string>('');
   readonly pinId = 'matricula-pin-input';
@@ -106,6 +108,13 @@ export class StudentMatriculaCodigoModalComponent {
       const inicial = this.codigoInicial();
       if (inicial) {
         untracked(() => this.codigo.set(inicial));
+      }
+    });
+    effect(() => {
+      const preferido = this.programaInicial();
+      const elegible = this.programas().some((p) => p.idPrograma === preferido);
+      if (preferido && elegible) {
+        untracked(() => this.programaId.set(preferido));
       }
     });
   }

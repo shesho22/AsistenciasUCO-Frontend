@@ -140,4 +140,19 @@ describe('StudentMatriculaCodigoModalComponent (HU176B)', () => {
       expect(el().querySelector('button[aria-label="Cerrar modal"]')).not.toBeNull();
     });
   });
+
+  it('DEC-078: preselecciona el programa conservado del login solo si es uno de los elegibles', () => {
+    fixture.componentRef.setInput('programas', [
+      { idPrograma: 'prg-a', nombre: 'A' },
+      { idPrograma: 'prg-b', nombre: 'B' },
+    ]);
+    fixture.componentRef.setInput('programaInicial', 'prg-b');
+    fixture.detectChanges();
+    expect(component.programaId()).toBe('prg-b');
+
+    component.programaId.set('');
+    fixture.componentRef.setInput('programaInicial', 'prg-x');
+    fixture.detectChanges();
+    expect(component.programaId()).toBe('');
+  });
 });

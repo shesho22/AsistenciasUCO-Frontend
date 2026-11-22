@@ -363,6 +363,10 @@ export class MatriculaQrComponent implements OnInit {
     } else if (this.credencial?.pin) {
       returnUrl = `/app/estudiante/materias?matricula=${encodeURIComponent(this.credencial.pin)}`;
     }
+    // DEC-078: el programa ya elegido viaja en el returnUrl para preseleccionarlo al volver del login.
+    if (this.programaId()) {
+      returnUrl += `${returnUrl.includes('?') ? '&' : '?'}programa=${encodeURIComponent(this.programaId())}`;
+    }
     void this.router.navigate(['/login'], {
       queryParams: { returnUrl },
     });

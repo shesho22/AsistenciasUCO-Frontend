@@ -304,6 +304,18 @@ describe('MatriculaQrComponent (HU176B, página pública)', () => {
     expect(args[1].queryParams.returnUrl).toBe('/app/estudiante/materias?matricula=482913');
   });
 
+  it('DEC-078: «Ya tengo cuenta» conserva el programa elegido en el returnUrl', async () => {
+    await crear();
+    component.pin.set('482913');
+    component.validarPin();
+    component.programaId.set('prg-b');
+
+    component.yaTengoCuenta();
+
+    const args = (router.navigate as jasmine.Spy).calls.mostRecent().args;
+    expect(args[1].queryParams.returnUrl).toBe('/app/estudiante/materias?matricula=482913&programa=prg-b');
+  });
+
   // CULM-001 HU176B: con la sesion abierta el estudiante se matricula con un toque, sin crear cuenta ni volver a iniciar sesion.
   it('sin sesión no ofrece matricularse con la sesión', async () => {
     await crear({ t: TOKEN });

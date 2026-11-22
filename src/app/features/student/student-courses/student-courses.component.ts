@@ -142,6 +142,7 @@ type VistaEstudiante = 'LISTA' | 'DETALLE' | 'RECLAMO';
           [tokenInicial]="tokenPrecargado()"
           [codigoInicial]="pinPrecargado()"
           [programas]="programasMatriculaGrupo()"
+          [programaInicial]="programaPrecargado()"
           (submitted)="enviarMatriculaPorCodigo($event)"
           (closed)="cerrarModalMatriculaGrupo()"
         />
@@ -191,6 +192,8 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
   pinPrecargado = signal<string>('');
   /** Token QR que trae el login (`?t=<TOKEN>`); F-EST-012. */
   tokenPrecargado = signal<string>('');
+  /** DEC-078: programa elegido en la página pública antes del login (`?programa=<id>`). */
+  programaPrecargado = signal<string>('');
 
   /** Materia (y grupo) que pide abrir el enlace de "Mis Alertas"; se consume al cargar las materias. */
   private enlaceMateria: { materia: string; grupo: string | null } | null = null;
@@ -262,6 +265,12 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
         this.pinPrecargado.set(paramMatricula);
       }
       this.abrirModalMatriculaGrupo();
+    }
+    const paramPrograma = this.route.snapshot.queryParamMap.get('programa');
+    if (paramPrograma && isUuid(paramPrograma) && (paramToken || paramMatricula)) {
+      this.programaPrecargado.set(paramPrograma);
+      // El selector necesita los programas del grupo: se piden con la misma credencial que trajo el login.
+      this.cargarProgramasMatricula(paramToken ? { token: paramToken } : { pin: paramMatricula as string });
     }
     // CERT-CULM001: "Mis Alertas" enlaza aquí con `?materia=<idAsignatura>&grupo=<idGrupo>` para abrir ese detalle.
     const paramMateria = this.route.snapshot.queryParamMap.get('materia');
@@ -826,10 +835,28 @@ export class StudentCoursesComponent implements OnInit, OnDestroy {
         // DEC-078: grupo compartido y el estudiante aún no pertenece a ninguno de sus programas: se piden los programas
         // del grupo para que elija el suyo y vuelva a confirmar (el mensaje del backend ya lo explica).
         if (getApiErrorCode(err) === CODIGO_ELEGIR_PROGRAMA) {
-          this.cargarProgramasMatricula(credencial);
+          const enError = this.programasDelError(err);
+          if (enError.length > 0) {
+            this.programasMatriculaGrupo.set(enError);
+          } else {
+            this.cargarProgramasMatricula(credencial);
+          }
         }
       },
     });
+  }
+
+  /** Lee `programasElegibles` del cuerpo del error (si el backend lo trae); nunca interpreta el texto del mensaje. */
+  private programasDelError(err: unknown): ProgramaElegibleMatriculaQr[] {
+    const cuerpo = (err as { error?: { programasElegibles?: unknown } } | null)?.error;
+    const lista = cuerpo?.programasElegibles;
+    if (!Array.isArray(lista)) {
+      return [];
+    }
+    return lista.filter(
+      (p): p is ProgramaElegibleMatriculaQr =>
+        typeof p?.idPrograma === 'string' && typeof p?.nombre === 'string'
+    );
   }
 
   private cargarProgramasMatricula(credencial: { token?: string; pin?: string }): void {
