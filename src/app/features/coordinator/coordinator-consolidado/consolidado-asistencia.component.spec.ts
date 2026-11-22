@@ -168,6 +168,38 @@ describe('ConsolidadoAsistenciaComponent (HU061)', () => {
       .toBe('Asistencia 60%, inasistencia 10%, excusa 5.5%, sin registro 24.5%');
   });
 
+  it('con porcentajePorDictar muestra columna, quinto segmento y leyenda "Por dictar"; sin él los oculta', () => {
+    const fixture = crear(false);
+    http
+      .expectOne((r) => r.url === `${api}/coordinador/consolidado-asistencia`)
+      .flush({
+        exitoso: true,
+        datos: [{ ...grupo('ASG-1', 'Cálculo', 'DOC-1'), porcentajeAsistencia: 40, porcentajeInasistencia: 5, porcentajeExcusa: 5, porcentajeSinRegistro: 10, porcentajePorDictar: 40 }],
+        total: 1,
+      });
+    fixture.detectChanges();
+
+    const raiz = fixture.nativeElement as HTMLElement;
+    expect(raiz.querySelector('[data-testid="por-dictar"]')?.textContent?.trim()).toBe('40%');
+    expect((raiz.querySelector('[data-testid="segmento-por-dictar"]') as HTMLElement).style.width).toBe('40%');
+    expect(raiz.querySelectorAll('[data-testid="barra-distribucion"] > span')).toHaveSize(5);
+    expect(raiz.querySelector('[data-testid="leyenda-por-dictar"]')?.textContent).toContain('Por dictar');
+    expect(raiz.querySelector('[data-testid="barra-distribucion"]')?.getAttribute('aria-label')).toContain('por dictar 40%');
+    expect(raiz.textContent).toContain('% Por dictar');
+  });
+
+  it('sin porcentajePorDictar no aparece columna ni leyenda "Por dictar"', () => {
+    const fixture = crear(false);
+    http
+      .expectOne((r) => r.url === `${api}/coordinador/consolidado-asistencia`)
+      .flush({ exitoso: true, datos: [grupo('ASG-1', 'Cálculo', 'DOC-1')], total: 1 });
+    fixture.detectChanges();
+    const raiz = fixture.nativeElement as HTMLElement;
+    expect(raiz.querySelector('[data-testid="por-dictar"]')).toBeNull();
+    expect(raiz.querySelector('[data-testid="leyenda-por-dictar"]')).toBeNull();
+    expect(raiz.textContent).not.toContain('Por dictar');
+  });
+
   it('el decano usa su ruta y filtrar por cohorte vuelve a consultar desde la página 1', () => {
     const fixture = crear(true);
     http.expectOne((r) => r.url === `${api}/decano/consolidado-asistencia`).flush({ exitoso: true, datos: [], total: 0 });

@@ -1,7 +1,7 @@
 import { TAMANO_PAGINA_TABLA, TAMANOS_PAGINA_TABLA } from '../../../shared/components/tabla-datos/tabla-datos.component';
 import { formatearHorasMinutos } from '../../../shared/pipes/horas-minutos.util';
 import { SemaforoAsistenciaComponent } from '../../../shared/components/semaforo-asistencia/semaforo-asistencia.component';
-import { Component, OnInit, inject, signal, ChangeDetectionStrategy, WritableSignal, input } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy, WritableSignal, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -95,7 +95,10 @@ const NUMERO_ES = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 2 });
                   <th scope="col" class="py-2 pr-3 text-right">% Asistencia</th>
                   <th scope="col" class="py-2 pr-3 text-right">% Inasistencia</th>
                   <th scope="col" class="py-2 pr-3 text-right" title="Horas con excusa aprobada o en trámite sobre las horas dictadas.">% Excusa</th>
-                  <th scope="col" class="py-2 pr-3 text-right" title="Horas dictadas sin ningún registro de asistencia.">% Sin registro</th>
+                  <th scope="col" class="py-2 pr-3 text-right" title="Horas ya dictadas sin ningún registro de asistencia.">% Sin registro</th>
+                  @if (hayPorDictar()) {
+                    <th scope="col" class="py-2 pr-3 text-right" title="Horas del grupo que aún no se dictan.">% Por dictar</th>
+                  }
                   <th scope="col" class="py-2 pr-3">Distribución</th>
                   <th scope="col" class="py-2 pr-3 text-right">En riesgo</th>
                   <th scope="col" class="py-2 text-right">Pérdida</th>
@@ -130,13 +133,19 @@ const NUMERO_ES = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 2 });
                     </td>
                     <td class="py-2 pr-3 text-right text-warm-700 max-md:hidden" data-label="% Excusa">{{ g.porcentajeExcusa | number: '1.0-2' }}%</td>
                     <td class="py-2 pr-3 text-right text-warm-700 max-md:hidden" data-label="% Sin registro">{{ g.porcentajeSinRegistro | number: '1.0-2' }}%</td>
+                    @if (hayPorDictar()) {
+                      <td class="py-2 pr-3 text-right text-warm-700 max-md:hidden" data-label="% Por dictar" data-testid="por-dictar">{{ g.porcentajePorDictar == null ? '—' : (g.porcentajePorDictar | number: '1.0-2') + '%' }}</td>
+                    }
                     <td class="py-2 pr-3 min-w-[8rem] max-md:hidden" data-label="Distribución">
                       <div class="flex h-3 w-full overflow-hidden rounded bg-warm-100" role="img" data-testid="barra-distribucion"
-                        [attr.aria-label]="'Asistencia ' + g.porcentajeAsistencia + '%, inasistencia ' + g.porcentajeInasistencia + '%, excusa ' + g.porcentajeExcusa + '%, sin registro ' + g.porcentajeSinRegistro + '%'">
+                        [attr.aria-label]="'Asistencia ' + g.porcentajeAsistencia + '%, inasistencia ' + g.porcentajeInasistencia + '%, excusa ' + g.porcentajeExcusa + '%, sin registro ' + g.porcentajeSinRegistro + '%' + (g.porcentajePorDictar == null ? '' : ', por dictar ' + g.porcentajePorDictar + '%')">
                         <span class="h-3 bg-success-600" data-testid="segmento-asistencia" [style.width.%]="g.porcentajeAsistencia"></span>
                         <span class="h-3 bg-danger-500" data-testid="segmento-inasistencia" [style.width.%]="g.porcentajeInasistencia"></span>
                         <span class="h-3 bg-warning-500" data-testid="segmento-excusa" [style.width.%]="g.porcentajeExcusa"></span>
                         <span class="h-3 bg-warm-300" data-testid="segmento-sin-registro" [style.width.%]="g.porcentajeSinRegistro"></span>
+                        @if (g.porcentajePorDictar) {
+                          <span class="h-3 bg-primary-200" data-testid="segmento-por-dictar" [style.width.%]="g.porcentajePorDictar"></span>
+                        }
                       </div>
                     </td>
                     <td class="py-2 pr-3 text-right" data-label="En riesgo" [class]="g.estudiantesRiesgo > 0 ? 'text-warning-700 font-semibold' : 'text-warm-700'">{{ g.estudiantesRiesgo }}</td>
@@ -144,7 +153,7 @@ const NUMERO_ES = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 2 });
                   </tr>
                   @if (expandido() === clave(g)) {
                     <tr [id]="'sesiones-grupo-' + clave(g)" [attr.data-testid]="'sesiones-' + g.idGrupo" class="bg-warm-50/60">
-                      <td colspan="13" class="tc-ancho p-3">
+                      <td colspan="14" class="tc-ancho p-3">
                         @if (comoDecano) {
                           @defer (on immediate) {
                             <app-dean-sesiones-grupo [idGrupo]="g.idGrupo" />
@@ -170,6 +179,9 @@ const NUMERO_ES = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 2 });
             <li class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-sm bg-danger-500"></span>Inasistencia</li>
             <li class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-sm bg-warning-500"></span>Excusa</li>
             <li class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-sm bg-warm-300"></span>Sin registro</li>
+            @if (hayPorDictar()) {
+              <li class="flex items-center gap-1.5" data-testid="leyenda-por-dictar"><span class="h-2.5 w-2.5 rounded-sm bg-primary-200"></span>Por dictar</li>
+            }
           </ul>
         }
         <app-pagination
@@ -204,6 +216,8 @@ export class ConsolidadoAsistenciaComponent implements OnInit {
   /** Opciones COMPLETAS de materia y docente del ámbito y el período (las entrega el servidor, no se arman con las filas). */
   asignaturas = signal<OpcionConsolidado[]>([]);
   docentes = signal<OpcionConsolidado[]>([]);
+  /** La columna, el segmento y la leyenda "Por dictar" solo aparecen si el backend entrega el dato. */
+  readonly hayPorDictar = computed(() => this.listado.filas().some((g) => g.porcentajePorDictar != null));
   readonly listado = new ListadoPaginado<ConsolidadoGrupoItem>(
     (pagina, tamano) => {
       const consulta = this.service.getConsolidadoAsistencia(
