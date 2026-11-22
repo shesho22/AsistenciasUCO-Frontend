@@ -35,6 +35,7 @@ ng-serve-*.log
 /.tmp/
 .env
 src/assets/env.js
+*.bak*
 connect.lock
 /coverage
 # Pruebas E2E (Playwright, PRU-06)

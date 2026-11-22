@@ -5,7 +5,7 @@ Una prueba cuenta para una HU cuando su archivo cita el código HU en un `descri
 paréntesis es la cantidad de casos (`it`/`test`) del archivo. Esta tabla es la columna "Pruebas (frontend)" de la
 HU-CATALOG (`AsistenciasUCO-Infra/docs/user-stories/HU-CATALOG.md`).
 
-Resumen: 74 HU con pruebas en 96 de 314 archivos de prueba.
+Resumen: 74 HU con pruebas en 95 de 312 archivos de prueba.
 
 | HU | Capa | Archivos | Casos | Pruebas |
 |---|---|---|---|---|
@@ -51,11 +51,11 @@ Resumen: 74 HU con pruebas en 96 de 314 archivos de prueba.
 | HU098 | unitaria | 3 | 115 | `src/app/core/interceptors/mock-backend.interceptor.spec.ts` (42)<br>`src/app/core/services/coordinator-management.service.spec.ts` (60)<br>`src/app/features/admin/admin-periodos/admin-periodos.component.spec.ts` (13) |
 | HU104 | unitaria | 2 | 43 | `src/app/features/dean/dean-cronograma/dean-cronograma.component.spec.ts` (8)<br>`src/app/features/dean/dean-directorio/dean-directorio.component.spec.ts` (35) |
 | HU105 | unitaria | 2 | 43 | `src/app/features/dean/dean-cronograma/dean-cronograma.component.spec.ts` (8)<br>`src/app/features/dean/dean-directorio/dean-directorio.component.spec.ts` (35) |
-| HU108 | unitaria | 2 | 19 | `src/app/features/dean/dean-plan-malla/dean-plan-malla.component.spec.ts` (12)<br>`src/app/features/dean/dean-programas/dean-programas.component.spec.ts` (7) |
+| HU108 | unitaria | 1 | 12 | `src/app/features/dean/dean-plan-malla/dean-plan-malla.component.spec.ts` (12) |
 | HU109 | unitaria | 2 | 15 | `src/app/features/dean/dean-cronograma/dean-cronograma.component.spec.ts` (8)<br>`src/app/features/dean/dean-estructura/dean-estructura.component.spec.ts` (7) |
 | HU110 | unitaria | 2 | 68 | `src/app/core/services/admin-management.service.spec.ts` (31)<br>`src/app/features/admin/admin-facultades/admin-facultades.component.spec.ts` (37) |
 | HU111 | unitaria | 2 | 68 | `src/app/core/services/admin-management.service.spec.ts` (31)<br>`src/app/features/admin/admin-facultades/admin-facultades.component.spec.ts` (37) |
-| HU112 | unitaria | 5 | 40 | `src/app/core/mocks/mock-consultas-transversales.spec.ts` (8)<br>`src/app/core/services/consultas-transversales.service.spec.ts` (14)<br>`src/app/features/dean/dean-programas/components/dean-programas-creditos.component.spec.ts` (6)<br>`src/app/features/dean/dean-programas/dean-programas.component.spec.ts` (7)<br>`src/app/shared/utils/listado-paginado.spec.ts` (5) |
+| HU112 | unitaria | 4 | 33 | `src/app/core/mocks/mock-consultas-transversales.spec.ts` (8)<br>`src/app/core/services/consultas-transversales.service.spec.ts` (14)<br>`src/app/features/dean/dean-programas/components/dean-programas-creditos.component.spec.ts` (6)<br>`src/app/shared/utils/listado-paginado.spec.ts` (5) |
 | HU116 | unitaria | 1 | 37 | `src/app/features/admin/admin-facultades/admin-facultades.component.spec.ts` (37) |
 | HU117 | unitaria | 2 | 68 | `src/app/core/services/admin-management.service.spec.ts` (31)<br>`src/app/features/admin/admin-facultades/admin-facultades.component.spec.ts` (37) |
 | HU119 | unitaria | 2 | 15 | `src/app/features/dean/dean-cronograma/dean-cronograma.component.spec.ts` (8)<br>`src/app/features/dean/dean-estructura/dean-estructura.component.spec.ts` (7) |
