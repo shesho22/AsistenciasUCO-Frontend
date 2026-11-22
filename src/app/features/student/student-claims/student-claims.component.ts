@@ -76,6 +76,7 @@ type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
           [etiquetaVisible]="false"
           [columnas]="6"
           anchoMinimo="64rem"
+          [tarjetasEnMovil]="true"
           [cargando]="isLoading()"
           [paginada]="!isLoading()"
           [totalItems]="total()"
@@ -92,18 +93,18 @@ type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
               <th scope="col">Estado</th>
               <th scope="col">Justificación y respuesta</th>
               <th scope="col">Soportes</th>
-              <th scope="col"><span class="sr-only">Acciones</span></th>
+              <th scope="col" class="col-acciones bg-warm-50"><span class="sr-only">Acciones</span></th>
             </tr>
           </thead>
           <tbody>
             @if (!isLoading()) {
               @for (reclamo of reclamos(); track reclamo.id) {
                 <tr class="align-top" [attr.data-testid]="'reclamo-fila-' + reclamo.id">
-                  <td class="min-w-[11rem]">
+                  <td class="md:min-w-[11rem]" data-label="Materia">
                     <span class="block font-semibold text-warm-900">{{ reclamo.materiaNombre }}</span>
                     <span class="block text-xs text-warm-600">{{ reclamo.materiaCodigo }} · {{ reclamo.grupo }}</span>
                   </td>
-                  <td class="text-xs text-warm-600 whitespace-nowrap">
+                  <td class="text-xs text-warm-600 md:whitespace-nowrap" data-label="Sesión">
                     <span class="block text-warm-800">
                       Sesión {{ reclamo.sesionNumero }}
                       @if (reclamo.fechaSesion) {
@@ -115,13 +116,13 @@ type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
                     }
                     <span class="block text-warm-500">Radicada el {{ reclamo.fechaSolicitud | date: 'dd/MM/yyyy' }}</span>
                   </td>
-                  <td>
+                  <td data-label="Estado">
                     <app-badge [variant]="badgeVariant(reclamo.estadoSolicitud)">{{ etiqueta(reclamo.estadoSolicitud) }}</app-badge>
                     @if (textoResultado(reclamo); as resultado) {
                       <p class="mt-1 text-xs font-bold text-success-800" data-testid="reclamo-resultado">{{ resultado }}</p>
                     }
                   </td>
-                  <td class="min-w-[16rem] space-y-1.5">
+                  <td class="md:min-w-[16rem] space-y-1.5" data-label="Justificación y respuesta">
                     <div>
                       <span class="block text-xs font-bold uppercase tracking-wider text-warm-700">Mi justificación</span>
                       <p class="text-sm text-warm-800">{{ reclamo.justificacionSolicitud }}</p>
@@ -133,7 +134,7 @@ type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
                       </div>
                     }
                   </td>
-                  <td class="min-w-[12rem]">
+                  <td class="md:min-w-[12rem]" data-label="Soportes">
                     @if (soportesDe(reclamo); as soportes) {
                       @if (soportes.length > 0) {
                         <div class="flex flex-col items-start gap-1.5" data-testid="reclamo-soportes">
@@ -154,7 +155,7 @@ type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
                       }
                     }
                   </td>
-                  <td class="text-right">
+                  <td class="col-acciones bg-white text-right">
                     @if (reclamo.estadoSolicitud === 'PENDIENTE') {
                       <button
                         type="button"
