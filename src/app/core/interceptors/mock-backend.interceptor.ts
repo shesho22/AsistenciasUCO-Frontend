@@ -1244,8 +1244,8 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
         intentos: 2,
         creadoEn: '2026-11-06T06:30:00Z',
         proximoIntentoEn: '2026-11-06T07:30:00Z',
-        codigoError: 'SMTP_TIMEOUT',
-        detalleError: 'Tiempo de espera agotado al conectar con el servidor SMTP',
+        codigoError: 'ENTREGA_TIMEOUT',
+        detalleError: 'Tiempo de espera agotado al entregar el correo',
         idCorrelacion: 'corr-notif-004',
       },
       {
@@ -1285,7 +1285,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   }
 
   if (url.endsWith('/admin/notificaciones/prueba') && method === 'POST') {
-    return of(okResponse({ exitoso: true }, 'Correo institucional de prueba despachado con éxito al canal SMTP.')).pipe(delay(350));
+    return of(okResponse({ exitoso: true }, 'Correo institucional de prueba despachado con éxito al servicio de notificaciones.')).pipe(delay(350));
   }
 
   // En modo mock una ruta API desconocida nunca debe alcanzar backend real.
