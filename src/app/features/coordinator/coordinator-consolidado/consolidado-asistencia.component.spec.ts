@@ -269,7 +269,7 @@ describe('ConsolidadoAsistenciaComponent (HU061)', () => {
       fixture.detectChanges();
       http.expectOne((r) => r.url === `${api}/coordinador/grupos/G-ASG-1/sesiones`).flush({
         exitoso: true, total: 1,
-        datos: [{ id: 'S1', idGrupo: 'G-ASG-1', codigoGrupo: 1, nombreGrupo: 'Grupo 01', nombre: 'Sesión 1', numero: 1, codigo: 'S-01', numeroSemana: 1, fechaHoraInicio: '2026-08-03T07:00:00', fechaHoraFin: '2026-08-03T09:00:00', estado: 'PROGRAMADA', cancelacion: null }],
+        datos: [{ id: 'S1', idGrupo: 'G-ASG-1', codigoGrupo: 1, nombreGrupo: 'Grupo 01', nombre: 'Sesión 1', numero: 1, codigo: 'S-01', numeroSemana: 1, fechaHoraInicio: '2099-08-03T07:00:00', fechaHoraFin: '2099-08-03T09:00:00', estado: 'PROGRAMADA', estadoSolicitud: 'APROBADA', cancelacion: null }],
       });
       fixture.detectChanges();
       const detalle = el(fixture).querySelector('[data-testid="sesiones-G-ASG-1"]');

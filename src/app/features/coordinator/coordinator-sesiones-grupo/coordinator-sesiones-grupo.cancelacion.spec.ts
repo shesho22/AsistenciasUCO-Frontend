@@ -21,8 +21,10 @@ const grupo: GrupoProgramaItem = {
 function sesion(id: string, estado: 'PROGRAMADA' | 'CANCELADA'): SesionGrupoItem {
   return {
     id, idGrupo: grupo.id, codigoGrupo: 101, nombreGrupo: 'Grupo 101', nombre: `Sesión ${id}`, numero: 1,
-    codigo: `SES-${id}`, numeroSemana: 1, fechaHoraInicio: '2026-11-20T08:00:00', fechaHoraFin: '2026-11-20T10:00:00',
+    codigo: `SES-${id}`, numeroSemana: 1, fechaHoraInicio: '2099-11-20T08:00:00', fechaHoraFin: '2099-11-20T10:00:00',
     estado,
+    // DEC-064: solo las extraordinarias aprobadas y futuras son cancelables por el coordinador.
+    estadoSolicitud: 'APROBADA',
     cancelacion: estado === 'CANCELADA'
       ? { tipo: 'DOCENTE', motivo: 'x', nombreFestivo: null, fechaCancelacionUtc: null }
       : null,
@@ -75,6 +77,18 @@ describe('CoordinatorSesionesGrupoComponent - cancelación de sesiones manuales 
   it('muestra "Cancelar sesión" solo en las sesiones no canceladas', () => {
     expect(el().querySelector('[data-testid="sesion-fila-a"] [data-testid="cancelar-sesion"]')).toBeTruthy();
     expect(el().querySelector('[data-testid="sesion-fila-b"] [data-testid="cancelar-sesion"]')).toBeNull();
+  });
+
+  it('FE-3: no ofrece "Cancelar sesión" en sesiones generadas, pasadas ni sin hora', async () => {
+    const generada = { ...sesion('g', 'PROGRAMADA'), estadoSolicitud: null };
+    const pasada = { ...sesion('p', 'PROGRAMADA'), fechaHoraInicio: '2020-01-01T08:00:00' };
+    const sinHora = { ...sesion('s', 'PROGRAMADA'), fechaHoraInicio: null };
+    component.cargarSesiones();
+    flushSesiones([generada, pasada, sinHora]);
+    await refrescar();
+    for (const id of ['g', 'p', 's']) {
+      expect(el().querySelector(`[data-testid="sesion-fila-${id}"] [data-testid="cancelar-sesion"]`)).withContext(id).toBeNull();
+    }
   });
 
   it('abrir el diálogo carga los motivos una sola vez y confirmar llama al endpoint y recarga la lista', async () => {

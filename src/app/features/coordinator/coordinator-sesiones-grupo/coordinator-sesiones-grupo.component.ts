@@ -106,7 +106,7 @@ export interface GrupoSesionesRef {
                         <button type="button" class="text-xs font-semibold text-primary-700 hover:underline" (click)="seleccionarSesion(s)">
                           Ver asistencia
                         </button>
-                        @if (!esCancelada(s) && !esPendiente(s)) {
+                        @if (puedeCancelar(s)) {
                           <button
                             type="button"
                             data-testid="cancelar-sesion"
@@ -245,6 +245,22 @@ export class CoordinatorSesionesGrupoComponent implements OnInit, OnDestroy {
   enviandoCancelacion = signal(false);
   readonly esCancelada = estaCancelada;
   readonly esPendiente = estaPendienteAprobacion;
+
+  /**
+   * DEC-064: el coordinador solo cancela sesiones extraordinarias (manuales) ya aprobadas y que aún no empezaron; en las
+   * generadas por el horario el backend responde 409 SES_018, así que no se ofrece la acción.
+   */
+  puedeCancelar(sesion: SesionGrupoItem): boolean {
+    if (estaCancelada(sesion) || estaPendienteAprobacion(sesion) || sesion.estadoSolicitud !== 'APROBADA') {
+      return false;
+    }
+    const inicio = sesion.fechaHoraInicioUtc ?? sesion.fechaHoraInicio;
+    if (!inicio) {
+      return false;
+    }
+    const instante = Date.parse(inicio);
+    return Number.isFinite(instante) && instante > Date.now();
+  }
 
   asistencias = signal<AsistenciaSesionItem[]>([]);
   totalAsistencias = signal(0);
