@@ -222,6 +222,9 @@ interface GrupoForm {
                 <div><dt class="text-warm-500">Sesiones del período</dt><dd class="font-semibold text-warm-900">{{ r.resumenPeriodo.sesionesCalendario }}</dd></div>
                 <div><dt class="text-warm-500">Se programan</dt><dd class="font-semibold text-warm-900">{{ r.resumenPeriodo.sesionesProgramadas }} ({{ horas(r.resumenPeriodo.minutosProgramados) }})</dd></div>
                 <div><dt class="text-warm-500">Caen en festivo</dt><dd class="font-semibold text-warm-900">{{ r.resumenPeriodo.sesionesEnFestivo }} ({{ horas(r.resumenPeriodo.minutosPerdidosFestivo) }})</dd></div>
+                @if (r.resumenPeriodo.sesionesEnReceso !== undefined) {
+                  <div data-testid="resumen-receso"><dt class="text-warm-500">Caen en receso académico</dt><dd class="font-semibold text-warm-900">{{ r.resumenPeriodo.sesionesEnReceso }} ({{ horas(r.resumenPeriodo.minutosPerdidosReceso ?? 0) }})</dd></div>
+                }
                 <div><dt class="text-warm-500">Ya no se pueden programar</dt><dd class="font-semibold text-warm-900">{{ r.resumenPeriodo.sesionesNoProgramables }} ({{ horas(r.resumenPeriodo.minutosNoProgramables) }})</dd></div>
                 <div><dt class="text-warm-500">Horas esperadas de la materia</dt><dd class="font-semibold text-warm-900">{{ horas(r.resumenPeriodo.minutosEsperadosMateria) }}</dd></div>
               </dl>
@@ -231,6 +234,14 @@ interface GrupoForm {
                   Sobre el grupo actual: se conservan {{ cambio.sesionesConservadas }} sesiones ({{ horas(cambio.minutosConservados) }}) ya dictadas o con asistencia,
                   se crean {{ cambio.sesionesFuturasQueSeCrean }} y se retiran {{ cambio.sesionesFuturasQueSeRetiran }}.
                 </p>
+              }
+
+              @if (r.recesos && r.recesos.length > 0) {
+                <ul class="space-y-1 text-xs text-warm-700" data-testid="recesos-previsualizacion" aria-label="Días de receso del período">
+                  @for (rc of r.recesos; track rc.fecha) {
+                    <li><span class="font-semibold tabular-nums">{{ rc.fecha }}</span> · {{ rc.motivo }} ({{ rc.sesionesAfectadas }} {{ rc.sesionesAfectadas === 1 ? 'sesión' : 'sesiones' }})</li>
+                  }
+                </ul>
               }
 
               @if (r.conflictos.length > 0) {
@@ -256,7 +267,7 @@ interface GrupoForm {
                         <tr class="border-t border-warm-100" [class.text-warm-400]="s.estado === 'NO_PROGRAMABLE_POR_FECHA'">
                           <td class="px-3 py-1.5">{{ s.numero }}</td><td class="px-3 py-1.5">{{ s.numeroSemana }}</td><td class="px-3 py-1.5">{{ s.fecha }}</td>
                           <td class="px-3 py-1.5">{{ s.horaInicio }}-{{ s.horaFin }}</td>
-                          <td class="px-3 py-1.5">{{ estadoSesion(s.estado) }}@if (s.nombreFestivo) { ({{ s.nombreFestivo }}) }</td>
+                          <td class="px-3 py-1.5">@if (s.estado === 'CANCELADA_POR_RECESO') { Cancelada · {{ s.motivoReceso || 'Receso académico' }} } @else { {{ estadoSesion(s.estado) }}@if (s.nombreFestivo) { ({{ s.nombreFestivo }}) } }</td>
                         </tr>
                       }
                     </tbody>

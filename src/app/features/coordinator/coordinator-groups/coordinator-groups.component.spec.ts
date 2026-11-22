@@ -434,6 +434,58 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
     expect(component.previsualizacionDesactualizada()).toBeFalse();
   });
 
+  it('DEC-081: la previsualización muestra el conteo de receso, la lista de días, la sesión «Cancelada · motivo» y el aviso informativo', () => {
+    const base = previsualizacion([
+      { codigo: 'REC_011', severidad: 'INFORMATIVO', mensaje: '2 h caen en receso académico (1 sesión(es)); esas sesiones quedan canceladas.', franja: null },
+    ]);
+    courseService.previsualizarHorarioGrupo.and.returnValue(of({
+      exitoso: true,
+      datos: {
+        ...base,
+        resumenPeriodo: { ...base.resumenPeriodo, sesionesEnReceso: 1, minutosPerdidosReceso: 120 },
+        recesos: [{ fecha: '2027-03-24', motivo: 'Receso académico: Semana Santa', sesionesAfectadas: 1 }],
+        sesiones: [
+          ...base.sesiones,
+          {
+            numero: 2, numeroSemana: 7, fecha: '2027-03-24', horaInicio: '08:00', horaFin: '10:00', fechaHoraInicioUtc: '2027-03-24T13:00:00Z',
+            fechaHoraFinUtc: '2027-03-24T15:00:00Z', minutos: 120, estado: 'CANCELADA_POR_RECESO' as const, nombreFestivo: null,
+            motivoReceso: 'Receso académico: Semana Santa',
+          },
+        ],
+      },
+    }));
+    llenarGrupoNuevo();
+    fixture.detectChanges();
+    component.previsualizar();
+    fixture.detectChanges();
+
+    const raiz = fixture.nativeElement as HTMLElement;
+    expect(raiz.querySelector('[data-testid="resumen-receso"]')?.textContent).toContain('1 (2 h)');
+    expect(raiz.querySelector('[data-testid="resumen-previsualizacion"]')?.textContent).toContain('Caen en festivo');
+    const lista = raiz.querySelector('[data-testid="recesos-previsualizacion"]');
+    expect(lista?.textContent).toContain('2027-03-24');
+    expect(lista?.textContent).toContain('Receso académico: Semana Santa');
+    expect(lista?.textContent).toContain('1 sesión');
+    const filas = Array.from(raiz.querySelectorAll('details tbody tr')).map((tr) => tr.textContent?.replace(/\s+/g, ' ').trim() ?? '');
+    expect(filas[1]).toContain('Cancelada · Receso académico: Semana Santa');
+    const conflicto = raiz.querySelector('[data-testid="conflictos-previsualizacion"] li');
+    expect(conflicto?.textContent).toContain('Información:');
+    expect(conflicto?.textContent).toContain('esas sesiones quedan canceladas');
+    expect(conflicto?.className).not.toContain('danger');
+    expect(raiz.querySelector('[data-testid="error-previsualizacion"]')).toBeNull();
+  });
+
+  it('DEC-081: sin campos de receso (backend anterior) no pinta el conteo ni la lista y una sesión en receso sin motivo usa el texto base', () => {
+    courseService.previsualizarHorarioGrupo.and.returnValue(of({ exitoso: true, datos: previsualizacion() }));
+    llenarGrupoNuevo();
+    fixture.detectChanges();
+    component.previsualizar();
+    fixture.detectChanges();
+    const raiz = fixture.nativeElement as HTMLElement;
+    expect(raiz.querySelector('[data-testid="resumen-receso"]')).toBeNull();
+    expect(raiz.querySelector('[data-testid="recesos-previsualizacion"]')).toBeNull();
+  });
+
   it('SES-GEN-01: si el horario cambia después de calcular, avisa que hay que volver a calcular', () => {
     courseService.previsualizarHorarioGrupo.and.returnValue(of({ exitoso: true, datos: previsualizacion() }));
     llenarGrupoNuevo();
