@@ -120,7 +120,9 @@ test.describe('Estudiante', () => {
     await expect(main.getByRole('button', { name: 'Retirar' })).toHaveCount(2);
     await expect(main.getByText('Justificación válida y confirmada con la coordinación del semillero.')).toBeVisible();
 
-    await main.getByRole('button', { name: 'Retirar' }).first().click();
+    await main.getByRole('button', { name: 'Retirar', exact: true }).first().click();
+    // El retiro ahora pide confirmación (no se puede deshacer).
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Sí, retirar solicitud' }).click();
     await expect(main.getByText('Retirada', { exact: true })).toBeVisible();
     await expect(main.getByRole('button', { name: 'Retirar' })).toHaveCount(1);
   });
