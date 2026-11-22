@@ -13,7 +13,7 @@
     "coverage:realtime:check": "node scripts/check-realtime-coverage.mjs",
     "e2e:realtime:smoke": "node scripts/realtime-smoke.mjs",
     "e2e": "npm run e2e:build && npm run e2e:run",
-    "e2e:build": "ng build --configuration=production",
+    "e2e:build": "ng build --configuration=e2e",
     "e2e:run": "playwright test",
     "e2e:typecheck": "tsc -p e2e/tsconfig.json",
     "lint": "eslint \"src/**/*.{ts,html}\"",
