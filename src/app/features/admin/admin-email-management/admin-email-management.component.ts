@@ -23,7 +23,6 @@ import { AuthService } from '../../../core/services/auth.service';
 import { getBackendUserMessage } from '../../../core/api/errors/api-error.util';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
-import { IconComponent } from '../../../shared/components/icon/icon.component';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
 
 /**
@@ -95,7 +94,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
 @Component({
     selector: 'app-admin-email-management',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [FormsModule, IconComponent, PaginationComponent],
+    imports: [FormsModule, PaginationComponent],
     template: `
     <div class="space-y-4">
       <!-- ================= HEADER & BREADCRUMB ================= -->

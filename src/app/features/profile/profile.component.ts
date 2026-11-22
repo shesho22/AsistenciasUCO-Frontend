@@ -1,9 +1,8 @@
 import { Component, OnInit, inject, signal, computed, effect, untracked, ChangeDetectionStrategy } from '@angular/core';
 import { Location } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { UserRole } from '../../core/models/user.model';
-import { CardComponent } from '../../shared/components/card/card.component';
 import { BadgeComponent, BadgeVariant } from '../../shared/components/badge/badge.component';
 import { ButtonComponent } from '../../shared/components/button/button.component';
 import { AvatarComponent } from '../../shared/components/avatar/avatar.component';
@@ -16,8 +15,6 @@ import { PerfilInstitucionalStore, TEXTO_SIN_REGISTRAR } from './perfil-instituc
     // APP-06: un solo estado de perfil institucional por pantalla, compartido con <app-profile-links>.
     providers: [PerfilInstitucionalStore],
     imports: [
-    RouterLink,
-    CardComponent,
     BadgeComponent,
     ButtonComponent,
     AvatarComponent,
