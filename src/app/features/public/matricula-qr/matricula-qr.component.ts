@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -175,6 +176,7 @@ const PIN_SEIS_DIGITOS = /^\d{6}$/;
   `
 })
 export class MatriculaQrComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly matriculaQr = inject(MatriculaQrService);
@@ -317,7 +319,7 @@ export class MatriculaQrComponent implements OnInit {
     };
     this.mensaje.set('');
     this.estado.set('ENVIANDO');
-    this.matriculaQr.registrar(payload).subscribe({
+    this.matriculaQr.registrar(payload).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (resultado) => {
         this.usuario.set(resultado.usuario);
         this.correoRegistrado.set(payload.correo);
@@ -342,7 +344,7 @@ export class MatriculaQrComponent implements OnInit {
     const envio = this.programaId()
       ? this.matriculaQr.matricularAutenticado(credencial, this.programaId())
       : this.matriculaQr.matricularAutenticado(credencial);
-    envio.subscribe({
+    envio.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (resultado) => {
         this.mensajeExito.set(getApiSuccessMessage(resultado, 'Quedaste matriculado en el grupo.'));
         this.descartarDatos();
@@ -383,7 +385,7 @@ export class MatriculaQrComponent implements OnInit {
     this.credencial = credencial;
     this.mensaje.set('');
     this.estado.set('VALIDANDO');
-    this.matriculaQr.validar(credencial).subscribe({
+    this.matriculaQr.validar(credencial).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (curso) => {
         this.curso.set(curso);
         this.programaId.set('');

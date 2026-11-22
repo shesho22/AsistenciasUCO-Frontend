@@ -1,4 +1,5 @@
-import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy, input } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy, input, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { FormsModule } from '@angular/forms';
 import { EMPTY, forkJoin, of } from 'rxjs';
@@ -291,6 +292,7 @@ interface GrupoForm {
   `
 })
 export class CoordinatorGroupsComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   /** CULM-001: dentro de una pestaña, el título lo pone el cascarón. */
   readonly embebido = input(false);
   private readonly courseService = inject(CourseService);
@@ -368,7 +370,7 @@ export class CoordinatorGroupsComponent implements OnInit {
           return of([] as AsignaturaPlanItem[]);
         })
       )
-      .subscribe((asignaturas) => this.asignaturas.set(asignaturas));
+      .pipe(takeUntilDestroyed(this.destroyRef)).subscribe((asignaturas) => this.asignaturas.set(asignaturas));
 
     // Se piden todas las páginas del directorio (el backend limita a 100 por página): el selector no debe truncarse.
     const TAMANO = 100;
@@ -383,7 +385,7 @@ export class CoordinatorGroupsComponent implements OnInit {
           return of([] as DocentePrograma[]);
         })
       )
-      .subscribe((docentes) => this.docentes.set(docentes));
+      .pipe(takeUntilDestroyed(this.destroyRef)).subscribe((docentes) => this.docentes.set(docentes));
 
     this.coordinatorService
       .getPeriodosAcademicos()
@@ -393,7 +395,7 @@ export class CoordinatorGroupsComponent implements OnInit {
           return of({ exitoso: false, datos: [] as PeriodoAcademicoItem[] });
         })
       )
-      .subscribe((res) => this.periodos.set(res.datos ?? []));
+      .pipe(takeUntilDestroyed(this.destroyRef)).subscribe((res) => this.periodos.set(res.datos ?? []));
   }
 
   readonly horas = minutosAHoras;
@@ -435,7 +437,7 @@ export class CoordinatorGroupsComponent implements OnInit {
         idDocente: this.form.idDocente || undefined,
         franjas: this.form.franjas.map((f) => ({ dia: f.dia, horaInicio: f.horaInicio, horaFin: f.horaFin })),
       })
-      .subscribe({
+      .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: (res) => {
           this.previsualizando.set(false);
           if (res.exitoso && res.datos) {
@@ -536,7 +538,7 @@ export class CoordinatorGroupsComponent implements OnInit {
 
     this.errorGuardado.set(null);
     this.guardando.set(true);
-    peticion.subscribe({
+    peticion.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
         this.guardando.set(false);
         if (res.exitoso) {

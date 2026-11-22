@@ -1,4 +1,5 @@
-import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { Router } from '@angular/router';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
@@ -95,6 +96,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
   `
 })
 export class CoordinatorStudyPlansComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly coordService = inject(CoordinatorManagementService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
@@ -111,18 +113,18 @@ export class CoordinatorStudyPlansComponent implements OnInit {
   }
 
   cargarPlanes(): void {
-    this.coordService.getPlanesEstudio().subscribe({
+    this.coordService.getPlanesEstudio().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
         this.planes.set(res.datos || []);
         this.totalPlanes.set(Number(res.total ?? 0));
       },
       error: (err) => this.toast.error(getApiErrorMessage(err)),
     });
-    this.coordService.getTotalPlanesVigentes().subscribe({
+    this.coordService.getTotalPlanesVigentes().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (total) => this.totalVigentes.set(total),
       error: (err) => this.toast.error(getApiErrorMessage(err)),
     });
-    this.coordService.getTotalAsignaturasVinculadas().subscribe({
+    this.coordService.getTotalAsignaturasVinculadas().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (total) => this.totalAsignaturasVinculadas.set(total),
       error: (err) => this.toast.error(getApiErrorMessage(err)),
     });
@@ -145,7 +147,7 @@ export class CoordinatorStudyPlansComponent implements OnInit {
   }
 
   toggleEstadoPlan(plan: PlanEstudioItem): void {
-    this.coordService.toggleEstadoPlanEstudio(plan.id).subscribe({
+    this.coordService.toggleEstadoPlanEstudio(plan.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
         if (res.exitoso) {
           this.toast.success(res.mensajeUsuario || mensajeUi('UI_COORDINATOR_STUDY_PLANS_001'));

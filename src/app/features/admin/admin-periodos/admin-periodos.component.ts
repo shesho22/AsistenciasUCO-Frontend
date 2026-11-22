@@ -1,4 +1,5 @@
-import { Component, OnInit, computed, inject, signal, viewChild, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, computed, inject, signal, viewChild, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { PeriodoAcademicoItem } from '../../../core/models/role-management.model';
@@ -81,6 +82,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
   `,
 })
 export class AdminPeriodosComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly coordService = inject(CoordinatorManagementService);
   private readonly toast = inject(ToastService);
 
@@ -102,7 +104,7 @@ export class AdminPeriodosComponent implements OnInit {
   }
 
   cargarPeriodos(): void {
-    this.coordService.getPeriodosAcademicos().subscribe({
+    this.coordService.getPeriodosAcademicos().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => this.periodos.set(res.datos || []),
       error: (err) => this.toast.error(getApiErrorMessage(err)),
     });
@@ -116,7 +118,7 @@ export class AdminPeriodosComponent implements OnInit {
       event.modo === 'CREAR'
         ? this.coordService.crearPeriodoAcademico(event.datos)
         : this.coordService.actualizarPeriodoAcademico(event.id ?? '', event.datos);
-    peticion.subscribe({
+    peticion.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
         this.guardando.set(false);
         if (res.exitoso) {
@@ -157,7 +159,7 @@ export class AdminPeriodosComponent implements OnInit {
         return;
       }
       const receso = recesos[indice];
-      this.coordService.crearRecesoPeriodo(idPeriodo, receso).subscribe({
+      this.coordService.crearRecesoPeriodo(idPeriodo, receso).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: (res) => {
           const exitoso = res.exitoso !== false;
           resultados.push({
@@ -200,7 +202,7 @@ export class AdminPeriodosComponent implements OnInit {
     if (!periodo) {
       return;
     }
-    this.coordService.eliminarPeriodoAcademico(periodo.id).subscribe({
+    this.coordService.eliminarPeriodoAcademico(periodo.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
         if (res.exitoso) {
           this.toast.success(res.mensajeUsuario || mensajeUi('UI_ADMIN_PERIODOS_002', { codigo: periodo.codigo }));

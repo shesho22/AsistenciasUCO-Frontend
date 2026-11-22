@@ -1,4 +1,5 @@
-import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { FormsModule } from '@angular/forms';
 import { AdminManagementService } from '../../../core/services/admin-management.service';
@@ -482,6 +483,7 @@ type FiltroEstadoFacultad = 'TODOS' | 'ACTIVO' | 'INACTIVO';
   `
 })
 export class AdminFacultadesComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly adminService = inject(AdminManagementService);
   private readonly toast = inject(ToastService);
 
@@ -576,9 +578,9 @@ export class AdminFacultadesComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.adminService.cargarFacultades().subscribe();
-    this.adminService.getDecanos().subscribe();
-    this.adminService.getInstituciones().subscribe();
+    this.adminService.cargarFacultades().pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
+    this.adminService.getDecanos().pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
+    this.adminService.getInstituciones().pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
   }
 
   totalProgramasDe(fac: FacultadItem): number | undefined {
@@ -640,7 +642,7 @@ export class AdminFacultadesComponent implements OnInit {
     this.guardando.set(true);
 
     if (this.facultadEnEdicion) {
-      this.adminService.actualizarFacultad(this.facultadEnEdicion.id, { nombre, idDecano }).subscribe({
+      this.adminService.actualizarFacultad(this.facultadEnEdicion.id, { nombre, idDecano }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: (res) => {
           this.guardando.set(false);
           if (res.exitoso) {
@@ -662,7 +664,7 @@ export class AdminFacultadesComponent implements OnInit {
           idDecano,
           idInstitucion: this.formFacultad.idInstitucion || undefined,
         })
-        .subscribe({
+        .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
           next: (res) => {
             this.guardando.set(false);
             if (res.exitoso) {
@@ -705,7 +707,7 @@ export class AdminFacultadesComponent implements OnInit {
     if (this.facultadCambiandoEstado() !== null) return;
     const activar = fac.estado !== 'ACTIVO';
     this.facultadCambiandoEstado.set(fac.id);
-    this.adminService.cambiarEstadoFacultad(fac.id, activar).subscribe({
+    this.adminService.cambiarEstadoFacultad(fac.id, activar).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
         this.facultadCambiandoEstado.set(null);
         if (res.exitoso) {
@@ -727,7 +729,7 @@ export class AdminFacultadesComponent implements OnInit {
     this.programasFacultad.set([]);
     this.errorProgramas.set(null);
     this.cargandoProgramas.set(true);
-    this.adminService.getProgramasInstitucion({ idFacultad: fac.id, pagina: 1, tamano: 100 }).subscribe({
+    this.adminService.getProgramasInstitucion({ idFacultad: fac.id, pagina: 1, tamano: 100 }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
         this.programasFacultad.set(res?.elementos ?? []);
         this.cargandoProgramas.set(false);
@@ -762,7 +764,7 @@ export class AdminFacultadesComponent implements OnInit {
     const decanoNombre = `${decano.nombres} ${decano.apellidos}`;
 
     this.guardandoDecano.set(true);
-    this.adminService.actualizarFacultad(fac.id, { idDecano: decano.id }).subscribe({
+    this.adminService.actualizarFacultad(fac.id, { idDecano: decano.id }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
         this.guardandoDecano.set(false);
         if (res.exitoso) {

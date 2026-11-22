@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { map } from 'rxjs';
 import { AdminManagementService } from '../../../core/services/admin-management.service';
@@ -161,6 +161,7 @@ interface EstadoCarga {
   `,
 })
 export class AdminCatalogosSistemaComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly adminService = inject(AdminManagementService);
   private readonly catalogosService = inject(AdminCatalogosService);
   private readonly catalogService = inject(CatalogService);
@@ -201,7 +202,7 @@ export class AdminCatalogosSistemaComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.adminService.cargarTiposPrograma().subscribe({
+    this.adminService.cargarTiposPrograma().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () =>
         this.fijar(
           'tipos-programa',
@@ -209,11 +210,11 @@ export class AdminCatalogosSistemaComponent implements OnInit {
         ),
       error: (err) => this.fallar('tipos-programa', err),
     });
-    this.catalogService.getIdentityDocumentTypes().subscribe({
+    this.catalogService.getIdentityDocumentTypes().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (tipos) => this.fijar('tipos-identificacion', tipos.map((t) => ({ id: t.id, codigo: t.tipoIdentificacion, nombre: t.nombre }))),
       error: (err) => this.fallar('tipos-identificacion', err),
     });
-    this.catalogosService.listarCategorias().subscribe({
+    this.catalogosService.listarCategorias().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) =>
         this.fijar(
           'categorias-justificacion',
@@ -227,7 +228,7 @@ export class AdminCatalogosSistemaComponent implements OnInit {
         ),
       error: (err) => this.fallar('categorias-justificacion', err),
     });
-    this.catalogosService.listarMotivos().subscribe({
+    this.catalogosService.listarMotivos().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) =>
         this.fijar(
           'motivos-cancelacion',
@@ -235,7 +236,7 @@ export class AdminCatalogosSistemaComponent implements OnInit {
         ),
       error: (err) => this.fallar('motivos-cancelacion', err),
     });
-    this.consultas.getEstadosSistema().subscribe({
+    this.consultas.getEstadosSistema().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
         const estados = res.datos ?? [];
         this.fijar('estados-reclamo', filasDeEstados(estados, 'SOLICITUD'));

@@ -1,4 +1,5 @@
-import { Component, OnInit, inject, input, signal, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, inject, input, signal, computed, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { ActivatedRoute, Router } from '@angular/router';
 import { CoordinatorManagementService } from '../../../../core/services/coordinator-management.service';
@@ -43,6 +44,7 @@ import { mensajeUi } from '../../../../core/messages/mensajes-ui';
   `
 })
 export class CoordinatorSubjectFormPageComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly coordService = inject(CoordinatorManagementService);
   private readonly consultas = inject(ConsultasTransversalesService);
   private readonly toast = inject(ToastService);
@@ -83,20 +85,20 @@ export class CoordinatorSubjectFormPageComponent implements OnInit {
   ngOnInit(): void {
     const id = this.effectivePlanId();
     // HU147 / P5: el formulario solo ofrece componentes y áreas que existen en sus tablas.
-    this.consultas.getComponentesFormacion().subscribe({
+    this.consultas.getComponentesFormacion().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => this.componentes.set(res.datos || []),
       error: (err) => this.toast.error(getApiErrorMessage(err)),
     });
-    this.coordService.getCaracteresAsignatura().subscribe({
+    this.coordService.getCaracteresAsignatura().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => this.caracteres.set(res.datos || []),
       error: (err) => this.toast.error(getApiErrorMessage(err)),
     });
-    this.coordService.getAreasConocimiento().subscribe({
+    this.coordService.getAreasConocimiento().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => this.areas.set(res.datos || []),
       error: (err) => this.toast.error(getApiErrorMessage(err)),
     });
     // MEJORAS-SERGIO 13: siempre se relee el plan; la copia en memoria puede no tener el semestre recien agregado en la malla.
-    this.coordService.getPlanesEstudio().subscribe({
+    this.coordService.getPlanesEstudio().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => this.planes.set(res.datos || []),
       error: (err) => this.toast.error(getApiErrorMessage(err)),
     });
@@ -105,7 +107,7 @@ export class CoordinatorSubjectFormPageComponent implements OnInit {
       if (cached.length > 0) {
         this.asignaturas.set(cached);
       }
-      this.coordService.getAsignaturasPorPlan(id).subscribe({
+      this.coordService.getAsignaturasPorPlan(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: (res) => this.asignaturas.set(res.datos || []),
         error: (err) => this.toast.error(getApiErrorMessage(err)),
       });
@@ -117,7 +119,7 @@ export class CoordinatorSubjectFormPageComponent implements OnInit {
     if (!id) return;
 
     if (this.modo() === 'CREAR') {
-      this.coordService.crearAsignaturaPlan(id, event.datos).subscribe({
+      this.coordService.crearAsignaturaPlan(id, event.datos).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: (res) => {
           if (res.exitoso) {
             this.toast.success(res.mensajeUsuario || mensajeUi('UI_SUBJECT_FORM_PAGE_001'));
@@ -129,7 +131,7 @@ export class CoordinatorSubjectFormPageComponent implements OnInit {
     } else {
       const asigId = event.id || this.effectiveAsignaturaId();
       if (!asigId) return;
-      this.coordService.actualizarAsignaturaPlan(id, asigId, event.datos).subscribe({
+      this.coordService.actualizarAsignaturaPlan(id, asigId, event.datos).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: (res) => {
           if (res.exitoso) {
             this.toast.success(res.mensajeUsuario || mensajeUi('UI_SUBJECT_FORM_PAGE_002'));

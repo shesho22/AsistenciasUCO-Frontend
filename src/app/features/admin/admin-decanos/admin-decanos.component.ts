@@ -1,4 +1,5 @@
-import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -351,6 +352,7 @@ const NOMBRE_FACULTAD_MAX = 50;
   `,
 })
 export class AdminDecanosComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly adminService = inject(AdminManagementService);
   private readonly catalogService = inject(CatalogService);
   private readonly toast = inject(ToastService);
@@ -483,7 +485,7 @@ export class AdminDecanosComponent implements OnInit {
   corregirDecano(d: DecanoItem, payload: CorregirIdentidadPayload): void {
     this.guardandoCorreccion.set(true);
     this.errorCorreccion.set(null);
-    this.correccionIdentidad.corregirDecano(d.id, payload).subscribe({
+    this.correccionIdentidad.corregirDecano(d.id, payload).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (r) => {
         this.guardandoCorreccion.set(false);
         this.decanoACorregir.set(null);
@@ -515,11 +517,11 @@ export class AdminDecanosComponent implements OnInit {
     this.cargarFacultades();
     this.cargarInstituciones();
     this.cargarDecanos();
-    this.registroConfig.getEmailDomain().subscribe({ next: (d) => this.dominioCorreo.set(d), error: () => this.dominioCorreo.set(null) });
+    this.registroConfig.getEmailDomain().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({ next: (d) => this.dominioCorreo.set(d), error: () => this.dominioCorreo.set(null) });
   }
 
   cargarInstituciones(): void {
-    this.adminService.getInstituciones().subscribe({
+    this.adminService.getInstituciones().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => this.preseleccionarInstitucion(res.datos ?? []),
       error: (err) => this.toast.warning(getApiErrorMessage(err)),
     });
@@ -533,7 +535,7 @@ export class AdminDecanosComponent implements OnInit {
 
   cargarFacultades(): void {
     // Solo se ofrecen las facultades activas y sin decano: una facultad con decano no puede recibir otro.
-    this.adminService.cargarFacultades().subscribe({
+    this.adminService.cargarFacultades().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
         this.errorFacultades.set(false);
         this.facultades.set(
@@ -550,7 +552,7 @@ export class AdminDecanosComponent implements OnInit {
   }
 
   cargarTiposIdentificacion(): void {
-    this.catalogService.getTiposIdentificacion().subscribe({
+    this.catalogService.getTiposIdentificacion().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
         if (res.datos && res.datos.length > 0) {
           this.tiposIdentificacion.set(res.datos);
@@ -579,7 +581,7 @@ export class AdminDecanosComponent implements OnInit {
     const peticion = this.ultimaPeticionDecanos.iniciar();
     this.isLoading.set(true);
     this.errorCarga.set(null);
-    this.adminService.getDecanos().subscribe({
+    this.adminService.getDecanos().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
         if (!this.ultimaPeticionDecanos.esVigente(peticion)) {
           return;
@@ -603,7 +605,7 @@ export class AdminDecanosComponent implements OnInit {
   }
 
   toggleEstado(decano: DecanoItem): void {
-    this.adminService.toggleDecanoStatus(decano.id).subscribe({
+    this.adminService.toggleDecanoStatus(decano.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
         if (res.exitoso && res.datos) {
           const updated = this.decanos().map((d) => (d.id === decano.id ? res.datos! : d));
@@ -784,7 +786,7 @@ export class AdminDecanosComponent implements OnInit {
     };
 
     this.isSubmitting.set(true);
-    this.adminService.createDecano(payload).pipe(finalize(() => this.isSubmitting.set(false))).subscribe({
+    this.adminService.createDecano(payload).pipe(finalize(() => this.isSubmitting.set(false))).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
         if (res.exitoso) {
           this.toast.success(res.mensajeUsuario || mensajeUi('UI_ADMIN_DECANOS_009'));

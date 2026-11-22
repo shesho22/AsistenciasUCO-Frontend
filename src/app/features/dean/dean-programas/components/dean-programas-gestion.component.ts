@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { DeanProgramasService } from '../../../../core/services/dean-programas.service';
 import { DeanManagementService } from '../../../../core/services/dean-management.service';
@@ -135,6 +136,7 @@ import { mensajeUi } from '../../../../core/messages/mensajes-ui';
   `
 })
 export class DeanProgramasGestionComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   readonly service = inject(DeanProgramasService);
   private readonly deanService = inject(DeanManagementService);
   private readonly toast = inject(ToastService);
@@ -166,9 +168,9 @@ export class DeanProgramasGestionComponent implements OnInit {
   ngOnInit(): void {
     this.cargar();
     this.cargarCoordinadores();
-    this.service.getTiposPrograma().subscribe({ next: (r) => this.tipos.set(r), error: (e) => this.toast.error(getApiErrorMessage(e)) });
-    this.service.getModalidades().subscribe({ next: (r) => this.modalidades.set(r), error: (e) => this.toast.error(getApiErrorMessage(e)) });
-    this.service.getJornadas().subscribe({ next: (r) => this.jornadas.set(r), error: (e) => this.toast.error(getApiErrorMessage(e)) });
+    this.service.getTiposPrograma().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({ next: (r) => this.tipos.set(r), error: (e) => this.toast.error(getApiErrorMessage(e)) });
+    this.service.getModalidades().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({ next: (r) => this.modalidades.set(r), error: (e) => this.toast.error(getApiErrorMessage(e)) });
+    this.service.getJornadas().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({ next: (r) => this.jornadas.set(r), error: (e) => this.toast.error(getApiErrorMessage(e)) });
   }
 
   cargar(): void {
@@ -180,11 +182,11 @@ export class DeanProgramasGestionComponent implements OnInit {
         nombre: this.filtroNombre().trim() || undefined,
         estaActivo: estado === '' ? undefined : estado === 'true',
       })
-      .subscribe({ error: (e) => this.toast.error(getApiErrorMessage(e)) });
+      .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({ error: (e) => this.toast.error(getApiErrorMessage(e)) });
   }
 
   private cargarCoordinadores(): void {
-    this.deanService.getCoordinadores({ pagina: 1, tamano: 100, estaActivo: true, sinPrograma: true }).subscribe({
+    this.deanService.getCoordinadores({ pagina: 1, tamano: 100, estaActivo: true, sinPrograma: true }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => this.coordinadores.set(res.elementos),
       error: (e) => this.toast.error(getApiErrorMessage(e)),
     });
@@ -222,7 +224,7 @@ export class DeanProgramasGestionComponent implements OnInit {
     const enEdicion = this.programaEnEdicion();
     const operacion = enEdicion ? this.service.actualizar(enEdicion.id, payload) : this.service.crear(payload);
     this.guardando.set(true);
-    operacion.subscribe({
+    operacion.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
         this.guardando.set(false);
         this.toast.success(res.mensajeUsuario || (enEdicion ? mensajeUi('UI_DEAN_PROGRAMAS_GESTION_001') : mensajeUi('UI_DEAN_PROGRAMAS_GESTION_002')));
@@ -254,7 +256,7 @@ export class DeanProgramasGestionComponent implements OnInit {
     if (!programa) {
       return;
     }
-    this.service.cambiarEstado(programa.id, estaActivo).subscribe({
+    this.service.cambiarEstado(programa.id, estaActivo).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
         this.toast.success(res.mensajeUsuario || mensajeUi('UI_DEAN_PROGRAMAS_GESTION_003'));
         this.cerrarEstado();
