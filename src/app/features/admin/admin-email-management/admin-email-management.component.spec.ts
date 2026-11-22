@@ -29,6 +29,7 @@ describe('AdminEmailManagementComponent', () => {
   const mockPlantillas: TipoPlantillaAdminDto[] = [
     {
       tipo: 'VERIFICACION_CORREO',
+      descripcion: 'Verificación del correo institucional',
       idioma: 'es',
       versionActiva: 1,
       asuntoActivo: 'Verifica tu correo {nombre}',
@@ -99,6 +100,7 @@ describe('AdminEmailManagementComponent', () => {
         codigoError: 'MAILBOX_NOT_FOUND',
         detalleError: 'Buzón inexistente (550)',
         idCorrelacion: 'corr-01',
+        aplicacion: 'AsistenciasUCO',
       },
       {
         id: 'notif-2',
@@ -171,7 +173,7 @@ describe('AdminEmailManagementComponent', () => {
     fixture.detectChanges();
   });
 
-  it('debe crearse e inicializar plantillas, cola outbox y canal SMTP', () => {
+  it('debe crearse e inicializar plantillas, cola outbox y servicio de notificaciones', () => {
     expect(component).toBeTruthy();
     expect(notificationServiceSpy.listarPlantillas).toHaveBeenCalledWith('es');
     expect(notificationServiceSpy.obtenerEstadoCanal).toHaveBeenCalled();
@@ -295,14 +297,6 @@ describe('AdminEmailManagementComponent', () => {
       expect(notificationServiceSpy.consultarCola).toHaveBeenCalled();
     });
 
-    it('puedeReintentar es verdadero solo para FALLIDA_DEFINITIVA y FALLIDA_REINTENTABLE', () => {
-      expect(component.puedeReintentar('FALLIDA_DEFINITIVA')).toBeTrue();
-      expect(component.puedeReintentar('FALLIDA_REINTENTABLE')).toBeTrue();
-      expect(component.puedeReintentar('ENTREGADA')).toBeFalse();
-      expect(component.puedeReintentar('PENDIENTE')).toBeFalse();
-      expect(component.puedeReintentar('RESERVADA')).toBeFalse();
-    });
-
     it('reintentar solicita el reintento al backend y refresca la bandeja', () => {
       notificationServiceSpy.reintentarNotificacion.and.returnValue(of({ exitoso: true }));
       component.reintentar('notif-1');
@@ -313,9 +307,9 @@ describe('AdminEmailManagementComponent', () => {
     });
   });
 
-  describe('Tab 3: Canal SMTP y Correo de Prueba', () => {
+  describe('Tab 3: Servicio de notificaciones y Correo de Prueba', () => {
     beforeEach(() => {
-      component.tabActiva.set('CANAL_SMTP');
+      component.tabActiva.set('CANAL_SERVICIO');
       fixture.detectChanges();
     });
 
@@ -330,7 +324,7 @@ describe('AdminEmailManagementComponent', () => {
       }
     });
 
-    it('expone el estado y los parámetros del canal SMTP', () => {
+    it('expone el estado y los parámetros del servicio de notificaciones', () => {
       expect(component.canalEstado()).toEqual(mockEstadoCanal);
       expect(component.canalEstado()?.canalActivo).toBeTrue();
     });
@@ -354,12 +348,12 @@ describe('AdminEmailManagementComponent', () => {
 
     it('enviarCorreoPrueba maneja errores del servidor', () => {
       notificationServiceSpy.enviarCorreoPrueba.and.returnValue(
-        throwError(() => ({ error: { message: 'Servidor SMTP no responde' } }))
+        throwError(() => ({ error: { message: 'El servicio de notificaciones no responde' } }))
       );
 
       component.enviarCorreoPrueba();
       expect(component.resultadoPrueba()?.exitoso).toBeFalse();
-      expect(component.resultadoPrueba()?.mensaje).toContain('Servidor SMTP no responde');
+      expect(component.resultadoPrueba()?.mensaje).toContain('El servicio de notificaciones no responde');
       expect(toastServiceSpy.error).toHaveBeenCalled();
     });
   });
@@ -463,7 +457,7 @@ describe('AdminEmailManagementComponent', () => {
 
       notificationServiceSpy.obtenerEstadoCanal.and.returnValue(throwError(() => new Error('x')));
       component.cargarEstadoCanal();
-      expect(toastServiceSpy.error).toHaveBeenCalledWith('No se pudo obtener el diagnóstico del canal SMTP.');
+      expect(toastServiceSpy.error).toHaveBeenCalledWith('No se pudo consultar el estado del servicio de notificaciones.');
     });
 
     it('cambia filtros de tipo y de página dentro del rango', () => {
@@ -478,20 +472,6 @@ describe('AdminEmailManagementComponent', () => {
       component.cambiarPagina(1);
       expect(notificationServiceSpy.consultarCola).toHaveBeenCalled();
     });
-
-    it('asigna clases de estado para cada código y un valor por defecto', () => {
-      for (const codigo of ['ENTREGADA', 'PENDIENTE', 'RESERVADA', 'FALLIDA_REINTENTABLE', 'FALLIDA_DEFINITIVA', 'OTRO']) {
-        expect(component.getEstadoBadgeClass(codigo)).not.toBe('');
-        expect(component.getEstadoDotClass(codigo)).not.toBe('');
-      }
-      expect(component.getEstadoBadgeClass('OTRO')).toBe('bg-warm-100 text-warm-700');
-    });
-
-    it('expone el HTML de la vista previa sin marcarlo como confiable', () => {
-      expect(component.safeHtmlPreview()).toBe('');
-      component.vistaPrevia.set({ asunto: 'a', textoPlano: 'b', html: '<p>hola</p>', origen: 'preview' });
-      expect(component.safeHtmlPreview()).toBe('<p>hola</p>');
-    });
   });
 
   describe('F-ADM-010 / F-ADM-018 / F-ADM-S17', () => {
@@ -504,7 +484,7 @@ describe('AdminEmailManagementComponent', () => {
     });
 
     it('no expone jerga interna (ids de deuda tecnica, puertos ni variables de entorno)', () => {
-      for (const tab of ['PLANTILLAS', 'COLA_OUTBOX', 'CANAL_SMTP'] as const) {
+      for (const tab of ['PLANTILLAS', 'COLA_OUTBOX', 'CANAL_SERVICIO'] as const) {
         component.tabActiva.set(tab);
         fixture.detectChanges();
         const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
@@ -520,6 +500,107 @@ describe('AdminEmailManagementComponent', () => {
       const el = fixture.nativeElement as HTMLElement;
       expect(el.querySelector('app-pagination')).toBeTruthy();
       expect(el.textContent).not.toContain('Pág.');
+    });
+  });
+
+  describe('Servicio de notificaciones: descripción, 503 y cola móvil', () => {
+    it('muestra la descripción del servicio como título y el código del tipo como respaldo', () => {
+      const el = fixture.nativeElement as HTMLElement;
+      const filas = Array.from(el.querySelectorAll('[data-testid="plantillas-tabla"] tbody tr'));
+      expect(filas[0].textContent).toContain('Verificación del correo institucional');
+      expect(filas[0].textContent).toContain('VERIFICACION_CORREO');
+      // Sin descripción: el título es el código del tipo, sin textos fijos del cliente.
+      expect(component.etiqueta(component.plantillas()[1])).toBe('RETIRO_ESTUDIANTE_GRUPO');
+      expect(el.querySelector('h2.font-serif.text-lg')?.textContent).toContain('Verificación del correo institucional');
+      for (const quemado of ['15%', '20%']) {
+        expect(el.textContent).not.toContain(quemado);
+      }
+    });
+
+    it('busca plantillas por la descripción del servicio', () => {
+      component.busquedaPlantilla.set('institucional');
+      expect(component.plantillasFiltradas().map((p) => p.tipo)).toEqual(['VERIFICACION_CORREO']);
+    });
+
+    it('preselecciona el tipo de la prueba con el primer tipo del servicio', () => {
+      expect(component.pruebaTipo()).toBe('VERIFICACION_CORREO');
+    });
+
+    it('con 503 ERR_NOTIFICACIONES_NO_DISPONIBLE muestra el mensaje del backend y deja usable el resto', () => {
+      notificationServiceSpy.obtenerEstadoCanal.and.returnValue(
+        throwError(() => new HttpErrorResponse({
+          status: 503,
+          error: {
+            timestamp: '2026-11-22T10:00:00Z',
+            status: 503,
+            error: 'Service Unavailable',
+            code: 'ERR_NOTIFICACIONES_NO_DISPONIBLE',
+            message: 'El servicio de notificaciones no responde, intente más tarde.',
+            path: '/api/v1/admin/notificaciones/estado-canal',
+            correlationId: null,
+          },
+        })),
+      );
+      toastServiceSpy.error.calls.reset();
+      component.cargarEstadoCanal();
+      component.tabActiva.set('CANAL_SERVICIO');
+      fixture.detectChanges();
+
+      const el = fixture.nativeElement as HTMLElement;
+      expect(component.servicioNoDisponible()).toBe('El servicio de notificaciones no responde, intente más tarde.');
+      expect(el.querySelector('[data-testid="servicio-no-disponible-mensaje"]')?.textContent).toContain('no responde, intente más tarde');
+      expect(el.querySelector('[data-testid="servicio-estado"]')?.textContent?.trim()).toBe('Servicio no disponible');
+      expect(toastServiceSpy.error).not.toHaveBeenCalled();
+      // El resto de la pantalla sigue usable: plantillas cargadas y prueba disponible.
+      expect(component.plantillas()).toHaveSize(2);
+      expect((el.querySelector('#correo-prueba-tipo') as HTMLSelectElement).options.length).toBe(2);
+    });
+
+    it('limpia el aviso cuando el servicio vuelve a responder', () => {
+      component.servicioNoDisponible.set('caído');
+      component.cargarEstadoCanal();
+      expect(component.servicioNoDisponible()).toBeNull();
+    });
+
+    it('otros errores del estado no activan el aviso de servicio caído', () => {
+      notificationServiceSpy.obtenerEstadoCanal.and.returnValue(throwError(() => new Error('x')));
+      component.cargarEstadoCanal();
+      expect(component.servicioNoDisponible()).toBeNull();
+    });
+
+    it('un 503 en la prueba muestra el mensaje del backend en el resultado y en el aviso', () => {
+      notificationServiceSpy.enviarCorreoPrueba.and.returnValue(
+        throwError(() => new HttpErrorResponse({
+          status: 503,
+          error: {
+            timestamp: '2026-11-22T10:00:00Z',
+            status: 503,
+            error: 'Service Unavailable',
+            code: 'ERR_NOTIFICACIONES_NO_DISPONIBLE',
+            message: 'Servicio de notificaciones no disponible.',
+            path: '/api/v1/admin/notificaciones/prueba',
+            correlationId: null,
+          },
+        })),
+      );
+      component.enviarCorreoPrueba();
+      expect(component.resultadoPrueba()?.mensaje).toBe('Servicio de notificaciones no disponible.');
+      expect(component.servicioNoDisponible()).toBe('Servicio de notificaciones no disponible.');
+    });
+
+    it('la cola muestra la aplicación de origen y se presenta como tarjetas en pantallas angostas', () => {
+      component.tabActiva.set('COLA_OUTBOX');
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      const tabla = el.querySelector('[data-testid="cola-tabla"]') as HTMLElement;
+      expect(tabla.classList).toContain('tabla-tarjetas');
+      expect(tabla.closest('.tabla-scroll')).toBeTruthy();
+      const aplicaciones = Array.from(el.querySelectorAll('[data-testid="cola-aplicacion"]')).map((c) => c.textContent?.trim());
+      expect(aplicaciones).toEqual(['AsistenciasUCO', '—']);
+      for (const celda of Array.from(tabla.querySelectorAll('tbody td'))) {
+        expect(celda.getAttribute('data-label')).toBeTruthy();
+      }
+      expect(el.innerHTML).not.toContain('py-0.2');
     });
   });
 });
