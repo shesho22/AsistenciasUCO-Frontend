@@ -248,7 +248,6 @@ export class LoginComponent {
     try {
       await this.authService.loginWithCredentials(trimmedUsername, trimmedPassword);
     } catch (error: unknown) {
-      console.error('Error al iniciar sesión:', error);
       this.errorMessage.set(
         (error instanceof Error && error.message) || 'Error al autenticar. Verifica tu usuario y contraseña.'
       );

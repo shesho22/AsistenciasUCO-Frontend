@@ -95,8 +95,8 @@ function parseJwt(token: string): JwtTokenPayload | null {
         .join('')
     );
     return JSON.parse(jsonPayload) as JwtTokenPayload;
-  } catch (e) {
-    console.error('Error al decodificar JWT:', e);
+  } catch {
+    // Token ilegible: se trata como ausente (sin registrar el contenido del token).
     return null;
   }
 }
@@ -561,7 +561,6 @@ export class AuthService implements OnDestroy {
         body: body.toString(),
       });
     } catch (networkError) {
-      console.error('Error de red al conectar con el servidor de autenticación institucional:', networkError);
       throw new Error(this.resolveAuthMessage('AUTH_NETWORK_ERROR'), { cause: networkError });
     }
 
@@ -860,8 +859,8 @@ export class AuthService implements OnDestroy {
       this.currentUser.set(syncedUser);
       // Perfil sincronizado solo en signal de memoria — sin localStorage.
       return syncedUser;
-    } catch (e) {
-      console.warn('No se pudo hidratar el perfil desde el backend:', e);
+    } catch {
+      // Sin perfil del backend se conserva la identidad del token.
       return null;
     }
   }
