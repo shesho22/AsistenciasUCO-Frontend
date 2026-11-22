@@ -25,6 +25,12 @@ export interface ClaseHorarioItem {
   horaFin: string;
   aula?: string;
   subtitulo: string;
+  /**
+   * Sesión con fecha concreta (p. ej. extraordinaria aprobada): reemplaza la proyección semanal de `dia`/`horaInicio`.
+   * `horaInicio`/`horaFin` siguen siendo el texto que se muestra.
+   */
+  inicio?: Date;
+  fin?: Date;
 }
 
 export function parseDayToNumber(dayStr: string): number {
@@ -127,6 +133,15 @@ export function calcularProximaClaseDesdeItems(
   const candidatos: Candidato[] = [];
 
   for (const item of items) {
+    if (item.inicio) {
+      const fin = item.fin ?? new Date(item.inicio.getTime() + 2 * 60 * 60 * 1000);
+      if (now >= item.inicio && now <= fin) {
+        candidatos.push({ item, startDate: item.inicio, endDate: fin, enCurso: true, diffMs: 0 });
+      } else if (item.inicio.getTime() > now.getTime()) {
+        candidatos.push({ item, startDate: item.inicio, endDate: fin, enCurso: false, diffMs: item.inicio.getTime() - now.getTime() });
+      }
+      continue;
+    }
     const targetDay = parseDayToNumber(item.dia);
     if (targetDay === -1) continue;
 

@@ -15,6 +15,9 @@ import { AdminIndicatorsService } from '../../../core/services/admin-indicators.
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { StudentManagementService } from '../../../core/services/student-management.service';
 import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
+import { SesionCalendarioService } from '../../../core/services/sesion-calendario.service';
+import { ApiDataResponse } from '../../../core/api/models/api-data-response.model';
+import { SesionCalendario } from '../../../core/models/sesion-calendario.model';
 import { TeacherGruposResumenService } from '../../../core/services/teacher-grupos-resumen.service';
 import { User, UserRole } from '../../../core/models/user.model';
 import { Course } from '../../../core/models/course.model';
@@ -46,6 +49,7 @@ describe('OverviewComponent', () => {
   let coordinatorServiceSpy: jasmine.SpyObj<CoordinatorManagementService>;
   let studentServiceSpy: jasmine.SpyObj<StudentManagementService>;
   let claimServiceSpy: jasmine.SpyObj<AttendanceClaimService>;
+  let calendarioSpy: jasmine.SpyObj<SesionCalendarioService>;
   let gruposResumenSpy: jasmine.SpyObj<TeacherGruposResumenService>;
 
   const mockUserDocente: User = {
@@ -248,6 +252,9 @@ describe('OverviewComponent', () => {
       of({ exitoso: true, datos: [{ id: 'r1', estadoSolicitud: 'PENDIENTE' } as never], total: 7 })
     );
 
+    calendarioSpy = jasmine.createSpyObj('SesionCalendarioService', ['consultar']);
+    calendarioSpy.consultar.and.returnValue(of({ exitoso: true, datos: [] } as unknown as ApiDataResponse<SesionCalendario[]>));
+
     await TestBed.configureTestingModule({
       imports: [OverviewComponent],
       providers: [
@@ -264,6 +271,7 @@ describe('OverviewComponent', () => {
         { provide: CoordinatorProgramService, useValue: coordinatorProgramSpy },
         { provide: StudentManagementService, useValue: studentServiceSpy },
         { provide: AttendanceClaimService, useValue: claimServiceSpy },
+        { provide: SesionCalendarioService, useValue: calendarioSpy },
         { provide: TeacherGruposResumenService, useValue: gruposResumenSpy },
       ],
     }).compileComponents();
@@ -842,6 +850,42 @@ describe('OverviewComponent', () => {
       expect(hero?.getAttribute('href')).toBe('/app/asistencia?courseId=grupo-proximo');
       const tarjeta = el.querySelector('app-overview-teacher a[href^="/app/asistencia?courseId=grupo-proximo"]');
       expect(tarjeta?.textContent).toContain('Tomar Asistencia');
+    });
+
+    const extraordinaria = (over: Partial<SesionCalendario> = {}): SesionCalendario => {
+      const inicio = new Date(Date.now() + 30 * 60 * 1000);
+      return {
+        idSesion: 's-x', idGrupo: 'grupo-extra', codigoGrupo: 1, nombreGrupo: 'Grupo 01', idAsignatura: 'a-1', codigoAsignatura: 'EXT-1',
+        nombreAsignatura: 'Sesión de repaso', nombreDocente: 'Ana Pérez', fechaHoraInicioUtc: inicio.toISOString(),
+        fechaHoraFinUtc: new Date(inicio.getTime() + 60 * 60 * 1000).toISOString(), esExtraordinaria: true, estaCancelada: false,
+        motivoCancelacion: null, esCancelacionAutomatica: false, nombreDiaFestivo: null, ...over,
+      };
+    };
+
+    it('FE-5 DOCENTE: la próxima clase incluye la sesión extraordinaria aprobada de hoy', async () => {
+      calendarioSpy.consultar.and.returnValue(of({ exitoso: true, datos: [extraordinaria()] } as unknown as ApiDataResponse<SesionCalendario[]>));
+      await createComponentWithRole('DOCENTE');
+
+      expect(calendarioSpy.consultar.calls.mostRecent().args[0]).toBe('DOCENTE');
+      expect(component.proximaClase()?.idGrupo).toBe('grupo-extra');
+      expect(component.proximaClase()?.materia).toBe('Sesión de repaso');
+    });
+
+    it('FE-5 ESTUDIANTE: la extraordinaria de hoy gana al horario semanal; una cancelada o programada no cuenta', async () => {
+      calendarioSpy.consultar.and.returnValue(of({ exitoso: true, datos: [extraordinaria(), extraordinaria({ idGrupo: 'g-cancelada', estaCancelada: true }), extraordinaria({ idGrupo: 'g-normal', esExtraordinaria: false })] } as unknown as ApiDataResponse<SesionCalendario[]>));
+      await createComponentWithRole('ESTUDIANTE');
+
+      expect(calendarioSpy.consultar.calls.mostRecent().args[0]).toBe('ESTUDIANTE');
+      expect(component.proximaClase()?.idGrupo).toBe('grupo-extra');
+      expect(component.sesionesExtraordinarias().length).toBe(1);
+    });
+
+    it('FE-5: si el calendario falla se mantiene el horario semanal', async () => {
+      calendarioSpy.consultar.and.returnValue(throwError(() => ({ status: 500 })));
+      await createComponentWithRole('DOCENTE');
+
+      expect(component.sesionesExtraordinarias()).toEqual([]);
+      expect(component.proximaClase()).not.toBeNull();
     });
 
     it('DOCENTE: sin horario con grupo no se inventa un grupo (el destino abre su vista general)', async () => {
