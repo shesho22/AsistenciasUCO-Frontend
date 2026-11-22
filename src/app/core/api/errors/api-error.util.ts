@@ -40,17 +40,50 @@ function isApiErrorResponse(value: unknown): value is ApiErrorResponse {
   );
 }
 
+/**
+ * TD-120: errores que ya fueron leidos por una pantalla para presentarlos (mensaje, codigo o errores de campo).
+ * El interceptor global consulta este registro antes de mostrar su aviso de respaldo, de modo que un error que la
+ * pantalla ya muestra de forma local no se notifica dos veces. Es una marca explicita sobre la instancia del error,
+ * nunca una inspeccion del texto.
+ */
+const erroresPresentados = new WeakSet<object>();
+let marcadoSuspendido = false;
+
+/** Marca un error como presentado por la pantalla que lo maneja (uso explicito cuando no pasa por estas utilidades). */
+export function marcarErrorPresentado(error: unknown): void {
+  if (!marcadoSuspendido && isRecord(error)) {
+    erroresPresentados.add(error);
+  }
+}
+
+export function errorFuePresentado(error: unknown): boolean {
+  return isRecord(error) && erroresPresentados.has(error);
+}
+
+/** Ejecuta una lectura del error sin marcarlo como presentado (la usa el propio interceptor). */
+export function leerErrorSinMarcar<T>(lectura: () => T): T {
+  const previo = marcadoSuspendido;
+  marcadoSuspendido = true;
+  try {
+    return lectura();
+  } finally {
+    marcadoSuspendido = previo;
+  }
+}
+
 export function getApiErrorResponse(
   error: unknown
 ): ApiErrorResponse | null {
   if (!(error instanceof HttpErrorResponse)) {
     return null;
   }
+  marcarErrorPresentado(error);
 
   return isApiErrorResponse(error.error) ? error.error : null;
 }
 
 export function getApiFieldErrors(error: unknown): ApiFieldError[] {
+  marcarErrorPresentado(error);
   if (error instanceof HttpErrorResponse && isRecord(error.error)) {
     const details = error.error['details'];
     if (Array.isArray(details)) {
@@ -134,6 +167,7 @@ export function getApiErrorCode(error: unknown): string {
 
 /** Mensaje para el usuario, decidido por `code`. */
 export function getApiErrorMessage(error: unknown): string {
+  marcarErrorPresentado(error);
   const code = getApiErrorCode(error);
   const envelope = getApiErrorResponse(error);
 
@@ -210,6 +244,7 @@ export function getErrorCorrelationId(error: unknown): string | null {
  * `err.message` (texto de infraestructura): sin texto del backend cae al mensaje semántico por código.
  */
 export function getBackendUserMessage(error: unknown, respaldo?: string): string {
+  marcarErrorPresentado(error);
   if (!(error instanceof HttpErrorResponse) && isRecord(error) && isRecord(error['error'])) {
     const cuerpo = error['error'];
     const texto = cuerpo['message'] ?? cuerpo['mensajeUsuario'];
