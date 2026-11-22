@@ -390,7 +390,8 @@ const BUSQUEDA_ESPERA_MS = 300;
                 <app-button
                   variant="danger"
                   size="md"
-                  [disabled]="resolviendo()"
+                  data-testid="rechazar-justificacion"
+                  [disabled]="resolviendo() || rechazoSinRespuestaValida()"
                   (clicked)="confirmarResolucion('RECHAZADA')"
                 >
                   <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -480,6 +481,11 @@ export class TeacherClaimsComponent implements OnInit, OnDestroy {
   errorComentario(): string {
     const accion = this.intentoRechazo() ? 'RECHAZADA' : 'APROBADA';
     return getClaimResponseError(accion, this.comentarioDocente) ?? '';
+  }
+
+  /** Validación de forma: no se puede rechazar hasta que la respuesta obligatoria (10 a 500) sea válida. */
+  rechazoSinRespuestaValida(): boolean {
+    return getClaimResponseError('RECHAZADA', this.comentarioDocente) !== null;
   }
 
   private listaSub?: Subscription;

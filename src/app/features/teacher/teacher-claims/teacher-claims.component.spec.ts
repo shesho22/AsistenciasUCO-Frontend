@@ -264,6 +264,18 @@ describe('TeacherClaimsComponent', () => {
     expect(component.errorComentario()).toBe('El campo Respuesta es obligatorio.');
   });
 
+  it('FE-6: «Rechazar justificación» está deshabilitado hasta que la respuesta sea válida', () => {
+    component.abrirVistaResolucion(mockReclamos[0]);
+    component.comentarioDocente = '';
+    expect(component.rechazoSinRespuestaValida()).toBeTrue();
+    component.comentarioDocente = 'corta';
+    expect(component.rechazoSinRespuestaValida()).toBeTrue();
+    component.comentarioDocente = 'x'.repeat(501);
+    expect(component.rechazoSinRespuestaValida()).toBeTrue();
+    component.comentarioDocente = 'No cumple con los soportes requeridos.';
+    expect(component.rechazoSinRespuestaValida()).toBeFalse();
+  });
+
   it('confirmarResolucion no rechaza con una respuesta de menos de 10 caracteres', () => {
     component.abrirVistaResolucion(mockReclamos[0]);
     component.comentarioDocente = '  corta  ';
