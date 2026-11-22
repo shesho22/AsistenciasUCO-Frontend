@@ -29,8 +29,9 @@ test.describe('Inicio por rol', () => {
     test(`${rol}: inicia sesion y ve su pagina de inicio con sus modulos`, async ({ page }) => {
       const cuenta = await iniciarSesion(page, rol);
 
-      await expect(page.getByRole('main').getByRole('heading', { level: 1, name: cuenta.encabezadoInicio })).toBeVisible();
-      await expect(page.getByRole('main').getByText(`Sesión activa como: ${rol}`)).toBeVisible();
+      // El login aterriza en el panel principal (hero de bienvenida con el rol de la sesion).
+      await expect(page.getByRole('main').getByRole('heading', { level: 1, name: `Bienvenido(a), ${cuenta.nombre}` })).toBeVisible();
+      await expect(page.getByRole('main').getByText(`Rol: ${rol}`)).toBeVisible();
 
       const menu = page.getByRole('complementary').getByRole('navigation');
       await expect(menu.getByText(`Módulos para ${rol}`)).toBeVisible();

@@ -38,8 +38,14 @@ test.describe('Decano', () => {
     await expect(main.getByRole('heading', { level: 1, name: 'Seguimiento' })).toBeVisible();
     const pestanas = main.getByRole('tablist', { name: 'Secciones de Seguimiento' });
     await expect(pestanas.getByRole('tab', { name: 'Indicadores' })).toHaveAttribute('aria-selected', 'true');
-    await expect(main.getByRole('heading', { name: 'Ausentismo por programa' })).toBeVisible();
-    await expect(main.getByRole('heading', { name: 'Aforo de grupos' })).toBeVisible();
+    // Indicadores solo conserva las tarjetas de cifras; la comparativa por programa y el aforo tienen pestanas propias.
+    await expect(main.getByText('En riesgo', { exact: true })).toBeVisible();
+    await expect(main.getByText(/Aforo de grupos activos/)).toBeVisible();
+
+    await pestanas.getByRole('tab', { name: 'Aforo' }).click();
+    await expect(page).toHaveURL(/\/app\/decano\/seguimiento\/aforo$/);
+    // Embebida en la pestana, la seccion no repite titulo: se verifica su tabla accesible.
+    await expect(main.getByRole('region', { name: 'Aforo de grupos' })).toBeVisible();
 
     await pestanas.getByRole('tab', { name: 'Consolidado' }).click();
     await expect(page).toHaveURL(/\/app\/decano\/seguimiento\/consolidado$/);
