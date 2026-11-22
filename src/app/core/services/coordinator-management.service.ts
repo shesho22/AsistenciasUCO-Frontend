@@ -30,6 +30,7 @@ import {
 } from '../models/role-management.model';
 import { EstudianteDirectorioCoordinadorApiDto, EstudianteDirectorioPaginaApiDto } from '../api/models/estudiante-api-dto.model';
 import { AsistenciaSesionItem, SesionGrupoItem } from '../models/asistencia-programa.model';
+import { RecesoAcademico, RecesoAcademicoCreado, RecesoAcademicoPayload } from '../models/receso-academico.model';
 
 /** Plan de estudio tal como llega del backend (HU081-HU083) o ya con la forma de la pantalla. */
 type PlanEstudioApiDto = Partial<PlanEstudioItem> & {
@@ -583,6 +584,25 @@ export class CoordinatorManagementService {
         }
       })
     );
+  }
+
+  /**
+   * DEC-081: días de receso del período. El administrador los lee por su ruta; decano y coordinador, por la de consulta
+   * (`soloLectura`). Orden por fecha, el que entrega el backend.
+   */
+  getRecesosPeriodo(idPeriodo: string, soloLectura = false): Observable<ApiResponse<RecesoAcademico[]>> {
+    const base = soloLectura ? 'coordinador' : 'admin';
+    return this.http.get<ApiResponse<RecesoAcademico[]>>(`${environment.apiUrl}/${base}/periodos-academicos/${idPeriodo}/recesos`);
+  }
+
+  /** DEC-081: registra un día de receso; el backend cancela sus clases y avisa por correo. */
+  crearRecesoPeriodo(idPeriodo: string, receso: RecesoAcademicoPayload): Observable<ApiResponse<RecesoAcademicoCreado>> {
+    return this.http.post<ApiResponse<RecesoAcademicoCreado>>(`${environment.apiUrl}/admin/periodos-academicos/${idPeriodo}/recesos`, receso);
+  }
+
+  /** DEC-081: retira un día que todavía no canceló clases (409 REC_010 si ya las canceló). */
+  retirarRecesoPeriodo(idPeriodo: string, idReceso: string): Observable<ApiResponse<null>> {
+    return this.http.delete<ApiResponse<null>>(`${environment.apiUrl}/admin/periodos-academicos/${idPeriodo}/recesos/${idReceso}`);
   }
 
   agregarSemestrePlan(planId: string): Observable<ApiResponse<{ planEstudioId: string }>> {

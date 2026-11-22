@@ -38,7 +38,12 @@ function instanteUtc(anio: number, mes: number, dia: number, hora: string): stri
  * ATA D7 (modo mock): una sesión por cada franja semanal y por cada fecha del rango `desde`-`hasta` (YYYY-MM-DD) que
  * caiga en el día de la franja, con la forma de `SesionCalendarioResponse`.
  */
-export function mockSesionesCalendario(franjas: FranjaMock[], desde: string, hasta: string): SesionCalendario[] {
+export function mockSesionesCalendario(
+  franjas: FranjaMock[],
+  desde: string,
+  hasta: string,
+  recesos: readonly { fecha: string; motivo: string }[] = [],
+): SesionCalendario[] {
   const [a, m, d] = desde.split('-').map(Number);
   const inicio = Date.UTC(a, m - 1, d);
   const fin = Date.parse(`${hasta}T00:00:00Z`);
@@ -46,6 +51,8 @@ export function mockSesionesCalendario(franjas: FranjaMock[], desde: string, has
   for (let t = inicio; t <= fin; t += 24 * 60 * 60 * 1000) {
     const fecha = new Date(t);
     const iso = fecha.toISOString().slice(0, 10);
+    // DEC-081: un día de receso cancela la sesión; el motivo llega con el prefijo y sin nombre de festivo.
+    const receso = recesos.find((r) => r.fecha === iso);
     for (const franja of franjas.filter((f) => DIA_A_NUMERO[f.dia] === fecha.getUTCDay())) {
       const [anio, mes, dia] = [fecha.getUTCFullYear(), fecha.getUTCMonth() + 1, fecha.getUTCDate()];
       sesiones.push({
@@ -60,9 +67,9 @@ export function mockSesionesCalendario(franjas: FranjaMock[], desde: string, has
         fechaHoraInicioUtc: instanteUtc(anio, mes, dia, franja.horaInicio),
         fechaHoraFinUtc: instanteUtc(anio, mes, dia, franja.horaFin),
         esExtraordinaria: false,
-        estaCancelada: false,
-        motivoCancelacion: null,
-        esCancelacionAutomatica: false,
+        estaCancelada: !!receso,
+        motivoCancelacion: receso ? `Receso académico: ${receso.motivo}` : null,
+        esCancelacionAutomatica: !!receso,
         nombreDiaFestivo: null,
       });
     }

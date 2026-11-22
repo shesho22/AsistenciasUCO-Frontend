@@ -61,6 +61,11 @@ UI_ADMIN_FACULTADES_008|UI058|Funcional|Información|UI_ADMIN_FACULTADES_008|Dec
 UI_ADMIN_PERIODOS_001|UI059|Funcional|Información|UI_ADMIN_PERIODOS_001|Período académico guardado.
 UI_ADMIN_PERIODOS_002|UI060|Funcional|Información|UI_ADMIN_PERIODOS_002|Período {codigo} eliminado.
 UI_ADMIN_PERIODOS_003|UI061|Funcional|Información|UI_ADMIN_PERIODOS_003|No se pudo guardar el período académico.
+UI_ADMIN_PERIODOS_004|UI145|Funcional|Información|UI_ADMIN_PERIODOS_004|Período creado y días de receso registrados.
+UI_ADMIN_PERIODOS_005|UI146|Funcional|Información|UI_ADMIN_PERIODOS_005|El período se creó, pero algunos días de receso no se registraron.
+UI_ADMIN_RECESOS_001|UI147|Funcional|Información|UI_ADMIN_RECESOS_001|Día de receso registrado.
+UI_ADMIN_RECESOS_002|UI148|Funcional|Información|UI_ADMIN_RECESOS_002|No se pudo registrar el día de receso.
+UI_ADMIN_RECESOS_003|UI149|Funcional|Información|UI_ADMIN_RECESOS_003|Día de receso retirado.
 UI_ADMIN_SIN_INSTITUCION_001|UI140|Funcional|Información|UI_ADMIN_SIN_INSTITUCION_001|Aún no tiene una institución asignada
 UI_ADMIN_SIN_INSTITUCION_002|UI141|Funcional|Información|UI_ADMIN_SIN_INSTITUCION_002|Solicítela al soporte institucional. Cuando la tenga, aquí verá los datos de la institución.
 UI_ADMIN_SYSTEM_001|UI062|Funcional|Información|UI_ADMIN_SYSTEM_001|Debe seleccionar un período válido para ejecutar el cierre.

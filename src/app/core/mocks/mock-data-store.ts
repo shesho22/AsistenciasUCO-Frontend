@@ -38,6 +38,7 @@ import {
   MOCK_REPORTES_CIERRE,
   MOCK_INSTITUCIONES,
 } from './role-management.mock';
+import { RecesoAcademico } from '../models/receso-academico.model';
 import { mockUuid } from './student-portal-mock.adapter';
 
 /**
@@ -61,6 +62,15 @@ class MockDataStore {
   asignaturasPlan: Record<string, AsignaturaPlanItem[]> = structuredClone(MOCK_ASIGNATURAS_PLAN);
   estudiantesDirectorio: EstudianteDirectorioItem[] = structuredClone(MOCK_ESTUDIANTES_DIRECTORIO);
   periodosAcademicos: PeriodoAcademicoItem[] = structuredClone(MOCK_PERIODOS_ACADEMICOS);
+  /** DEC-081: días de receso por id de período. Uno ya aplicado (canceló clases) y uno sin aplicar. */
+  recesosAcademicos: Record<string, RecesoAcademico[]> = {
+    'PER-2026-2': [
+      { id: 'REC-MOCK-1', fecha: '2026-12-03', motivo: 'Semana institucional', sesionesCanceladas: 6, estaAplicado: true, puedeRetirarse: false },
+    ],
+    'PER-2027-1': [
+      { id: 'REC-MOCK-2', fecha: '2027-03-25', motivo: 'Jueves Santo', sesionesCanceladas: 0, estaAplicado: false, puedeRetirarse: true },
+    ],
+  };
   facultades: FacultadItem[] = structuredClone(MOCK_FACULTADES);
   areasConocimiento: AreaConocimientoItem[] = structuredClone(MOCK_AREAS_CONOCIMIENTO);
   parametros: ParametroInstitucionalItem[] = structuredClone(MOCK_PARAMETROS);

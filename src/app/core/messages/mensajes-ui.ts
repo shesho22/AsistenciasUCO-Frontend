@@ -74,6 +74,11 @@ export const MENSAJES_UI = {
   UI_ADMIN_PERIODOS_001: 'Período académico guardado.',
   UI_ADMIN_PERIODOS_002: 'Período {codigo} eliminado.',
   UI_ADMIN_PERIODOS_003: 'No se pudo guardar el período académico.',
+  UI_ADMIN_PERIODOS_004: 'Período creado y días de receso registrados.',
+  UI_ADMIN_PERIODOS_005: 'El período se creó, pero algunos días de receso no se registraron.',
+  UI_ADMIN_RECESOS_001: 'Día de receso registrado.',
+  UI_ADMIN_RECESOS_002: 'No se pudo registrar el día de receso.',
+  UI_ADMIN_RECESOS_003: 'Día de receso retirado.',
   // HU178: aviso para el administrador que aún no tiene institución asignada (KPI_004; estado informativo, no un error).
   UI_ADMIN_SIN_INSTITUCION_001: 'Aún no tiene una institución asignada',
   UI_ADMIN_SIN_INSTITUCION_002: 'Solicítela al soporte institucional. Cuando la tenga, aquí verá los datos de la institución.',

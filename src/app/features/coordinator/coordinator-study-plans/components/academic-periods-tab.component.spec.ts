@@ -1,4 +1,7 @@
 import { ComponentFixture, DeferBlockState, TestBed } from '@angular/core/testing';
+import { provideHttpClient, withXhr } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { environment } from '../../../../../environments/environment';
 import { AcademicPeriodsTabComponent } from './academic-periods-tab.component';
 import { PeriodoAcademicoItem } from '../../../../core/models/role-management.model';
 
@@ -17,7 +20,10 @@ describe('AcademicPeriodsTabComponent', () => {
   const texto = (): string => (fixture.nativeElement as HTMLElement).textContent ?? '';
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ imports: [AcademicPeriodsTabComponent] });
+    TestBed.configureTestingModule({
+      imports: [AcademicPeriodsTabComponent],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting()],
+    });
     fixture = TestBed.createComponent(AcademicPeriodsTabComponent);
     component = fixture.componentInstance;
     fixture.componentRef.setInput('periodos', [periodo(1)]);
@@ -68,6 +74,64 @@ describe('AcademicPeriodsTabComponent', () => {
     fixture.detectChanges();
     expect(texto()).not.toContain('Nuevo Período Académico');
     expect(texto()).not.toContain('Editar Fechas');
+  });
+
+  it('DEC-081: crear con días de receso agregados los emite junto al período; sin días, el evento no cambia', async () => {
+    const emitidos: unknown[] = [];
+    component.savePeriodo.subscribe((e) => emitidos.push(e));
+    component.abrirCrear();
+    fixture.detectChanges();
+    const deferBlocks = await fixture.getDeferBlocks();
+    await Promise.all(deferBlocks.map((block) => block.render(DeferBlockState.Complete)));
+    fixture.detectChanges();
+    const datos = { nombre: '2027-1', fechaInicio: '2027-02-01', fechaFin: '2027-05-24' };
+    const modal = fixture.debugElement.query((d) => d.name === 'app-academic-period-form-modal').componentInstance as {
+      recesosChange: { emit(v: unknown): void };
+    };
+    const recesos = [{ fecha: '2027-03-25', motivo: 'Jueves Santo' }];
+    modal.recesosChange.emit(recesos);
+    component.guardar(datos);
+    expect(emitidos).toEqual([{ modo: 'CREAR', id: undefined, datos, recesos }]);
+
+    component.cerrarFormulario();
+    component.abrirCrear();
+    component.guardar(datos);
+    expect(emitidos[1]).toEqual({ modo: 'CREAR', id: undefined, datos });
+  });
+
+  it('DEC-081: al editar no envía días de receso pendientes', () => {
+    const emitidos: unknown[] = [];
+    component.savePeriodo.subscribe((e) => emitidos.push(e));
+    const datos = { nombre: '2026-1', fechaInicio: '2026-01-01', fechaFin: '2026-06-01' };
+    component.abrirEditar(periodo(1));
+    component.guardar(datos);
+    expect(emitidos).toEqual([{ modo: 'EDITAR', id: 'p1', datos }]);
+  });
+
+  it('DEC-081: en solo lectura cada período permite ver y ocultar sus días de receso (ruta de consulta)', () => {
+    const http = TestBed.inject(HttpTestingController);
+    fixture.componentRef.setInput('soloLectura', true);
+    fixture.detectChanges();
+    const raiz = fixture.nativeElement as HTMLElement;
+    const boton = raiz.querySelector<HTMLButtonElement>('[data-testid="ver-recesos"]') as HTMLButtonElement;
+    expect(boton.textContent).toContain('Ver receso');
+    boton.click();
+    fixture.detectChanges();
+    http.expectOne(`${environment.apiUrl}/coordinador/periodos-academicos/p1/recesos`).flush({
+      exitoso: true,
+      datos: [{ id: 'r1', fecha: '2026-03-25', motivo: 'Jueves Santo', sesionesCanceladas: 4, estaAplicado: true, puedeRetirarse: false }],
+    });
+    fixture.detectChanges();
+    const panel = raiz.querySelector('[data-testid="recesos-periodo"]');
+    expect(panel?.textContent).toContain('Jueves Santo');
+    expect(panel?.textContent).toContain('Aplicado: 4 clases canceladas');
+    expect(boton.textContent).toContain('Ocultar receso');
+    expect(boton.getAttribute('aria-pressed')).toBe('true');
+
+    boton.click();
+    fixture.detectChanges();
+    expect(raiz.querySelector('[data-testid="recesos-periodo"]')).toBeNull();
+    http.verify();
   });
 
   it('pagina de a 15 y muestra el estado vacio', () => {

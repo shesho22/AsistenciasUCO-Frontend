@@ -1,4 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideHttpClient, withXhr } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { environment } from '../../../../../environments/environment';
 import { AcademicPeriodFormModalComponent, PeriodoFormDatos } from './academic-period-form-modal.component';
 import { PeriodoAcademicoItem } from '../../../../core/models/role-management.model';
 
@@ -24,7 +27,12 @@ describe('AcademicPeriodFormModalComponent', () => {
   const guardar = (): HTMLButtonElement =>
     (fixture.nativeElement as HTMLElement).querySelector('button[type="submit"]') as HTMLButtonElement;
 
-  beforeEach(() => TestBed.configureTestingModule({ imports: [AcademicPeriodFormModalComponent] }));
+  beforeEach(() =>
+    TestBed.configureTestingModule({
+      imports: [AcademicPeriodFormModalComponent],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting()],
+    })
+  );
 
   it('al crear no precarga datos y deshabilita Guardar', () => {
     crear();
@@ -142,6 +150,38 @@ describe('AcademicPeriodFormModalComponent', () => {
     fixture.componentRef.setInput('error', 'Ya existe un período con ese nombre.');
     fixture.detectChanges();
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('Ya existe un período con ese nombre.');
+  });
+
+  it('DEC-081: al crear muestra la sección de días de receso sin consultar el backend y avisa los días agregados', () => {
+    crear();
+    const http = TestBed.inject(HttpTestingController);
+    const emitidos: unknown[] = [];
+    component.recesosChange.subscribe((r) => emitidos.push(r));
+    const raiz = fixture.nativeElement as HTMLElement;
+    expect(raiz.textContent ?? '').toContain('Días de receso académico');
+    http.expectNone(`${environment.apiUrl}/admin/periodos-academicos/p1/recesos`);
+
+    component.fechaInicio.set('2026-08-03');
+    fixture.detectChanges();
+    const fecha = raiz.querySelector<HTMLInputElement>('[data-testid="receso-fecha"]') as HTMLInputElement;
+    const motivo = raiz.querySelector<HTMLInputElement>('[data-testid="receso-motivo"]') as HTMLInputElement;
+    fecha.value = '2026-09-07';
+    fecha.dispatchEvent(new Event('input'));
+    motivo.value = 'Puente festivo';
+    motivo.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    raiz.querySelector<HTMLButtonElement>('[data-testid="agregar-receso"]')?.click();
+    expect(emitidos).toEqual([[{ fecha: '2026-09-07', motivo: 'Puente festivo' }]]);
+    http.verify();
+  });
+
+  it('DEC-081: al editar carga los días de receso del período', () => {
+    crear(periodo);
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne(`${environment.apiUrl}/admin/periodos-academicos/p1/recesos`).flush({ exitoso: true, datos: [] });
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="sin-recesos"]')).not.toBeNull();
+    http.verify();
   });
 
   it('cancelar cierra salvo que esté guardando', () => {
