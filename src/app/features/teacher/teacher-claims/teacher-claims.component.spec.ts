@@ -131,6 +131,17 @@ describe('TeacherClaimsComponent', () => {
       error: { timestamp: '2026-11-16T10:00:00Z', status, error: 'Error', code, message, path: '/api/v1/docente/reclamos', correlationId: null },
     });
 
+  it('FE-8: la bandeja muestra el nombre del grupo tal cual, sin anteponer otro «Grupo»', () => {
+    claimServiceSpy.getReclamosDocente.and.returnValue(
+      of({ exitoso: true, total: 1, datos: [{ ...mockReclamos[0], grupo: 'Grupo 01 - Arquitectura' }] })
+    );
+    component.cargarReclamos();
+    fixture.detectChanges();
+    const texto = ((fixture.nativeElement as HTMLElement).textContent ?? '').replace(/\s+/g, ' ');
+    expect(texto).toContain('Grupo 01 - Arquitectura · Sesión #1');
+    expect(texto).not.toContain('Grupo Grupo');
+  });
+
   it('un 501 inesperado se muestra con el mensaje del backend, sin texto técnico ni código HTTP', () => {
     claimServiceSpy.getReclamosDocente.and.returnValue(throwError(() => errorApi(501, 'FEATURE_UNAVAILABLE', 'Esta funcionalidad no está disponible por el momento.')));
     component.cargarReclamos();

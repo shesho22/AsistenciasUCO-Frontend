@@ -18,6 +18,7 @@ import { SessionTimeZoneService } from '../../../core/services/session-timezone.
 import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load-error.util';
 import { ButtonComponent } from '../../../shared/components/button/button.component';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
+import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
@@ -30,7 +31,7 @@ type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
 @Component({
     selector: 'app-student-claims',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [PageHeaderComponent, EmptyStateComponent, CommonModule, CardComponent, BadgeComponent, TablaDatosComponent, ButtonComponent],
+    imports: [PageHeaderComponent, EmptyStateComponent, CommonModule, CardComponent, BadgeComponent, TablaDatosComponent, ButtonComponent, ConfirmDialogComponent],
     template: `
     <div class="space-y-4 animate-fade-in">
       <app-page-header
@@ -161,7 +162,7 @@ type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
                         type="button"
                         data-accion="retirar-reclamo"
                         [disabled]="retirando() === reclamo.id"
-                        (click)="retirar(reclamo)"
+                        (click)="pedirRetiro(reclamo)"
                         class="px-3 py-2 min-h-[44px] text-xs font-medium text-danger-700 bg-danger-50 hover:bg-danger-100 border border-danger-200 rounded-lg disabled:opacity-60"
                         title="Retirar solicitud de revisión pendiente"
                       >
@@ -175,6 +176,15 @@ type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
           </tbody>
         </app-tabla-datos>
       }
+      <app-confirm-dialog
+        [isOpen]="retiroPendiente() !== null"
+        [title]="textos.tituloRetiro"
+        [message]="textos.mensajeRetiro"
+        [confirmLabel]="textos.confirmarRetiro"
+        [destructive]="true"
+        (confirmed)="confirmarRetiro()"
+        (cancelled)="retiroPendiente.set(null)"
+      />
     </div>
   `
 })
@@ -196,6 +206,13 @@ export class StudentClaimsComponent implements OnInit, OnDestroy {
   readonly descargando = signal(false);
   /** id del reclamo que se está retirando (evita el doble envío). */
   readonly retirando = signal<string | null>(null);
+  /** Solicitud cuyo retiro espera confirmación (el retiro no se puede deshacer). */
+  readonly retiroPendiente = signal<SolicitudRevisionItem | null>(null);
+  readonly textos = {
+    tituloRetiro: mensajeUi('UI_STUDENT_CLAIMS_003'),
+    mensajeRetiro: mensajeUi('UI_STUDENT_CLAIMS_004'),
+    confirmarRetiro: mensajeUi('UI_STUDENT_CLAIMS_005'),
+  };
 
   /** "Toma N · HH:mm" cuando el reclamo es de una toma; `null` si es de la sesión. */
   textoToma(reclamo: SolicitudRevisionItem): string | null {
@@ -298,6 +315,17 @@ export class StudentClaimsComponent implements OnInit, OnDestroy {
 
   etiqueta(estado: EstadoSolicitudRevision): string {
     return etiquetaEstadoReclamo(estado);
+  }
+
+  pedirRetiro(reclamo: SolicitudRevisionItem): void {
+    if (this.retirando()) return;
+    this.retiroPendiente.set(reclamo);
+  }
+
+  confirmarRetiro(): void {
+    const reclamo = this.retiroPendiente();
+    this.retiroPendiente.set(null);
+    if (reclamo) this.retirar(reclamo);
   }
 
   /** A.2-7: retira una solicitud pendiente; el mensaje y los errores son los del backend. */

@@ -148,6 +148,10 @@ describe('StudentClaimsComponent (HU010/HU011: consulta del estudiante)', () => 
     expect(botones).toHaveSize(1);
 
     botones[0].click();
+    fixture.detectChanges();
+    http.expectNone(`${ENDPOINT}/sol-1`);
+    expect(el.querySelector('[role="alertdialog"]')).not.toBeNull();
+    component.confirmarRetiro();
     const del = http.expectOne(`${ENDPOINT}/sol-1`);
     expect(del.request.method).toBe('DELETE');
     del.flush({ exitoso: true, mensaje: 'La solicitud de revisión fue retirada.' });
@@ -157,10 +161,19 @@ describe('StudentClaimsComponent (HU010/HU011: consulta del estudiante)', () => 
 
   it('A2-F-01 un 409 al retirar muestra el message del backend y no recarga', () => {
     (fixture.nativeElement.querySelector('[data-accion="retirar-reclamo"]') as HTMLButtonElement).click();
+    component.confirmarRetiro();
     http
       .expectOne(`${ENDPOINT}/sol-1`)
       .flush({ message: 'Solo se puede retirar una solicitud de revisión pendiente.' }, { status: 409, statusText: 'Conflict' });
     expect(toastSpy.error).toHaveBeenCalledWith('Solo se puede retirar una solicitud de revisión pendiente.');
+  });
+
+  it('FE-8: cancelar la confirmación no retira la solicitud', () => {
+    (fixture.nativeElement.querySelector('[data-accion="retirar-reclamo"]') as HTMLButtonElement).click();
+    expect(component.retiroPendiente()?.id).toBe('sol-1');
+    component.retiroPendiente.set(null);
+    component.confirmarRetiro();
+    http.expectNone(`${ENDPOINT}/sol-1`);
   });
 
   it('SC-02 filtra por estado y reinicia la página', () => {

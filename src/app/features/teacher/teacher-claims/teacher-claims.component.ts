@@ -173,7 +173,7 @@ const BUSQUEDA_ESPERA_MS = 300;
                     </td>
                     <td class="text-xs">
                       <p class="font-semibold text-warm-900">{{ reclamo.materiaNombre }}</p>
-                      <p class="text-warm-600">Grupo {{ reclamo.grupo }} · Sesión #{{ reclamo.sesionNumero }} ({{ reclamo.fechaSesion }})</p>
+                      <p class="text-warm-600">{{ reclamo.grupo }} · Sesión #{{ reclamo.sesionNumero }} ({{ reclamo.fechaSesion }})</p>
                       @if (textoTomaTarjeta(reclamo); as toma) {
                         <p class="font-semibold text-warm-900" data-testid="tarjeta-toma">{{ toma }}</p>
                       }
@@ -294,7 +294,7 @@ const BUSQUEDA_ESPERA_MS = 300;
                 {{ selectedReclamo()?.materiaNombre }} ({{ selectedReclamo()?.materiaCodigo }})
               </h4>
               <p class="text-xs text-warm-600">
-                Grupo: {{ selectedReclamo()?.grupo }} • Sesión #{{ selectedReclamo()?.sesionNumero }} ({{ selectedReclamo()?.fechaSesion }})
+                {{ selectedReclamo()?.grupo }} • Sesión #{{ selectedReclamo()?.sesionNumero }} ({{ selectedReclamo()?.fechaSesion }})
               </p>
               @if (textoTomaReclamada(selectedReclamo()); as toma) {
                 <p class="text-xs font-bold text-warm-900" data-testid="detalle-toma">{{ toma }}</p>

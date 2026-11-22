@@ -381,7 +381,8 @@ export class AttendanceControlComponent {
   tomaAbierta = computed(() => this.tomasSesionActual()?.tomas.find((t) => t.estado === 'ABIERTA') ?? null);
   tituloProyeccion = computed(() => {
     const c = this.currentCourse();
-    return c ? `${c.name} · Grupo ${c.section}` : 'Asistencia';
+    // `section` ya es el nombre completo del grupo (p. ej. «Grupo 01 - Materia»): no se antepone otro «Grupo».
+    return c ? `${c.name} · ${c.section}` : 'Asistencia';
   });
 
   // Estado para Info del Grupo & Alumnos

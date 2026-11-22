@@ -442,6 +442,8 @@ describe('AttendanceControlComponent contract corrections', () => {
     expect(sessionService.getSessionsByGroup).toHaveBeenCalledWith(grupoId);
     expect(component.sessions()).toHaveSize(2);
     expect(component.showToast()).toBeFalse();
+    // FE-8: el nombre del grupo ya trae «Grupo»; el título de la proyección no lo repite.
+    expect(component.tituloProyeccion()).toBe('Arquitectura de Software · Grupo 001 - Arq Software');
   });
 
   it('muestra feedback útil ante UNAUTHORIZED realtime', () => {

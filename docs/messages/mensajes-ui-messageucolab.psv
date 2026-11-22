@@ -116,6 +116,9 @@ UI_SESION_SOLICITUD_REGISTRADA|UI102|Funcional|Información|UI_SESION_SOLICITUD_
 UI_SOPORTE_DESCARGADO|UI103|Funcional|Información|UI_SOPORTE_DESCARGADO|Soporte "{nombre}" descargado.
 UI_STUDENT_CLAIMS_001|UI104|Funcional|Información|UI_STUDENT_CLAIMS_001|Esta solicitud no tiene un soporte descargable.
 UI_STUDENT_CLAIMS_002|UI105|Funcional|Información|UI_STUDENT_CLAIMS_002|Solicitud retirada.
+UI_STUDENT_CLAIMS_003|UI150|Funcional|Información|UI_STUDENT_CLAIMS_003|Retirar solicitud de revisión
+UI_STUDENT_CLAIMS_004|UI151|Funcional|Información|UI_STUDENT_CLAIMS_004|¿Retirar esta solicitud? Dejará de estar pendiente y el docente ya no la evaluará.
+UI_STUDENT_CLAIMS_005|UI152|Funcional|Información|UI_STUDENT_CLAIMS_005|Sí, retirar solicitud
 UI_STUDENT_COURSES_001|UI106|Funcional|Información|UI_STUDENT_COURSES_001|El archivo no es válido.
 UI_STUDENT_COURSES_002|UI107|Funcional|Información|UI_STUDENT_COURSES_002|Reclamo enviado.
 UI_STUDENT_COURSES_003|UI108|Funcional|Información|UI_STUDENT_COURSES_003|El soporte adjunto ya no está disponible. Adjúntalo nuevamente.
