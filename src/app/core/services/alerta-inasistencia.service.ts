@@ -3,9 +3,8 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, EMPTY } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
-import { AlertaInasistencia, FiltroAlertasEstudiante, MarcarLecturaResponse } from '../models/alerta-inasistencia.model';
+import { AlertaInasistencia, FiltroAlertasEstudiante } from '../models/alerta-inasistencia.model';
 import { ApiPageResponse } from '../api/models/api-page-response.model';
-import { ApiResponse } from '../models/api-response.model';
 
 @Injectable({
   providedIn: 'root',
@@ -50,13 +49,6 @@ export class AlertaInasistenciaService {
   contarNoLeidas(): Observable<number> {
     return this.consultar({ soloNoLeidas: true, tamano: 1 }).pipe(
       map((res) => Number(res.totalElementos ?? 0))
-    );
-  }
-
-  marcarLeidas(ids: string[]): Observable<MarcarLecturaResponse> {
-    if (!this.http) return EMPTY;
-    return this.http.post<ApiResponse<MarcarLecturaResponse>>(`${this.baseUrl}/marcar-lectura`, { ids }).pipe(
-      map((res) => res.datos ?? { marcadas: ids.length })
     );
   }
 }

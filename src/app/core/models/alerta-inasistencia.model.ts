@@ -48,7 +48,3 @@ export interface FiltroAlertasEstudiante {
   pagina?: number;
   tamano?: number;
 }
-
-export interface MarcarLecturaResponse {
-  marcadas: number;
-}
