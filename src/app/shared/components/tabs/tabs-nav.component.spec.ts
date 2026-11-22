@@ -109,6 +109,25 @@ describe('TabsNavComponent', () => {
     expect(await tecla('a')).toBe('/x/uno');
   });
 
+  it('FE-7: la pestaña activa se acerca a la vista dentro de la barra con scroll', async () => {
+    TestBed.configureTestingModule({ providers: [provideRouter(rutas)] });
+    const fixture = TestBed.createComponent(AisladoComponent);
+    document.body.appendChild(fixture.nativeElement);
+    const llamadas: unknown[] = [];
+    const original = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = function (arg?: boolean | ScrollIntoViewOptions) {
+      llamadas.push([this.id, arg]);
+    };
+    try {
+      fixture.detectChanges();
+      await fixture.whenStable();
+      expect(llamadas).toContain(['tab-dos', { block: 'nearest', inline: 'nearest' }]);
+    } finally {
+      Element.prototype.scrollIntoView = original;
+      fixture.nativeElement.remove();
+    }
+  });
+
   it('valores por defecto: etiqueta "Secciones" y panel "panel-pestanas"', () => {
     TestBed.configureTestingModule({ providers: [provideRouter(rutas)] });
     const fixture = TestBed.createComponent(AisladoComponent);

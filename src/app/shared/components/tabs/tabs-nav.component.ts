@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, afterNextRender, computed, effect, inject, input, Injector } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
 import { filter, map, startWith } from 'rxjs';
@@ -77,6 +77,19 @@ export class TabsNavComponent {
   readonly etiqueta = input<string>('Secciones');
   /** Id del panel que controlan las pestañas. */
   readonly idPanel = input<string>('panel-pestanas');
+
+  private readonly injector = inject(Injector);
+
+  constructor() {
+    // En móvil la barra hace scroll propio: la pestaña activa se acerca a la vista para que no quede cortada.
+    effect(() => {
+      const id = this.activa();
+      afterNextRender(
+        () => document.getElementById('tab-' + id)?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' }),
+        { injector: this.injector }
+      );
+    });
+  }
 
   private readonly indiceActivo = computed(() => this.tabs().findIndex((t) => t.id === this.activa()));
 

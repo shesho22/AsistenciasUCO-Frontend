@@ -259,6 +259,26 @@ describe('ConsolidadoAsistenciaComponent (HU061)', () => {
       expect(boton.getAttribute('aria-expanded')).toBe('false');
     });
 
+    it('FE-7: un grupo compartido por dos programas se expande solo en la fila pulsada y consulta las sesiones una vez', async () => {
+      const fixture = crear(true);
+      const base = grupo('ASG-1', 'Cálculo', 'DOC-1');
+      listar(fixture, 'decano', [base, { ...base, idPrograma: 'PRG-2', nombrePrograma: 'Psicología' }]);
+      const botones = Array.from(el(fixture).querySelectorAll<HTMLButtonElement>('[data-testid="expandir-G-ASG-1"]'));
+      expect(botones.length).toBe(2);
+
+      botones[0].click();
+      fixture.detectChanges();
+      const deferBlocks = await fixture.getDeferBlocks();
+      await Promise.all(deferBlocks.map((block) => block.render(DeferBlockState.Complete)));
+      fixture.detectChanges();
+      http.expectOne((r) => r.url === `${api}/decano/sesiones`).flush({ elementos: [], numeroPagina: 1, tamanoPagina: 50, totalElementos: 0, totalPaginas: 1 });
+      fixture.detectChanges();
+
+      expect(botones[0].getAttribute('aria-expanded')).toBe('true');
+      expect(botones[1].getAttribute('aria-expanded')).toBe('false');
+      expect(el(fixture).querySelectorAll('[data-testid="sesiones-G-ASG-1"]').length).toBe(1);
+    });
+
     it('el coordinador expande una fila y ve las sesiones de su grupo con la opción de cancelar', async () => {
       const fixture = crear(false);
       listar(fixture, 'coordinador', [grupo('ASG-1', 'Cálculo', 'DOC-1')]);

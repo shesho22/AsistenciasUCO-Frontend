@@ -31,6 +31,15 @@ export interface SesionCancelada {
 export const MOTIVO_CANCELACION_MIN = 10;
 export const MOTIVO_CANCELACION_MAX = 500;
 
+/**
+ * Rótulo de una sesión NO cancelada para listados de solo lectura: "Dictada" si su hora de fin ya pasó, si no "Programada".
+ * Sin hora de fin confiable devuelve "Programada" (no se afirma que ya se dictó).
+ */
+export function rotuloSesionNoCancelada(fin: string | null | undefined, ahora: number = Date.now()): 'Programada' | 'Dictada' {
+  const instante = fin ? Date.parse(fin) : Number.NaN;
+  return Number.isFinite(instante) && instante < ahora ? 'Dictada' : 'Programada';
+}
+
 export function estaCancelada(sesion: { estado?: EstadoSesion | null } | null | undefined): boolean {
   return sesion?.estado === 'CANCELADA';
 }
