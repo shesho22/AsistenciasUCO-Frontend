@@ -290,6 +290,17 @@ describe('GroupSessionsOverviewComponent', () => {
       expect(abiertas).toEqual(['sesion-1']);
     });
 
+    it('la sesión se abre con teclado: el número de sesión es un botón y emite una sola vez', () => {
+      const comp = renderConBanderas([session(1)]);
+      const abiertas: string[] = [];
+      comp.selectSession.subscribe((id) => abiertas.push(id));
+      const boton = (fixture.nativeElement as HTMLElement).querySelector('tbody tr td button') as HTMLButtonElement;
+      expect(boton.type).toBe('button');
+      expect(boton.getAttribute('aria-label')).toBe('Abrir la toma de asistencia de la sesión 1');
+      boton.click();
+      expect(abiertas).toEqual(['sesion-1']);
+    });
+
     it('el panel del menú flota sobre la tabla para que no lo recorte su desplazamiento', () => {
       renderConBanderas([session(1)]);
       abrirAcciones(1);

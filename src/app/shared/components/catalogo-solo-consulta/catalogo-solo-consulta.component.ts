@@ -34,6 +34,7 @@ export interface FilaCatalogo {
       }
 
       <div class="bg-white rounded-2xl border border-warm-200 overflow-hidden">
+        <div class="tabla-scroll">
         <table class="w-full text-sm">
           <thead class="bg-warm-50 text-xs uppercase text-warm-600">
             <tr>
@@ -67,6 +68,7 @@ export interface FilaCatalogo {
             }
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   `,
