@@ -35,6 +35,21 @@ describe('AdminEmailCanalComponent', () => {
     expect(el().querySelector('[data-testid="canal-ultimo-error"]')?.textContent?.trim()).toBe('E1');
   });
 
+  it('muestra el último envío con fecha y hora dd/MM/yyyy HH:mm y el último error', () => {
+    fixture.componentRef.setInput('estado', { canalActivo: true, ultimoEnvioUtc: '2026-11-23T00:53:35Z', ultimoError: 'Fallo SMTP' });
+    fixture.detectChanges();
+    const envio = el().querySelector('[data-testid="canal-ultimo-envio"]')?.textContent?.trim();
+    expect(envio).toMatch(/^\d{2}\/\d{2}\/2026 \d{2}:\d{2}$/);
+    expect(el().querySelector('[data-testid="canal-ultimo-error"]')?.textContent?.trim()).toBe('Fallo SMTP');
+  });
+
+  it('sin último envío muestra el guion y sin errores el texto Sin errores', () => {
+    fixture.componentRef.setInput('estado', { canalActivo: true, ultimoEnvioUtc: null, ultimoError: null });
+    fixture.detectChanges();
+    expect(el().querySelector('[data-testid="canal-ultimo-envio"]')?.textContent?.trim()).toBe('—');
+    expect(el().querySelector('[data-testid="canal-ultimo-error"]')?.textContent?.trim()).toBe('Sin errores');
+  });
+
   it('muestra el aviso del backend cuando el servicio no está disponible', () => {
     fixture.componentRef.setInput('servicioNoDisponible', 'Mensaje del backend');
     fixture.detectChanges();
