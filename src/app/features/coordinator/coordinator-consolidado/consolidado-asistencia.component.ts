@@ -134,11 +134,11 @@ const NUMERO_ES = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 2 });
                     <td class="py-2 pr-3 text-right text-warm-700 max-md:hidden" data-label="% Excusa">{{ g.porcentajeExcusa | number: '1.0-2' }}%</td>
                     <td class="py-2 pr-3 text-right text-warm-700 max-md:hidden" data-label="% Sin registro">{{ g.porcentajeSinRegistro | number: '1.0-2' }}%</td>
                     @if (hayPorDictar()) {
-                      <td class="py-2 pr-3 text-right text-warm-700 max-md:hidden" data-label="% Por dictar" data-testid="por-dictar">{{ g.porcentajePorDictar == null ? '—' : (g.porcentajePorDictar | number: '1.0-2') + '%' }}</td>
+                      <td class="py-2 pr-3 text-right text-warm-700 max-md:hidden" data-label="% Por dictar" data-testid="por-dictar">{{ (g.porcentajePorDictar ?? null) === null ? '—' : (g.porcentajePorDictar | number: '1.0-2') + '%' }}</td>
                     }
                     <td class="py-2 pr-3 min-w-[8rem] max-md:hidden" data-label="Distribución">
                       <div class="flex h-3 w-full overflow-hidden rounded bg-warm-100" role="img" data-testid="barra-distribucion"
-                        [attr.aria-label]="'Asistencia ' + g.porcentajeAsistencia + '%, inasistencia ' + g.porcentajeInasistencia + '%, excusa ' + g.porcentajeExcusa + '%, sin registro ' + g.porcentajeSinRegistro + '%' + (g.porcentajePorDictar == null ? '' : ', por dictar ' + g.porcentajePorDictar + '%')">
+                        [attr.aria-label]="'Asistencia ' + g.porcentajeAsistencia + '%, inasistencia ' + g.porcentajeInasistencia + '%, excusa ' + g.porcentajeExcusa + '%, sin registro ' + g.porcentajeSinRegistro + '%' + ((g.porcentajePorDictar ?? null) === null ? '' : ', por dictar ' + g.porcentajePorDictar + '%')">
                         <span class="h-3 bg-success-600" data-testid="segmento-asistencia" [style.width.%]="g.porcentajeAsistencia"></span>
                         <span class="h-3 bg-danger-500" data-testid="segmento-inasistencia" [style.width.%]="g.porcentajeInasistencia"></span>
                         <span class="h-3 bg-warning-500" data-testid="segmento-excusa" [style.width.%]="g.porcentajeExcusa"></span>
