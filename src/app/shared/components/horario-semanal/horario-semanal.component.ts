@@ -77,15 +77,15 @@ const COLORES_CLASE = [
               <div class="p-2 flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2 items-start content-center">
                 @for (s of sesionesDe(dia); track s.idSesion) {
                   @if (rol() === 'DOCENTE') {
-                    <!-- MEJORAS-SERGIO 9: la franja del docente abre el grupo; dentro de un <button> solo va contenido de frase. -->
+                    <!-- La franja del docente abre la toma de esa sesión; dentro de un <button> solo va contenido de frase. -->
                     <button
                       type="button"
                       class="block w-full text-left p-2.5 rounded-xl border text-warm-800 shadow-xs cursor-pointer transition-all hover:brightness-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-600"
                       [class]="color(s)"
                       [attr.data-testid]="'sesion-' + s.idSesion"
                       [attr.aria-label]="etiquetaFranja(s)"
-                      title="Abrir la materia y el grupo"
-                      (click)="abrirGrupo(s)"
+                      title="Abrir la toma de asistencia de esta sesión"
+                      (click)="abrirToma(s)"
                     >
                       <ng-container *ngTemplateOutlet="contenidoSesion; context: { $implicit: s }" />
                     </button>
@@ -187,9 +187,15 @@ export class HorarioSemanalComponent implements OnInit, OnDestroy {
     return COLORES_CLASE[indice];
   }
 
-  /** MEJORAS-SERGIO 9: la franja del docente lleva al hub del grupo (`/app/docente/grupos?grupo=<id>`, mismo enlace que usa el padrón). */
-  abrirGrupo(sesion: SesionCalendario): void {
-    void this.router.navigate(['/app/docente/grupos'], sesion.idGrupo ? { queryParams: { grupo: sesion.idGrupo } } : {});
+  /**
+   * La franja del docente abre la toma de asistencia de esa sesión (`/app/asistencia?courseId=<grupo>&sessionId=<sesión>`,
+   * el mismo enlace que entiende el control de asistencia). Sin grupo, abre el control sin preselección.
+   */
+  abrirToma(sesion: SesionCalendario): void {
+    void this.router.navigate(
+      ['/app/asistencia'],
+      sesion.idGrupo ? { queryParams: { courseId: sesion.idGrupo, sessionId: sesion.idSesion } } : {}
+    );
   }
 
   /** Nombre accesible de la franja: materia, grupo, día y horario en la zona institucional, y su estado si aplica. */
