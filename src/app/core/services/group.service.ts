@@ -1,6 +1,6 @@
-import { HttpClient, HttpContext } from '@angular/common/http';
+import { HttpClient, HttpContext, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, delay, of } from 'rxjs';
+import { Observable, catchError, delay, from, of, switchMap, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiListResponse } from '../api/models/api-list-response.model';
 import { EstudianteGrupoApiDto } from '../api/models/estudiante-grupo-api-dto.model';
@@ -71,8 +71,37 @@ export class GroupService {
   }
 
   descargarPlanillaExcel(grupoId: string): Observable<Blob> {
-    return this.http.get(`${environment.apiUrl}/grupos/${grupoId}/reportes/asistencia-excel`, {
-      responseType: 'blob',
-    });
+    return this.http
+      .get(`${environment.apiUrl}/grupos/${grupoId}/reportes/asistencia-excel`, {
+        responseType: 'blob',
+      })
+      .pipe(catchError((err: unknown) => this.errorDesdeBlob(err)));
+  }
+
+  /** Con responseType 'blob' el cuerpo del error llega como Blob: se lee el JSON para conservar el mensaje del backend. */
+  private errorDesdeBlob(err: unknown): Observable<never> {
+    if (!(err instanceof HttpErrorResponse) || !(err.error instanceof Blob)) {
+      return throwError(() => err);
+    }
+    return from(err.error.text()).pipe(
+      switchMap((texto) => {
+        let cuerpo: unknown = null;
+        try {
+          cuerpo = JSON.parse(texto);
+        } catch {
+          cuerpo = null;
+        }
+        return throwError(
+          () =>
+            new HttpErrorResponse({
+              error: cuerpo,
+              headers: err.headers,
+              status: err.status,
+              statusText: err.statusText,
+              url: err.url ?? undefined,
+            })
+        );
+      })
+    );
   }
 }

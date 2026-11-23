@@ -127,6 +127,7 @@ type StudentEnrollmentField =
         (openEnrollment)="openStudentRegistration()"
         (openNewSession)="openNewSessionModal()"
         (openProjection)="abrirSelectorModo()"
+        [exportingExcel]="descargandoPlanilla()"
         (exportExcel)="descargarPlanillaExcel()"
         (courseChange)="seleccionarCurso($event)"
         (sessionChange)="onSessionSelect($event)"
@@ -1513,11 +1514,15 @@ export class AttendanceControlComponent {
       });
   }
 
+  /** Descarga de la planilla Excel en curso (estado de carga del botón del encabezado). */
+  readonly descargandoPlanilla = signal(false);
+
   descargarPlanillaExcel(): void {
     const courseId = this.selectedCourseId();
-    if (!courseId) return;
+    if (!courseId || this.descargandoPlanilla()) return;
 
-    this.groupService.descargarPlanillaExcel(courseId).subscribe({
+    this.descargandoPlanilla.set(true);
+    this.groupService.descargarPlanillaExcel(courseId).pipe(finalize(() => this.descargandoPlanilla.set(false))).subscribe({
       next: (blob: Blob) => {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');

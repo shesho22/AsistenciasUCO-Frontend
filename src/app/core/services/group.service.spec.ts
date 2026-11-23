@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient, withXhr } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient, withXhr } from '@angular/common/http';
 import {
   HttpTestingController,
   provideHttpClientTesting,
@@ -62,6 +62,32 @@ describe('GroupService', () => {
     expect(req.request.method).toBe('GET');
     expect(req.request.responseType).toBe('blob');
     req.flush(new Blob(['excel'], { type: 'application/vnd.ms-excel' }));
+  });
+
+  it('descargarPlanillaExcel conserva el mensaje del backend cuando el error llega como blob', (done) => {
+    service.descargarPlanillaExcel('grupo-1').subscribe({
+      error: (err: HttpErrorResponse) => {
+        expect(err.status).toBe(403);
+        expect((err.error as { message: string }).message).toBe('Sin permiso sobre el grupo.');
+        done();
+      },
+    });
+    http
+      .expectOne(`${environment.apiUrl}/grupos/grupo-1/reportes/asistencia-excel`)
+      .flush(new Blob([JSON.stringify({ message: 'Sin permiso sobre el grupo.' })]), { status: 403, statusText: 'Forbidden' });
+  });
+
+  it('descargarPlanillaExcel relanza el error si el blob no es JSON', (done) => {
+    service.descargarPlanillaExcel('grupo-1').subscribe({
+      error: (err: HttpErrorResponse) => {
+        expect(err.status).toBe(500);
+        expect(err.error).toBeNull();
+        done();
+      },
+    });
+    http
+      .expectOne(`${environment.apiUrl}/grupos/grupo-1/reportes/asistencia-excel`)
+      .flush(new Blob(['no json']), { status: 500, statusText: 'Server Error' });
   });
 
   it('HU051 RT-08 retira al estudiante con POST y el motivo en el cuerpo', () => {

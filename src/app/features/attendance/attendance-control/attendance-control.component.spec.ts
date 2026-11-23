@@ -538,6 +538,20 @@ describe('AttendanceControlComponent contract corrections', () => {
     expect(component.toastMessage()).toContain('descargada');
   });
 
+  it('descargarPlanillaExcel marca la descarga en curso y la libera al terminar o fallar', () => {
+    const component = createComponent([activeStudent], []);
+    const respuesta = new Subject<Blob>();
+    groupService.descargarPlanillaExcel.and.returnValue(respuesta.asObservable());
+
+    component.descargarPlanillaExcel();
+    expect(component.descargandoPlanilla()).toBeTrue();
+    component.descargarPlanillaExcel();
+    expect(groupService.descargarPlanillaExcel).toHaveBeenCalledTimes(1);
+
+    respuesta.error(new Error('fallo'));
+    expect(component.descargandoPlanilla()).toBeFalse();
+  });
+
   it('descargarPlanillaExcel muestra error si el servicio falla', () => {
     const component = createComponent([activeStudent], []);
     groupService.descargarPlanillaExcel.and.returnValue(

@@ -99,6 +99,30 @@ describe('AttendanceControlHeaderComponent', () => {
 
   // HU175 (CULM-001 B.2): la ventana de asistencia la calcula la BD. Con la ventana cerrada (sesion futura,
   // finalizada o cancelada) no se ofrece proyectar un QR: el backend respondería 409 al abrir la toma.
+  describe('Descargar planilla (Excel)', () => {
+    it('muestra el botón accesible y emite exportExcel al pulsarlo', () => {
+      const emitido = jasmine.createSpy('exportExcel');
+      component.exportExcel.subscribe(emitido);
+      const boton = button(/Descargar planilla \(Excel\)/);
+      expect(boton).toBeTruthy();
+      expect(boton.disabled).toBeFalse();
+      boton.click();
+      expect(emitido).toHaveBeenCalledTimes(1);
+    });
+
+    it('con la descarga en curso queda deshabilitado', () => {
+      fixture.componentRef.setInput('exportingExcel', true);
+      fixture.detectChanges();
+      expect(button(/Descargar planilla \(Excel\)/).disabled).toBeTrue();
+    });
+
+    it('sin grupo seleccionado no se muestra', () => {
+      fixture.componentRef.setInput('selectedCourseId', '');
+      fixture.detectChanges();
+      expect(button(/Descargar planilla/)).toBeUndefined();
+    });
+  });
+
   describe('Proyectar QR segun la ventana de asistencia', () => {
     beforeEach(() => {
       fixture.componentRef.setInput('selectedSessionId', 'ses-1');
