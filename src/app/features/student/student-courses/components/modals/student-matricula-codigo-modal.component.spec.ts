@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { StudentMatriculaCodigoModalComponent } from './student-matricula-codigo-modal.component';
+import { EnvioMatriculaCodigo, StudentMatriculaCodigoModalComponent } from './student-matricula-codigo-modal.component';
 
 describe('StudentMatriculaCodigoModalComponent (HU176B)', () => {
   let fixture: ComponentFixture<StudentMatriculaCodigoModalComponent>;
@@ -28,7 +28,7 @@ describe('StudentMatriculaCodigoModalComponent (HU176B)', () => {
   });
 
   it('con un PIN de 6 dígitos habilita el botón y emite el PIN al confirmar', () => {
-    const emitidos: Array<string | { token: string }> = [];
+    const emitidos: EnvioMatriculaCodigo[] = [];
     component.submitted.subscribe((v) => emitidos.push(v));
     component.codigo.set(' 482913 ');
     fixture.detectChanges();
@@ -55,8 +55,30 @@ describe('StudentMatriculaCodigoModalComponent (HU176B)', () => {
     expect(component.pinValido()).toBeTrue();
   });
 
+  it('DEC-078: en un grupo compartido exige elegir el programa y lo envía con el PIN', () => {
+    const emitidos: EnvioMatriculaCodigo[] = [];
+    component.submitted.subscribe((v) => emitidos.push(v));
+    fixture.componentRef.setInput('programas', [
+      { idPrograma: 'prg-a', nombre: 'Administración' },
+      { idPrograma: 'prg-b', nombre: 'Sistemas' },
+    ]);
+    component.codigo.set('482913');
+    fixture.detectChanges();
+
+    const select = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="matricula-programa"]') as HTMLSelectElement;
+    expect(Array.from(select.options).map((o) => o.textContent?.trim())).toEqual(['Seleccione...', 'Administración', 'Sistemas']);
+    expect(confirmar().disabled).toBeTrue();
+
+    component.programaId.set('prg-b');
+    fixture.detectChanges();
+    expect(confirmar().disabled).toBeFalse();
+    confirmar().click();
+
+    expect(emitidos).toEqual([{ pin: '482913', idPrograma: 'prg-b' }]);
+  });
+
   it('F-EST-012: con tokenInicial el botón confirmar está habilitado y emite el token', () => {
-    let emitido!: string | { token: string; };
+    let emitido!: EnvioMatriculaCodigo;
     component.submitted.subscribe((v) => (emitido = v));
     fixture.componentRef.setInput('tokenInicial', 'TOKEN_ABC_123');
     fixture.detectChanges();
@@ -117,5 +139,20 @@ describe('StudentMatriculaCodigoModalComponent (HU176B)', () => {
     it('el boton de cierre tiene nombre accesible', () => {
       expect(el().querySelector('button[aria-label="Cerrar modal"]')).not.toBeNull();
     });
+  });
+
+  it('DEC-078: preselecciona el programa conservado del login solo si es uno de los elegibles', () => {
+    fixture.componentRef.setInput('programas', [
+      { idPrograma: 'prg-a', nombre: 'A' },
+      { idPrograma: 'prg-b', nombre: 'B' },
+    ]);
+    fixture.componentRef.setInput('programaInicial', 'prg-b');
+    fixture.detectChanges();
+    expect(component.programaId()).toBe('prg-b');
+
+    component.programaId.set('');
+    fixture.componentRef.setInput('programaInicial', 'prg-x');
+    fixture.detectChanges();
+    expect(component.programaId()).toBe('');
   });
 });

@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, input } from '@angular/core';
+import { Component, ChangeDetectionStrategy, computed, input } from '@angular/core';
 
 import { RouterLink } from '@angular/router';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
@@ -107,7 +107,7 @@ import { UserRole } from '../../../../core/models/user.model';
               }
             }
             @case ('DOCENTE') {
-              <a routerLink="/app/asistencia">
+              <a routerLink="/app/asistencia" [queryParams]="paramsTomarAsistencia()">
                 <app-button variant="accent" size="md">
                   <svg class="w-4 h-4 mr-1.5 text-warm-950 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
@@ -115,7 +115,7 @@ import { UserRole } from '../../../../core/models/user.model';
                   Tomar Asistencia Ahora
                 </app-button>
               </a>
-              <a routerLink="/app/docente/reclamos">
+              <a routerLink="/app/docente/reclamos" [queryParams]="paramsReclamos()">
                 <app-button variant="secondary" size="md">
                   <svg class="w-4 h-4 mr-1.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
@@ -164,4 +164,15 @@ export class OverviewHeroComponent {
    * llevarían al aviso y recorta la frase descriptiva para no prometer gestiones que no puede hacer.
    */
   sinEntidadAsignada = input<boolean>(false);
+  /** Grupo de la clase en curso o la más próxima del docente; "Tomar Asistencia Ahora" abre directamente ese grupo. */
+  grupoProximaClase = input<string | null>(null);
+
+  /** Sin clase próxima conocida no se inventa un grupo: el destino abre su vista general. */
+  readonly paramsTomarAsistencia = computed(() => {
+    const grupo = this.grupoProximaClase();
+    return grupo ? { courseId: grupo } : null;
+  });
+
+  /** Con solicitudes pendientes, la bandeja abre ya filtrada por pendientes. */
+  readonly paramsReclamos = computed(() => ((this.pendingClaimsCount() ?? 0) > 0 ? { estado: 'P' } : null));
 }

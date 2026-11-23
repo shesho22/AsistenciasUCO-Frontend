@@ -22,6 +22,8 @@ export interface KpisDecano {
   /** CIERRE-W3I: coordinadores activos y docentes con vinculo activo de la facultad (cada persona una sola vez). */
   totalCoordinadores: number;
   totalDocentes: number;
+  /** ATA D2: horas del período sobre las que se calcula el % de ausentismo (opcional). */
+  horasPeriodo?: number | null;
 }
 
 export interface ComparativaPrograma {
@@ -39,6 +41,8 @@ export interface ComparativaPrograma {
   /** Horas dictadas y horas de falta sin justa causa de esas matrículas (horas, 2 decimales). */
   horasDictadas: number;
   horasFalta: number;
+  /** ATA D2: horas del período, base del % de ausentismo; ausente en respuestas anteriores. */
+  horasPeriodo?: number | null;
 }
 
 export interface AforoGrupo {

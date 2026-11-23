@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -70,6 +71,19 @@ const PIN_SEIS_DIGITOS = /^\d{6}$/;
                 <p>Docente: {{ c.nombreDocente }}</p>
                 <p>Cupos disponibles: {{ c.cupoDisponible }}</p>
               </div>
+              <!-- DEC-078: grupo compartido por varios programas: el estudiante elige el suyo (no el docente). -->
+              @if (programasElegibles().length > 0) {
+                <app-form-field label="Programa al que perteneces" [required]="true"
+                  helperText="Este grupo lo comparten varios programas. Si ya estás en uno de ellos, se usa el tuyo.">
+                  <select name="programa" data-testid="matricula-programa" [ngModel]="programaId()" (ngModelChange)="programaId.set($event)"
+                    class="w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm text-warm-900 focus:outline-none focus:ring-2 focus:ring-primary-500/20">
+                    <option value="">Seleccione...</option>
+                    @for (p of programasElegibles(); track p.idPrograma) {
+                      <option [value]="p.idPrograma">{{ p.nombre }}</option>
+                    }
+                  </select>
+                </app-form-field>
+              }
               @if (mensaje()) {
                 <p class="text-sm text-danger-800 bg-danger-50 border border-danger-200 rounded-xl p-3" role="alert" data-testid="matricula-mensaje">{{ mensaje() }}</p>
               }
@@ -78,7 +92,7 @@ const PIN_SEIS_DIGITOS = /^\d{6}$/;
                   Matricularme con mi sesión
                 </button>
               } @else {
-                <button type="button" data-testid="matricula-crear" (click)="mostrarRegistro()" class="w-full min-h-[44px] py-2.5 text-sm font-bold text-white bg-primary-700 hover:bg-primary-800 rounded-xl">
+                <button type="button" data-testid="matricula-crear" [disabled]="!programaListo()" (click)="mostrarRegistro()" class="w-full disabled:opacity-50 min-h-[44px] py-2.5 text-sm font-bold text-white bg-primary-700 hover:bg-primary-800 rounded-xl">
                   Crear cuenta y matricularme
                 </button>
                 <button type="button" data-testid="matricula-ya-tengo-cuenta" (click)="yaTengoCuenta()" class="w-full min-h-[44px] py-2.5 text-sm font-semibold text-primary-700 border border-primary-300 hover:bg-primary-50 rounded-xl">
@@ -162,6 +176,7 @@ const PIN_SEIS_DIGITOS = /^\d{6}$/;
   `
 })
 export class MatriculaQrComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly matriculaQr = inject(MatriculaQrService);
@@ -174,6 +189,9 @@ export class MatriculaQrComponent implements OnInit {
   readonly estado = signal<MatriculaQrEstado>('PIN');
   readonly mensaje = signal<string>('');
   readonly curso = signal<CursoMatriculaQr | null>(null);
+  /** DEC-078: programas del grupo compartido entre los que elige el estudiante (vacío si no aplica) y el elegido. */
+  readonly programasElegibles = computed(() => this.curso()?.programasElegibles ?? []);
+  readonly programaId = signal<string>('');
   readonly usuario = signal<string>('');
   /** Correo con el que se registro la cuenta nueva: solo para indicar donde llego el enlace de verificacion. */
   readonly correoRegistrado = signal<string>('');
@@ -264,8 +282,14 @@ export class MatriculaQrComponent implements OnInit {
     return r.valid ? null : r.error;
   }
 
+  /** DEC-078: en un grupo compartido la cuenta nueva necesita el programa del estudiante. */
+  programaListo(): boolean {
+    return this.programasElegibles().length === 0 || this.programaId() !== '';
+  }
+
   formularioCompleto(): boolean {
     return (
+      this.programaListo() &&
       this.tipoId() !== '' &&
       this.errorDocumento() === null &&
       this.errorNombres() === null &&
@@ -291,10 +315,11 @@ export class MatriculaQrComponent implements OnInit {
       segundoApellido: this.segundoApellido().trim() || undefined,
       correo: this.correo().trim(),
       password: this.password(),
+      idPrograma: this.programaId() || undefined,
     };
     this.mensaje.set('');
     this.estado.set('ENVIANDO');
-    this.matriculaQr.registrar(payload).subscribe({
+    this.matriculaQr.registrar(payload).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (resultado) => {
         this.usuario.set(resultado.usuario);
         this.correoRegistrado.set(payload.correo);
@@ -316,7 +341,10 @@ export class MatriculaQrComponent implements OnInit {
     }
     this.mensaje.set('');
     this.estado.set('ENVIANDO');
-    this.matriculaQr.matricularAutenticado(credencial).subscribe({
+    const envio = this.programaId()
+      ? this.matriculaQr.matricularAutenticado(credencial, this.programaId())
+      : this.matriculaQr.matricularAutenticado(credencial);
+    envio.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (resultado) => {
         this.mensajeExito.set(getApiSuccessMessage(resultado, 'Quedaste matriculado en el grupo.'));
         this.descartarDatos();
@@ -337,6 +365,10 @@ export class MatriculaQrComponent implements OnInit {
     } else if (this.credencial?.pin) {
       returnUrl = `/app/estudiante/materias?matricula=${encodeURIComponent(this.credencial.pin)}`;
     }
+    // DEC-078: el programa ya elegido viaja en el returnUrl para preseleccionarlo al volver del login.
+    if (this.programaId()) {
+      returnUrl += `${returnUrl.includes('?') ? '&' : '?'}programa=${encodeURIComponent(this.programaId())}`;
+    }
     void this.router.navigate(['/login'], {
       queryParams: { returnUrl },
     });
@@ -353,9 +385,10 @@ export class MatriculaQrComponent implements OnInit {
     this.credencial = credencial;
     this.mensaje.set('');
     this.estado.set('VALIDANDO');
-    this.matriculaQr.validar(credencial).subscribe({
+    this.matriculaQr.validar(credencial).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (curso) => {
         this.curso.set(curso);
+        this.programaId.set('');
         this.tipoId.set(curso.tiposIdentificacion[0]?.id ?? '');
         this.estado.set('CURSO');
       },

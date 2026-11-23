@@ -1,6 +1,8 @@
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { Component, OnDestroy, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 
+import { ActivatedRoute } from '@angular/router';
+import { isUuid } from '../../../core/utils/uuid.util';
 import { Subject, Subscription, debounceTime, distinctUntilChanged, finalize } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
@@ -75,6 +77,13 @@ const BUSQUEDA_ESPERA_MS = 300;
           </div>
         </app-page-header>
 
+        @if (grupoFiltro()) {
+          <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-primary-200 bg-primary-50 px-4 py-2 text-xs text-primary-900" data-testid="filtro-grupo-activo">
+            <span>Mostrando solo las justificaciones del grupo seleccionado.</span>
+            <button type="button" class="min-h-[44px] font-bold underline" (click)="quitarFiltroGrupo()">Ver todas</button>
+          </div>
+        }
+
         <!-- Filtros y Búsqueda -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div class="sm:col-span-2">
@@ -110,14 +119,14 @@ const BUSQUEDA_ESPERA_MS = 300;
 
         <!-- Listado de Justificaciones -->
         @if (!isLoading() && listState() !== 'LOADED') {
-          <div class="bg-danger-50 border border-danger-200 rounded-2xl p-6 text-center text-sm text-danger-900 space-y-3" role="alert">
+          <div class="bg-danger-50 border border-danger-200 rounded-2xl p-4 text-center text-sm text-danger-900 space-y-3" role="alert">
             <p>{{ listStateMessage() }}</p>
             @if (listState() === 'NETWORK_ERROR' || listState() === 'SERVER_ERROR') {
               <app-button variant="secondary" size="sm" (clicked)="cargarReclamos()">Reintentar</app-button>
             }
           </div>
         } @else if (!isLoading() && reclamos().length === 0) {
-          <div class="superficie p-6 text-center">
+          <div class="superficie p-4 text-center">
             <app-empty-state
               title="No hay justificaciones en esta categoría"
               description="Todas las solicitudes de asistencia se encuentran al día."
@@ -164,7 +173,7 @@ const BUSQUEDA_ESPERA_MS = 300;
                     </td>
                     <td class="text-xs">
                       <p class="font-semibold text-warm-900">{{ reclamo.materiaNombre }}</p>
-                      <p class="text-warm-600">Grupo {{ reclamo.grupo }} · Sesión #{{ reclamo.sesionNumero }} ({{ reclamo.fechaSesion }})</p>
+                      <p class="text-warm-600">{{ reclamo.grupo }} · Sesión #{{ reclamo.sesionNumero }} ({{ reclamo.fechaSesion }})</p>
                       @if (textoTomaTarjeta(reclamo); as toma) {
                         <p class="font-semibold text-warm-900" data-testid="tarjeta-toma">{{ toma }}</p>
                       }
@@ -285,7 +294,7 @@ const BUSQUEDA_ESPERA_MS = 300;
                 {{ selectedReclamo()?.materiaNombre }} ({{ selectedReclamo()?.materiaCodigo }})
               </h4>
               <p class="text-xs text-warm-600">
-                Grupo: {{ selectedReclamo()?.grupo }} • Sesión #{{ selectedReclamo()?.sesionNumero }} ({{ selectedReclamo()?.fechaSesion }})
+                {{ selectedReclamo()?.grupo }} • Sesión #{{ selectedReclamo()?.sesionNumero }} ({{ selectedReclamo()?.fechaSesion }})
               </p>
               @if (textoTomaReclamada(selectedReclamo()); as toma) {
                 <p class="text-xs font-bold text-warm-900" data-testid="detalle-toma">{{ toma }}</p>
@@ -381,7 +390,8 @@ const BUSQUEDA_ESPERA_MS = 300;
                 <app-button
                   variant="danger"
                   size="md"
-                  [disabled]="resolviendo()"
+                  data-testid="rechazar-justificacion"
+                  [disabled]="resolviendo() || rechazoSinRespuestaValida()"
                   (clicked)="confirmarResolucion('RECHAZADA')"
                 >
                   <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -437,6 +447,7 @@ export class TeacherClaimsComponent implements OnInit, OnDestroy {
   private readonly claimService = inject(AttendanceClaimService);
   private readonly toast = inject(ToastService);
   private readonly zona = inject(SessionTimeZoneService);
+  private readonly route = inject(ActivatedRoute, { optional: true });
 
   vistaActual = signal<VistaDocenteReclamos>('BANDEJA');
   reclamos = signal<SolicitudRevisionItem[]>([]);
@@ -446,6 +457,8 @@ export class TeacherClaimsComponent implements OnInit, OnDestroy {
   listState = signal<ReclamosListState>('LOADING');
   searchQuery = signal<string>('');
   estadoFiltro = signal<EstadoFiltroReclamos>('TODOS');
+  /** Grupo al que se acotó la bandeja desde un acceso rápido (`?grupo=`); `null` = todos los grupos. */
+  grupoFiltro = signal<string | null>(null);
   pagina = signal<number>(1);
   /** Bloque E: 15 por página por defecto (15/30/50); el servidor acepta hasta 100 por página. */
   tamano = signal<number>(TAMANO_PAGINA_TABLA);
@@ -470,6 +483,11 @@ export class TeacherClaimsComponent implements OnInit, OnDestroy {
     return getClaimResponseError(accion, this.comentarioDocente) ?? '';
   }
 
+  /** Validación de forma: no se puede rechazar hasta que la respuesta obligatoria (10 a 500) sea válida. */
+  rechazoSinRespuestaValida(): boolean {
+    return getClaimResponseError('RECHAZADA', this.comentarioDocente) !== null;
+  }
+
   private listaSub?: Subscription;
   private pendientesSub?: Subscription;
   private detalleSub?: Subscription;
@@ -483,6 +501,22 @@ export class TeacherClaimsComponent implements OnInit, OnDestroy {
       this.pagina.set(1);
       this.cargarReclamos();
     });
+    this.aplicarEnlace();
+    this.cargarReclamos();
+  }
+
+  /** Los accesos rápidos abren la bandeja ya acotada: `?estado=P|A|R` y `?grupo=<idGrupo>`; un valor desconocido se ignora. */
+  private aplicarEnlace(): void {
+    const params = this.route?.snapshot?.queryParamMap;
+    const estado = params?.get('estado');
+    if (estado === 'P' || estado === 'A' || estado === 'R') this.estadoFiltro.set(estado);
+    const grupo = params?.get('grupo');
+    if (isUuid(grupo)) this.grupoFiltro.set(grupo);
+  }
+
+  quitarFiltroGrupo(): void {
+    this.grupoFiltro.set(null);
+    this.pagina.set(1);
     this.cargarReclamos();
   }
 
@@ -532,6 +566,7 @@ export class TeacherClaimsComponent implements OnInit, OnDestroy {
         pagina: this.pagina(),
         tamano: this.tamano(),
         busqueda: this.searchQuery().trim() || undefined,
+        grupoId: this.grupoFiltro() ?? undefined,
       })
       .subscribe({
         next: (res) => {

@@ -7,6 +7,8 @@ import { DeanFacultadService, GrupoDetalleDecanoApiDto } from '../../../core/ser
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
 import { resolveSessionInstant } from '../../../core/time/session-timezone.util';
 import { Course } from '../../../core/models/course.model';
+import { BadgeComponent } from '../../../shared/components/badge/badge.component';
+import { rotuloSesionNoCancelada } from '../../../core/models/sesion-estado.model';
 import { SesionEstadoBadgeComponent } from '../../../shared/components/sesion-estado-badge/sesion-estado-badge.component';
 import { SesionFacultadItem } from '../../../core/models/facultad-decano.model';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
@@ -34,7 +36,7 @@ function adaptarGrupoACurso(dto: GrupoDetalleDecanoApiDto): Course {
     selector: 'app-dean-grupo-detalle',
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: { class: 'block w-full' },
-    imports: [EmptyStateComponent, SesionEstadoBadgeComponent, PaginationComponent],
+    imports: [EmptyStateComponent, SesionEstadoBadgeComponent, PaginationComponent, BadgeComponent],
     template: `
     <div class="space-y-4 animate-fade-in">
       <!-- Barra de Retorno -->
@@ -126,7 +128,7 @@ function adaptarGrupoACurso(dto: GrupoDetalleDecanoApiDto): Course {
           />
         } @else {
           <!-- MEJORAS-SERGIO 6: tabla densa (una línea por sesión) y paginada, en lugar de una tarjeta alta por sesión -->
-          <div class="overflow-x-auto">
+          <div class="tabla-scroll">
             <table class="w-full text-xs text-warm-800" data-testid="tabla-sesiones-grupo">
               <thead class="bg-warm-50 border-b border-warm-200 text-[11px] font-bold text-warm-600 uppercase tracking-wider">
                 <tr>
@@ -150,7 +152,13 @@ function adaptarGrupoACurso(dto: GrupoDetalleDecanoApiDto): Course {
                       <td class="px-4 py-2 font-semibold text-warning-800" colspan="2">Horario no confirmado</td>
                     }
                     <td class="px-4 py-2 font-semibold text-warm-900 max-w-xs truncate" [title]="s.nombre">{{ s.nombre }}</td>
-                    <td class="px-4 py-2"><app-sesion-estado-badge [estado]="s.estado" [cancelacion]="s.cancelacion" /></td>
+                    <td class="px-4 py-2" data-testid="sesion-estado">
+                      @if (s.estado === 'CANCELADA') {
+                        <app-sesion-estado-badge [estado]="s.estado" [cancelacion]="s.cancelacion" />
+                      } @else {
+                        <app-badge size="sm" [variant]="rotuloEstado(s) === 'Dictada' ? 'success' : 'neutral'">{{ rotuloEstado(s) }}</app-badge>
+                      }
+                    </td>
                   </tr>
                 }
               </tbody>
@@ -284,6 +292,11 @@ export class DeanGrupoDetalleComponent implements OnInit, OnDestroy {
   }
 
   /** Inicio de la sesión: instante UTC si está confirmado; si no, el valor v1 sin zona (se muestra literal). */
+  /** Estado visible de una sesión no cancelada (la cancelada la rotula `app-sesion-estado-badge`). */
+  rotuloEstado(s: SesionFacultadItem): 'Programada' | 'Dictada' {
+    return rotuloSesionNoCancelada(this.fin(s));
+  }
+
   inicio(s: SesionFacultadItem): string | null {
     return resolveSessionInstant(s.fechaHoraInicio, s.fechaHoraInicioUtc, s.estadoTemporal);
   }

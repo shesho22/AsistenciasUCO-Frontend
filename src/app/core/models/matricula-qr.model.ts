@@ -27,6 +27,12 @@ export interface TipoIdentificacionMatriculaQr {
   nombre: string;
 }
 
+/** DEC-078: programa de un grupo compartido entre los que elige el estudiante al matricularse. */
+export interface ProgramaElegibleMatriculaQr {
+  idPrograma: string;
+  nombre: string;
+}
+
 /** Datos minimos del curso que devuelve la validacion publica. */
 export interface CursoMatriculaQr {
   idGrupo: string;
@@ -36,6 +42,8 @@ export interface CursoMatriculaQr {
   fechaExpiracionUtc: string;
   cupoDisponible: number;
   tiposIdentificacion: TipoIdentificacionMatriculaQr[];
+  /** DEC-078: vacio si el estudiante no elige programa; si no, los programas del grupo compartido. */
+  programasElegibles?: ProgramaElegibleMatriculaQr[];
 }
 
 /** Alta publica: credencial mas los datos de la persona. */
@@ -48,6 +56,8 @@ export interface RegistroMatriculaQrPayload extends CredencialMatricula {
   segundoApellido?: string;
   correo: string;
   password: string;
+  /** DEC-078: programa elegido en un grupo compartido (uno de `programasElegibles`). */
+  idPrograma?: string;
 }
 
 /** `usuario` es el numero de identificacion con el que inicia sesion; no hay token de sesion. */

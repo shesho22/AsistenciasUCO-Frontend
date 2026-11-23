@@ -6,6 +6,8 @@ import { CoordinatorManagementService } from '../../../core/services/coordinator
 import { CourseService } from '../../../core/services/course.service';
 import { Course } from '../../../core/models/course.model';
 import { CoordinatorProgramService } from '../../../core/services/coordinator-program.service';
+import { ToastService } from '../../../shared/components/toast/toast.component';
+import { HttpErrorResponse } from '@angular/common/http';
 import { crearProgramaCoordinadorStub, PROGRAMA_A, PROGRAMA_B } from '../../../core/testing/programa-coordinador.stub';
 
 // LB-001B.1B (DB source of truth cleanup, PLAN.md AS-IS #18): la ficha de curso seleccionado
@@ -35,7 +37,7 @@ describe('CoordinatorStudentsComponent', () => {
   beforeEach(() => {
     coordinatorService = jasmine.createSpyObj<CoordinatorManagementService>(
       'CoordinatorManagementService',
-      ['getEstudiantesDirectorio', 'getEstudiantesDirectorioPagina', 'getEstudiantesPorGrupo', 'getTotalEstudiantesPorEstado']
+      ['getEstudiantesDirectorio', 'getEstudiantesDirectorioPagina', 'getEstudiantesPorGrupo', 'getTotalEstudiantesPorEstado', 'actualizarSemestreEstudiante']
     );
     courseService = jasmine.createSpyObj<CourseService>('CourseService', ['getTeacherCourses']);
 
@@ -191,6 +193,21 @@ describe('CoordinatorStudentsComponent', () => {
     expect(component.estudianteFicha()?.id).toBe('est-1');
   });
 
+  it('P3 C3: la tabla no ensancha la página (contenedor con desplazamiento propio, tarjetas bajo md y acciones fijas)', () => {
+    const estudiante = {
+      id: 'est-1', documento: '1017334455', codigo: '', nombreCompleto: 'Ana Sofia Gomez Rios',
+      correo: 'ana.gomez@uco.edu.co', programa: 'Ingenieria de Sistemas', estadoMatricula: 'ACTIVO' as const, idPrograma: 'prg-1',
+    };
+    component.directorio.set([estudiante]);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const tabla = el.querySelector('[data-testid="tabla-estudiantes"]') as HTMLElement;
+    expect(tabla.classList).toContain('tabla-tarjetas');
+    expect(tabla.closest('[role="region"]')?.classList).toContain('tabla-scroll');
+    expect(tabla.querySelector('tbody td.col-acciones')).not.toBeNull();
+    expect(tabla.querySelectorAll('tbody td[data-label]').length).toBe(6);
+  });
+
   it('MEJORAS-SERGIO 8: lista en tabla con "Ver ficha" y sin estado financiero ni promedio ponderado', () => {
     const estudiante = {
       id: 'est-1', documento: '1017334455', codigo: '', nombreCompleto: 'Ana Sofia Gomez Rios',
@@ -238,5 +255,101 @@ describe('CoordinatorStudentsComponent', () => {
     expect(TestBed.inject(CoordinatorProgramService).seleccionar).toHaveBeenCalledWith('prg-b');
     expect(component.currentPageDirectorio()).toBe(1);
     expect(coordinatorService.getEstudiantesDirectorioPagina).toHaveBeenCalledWith(jasmine.objectContaining({ page: 0 }));
+  });
+
+  describe('semestre y programa del directorio', () => {
+    const resumen = (extra: Record<string, unknown>) => ({
+      id: 'est-1', idUsuario: 'u-1', tipoIdentificacionId: '', numeroIdentificacion: 1017, primerApellido: '', segundoApellido: null,
+      primerNombre: '', segundoNombre: null, nombreCompleto: 'Ana Gomez', correo: 'ana@uco.edu.co', estaActivoUsuario: true, ...extra,
+    });
+    const cargar = (items: ReturnType<typeof resumen>[]) => {
+      coordinatorService.getEstudiantesDirectorioPagina.and.returnValue(of({ items, totalItems: items.length, totalPages: 1, page: 0, size: 10 }));
+      component.cargarDatos();
+      fixture.detectChanges();
+    };
+    const el = () => fixture.nativeElement as HTMLElement;
+
+    it('mapea el nombre del programa y el semestre; nulo se muestra como "No informado"', () => {
+      cargar([
+        resumen({ idPrograma: 'p-1', nombrePrograma: 'Ingenieria de Sistemas', semestreActual: 4 }),
+        resumen({ id: 'est-2', idPrograma: 'p-1', nombrePrograma: 'Ingenieria de Sistemas', semestreActual: null }),
+      ]);
+      const [a, b] = component.directorio();
+      expect(a.programa).toBe('Ingenieria de Sistemas');
+      expect(a.semestreActual).toBe(4);
+      expect(b.semestreActual).toBeNull();
+      const celdas = Array.from(el().querySelectorAll('[data-testid="semestre-estudiante"]')).map((c) => c.textContent?.trim());
+      expect(celdas).toEqual(['4°', 'No informado']);
+      expect(el().textContent).not.toContain('No informado por el directorio');
+      expect(el().textContent).toContain('Ingenieria de Sistemas');
+    });
+
+    it('con el filtro "Todos los estados" un estudiante inactivo se muestra INACTIVO', () => {
+      component.filtroEstadoDirectorio.set('TODOS');
+      cargar([
+        resumen({ idPrograma: 'p-1', nombrePrograma: 'Sistemas', estaActivoUsuario: false }),
+        resumen({ id: 'est-2', idPrograma: 'p-1', nombrePrograma: 'Sistemas', estaActivoUsuario: true }),
+      ]);
+      expect(coordinatorService.getEstudiantesDirectorioPagina.calls.mostRecent().args[0]).not.toEqual(jasmine.objectContaining({ activo: jasmine.anything() }));
+      expect(component.directorio().map((e) => e.estadoMatricula)).toEqual(['INACTIVO', 'ACTIVO']);
+    });
+
+    it('editar semestre con éxito actualiza la fila y muestra el mensaje del backend', () => {
+      const toast = TestBed.inject(ToastService);
+      spyOn(toast, 'success');
+      cargar([resumen({ idPrograma: 'p-1', nombrePrograma: 'Sistemas', semestreActual: null })]);
+      coordinatorService.actualizarSemestreEstudiante.and.returnValue(
+        of({ exitoso: true, datos: { semestreActual: 5 }, mensajeUsuario: 'Semestre actualizado por backend.' })
+      );
+
+      el().querySelector<HTMLButtonElement>('[data-testid="editar-semestre"]')!.click();
+      fixture.detectChanges();
+      component.semestreSeleccionado.set('5');
+      component.guardarSemestre();
+      fixture.detectChanges();
+
+      expect(coordinatorService.actualizarSemestreEstudiante).toHaveBeenCalledWith('est-1', 'p-1', 5);
+      expect(component.directorio()[0].semestreActual).toBe(5);
+      expect(toast.success).toHaveBeenCalledWith('Semestre actualizado por backend.');
+      expect(component.estudianteSemestre()).toBeNull();
+      expect(el().querySelector('[data-testid="semestre-estudiante"]')?.textContent?.trim()).toBe('5°');
+    });
+
+    it('"Sin informar" envía null', () => {
+      cargar([resumen({ idPrograma: 'p-1', nombrePrograma: 'Sistemas', semestreActual: 3 })]);
+      coordinatorService.actualizarSemestreEstudiante.and.returnValue(of({ exitoso: true, datos: { semestreActual: null }, mensajeUsuario: 'ok' }));
+      component.abrirEdicionSemestre(component.directorio()[0]);
+      expect(component.semestreSeleccionado()).toBe('3');
+      component.semestreSeleccionado.set('');
+      component.guardarSemestre();
+      expect(coordinatorService.actualizarSemestreEstudiante).toHaveBeenCalledWith('est-1', 'p-1', null);
+      expect(component.directorio()[0].semestreActual).toBeNull();
+    });
+
+    it('un error del backend se muestra tal cual y la fila no cambia', () => {
+      cargar([resumen({ idPrograma: 'p-1', nombrePrograma: 'Sistemas', semestreActual: 2 })]);
+      coordinatorService.actualizarSemestreEstudiante.and.returnValue(
+        throwError(() => new HttpErrorResponse({
+          status: 400,
+          error: { status: 400, code: 'EST_009', message: 'El semestre debe estar entre 1 y 10 para este programa.' },
+        }))
+      );
+      component.abrirEdicionSemestre(component.directorio()[0]);
+      fixture.detectChanges();
+      component.semestreSeleccionado.set('12');
+      component.guardarSemestre();
+      fixture.detectChanges();
+
+      expect(component.directorio()[0].semestreActual).toBe(2);
+      expect(component.estudianteSemestre()).not.toBeNull();
+      expect(el().querySelector('[data-testid="error-semestre"]')?.textContent).toContain('El semestre debe estar entre 1 y 10 para este programa.');
+    });
+
+    it('sin idPrograma no ofrece editar y guardar no llama al servicio', () => {
+      cargar([resumen({})]);
+      expect(el().querySelector('[data-testid="editar-semestre"]')).toBeNull();
+      component.guardarSemestre();
+      expect(coordinatorService.actualizarSemestreEstudiante).not.toHaveBeenCalled();
+    });
   });
 });

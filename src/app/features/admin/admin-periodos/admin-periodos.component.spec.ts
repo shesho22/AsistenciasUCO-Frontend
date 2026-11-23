@@ -140,6 +140,84 @@ describe('AdminPeriodosComponent', () => {
     expect(nativo).not.toHaveBeenCalled();
   });
 
+  describe('DEC-081: días de receso al crear el período', () => {
+    const datos = { nombre: '2027-1', fechaInicio: '2027-02-01', fechaFin: '2027-05-24' };
+    const recesos = [
+      { fecha: '2027-03-24', motivo: 'Miércoles Santo' },
+      { fecha: '2027-03-25', motivo: 'Jueves Santo' },
+    ];
+    const urlRecesos = `${environment.apiUrl}/admin/periodos-academicos/per-nuevo/recesos`;
+
+    function crearPeriodoConRecesos(): void {
+      component.guardarPeriodo({ modo: 'CREAR', datos, recesos });
+      http.expectOne(`${environment.apiUrl}/admin/periodos-academicos`).flush({ exitoso: true, datos: { id: 'per-nuevo', nombre: '2027-1' } });
+      http.expectOne(`${environment.apiUrl}/coordinador/periodos-academicos`).flush({ exitoso: true, datos: mockPeriodos });
+    }
+
+    it('crea primero el período y luego registra cada día en orden, con un solo resumen si todos salen bien', () => {
+      crearPeriodoConRecesos();
+      expect(toastSpy.success).not.toHaveBeenCalled();
+
+      const primero = http.expectOne(urlRecesos);
+      expect(primero.request.method).toBe('POST');
+      expect(primero.request.body).toEqual(recesos[0]);
+      http.expectNone(urlRecesos); // el segundo espera al primero
+      primero.flush({ exitoso: true, datos: null, mensajeUsuario: 'Se registró el receso del 24/03/2027; se cancelaron 0 clases.' }, { status: 201, statusText: 'Created' });
+
+      const segundo = http.expectOne(urlRecesos);
+      expect(segundo.request.body).toEqual(recesos[1]);
+      segundo.flush({ exitoso: true, datos: null, mensajeUsuario: 'Se registró el receso del 25/03/2027; se cancelaron 0 clases.' }, { status: 201, statusText: 'Created' });
+
+      expect(toastSpy.success).toHaveBeenCalledOnceWith('Período creado y días de receso registrados.');
+      expect(toastSpy.warning).not.toHaveBeenCalled();
+      expect(component.resultadosRecesos()).toEqual([]);
+    });
+
+    it('si un día falla muestra su mensaje del backend, conserva el período y registra los demás días', () => {
+      crearPeriodoConRecesos();
+      http.expectOne(urlRecesos).flush({ code: 'REC_005', message: 'Ese día ya es festivo.' }, { status: 409, statusText: 'Conflict' });
+      http.expectOne(urlRecesos).flush({ exitoso: true, datos: null, mensajeUsuario: 'Se registró el receso del 25/03/2027; se cancelaron 0 clases.' }, { status: 201, statusText: 'Created' });
+      fixture.detectChanges();
+
+      expect(toastSpy.success).not.toHaveBeenCalled();
+      expect(toastSpy.warning).toHaveBeenCalledOnceWith('El período se creó, pero algunos días de receso no se registraron.');
+      const resultados = component.resultadosRecesos();
+      expect(resultados.map((r) => [r.fecha, r.exitoso, r.mensaje])).toEqual([
+        ['2027-03-24', false, 'Ese día ya es festivo.'],
+        ['2027-03-25', true, 'Se registró el receso del 25/03/2027; se cancelaron 0 clases.'],
+      ]);
+      const filas = (fixture.nativeElement as HTMLElement).querySelectorAll('[data-testid="resultado-receso-fila"]');
+      expect(filas.length).toBe(2);
+      expect(filas[0].textContent).toContain('24/03/2027');
+      expect(filas[0].textContent).toContain('Ese día ya es festivo.');
+
+      (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('[data-testid="cerrar-resultado-recesos"]')?.click();
+      fixture.detectChanges();
+      expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="resultado-recesos"]')).toBeNull();
+    });
+
+    it('un día con exitoso=false usa el mensaje del backend o el respaldo del catálogo', () => {
+      crearPeriodoConRecesos();
+      http.expectOne(urlRecesos).flush({ exitoso: false, datos: null, mensajeUsuario: 'No se pudo.' });
+      http.expectOne(urlRecesos).flush({ exitoso: false, datos: null });
+      expect(component.resultadosRecesos().map((r) => r.mensaje)).toEqual(['No se pudo.', 'No se pudo registrar el día de receso.']);
+    });
+
+    it('sin días agregados conserva el flujo anterior (un solo mensaje del período y sin llamadas de receso)', () => {
+      component.guardarPeriodo({ modo: 'CREAR', datos, recesos: [] });
+      http.expectOne(`${environment.apiUrl}/admin/periodos-academicos`).flush({ exitoso: true, datos: { id: 'per-nuevo' }, mensajeUsuario: 'Creado.' });
+      http.expectOne(`${environment.apiUrl}/coordinador/periodos-academicos`).flush({ exitoso: true, datos: mockPeriodos });
+      expect(toastSpy.success).toHaveBeenCalledOnceWith('Creado.');
+    });
+
+    it('al editar no registra días pendientes aunque lleguen en el evento', () => {
+      component.guardarPeriodo({ modo: 'EDITAR', id: 'per-2026-2', datos, recesos });
+      http.expectOne(`${environment.apiUrl}/admin/periodos-academicos/per-2026-2`).flush({ exitoso: true, datos: null });
+      http.expectOne(`${environment.apiUrl}/coordinador/periodos-academicos`).flush({ exitoso: true, datos: mockPeriodos });
+      expect(toastSpy.success).toHaveBeenCalledOnceWith('Período académico guardado.');
+    });
+  });
+
   it('carga con error muestra el mensaje', () => {
     component.cargarPeriodos();
     http.expectOne(`${environment.apiUrl}/coordinador/periodos-academicos`).flush(null, { status: 500, statusText: 'Error' });

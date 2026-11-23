@@ -1,4 +1,5 @@
 import {
+  rotuloSesionNoCancelada,
   CancelacionSesion,
   EstadoSesion,
   detalleCancelacion,
@@ -45,6 +46,12 @@ describe('sesion-estado.model (CULM-001 B.1)', () => {
     expect(detalleCancelacion({ ...docente, motivo: null })).toBe('');
     expect(detalleCancelacion(null)).toBe('');
     expect(detalleCancelacion(undefined)).toBe('');
+  });
+
+  it('DEC-081 detalleCancelacion muestra el motivo del receso tal como lo entrega el backend (sin tratar «festivo»)', () => {
+    const receso: CancelacionSesion = { tipo: 'RECESO', motivo: 'Receso académico: Semana Santa', nombreFestivo: null, fechaCancelacionUtc: null };
+    expect(detalleCancelacion(receso)).toBe('Receso académico: Semana Santa');
+    expect(detalleCancelacion({ ...receso, motivo: null })).toBe('');
   });
 
   it('B1-F-07 marcarSesionCancelada actualiza solo la sesión indicada y no muta la lista original', () => {
@@ -108,5 +115,15 @@ describe('solicitud de sesión extraordinaria (DEC-065 (2))', () => {
 
     expect(marcarSesionAprobada(lista, 'zzz')).toBe(lista);
     expect(marcarSesionAprobada(lista, 'a')).toBe(lista);
+  });
+});
+
+describe('rotuloSesionNoCancelada (FE-7)', () => {
+  it('Dictada si la hora de fin ya pasó; Programada si es futura, falta o es inválida', () => {
+    const ahora = Date.parse('2026-11-22T12:00:00');
+    expect(rotuloSesionNoCancelada('2026-11-22T10:00:00', ahora)).toBe('Dictada');
+    expect(rotuloSesionNoCancelada('2026-11-22T14:00:00', ahora)).toBe('Programada');
+    expect(rotuloSesionNoCancelada(null, ahora)).toBe('Programada');
+    expect(rotuloSesionNoCancelada('no es fecha', ahora)).toBe('Programada');
   });
 });

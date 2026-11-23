@@ -5,6 +5,9 @@ import { mockStore } from '../mocks/mock-data-store';
 import { respuestaConsultasTransversales } from '../mocks/mock-consultas-transversales';
 import { mockSesionesCalendario } from '../mocks/mock-calendario-sesiones';
 import { respuestaIndicadores } from '../mocks/mock-indicadores';
+import { respuestaSeguimiento } from '../mocks/mock-seguimiento';
+import { MOCK_DOCUMENT_TYPES } from '../services/catalog.service';
+import { responderCatalogosAdminMock } from '../mocks/mock-catalogos-admin';
 import { plantillasNotificacionMock } from '../mocks/mock-notificaciones';
 import {
   JORNADAS_PROGRAMA_MOCK,
@@ -217,11 +220,37 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     return of(okResponse(mockStore.areasConocimiento)).pipe(delay(200));
   }
 
+  // ================= ADMIN: CATÁLOGOS ADMINISTRABLES =================
+  const catalogoAdmin = responderCatalogosAdminMock(url, method);
+  if (catalogoAdmin) {
+    return catalogoAdmin as ReturnType<HttpInterceptorFn>;
+  }
+
   // ================= ADMIN: PARÁMETROS, AUDITORÍA Y CIERRE MASIVO =================
   if (url.endsWith('/admin/parametros') && method === 'GET') {
     return of(okResponse(mockStore.parametros)).pipe(delay(150));
   }
   if (url.includes('/admin/parametros/') && method === 'PATCH') {
+    const id = url.split('/').pop()!;
+    const body = req.body as { valor?: string };
+    mockStore.parametros = mockStore.parametros.map((p) =>
+      p.id === id ? { ...p, valor: body.valor as string, ultimaModificacion: new Date().toISOString().slice(0, 16) } : p
+    );
+    const param = mockStore.parametros.find((p) => p.id === id);
+    return of(okResponse(param, 'Parámetro actualizado.')).pipe(delay(150));
+  }
+  if (url.endsWith('/admin/cierre-masivo/historial') && method === 'GET') {
+    return of(okResponse(mockStore.reportesCierre)).pipe(delay(150));
+  }
+  if (/\/admin\/parametros\/[^/]+\/cambios$/.test(url) && method === 'GET') {
+    return of(
+      new HttpResponse({
+        status: 200,
+        body: { exitoso: true, elementos: [], numeroPagina: 1, tamanoPagina: 10, totalElementos: 0, totalPaginas: 1 },
+      })
+    ).pipe(delay(150));
+  }
+  if (url.includes('/admin/parametros/') && method === 'PUT') {
     const id = url.split('/').pop()!;
     const body = req.body as { valor?: string };
     mockStore.parametros = mockStore.parametros.map((p) =>
@@ -322,11 +351,11 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   // ================= ESTUDIANTE =================
   // ATA D7: calendario semanal con fechas, generado a partir de las franjas del mock.
   if (url.endsWith('/estudiante/sesiones/calendario') && method === 'GET') {
-    const datos = mockSesionesCalendario(mockStore.horariosEstudiante, req.params.get('desde') ?? '', req.params.get('hasta') ?? '');
+    const datos = mockSesionesCalendario(mockStore.horariosEstudiante, req.params.get('desde') ?? '', req.params.get('hasta') ?? '', Object.values(mockStore.recesosAcademicos).flat());
     return of(okResponse(datos)).pipe(delay(250));
   }
   if (url.endsWith('/docente/sesiones/calendario') && method === 'GET') {
-    const datos = mockSesionesCalendario(mockStore.horariosDocente, req.params.get('desde') ?? '', req.params.get('hasta') ?? '');
+    const datos = mockSesionesCalendario(mockStore.horariosDocente, req.params.get('desde') ?? '', req.params.get('hasta') ?? '', Object.values(mockStore.recesosAcademicos).flat());
     return of(okResponse(datos)).pipe(delay(250));
   }
   // ATA D6: bandejas de solicitudes de sesión (sin solicitudes en el mock): contadores del menú y pantallas del rol.
@@ -487,9 +516,16 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   if (url.endsWith('/coordinador/estudiantes') && method === 'GET') {
     const estudiantes = mockStore.estudiantesDirectorio.map((e) => ({
       id: e.id, idUsuario: e.id, numeroIdentificacion: Number(e.documento) || 0, nombreCompleto: e.nombreCompleto, correo: e.correo,
-      idPrograma: 'PRG-MOCK-1', nombrePrograma: e.programa,
+      idPrograma: 'PRG-MOCK-1', nombrePrograma: e.programa, semestreActual: e.semestreActual ?? null,
+      estaActivoUsuario: e.estadoMatricula === 'ACTIVO',
     }));
     return of(okPagina(estudiantes, req)).pipe(delay(200));
+  }
+  if (/\/coordinador\/estudiantes\/[^/]+\/programas\/[^/]+\/semestre$/.test(url) && method === 'PUT') {
+    const idEstudiante = url.split('/')[url.split('/').indexOf('estudiantes') + 1];
+    const semestreActual = (req.body as { semestreActual: number | null }).semestreActual ?? null;
+    mockStore.estudiantesDirectorio = mockStore.estudiantesDirectorio.map((e) => (e.id === idEstudiante ? { ...e, semestreActual } : e));
+    return of(okResponse({ semestreActual }, 'Semestre del estudiante actualizado.')).pipe(delay(200));
   }
   if (url.endsWith('/coordinador/planes-estudio') && method === 'POST') {
     const body = req.body as Partial<PlanEstudioItem>;
@@ -549,6 +585,18 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   const indicadores = respuestaIndicadores(method, url);
   if (indicadores) {
     return of(okResponse(indicadores.datos)).pipe(delay(200));
+  }
+
+  // ================= SEGUIMIENTO: ALERTAS TEMPRANAS, COMPARATIVA DE PROGRAMAS Y AFORO DE GRUPOS =================
+  const seguimiento = respuestaSeguimiento(req, url);
+  if (seguimiento) {
+    if (seguimiento.esPaginada && Array.isArray(seguimiento.datos)) {
+      const pagina = Number(req.params.get('pagina') ?? 1);
+      const tamano = Number(req.params.get('tamano') ?? 10);
+      const inicio = (pagina - 1) * tamano;
+      return of(okPageResponse(seguimiento.datos.slice(inicio, inicio + tamano), pagina, tamano, seguimiento.total)).pipe(delay(200));
+    }
+    return of(okResponse(seguimiento.datos)).pipe(delay(200));
   }
 
   // ================= DECANO Y ADMINISTRADOR: CONSULTAS TRANSVERSALES (HU112/HU128/HU143/HU157) =================
@@ -611,6 +659,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     ['/tipos-programa', TIPOS_PROGRAMA_MOCK],
     ['/modalidades-programa', MODALIDADES_PROGRAMA_MOCK],
     ['/jornadas-programa', JORNADAS_PROGRAMA_MOCK],
+    ['/tipos-identificacion', MOCK_DOCUMENT_TYPES],
   ] as const) {
     if (!url.includes('/admin/') && url.split('?')[0].endsWith(sufijo) && method === 'GET') {
       return of(new HttpResponse({ status: 200, body: catalogo })).pipe(delay(150));
@@ -696,6 +745,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
         idDocente: 'DOC-1', capacidadMaxima: 30, estudiantesActivos: 2, cuposDisponibles: 28, habilitado: true,
         inicioPeriodo: '2026-01-20', finPeriodo: '2026-06-05',
         franjas: [{ codigoDia: 'LU', nombreDia: 'Lunes', horaInicio: '07:00', horaFin: '09:00' }],
+        idProgramaResponsable: 'PRG-MOCK-1', nombreProgramaResponsable: 'Ingeniería de Sistemas', esResponsable: true,
       },
     ].filter((g) => !busqueda || g.nombre.toLowerCase().includes(busqueda) || g.nombreAsignatura.toLowerCase().includes(busqueda) || String(g.codigo).includes(busqueda));
     return of(okPagina(grupos, req)).pipe(delay(200));
@@ -741,6 +791,102 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     const asistio = req.params.get('asistio');
     const filtradas = asistio === null ? asistencias : asistencias.filter((a) => String(a.asistio) === asistio);
     return of(okResponse(filtradas, undefined, filtradas.length)).pipe(delay(200));
+  }
+
+  // ================= DEC-081: RECESO ACADÉMICO DEL PERÍODO =================
+  const rutaRecesos = /\/(admin|coordinador)\/periodos-academicos\/([^/]+)\/recesos(?:\/([^/]+))?$/.exec(url);
+  if (rutaRecesos) {
+    const [, , idPeriodo, idReceso] = rutaRecesos;
+    const lista = mockStore.recesosAcademicos[idPeriodo] ?? [];
+    const periodo = mockStore.periodosAcademicos.find((p) => p.id === idPeriodo);
+    if (!periodo) {
+      return throwError(() => new HttpErrorResponse({ status: 404, error: { code: 'PER_001', message: 'El período académico no existe.' } }));
+    }
+    if (method === 'GET' && !idReceso) {
+      const ordenada = [...lista].sort((a, b) => a.fecha.localeCompare(b.fecha));
+      return of(okResponse(ordenada)).pipe(delay(150));
+    }
+    if (method === 'POST' && !idReceso) {
+      const body = req.body as { fecha?: string; motivo?: string } | null;
+      const fecha = body?.fecha ?? '';
+      const motivo = (body?.motivo ?? '').trim();
+      const rechazo = (status: number, code: string, message: string) =>
+        throwError(() => new HttpErrorResponse({ status, error: { code, message } }));
+      if (motivo.length === 0 || motivo.length > 200) return rechazo(400, 'REC_008', 'El motivo del receso es obligatorio y no puede superar 200 caracteres.');
+      if (fecha < periodo.fechaInicio || fecha > periodo.fechaFin) return rechazo(400, 'REC_003', 'La fecha del receso debe estar dentro del período.');
+      if (lista.some((r) => r.fecha === fecha)) return rechazo(409, 'REC_006', 'Ya hay un receso registrado en esa fecha.');
+      const sesionesCanceladas = periodo.estado === 'ACTIVO' ? 4 : 0;
+      const nuevo = {
+        id: `REC-MOCK-${Date.now()}-${lista.length}`, fecha, motivo, sesionesCanceladas,
+        estaAplicado: sesionesCanceladas > 0, puedeRetirarse: sesionesCanceladas === 0,
+      };
+      mockStore.recesosAcademicos[idPeriodo] = [...lista, nuevo];
+      const [anio, mes, dia] = fecha.split('-');
+      return of(okResponse(
+        { id: nuevo.id, fecha, motivo, sesionesCanceladas, sesionesConAsistencia: 0 },
+        `Se registró el receso académico del ${dia}/${mes}/${anio}; se cancelaron ${sesionesCanceladas} clases.`,
+      )).pipe(delay(200));
+    }
+    if (method === 'DELETE' && idReceso) {
+      const receso = lista.find((r) => r.id === idReceso);
+      if (!receso) return throwError(() => new HttpErrorResponse({ status: 404, error: { code: 'REC_009', message: 'El receso académico no existe.' } }));
+      if (!receso.puedeRetirarse) {
+        return throwError(() => new HttpErrorResponse({ status: 409, error: { code: 'REC_010', message: 'El receso ya canceló clases y no se puede retirar.' } }));
+      }
+      mockStore.recesosAcademicos[idPeriodo] = lista.filter((r) => r.id !== idReceso);
+      return of(okResponse(null, 'Se retiró el receso académico.')).pipe(delay(150));
+    }
+  }
+
+  // ================= COORDINADOR: PREVISUALIZACIÓN DEL HORARIO DEL GRUPO (SES-GEN-01 + DEC-081) =================
+  if (url.endsWith('/coordinador/grupos/previsualizacion-horario') && method === 'POST') {
+    const body = req.body as { idPeriodoAcademico?: string; franjas?: { dia: string; horaInicio: string; horaFin: string }[] } | null;
+    const periodo = mockStore.periodosAcademicos.find((p) => p.id === (body?.idPeriodoAcademico ?? 'PER-2026-2')) ?? mockStore.periodosAcademicos[0];
+    const franja = body?.franjas?.[0] ?? { dia: 'LUNES', horaInicio: '07:00', horaFin: '09:00' };
+    const minutos = 120;
+    const recesos = mockStore.recesosAcademicos[periodo.id] ?? [];
+    const sesiones: {
+      numero: number; numeroSemana: number; fecha: string; horaInicio: string; horaFin: string; fechaHoraInicioUtc: string;
+      fechaHoraFinUtc: string; minutos: number; estado: string; nombreFestivo: string | null; motivoReceso: string | null;
+    }[] = [];
+    const diaSemana = ({ DO: 0, LU: 1, MA: 2, MI: 3, JU: 4, VI: 5, SA: 6 } as Record<string, number>)[franja.dia.slice(0, 2).toUpperCase()] ?? 1;
+    const finMs = Date.parse(`${periodo.fechaFin}T00:00:00Z`);
+    for (let t = Date.parse(`${periodo.fechaInicio}T00:00:00Z`); t <= finMs; t += 86_400_000) {
+      const dia = new Date(t);
+      if (dia.getUTCDay() !== diaSemana) continue;
+      const fecha = dia.toISOString().slice(0, 10);
+      const receso = recesos.find((r) => r.fecha === fecha);
+      sesiones.push({
+        numero: sesiones.length + 1, numeroSemana: sesiones.length + 1, fecha, horaInicio: franja.horaInicio, horaFin: franja.horaFin,
+        fechaHoraInicioUtc: `${fecha}T${franja.horaInicio}:00Z`, fechaHoraFinUtc: `${fecha}T${franja.horaFin}:00Z`, minutos,
+        estado: receso ? 'CANCELADA_POR_RECESO' : 'PROGRAMADA', nombreFestivo: null,
+        motivoReceso: receso ? `Receso académico: ${receso.motivo}` : null,
+      });
+    }
+    const enReceso = sesiones.filter((s) => s.estado === 'CANCELADA_POR_RECESO');
+    const datos = {
+      idGrupo: null,
+      asignatura: { id: 'ASI-MOCK', codigo: 'MOCK-101', nombre: 'Asignatura simulada', horasSemanales: 2 },
+      periodo: { id: periodo.id, nombre: periodo.nombre, fechaInicio: periodo.fechaInicio, fechaFin: periodo.fechaFin, diasPeriodo: Math.round((finMs - Date.parse(`${periodo.fechaInicio}T00:00:00Z`)) / 86_400_000) + 1, semanasPeriodo: Math.ceil((finMs - Date.parse(`${periodo.fechaInicio}T00:00:00Z`)) / 604_800_000), estado: periodo.estado },
+      zonaHoraria: 'America/Bogota',
+      franjas: [{ codigoDia: franja.dia, nombreDia: franja.dia, horaInicio: franja.horaInicio, horaFin: franja.horaFin, minutos }],
+      resumenSemanal: { franjasPorSemana: 1, minutosSemanales: minutos, minutosSemanalesMateria: minutos, diferenciaMinutos: 0, coincideConMateria: true },
+      resumenPeriodo: {
+        sesionesCalendario: sesiones.length, sesionesProgramadas: sesiones.length - enReceso.length, sesionesEnFestivo: 0, sesionesNoProgramables: 0,
+        minutosCalendario: sesiones.length * minutos, minutosProgramados: (sesiones.length - enReceso.length) * minutos, minutosPerdidosFestivo: 0,
+        minutosNoProgramables: 0, minutosEsperadosMateria: sesiones.length * minutos, diferenciaMinutos: 0, cubreTotalEsperado: enReceso.length === 0,
+        sesionesEnReceso: enReceso.length, minutosPerdidosReceso: enReceso.length * minutos,
+      },
+      festivos: [],
+      recesos: enReceso.map((s) => ({ fecha: s.fecha, motivo: s.motivoReceso, sesionesAfectadas: 1 })),
+      sesiones,
+      cambioSobreGrupoExistente: null,
+      conflictos: enReceso.length > 0
+        ? [{ codigo: 'REC_011', severidad: 'INFORMATIVO', mensaje: `${enReceso.length} sesión(es) caen en un receso académico y quedan canceladas.`, franja: null }]
+        : [],
+      puedeConfirmar: true,
+    };
+    return of(okResponse(datos)).pipe(delay(250));
   }
 
   // ================= COORDINADOR: PERÍODOS ACADÉMICOS =================
@@ -1098,8 +1244,8 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
         intentos: 2,
         creadoEn: '2026-11-06T06:30:00Z',
         proximoIntentoEn: '2026-11-06T07:30:00Z',
-        codigoError: 'SMTP_TIMEOUT',
-        detalleError: 'Tiempo de espera agotado al conectar con el servidor SMTP',
+        codigoError: 'ENTREGA_TIMEOUT',
+        detalleError: 'Tiempo de espera agotado al entregar el correo',
         idCorrelacion: 'corr-notif-004',
       },
       {
@@ -1139,7 +1285,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   }
 
   if (url.endsWith('/admin/notificaciones/prueba') && method === 'POST') {
-    return of(okResponse({ exitoso: true }, 'Correo institucional de prueba despachado con éxito al canal SMTP.')).pipe(delay(350));
+    return of(okResponse({ exitoso: true }, 'Correo institucional de prueba despachado con éxito al servicio de notificaciones.')).pipe(delay(350));
   }
 
   // En modo mock una ruta API desconocida nunca debe alcanzar backend real.

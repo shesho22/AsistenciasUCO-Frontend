@@ -68,6 +68,20 @@ import { ClassSession } from '../../../../core/models/attendance.model';
           </div>
 
           <div class="flex flex-wrap items-center gap-2">
+            @if (selectedCourseId()) {
+              <app-button
+                variant="secondary"
+                size="sm"
+                [loading]="exportingExcel()"
+                [disabled]="exportingExcel()"
+                (clicked)="exportExcel.emit()"
+              >
+                <svg class="w-4 h-4 mr-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 4v12m0 0l-4-4m4 4l4-4" />
+                </svg>
+                Descargar planilla (Excel)
+              </app-button>
+            }
             <!-- Botones contextuales de la sesión activa: Visibles SOLO en modo DETALLE -->
             @if (isDetailMode()) {
               @if (bulkActions()) {
@@ -147,6 +161,8 @@ export class AttendanceControlHeaderComponent {
   selectedSessionId = input<string>('');
   sessions = input<ClassSession[]>([]);
   isLoadingSession = input<boolean>(false);
+  /** Descarga de la planilla Excel en curso: el botón muestra el estado de carga y no admite doble clic. */
+  exportingExcel = input<boolean>(false);
   showBackButton = input<boolean>(false);
   isDetailMode = input<boolean>(false);
   /** SES-01: la sesión mostrada está activa ([inicio, fin) sobre instantes v2 confirmados). */

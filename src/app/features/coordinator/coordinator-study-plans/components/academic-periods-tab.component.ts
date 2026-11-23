@@ -1,8 +1,11 @@
 import { Component, ChangeDetectionStrategy, input, output, signal, computed } from '@angular/core';
+import { FechaCivilPipe } from '../../../../shared/pipes/fecha-hora.pipes';
 import { PeriodoAcademicoItem } from '../../../../core/models/role-management.model';
 import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
+import { PeriodoRecesosListaComponent } from './periodo-recesos-lista.component';
 import { AcademicPeriodFormModalComponent, PeriodoFormDatos } from './academic-period-form-modal.component';
+import { RecesoPendiente } from '../../../../core/models/receso-academico.model';
 import {
   TAMANO_PAGINA_TABLA,
   TablaDatosComponent,
@@ -12,7 +15,7 @@ import {
 @Component({
   selector: 'app-academic-periods-tab',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [BadgeComponent, ButtonComponent, TablaDatosComponent, AcademicPeriodFormModalComponent],
+  imports: [FechaCivilPipe, BadgeComponent, ButtonComponent, TablaDatosComponent, AcademicPeriodFormModalComponent, PeriodoRecesosListaComponent],
   template: `
     <div class="space-y-4">
       <div class="superficie flex items-center justify-between p-5">
@@ -36,7 +39,7 @@ import {
       <!-- Tabla de Períodos (más reciente primero) -->
       <app-tabla-datos
         etiqueta="Períodos académicos"
-        [columnas]="soloLectura() ? 5 : 6"
+        [columnas]="6"
         anchoMinimo="44rem"
         [vacio]="periodos().length === 0"
         mensajeVacio="No hay períodos académicos registrados."
@@ -54,9 +57,7 @@ import {
             <th scope="col">Fecha de inicio</th>
             <th scope="col">Fecha de cierre</th>
             <th scope="col">Estado</th>
-            @if (!soloLectura()) {
-              <th scope="col"><span class="sr-only">Acciones</span></th>
-            }
+            <th scope="col"><span class="sr-only">Acciones</span></th>
           </tr>
         </thead>
         <tbody>
@@ -71,8 +72,8 @@ import {
                   <span class="ml-2 rounded bg-primary-100 px-2 py-0.5 text-[10px] font-bold text-primary-800">ACTUAL</span>
                 }
               </td>
-              <td class="whitespace-nowrap tabular-nums">{{ periodo.fechaInicio }}</td>
-              <td class="whitespace-nowrap tabular-nums">{{ periodo.fechaFin }}</td>
+              <td class="whitespace-nowrap tabular-nums">{{ periodo.fechaInicio | fechaCivil }}</td>
+              <td class="whitespace-nowrap tabular-nums">{{ periodo.fechaFin | fechaCivil }}</td>
               <td>
                 <app-badge
                   size="sm"
@@ -81,8 +82,19 @@ import {
                   {{ periodo.estado }}
                 </app-badge>
               </td>
-              @if (!soloLectura()) {
-                <td class="text-right whitespace-nowrap text-xs">
+              <td class="text-right whitespace-nowrap text-xs">
+                @if (soloLectura()) {
+                  <button
+                    type="button"
+                    data-testid="ver-recesos"
+                    [attr.aria-pressed]="periodoRecesosId() === periodo.id"
+                    [attr.aria-label]="'Ver los días de receso del período ' + periodo.codigo"
+                    (click)="alternarRecesos(periodo)"
+                    class="font-medium text-primary-700 hover:text-primary-900"
+                  >
+                    {{ periodoRecesosId() === periodo.id ? 'Ocultar receso' : 'Ver receso' }}
+                  </button>
+                } @else {
                   <button
                     type="button"
                     (click)="abrirEditar(periodo)"
@@ -99,12 +111,16 @@ import {
                   >
                     Eliminar
                   </button>
-                </td>
-              }
+                }
+              </td>
             </tr>
           }
         </tbody>
       </app-tabla-datos>
+
+      @if (periodoRecesos(); as seleccionado) {
+        <app-periodo-recesos-lista [idPeriodo]="seleccionado.id" [nombrePeriodo]="seleccionado.codigo" />
+      }
 
       @if (mostrarModal()) {
         @defer (on immediate) {
@@ -113,6 +129,7 @@ import {
             [guardando]="guardando()"
             [error]="errorGuardado()"
             (guardar)="guardar($event)"
+            (recesosChange)="recesosPendientes.set($event)"
             (cerrar)="cerrarFormulario()"
           />
         }
@@ -129,14 +146,20 @@ export class AcademicPeriodsTabComponent {
   guardando = input(false);
   errorGuardado = input('');
 
-  savePeriodo = output<{ modo: 'CREAR' | 'EDITAR'; id?: string; datos: PeriodoFormDatos }>();
+  /** `recesos` (DEC-081) solo viaja al crear un período con días de receso agregados en el formulario. */
+  savePeriodo = output<{ modo: 'CREAR' | 'EDITAR'; id?: string; datos: PeriodoFormDatos; recesos?: RecesoPendiente[] }>();
   /** Solicita eliminar el período; el backend lo rechaza si tiene grupos o sesiones. */
   deletePeriodo = output<PeriodoAcademicoItem>();
 
   currentPage = signal(1);
   pageSize = signal(TAMANO_PAGINA_TABLA);
 
+  /** DEC-081: período cuyos días de receso se muestran (solo lectura). */
+  protected readonly periodoRecesosId = signal<string | null>(null);
+  protected readonly periodoRecesos = computed(() => this.periodos().find((p) => p.id === this.periodoRecesosId()) ?? null);
+
   mostrarModal = signal(false);
+  private readonly recesosPendientes = signal<RecesoPendiente[]>([]);
   periodoEditando = signal<PeriodoAcademicoItem | null>(null);
 
   /** Más reciente primero (por fecha de inicio ISO); la lista original no tenía orden elegido por el usuario. */
@@ -151,8 +174,13 @@ export class AcademicPeriodsTabComponent {
     this.currentPage.set(1);
   }
 
+  alternarRecesos(periodo: PeriodoAcademicoItem): void {
+    this.periodoRecesosId.update((actual) => (actual === periodo.id ? null : periodo.id));
+  }
+
   abrirCrear(): void {
     this.periodoEditando.set(null);
+    this.recesosPendientes.set([]);
     this.mostrarModal.set(true);
   }
 
@@ -164,15 +192,18 @@ export class AcademicPeriodsTabComponent {
   /** El nombre del período (p. ej. 2027-1) es único en la institución. */
   guardar(datos: PeriodoFormDatos): void {
     const editando = this.periodoEditando();
+    const recesos = editando ? [] : this.recesosPendientes();
     this.savePeriodo.emit({
       modo: editando ? 'EDITAR' : 'CREAR',
       id: editando?.id,
       datos,
+      ...(recesos.length > 0 ? { recesos } : {}),
     });
   }
 
   cerrarFormulario(): void {
     this.mostrarModal.set(false);
     this.periodoEditando.set(null);
+    this.recesosPendientes.set([]);
   }
 }

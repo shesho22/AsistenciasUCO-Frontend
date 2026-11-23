@@ -5,6 +5,7 @@ import { CorreccionDocumentoComponent } from '../../../../shared/components/corr
 import { EstadoCorreccionDocumento } from '../../../../core/models/correccion-identidad.model';
 import { getPersonNamesError } from '../../../../core/validation/form-fields.util';
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
+import { mensajeUi } from '../../../../core/messages/mensajes-ui';
 
 const CLASE_CONTROL =
   'w-full px-3.5 py-2.5 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20';
@@ -96,7 +97,7 @@ export class CoordinatorDocenteEditModalComponent implements OnInit {
     const primerNombre = f.primerNombre.trim();
     const primerApellido = f.primerApellido.trim();
     if (!primerNombre || !primerApellido) {
-      this.error.set('El primer nombre y el primer apellido no pueden quedar vacíos.');
+      this.error.set(mensajeUi('UI_COORDINATOR_DOCENTES_004'));
       return;
     }
     // DEC-073: nombres y apellidos solo con letras, espacios, apóstrofo y guion.
@@ -109,7 +110,7 @@ export class CoordinatorDocenteEditModalComponent implements OnInit {
     const payload: ActualizarDocentePayload = {};
     const estado = this.documento();
     if (!estado.valido) {
-      this.error.set('Revisa el documento y el motivo de la corrección.');
+      this.error.set(mensajeUi('UI_COORDINATOR_DOCENTES_005'));
       return;
     }
     if (estado.documento) {
@@ -129,7 +130,7 @@ export class CoordinatorDocenteEditModalComponent implements OnInit {
     }
 
     if (Object.keys(payload).length === 0) {
-      this.error.set('No hay cambios para guardar.');
+      this.error.set(mensajeUi('UI_COORDINATOR_DOCENTES_006'));
       return;
     }
     this.error.set(null);

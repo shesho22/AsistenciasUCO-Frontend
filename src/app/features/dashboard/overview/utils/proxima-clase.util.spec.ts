@@ -135,4 +135,24 @@ describe('proxima-clase.util', () => {
       expect(resultado?.tiempoDetalleBadge).toBeDefined();
     });
   });
+
+  describe('sesiones con fecha concreta (extraordinarias)', () => {
+    const base = { codigoMateria: 'X', nombreMateria: 'Extra', dia: 'Lunes', horaInicio: '08:00', horaFin: '09:00', subtitulo: 's' };
+
+    it('una sesión con fecha futura compite por cercanía y una en curso tiene prioridad', () => {
+      const ahora = Date.now();
+      const futura = { ...base, nombreMateria: 'Futura', inicio: new Date(ahora + 3_600_000), fin: new Date(ahora + 7_200_000) };
+      const enCurso = { ...base, nombreMateria: 'EnCurso', inicio: new Date(ahora - 600_000), fin: new Date(ahora + 600_000) };
+      expect(calcularProximaClaseDesdeItems([futura])?.materia).toBe('Futura');
+      const r = calcularProximaClaseDesdeItems([futura, enCurso]);
+      expect(r?.materia).toBe('EnCurso');
+      expect(r?.enCurso).toBeTrue();
+    });
+
+    it('una sesión con fecha ya terminada se ignora y sin fin se asume de 2 horas', () => {
+      const ahora = Date.now();
+      expect(calcularProximaClaseDesdeItems([{ ...base, inicio: new Date(ahora - 4 * 3_600_000), fin: new Date(ahora - 3_600_000) }])).toBeNull();
+      expect(calcularProximaClaseDesdeItems([{ ...base, inicio: new Date(ahora - 3_600_000) }])?.enCurso).toBeTrue();
+    });
+  });
 });

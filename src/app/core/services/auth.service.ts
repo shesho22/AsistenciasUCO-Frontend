@@ -95,8 +95,8 @@ function parseJwt(token: string): JwtTokenPayload | null {
         .join('')
     );
     return JSON.parse(jsonPayload) as JwtTokenPayload;
-  } catch (e) {
-    console.error('Error al decodificar JWT:', e);
+  } catch {
+    // Token ilegible: se trata como ausente (sin registrar el contenido del token).
     return null;
   }
 }
@@ -207,7 +207,8 @@ export class AuthService implements OnDestroy {
     // Persistir ambos estados evita que un USE_MOCKS=true definido por runtime
     // reaparezca al eliminar la preferencia local durante el mismo arranque.
     localStorage.setItem('USE_MOCKS', String(enabled));
-    this.mockModeSignal.set(enabled);
+    // En producción el modo simulado no existe (sus datos no viajan en el bundle).
+    this.mockModeSignal.set(enabled && !environment.production);
   }
 
   constructor() {
@@ -505,21 +506,9 @@ export class AuthService implements OnDestroy {
     }
   }
 
-  private homePathForRole(role: UserRole): string {
-    switch (role) {
-      case 'ADMINISTRADOR':
-        return '/app/admin/decanos';
-      case 'DECANO':
-        return '/app/decano/mi-facultad/coordinadores';
-      case 'COORDINADOR':
-        return '/app/coordinador/programa/docentes';
-      case 'DOCENTE':
-        return '/app/docente/grupos';
-      case 'ESTUDIANTE':
-        return '/app/estudiante/horarios';
-      default:
-        return '/app/dashboard';
-    }
+  /** Aterrizaje posterior al login: el Panel principal para todos los roles (P3 C5). */
+  private homePathForRole(_role: UserRole): string {
+    return '/app/dashboard';
   }
 
   async loginWithCredentials(usernameInput: string, passwordInput: string): Promise<User> {
@@ -572,7 +561,6 @@ export class AuthService implements OnDestroy {
         body: body.toString(),
       });
     } catch (networkError) {
-      console.error('Error de red al conectar con el servidor de autenticación institucional:', networkError);
       throw new Error(this.resolveAuthMessage('AUTH_NETWORK_ERROR'), { cause: networkError });
     }
 
@@ -726,26 +714,7 @@ export class AuthService implements OnDestroy {
   }
 
   navigateForRole(role: UserRole): void {
-    switch (role) {
-      case 'ADMINISTRADOR':
-        void this.router.navigate(['/app/admin/decanos']);
-        break;
-      case 'DECANO':
-        void this.router.navigate(['/app/decano/mi-facultad/coordinadores']);
-        break;
-      case 'COORDINADOR':
-        void this.router.navigate(['/app/coordinador/programa/docentes']);
-        break;
-      case 'DOCENTE':
-        void this.router.navigate(['/app/docente/grupos']);
-        break;
-      case 'ESTUDIANTE':
-        void this.router.navigate(['/app/estudiante/horarios']);
-        break;
-      default:
-        void this.router.navigate(['/app/dashboard']);
-        break;
-    }
+    void this.router.navigate([this.homePathForRole(role)]);
   }
 
   login(): Observable<ApiResponse<User | null>> {
@@ -890,8 +859,8 @@ export class AuthService implements OnDestroy {
       this.currentUser.set(syncedUser);
       // Perfil sincronizado solo en signal de memoria — sin localStorage.
       return syncedUser;
-    } catch (e) {
-      console.warn('No se pudo hidratar el perfil desde el backend:', e);
+    } catch {
+      // Sin perfil del backend se conserva la identidad del token.
       return null;
     }
   }

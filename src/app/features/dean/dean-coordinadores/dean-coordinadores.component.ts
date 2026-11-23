@@ -1,4 +1,6 @@
-import { Component, OnInit, inject, signal, ChangeDetectionStrategy, input } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy, input, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DeanManagementService } from '../../../core/services/dean-management.service';
@@ -414,6 +416,7 @@ const NOMBRE_PROGRAMA_MAX = 50;
   `,
 })
 export class DeanCoordinadoresComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   /** CULM-001: dentro de una pestaña, el título lo pone el cascarón. */
   readonly embebido = input(false);
   private readonly deanService = inject(DeanManagementService);
@@ -459,6 +462,7 @@ export class DeanCoordinadoresComponent implements OnInit {
   alElegirAccion(id: string): void {
     if (id === 'registrar') this.abrirFormularioRegistro();
   }
+  private readonly route = inject(ActivatedRoute, { optional: true });
   private readonly searchQuerySig = signal('');
   private readonly selectedEstadoSig = signal('TODOS');
   currentPage = signal(1);
@@ -519,30 +523,33 @@ export class DeanCoordinadoresComponent implements OnInit {
 
 
   ngOnInit(): void {
+    // Acceso rápido del panel («Administrar Coordinación»): abre la lista ya filtrada por el correo del coordinador.
+    const busquedaEnlace = this.route?.snapshot?.queryParamMap?.get('busqueda')?.trim();
+    if (busquedaEnlace) this.searchQuerySig.set(busquedaEnlace);
     this.cargarTiposIdentificacion();
     this.cargarProgramasAcademicos();
     this.cargarCatalogosPrograma();
     this.cargarCoordinadores();
-    this.registroConfig.getEmailDomain().subscribe({ next: (d) => this.dominioCorreo.set(d), error: () => this.dominioCorreo.set(null) });
+    this.registroConfig.getEmailDomain().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({ next: (d) => this.dominioCorreo.set(d), error: () => this.dominioCorreo.set(null) });
   }
 
   cargarCatalogosPrograma(): void {
-    this.programasService.getTiposPrograma().subscribe({
+    this.programasService.getTiposPrograma().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (lista) => this.tiposPrograma.set(lista),
       error: (err) => this.toast.warning(getApiErrorMessage(err)),
     });
-    this.programasService.getModalidades().subscribe({
+    this.programasService.getModalidades().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (lista) => this.modalidades.set(lista),
       error: (err) => this.toast.warning(getApiErrorMessage(err)),
     });
-    this.programasService.getJornadas().subscribe({
+    this.programasService.getJornadas().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (lista) => this.jornadas.set(lista),
       error: (err) => this.toast.warning(getApiErrorMessage(err)),
     });
   }
 
   cargarProgramasAcademicos(): void {
-    this.catalogService.getProgramasAcademicos().subscribe({
+    this.catalogService.getProgramasAcademicos().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
         if (res.datos) {
           this.programasAcademicos.set(res.datos);
@@ -553,7 +560,7 @@ export class DeanCoordinadoresComponent implements OnInit {
   }
 
   cargarTiposIdentificacion(): void {
-    this.catalogService.getTiposIdentificacion().subscribe({
+    this.catalogService.getTiposIdentificacion().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
         if (res.datos && res.datos.length > 0) {
           this.tiposIdentificacion.set(res.datos);
@@ -588,7 +595,7 @@ export class DeanCoordinadoresComponent implements OnInit {
       tamano: this.pageSize(),
       busqueda: this.searchQuerySig(),
       estaActivo: estado === 'TODOS' ? null : estado === 'ACTIVO',
-    }).subscribe({
+    }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
         if (!this.ultimaPeticionCoordinadores.esVigente(peticion)) {
           return;
@@ -628,7 +635,7 @@ export class DeanCoordinadoresComponent implements OnInit {
     if (!coord) {
       return;
     }
-    this.deanService.setCoordinadorEstado(coord.id, coord.estado !== 'ACTIVO').subscribe({
+    this.deanService.setCoordinadorEstado(coord.id, coord.estado !== 'ACTIVO').pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
         this.coordinadorParaCambioEstado.set(null);
         this.notificarResultado(res);
@@ -655,7 +662,7 @@ export class DeanCoordinadoresComponent implements OnInit {
     if (!coord) {
       return;
     }
-    this.deanService.updateCoordinador(coord.id, payload).subscribe({
+    this.deanService.updateCoordinador(coord.id, payload).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
         this.coordinadorEnEdicion.set(null);
         this.notificarResultado(res);
@@ -871,7 +878,7 @@ export class DeanCoordinadoresComponent implements OnInit {
     };
 
     this.isSubmitting.set(true);
-    this.deanService.createCoordinador(payload).pipe(finalize(() => this.isSubmitting.set(false))).subscribe({
+    this.deanService.createCoordinador(payload).pipe(finalize(() => this.isSubmitting.set(false))).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
         if (res.exitoso) {
           this.toast.success(res.mensajeUsuario || mensajeUi('UI_DEAN_COORDINADORES_005'));

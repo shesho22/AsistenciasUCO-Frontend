@@ -11,6 +11,7 @@ import {
   VincularDocenteNuevoPayload,
 } from '../../../../core/models/docente-programa.model';
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
+import { mensajeUi } from '../../../../core/messages/mensajes-ui';
 
 type ModoVinculacion = 'NUEVO' | 'EXISTENTE';
 
@@ -158,7 +159,7 @@ export class CoordinatorDocenteFormModalComponent {
     const faltantes = !tipoId || !f.numeroIdentificacion.trim() || !f.primerNombre.trim() || !f.primerApellido.trim()
       || !f.correo.trim();
     if (faltantes) {
-      this.error.set('Complete todos los campos obligatorios: documento, nombre, apellido y correo.');
+      this.error.set(mensajeUi('UI_COORDINATOR_DOCENTES_007'));
       return;
     }
     // DEC-073: formato de nombres, documento numerico y correo institucional antes de enviar.
@@ -202,7 +203,7 @@ export class CoordinatorDocenteFormModalComponent {
   enviarExistente(): void {
     const candidato = this.candidatoSeleccionado();
     if (!candidato) {
-      this.error.set('Seleccione un docente de la lista.');
+      this.error.set(mensajeUi('UI_COORDINATOR_DOCENTES_008'));
       return;
     }
     this.error.set(null);

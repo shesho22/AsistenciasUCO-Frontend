@@ -877,11 +877,13 @@ describe('mockBackendInterceptor', () => {
   describe('CIERRE-W2A: el simulador respeta los parámetros nuevos del coordinador', () => {
     it('GET /coordinador/grupos responde ApiPageResponse con franjas y filtra por búsqueda', fakeAsync(() => {
       auth.setMockMode(true);
-      let todos: SobrePagina<{ nombreAsignatura: string; franjas: unknown[] }> | undefined;
+      let todos: SobrePagina<{ nombreAsignatura: string; franjas: unknown[]; nombreProgramaResponsable: string; esResponsable: boolean }> | undefined;
       httpClient.get<typeof todos>(`${environment.apiUrl}/coordinador/grupos`, { params: { pagina: 1, tamano: 10 } }).subscribe((r) => (todos = r));
       tick(250);
       expect(todos!.totalElementos).toBe(1);
       expect(todos!.elementos[0].franjas).toHaveSize(1);
+      expect(todos!.elementos[0].nombreProgramaResponsable).toBe('Ingeniería de Sistemas');
+      expect(todos!.elementos[0].esResponsable).toBeTrue();
 
       let ninguno: SobrePagina<unknown> | undefined;
       httpClient.get<typeof ninguno>(`${environment.apiUrl}/coordinador/grupos`, { params: { busqueda: 'zzz' } }).subscribe((r) => (ninguno = r));
@@ -921,6 +923,79 @@ describe('mockBackendInterceptor', () => {
       tick(250);
       expect(activos!.datos.length).toBeGreaterThan(0);
       expect(activos!.datos.every((p) => p.estado === 'ACTIVO')).toBeTrue();
+    }));
+
+    it('DEC-081: GET/POST/DELETE de recesos del período (409 si ya canceló clases, 400 fuera del período, 409 repetido)', fakeAsync(() => {
+      auth.setMockMode(true);
+      interface Receso { id: string; fecha: string; motivo: string; estaAplicado: boolean; puedeRetirarse: boolean }
+      const base = `${environment.apiUrl}/admin/periodos-academicos/PER-2027-1/recesos`;
+      let lista: SobreDatos<Receso[]> | undefined;
+      httpClient.get<typeof lista>(base).subscribe((r) => (lista = r));
+      tick(250);
+      expect(lista!.datos.some((r) => r.puedeRetirarse && !r.estaAplicado)).toBeTrue();
+
+      let creado: (SobreDatos<{ id: string; sesionesCanceladas: number }> & { mensajeUsuario?: string }) | undefined;
+      httpClient.post<typeof creado>(base, { fecha: '2027-04-02', motivo: 'Viernes Santo' }).subscribe((r) => (creado = r));
+      tick(250);
+      expect(creado!.datos.id).toBeTruthy();
+
+      let rechazo: HttpErrorResponse | undefined;
+      httpClient.post(base, { fecha: '2027-04-02', motivo: 'Otra vez' }).subscribe({ error: (e) => (rechazo = e) });
+      tick(250);
+      expect(rechazo!.status).toBe(409);
+      httpClient.post(base, { fecha: '2030-01-01', motivo: 'Lejos' }).subscribe({ error: (e) => (rechazo = e) });
+      tick(250);
+      expect(rechazo!.status).toBe(400);
+      httpClient.post(base, { fecha: '2027-04-05', motivo: '   ' }).subscribe({ error: (e) => (rechazo = e) });
+      tick(250);
+      expect(rechazo!.status).toBe(400);
+
+      httpClient.delete(`${base}/${creado!.datos.id}`).subscribe();
+      tick(250);
+      httpClient.delete(`${environment.apiUrl}/admin/periodos-academicos/PER-2026-2/recesos/REC-MOCK-1`).subscribe({ error: (e) => (rechazo = e) });
+      tick(250);
+      expect(rechazo!.status).toBe(409);
+      httpClient.delete(`${base}/no-existe`).subscribe({ error: (e) => (rechazo = e) });
+      tick(250);
+      expect(rechazo!.status).toBe(404);
+      httpClient.get(`${environment.apiUrl}/coordinador/periodos-academicos/PER-NO/recesos`).subscribe({ error: (e) => (rechazo = e) });
+      tick(250);
+      expect(rechazo!.status).toBe(404);
+
+      let consulta: typeof lista;
+      httpClient.get<typeof lista>(`${environment.apiUrl}/coordinador/periodos-academicos/PER-2026-2/recesos`).subscribe((r) => (consulta = r));
+      tick(250);
+      expect(consulta!.datos.map((r) => r.id)).toContain('REC-MOCK-1');
+    }));
+
+    it('DEC-081: la previsualización simulada marca CANCELADA_POR_RECESO con motivo y aviso informativo REC_011', fakeAsync(() => {
+      auth.setMockMode(true);
+      interface Previsualizacion {
+        resumenPeriodo: { sesionesEnReceso: number };
+        recesos: { fecha: string; motivo: string }[];
+        sesiones: { estado: string; motivoReceso: string | null }[];
+        conflictos: { codigo: string; severidad: string }[];
+      }
+      let r: SobreDatos<Previsualizacion> | undefined;
+      httpClient
+        .post<typeof r>(`${environment.apiUrl}/coordinador/grupos/previsualizacion-horario`, {
+          idPeriodoAcademico: 'PER-2026-2',
+          franjas: [{ dia: 'JU', horaInicio: '07:00', horaFin: '09:00' }],
+        })
+        .subscribe((x) => (r = x));
+      tick(300);
+      expect(r!.datos.resumenPeriodo.sesionesEnReceso).toBe(r!.datos.recesos.length);
+      const canceladas = r!.datos.sesiones.filter((s) => s.estado === 'CANCELADA_POR_RECESO');
+      expect(canceladas.length).toBe(r!.datos.resumenPeriodo.sesionesEnReceso);
+      expect(canceladas.every((s) => !!s.motivoReceso?.startsWith('Receso académico: '))).toBeTrue();
+      expect(r!.datos.conflictos.length > 0 ? r!.datos.conflictos[0].severidad : 'INFORMATIVO').toBe('INFORMATIVO');
+
+      // Sin recesos en el período: sin conflicto y sin sesiones canceladas.
+      let sin: typeof r;
+      httpClient.post<typeof sin>(`${environment.apiUrl}/coordinador/grupos/previsualizacion-horario`, { idPeriodoAcademico: 'PER-2026-1' }).subscribe((x) => (sin = x));
+      tick(300);
+      expect(sin!.datos.resumenPeriodo.sesionesEnReceso).toBe(0);
+      expect(sin!.datos.conflictos).toEqual([]);
     }));
 
     it('GET /coordinador/planes-estudio filtra por estaActivo con el total del filtro', fakeAsync(() => {

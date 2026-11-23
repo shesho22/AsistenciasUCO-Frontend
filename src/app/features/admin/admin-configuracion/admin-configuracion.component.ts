@@ -6,7 +6,6 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
 export type TabConfiguracion =
   | 'parametros'
   | 'catalogos'
-  | 'estados'
   | 'festivos'
   | 'correo'
   | 'areas'
@@ -20,8 +19,7 @@ export interface TabConfiguracionItem {
 /** Orden de las pestañas de la vista única de configuración del administrador. */
 export const TABS_CONFIGURACION: readonly TabConfiguracionItem[] = [
   { id: 'parametros', etiqueta: 'Parámetros del sistema' },
-  { id: 'catalogos', etiqueta: 'Catálogos' },
-  { id: 'estados', etiqueta: 'Estados' },
+  { id: 'catalogos', etiqueta: 'Catálogos del sistema' },
   { id: 'festivos', etiqueta: 'Festivos' },
   { id: 'correo', etiqueta: 'Correo y notificaciones' },
   { id: 'areas', etiqueta: 'Áreas' },

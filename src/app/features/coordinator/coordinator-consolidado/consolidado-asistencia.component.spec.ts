@@ -111,6 +111,35 @@ describe('ConsolidadoAsistenciaComponent (HU061)', () => {
     expect(fixture.componentInstance.docentes()).toEqual(OPCIONES.docentes);
   });
 
+  it('P2 responsive: la tabla pasa a tarjetas bajo md y cada celda de la fila lleva su rótulo', () => {
+    const fixture = crear(false);
+    http
+      .expectOne((r) => r.url === `${api}/coordinador/consolidado-asistencia`)
+      .flush({ exitoso: true, datos: [grupo('ASG-1', 'Cálculo', 'DOC-1')], total: 1 });
+    fixture.detectChanges();
+    const tabla = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="consolidado-tabla"]') as HTMLElement;
+    expect(tabla.classList).toContain('tabla-tarjetas');
+    const rotulos = Array.from(tabla.querySelectorAll('tbody tr:first-child td[data-label]')).map((td) => td.getAttribute('data-label'));
+    expect(rotulos).toContain('Materia / Grupo');
+    expect(rotulos).toContain('% Inasistencia');
+    expect(rotulos).toContain('Pérdida');
+  });
+
+  it('P1 movil/escritorio: marco con desplazamiento propio (encabezado fijo) y columnas de expandir y materia fijas a la izquierda', () => {
+    const fixture = crear(false);
+    http
+      .expectOne((r) => r.url === `${api}/coordinador/consolidado-asistencia`)
+      .flush({ exitoso: true, datos: [grupo('ASG-1', 'Cálculo', 'DOC-1')], total: 1 });
+    fixture.detectChanges();
+    const tabla = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="consolidado-tabla"]') as HTMLElement;
+    expect(tabla.parentElement?.classList).toContain('tabla-scroll');
+    expect(tabla.parentElement?.getAttribute('role')).toBe('region');
+    const fijas = Array.from(tabla.querySelectorAll('tbody tr:first-child td.col-fija'));
+    expect(fijas.length).toBe(2);
+    expect(fijas[1].getAttribute('data-label')).toBe('Materia / Grupo');
+    expect(tabla.querySelectorAll('thead th.col-fija').length).toBe(2);
+  });
+
   it('D.8 muestra Excusa y Sin registro con la barra apilada de cuatro segmentos y la nota de horas', () => {
     const fixture = crear(false);
     http
@@ -137,6 +166,38 @@ describe('ConsolidadoAsistenciaComponent (HU061)', () => {
     expect(raiz.querySelectorAll('[data-testid="barra-distribucion"] > span')).toHaveSize(4);
     expect(raiz.querySelector('[data-testid="barra-distribucion"]')?.getAttribute('aria-label'))
       .toBe('Asistencia 60%, inasistencia 10%, excusa 5.5%, sin registro 24.5%');
+  });
+
+  it('con porcentajePorDictar muestra columna, quinto segmento y leyenda "Por dictar"; sin él los oculta', () => {
+    const fixture = crear(false);
+    http
+      .expectOne((r) => r.url === `${api}/coordinador/consolidado-asistencia`)
+      .flush({
+        exitoso: true,
+        datos: [{ ...grupo('ASG-1', 'Cálculo', 'DOC-1'), porcentajeAsistencia: 40, porcentajeInasistencia: 5, porcentajeExcusa: 5, porcentajeSinRegistro: 10, porcentajePorDictar: 40 }],
+        total: 1,
+      });
+    fixture.detectChanges();
+
+    const raiz = fixture.nativeElement as HTMLElement;
+    expect(raiz.querySelector('[data-testid="por-dictar"]')?.textContent?.trim()).toBe('40%');
+    expect((raiz.querySelector('[data-testid="segmento-por-dictar"]') as HTMLElement).style.width).toBe('40%');
+    expect(raiz.querySelectorAll('[data-testid="barra-distribucion"] > span')).toHaveSize(5);
+    expect(raiz.querySelector('[data-testid="leyenda-por-dictar"]')?.textContent).toContain('Por dictar');
+    expect(raiz.querySelector('[data-testid="barra-distribucion"]')?.getAttribute('aria-label')).toContain('por dictar 40%');
+    expect(raiz.textContent).toContain('% Por dictar');
+  });
+
+  it('sin porcentajePorDictar no aparece columna ni leyenda "Por dictar"', () => {
+    const fixture = crear(false);
+    http
+      .expectOne((r) => r.url === `${api}/coordinador/consolidado-asistencia`)
+      .flush({ exitoso: true, datos: [grupo('ASG-1', 'Cálculo', 'DOC-1')], total: 1 });
+    fixture.detectChanges();
+    const raiz = fixture.nativeElement as HTMLElement;
+    expect(raiz.querySelector('[data-testid="por-dictar"]')).toBeNull();
+    expect(raiz.querySelector('[data-testid="leyenda-por-dictar"]')).toBeNull();
+    expect(raiz.textContent).not.toContain('Por dictar');
   });
 
   it('el decano usa su ruta y filtrar por cohorte vuelve a consultar desde la página 1', () => {
@@ -230,6 +291,26 @@ describe('ConsolidadoAsistenciaComponent (HU061)', () => {
       expect(boton.getAttribute('aria-expanded')).toBe('false');
     });
 
+    it('FE-7: un grupo compartido por dos programas se expande solo en la fila pulsada y consulta las sesiones una vez', async () => {
+      const fixture = crear(true);
+      const base = grupo('ASG-1', 'Cálculo', 'DOC-1');
+      listar(fixture, 'decano', [base, { ...base, idPrograma: 'PRG-2', nombrePrograma: 'Psicología' }]);
+      const botones = Array.from(el(fixture).querySelectorAll<HTMLButtonElement>('[data-testid="expandir-G-ASG-1"]'));
+      expect(botones.length).toBe(2);
+
+      botones[0].click();
+      fixture.detectChanges();
+      const deferBlocks = await fixture.getDeferBlocks();
+      await Promise.all(deferBlocks.map((block) => block.render(DeferBlockState.Complete)));
+      fixture.detectChanges();
+      http.expectOne((r) => r.url === `${api}/decano/sesiones`).flush({ elementos: [], numeroPagina: 1, tamanoPagina: 50, totalElementos: 0, totalPaginas: 1 });
+      fixture.detectChanges();
+
+      expect(botones[0].getAttribute('aria-expanded')).toBe('true');
+      expect(botones[1].getAttribute('aria-expanded')).toBe('false');
+      expect(el(fixture).querySelectorAll('[data-testid="sesiones-G-ASG-1"]').length).toBe(1);
+    });
+
     it('el coordinador expande una fila y ve las sesiones de su grupo con la opción de cancelar', async () => {
       const fixture = crear(false);
       listar(fixture, 'coordinador', [grupo('ASG-1', 'Cálculo', 'DOC-1')]);
@@ -240,7 +321,7 @@ describe('ConsolidadoAsistenciaComponent (HU061)', () => {
       fixture.detectChanges();
       http.expectOne((r) => r.url === `${api}/coordinador/grupos/G-ASG-1/sesiones`).flush({
         exitoso: true, total: 1,
-        datos: [{ id: 'S1', idGrupo: 'G-ASG-1', codigoGrupo: 1, nombreGrupo: 'Grupo 01', nombre: 'Sesión 1', numero: 1, codigo: 'S-01', numeroSemana: 1, fechaHoraInicio: '2026-08-03T07:00:00', fechaHoraFin: '2026-08-03T09:00:00', estado: 'PROGRAMADA', cancelacion: null }],
+        datos: [{ id: 'S1', idGrupo: 'G-ASG-1', codigoGrupo: 1, nombreGrupo: 'Grupo 01', nombre: 'Sesión 1', numero: 1, codigo: 'S-01', numeroSemana: 1, fechaHoraInicio: '2099-08-03T07:00:00', fechaHoraFin: '2099-08-03T09:00:00', estado: 'PROGRAMADA', estadoSolicitud: 'APROBADA', cancelacion: null }],
       });
       fixture.detectChanges();
       const detalle = el(fixture).querySelector('[data-testid="sesiones-G-ASG-1"]');

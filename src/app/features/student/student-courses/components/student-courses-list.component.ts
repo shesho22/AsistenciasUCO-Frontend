@@ -3,7 +3,6 @@ import { HorasMinutosPipe } from '../../../../shared/pipes/horas-minutos.pipe';
 import { Component, ChangeDetectionStrategy, computed, input, output, signal } from '@angular/core';
 
 import { AttendanceStatusBadgeComponent } from '../../../../shared/components/attendance-status-badge/attendance-status-badge.component';
-import { CardComponent } from '../../../../shared/components/card/card.component';
 import { BadgeComponent, BadgeVariant } from '../../../../shared/components/badge/badge.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
@@ -43,7 +42,7 @@ interface BarraHoras {
 @Component({
     selector: 'app-student-courses-list',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [HorasMinutosPipe, PageHeaderComponent, CardComponent, BadgeComponent, ButtonComponent, AttendanceStatusBadgeComponent, PaginationComponent],
+    imports: [HorasMinutosPipe, PageHeaderComponent, BadgeComponent, ButtonComponent, AttendanceStatusBadgeComponent, PaginationComponent],
     template: `
     <div class="space-y-4">
       <!-- Header Bento -->
@@ -83,8 +82,8 @@ interface BarraHoras {
       </app-page-header>
 
       <!-- Métricas Generales -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="superficie p-4 flex items-center gap-4">
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4">
+        <div class="superficie px-3 py-2 sm:p-4 flex items-center gap-4">
           <div class="w-11 h-11 rounded-xl bg-primary-50 text-primary-700 flex items-center justify-center shrink-0">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
@@ -93,14 +92,14 @@ interface BarraHoras {
           <div>
             <span class="text-xs text-warm-500 font-medium">Materias Inscritas</span>
             @if (resumen(); as r) {
-              <p class="text-2xl font-serif font-bold text-warm-900" data-testid="resumen-total-materias">{{ r.totalMaterias }}</p>
+              <p class="text-xl font-serif font-bold text-warm-900" data-testid="resumen-total-materias">{{ r.totalMaterias }}</p>
             } @else {
               <p class="text-base font-serif font-bold text-warm-500" data-testid="materias-no-disponible">No disponible</p>
             }
           </div>
         </div>
 
-        <div class="superficie p-4 flex items-center gap-4">
+        <div class="superficie px-3 py-2 sm:p-4 flex items-center gap-4">
           <div class="w-11 h-11 rounded-xl bg-success-50 text-success-700 flex items-center justify-center shrink-0">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -109,14 +108,14 @@ interface BarraHoras {
           <div>
             <span class="text-xs text-warm-500 font-medium">Materias en riesgo</span>
             @if (materiasEnRiesgo() !== null) {
-              <p class="text-2xl font-serif font-bold text-warm-900">{{ materiasEnRiesgo() }}</p>
+              <p class="text-xl font-serif font-bold text-warm-900">{{ materiasEnRiesgo() }}</p>
             } @else {
               <p class="text-base font-serif font-bold text-warm-500" data-testid="riesgo-no-disponible">No disponible</p>
             }
           </div>
         </div>
 
-        <div class="superficie p-4 flex items-center gap-4">
+        <div class="superficie px-3 py-2 sm:p-4 flex items-center gap-4">
           <div class="w-11 h-11 rounded-xl bg-warning-50 text-warning-700 flex items-center justify-center shrink-0">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -125,7 +124,7 @@ interface BarraHoras {
           <div>
             <span class="text-xs text-warm-500 font-medium">Horas de falta</span>
             @if (resumen(); as r) {
-              <p class="text-2xl font-serif font-bold text-warm-900">{{ r.totalHorasFalta | horasMinutos }}</p>
+              <p class="text-xl font-serif font-bold text-warm-900">{{ r.totalHorasFalta | horasMinutos }}</p>
             } @else {
               <p class="text-base font-serif font-bold text-warm-500" data-testid="horas-falta-no-disponible">No disponible</p>
             }
@@ -168,124 +167,118 @@ interface BarraHoras {
           <app-button variant="secondary" size="sm" (clicked)="retry.emit()">Reintentar</app-button>
         </div>
       } @else {
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-          @for (materia of materiasPagina(); track materia.claveGrupo) {
-            <app-card [hoverable]="true" padding="md">
-              <div class="flex flex-col h-full justify-between gap-4">
-                <div>
-                  <div class="flex items-start justify-between gap-3 mb-2">
-                    <div class="flex items-center gap-2">
-                      @if (materia.codigo) {
-                        <span class="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-warm-100 text-warm-800">
-                          {{ materia.codigo }}
+        @if (materiasPagina().length === 0) {
+          @if (materias().length === 0) {
+            <div class="superficie px-4 py-6 text-center" data-testid="materias-vacio">
+              <p class="text-xs text-warm-500">No tienes asignaturas matriculadas actualmente.</p>
+            </div>
+          } @else {
+            <p class="text-sm text-warm-600 text-center py-4" data-testid="sin-coincidencias">
+              No hay materias que coincidan con «{{ busqueda().trim() }}».
+            </p>
+          }
+        } @else {
+          <div class="tabla-scroll" role="region" tabindex="0" aria-label="Materias matriculadas">
+            <table class="tabla-tarjetas tabla-tarjetas-compacta w-full min-w-[56rem] text-sm" data-testid="materias-tabla">
+              <thead>
+                <tr class="text-left text-xs uppercase tracking-wider text-warm-500 border-b border-warm-100">
+                  <th scope="col" class="col-fija py-2 pr-3">Materia</th>
+                  <th scope="col" class="py-2 pr-3">Grupo</th>
+                  <th scope="col" class="py-2 pr-3">Docente</th>
+                  <th scope="col" class="py-2 pr-3">Horario</th>
+                  <th scope="col" class="py-2 pr-3">Asistencia</th>
+                  <th scope="col" class="py-2 pr-3">Horas de la materia</th>
+                  <th scope="col" class="py-2 pr-3">Estado</th>
+                  <th scope="col" class="py-2 text-right"><span class="sr-only">Acciones</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (materia of materiasPagina(); track materia.claveGrupo) {
+                  <tr class="border-b border-warm-50 align-top" data-testid="materia-fila">
+                    <td class="col-fija tc-ancho py-2 pr-3">
+                      <span class="block font-semibold text-warm-900 leading-snug">
+                        @if (materia.codigo) {
+                          <span class="text-xs font-mono font-bold px-1.5 py-0.5 rounded-md bg-warm-100 text-warm-800 mr-1">{{ materia.codigo }}</span>
+                        }
+                        {{ materia.nombre }}
+                      </span>
+                      @if (materia.creditos || materia.caracter) {
+                        <span class="block text-xs text-warm-500" data-testid="materia-creditos-caracter">
+                          @if (materia.creditos) { <span>{{ materia.creditos }} créditos</span> }
+                          @if (materia.creditos && materia.caracter) { <span> · </span> }
+                          @if (materia.caracter) { <span>{{ materia.caracter }}</span> }
                         </span>
                       }
-                      <span class="text-xs text-warm-500 font-medium" data-testid="materia-grupo">{{ materia.grupo }}</span>
-                    </div>
-
-                    @if (materia.estado) {
-                      <app-badge [variant]="getBadgeVariant(materia.estado)">
-                        {{ materia.estado }}
-                      </app-badge>
-                    }
-                  </div>
-
-                  <h3 class="font-serif font-bold text-lg text-warm-900 leading-snug">
-                    {{ materia.nombre }}
-                  </h3>
-                  <p class="text-xs text-warm-500 mt-1">Docente: {{ materia.docente ?? 'No informado' }}</p>
-                  @if (materia.creditos || materia.caracter) {
-                    <p class="text-xs text-warm-500 mt-0.5" data-testid="materia-creditos-caracter">
-                      @if (materia.creditos) { <span>{{ materia.creditos }} créditos</span> }
-                      @if (materia.creditos && materia.caracter) { <span> · </span> }
-                      @if (materia.caracter) { <span>{{ materia.caracter }}</span> }
-                    </p>
-                  }
-                </div>
-
-                <!-- Indicadores por horas (solo con fuente autoritativa: los entrega el backend) -->
-                @if (materia.indicadores; as ind) {
-                  <div class="space-y-1.5 p-3 rounded-xl bg-warm-50 border border-warm-100">
-                    <div class="flex items-center justify-between gap-2 text-xs">
-                      <span class="font-bold text-warm-900" data-testid="porcentaje-inasistencia">{{ ind.porcentajeInasistencia }}% de inasistencia</span>
-                      <app-attendance-status-badge [codigoPermanencia]="ind.codigoPermanencia" />
-                    </div>
-                    <p class="text-xs text-warm-600">{{ ind.horasFalta | horasMinutos }} de falta de {{ ind.horasDictadas | horasMinutos }} dictadas</p>
-                    <p class="text-xs text-warm-500">Advertencia desde {{ ind.umbralAdvertencia }}% · pérdida desde {{ ind.umbralPerdida }}%</p>
-                  </div>
-                } @else {
-                  <div class="p-3 rounded-xl bg-warm-50 border border-warm-100 text-xs text-warm-500" data-testid="asistencia-no-disponible">
-                    <span class="font-medium text-warm-600">Asistencia:</span> No disponible
-                  </div>
-                }
-
-                <!-- HU019: horas asistidas, dictadas a la fecha y programadas del grupo (los tres valores los entrega el backend) -->
-                @if (barraHoras(materia); as barra) {
-                  <div class="space-y-1.5" data-testid="barra-horas">
-                    <div class="flex items-center justify-between gap-2 text-xs">
-                      <span class="font-semibold text-warm-800">Horas de la materia</span>
-                      @if (barra.conBarra) {
-                        <span class="text-warm-500" data-testid="avance-curso">{{ barra.porcentajeAvance }}% del curso dictado</span>
+                    </td>
+                    <td class="py-2 pr-3 text-warm-700 break-words md:whitespace-nowrap" data-label="Grupo" data-testid="materia-grupo">{{ materia.grupo }}</td>
+                    <td class="py-2 pr-3 text-warm-700" data-label="Docente">{{ materia.docente ?? 'No informado' }}</td>
+                    <td class="py-2 pr-3 text-warm-700" data-label="Horario">{{ materia.horario ?? 'Horario no informado' }}</td>
+                    <td class="py-2 pr-3 tc-ancho" data-label="Asistencia">
+                      <!-- Indicadores por horas (solo con fuente autoritativa: los entrega el backend) -->
+                      @if (materia.indicadores; as ind) {
+                        <span class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
+                          <span class="font-bold text-warm-900" data-testid="porcentaje-inasistencia">{{ ind.porcentajeInasistencia }}% de inasistencia</span>
+                          <app-attendance-status-badge [codigoPermanencia]="ind.codigoPermanencia" />
+                        </span>
+                        <span class="block text-xs text-warm-600">{{ ind.horasFalta | horasMinutos }} de falta de {{ ind.horasDictadas | horasMinutos }} dictadas</span>
+                        <span class="block text-xs text-warm-500">Advertencia desde {{ ind.umbralAdvertencia }}% · pérdida desde {{ ind.umbralPerdida }}%</span>
+                      } @else {
+                        <span class="text-xs text-warm-500" data-testid="asistencia-no-disponible">
+                          <span class="font-medium text-warm-600">Asistencia:</span> No disponible
+                        </span>
                       }
-                    </div>
-                    @if (barra.conBarra) {
-                      <div
-                        class="relative h-2.5 w-full rounded-full bg-warm-200 overflow-hidden"
-                        role="img"
-                        [attr.aria-label]="barra.descripcion"
-                        data-testid="barra-horas-tramos"
-                      >
-                        <div class="absolute inset-y-0 left-0 bg-primary-300" data-testid="tramo-dictadas" [style.width.%]="barra.anchoDictadas"></div>
-                        <div class="absolute inset-y-0 left-0 bg-primary-700" data-testid="tramo-asistidas" [style.width.%]="barra.anchoAsistidas"></div>
-                      </div>
-                      <ul class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-warm-600" data-testid="leyenda-horas">
-                        <li class="flex items-center gap-1.5">
-                          <span class="inline-block w-2.5 h-2.5 rounded-full bg-primary-700" aria-hidden="true"></span>
-                          {{ barra.asistidas | horasMinutos }} asistidas
-                        </li>
-                        <li class="flex items-center gap-1.5">
-                          <span class="inline-block w-2.5 h-2.5 rounded-full bg-primary-300" aria-hidden="true"></span>
-                          {{ barra.dictadas | horasMinutos }} dictadas a la fecha
-                        </li>
-                        <li class="flex items-center gap-1.5">
-                          <span class="inline-block w-2.5 h-2.5 rounded-full bg-warm-200 border border-warm-300" aria-hidden="true"></span>
-                          {{ barra.programadas | horasMinutos }} programadas
-                        </li>
-                      </ul>
-                    } @else if (barra.programadas === 0) {
-                      <p class="text-xs text-warm-500" data-testid="horas-sin-sesiones">El grupo aún no tiene sesiones programadas.</p>
-                    } @else {
-                      <p class="text-xs text-warm-500" data-testid="horas-programadas-no-disponible">Horas programadas: no disponible</p>
-                    }
-                  </div>
+                    </td>
+                    <td class="py-2 pr-3 tc-ancho min-w-[12rem]" data-label="Horas de la materia">
+                      <!-- HU019: horas asistidas, dictadas a la fecha y programadas del grupo (los tres valores los entrega el backend) -->
+                      @if (barraHoras(materia); as barra) {
+                        <div class="space-y-1" data-testid="barra-horas">
+                          @if (barra.conBarra) {
+                            <div
+                              class="relative h-2.5 w-full rounded-full bg-warm-200 overflow-hidden"
+                              role="img"
+                              [attr.aria-label]="barra.descripcion"
+                              data-testid="barra-horas-tramos"
+                            >
+                              <div class="absolute inset-y-0 left-0 bg-primary-300" data-testid="tramo-dictadas" [style.width.%]="barra.anchoDictadas"></div>
+                              <div class="absolute inset-y-0 left-0 bg-primary-700" data-testid="tramo-asistidas" [style.width.%]="barra.anchoAsistidas"></div>
+                            </div>
+                            <span class="block text-xs text-warm-500" data-testid="avance-curso">{{ barra.porcentajeAvance }}% del curso dictado</span>
+                            <ul class="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-warm-600" data-testid="leyenda-horas">
+                              <li class="flex items-center gap-1.5">
+                                <span class="inline-block w-2.5 h-2.5 rounded-full bg-primary-700" aria-hidden="true"></span>
+                                {{ barra.asistidas | horasMinutos }} asistidas
+                              </li>
+                              <li class="flex items-center gap-1.5">
+                                <span class="inline-block w-2.5 h-2.5 rounded-full bg-primary-300" aria-hidden="true"></span>
+                                {{ barra.dictadas | horasMinutos }} dictadas a la fecha
+                              </li>
+                              <li class="flex items-center gap-1.5">
+                                <span class="inline-block w-2.5 h-2.5 rounded-full bg-warm-200 border border-warm-300" aria-hidden="true"></span>
+                                {{ barra.programadas | horasMinutos }} programadas
+                              </li>
+                            </ul>
+                          } @else if (barra.programadas === 0) {
+                            <p class="text-xs text-warm-500" data-testid="horas-sin-sesiones">El grupo aún no tiene sesiones programadas.</p>
+                          } @else {
+                            <p class="text-xs text-warm-500" data-testid="horas-programadas-no-disponible">Horas programadas: no disponible</p>
+                          }
+                        </div>
+                      }
+                    </td>
+                    <td class="py-2 pr-3" data-label="Estado">
+                      @if (materia.estado) {
+                        <app-badge [variant]="getBadgeVariant(materia.estado)">{{ materia.estado }}</app-badge>
+                      }
+                    </td>
+                    <td class="py-2 text-right tc-ancho">
+                      <app-button variant="secondary" size="sm" (clicked)="viewDetail.emit(materia)">Ver Detalle</app-button>
+                    </td>
+                  </tr>
                 }
-
-                <div class="flex items-center justify-between pt-2 border-t border-warm-100">
-                  <span class="text-xs text-warm-500">{{ materia.horario ?? 'Horario no informado' }}</span>
-                  <div class="flex items-center gap-2">
-                    <app-button variant="secondary" size="sm" (clicked)="viewDetail.emit(materia)">
-                      <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
-                      Ver Detalle
-                    </app-button>
-                  </div>
-                </div>
-              </div>
-            </app-card>
-          } @empty {
-            @if (materias().length === 0) {
-              <div class="md:col-span-2 bg-white p-12 rounded-2xl border border-warm-200 text-center space-y-3" data-testid="materias-vacio">
-                <p class="text-xs text-warm-500">No tienes asignaturas matriculadas actualmente.</p>
-              </div>
-            } @else {
-              <p class="md:col-span-2 text-sm text-warm-600 text-center py-6" data-testid="sin-coincidencias">
-                No hay materias que coincidan con «{{ busqueda().trim() }}».
-              </p>
-            }
-          }
-        </div>
+              </tbody>
+            </table>
+          </div>
+        }
         <app-pagination
           [totalItems]="materiasFiltradas().length"
           [pageSize]="tamano()"

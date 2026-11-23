@@ -60,6 +60,13 @@ describe('DeanCronogramaComponent (HU145)', () => {
     expect(texto).toContain('sin zona horaria');
   });
 
+  it('P2 responsive: la tabla del cronograma pasa a tarjetas bajo md con rótulos por celda', () => {
+    const tabla = fixture.nativeElement.querySelector('[data-testid="cronograma-tabla"]') as HTMLElement;
+    expect(tabla.classList).toContain('tabla-tarjetas');
+    const rotulos = Array.from(tabla.querySelectorAll('tbody tr:first-child td[data-label]')).map((td) => td.getAttribute('data-label'));
+    expect(rotulos).toEqual(['Fecha y hora', 'Sesión', 'Asignatura · Grupo']);
+  });
+
   it('HU145: una sesión CONFIRMADA se muestra en la zona efectiva desde su instante UTC', () => {
     component.onPagina(1);
     http.expectOne((r) => r.url === URL).flush({

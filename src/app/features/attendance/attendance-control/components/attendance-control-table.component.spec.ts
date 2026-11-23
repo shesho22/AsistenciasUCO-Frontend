@@ -28,6 +28,12 @@ describe('AttendanceControlTableComponent', () => {
     expect(component.filteredStudents()[0].status).toBeNull();
   });
 
+  it('la tabla de escritorio va en un marco con desplazamiento propio para que el encabezado quede fijo', () => {
+    const tabla = (fixture.nativeElement as HTMLElement).querySelector('table') as HTMLElement;
+    expect(tabla.parentElement?.classList).toContain('tabla-scroll');
+    expect(tabla.querySelectorAll('thead th').length).toBe(3);
+  });
+
   it('filtra por estado, nombre y código', () => {
     component.filterStatus.set('AN');
     expect(component.filteredStudents().map((student) => student.studentId)).toEqual(['2']);

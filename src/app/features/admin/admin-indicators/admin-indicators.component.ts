@@ -45,7 +45,7 @@ const MARGEN_IZQ = 44;
       }
 
       @if (service.kpis(); as k) {
-        <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div class="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
           <app-kpi-card etiqueta="Asistencia global" [valor]="k.porcentajeAsistencia" unidad="%" />
           <app-kpi-card etiqueta="Ausentismo global" [valor]="k.porcentajeAusentismo" unidad="%" [variacion]="variacionAusentismo()" sentido="menor-mejor" />
           <app-kpi-card [etiqueta]="'Cumplimiento de sesiones con asistencia registrada (' + k.sesionesConRegistro + ' / ' + k.sesionesVencidas + ')'" [valor]="k.porcentajeCumplimiento" unidad="%" />

@@ -67,9 +67,9 @@ describe('DeanProgramasGestionComponent', () => {
     expect(component.coordinadoresDisponibles()).toEqual([{ id: 'c-2', nombre: 'Luis Gómez' }]);
   });
 
-  it('F3-DEC-05: la tabla va en un contenedor relative con overflow-x-auto para que no desborde la pagina en movil', () => {
+  it('F3-DEC-05: la tabla va en un contenedor relative con tabla-scroll (overflow auto y encabezado fijo) para que no desborde la pagina en movil', () => {
     const contenedor = (fixture.nativeElement as HTMLElement).querySelector('table')!.parentElement!;
-    expect(contenedor.classList).toContain('overflow-x-auto');
+    expect(contenedor.classList).toContain('tabla-scroll');
     expect(contenedor.classList).toContain('relative');
     expect(contenedor.contains(contenedor.querySelector('.sr-only'))).toBeTrue();
   });

@@ -1,5 +1,6 @@
 import { CifraConBaseComponent } from '../../../shared/components/cifra-con-base/cifra-con-base.component';
-import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DeanIndicatorsService } from '../../../core/services/dean-indicators.service';
 import { AdminManagementService } from '../../../core/services/admin-management.service';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
@@ -55,6 +56,7 @@ import { BadgeComponent } from '../../../shared/components/badge/badge.component
   `
 })
 export class DeanFacultyComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly deanIndicators = inject(DeanIndicatorsService);
   private readonly adminService = inject(AdminManagementService);
   private readonly coordService = inject(CoordinatorManagementService);
@@ -116,14 +118,14 @@ export class DeanFacultyComponent implements OnInit {
    * estructura de facultad.
    */
   ngOnInit(): void {
-    this.deanIndicators.consultarKpis().subscribe({
+    this.deanIndicators.consultarKpis().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
         this.kpis.set(res.datos ?? null);
         this.errorGrupos.set(res.datos === null || res.datos === undefined);
       },
       error: () => this.errorGrupos.set(true),
     });
-    this.deanService.getEstructura().subscribe({
+    this.deanService.getEstructura().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
         const estructura = res.datos || [];
         this.facultad.set(estructura[0] ?? null);
@@ -131,10 +133,10 @@ export class DeanFacultyComponent implements OnInit {
       },
       error: () => this.errorEstructura.set(true),
     });
-    this.coordService.getPeriodosAcademicos().subscribe({
+    this.coordService.getPeriodosAcademicos().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => this.periodos.set(res.datos || []),
       error: () => this.errorPeriodos.set(true),
     });
-    this.adminService.cargarAreas().subscribe({ error: () => this.errorAreas.set(true) });
+    this.adminService.cargarAreas().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({ error: () => this.errorAreas.set(true) });
   }
 }

@@ -216,7 +216,7 @@ export function entidadValida(valor: string | null | undefined): EntidadDirector
         } @else if (listado.filas().length === 0 && !listado.cargando()) {
           <p class="text-sm text-warm-500 text-center py-6">{{ config().vacio }}</p>
         } @else {
-          <div class="overflow-x-auto">
+          <div class="tabla-scroll">
             <table class="w-full text-sm">
               <thead>
                 <tr class="text-left text-xs uppercase tracking-wider text-warm-500 border-b border-warm-100">
@@ -288,7 +288,7 @@ export function entidadValida(valor: string | null | undefined): EntidadDirector
             </div>
             <button type="button" class="min-h-[44px] px-2 text-xs font-semibold text-warm-600 hover:underline" (click)="cerrarFicha()">Cerrar</button>
           </div>
-          <div class="overflow-x-auto">
+          <div class="tabla-scroll">
             <table class="w-full text-sm">
               <thead>
                 <tr class="text-left text-xs uppercase tracking-wider text-warm-500 border-b border-warm-100">

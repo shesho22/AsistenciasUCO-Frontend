@@ -20,6 +20,9 @@ export interface SolicitudSesionItem {
   fechaSolicitudUtc: string | null;
   fechaResolucionUtc: string | null;
   observacion: string | null;
+  /** Solo en la bandeja del docente: programa y coordinador que resuelven la solicitud (la bandeja del coordinador los envía nulos). */
+  nombreProgramaResponsable?: string | null;
+  nombreCoordinadorResolutor?: string | null;
 }
 
 export interface FiltroSolicitudesSesion {

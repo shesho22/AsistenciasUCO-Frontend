@@ -1,7 +1,7 @@
 import { TAMANO_PAGINA_TABLA, TAMANOS_PAGINA_TABLA } from '../../../shared/components/tabla-datos/tabla-datos.component';
 import { formatearHorasMinutos } from '../../../shared/pipes/horas-minutos.util';
 import { SemaforoAsistenciaComponent } from '../../../shared/components/semaforo-asistencia/semaforo-asistencia.component';
-import { Component, OnInit, inject, signal, ChangeDetectionStrategy, WritableSignal, input } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy, WritableSignal, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -82,69 +82,78 @@ const NUMERO_ES = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 2 });
         } @else if (listado.filas().length === 0 && !listado.cargando()) {
           <p class="text-sm text-warm-500 text-center py-6">No hay grupos con asistencia para los filtros seleccionados.</p>
         } @else {
-          <div class="overflow-x-auto">
-            <table class="w-full text-sm">
+          <div class="tabla-scroll" role="region" tabindex="0" aria-label="Consolidado de asistencia por grupo">
+            <table class="tabla-tarjetas tabla-tarjetas-compacta w-full min-w-[64rem] text-sm" data-testid="consolidado-tabla">
               <thead>
                 <tr class="text-left text-xs uppercase tracking-wider text-warm-500 border-b border-warm-100">
-                  <th scope="col" class="py-2 pr-1 w-8"><span class="sr-only">Sesiones del grupo</span></th>
+                  <th scope="col" class="col-fija w-9 min-w-9 py-2 pr-1"><span class="sr-only">Sesiones del grupo</span></th>
+                  <th scope="col" class="col-fija col-fija-2 py-2 pr-3 pl-1">Materia / Grupo</th>
                   <th scope="col" class="py-2 pr-3">Cohorte</th>
-                  <th scope="col" class="py-2 pr-3">Materia / Grupo</th>
                   <th scope="col" class="py-2 pr-3">Docente</th>
                   <th scope="col" class="py-2 pr-3 text-right">Activos</th>
                   <th scope="col" class="py-2 pr-3 text-right" title="Sesiones ya vencidas con asistencia registrada; las programadas a futuro no cuentan.">Sesiones ejecutadas</th>
                   <th scope="col" class="py-2 pr-3 text-right">% Asistencia</th>
                   <th scope="col" class="py-2 pr-3 text-right">% Inasistencia</th>
                   <th scope="col" class="py-2 pr-3 text-right" title="Horas con excusa aprobada o en trámite sobre las horas dictadas.">% Excusa</th>
-                  <th scope="col" class="py-2 pr-3 text-right" title="Horas dictadas sin ningún registro de asistencia.">% Sin registro</th>
+                  <th scope="col" class="py-2 pr-3 text-right" title="Horas ya dictadas sin ningún registro de asistencia.">% Sin registro</th>
+                  @if (hayPorDictar()) {
+                    <th scope="col" class="py-2 pr-3 text-right" title="Horas del grupo que aún no se dictan.">% Por dictar</th>
+                  }
                   <th scope="col" class="py-2 pr-3">Distribución</th>
                   <th scope="col" class="py-2 pr-3 text-right">En riesgo</th>
                   <th scope="col" class="py-2 text-right">Pérdida</th>
                 </tr>
               </thead>
               <tbody>
-                @for (g of listado.filas(); track g.idGrupo) {
-                  <tr class="border-b border-warm-50" [class.bg-primary-50]="expandido() === g.idGrupo">
-                    <td class="py-2 pr-1">
+                @for (g of listado.filas(); track clave(g)) {
+                  <tr class="border-b border-warm-50" [class.bg-primary-50]="expandido() === clave(g)">
+                    <td class="col-fija tc-esquina w-9 min-w-9 py-2 pr-1" [class.bg-primary-50]="expandido() === clave(g)">
                       <button
                         type="button"
                         class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-warm-700 hover:bg-warm-100 focus-visible:ring-2 focus-visible:ring-primary-600 outline-none"
                         [attr.data-testid]="'expandir-' + g.idGrupo"
-                        [attr.aria-expanded]="expandido() === g.idGrupo"
-                        [attr.aria-controls]="'sesiones-grupo-' + g.idGrupo"
-                        [attr.aria-label]="(expandido() === g.idGrupo ? 'Ocultar' : 'Ver') + ' las sesiones de ' + (g.nombreAsignatura || 'la asignatura') + ' ' + (g.nombreGrupo || g.codigoGrupo)"
-                        (click)="alternar(g.idGrupo)"
-                      >{{ expandido() === g.idGrupo ? '▾' : '▸' }}</button>
+                        [attr.aria-expanded]="expandido() === clave(g)"
+                        [attr.aria-controls]="'sesiones-grupo-' + clave(g)"
+                        [attr.aria-label]="(expandido() === clave(g) ? 'Ocultar' : 'Ver') + ' las sesiones de ' + (g.nombreAsignatura || 'la asignatura') + ' ' + (g.nombreGrupo || g.codigoGrupo)"
+                        (click)="alternar(clave(g))"
+                      >{{ expandido() === clave(g) ? '▾' : '▸' }}</button>
                     </td>
-                    <td class="py-2 pr-3 text-warm-700">{{ g.nombrePeriodoAcademico || '—' }}</td>
-                    <td class="py-2 pr-3">
+                    <td class="col-fija col-fija-2 tc-ancho py-2 pr-3 pl-1" [class.bg-primary-50]="expandido() === clave(g)" data-label="Materia / Grupo">
                       <span class="font-semibold text-warm-900 block">{{ g.nombreAsignatura || '—' }}</span>
                       <span class="text-xs text-warm-500">{{ g.nombreGrupo || 'Grupo ' + g.codigoGrupo }}{{ comoDecano && g.nombrePrograma ? ' · ' + g.nombrePrograma : '' }}</span>
                     </td>
-                    <td class="py-2 pr-3 text-warm-700">{{ g.nombreDocente || 'Sin docente' }}</td>
-                    <td class="py-2 pr-3 text-right text-warm-700">{{ g.estudiantesActivos }}</td>
-                    <td class="py-2 pr-3 text-right text-warm-700">{{ g.sesionesEjecutadas }}</td>
-                    <td class="py-2 pr-3 text-right font-semibold text-warm-900">{{ g.porcentajeAsistencia | number: '1.0-2' }}%</td>
-                    <td class="py-2 pr-3 text-right whitespace-nowrap" data-testid="inasistencia" [class]="conAdvertencia(g) ? 'text-danger-700 font-semibold' : 'text-warm-700'">
+                    <td class="py-2 pr-3 text-warm-700 max-md:hidden" data-label="Cohorte">{{ g.nombrePeriodoAcademico || '—' }}</td>
+                    <td class="py-2 pr-3 text-warm-700" data-label="Docente">{{ g.nombreDocente || 'Sin docente' }}</td>
+                    <td class="py-2 pr-3 text-right text-warm-700 max-md:hidden" data-label="Activos">{{ g.estudiantesActivos }}</td>
+                    <td class="py-2 pr-3 text-right text-warm-700 max-md:hidden" data-label="Sesiones ejecutadas">{{ g.sesionesEjecutadas }}</td>
+                    <td class="py-2 pr-3 text-right font-semibold text-warm-900" data-label="% Asistencia">{{ g.porcentajeAsistencia | number: '1.0-2' }}%</td>
+                    <td class="py-2 pr-3 text-right whitespace-nowrap" data-label="% Inasistencia" data-testid="inasistencia" [class]="conAdvertencia(g) ? 'text-danger-700 font-semibold' : 'text-warm-700'">
                       {{ inasistenciaConBase(g) }}
                       <app-semaforo-asistencia [codigoPermanencia]="g.codigoPermanencia" [porcentaje]="g.porcentajeInasistencia" [compacto]="true" />
                     </td>
-                    <td class="py-2 pr-3 text-right text-warm-700">{{ g.porcentajeExcusa | number: '1.0-2' }}%</td>
-                    <td class="py-2 pr-3 text-right text-warm-700">{{ g.porcentajeSinRegistro | number: '1.0-2' }}%</td>
-                    <td class="py-2 pr-3 min-w-[8rem]">
+                    <td class="py-2 pr-3 text-right text-warm-700 max-md:hidden" data-label="% Excusa">{{ g.porcentajeExcusa | number: '1.0-2' }}%</td>
+                    <td class="py-2 pr-3 text-right text-warm-700 max-md:hidden" data-label="% Sin registro">{{ g.porcentajeSinRegistro | number: '1.0-2' }}%</td>
+                    @if (hayPorDictar()) {
+                      <td class="py-2 pr-3 text-right text-warm-700 max-md:hidden" data-label="% Por dictar" data-testid="por-dictar">{{ (g.porcentajePorDictar ?? null) === null ? '—' : (g.porcentajePorDictar | number: '1.0-2') + '%' }}</td>
+                    }
+                    <td class="py-2 pr-3 min-w-[8rem] max-md:hidden" data-label="Distribución">
                       <div class="flex h-3 w-full overflow-hidden rounded bg-warm-100" role="img" data-testid="barra-distribucion"
-                        [attr.aria-label]="'Asistencia ' + g.porcentajeAsistencia + '%, inasistencia ' + g.porcentajeInasistencia + '%, excusa ' + g.porcentajeExcusa + '%, sin registro ' + g.porcentajeSinRegistro + '%'">
+                        [attr.aria-label]="'Asistencia ' + g.porcentajeAsistencia + '%, inasistencia ' + g.porcentajeInasistencia + '%, excusa ' + g.porcentajeExcusa + '%, sin registro ' + g.porcentajeSinRegistro + '%' + ((g.porcentajePorDictar ?? null) === null ? '' : ', por dictar ' + g.porcentajePorDictar + '%')">
                         <span class="h-3 bg-success-600" data-testid="segmento-asistencia" [style.width.%]="g.porcentajeAsistencia"></span>
                         <span class="h-3 bg-danger-500" data-testid="segmento-inasistencia" [style.width.%]="g.porcentajeInasistencia"></span>
                         <span class="h-3 bg-warning-500" data-testid="segmento-excusa" [style.width.%]="g.porcentajeExcusa"></span>
                         <span class="h-3 bg-warm-300" data-testid="segmento-sin-registro" [style.width.%]="g.porcentajeSinRegistro"></span>
+                        @if (g.porcentajePorDictar) {
+                          <span class="h-3 bg-primary-200" data-testid="segmento-por-dictar" [style.width.%]="g.porcentajePorDictar"></span>
+                        }
                       </div>
                     </td>
-                    <td class="py-2 pr-3 text-right" [class]="g.estudiantesRiesgo > 0 ? 'text-warning-700 font-semibold' : 'text-warm-700'">{{ g.estudiantesRiesgo }}</td>
-                    <td class="py-2 text-right" [class]="g.estudiantesPerdida > 0 ? 'text-danger-700 font-semibold' : 'text-warm-700'">{{ g.estudiantesPerdida }}</td>
+                    <td class="py-2 pr-3 text-right" data-label="En riesgo" [class]="g.estudiantesRiesgo > 0 ? 'text-warning-700 font-semibold' : 'text-warm-700'">{{ g.estudiantesRiesgo }}</td>
+                    <td class="py-2 text-right" data-label="Pérdida" [class]="g.estudiantesPerdida > 0 ? 'text-danger-700 font-semibold' : 'text-warm-700'">{{ g.estudiantesPerdida }}</td>
                   </tr>
-                  @if (expandido() === g.idGrupo) {
-                    <tr [id]="'sesiones-grupo-' + g.idGrupo" [attr.data-testid]="'sesiones-' + g.idGrupo" class="bg-warm-50/60">
-                      <td colspan="13" class="p-3">
+                  @if (expandido() === clave(g)) {
+                    <tr [id]="'sesiones-grupo-' + clave(g)" [attr.data-testid]="'sesiones-' + g.idGrupo" class="bg-warm-50/60">
+                      <td colspan="14" class="tc-ancho p-3">
                         @if (comoDecano) {
                           @defer (on immediate) {
                             <app-dean-sesiones-grupo [idGrupo]="g.idGrupo" />
@@ -170,6 +179,9 @@ const NUMERO_ES = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 2 });
             <li class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-sm bg-danger-500"></span>Inasistencia</li>
             <li class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-sm bg-warning-500"></span>Excusa</li>
             <li class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-sm bg-warm-300"></span>Sin registro</li>
+            @if (hayPorDictar()) {
+              <li class="flex items-center gap-1.5" data-testid="leyenda-por-dictar"><span class="h-2.5 w-2.5 rounded-sm bg-primary-200"></span>Por dictar</li>
+            }
           </ul>
         }
         <app-pagination
@@ -204,6 +216,8 @@ export class ConsolidadoAsistenciaComponent implements OnInit {
   /** Opciones COMPLETAS de materia y docente del ámbito y el período (las entrega el servidor, no se arman con las filas). */
   asignaturas = signal<OpcionConsolidado[]>([]);
   docentes = signal<OpcionConsolidado[]>([]);
+  /** La columna, el segmento y la leyenda "Por dictar" solo aparecen si el backend entrega el dato. */
+  readonly hayPorDictar = computed(() => this.listado.filas().some((g) => g.porcentajePorDictar != null));
   readonly listado = new ListadoPaginado<ConsolidadoGrupoItem>(
     (pagina, tamano) => {
       const consulta = this.service.getConsolidadoAsistencia(
@@ -253,8 +267,16 @@ export class ConsolidadoAsistenciaComponent implements OnInit {
     this.listado.buscar();
   }
 
-  alternar(idGrupo: string): void {
-    this.expandido.update((actual) => (actual === idGrupo ? null : idGrupo));
+  /**
+   * Identidad de una fila: un grupo compartido por varios programas aparece una vez por programa (mismo `idGrupo`), así que
+   * la fila expandida se identifica también por el programa; si no, se expandirían (y consultarían) todas las repetidas.
+   */
+  clave(g: ConsolidadoGrupoItem): string {
+    return `${g.idGrupo}|${g.idPrograma ?? ''}`;
+  }
+
+  alternar(clave: string): void {
+    this.expandido.update((actual) => (actual === clave ? null : clave));
   }
 
   /**

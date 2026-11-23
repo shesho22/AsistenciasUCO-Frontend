@@ -62,6 +62,17 @@ describe('StudentAlertsComponent (CULM-001 C.1 §4.3, §4.8)', () => {
     expect(card.textContent).toContain('16%');
   });
 
+  it('P2 responsive: la tabla pasa a tarjetas bajo md con rótulos por celda y deja la acción siempre visible', () => {
+    const tabla = fixture.nativeElement.querySelector('app-tabla-datos table') as HTMLElement;
+    expect(tabla.classList).toContain('tabla-tarjetas');
+    const fila = fixture.nativeElement.querySelector('[data-testid="alerta-card-alt-1"]') as HTMLElement;
+    const rotulos = Array.from(fila.querySelectorAll('td[data-label]')).map((td) => td.getAttribute('data-label'));
+    expect(rotulos).toEqual(['Alerta', 'Materia', 'Inasistencia', 'Detalle', 'Fecha']);
+    const accion = fila.querySelector('td.col-acciones') as HTMLElement;
+    expect(accion.querySelector('[data-testid="btn-ver-materia-alt-1"]')).not.toBeNull();
+    expect(tabla.querySelector('thead th.col-acciones')).not.toBeNull();
+  });
+
   it('CIERRE-W3I el semáforo de la alerta es el nivel de permanencia vigente que clasifica el servidor', () => {
     expect(fixture.nativeElement.querySelector('[data-testid="semaforo-nivel"]')).toBeNull();
 

@@ -459,7 +459,7 @@ describe('DeanDirectorioComponent (CULM-001)', () => {
     it('la tabla hace scroll horizontal dentro de su contenedor (no ensancha la página)', () => {
       const f = crear('docentes');
       cargarDocentes(f);
-      expect(el(f).querySelector('table')?.parentElement?.className).toContain('overflow-x-auto');
+      expect(el(f).querySelector('table')?.parentElement?.className).toContain('tabla-scroll');
     });
   });
 });

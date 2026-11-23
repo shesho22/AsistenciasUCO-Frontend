@@ -93,20 +93,20 @@ function cifra(valor: unknown): string {
       </app-page-header>
 
       <!-- KPIs de Materias del Programa -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="superficie p-4">
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4">
+        <div class="superficie px-3 py-2 sm:p-4">
           <span class="text-xs text-warm-500 font-medium">Grupos / Materias Ofertadas</span>
-          <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ listado.total() }}</p>
+          <p class="text-xl font-serif font-bold text-warm-900 mt-0.5">{{ listado.total() }}</p>
           <span class="text-[11px] text-primary-700 font-medium">Activos en el período</span>
         </div>
-        <div class="superficie p-4">
+        <div class="superficie px-3 py-2 sm:p-4">
           <span class="text-xs text-warm-500 font-medium">Asignaturas en el Plan de Estudio</span>
-          <p class="text-2xl font-serif font-bold text-success-700 mt-1">{{ listadoAsignaturas.total() }}</p>
+          <p class="text-xl font-serif font-bold text-success-700 mt-0.5">{{ listadoAsignaturas.total() }}</p>
           <span class="text-[11px] text-warm-500">En {{ totalPlanes() }} {{ totalPlanes() === 1 ? 'plan' : 'planes' }} de estudio</span>
         </div>
-        <div class="superficie p-4">
+        <div class="superficie px-3 py-2 sm:p-4">
           <span class="text-xs text-warm-500 font-medium">Ocupación de Cupos</span>
-          <p class="text-2xl font-serif font-bold text-info-800 mt-1" data-testid="ocupacion-cupos">{{ ocupacionTexto() }}</p>
+          <p class="text-xl font-serif font-bold text-info-800 mt-1" data-testid="ocupacion-cupos">{{ ocupacionTexto() }}</p>
           <span class="text-[11px] text-warm-500" data-testid="ocupacion-detalle">{{ ocupacionDetalle() }}</span>
         </div>
       </div>

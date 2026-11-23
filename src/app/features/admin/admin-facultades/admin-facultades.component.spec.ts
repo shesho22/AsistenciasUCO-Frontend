@@ -258,7 +258,7 @@ describe('AdminFacultadesComponent', () => {
     component.guardar();
 
     expect(crear).not.toHaveBeenCalled();
-    expect(component.errorGuardado()).toBe('Seleccione el decano titular de la facultad.');
+    expect(component.errorGuardado()).toBe('Selecciona el decano titular de la facultad.');
   });
 
   it('editar carga la institución y el decano reales de la facultad, no la primera institución', async () => {

@@ -1,4 +1,5 @@
 import { HorasMinutosPipe } from '../../../../shared/pipes/horas-minutos.pipe';
+import { FechaCivilPipe } from '../../../../shared/pipes/fecha-hora.pipes';
 import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 import { SemaforoAsistenciaComponent } from '../../../../shared/components/semaforo-asistencia/semaforo-asistencia.component';
 import { Component, ChangeDetectionStrategy, input, output, inject, effect, OnDestroy } from '@angular/core';
@@ -28,7 +29,7 @@ import { ToastService } from '../../../../shared/components/toast/toast.componen
 @Component({
     selector: 'app-student-course-detail',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [HorasMinutosPipe, EmptyStateComponent, BadgeComponent, ButtonComponent, MotivosJustificacionComponent, SesionEstadoBadgeComponent, AttendanceStatusBadgeComponent, TablaDatosComponent, SemaforoAsistenciaComponent],
+    imports: [FechaCivilPipe, HorasMinutosPipe, EmptyStateComponent, BadgeComponent, ButtonComponent, MotivosJustificacionComponent, SesionEstadoBadgeComponent, AttendanceStatusBadgeComponent, TablaDatosComponent, SemaforoAsistenciaComponent],
     template: `
     @if (materia()) {
       <div class="space-y-4">
@@ -185,7 +186,7 @@ import { ToastService } from '../../../../shared/components/toast/toast.componen
                         <p class="mt-1 font-semibold text-sm text-warm-900 leading-snug">{{ sesion.tema }}</p>
                       </td>
                       <td class="whitespace-nowrap text-xs text-warm-600">
-                        <span class="block font-medium text-warm-800">{{ sesion.fecha }}</span>
+                        <span class="block font-medium text-warm-800">{{ sesion.fecha | fechaCivil }}</span>
                         <span
                           class="block"
                           [attr.title]="sesion.temporalidad === 'SIN_ZONA' ? 'El servidor entregó la hora sin zona horaria; se muestra sin convertir.' : null"

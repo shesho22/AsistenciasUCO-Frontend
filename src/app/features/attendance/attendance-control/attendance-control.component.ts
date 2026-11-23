@@ -127,6 +127,7 @@ type StudentEnrollmentField =
         (openEnrollment)="openStudentRegistration()"
         (openNewSession)="openNewSessionModal()"
         (openProjection)="abrirSelectorModo()"
+        [exportingExcel]="descargandoPlanilla()"
         (exportExcel)="descargarPlanillaExcel()"
         (courseChange)="seleccionarCurso($event)"
         (sessionChange)="onSessionSelect($event)"
@@ -234,7 +235,7 @@ type StudentEnrollmentField =
       }
 
       <!-- 6. Modo de la toma, proyección del QR y cierre (CULM-001 B.2) -->
-      @defer (when modoSelectorAbierto()) {
+      @if (modoSelectorAbierto()) {
         <app-toma-modo-selector
           [qrHabilitado]="sessionQrEnabled"
           (modoElegido)="onModoElegido($event)"
@@ -333,7 +334,13 @@ export class AttendanceControlComponent {
   courses = signal<Course[]>([]);
   sessions = signal<ClassSession[]>([]);
 
-  vistaActual = signal<'OVERVIEW' | 'DETALLE'>('OVERVIEW');
+  /**
+   * Vista inicial según la URL: si llega con `sessionId` (p. ej. desde «Mis Horarios»), arranca en el detalle de la toma
+   * para no pintar un instante el panorama del grupo mientras cargan los grupos y las sesiones.
+   */
+  vistaActual = signal<'OVERVIEW' | 'DETALLE'>(
+    inject(ActivatedRoute, { optional: true })?.snapshot?.queryParamMap?.get('sessionId') ? 'DETALLE' : 'OVERVIEW'
+  );
   selectedCourseId = signal<string>('');
   selectedSessionId = signal<string>('');
 
@@ -357,6 +364,12 @@ export class AttendanceControlComponent {
 
   // CULM-001 B.2: tomas de la sesión, proyección del QR y faltantes.
   tomasSesion = signal<TomasSesion | null>(null);
+  /**
+   * «Proyectar Auto-Registro» desde Mis grupos llega con `accion=proyectar-qr`: al cargar las tomas de la sesión elegida
+   * (la en curso o la próxima) se proyecta la toma QR abierta o, si la ventana está abierta, se ofrece el selector de modo.
+   * Se atiende una sola vez.
+   */
+  private accionPendiente: 'PROYECTAR_QR' | null = null;
   /** Resumen por horas del grupo (backend): alimenta los KPIs de la panorámica. */
   /** CIERRE-W3M: estado temporal, conteos por sesion, en riesgo y promedio del grupo, resueltos por el servidor. */
   resumenSesiones = signal<ResumenSesionesGrupo | null>(null);
@@ -375,7 +388,8 @@ export class AttendanceControlComponent {
   tomaAbierta = computed(() => this.tomasSesionActual()?.tomas.find((t) => t.estado === 'ABIERTA') ?? null);
   tituloProyeccion = computed(() => {
     const c = this.currentCourse();
-    return c ? `${c.name} · Grupo ${c.section}` : 'Asistencia';
+    // `section` ya es el nombre completo del grupo (p. ej. «Grupo 01 - Materia»): no se antepone otro «Grupo».
+    return c ? `${c.name} · ${c.section}` : 'Asistencia';
   });
 
   // Estado para Info del Grupo & Alumnos
@@ -571,6 +585,7 @@ export class AttendanceControlComponent {
       next: (res) => {
         if (this.selectedSessionId() !== sesionId) return;
         this.tomasSesion.set(res.datos);
+        this.atenderAccionPendiente(res.datos);
         const proyectada = this.tomaProyectada();
         if (!proyectada) return;
         const actual = res.datos.tomas.find((t) => t.idToma === proyectada.idToma);
@@ -583,6 +598,23 @@ export class AttendanceControlComponent {
       },
       error: () => this.tomasSesion.set(null),
     });
+  }
+
+  private atenderAccionPendiente(datos: TomasSesion): void {
+    if (this.accionPendiente !== 'PROYECTAR_QR') return;
+    this.accionPendiente = null;
+    if (!this.sessionQrEnabled) return;
+    const tomaQrAbierta = datos.tomas.find((t) => t.estado === 'ABIERTA' && t.modo === 'QR');
+    if (tomaQrAbierta) {
+      this.proyectarQr(tomaQrAbierta);
+    } else if (datos.ventana.abierta && !datos.cancelacion) {
+      this.abrirSelectorModo();
+    } else {
+      this.mostrarNotificacion({
+        tipo: 'info',
+        texto: 'La sesión del grupo no está en su horario de toma. Elige una sesión en curso para proyectar el código QR.',
+      });
+    }
   }
 
   mostrarNotificacion(notificacion: NotificacionToma): void {
@@ -778,17 +810,21 @@ export class AttendanceControlComponent {
           if (courses.length > 0) {
             const queryCourseId = this.route?.snapshot?.queryParamMap?.get('courseId');
             const querySessionId = this.route?.snapshot?.queryParamMap?.get('sessionId');
+            if (this.route?.snapshot?.queryParamMap?.get('accion') === 'proyectar-qr') this.accionPendiente = 'PROYECTAR_QR';
             const targetCourseId =
               queryCourseId && courses.some((c) => c.id === queryCourseId)
                 ? queryCourseId
                 : courses[0].id;
 
             this.onCourseSelect(targetCourseId, querySessionId || undefined);
+          } else {
+            this.vistaActual.set('OVERVIEW');
           }
         },
         error: (err) => {
           this.courses.set([]);
           this.courseOptions.set([]);
+          this.vistaActual.set('OVERVIEW');
           this.toastType.set('error');
           this.toastMessage.set(
             getApiErrorMessage(err) || 'No fue posible cargar los grupos del docente.'
@@ -1487,11 +1523,15 @@ export class AttendanceControlComponent {
       });
   }
 
+  /** Descarga de la planilla Excel en curso (estado de carga del botón del encabezado). */
+  readonly descargandoPlanilla = signal(false);
+
   descargarPlanillaExcel(): void {
     const courseId = this.selectedCourseId();
-    if (!courseId) return;
+    if (!courseId || this.descargandoPlanilla()) return;
 
-    this.groupService.descargarPlanillaExcel(courseId).subscribe({
+    this.descargandoPlanilla.set(true);
+    this.groupService.descargarPlanillaExcel(courseId).pipe(finalize(() => this.descargandoPlanilla.set(false))).subscribe({
       next: (blob: Blob) => {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');

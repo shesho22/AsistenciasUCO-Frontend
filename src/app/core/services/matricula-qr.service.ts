@@ -50,16 +50,30 @@ export class MatriculaQrService {
       .pipe(map((response) => response.datos));
   }
 
+  /**
+   * Estudiante con sesion iniciada: igual que `validar`, pero `programasElegibles` es la interseccion entre sus programas y los del
+   * grupo (la matricula por QR/PIN exige un programa comun, como la manual).
+   */
+  validarComoEstudiante(credencial: CredencialMatricula): Observable<CursoMatriculaQr> {
+    return this.http
+      .post<ApiDataResponse<CursoMatriculaQr>>(`${environment.apiUrl}/estudiante/matricula-qr/validar`, soloCredencial(credencial))
+      .pipe(map((response) => response.datos));
+  }
+
   registrar(payload: RegistroMatriculaQrPayload): Observable<MatriculaQrResultado> {
     return this.http
       .post<ApiDataResponse<MatriculaQrResultado>>(`${environment.apiUrl}/public/matricula-qr/registro`, payload)
       .pipe(map((response) => response.datos));
   }
 
-  /** Estudiante con sesion iniciada: se matricula con el PIN (o token) de la ventana. */
-  matricularAutenticado(credencial: CredencialMatricula): Observable<MatriculaGrupoResultado> {
+  /**
+   * Estudiante con sesion iniciada: se matricula con el PIN (o token) de la ventana. `idPrograma` (DEC-078) es el programa
+   * que elige en un grupo compartido; solo se envia si lo eligio.
+   */
+  matricularAutenticado(credencial: CredencialMatricula, idPrograma?: string | null): Observable<MatriculaGrupoResultado> {
+    const cuerpo = idPrograma ? { ...soloCredencial(credencial), idPrograma } : soloCredencial(credencial);
     return this.http
-      .post<ApiDataResponse<MatriculaGrupoResultado>>(`${environment.apiUrl}/estudiante/matricular-grupo`, soloCredencial(credencial))
+      .post<ApiDataResponse<MatriculaGrupoResultado>>(`${environment.apiUrl}/estudiante/matricular-grupo`, cuerpo)
       .pipe(map((response) => response.datos));
   }
 }

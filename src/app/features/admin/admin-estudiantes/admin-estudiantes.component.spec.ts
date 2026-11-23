@@ -94,11 +94,32 @@ describe('AdminEstudiantesComponent (HU157)', () => {
     expect(el.querySelector('[data-testid="filtros-activos"]')?.textContent?.trim()).toBe('2');
   });
 
-  it('F3-ADM-05: la tabla va en un contenedor relative con overflow-x-auto para que no desborde la pagina en movil', () => {
+  it('F3-ADM-05: la tabla va en un contenedor relative con tabla-scroll (overflow auto y encabezado fijo) para que no desborde la pagina en movil', () => {
     const contenedor = (fixture.nativeElement as HTMLElement).querySelector('table')!.parentElement!;
-    expect(contenedor.classList).toContain('overflow-x-auto');
+    expect(contenedor.classList).toContain('tabla-scroll');
     expect(contenedor.classList).toContain('relative');
     expect(contenedor.contains(contenedor.querySelector('.sr-only'))).toBeTrue();
+  });
+
+  it('UX: facultades y programas se resumen (principal + N mas) con la lista completa en el tooltip', () => {
+    component.listado.buscar();
+    http.expectOne((r) => r.url === BASE).flush({
+      exitoso: true,
+      datos: [{ ...estudiante, programas: 'Sistemas, Derecho, Medicina', facultades: 'Ingeniería, Ciencias' }],
+      total: 1,
+    });
+    fixture.detectChanges();
+    const celda = (fixture.nativeElement as HTMLElement).querySelector('[data-testid="celda-programas"]') as HTMLElement;
+    expect(celda.getAttribute('title')).toBe('Sistemas, Derecho, Medicina');
+    expect(celda.textContent).toContain('Sistemas');
+    expect(celda.textContent).not.toContain('Medicina');
+    expect(celda.querySelector('[data-testid="programas-mas"]')?.textContent?.trim()).toBe('+2 programas');
+  });
+
+  it('UX: la tabla tiene encabezado fijo (tabla-scroll) y sin chip cuando hay un solo programa y facultad', () => {
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('table')!.parentElement!.classList).toContain('tabla-scroll');
+    expect(el.querySelector('[data-testid="programas-mas"]')).toBeNull();
   });
 
   it('la tabla antepone el tipo de documento al número solo cuando el backend lo entrega', () => {

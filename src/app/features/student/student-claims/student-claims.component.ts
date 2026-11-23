@@ -18,6 +18,7 @@ import { SessionTimeZoneService } from '../../../core/services/session-timezone.
 import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load-error.util';
 import { ButtonComponent } from '../../../shared/components/button/button.component';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
+import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
@@ -30,7 +31,7 @@ type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
 @Component({
     selector: 'app-student-claims',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [PageHeaderComponent, EmptyStateComponent, CommonModule, CardComponent, BadgeComponent, TablaDatosComponent, ButtonComponent],
+    imports: [PageHeaderComponent, EmptyStateComponent, CommonModule, CardComponent, BadgeComponent, TablaDatosComponent, ButtonComponent, ConfirmDialogComponent],
     template: `
     <div class="space-y-4 animate-fade-in">
       <app-page-header
@@ -76,6 +77,7 @@ type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
           [etiquetaVisible]="false"
           [columnas]="6"
           anchoMinimo="64rem"
+          [tarjetasEnMovil]="true"
           [cargando]="isLoading()"
           [paginada]="!isLoading()"
           [totalItems]="total()"
@@ -92,18 +94,18 @@ type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
               <th scope="col">Estado</th>
               <th scope="col">Justificación y respuesta</th>
               <th scope="col">Soportes</th>
-              <th scope="col"><span class="sr-only">Acciones</span></th>
+              <th scope="col" class="col-acciones bg-warm-50"><span class="sr-only">Acciones</span></th>
             </tr>
           </thead>
           <tbody>
             @if (!isLoading()) {
               @for (reclamo of reclamos(); track reclamo.id) {
                 <tr class="align-top" [attr.data-testid]="'reclamo-fila-' + reclamo.id">
-                  <td class="min-w-[11rem]">
+                  <td class="md:min-w-[11rem]" data-label="Materia">
                     <span class="block font-semibold text-warm-900">{{ reclamo.materiaNombre }}</span>
                     <span class="block text-xs text-warm-600">{{ reclamo.materiaCodigo }} · {{ reclamo.grupo }}</span>
                   </td>
-                  <td class="text-xs text-warm-600 whitespace-nowrap">
+                  <td class="text-xs text-warm-600 md:whitespace-nowrap" data-label="Sesión">
                     <span class="block text-warm-800">
                       Sesión {{ reclamo.sesionNumero }}
                       @if (reclamo.fechaSesion) {
@@ -115,13 +117,13 @@ type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
                     }
                     <span class="block text-warm-500">Radicada el {{ reclamo.fechaSolicitud | date: 'dd/MM/yyyy' }}</span>
                   </td>
-                  <td>
+                  <td data-label="Estado">
                     <app-badge [variant]="badgeVariant(reclamo.estadoSolicitud)">{{ etiqueta(reclamo.estadoSolicitud) }}</app-badge>
                     @if (textoResultado(reclamo); as resultado) {
                       <p class="mt-1 text-xs font-bold text-success-800" data-testid="reclamo-resultado">{{ resultado }}</p>
                     }
                   </td>
-                  <td class="min-w-[16rem] space-y-1.5">
+                  <td class="md:min-w-[16rem] space-y-1.5" data-label="Justificación y respuesta">
                     <div>
                       <span class="block text-xs font-bold uppercase tracking-wider text-warm-700">Mi justificación</span>
                       <p class="text-sm text-warm-800">{{ reclamo.justificacionSolicitud }}</p>
@@ -133,7 +135,7 @@ type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
                       </div>
                     }
                   </td>
-                  <td class="min-w-[12rem]">
+                  <td class="md:min-w-[12rem]" data-label="Soportes">
                     @if (soportesDe(reclamo); as soportes) {
                       @if (soportes.length > 0) {
                         <div class="flex flex-col items-start gap-1.5" data-testid="reclamo-soportes">
@@ -154,13 +156,13 @@ type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
                       }
                     }
                   </td>
-                  <td class="text-right">
+                  <td class="col-acciones bg-white text-right">
                     @if (reclamo.estadoSolicitud === 'PENDIENTE') {
                       <button
                         type="button"
                         data-accion="retirar-reclamo"
                         [disabled]="retirando() === reclamo.id"
-                        (click)="retirar(reclamo)"
+                        (click)="pedirRetiro(reclamo)"
                         class="px-3 py-2 min-h-[44px] text-xs font-medium text-danger-700 bg-danger-50 hover:bg-danger-100 border border-danger-200 rounded-lg disabled:opacity-60"
                         title="Retirar solicitud de revisión pendiente"
                       >
@@ -174,6 +176,15 @@ type EstadoFiltro = 'TODOS' | EstadoSolicitudRevision;
           </tbody>
         </app-tabla-datos>
       }
+      <app-confirm-dialog
+        [isOpen]="retiroPendiente() !== null"
+        [title]="textos.tituloRetiro"
+        [message]="textos.mensajeRetiro"
+        [confirmLabel]="textos.confirmarRetiro"
+        [destructive]="true"
+        (confirmed)="confirmarRetiro()"
+        (cancelled)="retiroPendiente.set(null)"
+      />
     </div>
   `
 })
@@ -195,6 +206,13 @@ export class StudentClaimsComponent implements OnInit, OnDestroy {
   readonly descargando = signal(false);
   /** id del reclamo que se está retirando (evita el doble envío). */
   readonly retirando = signal<string | null>(null);
+  /** Solicitud cuyo retiro espera confirmación (el retiro no se puede deshacer). */
+  readonly retiroPendiente = signal<SolicitudRevisionItem | null>(null);
+  readonly textos = {
+    tituloRetiro: mensajeUi('UI_STUDENT_CLAIMS_003'),
+    mensajeRetiro: mensajeUi('UI_STUDENT_CLAIMS_004'),
+    confirmarRetiro: mensajeUi('UI_STUDENT_CLAIMS_005'),
+  };
 
   /** "Toma N · HH:mm" cuando el reclamo es de una toma; `null` si es de la sesión. */
   textoToma(reclamo: SolicitudRevisionItem): string | null {
@@ -297,6 +315,17 @@ export class StudentClaimsComponent implements OnInit, OnDestroy {
 
   etiqueta(estado: EstadoSolicitudRevision): string {
     return etiquetaEstadoReclamo(estado);
+  }
+
+  pedirRetiro(reclamo: SolicitudRevisionItem): void {
+    if (this.retirando()) return;
+    this.retiroPendiente.set(reclamo);
+  }
+
+  confirmarRetiro(): void {
+    const reclamo = this.retiroPendiente();
+    this.retiroPendiente.set(null);
+    if (reclamo) this.retirar(reclamo);
   }
 
   /** A.2-7: retira una solicitud pendiente; el mensaje y los errores son los del backend. */

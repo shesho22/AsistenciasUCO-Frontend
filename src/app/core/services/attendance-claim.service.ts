@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpContext, HttpParams } from '@angular/common/http';
-import { Observable, catchError, defer, map, of, throwError } from 'rxjs';
+import { Observable, catchError, defer, finalize, map, of, shareReplay, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiResponse } from '../models/api-response.model';
 import { ApiDataResponse } from '../api/models/api-data-response.model';
@@ -311,7 +311,19 @@ export class AttendanceClaimService {
     return this.http.patch<ResolverReclamoResponse>(`${environment.apiUrl}/docente/reclamos/${id}`, cuerpo);
   }
 
-  getHorarioDocente(_docenteId?: string): Observable<ApiResponse<HorarioDocenteItem[]>> {
-    return this.http.get<ApiResponse<HorarioDocenteItem[]>>(`${environment.apiUrl}/docente/horarios`);
+  /** Petición en vuelo de GET /docente/horarios: el panel y el listado de grupos la piden a la vez y comparten una sola. */
+  private horarioDocenteEnVuelo: Observable<unknown> | null = null;
+
+  getHorarioDocente<T = HorarioDocenteItem>(_docenteId?: string): Observable<ApiResponse<T[]>> {
+    if (!this.horarioDocenteEnVuelo) {
+      this.horarioDocenteEnVuelo = this.http
+        .get<ApiResponse<T[]>>(`${environment.apiUrl}/docente/horarios`)
+        .pipe(
+          finalize(() => (this.horarioDocenteEnVuelo = null)),
+          // refCount: si todos los suscriptores se van (p. ej. falla la otra fuente de grupos), la petición se cancela.
+          shareReplay({ bufferSize: 1, refCount: true })
+        );
+    }
+    return this.horarioDocenteEnVuelo as Observable<ApiResponse<T[]>>;
   }
 }

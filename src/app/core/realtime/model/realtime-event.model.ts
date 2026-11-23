@@ -55,7 +55,7 @@ export interface AttendanceSessionUpdatedRealtimePayload {
 export interface SesionCanceladaRealtimePayload {
   grupo: string;
   sesion: string;
-  tipo: 'DOCENTE' | 'FESTIVO' | 'COORDINADOR';
+  tipo: 'DOCENTE' | 'FESTIVO' | 'COORDINADOR' | 'RECESO';
   fechaHoraInicioUtc: string | null;
 }
 

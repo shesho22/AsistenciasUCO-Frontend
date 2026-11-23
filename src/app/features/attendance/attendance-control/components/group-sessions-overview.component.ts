@@ -185,7 +185,7 @@ export interface AccionSesionEvento {
             </app-empty-state>
           </div>
         } @else {
-          <div class="overflow-x-auto">
+          <div class="tabla-scroll">
             <table class="w-full text-left text-xs text-warm-800">
               <thead class="bg-warm-50 border-b border-warm-200 text-[11px] font-bold text-warm-600 uppercase tracking-wider">
                 <tr>
@@ -204,7 +204,14 @@ export interface AccionSesionEvento {
                     title="Haz clic para abrir la toma de asistencia de esta sesión"
                   >
                     <td class="px-5 py-4 font-mono font-bold text-primary-800 group-hover:text-primary-950">
-                      Sesión #{{ s.sessionNumber }}
+                      <button
+                        type="button"
+                        class="rounded font-mono font-bold underline-offset-2 hover:underline focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:outline-none"
+                        [attr.aria-label]="'Abrir la toma de asistencia de la sesión ' + s.sessionNumber"
+                        (click)="$event.stopPropagation(); selectSession.emit(s.id)"
+                      >
+                        Sesión #{{ s.sessionNumber }}
+                      </button>
                     </td>
                     <td class="px-5 py-4">
                       @if (s.estadoTemporal === 'INDETERMINADA') {

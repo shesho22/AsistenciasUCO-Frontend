@@ -24,12 +24,17 @@ export interface PrevisualizacionHorarioGrupo {
     minutosCalendario: number;
     minutosProgramados: number;
     minutosPerdidosFestivo: number;
+    /** DEC-081: sesiones que caen en un día de receso académico (aditivo; ausente en backends anteriores). */
+    sesionesEnReceso?: number;
+    minutosPerdidosReceso?: number;
     minutosNoProgramables: number;
     minutosEsperadosMateria: number | null;
     diferenciaMinutos: number | null;
     cubreTotalEsperado: boolean | null;
   };
   festivos: { fecha: string; nombre: string; sesionesAfectadas: number }[];
+  /** DEC-081: días de receso del período; `motivo` ya trae el prefijo «Receso académico: ». */
+  recesos?: { fecha: string; motivo: string; sesionesAfectadas: number }[];
   sesiones: {
     numero: number;
     numeroSemana: number;
@@ -39,8 +44,10 @@ export interface PrevisualizacionHorarioGrupo {
     fechaHoraInicioUtc: string;
     fechaHoraFinUtc: string;
     minutos: number;
-    estado: 'PROGRAMADA' | 'CANCELADA_POR_FESTIVO' | 'NO_PROGRAMABLE_POR_FECHA';
+    estado: 'PROGRAMADA' | 'CANCELADA_POR_FESTIVO' | 'CANCELADA_POR_RECESO' | 'NO_PROGRAMABLE_POR_FECHA';
     nombreFestivo: string | null;
+    /** DEC-081: motivo con prefijo, solo en `CANCELADA_POR_RECESO`. */
+    motivoReceso?: string | null;
   }[];
   /** Solo al editar un grupo existente. */
   cambioSobreGrupoExistente: {

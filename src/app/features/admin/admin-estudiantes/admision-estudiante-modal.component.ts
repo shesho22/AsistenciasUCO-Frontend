@@ -1,17 +1,5 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  ElementRef,
-  HostListener,
-  OnDestroy,
-  OnInit,
-  computed,
-  inject,
-  input,
-  output,
-  signal,
-  viewChild,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, HostListener, OnDestroy, OnInit, computed, inject, input, output, signal, viewChild, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { FormsModule } from '@angular/forms';
 import { CatalogService } from '../../../core/services/catalog.service';
@@ -195,6 +183,7 @@ const CAMPOS_FORMULARIO = new Set([
   `
 })
 export class AdmisionEstudianteModalComponent implements OnInit, OnDestroy {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly catalog = inject(CatalogService);
   private readonly admin = inject(AdminManagementService);
   private readonly toast = inject(ToastService);
@@ -311,13 +300,13 @@ export class AdmisionEstudianteModalComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     document.addEventListener('scroll', this.alDesplazar, true);
-    this.registroConfig.getEmailDomain().subscribe({ next: (d) => this.dominioCorreo.set(d), error: () => this.dominioCorreo.set(null) });
+    this.registroConfig.getEmailDomain().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({ next: (d) => this.dominioCorreo.set(d), error: () => this.dominioCorreo.set(null) });
     this.cargarTipos();
     this.buscarProgramas('');
   }
 
   private cargarTipos(): void {
-    this.catalog.getTiposIdentificacion().subscribe({
+    this.catalog.getTiposIdentificacion().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
         const datos = res?.datos ?? [];
         this.tipos.set(datos);
@@ -435,7 +424,7 @@ export class AdmisionEstudianteModalComponent implements OnInit, OnDestroy {
 
   buscarProgramas(texto: string): void {
     this.buscandoProgramas.set(true);
-    this.admin.getProgramasInstitucion({ texto: texto.trim(), pagina: 1, tamano: 20 }).subscribe({
+    this.admin.getProgramasInstitucion({ texto: texto.trim(), pagina: 1, tamano: 20 }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
         this.buscandoProgramas.set(false);
         this.programas.set(res?.elementos ?? []);
@@ -469,7 +458,7 @@ export class AdmisionEstudianteModalComponent implements OnInit, OnDestroy {
       idPrograma: this.idPrograma(),
     };
 
-    this.admin.admitirEstudiante(payload).subscribe({
+    this.admin.admitirEstudiante(payload).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
         this.guardando.set(false);
         const dto = res.datos;

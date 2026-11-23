@@ -203,12 +203,30 @@ describe('TeacherGruposComponent', () => {
     }
   });
 
+  it('«Gestionar reclamos» del hub abre la bandeja acotada al grupo del hub (antes abría todos los grupos)', () => {
+    const navigate = router.navigate.and.resolveTo(true);
+    component.verHubGrupo(course);
+
+    component.irAGestionReclamos();
+
+    expect(navigate).toHaveBeenCalledWith(['/app/docente/reclamos'], { queryParams: { grupo: course.id } });
+  });
+
+  it('sin grupo seleccionado «Gestionar reclamos» abre la bandeja completa', () => {
+    const navigate = router.navigate.and.resolveTo(true);
+
+    component.irAGestionReclamos();
+
+    expect(navigate).toHaveBeenCalledWith(['/app/docente/reclamos'], {});
+  });
+
   it('B2-F-15 proyectar el QR del grupo lleva a la pantalla de asistencia sin llamar al backend', () => {
     const navigate = router.navigate.and.resolveTo(true);
     component.verHubGrupo(course);
 
     component.proyectarQrGrupo(course);
-    expect(navigate).toHaveBeenCalledWith(['/app/asistencia'], { queryParams: { courseId: course.id } });
+    // Proyectar Auto-Registro pide a la pantalla de asistencia proyectar el QR (o el selector de modo) de una vez.
+    expect(navigate).toHaveBeenCalledWith(['/app/asistencia'], { queryParams: { courseId: course.id, accion: 'proyectar-qr' } });
   });
 
   // CIERRE-W3M: el hub ya no descarga padron, asistencias y sesiones completos para cruzarlos; el servidor entrega la matriz

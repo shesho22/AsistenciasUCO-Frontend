@@ -27,20 +27,20 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
       </div>
 
       <!-- KPIs Docente -->
-      <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
+      <section class="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+        <div class="superficie px-3 py-2 sm:px-4 sm:py-3 flex flex-col justify-between h-full">
           <span class="text-xs text-warm-500 font-medium">Asignaturas a Cargo</span>
-          <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ courses().length }}</p>
+          <p class="text-xl font-serif font-bold text-warm-900 mt-0.5">{{ courses().length }}</p>
           <span class="text-[11px] text-primary-700 font-medium">Semestre 2026-II</span>
         </div>
-        <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
+        <div class="superficie px-3 py-2 sm:px-4 sm:py-3 flex flex-col justify-between h-full">
           <span class="text-xs text-warm-500 font-medium">Alumnos Matriculados</span>
-          <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ totalStudentsCount() ?? '—' }}</p>
+          <p class="text-xl font-serif font-bold text-warm-900 mt-0.5">{{ totalStudentsCount() ?? '—' }}</p>
           <span class="text-[11px] text-warm-500 font-medium">Total en tus grupos</span>
         </div>
-        <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
+        <div class="superficie px-3 py-2 sm:px-4 sm:py-3 flex flex-col justify-between h-full">
           <span class="text-xs text-warm-500 font-medium">Reclamos Pendientes</span>
-          <p class="text-2xl font-serif font-bold text-warm-900 mt-1" [ngClass]="(pendingClaimsCount() ?? 0) > 0 ? 'text-warning-600' : 'text-warm-900'">
+          <p class="text-xl font-serif font-bold text-warm-900 mt-0.5" [ngClass]="(pendingClaimsCount() ?? 0) > 0 ? 'text-warning-600' : 'text-warm-900'">
             {{ pendingClaimsCount() ?? '—' }}
           </p>
           @if (pendingClaimsCount() !== null) {
@@ -49,7 +49,7 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
             </span>
           }
         </div>
-        <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]"
+        <div class="superficie px-3 py-2 sm:px-4 sm:py-3 flex flex-col justify-between h-full"
              [ngClass]="{'border-primary-300 bg-primary-50/30 ring-1 ring-primary-400/20': $safeNavigationMigration(proximaClase()?.enCurso), 'border-primary-200/60': proximaClase() && !proximaClase()?.enCurso}">
           <div class="flex items-center justify-between">
             <span class="text-xs text-warm-500 font-medium">Próxima Clase</span>
@@ -95,7 +95,7 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
               <p class="text-xs text-warning-700">Revisa las solicitudes radicadas por estudiantes antes de que expiren los plazos de corte.</p>
             </div>
           </div>
-          <a routerLink="/app/docente/reclamos" class="shrink-0">
+          <a routerLink="/app/docente/reclamos" [queryParams]="{ estado: 'P' }" class="shrink-0">
             <app-button variant="accent" size="sm">
               Revisar Reclamos Ahora →
             </app-button>
@@ -147,7 +147,7 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
           </div>
 
           <div class="shrink-0 w-full sm:w-auto flex items-center justify-end gap-2">
-            <a routerLink="/app/asistencia" class="w-full sm:w-auto">
+            <a routerLink="/app/asistencia" [queryParams]="pc.idGrupo ? { courseId: pc.idGrupo } : null" class="w-full sm:w-auto">
               <app-button variant="accent" size="sm" [fullWidth]="true">
                 Tomar Asistencia →
               </app-button>
@@ -205,7 +205,7 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
                     </span>
                   </td>
                   <td class="text-right whitespace-nowrap">
-                    <a routerLink="/app/asistencia">
+                    <a routerLink="/app/asistencia" [queryParams]="{ courseId: course.id }">
                       <app-button variant="secondary" size="sm">Acceder a Sesiones y Asistencia</app-button>
                     </a>
                   </td>

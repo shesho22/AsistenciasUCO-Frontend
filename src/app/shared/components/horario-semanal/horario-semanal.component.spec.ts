@@ -105,6 +105,21 @@ describe('HorarioSemanalComponent (ATA D7)', () => {
     expect(el().querySelector('[data-testid="motivo-cancelacion"]')?.textContent).toContain('Día de la Independencia');
   });
 
+  it('DEC-081: una cancelación automática por receso muestra su motivo, no una etiqueta de festivo', () => {
+    montar('ESTUDIANTE');
+    calendario().flush({
+      exitoso: true,
+      datos: [sesion({ estaCancelada: true, esCancelacionAutomatica: true, nombreDiaFestivo: null, motivoCancelacion: 'Receso académico: Semana Santa' })],
+    });
+    fixture.detectChanges();
+    const tarjeta = el().querySelector('[data-testid="sesion-s-1"]') as HTMLElement;
+    expect(tarjeta.querySelector('[data-testid="motivo-cancelacion"]')?.textContent).toContain('Receso académico: Semana Santa');
+    expect(tarjeta.textContent).not.toContain('festivo');
+    expect(component.etiquetaFranja(sesion({ estaCancelada: true, esCancelacionAutomatica: true, motivoCancelacion: 'Receso académico: Semana Santa' }))).toContain(
+      'cancelada: Receso académico: Semana Santa',
+    );
+  });
+
   it('una cancelada sin motivo ni festivo no pinta el párrafo de motivo', () => {
     montar('ESTUDIANTE');
     calendario().flush({ exitoso: true, datos: [sesion({ estaCancelada: true })] });
@@ -214,7 +229,7 @@ describe('HorarioSemanalComponent (ATA D7)', () => {
     expect(req.cancelled).toBeTrue();
   });
 
-  describe('MEJORAS-SERGIO 9: la franja del docente abre el grupo', () => {
+  describe('la franja del docente abre la toma de la sesión', () => {
     let navigate: jasmine.Spy;
 
     function montarDocenteCon(datos: SesionCalendario[]): void {
@@ -224,18 +239,18 @@ describe('HorarioSemanalComponent (ATA D7)', () => {
       fixture.detectChanges();
     }
 
-    it('al pulsar la franja lleva al hub del grupo de esa sesión', () => {
+    it('al pulsar la franja lleva a la toma de asistencia de esa sesión', () => {
       montarDocenteCon([sesion()]);
       const franja = el().querySelector('[data-testid="sesion-s-1"]') as HTMLElement;
       expect(franja.tagName).toBe('BUTTON');
       franja.click();
-      expect(navigate).toHaveBeenCalledWith(['/app/docente/grupos'], { queryParams: { grupo: 'g-1' } });
+      expect(navigate).toHaveBeenCalledWith(['/app/asistencia'], { queryParams: { courseId: 'g-1', sessionId: 's-1' } });
     });
 
-    it('una sesión sin grupo lleva a la lista de grupos', () => {
+    it('una sesión sin grupo abre el control de asistencia sin preselección', () => {
       montarDocenteCon([]);
-      component.abrirGrupo(sesion({ idGrupo: '' }));
-      expect(navigate).toHaveBeenCalledWith(['/app/docente/grupos'], {});
+      component.abrirToma(sesion({ idGrupo: '' }));
+      expect(navigate).toHaveBeenCalledWith(['/app/asistencia'], {});
     });
 
     it('la franja solo contiene contenido de frase (sin div, h4 ni p dentro del botón)', () => {

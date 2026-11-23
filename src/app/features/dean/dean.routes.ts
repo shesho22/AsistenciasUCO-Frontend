@@ -12,6 +12,8 @@ export const TABS_MI_FACULTAD: readonly TabItem[] = [
 /** Pestañas de «Seguimiento» (`/app/decano/seguimiento/:pestaña`). */
 export const TABS_SEGUIMIENTO: readonly TabItem[] = [
   { id: 'indicadores', etiqueta: 'Indicadores' },
+  { id: 'comparativa', etiqueta: 'Comparativa' },
+  { id: 'aforo', etiqueta: 'Aforo' },
   { id: 'consolidado', etiqueta: 'Consolidado' },
   { id: 'cronograma', etiqueta: 'Cronograma' },
 ];
@@ -63,7 +65,7 @@ export const SEGUIMIENTO_ROUTES: Routes = [
     component: PestanasShellComponent,
     data: {
       titulo: 'Seguimiento',
-      descripcion: 'Indicadores, asistencia consolidada y cronograma de sesiones de la facultad.',
+      descripcion: 'Indicadores, comparativa de programas, aforo de grupos, asistencia consolidada y cronograma de sesiones de la facultad.',
       tabs: TABS_SEGUIMIENTO,
       base: ['/app/decano/seguimiento'],
     },
@@ -74,6 +76,17 @@ export const SEGUIMIENTO_ROUTES: Routes = [
         data: { tab: 'indicadores', embebido: true },
         loadComponent: () =>
           import('./dean-indicators/dean-indicators.component').then((m) => m.DeanIndicatorsComponent),
+      },
+      {
+        path: 'comparativa',
+        data: { tab: 'comparativa', embebido: true },
+        loadComponent: () =>
+          import('./dean-seguimiento/dean-comparativa.component').then((m) => m.DeanComparativaComponent),
+      },
+      {
+        path: 'aforo',
+        data: { tab: 'aforo', embebido: true },
+        loadComponent: () => import('./dean-seguimiento/dean-aforo.component').then((m) => m.DeanAforoComponent),
       },
       {
         path: 'consolidado',

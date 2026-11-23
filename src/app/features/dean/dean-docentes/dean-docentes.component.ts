@@ -1,4 +1,5 @@
-import { Component, OnInit, computed, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, computed, inject, signal, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -113,7 +114,7 @@ interface OpcionFacultad {
         } @else if (listado.filas().length === 0 && !listado.cargando()) {
           <p class="text-sm text-warm-500 text-center py-6">No hay docentes que coincidan con los filtros.</p>
         } @else {
-          <div class="overflow-x-auto">
+          <div class="tabla-scroll">
             <table class="w-full text-sm">
               <thead>
                 <tr class="text-left text-xs uppercase tracking-wider text-warm-500 border-b border-warm-100">
@@ -159,6 +160,7 @@ interface OpcionFacultad {
   `
 })
 export class DeanDocentesComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly service = inject(ConsultasTransversalesService);
   private readonly facultad = inject(DeanFacultadService);
   private readonly admin = inject(AdminManagementService);
@@ -231,12 +233,12 @@ export class DeanDocentesComponent implements OnInit {
    */
   private cargarProgramas(): void {
     if (this.comoAdministrador) {
-      this.admin.cargarFacultades().subscribe({
+      this.admin.cargarFacultades().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: (res) => this.facultades.set((res.datos ?? []).map((f) => ({ id: f.id, nombre: f.nombre }))),
         error: () => this.facultades.set([]),
       });
       // /decano/programas es solo del rol Decano (403 para el administrador): se usa el listado institucional.
-      this.admin.getProgramasInstitucion({ pagina: 1, tamano: 100 }).subscribe({
+      this.admin.getProgramasInstitucion({ pagina: 1, tamano: 100 }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: (res) =>
           this.programas.set(
             (res.elementos ?? []).map((p) => ({ id: p.id, nombre: p.nombre, facultad: p.nombreFacultad }))
@@ -245,7 +247,7 @@ export class DeanDocentesComponent implements OnInit {
       });
       return;
     }
-    this.facultad.getEstructura().subscribe({
+    this.facultad.getEstructura().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) =>
         this.programas.set((res.datos ?? []).flatMap((f) => f.programas.map((p) => ({ id: p.id, nombre: p.nombre })))),
       error: () => this.programas.set([]),

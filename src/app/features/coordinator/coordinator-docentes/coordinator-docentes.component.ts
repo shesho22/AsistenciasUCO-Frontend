@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal, input } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 
 import { FormsModule } from '@angular/forms';
@@ -68,18 +69,18 @@ const MIN_CARACTERES_CANDIDATOS = 3;
 
       <!-- HU095: consolidado del directorio del programa (servidor), por estado -->
       @if (resumen(); as r) {
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4" data-testid="resumen-docentes">
-          <div class="superficie p-4">
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4" data-testid="resumen-docentes">
+          <div class="superficie px-3 py-2 sm:p-4">
             <p class="text-xs font-semibold text-warm-500 uppercase">Docentes vinculados</p>
-            <p class="text-2xl font-bold text-warm-900">{{ r.totalDocentes }}</p>
+            <p class="text-xl font-bold text-warm-900">{{ r.totalDocentes }}</p>
           </div>
-          <div class="superficie p-4">
+          <div class="superficie px-3 py-2 sm:p-4">
             <p class="text-xs font-semibold text-success-700 uppercase">Activos</p>
-            <p class="text-2xl font-bold text-success-800">{{ r.totalActivos }}</p>
+            <p class="text-xl font-bold text-success-800">{{ r.totalActivos }}</p>
           </div>
-          <div class="superficie p-4">
+          <div class="superficie px-3 py-2 sm:p-4">
             <p class="text-xs font-semibold text-warm-500 uppercase">Inactivos</p>
-            <p class="text-2xl font-bold text-warm-700">{{ r.totalInactivos }}</p>
+            <p class="text-xl font-bold text-warm-700">{{ r.totalInactivos }}</p>
           </div>
         </div>
       }
@@ -124,7 +125,7 @@ const MIN_CARACTERES_CANDIDATOS = 3;
       } @else {
         <!-- MEJORAS-SERGIO 12: lista en tabla (una fila por docente) con las acciones; sin tipo de vinculación -->
         <div class="superficie overflow-hidden">
-          <div class="overflow-x-auto">
+          <div class="tabla-scroll">
             <table class="w-full text-sm text-warm-800" data-testid="tabla-docentes">
               <thead class="bg-warm-50 border-b border-warm-200 text-[11px] font-bold text-warm-600 uppercase tracking-wider">
                 <tr>
@@ -269,7 +270,9 @@ export class CoordinatorDocentesComponent implements OnInit {
   readonly docentes = this.coordService.docentes;
   readonly totalDocentes = this.coordService.totalDocentes;
 
-  readonly busqueda = signal('');
+  private readonly route = inject(ActivatedRoute, { optional: true });
+  /** Acceso rápido del panel («Ver Perfil y Carga»): `?busqueda=<documento>` abre la lista ya filtrada. */
+  readonly busqueda = signal(this.route?.snapshot?.queryParamMap?.get('busqueda')?.trim() ?? '');
   readonly filtroEstado = signal<FiltroEstado>('TODOS');
   readonly resumen = signal<ResumenDocentesPrograma | null>(null);
   readonly pagina = signal(1);

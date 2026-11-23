@@ -38,8 +38,14 @@ test.describe('Decano', () => {
     await expect(main.getByRole('heading', { level: 1, name: 'Seguimiento' })).toBeVisible();
     const pestanas = main.getByRole('tablist', { name: 'Secciones de Seguimiento' });
     await expect(pestanas.getByRole('tab', { name: 'Indicadores' })).toHaveAttribute('aria-selected', 'true');
-    await expect(main.getByRole('heading', { name: 'Ausentismo por programa' })).toBeVisible();
-    await expect(main.getByRole('heading', { name: 'Aforo de grupos' })).toBeVisible();
+    // Indicadores solo conserva las tarjetas de cifras; la comparativa por programa y el aforo tienen pestanas propias.
+    await expect(main.getByText('En riesgo', { exact: true })).toBeVisible();
+    await expect(main.getByText(/Aforo de grupos activos/)).toBeVisible();
+
+    await pestanas.getByRole('tab', { name: 'Aforo' }).click();
+    await expect(page).toHaveURL(/\/app\/decano\/seguimiento\/aforo$/);
+    // Embebida en la pestana, la seccion no repite titulo: se verifica su tabla accesible.
+    await expect(main.getByRole('region', { name: 'Aforo de grupos' })).toBeVisible();
 
     await pestanas.getByRole('tab', { name: 'Consolidado' }).click();
     await expect(page).toHaveURL(/\/app\/decano\/seguimiento\/consolidado$/);
@@ -58,8 +64,9 @@ test.describe('Coordinador', () => {
 
     const tabla = main.getByRole('table');
     await expect(tabla.getByRole('columnheader', { name: '% Asistencia' })).toBeVisible();
-    await expect(tabla.getByRole('row', { name: /Cálculo Diferencial Grupo 01/ })).toContainText('93.75%');
-    await expect(tabla.getByRole('row', { name: /Estructuras de Datos Grupo 02/ })).toContainText('97.78%');
+    // H-15: con el locale es-CO registrado el pipe number usa coma decimal.
+    await expect(tabla.getByRole('row', { name: /Cálculo Diferencial Grupo 01/ })).toContainText('93,75%');
+    await expect(tabla.getByRole('row', { name: /Estructuras de Datos Grupo 02/ })).toContainText('97,78%');
 
     await main.getByRole('combobox', { name: 'Materia' }).selectOption({ label: 'Cálculo Diferencial' });
     await expect(main.getByTestId('conteo-grupos')).toHaveText(/^\s*1 Grupos?\s*$/);
@@ -114,7 +121,9 @@ test.describe('Estudiante', () => {
     await expect(main.getByRole('button', { name: 'Retirar' })).toHaveCount(2);
     await expect(main.getByText('Justificación válida y confirmada con la coordinación del semillero.')).toBeVisible();
 
-    await main.getByRole('button', { name: 'Retirar' }).first().click();
+    await main.getByRole('button', { name: 'Retirar', exact: true }).first().click();
+    // El retiro ahora pide confirmación (no se puede deshacer).
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Sí, retirar solicitud' }).click();
     await expect(main.getByText('Retirada', { exact: true })).toBeVisible();
     await expect(main.getByRole('button', { name: 'Retirar' })).toHaveCount(1);
   });

@@ -22,25 +22,25 @@ import { EstadoIndicadores, textoCifra, textoPeriodo } from '../../../../core/ut
     template: `
     <div class="space-y-4">
       <!-- KPIs Decano -->
-      <section class="grid grid-cols-2 lg:grid-cols-4 gap-4" [attr.aria-busy]="estado() === 'cargando'">
-        <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
+      <section class="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3" [attr.aria-busy]="estado() === 'cargando'">
+        <div class="superficie px-3 py-2 sm:px-4 sm:py-3 flex flex-col justify-between h-full">
           <span class="text-xs text-warm-500 font-medium">Coordinadores Asignados</span>
-          <p class="text-2xl font-serif font-bold text-warm-900 mt-1" data-testid="coordinadores">{{ texto(kpis()?.totalCoordinadores) }}</p>
+          <p class="text-xl font-serif font-bold text-warm-900 mt-0.5" data-testid="coordinadores">{{ texto(kpis()?.totalCoordinadores) }}</p>
           <span class="text-[11px] text-primary-700 font-medium">Programas de facultad</span>
         </div>
-        <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
+        <div class="superficie px-3 py-2 sm:px-4 sm:py-3 flex flex-col justify-between h-full">
           <span class="text-xs text-warm-500 font-medium">Docentes de Facultad</span>
-          <p class="text-2xl font-serif font-bold text-warm-900 mt-1" data-testid="docentes">{{ texto(kpis()?.totalDocentes) }}</p>
+          <p class="text-xl font-serif font-bold text-warm-900 mt-0.5" data-testid="docentes">{{ texto(kpis()?.totalDocentes) }}</p>
           <span class="text-[11px] text-warm-500 font-medium">Con vínculo activo en sus programas</span>
         </div>
-        <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
+        <div class="superficie px-3 py-2 sm:px-4 sm:py-3 flex flex-col justify-between h-full">
           <span class="text-xs text-warm-500 font-medium">Grupos en Curso</span>
-          <p class="text-2xl font-serif font-bold text-warm-900 mt-1" data-testid="grupos">{{ texto(kpis()?.gruposActivos) }}</p>
+          <p class="text-xl font-serif font-bold text-warm-900 mt-0.5" data-testid="grupos">{{ texto(kpis()?.gruposActivos) }}</p>
           <span class="text-[11px] text-warm-500 font-medium" data-testid="periodo">{{ periodoTexto() }}</span>
         </div>
-        <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
+        <div class="superficie px-3 py-2 sm:px-4 sm:py-3 flex flex-col justify-between h-full">
           <span class="text-xs text-warm-500 font-medium">Asistencia Promedio</span>
-          <p class="text-2xl font-serif font-bold text-success-700 mt-1" data-testid="asistencia">{{ texto(kpis()?.porcentajeAsistencia, '%') }}</p>
+          <p class="text-xl font-serif font-bold text-success-700 mt-0.5" data-testid="asistencia">{{ texto(kpis()?.porcentajeAsistencia, '%') }}</p>
           <span class="text-[11px] text-warm-500 font-medium">Período vigente de la facultad</span>
         </div>
       </section>
@@ -95,6 +95,7 @@ import { EstadoIndicadores, textoCifra, textoPeriodo } from '../../../../core/ut
                   <td class="text-right">
                     <a
                       routerLink="/app/decano/mi-facultad/coordinadores"
+                      [queryParams]="{ busqueda: coord.correo }"
                       class="inline-flex items-center rounded-xl border border-warm-200 bg-white px-3 py-1.5 text-xs font-semibold text-warm-800 hover:bg-warm-50 whitespace-nowrap"
                     >
                       Administrar Coordinación

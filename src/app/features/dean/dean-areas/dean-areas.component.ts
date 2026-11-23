@@ -42,10 +42,10 @@ import {
 
       <!-- KPIs Bento -->
       <div class="grid grid-cols-1 gap-4">
-        <div class="superficie p-4 flex items-center justify-between">
+        <div class="superficie px-3 py-2 sm:p-4 flex items-center justify-between">
           <div>
             <span class="text-xs text-warm-500 font-medium">Áreas de Conocimiento</span>
-            <p class="text-2xl font-serif font-bold text-warm-900">{{ areasTotal() }}</p>
+            <p class="text-xl font-serif font-bold text-warm-900">{{ areasTotal() }}</p>
           </div>
           <div class="w-11 h-11 rounded-xl bg-primary-50 text-primary-700 flex items-center justify-center shrink-0">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

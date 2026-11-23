@@ -13,12 +13,14 @@ import { HorarioDocenteApiDto } from '../api/models/horario-docente-api-dto.mode
 import { Course, FranjaHorario } from '../models/course.model';
 import { PrevisualizacionHorarioGrupo, PrevisualizarHorarioPayload } from '../models/horario-grupo.model';
 import { MOCK_COURSES } from '../mocks/course.mock';
+import { AttendanceClaimService } from './attendance-claim.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class CourseService {
   private readonly http = inject(HttpClient);
+  private readonly claimService = inject(AttendanceClaimService);
 
   private readonly coursesSignal = signal<Course[]>([...MOCK_COURSES]);
 
@@ -48,8 +50,8 @@ export class CourseService {
       this.http.get<ApiListResponse<AsignaturaDocenteApiDto>>(
         `${environment.apiUrl}/docente/asignaturas`
       ),
-      this.http
-        .get<ApiListResponse<HorarioDocenteApiDto>>(`${environment.apiUrl}/docente/horarios`)
+      this.claimService
+        .getHorarioDocente<HorarioDocenteApiDto>()
         .pipe(catchError(() => of(null))),
     ]).pipe(
       map(([asignaciones, horarios]) => {
@@ -177,8 +179,11 @@ export class CourseService {
         franjas,
         asignaturaId: grupo.idAsignatura ?? undefined,
         docenteId: grupo.idDocente ?? undefined,
+        docenteName: grupo.nombreDocente ?? undefined,
         enrolledStudentsCount: grupo.estudiantesActivos ?? undefined,
         cupoMaximo: grupo.capacidadMaxima ?? undefined,
+        nombreProgramaResponsable: grupo.nombreProgramaResponsable ?? null,
+        esResponsable: grupo.esResponsable === true,
         colorCategory: colors[index % colors.length],
       };
     });
@@ -257,7 +262,7 @@ export class CourseService {
   /**
    * F1/F3: crea un grupo (POST /grupos, COORDINADOR o el propio DOCENTE) con su horario semanal en la misma transacción.
    * El body sigue el contrato real de CrearGrupoRequest; `franjas` vacío o ausente = grupo sin horario. Sin
-   * `idPeriodoAcademico` la DB toma el período más reciente.
+   * `idPeriodoAcademico` la DB toma el período en curso o, si no hay, el próximo en planeación (DEC-076).
    */
   crearGrupo(payload: GrupoCoordinadorPayload): Observable<ApiResponse<{ id: string; mensajeUsuario: string }>> {
     if (environment.useMocks) {

@@ -1,7 +1,7 @@
 // PRU-06 (VAL oleada 3): servidor estatico minimo para las pruebas E2E.
-// Sirve el build de produccion (dist/gestio-asistencia-frontend/browser) con fallback de SPA y reemplaza
-// /assets/env.js por e2e/support/env.e2e.js (modo mock, proveedor legacy). El build y el env.js de produccion
-// no cambian: la configuracion de prueba solo existe en este servidor.
+// Sirve el build `e2e` (igual que produccion pero conserva el backend simulado; dist/gestio-asistencia-frontend/browser) con fallback de SPA y reemplaza
+// /assets/env.js por e2e/support/env.e2e.js (modo mock, proveedor legacy). El build de produccion (sin simulador)
+// y su env.js no cambian: la configuracion de prueba solo existe en este servidor.
 // Uso: node e2e/support/serve-dist.mjs [puerto]   (por defecto 4300, o E2E_PORT)
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';

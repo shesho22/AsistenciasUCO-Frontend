@@ -12,10 +12,8 @@ export interface CuentaPrueba {
   rol: Rol;
   correo: string;
   nombre: string;
-  /** Ruta a la que el login lleva a este rol (AuthService.navigateForRole). */
+  /** Ruta a la que el login lleva a todos los roles: el panel principal (AuthService.homePathForRole). */
   inicio: RegExp;
-  /** Encabezado principal visible en la pagina de inicio del rol. */
-  encabezadoInicio: string;
   /** Enlaces de modulos que el menu lateral debe ofrecer al rol. */
   modulos: string[];
 }
@@ -25,40 +23,35 @@ export const CUENTAS: Record<Rol, CuentaPrueba> = {
     rol: 'ADMINISTRADOR',
     correo: 'admin.sistemas@uco.edu.co',
     nombre: 'Carlos Alberto Restrepo',
-    inicio: /\/app\/admin\/personas\/decanos$/,
-    encabezadoInicio: 'Gestión de Decanos',
+    inicio: /[/]app[/]dashboard$/,
     modulos: ['Personas', 'Organigrama', 'Configuración', 'Indicadores'],
   },
   DECANO: {
     rol: 'DECANO',
     correo: 'decano.ingenieria@uco.edu.co',
     nombre: 'Dr. Juan Carlos Gómez Pérez',
-    inicio: /\/app\/decano\/mi-facultad\/coordinadores$/,
-    encabezadoInicio: 'Mi facultad',
+    inicio: /[/]app[/]dashboard$/,
     modulos: ['Mi Facultad', 'Seguimiento', 'Directorio', 'Períodos Académicos'],
   },
   COORDINADOR: {
     rol: 'COORDINADOR',
     correo: 'coordinador.sistemas@uco.edu.co',
     nombre: 'Ing. Andrés Felipe López Martínez',
-    inicio: /\/app\/coordinador\/programa\/docentes$/,
-    encabezadoInicio: 'Programa',
+    inicio: /[/]app[/]dashboard$/,
     modulos: ['Asistencia', 'Solicitudes de sesión', 'Programa', 'Planes de Estudio', 'Estudiantes del Programa'],
   },
   DOCENTE: {
     rol: 'DOCENTE',
     correo: 'maria.rostagno@uco.edu.co',
     nombre: 'Dra. María Elena Rostagno',
-    inicio: /\/app\/docente\/grupos$/,
-    encabezadoInicio: 'Gestión Integral de Grupos y Sesiones',
+    inicio: /[/]app[/]dashboard$/,
     modulos: ['Mis Grupos', 'Tomar Asistencia', 'Solicitudes de sesión', 'Justificaciones', 'Mis Horarios'],
   },
   ESTUDIANTE: {
     rol: 'ESTUDIANTE',
     correo: 'carlos.zapata@uco.edu.co',
     nombre: 'Carlos Andrés Zapata Gómez',
-    inicio: /\/app\/estudiante\/mis-materias\/horarios$/,
-    encabezadoInicio: 'Mi Horario de Clases',
+    inicio: /[/]app[/]dashboard$/,
     modulos: ['Mis Materias', 'Mis Reclamos', 'Mis Alertas'],
   },
 };

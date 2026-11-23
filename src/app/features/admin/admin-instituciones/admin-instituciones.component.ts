@@ -41,16 +41,16 @@ import { getApiErrorMessage } from '../../../core/api/errors/api-error.util';
       <!-- Contenido Principal -->
       <app-card padding="none">
         @if (cargando()) {
-          <div class="p-8 text-center text-sm text-warm-500" role="status">
+          <div class="p-4 text-center text-sm text-warm-500" role="status">
             Cargando instituciones...
           </div>
         } @else if (instituciones().length === 0) {
-          <div class="p-12 text-center text-warm-600">
+          <div class="p-4 text-center text-warm-600">
             <p class="text-base font-semibold text-warm-800">No hay instituciones registradas</p>
             <p class="text-xs text-warm-500 mt-1">Actualmente no existen registros institucionales configurados en el sistema.</p>
           </div>
         } @else {
-          <div class="overflow-x-auto">
+          <div class="tabla-scroll">
             <table class="w-full text-left text-sm">
               <thead class="bg-warm-50 border-b border-warm-200 text-xs font-bold text-warm-600 uppercase tracking-wider">
                 <tr>

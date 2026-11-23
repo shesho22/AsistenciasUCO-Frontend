@@ -88,6 +88,7 @@ export function agruparFaltasPorSesion(filas: readonly FaltaReclamable[]): Falta
             [etiquetaVisible]="false"
             [columnas]="4"
             anchoMinimo="48rem"
+            [tarjetasEnMovil]="true"
             [paginada]="faltasTotal() > tamanosPagina[0]"
             [totalItems]="faltasTotal()"
             [pagina]="faltasPagina()"
@@ -102,24 +103,24 @@ export function agruparFaltasPorSesion(filas: readonly FaltaReclamable[]): Falta
                 <th scope="col">Materia</th>
                 <th scope="col">Sesión</th>
                 <th scope="col">Plazo para reclamar</th>
-                <th scope="col">Tomas</th>
+                <th scope="col" class="col-acciones bg-warm-100">Tomas</th>
               </tr>
             </thead>
             <tbody>
               @for (sesion of faltasSesiones(); track sesion.idSesion) {
                 <tr class="align-top" [attr.data-testid]="'falta-card-' + sesion.idSesion">
-                  <td>
+                  <td data-label="Materia">
                     <span class="block text-sm font-bold text-warm-900">{{ sesion.nombreAsignatura }}</span>
                     <span class="block text-xs text-warm-500">{{ sesion.nombreGrupo }}</span>
                   </td>
-                  <td class="text-xs text-warm-700" data-testid="falta-horario">
+                  <td class="text-xs text-warm-700" data-label="Sesión" data-testid="falta-horario">
                     Sesión {{ sesion.numeroSesion }} · {{ zona.formatTemporal(sesion.fechaHoraInicioUtc, 'date') }}
                     · {{ zona.formatTemporal(sesion.fechaHoraInicioUtc, 'time') }}–{{ zona.formatTemporal(sesion.fechaHoraFinUtc, 'time') }}
                   </td>
-                  <td class="text-xs font-semibold text-warning-800" data-testid="falta-limite">
+                  <td class="text-xs font-semibold text-warning-800" data-label="Plazo para reclamar" data-testid="falta-limite">
                     Puedes reclamar hasta {{ zona.formatTemporal(sesion.fechaLimiteReclamoUtc) }}
                   </td>
-                  <td>
+                  <td class="col-acciones bg-white" data-label="Tomas">
                     <ul class="space-y-1">
                       @for (toma of sesion.tomas; track toma.idToma) {
                         <li class="flex flex-wrap items-center justify-between gap-2" [attr.data-testid]="'falta-toma-' + toma.idToma">
@@ -162,6 +163,7 @@ export function agruparFaltasPorSesion(filas: readonly FaltaReclamable[]): Falta
           [etiquetaVisible]="false"
           [columnas]="6"
           anchoMinimo="56rem"
+          [tarjetasEnMovil]="true"
           [cargando]="cargando()"
           [filasEsqueleto]="3"
           [paginada]="!cargando() && totalElementos() > tamanosPagina[0]"
@@ -179,19 +181,19 @@ export function agruparFaltasPorSesion(filas: readonly FaltaReclamable[]): Falta
               <th scope="col">Inasistencia</th>
               <th scope="col">Detalle</th>
               <th scope="col">Fecha</th>
-              <th scope="col"><span class="sr-only">Acciones</span></th>
+              <th scope="col" class="col-acciones bg-warm-100"><span class="sr-only">Acciones</span></th>
             </tr>
           </thead>
           <tbody>
             @if (!cargando()) {
               @for (alerta of alertas(); track alerta.id) {
                 <tr class="align-top" [attr.data-testid]="'alerta-card-' + alerta.id">
-                  <td>
+                  <td data-label="Alerta">
                     <app-badge [variant]="alerta.tipo === 'PERDIDA' ? 'danger' : 'warning'">
                       {{ alerta.nombreTipo || (alerta.tipo === 'PERDIDA' ? 'Pérdida por inasistencia' : 'Riesgo de pérdida') }}
                     </app-badge>
                   </td>
-                  <td>
+                  <td data-label="Materia">
                     <span class="block text-xs font-bold text-warm-900">
                       {{ alerta.asignatura?.nombre || alerta.nombreAsignatura || 'Asignatura' }}
                     </span>
@@ -199,17 +201,17 @@ export function agruparFaltasPorSesion(filas: readonly FaltaReclamable[]): Falta
                       <span class="block text-xs text-warm-500">{{ alerta.grupo?.nombre || alerta.nombreGrupo }}</span>
                     }
                   </td>
-                  <td class="whitespace-nowrap">
+                  <td class="whitespace-nowrap" data-label="Inasistencia">
                     <div class="text-xs font-bold" [class.text-danger-700]="alerta.tipo === 'PERDIDA'" [class.text-warning-800]="alerta.tipo !== 'PERDIDA'">
                       {{ alerta.porcentajeActual ?? alerta.porcentajeCruce ?? 0 }}%
                       <app-semaforo-asistencia [codigoPermanencia]="alerta.codigoPermanenciaActual" [porcentaje]="alerta.porcentajeActual ?? alerta.porcentajeCruce" />
                     </div>
                   </td>
-                  <td class="min-w-[16rem] text-sm text-warm-800 leading-relaxed">{{ alerta.mensaje }}</td>
-                  <td class="whitespace-nowrap text-xs text-warm-500" [attr.title]="alerta.fechaCruceUtc || alerta.fechaGeneracion">
+                  <td class="min-w-[16rem] max-md:min-w-0 text-sm text-warm-800 leading-relaxed" data-label="Detalle">{{ alerta.mensaje }}</td>
+                  <td class="whitespace-nowrap text-xs text-warm-500" data-label="Fecha" [attr.title]="alerta.fechaCruceUtc || alerta.fechaGeneracion">
                     {{ alerta.fechaCruceUtc || alerta.fechaGeneracion | fechaHoraCorta }}
                   </td>
-                  <td class="text-right">
+                  <td class="col-acciones bg-white text-right">
                     <button
                       type="button"
                       [attr.data-testid]="'btn-ver-materia-' + alerta.id"

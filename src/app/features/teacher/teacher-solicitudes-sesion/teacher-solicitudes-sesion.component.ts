@@ -31,7 +31,7 @@ import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load
     RangoHorarioPipe,
   ],
   template: `
-    <div class="space-y-5 min-w-0">
+    <div class="space-y-4 min-w-0">
       <app-page-header
         titulo="Solicitudes de sesión"
         descripcion="Estado de las sesiones extraordinarias que has pedido a tu coordinación."
@@ -74,7 +74,7 @@ import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load
             />
           }
         } @else {
-          <div class="overflow-x-auto">
+          <div class="tabla-scroll">
             <table class="w-full text-sm">
               <thead>
                 <tr class="text-left text-xs uppercase tracking-wider text-warm-500 border-b border-warm-100">
@@ -89,6 +89,9 @@ import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load
                     <td class="py-2 pr-3 text-warm-700">
                       <span class="font-semibold text-warm-900">{{ s.nombreGrupo }} · {{ s.nombreAsignatura }}</span>
                       <span class="block text-xs text-warm-500">{{ s.nombreSesion }}</span>
+                      @if (lineaResolutor(s); as linea) {
+                        <span class="block text-xs text-warm-600 mt-0.5" data-testid="solicitud-resolutor">{{ linea }}</span>
+                      }
                     </td>
                     <td class="py-2 pr-3 text-warm-700 text-xs">
                       {{ s.fechaHoraInicio | fechaCorta: zona() }}
@@ -137,6 +140,16 @@ export class TeacherSolicitudesSesionComponent implements OnInit {
 
   zona(): string {
     return this.timeZone.zone();
+  }
+
+  /** Quién resuelve la solicitud; solo compone los nombres recibidos. Vacío si el backend no informa ninguno. */
+  lineaResolutor(s: SolicitudSesionItem): string {
+    const coordinador = s.nombreCoordinadorResolutor?.trim();
+    const programa = s.nombreProgramaResponsable?.trim();
+    if (coordinador && programa) return `La resuelve: ${coordinador} (Coordinación de ${programa})`;
+    if (coordinador) return `La resuelve: ${coordinador}`;
+    if (programa) return `La resuelve: Coordinación de ${programa}`;
+    return '';
   }
 
   variante(estado: EstadoSolicitudSesion): BadgeVariant {

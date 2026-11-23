@@ -3,7 +3,6 @@ import { RangoHorarioPipe } from '../../../../shared/pipes/fecha-hora.pipes';
 import { Component, ChangeDetectionStrategy, computed, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { CardComponent } from '../../../../shared/components/card/card.component';
 import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
 import { AttendanceStatusBadgeComponent } from '../../../../shared/components/attendance-status-badge/attendance-status-badge.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
@@ -13,44 +12,44 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
 @Component({
     selector: 'app-overview-student',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [RangoHorarioPipe, HorasMinutosPipe, CommonModule, RouterLink, CardComponent, BadgeComponent, ButtonComponent, AttendanceStatusBadgeComponent],
+    imports: [RangoHorarioPipe, HorasMinutosPipe, CommonModule, RouterLink, BadgeComponent, ButtonComponent, AttendanceStatusBadgeComponent],
     host: {
         class: 'block w-full',
     },
     template: `
     <div class="space-y-4">
       <!-- KPIs Estudiante -->
-      <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
+      <section class="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+        <div class="superficie px-3 py-2 sm:px-4 sm:py-3 flex flex-col justify-between h-full">
           <span class="text-xs text-warm-500 font-medium">Materias Matriculadas</span>
           @if (resumen(); as r) {
-            <p class="text-2xl font-serif font-bold text-warm-900 mt-1" data-testid="resumen-total-materias">{{ r.totalMaterias }}</p>
+            <p class="text-xl font-serif font-bold text-warm-900 mt-0.5" data-testid="resumen-total-materias">{{ r.totalMaterias }}</p>
           } @else {
             <p class="text-base font-serif font-bold text-warm-500 mt-1" data-testid="materias-no-disponible">No disponible</p>
           }
           <span class="text-[11px] text-primary-700 font-medium">Semestre 2026-II</span>
         </div>
-        <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
+        <div class="superficie px-3 py-2 sm:px-4 sm:py-3 flex flex-col justify-between h-full">
           <span class="text-xs text-warm-500 font-medium">Materias en riesgo</span>
           @if (materiasEnRiesgo() !== null) {
-            <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ materiasEnRiesgo() }}</p>
+            <p class="text-xl font-serif font-bold text-warm-900 mt-0.5">{{ materiasEnRiesgo() }}</p>
             <span class="text-[11px] text-warm-500 font-medium">Según la inasistencia por horas</span>
           } @else {
             <p class="text-base font-serif font-bold text-warm-500 mt-1" data-testid="riesgo-no-disponible">No disponible</p>
             <span class="text-[11px] text-warm-500 font-medium">Sin datos de asistencia consolidados</span>
           }
         </div>
-        <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]">
+        <div class="superficie px-3 py-2 sm:px-4 sm:py-3 flex flex-col justify-between h-full">
           <span class="text-xs text-warm-500 font-medium">Horas de falta</span>
           @if (resumen(); as r) {
-            <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ r.totalHorasFalta | horasMinutos }}</p>
+            <p class="text-xl font-serif font-bold text-warm-900 mt-0.5">{{ r.totalHorasFalta | horasMinutos }}</p>
             <span class="text-[11px] text-warm-500 font-medium">En todo el periodo</span>
           } @else {
             <p class="text-base font-serif font-bold text-warm-500 mt-1" data-testid="horas-falta-no-disponible">No disponible</p>
             <span class="text-[11px] text-warm-500 font-medium">Sin datos de asistencia consolidados</span>
           }
         </div>
-        <div class="superficie p-5 flex flex-col justify-between h-full min-h-[120px]"
+        <div class="superficie px-3 py-2 sm:px-4 sm:py-3 flex flex-col justify-between h-full"
              [ngClass]="{'border-primary-300 bg-primary-50/30 ring-1 ring-primary-400/20': $safeNavigationMigration(proximaClase()?.enCurso), 'border-primary-200/60': proximaClase() && !proximaClase()?.enCurso}">
           <div class="flex items-center justify-between">
             <span class="text-xs text-warm-500 font-medium">Próxima Clase</span>
@@ -147,56 +146,61 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
           </a>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          @for (mat of materias(); track mat.claveGrupo) {
-            <app-card [hoverable]="true" [title]="mat.nombre" [subtitle]="mat.codigo ? mat.codigo + ' • ' + mat.grupo : mat.grupo">
-              <div class="space-y-4 my-2 text-xs text-warm-700">
-                <!-- Inasistencia por horas (solo con fuente autoritativa) -->
-                @if (mat.indicadores; as ind) {
-                  <div class="flex items-center justify-between gap-2">
-                    <span class="font-bold text-sm text-warm-900">{{ ind.porcentajeInasistencia }}% de inasistencia</span>
-                    <app-attendance-status-badge [codigoPermanencia]="ind.codigoPermanencia" />
-                  </div>
-                } @else {
-                  <div class="text-warm-500" data-testid="asistencia-no-disponible">
-                    <span class="font-medium text-warm-600">Inasistencia:</span> No disponible
-                  </div>
+        @if (materias().length > 0) {
+          <div class="tabla-scroll" role="region" tabindex="0" aria-label="Mis materias y resumen de asistencia">
+            <table class="tabla-tarjetas tabla-tarjetas-compacta w-full min-w-[44rem] text-sm" data-testid="dashboard-materias-tabla">
+              <thead>
+                <tr class="text-left text-xs uppercase tracking-wider text-warm-500 border-b border-warm-100">
+                  <th scope="col" class="col-fija py-2 pr-3">Materia</th>
+                  <th scope="col" class="py-2 pr-3">Grupo</th>
+                  <th scope="col" class="py-2 pr-3">Docente</th>
+                  <th scope="col" class="py-2 pr-3">Inasistencia</th>
+                  <th scope="col" class="py-2 pr-3">Estado</th>
+                  <th scope="col" class="py-2 text-right"><span class="sr-only">Acciones</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (mat of materias(); track mat.claveGrupo) {
+                  <tr class="border-b border-warm-50 align-top" data-testid="dashboard-materia-fila">
+                    <td class="col-fija tc-ancho py-2 pr-3">
+                      <span class="block font-semibold text-warm-900 leading-snug">{{ mat.nombre }}</span>
+                      @if (mat.codigo) {
+                        <span class="block text-xs text-warm-500 font-mono">{{ mat.codigo }}</span>
+                      }
+                    </td>
+                    <td class="py-2 pr-3 text-warm-700 break-words md:whitespace-nowrap" data-label="Grupo">{{ mat.grupo }}</td>
+                    <td class="py-2 pr-3 text-warm-700" data-label="Docente">{{ mat.docente ?? 'No informado' }}</td>
+                    <td class="py-2 pr-3 tc-ancho" data-label="Inasistencia">
+                      <!-- Inasistencia por horas (solo con fuente autoritativa) -->
+                      @if (mat.indicadores; as ind) {
+                        <span class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
+                          <span class="font-bold text-sm text-warm-900">{{ ind.porcentajeInasistencia }}% de inasistencia</span>
+                          <app-attendance-status-badge [codigoPermanencia]="ind.codigoPermanencia" />
+                        </span>
+                        <span class="block text-xs text-warm-600">{{ ind.horasFalta | horasMinutos }} de falta de {{ ind.horasDictadas | horasMinutos }}</span>
+                      } @else {
+                        <span class="text-xs text-warm-500" data-testid="asistencia-no-disponible">
+                          <span class="font-medium text-warm-600">Inasistencia:</span> No disponible
+                        </span>
+                      }
+                    </td>
+                    <td class="py-2 pr-3" data-label="Estado">
+                      @if (mat.estado) {
+                        <app-badge [variant]="mat.estado === 'Al día' ? 'success' : 'danger'">{{ mat.estado }}</app-badge>
+                      }
+                    </td>
+                    <td class="py-2 text-right tc-ancho">
+                      <a routerLink="/app/estudiante/materias" [queryParams]="{ materia: mat.id, grupo: mat.idGrupo }">
+                        <app-button variant="secondary" size="sm">Ver Desglose de Sesiones y Reclamar</app-button>
+                      </a>
+                    </td>
+                  </tr>
                 }
-
-                <!-- Ficha resumida -->
-                <div class="grid grid-cols-2 gap-2 bg-warm-50 p-3 rounded-xl">
-                  <div>
-                    <span class="text-warm-400 text-[10px] block">Docente</span>
-                    <span class="font-semibold text-warm-900 text-xs">{{ mat.docente ?? 'No informado' }}</span>
-                  </div>
-                  <div>
-                    <span class="text-warm-400 text-[10px] block">Horario</span>
-                    <span class="font-semibold text-warm-900 text-xs">{{ mat.horario ?? 'No informado' }}</span>
-                  </div>
-                </div>
-
-                <div class="flex items-center justify-between pt-2 border-t border-warm-100">
-                  @if (mat.indicadores; as ind) {
-                    <span class="text-warm-700 font-semibold">{{ ind.horasFalta | horasMinutos }} de falta de {{ ind.horasDictadas | horasMinutos }}</span>
-                  }
-                  @if (mat.estado) {
-                    <app-badge [variant]="mat.estado === 'Al día' ? 'success' : 'danger'">
-                      {{ mat.estado }}
-                    </app-badge>
-                  }
-                </div>
-              </div>
-
-              <div card-footer class="mt-4 pt-3 border-t border-warm-100 flex items-center justify-end">
-                <a routerLink="/app/estudiante/materias" class="w-full">
-                  <app-button variant="secondary" size="sm" [fullWidth]="true">
-                    Ver Desglose de Sesiones y Reclamar
-                  </app-button>
-                </a>
-              </div>
-            </app-card>
-          } @empty {
-            <div class="col-span-2 bg-white p-12 rounded-2xl border border-warm-200 text-center space-y-3">
+              </tbody>
+            </table>
+          </div>
+        } @else {
+            <div class="superficie px-4 py-6 text-center">
               @switch (estadoMaterias()) {
                 @case ('CARGANDO') {
                   <p class="text-xs text-warm-500 animate-pulse" data-testid="materias-cargando">Cargando tus materias…</p>
@@ -209,8 +213,7 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
                 }
               }
             </div>
-          }
-        </div>
+        }
       </section>
 
       <!-- Acceso rápido a Horarios -->

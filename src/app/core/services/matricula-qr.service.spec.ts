@@ -83,6 +83,15 @@ describe('MatriculaQrService (HU176B)', () => {
     });
   });
 
+  it('validarComoEstudiante usa el endpoint autenticado y envia solo la credencial', () => {
+    service.validarComoEstudiante({ pin: '482913' }).subscribe();
+
+    const req = http.expectOne(`${environment.apiUrl}/estudiante/matricula-qr/validar`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ pin: '482913' });
+    req.flush({ exitoso: true, datos: { programasElegibles: [] } });
+  });
+
   it('validar con PIN envia solo el PIN', () => {
     service.validar({ pin: '482913' }).subscribe();
 
@@ -120,6 +129,14 @@ describe('MatriculaQrService (HU176B)', () => {
     expect(req.request.body).toEqual({ pin: '482913' });
     req.flush({ exitoso: true, datos: { idGrupo: 'g-1' } });
     expect(idGrupo).toBe('g-1');
+  });
+
+  it('DEC-078: matricularAutenticado envía el programa elegido junto con la credencial', () => {
+    service.matricularAutenticado({ token: 'T', pin: '482913' }, 'prg-a').subscribe();
+
+    const req = http.expectOne(`${environment.apiUrl}/estudiante/matricular-grupo`);
+    expect(req.request.body).toEqual({ token: 'T', idPrograma: 'prg-a' });
+    req.flush({ exitoso: true, datos: { idGrupo: 'g-1' } });
   });
 
   it('propaga el error del backend sin transformarlo', () => {

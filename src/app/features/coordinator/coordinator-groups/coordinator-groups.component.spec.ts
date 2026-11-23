@@ -60,7 +60,16 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
     coordinatorService.getDocentesPrograma.and.returnValue(
       of({ exitoso: true, datos: [{ idDocente: 'doc-1', nombreCompleto: 'Ana Pérez' } as never] })
     );
-    coordinatorService.getPeriodosAcademicos.and.returnValue(of({ exitoso: true, datos: [{ id: 'per-1', nombre: '2026-2' } as never] }));
+    coordinatorService.getPeriodosAcademicos.and.returnValue(
+      of({
+        exitoso: true,
+        datos: [
+          { id: 'per-0', nombre: '2026-1', estado: 'CERRADO' } as never,
+          { id: 'per-1', nombre: '2026-2', estado: 'ACTIVO' } as never,
+          { id: 'per-2', nombre: '2027-1', estado: 'PLANEACION' } as never,
+        ],
+      })
+    );
 
     await TestBed.configureTestingModule({
       imports: [CoordinatorGroupsComponent],
@@ -80,9 +89,12 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
     expect(component.listado.filas()).toEqual([grupo]);
     expect(component.asignaturas().map((a) => a.id)).toEqual(['asig-1']);
     expect(component.docentes()).toHaveSize(1);
-    expect(component.periodos()).toHaveSize(1);
+    expect(component.periodos()).toHaveSize(3);
     expect(component.nombreDocente('doc-1')).toBe('Ana Pérez');
     expect(component.nombreDocente(undefined)).toBe('Sin asignar');
+    // El nombre que entrega el backend manda; el listado del programa es solo respaldo.
+    expect(component.nombreDocente('doc-1', 'Luis Mora')).toBe('Luis Mora');
+    expect(component.nombreDocente('doc-x', null)).toBe('Sin asignar');
     expect(fixture.nativeElement.textContent).toContain('Lunes 08:00-10:00');
     expect(coordinatorService.getDocentesPrograma).toHaveBeenCalledWith({ pagina: 1, tamano: 100, estaActivo: true });
   });
@@ -168,10 +180,9 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
     expect(component.form.franjas).toHaveSize(1);
 
     component.guardar();
-    expect(toast.warning).toHaveBeenCalledWith('Seleccione la asignatura y el período académico.');
+    expect(toast.warning).toHaveBeenCalledWith('Seleccione la asignatura.');
 
     component.form.idAsignatura = 'asig-1';
-    component.form.idPeriodoAcademico = 'per-1';
     component.guardar();
     expect(toast.warning).toHaveBeenCalledWith('El código y el nombre del grupo son obligatorios.');
 
@@ -200,10 +211,36 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
     expect(courseService.getCoordinatorCoursesPage).toHaveBeenCalledTimes(2);
   });
 
+  // DEC-076: el período no se elige; se muestra el que el servidor marca como ACTIVO y se envía su id.
+  it('DEC-076: sin selector de período, muestra el período en curso y lo envía al crear', () => {
+    fixture.nativeElement.querySelector('[data-testid="nuevo-grupo"]').click();
+    fixture.detectChanges();
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.querySelector('select[name="idPeriodoAcademico"]')).toBeNull();
+    expect(el.querySelector('[data-testid="periodo-creacion"]')?.textContent).toContain('2026-2 (en curso)');
+
+    courseService.crearGrupo.and.returnValue(of({ exitoso: true, mensajeUsuario: 'Grupo creado.', datos: { id: 'g9', mensajeUsuario: '' } }));
+    Object.assign(component.form, { idAsignatura: 'a', codigo: 9, nombre: 'G9', idDocente: 'd' });
+    component.guardar();
+    expect(courseService.crearGrupo.calls.mostRecent().args[0].idPeriodoAcademico).toBe('per-1');
+  });
+
+  it('DEC-076: sin período en curso no envía período (la base toma el próximo en planeación) y lo explica', () => {
+    component.periodos.set([{ id: 'per-2', nombre: '2027-1', estado: 'PLANEACION' } as never]);
+    component.abrirCrear();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[data-testid="periodo-creacion"]')?.textContent).toContain('próximo período en planeación');
+
+    courseService.crearGrupo.and.returnValue(of({ exitoso: true, mensajeUsuario: 'Grupo creado.', datos: { id: 'g10', mensajeUsuario: '' } }));
+    Object.assign(component.form, { idAsignatura: 'a', codigo: 10, nombre: 'G10', idDocente: 'd' });
+    component.guardar();
+    expect(courseService.crearGrupo.calls.mostRecent().args[0].idPeriodoAcademico).toBeUndefined();
+  });
+
   // DEC-073: el código es un entero positivo y el nombre, texto seguro.
   it('DEC-073: valida código entero y nombre sin < > ni comillas antes de llamar al backend', () => {
     component.abrirCrear();
-    Object.assign(component.form, { idAsignatura: 'a', idPeriodoAcademico: 'p', codigo: 1.5, nombre: 'G', idDocente: 'd' });
+    Object.assign(component.form, { idAsignatura: 'a', codigo: 1.5, nombre: 'G', idDocente: 'd' });
     expect(component.validar()).toBe('El código del grupo debe ser un número entero mayor que cero.');
 
     Object.assign(component.form, { codigo: 2, nombre: 'Grupo <b>A</b>' });
@@ -215,7 +252,7 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
 
   it('valida horas y franjas que se cruzan antes de llamar al backend', () => {
     component.abrirCrear();
-    Object.assign(component.form, { idAsignatura: 'a', idPeriodoAcademico: 'p', codigo: 1, nombre: 'G', idDocente: 'd' });
+    Object.assign(component.form, { idAsignatura: 'a', codigo: 1, nombre: 'G', idDocente: 'd' });
 
     component.form.franjas = [{ dia: 'LU', horaInicio: '10:00', horaFin: '08:00' }];
     component.guardar();
@@ -349,7 +386,6 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
   function llenarGrupoNuevo(): void {
     component.abrirCrear();
     component.form.idAsignatura = 'asig-1';
-    component.form.idPeriodoAcademico = 'per-1';
     component.form.codigo = 3;
     component.form.nombre = 'Grupo 3';
     component.form.idDocente = 'doc-1';
@@ -401,6 +437,58 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
     expect(component.previsualizacionDesactualizada()).toBeFalse();
   });
 
+  it('DEC-081: la previsualización muestra el conteo de receso, la lista de días, la sesión «Cancelada · motivo» y el aviso informativo', () => {
+    const base = previsualizacion([
+      { codigo: 'REC_011', severidad: 'INFORMATIVO', mensaje: '2 h caen en receso académico (1 sesión(es)); esas sesiones quedan canceladas.', franja: null },
+    ]);
+    courseService.previsualizarHorarioGrupo.and.returnValue(of({
+      exitoso: true,
+      datos: {
+        ...base,
+        resumenPeriodo: { ...base.resumenPeriodo, sesionesEnReceso: 1, minutosPerdidosReceso: 120 },
+        recesos: [{ fecha: '2027-03-24', motivo: 'Receso académico: Semana Santa', sesionesAfectadas: 1 }],
+        sesiones: [
+          ...base.sesiones,
+          {
+            numero: 2, numeroSemana: 7, fecha: '2027-03-24', horaInicio: '08:00', horaFin: '10:00', fechaHoraInicioUtc: '2027-03-24T13:00:00Z',
+            fechaHoraFinUtc: '2027-03-24T15:00:00Z', minutos: 120, estado: 'CANCELADA_POR_RECESO' as const, nombreFestivo: null,
+            motivoReceso: 'Receso académico: Semana Santa',
+          },
+        ],
+      },
+    }));
+    llenarGrupoNuevo();
+    fixture.detectChanges();
+    component.previsualizar();
+    fixture.detectChanges();
+
+    const raiz = fixture.nativeElement as HTMLElement;
+    expect(raiz.querySelector('[data-testid="resumen-receso"]')?.textContent).toContain('1 (2 h)');
+    expect(raiz.querySelector('[data-testid="resumen-previsualizacion"]')?.textContent).toContain('Caen en festivo');
+    const lista = raiz.querySelector('[data-testid="recesos-previsualizacion"]');
+    expect(lista?.textContent).toContain('24/03/2027');
+    expect(lista?.textContent).toContain('Receso académico: Semana Santa');
+    expect(lista?.textContent).toContain('1 sesión');
+    const filas = Array.from(raiz.querySelectorAll('details tbody tr')).map((tr) => tr.textContent?.replace(/\s+/g, ' ').trim() ?? '');
+    expect(filas[1]).toContain('Cancelada · Receso académico: Semana Santa');
+    const conflicto = raiz.querySelector('[data-testid="conflictos-previsualizacion"] li');
+    expect(conflicto?.textContent).toContain('Información:');
+    expect(conflicto?.textContent).toContain('esas sesiones quedan canceladas');
+    expect(conflicto?.className).not.toContain('danger');
+    expect(raiz.querySelector('[data-testid="error-previsualizacion"]')).toBeNull();
+  });
+
+  it('DEC-081: sin campos de receso (backend anterior) no pinta el conteo ni la lista y una sesión en receso sin motivo usa el texto base', () => {
+    courseService.previsualizarHorarioGrupo.and.returnValue(of({ exitoso: true, datos: previsualizacion() }));
+    llenarGrupoNuevo();
+    fixture.detectChanges();
+    component.previsualizar();
+    fixture.detectChanges();
+    const raiz = fixture.nativeElement as HTMLElement;
+    expect(raiz.querySelector('[data-testid="resumen-receso"]')).toBeNull();
+    expect(raiz.querySelector('[data-testid="recesos-previsualizacion"]')).toBeNull();
+  });
+
   it('SES-GEN-01: si el horario cambia después de calcular, avisa que hay que volver a calcular', () => {
     courseService.previsualizarHorarioGrupo.and.returnValue(of({ exitoso: true, datos: previsualizacion() }));
     llenarGrupoNuevo();
@@ -417,7 +505,15 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
     component.abrirCrear();
     component.previsualizar();
     expect(courseService.previsualizarHorarioGrupo).not.toHaveBeenCalled();
-    expect(component.errorPrevision()).toContain('asignatura y el período');
+    expect(component.errorPrevision()).toContain('asignatura');
+
+    // DEC-076: sin período en curso no hay calendario que previsualizar.
+    llenarGrupoNuevo();
+    component.periodos.set([{ id: 'per-2', nombre: '2027-1', estado: 'PLANEACION' } as never]);
+    component.previsualizar();
+    expect(component.errorPrevision()).toContain('No hay un período en curso');
+    expect(courseService.previsualizarHorarioGrupo).not.toHaveBeenCalled();
+    component.periodos.set([{ id: 'per-1', nombre: '2026-2', estado: 'ACTIVO' } as never]);
 
     llenarGrupoNuevo();
     component.form.idDocente = '';
@@ -483,7 +579,7 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
       },
     })));
     component.abrirCrear();
-    component.form = { ...component.form, idAsignatura: 'a-1', idPeriodoAcademico: 'p-1', codigo: 3, nombre: 'Grupo 03', idDocente: 'doc-1' };
+    component.form = { ...component.form, idAsignatura: 'a-1', codigo: 3, nombre: 'Grupo 03', idDocente: 'doc-1' };
     component.guardar();
     fixture.detectChanges();
 
@@ -535,5 +631,52 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
     courseService.getCoordinatorCoursesPage.calls.reset();
     component.listado.cambiarTamano(25);
     expect(courseService.getCoordinatorCoursesPage).toHaveBeenCalledWith({ pagina: 1, tamano: 25 });
+  });
+
+  describe('DEC-077: programa responsable', () => {
+    const filaTexto = (): { responsable: string[]; botones: number; notas: string[] } => {
+      const el = fixture.nativeElement as HTMLElement;
+      return {
+        responsable: Array.from(el.querySelectorAll('[data-testid="programa-responsable"]')).map((n) => n.textContent!.trim()),
+        botones: Array.from(el.querySelectorAll('tbody button')).filter((b) => b.textContent!.trim() === 'Editar').length,
+        notas: Array.from(el.querySelectorAll('[data-testid="gestiona-otro-programa"]')).map((n) => n.textContent!.trim()),
+      };
+    };
+
+    it('muestra el programa responsable y Editar solo cuando esResponsable es true', () => {
+      courseService.getCoordinatorCoursesPage.and.returnValue(of(paginaGrupos([
+        { ...grupo, id: 'a', nombreProgramaResponsable: 'Ingeniería de Sistemas', esResponsable: true },
+      ])));
+      component.listado.cargar();
+      fixture.detectChanges();
+      const r = filaTexto();
+      expect(r.responsable).toEqual(['Ingeniería de Sistemas']);
+      expect(r.botones).toBe(1);
+      expect(r.notas).toEqual([]);
+    });
+
+    it('en grupos de otro programa oculta Editar y muestra la nota "Lo gestiona <programa>"', () => {
+      courseService.getCoordinatorCoursesPage.and.returnValue(of(paginaGrupos([
+        { ...grupo, id: 'b', nombreProgramaResponsable: 'Derecho', esResponsable: false },
+      ])));
+      component.listado.cargar();
+      fixture.detectChanges();
+      const r = filaTexto();
+      expect(r.responsable).toEqual(['Derecho']);
+      expect(r.botones).toBe(0);
+      expect(r.notas).toEqual(['Lo gestiona Derecho']);
+    });
+
+    it('sin programa responsable muestra "Sin programa responsable" y no ofrece Editar', () => {
+      courseService.getCoordinatorCoursesPage.and.returnValue(of(paginaGrupos([
+        { ...grupo, id: 'c', nombreProgramaResponsable: null, esResponsable: false },
+      ])));
+      component.listado.cargar();
+      fixture.detectChanges();
+      const r = filaTexto();
+      expect(r.responsable).toEqual(['Sin programa responsable']);
+      expect(r.botones).toBe(0);
+      expect(r.notas).toEqual(['Sin programa responsable']);
+    });
   });
 });

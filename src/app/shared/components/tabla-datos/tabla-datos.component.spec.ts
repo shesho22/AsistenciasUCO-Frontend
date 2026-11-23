@@ -53,6 +53,14 @@ describe('TablaDatosComponent', () => {
     expect(el().querySelector('table caption')?.textContent).toContain('Prueba');
   });
 
+  it('usa por defecto el marco con desplazamiento propio y alto maximo (cabecera fija) y deja la paginacion fuera', () => {
+    const region = el().querySelector('[role="region"]') as HTMLElement;
+    expect(region.classList.contains('tabla-contenedor')).toBeTrue();
+    expect(region.style.maxHeight).toBe('var(--tabla-alto-max)');
+    expect(region.querySelector('app-pagination')).toBeNull();
+    expect(el().querySelector('app-pagination')).toBeTruthy();
+  });
+
   it('muestra filas de esqueleto mientras carga y marca aria-busy', () => {
     host.cargando.set(true);
     fixture.detectChanges();
@@ -75,6 +83,14 @@ describe('TablaDatosComponent', () => {
     expect(opciones).toEqual(['15', '30', '50']);
     expect(TAMANO_PAGINA_TABLA).toBe(15);
     expect(TAMANOS_PAGINA_TABLA).toEqual([15, 30, 50]);
+  });
+
+  it('tarjetasEnMovil activa la clase que apila las filas como tarjetas bajo md (apagada por defecto)', () => {
+    expect(el().querySelector('table')?.classList).not.toContain('tabla-tarjetas');
+    const f2 = TestBed.createComponent(TablaDatosComponent);
+    f2.componentRef.setInput('tarjetasEnMovil', true);
+    f2.detectChanges();
+    expect((f2.nativeElement as HTMLElement).querySelector('table')?.classList).toContain('tabla-tarjetas');
   });
 
   it('paginarEnCliente devuelve la porcion de la pagina', () => {

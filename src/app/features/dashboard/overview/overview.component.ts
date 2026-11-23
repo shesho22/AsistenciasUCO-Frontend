@@ -22,6 +22,9 @@ import { AdminIndicatorsService } from '../../../core/services/admin-indicators.
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
 import { StudentManagementService } from '../../../core/services/student-management.service';
 import { AttendanceClaimService } from '../../../core/services/attendance-claim.service';
+import { SesionCalendarioService } from '../../../core/services/sesion-calendario.service';
+import { SesionCalendario } from '../../../core/models/sesion-calendario.model';
+import { sumarDias } from '../../../core/utils/semana.util';
 import { TeacherGruposResumenService } from '../../../core/services/teacher-grupos-resumen.service';
 import { KpisInstitucion } from '../../../core/models/admin-indicators.model';
 import { KpisDecano } from '../../../core/models/dean-indicators.model';
@@ -40,7 +43,6 @@ import {
   HorarioDocenteItem,
   HorarioItem,
 } from '../../../core/models/role-management.model';
-import { MOCK_USERS_BY_ROLE } from '../../../core/mocks/user.mock';
 import {
   ProximaClaseInfo,
   ClaseHorarioItem,
@@ -70,14 +72,16 @@ import { OverviewStudentComponent } from './components/overview-student.componen
     OverviewStudentComponent,
   ],
   template: `
+    @if (user(); as usuario) {
     <div class="flex flex-col gap-4 animate-fade-in">
       <!-- 1. Hero Banner Adaptativo -->
       <app-overview-hero
         [userRole]="userRole()"
-        [userName]="user().name"
-        [institutionName]="user().institutionName"
-        [department]="user().department"
+        [userName]="usuario.name"
+        [institutionName]="usuario.institutionName"
+        [department]="usuario.department"
         [pendingClaimsCount]="pendingClaimsCount()"
+        [grupoProximaClase]="proximaClase()?.idGrupo ?? null"
         [sinEntidadAsignada]="heroSinEntidad()"
       />
 
@@ -141,6 +145,7 @@ import { OverviewStudentComponent } from './components/overview-student.componen
         }
       }
     </div>
+    }
   `,
 })
 export class OverviewComponent implements OnInit {
@@ -156,15 +161,22 @@ export class OverviewComponent implements OnInit {
   private readonly coordinatorProgram = inject(CoordinatorProgramService);
   private readonly studentService = inject(StudentManagementService);
   private readonly claimService = inject(AttendanceClaimService);
+  private readonly calendarioService = inject(SesionCalendarioService);
   private readonly teacherResumen = inject(TeacherGruposResumenService);
   private readonly destroyRef = inject(DestroyRef);
 
-  user = computed(() => this.authService.currentUser() || MOCK_USERS_BY_ROLE.DOCENTE);
+  user = computed(() => this.authService.currentUser());
   userRole = computed<UserRole>(() => this.user()?.role || 'DOCENTE');
   /** HU178: el perfil confirmó que el decano no tiene facultad asignada. */
-  decanoSinFacultad = computed(() => sinEntidadAsignada(this.user(), 'DECANO'));
+  decanoSinFacultad = computed(() => {
+    const usuario = this.user();
+    return usuario ? sinEntidadAsignada(usuario, 'DECANO') : false;
+  });
   /** HU178: el perfil confirmó que el coordinador no tiene programa asignado. */
-  coordinadorSinPrograma = computed(() => sinEntidadAsignada(this.user(), 'COORDINADOR'));
+  coordinadorSinPrograma = computed(() => {
+    const usuario = this.user();
+    return usuario ? sinEntidadAsignada(usuario, 'COORDINADOR') : false;
+  });
   /** HU178: al rol activo le falta su entidad; el encabezado no ofrece acciones que solo llevarían al aviso. */
   heroSinEntidad = computed(() => {
     const rol = this.userRole();
@@ -175,6 +187,8 @@ export class OverviewComponent implements OnInit {
   horariosDocente = signal<HorarioDocenteItem[]>([]);
   horariosEstudiante = signal<HorarioItem[]>([]);
   proximaClase = signal<ProximaClaseInfo | null>(null);
+  /** Sesiones extraordinarias aprobadas (con fecha) de los próximos días; se suman al horario semanal en "Próxima clase". */
+  sesionesExtraordinarias = signal<SesionCalendario[]>([]);
 
   // Datos Docente
   courses: Course[] = [];
@@ -211,6 +225,11 @@ export class OverviewComponent implements OnInit {
   isLoading = signal<boolean>(true);
 
   ngOnInit(): void {
+    // Sin sesión no hay rol que consultar: la vista queda vacía en lugar de simular un usuario.
+    if (!this.user()) {
+      this.isLoading.set(false);
+      return;
+    }
     this.loadDataForRole(this.userRole());
   }
 
@@ -317,6 +336,7 @@ export class OverviewComponent implements OnInit {
         break;
 
       case 'DOCENTE':
+        this.cargarSesionesExtraordinarias('DOCENTE');
         this.claimService.getHorarioDocente().subscribe({
           next: (res) => {
             if (res.exitoso && res.datos) {
@@ -349,6 +369,7 @@ export class OverviewComponent implements OnInit {
         break;
 
       case 'ESTUDIANTE':
+        this.cargarSesionesExtraordinarias('ESTUDIANTE');
         this.studentService.getHorarios().subscribe({
           next: (res) => {
             if (res.exitoso && res.datos) {
@@ -397,6 +418,42 @@ export class OverviewComponent implements OnInit {
       });
   }
 
+  /** Calendario de los próximos 7 días: de él solo se toman las extraordinarias no canceladas (ya aprobadas). */
+  private cargarSesionesExtraordinarias(rol: 'DOCENTE' | 'ESTUDIANTE'): void {
+    const hoy = new Date();
+    const civil = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
+    this.calendarioService
+      .consultar(rol, civil, sumarDias(civil, 6))
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => {
+          this.sesionesExtraordinarias.set((res.datos ?? []).filter((x) => x.esExtraordinaria && !x.estaCancelada));
+          this.recalcularProximaClase();
+        },
+        error: () => this.sesionesExtraordinarias.set([]),
+      });
+  }
+
+  private itemsExtraordinarias(subtituloDe: (x: SesionCalendario) => string): ClaseHorarioItem[] {
+    const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const hora = (d: Date): string => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    return this.sesionesExtraordinarias().map((x) => {
+      const inicio = new Date(x.fechaHoraInicioUtc);
+      const fin = new Date(x.fechaHoraFinUtc);
+      return {
+        idGrupo: x.idGrupo,
+        codigoMateria: x.codigoAsignatura,
+        nombreMateria: x.nombreAsignatura,
+        dia: dias[inicio.getDay()],
+        horaInicio: hora(inicio),
+        horaFin: hora(fin),
+        subtitulo: subtituloDe(x),
+        inicio,
+        fin,
+      };
+    });
+  }
+
   recalcularProximaClase(): void {
     const role = this.userRole();
     const items: ClaseHorarioItem[] = [];
@@ -406,6 +463,7 @@ export class OverviewComponent implements OnInit {
       if (hd && hd.length > 0) {
         for (const h of hd) {
           items.push({
+            idGrupo: h.idGrupo,
             codigoMateria: h.codigoMateria,
             nombreMateria: h.nombreMateria,
             dia: h.dia,
@@ -419,6 +477,7 @@ export class OverviewComponent implements OnInit {
           const parsed = parseScheduleString(c.schedule);
           for (const p of parsed) {
             items.push({
+              idGrupo: c.id,
               codigoMateria: c.code ?? '',
               nombreMateria: c.name,
               dia: p.dia,
@@ -434,6 +493,7 @@ export class OverviewComponent implements OnInit {
       if (he && he.length > 0) {
         for (const h of he) {
           items.push({
+            idGrupo: h.idGrupo,
             codigoMateria: h.codigoMateria,
             nombreMateria: h.nombreMateria,
             dia: h.dia,
@@ -450,6 +510,7 @@ export class OverviewComponent implements OnInit {
           const parsed = parseScheduleString(m.horario);
           for (const p of parsed) {
             items.push({
+              idGrupo: m.idGrupo,
               codigoMateria: m.codigo ?? m.nombre,
               nombreMateria: m.nombre,
               dia: p.dia,
@@ -463,6 +524,15 @@ export class OverviewComponent implements OnInit {
       }
     }
 
+    if (role === 'DOCENTE' || role === 'ESTUDIANTE') {
+      items.push(
+        ...this.itemsExtraordinarias((x) =>
+          role === 'DOCENTE'
+            ? `${x.nombreGrupo} • Sesión extraordinaria`
+            : `${x.nombreGrupo}${x.nombreDocente ? ' • ' + x.nombreDocente : ''} • Sesión extraordinaria`
+        )
+      );
+    }
     this.proximaClase.set(calcularProximaClaseDesdeItems(items));
   }
 }

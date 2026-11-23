@@ -1,4 +1,5 @@
 import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
+import { FechaCivilPipe } from '../../../shared/pipes/fecha-hora.pipes';
 
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -17,7 +18,7 @@ import {
     selector: 'app-dean-periodos',
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: { class: 'block w-full' },
-    imports: [PageHeaderComponent, FormsModule, BadgeComponent, TablaDatosComponent],
+    imports: [FechaCivilPipe, PageHeaderComponent, FormsModule, BadgeComponent, TablaDatosComponent],
     template: `
     <div class="space-y-4 animate-fade-in">
       <!-- Header Bento -->
@@ -58,7 +59,7 @@ import {
 
       <!-- Tabla de Períodos -->
       @if (errorPeriodos()) {
-        <div class="bg-white rounded-2xl border border-danger-200 p-12 text-center shadow-warm-sm" role="alert">
+        <div class="bg-white rounded-2xl border border-danger-200 p-4 text-center shadow-warm-sm" role="alert">
           <p class="text-sm font-semibold text-danger-700">No fue posible cargar los períodos académicos.</p>
           <p class="text-xs text-danger-700 mt-1">{{ errorPeriodos() }}</p>
           <button type="button" (click)="cargar()" class="mt-3 text-xs font-semibold px-3 py-1.5 rounded-lg border border-danger-200 hover:bg-danger-50">
@@ -93,8 +94,8 @@ import {
               <tr data-testid="periodo-fila">
                 <td class="font-mono text-xs font-bold text-warm-800 whitespace-nowrap">{{ p.codigo }}</td>
                 <td class="font-semibold text-warm-900">{{ p.nombre }}</td>
-                <td class="whitespace-nowrap">{{ p.fechaInicio }}</td>
-                <td class="whitespace-nowrap">{{ p.fechaFin }}</td>
+                <td class="whitespace-nowrap">{{ p.fechaInicio | fechaCivil }}</td>
+                <td class="whitespace-nowrap">{{ p.fechaFin | fechaCivil }}</td>
                 <td>
                   <div class="flex flex-wrap items-center gap-1.5">
                     <app-badge [variant]="p.estado === 'ACTIVO' ? 'success' : (p.estado === 'PLANEACION' ? 'warning' : 'neutral')" size="sm">

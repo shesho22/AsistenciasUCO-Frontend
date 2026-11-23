@@ -125,6 +125,15 @@ describe('StudentClaimsComponent (HU010/HU011: consulta del estudiante)', () => 
     expect(el.querySelector('[data-testid="reclamo-resultado"]')).toBeNull();
   });
 
+  it('FE-4: la tabla pasa a tarjetas en móvil y cada celda de datos lleva su rótulo', () => {
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('table.tabla-tarjetas')).not.toBeNull();
+    const fila = el.querySelector('tbody tr[data-testid="reclamo-fila-sol-1"]') as HTMLElement;
+    const rotulos = Array.from(fila.querySelectorAll('td[data-label]')).map((td) => td.getAttribute('data-label'));
+    expect(rotulos).toEqual(['Materia', 'Sesión', 'Estado', 'Justificación y respuesta', 'Soportes']);
+    expect(fila.querySelector('td.col-acciones [data-accion="retirar-reclamo"]')).not.toBeNull();
+  });
+
   it('A2-F-07 un reclamo RETIRADA muestra la insignia "Retirada" y no ofrece retirarlo', () => {
     component.reclamos.set([{ ...component.reclamos()[0], id: 'sol-3', estadoSolicitud: 'RETIRADA' }]);
     fixture.detectChanges();
@@ -139,6 +148,10 @@ describe('StudentClaimsComponent (HU010/HU011: consulta del estudiante)', () => 
     expect(botones).toHaveSize(1);
 
     botones[0].click();
+    fixture.detectChanges();
+    http.expectNone(`${ENDPOINT}/sol-1`);
+    expect(el.querySelector('[role="alertdialog"]')).not.toBeNull();
+    component.confirmarRetiro();
     const del = http.expectOne(`${ENDPOINT}/sol-1`);
     expect(del.request.method).toBe('DELETE');
     del.flush({ exitoso: true, mensaje: 'La solicitud de revisión fue retirada.' });
@@ -148,10 +161,19 @@ describe('StudentClaimsComponent (HU010/HU011: consulta del estudiante)', () => 
 
   it('A2-F-01 un 409 al retirar muestra el message del backend y no recarga', () => {
     (fixture.nativeElement.querySelector('[data-accion="retirar-reclamo"]') as HTMLButtonElement).click();
+    component.confirmarRetiro();
     http
       .expectOne(`${ENDPOINT}/sol-1`)
       .flush({ message: 'Solo se puede retirar una solicitud de revisión pendiente.' }, { status: 409, statusText: 'Conflict' });
     expect(toastSpy.error).toHaveBeenCalledWith('Solo se puede retirar una solicitud de revisión pendiente.');
+  });
+
+  it('FE-8: cancelar la confirmación no retira la solicitud', () => {
+    (fixture.nativeElement.querySelector('[data-accion="retirar-reclamo"]') as HTMLButtonElement).click();
+    expect(component.retiroPendiente()?.id).toBe('sol-1');
+    component.retiroPendiente.set(null);
+    component.confirmarRetiro();
+    http.expectNone(`${ENDPOINT}/sol-1`);
   });
 
   it('SC-02 filtra por estado y reinicia la página', () => {

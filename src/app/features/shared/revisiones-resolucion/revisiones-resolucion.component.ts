@@ -66,7 +66,7 @@ export const ESTADOS_FILTRABLES: ReadonlyArray<{ codigo: EstadoRevisionCancelaci
           ? 'Consulta de las revisiones de cancelación de matrícula por inasistencia de los grupos de tu facultad. La decisión final la toma el coordinador del programa.'
           : 'Decide si se cancela la matrícula de los estudiantes que el docente propuso cancelar por pérdida de inasistencia.'"
       >
-        <div cabecera-acciones class="flex items-center gap-3">
+        <div cabecera-acciones class="flex max-w-full flex-wrap items-center gap-3">
           @if (esDecano()) {
             <label class="flex items-center gap-2 text-xs font-medium text-warm-700">
               <span>Estado</span>
@@ -94,7 +94,7 @@ export const ESTADOS_FILTRABLES: ReadonlyArray<{ codigo: EstadoRevisionCancelaci
               <span>Solo pendientes</span>
             </label>
           }
-          <span class="px-3 py-1.5 rounded-xl bg-warm-100 text-xs font-bold text-warm-800 border border-warm-200">
+          <span class="px-3 py-1.5 rounded-xl bg-warm-100 text-xs font-bold text-warm-800 border border-warm-200 whitespace-nowrap">
             {{ totalElementos() }} {{ totalElementos() === 1 ? 'registro' : 'registros' }}
           </span>
         </div>
@@ -105,7 +105,7 @@ export const ESTADOS_FILTRABLES: ReadonlyArray<{ codigo: EstadoRevisionCancelaci
       }
 
       @if (cargando()) {
-        <div class="bg-white p-12 rounded-2xl border border-warm-200 text-center text-sm text-warm-500">
+        <div class="bg-white p-4 rounded-2xl border border-warm-200 text-center text-sm text-warm-500">
           Cargando revisiones…
         </div>
       } @else if (revisiones().length === 0) {
@@ -118,8 +118,8 @@ export const ESTADOS_FILTRABLES: ReadonlyArray<{ codigo: EstadoRevisionCancelaci
         />
       } @else {
         <div class="superficie overflow-hidden">
-          <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm">
+          <div class="tabla-scroll">
+            <table class="tabla-tarjetas w-full text-left text-sm" data-testid="rev-tabla">
               <thead class="bg-warm-50 border-b border-warm-200 text-xs font-bold text-warm-600 uppercase tracking-wider">
                 <tr>
                   <th scope="col" class="px-5 py-3.5">Estudiante</th>
@@ -128,20 +128,20 @@ export const ESTADOS_FILTRABLES: ReadonlyArray<{ codigo: EstadoRevisionCancelaci
                   <th scope="col" class="px-5 py-3.5">Docente y propuesta</th>
                   <th scope="col" class="px-5 py-3.5">Estado</th>
                   @if (!esDecano()) {
-                    <th scope="col" class="px-5 py-3.5 text-right">Acción</th>
+                    <th scope="col" class="col-acciones bg-warm-50 px-5 py-3.5 text-right">Acción</th>
                   }
                 </tr>
               </thead>
               <tbody class="divide-y divide-warm-100">
                 @for (rev of revisiones(); track rev.id) {
                   <tr class="hover:bg-warm-50/70 transition-colors align-top">
-                    <td class="px-5 py-4">
+                    <td class="px-5 py-4" data-label="Estudiante">
                       <span class="block font-bold text-warm-900">{{ nombre(rev) }}</span>
                       @if (rev.numeroIdentificacionEstudiante) {
                         <span class="block text-xs font-mono text-warm-500">{{ rev.numeroIdentificacionEstudiante }}</span>
                       }
                     </td>
-                    <td class="px-5 py-4">
+                    <td class="px-5 py-4" data-label="Asignatura / Grupo">
                       <span class="block font-medium text-warm-900">
                         {{ rev.asignatura?.nombre || rev.nombreAsignatura || '—' }}
                       </span>
@@ -149,7 +149,7 @@ export const ESTADOS_FILTRABLES: ReadonlyArray<{ codigo: EstadoRevisionCancelaci
                         {{ rev.grupo?.nombre || rev.nombreGrupo || 'Grupo' }}
                       </span>
                     </td>
-                    <td class="px-5 py-4">
+                    <td class="px-5 py-4" data-label="Inasistencia">
                       <div class="flex flex-col items-start gap-1">
                         <app-semaforo-asistencia [codigoPermanencia]="rev.codigoPermanenciaActual" [porcentaje]="porcentaje(rev)" />
                         <span class="text-xs text-warm-600" data-testid="rev-porcentaje">
@@ -161,7 +161,7 @@ export const ESTADOS_FILTRABLES: ReadonlyArray<{ codigo: EstadoRevisionCancelaci
                         }
                       </div>
                     </td>
-                    <td class="px-5 py-4 max-w-xs">
+                    <td class="px-5 py-4 max-w-xs max-md:max-w-none" data-label="Docente y propuesta">
                       <span class="block text-xs text-warm-700">{{ rev.docente?.nombreCompleto || 'Docente' }}</span>
                       @if (rev.motivoDocente) {
                         <p
@@ -173,13 +173,13 @@ export const ESTADOS_FILTRABLES: ReadonlyArray<{ codigo: EstadoRevisionCancelaci
                         </p>
                       }
                     </td>
-                    <td class="px-5 py-4">
+                    <td class="px-5 py-4" data-label="Estado">
                       <app-badge variant="warning">
                         {{ rev.nombreEstado || rev.estado }}
                       </app-badge>
                     </td>
                     @if (!esDecano()) {
-                      <td class="px-5 py-4 text-right">
+                      <td class="col-acciones bg-white px-5 py-4 text-right" data-label="Acción">
                         @if (rev.requiereAccionResolutor !== false) {
                           <div class="inline-flex flex-wrap justify-end gap-2">
                             <button

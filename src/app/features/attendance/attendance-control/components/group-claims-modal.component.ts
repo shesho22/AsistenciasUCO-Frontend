@@ -1,4 +1,5 @@
 ﻿import { Component, ChangeDetectionStrategy, input, output } from '@angular/core';
+import { FechaCivilPipe } from '../../../../shared/pipes/fecha-hora.pipes';
 
 import { FormsModule } from '@angular/forms';
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
@@ -12,7 +13,7 @@ import { TablaDatosComponent } from '../../../../shared/components/tabla-datos/t
 @Component({
     selector: 'app-group-claims-modal',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [FormsModule, ModalComponent, ButtonComponent, BadgeComponent, TablaDatosComponent],
+    imports: [FechaCivilPipe, FormsModule, ModalComponent, ButtonComponent, BadgeComponent, TablaDatosComponent],
     template: `
     <app-modal
       [isOpen]="isOpen()"
@@ -88,7 +89,7 @@ import { TablaDatosComponent } from '../../../../shared/components/tabla-datos/t
                     </td>
                     <td class="whitespace-nowrap text-[11px] text-warm-500">
                       <span class="font-mono font-bold px-2 py-0.5 rounded bg-warm-100 text-warm-800">{{ rec.folio }}</span>
-                      <p class="mt-1">{{ rec.fechaSolicitud }}</p>
+                      <p class="mt-1">{{ rec.fechaSolicitud | fechaCivil }}</p>
                     </td>
                     <td class="min-w-[16rem] text-xs">
                       <p class="text-[11px] text-warm-500">Motivo: <strong class="text-warm-700">{{ rec.categoria || 'Médico / Salud' }}</strong></p>

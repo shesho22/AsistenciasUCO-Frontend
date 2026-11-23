@@ -57,8 +57,8 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
               Horas en {{ timeZone.zoneLabel() }}.
             }
           </p>
-          <div class="overflow-x-auto">
-            <table class="w-full text-sm">
+          <div class="tabla-scroll">
+            <table class="tabla-tarjetas w-full text-sm" data-testid="cronograma-tabla">
               <thead>
                 <tr class="text-left text-xs uppercase tracking-wider text-warm-500 border-b border-warm-100">
                   <th scope="col" class="py-2 pr-3">Fecha y hora</th>
@@ -69,12 +69,12 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
               <tbody>
                 @for (s of sesiones(); track s.id) {
                   <tr class="border-b border-warm-50" [attr.data-testid]="'sesion-fila-' + s.id">
-                    <td class="py-2 pr-3 text-xs text-warm-600">{{ horario(s) }}</td>
-                    <td class="py-2 pr-3 font-semibold text-warm-900">
+                    <td class="py-2 pr-3 text-xs text-warm-600" data-label="Fecha y hora">{{ horario(s) }}</td>
+                    <td class="py-2 pr-3 font-semibold text-warm-900" data-label="Sesión">
                       {{ s.nombre }} <span class="text-warm-400 font-mono">{{ s.codigo }}</span>
                       <app-sesion-estado-badge class="block font-normal" [estado]="s.estado" [cancelacion]="s.cancelacion" />
                     </td>
-                    <td class="py-2 pr-3 text-warm-700">{{ s.nombreAsignatura }} · {{ s.nombreGrupo }}</td>
+                    <td class="py-2 pr-3 text-warm-700" data-label="Asignatura · Grupo">{{ s.nombreAsignatura }} · {{ s.nombreGrupo }}</td>
                   </tr>
                 }
               </tbody>

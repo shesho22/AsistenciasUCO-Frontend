@@ -1,4 +1,5 @@
-import { Routes } from '@angular/router';
+import { inject } from '@angular/core';
+import { Router, Routes } from '@angular/router';
 import { AdminConfiguracionComponent } from './admin-configuracion.component';
 
 /**
@@ -19,12 +20,13 @@ export const CONFIGURACION_ROUTES: Routes = [
       {
         path: 'catalogos',
         data: { tab: 'catalogos' },
-        loadComponent: () => import('../admin-catalogs/admin-catalogs.component').then((m) => m.AdminCatalogsComponent),
+        loadComponent: () => import('../admin-catalogs/admin-catalogos-sistema.component').then((m) => m.AdminCatalogosSistemaComponent),
       },
+      // Los estados del sistema viven en la vista única de catálogos; se abre con el catálogo de estados preseleccionado.
       {
         path: 'estados',
-        data: { tab: 'estados' },
-        loadComponent: () => import('../admin-estados/admin-estados.component').then((m) => m.AdminEstadosComponent),
+        pathMatch: 'full',
+        redirectTo: () => inject(Router).parseUrl('/app/admin/configuracion/catalogos?catalogo=estados-reclamo'),
       },
       {
         path: 'festivos',

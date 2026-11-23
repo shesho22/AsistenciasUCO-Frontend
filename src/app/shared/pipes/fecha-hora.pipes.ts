@@ -1,6 +1,7 @@
 import { Pipe, PipeTransform } from '@angular/core';
 import {
   ValorTemporal,
+  formatearFechaCivil,
   formatearFechaCorta,
   formatearFechaHoraCorta,
   formatearHoraCorta,
@@ -36,5 +37,13 @@ export class RangoHorarioPipe implements PipeTransform {
 export class FechaHoraCortaPipe implements PipeTransform {
   transform(valor: ValorTemporal, timeZone?: string): string {
     return formatearFechaHoraCorta(valor, timeZone);
+  }
+}
+
+/** `12/11/2026` a partir de una fecha civil `2026-11-12` (sin desfase de zona horaria). */
+@Pipe({ name: 'fechaCivil', standalone: true })
+export class FechaCivilPipe implements PipeTransform {
+  transform(valor: string | null | undefined): string {
+    return formatearFechaCivil(valor);
   }
 }

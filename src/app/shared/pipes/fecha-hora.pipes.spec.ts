@@ -1,4 +1,4 @@
-import { FechaCortaPipe, FechaHoraCortaPipe, HoraCortaPipe, RangoHorarioPipe } from './fecha-hora.pipes';
+import { FechaCivilPipe, FechaCortaPipe, FechaHoraCortaPipe, HoraCortaPipe, RangoHorarioPipe } from './fecha-hora.pipes';
 
 describe('pipes de fecha y hora (formato unico)', () => {
   const BOGOTA = 'America/Bogota';
@@ -71,6 +71,20 @@ describe('pipes de fecha y hora (formato unico)', () => {
     });
     it('sin dato devuelve guion', () => {
       expect(pipe.transform(null)).toBe('—');
+    });
+  });
+
+  describe('fechaCivil', () => {
+    const pipe = new FechaCivilPipe();
+    it('formatea yyyy-MM-dd como dd/MM/yyyy sin desfase', () => {
+      expect(pipe.transform('2027-02-01')).toBe('01/02/2027');
+      expect(pipe.transform('2027-06-11')).toBe('11/06/2027');
+    });
+    it('deja pasar un texto ya presentable y muestra raya si no hay dato', () => {
+      expect(pipe.transform('11/06/2027')).toBe('11/06/2027');
+      expect(pipe.transform(null)).toBe('—');
+      expect(pipe.transform(undefined)).toBe('—');
+      expect(pipe.transform('')).toBe('—');
     });
   });
 });

@@ -1,4 +1,6 @@
-import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy, input } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy, input, DestroyRef } from '@angular/core';
+import { FechaCivilPipe } from '../../../shared/pipes/fecha-hora.pipes';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { FormsModule } from '@angular/forms';
 import { EMPTY, forkJoin, of } from 'rxjs';
@@ -30,7 +32,6 @@ export function cupoValidoOVacio(cupo: number | string | null | undefined): bool
 
 interface GrupoForm {
   idAsignatura: string;
-  idPeriodoAcademico: string;
   codigo: number | null;
   nombre: string;
   idDocente: string;
@@ -47,7 +48,7 @@ interface GrupoForm {
     selector: 'app-coordinator-groups',
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: { class: 'block w-full' },
-    imports: [PageHeaderComponent, FormsModule, FranjasEditorComponent, PaginationComponent, ErrorCargaComponent],
+    imports: [FechaCivilPipe, PageHeaderComponent, FormsModule, FranjasEditorComponent, PaginationComponent, ErrorCargaComponent],
     template: `
     <div class="space-y-4 animate-fade-in">
       <app-page-header
@@ -66,7 +67,7 @@ interface GrupoForm {
       </app-page-header>
 
       @if (vista() === 'LISTA') {
-        <div class="superficie overflow-x-auto">
+        <div class="superficie tabla-scroll">
           @if (cargando()) {
             <p class="p-6 text-sm text-warm-500">Cargando grupos...</p>
           } @else if (errorCarga()) {
@@ -80,6 +81,7 @@ interface GrupoForm {
                   <th scope="col" class="px-4 py-3">Asignatura</th>
                   <th scope="col" class="px-4 py-3">Grupo</th>
                   <th scope="col" class="px-4 py-3">Docente</th>
+                  <th scope="col" class="px-4 py-3">Responsable</th>
                   <th scope="col" class="px-4 py-3">Horario semanal</th>
                   <th scope="col" class="px-4 py-3">Cupo</th>
                   <th scope="col" class="px-4 py-3"></th>
@@ -90,13 +92,20 @@ interface GrupoForm {
                   <tr class="border-t border-warm-100">
                     <td class="px-4 py-3 font-medium text-warm-900">{{ grupo.name }}</td>
                     <td class="px-4 py-3">{{ grupo.section }}</td>
-                    <td class="px-4 py-3">{{ nombreDocente(grupo.docenteId) }}</td>
+                    <td class="px-4 py-3">{{ nombreDocente(grupo.docenteId, grupo.docenteName) }}</td>
+                    <td class="px-4 py-3" data-testid="programa-responsable">{{ grupo.nombreProgramaResponsable || 'Sin programa responsable' }}</td>
                     <td class="px-4 py-3">{{ grupo.schedule || 'Sin horario' }}</td>
                     <td class="px-4 py-3">{{ grupo.enrolledStudentsCount ?? 0 }} / {{ grupo.cupoMaximo ?? '-' }}</td>
                     <td class="px-4 py-3 text-right">
-                      <button type="button" class="text-xs font-semibold text-primary-700 hover:underline" (click)="abrirEditar(grupo)">
-                        Editar
-                      </button>
+                      @if (grupo.esResponsable === true) {
+                        <button type="button" class="text-xs font-semibold text-primary-700 hover:underline" (click)="abrirEditar(grupo)">
+                          Editar
+                        </button>
+                      } @else {
+                        <span class="text-xs text-warm-600" data-testid="gestiona-otro-programa">
+                          {{ grupo.nombreProgramaResponsable ? 'Lo gestiona ' + grupo.nombreProgramaResponsable : 'Sin programa responsable' }}
+                        </span>
+                      }
                     </td>
                   </tr>
                 }
@@ -140,14 +149,16 @@ interface GrupoForm {
                   }
                 </select>
               </label>
-              <label class="text-xs font-semibold text-warm-700">Período académico
-                <select name="idPeriodoAcademico" [(ngModel)]="form.idPeriodoAcademico" class="mt-1 w-full px-3 py-2 border border-warm-200 rounded-xl text-sm">
-                  <option value="">{{ periodos().length === 0 ? '-- No hay períodos disponibles --' : 'Seleccione...' }}</option>
-                  @for (p of periodos(); track p.id) {
-                    <option [value]="p.id">{{ p.nombre }}</option>
+              <!-- DEC-076: el período no se elige; el grupo se crea en el período en curso (estado ACTIVO que calcula la base). -->
+              <div class="text-xs font-semibold text-warm-700">Período académico
+                <p data-testid="periodo-creacion" class="mt-1 w-full px-3 py-2 border border-warm-100 bg-warm-50 rounded-xl text-sm font-normal text-warm-800">
+                  @if (periodoCreacion(); as periodo) {
+                    {{ periodo.nombre }} (en curso)
+                  } @else {
+                    Se asignará el próximo período en planeación
                   }
-                </select>
-              </label>
+                </p>
+              </div>
             }
             <label class="text-xs font-semibold text-warm-700">Código del grupo
               <input name="codigo" type="number" min="1" step="1" [(ngModel)]="form.codigo" class="mt-1 w-full px-3 py-2 border border-warm-200 rounded-xl text-sm" />
@@ -213,6 +224,9 @@ interface GrupoForm {
                 <div><dt class="text-warm-500">Sesiones del período</dt><dd class="font-semibold text-warm-900">{{ r.resumenPeriodo.sesionesCalendario }}</dd></div>
                 <div><dt class="text-warm-500">Se programan</dt><dd class="font-semibold text-warm-900">{{ r.resumenPeriodo.sesionesProgramadas }} ({{ horas(r.resumenPeriodo.minutosProgramados) }})</dd></div>
                 <div><dt class="text-warm-500">Caen en festivo</dt><dd class="font-semibold text-warm-900">{{ r.resumenPeriodo.sesionesEnFestivo }} ({{ horas(r.resumenPeriodo.minutosPerdidosFestivo) }})</dd></div>
+                @if (r.resumenPeriodo.sesionesEnReceso !== undefined) {
+                  <div data-testid="resumen-receso"><dt class="text-warm-500">Caen en receso académico</dt><dd class="font-semibold text-warm-900">{{ r.resumenPeriodo.sesionesEnReceso }} ({{ horas(r.resumenPeriodo.minutosPerdidosReceso ?? 0) }})</dd></div>
+                }
                 <div><dt class="text-warm-500">Ya no se pueden programar</dt><dd class="font-semibold text-warm-900">{{ r.resumenPeriodo.sesionesNoProgramables }} ({{ horas(r.resumenPeriodo.minutosNoProgramables) }})</dd></div>
                 <div><dt class="text-warm-500">Horas esperadas de la materia</dt><dd class="font-semibold text-warm-900">{{ horas(r.resumenPeriodo.minutosEsperadosMateria) }}</dd></div>
               </dl>
@@ -222,6 +236,14 @@ interface GrupoForm {
                   Sobre el grupo actual: se conservan {{ cambio.sesionesConservadas }} sesiones ({{ horas(cambio.minutosConservados) }}) ya dictadas o con asistencia,
                   se crean {{ cambio.sesionesFuturasQueSeCrean }} y se retiran {{ cambio.sesionesFuturasQueSeRetiran }}.
                 </p>
+              }
+
+              @if (r.recesos && r.recesos.length > 0) {
+                <ul class="space-y-1 text-xs text-warm-700" data-testid="recesos-previsualizacion" aria-label="Días de receso del período">
+                  @for (rc of r.recesos; track rc.fecha) {
+                    <li><span class="font-semibold tabular-nums">{{ rc.fecha | fechaCivil }}</span> · {{ rc.motivo }} ({{ rc.sesionesAfectadas }} {{ rc.sesionesAfectadas === 1 ? 'sesión' : 'sesiones' }})</li>
+                  }
+                </ul>
               }
 
               @if (r.conflictos.length > 0) {
@@ -245,9 +267,9 @@ interface GrupoForm {
                     <tbody>
                       @for (s of r.sesiones; track s.numero) {
                         <tr class="border-t border-warm-100" [class.text-warm-400]="s.estado === 'NO_PROGRAMABLE_POR_FECHA'">
-                          <td class="px-3 py-1.5">{{ s.numero }}</td><td class="px-3 py-1.5">{{ s.numeroSemana }}</td><td class="px-3 py-1.5">{{ s.fecha }}</td>
+                          <td class="px-3 py-1.5">{{ s.numero }}</td><td class="px-3 py-1.5">{{ s.numeroSemana }}</td><td class="px-3 py-1.5">{{ s.fecha | fechaCivil }}</td>
                           <td class="px-3 py-1.5">{{ s.horaInicio }}-{{ s.horaFin }}</td>
-                          <td class="px-3 py-1.5">{{ estadoSesion(s.estado) }}@if (s.nombreFestivo) { ({{ s.nombreFestivo }}) }</td>
+                          <td class="px-3 py-1.5">@if (s.estado === 'CANCELADA_POR_RECESO') { Cancelada · {{ s.motivoReceso || 'Receso académico' }} } @else { {{ estadoSesion(s.estado) }}@if (s.nombreFestivo) { ({{ s.nombreFestivo }}) } }</td>
                         </tr>
                       }
                     </tbody>
@@ -271,6 +293,7 @@ interface GrupoForm {
   `
 })
 export class CoordinatorGroupsComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   /** CULM-001: dentro de una pestaña, el título lo pone el cascarón. */
   readonly embebido = input(false);
   private readonly courseService = inject(CourseService);
@@ -294,6 +317,11 @@ export class CoordinatorGroupsComponent implements OnInit {
    */
   asignaturasParaCrear = computed(() => this.asignaturas().filter((a) => a.estaActivaAsignatura !== false));
   periodos = signal<PeriodoAcademicoItem[]>([]);
+  /**
+   * DEC-076: período en el que se crea el grupo: el que el servidor marca como ACTIVO (vigente hoy). Sin uno en curso no se
+   * envía período y la base toma el próximo en PLANEACION. Un período ya terminado no recibe grupos (la base responde PER_010).
+   */
+  readonly periodoCreacion = computed(() => this.periodos().find((p) => p.estado === 'ACTIVO') ?? null);
   docentes = signal<DocentePrograma[]>([]);
   /** Fallo al cargar las asignaturas, docentes o periodos del formulario: se muestra con reintento, no como listas vacías. */
   errorCatalogos = signal<LoadErrorState | null>(null);
@@ -343,7 +371,7 @@ export class CoordinatorGroupsComponent implements OnInit {
           return of([] as AsignaturaPlanItem[]);
         })
       )
-      .subscribe((asignaturas) => this.asignaturas.set(asignaturas));
+      .pipe(takeUntilDestroyed(this.destroyRef)).subscribe((asignaturas) => this.asignaturas.set(asignaturas));
 
     // Se piden todas las páginas del directorio (el backend limita a 100 por página): el selector no debe truncarse.
     const TAMANO = 100;
@@ -358,7 +386,7 @@ export class CoordinatorGroupsComponent implements OnInit {
           return of([] as DocentePrograma[]);
         })
       )
-      .subscribe((docentes) => this.docentes.set(docentes));
+      .pipe(takeUntilDestroyed(this.destroyRef)).subscribe((docentes) => this.docentes.set(docentes));
 
     this.coordinatorService
       .getPeriodosAcademicos()
@@ -368,7 +396,7 @@ export class CoordinatorGroupsComponent implements OnInit {
           return of({ exitoso: false, datos: [] as PeriodoAcademicoItem[] });
         })
       )
-      .subscribe((res) => this.periodos.set(res.datos ?? []));
+      .pipe(takeUntilDestroyed(this.destroyRef)).subscribe((res) => this.periodos.set(res.datos ?? []));
   }
 
   readonly horas = minutosAHoras;
@@ -380,7 +408,7 @@ export class CoordinatorGroupsComponent implements OnInit {
 
   /** Datos que determinan la previsualización: si cambian, el resultado mostrado ya no corresponde. */
   private claveForm(): string {
-    return JSON.stringify([this.grupoEditado, this.form.idAsignatura, this.form.idPeriodoAcademico, this.form.idDocente,
+    return JSON.stringify([this.grupoEditado, this.form.idAsignatura, this.periodoCreacion()?.id, this.form.idDocente,
       this.form.franjas.map((f) => [f.dia, f.horaInicio, f.horaFin])]);
   }
 
@@ -406,11 +434,11 @@ export class CoordinatorGroupsComponent implements OnInit {
       .previsualizarHorarioGrupo({
         idGrupo: this.modo() === 'EDITAR' ? (this.grupoEditado as string) : undefined,
         idAsignatura: this.modo() === 'CREAR' ? this.form.idAsignatura : undefined,
-        idPeriodoAcademico: this.modo() === 'CREAR' ? this.form.idPeriodoAcademico : undefined,
+        idPeriodoAcademico: this.modo() === 'CREAR' ? this.periodoCreacion()?.id : undefined,
         idDocente: this.form.idDocente || undefined,
         franjas: this.form.franjas.map((f) => ({ dia: f.dia, horaInicio: f.horaInicio, horaFin: f.horaFin })),
       })
-      .subscribe({
+      .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: (res) => {
           this.previsualizando.set(false);
           if (res.exitoso && res.datos) {
@@ -427,18 +455,25 @@ export class CoordinatorGroupsComponent implements OnInit {
       });
   }
 
-  /** Lo mínimo para poder calcular: materia, período y docente (grupo nuevo) y al menos una franja válida. */
+  /**
+   * Lo mínimo para poder calcular: materia, período en curso y docente (grupo nuevo) y al menos una franja válida. DEC-076: sin
+   * período en curso no hay calendario que previsualizar (el grupo se creará en el próximo período en planeación).
+   */
   private errorPrevisualizable(): string | null {
-    if (this.modo() === 'CREAR' && (!this.form.idAsignatura || !this.form.idPeriodoAcademico)) {
-      return 'Seleccione la asignatura y el período académico para calcular las sesiones.';
+    if (this.modo() === 'CREAR' && !this.form.idAsignatura) {
+      return 'Seleccione la asignatura para calcular las sesiones.';
+    }
+    if (this.modo() === 'CREAR' && !this.periodoCreacion()) {
+      return 'No hay un período en curso para calcular las sesiones; el grupo se creará en el próximo período en planeación.';
     }
     if (!this.form.idDocente) return 'Seleccione el docente titular para calcular las sesiones.';
     if (this.form.franjas.length === 0) return 'Defina al menos una franja del horario.';
     return validarFranjas(this.form.franjas);
   }
 
-  nombreDocente(idDocente: string | undefined): string {
-    return (idDocente && this.nombresDocente().get(idDocente)) || 'Sin asignar';
+  /** El nombre lo entrega el backend; solo si viene vacío se resuelve contra los docentes del programa. */
+  nombreDocente(idDocente: string | undefined, nombreBackend?: string | null): string {
+    return nombreBackend || (idDocente && this.nombresDocente().get(idDocente)) || 'Sin asignar';
   }
 
   abrirCrear(): void {
@@ -455,7 +490,6 @@ export class CoordinatorGroupsComponent implements OnInit {
     this.grupoEditado = grupo.id;
     this.form = {
       idAsignatura: grupo.asignaturaId ?? '',
-      idPeriodoAcademico: '',
       codigo: grupo.code ? Number(grupo.code) : null,
       nombre: grupo.section,
       idDocente: grupo.docenteId ?? '',
@@ -496,7 +530,7 @@ export class CoordinatorGroupsComponent implements OnInit {
         ? this.courseService.crearGrupo({
             ...payload,
             idAsignatura: this.form.idAsignatura,
-            idPeriodoAcademico: this.form.idPeriodoAcademico,
+            idPeriodoAcademico: this.periodoCreacion()?.id,
           })
         : this.courseService.actualizarGrupo(this.grupoEditado as string, {
             ...payload,
@@ -505,7 +539,7 @@ export class CoordinatorGroupsComponent implements OnInit {
 
     this.errorGuardado.set(null);
     this.guardando.set(true);
-    peticion.subscribe({
+    peticion.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
         this.guardando.set(false);
         if (res.exitoso) {
@@ -530,8 +564,8 @@ export class CoordinatorGroupsComponent implements OnInit {
 
   /** Validaciones de formato antes de llamar al backend (las reglas de negocio las confirma la DB). */
   validar(): string | null {
-    if (this.modo() === 'CREAR' && (!this.form.idAsignatura || !this.form.idPeriodoAcademico)) {
-      return 'Seleccione la asignatura y el período académico.';
+    if (this.modo() === 'CREAR' && !this.form.idAsignatura) {
+      return 'Seleccione la asignatura.';
     }
     if (!this.form.codigo || Number(this.form.codigo) < 1 || !this.form.nombre.trim()) {
       return 'El código y el nombre del grupo son obligatorios.';
@@ -561,7 +595,6 @@ export class CoordinatorGroupsComponent implements OnInit {
   private formVacio(): GrupoForm {
     return {
       idAsignatura: '',
-      idPeriodoAcademico: '',
       codigo: null,
       nombre: '',
       idDocente: '',

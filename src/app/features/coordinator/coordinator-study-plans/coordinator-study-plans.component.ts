@@ -1,4 +1,5 @@
-import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { Router } from '@angular/router';
 import { CoordinatorManagementService } from '../../../core/services/coordinator-management.service';
@@ -42,11 +43,11 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
       </app-page-header>
 
       <!-- KPIs Bento -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-xs flex items-center justify-between">
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4">
+        <div class="bg-white px-3 py-2 sm:p-4 rounded-2xl border border-warm-200 shadow-warm-xs flex items-center justify-between">
           <div>
             <span class="text-xs font-bold uppercase tracking-wider text-warm-500">Total Planes</span>
-            <div class="text-2xl font-bold font-serif text-warm-900 mt-1">{{ totalPlanes() }}</div>
+            <div class="text-xl font-bold font-serif text-warm-900 mt-0.5">{{ totalPlanes() }}</div>
             <p class="text-[11px] text-warm-500 mt-0.5">Registrados en el programa</p>
           </div>
           <div class="p-2.5 rounded-xl bg-primary-50 text-primary-700">
@@ -56,10 +57,10 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
           </div>
         </div>
 
-        <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-xs flex items-center justify-between">
+        <div class="bg-white px-3 py-2 sm:p-4 rounded-2xl border border-warm-200 shadow-warm-xs flex items-center justify-between">
           <div>
             <span class="text-xs font-bold uppercase tracking-wider text-warm-500">Planes Vigentes</span>
-            <div class="text-2xl font-bold font-serif text-success-700 mt-1">{{ totalVigentes() }}</div>
+            <div class="text-xl font-bold font-serif text-success-700 mt-0.5">{{ totalVigentes() }}</div>
             <p class="text-[11px] text-warm-500 mt-0.5">Activos para cohortes actuales</p>
           </div>
           <div class="p-2.5 rounded-xl bg-success-50 text-success-700">
@@ -69,10 +70,10 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
           </div>
         </div>
 
-        <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-xs flex items-center justify-between">
+        <div class="bg-white px-3 py-2 sm:p-4 rounded-2xl border border-warm-200 shadow-warm-xs flex items-center justify-between">
           <div>
             <span class="text-xs font-bold uppercase tracking-wider text-warm-500">Asignaturas Vinculadas</span>
-            <div class="text-2xl font-bold font-serif text-primary-800 mt-1">{{ totalAsignaturasVinculadas() }}</div>
+            <div class="text-xl font-bold font-serif text-primary-800 mt-0.5">{{ totalAsignaturasVinculadas() }}</div>
             <p class="text-[11px] text-warm-500 mt-0.5">Acumulado en planes curriculares</p>
           </div>
           <div class="p-2.5 rounded-xl bg-accent-100 text-accent-800">
@@ -95,6 +96,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
   `
 })
 export class CoordinatorStudyPlansComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly coordService = inject(CoordinatorManagementService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
@@ -111,18 +113,18 @@ export class CoordinatorStudyPlansComponent implements OnInit {
   }
 
   cargarPlanes(): void {
-    this.coordService.getPlanesEstudio().subscribe({
+    this.coordService.getPlanesEstudio().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
         this.planes.set(res.datos || []);
         this.totalPlanes.set(Number(res.total ?? 0));
       },
       error: (err) => this.toast.error(getApiErrorMessage(err)),
     });
-    this.coordService.getTotalPlanesVigentes().subscribe({
+    this.coordService.getTotalPlanesVigentes().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (total) => this.totalVigentes.set(total),
       error: (err) => this.toast.error(getApiErrorMessage(err)),
     });
-    this.coordService.getTotalAsignaturasVinculadas().subscribe({
+    this.coordService.getTotalAsignaturasVinculadas().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (total) => this.totalAsignaturasVinculadas.set(total),
       error: (err) => this.toast.error(getApiErrorMessage(err)),
     });
@@ -145,7 +147,7 @@ export class CoordinatorStudyPlansComponent implements OnInit {
   }
 
   toggleEstadoPlan(plan: PlanEstudioItem): void {
-    this.coordService.toggleEstadoPlanEstudio(plan.id).subscribe({
+    this.coordService.toggleEstadoPlanEstudio(plan.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
         if (res.exitoso) {
           this.toast.success(res.mensajeUsuario || mensajeUi('UI_COORDINATOR_STUDY_PLANS_001'));

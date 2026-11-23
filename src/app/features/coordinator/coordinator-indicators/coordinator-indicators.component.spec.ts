@@ -89,6 +89,12 @@ describe('CoordinatorIndicatorsComponent', () => {
     expect(component.service.totalAlertas()).toBe(12);
   });
 
+  it('P1 movil: la tabla de alertas va en un marco con desplazamiento propio (no desplaza el main) y encabezado fijo', () => {
+    const tabla = fixture.nativeElement.querySelector('table') as HTMLElement;
+    expect(tabla.parentElement?.classList).toContain('tabla-scroll');
+    expect(tabla.parentElement?.getAttribute('role')).toBe('region');
+  });
+
   it('T-FE-03 cambiar de página vuelve a consultar el backend con esa página', () => {
     component.onPageChange(2);
     const req = http.expectOne((r) => r.url === `${base}/alertas-tempranas`);
@@ -118,6 +124,18 @@ describe('CoordinatorIndicatorsComponent', () => {
     http.expectOne((r) => r.url === `${base}/indicadores`).flush({ message: 'No tiene un programa a su cargo.' }, { status: 403, statusText: 'Forbidden' });
     alertasReq().forEach((r) => r.flush({ message: 'No tiene un programa a su cargo.' }, { status: 403, statusText: 'Forbidden' }));
     expect(toast.error).toHaveBeenCalled();
+    fixture.detectChanges();
+    expect(component.errorAlertas()).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('[data-testid="alertas-error"]')).not.toBeNull();
+  });
+
+  it('muestra el estado de carga mientras llegan las alertas', () => {
+    component.onPageChange(2);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[data-testid="alertas-cargando"]')).not.toBeNull();
+    http.expectOne((r) => r.url === `${base}/alertas-tempranas`).flush({ exitoso: true, datos: [], total: 0 });
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[data-testid="alertas-cargando"]')).toBeNull();
   });
 
   it('HU178: KPI_001 (coordinador sin programa) muestra el aviso informativo y no un toast de error', () => {

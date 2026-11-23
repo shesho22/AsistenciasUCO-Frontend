@@ -514,9 +514,9 @@ describe('CoordinatorManagementService', () => {
       expect(http.expectOne(porUrl(`${environment.apiUrl}/coordinador/estudiantes`)).request.params.get('programaId')).toBe('prg-b');
 
       service.getEstudiantesDirectorioPagina({ page: 0, size: 6 }).subscribe();
-      const directorio = http.expectOne((r) => r.url === `${environment.apiUrl}/estudiantes`);
+      const directorio = http.expectOne((r) => r.url === `${environment.apiUrl}/coordinador/estudiantes` && r.params.get('tamano') === '6');
       expect(directorio.request.params.get('programaId')).toBe('prg-b');
-      directorio.flush({ items: [], totalItems: 0, totalPages: 0, page: 0, size: 6 });
+      directorio.flush(paginaApi([]));
 
       service.getAsignaturasPrograma({ busqueda: 'cal', estaActiva: true, pagina: 1, tamano: 9 }).subscribe((p) => {
         expect(p.elementos[0].id).toBe('a-1');
@@ -559,6 +559,7 @@ describe('CoordinatorManagementService', () => {
       const periodo = service.periodos()[0];
       expect(periodo.codigo).toBe('2026-2');
       expect(periodo.nombre).toBe('Período 2026-2');
+      expect(periodo.nombreOriginal).toBe('2026-2');
     });
 
     it('normalizarPeriodoAcademico conserva el estado que resolvió el backend y no lo deduce con el reloj (CIERRE-W2A)', () => {
@@ -637,12 +638,12 @@ describe('CoordinatorManagementService', () => {
       service.getTotalEstudiantesPorEstado(true).subscribe((t) => totales.push(t));
       service.getTotalEstudiantesPorEstado(false).subscribe((t) => totales.push(t));
 
-      const activos = http.expectOne((r) => r.url === `${environment.apiUrl}/estudiantes` && r.params.get('activo') === 'true');
-      expect(activos.request.params.get('size')).toBe('1');
-      expect(activos.request.params.get('page')).toBe('0');
-      activos.flush({ items: [], totalItems: 40, totalPages: 40, page: 0, size: 1 });
-      http.expectOne((r) => r.url === `${environment.apiUrl}/estudiantes` && r.params.get('activo') === 'false')
-        .flush({ items: [], totalItems: 3, totalPages: 3, page: 0, size: 1 });
+      const activos = http.expectOne((r) => r.url === `${environment.apiUrl}/coordinador/estudiantes` && r.params.get('estaActivo') === 'true');
+      expect(activos.request.params.get('tamano')).toBe('1');
+      expect(activos.request.params.get('pagina')).toBe('1');
+      activos.flush({ exitoso: true, elementos: [], numeroPagina: 1, tamanoPagina: 1, totalElementos: 40, totalPaginas: 40 });
+      http.expectOne((r) => r.url === `${environment.apiUrl}/coordinador/estudiantes` && r.params.get('estaActivo') === 'false')
+        .flush({ exitoso: true, elementos: [], numeroPagina: 1, tamanoPagina: 1, totalElementos: 3, totalPaginas: 3 });
 
       expect(totales).toEqual([40, 3]);
     });
@@ -840,21 +841,37 @@ describe('CoordinatorManagementService', () => {
       delReq.flush({ exitoso: true, datos: { planEstudioId: 'plan-1', semestreEliminado: 10 } });
     });
 
+    it('getEstudiantesDirectorioPagina conserva estaActivoUsuario del backend sobre el filtro y lo infiere solo si falta', () => {
+      let items: { estaActivoUsuario: boolean }[] = [];
+      service.getEstudiantesDirectorioPagina({ page: 0, size: 10 }).subscribe((res) => (items = res.items));
+      http.expectOne((req) => req.url === `${environment.apiUrl}/coordinador/estudiantes`).flush({
+        exitoso: true,
+        elementos: [{ id: '1', estaActivoUsuario: false }, { id: '2', estaActivoUsuario: true }, { id: '3' }],
+        numeroPagina: 1, tamanoPagina: 10, totalElementos: 3, totalPaginas: 1,
+      });
+      expect(items.map((i) => i.estaActivoUsuario)).toEqual([false, true, true]);
+    });
+
     it('getEstudiantesDirectorioPagina y getEstudiantesPorGrupo funcionan', () => {
       service.getEstudiantesDirectorioPagina({ page: 0, size: 10, nombre: 'Laura', activo: true }).subscribe((res) => {
         expect(res.items).toHaveSize(1);
         expect(res.totalItems).toBe(1);
+        expect(res.items[0].nombrePrograma).toBe('Sistemas');
+        expect(res.items[0].semestreActual).toBe(6);
       });
 
-      const getReq = http.expectOne((req) => req.url.includes('/estudiantes'));
+      const getReq = http.expectOne((req) => req.url === `${environment.apiUrl}/coordinador/estudiantes`);
       // Sin programa seleccionado no se inventa programaId.
       expect(getReq.request.params.has('programaId')).toBeFalse();
+      expect(getReq.request.params.get('busqueda')).toBe('Laura');
+      expect(getReq.request.params.get('estaActivo')).toBe('true');
       getReq.flush({
-        items: [{ id: '1', nombreCompleto: 'Laura Restrepo', estaActivoUsuario: true }],
-        totalItems: 1,
-        totalPages: 1,
-        page: 0,
-        size: 10,
+        exitoso: true,
+        elementos: [{ id: '1', nombreCompleto: 'Laura Restrepo', idPrograma: 'p-1', nombrePrograma: 'Sistemas', semestreActual: 6 }],
+        numeroPagina: 1,
+        tamanoPagina: 10,
+        totalElementos: 1,
+        totalPaginas: 1,
       });
 
       service.getEstudiantesPorGrupo('grp-1').subscribe((res) => {
@@ -865,6 +882,21 @@ describe('CoordinatorManagementService', () => {
       reqGrp.flush({ exitoso: true, datos: [] });
 
       expect(service.getAsignaturasPlan('plan-inexistente')).toEqual([]);
+    });
+
+    it('actualizarSemestreEstudiante hace PUT con el semestre (o null para limpiar)', () => {
+      const respuestas: (number | null)[] = [];
+      service.actualizarSemestreEstudiante('e-1', 'p-1', 7).subscribe((r) => respuestas.push(r.datos.semestreActual));
+      const put = http.expectOne(`${environment.apiUrl}/coordinador/estudiantes/e-1/programas/p-1/semestre`);
+      expect(put.request.method).toBe('PUT');
+      expect(put.request.body).toEqual({ semestreActual: 7 });
+      put.flush({ exitoso: true, datos: { semestreActual: 7 }, mensajeUsuario: 'ok' });
+
+      service.actualizarSemestreEstudiante('e-1', 'p-1', null).subscribe((r) => respuestas.push(r.datos.semestreActual));
+      const limpiar = http.expectOne(`${environment.apiUrl}/coordinador/estudiantes/e-1/programas/p-1/semestre`);
+      expect(limpiar.request.body).toEqual({ semestreActual: null });
+      limpiar.flush({ exitoso: true, datos: { semestreActual: null }, mensajeUsuario: 'ok' });
+      expect(respuestas).toEqual([7, null]);
     });
   });
 });

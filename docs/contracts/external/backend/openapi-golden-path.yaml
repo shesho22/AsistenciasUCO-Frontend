@@ -1697,12 +1697,16 @@ components:
       properties:
         tipo:
           type: string
-          enum: [DOCENTE, FESTIVO]
+          enum: [DOCENTE, FESTIVO, RECESO]
+          description: |
+            Código del catálogo TipoCancelacionSesion. DOCENTE la cancela el docente (o el coordinador sobre una
+            sesión extraordinaria); FESTIVO y RECESO son cancelaciones del sistema (DEC-081 agrega RECESO, día
+            de receso académico del período).
         motivo:
           type: string
         nombreFestivo:
           type: [string, 'null']
-          description: Nombre del festivo cuando la cancelación es del sistema; null si la cancela el docente.
+          description: Nombre del festivo cuando el tipo es FESTIVO; null en los demás tipos.
         fechaCancelacionUtc:
           $ref: '#/components/schemas/UtcInstantResponse'
     SesionV2DataResponse:

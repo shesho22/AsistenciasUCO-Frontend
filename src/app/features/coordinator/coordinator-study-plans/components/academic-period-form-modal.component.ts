@@ -4,6 +4,8 @@ import { PeriodoAcademicoItem } from '../../../../core/models/role-management.mo
 import { ModalComponent } from '../../../../shared/components/modal/modal.component';
 import { FormFieldComponent } from '../../../../shared/components/form-field/form-field.component';
 import { getSafeTextError } from '../../../../core/validation/form-fields.util';
+import { RecesoPendiente } from '../../../../core/models/receso-academico.model';
+import { PeriodoRecesosEditorComponent } from './periodo-recesos-editor.component';
 
 export const PERIODO_NOMBRE_MINIMO = 3;
 export const PERIODO_NOMBRE_MAXIMO = 50;
@@ -33,7 +35,7 @@ export interface PeriodoFormDatos {
 @Component({
   selector: 'app-academic-period-form-modal',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ModalComponent, FormFieldComponent],
+  imports: [FormsModule, ModalComponent, FormFieldComponent, PeriodoRecesosEditorComponent],
   template: `
     <app-modal [isOpen]="true" [title]="esEdicion() ? 'Modificar período académico' : 'Nuevo período académico'" (closed)="cancelar()">
       <form class="space-y-4" (ngSubmit)="enviar()" novalidate>
@@ -84,6 +86,14 @@ export interface PeriodoFormDatos {
           </p>
         }
 
+        <app-periodo-recesos-editor
+          [idPeriodo]="periodo()?.id ?? null"
+          [fechaInicio]="fechaInicio()"
+          [fechaFin]="fechaFinEfectiva()"
+          [pendientes]="recesosPendientes()"
+          (pendientesChange)="alCambiarRecesos($event)"
+        />
+
         @if (error()) {
           <p class="text-xs font-semibold text-danger-600" role="alert">{{ error() }}</p>
         }
@@ -111,6 +121,10 @@ export class AcademicPeriodFormModalComponent implements OnInit {
 
   readonly guardar = output<PeriodoFormDatos>();
   readonly cerrar = output<void>();
+  /** DEC-081: días de receso agregados al formulario de un período nuevo; el padre los registra tras crear el período. */
+  readonly recesosChange = output<RecesoPendiente[]>();
+
+  protected readonly recesosPendientes = signal<RecesoPendiente[]>([]);
 
   readonly nombre = signal('');
   readonly fechaInicio = signal('');
@@ -157,7 +171,7 @@ export class AcademicPeriodFormModalComponent implements OnInit {
   ngOnInit(): void {
     const actual = this.periodo();
     if (actual) {
-      this.nombre.set(actual.nombre || actual.codigo);
+      this.nombre.set(actual.nombreOriginal || actual.nombre || actual.codigo);
       this.fechaInicio.set(actual.fechaInicio);
       this.fechaFin.set(actual.fechaFin);
     }
@@ -170,6 +184,11 @@ export class AcademicPeriodFormModalComponent implements OnInit {
       fechaInicio: this.fechaInicio(),
       fechaFin: this.fechaFinEfectiva(),
     });
+  }
+
+  protected alCambiarRecesos(recesos: RecesoPendiente[]): void {
+    this.recesosPendientes.set(recesos);
+    this.recesosChange.emit(recesos);
   }
 
   cancelar(): void {

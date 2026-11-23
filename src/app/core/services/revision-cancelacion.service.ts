@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, EMPTY } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { finalize, map, shareReplay } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import {
   DecisionDocentePayload,
@@ -89,15 +89,22 @@ export class RevisionCancelacionService {
     );
   }
 
+  /** Conteos en vuelo por rol: el menú y el KPI del panel piden lo mismo a la vez y comparten una sola petición. */
+  private readonly conteosEnVuelo = new Map<'DOCENTE' | 'COORDINADOR', Observable<number>>();
+
   /** Revisiones que el rol debe atender (el decano solo consulta, no tiene pendientes propios). */
   contarPendientes(rol: 'DOCENTE' | 'COORDINADOR'): Observable<number> {
-    if (rol === 'DOCENTE') {
-      return this.consultarDocente({ soloPendientes: true, tamano: 1 }).pipe(
-        map((res) => Number(res.totalElementos ?? 0))
-      );
-    }
-    return this.consultarCoordinador({ soloPendientes: true, tamano: 1 }).pipe(
-      map((res) => Number(res.totalElementos ?? 0))
+    const enVuelo = this.conteosEnVuelo.get(rol);
+    if (enVuelo) return enVuelo;
+    const consulta = rol === 'DOCENTE'
+      ? this.consultarDocente({ soloPendientes: true, tamano: 1 })
+      : this.consultarCoordinador({ soloPendientes: true, tamano: 1 });
+    const compartido = consulta.pipe(
+      map((res) => Number(res.totalElementos ?? 0)),
+      finalize(() => this.conteosEnVuelo.delete(rol)),
+      shareReplay({ bufferSize: 1, refCount: false })
     );
+    this.conteosEnVuelo.set(rol, compartido);
+    return compartido;
   }
 }

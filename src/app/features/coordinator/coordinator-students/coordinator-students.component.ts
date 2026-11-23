@@ -15,10 +15,11 @@ import { LoadErrorState, classifyLoadError } from '../../../core/api/errors/load
 import { Subject, EMPTY } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, finalize, switchMap } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { EstudianteResumenApiDto } from '../../../core/api/models/estudiante-api-dto.model';
+import { EstudianteDirectorioCoordinadorApiDto } from '../../../core/api/models/estudiante-api-dto.model';
 import { CoordinatorProgramService } from '../../../core/services/coordinator-program.service';
 import { CoordinatorProgramSelectorComponent } from '../shared/coordinator-program-selector.component';
 import { CoordinatorFichaModalComponent } from '../coordinator-indicators/components/coordinator-ficha-modal.component';
+import { ModalComponent } from '../../../shared/components/modal/modal.component';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 
 type PestanaModulo = 'DIRECTORIO';
@@ -34,7 +35,8 @@ type PestanaModulo = 'DIRECTORIO';
     PaginationComponent,
     CoordinatorFichaModalComponent,
     CoordinatorProgramSelectorComponent,
-    ErrorCargaComponent
+    ErrorCargaComponent,
+    ModalComponent
 ],
     template: `
     <div class="space-y-4">
@@ -47,10 +49,7 @@ type PestanaModulo = 'DIRECTORIO';
         titulo="Estudiantes del Programa"
         descripcion="Consulta la información académica e institucional de todos los estudiantes adscritos a la carrera."
       >
-        <div cabecera-acciones class="flex flex-wrap items-center gap-3">
-          <span class="px-3.5 py-2 rounded-xl bg-primary-50 text-primary-900 text-xs font-bold border border-primary-200">
-            {{ totalDirectorio() }} Estudiantes Registrados
-          </span>
+        <div cabecera-acciones class="flex flex-wrap items-center gap-2">
           <app-button variant="secondary" size="sm" (clicked)="irAMaterias()">
             Ver Materias del Programa →
           </app-button>
@@ -58,20 +57,20 @@ type PestanaModulo = 'DIRECTORIO';
       </app-page-header>
 
       <!-- KPIs Rápidos del Padrón Estudiantil -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="superficie p-4">
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4">
+        <div class="superficie px-3 py-2 sm:p-4">
           <span class="text-xs text-warm-500 font-medium">Total en el Programa</span>
-          <p class="text-2xl font-serif font-bold text-warm-900 mt-1">{{ totalDirectorio() }}</p>
+          <p class="text-xl font-serif font-bold text-warm-900 mt-0.5">{{ totalDirectorio() }}</p>
           <span class="text-[11px] text-warm-500">Estudiantes encontrados</span>
         </div>
-        <div class="superficie p-4">
+        <div class="superficie px-3 py-2 sm:p-4">
           <span class="text-xs text-warm-500 font-medium">Activos en el Programa</span>
-          <p class="text-2xl font-serif font-bold text-success-700 mt-1">{{ totalActivos() }}</p>
+          <p class="text-xl font-serif font-bold text-success-700 mt-0.5">{{ totalActivos() }}</p>
           <span class="text-[11px] text-success-700">Matrícula académica vigente</span>
         </div>
-        <div class="superficie p-4">
+        <div class="superficie px-3 py-2 sm:p-4">
           <span class="text-xs text-warm-500 font-medium">Inactivos en el Programa</span>
-          <p class="text-2xl font-serif font-bold text-warm-700 mt-1">{{ totalInactivos() }}</p>
+          <p class="text-xl font-serif font-bold text-warm-700 mt-0.5">{{ totalInactivos() }}</p>
           <span class="text-[11px] text-warm-500">Sin matrícula activa en el período</span>
         </div>
       </div>
@@ -115,8 +114,8 @@ type PestanaModulo = 'DIRECTORIO';
         <!-- MEJORAS-SERGIO 8: lista en tabla (una fila por estudiante) con la acción "Ver ficha"; sin estado financiero ni promedio,
              que el sistema no administra -->
         <div class="superficie overflow-hidden">
-          <div class="overflow-x-auto">
-            <table class="w-full text-sm text-warm-800" data-testid="tabla-estudiantes">
+          <div class="tabla-scroll max-w-full" role="region" tabindex="0" aria-label="Estudiantes del programa">
+            <table class="tabla-tarjetas w-full text-sm text-warm-800" data-testid="tabla-estudiantes">
               <thead class="bg-warm-50 border-b border-warm-200 text-[11px] font-bold text-warm-600 uppercase tracking-wider">
                 <tr>
                   <th scope="col" class="px-4 py-3 text-left">Estudiante</th>
@@ -124,13 +123,13 @@ type PestanaModulo = 'DIRECTORIO';
                   <th scope="col" class="px-4 py-3 text-left">Semestre</th>
                   <th scope="col" class="px-4 py-3 text-left">Programa</th>
                   <th scope="col" class="px-4 py-3 text-left">Estado</th>
-                  <th scope="col" class="px-4 py-3 text-right"><span class="sr-only">Acciones</span></th>
+                  <th scope="col" class="col-acciones bg-warm-50 px-4 py-3 text-right"><span class="sr-only">Acciones</span></th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-warm-100">
                 @for (est of paginatedDirectorio(); track est.id) {
                   <tr class="hover:bg-warm-50/60 transition-colors" [attr.data-testid]="'fila-estudiante-' + est.id">
-                    <td class="px-4 py-3">
+                    <td class="px-4 py-3" data-label="Estudiante">
                       <div class="flex items-center gap-3 min-w-0">
                         <app-avatar [name]="est.nombreCompleto" size="sm"></app-avatar>
                         <div class="min-w-0">
@@ -139,19 +138,26 @@ type PestanaModulo = 'DIRECTORIO';
                         </div>
                       </div>
                     </td>
-                    <td class="px-4 py-3 font-mono text-xs text-warm-700 whitespace-nowrap">{{ est.documento }}</td>
-                    <td class="px-4 py-3 text-xs whitespace-nowrap">{{ est.semestreActual ? est.semestreActual + '°' : 'No informado' }}</td>
-                    <td class="px-4 py-3 text-xs max-w-[14rem] truncate" [title]="est.programa">{{ est.programa }}</td>
-                    <td class="px-4 py-3">
+                    <td class="px-4 py-3 font-mono text-xs text-warm-700 whitespace-nowrap" data-label="Documento">{{ est.documento }}</td>
+                    <td class="px-4 py-3 text-xs whitespace-nowrap" data-label="Semestre"><span data-testid="semestre-estudiante">{{ est.semestreActual ? est.semestreActual + '°' : 'No informado' }}</span></td>
+                    <td class="px-4 py-3 text-xs max-w-[9rem] xl:max-w-[14rem] truncate max-md:max-w-none" data-label="Programa" [title]="est.programa">{{ est.programa || 'No informado' }}</td>
+                    <td class="px-4 py-3" data-label="Estado">
                       <app-badge [variant]="est.estadoMatricula === 'ACTIVO' ? 'success' : (est.estadoMatricula === 'BLOQUEADO' ? 'danger' : 'neutral')">
                         {{ est.estadoMatricula }}
                       </app-badge>
                     </td>
-                    <td class="px-4 py-3 text-right whitespace-nowrap">
+                    <td class="col-acciones bg-white px-3 py-2 text-right" data-label="Acciones">
+                      <div class="flex flex-col items-end lg:flex-row lg:justify-end max-md:items-start max-md:flex-row max-md:flex-wrap">
+                      @if (est.idPrograma) {
+                        <button type="button" data-testid="editar-semestre" (click)="abrirEdicionSemestre(est)" [attr.aria-label]="'Editar semestre de ' + est.nombreCompleto" class="min-h-[44px] px-3 text-xs text-primary-700 font-semibold hover:underline">
+                          Editar semestre
+                        </button>
+                      }
                       <!-- HU159: la ficha (historial y "Corregir datos") también desde el padrón del programa -->
                       <button type="button" data-testid="ver-ficha-estudiante" (click)="abrirFicha(est)" [attr.aria-label]="'Ver ficha de ' + est.nombreCompleto" class="min-h-[44px] px-3 text-xs text-primary-700 font-semibold hover:underline">
                         Ver ficha
                       </button>
+                      </div>
                     </td>
                   </tr>
                 }
@@ -169,6 +175,37 @@ type PestanaModulo = 'DIRECTORIO';
         }
       }
 
+      @if (estudianteSemestre(); as e) {
+        <app-modal
+          [isOpen]="true"
+          title="Editar semestre"
+          [subtitulo]="e.nombreCompleto + ' · ' + e.programa"
+          tamano="sm"
+          etiquetaCerrar="Cerrar"
+          [cerrarAlPulsarFondo]="false"
+          (closed)="cerrarEdicionSemestre()"
+        >
+          <form (ngSubmit)="guardarSemestre()" class="space-y-4" autocomplete="off">
+            @if (errorSemestre()) {
+              <p role="alert" data-testid="error-semestre" class="text-xs font-medium text-danger-700 bg-danger-50 border border-danger-200 rounded-xl px-3 py-2">{{ errorSemestre() }}</p>
+            }
+            <label class="block text-xs font-semibold text-warm-700">Semestre actual
+              <select name="semestre" data-testid="select-semestre" [ngModel]="semestreSeleccionado()" (ngModelChange)="semestreSeleccionado.set($event)"
+                class="mt-1 w-full px-3.5 py-2.5 bg-white border border-warm-200 rounded-xl text-sm text-warm-800 focus:outline-none focus:ring-2 focus:ring-primary-500/20">
+                <option value="">Sin informar</option>
+                @for (n of opcionesSemestre; track n) {
+                  <option [value]="n">{{ n }}°</option>
+                }
+              </select>
+            </label>
+            <div class="flex justify-end gap-3 pt-3 border-t border-warm-100">
+              <button type="button" (click)="cerrarEdicionSemestre()" class="px-4 py-2 rounded-xl text-sm font-semibold bg-warm-100 text-warm-800 hover:bg-warm-200">Cancelar</button>
+              <button type="submit" data-testid="guardar-semestre" [disabled]="guardandoSemestre()" class="px-4 py-2 rounded-xl text-sm font-semibold bg-primary-700 text-white hover:bg-primary-800 disabled:opacity-60">Guardar</button>
+            </div>
+          </form>
+        </app-modal>
+      }
+
       <!-- Paginador del Directorio -->
       <app-pagination
         [totalItems]="totalDirectorio()"
@@ -183,6 +220,45 @@ type PestanaModulo = 'DIRECTORIO';
 export class CoordinatorStudentsComponent implements OnInit {
   abrirFicha(estudiante: EstudianteDirectorioItem): void {
     this.estudianteFicha.set(estudiante);
+  }
+
+  /** Estudiante cuyo semestre se edita y estado del formulario. El rango lo valida el backend (EST_009). */
+  estudianteSemestre = signal<EstudianteDirectorioItem | null>(null);
+  semestreSeleccionado = signal<string>('');
+  guardandoSemestre = signal(false);
+  errorSemestre = signal<string | null>(null);
+  readonly opcionesSemestre = Array.from({ length: 12 }, (_, i) => i + 1);
+
+  abrirEdicionSemestre(estudiante: EstudianteDirectorioItem): void {
+    this.errorSemestre.set(null);
+    this.semestreSeleccionado.set(estudiante.semestreActual ? String(estudiante.semestreActual) : '');
+    this.estudianteSemestre.set(estudiante);
+  }
+
+  cerrarEdicionSemestre(): void {
+    this.estudianteSemestre.set(null);
+    this.errorSemestre.set(null);
+  }
+
+  guardarSemestre(): void {
+    const estudiante = this.estudianteSemestre();
+    if (!estudiante?.idPrograma || this.guardandoSemestre()) return;
+    const valor = this.semestreSeleccionado();
+    const semestre = valor === '' ? null : Number(valor);
+    this.guardandoSemestre.set(true);
+    this.errorSemestre.set(null);
+    this.coordinatorService
+      .actualizarSemestreEstudiante(estudiante.id, estudiante.idPrograma, semestre)
+      .pipe(finalize(() => this.guardandoSemestre.set(false)), takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (r) => {
+          const nuevo = r.datos?.semestreActual ?? null;
+          this.directorio.update((filas) => filas.map((f) => (f.id === estudiante.id ? { ...f, semestreActual: nuevo } : f)));
+          if (r.mensajeUsuario) this.toast.success(r.mensajeUsuario);
+          this.cerrarEdicionSemestre();
+        },
+        error: (error: unknown) => this.errorSemestre.set(getApiErrorMessage(error)),
+      });
   }
 
   private readonly coordinatorService = inject(CoordinatorManagementService);
@@ -340,14 +416,16 @@ export class CoordinatorStudentsComponent implements OnInit {
     void this.router.navigate(['/app/coordinador/programa/materias']);
   }
 
-  private toDirectoryItem(item: EstudianteResumenApiDto): EstudianteDirectorioItem {
+  private toDirectoryItem(item: EstudianteDirectorioCoordinadorApiDto): EstudianteDirectorioItem {
     return {
       id: item.id,
       documento: String(item.numeroIdentificacion),
       codigo: '',
       nombreCompleto: item.nombreCompleto,
       correo: item.correo,
-      programa: 'No informado por el directorio',
+      programa: item.nombrePrograma ?? '',
+      ...(item.idPrograma ? { idPrograma: item.idPrograma } : {}),
+      semestreActual: item.semestreActual ?? null,
       estadoMatricula: item.estaActivoUsuario ? 'ACTIVO' : 'INACTIVO',
     };
   }

@@ -43,6 +43,7 @@ export function paginarEnCliente<T>(items: readonly T[], pagina: number, tamano:
  * - Desplazamiento horizontal en pantallas angostas: `anchoMinimo` evita que el texto se encoja.
  * - Mientras `cargando` muestra filas de esqueleto y conserva la altura que tenia, para que la vista no salte
  *   al cambiar de pagina, filtrar o recargar.
+ * - `tarjetasEnMovil`: bajo md las filas se apilan como tarjetas; `col-acciones` en el th y el td mantiene visibles las acciones.
  * - Paginacion opcional (15 por defecto, 15/30/50) con `app-pagination`; se muestra si `totalItems` > 0
  *   y `paginada` es verdadero.
  */
@@ -62,7 +63,7 @@ export function paginarEnCliente<T>(items: readonly T[], pagina: number, tamano:
       [style.max-height]="alturaMaxima()"
       [style.min-height]="alturaReservada()"
     >
-      <table class="tabla" [class.table-fixed]="fija()" [style.min-width]="anchoMinimo()">
+      <table class="tabla" [class.table-fixed]="fija()" [class.tabla-tarjetas]="tarjetasEnMovil()" [style.min-width]="anchoMinimo()">
         @if (etiquetaVisible()) {
           <caption class="sr-only">{{ etiqueta() }}</caption>
         }
@@ -81,7 +82,7 @@ export function paginarEnCliente<T>(items: readonly T[], pagina: number, tamano:
         } @else if (vacio()) {
           <tbody>
             <tr>
-              <td [attr.colspan]="columnas()" class="py-8 text-center text-sm text-warm-600" data-testid="tabla-datos-vacia">
+              <td [attr.colspan]="columnas()" class="py-4 text-center text-sm text-warm-600" data-testid="tabla-datos-vacia">
                 {{ mensajeVacio() }}
               </td>
             </tr>
@@ -116,10 +117,15 @@ export class TablaDatosComponent {
   readonly mensajeVacio = input<string>('No hay registros para mostrar.');
   /** Ancho minimo de la tabla; por debajo de el aparece desplazamiento horizontal. */
   readonly anchoMinimo = input<string>('40rem');
-  /** Altura maxima del marco; por encima de ella la tabla se desplaza con la cabecera fija. */
-  readonly alturaMaxima = input<string>('70vh');
+  /**
+   * Altura maxima del marco; por encima de ella la tabla se desplaza con la cabecera fija (sticky).
+   * Por defecto usa el token --tabla-alto-max; pasar 'none' para no limitar el alto (sin desplazamiento vertical propio).
+   */
+  readonly alturaMaxima = input<string>('var(--tabla-alto-max)');
   /** Usa table-layout fixed (anchos de columna estables definidos en colgroup o en los th). */
   readonly fija = input<boolean>(false);
+  /** Bajo md cada fila se muestra como tarjeta apilada (las celdas llevan `data-label` con su rotulo). */
+  readonly tarjetasEnMovil = input<boolean>(false);
 
   readonly paginada = input<boolean>(false);
   readonly totalItems = input<number>(0);

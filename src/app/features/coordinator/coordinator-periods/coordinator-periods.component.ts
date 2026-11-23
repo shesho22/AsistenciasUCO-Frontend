@@ -39,11 +39,11 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
       </app-page-header>
 
       <!-- KPIs Bento -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-xs flex items-center justify-between">
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4">
+        <div class="bg-white px-3 py-2 sm:p-4 rounded-2xl border border-warm-200 shadow-warm-xs flex items-center justify-between">
           <div>
             <span class="text-xs font-bold uppercase tracking-wider text-warm-500">Total Períodos</span>
-            <div class="text-2xl font-bold font-serif text-warm-900 mt-1">{{ totalPeriodos() }}</div>
+            <div class="text-xl font-bold font-serif text-warm-900 mt-0.5">{{ totalPeriodos() }}</div>
             <p class="text-[11px] text-warm-500 mt-0.5">Registrados en el calendario</p>
           </div>
           <div class="p-2.5 rounded-xl bg-primary-50 text-primary-700">
@@ -53,10 +53,10 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
           </div>
         </div>
 
-        <div class="bg-white p-5 rounded-2xl border border-warm-200 shadow-warm-xs flex items-center justify-between">
+        <div class="bg-white px-3 py-2 sm:p-4 rounded-2xl border border-warm-200 shadow-warm-xs flex items-center justify-between">
           <div>
             <span class="text-xs font-bold uppercase tracking-wider text-warm-500">Períodos Activos</span>
-            <div class="text-2xl font-bold font-serif text-success-700 mt-1">{{ totalActivos() }}</div>
+            <div class="text-xl font-bold font-serif text-success-700 mt-0.5">{{ totalActivos() }}</div>
             <p class="text-[11px] text-warm-500 mt-0.5">Habilitados para programación</p>
           </div>
           <div class="p-2.5 rounded-xl bg-success-50 text-success-700">

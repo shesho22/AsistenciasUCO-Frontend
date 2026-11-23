@@ -1,6 +1,6 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { Router, Routes, provideRouter } from '@angular/router';
+import { Router, Routes, UrlTree, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { AdminConfiguracionComponent, TABS_CONFIGURACION } from './admin-configuracion.component';
 import { CONFIGURACION_ROUTES } from './admin-configuracion.routes';
@@ -40,9 +40,9 @@ describe('AdminConfiguracionComponent', () => {
     return el.querySelector('[role="tab"][aria-selected="true"]')?.id ?? null;
   }
 
-  it('expone las siete secciones (instituciones vive en Estructura y mensajes es una vista propia) de configuracion en el orden esperado', () => {
+  it('expone las seis secciones (instituciones vive en Estructura y mensajes es una vista propia) de configuracion en el orden esperado', () => {
     expect(TABS_CONFIGURACION.map((t) => t.id)).toEqual([
-      'parametros', 'catalogos', 'estados', 'festivos', 'correo', 'areas', 'periodos',
+      'parametros', 'catalogos', 'festivos', 'correo', 'areas', 'periodos',
     ]);
   });
 
@@ -77,7 +77,7 @@ describe('AdminConfiguracionComponent', () => {
   });
 
   it('las flechas, Home y End mueven la pestaña activa; otras teclas se ignoran', async () => {
-    const el = await abrir('/app/admin/configuracion/estados');
+    const el = await abrir('/app/admin/configuracion/catalogos');
     const router = TestBed.inject(Router);
     const tecla = async (key: string) => {
       (el.querySelector('[role="tab"][aria-selected="true"]') as HTMLElement).dispatchEvent(
@@ -88,7 +88,7 @@ describe('AdminConfiguracionComponent', () => {
       return router.url;
     };
     expect(await tecla('ArrowRight')).toBe('/app/admin/configuracion/festivos');
-    expect(await tecla('ArrowLeft')).toBe('/app/admin/configuracion/estados');
+    expect(await tecla('ArrowLeft')).toBe('/app/admin/configuracion/catalogos');
     expect(await tecla('Home')).toBe('/app/admin/configuracion/parametros');
     expect(await tecla('ArrowLeft')).toBe('/app/admin/configuracion/periodos');
     expect(await tecla('ArrowRight')).toBe('/app/admin/configuracion/parametros');
@@ -137,6 +137,15 @@ describe('CONFIGURACION_ROUTES', () => {
     for (const r of hijas().filter((x) => x.loadComponent)) {
       expect(await (r.loadComponent as () => Promise<unknown>)()).toBeTruthy();
     }
+  });
+
+  it('estados ya no es una pestaña: redirige a catalogos con los estados preseleccionados', () => {
+    const ruta = hijas().find((r) => r.path === 'estados');
+    expect(ruta?.data?.['tab']).toBeUndefined();
+    expect(ruta?.loadComponent).toBeUndefined();
+    TestBed.configureTestingModule({ providers: [provideRouter([])] });
+    const destino = TestBed.runInInjectionContext(() => (ruta?.redirectTo as () => UrlTree)());
+    expect(TestBed.inject(Router).serializeUrl(destino)).toBe('/app/admin/configuracion/catalogos?catalogo=estados-reclamo');
   });
 
   it('instituciones y mensajes ya no son pestañas: redirigen a su vista propia', () => {

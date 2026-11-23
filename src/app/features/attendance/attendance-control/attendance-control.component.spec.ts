@@ -1,3 +1,4 @@
+import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { ObservedValueOf } from 'rxjs';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { TeacherMatrizAsistenciaService } from '../../../core/services/teacher-matriz-asistencia.service';
@@ -442,6 +443,8 @@ describe('AttendanceControlComponent contract corrections', () => {
     expect(sessionService.getSessionsByGroup).toHaveBeenCalledWith(grupoId);
     expect(component.sessions()).toHaveSize(2);
     expect(component.showToast()).toBeFalse();
+    // FE-8: el nombre del grupo ya trae «Grupo»; el título de la proyección no lo repite.
+    expect(component.tituloProyeccion()).toBe('Arquitectura de Software · Grupo 001 - Arq Software');
   });
 
   it('muestra feedback útil ante UNAUTHORIZED realtime', () => {
@@ -536,6 +539,20 @@ describe('AttendanceControlComponent contract corrections', () => {
     expect(component.toastMessage()).toContain('descargada');
   });
 
+  it('descargarPlanillaExcel marca la descarga en curso y la libera al terminar o fallar', () => {
+    const component = createComponent([activeStudent], []);
+    const respuesta = new Subject<Blob>();
+    groupService.descargarPlanillaExcel.and.returnValue(respuesta.asObservable());
+
+    component.descargarPlanillaExcel();
+    expect(component.descargandoPlanilla()).toBeTrue();
+    component.descargarPlanillaExcel();
+    expect(groupService.descargarPlanillaExcel).toHaveBeenCalledTimes(1);
+
+    respuesta.error(new Error('fallo'));
+    expect(component.descargandoPlanilla()).toBeFalse();
+  });
+
   it('descargarPlanillaExcel muestra error si el servicio falla', () => {
     const component = createComponent([activeStudent], []);
     groupService.descargarPlanillaExcel.and.returnValue(
@@ -589,6 +606,116 @@ describe('AttendanceControlComponent contract corrections', () => {
 
     component.abrirReclamosGrupo();
     expect(component.isGroupClaimsModalOpen()).toBeTrue();
+  });
+
+  describe('vista inicial según la URL (enlace desde «Mis Horarios»)', () => {
+    function crearConUrl(params: Record<string, string>): AttendanceControlComponent {
+      const mapa = convertToParamMap(params);
+      TestBed.configureTestingModule({
+        providers: [{ provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: mapa }, queryParamMap: of(mapa) } }],
+      });
+      return createComponent([activeStudent], []);
+    }
+    const panorama = () => fixture.nativeElement.querySelector('app-group-sessions-overview');
+
+    it('con sessionId arranca en el detalle y no pinta el panorama del grupo mientras cargan los grupos', () => {
+      courseService.getCurrentTeacherCourses.and.returnValue(NEVER);
+      const component = crearConUrl({ courseId: 'group-1', sessionId: 'session-1' });
+
+      expect(component.vistaActual()).toBe('DETALLE');
+      expect(panorama()).toBeNull();
+    });
+
+    it('sin sessionId arranca en el panorama del grupo', () => {
+      courseService.getCurrentTeacherCourses.and.returnValue(NEVER);
+      const component = crearConUrl({ courseId: 'group-1' });
+
+      expect(component.vistaActual()).toBe('OVERVIEW');
+    });
+
+    it('con sessionId pero sin grupos del docente vuelve al panorama', () => {
+      courseService.getCurrentTeacherCourses.and.returnValue(of<never>({ exitoso: true, datos: [] } as never));
+      const component = crearConUrl({ courseId: 'group-1', sessionId: 'session-1' });
+
+      expect(component.vistaActual()).toBe('OVERVIEW');
+    });
+
+    it('con sessionId y error al cargar los grupos vuelve al panorama', () => {
+      courseService.getCurrentTeacherCourses.and.returnValue(throwError(() => new Error('fallo')));
+      const component = crearConUrl({ courseId: 'group-1', sessionId: 'session-1' });
+
+      expect(component.vistaActual()).toBe('OVERVIEW');
+    });
+  });
+
+  describe('Proyectar Auto-Registro (accion=proyectar-qr)', () => {
+    type ConAccion = { accionPendiente: 'PROYECTAR_QR' | null; atenderAccionPendiente(d: unknown): void };
+    const tomas = (tomasLista: unknown[], abierta: boolean, cancelacion: unknown = null) => ({
+      idSesion: 'session-1', estado: 'EN_CURSO', cancelacion, ventana: { abierta }, horasSesion: 2, maximoTomas: 3, tomas: tomasLista,
+    });
+
+    it('con la ventana abierta y sin toma QR abre el selector de modo una sola vez', () => {
+      const component = createComponent([activeStudent], []);
+      component.selectedSessionId.set('session-1');
+      const c = component as unknown as ConAccion;
+      c.accionPendiente = 'PROYECTAR_QR';
+
+      c.atenderAccionPendiente(tomas([], true));
+      expect(component.modoSelectorAbierto()).toBeTrue();
+
+      component.modoSelectorAbierto.set(false);
+      c.atenderAccionPendiente(tomas([], true));
+      expect(component.modoSelectorAbierto()).toBeFalse();
+    });
+
+    it('con una toma QR abierta la proyecta sin abrir el selector', () => {
+      const component = createComponent([activeStudent], []);
+      const qr = TestBed.inject(AsistenciaQrService);
+      const abrirQr = spyOn(qr, 'abrirQr').and.returnValue(NEVER);
+      const c = component as unknown as ConAccion;
+      c.accionPendiente = 'PROYECTAR_QR';
+
+      c.atenderAccionPendiente(tomas([{ idToma: 't-1', estado: 'ABIERTA', modo: 'QR' }], true));
+
+      expect(abrirQr).toHaveBeenCalledOnceWith('t-1');
+      expect(component.modoSelectorAbierto()).toBeFalse();
+    });
+
+    it('fuera de la ventana de toma avisa y no abre nada', () => {
+      const component = createComponent([activeStudent], []);
+      const c = component as unknown as ConAccion;
+      c.accionPendiente = 'PROYECTAR_QR';
+
+      c.atenderAccionPendiente(tomas([], false));
+
+      expect(component.modoSelectorAbierto()).toBeFalse();
+      expect(component.showToast()).toBeTrue();
+      expect(component.toastMessage()).toContain('no está en su horario de toma');
+    });
+  });
+
+  // Regresión 2026-11-19: con `@defer (when ...)` el selector se pintaba una vez y no volvía a ocultarse al elegir el
+  // modo o cancelar; se quedaba encima de la proyección del QR. Debe mostrarse y ocultarse con el signal.
+  it('el selector de modo de toma desaparece del DOM al elegir el modo y al cancelar', () => {
+    const component = createComponent([activeStudent], []);
+    const selector = () => fixture.nativeElement.querySelector('app-toma-modo-selector');
+    component.selectedSessionId.set('session-1');
+
+    component.abrirSelectorModo();
+    fixture.detectChanges();
+    expect(selector()).not.toBeNull();
+
+    component.modoSelectorAbierto.set(false);
+    fixture.detectChanges();
+    expect(selector()).toBeNull();
+
+    component.abrirSelectorModo();
+    fixture.detectChanges();
+    expect(selector()).not.toBeNull();
+
+    component.onModoElegido('MANUAL');
+    fixture.detectChanges();
+    expect(selector()).toBeNull();
   });
 
   it('HU176B: al matricularse un estudiante por QR refresca el listado solo si el listado del grupo está abierto', () => {

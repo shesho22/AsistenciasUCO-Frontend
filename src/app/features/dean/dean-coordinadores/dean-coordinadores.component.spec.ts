@@ -1,3 +1,4 @@
+import { convertToParamMap } from '@angular/router';
 import { StudentRegistrationConfigService } from '../../../core/services/student-registration-config.service';
 import { of } from 'rxjs';
 import { ChangeDetectorRef } from '@angular/core';
@@ -101,6 +102,19 @@ describe('DeanCoordinadoresComponent', () => {
 
     fixture.detectChanges();
   }
+
+  it('acceso rápido del panel: ?busqueda=<correo> consulta la lista filtrada por ese coordinador', () => {
+    (component as unknown as { route: unknown }).route = {
+      snapshot: { queryParamMap: convertToParamMap({ busqueda: 'coord@uco.edu.co' }) },
+    };
+    fixture.detectChanges();
+
+    const req = http.expectOne(porUrl(`${environment.apiUrl}/decano/coordinadores`));
+    expect(req.request.params.get('busqueda')).toBe('coord@uco.edu.co');
+    expect(component.searchQuery).toBe('coord@uco.edu.co');
+    req.flush(paginaApi([mockCoordinadores[0]], 1, 6, 1));
+    http.match(() => true).forEach((r) => r.flush([]));
+  });
 
   it('debe crearse e inicializar lista de coordinadores', () => {
     flushInitialRequests();

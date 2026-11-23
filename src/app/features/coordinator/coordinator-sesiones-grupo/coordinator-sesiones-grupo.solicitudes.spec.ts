@@ -75,7 +75,7 @@ describe('CoordinatorSesionesGrupoComponent - solicitudes de sesión extraordina
   it('muestra la insignia de pendiente y no ofrece cancelar la sesión pendiente', () => {
     flush([
       sesion('p', { estadoSolicitud: 'PENDIENTE', pendienteAprobacion: true }),
-      sesion('n'),
+      sesion('n', { estadoSolicitud: 'APROBADA', fechaHoraInicio: '2099-11-20T08:00:00' }),
     ]);
     fixture.detectChanges();
 

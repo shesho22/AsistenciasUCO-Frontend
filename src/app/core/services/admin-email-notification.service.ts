@@ -37,6 +37,8 @@ export interface TipoPlantillaAdminDto {
   actualizadoEn: string;
   marcadores: MarcadorPlantillaDto[];
   versiones: VersionPlantillaDto[];
+  /** Descripción del tipo entregada por el servicio de notificaciones (vacía si no la hay). */
+  descripcion?: string;
 }
 
 export interface VistaPreviaPlantillaRequest {
@@ -66,6 +68,8 @@ export interface NotificacionSalienteAdminDto {
   codigoError?: string | null;
   detalleError?: string | null;
   idCorrelacion: string;
+  /** Aplicación que originó el correo (el servicio de notificaciones atiende varias); puede no venir. */
+  aplicacion?: string | null;
 }
 
 export interface ResumenColaNotificacionDto {

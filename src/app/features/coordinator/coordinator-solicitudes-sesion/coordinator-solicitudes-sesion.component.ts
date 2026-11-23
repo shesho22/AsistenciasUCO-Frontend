@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, output, signal, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { BadgeComponent, BadgeVariant } from '../../../shared/components/badge/badge.component';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
@@ -80,7 +81,7 @@ import { CoordinatorAprobarSolicitudModalComponent } from './coordinator-aprobar
           />
         }
       } @else {
-        <div class="overflow-x-auto">
+        <div class="tabla-scroll">
           <table class="w-full text-sm">
             <thead>
               <tr class="text-left text-xs uppercase tracking-wider text-warm-500 border-b border-warm-100">
@@ -163,6 +164,7 @@ import { CoordinatorAprobarSolicitudModalComponent } from './coordinator-aprobar
   `,
 })
 export class CoordinatorSolicitudesSesionComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly sesionesService = inject(CoordinadorSesionesService);
   private readonly programa = inject(CoordinatorProgramService);
   private readonly toast = inject(ToastService);
@@ -190,7 +192,7 @@ export class CoordinatorSolicitudesSesionComponent implements OnInit {
 
   ngOnInit(): void {
     // Se conocen los programas del coordinador antes de pedir datos, para enviar siempre programaId.
-    this.programa.cargar().subscribe({
+    this.programa.cargar().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => this.cargar(),
       error: (e: unknown) => this.toast.error(getApiErrorMessage(e)),
     });
@@ -220,7 +222,7 @@ export class CoordinatorSolicitudesSesionComponent implements OnInit {
         pagina: this.pagina(),
         tamano: this.tamano(),
       })
-      .subscribe({
+      .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: (res) => {
           this.solicitudes.set(res.elementos ?? []);
           this.total.set(Number(res.totalElementos ?? 0));
@@ -290,7 +292,7 @@ export class CoordinatorSolicitudesSesionComponent implements OnInit {
   private resolver(llamada: ReturnType<CoordinadorSesionesService['aprobar']>, respaldo: string): void {
     this.errorResolucion.set(null);
     this.enviando.set(true);
-    llamada.subscribe({
+    llamada.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
         this.toast.success(getApiSuccessMessage(res, respaldo));
         this.cerrarDialogos();
@@ -306,7 +308,7 @@ export class CoordinatorSolicitudesSesionComponent implements OnInit {
 
   private cargarMotivos(): void {
     this.errorMotivos.set(null);
-    this.sesionesService.getMotivosCancelacion().subscribe({
+    this.sesionesService.getMotivosCancelacion().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => this.motivos.set(res.datos ?? []),
       error: (e: unknown) => {
         this.motivos.set([]);

@@ -164,6 +164,6 @@ describe('ResumenSesionTomasComponent (CULM-001 UX toma)', () => {
 
   it('el contenedor de la matriz se desplaza solo, sin ensanchar la pagina', () => {
     crear();
-    expect(el('matriz-scroll')!.className).toContain('overflow-x-auto');
+    expect(el('matriz-scroll')!.className).toContain('tabla-scroll');
   });
 });

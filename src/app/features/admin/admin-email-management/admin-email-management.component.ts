@@ -17,14 +17,18 @@ import {
   NotificacionSalienteAdminDto,
   ResumenColaNotificacionDto,
   TipoPlantillaAdminDto,
+  VistaPreviaPlantillaResponse,
 } from '../../../core/services/admin-email-notification.service';
-import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { getBackendUserMessage } from '../../../core/api/errors/api-error.util';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { ToastService } from '../../../shared/components/toast/toast.component';
-import { IconComponent } from '../../../shared/components/icon/icon.component';
 import { mensajeUi } from '../../../core/messages/mensajes-ui';
+import { getApiErrorCode, getBackendUserMessage } from '../../../core/api/errors/api-error.util';
+import { AdminEmailPlantillaEditorComponent, DestinoMarcador } from './admin-email-plantilla-editor.component';
+import { AdminEmailColaTablaComponent } from './admin-email-cola-tabla.component';
+import { AdminEmailCanalComponent, ResultadoPruebaCorreo } from './admin-email-canal.component';
+import { AdminEmailNoDisponibleComponent } from './admin-email-no-disponible.component';
+import { etiquetaPlantilla } from './admin-email-formato.util';
 
 /**
  * Token de desacoplamiento para delegar la consola de correos al micro-frontend
@@ -38,64 +42,22 @@ export const EMAIL_ADMIN_EXTERNAL_MODE = new InjectionToken<boolean>(
   }
 );
 
-export type TabNotificaciones = 'PLANTILLAS' | 'COLA_OUTBOX' | 'CANAL_SMTP';
+/** Código con que el backend avisa que el servicio de notificaciones no responde (503). */
+const CODIGO_SERVICIO_NO_DISPONIBLE = 'ERR_NOTIFICACIONES_NO_DISPONIBLE';
 
-export interface PlantillaMetaInfo {
-  titulo: string;
-  descripcion: string;
-}
-
-export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
-  VERIFICACION_CORREO: {
-    titulo: 'Verificación de Correo Institucional',
-    descripcion: 'Enlace seguro para validar el correo del estudiante en su primer acceso.',
-  },
-  RETIRO_ESTUDIANTE_GRUPO: {
-    titulo: 'Retiro de Estudiante de Grupo',
-    descripcion: 'Notificación oficial cuando el docente titular desvincula un estudiante del grupo.',
-  },
-  RECLAMO_ASISTENCIA_RADICADO: {
-    titulo: 'Nueva Solicitud de Revisión de Asistencia',
-    descripcion: 'Aviso al docente titular cuando un estudiante radica una reclamación de inasistencia.',
-  },
-  RECLAMO_ASISTENCIA_RESUELTO: {
-    titulo: 'Resolución de Reclamo de Asistencia',
-    descripcion: 'Aviso al alumno con la decisión sobre su reclamo o justificación de falta.',
-  },
-  ALERTA_RIESGO_INASISTENCIA: {
-    titulo: 'Alerta Preventiva de Ausentismo (15%)',
-    descripcion: 'Alerta temprana al estudiante antes de alcanzar el umbral de reprobación.',
-  },
-  ALERTA_PERDIDA_INASISTENCIA: {
-    titulo: 'Pérdida de Asignatura por Inasistencia (20%)',
-    descripcion: 'Notificación formal institucional de pérdida de materia por inasistencia.',
-  },
-  CIERRE_MASIVO_PERIODO_EJECUTADO: {
-    titulo: 'Consolidación de Cierre Masivo de Período',
-    descripcion: 'Resumen oficial enviado al administrador tras consolidar el cierre masivo del semestre.',
-  },
-  ALERTA_INASISTENCIA_15: {
-    titulo: 'Alerta Preventiva de Ausentismo (15%)',
-    descripcion: 'Alerta temprana al estudiante antes de alcanzar el umbral de reprobación.',
-  },
-  PERDIDA_ASIGNATURA_20: {
-    titulo: 'Pérdida de Asignatura por Inasistencia (20%)',
-    descripcion: 'Notificación formal institucional de pérdida de materia por inasistencia.',
-  },
-  CIERRE_SESION_ASISTENCIA: {
-    titulo: 'Consolidación de Sesión de Clase',
-    descripcion: 'Resumen digital de asistencia enviado al docente tras consolidar la clase.',
-  },
-  SOLICITUD_REVISION_ASISTENCIA: {
-    titulo: 'Nueva Solicitud de Revisión de Faltas',
-    descripcion: 'Aviso al docente cuando un estudiante radica una reclamación con soportes.',
-  },
-};
+export type TabNotificaciones = 'PLANTILLAS' | 'COLA_OUTBOX' | 'CANAL_SERVICIO';
 
 @Component({
     selector: 'app-admin-email-management',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [FormsModule, IconComponent, PaginationComponent],
+    imports: [
+      FormsModule,
+      PaginationComponent,
+      AdminEmailPlantillaEditorComponent,
+      AdminEmailColaTablaComponent,
+      AdminEmailCanalComponent,
+      AdminEmailNoDisponibleComponent,
+    ],
     template: `
     <div class="space-y-4">
       <!-- ================= HEADER & BREADCRUMB ================= -->
@@ -155,7 +117,7 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
             class="px-4 py-3 text-sm flex items-center gap-2 transition-colors cursor-pointer"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-            <span>Plantillas y Mensajes Automáticos ({{ plantillas().length }})</span>
+            <span>Plantillas y Mensajes Automáticos @if (!plantillasNoDisponible()) {({{ plantillas().length }})}</span>
           </button>
 
           <button
@@ -166,24 +128,26 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
             <span>Cola de Envíos y Reintentos (Outbox)</span>
             @if (resumenCola().fallidasDefinitivas > 0) {
-              <span class="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-danger-100 text-danger-800">
+              <span class="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-danger-100 text-danger-800">
                 {{ resumenCola().fallidasDefinitivas }}
               </span>
             }
           </button>
 
           <button
-            (click)="tabActiva.set('CANAL_SMTP')"
-            [class]="tabActiva() === 'CANAL_SMTP' ? 'border-primary-700 text-primary-800 font-bold border-b-2' : 'text-warm-500 hover:text-warm-700'"
+            (click)="tabActiva.set('CANAL_SERVICIO')"
+            [class]="tabActiva() === 'CANAL_SERVICIO' ? 'border-primary-700 text-primary-800 font-bold border-b-2' : 'text-warm-500 hover:text-warm-700'"
             class="px-4 py-3 text-sm flex items-center gap-2 transition-colors cursor-pointer"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-            <span>Canal Gmail / SMTP & Desacoplamiento</span>
+            <span>{{ mensaje('UI_ADMIN_EMAIL_MANAGEMENT_014') }}</span>
           </button>
         </div>
 
         <!-- ================= TAB 1: PLANTILLAS ================= -->
-        @if (tabActiva() === 'PLANTILLAS') {
+        @if (tabActiva() === 'PLANTILLAS' && plantillasNoDisponible(); as aviso) {
+          <app-admin-email-no-disponible [aviso]="aviso" (reintentar)="cargarPlantillas()" />
+        } @else if (tabActiva() === 'PLANTILLAS') {
           <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
             <!-- Left Column: Master List (4 cols) -->
             <div class="superficie lg:col-span-4 p-4 space-y-3">
@@ -198,287 +162,70 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
                   type="text"
                   [ngModel]="busquedaPlantilla()"
                   (ngModelChange)="busquedaPlantilla.set($event)"
-                  placeholder="Buscar plantilla o HU..."
+                  placeholder="Buscar plantilla..."
                   class="w-full text-xs py-2 pl-8 pr-3 bg-warm-50 border border-warm-200 rounded-xl text-warm-800 placeholder-warm-400 focus:outline-none focus:ring-1 focus:ring-primary-500"
                 />
                 <svg class="w-4 h-4 text-warm-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
               </div>
 
-              <!-- List of Template Cards -->
-              <div class="space-y-2 max-h-[640px] overflow-y-auto pr-1">
-                @for (tpl of plantillasFiltradas(); track tpl.tipo) {
-                  <button
-                    type="button"
-                    (click)="seleccionarPlantilla(tpl)"
-                    [class]="selectedTipo() === tpl.tipo ? 'border-primary-600 bg-primary-50/60 shadow-xs' : 'border-warm-200 bg-white hover:bg-warm-50/80'"
-                    class="w-full text-left p-3 rounded-xl border transition-all cursor-pointer flex flex-col gap-1.5"
-                  >
-                    <div class="flex items-center justify-between gap-2">
-                      <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary-100 text-primary-800 font-mono">
-                        {{ tpl.tipo }}
-                      </span>
-                      <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-warm-100 text-warm-700">
-                        v{{ tpl.versionActiva }}
-                      </span>
-                    </div>
-                    <div class="font-bold text-xs text-warm-900 leading-tight">
-                      {{ getMetadata(tpl.tipo).titulo }}
-                    </div>
-                  </button>
-                }
+              <!-- Lista maestra compacta: una fila por tipo, con encabezado fijo -->
+              <div class="tabla-scroll" role="region" tabindex="0" aria-label="Catálogo de notificaciones">
+                <table class="w-full text-xs" data-testid="plantillas-tabla">
+                  <thead>
+                    <tr class="text-left uppercase tracking-wider text-warm-500 border-b border-warm-100">
+                      <th scope="col" class="py-1.5 pr-2">Notificación</th>
+                      <th scope="col" class="py-1.5 text-right">Versión</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (tpl of plantillasFiltradas(); track tpl.tipo) {
+                      <tr class="border-b border-warm-50" [class.bg-primary-50]="selectedTipo() === tpl.tipo">
+                        <td class="p-0">
+                          <button
+                            type="button"
+                            (click)="seleccionarPlantilla(tpl)"
+                            [attr.aria-pressed]="selectedTipo() === tpl.tipo"
+                            class="w-full min-h-10 text-left py-1.5 pr-2 cursor-pointer hover:bg-warm-50/80 focus-visible:ring-2 focus-visible:ring-primary-600 outline-none"
+                          >
+                            <span class="block font-bold text-warm-900 leading-tight">{{ etiqueta(tpl) }}</span>
+                            <span class="block font-mono text-[10px] text-primary-800">{{ tpl.tipo }}</span>
+                          </button>
+                        </td>
+                        <td class="py-1.5 text-right whitespace-nowrap">
+                          <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-warm-100 text-warm-700">v{{ tpl.versionActiva }}</span>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
               </div>
             </div>
 
-            <!-- Right Column: Detail & Editor (8 cols) -->
             @if (selectedPlantilla(); as tpl) {
-              <div class="lg:col-span-8 space-y-5">
-                <!-- Header Card -->
-                <div class="superficie p-5">
-                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-warm-100">
-                    <div>
-                      <div class="flex items-center gap-2">
-                        <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-primary-100 text-primary-800 font-mono">{{ tpl.tipo }}</span>
-                      </div>
-                      <h2 class="text-lg font-serif font-bold text-warm-900 mt-1">
-                        {{ getMetadata(tpl.tipo).titulo }}
-                      </h2>
-                      <p class="text-xs text-warm-600 mt-0.5">
-                        {{ getMetadata(tpl.tipo).descripcion }}
-                      </p>
-                    </div>
-
-                    <div class="flex items-center gap-2 shrink-0">
-                      <span class="text-xs text-warm-500">Versión activa:</span>
-                      <span class="text-xs font-bold px-2 py-0.5 rounded-md bg-success-100 text-success-800 border border-success-200">
-                        v{{ tpl.versionActiva }} Activa
-                      </span>
-                    </div>
-                  </div>
-
-                  <!-- Marcadores Disponibles -->
-                  <div class="mt-4">
-                    <div class="flex items-center justify-between mb-2">
-                      <span class="text-xs font-bold uppercase tracking-wider text-warm-600">Marcadores Dinámicos Disponibles</span>
-                      <span class="text-[11px] text-warm-400">Haz clic en un marcador para insertarlo</span>
-                    </div>
-
-                    <div class="flex flex-wrap gap-2">
-                      @for (m of tpl.marcadores; track m.marcador) {
-                        <div class="inline-flex items-center border border-warm-200 rounded-lg bg-warm-50/70 p-1 text-xs">
-                          <button
-                            type="button"
-                            (click)="insertarMarcador(m.marcador, 'cuerpo')"
-                            title="Insertar en el cuerpo: {{ m.descripcion }} (Ej: {{ m.ejemplo }})"
-                            class="font-mono font-bold text-primary-800 hover:text-primary-900 px-1.5 py-0.5 rounded hover:bg-primary-100/60 transition-colors"
-                          >
-                            {{ '{' + m.marcador + '}' }}
-                          </button>
-                          <span
-                            [class]="m.obligatorio ? 'bg-warning-100 text-warning-800' : 'bg-warm-200 text-warm-700'"
-                            class="text-[9px] font-bold px-1.5 py-0.2 rounded ml-1"
-                          >
-                            {{ m.obligatorio ? 'Obligatorio' : 'Opcional' }}
-                          </span>
-                          <button
-                            type="button"
-                            (click)="insertarMarcador(m.marcador, 'asunto')"
-                            title="Insertar en asunto"
-                            class="text-[9px] font-semibold text-warm-400 hover:text-primary-700 ml-1 px-1 py-0.2 rounded hover:bg-warm-200 transition-colors"
-                          >
-                            + Asunto
-                          </button>
-                        </div>
-                      }
-                    </div>
-
-                    <!-- Client Validation Warning / Success Indicator -->
-                    <div class="mt-3">
-                      @if (marcadoresObligatoriosFaltantes().length > 0) {
-                        <div class="flex items-center gap-2 p-2.5 rounded-xl bg-warning-50 border border-warning-200 text-warning-900 text-xs">
-                          <svg class="w-4 h-4 text-warning-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                          <span>
-                            Faltan marcadores obligatorios en el texto:
-                            <strong>{{ formatMissingMarkers() }}</strong>. Deben estar presentes en el asunto o cuerpo.
-                          </span>
-                        </div>
-                      } @else {
-                        <div class="flex items-center gap-2 p-2 rounded-xl bg-success-50 border border-success-200 text-success-800 text-xs">
-                          <svg class="w-4 h-4 text-success-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                          <span>Todos los marcadores obligatorios están presentes en la plantilla.</span>
-                        </div>
-                      }
-                    </div>
-                  </div>
-
-                  <!-- Editor Form -->
-                  <div class="mt-5 space-y-4">
-                    <div>
-                      <div class="flex items-center justify-between mb-1">
-                        <label for="correo-asunto" class="text-xs font-bold text-warm-700">Asunto del Correo Electrónico</label>
-                        <span class="text-[11px] text-warm-400 font-mono">{{ asuntoEditado().length }} / 200</span>
-                      </div>
-                      <input
-                        id="correo-asunto"
-                        type="text"
-                        [ngModel]="asuntoEditado()"
-                        (ngModelChange)="asuntoEditado.set($event)"
-                        maxlength="200"
-                        class="w-full text-sm font-semibold p-2.5 bg-white border border-warm-300 rounded-xl text-warm-900 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                        placeholder="Asunto institucional..."
-                      />
-                    </div>
-
-                    <div>
-                      <div class="flex items-center justify-between mb-1">
-                        <label for="correo-cuerpo" class="text-xs font-bold text-warm-700">Cuerpo del Mensaje (Texto con Marcadores)</label>
-                        <span class="text-[11px] text-warm-400 font-mono">{{ cuerpoEditado().length }} / 4000</span>
-                      </div>
-                      <textarea
-                        id="correo-cuerpo"
-                        rows="7"
-                        [ngModel]="cuerpoEditado()"
-                        (ngModelChange)="cuerpoEditado.set($event)"
-                        maxlength="4000"
-                        class="w-full text-xs font-mono p-3 bg-white border border-warm-300 rounded-xl text-warm-900 leading-relaxed focus:outline-none focus:ring-1 focus:ring-primary-500"
-                        placeholder="Redacta el cuerpo de la plantilla..."
-                      ></textarea>
-                    </div>
-
-                    <!-- Actions Bar -->
-                    <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
-                      <div class="flex items-center gap-2">
-                        <button
-                          type="button"
-                          (click)="generarVistaPrevia()"
-                          [disabled]="generandoPreview()"
-                          class="px-4 py-2 bg-warm-100 hover:bg-warm-200 text-warm-800 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
-                        >
-                          <svg class="w-4 h-4 text-warm-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                          <span>{{ generandoPreview() ? 'Generando...' : 'Vista Previa Institucional' }}</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          (click)="restaurarTextoActivo()"
-                          class="px-3 py-2 text-warm-500 hover:text-warm-800 text-xs font-semibold transition-colors cursor-pointer"
-                        >
-                          Restaurar Texto Activo
-                        </button>
-                      </div>
-
-                      <button
-                        type="button"
-                        (click)="guardarYActivarNuevaVersion()"
-                        [disabled]="guardando() || !puedeGuardar()"
-                        class="px-5 py-2.5 bg-primary-700 hover:bg-primary-800 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-2 cursor-pointer"
-                      >
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                        <span>{{ guardando() ? 'Guardando versión...' : 'Guardar y Activar Nueva Versión' }}</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Preview Box -->
-                @if (vistaPrevia(); as vp) {
-                  <div class="superficie p-5 space-y-3">
-                    <div class="flex items-center justify-between pb-2 border-b border-warm-100">
-                      <div class="flex items-center gap-2">
-                        <span class="text-xs font-bold uppercase tracking-wider text-warm-700">Renderizado de Vista Previa</span>
-                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-accent-100 text-accent-800 font-mono">
-                          Origen: {{ vp.origen }}
-                        </span>
-                      </div>
-                      <span class="text-[11px] text-warm-400">Diseño Aurora UCO</span>
-                    </div>
-
-                    <div class="p-3 bg-warm-50 rounded-xl border border-warm-200 text-xs">
-                      <span class="font-bold text-warm-600 uppercase text-[10px] block mb-1">Asunto Renderizado:</span>
-                      <p class="font-bold text-warm-900 text-sm">{{ vp.asunto }}</p>
-                    </div>
-
-                    <!-- Email Client Layout Mockup -->
-                    <div class="border border-warm-200 rounded-xl overflow-hidden shadow-xs bg-white">
-                      <!-- Email Header Mockup -->
-                      <div class="bg-primary-800 text-white px-5 py-3 flex items-center justify-between">
-                        <div class="flex items-center gap-2">
-                          <span class="font-serif font-bold text-sm tracking-wide">Universidad Católica de Oriente</span>
-                          <span class="text-primary-200 text-xs">· Asistencias UCO</span>
-                        </div>
-                        <span class="text-[10px] font-mono text-primary-200">notificaciones&#64;uco.edu.co</span>
-                      </div>
-
-                      <!-- Email Body -->
-                      <div class="p-5" [innerHTML]="safeHtmlPreview()"></div>
-
-                      <!-- Email Footer Mockup -->
-                      <div class="bg-warm-50 border-t border-warm-200 px-5 py-3 text-[11px] text-warm-500 flex items-center justify-between">
-                        <span>Gestión de Asistencia Académica UCO · Sistema Central</span>
-                        <span>Mensaje transaccional automático</span>
-                      </div>
-                    </div>
-                  </div>
-                }
-
-                <!-- Version History Table -->
-                <div class="superficie p-5">
-                  <div class="flex items-center justify-between mb-3 pb-2 border-b border-warm-100">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-warm-700">Historial de Versiones de la Plantilla</h3>
-                    <span class="text-xs text-warm-400">{{ tpl.versiones.length }} versión(es)</span>
-                  </div>
-
-                  <div class="overflow-x-auto">
-                    <table class="w-full text-left text-xs">
-                      <thead class="bg-warm-50 text-warm-600 uppercase text-[10px] font-bold">
-                        <tr>
-                          <th scope="col" class="py-2.5 px-3">Versión</th>
-                          <th scope="col" class="py-2.5 px-3">Fecha</th>
-                          <th scope="col" class="py-2.5 px-3">Asunto</th>
-                          <th scope="col" class="py-2.5 px-3">Estado</th>
-                          <th scope="col" class="py-2.5 px-3 text-right">Acción</th>
-                        </tr>
-                      </thead>
-                      <tbody class="divide-y divide-warm-100 text-warm-800">
-                        @for (v of tpl.versiones; track v.id) {
-                          <tr class="hover:bg-warm-50/60 transition-colors">
-                            <td class="py-2.5 px-3 font-mono font-bold">v{{ v.version }}</td>
-                            <td class="py-2.5 px-3 text-warm-500 whitespace-nowrap">{{ formatearFecha(v.creadoEn) }}</td>
-                            <td class="py-2.5 px-3 max-w-[260px] truncate font-medium" [title]="v.asunto">{{ v.asunto }}</td>
-                            <td class="py-2.5 px-3">
-                              @if (v.activa) {
-                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-success-100 text-success-800 border border-success-200">
-                                  Activa
-                                </span>
-                              } @else {
-                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-warm-100 text-warm-600">
-                                  Histórica
-                                </span>
-                              }
-                            </td>
-                            <td class="py-2.5 px-3 text-right">
-                              @if (!v.activa) {
-                                <button
-                                  type="button"
-                                  (click)="activarVersionExistente(tpl.tipo, v.version)"
-                                  class="px-2.5 py-1 bg-warm-100 hover:bg-warm-200 text-warm-800 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer"
-                                >
-                                  Activar
-                                </button>
-                              }
-                            </td>
-                          </tr>
-                        }
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
+              <app-admin-email-plantilla-editor
+                class="block lg:col-span-8"
+                [plantilla]="tpl"
+                [(asunto)]="asuntoEditado"
+                [(cuerpo)]="cuerpoEditado"
+                [faltantes]="marcadoresObligatoriosFaltantes()"
+                [puedeGuardar]="puedeGuardar()"
+                [guardando]="guardando()"
+                [generandoPreview]="generandoPreview()"
+                [vistaPrevia]="vistaPrevia()"
+                (marcadorInsertado)="insertarMarcador($event.marcador, $event.destino)"
+                (vistaPreviaSolicitada)="generarVistaPrevia()"
+                (restaurarSolicitado)="restaurarTextoActivo()"
+                (guardarSolicitado)="guardarYActivarNuevaVersion()"
+                (versionActivada)="activarVersionExistente($event.tipo, $event.version)"
+              />
             }
           </div>
         }
 
         <!-- ================= TAB 2: COLA OUTBOX ================= -->
-        @if (tabActiva() === 'COLA_OUTBOX') {
+        @if (tabActiva() === 'COLA_OUTBOX' && colaNoDisponible(); as aviso) {
+          <app-admin-email-no-disponible [aviso]="aviso" (reintentar)="cargarCola()" />
+        } @else if (tabActiva() === 'COLA_OUTBOX') {
           <div class="space-y-4">
             <!-- Top Bento Grid with 5 KPI Cards -->
             <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
@@ -586,82 +333,11 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
 
             <!-- Queue Table -->
             <div class="superficie overflow-hidden">
-              <div class="overflow-x-auto">
-                <table class="w-full text-left text-xs">
-                  <thead class="bg-warm-50 text-warm-600 uppercase text-[10px] font-bold border-b border-warm-200">
-                    <tr>
-                      <th scope="col" class="py-3 px-4">Tipo / Evento</th>
-                      <th scope="col" class="py-3 px-4">Asunto</th>
-                      <th scope="col" class="py-3 px-4">Destinatarios</th>
-                      <th scope="col" class="py-3 px-4">Estado</th>
-                      <th scope="col" class="py-3 px-4">Intentos</th>
-                      <th scope="col" class="py-3 px-4">Fecha Creación</th>
-                      <th scope="col" class="py-3 px-4">Error / Detalle</th>
-                      <th scope="col" class="py-3 px-4 text-right">Acción</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-warm-100 text-warm-800">
-                    @for (item of colaItems(); track item.id) {
-                      <tr class="hover:bg-warm-50/60 transition-colors">
-                        <td class="py-3 px-4">
-                          <span class="font-mono font-bold text-[11px] text-warm-900 block">{{ item.tipo }}</span>
-                          <span class="text-[10px] text-warm-400 font-mono">ID: {{ item.id.substring(0, 8) }}...</span>
-                        </td>
-                        <td class="py-3 px-4 max-w-[280px]">
-                          <span class="font-medium text-warm-900 block truncate" [title]="item.asunto">{{ item.asunto }}</span>
-                          <span class="text-[10px] text-warm-400 font-mono">Corr: {{ item.idCorrelacion }}</span>
-                        </td>
-                        <td class="py-3 px-4 font-mono font-semibold">
-                          {{ item.cantidadDestinatarios }} dest.
-                        </td>
-                        <td class="py-3 px-4">
-                          <span
-                            [class]="getEstadoBadgeClass(item.codigoEstado)"
-                            class="px-2.5 py-1 rounded-full text-[10px] font-bold inline-flex items-center gap-1"
-                          >
-                            <span class="w-1.5 h-1.5 rounded-full" [class]="getEstadoDotClass(item.codigoEstado)"></span>
-                            {{ item.nombreEstado || item.codigoEstado }}
-                          </span>
-                        </td>
-                        <td class="py-3 px-4 font-mono font-bold">{{ item.intentos }}</td>
-                        <td class="py-3 px-4 text-warm-500 whitespace-nowrap">
-                          <div>{{ formatearFecha(item.creadoEn) }}</div>
-                          @if (item.entregadoEn) {
-                            <div class="text-[10px] text-success-700">Entregado: {{ formatearFecha(item.entregadoEn) }}</div>
-                          }
-                        </td>
-                        <td class="py-3 px-4 max-w-[220px]">
-                          @if (item.detalleError) {
-                            <div class="text-[11px] text-danger-700 bg-danger-50 border border-danger-100 p-1.5 rounded-lg font-mono truncate" [title]="item.detalleError">
-                              {{ item.codigoError ? item.codigoError + ': ' : '' }}{{ item.detalleError }}
-                            </div>
-                          } @else {
-                            <span class="text-warm-300">—</span>
-                          }
-                        </td>
-                        <td class="py-3 px-4 text-right">
-                          @if (puedeReintentar(item.codigoEstado)) {
-                            <button
-                              type="button"
-                              (click)="reintentar(item.id)"
-                              [disabled]="reintentandoId() === item.id"
-                              class="px-3 py-1 bg-warning-100 hover:bg-warning-200 text-warning-900 rounded-lg text-xs font-bold transition-colors cursor-pointer"
-                            >
-                              {{ reintentandoId() === item.id ? 'Reintentando...' : 'Reintentar' }}
-                            </button>
-                          }
-                        </td>
-                      </tr>
-                    } @empty {
-                      <tr>
-                        <td colspan="8" class="py-8 text-center text-warm-500 text-xs">
-                          No se encontraron notificaciones en la cola para los filtros seleccionados.
-                        </td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
+              <app-admin-email-cola-tabla
+                [items]="colaItems()"
+                [reintentandoId]="reintentandoId()"
+                (reintentar)="reintentar($event)"
+              />
 
               <!-- Paginación compartida -->
               <app-pagination
@@ -675,120 +351,18 @@ export const PLANTILLA_METADATA: Record<string, PlantillaMetaInfo> = {
           </div>
         }
 
-        <!-- ================= TAB 3: CANAL SMTP ================= -->
-        @if (tabActiva() === 'CANAL_SMTP') {
-          <div class="space-y-4">
-            <!-- Architecture & Decoupling Status Card -->
-            <div class="superficie p-5 space-y-4">
-              <div class="flex items-center justify-between pb-3 border-b border-warm-100">
-                <div>
-                  <span class="text-xs font-bold uppercase tracking-wider text-primary-700">Canal de envío</span>
-                  <h3 class="text-lg font-serif font-bold text-warm-900 mt-0.5">Estado del canal de correo</h3>
-                </div>
-                <span class="px-3 py-1 rounded-full text-xs font-bold bg-success-100 text-success-800 border border-success-200">
-                  Canal desacoplado
-                </span>
-              </div>
-
-              <!-- Estado del canal (D.9-a): solo canalActivo, ultimoEnvioUtc y ultimoError -->
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-4" data-testid="estado-canal">
-                <div class="p-4 rounded-xl bg-warm-50 border border-warm-200">
-                  <span class="text-[10px] font-bold text-warm-500 uppercase block mb-1">Canal de correo</span>
-                  <div class="flex items-center gap-1.5 mt-1">
-                    <span class="w-2.5 h-2.5 rounded-full" [class]="canalEstado()?.canalActivo ? 'bg-success-500' : 'bg-danger-500'"></span>
-                    <span class="text-xs font-bold" data-testid="canal-activo" [class]="canalEstado()?.canalActivo ? 'text-success-800' : 'text-danger-800'">
-                      {{ canalEstado()?.canalActivo ? 'Activo' : 'Inactivo' }}
-                    </span>
-                  </div>
-                </div>
-
-                <div class="p-4 rounded-xl bg-warm-50 border border-warm-200">
-                  <span class="text-[10px] font-bold text-warm-500 uppercase block mb-1">Último envío</span>
-                  <span class="text-sm font-mono font-bold text-warm-900 block" data-testid="canal-ultimo-envio">{{ timeZone.formatTemporal($safeNavigationMigration(canalEstado()?.ultimoEnvioUtc)) }}</span>
-                </div>
-
-                <div class="p-4 rounded-xl bg-warm-50 border border-warm-200">
-                  <span class="text-[10px] font-bold text-warm-500 uppercase block mb-1">Último error</span>
-                  <span class="text-sm font-mono font-bold text-warm-900 block" data-testid="canal-ultimo-error">{{ canalEstado()?.ultimoError || 'Sin errores' }}</span>
-                </div>
-              </div>
-
-              <!-- Informative Banner about Third Party Retiring Plan -->
-              <div class="p-4 rounded-xl bg-primary-50/60 border border-primary-200 text-xs text-warm-800 leading-relaxed">
-                <p class="font-bold text-primary-900 mb-1">Cambio de proveedor de correo</p>
-                <p>
-                  El canal actual envía con la cuenta de correo institucional de la aplicación. Si el servicio institucional de
-                  notificaciones lo reemplaza, las pantallas y las reglas del sistema no cambian.
-                </p>
-              </div>
-            </div>
-
-            <!-- SMTP Connection Diagnostic & Live Test Grid -->
-            <div class="grid grid-cols-1 gap-4 items-start">
-              <!-- Card: Live Test Email -->
-              <div class="superficie p-5 space-y-4">
-                <div class="pb-3 border-b border-warm-100">
-                  <h4 class="text-sm font-bold text-warm-900 uppercase tracking-wider">Probar Envío de Correo en Vivo</h4>
-                  <p class="text-xs text-warm-600 mt-0.5">
-                    Envía un correo de comprobación de conectividad por el canal de correo institucional.
-                  </p>
-                </div>
-
-                <div class="space-y-3">
-                  <div>
-                    <label for="correo-prueba-tipo" class="text-xs font-bold text-warm-700 block mb-1">Tipo de Plantilla de Prueba</label>
-                    <select
-                      id="correo-prueba-tipo"
-                      [ngModel]="pruebaTipo()"
-                      (ngModelChange)="pruebaTipo.set($event)"
-                      class="w-full text-xs font-semibold py-2 px-3 bg-white border border-warm-300 rounded-xl text-warm-900 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                    >
-                      @for (tpl of plantillas(); track tpl.tipo) {
-                        <option [value]="tpl.tipo">{{ tpl.tipo }} — {{ getMetadata(tpl.tipo).titulo }}</option>
-                      }
-                    </select>
-                  </div>
-
-                  <div>
-                    <label for="correo-prueba-destino" class="text-xs font-bold text-warm-700 block mb-1">Correo Electrónico de Destino</label>
-                    <input
-                      id="correo-prueba-destino"
-                      type="email"
-                      [ngModel]="pruebaCorreoDestino()"
-                      (ngModelChange)="pruebaCorreoDestino.set($event)"
-                      placeholder="admin@uco.edu.co"
-                      class="w-full text-xs py-2 px-3 bg-white border border-warm-300 rounded-xl text-warm-900 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                    />
-                    <span class="text-[10px] text-warm-400 mt-1 block">
-                      Por defecto se enviará a tu correo de administrador conectado.
-                    </span>
-                  </div>
-
-                  <div class="pt-2">
-                    <button
-                      type="button"
-                      (click)="enviarCorreoPrueba()"
-                      [disabled]="enviandoPrueba()"
-                      class="w-full py-2.5 bg-primary-700 hover:bg-primary-800 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
-                    >
-                      <svg class="w-4 h-4" [class.animate-spin]="enviandoPrueba()" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
-                      <span>{{ enviandoPrueba() ? 'Enviando correo de prueba...' : 'Enviar Correo de Prueba en Vivo' }}</span>
-                    </button>
-                  </div>
-
-                  @if (resultadoPrueba()) {
-                    <div
-                      [class]="resultadoPrueba()?.exitoso ? 'bg-success-50 border-success-200 text-success-900' : 'bg-danger-50 border-danger-200 text-danger-900'"
-                      class="p-3 rounded-xl border text-xs"
-                    >
-                      <p class="font-bold">{{ resultadoPrueba()?.exitoso ? '¡Envío Exitoso!' : 'Error de Envío' }}</p>
-                      <p class="mt-0.5 text-[11px]">{{ resultadoPrueba()?.mensaje }}</p>
-                    </div>
-                  }
-                </div>
-              </div>
-            </div>
-          </div>
+        <!-- ================= TAB 3: SERVICIO DE NOTIFICACIONES ================= -->
+        @if (tabActiva() === 'CANAL_SERVICIO') {
+          <app-admin-email-canal
+            [estado]="canalEstado()"
+            [servicioNoDisponible]="servicioNoDisponible()"
+            [plantillas]="plantillas()"
+            [enviando]="enviandoPrueba()"
+            [resultado]="resultadoPrueba()"
+            [(pruebaTipo)]="pruebaTipo"
+            [(pruebaCorreoDestino)]="pruebaCorreoDestino"
+            (enviar)="enviarCorreoPrueba()"
+          />
         }
       }
     </div>
@@ -818,7 +392,7 @@ export class AdminEmailManagementComponent implements OnInit {
   readonly selectedTipo = signal<string>('');
   readonly asuntoEditado = signal<string>('');
   readonly cuerpoEditado = signal<string>('');
-  readonly vistaPrevia = signal<{ asunto: string; textoPlano: string; html: string; origen: string } | null>(null);
+  readonly vistaPrevia = signal<VistaPreviaPlantillaResponse | null>(null);
 
   // Tab 2: Outbox
   readonly colaItems = signal<NotificacionSalienteAdminDto[]>([]);
@@ -836,12 +410,18 @@ export class AdminEmailManagementComponent implements OnInit {
   readonly totalCola = signal<number>(0);
   readonly totalPaginasCola = signal<number>(1);
 
-  // Tab 3: Canal SMTP
+  // Tab 3: Servicio de notificaciones
   readonly canalEstado = signal<EstadoCanalNotificacionDto | null>(null);
-  readonly timeZone = inject(SessionTimeZoneService);
-  readonly pruebaTipo = signal<string>('VERIFICACION_CORREO');
+  /** Mensaje del backend cuando el servicio de notificaciones no responde (ERR_NOTIFICACIONES_NO_DISPONIBLE). */
+  readonly servicioNoDisponible = signal<string | null>(null);
+  /** Mensaje del backend si la consulta de plantillas falló por la caída del servicio; null si responde. */
+  readonly plantillasNoDisponible = signal<string | null>(null);
+  /** Ídem para la cola de envíos. */
+  readonly colaNoDisponible = signal<string | null>(null);
+  readonly mensaje = mensajeUi;
+  readonly pruebaTipo = signal<string>('');
   readonly pruebaCorreoDestino = signal<string>('');
-  readonly resultadoPrueba = signal<{ exitoso: boolean; mensaje: string } | null>(null);
+  readonly resultadoPrueba = signal<ResultadoPruebaCorreo | null>(null);
 
   // Computeds
   readonly plantillasFiltradas = computed<TipoPlantillaAdminDto[]>(() => {
@@ -849,10 +429,9 @@ export class AdminEmailManagementComponent implements OnInit {
     const list = this.plantillas();
     if (!query) return list;
     return list.filter((item) => {
-      const meta = PLANTILLA_METADATA[item.tipo];
       const matchTipo = item.tipo.toLowerCase().includes(query);
-      const matchTitulo = meta?.titulo.toLowerCase().includes(query);
-      return matchTipo || matchTitulo;
+      const matchDescripcion = etiquetaPlantilla(item).toLowerCase().includes(query);
+      return matchTipo || matchDescripcion;
     });
   });
 
@@ -887,9 +466,6 @@ export class AdminEmailManagementComponent implements OnInit {
     return this.plantillas().map((p) => p.tipo);
   });
 
-  /** HTML de la vista previa; Angular lo sanitiza al enlazarlo con [innerHTML] (sin bypassSecurityTrust). */
-  readonly safeHtmlPreview = computed<string>(() => this.vistaPrevia()?.html ?? '');
-
   ngOnInit(): void {
     if (this.isExternalMode) {
       return;
@@ -917,14 +493,19 @@ export class AdminEmailManagementComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (items) => {
+          this.plantillasNoDisponible.set(null);
           this.plantillas.set(items);
           this.cargando.set(false);
+          if (items.length > 0 && !items.some((p) => p.tipo === this.pruebaTipo())) {
+            this.pruebaTipo.set(items[0].tipo);
+          }
           if (items.length > 0 && !this.selectedTipo()) {
             this.seleccionarPlantilla(items[0]);
           }
         },
         error: (err: unknown) => {
           this.cargando.set(false);
+          this.plantillasNoDisponible.set(this.registrarServicioNoDisponible(err));
           this.toast.error(getBackendUserMessage(err, mensajeUi('UI_ADMIN_EMAIL_MANAGEMENT_001')));
         },
       });
@@ -937,7 +518,7 @@ export class AdminEmailManagementComponent implements OnInit {
     this.vistaPrevia.set(null);
   }
 
-  insertarMarcador(marcador: string, destino: 'cuerpo' | 'asunto' = 'cuerpo'): void {
+  insertarMarcador(marcador: string, destino: DestinoMarcador = 'cuerpo'): void {
     const token = `{${marcador}}`;
     if (destino === 'asunto') {
       const actual = this.asuntoEditado();
@@ -1041,14 +622,9 @@ export class AdminEmailManagementComponent implements OnInit {
     return this.marcadoresObligatoriosFaltantes().map((m) => `{${m}}`).join(', ');
   }
 
-  getMetadata(tipo: string): PlantillaMetaInfo {
-    return (
-      PLANTILLA_METADATA[tipo] || {
-        titulo: tipo,
-        hu: 'HU-AUTO',
-        descripcion: 'Plantilla de notificación automática transaccional.',
-      }
-    );
+  /** Descripción del tipo entregada por el servicio; sin ella, el código del tipo. */
+  etiqueta(tpl: TipoPlantillaAdminDto): string {
+    return etiquetaPlantilla(tpl);
   }
 
   // ================= COLA OUTBOX =================
@@ -1063,6 +639,7 @@ export class AdminEmailManagementComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (resp) => {
+          this.colaNoDisponible.set(null);
           this.colaItems.set(resp.elementos || []);
           this.totalCola.set(resp.totalElementos || 0);
           this.totalPaginasCola.set(resp.totalPaginas || 1);
@@ -1071,6 +648,7 @@ export class AdminEmailManagementComponent implements OnInit {
           }
         },
         error: (err: unknown) => {
+          this.colaNoDisponible.set(this.registrarServicioNoDisponible(err));
           this.toast.error(getBackendUserMessage(err, mensajeUi('UI_ADMIN_EMAIL_MANAGEMENT_005')));
         },
       });
@@ -1095,10 +673,6 @@ export class AdminEmailManagementComponent implements OnInit {
     }
   }
 
-  puedeReintentar(codigoEstado: string): boolean {
-    return codigoEstado === 'FALLIDA_DEFINITIVA' || codigoEstado === 'FALLIDA_REINTENTABLE';
-  }
-
   reintentar(id: string): void {
     this.reintentandoId.set(id);
     this.notificationService
@@ -1117,40 +691,17 @@ export class AdminEmailManagementComponent implements OnInit {
       });
   }
 
-  getEstadoBadgeClass(codigo: string): string {
-    switch (codigo) {
-      case 'ENTREGADA':
-        return 'bg-success-100 text-success-800 border border-success-200';
-      case 'PENDIENTE':
-        return 'bg-warning-100 text-warning-800 border border-warning-200';
-      case 'RESERVADA':
-        return 'bg-info-100 text-info-800 border border-info-200';
-      case 'FALLIDA_REINTENTABLE':
-        return 'bg-warning-100 text-warning-900 border border-warning-300';
-      case 'FALLIDA_DEFINITIVA':
-        return 'bg-danger-100 text-danger-800 border border-danger-200';
-      default:
-        return 'bg-warm-100 text-warm-700';
+  // ================= SERVICIO DE NOTIFICACIONES =================
+  /** Si el error es la caída del servicio, muestra el mensaje del backend en la tarjeta de estado (por código, sin leer texto). */
+  private registrarServicioNoDisponible(err: unknown): string | null {
+    if (getApiErrorCode(err) !== CODIGO_SERVICIO_NO_DISPONIBLE) {
+      return null;
     }
+    const aviso = getBackendUserMessage(err, mensajeUi('UI_ADMIN_EMAIL_MANAGEMENT_017'));
+    this.servicioNoDisponible.set(aviso);
+    return aviso;
   }
 
-  getEstadoDotClass(codigo: string): string {
-    switch (codigo) {
-      case 'ENTREGADA':
-        return 'bg-success-500';
-      case 'PENDIENTE':
-      case 'FALLIDA_REINTENTABLE':
-        return 'bg-warning-500';
-      case 'RESERVADA':
-        return 'bg-info-500';
-      case 'FALLIDA_DEFINITIVA':
-        return 'bg-danger-500';
-      default:
-        return 'bg-warm-400';
-    }
-  }
-
-  // ================= CANAL SMTP =================
   cargarEstadoCanal(): void {
     this.notificationService
       .obtenerEstadoCanal()
@@ -1158,9 +709,12 @@ export class AdminEmailManagementComponent implements OnInit {
       .subscribe({
         next: (estado) => {
           this.canalEstado.set(estado);
+          this.servicioNoDisponible.set(null);
         },
         error: (err: unknown) => {
-          this.toast.error(getBackendUserMessage(err, mensajeUi('UI_ADMIN_EMAIL_MANAGEMENT_008')));
+          if (this.registrarServicioNoDisponible(err) === null) {
+            this.toast.error(getBackendUserMessage(err, mensajeUi('UI_ADMIN_EMAIL_MANAGEMENT_008')));
+          }
         },
       });
   }
@@ -1182,7 +736,7 @@ export class AdminEmailManagementComponent implements OnInit {
           this.enviandoPrueba.set(false);
           this.resultadoPrueba.set({
             exitoso: res.exitoso,
-            mensaje: res.mensajeUsuario || 'Correo de prueba despachado con éxito al canal SMTP.',
+            mensaje: res.mensajeUsuario || mensajeUi('UI_ADMIN_EMAIL_MANAGEMENT_009'),
           });
           this.toast.success(res.mensajeUsuario || mensajeUi('UI_ADMIN_EMAIL_MANAGEMENT_009'));
           this.cargarEstadoCanal();
@@ -1190,7 +744,8 @@ export class AdminEmailManagementComponent implements OnInit {
         },
         error: (err: unknown) => {
           this.enviandoPrueba.set(false);
-          const msg = getBackendUserMessage(err, 'No fue posible conectar con el canal de correo.');
+          this.registrarServicioNoDisponible(err);
+          const msg = getBackendUserMessage(err, mensajeUi('UI_ADMIN_EMAIL_MANAGEMENT_017'));
           this.resultadoPrueba.set({
             exitoso: false,
             mensaje: msg,
@@ -1198,21 +753,5 @@ export class AdminEmailManagementComponent implements OnInit {
           this.toast.error(msg);
         },
       });
-  }
-
-  formatearFecha(isoStr?: string | null): string {
-    if (!isoStr) return '—';
-    try {
-      const d = new Date(isoStr);
-      return d.toLocaleString('es-CO', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-    } catch {
-      return isoStr;
-    }
   }
 }

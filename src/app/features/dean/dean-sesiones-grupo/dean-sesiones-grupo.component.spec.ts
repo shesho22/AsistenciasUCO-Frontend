@@ -57,6 +57,21 @@ describe('DeanSesionesGrupoComponent (CULM-001)', () => {
     expect(el().textContent).toContain('sin zona horaria');
   });
 
+  it('FE-7: la columna Estado rotula Dictada, Programada o Cancelada y nunca queda vacía', () => {
+    http.expectOne(url).flush(
+      pagina([
+        sesion('pasada', { fechaHoraFin: '2020-01-01T09:00:00' }),
+        sesion('futura', { fechaHoraFin: '2099-01-01T09:00:00' }),
+        sesion('cancel', { estado: 'CANCELADA', cancelacion: { tipo: 'DOCENTE', motivo: 'Paro', nombreFestivo: null, fechaCancelacionUtc: null } }),
+      ])
+    );
+    fixture.detectChanges();
+    const estado = (id: string) => el().querySelector(`[data-testid="sesion-fila-${id}"] [data-testid="sesion-estado"]`)?.textContent?.trim();
+    expect(estado('pasada')).toBe('Dictada');
+    expect(estado('futura')).toBe('Programada');
+    expect(estado('cancel')).toContain('Cancelada');
+  });
+
   it('un 200 sin sesiones es un vacío legítimo, no un error', () => {
     http.expectOne(url).flush(pagina([]));
     fixture.detectChanges();

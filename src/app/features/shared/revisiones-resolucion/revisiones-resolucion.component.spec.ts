@@ -142,6 +142,27 @@ describe('RevisionesResolucionComponent (CULM-001 C.1 §4.5, §4.8)', () => {
     expect(fixture.nativeElement.querySelector('[data-testid="rev-motivo-docente"]').textContent).toContain('Ausencias constantes');
   });
 
+  it('P1 movil: la tabla va en un marco tabla-scroll y las acciones del encabezado se pliegan en vez de ensanchar la pagina', () => {
+    inicializar('DECANO');
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[data-testid="rev-tabla"]')?.parentElement?.classList).toContain('tabla-scroll');
+    expect(el.querySelector('[cabecera-acciones]')?.classList).toContain('flex-wrap');
+  });
+
+  it('P2 responsive: la tabla pasa a tarjetas bajo md y las acciones del coordinador quedan fijas a la derecha', () => {
+    inicializar('COORDINADOR');
+    const tabla = fixture.nativeElement.querySelector('[data-testid="rev-tabla"]') as HTMLElement;
+    expect(tabla.classList).toContain('tabla-tarjetas');
+    const fila = tabla.querySelector('tbody tr') as HTMLElement;
+    expect(Array.from(fila.querySelectorAll('td[data-label]')).map((td) => td.getAttribute('data-label'))).toEqual([
+      'Estudiante', 'Asignatura / Grupo', 'Inasistencia', 'Docente y propuesta', 'Estado', 'Acción',
+    ]);
+    const acciones = fila.querySelector('td.col-acciones') as HTMLElement;
+    expect(acciones.querySelector('[data-testid="rev-aprobar"]')).not.toBeNull();
+    expect(acciones.querySelector('[data-testid="rev-rechazar"]')).not.toBeNull();
+    expect(tabla.querySelector('thead th.col-acciones')).not.toBeNull();
+  });
+
   it('CIERRE-W3I el nivel del semáforo de cada fila es el que clasifica el servidor (codigoPermanenciaActual), sin umbrales en el cliente', () => {
     serviceMock.consultarCoordinador.and.returnValue(
       of({

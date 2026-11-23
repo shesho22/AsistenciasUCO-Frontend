@@ -86,11 +86,11 @@ export class TeacherRetiroEstudianteModalComponent {
   confirmar(): void {
     const motivo = this.motivo().trim();
     if (!motivo) {
-      this.error.set('El motivo del retiro es obligatorio.');
+      this.error.set(mensajeUi('UI_TEACHER_RETIRO_ESTUDIANTE_MODAL_003'));
       return;
     }
     if (motivo.length > MOTIVO_MAXIMO) {
-      this.error.set('El motivo no puede superar 500 caracteres.');
+      this.error.set(mensajeUi('UI_TEACHER_RETIRO_ESTUDIANTE_MODAL_004', { maximo: MOTIVO_MAXIMO }));
       return;
     }
     const grupoId = this.grupoId();

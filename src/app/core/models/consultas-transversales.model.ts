@@ -163,7 +163,10 @@ export interface ConsolidadoGrupoItem {
   horasDictadas: number;
   /** Los cuatro porcentajes suman 100 (el backend reparte el redondeo). */
   porcentajeExcusa: number;
+  /** Solo horas ya dictadas sin registro de asistencia. */
   porcentajeSinRegistro: number;
+  /** Horas aún no dictadas; con él los cinco porcentajes suman 100. Ausente en respuestas anteriores. */
+  porcentajePorDictar?: number | null;
   /** CIERRE-W3I: nivel de permanencia del grupo que clasifica el servidor (REGULAR, RIESGO o PERDIDA). */
   codigoPermanencia?: string | null;
 }

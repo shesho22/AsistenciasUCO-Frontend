@@ -1,4 +1,5 @@
-import { Component, OnInit, inject, input, signal, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, inject, input, signal, computed, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { ActivatedRoute, Router } from '@angular/router';
 import { CoordinatorManagementService } from '../../../../core/services/coordinator-management.service';
@@ -102,6 +103,7 @@ const MAX_SEMESTRES = 10;
   `
 })
 export class CoordinatorStudyPlanMeshPageComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   private readonly coordService = inject(CoordinatorManagementService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
@@ -181,7 +183,7 @@ export class CoordinatorStudyPlanMeshPageComponent implements OnInit {
     this.listado.tamano.set(TAMANO_PAGINA_TABLA);
     // Siempre se recarga del servidor: la copia en memoria puede tener un total de semestres desactualizado.
     this.recargarPlanes();
-    this.coordService.getCaracteresAsignatura().subscribe({
+    this.coordService.getCaracteresAsignatura().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => this.caracteres.set(res.datos ?? []),
       error: (err) => this.toast.error(getApiErrorMessage(err)),
     });
@@ -191,7 +193,7 @@ export class CoordinatorStudyPlanMeshPageComponent implements OnInit {
   }
 
   recargarPlanes(): void {
-    this.coordService.getPlanesEstudio().subscribe({
+    this.coordService.getPlanesEstudio().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => this.planes.set(res.datos || []),
       error: (err) => this.toast.error(getApiErrorMessage(err)),
     });
@@ -221,7 +223,7 @@ export class CoordinatorStudyPlanMeshPageComponent implements OnInit {
       return;
     }
     const nuevoTotal = plan.totalSemestres + 1;
-    this.coordService.agregarSemestrePlan(plan.id).subscribe({
+    this.coordService.agregarSemestrePlan(plan.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
         if (res.exitoso) {
           this.toast.success(mensajeUi('UI_STUDY_PLAN_MESH_PAGE_003', { semestre: nuevoTotal }));
@@ -250,7 +252,7 @@ export class CoordinatorStudyPlanMeshPageComponent implements OnInit {
     // La regla «solo se quita un semestre vacío» la resuelve el backend (PLA_006): se muestra su mensaje.
     const ultimoSem = plan.totalSemestres;
     const nuevoTotal = ultimoSem - 1;
-    this.coordService.eliminarSemestrePlan(plan.id, ultimoSem).subscribe({
+    this.coordService.eliminarSemestrePlan(plan.id, ultimoSem).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
         if (res.exitoso) {
           this.toast.success(mensajeUi('UI_STUDY_PLAN_MESH_PAGE_004', { semestre: ultimoSem }));
@@ -291,7 +293,7 @@ export class CoordinatorStudyPlanMeshPageComponent implements OnInit {
     this.asignaturaAQuitar.set(null);
     if (!asig || !id) return;
     this.aviso.set(null);
-    this.coordService.desvincularAsignaturaPlan(id, asig.id).subscribe({
+    this.coordService.desvincularAsignaturaPlan(id, asig.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
         this.toast.success(res.mensajeUsuario || mensajeUi('UI_STUDY_PLAN_MESH_PAGE_002'));
         this.recargarMalla();
@@ -319,7 +321,7 @@ export class CoordinatorStudyPlanMeshPageComponent implements OnInit {
     if (!asig || this.cambiandoEstado()) return;
     const estaActiva = asig.estaActivaAsignatura === false;
     this.idEstadoEnCurso.set(asig.id);
-    this.coordService.cambiarEstadoAsignatura(asig.id, estaActiva).subscribe({
+    this.coordService.cambiarEstadoAsignatura(asig.id, estaActiva).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
         const quedoActiva = res.datos?.estaActivaAsignatura ?? estaActiva;
         this.toast.success(

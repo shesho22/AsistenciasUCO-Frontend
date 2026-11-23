@@ -1,4 +1,5 @@
-import { Routes } from '@angular/router';
+import { inject } from '@angular/core';
+import { Router, Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { roleGuard } from './core/guards/role.guard';
 import {
@@ -163,7 +164,11 @@ export const routes: Routes = [
           ),
       },
       { path: 'admin/catalogos', redirectTo: 'admin/configuracion/catalogos', pathMatch: 'full' },
-      { path: 'admin/estados', redirectTo: 'admin/configuracion/estados', pathMatch: 'full' },
+      {
+        path: 'admin/estados',
+        pathMatch: 'full',
+        redirectTo: () => inject(Router).parseUrl('/app/admin/configuracion/catalogos?catalogo=estados-reclamo'),
+      },
       { path: 'admin/festivos', redirectTo: 'admin/configuracion/festivos', pathMatch: 'full' },
       {
         // Sistema: pestañas auditoría y cierre masivo, cada una con su vista (/app/admin/sistema/:pestaña).
@@ -305,6 +310,16 @@ export const routes: Routes = [
           ),
       },
       {
+        // P2: indicadores y alertas tempranas del programa con su propia entrada de menú (antes redirigía a Asistencia).
+        path: 'coordinador/indicadores',
+        canActivate: [roleGuard, coordinadorConProgramaGuard],
+        data: { roles: ['COORDINADOR'] },
+        loadComponent: () =>
+          import('./features/coordinator/coordinator-indicators/coordinator-indicators.component').then(
+            (m) => m.CoordinatorIndicatorsComponent
+          ),
+      },
+      {
         // ATA D6: la bandeja de solicitudes de sesión sale de «Asistencia» y tiene su propia entrada de menú.
         path: 'coordinador/solicitudes-sesion',
         canActivate: [roleGuard, coordinadorConProgramaGuard],
@@ -331,7 +346,6 @@ export const routes: Routes = [
       { path: 'coordinador/periodos', redirectTo: 'coordinador/programa/periodos', pathMatch: 'full' },
       { path: 'coordinador/asistencias', redirectTo: 'coordinador/asistencia', pathMatch: 'full' },
       { path: 'coordinador/consolidado-asistencia', redirectTo: 'coordinador/asistencia', pathMatch: 'full' },
-      { path: 'coordinador/indicadores', redirectTo: 'coordinador/asistencia', pathMatch: 'full' },
       {
         path: 'coordinador/planes-estudio',
         canActivate: [roleGuard, coordinadorConProgramaGuard],

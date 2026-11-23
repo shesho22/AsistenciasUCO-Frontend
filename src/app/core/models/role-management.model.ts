@@ -434,7 +434,7 @@ export interface EstudianteDirectorioItem {
   correo: string;
   programa: string;
   idPrograma?: string;
-  semestreActual?: number;
+  semestreActual?: number | null;
   estadoMatricula: 'ACTIVO' | 'INACTIVO' | 'BLOQUEADO';
   gruposInscritos?: string[];
 }
@@ -443,6 +443,8 @@ export interface PeriodoAcademicoItem {
   id: string;
   codigo: string;
   nombre: string;
+  /** Nombre tal cual lo guarda el backend (sin el prefijo de presentación); es el que se precarga al editar. */
+  nombreOriginal?: string;
   fechaInicio: string;
   fechaFin: string;
   fechaLimiteNotas?: string;
@@ -543,6 +545,18 @@ export interface ActualizarParametroRequest {
   valor: string;
   fechaModificacionEsperada: string;
   motivo: string;
+}
+
+/** `CambioParametroDTO` del backend: un renglón del historial de cambios de un parámetro. */
+export interface CambioParametroDto {
+  id: string;
+  valorAnterior: string | null;
+  valorNuevo: string | null;
+  motivo: string | null;
+  idUsuarioEjecutor?: string | null;
+  nombreEjecutor?: string | null;
+  idCorrelacion?: string | null;
+  fechaCambioUtc: string;
 }
 
 export interface RegistroAuditoriaItem {

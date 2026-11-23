@@ -14,6 +14,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { hasAnyRole } from '../../../core/models/user.model';
 import { environment } from '../../../../environments/environment';
 import { readDesignToken } from '../../../shared/utils/design-tokens';
+import { ParametrosRespaldoComponent } from '../parametros-respaldo/parametros-respaldo.component';
 import { PARAMETROS_ADMIN_LOADER, ParametrosAdminHandle, ParametrosAdminModule } from './parametros-administration.contract';
 
 export type ParametrosViewState = 'loading' | 'ready' | 'error' | 'unauthorized' | 'forbidden' | 'misconfigured';
@@ -28,13 +29,15 @@ const RUTA_POR_DEFECTO = '/app/admin/configuracion/parametros';
 
 /**
  * Administración de parámetros de AsistenciasUCO: monta el micro frontend `parametros-administration.js` del equipo del
- * Catálogo de Parámetros. Es la única administración de parámetros de la interfaz (decisión del responsable,
- * 2026-11-12); la pantalla propia que editaba `dbo.CatalogoParametro` se retiró.
+ * Catálogo de Parámetros y es la vía principal (decisión del responsable, 2026-11-12). Si no carga o no está
+ * configurado, muestra debajo la vista de respaldo (`ParametrosRespaldoComponent`) con la API propia, para que el
+ * administrador no se quede sin ver ni editar parámetros.
  */
 @Component({
   selector: 'app-parametros-administration',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ParametrosRespaldoComponent],
   template: `
     <section class="superficie p-4" aria-labelledby="titulo-parametros">
       <div class="mb-5">
@@ -66,6 +69,10 @@ const RUTA_POR_DEFECTO = '/app/admin/configuracion/parametros';
             }
           </div>
         </div>
+      }
+
+      @if (state() === 'error' || state() === 'misconfigured') {
+        <app-parametros-respaldo />
       }
 
       <div #mountPoint class="mt-4" [hidden]="state() !== 'ready'"></div>

@@ -1,6 +1,8 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal } from '@angular/core';
 import { DeanFacultadService } from '../../../core/services/dean-facultad.service';
 import { SesionFacultadItem } from '../../../core/models/facultad-decano.model';
+import { BadgeComponent } from '../../../shared/components/badge/badge.component';
+import { rotuloSesionNoCancelada } from '../../../core/models/sesion-estado.model';
 import { SesionEstadoBadgeComponent } from '../../../shared/components/sesion-estado-badge/sesion-estado-badge.component';
 import { ErrorCargaComponent } from '../../../shared/components/error-carga/error-carga.component';
 import { SessionTimeZoneService } from '../../../core/services/session-timezone.service';
@@ -16,7 +18,7 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
 @Component({
     selector: 'app-dean-sesiones-grupo',
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [SesionEstadoBadgeComponent, ErrorCargaComponent],
+    imports: [SesionEstadoBadgeComponent, ErrorCargaComponent, BadgeComponent],
     template: `
     <section class="bg-white p-4 rounded-xl border border-warm-200 space-y-3" aria-label="Sesiones del grupo">
       @if (error(); as e) {
@@ -33,11 +35,12 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
             Horas en {{ timeZone.zoneLabel() }}.
           }
         </p>
-        <div class="overflow-x-auto">
+        <div class="tabla-scroll">
           <table class="w-full text-sm">
             <thead>
               <tr class="text-left text-xs uppercase tracking-wider text-warm-500 border-b border-warm-100">
                 <th scope="col" class="py-2 pr-3">Sesión</th>
+                <th scope="col" class="py-2 pr-3">Estado</th>
                 <th scope="col" class="py-2 pr-3">Semana</th>
                 <th scope="col" class="py-2">Fecha y hora</th>
               </tr>
@@ -47,7 +50,13 @@ import { ToastService } from '../../../shared/components/toast/toast.component';
                 <tr class="border-b border-warm-50" [attr.data-testid]="'sesion-fila-' + s.id">
                   <td class="py-2 pr-3 font-semibold text-warm-900">
                     {{ s.nombre }} <span class="text-warm-400 font-mono">{{ s.codigo }}</span>
-                    <app-sesion-estado-badge class="block font-normal" [estado]="s.estado" [cancelacion]="s.cancelacion" />
+                  </td>
+                  <td class="py-2 pr-3" data-testid="sesion-estado">
+                    @if (s.estado === 'CANCELADA') {
+                      <app-sesion-estado-badge [estado]="s.estado" [cancelacion]="s.cancelacion" />
+                    } @else {
+                      <app-badge size="sm" [variant]="rotuloEstado(s) === 'Dictada' ? 'success' : 'neutral'">{{ rotuloEstado(s) }}</app-badge>
+                    }
                   </td>
                   <td class="py-2 pr-3 text-warm-700">{{ s.numeroSemana ?? '—' }}</td>
                   <td class="py-2 text-xs text-warm-600">{{ horario(s) }}</td>
@@ -92,6 +101,11 @@ export class DeanSesionesGrupoComponent implements OnInit {
         this.toast.error(getApiErrorMessage(error));
       },
     });
+  }
+
+  /** Estado visible de una sesión no cancelada (la cancelada la rotula `app-sesion-estado-badge`). */
+  rotuloEstado(sesion: SesionFacultadItem): 'Programada' | 'Dictada' {
+    return rotuloSesionNoCancelada(this.fin(sesion));
   }
 
   horario(sesion: SesionFacultadItem): string {

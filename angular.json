@@ -38,6 +38,51 @@
           },
           "configurations": {
             "production": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.prod.ts"
+                },
+                {
+                  "replace": "src/app/core/interceptors/mock-backend-lazy.interceptor.ts",
+                  "with": "src/app/core/mocks/prod/mock-backend-lazy.interceptor.prod.ts"
+                },
+                {
+                  "replace": "src/app/core/mocks/user.mock.ts",
+                  "with": "src/app/core/mocks/prod/user.mock.prod.ts"
+                },
+                {
+                  "replace": "src/app/core/mocks/course.mock.ts",
+                  "with": "src/app/core/mocks/prod/course.mock.prod.ts"
+                },
+                {
+                  "replace": "src/app/core/mocks/role-management.mock.ts",
+                  "with": "src/app/core/mocks/prod/role-management.mock.prod.ts"
+                }
+              ],
+              "optimization": {
+                "scripts": true,
+                "styles": {
+                  "minify": true,
+                  "inlineCritical": false
+                },
+                "fonts": false
+              },
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "600kB",
+                  "maximumError": "1MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "2kB",
+                  "maximumError": "4kB"
+                }
+              ],
+              "outputHashing": "all"
+            },
+            "e2e": {
               "optimization": {
                 "scripts": true,
                 "styles": {

@@ -32,6 +32,9 @@ export interface Course {
   franjas?: FranjaHorario[];
   /** CULM-001 B2NM: nombres de los programas del grupo (GET /decano/grupos). */
   programas?: string[];
+  /** DEC-077 (GET /coordinador/grupos): programa responsable del grupo y si el coordinador autenticado puede gestionarlo. */
+  nombreProgramaResponsable?: string | null;
+  esResponsable?: boolean;
 }
 
 /** F1: franja del horario semanal de un grupo. `dia` es el código de dbo.Dia (LU, MA, MI, JU, VI, SA, DO). */
