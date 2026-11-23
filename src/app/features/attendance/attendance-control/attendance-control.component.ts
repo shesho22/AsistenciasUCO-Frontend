@@ -334,7 +334,13 @@ export class AttendanceControlComponent {
   courses = signal<Course[]>([]);
   sessions = signal<ClassSession[]>([]);
 
-  vistaActual = signal<'OVERVIEW' | 'DETALLE'>('OVERVIEW');
+  /**
+   * Vista inicial según la URL: si llega con `sessionId` (p. ej. desde «Mis Horarios»), arranca en el detalle de la toma
+   * para no pintar un instante el panorama del grupo mientras cargan los grupos y las sesiones.
+   */
+  vistaActual = signal<'OVERVIEW' | 'DETALLE'>(
+    inject(ActivatedRoute, { optional: true })?.snapshot?.queryParamMap?.get('sessionId') ? 'DETALLE' : 'OVERVIEW'
+  );
   selectedCourseId = signal<string>('');
   selectedSessionId = signal<string>('');
 
@@ -811,11 +817,14 @@ export class AttendanceControlComponent {
                 : courses[0].id;
 
             this.onCourseSelect(targetCourseId, querySessionId || undefined);
+          } else {
+            this.vistaActual.set('OVERVIEW');
           }
         },
         error: (err) => {
           this.courses.set([]);
           this.courseOptions.set([]);
+          this.vistaActual.set('OVERVIEW');
           this.toastType.set('error');
           this.toastMessage.set(
             getApiErrorMessage(err) || 'No fue posible cargar los grupos del docente.'

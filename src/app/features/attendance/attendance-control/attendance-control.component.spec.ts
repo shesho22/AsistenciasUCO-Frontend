@@ -1,3 +1,4 @@
+import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { ObservedValueOf } from 'rxjs';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { TeacherMatrizAsistenciaService } from '../../../core/services/teacher-matriz-asistencia.service';
@@ -605,6 +606,46 @@ describe('AttendanceControlComponent contract corrections', () => {
 
     component.abrirReclamosGrupo();
     expect(component.isGroupClaimsModalOpen()).toBeTrue();
+  });
+
+  describe('vista inicial según la URL (enlace desde «Mis Horarios»)', () => {
+    function crearConUrl(params: Record<string, string>): AttendanceControlComponent {
+      const mapa = convertToParamMap(params);
+      TestBed.configureTestingModule({
+        providers: [{ provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: mapa }, queryParamMap: of(mapa) } }],
+      });
+      return createComponent([activeStudent], []);
+    }
+    const panorama = () => fixture.nativeElement.querySelector('app-group-sessions-overview');
+
+    it('con sessionId arranca en el detalle y no pinta el panorama del grupo mientras cargan los grupos', () => {
+      courseService.getCurrentTeacherCourses.and.returnValue(NEVER);
+      const component = crearConUrl({ courseId: 'group-1', sessionId: 'session-1' });
+
+      expect(component.vistaActual()).toBe('DETALLE');
+      expect(panorama()).toBeNull();
+    });
+
+    it('sin sessionId arranca en el panorama del grupo', () => {
+      courseService.getCurrentTeacherCourses.and.returnValue(NEVER);
+      const component = crearConUrl({ courseId: 'group-1' });
+
+      expect(component.vistaActual()).toBe('OVERVIEW');
+    });
+
+    it('con sessionId pero sin grupos del docente vuelve al panorama', () => {
+      courseService.getCurrentTeacherCourses.and.returnValue(of<never>({ exitoso: true, datos: [] } as never));
+      const component = crearConUrl({ courseId: 'group-1', sessionId: 'session-1' });
+
+      expect(component.vistaActual()).toBe('OVERVIEW');
+    });
+
+    it('con sessionId y error al cargar los grupos vuelve al panorama', () => {
+      courseService.getCurrentTeacherCourses.and.returnValue(throwError(() => new Error('fallo')));
+      const component = crearConUrl({ courseId: 'group-1', sessionId: 'session-1' });
+
+      expect(component.vistaActual()).toBe('OVERVIEW');
+    });
   });
 
   describe('Proyectar Auto-Registro (accion=proyectar-qr)', () => {
