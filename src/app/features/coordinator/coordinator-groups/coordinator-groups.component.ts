@@ -1,4 +1,5 @@
 import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy, input, DestroyRef } from '@angular/core';
+import { FechaCivilPipe } from '../../../shared/pipes/fecha-hora.pipes';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { FormsModule } from '@angular/forms';
@@ -47,7 +48,7 @@ interface GrupoForm {
     selector: 'app-coordinator-groups',
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: { class: 'block w-full' },
-    imports: [PageHeaderComponent, FormsModule, FranjasEditorComponent, PaginationComponent, ErrorCargaComponent],
+    imports: [FechaCivilPipe, PageHeaderComponent, FormsModule, FranjasEditorComponent, PaginationComponent, ErrorCargaComponent],
     template: `
     <div class="space-y-4 animate-fade-in">
       <app-page-header
@@ -240,7 +241,7 @@ interface GrupoForm {
               @if (r.recesos && r.recesos.length > 0) {
                 <ul class="space-y-1 text-xs text-warm-700" data-testid="recesos-previsualizacion" aria-label="Días de receso del período">
                   @for (rc of r.recesos; track rc.fecha) {
-                    <li><span class="font-semibold tabular-nums">{{ rc.fecha }}</span> · {{ rc.motivo }} ({{ rc.sesionesAfectadas }} {{ rc.sesionesAfectadas === 1 ? 'sesión' : 'sesiones' }})</li>
+                    <li><span class="font-semibold tabular-nums">{{ rc.fecha | fechaCivil }}</span> · {{ rc.motivo }} ({{ rc.sesionesAfectadas }} {{ rc.sesionesAfectadas === 1 ? 'sesión' : 'sesiones' }})</li>
                   }
                 </ul>
               }
@@ -266,7 +267,7 @@ interface GrupoForm {
                     <tbody>
                       @for (s of r.sesiones; track s.numero) {
                         <tr class="border-t border-warm-100" [class.text-warm-400]="s.estado === 'NO_PROGRAMABLE_POR_FECHA'">
-                          <td class="px-3 py-1.5">{{ s.numero }}</td><td class="px-3 py-1.5">{{ s.numeroSemana }}</td><td class="px-3 py-1.5">{{ s.fecha }}</td>
+                          <td class="px-3 py-1.5">{{ s.numero }}</td><td class="px-3 py-1.5">{{ s.numeroSemana }}</td><td class="px-3 py-1.5">{{ s.fecha | fechaCivil }}</td>
                           <td class="px-3 py-1.5">{{ s.horaInicio }}-{{ s.horaFin }}</td>
                           <td class="px-3 py-1.5">@if (s.estado === 'CANCELADA_POR_RECESO') { Cancelada · {{ s.motivoReceso || 'Receso académico' }} } @else { {{ estadoSesion(s.estado) }}@if (s.nombreFestivo) { ({{ s.nombreFestivo }}) } }</td>
                         </tr>

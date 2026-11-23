@@ -65,8 +65,8 @@ describe('DeanPeriodosComponent', () => {
     const filas = el.querySelectorAll('app-tabla-datos tbody tr[data-testid="periodo-fila"]');
     expect(filas).toHaveSize(1);
     expect(filas[0].textContent).toContain('2026-2');
-    expect(filas[0].textContent).toContain('2026-07-15');
-    expect(filas[0].textContent).toContain('2026-11-30');
+    expect(filas[0].textContent).toContain('15/07/2026');
+    expect(filas[0].textContent).toContain('30/11/2026');
     expect(filas[0].querySelector('[data-testid="periodo-en-curso"]')).not.toBeNull();
   });
 

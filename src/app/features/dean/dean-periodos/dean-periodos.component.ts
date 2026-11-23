@@ -1,4 +1,5 @@
 import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
+import { FechaCivilPipe } from '../../../shared/pipes/fecha-hora.pipes';
 
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -17,7 +18,7 @@ import {
     selector: 'app-dean-periodos',
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: { class: 'block w-full' },
-    imports: [PageHeaderComponent, FormsModule, BadgeComponent, TablaDatosComponent],
+    imports: [FechaCivilPipe, PageHeaderComponent, FormsModule, BadgeComponent, TablaDatosComponent],
     template: `
     <div class="space-y-4 animate-fade-in">
       <!-- Header Bento -->
@@ -93,8 +94,8 @@ import {
               <tr data-testid="periodo-fila">
                 <td class="font-mono text-xs font-bold text-warm-800 whitespace-nowrap">{{ p.codigo }}</td>
                 <td class="font-semibold text-warm-900">{{ p.nombre }}</td>
-                <td class="whitespace-nowrap">{{ p.fechaInicio }}</td>
-                <td class="whitespace-nowrap">{{ p.fechaFin }}</td>
+                <td class="whitespace-nowrap">{{ p.fechaInicio | fechaCivil }}</td>
+                <td class="whitespace-nowrap">{{ p.fechaFin | fechaCivil }}</td>
                 <td>
                   <div class="flex flex-wrap items-center gap-1.5">
                     <app-badge [variant]="p.estado === 'ACTIVO' ? 'success' : (p.estado === 'PLANEACION' ? 'warning' : 'neutral')" size="sm">

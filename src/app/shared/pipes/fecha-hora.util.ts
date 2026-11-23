@@ -52,3 +52,13 @@ export function formatearFechaHoraCorta(valor: ValorTemporal, timeZone?: string)
   if (aFecha(valor) === null) return SIN_DATO;
   return `${formatearFechaCorta(valor, timeZone)}, ${formatearHoraCorta(valor, timeZone)}`;
 }
+
+/**
+ * Fecha civil `yyyy-MM-dd` como `dd/MM/yyyy`, sin pasar por `Date` (no se desplaza por zona horaria).
+ * Cualquier otro valor ya presentable se devuelve tal cual; vacío o nulo da `—`.
+ */
+export function formatearFechaCivil(valor: string | null | undefined): string {
+  if (valor === null || valor === undefined || valor === '') return SIN_DATO;
+  const dia = SOLO_FECHA.exec(valor);
+  return dia ? `${dia[3]}/${dia[2]}/${dia[1]}` : valor;
+}

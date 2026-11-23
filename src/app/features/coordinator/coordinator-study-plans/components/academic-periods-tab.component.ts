@@ -1,4 +1,5 @@
 import { Component, ChangeDetectionStrategy, input, output, signal, computed } from '@angular/core';
+import { FechaCivilPipe } from '../../../../shared/pipes/fecha-hora.pipes';
 import { PeriodoAcademicoItem } from '../../../../core/models/role-management.model';
 import { BadgeComponent } from '../../../../shared/components/badge/badge.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
@@ -14,7 +15,7 @@ import {
 @Component({
   selector: 'app-academic-periods-tab',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [BadgeComponent, ButtonComponent, TablaDatosComponent, AcademicPeriodFormModalComponent, PeriodoRecesosListaComponent],
+  imports: [FechaCivilPipe, BadgeComponent, ButtonComponent, TablaDatosComponent, AcademicPeriodFormModalComponent, PeriodoRecesosListaComponent],
   template: `
     <div class="space-y-4">
       <div class="superficie flex items-center justify-between p-5">
@@ -71,8 +72,8 @@ import {
                   <span class="ml-2 rounded bg-primary-100 px-2 py-0.5 text-[10px] font-bold text-primary-800">ACTUAL</span>
                 }
               </td>
-              <td class="whitespace-nowrap tabular-nums">{{ periodo.fechaInicio }}</td>
-              <td class="whitespace-nowrap tabular-nums">{{ periodo.fechaFin }}</td>
+              <td class="whitespace-nowrap tabular-nums">{{ periodo.fechaInicio | fechaCivil }}</td>
+              <td class="whitespace-nowrap tabular-nums">{{ periodo.fechaFin | fechaCivil }}</td>
               <td>
                 <app-badge
                   size="sm"

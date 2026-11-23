@@ -466,7 +466,7 @@ describe('CoordinatorGroupsComponent (F1: grupos y horario semanal)', () => {
     expect(raiz.querySelector('[data-testid="resumen-receso"]')?.textContent).toContain('1 (2 h)');
     expect(raiz.querySelector('[data-testid="resumen-previsualizacion"]')?.textContent).toContain('Caen en festivo');
     const lista = raiz.querySelector('[data-testid="recesos-previsualizacion"]');
-    expect(lista?.textContent).toContain('2027-03-24');
+    expect(lista?.textContent).toContain('24/03/2027');
     expect(lista?.textContent).toContain('Receso académico: Semana Santa');
     expect(lista?.textContent).toContain('1 sesión');
     const filas = Array.from(raiz.querySelectorAll('details tbody tr')).map((tr) => tr.textContent?.replace(/\s+/g, ' ').trim() ?? '');
