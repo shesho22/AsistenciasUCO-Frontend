@@ -556,6 +556,77 @@ describe('AdminEmailManagementComponent', () => {
       expect((el.querySelector('#correo-prueba-tipo') as HTMLSelectElement).options.length).toBe(2);
     });
 
+    describe('con el servicio caído (503) en plantillas y cola', () => {
+      const error503 = () => throwError(() => new HttpErrorResponse({
+        status: 503,
+        error: {
+          timestamp: '2026-11-22T10:00:00Z',
+          status: 503,
+          error: 'Service Unavailable',
+          code: 'ERR_NOTIFICACIONES_NO_DISPONIBLE',
+          message: 'El servicio de notificaciones no responde, intente más tarde.',
+          path: '/api/v1/admin/notificaciones',
+          correlationId: null,
+        },
+      }));
+      const el = () => fixture.nativeElement as HTMLElement;
+
+      it('Plantillas muestra el estado no disponible en lugar del vacío y reintenta', () => {
+        notificationServiceSpy.listarPlantillas.and.returnValue(error503());
+        component.cargarPlantillas();
+        fixture.detectChanges();
+
+        expect(component.plantillasNoDisponible()).toBe('El servicio de notificaciones no responde, intente más tarde.');
+        expect(el().querySelector('[data-testid="no-disponible-mensaje"]')?.textContent).toContain('no responde, intente más tarde');
+        expect(el().querySelector('[data-testid="plantillas-tabla"]')).toBeNull();
+        expect(el().textContent).not.toContain('0 tipos');
+
+        notificationServiceSpy.listarPlantillas.and.returnValue(of(mockPlantillas));
+        notificationServiceSpy.listarPlantillas.calls.reset();
+        (el().querySelector('[data-testid="no-disponible-reintentar"]') as HTMLButtonElement).click();
+        fixture.detectChanges();
+        expect(notificationServiceSpy.listarPlantillas).toHaveBeenCalledTimes(1);
+        expect(component.plantillasNoDisponible()).toBeNull();
+        expect(el().querySelector('[data-testid="plantillas-tabla"]')).not.toBeNull();
+      });
+
+      it('Cola muestra el estado no disponible en lugar del vacío y reintenta', () => {
+        notificationServiceSpy.consultarCola.and.returnValue(error503());
+        component.tabActiva.set('COLA_OUTBOX');
+        component.cargarCola();
+        fixture.detectChanges();
+
+        expect(component.colaNoDisponible()).toBe('El servicio de notificaciones no responde, intente más tarde.');
+        expect(el().querySelector('[data-testid="no-disponible"]')).not.toBeNull();
+        expect(el().querySelector('[data-testid="cola-tabla"]')).toBeNull();
+        expect(el().textContent).not.toContain('No se encontraron notificaciones');
+
+        notificationServiceSpy.consultarCola.and.returnValue(of(mockColaResponse));
+        (el().querySelector('[data-testid="no-disponible-reintentar"]') as HTMLButtonElement).click();
+        fixture.detectChanges();
+        expect(component.colaNoDisponible()).toBeNull();
+        expect(el().querySelector('[data-testid="cola-tabla"]')).not.toBeNull();
+      });
+
+      it('otros errores no activan el estado no disponible de las pestañas', () => {
+        notificationServiceSpy.listarPlantillas.and.returnValue(throwError(() => new Error('x')));
+        notificationServiceSpy.consultarCola.and.returnValue(throwError(() => new Error('x')));
+        component.cargarPlantillas();
+        component.cargarCola();
+        expect(component.plantillasNoDisponible()).toBeNull();
+        expect(component.colaNoDisponible()).toBeNull();
+      });
+
+      it('la tarjeta del canal no afirma que plantillas y cola sigan disponibles', () => {
+        notificationServiceSpy.obtenerEstadoCanal.and.returnValue(error503());
+        component.cargarEstadoCanal();
+        component.tabActiva.set('CANAL_SERVICIO');
+        fixture.detectChanges();
+        expect(el().textContent).not.toContain('siguen disponibles');
+        expect(el().textContent).toContain('no se pueden consultar');
+      });
+    });
+
     it('limpia el aviso cuando el servicio vuelve a responder', () => {
       component.servicioNoDisponible.set('caído');
       component.cargarEstadoCanal();
