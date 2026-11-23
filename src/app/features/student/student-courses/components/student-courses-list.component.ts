@@ -210,7 +210,7 @@ interface BarraHoras {
                         </span>
                       }
                     </td>
-                    <td class="py-2 pr-3 text-warm-700 whitespace-nowrap" data-label="Grupo" data-testid="materia-grupo">{{ materia.grupo }}</td>
+                    <td class="py-2 pr-3 text-warm-700 break-words md:whitespace-nowrap" data-label="Grupo" data-testid="materia-grupo">{{ materia.grupo }}</td>
                     <td class="py-2 pr-3 text-warm-700" data-label="Docente">{{ materia.docente ?? 'No informado' }}</td>
                     <td class="py-2 pr-3 text-warm-700" data-label="Horario">{{ materia.horario ?? 'Horario no informado' }}</td>
                     <td class="py-2 pr-3 tc-ancho" data-label="Asistencia">

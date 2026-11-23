@@ -168,7 +168,7 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
                         <span class="block text-xs text-warm-500 font-mono">{{ mat.codigo }}</span>
                       }
                     </td>
-                    <td class="py-2 pr-3 text-warm-700 whitespace-nowrap" data-label="Grupo">{{ mat.grupo }}</td>
+                    <td class="py-2 pr-3 text-warm-700 break-words md:whitespace-nowrap" data-label="Grupo">{{ mat.grupo }}</td>
                     <td class="py-2 pr-3 text-warm-700" data-label="Docente">{{ mat.docente ?? 'No informado' }}</td>
                     <td class="py-2 pr-3 tc-ancho" data-label="Inasistencia">
                       <!-- Inasistencia por horas (solo con fuente autoritativa) -->
