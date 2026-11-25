@@ -61,7 +61,10 @@ interface NavItem {
       <header class="md:hidden bg-white border-b border-warm-200 px-4 py-3 flex items-center justify-between shrink-0 sticky top-0 z-30 shadow-warm-sm">
         <div class="flex items-center gap-2.5">
           <img src="logo.svg" alt="Gestión Asistencia Logo" class="w-8 h-8 object-contain shrink-0" />
-          <span class="font-serif font-bold text-warm-900 text-lg">Gestión Asistencia</span>
+          <div class="leading-tight">
+            <span class="block font-serif font-bold text-warm-900 text-base">Gestión Asistencia</span>
+            <span class="block text-[10px] font-semibold uppercase tracking-[0.12em] text-primary-800">Universidad Católica de Oriente</span>
+          </div>
         </div>
         <button
           #botonMenu
@@ -97,54 +100,77 @@ interface NavItem {
       <!-- Sidebar Container -->
       <aside id="menu-lateral" [class]="sidebarClasses()" [attr.inert]="menuInerte() ? '' : null">
         <!-- Brand Header -->
-        <div class="p-5 flex items-center justify-between border-b border-warm-200/80 shrink-0">
-          <div class="flex items-center gap-3">
-            <img src="logo.svg" alt="Gestión Asistencia Logo" class="w-9 h-9 object-contain shrink-0" />
+        <div class="relative border-b border-white/10 shrink-0" [class]="isCollapsed() ? 'px-2 py-4' : 'p-5'">
+          <!-- Logo institucional en version blanca sobre verde (como la referencia): emblema, sigla UCO, nombre y vigilancia.
+               El emblema reutiliza las formas de public/logo.svg; se reemplaza por el SVG oficial cuando se entregue. -->
+          <div class="flex flex-col items-center" [class.pr-5]="!isCollapsed()">
+            <div class="flex items-center gap-1">
+              <!-- Emblema: cuadro blanco redondeado; detras, un sol verde de 12 puntas (tres entre cada punta de la estrella);
+                   delante, la estrella blanca de 4 puntas que toca los bordes del cuadro, con un filo verde fino. -->
+              <svg class="w-14 h-14 shrink-0" viewBox="0 0 512 512" role="img" aria-label="Logo Universidad Católica de Oriente">
+                <rect width="512" height="512" rx="110" class="fill-white" />
+                <circle cx="256" cy="256" r="98" class="fill-primary-800" />
+                                <polygon class="fill-primary-800" points="350,268 446,318 339,302 336,308 415,415 308,336 302,339 318,446 268,350 244,350 194,446 210,339 204,336 97,415 176,308 173,302 66,318 162,268 162,244 66,194 173,210 176,204 97,97 204,176 210,173 194,66 244,162 268,162 318,66 302,173 308,176 415,97 336,204 339,210 446,194 350,244" />
+                <polygon class="fill-white stroke-primary-200" stroke-width="3" stroke-linejoin="round" points="256,10 286,226 502,256 286,286 256,502 226,286 10,256 226,226" />
+              </svg>
+              @if (!isCollapsed()) {
+                <p class="font-sans text-[4rem] font-bold leading-[0.8] tracking-tighter text-white">UCO</p>
+              }
+            </div>
             @if (!isCollapsed()) {
-              <div>
-                <h1 class="font-serif font-bold text-warm-900 text-base leading-tight tracking-tight">Gestión Asistencia</h1>
-                <p class="text-[10px] uppercase font-bold text-primary-700 tracking-wider">Universidad Católica de Oriente</p>
-              </div>
+              <p class="mt-1 text-center text-[11px] font-bold leading-tight tracking-[0.05em] whitespace-nowrap text-white">Universidad Católica de Oriente</p>
+              <p class="text-center text-[11px] leading-tight text-white/90">Vigilada Mineducación</p>
             }
           </div>
           <!-- Desktop Collapse Toggle -->
           <button
             type="button"
             (click)="toggleCollapsed()"
-            class="hidden md:flex p-1.5 rounded-lg text-warm-400 hover:text-warm-700 hover:bg-warm-100 transition-colors"
+            [class]="isCollapsed() ? 'mx-auto mt-2' : 'absolute top-3 right-2'"
+            class="hidden md:flex p-1.5 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors"
             [title]="isCollapsed() ? 'Expandir menú' : 'Colapsar menú'"
           >
             <svg class="w-5 h-5 transform transition-transform" [class.rotate-180]="isCollapsed()" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
             </svg>
           </button>
+          @if (!isCollapsed()) {
+            <div class="mt-5 flex items-start gap-3">
+              <span class="mt-2 h-0.5 w-6 shrink-0 rounded-full bg-accent-500" aria-hidden="true"></span>
+              <h1 class="min-w-0 font-serif text-sm font-extrabold uppercase leading-tight tracking-[0.12em] text-white">Gestión Asistencia</h1>
+            </div>
+          }
         </div>
 
         <!-- Navigation Links Filtrados por Rol -->
-        <nav class="flex-1 p-4 space-y-1.5 overflow-y-auto">
-          @if (!isCollapsed() && currentRole()) {
-            <div class="px-3 pb-2 text-[10px] font-bold tracking-wider text-warm-400 uppercase">
-              Módulos para {{ currentRole() }}
-            </div>
-          }
-
-          @for (item of filteredNavItems(); track item.route) {
+        <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+          <!-- Secciones del menú como en la referencia UCO: «Inicio» (Panel Principal) y luego los módulos del rol. -->
+          @for (item of filteredNavItems(); track item.route; let primero = $first, indice = $index) {
+            @if (!isCollapsed() && currentRole()) {
+              @if (primero) {
+                <div class="menu-uco-seccion">Inicio</div>
+              } @else if (indice === 1) {
+                <div class="menu-uco-seccion pt-4">Módulos para {{ currentRole() }}</div>
+              }
+            }
             <a
               [routerLink]="item.route"
-              routerLinkActive="bg-primary-50 text-primary-800 font-semibold shadow-xs"
+              routerLinkActive="menu-uco-activo"
               ariaCurrentWhenActive="page"
               (click)="isMobileMenuOpen.set(false)"
-              class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-warm-700 hover:bg-warm-100 hover:text-warm-900 transition-all duration-150 group"
+              class="menu-uco-item"
               [title]="isCollapsed() ? item.label : ''"
             >
-              <app-icon [name]="item.icon" cssClass="w-5 h-5 text-warm-500 group-hover:text-primary-700 shrink-0 transition-colors"></app-icon>
+              <span class="menu-uco-icono" aria-hidden="true">
+                <app-icon [name]="item.icon" cssClass="w-4 h-4 shrink-0"></app-icon>
+              </span>
               @if (!isCollapsed()) {
                 <span class="truncate">{{ item.label }}</span>
               }
               @if (contadorDe(item); as pendientes) {
                 <span
                   data-testid="menu-contador"
-                  class="ml-auto min-w-[1.25rem] rounded-full bg-warning-100 px-1.5 py-0.5 text-center text-[11px] font-bold text-warning-800"
+                  class="ml-auto min-w-[1.25rem] rounded-full bg-accent-500 px-1.5 py-0.5 text-center text-[11px] font-bold text-warm-950"
                   [attr.aria-label]="pendientes + (pendientes === 1 ? ' pendiente' : ' pendientes')"
                 >{{ pendientes }}</span>
               }
@@ -157,7 +183,7 @@ interface NavItem {
              amplio se salia de la tarjeta. Extendida (256 px) deja 125 px para el nombre y el rol: la insignia del rol mas
              largo (ADMINISTRADOR) mide 121 px sin el punto, asi que no lleva punto ni texto adicional a su lado; antes
              media 131 px, mas el texto Editar, y se montaba sobre el boton de cerrar sesion. -->
-        <div data-testid="pie-usuario" [class]="isCollapsed() ? 'p-2' : 'p-3'" class="border-t border-warm-200/80 bg-warm-50/50 shrink-0">
+        <div data-testid="pie-usuario" [class]="isCollapsed() ? 'p-2' : 'p-3'" class="border-t border-white/10 bg-primary-950/40 shrink-0">
           <div class="flex items-center gap-1 p-1.5 rounded-xl bg-white border border-warm-200 shadow-warm-sm hover:border-primary-300 transition-colors">
             <!-- Clickable User Profile Area -->
             <a
@@ -199,25 +225,32 @@ interface NavItem {
               </button>
             }
           </div>
+          @if (!isCollapsed()) {
+            <div data-testid="lema-uco" class="mt-3 text-center">
+              <p class="font-serif text-xs font-bold text-white">A la Verdad, por la Fe y la Ciencia</p>
+              <p class="mt-0.5 text-[11px] text-white/75">UCO · {{ anioActual }}</p>
+            </div>
+          }
         </div>
       </aside>
 
       <!-- Main Content Area -->
       <main id="contenido-principal" tabindex="-1" class="flex-1 flex flex-col min-w-0 h-full overflow-y-auto focus:outline-none">
         <!-- Top Desktop Bar -->
-        <div class="hidden md:flex items-center justify-between bg-white border-b border-warm-200 px-8 py-3.5 shadow-warm-sm shrink-0 sticky top-0 z-20">
-          <div class="flex items-center gap-3">
-            <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-accent-100 text-accent-800 border border-accent-200">
-              {{ user()?.institutionName || 'UCO' }}
-            </span>
-            <span class="text-warm-300">/</span>
-            <span class="text-xs text-warm-600 font-medium">{{ user()?.department }}</span>
+        <div class="hidden md:flex items-center justify-between bg-white border-b border-warm-200 px-8 py-2.5 shadow-warm-sm shrink-0 sticky top-0 z-20">
+          <div class="min-w-0">
+            <p class="font-serif text-sm font-bold uppercase tracking-[0.12em] text-primary-900">Universidad Católica de Oriente</p>
+            <div class="flex items-center gap-2 text-xs">
+              <span class="font-semibold text-accent-700">{{ user()?.institutionName || 'UCO' }}</span>
+              <span class="text-warm-300" aria-hidden="true">/</span>
+              <span class="truncate font-medium text-warm-600">{{ user()?.department }}</span>
+            </div>
           </div>
 
           @if (currentRole(); as rol) {
             <div class="flex items-center gap-3">
               <span class="text-xs text-warm-500">Sesión activa como:</span>
-              <span class="text-xs font-bold px-2 py-0.5 rounded-md bg-warm-100 text-warm-800 border border-warm-200">
+              <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-primary-50 text-primary-900 border border-primary-200">
                 {{ rol }}
               </span>
             </div>
@@ -238,6 +271,8 @@ export class DashboardLayoutComponent {
   toastState = this.toastService.currentToast;
 
   user = this.authService.currentUser;
+  /** Año que acompaña el lema institucional al pie del menú. */
+  readonly anioActual = new Date().getFullYear();
   isCollapsed = signal<boolean>(false);
   isMobileMenuOpen = signal<boolean>(false);
   private readonly botonMenu = viewChild<ElementRef<HTMLButtonElement>>('botonMenu');
@@ -582,7 +617,7 @@ export class DashboardLayoutComponent {
       ? 'translate-x-0'
       : '-translate-x-full md:translate-x-0';
 
-    return `fixed md:static inset-y-0 left-0 z-50 h-dvh max-h-dvh bg-white border-r border-warm-200/80 flex flex-col justify-between transition-all duration-300 ease-in-out shadow-warm-md md:shadow-none ${collapsedWidth} ${mobileVisibility}`;
+    return `fixed md:static inset-y-0 left-0 z-50 h-dvh max-h-dvh menu-uco flex flex-col justify-between transition-all duration-300 ease-in-out shadow-warm-md md:shadow-none ${collapsedWidth} ${mobileVisibility}`;
   }
 
   getRoleBadgeVariant(role: UserRole | null): 'success' | 'warning' | 'danger' | 'info' | 'neutral' {

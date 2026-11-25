@@ -25,12 +25,12 @@ import { EstadoIndicadores, textoCifra } from '../../../../core/utils/cifra-indi
       <!-- KPIs Administrador -->
       <section class="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3" [attr.aria-busy]="estado() === 'cargando'">
         <div class="superficie px-3 py-2 sm:px-4 sm:py-3 flex flex-col justify-between h-full">
-          <span class="text-xs text-warm-500 font-medium">Facultades Activas</span>
+          <span class="rotulo-uco">Facultades Activas</span>
           <p class="text-xl font-serif font-bold text-warm-900 mt-0.5" data-testid="facultades-activas">{{ texto(kpis()?.facultadesActivas) }}</p>
           <span class="text-[11px] text-success-700 font-medium">De la institución</span>
         </div>
         <div class="superficie px-3 py-2 sm:px-4 sm:py-3 flex flex-col justify-between h-full">
-          <span class="text-xs text-warm-500 font-medium">Decanos en ejercicio</span>
+          <span class="rotulo-uco">Decanos en ejercicio</span>
           <p class="text-xl font-serif font-bold text-warm-900 mt-0.5" data-testid="decanos-activos">{{ texto(kpis()?.decanosActivos) }}</p>
           <span class="text-[11px] text-warm-500 font-medium">
             @if (estado() === 'listo' && kpis(); as k) {
@@ -39,12 +39,12 @@ import { EstadoIndicadores, textoCifra } from '../../../../core/utils/cifra-indi
           </span>
         </div>
         <div class="superficie px-3 py-2 sm:px-4 sm:py-3 flex flex-col justify-between h-full">
-          <span class="text-xs text-warm-500 font-medium">Programas Académicos</span>
+          <span class="rotulo-uco">Programas Académicos</span>
           <p class="text-xl font-serif font-bold text-warm-900 mt-0.5" data-testid="programas">{{ texto(kpis()?.totalProgramas) }}</p>
           <span class="text-[11px] text-primary-700 font-medium">De la institución</span>
         </div>
         <div class="superficie px-3 py-2 sm:px-4 sm:py-3 flex flex-col justify-between h-full">
-          <span class="text-xs text-warm-500 font-medium">Asistencia Promedio Campus</span>
+          <span class="rotulo-uco">Asistencia Promedio Campus</span>
           <p class="text-xl font-serif font-bold text-accent-700 mt-0.5" data-testid="asistencia-campus">{{ texto(kpis()?.porcentajeAsistencia, '%') }}</p>
           <span class="text-[11px] text-success-700 font-medium">Indicador institucional</span>
         </div>

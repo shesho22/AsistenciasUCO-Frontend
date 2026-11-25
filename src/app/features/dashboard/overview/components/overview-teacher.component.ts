@@ -29,17 +29,17 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
       <!-- KPIs Docente -->
       <section class="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
         <div class="superficie px-3 py-2 sm:px-4 sm:py-3 flex flex-col justify-between h-full">
-          <span class="text-xs text-warm-500 font-medium">Asignaturas a Cargo</span>
+          <span class="rotulo-uco">Asignaturas a Cargo</span>
           <p class="text-xl font-serif font-bold text-warm-900 mt-0.5">{{ courses().length }}</p>
           <span class="text-[11px] text-primary-700 font-medium">Semestre 2026-II</span>
         </div>
         <div class="superficie px-3 py-2 sm:px-4 sm:py-3 flex flex-col justify-between h-full">
-          <span class="text-xs text-warm-500 font-medium">Alumnos Matriculados</span>
+          <span class="rotulo-uco">Alumnos Matriculados</span>
           <p class="text-xl font-serif font-bold text-warm-900 mt-0.5">{{ totalStudentsCount() ?? '—' }}</p>
           <span class="text-[11px] text-warm-500 font-medium">Total en tus grupos</span>
         </div>
         <div class="superficie px-3 py-2 sm:px-4 sm:py-3 flex flex-col justify-between h-full">
-          <span class="text-xs text-warm-500 font-medium">Reclamos Pendientes</span>
+          <span class="rotulo-uco">Reclamos Pendientes</span>
           <p class="text-xl font-serif font-bold text-warm-900 mt-0.5" [ngClass]="(pendingClaimsCount() ?? 0) > 0 ? 'text-warning-600' : 'text-warm-900'">
             {{ pendingClaimsCount() ?? '—' }}
           </p>
@@ -52,7 +52,7 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
         <div class="superficie px-3 py-2 sm:px-4 sm:py-3 flex flex-col justify-between h-full"
              [ngClass]="{'border-primary-300 bg-primary-50/30 ring-1 ring-primary-400/20': $safeNavigationMigration(proximaClase()?.enCurso), 'border-primary-200/60': proximaClase() && !proximaClase()?.enCurso}">
           <div class="flex items-center justify-between">
-            <span class="text-xs text-warm-500 font-medium">Próxima Clase</span>
+            <span class="rotulo-uco">Próxima Clase</span>
             @if (proximaClase()?.enCurso) {
               <span class="inline-flex items-center gap-1 text-[10px] font-bold text-success-700 bg-success-100 px-2 py-0.5 rounded-full animate-pulse">
                 <span class="w-1.5 h-1.5 rounded-full bg-success-600"></span>
@@ -96,7 +96,7 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
             </div>
           </div>
           <a routerLink="/app/docente/reclamos" [queryParams]="{ estado: 'P' }" class="shrink-0">
-            <app-button variant="accent" size="sm">
+            <app-button variant="primary" size="sm">
               Revisar Reclamos Ahora →
             </app-button>
           </a>
@@ -148,7 +148,7 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
 
           <div class="shrink-0 w-full sm:w-auto flex items-center justify-end gap-2">
             <a routerLink="/app/asistencia" [queryParams]="pc.idGrupo ? { courseId: pc.idGrupo } : null" class="w-full sm:w-auto">
-              <app-button variant="accent" size="sm" [fullWidth]="true">
+              <app-button variant="primary" size="sm" [fullWidth]="true">
                 Tomar Asistencia →
               </app-button>
             </a>

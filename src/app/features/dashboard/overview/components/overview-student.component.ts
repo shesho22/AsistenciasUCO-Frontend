@@ -21,7 +21,7 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
       <!-- KPIs Estudiante -->
       <section class="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
         <div class="superficie px-3 py-2 sm:px-4 sm:py-3 flex flex-col justify-between h-full">
-          <span class="text-xs text-warm-500 font-medium">Materias Matriculadas</span>
+          <span class="rotulo-uco">Materias Matriculadas</span>
           @if (resumen(); as r) {
             <p class="text-xl font-serif font-bold text-warm-900 mt-0.5" data-testid="resumen-total-materias">{{ r.totalMaterias }}</p>
           } @else {
@@ -30,7 +30,7 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
           <span class="text-[11px] text-primary-700 font-medium">Semestre 2026-II</span>
         </div>
         <div class="superficie px-3 py-2 sm:px-4 sm:py-3 flex flex-col justify-between h-full">
-          <span class="text-xs text-warm-500 font-medium">Materias en riesgo</span>
+          <span class="rotulo-uco">Materias en riesgo</span>
           @if (materiasEnRiesgo() !== null) {
             <p class="text-xl font-serif font-bold text-warm-900 mt-0.5">{{ materiasEnRiesgo() }}</p>
             <span class="text-[11px] text-warm-500 font-medium">Según la inasistencia por horas</span>
@@ -40,7 +40,7 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
           }
         </div>
         <div class="superficie px-3 py-2 sm:px-4 sm:py-3 flex flex-col justify-between h-full">
-          <span class="text-xs text-warm-500 font-medium">Horas de falta</span>
+          <span class="rotulo-uco">Horas de falta</span>
           @if (resumen(); as r) {
             <p class="text-xl font-serif font-bold text-warm-900 mt-0.5">{{ r.totalHorasFalta | horasMinutos }}</p>
             <span class="text-[11px] text-warm-500 font-medium">En todo el periodo</span>
@@ -52,7 +52,7 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
         <div class="superficie px-3 py-2 sm:px-4 sm:py-3 flex flex-col justify-between h-full"
              [ngClass]="{'border-primary-300 bg-primary-50/30 ring-1 ring-primary-400/20': $safeNavigationMigration(proximaClase()?.enCurso), 'border-primary-200/60': proximaClase() && !proximaClase()?.enCurso}">
           <div class="flex items-center justify-between">
-            <span class="text-xs text-warm-500 font-medium">Próxima Clase</span>
+            <span class="rotulo-uco">Próxima Clase</span>
             @if (proximaClase()?.enCurso) {
               <span class="inline-flex items-center gap-1 text-[10px] font-bold text-success-700 bg-success-100 px-2 py-0.5 rounded-full animate-pulse">
                 <span class="w-1.5 h-1.5 rounded-full bg-success-600"></span>
@@ -126,7 +126,7 @@ import { ProximaClaseInfo } from '../utils/proxima-clase.util';
 
           <div class="shrink-0 w-full sm:w-auto flex items-center justify-end gap-2">
             <a routerLink="/app/estudiante/horarios" class="w-full sm:w-auto">
-              <app-button variant="accent" size="sm" [fullWidth]="true">
+              <app-button variant="primary" size="sm" [fullWidth]="true">
                 Ver Horario Completo →
               </app-button>
             </a>
