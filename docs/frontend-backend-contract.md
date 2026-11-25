@@ -66,7 +66,7 @@ No se envían `grupoId`, `studentId`, `status`, `notes` ni `observaciones`. El f
 
 ## Realtime
 
-El stream es `GET /api/v1/realtime/stream?grupoId={UUID}` y publica `ASISTENCIAS_SESION_ACTUALIZADAS`. El detalle de lifecycle, scope y reconexión está en `docs/frontend-realtime.md`.
+El stream es `GET /api/v1/realtime/stream?grupoId={UUID}` y publica `ASISTENCIAS_SESION_ACTUALIZADAS`. El canal del usuario `GET /api/v1/realtime/stream/usuario` (REDIS-001) alimenta los contadores del menú. El detalle de lifecycle, scope y reconexión está en `docs/frontend-realtime.md`.
 
 ## Coordinación, decanatura, estudiante y docente — HU081-HU083, HU096-HU098, HU060-HU064, HU104-HU145, HU108, HU010/HU011, HU051, HU053-HU055, HU094/HU095 y HU006 (2026-10-26/27)
 

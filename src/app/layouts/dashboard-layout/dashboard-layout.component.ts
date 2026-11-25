@@ -307,6 +307,16 @@ export class DashboardLayoutComponent {
       inject(DestroyRef).onDestroy(() => consulta.removeEventListener('change', alCambiar));
     }
 
+    // REDIS-001 (TD-084): canal SSE del usuario mientras haya sesión, para que los contadores del menú se actualicen
+    // en cualquier pantalla y no solo dentro de un grupo. Se cierra al salir del layout (cierre de sesión).
+    effect((onCleanup) => {
+      if (this.currentRole() === null) {
+        return;
+      }
+      untracked(() => this.realtime?.startForUser());
+      onCleanup(() => this.realtime?.stopUser());
+    });
+
     // ATA D6: el contador de «Solicitudes de sesión» se recarga al fijar el rol y con los eventos SSE de solicitudes.
     effect(() => {
       const role = this.currentRole();

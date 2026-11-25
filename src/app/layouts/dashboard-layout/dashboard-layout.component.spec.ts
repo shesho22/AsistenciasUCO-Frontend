@@ -8,6 +8,8 @@ import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../shared/components/toast/toast.component';
 import { SolicitudesSesionMenuService } from '../../core/services/solicitudes-sesion-menu.service';
 import { UserRole } from '../../core/models/user.model';
+import { RealtimeService } from '../../core/realtime/realtime.service';
+import { NEVER } from 'rxjs';
 
 describe('DashboardLayoutComponent', () => {
   let fixture: ComponentFixture<DashboardLayoutComponent>;
@@ -230,5 +232,38 @@ describe('DashboardLayoutComponent (ATA D6: Solicitudes de sesión)', () => {
     const { fixture } = await montar('ESTUDIANTE', 0);
     const rutas = fixture.componentInstance.filteredNavItems().map((i) => i.route);
     expect(rutas.some((r) => r.includes('solicitudes-sesion'))).toBeFalse();
+  });
+});
+
+describe('DashboardLayoutComponent - canal en vivo del usuario (REDIS-001 TD-084)', () => {
+  it('abre el canal del usuario con sesión y lo cierra al salir del layout', async () => {
+    const usuario = signal({ id: 'usr-9', name: 'Docente Uno', email: 'docente@uco.edu.co', role: 'DOCENTE' as UserRole });
+    const auth = jasmine.createSpyObj('AuthService', ['logout'], {
+      currentUser: usuario.asReadonly(),
+      cerrandoSesion: signal(false).asReadonly(),
+      isMockMode: signal(false).asReadonly(),
+    });
+    const toast = jasmine.createSpyObj('ToastService', ['dismiss'], {
+      currentToast: signal({ visible: false, message: '', type: 'info' as const }).asReadonly(),
+    });
+    const realtime = jasmine.createSpyObj<RealtimeService>('RealtimeService', ['startForUser', 'stopUser', 'events']);
+    realtime.events.and.returnValue(NEVER);
+    await TestBed.configureTestingModule({
+      imports: [DashboardLayoutComponent],
+      providers: [
+        provideRouter([]), provideHttpClient(), provideHttpClientTesting(),
+        { provide: AuthService, useValue: auth },
+        { provide: ToastService, useValue: toast },
+        { provide: RealtimeService, useValue: realtime },
+      ],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(DashboardLayoutComponent);
+    fixture.detectChanges();
+
+    expect(realtime.startForUser).toHaveBeenCalledTimes(1);
+    expect(realtime.stopUser).not.toHaveBeenCalled();
+
+    fixture.destroy();
+    expect(realtime.stopUser).toHaveBeenCalledTimes(1);
   });
 });

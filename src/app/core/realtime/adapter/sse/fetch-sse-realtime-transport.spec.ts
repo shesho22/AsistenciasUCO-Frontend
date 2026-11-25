@@ -103,6 +103,16 @@ describe('FetchSseRealtimeTransport', () => {
     );
   });
 
+  it('el canal del usuario usa /realtime/stream/usuario sin grupo (TD-084)', async () => {
+    setup();
+    transport.start({ canal: 'usuario' });
+    transport.start({ canal: 'usuario' });
+    await flushAsync();
+
+    expect(fake.calls).toHaveSize(1);
+    expect(fake.calls[0].input).toBe(`${environment.apiUrl}/realtime/stream/usuario`);
+  });
+
   it('nunca agrega el token como query param', async () => {
     setup();
     transport.start({ grupoId: 'g1' });

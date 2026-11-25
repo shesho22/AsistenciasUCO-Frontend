@@ -12,7 +12,7 @@ import { authInterceptor } from './core/interceptors/auth.interceptor';
 import { mockBackendLazyInterceptor } from './core/interceptors/mock-backend-lazy.interceptor';
 import { errorInterceptor } from './core/interceptors/error.interceptor';
 import { AuthService } from './core/services/auth.service';
-import { REALTIME_TRANSPORT } from './core/realtime/contract/realtime-transport';
+import { REALTIME_TRANSPORT, REALTIME_USUARIO_TRANSPORT } from './core/realtime/contract/realtime-transport';
 import { FetchSseRealtimeTransport } from './core/realtime/adapter/sse/fetch-sse-realtime-transport';
 import { GlobalErrorHandler } from './core/errors/global-error-handler';
 
@@ -65,6 +65,8 @@ export const appConfig: ApplicationConfig = {
       })
     ),
     { provide: REALTIME_TRANSPORT, useClass: FetchSseRealtimeTransport },
+    // REDIS-001 (TD-084): instancia aparte para el canal del usuario (contadores del menú).
+    { provide: REALTIME_USUARIO_TRANSPORT, useClass: FetchSseRealtimeTransport },
     // VAL MSG-06 / INT-003: los textos de la interfaz se leen del catalogo a traves del Backend (sin bloquear el arranque).
     provideAppInitializer(() => iniciarCatalogoMensajesUi(inject(EnvironmentInjector))()),
     provideAppInitializer(() => initializeKeycloak(inject(AuthService))()),

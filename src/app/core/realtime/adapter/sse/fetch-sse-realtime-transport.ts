@@ -36,6 +36,19 @@ function getSecureJitter(maxMs: number): number {
   return maxMs / 2;
 }
 
+/** Clave interna del canal del usuario; los grupos usan su UUID, que nunca coincide con ella. */
+const CLAVE_CANAL_USUARIO = ':usuario';
+
+function claveDeAlcance(scope: RealtimeSubscriptionScope): string {
+  return 'canal' in scope ? CLAVE_CANAL_USUARIO : scope.grupoId;
+}
+
+function urlDelStream(clave: string): string {
+  return clave === CLAVE_CANAL_USUARIO
+    ? `${environment.apiUrl}/realtime/stream/usuario`
+    : `${environment.apiUrl}/realtime/stream?grupoId=${encodeURIComponent(clave)}`;
+}
+
 class UnauthorizedStreamError extends Error {}
 class ForbiddenStreamError extends Error {}
 
@@ -121,7 +134,8 @@ export class FetchSseRealtimeTransport implements RealtimeTransport {
   };
 
   start(scope: RealtimeSubscriptionScope): void {
-    if (this.running && this.activeGroupId === scope.grupoId) {
+    const clave = claveDeAlcance(scope);
+    if (this.running && this.activeGroupId === clave) {
       return;
     }
 
@@ -131,13 +145,13 @@ export class FetchSseRealtimeTransport implements RealtimeTransport {
     this.recoveryAttemptPending = false;
     this.connectionGeneration++;
     const generation = this.connectionGeneration;
-    this.activeGroupId = scope.grupoId;
+    this.activeGroupId = clave;
     this.running = true;
     this.backoffAttempt = 0;
     this.isReconnecting = false;
     this.attachNetworkListeners();
     this.ngZone.runOutsideAngular(() => {
-      void this.runLoop(scope.grupoId, generation);
+      void this.runLoop(clave, generation);
     });
   }
 
@@ -276,9 +290,7 @@ export class FetchSseRealtimeTransport implements RealtimeTransport {
 
       try {
         await this.fetchEventSourceFn(
-          `${environment.apiUrl}/realtime/stream?grupoId=${encodeURIComponent(
-            groupId
-          )}`,
+          urlDelStream(groupId),
           {
           method: 'GET',
           headers: {
