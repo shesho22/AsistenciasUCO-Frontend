@@ -12,8 +12,12 @@ import { UserRole } from '../../../../core/models/user.model';
         class: 'block w-full',
     },
     template: `
-    <section class="bg-gradient-to-r from-primary-950 via-primary-900 to-primary-950 rounded-3xl p-6 sm:p-8 text-white relative overflow-hidden shadow-warm-md border border-primary-800">
-      <div class="absolute right-0 top-0 bottom-0 w-1/2 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-accent-400/20 via-transparent to-transparent pointer-events-none"></div>
+    <section class="bg-gradient-to-br from-primary-600 via-primary-700 to-primary-900 rounded-3xl p-6 sm:p-8 text-white relative overflow-hidden shadow-warm-md">
+      <!-- Lineas decorativas de la referencia UCO: rombo de trazo fino amarillo en el costado derecho. -->
+      <svg class="absolute right-0 top-0 h-full w-1/2 max-w-md text-accent-500/40 pointer-events-none" viewBox="0 0 300 240" preserveAspectRatio="xMaxYMid slice" fill="none" aria-hidden="true">
+        <path d="M210 40 L300 130 L210 220 L120 130 Z" stroke="currentColor" stroke-width="1" />
+        <path d="M40 0 L160 120" stroke="currentColor" stroke-width="0.75" />
+      </svg>
 
       <div class="relative z-10 max-w-3xl space-y-3">
         <div class="flex flex-wrap items-center gap-2">
@@ -21,17 +25,18 @@ import { UserRole } from '../../../../core/models/user.model';
             <span class="w-2 h-2 rounded-full bg-accent-400 animate-pulse"></span>
             Semestre Académico 2026-II
           </span>
-          <span class="text-xs text-warm-300 font-medium">| {{ institutionName() }}</span>
-          <span class="text-xs bg-primary-800/80 text-primary-200 px-2.5 py-0.5 rounded-md font-semibold border border-primary-700/50">
+          <span class="text-xs text-white font-medium">| {{ institutionName() }}</span>
+          <span class="text-xs bg-primary-900/60 text-primary-100 px-2.5 py-0.5 rounded-md font-semibold border border-primary-700/50">
             Rol: {{ userRole() }}
           </span>
         </div>
 
-        <h1 class="font-serif text-2xl sm:text-4xl font-bold tracking-tight text-white leading-tight">
+        <h1 class="font-serif text-2xl sm:text-4xl font-extrabold tracking-tight text-white leading-tight">
           Bienvenido(a), {{ userName() }}
         </h1>
+        <span class="block h-1 w-16 rounded-full bg-accent-500" aria-hidden="true"></span>
 
-        <p class="text-warm-200 text-xs sm:text-sm max-w-xl leading-relaxed font-sans">
+        <p class="text-white text-xs sm:text-sm max-w-xl leading-relaxed font-sans">
           @switch (userRole()) {
             @case ('ADMINISTRADOR') {
               Panel de Control Institucional. Supervisa la estructura académica, decanaturas y auditoría del campus universitario.
@@ -97,7 +102,7 @@ import { UserRole } from '../../../../core/models/user.model';
                   </app-button>
                 </a>
                 <a routerLink="/app/coordinador/planes-estudio" data-testid="hero-accion-coordinador-planes">
-                  <app-button variant="secondary" size="md">
+                  <app-button variant="accent-contorno" size="md">
                     <svg class="w-4 h-4 mr-1.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                     </svg>
@@ -116,7 +121,7 @@ import { UserRole } from '../../../../core/models/user.model';
                 </app-button>
               </a>
               <a routerLink="/app/docente/reclamos" [queryParams]="paramsReclamos()">
-                <app-button variant="secondary" size="md">
+                <app-button variant="accent-contorno" size="md">
                   <svg class="w-4 h-4 mr-1.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
                   </svg>
@@ -139,7 +144,7 @@ import { UserRole } from '../../../../core/models/user.model';
                 </app-button>
               </a>
               <a routerLink="/app/estudiante/horarios">
-                <app-button variant="secondary" size="md">
+                <app-button variant="accent-contorno" size="md">
                   <svg class="w-4 h-4 mr-1.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>

@@ -13,7 +13,7 @@ export type SentidoMejora = 'menor-mejor' | 'mayor-mejor';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <article class="superficie h-full px-3 py-2 sm:px-4" data-testid="kpi-card">
-      <p class="text-xs leading-snug text-warm-600" data-testid="kpi-etiqueta">{{ etiqueta() }}</p>
+      <p class="rotulo-uco leading-snug" data-testid="kpi-etiqueta">{{ etiqueta() }}</p>
       <p class="text-lg font-semibold leading-tight" data-testid="kpi-valor">{{ valorTexto() }}@if (unidad() && valorTexto() !== sinDato) {<span class="text-base font-medium text-warm-600" data-testid="kpi-unidad">{{ unidad() }}</span>}</p>
       @if (descripcion()) {
         <p class="text-xs text-warm-600" data-testid="kpi-descripcion">{{ descripcion() }}</p>

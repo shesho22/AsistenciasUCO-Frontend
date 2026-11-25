@@ -259,6 +259,60 @@
   @apply rounded-2xl border border-warm-200 bg-white shadow-warm-sm;
 }
 
+/*
+ * Menu lateral UCO (estetica de referencia "Catalogo de Parametros", 2026-11-24): fondo verde oscuro institucional,
+ * iconos dentro de un circulo con borde amarillo y el item activo resaltado con barra amarilla a la izquierda.
+ * Selectores planos (sin anidar) por la regla Sonar css:S8776.
+ */
+@layer components {
+  .menu-uco {
+    --menu-uco-linea: color-mix(in srgb, var(--color-accent-500) 30%, transparent);
+    background-color: var(--color-primary-700);
+    /* Rombo de lineas finas amarillas (decoracion de la referencia) sobre el verde institucional. */
+    background-image:
+      linear-gradient(135deg, transparent calc(50% - 1px), var(--menu-uco-linea) 50%, transparent calc(50% + 1px)),
+      linear-gradient(45deg, transparent calc(50% - 1px), var(--menu-uco-linea) 50%, transparent calc(50% + 1px)),
+      linear-gradient(180deg, var(--color-primary-700) 0%, var(--color-primary-800) 100%);
+    background-size: 240px 240px, 240px 240px, 100% 100%;
+    background-position: 30px 110px, 30px 110px, 0 0;
+    background-repeat: no-repeat;
+    color: var(--color-white);
+  }
+
+  .menu-uco-seccion {
+    @apply px-3 pb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-white/75;
+  }
+
+  .menu-uco :focus-visible {
+    outline-color: var(--color-accent-500);
+  }
+
+  .menu-uco-item {
+    @apply relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-white/85 transition-colors duration-150;
+  }
+
+  .menu-uco-item:hover {
+    @apply bg-white/10 text-white;
+  }
+
+  .menu-uco-icono {
+    @apply inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-accent-500 text-accent-500 transition-colors;
+  }
+
+  .menu-uco-activo {
+    @apply rounded-lg bg-white/15 font-semibold text-white;
+    box-shadow: inset 3px 0 0 var(--color-accent-500);
+  }
+}
+
+/*
+ * Rotulo de tarjeta UCO: etiqueta corta en mayusculas espaciadas, dorada (accent-700 para 4.5:1 sobre blanco),
+ * con un subrayado amarillo corto debajo. La usan las tarjetas KPI.
+ */
+@utility rotulo-uco {
+  @apply text-[11px] font-semibold uppercase tracking-[0.14em] text-accent-700;
+}
+
 /* Alto maximo de los marcos de tabla con encabezado fijo (tabla-contenedor y tabla-scroll). */
 :root {
   --tabla-alto-max: 70vh;

@@ -89,3 +89,13 @@ Los tokens solidos `attendance-present` (3.8), `-excused` (4.1) y `-risk` (3.2) 
 | Tarjeta KPI (`app-kpi-card`) | `p-4`, valor `text-2xl` | `px-4 py-3`, valor `text-xl`; ocupa todo el alto de su celda |
 
 Coordinador, «Asistencia del programa»: «Revisiones por resolver» ocupa la primera columna de la fila de indicadores (dos filas de alto en pantallas anchas, ranura `[kpi-extra]` de `app-coordinator-indicators`) y el contador «N Grupos» va en la misma linea que los filtros del consolidado, para que la tabla de grupos se vea sin desplazar a 1366x768.
+
+## Estetica de referencia UCO (2026-11-24)
+
+Ajuste visual para alinear la aplicacion con la referencia institucional ("Catalogo de Parametros"). Solo apariencia: no cambia rutas, permisos ni textos de negocio.
+
+- **Menu lateral** (`dashboard-layout`): clases `menu-uco`, `menu-uco-seccion`, `menu-uco-item`, `menu-uco-icono` y `menu-uco-activo` en `src/styles.css`. Fondo verde institucional (`primary-700` a `primary-800`) con un rombo de lineas finas amarillas; secciones en mayusculas espaciadas («Inicio» y «Modulos para ROL»); cada icono va dentro de un circulo con borde amarillo; el item activo lleva fondo blanco translucido y barra amarilla a la izquierda. Encabezado del menu con el logo en version blanca sobre verde (emblema dibujado en SVG: cuadro blanco, sol verde de 12 puntas y estrella blanca de 4 puntas; sigla «UCO» grande, nombre de la universidad y «Vigilada Mineducacion»; se cambia por el SVG oficial cuando se entregue) y el nombre de la aplicacion con raya amarilla. Al pie, el lema «A la Verdad, por la Fe y la Ciencia» y «UCO · ano».
+- **Encabezado**: blanco, con «Universidad Catolica de Oriente» en mayusculas espaciadas y la dependencia debajo.
+- **Banner de bienvenida** (`app-overview-hero`): degradado verde (`primary-600` a `primary-900`), rombo decorativo amarillo y subrayado amarillo bajo el saludo.
+- **Rotulos de tarjetas**: utilidad `rotulo-uco` (mayusculas espaciadas en `accent-700`, 4.5:1 sobre blanco) en las tarjetas KPI de los paneles y en `app-kpi-card`.
+- **Regla de botones** (decision de John, 2026-11-24): sobre fondo verde los botones van en amarillo (`variant="accent"`; el secundario usa `variant="accent-contorno"`, contorno amarillo y texto blanco); sobre cualquier otro fondo, el boton principal va en verde (`variant="primary"`). Los botones secundarios neutros (`secondary`, `ghost`) no cambian.

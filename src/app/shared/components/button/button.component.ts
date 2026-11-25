@@ -1,7 +1,7 @@
 import { Component, ChangeDetectionStrategy, input, output, computed } from '@angular/core';
 
 
-export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost' | 'accent';
+export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost' | 'accent' | 'accent-contorno';
 export type ButtonSize = 'sm' | 'md' | 'lg';
 
 @Component({
@@ -59,6 +59,9 @@ export class ButtonComponent {
         'bg-warm-100 text-warm-800 hover:bg-warm-200 border border-warm-200 focus-visible:ring-warm-400',
       accent:
         'bg-accent-500 text-warm-950 hover:bg-accent-400 font-semibold focus-visible:ring-accent-400 shadow-warm-sm',
+      // Botón secundario sobre fondo verde: contorno amarillo con texto blanco (sobre verde los botones van en amarillo).
+      'accent-contorno':
+        'bg-transparent text-white border-2 border-accent-500 hover:bg-white/10 focus-visible:ring-accent-400',
       danger:
         'bg-danger-500 text-black hover:bg-danger-400 focus-visible:ring-danger-700 shadow-warm-sm',
       ghost:

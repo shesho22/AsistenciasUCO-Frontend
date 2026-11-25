@@ -85,7 +85,7 @@ import { ClassSession } from '../../../../core/models/attendance.model';
             <!-- Botones contextuales de la sesión activa: Visibles SOLO en modo DETALLE -->
             @if (isDetailMode()) {
               @if (bulkActions()) {
-                <app-button variant="accent" size="sm" [disabled]="bulkDisabled()" (clicked)="markAllPresent.emit()">
+                <app-button variant="primary" size="sm" [disabled]="bulkDisabled()" (clicked)="markAllPresent.emit()">
                   <svg class="w-4 h-4 mr-1 text-warm-950 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                   </svg>
