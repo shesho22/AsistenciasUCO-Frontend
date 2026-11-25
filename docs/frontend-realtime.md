@@ -9,7 +9,19 @@ Authorization: Bearer <JWT>
 X-Correlation-Id: <UUID>
 ```
 
-El stream siempre está scopeado por grupo. El token vive exclusivamente en la cabecera `Authorization`; nunca se incluye en la URL. El adapter usa `credentials: 'omit'` y `@microsoft/fetch-event-source`, porque `EventSource` nativo no permite enviar el Bearer token.
+Hay dos canales con el mismo formato, heartbeat y reconexión:
+
+| Canal | Endpoint | Quién lo abre | Para qué |
+| :--- | :--- | :--- | :--- |
+| Grupo | `GET /realtime/stream?grupoId={UUID}` | Las pantallas de un grupo (`startForGroup`) | Aula: toma, QR, contador de presentes, sesiones del grupo |
+| Usuario (REDIS-001, TD-084) | `GET /realtime/stream/usuario` | `DashboardLayoutComponent` mientras hay sesión (`startForUser` / `stopUser`) | Contadores del menú en cualquier pantalla: solicitudes de sesión (coordinador y docente), faltas avisadas, alertas y revisiones |
+
+Cada canal usa su propia instancia de `FetchSseRealtimeTransport` (`REALTIME_TRANSPORT` y `REALTIME_USUARIO_TRANSPORT`), así abrir
+o cambiar de grupo no cierra el del usuario. `RealtimeService.events()` une ambos y descarta por `eventId` el evento que llega por
+los dos (ventana de 200 ids). El backend solo envía al canal del usuario lo que le corresponde: eventos de los que es
+destinatario y, a titulares y roles con ámbito, las solicitudes de sesión de sus grupos.
+
+El token vive exclusivamente en la cabecera `Authorization`; nunca se incluye en la URL. El adapter usa `credentials: 'omit'` y `@microsoft/fetch-event-source`, porque `EventSource` nativo no permite enviar el Bearer token.
 
 ## Capas y lifecycle
 
@@ -22,7 +34,7 @@ AttendanceControlComponent
   -> backend
 ```
 
-`DashboardLayoutComponent` no inicia realtime. La pantalla de asistencia es la propietaria del stream porque solo allí existe el `grupoId` requerido:
+`DashboardLayoutComponent` solo abre el canal del usuario. La pantalla de asistencia es la propietaria del stream del grupo porque solo allí existe el `grupoId` requerido:
 
 - seleccionar el mismo grupo es idempotente;
 - seleccionar otro grupo aborta el stream anterior antes de abrir el nuevo;
