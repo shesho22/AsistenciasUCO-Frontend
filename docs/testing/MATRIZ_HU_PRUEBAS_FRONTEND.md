@@ -12,7 +12,7 @@ Resumen: 74 HU con pruebas en 96 de 323 archivos de prueba.
 | HU005 | unitaria | 3 | 129 | `src/app/core/services/consultas-transversales.service.spec.ts` (14)<br>`src/app/features/student/student-courses/components/student-claim-form.component.spec.ts` (28)<br>`src/app/features/student/student-courses/student-courses.component.spec.ts` (87) |
 | HU006 | unitaria | 4 | 173 | `src/app/core/interceptors/mock-backend.interceptor.spec.ts` (42)<br>`src/app/core/services/auth.service.spec.ts` (121)<br>`src/app/core/services/perfil.service.spec.ts` (2)<br>`src/app/features/profile/components/profile-links.component.spec.ts` (8) |
 | HU007 | unitaria | 1 | 20 | `src/app/features/student/student-courses/components/student-courses-list.component.spec.ts` (20) |
-| HU008 | unitaria | 2 | 17 | `src/app/features/student/student-mis-materias/student-mis-materias.routes.spec.ts` (3)<br>`src/app/layouts/dashboard-layout/dashboard-layout.component.spec.ts` (14) |
+| HU008 | unitaria | 2 | 18 | `src/app/features/student/student-mis-materias/student-mis-materias.routes.spec.ts` (3)<br>`src/app/layouts/dashboard-layout/dashboard-layout.component.spec.ts` (15) |
 | HU010 | unitaria | 1 | 23 | `src/app/features/student/student-claims/student-claims.component.spec.ts` (23) |
 | HU011 | unitaria | 1 | 23 | `src/app/features/student/student-claims/student-claims.component.spec.ts` (23) |
 | HU014 | unitaria | 4 | 225 | `src/app/core/services/attendance-claim.service.spec.ts` (54)<br>`src/app/features/student/student-courses/components/student-claim-form.component.spec.ts` (28)<br>`src/app/features/student/student-courses/student-courses.component.spec.ts` (87)<br>`src/app/features/teacher/teacher-claims/teacher-claims.component.spec.ts` (56) |
