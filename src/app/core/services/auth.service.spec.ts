@@ -1083,6 +1083,20 @@ describe('AuthService', () => {
         expect(sessionStorage.getItem(SESSION_REFRESH_KEY)).toBe('refresh-3');
       });
 
+      it('dos renovaciones simultáneas (p. ej. dos canales SSE con 401) comparten una sola petición', async () => {
+        mockTokenResponse(basePayload(), 'refresh-1');
+        await service.loginWithCredentials('docente@uco.edu.co', 'pass');
+        fetchSpy.calls.reset();
+        mockTokenResponse(basePayload(), 'refresh-2');
+
+        const [a, b] = await Promise.all([service.refreshAccessToken(), service.refreshAccessToken()]);
+
+        expect(a).toBeTrue();
+        expect(b).toBeTrue();
+        expect(tokenEndpointCalls()).toHaveSize(1);
+        expect(sessionStorage.getItem(SESSION_REFRESH_KEY)).toBe('refresh-2');
+      });
+
       it('si Keycloak no rota, conserva el refresh token vigente en sessionStorage', async () => {
         mockTokenResponse(basePayload(), 'refresh-1');
         await service.loginWithCredentials('docente@uco.edu.co', 'pass');

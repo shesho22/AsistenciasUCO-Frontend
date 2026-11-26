@@ -24,7 +24,7 @@ describe('SolicitudesSesionMenuService (ATA D6)', () => {
       providers: [
         { provide: CoordinadorSesionesService, useValue: coordinador },
         { provide: DocenteSolicitudesSesionService, useValue: docente },
-        { provide: RealtimeService, useValue: { events: () => eventos$.asObservable() } },
+        { provide: RealtimeService, useValue: { allEvents: () => eventos$.asObservable() } },
       ],
     });
     service = TestBed.inject(SolicitudesSesionMenuService);

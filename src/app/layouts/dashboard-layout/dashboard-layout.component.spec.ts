@@ -9,7 +9,8 @@ import { ToastService } from '../../shared/components/toast/toast.component';
 import { SolicitudesSesionMenuService } from '../../core/services/solicitudes-sesion-menu.service';
 import { UserRole } from '../../core/models/user.model';
 import { RealtimeService } from '../../core/realtime/realtime.service';
-import { NEVER } from 'rxjs';
+import { BehaviorSubject, NEVER } from 'rxjs';
+import { RealtimeConnectionState } from '../../core/realtime/model/realtime-connection-state.model';
 
 describe('DashboardLayoutComponent', () => {
   let fixture: ComponentFixture<DashboardLayoutComponent>;
@@ -236,18 +237,29 @@ describe('DashboardLayoutComponent (ATA D6: Solicitudes de sesión)', () => {
 });
 
 describe('DashboardLayoutComponent - canal en vivo del usuario (REDIS-001 TD-084)', () => {
-  it('abre el canal del usuario con sesión y lo cierra al salir del layout', async () => {
-    const usuario = signal({ id: 'usr-9', name: 'Docente Uno', email: 'docente@uco.edu.co', role: 'DOCENTE' as UserRole });
+  type Persona = { id: string; name: string; email: string; role: UserRole };
+
+  async function montarCanal(persona: Persona) {
+    const usuario = signal<Persona | null>(persona);
+    const token = signal<string | null>('token-1');
     const auth = jasmine.createSpyObj('AuthService', ['logout'], {
       currentUser: usuario.asReadonly(),
+      token,
       cerrandoSesion: signal(false).asReadonly(),
       isMockMode: signal(false).asReadonly(),
     });
     const toast = jasmine.createSpyObj('ToastService', ['dismiss'], {
       currentToast: signal({ visible: false, message: '', type: 'info' as const }).asReadonly(),
     });
-    const realtime = jasmine.createSpyObj<RealtimeService>('RealtimeService', ['startForUser', 'stopUser', 'events']);
+    const estadoUsuario$ = new BehaviorSubject<RealtimeConnectionState>('DISCONNECTED');
+    const realtime = jasmine.createSpyObj<RealtimeService>('RealtimeService', ['startForUser', 'stopUser', 'events', 'allEvents'], {
+      userConnectionState$: estadoUsuario$.asObservable(),
+    });
     realtime.events.and.returnValue(NEVER);
+    realtime.allEvents.and.returnValue(NEVER);
+    const solicitudes = jasmine.createSpyObj<SolicitudesSesionMenuService>('SolicitudesSesionMenuService', ['iniciar', 'recargar'], {
+      pendientes: signal(0),
+    });
     await TestBed.configureTestingModule({
       imports: [DashboardLayoutComponent],
       providers: [
@@ -255,15 +267,76 @@ describe('DashboardLayoutComponent - canal en vivo del usuario (REDIS-001 TD-084
         { provide: AuthService, useValue: auth },
         { provide: ToastService, useValue: toast },
         { provide: RealtimeService, useValue: realtime },
+        { provide: SolicitudesSesionMenuService, useValue: solicitudes },
       ],
     }).compileComponents();
     const fixture = TestBed.createComponent(DashboardLayoutComponent);
     fixture.detectChanges();
+    return { fixture, usuario, token, realtime, estadoUsuario$, solicitudes };
+  }
+
+  const docenteUno: Persona = { id: 'usr-9', name: 'Docente Uno', email: 'docente@uco.edu.co', role: 'DOCENTE' };
+
+  it('abre el canal del usuario con sesión y lo cierra al salir del layout', async () => {
+    const { fixture, realtime } = await montarCanal(docenteUno);
 
     expect(realtime.startForUser).toHaveBeenCalledTimes(1);
     expect(realtime.stopUser).not.toHaveBeenCalled();
 
     fixture.destroy();
     expect(realtime.stopUser).toHaveBeenCalledTimes(1);
+  });
+
+  it('reabre el canal si cambia la persona aunque conserve el rol', async () => {
+    const { fixture, usuario, realtime } = await montarCanal(docenteUno);
+
+    usuario.set({ id: 'usr-10', name: 'Docente Dos', email: 'docente2@uco.edu.co', role: 'DOCENTE' });
+    fixture.detectChanges();
+
+    expect(realtime.stopUser).toHaveBeenCalledTimes(1);
+    expect(realtime.startForUser).toHaveBeenCalledTimes(2);
+  });
+
+  it('no reabre el canal si solo se renueva el usuario con la misma identidad', async () => {
+    const { fixture, usuario, realtime } = await montarCanal(docenteUno);
+
+    usuario.set({ ...docenteUno });
+    fixture.detectChanges();
+
+    expect(realtime.startForUser).toHaveBeenCalledTimes(1);
+    expect(realtime.stopUser).not.toHaveBeenCalled();
+  });
+
+  it('recuenta los contadores del menú cuando el canal vuelve a conectar, no en la primera conexión', async () => {
+    const { estadoUsuario$, solicitudes } = await montarCanal(docenteUno);
+
+    estadoUsuario$.next('CONNECTING');
+    estadoUsuario$.next('CONNECTED');
+    expect(solicitudes.recargar).not.toHaveBeenCalled();
+
+    estadoUsuario$.next('RECONNECTING');
+    estadoUsuario$.next('CONNECTED');
+    expect(solicitudes.recargar).toHaveBeenCalledTimes(1);
+  });
+
+  it('reabre el canal terminado cuando la sesión obtiene un token nuevo', async () => {
+    const { fixture, token, realtime, estadoUsuario$ } = await montarCanal(docenteUno);
+    expect(realtime.startForUser).toHaveBeenCalledTimes(1);
+
+    estadoUsuario$.next('UNAUTHORIZED');
+    token.set('token-2');
+    fixture.detectChanges();
+
+    expect(realtime.startForUser).toHaveBeenCalledTimes(2);
+  });
+
+  it('no reabre el canal por un token nuevo si sigue conectado', async () => {
+    const { fixture, token, realtime, estadoUsuario$ } = await montarCanal(docenteUno);
+
+    estadoUsuario$.next('CONNECTED');
+    token.set('token-2');
+    fixture.detectChanges();
+
+    expect(realtime.startForUser).toHaveBeenCalledTimes(1);
   });
 });

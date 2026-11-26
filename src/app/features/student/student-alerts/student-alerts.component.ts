@@ -261,7 +261,7 @@ export class StudentAlertsComponent implements OnInit {
     this.cargarFaltas();
     // ATA D10: la sección se recarga cuando el servidor avisa; no hay sondeo.
     this.realtime
-      .events()
+      .allEvents()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((evento) => {
         if (EVENTOS_QUE_RECARGAN_FALTAS.includes(evento?.type)) this.cargarFaltas();

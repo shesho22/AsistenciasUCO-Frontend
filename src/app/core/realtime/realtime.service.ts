@@ -17,7 +17,12 @@ const VENTANA_DUPLICADOS = 200;
  * no cabecera `Authorization`, no política de reconexión.
  *
  * Hay dos canales: el del grupo abierto (`startForGroup`) y el del usuario (`startForUser`, REDIS-001 TD-084), que el
- * layout abre una vez por sesión para los contadores del menú. `events()` los une y descarta el mismo evento repetido.
+ * layout abre una vez por sesión para los contadores del menú.
+ *
+ * - `events()` y `listenType()` entregan solo el canal del grupo: las pantallas de un grupo no deben reaccionar a avisos
+ *   de otros grupos que llegan por el canal del usuario.
+ * - `allEvents()` une ambos canales y descarta el mismo evento repetido; es para vistas que no dependen de un grupo
+ *   (contadores del menú, «Mis alertas»).
  */
 @Injectable({ providedIn: 'root' })
 export class RealtimeService {
@@ -26,13 +31,21 @@ export class RealtimeService {
 
   /** Estado del canal del grupo (el que muestran las pantallas de aula). */
   readonly connectionState$: Observable<RealtimeConnectionState>;
+  /** Estado del canal del usuario; el layout lo usa para recontar el menú al reconectar y reabrir el canal caído. */
+  readonly userConnectionState$: Observable<RealtimeConnectionState>;
 
   constructor() {
     this.connectionState$ = this.transport.connectionState$;
+    this.userConnectionState$ = this.transportUsuario.connectionState$;
   }
 
-  /** Todos los eventos de negocio recibidos por ambos canales, sin filtrar por tipo y sin duplicados. */
+  /** Eventos de negocio del canal del grupo abierto, sin filtrar por tipo. */
   events(): Observable<RealtimeEvent> {
+    return this.transport.events$;
+  }
+
+  /** Eventos de ambos canales (grupo y usuario), sin filtrar por tipo y sin duplicados. Solo para vistas sin grupo. */
+  allEvents(): Observable<RealtimeEvent> {
     return defer(() => {
       const vistos = new Set<string>();
       return merge(this.transport.events$, this.transportUsuario.events$).pipe(
@@ -51,7 +64,10 @@ export class RealtimeService {
     });
   }
 
-  /** Suscripción filtrada por `type` (match exacto, sin normalizar casing). Valores conocidos: ver `RealtimeEventType`. */
+  /**
+   * Suscripción al canal del grupo filtrada por `type` (match exacto, sin normalizar casing). Valores conocidos: ver
+   * `RealtimeEventType`.
+   */
   listenType<T = unknown>(type: string): Observable<RealtimeEvent<T>> {
     return this.events().pipe(
       filter((evt): evt is RealtimeEvent<T> => evt.type === type)

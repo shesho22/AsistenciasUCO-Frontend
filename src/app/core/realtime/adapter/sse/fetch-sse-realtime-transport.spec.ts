@@ -341,6 +341,36 @@ describe('FetchSseRealtimeTransport', () => {
     expect(fake.calls).toHaveSize(1);
   });
 
+  it('404 en el canal del usuario (backend sin REDIS-001) es terminal, sin reintentos', async () => {
+    setup();
+    const states: RealtimeConnectionState[] = [];
+    transport.connectionState$.subscribe((s) => states.push(s));
+
+    transport.start({ canal: 'usuario' });
+    await flushAsync();
+    await openWith(fake.calls[0], fakeResponse(404));
+    await flushAsync();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(states).toContain('ERROR');
+    expect(states).not.toContain('RECONNECTING');
+    expect(fake.calls).toHaveSize(1);
+  });
+
+  it('404 en el canal de un grupo sigue siendo recuperable (no cambia)', async () => {
+    setup();
+    const states: RealtimeConnectionState[] = [];
+    transport.connectionState$.subscribe((s) => states.push(s));
+
+    transport.start({ grupoId: 'g1' });
+    await flushAsync();
+    await openWith(fake.calls[0], fakeResponse(404));
+    await flushAsync();
+
+    expect(states).toContain('RECONNECTING');
+    expect(states).not.toContain('ERROR');
+  });
+
   it('start() es idempotente: no abre dos streams simultáneos', async () => {
     setup();
     transport.start({ grupoId: 'g1' });

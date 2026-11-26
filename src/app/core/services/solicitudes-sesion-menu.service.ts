@@ -42,7 +42,7 @@ export class SolicitudesSesionMenuService {
       this.pendientes.set(0);
       return;
     }
-    this.suscripcion = this.realtime.events().subscribe((evento) => {
+    this.suscripcion = this.realtime.allEvents().subscribe((evento) => {
       if (EVENTOS_QUE_RECUENTAN.includes(evento?.type)) this.recargar();
     });
     this.recargar();

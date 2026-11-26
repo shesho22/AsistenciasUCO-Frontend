@@ -606,7 +606,22 @@ export class AuthService implements OnDestroy {
     return this.currentUser() || user;
   }
 
-  async refreshAccessToken(refreshTokenStr?: string): Promise<boolean> {
+  /**
+   * Renueva el access token. Sin refresh token explícito, las llamadas simultáneas (interceptor HTTP, canal del grupo,
+   * canal del usuario) comparten una sola petición: con rotación de refresh token en Keycloak, dos peticiones con el
+   * mismo token harían fallar la segunda o invalidarían la sesión.
+   */
+  refreshAccessToken(refreshTokenStr?: string): Promise<boolean> {
+    if (refreshTokenStr) {
+      return this.ejecutarRefresh(refreshTokenStr);
+    }
+    this.refreshInFlight ??= this.ejecutarRefresh().finally(() => {
+      this.refreshInFlight = null;
+    });
+    return this.refreshInFlight;
+  }
+
+  private async ejecutarRefresh(refreshTokenStr?: string): Promise<boolean> {
     if (this.isBaselineMode()) {
       return false;
     }
@@ -694,11 +709,7 @@ export class AuthService implements OnDestroy {
       return null;
     }
 
-    this.refreshInFlight ??= this.refreshAccessToken().finally(() => {
-      this.refreshInFlight = null;
-    });
-
-    const refreshed = await this.refreshInFlight;
+    const refreshed = await this.refreshAccessToken();
     return refreshed ? this.token() : null;
   }
 

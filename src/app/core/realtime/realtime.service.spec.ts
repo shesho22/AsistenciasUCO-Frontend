@@ -12,6 +12,7 @@ describe('RealtimeService', () => {
   let transportSpy: jasmine.SpyObj<RealtimeTransport>;
   let eventosUsuario$: Subject<RealtimeEvent>;
   let transporteUsuarioSpy: jasmine.SpyObj<RealtimeTransport>;
+  let estadoUsuario$: Subject<RealtimeConnectionState>;
 
   beforeEach(() => {
     events$ = new Subject<RealtimeEvent>();
@@ -23,10 +24,11 @@ describe('RealtimeService', () => {
     );
 
     eventosUsuario$ = new Subject<RealtimeEvent>();
+    estadoUsuario$ = new Subject<RealtimeConnectionState>();
     transporteUsuarioSpy = jasmine.createSpyObj<RealtimeTransport>(
       'RealtimeUsuarioTransport',
       ['start', 'stop'],
-      { events$: eventosUsuario$.asObservable(), connectionState$: new Subject<RealtimeConnectionState>().asObservable() }
+      { events$: eventosUsuario$.asObservable(), connectionState$: estadoUsuario$.asObservable() }
     );
 
     TestBed.configureTestingModule({
@@ -68,9 +70,9 @@ describe('RealtimeService', () => {
     expect(transportSpy.stop).toHaveBeenCalledTimes(1);
   });
 
-  it('events() une ambos canales y entrega una sola vez el evento que llega por los dos', () => {
+  it('allEvents() une ambos canales y entrega una sola vez el evento que llega por los dos', () => {
     const recibidos: string[] = [];
-    service.events().subscribe((evt) => recibidos.push(evt.eventId));
+    service.allEvents().subscribe((evt) => recibidos.push(evt.eventId));
     const repetido = makeEvent('SESION_SOLICITUD_CREADA');
 
     events$.next(repetido);
@@ -81,9 +83,9 @@ describe('RealtimeService', () => {
     expect(recibidos).toEqual([repetido.eventId, 'solo-usuario', '']);
   });
 
-  it('events() olvida los ids más antiguos para no crecer sin límite', () => {
+  it('allEvents() olvida los ids más antiguos para no crecer sin límite', () => {
     const recibidos: string[] = [];
-    service.events().subscribe((evt) => recibidos.push(evt.eventId));
+    service.allEvents().subscribe((evt) => recibidos.push(evt.eventId));
     const primero = { ...makeEvent('X'), eventId: 'id-0' };
     events$.next(primero);
     for (let i = 1; i <= 200; i++) {
@@ -94,11 +96,26 @@ describe('RealtimeService', () => {
     expect(recibidos.filter((id) => id === 'id-0')).toHaveSize(2);
   });
 
-  it('listenType también recibe lo que llega por el canal del usuario', () => {
-    const recibidos: RealtimeEvent[] = [];
-    service.listenType('FALTA_SESION_AVISADA').subscribe((evt) => recibidos.push(evt));
-    eventosUsuario$.next(makeEvent('FALTA_SESION_AVISADA'));
-    expect(recibidos).toHaveSize(1);
+  it('events() y listenType() no entregan lo que llega por el canal del usuario (avisos de otros grupos)', () => {
+    const todos: RealtimeEvent[] = [];
+    const delTipo: RealtimeEvent[] = [];
+    service.events().subscribe((evt) => todos.push(evt));
+    service.listenType('ALERTA_INASISTENCIA').subscribe((evt) => delTipo.push(evt));
+
+    eventosUsuario$.next(makeEvent('ALERTA_INASISTENCIA', { grupo: 'otro-grupo' }));
+    events$.next(makeEvent('ALERTA_INASISTENCIA', { grupo: 'g1' }));
+
+    expect(todos).toHaveSize(1);
+    expect(delTipo).toHaveSize(1);
+    expect((delTipo[0].payload as { grupo: string }).grupo).toBe('g1');
+  });
+
+  it('expone userConnectionState$ del canal del usuario', () => {
+    const estados: RealtimeConnectionState[] = [];
+    service.userConnectionState$.subscribe((s) => estados.push(s));
+    estadoUsuario$.next('RECONNECTING');
+    estadoUsuario$.next('CONNECTED');
+    expect(estados).toEqual(['RECONNECTING', 'CONNECTED']);
   });
 
   it('stop() delega en el transporte', () => {
