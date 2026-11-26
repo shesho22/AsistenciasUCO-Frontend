@@ -53,7 +53,7 @@ describe('StudentAlertsComponent: faltas por reclamar (ATA D10)', () => {
         { provide: AlertaInasistenciaService, useValue: alertas },
         { provide: FaltaReclamableService, useValue: faltas },
         { provide: Router, useValue: router },
-        { provide: RealtimeService, useValue: { events: () => eventos.asObservable() } },
+        { provide: RealtimeService, useValue: { allEvents: () => eventos.asObservable() } },
       ],
     });
     fixture = TestBed.createComponent(StudentAlertsComponent);

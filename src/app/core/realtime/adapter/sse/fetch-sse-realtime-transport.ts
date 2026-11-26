@@ -50,6 +50,7 @@ function urlDelStream(clave: string): string {
 }
 
 class UnauthorizedStreamError extends Error {}
+/** Respuesta terminal del stream (403, o 404/405 en el canal del usuario): no se reintenta. */
 class ForbiddenStreamError extends Error {}
 
 function isAbortError(err: unknown): boolean {
@@ -319,6 +320,10 @@ export class FetchSseRealtimeTransport implements RealtimeTransport {
             if (response.status === 403) {
               throw new ForbiddenStreamError();
             }
+            // Un backend sin el canal del usuario (anterior a REDIS-001) responde 404/405: reintentar no lo arregla.
+            if (groupId === CLAVE_CANAL_USUARIO && (response.status === 404 || response.status === 405)) {
+              throw new ForbiddenStreamError();
+            }
             throw new Error(
               `Respuesta inesperada del stream realtime: HTTP ${response.status}`
             );
@@ -366,12 +371,14 @@ export class FetchSseRealtimeTransport implements RealtimeTransport {
           if (refreshed) {
             continue;
           }
+          debugLog(`UNAUTHORIZED canal=${groupId}`);
           this.setState('UNAUTHORIZED');
           this.running = false;
           return;
         }
 
         if (err instanceof ForbiddenStreamError) {
+          debugLog(`ERROR terminal canal=${groupId}`);
           this.setState('ERROR');
           this.running = false;
           return;

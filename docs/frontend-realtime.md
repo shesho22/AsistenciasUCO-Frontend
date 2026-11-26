@@ -17,9 +17,24 @@ Hay dos canales con el mismo formato, heartbeat y reconexión:
 | Usuario (REDIS-001, TD-084) | `GET /realtime/stream/usuario` | `DashboardLayoutComponent` mientras hay sesión (`startForUser` / `stopUser`) | Contadores del menú en cualquier pantalla: solicitudes de sesión (coordinador y docente), faltas avisadas, alertas y revisiones |
 
 Cada canal usa su propia instancia de `FetchSseRealtimeTransport` (`REALTIME_TRANSPORT` y `REALTIME_USUARIO_TRANSPORT`), así abrir
-o cambiar de grupo no cierra el del usuario. `RealtimeService.events()` une ambos y descarta por `eventId` el evento que llega por
-los dos (ventana de 200 ids). El backend solo envía al canal del usuario lo que le corresponde: eventos de los que es
-destinatario y, a titulares y roles con ámbito, las solicitudes de sesión de sus grupos.
+o cambiar de grupo no cierra el del usuario. El backend solo envía al canal del usuario lo que le corresponde: eventos de los
+que es destinatario y, a titulares y roles con ámbito, las solicitudes de sesión de sus grupos.
+
+`RealtimeService` separa los dos usos:
+
+- `events()` y `listenType()` entregan solo el canal del grupo. Las pantallas de un grupo los usan y así no reaccionan a avisos de
+  otros grupos que llegan por el canal del usuario (por ejemplo, una alerta de inasistencia de otra materia).
+- `allEvents()` une ambos canales y descarta por `eventId` el evento que llega por los dos (ventana de 200 ids). Lo usan las vistas
+  que no dependen de un grupo: los contadores del menú (`DashboardLayoutComponent`, `SolicitudesSesionMenuService`) y «Mis alertas».
+- `userConnectionState$` expone el estado del canal del usuario. El layout recuenta los contadores del menú cada vez que el canal
+  vuelve a conectar (los avisos emitidos mientras estuvo caído no se reenvían) y, si el canal terminó (`UNAUTHORIZED` o `ERROR`),
+  lo reabre cuando la sesión obtiene un token nuevo. El canal también se reabre si cambia la persona en sesión, aunque el rol sea
+  el mismo.
+
+En el canal del usuario un 404 o 405 (backend anterior a REDIS-001) es terminal (`ERROR`), igual que un 403: no se reintenta cada
+30 s. La renovación del token por un 401 es compartida: si los dos canales y el interceptor HTTP la piden a la vez,
+`AuthService.refreshAccessToken()` hace una sola petición a Keycloak (con rotación del refresh token, dos peticiones con el mismo
+token harían fallar la segunda o invalidarían la sesión).
 
 El token vive exclusivamente en la cabecera `Authorization`; nunca se incluye en la URL. El adapter usa `credentials: 'omit'` y `@microsoft/fetch-event-source`, porque `EventSource` nativo no permite enviar el Bearer token.
 

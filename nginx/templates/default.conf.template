@@ -10,8 +10,9 @@
 #
 # Los micro frontends externos (MessageUcoLab y Catálogo de Parámetros) llaman a rutas relativas de este mismo origen
 # para que el navegador envíe la cookie de sesión de Seguridad y para que la CSP ('self') los admita; aquí se reenvían a
-# cada componente (mismo arreglo que proxy.conf.js de ng serve). Se quita Origin en las APIs porque cada componente solo
-# admite en CORS su propio frontend.
+# cada componente (mismo arreglo que proxy.conf.js de ng serve). Cada componente solo admite en CORS su propio frontend,
+# así que se quita Origin, pero SOLO cuando coincide con el host de esta SPA ($origen_hacia_componente). Una petición
+# de otro sitio conserva su Origin y el componente la rechaza: quitarlo siempre la haría pasar por una del mismo origen.
 #
 # Los destinos se resuelven en cada petición (proxy_pass con variable + resolver), no al arrancar: si un componente
 # externo no existe o no resuelve (p. ej. host.docker.internal en Linux sin extra_hosts), solo esa ruta responde 502 y
@@ -20,6 +21,13 @@
 server_tokens off;
 
 resolver ${NGINX_LOCAL_RESOLVERS} valid=30s ipv6=off;
+
+# Origin vacío (no se envía) si su host es el de esta SPA; cualquier otro Origin se reenvía tal cual. Se compara el
+# host y no el esquema porque delante puede haber un proxy TLS (Traefik) que entrega la petición por http.
+map "$http_origin|$http_host" $origen_hacia_componente {
+    "~^https?://([^/|]+)\|\1$" "";
+    default $http_origin;
+}
 
 server {
     listen 8080;
@@ -67,7 +75,7 @@ server {
         proxy_pass $messageucolab_upstream;
         proxy_http_version 1.1;
         proxy_set_header Connection "";
-        proxy_set_header Origin "";
+        proxy_set_header Origin $origen_hacia_componente;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_buffering off;
@@ -82,7 +90,7 @@ server {
         proxy_pass $catalogo_parametros_upstream;
         proxy_http_version 1.1;
         proxy_set_header Connection "";
-        proxy_set_header Origin "";
+        proxy_set_header Origin $origen_hacia_componente;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_buffering off;

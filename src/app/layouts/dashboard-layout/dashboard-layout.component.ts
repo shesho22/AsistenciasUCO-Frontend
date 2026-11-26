@@ -1,5 +1,6 @@
 import { Component, signal, inject, computed, effect, ChangeDetectionStrategy, ElementRef, viewChild, DestroyRef, untracked } from '@angular/core';
 
+import { filter, skip } from 'rxjs';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { UserRole, effectiveRoles } from '../../core/models/user.model';
@@ -11,6 +12,7 @@ import { AlertaInasistenciaService } from '../../core/services/alerta-inasistenc
 import { FaltaReclamableService } from '../../core/services/falta-reclamable.service';
 import { REALTIME_EVENT_TYPE } from '../../core/realtime/model/realtime-event.model';
 import { RealtimeService } from '../../core/realtime/realtime.service';
+import { RealtimeConnectionState } from '../../core/realtime/model/realtime-connection-state.model';
 import { RevisionCancelacionService } from '../../core/services/revision-cancelacion.service';
 import { SolicitudesSesionMenuService } from '../../core/services/solicitudes-sesion-menu.service';
 import { ComponentesExternosService, ComponenteExterno } from '../../core/services/componentes-externos.service';
@@ -286,6 +288,10 @@ export class DashboardLayoutComponent {
 
   /** Sin usuario no hay rol: nunca se inventa uno (antes caía en DOCENTE y se pintaba su menú al cerrar sesión). */
   currentRole = computed<UserRole | null>(() => this.user()?.role ?? null);
+  /** Id de la persona en sesión: el canal del usuario se reabre si cambia, aunque el rol sea el mismo. */
+  private readonly usuarioId = computed<string | null>(() => this.user()?.id ?? null);
+  /** Último estado conocido del canal del usuario. */
+  private readonly estadoCanalUsuario = signal<RealtimeConnectionState>('DISCONNECTED');
 
   private readonly alertaService = inject(AlertaInasistenciaService, { optional: true });
   private readonly revisionService = inject(RevisionCancelacionService, { optional: true });
@@ -308,13 +314,46 @@ export class DashboardLayoutComponent {
     }
 
     // REDIS-001 (TD-084): canal SSE del usuario mientras haya sesión, para que los contadores del menú se actualicen
-    // en cualquier pantalla y no solo dentro de un grupo. Se cierra al salir del layout (cierre de sesión).
+    // en cualquier pantalla y no solo dentro de un grupo. Se cierra al salir del layout (cierre de sesión) y se reabre
+    // si cambia la persona, aunque conserve el rol. Al volver a conectar se recuentan los contadores, porque los avisos
+    // emitidos mientras estuvo caído no se reenvían.
     effect((onCleanup) => {
-      if (this.currentRole() === null) {
+      const usuarioId = this.usuarioId();
+      const role = this.currentRole();
+      if (usuarioId === null || role === null || !this.realtime) {
         return;
       }
-      untracked(() => this.realtime?.startForUser());
-      onCleanup(() => this.realtime?.stopUser());
+      const realtime = this.realtime;
+      untracked(() => {
+        realtime.startForUser();
+        const estados = realtime.userConnectionState$?.subscribe((estado) => this.estadoCanalUsuario.set(estado));
+        const reconexiones = realtime.userConnectionState$
+          ?.pipe(
+            filter((estado) => estado === 'CONNECTED'),
+            skip(1)
+          )
+          .subscribe(() => this.recontarMenuTrasReconexion());
+        onCleanup(() => {
+          estados?.unsubscribe();
+          reconexiones?.unsubscribe();
+          realtime.stopUser();
+          this.estadoCanalUsuario.set('DISCONNECTED');
+        });
+      });
+    });
+
+    // Si el canal del usuario terminó (token no renovable o respuesta 403/404), se reintenta cuando la sesión obtiene
+    // un token nuevo, en lugar de dejar el menú sin tiempo real el resto de la sesión.
+    effect(() => {
+      // `token` puede faltar en los dobles de AuthService de las pruebas del layout.
+      const token = this.authService.token?.();
+      if (!token || this.usuarioId() === null) {
+        return;
+      }
+      const estado = untracked(() => this.estadoCanalUsuario());
+      if (estado === 'UNAUTHORIZED' || estado === 'ERROR') {
+        untracked(() => this.realtime?.startForUser());
+      }
     });
 
     // ATA D6: el contador de «Solicitudes de sesión» se recarga al fijar el rol y con los eventos SSE de solicitudes.
@@ -332,7 +371,7 @@ export class DashboardLayoutComponent {
       }
       untracked(() => {
         this.recargarFaltasReclamables();
-        const suscripcion = this.realtime?.events().subscribe((evento) => {
+        const suscripcion = this.realtime?.allEvents().subscribe((evento) => {
           if (evento?.type === REALTIME_EVENT_TYPE.FALTA_SESION_AVISADA || evento?.type === REALTIME_EVENT_TYPE.ASISTENCIAS_TOMA_ACTUALIZADAS) {
             this.recargarFaltasReclamables();
           }
@@ -366,6 +405,14 @@ export class DashboardLayoutComponent {
         });
       }
     }, { allowSignalWrites: true });
+  }
+
+  /** Recuenta los contadores del menú que dependen del canal en vivo tras una reconexión del canal del usuario. */
+  private recontarMenuTrasReconexion(): void {
+    this.solicitudesMenu.recargar();
+    if (this.currentRole() === 'ESTUDIANTE' && environment.features?.cancelacionInasistenciaEnabled) {
+      this.recargarFaltasReclamables();
+    }
   }
 
   private recargarFaltasReclamables(): void {

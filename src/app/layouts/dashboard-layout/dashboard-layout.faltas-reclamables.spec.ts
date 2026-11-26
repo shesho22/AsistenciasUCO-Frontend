@@ -46,7 +46,7 @@ describe('DashboardLayoutComponent: contador de Mis Alertas con faltas por recla
         { provide: ToastService, useValue: toast },
         { provide: AlertaInasistenciaService, useValue: alertas },
         { provide: FaltaReclamableService, useValue: faltas },
-        { provide: RealtimeService, useValue: { events: () => eventos.asObservable(), listenType: () => eventos.asObservable(), startForUser: () => undefined, stopUser: () => undefined } },
+        { provide: RealtimeService, useValue: { allEvents: () => eventos.asObservable(), events: () => eventos.asObservable(), listenType: () => eventos.asObservable(), startForUser: () => undefined, stopUser: () => undefined } },
       ],
     });
     fixture = TestBed.createComponent(DashboardLayoutComponent);
